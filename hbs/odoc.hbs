@@ -1,0 +1,83 @@
+<style>
+.tabs .indicator { background-color: #ff9800 }
+</style>
+<div class="row">
+	<form class="col s12" id="searchForm">
+		<div class="input-field col s12">
+			<input id="search" type="text" value="{{id}}">
+			<label for="search">Search terms</label>
+		</div>
+	</form>
+</div>
+
+<script>
+    var list = [];
+{{#each terms}}
+	list.push("{{this}}");
+{{/each}}
+
+    function update(newTerm) {
+    	var newList = [];
+    	var searchVal = (typeof newTerm === 'undefined') ? $("#search").val() : newTerm;
+		if (searchVal.length > 0) {
+			newList = Stream(list).filter(new RegExp(searchVal.replace("$", "\\$"), "i")).toArray();
+		} else {
+			newList = list;
+		}
+
+		var output = "";
+		if (newList.length == 1 || typeof newTerm !== 'undefined') {
+			$.getJSON("/odocKey?q=" + _.escape(searchVal), function(elem) { 
+				var out = "";
+				out += "<span class=\"card-title thin\">" + elem.key + "</span>";
+				out += "<div class=\"card-action\"><h5 class=\"grey-text text-darken-1\">" + elem.fullkey + "</h5>";
+				out += "<p>" + elem.text.replace(/\n/g, "<br>") + "</p>";
+				out += "</div>";
+				$("#keyCardContent").html(out);
+				$("#keyCard").show();
+				$("#termCollection").hide();
+			});
+		} else {
+			$("#keyCardContent").html("");
+			$("#keyCard").hide();
+			$("#termCollection").show();
+		}
+
+		output = "";
+		for(var i in newList) {
+			output += "<a href=\"#\" id=\"term_" + newList[i] + "\" class=\"odocterm collection-item grey-text text-darken-1\">" + newList[i] + "</a>";
+		}
+		$("#termCollection").html(output);
+		$('.odocterm').click(function(e) {
+			$("#search").val(e.target.id.replace(/^term_/, ""));
+			$("#search").trigger("focus");
+			update(e.target.id.replace(/^term_/, ""));
+		});		
+    }
+
+	$("#search").keyup(function() {
+		update();
+	});
+
+	$("#searchForm").submit(function() {
+		//$("#searchForm").attr("action", "/odoc/" + $("#search").val());
+		update();
+	});
+
+
+</script>
+
+<div class="row">
+ <div class="col s12 m12">
+  <div class="card" id="keyCard">
+   <div class="card-content" id="keyCardContent">
+   </div>
+  </div>
+ </div>
+<div class="collection col s12 m12" id="termCollection">
+</div>
+</div>
+
+<script>
+update();
+</script>

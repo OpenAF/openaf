@@ -1,0 +1,272 @@
+// Build OpenAF
+//
+
+plugin("ZIP");
+
+var params = processExpr();
+
+var OPENAF_BUILD_HOME = (isUndefined(params.withDir)) ? "." : params.withDir;
+var OPENAF_LIB = OPENAF_BUILD_HOME + "/lib";
+var OPENAF_SRC = OPENAF_BUILD_HOME + "/src";
+var OPENAF_BIN = OPENAF_BUILD_HOME + "/bin";
+var JAVAC = "javac";
+var smallClassPath = "";
+
+var EXTERNAL = false;
+if (isDefined(params.external)) EXTERNAL = true;
+
+var INTERNAL_LICENSE = "See license info in ";
+var EXTERNAL_LICENSE = "See license info in ";
+
+function buildDeps() {
+	loadUnderscore();
+
+	// Check javascript dependencies
+	var l = io.listFilenames(OPENAF_BUILD_HOME + "/js");
+	var ss = {}; 
+
+	for(var i in l) { 
+		if (l[i].match(/\.js$/))
+			ss[l[i]] = _.uniq(io.readFileString(l[i]).match(/plugin\([^\)]+\)/g))
+	};
+	
+	return ss;
+}
+
+function buildClasspath() {
+	var classpath = "";
+
+	var listfiles = af.listFiles(OPENAF_LIB);
+
+	if (isUndefined(listfiles)) {
+		logErr("Didn't found the OPENAF_LIB. Please configure it.");
+		java.lang.System.exit(0);
+	}
+
+	for(i in listfiles.files) {
+		if(!listfiles.files[i].filename.match("\.jar$")) continue;
+		if(listfiles.files[i].filename.match("af.jar") || listfiles.files[i].filename.match("af.jar")) continue;
+		log("Including " + listfiles.files[i].filename);
+		classpath += listfiles.files[i].filepath;
+		smallClassPath += " " + listfiles.files[i].filename + "";
+		if (i < (listfiles.files.length - 1)) classpath += PATHSEPARATOR;
+	}
+
+	var tmp = smallClassPath;
+        for(var i = 0; i <= Math.floor(smallClassPath.length / 70); i++) {
+ 	 	tmp = tmp.substr(0, i * 70) + "\n " + tmp.substr(i * 70, tmp.length); 	
+        }
+	smallClassPath = tmp;
+
+        return classpath;
+}
+
+function listFiles(aPath, aFilter, aExcludeFilter) {
+	var listfiles = af.listFiles(aPath);
+	var arrayFiles = [];
+
+	for(i in listfiles.files) {
+		if(listfiles.files[i].isDirectory) {
+			arrayFiles = arrayFiles.concat(listFiles(listfiles.files[i].filepath, aFilter, aExcludeFilter));
+		} else {
+			if(listfiles.files[i].filename.match(new RegExp(aFilter))) {
+   				if (!(isDefined(aExcludeFilter) && (listfiles.files[i].filepath.replace(/\\/g, "/").match(new RegExp(aExcludeFilter)) != null)))
+					arrayFiles.push(listfiles.files[i].filepath);
+			}
+		}
+	}
+
+	return arrayFiles;
+}
+
+function buildSource() {
+	var sourcePath = "";
+
+	log("Finding sources...");
+        var excludeFilter;
+        //if (EXTERNAL) excludeFilter = "plugins/Wedo";
+        excludeFilter = "plugins/Wedo|wedo/open/utils|openaf/AF\.java|openaf/OpenAF\.java|openaf/core/AF\.java|openaf/IO\.java|openaf/AFCmd\.java|plugins/HTTPd/XDTServerResponse\.java|openaf/ScriptableParameterMap\.java";
+	var arrayList = listFiles(OPENAF_SRC, ".+\.java$", excludeFilter);
+        log("Found #" + arrayList.length + " java sources.");
+	sourcePath = arrayList.join(" ");
+
+	sprint(arrayList);
+	return sourcePath;
+}
+
+// MAIN
+// ----
+log("Init build");
+var os = java.lang.System.getProperty("os.name") + "";
+var PATHSEPARATOR = (os.match(/Windows/)) ? ";" : ":";
+
+var dateFormat = new java.text.SimpleDateFormat("yyyyMMdd");
+var release = dateFormat.format(new java.util.Date());
+
+log("Building relase " + release);
+var classpath = buildClasspath();
+
+log("Changing AFCmdOS for release = " + release);
+var javaAFCmd = af.readFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java");
+javaAFCmd = javaAFCmd.replace(/final public static String VERSION = "([0-9]+)";/m, "final public static String VERSION = \"" + release + "\";");
+if (EXTERNAL) 
+   javaAFCmd = javaAFCmd.replace(/final public static String LICENSE = "([^\"]+)";/m, "final public static String LICENSE = \"" + EXTERNAL_LICENSE + "\";");
+else 
+   javaAFCmd = javaAFCmd.replace(/final public static String LICENSE = "([^\"]+)";/m, "final public static String LICENSE = \"" + INTERNAL_LICENSE + "\";");
+
+af.writeFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java", javaAFCmd);
+
+log("Changing openaf.js variables according with release");
+var jsOpenAF = af.readFileString(OPENAF_BUILD_HOME + "/js/openaf.js");
+if (EXTERNAL)
+   jsOpenAF = jsOpenAF.replace(/var noHomeComms = ([a-z]+);/m, "var noHomeComms = true;");
+else
+   jsOpenAF = jsOpenAF.replace(/var noHomeComms = ([a-z]+);/m, "var noHomeComms = false;");
+
+af.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", jsOpenAF);
+
+af.mkdir(OPENAF_BIN);
+var cmd = JAVAC + " -cp " + classpath + " -Xlint:deprecation -d " + OPENAF_BIN + " " + buildSource();
+log("Compiling...");
+log(af.sh(cmd, "", undefined, true));
+if(__exitcode != 0) {
+	logErr("Error compiling: " + __stderr);
+}
+
+var tempJar = new ZIP(af.readFileBytes(OPENAF_BUILD_HOME + "/jar-in-jar-loader.zip"));
+var binFiles = listFiles(OPENAF_BIN, "\.class$");
+log("#" + binFiles.length + " binary files identified.");
+binFiles = binFiles.concat(classpath.split(PATHSEPARATOR));
+var transformPathBin = (os.match(/Windows/)) ? OPENAF_BIN.replace(/\//g, "\\") : OPENAF_BIN;
+var transformPathLib = (os.match(/Windows/)) ? OPENAF_LIB.replace(/\//g, "\\") : OPENAF_LIB;
+for(i in binFiles) {
+	tempJar.putFile(binFiles[i].replace(transformPathLib, "").replace(transformPathBin, "").replace(/\\/g, "/").replace(/^\//, ""), af.readFileBytes(binFiles[i]));
+}
+
+log("Adding extra files...");
+
+var packjson = af.readFile(OPENAF_BUILD_HOME + "/.package.json");
+packjson.version = release + "";
+//tempJar.putFile("log4j.properties", af.readFileBytes(OPENAF_BUILD_HOME + "/log4j.properties"));
+tempJar.putFile("versionsAndDeps.json", af.readFileBytes(OPENAF_BUILD_HOME + "/versionsAndDeps.json"));
+tempJar.putFile(".package.json", af.fromString2Bytes(beautifier(packjson)));
+tempJar.putFile("db/raidaf.h2.db", af.readFileBytes(OPENAF_BUILD_HOME + "/db/raidaf.h2.db"));
+
+log("Adding css files...");
+var cssList = listFilesRecursive(OPENAF_BUILD_HOME + "/css");
+for(i in cssList) {
+	var file = cssList[i];
+	if (file.isFile) {
+		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g,"/").replace(/^\//, ""), af.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
+	}
+};
+
+log("Adding fonts files...");
+var fontsList = listFilesRecursive(OPENAF_BUILD_HOME + "/fonts");
+for(i in fontsList) {
+	var file = fontsList[i];
+	if (file.isFile) {
+		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g,"/").replace(/^\//, ""), af.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
+	}
+}
+
+log("Adding hbs files...");
+var hbsList = listFilesRecursive(OPENAF_BUILD_HOME + "/hbs");
+for(i in hbsList) {
+	var file = hbsList[i];
+	if (file.isFile) {
+		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g, "/").replace(/^\//, ""), af.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
+	}
+}
+
+var jsList = af.listFiles(OPENAF_BUILD_HOME + "/js").files;
+af.mkdir(OPENAF_BUILD_HOME + "/jsmin");
+//for(i in jsList) {
+parallel4Array(jsList, function(i) { 
+	var file = i;
+	if(file.isFile) {
+		if (file.filename == 'ow.waf.js' || file.filename == 'ow.portal.js') return i;
+		log("Adding " + file.filename);
+                log("Compiling " + file.filename);
+                if (file.filename !== 'example.js' && 
+                	file.filename !== 'underscore.js' && 
+                	file.filename !== 'materialize.js' &&
+	 		file.filename !== 'stream.js' &&
+                        file.filename !== 'avsc.js' &&
+                	file.filename !== 'jquery.js') {
+                	var output = af.sh("java -jar compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+			if (output.length > 0) log(file.filename + ": " + output);
+                	if (__stderr.length > 0) logErr(file.filename + ": " + __stderr);
+			sync(function() { 
+                           tempJar.putFile("js/" + file.filename, af.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
+                        }, tempJar);
+                } else {
+                        sync(function() {
+			   tempJar.putFile("js/" + file.filename, af.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
+                        }, tempJar);
+                }
+	}
+	return i;
+}, 2);
+
+
+// Build Manifest
+log("Adding manifest");
+var manifest = "Manifest-Version: 1.0\n";
+manifest += "Rsrc-Class-Path: ./" + smallClassPath + "\n";
+manifest += "Class-Path: .\n";
+manifest += "Rsrc-Main-Class: wedo.openaf.AFCmdOS\n";
+manifest += "Main-Class: org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader\n";
+tempJar.putFile("META-INF/MANIFEST.MF", af.fromString2Bytes(manifest));
+
+// Build ODoc
+try {
+	log("Building ODoc documentation");
+	var helpFiles = {
+		"odoc"      : OPENAF_BUILD_HOME + "/js/odoc.js",
+		"ow.test"   : OPENAF_BUILD_HOME + "/js/owrap.test.js",
+		"ow.format" : OPENAF_BUILD_HOME + "/js/owrap.format.js",
+		"ow.template": OPENAF_BUILD_HOME + "/js/owrap.template.js",
+		"ow.server" : OPENAF_BUILD_HOME + "/js/owrap.server.js",
+		"ow.obj"    : OPENAF_BUILD_HOME + "/js/owrap.obj.js",
+		"afbase"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/AFBase.java",
+		"iocore"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/IO.java",
+		"csv"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/CSV.java",
+		"db"        : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/DB.java",
+		"console"   : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Console.java",
+        "threads"   : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Threads.java",
+        "email"     : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Email.java",
+        "http"      : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/HTTP.java",
+        "httpd"     : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/HTTPServer.java",
+        "jmx"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/JMX.java",
+        "jmxserver" : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/JMXServer.java",
+        "ssh"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SSH.java",
+        "snmp"      : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SNMP.java",
+        "snmpd"     : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SNMPServer.java",
+        "xml"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/XML.java",
+        "xls"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/XLS.java",
+        "svn"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SVN.java",
+        "git"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/GIT.java",
+        "zip"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/ZIP.java",
+		"scope"     : OPENAF_BUILD_HOME + "/js/openaf.js",
+		"ops"       : OPENAF_BUILD_HOME + "/src/opsODoc.js",
+		"index"     : OPENAF_BUILD_HOME + "/js/example.js"
+	};
+        saveHelp(OPENAF_BUILD_HOME, helpFiles);
+        log("Generating oDoc for Web");
+        af.mkdir("odocweb");
+        saveHelpWeb("odocweb", helpFiles);
+	tempJar.putFile(".odoc.db", io.readFileBytes(OPENAF_BUILD_HOME + "/.odoc.db"));
+} catch(e) {
+	logErr(e);
+}
+
+//Build deps
+log("Building dependencies");
+io.writeFileString(OPENAF_BUILD_HOME + "/dependencies.json", stringify(buildDeps()));
+
+log("Creating the openaf.jar");
+io.writeFileBytes(OPENAF_BUILD_HOME + "/openaf.jar", tempJar.generate({"compressionLevel": 9}));
+tempJar.close();
+
+log("Done build");

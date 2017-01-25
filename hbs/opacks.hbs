@@ -1,0 +1,64 @@
+<style>
+.tabs .indicator { background-color: #ff9800 }
+</style>
+<div class="row">
+	<div>
+		<ul class="tabs grey-text text-darken-1">
+			<li class="tab"><a href="#installed" class="grey-text text-darken-1">Installed oPacks</a></li>
+			<li class="tab"><a href="#repository" class="grey-text text-darken-1">Installed + Central oPacks</a></li>
+		</ul>
+	</div>
+	<br>
+	<div id="installed" class="col s12">
+		<ul class="collapsible popout" data-collapsible="accordion">
+		{{#each installed}}
+			<li>
+			  <div class="collapsible-header grey-text text-darken-1"><i class="material-icons">cloud_done</i>{{Name}}</div>
+			  <div class="collapsible-body">
+			   <table class="grey-text text-darken-1">
+			    <tr><td class="align-top right-align"><b>Path:</b></td><td>{{Path}}</td></tr>
+			    <tr><td class="align-top right-align"><b>Version:</b></td><td>{{Version}}</td></tr>
+			    <tr><td class="align-top right-align"><b>Description:</b></td><td>{{Description}}</td></tr>
+			    <tr><td class="align-top right-align"><b>Author:</b></td><td>{{Author}}</td></tr>
+			    <tr><td class="align-top right-align"><b>Bug reporting:</b></td><td><a href="{{Bugs}}">{{Bugs}}</a></td></tr>
+			   </table>
+			  </div>
+			</li>
+		{{/each}}
+		</ul>
+	</div>
+	<div id="repository">
+		<ul class="collapsible popout" data-collapsible="accordion">
+		{{#each all}}
+			<li>
+			  {{#if Local}}
+			   {{#if Update}}
+			     <div class="collapsible-header grey-text text-lighten-1"><i class="material-icons">cloud_queue</i>{{Name}}</div>
+			   {{else}}
+			     <div class="collapsible-header grey-text text-darken-1"><i class="material-icons">cloud_done</i>{{Name}}</div>
+			   {{/if}}
+			  {{else}}
+			     <div class="collapsible-header orange-text"><i class="material-icons">cloud_download</i>{{Name}}</div>
+			  {{/if}}
+			  <div class="collapsible-body">
+			   <table class="grey-text text-darken-1">
+			    {{#if Local}}
+			    <tr><td class="align-top right-align"><b>Path:</b></td><td>{{Path}}</td></tr>
+			    <tr><td class="align-top right-align"><b>Version:</b></td><td>{{Version}}{{#if Update}} (new version {{RemoteVersion}} available) &nbsp;&nbsp; <a href="/exec/opack/update?opack={{Name}}" class="waves-effect waves-light orange btn"><i class="material-icons left">cloud_download</i>Update</a>{{/if}}</td></tr>
+			    {{else}}
+			    <tr><td class="align-top right-align"><b>Version available:</b></td><td>{{RemoteVersion}}</td></tr>
+			    {{/if}}
+			    <tr><td class="align-top right-align"><b>Description:</b></td><td>{{Description}}</td></tr>
+			    <tr><td class="align-top right-align"><b>Author:</b></td><td>{{Author}}</td></tr>
+			    <tr><td class="align-top right-align"><b>Bug reporting:</b></td><td><a href="{{Bugs}}">{{Bugs}}</a></td></tr>
+                            {{#if Local}}
+                            {{else}}
+			    <tr><td class="align-top right-align"><b></b></td><td><a href="/exec/opack/install?opack={{Name}}" class="waves-effect waves-light orange btn"><i class="material-icons left">cloud_download</i>Install</a></td></tr>
+		            {{/if}}
+			   </table>
+			  </div>
+			</li>
+		{{/each}}
+		</ul>	
+	</div>
+</div>

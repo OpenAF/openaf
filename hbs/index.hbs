@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
+  <title>{{title}}</title>
+
+  <link href="css/materialize-icon.css" rel="stylesheet">
+  <link href="css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+  <!--link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/-->
+</head>
+<body>
+  <nav class="grey lighten-5" role="navigation">
+    <div class="nav-wrapper container"><a id="logo-container" href="{{logo.link}}" class="brand-logo orange-text thin">{{logo.text}}</a>
+      <ul class="right hide-on-med-and-down waves-effect waves-light thin">
+        {{#each navbar}}
+        <li><a href="{{link}}" class="orange-text">{{text}}</a></li>
+        {{/each}}
+      </ul>
+
+      <ul id="nav-mobile" class="side-nav waves-effect waves-light thin">
+        {{#each navbar}}
+        <li><a href="{{link}}" class="orange-text">{{text}}</a></li>
+        {{/each}}
+      </ul>
+      <a href="#" data-activates="nav-mobile" class="button-collapse orange-text thin"><i class="material-icons">menu</i></a>
+    </div>
+  </nav>
+
+  <!--  Scripts-->
+  <script src="js/jquery.js"></script>
+  <script src="js/materialize.js"></script>
+  <script src="js/stream.js"></script>
+  <script src="js/underscore.js"></script>
+
+  <div class="section">
+    <div class="container no-pad-bot s12">
+      {{{contents}}}
+    </div>
+  </div>
+
+  <footer class="page-footer white">
+    <div class="container">
+    </div>
+    <div class="footer-copyright">
+      <div class="container">
+      <div class="right grey-text text-darken-1">Served by <a class="grey-text" href="{{served.link}}">{{served.text}}</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    $( document ).ready(function(){
+       $(".button-collapse").sideNav();
+    });
+    window.onbeforeunload = function(event) {
+       $.ajax({ async: false, type: 'GET', url: '/exec/quit', success: function(d) {}});
+    }
+  </script>
+
+  </body>
+</html>
