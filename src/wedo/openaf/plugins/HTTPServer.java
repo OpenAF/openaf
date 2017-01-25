@@ -367,8 +367,8 @@ public class HTTPServer extends ScriptableObject {
 		
 		if (AFCmdBase.afcmd.equals("AFCmdWeDo")) {
 			Class<?> cl = Class.forName("wedo.openaf.plugins.HTTPd.XDTServerResponse");
-			cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(authFunction);
-			cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(opsBroker);
+			cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(this, authFunction);
+			cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(this, opsBroker);
 			
 			com.nwu.httpd.HTTPd.registerURIResponse(uri, cl, props);
 		}
