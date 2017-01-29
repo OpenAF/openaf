@@ -127,7 +127,123 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].remove(ak);
 		}
 	},
+	db: {
+		__db: {},
+		__table: {},
+		create: function(aName, shouldCompress, options) {
+			if (isDef(options) && isDef(options.db)) 
+				this.__db[aName] = options.db;
+			else
+				this.__db[aName] = createDBInMem(aName, false, undefined, undefined, false, true);
+			
+			if (isDef(options) && isDef(options.tableName)) {
+				this.__table[aName] = options.tableName;
+			} else {
+				this.__table[aName] = "ch_" + aName;
+			}
+			
+			var _keySize = 4000;
+			
+			if (isDef(options) && isDef(options.keySize)) { _keySize = options.keySize; };
+			
+			try {
+				this.__db[aName].q("select count(key) from " + this.__table[aName]);
+			} catch(e) {
+				// Table probably doesn't exist
+				this.__db[aName].u("CREATE TABLE " + this.__table[aName] + " (key varchar2(" + _keySize + ") primary key, ts number(15), value clob)" );
+			}
+		},
+		destroy: function(aName) { 
+			this.__db[aName].close();
+			this.__db = deleteFromArray(this.__db, this.__db.indexOf(aName));
+		},
+		size: function(aName) {
+			return Number(this.__db[aName].q("select count(key) c from " + this.__table[aName]).results[0].C);
+		},
+		forEach: function(aName, aFunction, x) {
+			var i = this.getKeys(aName);
+			for(j in i) {
+				aFunction(i[j], this.get(aName, i[j]));
+			}
+		},
+		getKeys: function(aName, full) { 
+			var i = $stream(this.__db[aName].q("select key from " + this.__table[aName]).results).map("KEY").toArray();
+			var res = [];
+			for(j in i) {
+				res.push(JSON.parse(i[j]));
+			}
+			return res;
+		},
+		getSortedKeys: function(aName, full) {
+			var i = $stream(this.__db[aName].q("select key from " + this.__table[aName] + " order by ts").results).map("KEY").toArray();
+			var res = [];
+			for(j in i) {
+				res.push(JSON.parse(i[j]));
+			}
+			return res;
+		},
+		getSet: function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res;
+			try {
+				res = this.__db[aName].qs("select key from " + this.__table[aName] + " where key = ? for update", [stringify(aK)], true).results[0].KEY;
+				if (isDef(res) && ($stream([JSON.parse(res)]).anyMatch(aMatch)) ) {
+					this.set(aName, aK, aV, aTimestamp);
+				}
+				this.__db[aName].commit();
+			} catch(e) {
+				this.__db[aName].rollback();
+				throw e;
+			}
+		},
+		set: function(aName, aK, aV, aTimestamp, x) { 
+			var i = this.get(aName, aK);
+			try {
+				if (isDef(i)) {
+					this.__db[aName].us("update " + this.__table[aName] + " set value = ?, ts = ? where key = ?", [stringify(aV), aTimestamp, stringify(aK)], true);
+				} else {
+					this.__db[aName].us("insert into " + this.__table[aName] + " (key, ts, value) values (?, ?, ?)", [stringify(aK), aTimestamp, stringify(aV)], true);
+				}
+				this.__db[aName].commit();
+			} catch(e) {
+				this.__db[aName].rollback();
+				throw e;
+			}
+		},
+		setAll: function(aName, aKs, aVs, aTimestamp) { 
+			for(var i in aVs) {
+				this.set(aName, ow.loadObj().filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},
+		get: function(aName, aK, x) {
+			var res;
+			try {
+				res = JSON.parse(this.__db[aName].qs("select value from " + this.__table[aName] + " where key = ?", [stringify(aK)], true).results[0].VALUE);
+			} catch(e) {}
+			return res;
+		},
+		pop: function(aName) { 
+			var aKs = this.getSortedKeys(aName);
+			var aK = aKs[aKs.length - 1];
+			var aV = this.get(aName, aK);
+			return aK;		
+		},
+		shift: function(aName) {
+			var aK = this.getSortedKeys(aName)[0];
+			var aV = this.get(aName, aK);
+			return aK;
+		},
+		unset: function(aName, aK, aTimestamp) { 
+			try {
+				this.__db[aName].us("delete " + this.__table[aName] + " where key = ?", [stringify(aK)], true);
+				this.__db[aName].commit();
+			} catch(e) {
+				this.__db[aName].rollback();
+				throw e;
+			}
+		}
+	},
 	// Operations channel implementation
+	// (run operations from a channel)
 	//
 	ops: {
 		__ops : {},
@@ -899,7 +1015,7 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 		var fns = {};
 		for(var _i in this.subscribers[aName]) {
 			var uid = t.addThread(function(uuid) {
-				fn(aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
+				fns[uuid](aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
 				return uuid;
  			});
 			
@@ -923,6 +1039,27 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	return this;
 };
 	
+OpenWrap.ch.prototype.utils = {
+	getMirrorSubscriber: function(aTargetCh, aFunc) {
+		return function(aC, aO, aK, aV) {
+			if (isUnDef(aFunc)) aFunc = function() { return true; };
+			switch(aO) {
+			case "set": 
+				if (aFunc(aK)) $ch(aTargetCh).set(aK, aV);
+				break;
+			case "setall": 
+				for (var k in aK) {
+					if (aFunc(aK[k])) $ch(aTargetCh).set(aK[k], aV[k]);
+				}
+				break;
+			case "unset": 
+				if (aFunc(aK)) $ch(aTargetCh).unset(aK);
+				break;
+			}		
+		}
+	}
+};
+
 OpenWrap.ch.prototype.comms = {
 	__counter: {},
 	

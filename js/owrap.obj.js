@@ -1123,6 +1123,10 @@ OpenWrap.obj.prototype.rest = {
 		return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", undefined, undefined, undefined, _t);
 	},
 	
+	jsonGet: function(aURL, aIdx, _l, _p, _t) {
+		return JSON.parse(this.get(aURL, aIdx, _l, _p, _t).response);
+	},
+	
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.create(aBaseURI, aDataRowMap, aLogin, aPassword, aTimeout) : Map</key>
@@ -1146,6 +1150,10 @@ OpenWrap.obj.prototype.rest = {
 			h.login(_l, _p);
 		} 
 		return h.exec(aURL, "POST", stringify(aDataRow), {"Content-Type":"application/json", "content-type": "application/json"}, undefined, _t);
+	},
+	
+	jsonCreate: function(aURL, aDataRow, _l, _p, _t) {
+		return JSON.parse(this.create(aURL, aDataRow, _l, _p, _t).response);
 	},
 	
 	/**
@@ -1173,6 +1181,10 @@ OpenWrap.obj.prototype.rest = {
 		return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", stringify(aDataRow), {"Content-Type":"application/json", "content-type": "application/json"}, undefined, _t);
 	},
 	
+	jsonSet: function(aURL, aDataRow, _l, _p, _t) {
+		return JSON.parse(this.set(aURL, aDataRow, _l, _p, _t));
+	},
+	
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.remove(aBaseURI, aIndexMap, aLogin, aPassword, aTimeout) : Map</key>
@@ -1196,6 +1208,10 @@ OpenWrap.obj.prototype.rest = {
 			h.login(_l, _p);
 		} 
 		return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", undefined, undefined, undefined, _t);
+	},
+	
+	jsonRemove: function(aURL, aIdx, _l, _p, _t) {
+		return JSON.parse(this.remove(aURL, aIdx, _l, _p, _t));
 	},
 	
 	/**
