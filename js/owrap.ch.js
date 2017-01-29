@@ -369,19 +369,17 @@ OpenWrap.ch.prototype.__types = {
 			return ch.size([ Packages.org.apache.ignite.cache.CachePeekMode.ALL ]);
 		},
 		forEach      : function(aName, aFunction) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			var i = ch.iterator();
-			while(i.hasNext()) {
-				var o = i.next();
-				aFunction(af.fromJavaMap(o.getKey()), af.fromJavaMap(o.getValue()));
+			var keys = this.getKeys(aName);
+			while(o in keys) {
+				aFunction(o, this.get(aName, o));
 			}
 		},
 		getKeys      : function(aName, full) {
 			var ch = this.__ig.getIgnite().getCache(aName);
-			var i = ch.iterator();
+			var i = ch.primaryKeySet().iterator();
 			var keys = [];
 			while(i.hasNext()) {
-				keys.push(af.fromJavaMap(i.next().getKey()));
+				keys.push(af.fromJavaMap(i.next()));
 			}
 			return keys;
 		},
@@ -411,7 +409,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			for(var i in anArrayOfMapData) {
-				this.set(aName, ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], Timestamp);
+				this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
 			}
 		},
 		get          : function(aName, aKey) {
@@ -419,23 +417,15 @@ OpenWrap.ch.prototype.__types = {
 			return af.fromJavaMap(ch.get(af.toJavaMap(aKey)));
 		},
 		pop          : function(aName) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			var i = ch.iterator();
-			var k;
-			while (i.hasNext()) { k = i.next().getKey(); }
-			
-			if (isDef(k))
-				return af.fromJavaMap(k);
-			else
-				return {};				
+			var aKs = this.getSortedKeys(aName);
+			var aK = aKs[aKs.length - 1];
+			var aV = this.get(aName, aK);
+			return aK;				
 		},
 		shift        : function(aName) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			var i = ch.iterator();
-			if (i.hasNext())
-				return af.fromJavaMap(i.next().getKey());
-			else
-				return {};
+			var aK = this.getSortedKeys(aName)[0];
+			var aV = this.get(aName, aK);
+			return aK;
 		},
 		unset        : function(aName, aKey) {
 			var ch = this.__ig.getIgnite().getCache(aName);
