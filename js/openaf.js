@@ -393,7 +393,12 @@ function jsonParse(astring) {
  */
 function templify(aTemplateString, someData) {
 	someData = (isUndefined(someData)) ? this : someData;
-	return ow.loadTemplate().parse(aTemplateString, someData);
+	// Handlebars is not thread-safe
+	var res = "";
+	sync(function() {
+		res = ow.loadTemplate().parse(aTemplateString, someData);
+	}, ow.loadTemplate());
+	return res;
 }
 
 /**
@@ -1771,7 +1776,19 @@ function loadLib(aLib, forceReload, aFunction) {
  * </odoc>
  */
 function sync(aFunction, anObj) {
-	af.sync(aFunction, anObj)();
+	var foundException = false;
+	var exception;
+	
+	af.sync(function() {
+		try {
+			aFunction();
+		} catch(e) {
+			foundException = true;
+			exception = e;
+		}
+	}, anObj)();
+	
+	if (foundException) throw exception;
 }
 
 

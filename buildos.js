@@ -248,6 +248,7 @@ try {
         "svn"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SVN.java",
         "git"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/GIT.java",
         "zip"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/ZIP.java",
+        "ignite"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Ignite.java",
 		"scope"     : OPENAF_BUILD_HOME + "/js/openaf.js",
 		"ops"       : OPENAF_BUILD_HOME + "/src/opsODoc.js",
 		"index"     : OPENAF_BUILD_HOME + "/js/example.js"

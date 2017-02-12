@@ -12,13 +12,19 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
+import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Future;
 
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -63,6 +69,83 @@ public class HTTP extends ScriptableObject {
 			this.contentType = contentType;
 		}
 
+	}
+
+	public class EventSocket extends WebSocketAdapter {
+		NativeFunction onConnect, onMsg, onError, onClose;
+		
+		public EventSocket(NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
+				NativeFunction onClose) {
+			this.onConnect = onConnect;
+			this.onMsg = onMsg;
+			this.onError = onError;
+			this.onClose = onClose;
+		}
+
+		@Override
+		public void onWebSocketConnect(Session sess) {
+			super.onWebSocketConnect(sess);
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				this.onConnect.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {sess});
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+		
+		@Override
+		public void onWebSocketText(String payload) {
+			super.onWebSocketText(payload);
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				this.onMsg.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {"text", payload});
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+		
+		@Override
+		public void onWebSocketBinary(byte[] payload, int offset, int len) {
+			super.onWebSocketBinary(payload, offset, len);
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				this.onMsg.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {"bytes", payload, offset, len});
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}			
+		}
+		
+		@Override
+		public void onWebSocketClose(int statusCode, String reason) {
+			super.onWebSocketClose(statusCode, reason);
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				this.onClose.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {statusCode, reason});
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+		
+		@Override
+		public void onWebSocketError(Throwable cause) {
+			super.onWebSocketError(cause);
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				this.onError.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {cause});
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
 	}
 	
 	/**
@@ -239,6 +322,49 @@ public class HTTP extends ScriptableObject {
 	@JSFunction
 	public String response() {
 		return output.response;
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>HTTP.wsConnect(anURL, onConnect, onMsg, onError, onClose) : WebSocketClient</key>
+	 * Tries to establish a websocket connection (ws or wss) and returns a jetty WebSocketClient java object.
+	 * As callbacks you should defined onConnect, onMsg, onError and onClose. The onConnect callback will 
+	 * provide, as argument, the created session that you should use to send data; the onMsg callback will
+	 * provide, as arguments, aType (either "text" or "bytes"), aPayload (string or array of bytes) and an offset
+	 * and length (in case type is "bytes"); the onError callback will provide the cause; the onClose callback
+	 * will provide aStatusCode and aReason. Example:\
+	 * \
+	 * plugin("HTTP");\
+	 * var session; var output = "";\
+	 * var client = (new HTTP()).wsConnect("ws://echo.websocket.org",\
+	 *   function(aSession) { log("Connected"); session = aSession; },\
+	 *   function(aType, aPayload, aOffset, aLength) { if (aType == "text") output += aPayload; },\
+	 *   function(aCause) { logErr(aCause); },\
+	 *   function(aStatusCode, aReason) { log("Closed (" + aReason + ")"); }\
+	 * );\
+	 * session.getRemote().sendString("Hello World!");\
+	 * while(output.length &lt; 1) { sleep(100); };\
+	 * client.stop();\
+	 * print(output);\
+	 * \
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose) throws Exception {
+		URI uri = URI.create(anURL);
+		WebSocketClient client = new WebSocketClient();		
+		try {
+			client.start();
+			EventSocket socket = new EventSocket(onConnect, onMsg, onError, onClose);
+			Future<Session> fut = client.connect(socket, uri);
+
+			Session session = fut.get();
+
+			return client;
+		} catch (Exception e) {
+			client.stop();
+			throw e;
+		}
 	}
 	
 	/**
