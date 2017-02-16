@@ -347,14 +347,17 @@ OpenWrap.server.prototype.auth = {
  * var res = ldap.search("dc=example,dc=com", "(uid=*)");\
  * \
  * print(beautifier(res));\
- * \
  * </odoc>
  */
 OpenWrap.server.prototype.ldap = function(aServer, aUsername, aPassword) {
 	var env = new java.util.Hashtable(5);
+	
+	if (isUnDef(aUsername) && isUnDef(aPassword)) {
+		env.put(javax.naming.Context.SECURITY_AUTHENTICATION, "none");
+	}
 	//env.put(javax.naming.Context.SECURITY_AUTHENTICATION, "simple");
 	env.put(javax.naming.Context.SECURITY_PRINCIPAL, aUsername);
-	env.put(javax.naming.Context.SECURITY_CREDENTIALS, Packages.wedo.openaf.AFCmdBase.getAF().decryptIfPossible(aPassword));
+	env.put(javax.naming.Context.SECURITY_CREDENTIALS, Packages.wedo.openaf.AFCmdBase.afc.dIP(aPassword));
 	env.put(javax.naming.Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
 	env.put(javax.naming.Context.PROVIDER_URL, aServer);
 
