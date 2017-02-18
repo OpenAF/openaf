@@ -39,6 +39,7 @@ public class HTTP extends ScriptableObject {
 	protected static CookieManager ckman = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
 	protected HTTPResponse output = new HTTPResponse("", -1, null, "");
 	protected Object outputObj = new Object();
+	protected Object errorObj = new Object();
 	
 	/**
 	 * 
@@ -271,6 +272,17 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
+	 * <key>HTTP.getErrorResponse() : Object</key>
+	 * Returns the HTTP request error result string. 
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object getErrorResponse() {
+		return errorObj;
+	}
+	
+	/**
+	 * <odoc>
 	 * <key>HTTP.responseCode() : Number</key>
 	 * Returns the HTTP request response code (e.g. 404, 500, ...)
 	 * </odoc>
@@ -409,12 +421,20 @@ public class HTTP extends ScriptableObject {
 		if (timeout > 0) con.setConnectTimeout(timeout);
 		
 		con.connect(); 
-		SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; responsecode = " + con.getResponseCode() + "; cookiesize = " + ckman.getCookieStore().getCookies().size(), null);
-		
-		if (bytes) {
-			return new HTTPResponse(IOUtils.toByteArray(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
-		} else {
-			return new HTTPResponse(IOUtils.toString(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+		try {
+			SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; responsecode = " + con.getResponseCode() + "; cookiesize = " + ckman.getCookieStore().getCookies().size(), null);
+	
+			if (bytes) {
+				return new HTTPResponse(IOUtils.toByteArray(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+			} else {
+				return new HTTPResponse(IOUtils.toString(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+			}
+		} catch(Exception e) {
+			if (con.getErrorStream() != null) {
+				errorObj = IOUtils.toString(con.getErrorStream());
+				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream()), e);
+			}
+			throw e;
 		}
 	}
 }
