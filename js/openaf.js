@@ -2033,6 +2033,13 @@ OpenWrap.prototype.loadTemplate = function() { loadLib(getOpenAFJar() + "::js/ow
 OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.obj.js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
 /**
  * <odoc>
+ * <key>ow.loadServer()</key>
+ * Loads OpenWrap server functionality. 
+ * </odoc>
+ */
+OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+/**
+ * <odoc>
  * <key>ow.loadCh()</key>
  * Loads OpenWrap channels functionality. 
  * </odoc>

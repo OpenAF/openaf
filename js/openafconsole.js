@@ -872,8 +872,6 @@ con.getConsoleReader().setExpandEvents(false);
 __outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + ") (type help for commands)");
 var historyFile;
 var jLineFileHistory;
-var operationsList;
-var opsList;
 
 // Initializations
 plugin("Threads");
@@ -884,12 +882,6 @@ initThread.addThread(function(uuid) {
 	jLineFileHistory = new Packages.jline.console.history.FileHistory(new java.io.File(historyFile));
 	con.getConsoleReader().setHistory(jLineFileHistory);
 
-	operationsList = af.getOperations("").list;
-	opsList = [];
-	for(i in operationsList) {
-		opsList.push(operationsList[i].operation);
-	}
-	operationsList = undefined;
 	con.getConsoleReader().addCompleter(
 		new Packages.wedo.openaf.jline.OpenAFConsoleCompleter(function(buf, cursor, candidates) {
 			if (buf == null) return null;

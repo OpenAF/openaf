@@ -93,7 +93,7 @@ if (!irj || __expr != "") {
 			if( el.name.match(/MANIFEST.MF$/) ) {
 				var str = af.fromBytes2String(zip.getFile(el.name));
 				if ((str.match(/jarinjarloader/) && str.match(/eclipse/) )) {
-					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, "wedo.openaf.AFCmd");
+					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, Packages.wedo.openaf.AFCmdBase.afc.getClass().getName());
 					zipNew.putFile(el.name, af.fromString2Bytes(str));
 				}
 			} else {
