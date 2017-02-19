@@ -90,7 +90,6 @@ function buildSource() {
         log("Found #" + arrayList.length + " java sources.");
 	sourcePath = arrayList.join(" ");
 
-	sprint(arrayList);
 	return sourcePath;
 }
 
@@ -150,7 +149,6 @@ packjson.version = release + "";
 //tempJar.putFile("log4j.properties", af.readFileBytes(OPENAF_BUILD_HOME + "/log4j.properties"));
 tempJar.putFile("versionsAndDeps.json", af.readFileBytes(OPENAF_BUILD_HOME + "/versionsAndDeps.json"));
 tempJar.putFile(".package.json", af.fromString2Bytes(beautifier(packjson)));
-tempJar.putFile("db/raidaf.h2.db", af.readFileBytes(OPENAF_BUILD_HOME + "/db/raidaf.h2.db"));
 
 log("Adding css files...");
 var cssList = listFilesRecursive(OPENAF_BUILD_HOME + "/css");
