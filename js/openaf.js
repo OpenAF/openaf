@@ -883,7 +883,7 @@ function load(aScript) {
 		try {
 			af.load(aScript + ".js")
 		} catch(e) {
-			eeror = e0;
+			error = e0;
 			var paths = getOPackPaths();
 			paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
 	
