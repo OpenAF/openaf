@@ -592,6 +592,8 @@ OpenWrap.server.prototype.rest = {
 OpenWrap.server.prototype.httpd = {
 	__routes: {},
 	__defaultRoutes: {},
+	__preRoutes: {},
+	
 	
 	/**
 	 * <odoc>
@@ -612,6 +614,7 @@ OpenWrap.server.prototype.httpd = {
 		
 		this.__routes[hs.getPort()] = {};
 		this.__defaultRoutes[hs.getPort()] = {};
+		this.__preRoutes[hs.getPort()] = {};
 		
 		return hs;
 	},
@@ -666,23 +669,31 @@ OpenWrap.server.prototype.httpd = {
 		if (isUndefined(aMapOfRoutes)) aMapOfRoutes = {};
 		ow.loadFormat();
 		
-		aHTTPd.add(aPath, function(req) {
-			var uri = req.uri.replace(new RegExp("^" + aPath), "");
-			if (isDefined(aPreRouteFunc)) aPreRouteFunc(req);
-			if (isDefined(aMapOfRoutes[uri])) {
-				return aMapOfRoutes[uri](req);
-			} else {
-				var bp = ow.format.string.bestPrefix(uri, Object.keys(aMapOfRoutes));
-
-				if (isDefined(bp))
-					return aMapOfRoutes[bp](req);
-				else
-					return aDefaultRoute(req);
-			}
-		});
+		var parent = this;
+		var aPort = aHTTPd.getPort() + 0;
+		var aP    = String(aPath);
 		
-		this.__routes[aHTTPd.getPort()] = aMapOfRoutes;
-		if (isDefined(aDefaultRoute)) this.__defaultRoutes[aHTTPd.getPort()] = aDefaultRoute;
+		this.__routes[aPort] = aMapOfRoutes;
+		if (isDef(aDefaultRoute)) this.__defaultRoutes[aPort] = aDefaultRoute;
+		if (isDef(aPreRouteFunc)) this.__preRoutes[aPort] = aPreRouteFunc;
+		
+		aHTTPd.add(aPath, function(req) {
+try {			
+			var uri = req.uri.replace(new RegExp("^" + aP), "");
+			if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req);
+			if (isFunction(parent.__routes[aPort][uri])) {
+				return parent.__routes[aPort][uri](req);
+			} else {
+				var bp = ow.format.string.bestPrefix(uri, Object.keys(parent.__routes[aPort]));
+				if (isDef(bp))
+					return parent.__routes[aPort][bp](req);
+				else
+					return parent.__defaultRoutes[aPort](req);
+			}
+} catch(e) {
+	logErr(e);
+}
+		});
 		
 		aHTTPd.setDefault(aPath);
 	},
@@ -711,6 +722,7 @@ OpenWrap.server.prototype.httpd = {
 		aHTTPd.stop();
 		delete this.__routes[aHTTPd.getPort()];
 		delete this.__defaultRoutes[aHTTPd.getPort()];
+		delete this.__preRoutes[aHTTPd.getPort()];
 	},
 	
 	/**

@@ -7,15 +7,22 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +33,12 @@ import java.util.zip.ZipFile;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import javax.security.cert.X509Certificate;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -67,23 +80,6 @@ public class AFBase extends ScriptableObject {
 	private static final long serialVersionUID = 1L;
 	private static final String K = "ChangeThisPsswrd";
 
-	/**
-	 * <odoc>
-	 * <key>af.fromJson(aString) : Object</key>
-	 * Converts a JSON string representation into a Javascript object.
-	 * </odoc>
-	 */
-	@JSFunction
-	public static Object fromJson(String s) throws Exception {
-		try {
-			return jsonParse(s);
-		} catch (Exception e) {
-			SimpleLog.log(SimpleLog.logtype.DEBUG,
-					"Error converting from parametermap: " + e.getMessage(), e);
-			throw e;
-		}
-	}
-	
 	/**
 	 * <odoc>
 	 * <key>af.restartOpenAF(aCommandLineArray)</key>
@@ -689,6 +685,23 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
+	 * <key>af.externalAddClasspath(aURL)</key>
+	 * Tries to add aURL to the current classpath. Don't forget that directories must end with a '/', for 
+	 * example: file:/my/own/dir/\
+	 * \
+	 * Note: This might not work for some JVMs.  
+	 * </odoc>
+	 */
+	@JSFunction
+	public void externalAddClasspath(String url) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, MalformedURLException {
+		ClassLoader sysloader = ClassLoader.getSystemClassLoader();
+		Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[] { URL.class });
+		method.setAccessible(true);
+		method.invoke(sysloader, new Object[]{ new URL(url) });
+	}
+	
+	/**
+	 * <odoc>
 	 * <key>af.load(aFilename)</key>
 	 * Loads an OpenAF script/file aFilename. The variable __loadedfrom will always be set to the aFilename value a
 	 * after each execution. The aFilename can be composed not only by a filename but also with a zip/opack
@@ -1118,4 +1131,5 @@ public class AFBase extends ScriptableObject {
 		AFCmdBase.jse.exitContext();
 		return ret;
 	}	
+	
 }

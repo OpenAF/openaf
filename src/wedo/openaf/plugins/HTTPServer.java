@@ -258,7 +258,7 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addEcho(String uri) {
-		com.nwu.httpd.HTTPd.registerURIResponse(uri, EchoResponse.class, null);
+		httpd.registerURIResponse(uri, EchoResponse.class, null);
 	}
 	
 	/**
@@ -269,7 +269,7 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addStatus(String uri) {
-		com.nwu.httpd.HTTPd.registerURIResponse(uri, StatusResponse.class, null);
+		httpd.registerURIResponse(uri, StatusResponse.class, null);
 		//httpd.createContext(uri, new StatusHandler());
 	}
 	
@@ -287,12 +287,12 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void add(String uri, NativeFunction callback) {
-		callbacks.put(uri, callback);
+		callbacks.put(this.serverport + ":" + uri, callback);
 		
 		Map<String, String> props = new HashMap<String, String>();
 		props.put("uri", uri);
 		
-		com.nwu.httpd.HTTPd.registerURIResponse(uri, JSResponse.class, props);
+		httpd.registerURIResponse(uri, JSResponse.class, props);
 	}
 	
 	/**
@@ -308,7 +308,7 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void setDefault(String uri) {
-		com.nwu.httpd.HTTPd.setDefaultResponse(uri);
+		httpd.setDefaultResponse(uri);
 	}
 	
 	/**
@@ -322,7 +322,7 @@ public class HTTPServer extends ScriptableObject {
 	public void addFileBrowse(String uri, String filepath) {
 		Map<String, String> props = new HashMap<String, String>();
 		props.put("publichtml", filepath);
-		com.nwu.httpd.HTTPd.registerURIResponse(uri, FileResponse.class, props);
+		httpd.registerURIResponse(uri, FileResponse.class, props);
 	}
 	
 	/**
@@ -370,7 +370,7 @@ public class HTTPServer extends ScriptableObject {
 			cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(this, authFunction);
 			cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(this, opsBroker);
 			
-			com.nwu.httpd.HTTPd.registerURIResponse(uri, cl, props);
+			httpd.registerURIResponse(uri, cl, props);
 		}
 	}
 	

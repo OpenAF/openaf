@@ -63,7 +63,7 @@ public class JSResponse extends Response {
 			json.put("params", json, toScriptable(request.getParams()));
 			json.put("files", json, toScriptable(request.getFiles()));
 			
-			NativeFunction func = HTTPServer.callbacks.get(props.get("uri"));
+			NativeFunction func = HTTPServer.callbacks.get(this.httpd.getListeningPort() + ":" + props.get("uri"));
 			Object ret = null; 
 			if (func != null) {
 				ret = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {json});

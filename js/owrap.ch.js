@@ -1288,7 +1288,7 @@ OpenWrap.ch.prototype.server = {
 		var droute = ow.server.httpd.getDefaultRoute(hs);
 		if (isUnDef(droute)) droute = function (r) { return hs.reply("not found", ow.server.httpd.mimes.TXT, ow.server.httpd.codes.NOTFOUND) };
 		
-		ow.server.httpd.route(hs, ow.server.httpd.mapWithExistingRoutes(hs, routes), ow.server.httpd.getDefaultRoute(hs));
+		ow.server.httpd.route(hs, ow.server.httpd.mapWithExistingRoutes(hs, routes), droute);
 
 		return uuid;
 	},
