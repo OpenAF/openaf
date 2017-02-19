@@ -466,17 +466,18 @@ OpenWrap.server.prototype.rest = {
 		switch(aReq.method) {
 		case "GET": res.data = stringify(aGetFunc(idxs)); break;
 		case "POST": 
-			res.data = stringify(aCreateFunc(idxs, JSON.parse(io.readFileString(aReq.files.content)))); 
+			//res.data = stringify(aCreateFunc(idxs, JSON.parse(io.readFileString(aReq.files.content))));
+			res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.files.postData)));
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
 			break;
 		case "PUT": 
-			res.data = stringify(aSetFunc(idxs, JSON.parse(io.readFileString(aReq.files.content)))); 
+			res.data = stringify(aSetFunc(idxs, io.readFile(aReq.files.content)));
+			//res.data = stringify(aSetFunc(idxs, jsonParse(aReq.files.postData)));
 			break;
 		case "DELETE": res.data = stringify(aRemoveFunc(idxs)); break;
 		};
 		
 		res.mimetype = ow.server.httpd.mimes.JSON;
-		
 		return res;
 	},
 	
@@ -496,44 +497,44 @@ OpenWrap.server.prototype.rest = {
 	 * </odoc>
 	 */
 	replyData: function(aBaseURI, aReq, aData) {
-		loadUnderscore();
 		return ow.server.rest.reply(aBaseURI, aReq,
-			function(idxs) {
-				if ($stream(aData).filter(idxs).count() <= 0) {
-					aData.push(idxs);
-					return idxs;
+			function(idxs, data) {
+				if ($stream(clone(aData)).filter(idxs).count() <= 0) {
+					var newData = merge(idxs, data);
+					aData.push(newData);
+					return newData;
 				} else {
 					return {};
 				}
 			},
 			function(idxs) {
-				if ($stream(aData).filter(idxs).count() > 0) {
-					return $stream(aData).filter(idxs).toArray()[0];
+				if ($stream(clone(aData)).filter(idxs).count() > 0) {
+					return $stream(clone(aData)).filter(idxs).toArray()[0];
 				} else {
 					return {};
 				}				
 			},
-			function(idxs) {
+			function(idxs, data) {
 				var newData;
 				
-				if (isDefined(req.files.content)) {
-					newData = io.readFile(req.files.content);
+				//if (isDefined(aReq.files.content)) {
+					//newData = io.readFile(aReq.files.content);
+					newData = data;
 
-					if ($stream(aData).filter(idxs).count() > 0) {
-						aData[aData.indexOf($stream(aData).filter(idxs).toArray()[0])] = newData;
+					if ($stream(clone(aData)).filter(idxs).count() > 0) {
+						aData[aData.indexOf($stream(clone(aData)).filter(idxs).toArray()[0])] = newData;
 					} else {
 						aData.push(newData);
 					}
 					
-					return newData;
-				}
+					//return newData;
+				//}
 
 				return {};
 			},
 			function(idxs) {
-				if ($stream(aData).filter(idxs).count() > 0) {
-					delete aData[aData.indexOf($stream(aData).filter(idxs).toArray()[0])];
-					aData = _.compact(aData);
+				if ($stream(clone(aData)).filter(idxs).count() > 0) {
+					deleteFromArray(aData, aData.indexOf($stream(clone(aData)).filter(idxs).toArray()[0]) );
 					return idxs;
 				} else {
 					return {};
@@ -554,10 +555,11 @@ OpenWrap.server.prototype.rest = {
 		var propsObj = {};
 
 		for (var i = 0; i < props.length; i += 2) {
-			propsObj[props[i]] = jsonParse(decodeURI(props[i + 1]));
+			if (props[i].length > 0)
+				propsObj[props[i]] = jsonParse(decodeURI(props[i + 1]));
 		}
 		for (var parName in req.params) {
-			if (!parName.match(/^NanoHttpd\./)) {
+			if (!parName.match(/^NanoHttpd\./) && parName.length > 0) {
 				propsObj[parName] = jsonParse(decodeURI(req.params[parName]));
 			}
 		}
@@ -567,7 +569,7 @@ OpenWrap.server.prototype.rest = {
 			isDefined(req.header["content-type"]) &&
 			req.header["content-type"].toLowerCase() == "application/json") {
 			var data = jsonParse(req.files.postData);
-			extend(propsObj, data);
+			propsObj = merge(propsObj, data);
 		}
 		
 		return propsObj;
@@ -677,8 +679,7 @@ OpenWrap.server.prototype.httpd = {
 		if (isDef(aDefaultRoute)) this.__defaultRoutes[aPort] = aDefaultRoute;
 		if (isDef(aPreRouteFunc)) this.__preRoutes[aPort] = aPreRouteFunc;
 		
-		aHTTPd.add(aPath, function(req) {
-try {			
+		aHTTPd.add(aPath, function(req) {			
 			var uri = req.uri.replace(new RegExp("^" + aP), "");
 			if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req);
 			if (isFunction(parent.__routes[aPort][uri])) {
@@ -690,9 +691,6 @@ try {
 				else
 					return parent.__defaultRoutes[aPort](req);
 			}
-} catch(e) {
-	logErr(e);
-}
 		});
 		
 		aHTTPd.setDefault(aPath);

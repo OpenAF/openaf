@@ -1130,17 +1130,17 @@ OpenWrap.obj.prototype.rest = {
 	},
 	
 	jsonGet: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
-		return JSON.parse(this.get(aURL, aIdx, _l, _p, _t, aRequestMap).response);
+		return jsonParse(this.get(aURL, aIdx, _l, _p, _t, aRequestMap).response);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.create(aBaseURI, aDataRowMap, aLogin, aPassword, aTimeout, aRequestMap) : Map</key>
-	 * Tries to create a new aDataRowMap entry on the REST aBaseURI service returning the reply as a Map.
+	 * <key>ow.obj.rest.create(aBaseURI, aIndexMap, aDataRowMap, aLogin, aPassword, aTimeout, aRequestMap) : Map</key>
+	 * Tries to create a new aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a Map.
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request.
 	 * </odoc>
 	 */
-	create: function(aURL, aDataRow, _l, _p, _t, aRequestMap) {
+	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap) {
 		plugin("HTTP");
 		var h = new HTTP();
 		
@@ -1157,15 +1157,15 @@ OpenWrap.obj.prototype.rest = {
 		} 
 		var rmap = merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
 		try {
-			return h.exec(aURL, "POST", stringify(aDataRow), rmap, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", stringify(aDataRow), rmap, undefined, _t);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + h.getErrorResponse();
 			throw e;
 		}
 	},
 	
-	jsonCreate: function(aURL, aDataRow, _l, _p, _t, aRequestMap) {
-		return JSON.parse(this.create(aURL, aDataRow, _l, _p, _t, aRequestMap).response);
+	jsonCreate: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap) {
+		return jsonParse(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap).response);
 	},
 	
 	/**
@@ -1200,7 +1200,7 @@ OpenWrap.obj.prototype.rest = {
 	},
 	
 	jsonSet: function(aURL, aDataRow, _l, _p, _t, aRequestMap) {
-		return JSON.parse(this.set(aURL, aDataRow, _l, _p, _t, aRequestMap));
+		return jsonParse(this.set(aURL, aDataRow, _l, _p, _t, aRequestMap).response);
 	},
 	
 	/**
@@ -1235,7 +1235,7 @@ OpenWrap.obj.prototype.rest = {
 	},
 	
 	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
-		return JSON.parse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap));
+		return jsonParse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap).response);
 	},
 	
 	/**
