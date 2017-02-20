@@ -2845,7 +2845,7 @@ if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
  * Channel basic persistence:\
  * \
  * - storeAdd(aFilename, anArrayOfKeys, shouldCompress)\
- * - storeRestore(aFilename)\
+ * - storeRestore(aFilename, anArrayOfKeys)\
  * \
  * Inter-channel HTTP REST:\
  * \
@@ -2879,7 +2879,7 @@ $channels = function(a) {
 		getVersion   : function() { return ow.ch.getVersion(a); },
 		
 		storeAdd     : function(aFilename, anArrayOfKeys, shouldCompress) { ow.ch.persistence.create(a, aFilename, anArrayOfKeys, shouldCompress); return $channels(a) },
-		storeRestore : function(aFilename) { ow.ch.persistence.restore(a, aFilename); return $channels(a); },
+		storeRestore : function(aFilename, anArrayOfKeys) { ow.ch.persistence.restore(a, aFilename, anArrayOfKeys); return $channels(a); },
 		
 		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc); },
 		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); return $channels(a); },
@@ -2937,7 +2937,7 @@ $channels = function(a) {
  * Channel basic persistence:\
  * \
  * - storeAdd(aFilename, anArrayOfKeys, shouldCompress)\
- * - storeRestore(aFilename)\
+ * - storeRestore(aFilename, anArrayOfKeys)\
  * \
  * Inter-channel HTTP REST:\
  * \

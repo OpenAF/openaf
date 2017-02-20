@@ -85,7 +85,7 @@ function buildSource() {
 	log("Finding sources...");
         var excludeFilter;
         //if (EXTERNAL) excludeFilter = "plugins/Wedo";
-        excludeFilter = "plugins/Wedo|wedo/open/utils|openaf/AF\.java|openaf/OpenAF\.java|openaf/core/AF\.java|openaf/IO\.java|openaf/AFCmd\.java|plugins/HTTPd/XDTServerResponse\.java|openaf/ScriptableParameterMap\.java";
+        excludeFilter = "plugins/Wedo";
 	var arrayList = listFiles(OPENAF_SRC, ".+\.java$", excludeFilter);
         log("Found #" + arrayList.length + " java sources.");
 	sourcePath = arrayList.join(" ");
@@ -229,6 +229,7 @@ try {
 		"ow.obj"    : OPENAF_BUILD_HOME + "/js/owrap.obj.js",
 		"ow.ch"     : OPENAF_BUILD_HOME + "/js/owrap.ch.js",
 		"afbase"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/AFBase.java",
+		"io"        : OPENAF_BUILD_HOME + "/src/wedo/openaf/IO.java",
 		"iocore"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/IO.java",
 		"csv"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/CSV.java",
 		"db"        : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/DB.java",

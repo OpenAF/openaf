@@ -80,6 +80,11 @@ public class AFBase extends ScriptableObject {
 	private static final long serialVersionUID = 1L;
 	private static final String K = "ChangeThisPsswrd";
 
+	@JSFunction
+	public static Object fromJson(String in) throws Exception {
+		return jsonParse(in);
+        }		
+
 	/**
 	 * <odoc>
 	 * <key>af.restartOpenAF(aCommandLineArray)</key>
@@ -146,6 +151,7 @@ public class AFBase extends ScriptableObject {
 	 * @param out
 	 * @return
 	 */
+	@JSFunction
 	public static Object jsonParse(String out) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Object ret;

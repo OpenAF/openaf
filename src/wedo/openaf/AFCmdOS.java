@@ -525,7 +525,7 @@ public class AFCmdOS extends AFCmdBase  {
 				ScriptableObject.defineClass((Scriptable) jse.getGlobalscope(), CSV.class, false, true);
 				
 				// Add IO class
-				ScriptableObject.defineClass((Scriptable) jse.getGlobalscope(), wedo.openaf.core.IO.class, false, true);			
+				ScriptableObject.defineClass((Scriptable) jse.getGlobalscope(), wedo.openaf.IO.class, false, true);			
 				
 				// Add this object
 				Scriptable afScript = null;

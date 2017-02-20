@@ -134,16 +134,8 @@ public class IO extends wedo.openaf.core.IO {
 	public static Object readFile(String filename, String encoding) throws Exception {
 		Object res = wedo.openaf.core.IO.readFile(filename, encoding);
 	  
-                try {
-			if (encoding == null || encoding.equals("undefined")) enconding = "UTF-8";
-			JsonObject out = (new Gson()).fromJson((String) res, JsonObject.class);
-			return (new Gson()).toJson(out);
-		} catch(Exception e) {
-			SimpleLog.log(SimpleLog.logtype.DEBUG,
-					"Error parsing file: " + e.getMessage(), e);a
-			throw e; 	
-		}
-		return "";
+		if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
+		return wedo.openaf.AFBase.jsonParse((String) res);
 	}	
 
 	@JSFunction
