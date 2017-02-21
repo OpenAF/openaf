@@ -1,10 +1,12 @@
 plugin("Console");
 
 var __ansiflag = true;
+var __pinflag = false;
+var __pinprefix = "";
 var CONSOLESEPARATOR = "-- "
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|watch|clear|purge|pause|sql|esql|dsql";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|watch|clear|purge|pause|sql|esql|dsql|pin";
 var __alias = {
 	"opack": "__expr=__aliasparam;load(getOpenAFJar() + \"::js/opack.js\");",
 };
@@ -337,6 +339,16 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 	return outputres;
 }
 
+function __pin(aCommand) {
+	if (!__pinflag) {
+		__pinflag = true;
+		__pinprefix = aCommand;
+	} else {
+		__pinflag = false;
+		__pinprefix = "";
+	}
+}
+
 var __timeResult;
 /**
  * Turns on or off timing of commands or provides the elapsed time
@@ -500,6 +512,7 @@ function __help(aTerm) {
 		__outputConsoleComments("sql      Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')");
 		__outputConsoleComments("dsql     Returns the list of columns produced by a SQL query over a db connection.");
 		__outputConsoleComments("esql     Executes the SQL statement, over a db connection (example 'esql db update...')");
+		__outputConsoleComments("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
 		__outputConsoleComments("clear    Tries to clear the screen.");
 		__outputConsoleComments("purge    Purge all the command history");
 		__outputConsoleComments("[others] Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
@@ -696,6 +709,10 @@ function __processCmdLine(aCommand, returnOnly) {
 			if (aCommand.match(/^pause(?: +|$)/)) {
 				internalCommand = true;
 				__pause(aCommand.replace(/^pause */, ""));
+			}
+			if (aCommand.match(/^pin(?: +|$)/)) {
+				internalCommand = true;
+				__pin(aCommand.replace(/^pin */, ""));
 			}
 			var __res;
 			if (!internalCommand) {
@@ -949,10 +966,20 @@ while(cmd != "exit") {
 			if (isUndefined(watchresult)) watchresult = "";
 			if (beautifyCommand) watchresult = String(stringify(watchresult)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
 		} catch(e) { watchresult = "ERROR: " + e.message; watchCommand = false; }
-		cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + "> ");
+		cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ");
 	} else {
-		cmd = con.readLinePrompt("> ");
+		cmd = con.readLinePrompt(__pinprefix + "> ");
 	}
+
+	if (cmd == "") {
+		__pinflag = false;
+		__pinprefix = "";
+	} else {
+		if (__pinflag) {
+			cmd = __pinprefix + " " + cmd;
+		}
+	}
+
 	if(isDefined(jLineFileHistory)) jLineFileHistory.flush();
 }
 
