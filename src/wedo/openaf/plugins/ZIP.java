@@ -6,9 +6,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -288,13 +291,21 @@ public class ZIP extends ScriptableObject {
 		
 		try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
 			SimpleLog.log(logtype.DEBUG, "put file with data of type " + data.getClass().getName(), null);
-			
 			Path nf = fs.getPath(name);
-			if (nf.getParent() != null && !Files.exists(nf.getParent())) {
-				Files.createDirectories(nf.getParent());
-			}
 			
-			Files.write(nf, (byte[]) data, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+			try { 
+				if (nf.getParent() != null && Files.notExists(nf.getParent())) {
+					Files.createDirectories(nf.getParent());
+				}
+			
+				if (!Files.isDirectory(nf))
+					Files.write(nf, (byte[]) data, new OpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE });
+				else {
+					if (Files.notExists(nf)) 
+						Files.createDirectory(nf);
+				}
+			} catch(NoSuchFileException nsfe) {
+			}
 		} 
 	}
 	
@@ -319,7 +330,7 @@ public class ZIP extends ScriptableObject {
 			if (nf.getParent() != null && !Files.exists(nf.getParent())) Files.createDirectories(nf.getParent());
 		
 			if (data instanceof InputStream)
-				Files.copy((InputStream) data, nf);
+				Files.copy((InputStream) data, nf, new CopyOption[]{ StandardCopyOption.REPLACE_EXISTING });
 			else
 				Files.write(nf, (byte[]) data);
 		} 

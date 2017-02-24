@@ -56,6 +56,35 @@ var zipNew = new ZIP();
 var irj = isRepackJar(classPath);
 
 try {
+// Set .package.json	
+
+packJson = jsonParse(af.fromBytes2String(zip.streamGetFile(getOpenAFJar(), ".package.json")));
+packJson.version = getVersion();
+
+var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+
+var packages = {};
+var zipdb = new ZIP();
+try {
+	packages = af.fromJson(af.fromBytes2String(zipdb.streamGetFile(fileDB, PACKAGESJSON)));
+} catch(e) {
+	 if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
+}
+
+if (!isUndefined(packages)) {
+	packages["OpenAF"] = packJson;
+} else {
+	packages = {};
+	packages["OpenAF"] = packJson;
+}
+
+try {
+	zipdb.streamPutFile(fileDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
+} catch (e) {
+	logErr(e.message);
+}
+
+	
 if (!irj || __expr != "") {
 	var oldVersionFile = classPath.replace(/openaf.jar/, "openaf.jar.orig");
 	
@@ -96,7 +125,7 @@ if (!irj || __expr != "") {
 					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, Packages.wedo.openaf.AFCmdBase.afc.getClass().getName());
 					zipNew.putFile(el.name, af.fromString2Bytes(str));
 				}
-			} else {
+			} else {				
 				if (!(el.name.match(/jarinjarloader/))) 
 					zipNew.putFile(el.name, zip.getFile(el.name));
 			}
@@ -114,4 +143,4 @@ if (!irj || __expr != "") {
 log("Done repacking OpenAF.jar");
 // We need to stop
 java.lang.System.exit(0);
-} catch(e) { e.javaException.printStackTrace(); }
+} catch(e) { printErr(e); e.javaException.printStackTrace(); }

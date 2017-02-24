@@ -17,8 +17,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.UnknownHostException;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -83,7 +86,7 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public static Object fromJson(String in) throws Exception {
 		return jsonParse(in);
-        }		
+    }		
 
 	/**
 	 * <odoc>
@@ -457,6 +460,18 @@ public class AFBase extends ScriptableObject {
 		
 		FileUtils.deleteDirectory(new File(filepath));
 		return true;
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>af.mv(aSourceFilePath, aTargetFilePath)</key>
+	 * Tries to move aSourceFilePath to aTargetFilePath.
+	 * </odoc>
+	 * @throws IOException 
+	 */
+	@JSFunction
+	public boolean mv(String orig, String dest) throws IOException {
+		return Files.move((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING }) != null;
 	}
 	
 	/**

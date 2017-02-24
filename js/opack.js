@@ -779,7 +779,8 @@ function __opack_list(args) {
 
 	var sortIds = {};
 	for(i in packages) {
-		sortIds[packages[i].name.toLowerCase()] = i;
+		if (isDef(packages[i].name)) 
+			sortIds[packages[i].name.toLowerCase()] = i;
 	}
 
 	var packsIds = Object.keys(sortIds).sort();
