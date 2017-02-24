@@ -879,29 +879,35 @@ function load(aScript) {
 		af.load(aScript);
 		return aScript;
 	} catch(e0) {
-		error = e0;
-		try {
-			af.load(aScript + ".js")
-		} catch(e) {
+		if (e0.message.match(/FileNotFoundException/)) {
 			error = e0;
-			var paths = getOPackPaths();
-			paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
-	
-			for(i in paths) {
-				try {
-					paths[i] = paths[i].replace(/\\+/g, "/");
-					paths[i] = paths[i].replace(/\/+/g, "/");
-					af.load(paths[i] + "/" + aScript);
-					return aScript;
-				} catch(e) {
-					error = e;
+			try {
+				af.load(aScript + ".js")
+			} catch(e) {
+				if (e0.message.match(/FileNotFoundException/)) {
+					error = e0;
+					var paths = getOPackPaths();
+					paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
+			
+					for(i in paths) {
+						try {
+							paths[i] = paths[i].replace(/\\+/g, "/");
+							paths[i] = paths[i].replace(/\/+/g, "/");
+							af.load(paths[i] + "/" + aScript);
+							return aScript;
+						} catch(e) {
+							error = e;
+						}
+					}
+			
+					if (typeof __loadedfrom !== 'undefined') {
+						af.load(__loadedfrom.replace(/[^\/]+$/, "") + aScript);
+						return aScript;
+					}
 				}
 			}
-	
-			if (typeof __loadedfrom !== 'undefined') {
-				af.load(__loadedfrom.replace(/[^\/]+$/, "") + aScript);
-				return aScript;
-			}
+		} else {
+			throw e0;
 		}
 	}
 	throw "Couldn't find " + aScript + "; " + error;
