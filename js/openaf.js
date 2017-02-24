@@ -2816,6 +2816,45 @@ if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 
 /**
  * <odoc>
+ * <key>loadJSYAML()</key>
+ * Loads the JS-YAML library.
+ * </odoc>
+ */
+function loadJSYAML() {
+	loadLib(getOpenAFJar() + "::js/js-yaml.js");
+}
+
+/**
+ * <odoc>
+ * <key>AF.toYAML(aJson) : String</key>
+ * Tries to dump aJson into a YAML string.
+ * </odoc>
+ */
+AF.prototype.toYAML = function(aJson) { loadJSYAML(); return jsyaml.dump(aJson); }
+/**
+ * <odoc>
+ * <key>AF.fromYAML(aYaml) : Object</key>
+ * Tries to parse aYaml into a javascript map.
+ * </odoc>
+ */
+AF.prototype.fromYAML = function(aYAML) { loadJSYAML(); return jsyaml.load(aYAML); }
+/**
+ * <odoc>
+ * <key>IO.readFileYAML(aYAMLFile) : Object</key>
+ * Tries to read aYAMLFile into a javascript object. 
+ * </odoc>
+ */
+IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFileString(aYAMLFile)); }
+/**
+ * <odoc>
+ * <key>IO.writeFileYAML(aYAMLFile, aObj)</key>
+ * Tries to write a javascript aObj into a aYAMLFile.
+ * </odoc>
+ */
+IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileString(aYAMLFile, af.toYAML(aObj)); }
+
+/**
+ * <odoc>
  * <key>$channels(aChannel)</key>
  * Please check more details with the help from ow.ch. The available methods are:\
  * \

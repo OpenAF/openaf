@@ -189,8 +189,9 @@ parallel4Array(jsList, function(i) {
                 if (file.filename !== 'example.js' && 
                 	file.filename !== 'underscore.js' && 
                 	file.filename !== 'materialize.js' &&
-	 		file.filename !== 'stream.js' &&
-                        file.filename !== 'avsc.js' &&
+	 				file.filename !== 'stream.js' &&
+	 				file.filename !== 'js-yaml.js' &&
+                    file.filename !== 'avsc.js' &&
                 	file.filename !== 'jquery.js') {
                 	var output = af.sh("java -jar compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
 			if (output.length > 0) log(file.filename + ": " + output);
