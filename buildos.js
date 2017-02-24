@@ -106,7 +106,7 @@ log("Building relase " + release);
 var classpath = buildClasspath();
 
 log("Changing AFCmdOS for release = " + release);
-var javaAFCmd = af.readFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java");
+var javaAFCmd = io.readFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java");
 javaAFCmd = javaAFCmd.replace(/final public static String VERSION = "([0-9]+)";/m, "final public static String VERSION = \"" + release + "\";");
 if (EXTERNAL) 
    javaAFCmd = javaAFCmd.replace(/final public static String LICENSE = "([^\"]+)";/m, "final public static String LICENSE = \"" + EXTERNAL_LICENSE + "\";");
@@ -116,7 +116,7 @@ else
 af.writeFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java", javaAFCmd);
 
 log("Changing openaf.js variables according with release");
-var jsOpenAF = af.readFileString(OPENAF_BUILD_HOME + "/js/openaf.js");
+var jsOpenAF = io.readFileString(OPENAF_BUILD_HOME + "/js/openaf.js");
 if (EXTERNAL)
    jsOpenAF = jsOpenAF.replace(/var noHomeComms = ([a-z]+);/m, "var noHomeComms = true;");
 else
@@ -132,22 +132,22 @@ if(__exitcode != 0) {
 	logErr("Error compiling: " + __stderr);
 }
 
-var tempJar = new ZIP(af.readFileBytes(OPENAF_BUILD_HOME + "/jar-in-jar-loader.zip"));
+var tempJar = new ZIP(io.readFileBytes(OPENAF_BUILD_HOME + "/jar-in-jar-loader.zip"));
 var binFiles = listFiles(OPENAF_BIN, "\.class$");
 log("#" + binFiles.length + " binary files identified.");
 binFiles = binFiles.concat(classpath.split(PATHSEPARATOR));
 var transformPathBin = (os.match(/Windows/)) ? OPENAF_BIN.replace(/\//g, "\\") : OPENAF_BIN;
 var transformPathLib = (os.match(/Windows/)) ? OPENAF_LIB.replace(/\//g, "\\") : OPENAF_LIB;
 for(i in binFiles) {
-	tempJar.putFile(binFiles[i].replace(transformPathLib, "").replace(transformPathBin, "").replace(/\\/g, "/").replace(/^\//, ""), af.readFileBytes(binFiles[i]));
+	tempJar.putFile(binFiles[i].replace(transformPathLib, "").replace(transformPathBin, "").replace(/\\/g, "/").replace(/^\//, ""), io.readFileBytes(binFiles[i]));
 }
 
 log("Adding extra files...");
 
-var packjson = af.readFile(OPENAF_BUILD_HOME + "/.package.json");
+var packjson = io.readFile(OPENAF_BUILD_HOME + "/.package.json");
 packjson.version = release + "";
-//tempJar.putFile("log4j.properties", af.readFileBytes(OPENAF_BUILD_HOME + "/log4j.properties"));
-tempJar.putFile("versionsAndDeps.json", af.readFileBytes(OPENAF_BUILD_HOME + "/versionsAndDeps.json"));
+//tempJar.putFile("log4j.properties", io.readFileBytes(OPENAF_BUILD_HOME + "/log4j.properties"));
+tempJar.putFile("versionsAndDeps.json", io.readFileBytes(OPENAF_BUILD_HOME + "/versionsAndDeps.json"));
 tempJar.putFile(".package.json", af.fromString2Bytes(beautifier(packjson)));
 
 log("Adding css files...");
@@ -155,7 +155,7 @@ var cssList = listFilesRecursive(OPENAF_BUILD_HOME + "/css");
 for(i in cssList) {
 	var file = cssList[i];
 	if (file.isFile) {
-		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g,"/").replace(/^\//, ""), af.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
+		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g,"/").replace(/^\//, ""), io.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
 	}
 };
 
@@ -164,7 +164,7 @@ var fontsList = listFilesRecursive(OPENAF_BUILD_HOME + "/fonts");
 for(i in fontsList) {
 	var file = fontsList[i];
 	if (file.isFile) {
-		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g,"/").replace(/^\//, ""), af.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
+		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g,"/").replace(/^\//, ""), io.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
 	}
 }
 
@@ -173,7 +173,7 @@ var hbsList = listFilesRecursive(OPENAF_BUILD_HOME + "/hbs");
 for(i in hbsList) {
 	var file = hbsList[i];
 	if (file.isFile) {
-		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g, "/").replace(/^\//, ""), af.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
+		tempJar.putFile(file.filepath.replace(OPENAF_BUILD_HOME, "").replace(/\\/g, "/").replace(/^\//, ""), io.readFileBytes(OPENAF_BUILD_HOME + "" + file.filepath.replace(OPENAF_BUILD_HOME, "")));
 	}
 }
 
@@ -196,11 +196,11 @@ parallel4Array(jsList, function(i) {
 			if (output.length > 0) log(file.filename + ": " + output);
                 	if (__stderr.length > 0) logErr(file.filename + ": " + __stderr);
 			sync(function() { 
-                           tempJar.putFile("js/" + file.filename, af.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
+                           tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
                         }, tempJar);
                 } else {
                         sync(function() {
-			   tempJar.putFile("js/" + file.filename, af.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
+			   tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
                         }, tempJar);
                 }
 	}
