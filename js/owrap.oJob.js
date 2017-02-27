@@ -64,42 +64,45 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob) {
 		if (this.__ojob.channels.expose) {
 			if (isDef(this.__ojob.channels.port)) {
 
-				var hs = ow.loadServer().httpd.start(this.__ojob.channels.port, this.__ojob.channels.host, this.__ojob.channels.keyStorePath, this.__ojob.channels.keyPassword);
-				var parent = this;
-
-				var auth = function(u, p, s, r) {
-					if (isUnDef(parent.__ojob.channels.permissions)) 
-						r.channelPermission = "r";
-					else
-						r.channelPermission = parent.__ojob.channels.permissions;	
-					
-					return true;				
-				};
-
-				if (isDef(parent.__ojob.channels.auth)) {
-					auth = function(u, p, s, r) {
+				if (isUnDef(this.__hs)) {
+					this.__hs = ow.loadServer().httpd.start(this.__ojob.channels.port, this.__ojob.channels.host, this.__ojob.channels.keyStorePath, this.__ojob.channels.keyPassword);
+				
+					var parent = this;
+	
+					var auth = function(u, p, s, r) {
 						if (isUnDef(parent.__ojob.channels.permissions)) 
 							r.channelPermission = "r";
 						else
-							r.channelPermission = parent.__ojob.channels.permissions;
-						var creds = $from(parent.__ojob.channels.auth).equals("login", u).at(0);
-				
-						if (isDef(creds) && isDef(creds.pass) && p == creds.pass) {
-							if (isDef(creds.permissions)) r.channelPermission = creds.permissions;
-							return true;
-						} else {
-							return false;
+							r.channelPermission = parent.__ojob.channels.permissions;	
+						
+						return true;				
+					};
+	
+					if (isDef(parent.__ojob.channels.auth)) {
+						auth = function(u, p, s, r) {
+							if (isUnDef(parent.__ojob.channels.permissions)) 
+								r.channelPermission = "r";
+							else
+								r.channelPermission = parent.__ojob.channels.permissions;
+							var creds = $from(parent.__ojob.channels.auth).equals("login", u).at(0);
+					
+							if (isDef(creds) && isDef(creds.pass) && p == creds.pass) {
+								if (isDef(creds.permissions)) r.channelPermission = creds.permissions;
+								return true;
+							} else {
+								return false;
+							}
 						}
 					}
-				}
-
-				if (isUnDef(this.__ojob.channels.list)) {
-					this.__ojob.channels.list = $ch().list();
-					this.__ojob.channels.list.push("__log");
-				}
-
-				for(var i in this.__ojob.channels.list) {
-					$ch(this.__ojob.channels.list[i]).expose(hs, undefined, auth);
+	
+					if (isUnDef(this.__ojob.channels.list)) {
+						this.__ojob.channels.list = $ch().list();
+						this.__ojob.channels.list.push("__log");
+					}
+	
+					for(var i in this.__ojob.channels.list) {
+						$ch(this.__ojob.channels.list[i]).expose(this.__hs, undefined, auth);
+					}
 				}
 			}
 		}
@@ -228,7 +231,7 @@ OpenWrap.oJob.prototype.loadFile = function(aFile) {
 OpenWrap.oJob.prototype.runFile = function(aFile, args) {
 	ow.oJob.loadFile(aFile);
 
-	ow.oJob.start(args, true);	
+	ow.oJob.start(args, true);
 }
 
 /**
@@ -416,12 +419,12 @@ OpenWrap.oJob.prototype.stop = function() {
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop) {
 	var args = isDef(provideArgs) ? merge(provideArgs, this.__expr) : this.__expr;
 	var parent = this;
-
+	
 	if (this.__ojob != {}) {
 	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 2000;
 
 	    if (isUnDef(this.__ojob.unique)) this.__ojob.unique = {};
-	    if (this.__ojob.unique != {}) {
+	    if (this.__ojob.unique != {} && this.__ojob.daemon) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
 
@@ -440,7 +443,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop) {
 	var parent = this;
 	t.addThread(function() {
 		// Check all jobs in the todo queue
-		var job; var shouldStop = false;
+		var job = undefined; 
+		var shouldStop = false;
 		while(!shouldStop) {
 			try {
 				if ($from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID()).any()) {
@@ -469,13 +473,14 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop) {
 		}
 
 	});
+	
 	t.start();
 
 	if (this.__ojob != {} && this.__ojob.daemon == true) {
 		ow.loadServer().daemon(this.__ojob.timeInterval);
 	}
 
-	t.waitForThreads(5000);
+	t.waitForThreads(2500);
 	t.stop();
 }
 
