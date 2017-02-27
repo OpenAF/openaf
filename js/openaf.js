@@ -2058,6 +2058,13 @@ OpenWrap.prototype.loadCh = function() { loadLib(getOpenAFJar() + "::js/owrap.ch
  * </odoc>
  */
 OpenWrap.prototype.loadPortal = function() { loadLib(getOpenAFJar() + "::js/owrap.portal.js"); ow.portal = new OpenWrap.portal(); pods.declare("ow.portal", ow.portal); return ow.portal; }
+/**
+ * <odoc>
+ * <key>ow.loadOJob()</key>
+ * Loads OpenWrap oJob functionality. 
+ * </odoc>
+ */
+OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
 
 /**
  * <odoc>

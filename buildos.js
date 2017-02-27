@@ -229,6 +229,7 @@ try {
 		"ow.server" : OPENAF_BUILD_HOME + "/js/owrap.server.js",
 		"ow.obj"    : OPENAF_BUILD_HOME + "/js/owrap.obj.js",
 		"ow.ch"     : OPENAF_BUILD_HOME + "/js/owrap.ch.js",
+		"ow.oJob"   : OPENAF_BUILD_HOME + "/js/owrap.oJob.js",
 		"afbase"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/AFBase.java",
 		"io"        : OPENAF_BUILD_HOME + "/src/wedo/openaf/IO.java",
 		"iocore"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/IO.java",
