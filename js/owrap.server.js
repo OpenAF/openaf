@@ -116,6 +116,7 @@ OpenWrap.server.prototype.getPid = function(aPidFile) {
 	return io.readFileString(aPidFile);
 }
 
+
 //-----------------------------------------------------------------------------------------------------
 // JMX
 //-----------------------------------------------------------------------------------------------------
@@ -486,11 +487,11 @@ OpenWrap.server.prototype.rest = {
 
 		for (var i = 0; i < props.length; i += 2) {
 			if (props[i].length > 0)
-				propsObj[props[i]] = jsonParse(decodeURI(props[i + 1]));
+				propsObj[decodeURIComponent(props[i])] = jsonParse(decodeURIComponent(props[i + 1]));
 		}
 		for (var parName in req.params) {
 			if (!parName.match(/^NanoHttpd\./) && parName.length > 0) {
-				propsObj[parName] = jsonParse(decodeURI(req.params[parName]));
+				propsObj[decodeURIComponent(parName)] = jsonParse(decodeURIComponent(req.params[parName]));
 			}
 		}
 		

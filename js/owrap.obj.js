@@ -1250,10 +1250,10 @@ OpenWrap.obj.prototype.rest = {
 		for (var parName in aPropsObj) {
 			var o = aPropsObj[parName];
 			if (isObject(o)) o = JSON.stringify(o);
-			surl += "/" + parName + "/" + o;
+			surl += "/" + encodeURIComponent(parName) + "/" + encodeURIComponent(o);
 		}
 		
-		return encodeURI(surl);
+		return encodeURIComponent(surl);
 	}
 };
 

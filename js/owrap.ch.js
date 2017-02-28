@@ -318,23 +318,26 @@ OpenWrap.ch.prototype.__types = {
 				aFunction(aKs[i], this.get(aName, aKs[i]));
 			}
 		},
+		getAll      : function(aName, full) {
+			return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "a" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+		},
 		getKeys      : function(aName, full) {
-			return JSON.parse(ow.obj.rest.get(this.__channels[aName].url, { "o": "k" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).response).r;
+			return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "k" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
 		},
 		getSortedKeys: function(aName, full) {
-			return JSON.parse(ow.obj.rest.get(this.__channels[aName].url, { "o": "s" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).response).r;				
+			return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "s" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;				
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
-			return JSON.parse(ow.obj.rest.set(this.__channels[aName].url, { "o": "es", "m": aMatch, "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).response).r;
+			return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "es", "m": aMatch, "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
-			return JSON.parse(ow.obj.rest.set(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).response).r;
+			return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
-			return JSON.parse(ow.obj.rest.set(this.__channels[aName].url, { "o": "a", "k": aKs, "t": aTimestamp }, aVs, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).response).r;		
+			return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "a", "k": aKs, "t": aTimestamp }, aVs, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;		
 		},
 		get          : function(aName, aK) {
-			return JSON.parse(ow.obj.rest.get(this.__channels[aName].url, { "o": "e", "k": aK }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).response).r;
+			return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "e", "k": aK }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
 		},
 		pop          : function(aName) {
 			var aKs = this.getSortedKeys(aName);
@@ -348,7 +351,7 @@ OpenWrap.ch.prototype.__types = {
 			return aK;
 		},
 		unset        : function(aName, aK, aTimestamp) {
-			return JSON.parse(ow.obj.rest.remove(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).response);
+			return ow.obj.rest.jsonRemove(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout);
 		}
 	},
 	// Ignite channel implementation
@@ -652,11 +655,6 @@ OpenWrap.ch.prototype.unsubscribeAll = function(aName) {
 OpenWrap.ch.prototype.forEach = function(aName, aFunction, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 
-//	switch(this.channels[aName]) {
-//	case "ignite": { this.__types.ignite.forEach(aName, aFunction); break; }
-//	case "remote": { this.__types.remote.forEach(aName, aFunction); break; }
-//	default      : { this.__types.big.forEach(aName, aFunction); }
-//	}
 	this.__types[this.channels[aName]].forEach(aName, aFunction, x);
 
 	return this;
@@ -672,10 +670,17 @@ OpenWrap.ch.prototype.getAll = function(aName, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";	
 
 	var res = [];
-
-	this.forEach(aName, function(aKey, aValue) {
-		sync(function() { res.push(aValue); }, res);
-	}, x);
+	var parent = this;
+	
+	if (isDef(this.__types[this.channels[aName]].getAll)) {
+		sync(function() {
+			res = res.concat(parent.__types[parent.channels[aName]].getAll(aName));
+		}, x);
+	} else {
+		this.forEach(aName, function(aKey, aValue) {
+			sync(function() { res.push(aValue); }, res);
+		}, x);
+	}
 
 	return res;
 };
@@ -690,11 +695,6 @@ OpenWrap.ch.prototype.getAll = function(aName, x) {
 OpenWrap.ch.prototype.getKeys = function(aName, full, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 	
-//	switch(this.channels[aName]) {
-//	case "ignite": { return this.__types.ignite.getKeys(aName, full); break; }
-//	case "remote": { return this.__types.remote.getKeys(aName, full); break; }
-//	default      : { return this.__types.big.getKeys(aName, full); }
-//	}
 	return this.__types[this.channels[aName]].getKeys(aName, full, x);
 };
 	
@@ -1066,7 +1066,7 @@ OpenWrap.ch.prototype.comms = {
 			if (isUnDef(sUUID)) sUUID = genUUID();
 			if (sUUID == aUUID) return;
 			
-			$channels("__comm::" + na).create();
+			$ch("__comm::" + na).create();
 			sync(function() { 
 				if (isUnDef(ow.ch.comms.__counter[na])) {
 					ow.ch.comms.__counter[na] = 0; 
@@ -1076,7 +1076,7 @@ OpenWrap.ch.prototype.comms = {
 			function recordError(_op, _t, _k, _v, _e) {
 				var ct = nowUTC();
 
-				$channels("__comm::" + na).set({
+				$ch("__comm::" + na).set({
 					"timeStamp": ct,
 					"operation": _op,
 					"keys"     : _k
@@ -1119,7 +1119,7 @@ OpenWrap.ch.prototype.comms = {
 					}, ow.ch.comms.__counter[na]);
 					var res;
 					sync(function() {
-						res = JSON.parse((ow.obj.rest.set(aURL, { "o": "a", "k": k, "t": t }, v, aL, aP, aT)).response); 
+						res = ow.obj.rest.jsonSet(aURL, { "o": "a", "k": k, "t": t }, v, aL, aP, aT); 
 						shouldReset(res);
 					}, aURL);
 					break;
@@ -1127,7 +1127,7 @@ OpenWrap.ch.prototype.comms = {
 					sync(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
 					var res;
 					sync(function() {
-						res = JSON.parse((ow.obj.rest.set(aURL, { "o": "e", "k": ak, "t": t }, av, aL, aP, aT)).response);
+						res = ow.obj.rest.jsonSet(aURL, { "o": "e", "k": ak, "t": t }, av, aL, aP, aT);
 						shouldReset(res);
 					}, aURL);
 					break;
@@ -1135,14 +1135,14 @@ OpenWrap.ch.prototype.comms = {
 					sync(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
 					var res;
 					sync(function() {
-						res = JSON.parse((ow.obj.rest.remove(aURL, { "o": "e", "k": ak, "t": t }, aL, aP, aT)).response); 
+						res = ow.obj.rest.jsonRemove(aURL, { "o": "e", "k": ak, "t": t }, aL, aP, aT); 
 						shouldReset(res);
 					}, aURL);
 					break;				
 				default      : 
 					var res;
 				    sync(function() {
-				    	res = JSON.parse((ow.obj.rest.get(aURL, { "o": "e", "k": ak }, aL, aP, aT)).response);
+				    	res = ow.obj.rest.jsonGet(aURL, { "o": "e", "k": ak }, aL, aP, aT);
 						shouldReset(res);
 				    }, aURL);
 				}
@@ -1165,8 +1165,8 @@ OpenWrap.ch.prototype.persistence = {
 		function recordError(_ch, _op, _k, _v, _e) {
 			var ct = nowUTC();
 			
-			$channels("__store::" + ch).create();
-			$channels("__store::" + na).set({
+			$ch("__store::" + ch).create();
+			$ch("__store::" + na).set({
 				"timeStamp": ct,
 				"operation": _op,
 				"keys"     : _k
@@ -1321,7 +1321,7 @@ OpenWrap.ch.prototype.server = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.ch.routeProcessing(aURI, aRequest, aName) : HTTPServerReply</key>
+	 * <key>ow.ch.server.routeProcessing(aURI, aRequest, aName) : HTTPServerReply</key>
 	 * Creates a server route processing for a ow.ch.comms client provided aURI, a HTTPServer aRequest and the 
 	 * aName of a channel (please note that you should create the channel prior to using this function).
 	 * Depending on aRequest.channelPermission some operations may not execute:\
@@ -1345,7 +1345,7 @@ OpenWrap.ch.prototype.server = {
 	 */
 	routeProcessing: function(aURI, aRequest, aName, aaUUID) {
 		ow.loadServer();
-		$channels("__commServer::" + aName).create();
+		$ch("__commServer::" + aName).create();
 
 		function restSet(k, v) {
 			var cc;
@@ -1358,10 +1358,10 @@ OpenWrap.ch.prototype.server = {
 			if (isDef(k.o)) {
 				switch(k.o) {
 				case "a":
-					//if (k.t < $channels(aName).getVersion()) return undefined;
+					//if (k.t < $ch(aName).getVersion()) return undefined;
 					if (isArray(k.k) && isArray(v)) {
 						sync(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
-						var rt = $channels(aName).setAll(k.k, v, k.t, aaUUID, aRequest);
+						var rt = $ch(aName).setAll(k.k, v, k.t, aaUUID, aRequest);
 						return { "c": cc, "r": rt };
 					} 
 					break;
@@ -1371,26 +1371,26 @@ OpenWrap.ch.prototype.server = {
 						for(var i in v) {
 							keysToInclude.push(ow.loadObj().filterKeys(k.k, v[i]));
 						}
-						$channels(aName).forEach(function(ak, av) {
+						$ch(aName).forEach(function(ak, av) {
 							if (keysToInclude.indexOf(ak) < 0) {
-								$channels(aName).unset(ak, k.t, aaUUID, aRequest);
+								$ch(aName).unset(ak, k.t, aaUUID, aRequest);
 							}
 							return ak;
 						});
 
 						sync(function() { ow.ch.server.__counter[aName] = 0; cc = 0; }, ow.ch.server.__counter);
-						var rt = $channels(aName).setAll(k.k, v, k.t, aaUUID, aRequest);
+						var rt = $ch(aName).setAll(k.k, v, k.t, aaUUID, aRequest);
 						return { "c": cc, "r": rt };
 					} 
 					break;					
 				case "e":		
-					//if (k.t < $channels(aName).getVersion()) return undefined;
+					//if (k.t < $ch(aName).getVersion()) return undefined;
 					sync(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
-					var rt = $channels(aName).set(k.k, v, k.t, aaUUID, aRequest);
+					var rt = $ch(aName).set(k.k, v, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				case "es":
 					sync(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
-					var rt = $channels(aName).getSet(k.m, k.k, v, k.t, aaUUID, aRequest);
+					var rt = $ch(aName).getSet(k.m, k.k, v, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				}
 			}
@@ -1398,7 +1398,7 @@ OpenWrap.ch.prototype.server = {
 
 		function restUnset(k) {	
 			var cc;
-			//if (k.t < $channels(aName).getVersion()) return undefined;
+			//if (k.t < $ch(aName).getVersion()) return undefined;
 
 			sync(function() { 
 				if (isUnDef(ow.ch.server.__counter[aName])) {
@@ -1408,9 +1408,9 @@ OpenWrap.ch.prototype.server = {
 
 			if (isDef(k.o)) {
 				if (k.o == "e") {
-					//if (k.t < $channels(aName).getVersion()) return undefined;
+					//if (k.t < $ch(aName).getVersion()) return undefined;
 					sync(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
-					var rt = $channels(aName).unset(k.k, k.t, aaUUID, aRequest);
+					var rt = $ch(aName).unset(k.k, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				}
 			}
@@ -1420,13 +1420,13 @@ OpenWrap.ch.prototype.server = {
 			if (isDef(k.o)) {
 				switch(k.o) {
 				case "a":
-					return { "r": $channels(aName).getAll(aRequest), "c": ow.ch.server.__counter[aName] };
+					return { "r": $ch(aName).getAll(aRequest), "c": ow.ch.server.__counter[aName] };
 				case "e":
-					return { "r": $channels(aName).get(k.k, aRequest), "c": ow.ch.server.__counter[aName] };
+					return { "r": $ch(aName).get(k.k, aRequest), "c": ow.ch.server.__counter[aName] };
 				case "k":
-					return { "r": $channels(aName).getKeys(false, aRequest), "c": ow.ch.server.__counter[aName] };
+					return { "r": $ch(aName).getKeys(false, aRequest), "c": ow.ch.server.__counter[aName] };
 				case "s":
-					return { "r": $channels(aName).getSortedKeys(false, aRequest), "c": ow.ch.server.__counter[aName] };
+					return { "r": $ch(aName).getSortedKeys(false, aRequest), "c": ow.ch.server.__counter[aName] };
 				}
 			}
 		}
@@ -1434,7 +1434,7 @@ OpenWrap.ch.prototype.server = {
 		function recordError(_op, _t, _k, _v, _e) {
 			var ct = nowUTC();
 
-			$channels("__comm::" + na).set({
+			$ch("__comm::" + na).set({
 				"timeStamp": ct,
 				"operation": _op,
 				"keys"     : _k
@@ -1454,10 +1454,10 @@ OpenWrap.ch.prototype.server = {
 				try {
 					if (isDef(aRequest.channelPermission) && 
 						aRequest.channelPermission.indexOf("w") < 0)
-						return { "l": $channels(aName).size(), "v": $channels(aName).getVersion(), "c": -1, "r": {} };
+						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restSet(i, d);
 					if (isUnDef(c)) return {};
-					return { "l": $channels(aName).size(), "v": $channels(aName).getVersion(), "c": c.c, "r": c.r }
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
 				} catch(e) {
 					recordError("create", undefined, i, d, e);
 					return {};
@@ -1468,10 +1468,10 @@ OpenWrap.ch.prototype.server = {
 				try {
 					if (isDef(aRequest.channelPermission) && 
 						aRequest.channelPermission.indexOf("r") < 0)
-						return { "l": $channels(aName).size(), "v": $channels(aName).getVersion(), "c": -1, "r": {} };
+						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restGet(i);
 					if (isUnDef(c)) return {};
-					return { "l": $channels(aName).size(), "v": $channels(aName).getVersion(), "c": c.c, "r": c.r }
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
 				} catch(e) {
 					recordError("get", undefined, i, d, e);
 					return {};
@@ -1482,10 +1482,10 @@ OpenWrap.ch.prototype.server = {
 				try {
 					if (isDef(aRequest.channelPermission) && 
 						aRequest.channelPermission.indexOf("w") < 0)
-						return { "l": $channels(aName).size(), "v": $channels(aName).getVersion(), "c": -1, "r": {} };
+						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restSet(i, d);
 					if (isUnDef(c)) return {};
-					return { "l": $channels(aName).size(), "v": $channels(aName).getVersion(), "c": c.c, "r": c.r }
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
 				} catch(e) {
 					recordError("set", undefined, i, d, e);
 					return {};
@@ -1496,12 +1496,12 @@ OpenWrap.ch.prototype.server = {
 				try {
 					if (isDef(aRequest.channelPermission) && 
 						aRequest.channelPermission.indexOf("w") < 0)
-						return { "l": $channels(aName).size(), "v": $channels(aName).getVersion(), "c": -1, "r": {} };
+						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restUnset(i);
 					if (isUnDef(c)) return {};
-					return { "l": $channels(aName).size(), "v": $channels(aName).getVersion(), "c": c.c, "r": c.r }
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
 				} catch(e) {
-					recordError("create", undefined, i, d, e);
+					recordError("remove", undefined, i, d, e);
 					return {};
 				}
 			}
