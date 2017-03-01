@@ -251,25 +251,6 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 	if (isUndefined(params[1])) {
 		__outputConsoleError("Needs to be a DB object followed by a SQL statement");
 		return;
-	} else {
-		if (isUndefined(__afDBs["af"])) 
-			__afDBs["af"] = af.getURL();
-		else {
-			if (__afDBs["af"] != af.getURL()) {
-				__afDBs = {};
-				__afDBs["af"] = af.getURL();
-			}
-		}
-
-		if (isUndefined(__afDBs[params[1]])) {
-			if (params[1].match(/^adm$/i)) { __afDBs["adm"] = getDB('Adm') ; params[1] = "__afDBs.adm" }
-			if (params[1].match(/^app$/i)) { __afDBs["app"] = getDB('App') ; params[1] = "__afDBs.app" }
-			if (params[1].match(/^dat$/i)) { __afDBs["dat"] = getDB('Dat') ; params[1] = "__afDBs.dat" }
-		} else {
-			if (params[1].match(/^adm$/i)) { params[1] = "__afDBs.adm" }
-			if (params[1].match(/^app$/i)) { params[1] = "__afDBs.app" }
-			if (params[1].match(/^dat$/i)) { params[1] = "__afDBs.dat" }
-		}
 	}
 
 	_db = af.eval(params[1]);
