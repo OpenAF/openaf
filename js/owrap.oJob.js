@@ -2,8 +2,8 @@
  * <odoc>
  * <key>oJob.oJob() : oJob</key>
  * Creates an instance of an oJob. O
- * Uses the channel __oJob::log for job logging, __oJob::jobs for job register, __oJob::todo as
- * job todo register and __oJob::oJob for oJob instances registry.
+ * Uses the channel oJob::log for job logging, oJob::jobs for job register, oJob::todo as
+ * job todo register and oJob::oJob for oJob instances registry.
  * </odoc>
  */
 OpenWrap.oJob = function() { 
@@ -122,18 +122,44 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 	if (isDef(res.include) && isArray(res.include)) {
 		for (var i in res.include) {
 			if (res.include[i].match(/\.js$/i)) load(res.include[i]);
-			if (res.include[i].match(/\.yaml$/i)) res = merge(res, this.__loadFile(res.include[i]));
+			if (res.include[i].match(/\.yaml$/i)) res = this.__merge(res, this.__loadFile(res.include[i]));
 		}
 	}
 
 	return res;
 }
 
+OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
+	var res = { include: [], jobs: [], todo: [], ojob: {} };
+	
+	if (isDef(aJSONa.include)) 
+		res.include = aJSONa.include.concat(aJSONb.include);
+	else
+		res.include = isDef(aJSONb.include) ? aJSONb.include : [];
+	
+	if (isDef(aJSONa.jobs)) 
+		res.jobs = aJSONa.jobs.concat(aJSONb.jobs);
+	else
+		res.jobs = isDef(aJSONb.jobs) ? aJSONb.jobs : [];
+	
+	if (isDef(aJSONa.todo)) 
+		res.todo = aJSONa.todo.concat(aJSONb.todo);
+	else
+		res.todo = isDef(aJSONb.todo) ? aJSONb.todo : [];
+	
+	if (isDef(aJSONa.ojob)) 
+		res.ojob = merge(aJSONa.ojob, aJSONb.ojob);
+	else
+		res.ojob = isDef(aJSONb.ojob) ? aJSONb.ojob : {};
+	
+	return res;
+}
+
 OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	var res = {};
 
-	if (aFile.match(/\.js$/i)) res = merge(res, io.readFile(aFile));
-	if (aFile.match(/\.yaml$/i)) res = merge(res, io.readFileYAML(aFile));
+	if (aFile.match(/\.js$/i)) res = this.__merge(res, io.readFile(aFile));
+	if (aFile.match(/\.yaml$/i)) res = this.__merge(res, io.readFileYAML(aFile));
 
 	return this.loadJSON(res);
 }
@@ -209,7 +235,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
  *    port       : 17878\
  *    permissions: r\
  *    #list       :\
- *    #  - __oJob::log\
+ *    #  - oJob::log\
  *    #auth       :\
  *    #  - login: ojob\
  *    #    pass : ojob\
@@ -236,37 +262,47 @@ OpenWrap.oJob.prototype.runFile = function(aFile, args) {
 
 /**
  * <odoc>
- * <key>ow.oJob.getJobsCh() : Channel</key>
- * Gets the __oJob::jobs channel
+ * <key>ow.oJob.previewFile(aFile) : Map</key>
+ * Returns a map with a preview of the oJob configuration that would be executed with aFile.
  * </odoc>
  */
-OpenWrap.oJob.prototype.getJobsCh = function() { return $ch("__oJob::jobs"); }
+OpenWrap.oJob.prototype.previewFile = function(aFile) {
+	return this.__loadFile(aFile);
+}
+
+/**
+ * <odoc>
+ * <key>ow.oJob.getJobsCh() : Channel</key>
+ * Gets the oJob::jobs channel
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getJobsCh = function() { return $ch("oJob::jobs"); }
 /**
  * <odoc>
  * <key>ow.oJob.getTodoCh() : Channel</key>
- * Gets the __oJob::todo channel
+ * Gets the oJob::todo channel
  * </odoc>
  */
-OpenWrap.oJob.prototype.getTodoCh = function() { return $ch("__oJob::todo"); }
+OpenWrap.oJob.prototype.getTodoCh = function() { return $ch("oJob::todo"); }
 /**
  * <odoc>
  * <key>ow.oJob.getLogCh() : Channel</key>
- * Gets the __oJob::log channel
+ * Gets the oJob::log channel
  * </odoc>
  */
-OpenWrap.oJob.prototype.getLogCh = function() { return $ch("__oJob::log"); }
+OpenWrap.oJob.prototype.getLogCh = function() { return $ch("oJob::log"); }
 /**
  * <odoc>
  * <key>ow.oJob.getMainCh() : Channel</key>
- * Gets the __oJob::oJob channel
+ * Gets the oJob::oJob channel
  * </odoc>
  */
-OpenWrap.oJob.prototype.getMainCh = function() { return $ch("__oJob::oJob"); }
+OpenWrap.oJob.prototype.getMainCh = function() { return $ch("oJob::oJob"); }
 
 /**
  * <odoc>
  * <key>oJob.getID() : String</key>
- * Returns this oJob instance ID. Useful to lookup logging in the __oJob::log channel.
+ * Returns this oJob instance ID. Useful to lookup logging in the oJob::log channel.
  * </odoc>
  */
 OpenWrap.oJob.prototype.getID = function() {
@@ -318,7 +354,7 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs) {
 /**
  * <odoc>
  * <key>oJob.__addLog(aOperation, aJobName, aJobExecId, anErrorMessage) : String</key>
- * Adds a new log entry to the channel __oJob::log for the aJobName provided for the follwoing operations:\
+ * Adds a new log entry to the channel oJob::log for the aJobName provided for the follwoing operations:\
  * \
  * - start (start of a job)\
  * - success (successfully end of a job)\
@@ -459,6 +495,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop) {
 							    "todoId": todo.todoId
 							}, todo);
 						}
+					} else {
+						logErr("Job " + todo.name + " not found!");
+						parent.getTodoCh().unset({
+							"ojobId": todo.ojobId,
+							"todoId": todo.todoId
+						})
 					}
 				}
 				if (!shouldStop && (isDef(parent.__ojob) && 
