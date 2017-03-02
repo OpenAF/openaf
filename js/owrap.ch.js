@@ -298,6 +298,89 @@ OpenWrap.ch.prototype.__types = {
 			return undefined;
 		}
 	},
+	// Cache implementation
+	//
+	cache: {
+		__cacheFunc: {},
+		__cacheCh  : {},
+		__cacheTTL : {},
+		create       : function(aName, shouldCompress, options) { 
+			this.__cacheFunc[aName] = (isDef(options.func) ? options.func : function() { return {}; });
+			this.__cacheTTL[aName] = (isDef(options.ttl) ? options.ttl : 5000);
+			if (isUnDef(options.ch)) {
+				$ch(aName + "::__cache").create();
+				this.__cacheCh[aName] = $ch(aName + "::__cache");
+			} else {
+				this.__cacheCh[aName] = options.ch;
+			}
+		},
+		destroy      : function(aName) { 
+			delete this.__cacheFunc[aName];
+			delete this.__cacheCh[aName];
+			delete this.__cacheOpts[aName];
+		},
+		size         : function(aName) { 
+			return this.__cacheCh[aName].size();
+		},
+		forEach      : function(aName, aFunction, x) { 
+			var aKs = this.getKeys(aName);
+			for(var i in aKs) {
+				aFunction(aKs[i], this.get(aName, aKs[i], x));
+			}			
+		},
+		getKeys      : function(aName, full) { 
+			return this.__cacheCh[aName].getKeys(full);
+		},
+		getSortedKeys: function(aName, full) { 
+			return this.getKeys(aName, full).sort();
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  { 
+			var res;
+			res = this.get(aName, aKey);
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aKey, aValue, aTimestamp);
+			}
+			return undefined;
+		},
+		set          : function(aName, aK, aV, aTimestamp, x) { 
+			this.__cacheCh[aName].set(aK, this.__cacheFunc[aName](aK), aTimestamp, x);
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) { 
+			var avvs = [];
+			for (var i in aKs) {
+				avvs[i] = this.__cacheFunc[aName](aK);
+			}
+			this.__cacheCh[aName].setAll(aKs, avvs, aTimestamp);
+		},
+		get          : function(aName, aK) { 
+			var aVv;
+			var ee = $stream(this.getKeys(aName, true)).filter({ "k": aK }).toArray()[0];
+			if (isDef(ee)) {
+				if (ee.t > (now() - this.__cacheTTL[aName])) {
+					aVv = this.__cacheCh[aName].get(aK);
+				} else {
+					var aVv = this.__cacheFunc[aName](aK);
+					this.__cacheCh[aName].set(aK, aVv);			
+					aVv = this.__cacheCh[aName].get(aK);
+				}
+			}
+			return aVv;
+		},
+		pop          : function(aName) { 
+			var aKs = this.getSortedKeys(aName);
+			var aK = aKs[aKs.length - 1];
+			var aV = this.get(aName, aK);
+			return aK;
+		},
+		shift        : function(aName) { 
+			var aK = this.getSortedKeys(aName)[0];
+			var aV = this.get(aName, aK);
+			return aK;	
+		},
+		unset        : function(aName, aK, aTimestamp) { 
+			this.__cacheCh[aName].unset(aK);
+		}	
+	},	
 	// Remote channel implementation
 	//
 	remote: {
