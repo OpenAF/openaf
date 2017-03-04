@@ -66,6 +66,7 @@ public class AFCmdOS extends AFCmdBase  {
 	final protected static String OPTION_SCRIPTOPTION = "--script";
 	final protected static String OPTION_DAEMON = "--daemon";
 	final protected static String OPTION_PIPE = "-p";
+	final protected static String OPTION_CODE = "-c";
 	final protected static String OPTION_SCRIPTFILE = "-f";
 	final protected static String PREFIX_SCRIPT = "script:";
 	final protected static String OPACK = ".package.json";
@@ -81,6 +82,7 @@ public class AFCmdOS extends AFCmdBase  {
 	protected inputtype INPUT_TYPE = inputtype.INPUT_AUTO;
 	protected String exprInput = "";
 	protected String scriptfile = "";
+	protected String code = "";
 	protected String classfile = "";
 	protected String injectscriptfile = "";
 	protected long numberOfIncludedLines = 0;
@@ -94,6 +96,7 @@ public class AFCmdOS extends AFCmdBase  {
 	protected boolean console = false;
 	protected boolean injectscript = false;
 	protected boolean daemon = false;
+	protected boolean injectcode = false;
 	protected JsonObject pmIn, pmOut;
 
 	public static String[] args;
@@ -218,6 +221,9 @@ public class AFCmdOS extends AFCmdBase  {
 				case OPTION_SCRIPTFILE:
 					scriptfile = a;
 					continue;
+				case OPTION_CODE:
+					code = a;
+					continue;
 				}	
 			}
 			switch(a) {
@@ -293,6 +299,13 @@ public class AFCmdOS extends AFCmdBase  {
 				continue;
 			case OPTION_CHECK:
 				check();
+				continue;
+			case OPTION_CODE:
+				checkNext = true;
+				silentMode = true;
+				checkOption = OPTION_CODE;
+				code = "";
+				injectcode = true;
 				continue;
 			case OPTION_SCRIPTHELP:
 				try {
@@ -409,7 +422,7 @@ public class AFCmdOS extends AFCmdBase  {
 		//
 		INPUT_TYPE = inputtype.INPUT_SCRIPT;
 		
-		if (((!pipe) && (!filescript) && (!processScript))) {
+		if (((!pipe) && (!filescript) && (!processScript) && (!injectcode))) {
 			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
 				injectscript = true;
 				injectscriptfile = "/js/openafgui.js";
@@ -418,7 +431,7 @@ public class AFCmdOS extends AFCmdBase  {
 			}
 		}
 
-		if (processScript || filescript) {
+		if (processScript || filescript || injectcode) {
 			// Obtain script
 			String script;
 			
@@ -485,6 +498,7 @@ public class AFCmdOS extends AFCmdBase  {
 			script = script.replaceFirst(PREFIX_SCRIPT, "");
 			
 			if (daemon) script += "; ow.loadServer().daemon();";
+			if (injectcode) script += code;
 			
 			Context cx = (Context) jse.getNotSafeContext();
 			cx.setErrorReporter(new WeDoOpenRhinoErrorReporter());
