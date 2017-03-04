@@ -499,6 +499,26 @@ function log(msg) {
 }
 
 /**
+ * <key>logWarn(msg)</key>
+ * Outputs to the current warning in a line composed of the current date, indication of WARN and the provided msg.
+ * Note: you can use startLog, stopLog and dumpLog to keep an internal record of theses messages.
+ * </odoc>
+ */
+function logWarn(msg) {
+        var data = new Date();
+        if (__logStatus) 
+                $ch("__log").set({
+                        "d": data,
+                        "t": "WARN"
+                }, {
+                        "d": data,
+                        "t": "WARN",
+                        "m": msg
+                });
+        print("" + data + " | WARN | " + msg);
+}
+
+/**
  * <odoc>
  * <key>tlog(msg, someData)</key>
  * Outputs to the current stdout a line composed of the current date, indication of INFO and the provided msg using the templify function.
@@ -508,6 +528,18 @@ function log(msg) {
  */
 function tlog(msg, someData) {
 	log(templify(msg, someData));
+}
+
+ 
+/**
+ * <odoc>
+ * <key>tlogWarn(msg, someData)</key>
+ * Outputs to the current warning in a line composed of the current date, indication of WARN and the provided msg using the templify function.
+ * Optinionally you can provide also someData.
+ * </odoc>
+ */
+function tlogWarn(msg, someData) {
+        logWarn(templify(msg, someData));
 }
 
 /**
@@ -1271,6 +1303,16 @@ function exit(exitCode) {
 function clone(aObject) {
 	if (Array.isArray(aObject)) return aObject.slice(0);
  	return extend(true, {}, aObject);
+}
+
+/**
+ * <odoc>
+ * <key>isString(aObj) : boolean</key>
+ * Returns true if aObj is a string, false otherwise
+ * </odoc>
+ */
+function isString(obj) {
+        return typeof obj == 'string' || false;
 }
 
 /**
@@ -2065,6 +2107,39 @@ OpenWrap.prototype.loadPortal = function() { loadLib(getOpenAFJar() + "::js/owra
  * </odoc>
  */
 OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
+
+/**
+ * <odoc>
+ * <key>oJobRunJob(aJob, args)</key>
+ * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
+ * </odoc>
+ */
+function oJobRunJob(aJob, args) {
+        ow.loadOJob();
+        ow.oJob.runJob(aJob, args);
+}
+
+/**
+ * <odoc>
+ * <key>oJobRunFile(aFile, args)</key>
+ * Runs a oJob aFile with the provided args (arguments).
+ * </odoc>
+ */
+function oJobRunFile(aYAMLFile, args) {
+        ow.loadOJob().runFile(aYAMLFile, args);
+}
+ 
+/**
+ * <odoc>
+ * <key>oJobRun(aJson, args)</key>
+ * Runs a oJob from aJson definition with the provided args (arguments).
+ * </odoc>
+ */
+function oJobRun(aJson, args) {
+        var s = ow.loadOJob().loadJSON(aJson);
+        ow.oJob.load(s.jobs, s.todo, s.ojob);
+        ow.oJob.start(args, true);
+}
 
 /**
  * <odoc>

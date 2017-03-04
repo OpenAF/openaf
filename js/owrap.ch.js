@@ -315,9 +315,10 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		destroy      : function(aName) { 
-			delete this.__cacheFunc[aName];
-			delete this.__cacheCh[aName];
-			delete this.__cacheOpts[aName];
+			if (isDef(this.__cacheFunc[aName])) delete this.__cacheFunc[aName];
+			if (isDef(this.__cacheCh[aName])) delete this.__cacheCh[aName];
+			if (isDef(this.__cacheTTL[aName])) delete this.__cacheTTL[aName];
+			$ch(aName + "::__cache").destroy();
 		},
 		size         : function(aName) { 
 			return this.__cacheCh[aName].size();
@@ -353,7 +354,7 @@ OpenWrap.ch.prototype.__types = {
 			this.__cacheCh[aName].setAll(aKs, avvs, aTimestamp);
 		},
 		get          : function(aName, aK) { 
-			var aVv;
+			var aVv = {};
 			var ee = $stream(this.getKeys(aName, true)).filter({ "k": aK }).toArray()[0];
 			if (isDef(ee)) {
 				if (ee.t > (now() - this.__cacheTTL[aName])) {
@@ -363,6 +364,10 @@ OpenWrap.ch.prototype.__types = {
 					this.__cacheCh[aName].set(aK, aVv);			
 					aVv = this.__cacheCh[aName].get(aK);
 				}
+			} else {
+				var aVv = this.__cacheFunc[aName](aK);
+				this.__cacheCh[aName].set(aK, aVv);
+				aVv = this.__cacheCh[aName].get(aK);
 			}
 			return aVv;
 		},
@@ -657,7 +662,10 @@ OpenWrap.ch.prototype.size = function(aName) {
  */
 OpenWrap.ch.prototype.subscribe = function(aName, aFunction, onlyFromNow, anId) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	if (isUnDef(anId)) anId = genUUID();
+	//if (isUnDef(anId)) anId = genUUID();
+	if (isUnDef(anId)) anId = md5(aFunction.toString());
+	
+	if (isDef(this.subscribers[aName][anId])) return anId;
 	
 	this.subscribers[aName][anId] = aFunction;
 	if (this.size(aName) > 0 && !onlyFromNow) {

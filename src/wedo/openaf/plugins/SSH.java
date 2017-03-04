@@ -178,6 +178,8 @@ public class SSH extends ScriptableObject {
      		session.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
      		session.setConfig("compression_level", "9");
      	}
+     	
+     	session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
 	    
 		session.connect();
 	}
