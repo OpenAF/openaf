@@ -158,9 +158,41 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	var res = {};
 
+	function _load(aFn) {
+		var res = {};
+		try {
+			res = aFn(aFile);
+			return res;
+		} catch(e1) {
+			if (e1.message.match(/FileNotFoundException/)) {
+				var paths = getOPackPaths();
+				//paths["__default"] = java.lang.System.getProperty("java.class.path") + "::oJob";
+				
+				for(i in paths) {
+					try {
+						paths[i] = paths[i].replace(/\\+/g, "/");
+						paths[i] = paths[i].replace(/\/+/g, "/");
+						res = aFn(paths[i] + "/" + aFile);
+						return res;
+					} catch(e2) {
+						if (!e2.message.match(/FileNotFoundException/)) {
+							throw e2;
+						}
+					}
+				}
+			} else {
+				throw e1;
+			}
+		}
+	}
+	
 	if (isDef(aFile)) {		
-		if (aFile.match(/\.js$/i)) res = this.__merge(io.readFile(aFile), res);
-		if (aFile.match(/\.yaml$/i)) res = this.__merge(io.readFileYAML(aFile), res);
+		if (aFile.match(/\.js$/i)) {
+			res = this.__merge(_load(io.readFile), res);
+		}
+		if (aFile.match(/\.yaml$/i)) {
+			res = this.__merge(_load(io.readFileYAML), res);
+		}
 	}
 
 	return this.loadJSON(res);
@@ -233,9 +265,9 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
  *       pidFile     : helloworld.pid\
  *       killPrevious: true\
  *    channels:\
- *    expose     : true\
- *    port       : 17878\
- *    permissions: r\
+ *       expose     : true\
+ *       port       : 17878\
+ *       permissions: r\
  *    #list       :\
  *    #  - oJob::log\
  *    #auth       :\
@@ -531,24 +563,27 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop) {
 						})
 					}
 				}
-				if (!shouldStop && (isDef(parent.__ojob) && 
-	               isDef(parent.__ojob.daemon) && 
-	               parent.__ojob.daemon == false &&
-	               $from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID()).none())) {
-	               	shouldStop = true;
-					//parent.stop();
-				}
+				if (!shouldStop && 
+					!(isDef(parent.__ojob) && isDef(parent.__ojob.daemon) && parent.__ojob.daemon == true) &&
+	                $from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID()).none()
+	               ) {
+	               	  shouldStop = true;
+				      parent.stop();
+				} 
 			} catch(e) { logErr(e); if (isDef(e.javaException)) e.javaException.printStackTrace(); }
-			sleep(100);
+			if (isDef(parent.__ojob) && parent.__ojob.daemon == true) 
+				sleep((isDef(parent.__ojob.timeInterval) ? parent.__ojob.timeInterval : 100));
+			else
+				sleep(100);
 		}
 
 	});
 	
 	t.start();
 
-	if (this.__ojob != {} && this.__ojob.daemon == true) {
+	/*if (this.__ojob != {} && this.__ojob.daemon == true) {
 		ow.loadServer().daemon(this.__ojob.timeInterval);
-	}
+	}*/
 
 	try {
 		t.waitForThreads(2500);
