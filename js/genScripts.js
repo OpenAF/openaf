@@ -50,6 +50,18 @@ function generateWinPackBat() {
   return s;
 }
 
+function generateWinJobBat() {
+	  var s;
+
+	  s = "@echo off\n\n";
+	  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
+	  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
+	  s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
+	  s = s + "\n";
+	  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -jar %OPENAF_DIR% --ojob -e \"%*\"";
+	  return s;
+	}
+
 function generateWinConsoleBat() {
   var s;
 
@@ -145,21 +157,25 @@ log("Checking requirements");
 
 var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
+var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
 var winConsolePSBat = generateWinConsolePSBat();
 var unixScript = generateUnixScript("\"$@\"");
 var unixSB = generateUnixScript("-s -i script -f \"$@\"");
 var unixPackScript = generateUnixScript("--opack -e \"$*\"");
+var unixJobScript = generateUnixScript("--ojob -e \"$*\"");
 var unixConsoleScript = generateUnixScript("--console \"$@\"");
 
 try {
   if (windows == 1) io.writeFileString(curDir + "\\openaf.bat", winBat);
   if (windows == 1) io.writeFileString(curDir + "\\opack.bat", winPackBat);
+  if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console-ps.bat", winConsolePSBat);
   io.writeFileString(curDir + "/openaf", unixScript);
   io.writeFileString(curDir + "/openaf-sb", unixSB);
   io.writeFileString(curDir + "/opack", unixPackScript);
+  io.writeFileString(curDir + "/ojob", unixJobScript);
   io.writeFileString(curDir + "/openaf-console", unixConsoleScript);
 } catch (e) {
   logErr("Couldn't write file: " + e.message);
@@ -168,10 +184,11 @@ try {
 
 if (windows == 0) {
   try {
-	  af.sh("chmod u+x " + curDir + "/openaf", "", null, false);
-	  af.sh("chmod u+x " + curDir + "/openaf-sb", "", null, false);
-	  af.sh("chmod u+x " + curDir + "/opack", "", null, false);
-	  af.sh("chmod u+x " + curDir + "/openaf-console", "", null, false);
+	  sh("chmod u+x " + curDir + "/openaf", "", null, false);
+	  sh("chmod u+x " + curDir + "/openaf-sb", "", null, false);
+	  sh("chmod u+x " + curDir + "/opack", "", null, false);
+	  sh("chmod u+x " + curDir + "/ojob", "", null, false);
+	  sh("chmod u+x " + curDir + "/openaf-console", "", null, false);
   }	catch(e) {
 	  logErr("Couldn't change permissions: " + e.message);
   }

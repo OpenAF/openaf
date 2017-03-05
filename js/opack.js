@@ -113,7 +113,7 @@ function showHelp() {
 	}
 
 	print("");
-	print("(version " + af.getVersion() + ", Wedo internal tool)");
+	print("(version " + af.getVersion() + ", " + AFCmdBase.LICENSE +")");
 }
 
 // Retrieve OPack file using HTTP

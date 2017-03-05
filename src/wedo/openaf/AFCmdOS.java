@@ -63,6 +63,7 @@ public class AFCmdOS extends AFCmdBase  {
 	final protected static String OPTION_REPACK = "--repack";
 	final protected static String OPTION_OPACK = "--opack";
 	final protected static String OPTION_CONSOLE = "--console";
+	final protected static String OPTION_OJOB = "--ojob";
 	final protected static String OPTION_SCRIPTOPTION = "--script";
 	final protected static String OPTION_DAEMON = "--daemon";
 	final protected static String OPTION_PIPE = "-p";
@@ -94,6 +95,7 @@ public class AFCmdOS extends AFCmdBase  {
 	protected boolean classscript = false;
 	protected boolean opack = false;
 	protected boolean console = false;
+	protected boolean ojob = false;
 	protected boolean injectscript = false;
 	protected boolean daemon = false;
 	protected boolean injectcode = false;
@@ -282,6 +284,14 @@ public class AFCmdOS extends AFCmdBase  {
 				injectscript = true;
 				injectscriptfile = "/js/opack.js";
 				continue;
+            case OPTION_OJOB:
+                filescript = true;
+                silentMode = true;
+                INPUT_TYPE = inputtype.INPUT_SCRIPT;
+                ojob = true;
+                injectscript = true;
+                injectscriptfile = "/js/ojob.js";
+                continue;
 			case OPTION_CONSOLE:
 				filescript = true;
 				silentMode = true;

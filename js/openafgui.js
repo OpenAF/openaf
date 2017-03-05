@@ -12,7 +12,7 @@ ow.server.checkIn(java.lang.System.getProperty("user.home") + "/.openaf.pid", fu
 	log("Killing previous " + ow.server.getPid(aPid));
 	pidKill(ow.server.getPid(aPid), true);
 	return true;
-},
+}, 
 function() {
 	log("OpenAF GUI shutdown");
 });
