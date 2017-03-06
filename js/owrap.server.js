@@ -395,17 +395,17 @@ OpenWrap.server.prototype.rest = {
 		res.headers = {};
 		
 		switch(aReq.method) {
-		case "GET": res.data = stringify(aGetFunc(idxs)); break;
-		case "POST": 
+		case "GET": res.data = stringify(aGetFunc(idxs), undefined, ""); break;
+		case "POST":  
 			//res.data = stringify(aCreateFunc(idxs, JSON.parse(io.readFileString(aReq.files.content))));
-			res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.files.postData)));
+			res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.files.postData)), undefined, "");
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
 			break;
 		case "PUT": 
-			res.data = stringify(aSetFunc(idxs, io.readFile(aReq.files.content)));
+			res.data = stringify(aSetFunc(idxs, io.readFile(aReq.files.content)), undefined, "");
 			//res.data = stringify(aSetFunc(idxs, jsonParse(aReq.files.postData)));
 			break;
-		case "DELETE": res.data = stringify(aRemoveFunc(idxs)); break;
+		case "DELETE": res.data = stringify(aRemoveFunc(idxs), undefined, ""); break;
 		};
 		
 		res.mimetype = ow.server.httpd.mimes.JSON;
@@ -498,7 +498,7 @@ OpenWrap.server.prototype.rest = {
 		if (isDefined(req.files) && 
 			isDefined(req.files.postData) &&
 			isDefined(req.header["content-type"]) &&
-			req.header["content-type"].toLowerCase() == "application/json") {
+			req.header["content-type"].match(/application\/json/i)) {
 			var data = jsonParse(req.files.postData);
 			propsObj = merge(propsObj, data);
 		}

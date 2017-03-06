@@ -2110,36 +2110,40 @@ OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.
 
 /**
  * <odoc>
- * <key>oJobRunJob(aJob, args)</key>
- * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
+ * <key>oJobRunFile(aFile, args, aId)</key>
+ * Runs a oJob aFile with the provided args (arguments).
+ * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-function oJobRunJob(aJob, args) {
-        ow.loadOJob();
-        ow.oJob.runJob(aJob, args);
+function oJobRunFile(aYAMLFile, args, aId) {
+	ow.loadOJob().runFile(aYAMLFile, args, aId);
 }
 
 /**
  * <odoc>
- * <key>oJobRunFile(aFile, args)</key>
- * Runs a oJob aFile with the provided args (arguments).
- * </odoc>
- */
-function oJobRunFile(aYAMLFile, args) {
-        ow.loadOJob().runFile(aYAMLFile, args);
-}
- 
-/**
- * <odoc>
  * <key>oJobRun(aJson, args)</key>
  * Runs a oJob from aJson definition with the provided args (arguments).
+ * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
 function oJobRun(aJson, args) {
-        var s = ow.loadOJob().loadJSON(aJson);
-        ow.oJob.load(s.jobs, s.todo, s.ojob);
-        ow.oJob.start(args, true);
+	var s = ow.loadOJob().loadJSON(aJson);
+	ow.oJob.load(s.jobs, s.todo, s.ojob, args, aId);
+	ow.oJob.start(args, true, aId);
 }
+
+/**
+ * <odoc>
+ * <key>oJobRunJob(aJob, args, aId)</key>
+ * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
+ * Optionally you can provide aId to segment this specific job.
+ * </odoc>
+ */
+function oJobRunJob(aJob, args, aId) {
+	ow.loadOJob();
+	ow.oJob.runJob(aJob, args, aId);
+}
+
 
 /**
  * <odoc>

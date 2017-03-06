@@ -1,7 +1,6 @@
 var params = processExpr(" ");
 var ojob_shouldRun = true;
 var ojob_args = {};
-ow.loadOJob();
 
 if (Object.keys(params).length == 1 && Object.keys(params)[0] == "") ojob_showHelp();
 
@@ -76,7 +75,7 @@ function ojob_compile() {
 	var file = ojob__getFile();
 	
 	if (isDef(file)) {
-		print(af.toYAML(ow.oJob.previewFile(file)));
+		print(af.toYAML(ow.loadOJob().previewFile(file)));
 	}
 	ojob_shouldRun = false;
 }
@@ -85,7 +84,7 @@ function ojob_tojson() {
 	var file = ojob__getFile();
 	
 	if (isDef(file)) {
-		sprint(ow.oJob.previewFile(file));
+		sprint(ow.loadOJob().previewFile(file));
 	}
 	ojob_shouldRun = false;
 }
@@ -94,7 +93,7 @@ function ojob_jobs() {
 	var file = ojob__getFile();
 	
 	if (isDef(file)) {
-		print(af.toYAML($stream(ow.oJob.previewFile(file).jobs).map("name").toArray().sort()));
+		print(af.toYAML($stream(ow.loadOJob().previewFile(file).jobs).map("name").toArray().sort()));
 	}
 	ojob_shouldRun = false;
 }
@@ -114,7 +113,7 @@ function ojob_jobhelp() {
 	}
 	
 	if (isDef(file)) {
-		var hh = $from(ow.oJob.previewFile(file).jobs).equals("name", job).select({"name":"n/a", "help": "n/a"})[0];
+		var hh = $from(ow.loadOJob().previewFile(file).jobs).equals("name", job).select({"name":"n/a", "help": "n/a"})[0];
 		if (isDef(hh)) {
 			print(hh.name);
 			print(repeat(hh.name.length, '-'));
@@ -129,7 +128,7 @@ function ojob_todo() {
 	var file = ojob__getFile();
 	
 	if (isDef(file)) {
-		var l = ow.oJob.previewFile(file).todo;
+		var l = ow.loadOJob().previewFile(file).todo;
 		var r = [];
 		for(var i in l) {
 			if (isObject(l[i])) 
@@ -146,6 +145,8 @@ function ojob_runFile() {
 	if (ojob_shouldRun) {
 		var file = ojob__getFile();
 
+		__expr = $from(params).select(function(r) { var rr={}; var kk = Object.keys(r)[0]; return kk+"="+r[kk]; }).join(" ");
+		
 		if (isDef(file)) {
 			oJobRunFile(file, ojob_args);
 		}
