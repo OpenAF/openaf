@@ -30,6 +30,11 @@ if (isDef(params["-todo"]) && params["-todo"] == "") {
 	ojob_todo();
 }
 
+if (isDef(params["-deps"]) && params["-deps"] == "") {
+	delete params["-deps"];
+	ojob_draw();
+}
+
 if (isDef(params["-jobhelp"]) && params["-jobhelp"] == "") {
 	delete params["-jobhelp"];
 	ojob_jobhelp();
@@ -52,6 +57,7 @@ function ojob_showHelp() {
 	print("  -tojson        Outputs all includes and current fiel into a single json output.")
 	print("  -jobs          List all jobs available.");
 	print("  -todo          List the final todo list.");
+	print("  -deps          Draws a list of dependencies of todo jobs on a file.");
 	print("  -jobhelp (job) Display any available help information for a job.");
 	print("");
 	print("(version " + af.getVersion() + ", " + Packages.wedo.openaf.AFCmdBase.LICENSE +")");
@@ -95,6 +101,58 @@ function ojob_jobs() {
 	if (isDef(file)) {
 		print(af.toYAML($stream(ow.loadOJob().previewFile(file).jobs).map("name").toArray().sort()));
 	}
+	ojob_shouldRun = false;
+}
+
+function ojob_draw() {
+	var file = ojob__getFile();
+	ow.loadOJob();
+
+	var oj = ow.oJob.previewFile(file);
+
+	function getDeps(aJobName) {
+		var j = $from(oj.jobs).equals("name", aJobName).first();
+
+		if (isUnDef(j)) return undefined;
+
+		if (isDef(j.deps)) {
+			return j.deps;
+		} else {
+			return [];
+		}
+	}
+
+	function getPath(aJobName) {
+		var msg = "";
+
+		var deps = getDeps(aJobName);
+		if (isUnDef(deps)) {
+			msg += "!!NOT FOUND!!";
+		} else {
+			for(var i in deps) {
+				msg += " | " + deps[i];
+				var r = getPath(deps[i]);
+				if (r.length > 0) {
+					msg += " (" + r + ")";
+				}	
+			}
+			
+		}
+
+		return msg;
+	}
+
+	if (oj.ojob.sequential) {
+		print("Sequential dependencies are enabled.\n");
+	}
+	
+	$from(oj.todo).select(function(v) {
+		var nn = (isDef(v.name) ? v.name : v);
+		printnl("[" + nn + "]");
+		var deps = getDeps(nn);
+		print(getPath(nn));
+	});
+	
 	ojob_shouldRun = false;
 }
 

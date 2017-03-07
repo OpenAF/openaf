@@ -56,6 +56,16 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	if (isUnDef(todo)) todo = [];
 	if (isDef(ojob)) this.__ojob = merge(this.__ojob, ojob);
 
+	for(var i in todo) {
+		if (isDef(ojob.sequential) && ojob.sequential && i > 0) {
+			var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).first();
+			if (isDef(j)) {
+				if (isUnDef(j.deps)) j.deps = [];
+				j.deps.push((isObject(todo[i-1]) ? todo[i-1].name : todo[i-1]));
+			}
+		}
+	}
+	
 	for(var i in jobs) {
 		this.addJob(this.getJobsCh(), jobs[i].name, jobs[i].deps, jobs[i].type, jobs[i].typeArgs, jobs[i].exec, jobs[i].from, jobs[i].to, jobs[i].help);
 	}
@@ -181,6 +191,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 						}
 					}
 				}
+				throw "File not found!";
 			} else {
 				throw e1;
 			}
@@ -518,7 +529,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					printErr("\n" + _e(ss) + _g(aa) + _b(msg + "Ended in ERROR  | " + new Date()) + "\n" + stringify(existing) + "\n" + _e(ss)); 
 				}
 				if (existing.start && existing.success) { 
-					print("\n" + _c(ss)); print(_g(aa) +_b(msg + "Ended with SUCCESS | " + new Date()) + "\n"); 
+					printnl("\n" + _c(ss)); print(_g(aa) +_b(msg + "Ended with SUCCESS | " + new Date()) + "\n"); 
 				}
 				/*if (!existing.deps) { 
 				}*/
