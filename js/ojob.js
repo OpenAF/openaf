@@ -177,7 +177,10 @@ function ojob_jobhelp() {
 			print(repeat(hh.name.length, '-'));
 			print("");
 			print(hh.help);
-		}
+		} else {
+                   	printErr("Didn't find job help for '" + job + "'.");
+                        return undefined;
+                }
 	}
 	ojob_shouldRun = false;
 }

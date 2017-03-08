@@ -113,7 +113,7 @@ function showHelp() {
 	}
 
 	print("");
-	print("(version " + af.getVersion() + ", " + AFCmdBase.LICENSE +")");
+	print("(version " + af.getVersion() + ", " + Packages.wedo.openaf.AFCmdBase.LICENSE +")");
 }
 
 // Retrieve OPack file using HTTP

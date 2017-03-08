@@ -67,7 +67,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	}
 	
 	for(var i in jobs) {
-		this.addJob(this.getJobsCh(), jobs[i].name, jobs[i].deps, jobs[i].type, jobs[i].typeArgs, jobs[i].exec, jobs[i].from, jobs[i].to, jobs[i].help);
+		this.addJob(this.getJobsCh(), jobs[i].name, jobs[i].deps, jobs[i].type, jobs[i].typeArgs, jobs[i].args, jobs[i].exec, jobs[i].from, jobs[i].to, jobs[i].help);
 	}
 	this.addTodos(todo, args, aId);
 
@@ -527,7 +527,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			if (existing.name != 'oJob Log') {
 				var msg = "[" + existing.name + "] | ";
 				if (existing.start && (!existing.error && !existing.success)) { 
-					print(_b(msg + "STARTED | " + new Date()) + "\n" + _g(aa) + _c(s)); 
+					printnl(_b(msg + "STARTED | " + new Date()) + "\n" + _g(aa) + _c(s)); 
 				}
 				if (existing.start && existing.error) { 
 					printErr("\n" + _e(ss) + _g(aa) + _b(msg + "Ended in ERROR  | " + new Date()) + "\n" + stringify(existing) + "\n" + _e(ss)); 
@@ -728,14 +728,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		}
 	}
 
-	function _run(aExec, args) {		
-		var f = new Function("var args = arguments[0]; " + aExec);
+	function _run(aExec, args, job, id) {		
+		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; " + aExec);
 		if (isDef(args.__oJobRepeat)) { 
 			parallel4Array(args.__oJobRepeat, function(aValue) {
-				return f(aValue);
+				return f(aValue, job, id);
 			});
 		} else {
-			f(args);
+			f(args, job, id);
 		}
 	}
 	
@@ -743,11 +743,12 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		args.objId = this.getID() + altId;
 		var uuid = this.__addLog("start", aJob.name, undefined, args, undefined, aId);
 		args.execid = uuid;
+                args = merge(args, aJob.args);
 
 		switch(aJob.type) {
 		case "single":
 			try {
-				_run(aJob.exec, args);
+				_run(aJob.exec, args, aJob, altId);
 				this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 				return true;
 			} catch(e) {
@@ -787,7 +788,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		case "shutdown":
 			addOnOpenAFShutdown(function() {
 				try {
-					_run(aJob.exec, args);
+					_run(aJob.exec, args, aJob, altId);
 					parent.__addLog("success", aJob.name, uuid, undefined, aId);
 				} catch(e) {
 					parent.__addLog("error", aJob.name, uuid, args, e, aId);
@@ -805,7 +806,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
 				args.execid = uuid;
 				try {
-					_run(aJob.exec, args);
+					_run(aJob.exec, args, aJob, altId);
 					parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
 				} catch(e) {
 					parent.__addLog("error", aJob.name, uuid, args, e, aId);
@@ -835,14 +836,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 
 /**
  * <odoc>
- * <key>ow.oJob.addJob(aJobsCh, aName, jobDeps, jobType, jobTypeArgs, jobFunc, jobFrom, jobTo, jobHelp)</key>
+ * <key>ow.oJob.addJob(aJobsCh, aName, jobDeps, jobType, aJobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp)</key>
  * Provided aJobsCh (a jobs channel) adds a new job with the provided aName, an array of jobDeps (job dependencies),
- * a jobType (e.g. single, peoridic, shutdown), aJobTypeArgs (a amp) and a jobFunc (a job function). 
+ * a jobType (e.g. single, peoridic, shutdown), aJobTypeArgs (a map), jobArgs and a jobFunc (a job function). 
  * Optionally you can inherit the job definition from a jobFrom and/or jobTo name ("from" will execute first, "to" will execute after).
  * Also you can include jobHelp.
  * </odoc>
  */
-OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobTypeArgs, jobFunc, jobFrom, jobTo, jobHelp) {
+OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp) {
 	if (isUnDef(jobDeps)) jobDeps = [];
 	if (isUnDef(jobType)) jobType = "single";
 	if (isUnDef(jobFunc)) jobFunc = function() {};
@@ -856,6 +857,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		if (isDef(f)) {
 			j.type = f.type;
 			j.typeArgs = f.typeArgs;
+                        j.args = f.args;
 			j.deps = f.deps;
 			j.exec = f.exec;
 			j.help = f.help;
@@ -868,6 +870,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		"name": aName,
 		"type": jobType,
 		"typeArgs": (isDef(j.typeArgs) ? merge(j.typeArgs, jobTypeArgs) : jobTypeArgs),
+                "args": (isDef(j.args) ? merge(j.args, jobArgs) : jobArgs),
 		"deps": (isDef(j.deps) ? j.deps.concat(jobDeps) : jobDeps),
 		"exec": (isDef(j.exec) ? j.exec : "") + fstr,
 		"help": (isDef(j.help) ? j.help : "") + jobHelp
@@ -878,6 +881,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		if (isDef(f)) {
 			j.type = (isDef(f.type) ? f.type : j.type);
 			j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
+                        j.args = (isDef(f.args) ? merge(j.args, f.args) : j.args);
 			j.deps = (isDef(f.deps) ? j.deps.concat(f.deps) : j.deps);
 			j.exec = j.exec + (isDef(f.exec) ? f.exec : "");
 			j.help = j.help + (isDef(f.help) ? f.help : "");
