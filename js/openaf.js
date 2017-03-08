@@ -2121,12 +2121,12 @@ function oJobRunFile(aYAMLFile, args, aId) {
 
 /**
  * <odoc>
- * <key>oJobRun(aJson, args)</key>
+ * <key>oJobRun(aJson, args, aId)</key>
  * Runs a oJob from aJson definition with the provided args (arguments).
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-function oJobRun(aJson, args) {
+function oJobRun(aJson, arg, aId) {
 	var s = ow.loadOJob().loadJSON(aJson);
 	ow.oJob.load(s.jobs, s.todo, s.ojob, args, aId);
 	ow.oJob.start(args, true, aId);

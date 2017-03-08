@@ -57,7 +57,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	if (isDef(ojob)) this.__ojob = merge(this.__ojob, ojob);
 
 	for(var i in todo) {
-		if (isDef(ojob.sequential) && ojob.sequential && i > 0) {
+		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
 			var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).first();
 			if (isDef(j)) {
 				if (isUnDef(j.deps)) j.deps = [];
