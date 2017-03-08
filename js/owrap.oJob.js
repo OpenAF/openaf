@@ -136,6 +136,10 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 			if (res.include[i].match(/\.yaml$/i)) res = this.__merge(this.__loadFile(res.include[i]), res);
 		}
 	}
+	
+	if (!(isArray(res.ojob)) && !(isArray(res.todo))) {
+		throw("ojob and todo entries need to be defined as arrays.")
+	}
 
 	return res;
 }
