@@ -134,13 +134,13 @@
   		{
   			"description": "Ignite",
   			"path"       : [ "lib/ignite.jar" ],
-  			"version"    : "1.8.0",
+  			"version"    : "1.9.0",
   			"changes"    : false,
   			"type"       : [ "java" ],
   			"url"        : "https://ignite.apache.org",
   			"license"    : "Apache License 2.0",
   			"deps"       : [
-  				"lib/ignite-core-1.8.0.jar",
+  				"lib/ignite-core-1.9.0.jar",
   				"lib/ignite-shmem-1.0.0.jar",
   				"lib/cache-api-1.0.0.jar"
   			]
@@ -273,7 +273,7 @@
 			"name"     : "Ignite",
 			"removable": true,
 			"deps"     : [
-				"lib/ignite-core-1.7.0.jar",
+				"lib/ignite-core-1.8.0.jar",
 				"lib/ignite-shmem-1.0.0.jar",
   				"lib/cache-api-1.0.0.jar"				
 			]
