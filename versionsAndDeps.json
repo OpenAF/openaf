@@ -112,6 +112,16 @@
   			]
   		},
   		{
+  			"description": "Apache Commons Compress",
+  			"path"       : [ "lib/commons-compress-1.13.jar" ],
+  			"version"    : "1.13",
+  			"changes"    : false,
+  			"type"       : [ "java" ],
+  			"license"    : "Apache License 2.0",
+  			"deps"       : [
+  			]
+  		},
+  		{
   			"description": "Eclipse Jar-In-Jar",
   			"path"       : [ "jar-in-jar-loader.jar" ],
   			"version"    : "",
@@ -184,7 +194,18 @@
   			"license"    : "https://glassfish.java.net/public/CDDL+GPL_1_1.html",
   			"deps"       : [
   			]
-  		}
+  		},
+  		{
+  			"description": "JBSDiff",
+  			"path"       : [ "lib/jbsdiff-1.0.jar" ],
+  			"version"    : "1.0",
+  			"changes"    : false,
+  			"type"       : [ "java" ],
+  			"license"    : "https://github.com/malensek/jbsdiff/blob/master/LICENSE.txt",
+  			"deps"       : [
+  				"lib/commons-compress-1.13.jar"
+  			]
+   		}
 	],
 	"plugins": [
 		{
@@ -366,6 +387,14 @@
 			],
  			"deps"     : [
 			]
-		}
+		},
+		{
+			"name"     : "BSDiff",
+			"removable": true,
+			"hardDeps" : [
+				"lib/jbsdiff-1.0.jar",
+				"lib/commons-compress-1.13.jar"
+			]
+ 		}
 	]
 }

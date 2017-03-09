@@ -157,7 +157,7 @@ function addRemoteDB(aPackage, aDB) {
   try {
   	//zip.loadFile(aDB);
 
-  	packages = af.fromJson(af.fromBytes2String(zip.streamGetFile(aDB, OPACKCENTRALJSON)));
+  	packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(aDB, OPACKCENTRALJSON)));
   } catch(e) {
   }
 
@@ -184,7 +184,7 @@ function removeRemoteDB(aPackage, aDB) {
   try {
   	//zip.loadFile(aDB);
 
-  	packages = af.fromJson(af.fromBytes2String(zip.streamGetFile(aDB, OPACKCENTRALJSON)));
+  	packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(aDB, OPACKCENTRALJSON)));
   } catch(e) {
   }
 
@@ -217,7 +217,7 @@ function addLocalDB(aPackage, aTarget) {
 	var zip = new ZIP();
 	try {
 		//zip = new ZIP(io.readFileBytes(fileDB));
-		packages = af.fromJson(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
+		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
 	} catch(e) {
 		 if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
 	}
@@ -310,7 +310,7 @@ function verifyDeps(packag) {
 	try {
 		//var zip = new ZIP(io.readFileBytes(fileDB));
 		var zip = new ZIP();
-		packages = af.fromJson(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
+		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
 		//zip.close();
 	} catch(e) {
 		//logErr(e.message);
@@ -344,7 +344,7 @@ function removeLocalDB(aPackage, aTarget) {
 	var zip = new ZIP();
 	try {
 		//zip = new ZIP(io.readFileBytes(fileDB));
-		packages = af.fromJson(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
+		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
 	} catch(e) {
 		logErr(e.message);
 	}
@@ -411,7 +411,7 @@ function listFilesWithHash(startPath) {
 		c++;
 		try {
 			lognl("Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
-			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))))
+			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) || !(files[i].match(new RegExp(PACKAGEYAML + "$", ""))))
 				filesHash[files[i]] = sha1(io.readFileStream(startPath + "/" + files[i])) + "";
 		} catch (e) {
 		}
@@ -608,6 +608,14 @@ function findCaseInsensitive(aObject, aKey) {
 	return undefined;
 }
 
+function fromJsonYaml(aString) {
+	try {
+		return af.fromJson(aString);
+	} catch(e) {
+		return af.fromYAML(aString);
+	}
+}
+
 // ----------------------------------------------------------
 // VERB FUNCTIONS
 // ----------------------------------------------------------
@@ -626,7 +634,11 @@ function getPackage(packPath) {
 			if (isUndefined(opack)) return;
 
 			// There should be no \n usually associated with package.json scripts
-			packag = af.fromJson(af.fromBytes2String(opack.getFile(PACKAGEJSON)).replace(/\n/g, "") + "");
+			try {
+				packag = fromJsonYaml(af.fromBytes2String(opack.getFile(PACKAGEJSON)).replace(/\n/g, "") + "");
+			} catch(e) {
+				packag = fromJsonYaml(af.fromBytes2String(opack.getFile(PACKAGEYAML)).replace(/\n/g, "") + "");
+			}
 			if (isUndefined(packag.files)) {
 				packag.files = [];
 				var listOfFiles = opack.list();
@@ -638,13 +650,18 @@ function getPackage(packPath) {
 		} else {
 			// URL identified
 			try {
-				var http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEJSON, "GET", "", {}, true);
+				var http;
+				try {
+					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEJSON, "GET", "", {}, true);
+				} catch(e) {
+					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
+				}
 				// There should be no \n usually associated with package.json scripts
 				var output = af.fromBytes2String(http.responseBytes()).replace(/\n/g, "");
 				if (packPath.match(alternativeIP) && output.match(homeIP)) {
 					output = output.replace(new RegExp(homeIP, "g"), alternativeIP);
 				}
-				packag = af.fromJson(output);
+				packag = fromJsonYaml(output);
 				if (isUndefined(packag)) throw(packPath + "/" + PACKAGESJSON);
 				packag.__filelocation = "url";
 			} catch(e) {
@@ -662,7 +679,11 @@ function getPackage(packPath) {
 			try {
 				var opack = new ZIP();
 				//opack.loadFile(packPath);
-				packag = af.fromJson(af.fromBytes2String(opack.streamGetFile(packPath, PACKAGEJSON)) + "");
+				try {
+					packag = fromJsonYaml(af.fromBytes2String(opack.streamGetFile(packPath, PACKAGEJSON)) + "");
+				} catch(e) {
+					packag = fromJsonYaml(af.fromBytes2String(opack.streamGetFile(packPath, PACKAGEYAML)) + "");
+				}
 				if (isUndefined(packag.files)) {
 					packag.files = [];
 					var listOfFiles = opack.list();
@@ -679,7 +700,11 @@ function getPackage(packPath) {
 		} else {
 			// File identified
 			try {
-				packag = io.readFile(packPath + "/" + PACKAGEJSON);
+				try {
+					packag = io.readFile(packPath + "/" + PACKAGEJSON);
+				} catch(e) {
+					packag = io.readFileYAML(packPath + "/" + PACKAGEYAML);
+				}
 				packag.__filelocation = "local";
 				packag.__target = (new java.io.File(packPath)).getCanonicalPath() + "";
 
@@ -757,7 +782,7 @@ function __opack_info(args) {
 	for(i in packag.files) {
 		var file = packag.files[i];
 
-		if (file == PACKAGEJSON) continue;
+		if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
 
 		if (!remote) {
 			var status;
@@ -1038,7 +1063,7 @@ function install(args) {
 		var hashResults = verifyHashList(outputPath, packag.filesHash);
 		for(i in packag.files) {
 			var file = packag.files[i];
-			if (file == PACKAGEJSON) continue;
+			if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
 			if (!(hashResults[file])) {
 				logErr("File '" + file + "' not equal to declared hash ('" + packag.filesHash[file] + "')");
 				//return;
@@ -1207,7 +1232,8 @@ function erase(args) {
 		!force) {
 		var packages = getLocalDB(true);
 		for(pack in packages) {
-			if (typeof packages[pack].dependencies[packag.name] !== 'undefined') {
+			if (isArray(packages[pack].dependencies) &&
+				typeof packages[pack].dependencies[packag.name] !== 'undefined') {
 				logErr("'" + packages[pack].name + "' depends on '" + packag.name + "'");
 				return;
 			}
@@ -1396,10 +1422,20 @@ function genpack(args) {
 	packageNew.version             = (typeof packag.version !== 'undefined')             ? packag.version             : "20010101";
 	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": "20100101", "packb": "20120101" };
 	packageNew.files = listFiles(args[0]);
-	if (packageNew.files.indexOf(PACKAGEJSON) < 0) packageNew.files.push(PACKAGEJSON);
+	if (packageNew.files.indexOf(PACKAGEJSON) < 0 && packageNew.files.indexOf(PACKAGEYAML) < 0) {
+		if (args.indexOf("-inyaml") < 0)
+			packageNew.files.push(PACKAGEJSON);
+		else
+			packageNew.files.push(PACKAGEYAML);
+	}
 	packageNew.filesHash = listFilesWithHash(args[0]);
-    log("Writing " + args[0] + "/" + PACKAGEJSON);
-	io.writeFileString(args[0] + "/" + PACKAGEJSON, stringify(packageNew));
+	if (args.indexOf("-inyaml") >= 0 || packageNew.files.indexOf(PACKAGEYAML) >= 0) {
+	    log("Writing " + args[0] + "/" + PACKAGEYAML);
+		io.writeFileString(args[0] + "/" + PACKAGEYAML, af.toYAML(packageNew));			
+	} else {
+	    log("Writing " + args[0] + "/" + PACKAGEJSON);
+		io.writeFileString(args[0] + "/" + PACKAGEJSON, stringify(packageNew));	
+	}
 }
 
 // ----------------------------------------------------------

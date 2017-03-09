@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
@@ -27,6 +28,10 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.compress.archivers.ArchiveException;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeObject;
@@ -506,5 +511,20 @@ public class ZIP extends ScriptableObject {
 		}
 		
 		return this;
+	}
+	
+	@JSFunction
+	public Object getCompressOutputStream(Object outputStream, String compression) throws CompressorException {
+		return new CompressorStreamFactory().createCompressorOutputStream(compression, (OutputStream) outputStream);
+	}
+	
+	@JSFunction
+	public Object getArchiveInputStream(Object inputStream) throws ArchiveException {
+		return new ArchiveStreamFactory().createArchiveInputStream((InputStream) inputStream);
+	}
+	
+	@JSFunction
+	public Object getCompressInputStream(Object inputStream) throws CompressorException {
+		return new CompressorStreamFactory().createCompressorInputStream((InputStream) inputStream);
 	}
 }

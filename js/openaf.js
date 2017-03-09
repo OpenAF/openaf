@@ -790,6 +790,7 @@ function getOpenAFJar() {
 //------------------------------------------
 
 var PACKAGEJSON  = ".package.json";
+var PACKAGEYAML  = ".package.yaml";
 var PACKAGESJSON = "packages.json";
 var PACKAGESJSON_DB = ".opack.db";
 var OPACKCENTRALDB = "http://192.168.40.110/d/opack/opack.central.db";
