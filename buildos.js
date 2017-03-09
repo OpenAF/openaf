@@ -253,7 +253,6 @@ try {
         "ignite"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Ignite.java",
         "bsdiff"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/BSDiff.java",
 		"scope"     : OPENAF_BUILD_HOME + "/js/openaf.js",
-		"ops"       : OPENAF_BUILD_HOME + "/src/opsODoc.js",
 		"index"     : OPENAF_BUILD_HOME + "/js/example.js"
 	};
         saveHelp(OPENAF_BUILD_HOME, helpFiles);

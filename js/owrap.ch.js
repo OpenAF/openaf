@@ -461,8 +461,8 @@ OpenWrap.ch.prototype.__types = {
 		},
 		forEach      : function(aName, aFunction) {
 			var keys = this.getKeys(aName);
-			while(o in keys) {
-				aFunction(o, this.get(aName, o));
+			for(var o in keys) {
+				aFunction(keys[o], this.get(aName, keys[o]));
 			}
 		},
 		getKeys      : function(aName, full) {
