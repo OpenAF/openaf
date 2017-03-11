@@ -1308,21 +1308,19 @@ function clone(aObject) {
 
 /**
  * <odoc>
- * <key>isString(aObj) : boolean</key>
- * Returns true if aObj is a string, false otherwise
- * </odoc>
- */
-function isString(obj) {
-        return typeof obj == 'string' || false;
-}
-
-/**
- * <odoc>
  * <key>merge(anObjectA, anObjectB) : aMergedObject</key>
  * Merges a JavaScript object A with a JavaScript object B a returns the result as a new object.
  * </odoc>
  */
 function merge(aObjectA, aObjectB) {
+	if (isObject(aObjectA) && isArray(aObjectB)) {
+		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA)); }
+		return aObjectB;
+	}
+	if (isObject(aObjectB) && isArray(aObjectA)) {
+		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB)); }
+		return aObjectA;
+	}
 	return extend(true, clone(aObjectA), aObjectB);
 }
 
@@ -1793,6 +1791,16 @@ function isObject(obj) {
 function isFunction(obj) {
     return typeof obj == 'function' || false;
 };
+
+/**
+ * <odoc>
+ * <key>isString(aObj) : boolean</key>
+ * Returns true if aObj is a string, false otherwise
+ * </odoc>
+ */
+function isString(obj) {
+	return typeof obj == 'string' || false;
+}
 
 /**
  * <odoc>
@@ -2880,6 +2888,42 @@ function clearInterval(uuid) {
 function deleteFromArray(anArray, anIndex) {
 	anArray.splice(anIndex, 1);
 	return anArray;
+}
+
+/**
+ * <odoc>
+ * <key>oJobRunFile(aFile, args, aId)</key>
+ * Runs a oJob aFile with the provided args (arguments).
+ * Optionally you can provide aId to segment these specific jobs.
+ * </odoc>
+ */
+function oJobRunFile(aYAMLFile, args, aId) {
+	ow.loadOJob().runFile(aYAMLFile, args, aId);
+}
+
+/**
+ * <odoc>
+ * <key>oJobRun(aJson, args, aId)</key>
+ * Runs a oJob from aJson definition with the provided args (arguments).
+ * Optionally you can provide aId to segment these specific jobs.
+ * </odoc>
+ */
+function oJobRun(aJson, args, aId) {
+	var s = ow.loadOJob().loadJSON(aJson);
+	ow.oJob.load(s.jobs, s.todo, s.ojob, args, aId);
+	ow.oJob.start(args, true, aId);
+}
+
+/**
+ * <odoc>
+ * <key>oJobRunJob(aJob, args, aId)</key>
+ * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
+ * Optionally you can provide aId to segment this specific job.
+ * </odoc>
+ */
+function oJobRunJob(aJob, args, aId) {
+	ow.loadOJob();
+	ow.oJob.runJob(aJob, args, aId);
 }
 
 // ---------------

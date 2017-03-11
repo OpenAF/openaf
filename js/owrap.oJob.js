@@ -195,7 +195,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 						}
 					}
 				}
-				throw "File not found!";
+				throw "File not found! (" + aFile + ")";
 			} else {
 				throw e1;
 			}
@@ -904,7 +904,7 @@ OpenWrap.oJob.prototype.addTodo = function(aOJobID, aJobsCh, aTodoCh, aJobName, 
 	var todoId = genUUID();
  
 	var job = aJobsCh.get({ "name": aJobName });
-	if (isUnDef(job) || job == {}) throw "Job " + aJobName + " wasn't found.";
+	if (isUnDef(job) || job == {}) throw "Job '" + aJobName + "' wasn't found.";
 
 	var jobType = (isUnDef(aJobType)) ? job.type : aJobType;
 	var jobTypeArgs = (isUnDef(aJobType)) ? job.typeArgs : aJobTypeArgs;

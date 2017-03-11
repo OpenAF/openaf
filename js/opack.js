@@ -637,7 +637,7 @@ function getPackage(packPath) {
 			try {
 				packag = fromJsonYaml(af.fromBytes2String(opack.getFile(PACKAGEJSON)).replace(/\n/g, "") + "");
 			} catch(e) {
-				packag = fromJsonYaml(af.fromBytes2String(opack.getFile(PACKAGEYAML)).replace(/\n/g, "") + "");
+				packag = fromJsonYaml(af.fromBytes2String(opack.getFile(PACKAGEYAML)) + "");
 			}
 			if (isUndefined(packag.files)) {
 				packag.files = [];
@@ -650,14 +650,15 @@ function getPackage(packPath) {
 		} else {
 			// URL identified
 			try {
-				var http;
+				var http, output;
 				try {
 					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEJSON, "GET", "", {}, true);
+					// There should be no \n usually associated with package.json scripts
+					output = af.fromBytes2String(http.responseBytes()).replace(/\n/g, "");
 				} catch(e) {
 					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
+					output = af.fromBytes2String(http.responseBytes());
 				}
-				// There should be no \n usually associated with package.json scripts
-				var output = af.fromBytes2String(http.responseBytes()).replace(/\n/g, "");
 				if (packPath.match(alternativeIP) && output.match(homeIP)) {
 					output = output.replace(new RegExp(homeIP, "g"), alternativeIP);
 				}
@@ -783,6 +784,7 @@ function __opack_info(args) {
 		var file = packag.files[i];
 
 		if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
+		if (isUnDef(file) || file == null) continue;
 
 		if (!remote) {
 			var status;
@@ -793,8 +795,9 @@ function __opack_info(args) {
 			}
 			
 			print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, "") + " [" + status + "]");
-		} else
+		} else {
 			print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, ""));
+		}
 	}
 }
 
