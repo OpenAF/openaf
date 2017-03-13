@@ -484,18 +484,20 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public static String encrypt(String aString, Object key) throws Exception {
+            	if (key == null || key instanceof Undefined) key = "openappframework";
+		if (key instanceof String) key = ((String) key).getBytes();
 		if (((byte[]) key).length != 16) throw new Exception("Invalid key size. Key should be 16 bytes."); 
 
-    	SecureRandom sc = new SecureRandom();
-    	byte[] biv = sc.generateSeed(16);
-        IvParameterSpec iv = new IvParameterSpec(biv);
-        SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
+    		SecureRandom sc = new SecureRandom();
+    		byte[] biv = sc.generateSeed(16);
+        	IvParameterSpec iv = new IvParameterSpec(biv);
+        	SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-        cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
+        	Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+        	cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
 
-        byte[] encrypted = cipher.doFinal(aString.getBytes());
-        return (Hex.encodeHexString(encrypted) + Hex.encodeHexString(biv)).toUpperCase();
+        	byte[] encrypted = cipher.doFinal(aString.getBytes());
+        	return (Hex.encodeHexString(encrypted) + Hex.encodeHexString(biv)).toUpperCase();
 	}
 	
 	/**
@@ -507,21 +509,20 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public static String decrypt(String aString, Object key) throws Exception {
-		if (key != null && !(key instanceof Undefined)) {
-			if (((byte[]) key).length != 16) throw new Exception("Invalid key size. Key should be 16 bytes."); 
-			String initVector = aString.substring(aString.length() - 32);
-			IvParameterSpec iv = new IvParameterSpec(Hex.decodeHex(initVector.toCharArray()));
-			SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
-
-			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-			cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
-
-			byte[] original = cipher.doFinal(Hex.decodeHex(aString.substring(0, aString.length()-32).toCharArray()));
-
-			return new String(original);
-		}
+		if (key != null || !(key instanceof Undefined)) key = "openappframework"; 
+		if (key instanceof String) key = ((String) key).getBytes();
 		
-		return null;
+		if (((byte[]) key).length != 16) throw new Exception("Invalid key size. Key should be 16 bytes."); 
+		String initVector = aString.substring(aString.length() - 32);
+		IvParameterSpec iv = new IvParameterSpec(Hex.decodeHex(initVector.toCharArray()));
+		SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
+
+		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+		cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
+
+		byte[] original = cipher.doFinal(Hex.decodeHex(aString.substring(0, aString.length()-32).toCharArray()));
+
+		return new String(original);
 	}
 	
 	/**

@@ -1,5 +1,6 @@
 include:
    - oJobTest.yaml
+   - autoTestAll.Channels.yaml
 
 ojob:
    sequential: true
@@ -37,18 +38,6 @@ jobs:
           logErr("Bye World!"); logWarn("?");
           lognl("no"); log(" line");
 
-   # CHANNELS tests
-   # --------------
-   - name: Channels::Creating a channel
-     to  : oJob Test
-     args:
-       func: $ch("test").create();
- 
-   - name: Channels::Destroy a channel
-     to  : oJob Test
-     args: 
-       func: $ch("test").destroy(); 
-
    # FINAL TEST RESULTS
    # ------------------
    - name: Results
@@ -61,11 +50,30 @@ jobs:
        if (args.results.fail > 0) throw "There are failed tests";
 
 todo:
+   # Generic Tests
+   # -------------
    - OpenAF::Get version
    - OpenAF::Prints
    - OpenAF::SPrints
    - OpenAF::Logs
-   - Channels::Creating a channel
+   
+   # Channels tests
+   # --------------
+   
+   # Big
+   - name: Channels::Creating a channel
+     args:
+       chType: big
+   - Channels::Setting data into a channel
+   - Channels::Destroy a channel 
+   
+   # Ignite
+   - name: Channels::Creating a channel
+     args:
+       chType: ignite
+   - Channels::Setting data into a channel
    - Channels::Destroy a channel
-  
+   
+   # Final results
+   # -------------
    - Results

@@ -15,6 +15,7 @@ import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.mozilla.javascript.NativeArray;
@@ -218,6 +219,21 @@ public class GIT extends ScriptableObject {
 		else
 			throw new Exception("Repository not open");
 	}
+ 
+       	/**
+	 * <odoc>
+	 * <key>GIT.pull()</key>
+	 * Performs a pull command on the current opened GIT repository.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void pull() throws Exception {
+		if (git != null)
+			git.pull().call();
+		else
+			throw new Exception("Repository not open");
+	}
+ 
 
 	/**
 	 * <odoc>
