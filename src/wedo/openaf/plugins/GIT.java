@@ -11,7 +11,9 @@ import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
@@ -107,7 +109,7 @@ public class GIT extends ScriptableObject {
 	@JSFunction
 	public void clone(Object aURL, Object dir, boolean cloneAll, Object branch) throws InvalidRemoteException, TransportException, GitAPIException {
 		if (!(dir instanceof Undefined) && dir != "" && !(aURL instanceof Undefined) && aURL != "") {
-			CloneCommand clone = Git.cloneRepository().setURI((String) aURL).setDirectory(new File((String) dir));
+			CloneCommand clone = ((CloneCommand) setCred(Git.cloneRepository())).setURI((String) aURL).setDirectory(new File((String) dir));
 			if (!(branch instanceof Undefined) && branch != "") {
 				clone = clone.setBranchesToClone(Collections.singleton((String) branch));
 				clone = clone.setBranch((String) branch);
@@ -206,6 +208,14 @@ public class GIT extends ScriptableObject {
 		return git;
 	}
 	
+	protected TransportCommand<?, ?> setCred(TransportCommand<?, ?> c) {
+		if (login != null & pass != null) {
+			c.setCredentialsProvider(new UsernamePasswordCredentialsProvider(login, pass));
+		}
+		
+		return c;
+	}
+	
 	/**
 	 * <odoc>
 	 * <key>GIT.push()</key>
@@ -215,7 +225,7 @@ public class GIT extends ScriptableObject {
 	@JSFunction
 	public void push() throws Exception {
 		if (git != null)
-			git.push().call();
+			setCred(git.push()).call();
 		else
 			throw new Exception("Repository not open");
 	}
@@ -229,7 +239,7 @@ public class GIT extends ScriptableObject {
 	@JSFunction
 	public void pull() throws Exception {
 		if (git != null)
-			git.pull().call();
+			setCred(git.pull()).call();
 		else
 			throw new Exception("Repository not open");
 	}
@@ -246,7 +256,7 @@ public class GIT extends ScriptableObject {
 	@JSFunction
 	public void fetch(Object aRemote) throws Exception {
 		if (git != null) {
-			FetchCommand fetch = git.fetch();
+			FetchCommand fetch = (FetchCommand) setCred(git.fetch());
 			if (!(aRemote instanceof Undefined) && aRemote != "") {
 				fetch = fetch.setRemote((String) aRemote);
 			}

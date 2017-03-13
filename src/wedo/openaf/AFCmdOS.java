@@ -392,7 +392,7 @@ public class AFCmdOS extends AFCmdBase  {
 		if (theInput.length() > 0) {
 			switch(INPUT_TYPE) {
 			case INPUT_JSON:
-				pmIn = new Gson().fromJson(theInput.toString(), JsonObject.class);
+				pmIn = (new com.google.gson.Gson()).fromJson(theInput.toString(), JsonObject.class);
 				break;
 			case INPUT_SCRIPT:
 				processScript = true;
@@ -595,7 +595,8 @@ public class AFCmdOS extends AFCmdBase  {
 			
 			// Convert to ParameterMap
 			Object stringify = NativeJSON.stringify(cx, (Scriptable) jse.getGlobalscope(), jsonPMOut, null, null);
-			pmOut = (new com.google.gson.Gson()).fromJson(stringify.toString(), JsonObject.class);
+			Gson gson = new com.google.gson.Gson();
+			pmOut = gson.fromJson(stringify.toString(), JsonObject.class);
 			
 			// Leave Rhino
 			//org.mozilla.javascript.Context.exit();

@@ -478,10 +478,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 	}
 
 	if (isDef(existing)) {
-		plugin("Console"); var con = (new Console()).getConsoleReader();
-		var w = con.getTerminal().getWidth();
-		var ansis = con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null);
-		var jansi = JavaImporter(Packages.org.fusesource.jansi);
+
 		var aa = "";
 		if (isDef(args) && this.__ojob.logArgs) {
 			var temp = clone(args);
@@ -491,6 +488,12 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		}
 		try {
 			var s = "", ss = "";
+			plugin("Console"); 
+			var con = (new Console()).getConsoleReader();
+			var w = con.getTerminal().getWidth();
+			var ansis = con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null);
+			var jansi = JavaImporter(Packages.org.fusesource.jansi);
+			
 			if (ansis) {
 				jansi.AnsiConsole.systemInstall();
 				s  = repeat(w, '-');
@@ -535,8 +538,6 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				if (existing.start && existing.success) { 
 					printnl("\n" + _c(ss)); print(_g(aa) +_b(msg + "Ended with SUCCESS | " + new Date()) + "\n"); 
 				}
-				/*if (!existing.deps) { 
-				}*/
 			}
 		} catch(e) { 
 			logErr(e); 
@@ -743,7 +744,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		args.objId = this.getID() + altId;
 		var uuid = this.__addLog("start", aJob.name, undefined, args, undefined, aId);
 		args.execid = uuid;
-                args = merge(args, aJob.args);
+        args = merge(args, aJob.args);
 
 		switch(aJob.type) {
 		case "single":
