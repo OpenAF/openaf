@@ -1,0 +1,79 @@
+include:
+   - oJobTest.yaml
+   - autoTestAll.Channels.yaml
+
+ojob:
+   sequential: true
+
+jobs:
+   # OPENAF generic tests
+   # --------------------
+   - name: OpenAF::Get version
+     to  : oJob Test
+     args:
+       func: print(getVersion());
+ 
+   - name: OpenAF::Prints
+     to  : oJob Test
+     args: 
+       func: >
+          print("Hello World!");
+          printErr("Bye World!"); printErrnl("?");
+          printnl("no"); print(" line");
+
+   - name: OpenAF::SPrints
+     to  : oJob Test
+     args: 
+       func: >
+          var a = { a: 1, b: "a", c: [1, { d: 3 }]};
+          sprint(a);
+          sprintErr(a); sprintErrnl(a);
+          sprintnl(a); sprint(a); 
+  
+   - name: OpenAF::Logs
+     to  : oJob Test
+     args: 
+       func: >
+          log("Hello World!");
+          logErr("Bye World!"); logWarn("?");
+          lognl("no"); log(" line");
+
+   # FINAL TEST RESULTS
+   # ------------------
+   - name: Results
+     from: oJob Test Results
+     args: 
+       quite: true
+     exec: >
+       tprint("Tests PASSED: {{pass}}/{{count}}", args.results);
+       tprint("Tests FAILED: {{fail}}/{{count}}", args.results);
+       if (args.results.fail > 0) throw "There are failed tests";
+
+todo:
+   # Generic Tests
+   # -------------
+   - OpenAF::Get version
+   - OpenAF::Prints
+   - OpenAF::SPrints
+   - OpenAF::Logs
+   
+   # Channels tests
+   # --------------
+   
+   # Big
+   - name: Channels::Creating a channel
+     args:
+       chType: big
+   - Channels::Setting data into a channel
+   - Channels::Destroy a channel 
+   
+   # Ignite
+   #- name: Channels::Creating a channel
+   #  args:
+   #    chType: ignite
+   #- Channels::Setting data into a channel
+   #- Channels::Destroy a channel
+   
+   # Final results
+   # -------------
+   - Results

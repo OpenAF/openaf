@@ -1,0 +1,31 @@
+include:
+   - oJobTest.yaml
+
+ojob:
+  sequential: true 
+  
+jobs:
+   # CHANNELS tests
+   # --------------
+   - name: Channels::Creating a channel
+     to  : oJob Test
+     exec: >
+       $ch("test").create(true, args.chType);
+       args.func = "$ch('test').size()";
+
+   - name: Channels::Setting data into a channel
+     to  : oJob Test
+     deps: 
+       - Channels::Creating a channel
+     args:
+       func: >
+          var l = listFilesRecursive(",");
+          $ch("test").setAll(["filepath"], l);
+          ow.test.assert(l.length, $ch("test").size(), "Channel didn't store all values.");
+ 
+   - name: Channels::Destroy a channel
+     to  : oJob Test
+     deps: 
+       - Channels::Creating a channel
+     args: 
+       func: $ch("test").destroy(); 
