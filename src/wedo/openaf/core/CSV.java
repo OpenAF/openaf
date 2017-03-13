@@ -54,7 +54,7 @@ public class CSV {
 
 	/**
 	 * <odoc>
-	 * <key>setStringDelimiter(aDelimiter)</key>
+	 * <key>CSV.setStringDelimiter(aDelimiter)</key>
 	 * Sets the default string delimited to use when building a CSV output (default is ")
 	 * </odoc>
 	 */

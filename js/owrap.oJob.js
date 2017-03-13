@@ -732,9 +732,17 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 	function _run(aExec, args, job, id) {		
 		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; " + aExec);
 		if (isDef(args.__oJobRepeat)) { 
+			var errors = [];
 			parallel4Array(args.__oJobRepeat, function(aValue) {
-				return f(aValue, job, id);
+				try {
+					return f(aValue, job, id);
+				} catch(e) {
+					errors.push(e);
+				}
 			});
+			if (errors.length > 0) {
+				throw errors.join(", ");
+			}
 		} else {
 			f(args, job, id);
 		}
