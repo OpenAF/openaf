@@ -499,8 +499,8 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				s  = repeat(w, '-');
 				ss = repeat(w, '=');
 			} else {
-				s  = repeat(80, '-');
-				ss = repeat(80, '=');
+				s  = repeat(80, '-') + "\n";
+				ss = repeat(80, '=') + "\n";
 			}
 
 			var _c = function(m) { 
