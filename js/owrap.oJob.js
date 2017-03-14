@@ -21,7 +21,7 @@ OpenWrap.oJob = function() {
 
 	this.__id = sha256(this.__host + this.__ip);
 	this.__threads = {};
-	this.__ojob = { log: true, logArgs: false };
+	this.__ojob = { log: true, logArgs: false, numThreads: getNumberOfCores() };
 	this.__expr = processExpr(" ");
 
 	plugin("Threads");
@@ -71,6 +71,12 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	}
 	this.addTodos(todo, args, aId);
 
+	if (isUnDef(ojob.numThreads)) {
+		this.__ojob.numThreads = getNumberOfCores();
+	} else {
+		this.__ojob.numThreads = ojob.numThreads;
+	}
+	
 	if (isDef(this.__ojob.channels)) {
 		if (this.__ojob.channels.expose) {
 			if (isDef(this.__ojob.channels.port)) {
@@ -739,7 +745,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				} catch(e) {
 					errors.push(e);
 				}
-			});
+			}, parent.__ojob.numThreads);
 			if (errors.length > 0) {
 				throw errors.join(", ");
 			}
@@ -777,7 +783,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 							} catch(e1) {
 								errors.push({ k: aV, e: e1});
 							}
-						});
+						}, parent.__ojob.numThreads);
 						if (errors.length > 0) throw stringify(errors);
 						this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 					} else {

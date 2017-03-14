@@ -1460,6 +1460,17 @@ function getNumberOfCores() {
 
 /**
  * <odoc>
+ * <key>getCPULoad() : Number</key>
+ * Tries to obtain the current system load average (equivalent to top). If not available a negative value
+ * will be returned.
+ * </odoc>
+ */
+function getCPULoad() {
+	return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
+}
+
+/**
+ * <odoc>
  * <key>getPid() : String</key>
  * Tries to retrieve the current script execution operating system PID and returns it.
  * </odoc>
