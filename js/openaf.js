@@ -1615,7 +1615,10 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 
 	var __threads = new Threads();
 	if (isUndefined(__cpucores)) __cpucores = __threads.getNumberOfCores();
-	if (isUndefined(numThreads)) numThreads = __cpucores;
+	if (isUndefined(numThreads)) {
+		numThreads = __cpucores + 1;
+		balance = true;
+	}
 
 	if (isDefined(threads)) {
 		threads["__threads"]  = __threads;
@@ -1623,10 +1626,25 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 		threads.uuids = [];
 	}
 	
+	var __cooldown = 0;
+	var balance = false;
+	function __balance() {
+		var l = getCPULoad();
+		if (l > numThreads) {
+			sync(function() { cooldown++; });
+			while (l > numThreads && __cooldown < numThreads) {
+				sleep((l - numThreads) * 2000);
+				l = getCPULoad();
+			}
+			sync(function() { cooldown--; });
+		}
+	}
+	
 	var results = [];
 	for(var i = 0; i < numThreads; i++) {
 		var uuid = __threads.addThread(function(uuid) {
 			results.push(aFunction(uuid, __threads));
+			if (balance) __balance();
 		});
 		if (isDefined(threads)) {
 			threads.uuids.push(uuid);
@@ -1642,6 +1660,7 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 	else
 		return aAggFunction(results);
 }
+
 
 /**
  * <odoc>
@@ -1670,10 +1689,27 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 		}
 	}
 
+	var __cooldown = 0;
+	var balance = false;
+	function __balance() {
+		var l = getCPULoad();
+		if (l > numThreads) {
+			sync(function() { cooldown++; });
+			while (l > numThreads && __cooldown < numThreads) {
+				sleep((l - numThreads) * 2000);
+				l = getCPULoad();
+			}
+			sync(function() { cooldown--; });
+		}
+	}
+	
 	var results = [];
 	var __threads = new Threads();
 	if (isUndefined(__cpucores)) __cpucores = __threads.getNumberOfCores();
-	if (isUndefined(numThreads)) numThreads = __cpucores;	
+	if (isUndefined(numThreads)) {
+		numThreads = __cpucores + 1;
+		balance = true;
+	}
 
 	// Map it to threads
 	var myMap = [];
@@ -1700,6 +1736,7 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 		var uuid = __threads.addThread(function(uuid) {
 			var subres = xx[uuid].reduce(aReduceFunction, initValues);
 			__threads.sync(function() { results.push(subres); } );
+			if (balance) __balance();
 		});
 		xx[uuid] = myMap[x];
 		

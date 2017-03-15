@@ -21,7 +21,7 @@ OpenWrap.oJob = function() {
 
 	this.__id = sha256(this.__host + this.__ip);
 	this.__threads = {};
-	this.__ojob = { log: true, logArgs: false, numThreads: getNumberOfCores() };
+	this.__ojob = { log: true, logArgs: false, numThreads: undefined };
 	this.__expr = processExpr(" ");
 
 	plugin("Threads");
@@ -71,9 +71,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	}
 	this.addTodos(todo, args, aId);
 
-	if (isUnDef(ojob.numThreads)) {
-		this.__ojob.numThreads = getNumberOfCores();
-	} else {
+	if (isDef(ojob.numThreads)) {
 		this.__ojob.numThreads = ojob.numThreads;
 	}
 	
