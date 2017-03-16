@@ -285,8 +285,9 @@ public class Email extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>Email.setSecure(shouldSecure) : Email</key>
-	 * Sets if should use TLS/SSL when connecting to a email server.
+	 * <key>Email.setSecure(shouldSecure, useTLS) : Email</key>
+	 * Sets if should use TLS/SSL when connecting to a email server. Do specify with useTLS = true if you 
+	 * want to establish a connection using TLS instead of SSL.
 	 * </odoc>
 	 */
 	@JSFunction
