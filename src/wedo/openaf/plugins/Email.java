@@ -14,6 +14,8 @@ import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
 import wedo.openaf.AFCmdBase;
+
+import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.EmailAttachment;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.MultiPartEmail;
@@ -39,6 +41,7 @@ public class Email extends ScriptableObject {
 	protected String contentType = null;
 	protected AuthenticatingSMTPClient.AUTH_METHOD credMethod;
 	protected Map<String, String> headers = new ConcurrentHashMap<String, String>();
+	protected boolean tlssecure;
 	
 	/**
 	 * 
@@ -57,16 +60,17 @@ public class Email extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSConstructor
-	public void newEmail(String server, String sender, boolean shouldSecure) {
+	public void newEmail(String server, String sender, boolean shouldSecure, boolean tlssecure) {
 		this.secureProto = shouldSecure;
 		this.sender = sender;
 		this.server = server;
+		this.tlssecure = tlssecure;
 		newEmailObj();
 	}
 	
 	protected void newEmailObj() {
 		this.email = new MultiPartEmail();
-		if (secureProto) this.setSecure(true);
+		if (secureProto) this.setSecure(true, this.tlssecure);
 		email.setHostName(this.server);
 		this.contentType = null;
 	}
@@ -94,7 +98,6 @@ public class Email extends ScriptableObject {
 	public Email setCredentials(String aLogin, String aPassword) {
 		this.login = aLogin;
 		this.pass = AFCmdBase.afc.dIP(aPassword);
-		this.setSecure(true);
 		return this;
 	}
 	
@@ -287,8 +290,12 @@ public class Email extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Email setSecure(boolean secure) {
-		email.setSSLOnConnect(secure);
+	public Email setSecure(boolean secure, boolean tls) {
+		this.secureProto = true;
+		if (!tls)
+			email.setSSLOnConnect(secure);
+		else
+			email.setStartTLSEnabled(secure);
 		return this;
 	}
 	
@@ -339,10 +346,16 @@ public class Email extends ScriptableObject {
 			if (email.isSSLOnConnect()) 
 				this.port = 465;
 			else
-				this.port = 25;
+				if (email.isStartTLSEnabled())
+					this.port = 587;
+				else
+					this.port = 25;
 		}
 		
-		if (this.login != null) email.setAuthentication(this.login, this.pass);
+		email.setSslSmtpPort(String.valueOf(this.port));
+		email.setSmtpPort(this.port);
+		
+		if (this.login != null) email.setAuthenticator(new DefaultAuthenticator(this.login, this.pass));
 		String res;
 		
 		res = email.send();
