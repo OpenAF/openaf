@@ -1460,13 +1460,20 @@ function getNumberOfCores() {
 
 /**
  * <odoc>
- * <key>getCPULoad() : Number</key>
+ * <key>getCPULoad(useAlternative) : Number</key>
  * Tries to obtain the current system load average (equivalent to top). If not available a negative value
- * will be returned.
+ * will be returned. Optionally you can specify to use the current system load if useAlternative = true.
+ * If the current system doesn't provide a load average it will fallback to the current system load.
  * </odoc>
  */
-function getCPULoad() {
-	return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
+function getCPULoad(useAlternative) {
+        if (useAlternative) {
+        	return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores());
+        } else {
+		var res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
+ 		if (res < 0) res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores());
+		return res;
+ 	}
 }
 
 /**
