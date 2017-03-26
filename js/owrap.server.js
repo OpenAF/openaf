@@ -107,6 +107,29 @@ OpenWrap.server.prototype.daemon = function(aTimePeriod, aPeriodicFunction) {
 
 /**
  * <odoc>
+ * <key>ow.server.simpleCheckIn(aName)</key>
+ * If aName is provided it will check for 'aName.pid'. If the pid is running it will stop the current execution unless 
+ * stop or restart is provided as a script parameter.
+ * If stop is provided as a script parameter it will stop execution and try to kill the existing pid.
+ * If restart is provided as a script parameter it will continue execution and try to kill the existing pid.
+ * </odoc>
+ */
+OpenWrap.server.prototype.simpleCheckIn = function(aName) {
+	if (isUnDef(aName)) return;
+	
+	ow.server.checkIn(aName + ".pid", function(aPid) {
+		var p = processExpr();
+		if (isDef(p.restart) || isDef(p.stop)) {
+			if (!pidKill(ow.server.getPid(aPid), false))
+				pidKill(ow.server.getPid(aPid), true);
+			if (isDef(p.restart)) return true;
+		}
+		return false;
+	});
+}
+
+/**
+ * <odoc>
  * <key>ow.server.getPid(aPidFile) : String</key>
  * Retrieve the server pid on the given aPidFile.
  * (available after ow.loadServer())
@@ -115,6 +138,76 @@ OpenWrap.server.prototype.daemon = function(aTimePeriod, aPeriodicFunction) {
 OpenWrap.server.prototype.getPid = function(aPidFile) {
 	return io.readFileString(aPidFile);
 }
+
+//-----------------------------------------------------------------------------------------------------
+// OpenAF Server
+//-----------------------------------------------------------------------------------------------------
+OpenWrap.server.prototype.openafServer = {
+	/**
+	 * <odoc>
+	 * <key>ow.server.openafServer.start(aId, aPort, notLocal)</key>
+	 * Starts an internal JMX server with a give optional aId. If there is a need to access it externally 
+	 * (do keep in mind security) you can provide also aPort. This server allows for the load or execution 
+	 * of OpenAF scripts. In extreme cases you can use notLocal = true to make the server available outside
+	 * the localhost (NOT ADVISABLE!).
+	 * </odoc>
+	 */
+	start: function(aId, aPort, notLocal) {
+		plugin("JMXServer");
+		this.jmxs = new JMXServer("wedo.openaf:type=OpenAFServer-" + aId);
+		this.jmxs.start(aPort, !notLocal);
+		this.jmxs.addBean({},
+		  function(key) { },
+		  function(key, value) { },
+		  function(op, params) {
+		  	switch(op) {
+		  	case "load": return ow.server.jmx.serverExec(params, function(f) { 
+		  		__pmIn = jsonParse(Packages.wedo.open.utils.PMStringConvert.toJSON(Packages.wedo.openaf.OpenAF.__pmIn));
+		  		load(f);
+		  		Packages.wedo.openaf.OpenAF.__pmOut = Packages.wedo.open.utils.PMStringConvert.fromJSON(stringify(__pmOut)); });
+		  	case "exec": return ow.server.jmx.serverExec(params, function(f) { 
+				__pmIn = jsonParse(Packages.wedo.open.utils.PMStringConvert.toJSON(Packages.wedo.openaf.OpenAF.__pmIn));
+		  		var res = af.eval(f); 
+		  		Packages.wedo.openaf.OpenAF.__pmOut = Packages.wedo.open.utils.PMStringConvert.fromJSON(stringify(__pmOut));
+				return res; }); 
+		    }
+		  }
+		);
+	},
+	
+	/**
+	 * <odoc>
+	 * <key>ow.server.openafServer.exec(aId, aScript, aServerPid)</key>
+	 * Tries to execute the given aScript locally or in the aServerPid provided (created by a ow.server.openafServer.start).
+	 * Optionally you can also specify aId.
+	 * </odoc>
+	 */
+	exec: function(aId, aScript, aServerPid) {
+		ow.server.jmx.call(ow.server.jmx.localConnect(aServerPid), "wedo.openaf:type=OpenAFServer-" + aId, "exec", aScript);
+	},
+	
+	/**
+	 * <odoc>
+	 * <key>ow.server.openafServer.load(aId, aScriptFilePath, aServerPid)</key>
+	 * Tries to execute the given aScriptFilePath locally or in the aServerPid provided (created by a ow.server.openafServer.start).
+	 * Optionally you can also specify aId.
+	 * </odoc>
+	 */
+	load: function(aId, aScriptFilePath, aServerPid) {
+		ow.server.jmx.call(ow.server.jmx.localConnect(aServerPid), "wedo.openaf:type=OpenAFServer-" + aId, "load", aScriptFilePath);
+	},
+	
+	/**
+	 * <odoc>
+	 * <key>ow.server.openafServer.stop()</key>
+	 * Attempts to stop the existing server.
+	 * </odoc>
+	 */
+	stop: function() {
+		this.jmxs.stop();
+	}
+}
+
 
 //-----------------------------------------------------------------------------------------------------
 // JMX

@@ -500,7 +500,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			
 			if (ansis) {
 				jansi.AnsiConsole.systemInstall();
-				s  = repeat(w, '-');
+				s  = repeat(w, '-') + "\n";
 				ss = repeat(w, '=');
 			} else {
 				s  = repeat(80, '-') + "\n";
@@ -619,9 +619,10 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
 
 	    	ow.loadServer().checkIn(this.__ojob.unique.pidFile, function(aPid) {
-	    		if (parent.__ojob.unique.killPrevious) {
-	    			pidKill(ow.server.getPid(aPid), true);
-	    			return true;
+	    		if (parent.__ojob.unique.killPrevious || isDef(args.stop) || isDef(args.restart)) {
+	    			if (!pidKill(ow.server.getPid(aPid), false))
+	    				pidKill(ow.server.getPid(aPid), true);
+	    			if (isDef(args.stop)) return false; else return true;
 	    		} else {
 	    			return false;
 	    		}

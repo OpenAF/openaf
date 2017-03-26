@@ -130,7 +130,7 @@ function ojob_draw() {
 			msg += "!!NOT FOUND!!";
 		} else {
 			for(var i in deps) {
-				msg += " | " + deps[i];
+				msg += " <- " + deps[i];
 				var r = getPath(deps[i]);
 				if (r.length > 0) {
 					msg += " (" + r + ")";

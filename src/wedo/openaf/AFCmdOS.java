@@ -223,6 +223,9 @@ public class AFCmdOS extends AFCmdBase  {
 				case OPTION_SCRIPTFILE:
 					scriptfile = a;
 					continue;
+				case OPTION_DAEMON:
+					scriptfile = a;
+					continue;					
 				case OPTION_CODE:
 					code = a;
 					continue;
@@ -263,7 +266,7 @@ public class AFCmdOS extends AFCmdBase  {
 				checkNext = true;
 				silentMode = true;
 				INPUT_TYPE = inputtype.INPUT_SCRIPT;
-				checkOption = OPTION_SCRIPTFILE;
+				checkOption = OPTION_DAEMON;
 				filescript = true;
 				daemon = true;
 				continue;
@@ -507,7 +510,7 @@ public class AFCmdOS extends AFCmdBase  {
 			script = script.replaceAll("^#.*", "//");
 			script = script.replaceFirst(PREFIX_SCRIPT, "");
 			
-			if (daemon) script += "; ow.loadServer().daemon();";
+			if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().simpleDaemon();";
 			if (injectcode) script += code;
 			
 			Context cx = (Context) jse.getNotSafeContext();
