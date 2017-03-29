@@ -117,15 +117,34 @@ OpenWrap.server.prototype.daemon = function(aTimePeriod, aPeriodicFunction) {
 OpenWrap.server.prototype.simpleCheckIn = function(aName) {
 	if (isUnDef(aName)) return;
 	
-	ow.server.checkIn(aName + ".pid", function(aPid) {
-		var p = processExpr();
+	var p = processExpr();
+	var s = ow.server.checkIn(aName + ".pid", function(aPid) {
 		if (isDef(p.restart) || isDef(p.stop)) {
-			if (!pidKill(ow.server.getPid(aPid), false))
+			if (!pidKill(ow.server.getPid(aPid), false)) {
 				pidKill(ow.server.getPid(aPid), true);
-			if (isDef(p.restart)) return true;
+				log("Stopped " + aName);
+			}
+			if (isDef(p.restart)) {
+				return true;
+			}
+			if (isDef(p.stop)) {
+				exit(0);
+			}
+		}
+		if (isDef(p.status)) {
+			var pid = ow.server.getPid(aPid);
+			if (isDef(pid)) log("Running on pid = " + pid);
+			return false;
 		}
 		return false;
 	});
+	
+	if (isDef(p.status) && s) {
+		log("Not running");
+		exit(0);
+	}
+	
+	__expr = __expr.replace(/( *)(start|stop|restart|status)( *)/i, "$1$3");
 }
 
 /**
