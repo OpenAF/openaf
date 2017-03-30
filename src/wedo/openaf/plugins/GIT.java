@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.slf4j.LoggerFactory;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.CommitCommand;
@@ -60,15 +61,15 @@ public class GIT extends ScriptableObject {
 	@JSConstructor
 	public void newGIT(Object dir, Object alogin, Object apass) throws IOException { 	
 		// Remove JGit logging except for errors
-		//((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.eclipse.jgit.util.FS.class)).setLevel(ch.qos.logback.classic.Level.ERROR);
-		//((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.eclipse.jgit.util.FS_Win32.class)).setLevel(ch.qos.logback.classic.Level.ERROR);
-		//((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.eclipse.jgit.util.FS_Win32_Cygwin.class)).setLevel(ch.qos.logback.classic.Level.ERROR);
-		//((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.eclipse.jgit.util.FS_POSIX.class)).setLevel(ch.qos.logback.classic.Level.ERROR);
+		((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.eclipse.jgit.util.FS.class)).setLevel(ch.qos.logback.classic.Level.ERROR);
+		((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.eclipse.jgit.util.FS_Win32.class)).setLevel(ch.qos.logback.classic.Level.ERROR);
+		((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.eclipse.jgit.util.FS_Win32_Cygwin.class)).setLevel(ch.qos.logback.classic.Level.ERROR);
+		((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.eclipse.jgit.util.FS_POSIX.class)).setLevel(ch.qos.logback.classic.Level.ERROR);
 		open(dir);
 		if (alogin != null && !(alogin instanceof Undefined) &&
 			apass != null && !(apass instanceof Undefined)) {
 			login = (String) alogin;
-			pass = (String) apass;
+			pass = AFCmdBase.afc.dIP((String) apass);
 		}
 	}
 	
