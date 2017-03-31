@@ -1109,8 +1109,13 @@ function __opack_exec(args) {
 
 	if (typeof packag.main !== 'undefined' && packag.main.length > 0)
 		af.load(target + "/" + packag.main);
-	else
-		logErr("Can't load package " + packag.name);
+	else {
+		if (isDef(packag.mainJob) && packag.mainJob.length > 0) {
+			oJobRunFile(target + "/" + packag.mainJob);
+		} else {
+			logErr("Can't load package " + packag.name);
+		}
+	}
 }
 
 // UPDATE
@@ -1421,6 +1426,7 @@ function genpack(args) {
 	packageNew.description         = (typeof packag.description !== 'undefined')         ? packag.description         : "A nice description";
 	packageNew.name                = (typeof packag.name !== 'undefined')                ? packag.name                : "A_nice_name";
 	packageNew.main                = (typeof packag.main !== 'undefined')                ? packag.main                : "";
+	packageNew.mainJob             = (typeof packag.mainJob !== 'undefined')             ? packag.mainJob             : "";
 	packageNew.license             = (typeof packag.license !== 'undefined')             ? packag.license             : "The licence description";
 	packageNew.version             = (typeof packag.version !== 'undefined')             ? packag.version             : "20010101";
 	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": "20100101", "packb": "20120101" };
