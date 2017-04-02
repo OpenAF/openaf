@@ -3178,3 +3178,11 @@ $channels = function(a) {
  * </odoc>
  */
 $ch = $channels;
+
+// Set logging to ERROR 
+{
+   var i = Packages.org.slf4j.LoggerFactory.getLogger(Packages.ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME).getLoggerContext().getLoggerList().iterator();
+   while(i.hasNext()) { 
+      Packages.org.slf4j.LoggerFactory.getLogger(i.next().getName()).setLevel(Packages.ch.qos.logback.classic.Level.ERROR);
+   }
+}
