@@ -93,6 +93,16 @@ public class DB {
 	
 	/**
 	 * <odoc>
+	 * <key>DB.getConnect() : JavaObject</key>
+	 * Returns a Java database connection. 
+	 * </odoc>
+	 */
+	public Object getConnect() {
+		return con;
+	}
+	
+	/**
+	 * <odoc>
 	 * <key>DB.closeStatement(aStatement)</key>
 	 * Closes the corresponding prepared statement. If an error occurs during this process
 	 * an exception will be thrown.
