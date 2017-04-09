@@ -43,7 +43,7 @@
 		{
 			"description": "js-yaml",
 			"path"       : [ "js/js-yaml.js" ],
-			"version"    : "3.8.1",
+			"version"    : "3.8.3",
 			"changes"    : false,
 			"type"       : [ "js" ],
 			"license"    : "https://github.com/nodeca/js-yaml/blob/master/LICENSE",
