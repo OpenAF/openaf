@@ -1500,6 +1500,31 @@ function addOnOpenAFShutdown(aFunction) {
 
 /**
  * <odoc>
+ * <key>pidCheck(aPid) : Boolean</key>
+ * Verifies if aPid is running (returning true) or not (returning false).
+ * </odoc>
+ */
+function pidCheck(aPid) {
+	
+	try {
+		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
+			if (af.sh("cmd /c tasklist /NH /FI \"PID eq " + aPid + "\"").match(aPid)) {
+				return true;
+			} 
+		} else {
+			af.sh("kill -0 " + aPid);
+			if (__exitcode == 0) {
+				return true;
+			} 
+		}
+	} catch(e) {
+	}
+	
+	return false;
+}
+
+/**
+ * <odoc>
  * <key>pidCheckIn(aFilename) : boolean</key>
  * Uses the contents of aFilename to determine if there is an existing process running with the pid 
  * recorded on the file. If it's running it will return false, if not it will return true and record
@@ -1512,18 +1537,7 @@ function pidCheckIn(aFilename) {
 	
 	try {
 		checkPid = io.readFileString(aFilename);
-		if (checkPid.match(/\d+/)) {
-			if (java.lang.System.getProperty("os.name").match(/Windows/)) {
-				if (af.sh("cmd /c tasklist /NH /FI \"PID eq " + checkPid + "\"").match(checkPid)) {
-					return false;
-				} 
-			} else {
-				af.sh("kill -0 " + checkPid);
-				if (__exitcode == 0) {
-					return false;
-				} 
-			}
-		}
+		if (pidCheck(checkPid)) return false;
 	} catch(e) {
 	}
 	
@@ -1534,6 +1548,7 @@ function pidCheckIn(aFilename) {
 	})
 	return true;
 }
+
 
 /**
  * <odoc>

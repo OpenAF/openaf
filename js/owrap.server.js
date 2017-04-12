@@ -110,7 +110,8 @@ OpenWrap.server.prototype.daemon = function(aTimePeriod, aPeriodicFunction) {
  * <key>ow.server.simpleCheckIn(aName)</key>
  * If aName is provided it will check for 'aName.pid'. If the pid is running it will stop the current execution unless 
  * stop or restart is provided as a script parameter.
- * If stop is provided as a script parameter it will stop execution and try to kill the existing pid.
+ * If stop is provided as a script parameter it will stop execution and try to kill the existing pid (force stop will
+ * try to kill it anyway).
  * If restart is provided as a script parameter it will continue execution and try to kill the existing pid.
  * </odoc>
  */
@@ -119,21 +120,30 @@ OpenWrap.server.prototype.simpleCheckIn = function(aName) {
 	
 	var p = processExpr();
 	var s = ow.server.checkIn(aName + ".pid", function(aPid) {
-		if (isDef(p.restart) || isDef(p.stop)) {
-			if (!pidKill(ow.server.getPid(aPid), false)) {
+		if (isDef(p.restart) || isDef(p.stop) || isDef(p.forcestop)) {
+			if (isDef(p.forcestop) || !pidKill(ow.server.getPid(aPid), false)) {
 				pidKill(ow.server.getPid(aPid), true);
-				log("Stopped " + aName);
 			}
-			if (isDef(p.restart)) {
+			var didDie = !(pidCheck(aPid));
+			
+			if (isDef(p.restart) &&  didDie) {
+				log("Restarting " + aName);
 				return true;
 			}
-			if (isDef(p.stop)) {
-				exit(0);
+			if (isDef(p.stop) || isDef(p.forcestop)) {
+				if (didDie) {
+					log("Stopped " + aName);
+					exit(0);
+				} else {
+					log("Failed to stop " + aName + " (" + aPid + ")");
+					exit(-1);
+				}
 			}
 		}
 		if (isDef(p.status)) {
 			var pid = ow.server.getPid(aPid);
-			if (isDef(pid)) log("Running on pid = " + pid);
+			var word = (pidCheck(pid) ? "Running on" : "Not running but registered with")
+			if (isDef(pid)) log(word + " pid = " + pid);
 			return false;
 		}
 		return false;
