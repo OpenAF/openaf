@@ -156,6 +156,16 @@
   			]
   		},
   		{
+  			"description": "JAnsi",
+  			"path"       : [ "lib/jansi-1.14.jar" ],
+  			"version"    : "1.14",
+  			"changes"    : false,
+  			"type"       : [ "java" ],
+  			"license"    : "https://github.com/fusesource/jansi/blob/master/license.txt",
+  			"deps"       : [
+  			]
+  		}
+  		{
   			"description": "Apache Commons IO",
   			"path"       : [ "lib/commons-io-2.4.jar" ],
   			"version"    : "2.4",

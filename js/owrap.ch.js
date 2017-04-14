@@ -8,7 +8,7 @@ OpenWrap.ch = function() {
 
 OpenWrap.ch.prototype.subscribers = {};
 OpenWrap.ch.prototype.jobs = {};
-OpenWrap.ch.prototype.vers = {};
+OpenWrap.ch.prototype.vers = {}; 
 OpenWrap.ch.prototype.channels = {};
 OpenWrap.ch.prototype.type = {};
 
@@ -461,8 +461,8 @@ OpenWrap.ch.prototype.__types = {
 		},
 		forEach      : function(aName, aFunction) {
 			var keys = this.getKeys(aName);
-			for(var o in keys) {
-				aFunction(keys[o], this.get(aName, keys[o]));
+			while(o in keys) {
+				aFunction(o, this.get(aName, o));
 			}
 		},
 		getKeys      : function(aName, full) {

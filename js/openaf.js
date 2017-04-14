@@ -292,6 +292,63 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount) {
 }
 
 /**
+ * <odoc>
+ * <key>ansiColor(aAnsi, aString, force) : String</key>
+ * Returns the ANSI codes together with aString, if determined that the current terminal can handle ANSI codes (overridden
+ * by force = true), with the attributes defined in aAnsi. Please use with ansiStart() and ansiStop().
+ * The attributes separated by commas can be:\
+ * \
+ * BLACK; RED; GREEN; YELLOW; BLUE; MAGENTA; CYAN; WHITE;\
+ * FG_BLACK; FG_RED; FG_GREEN; FG_YELLOW; FG_BLUE; FG_MAGENTA; FG_CYAN; FG_WHITE;\
+ * BG_BLACK; BG_RED; BG_GREEN; BG_YELLOW; BG_BLUE; BG_MAGENTA; BG_CYAN; BG_WHITE;\
+ * BOLD; FAINT; INTENSITY_BOLD; INTENSITY_FAINT; ITALIC; UNDERLINE; BLINK_SLOW; BLINK_FAST; BLINK_OFF; NEGATIVE_ON; NEGATIVE_OFF; CONCEAL_ON; CONCEAL_OFF; UNDERLINE_DOUBLE; UNDERLINE_OFF;\
+ * \
+ * </odoc>
+ */
+function ansiColor(aAnsi, aString, force) {
+	plugin("Console"); 
+	var con = (new Console()).getConsoleReader();
+	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
+	var jansi = JavaImporter(Packages.org.fusesource.jansi);
+	var res = "";
+	
+	if (ansis) {
+		var res = Packages.org.fusesource.jansi.AnsiRenderer.render("@|" + aAnsi.toUpperCase() + " " + aString + "|@")
+		return res;
+	} else {
+		return aString;
+	}
+}
+
+/**
+ * <odoc>
+ * <key>ansiStart(force)</key>
+ * Prepares to output ansi codes if the current terminal is capable off (unless force = true). Use with ansiColor() and ansiStop().
+ * </odoc>
+ */
+function ansiStart(force) {
+	plugin("Console"); 
+	var con = (new Console()).getConsoleReader();
+	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
+	var jansi = JavaImporter(Packages.org.fusesource.jansi);
+	if (ansis) jansi.AnsiConsole.systemInstall();
+}
+
+/**
+ * <odoc>
+ * <key>ansiStop(force)</key>
+ * Disables the output of ansi codes if the current terminal is capable off (unless force = true). Use with ansiColor() and ansiStart().
+ * </odoc>
+ */
+function ansiStop(force) {
+	plugin("Console"); 
+	var con = (new Console()).getConsoleReader();
+	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
+	var jansi = JavaImporter(Packages.org.fusesource.jansi);
+	if (ansis) jansi.AnsiConsole.systemUninstall();
+}
+
+/**
  * Builds a JSON WeDo date type
  *
  * <blockquote><code>
@@ -499,26 +556,6 @@ function log(msg) {
 }
 
 /**
- * <key>logWarn(msg)</key>
- * Outputs to the current warning in a line composed of the current date, indication of WARN and the provided msg.
- * Note: you can use startLog, stopLog and dumpLog to keep an internal record of theses messages.
- * </odoc>
- */
-function logWarn(msg) {
-        var data = new Date();
-        if (__logStatus) 
-                $ch("__log").set({
-                        "d": data,
-                        "t": "WARN"
-                }, {
-                        "d": data,
-                        "t": "WARN",
-                        "m": msg
-                });
-        print("" + data + " | WARN | " + msg);
-}
-
-/**
  * <odoc>
  * <key>tlog(msg, someData)</key>
  * Outputs to the current stdout a line composed of the current date, indication of INFO and the provided msg using the templify function.
@@ -528,18 +565,6 @@ function logWarn(msg) {
  */
 function tlog(msg, someData) {
 	log(templify(msg, someData));
-}
-
- 
-/**
- * <odoc>
- * <key>tlogWarn(msg, someData)</key>
- * Outputs to the current warning in a line composed of the current date, indication of WARN and the provided msg using the templify function.
- * Optinionally you can provide also someData.
- * </odoc>
- */
-function tlogWarn(msg, someData) {
-        logWarn(templify(msg, someData));
 }
 
 /**
@@ -592,18 +617,54 @@ function logErr(msg) {
 			"t": "ERROR",
 			"m": msg
 		});
-	printErr("" + data + " | ERROR | " + msg);
+	ansiStart();
+	printErr("" + data + " | " + ansiColor("red", "ERROR") + " | " + msg);
+	ansiStop();
 }
 
 /**
  * <odoc>
- * <key>tlognl(msg, someData)</key>
+ * <key>logWarn(msg)</key>
+ * Outputs to the current warning in a line composed of the current date, indication of WARN and the provided msg.
+ * Note: you can use startLog, stopLog and dumpLog to keep an internal record of theses messages.
+ * </odoc>
+ */
+function logWarn(msg) {
+	var data = new Date();
+	if (__logStatus) 
+		$ch("__log").set({
+			"d": data,
+			"t": "WARN"
+		}, {
+			"d": data,
+			"t": "WARN",
+			"m": msg
+		});
+	ansiStart();
+	print("" + data + " | " + ansiColor("red", "WARN") + " | " + msg);
+	ansiStop();
+}
+
+/**
+ * <odoc>
+ * <key>tlogErr(msg, someData)</key>
  * Outputs to the current stderr a line composed of the current date, indication of ERROR and the provided msg using the templify function.
  * Optinionally you can provide also someData.
  * </odoc>
  */
 function tlogErr(msg, someData) {
 	logErr(templify(msg, someData));
+}
+
+/**
+ * <odoc>
+ * <key>tlogWarn(msg, someData)</key>
+ * Outputs to the current warning in a line composed of the current date, indication of WARN and the provided msg using the templify function.
+ * Optinionally you can provide also someData.
+ * </odoc>
+ */
+function tlogWarn(msg, someData) {
+	logWarn(templify(msg, someData));
 }
 
 /**
@@ -751,7 +812,6 @@ function getVersion() {
 	return af.getVersion();
 }
 
-
 /**
  * <odoc>
  * <key>getOpenAFPath() : String</key>
@@ -759,10 +819,14 @@ function getVersion() {
  * </odoc>
  */
 function getOpenAFPath() {
-	var classPath = new java.io.File(java.lang.System.getProperty("java.class.path")).getAbsolutePath() + "";
-	classPath = classPath.replace(/openaf\.jar$/, "").replace(/\\/g, "/");
+	if (isDef(__forcedOpenAFJar)) {
+		return String(new java.io.File(__forcedOpenAFJar).getParent());
+	} else {
+		var classPath = new java.io.File(java.lang.System.getProperty("java.class.path")).getAbsolutePath() + "";
+		classPath = classPath.replace(/openaf\.jar$/, "").replace(/\\/g, "/");
 
-	return classPath.replace(/[/\\][^/\\]+$/, "");
+		return classPath.replace(/[/\\][^/\\]+$/, "");
+	}
 }
 
 /**
@@ -844,7 +908,7 @@ function getOPackLocalDB() {
 
 	try {
 		plugin("ZIP");
-		var zip = new ZIP(af.readFileBytes(fileDB));
+		var zip = new ZIP(io.readFileBytes(fileDB));
 		packages = af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON)));
 		zip.close();
 		
@@ -1007,14 +1071,14 @@ function isUnDef(aObject) { return (typeof aObject == 'undefined') ? true : fals
 /**
  * <odoc>
  * <key>listFilesRecursive(aPath) : Map</key>
- * Performs the af.listFiles function recursively given aPath. The returned map will be equivalent to
- * the af.listFiles function (see more in af.listFiles). 
+ * Performs the io.listFiles function recursively given aPath. The returned map will be equivalent to
+ * the io.listFiles function (see more in io.listFiles). 
  * </odoc>
  */
 function listFilesRecursive(aPath) {
 	if (isUndefined(aPath)) return [];
 
-	var files = af.listFiles(aPath);
+	var files = io.listFiles(aPath);
 	if(isUndefined(files)) return [];
 	var ret = [];
 	files = files.files;
@@ -1453,7 +1517,7 @@ function getNumberOfCores() {
   	plugin("Threads");
 
   	var t = new Threads();
-  	__cpucores = t.getNumberOfCores();
+  	__cpucores = Number(t.getNumberOfCores());
 
  	return __cpucores;
 }
@@ -1548,7 +1612,6 @@ function pidCheckIn(aFilename) {
 	})
 	return true;
 }
-
 
 /**
  * <odoc>
@@ -1682,7 +1745,6 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 	else
 		return aAggFunction(results);
 }
-
 
 /**
  * <odoc>
@@ -2146,6 +2208,13 @@ OpenWrap.prototype.loadFormat = function() { loadLib(getOpenAFJar() + "::js/owra
 OpenWrap.prototype.loadTest = function() { loadLib(getOpenAFJar() + "::js/owrap.test.js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
 /**
  * <odoc>
+ * <key>ow.loadServer()</key>
+ * Loads OpenWrap Server functionality. Basically functions to wrap access to server functionality.
+ * </odoc>
+ */
+OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+/**
+ * <odoc>
  * <key>ow.loadTemplate()</key>
  * Loads OpenWrap template functionality. Basically functions to wrap access to Handlebars functionality.
  * </odoc>
@@ -2158,13 +2227,6 @@ OpenWrap.prototype.loadTemplate = function() { loadLib(getOpenAFJar() + "::js/ow
  * </odoc>
  */
 OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.obj.js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
-/**
- * <odoc>
- * <key>ow.loadServer()</key>
- * Loads OpenWrap server functionality. 
- * </odoc>
- */
-OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
 /**
  * <odoc>
  * <key>ow.loadCh()</key>
@@ -2186,42 +2248,6 @@ OpenWrap.prototype.loadPortal = function() { loadLib(getOpenAFJar() + "::js/owra
  * </odoc>
  */
 OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
-
-/**
- * <odoc>
- * <key>oJobRunFile(aFile, args, aId)</key>
- * Runs a oJob aFile with the provided args (arguments).
- * Optionally you can provide aId to segment these specific jobs.
- * </odoc>
- */
-function oJobRunFile(aYAMLFile, args, aId) {
-	ow.loadOJob().runFile(aYAMLFile, args, aId);
-}
-
-/**
- * <odoc>
- * <key>oJobRun(aJson, args, aId)</key>
- * Runs a oJob from aJson definition with the provided args (arguments).
- * Optionally you can provide aId to segment these specific jobs.
- * </odoc>
- */
-function oJobRun(aJson, arg, aId) {
-	var s = ow.loadOJob().loadJSON(aJson);
-	ow.oJob.load(s.jobs, s.todo, s.ojob, args, aId);
-	ow.oJob.start(args, true, aId);
-}
-
-/**
- * <odoc>
- * <key>oJobRunJob(aJob, args, aId)</key>
- * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
- * Optionally you can provide aId to segment this specific job.
- * </odoc>
- */
-function oJobRunJob(aJob, args, aId) {
-	ow.loadOJob();
-	ow.oJob.runJob(aJob, args, aId);
-}
 
 
 /**
@@ -2433,7 +2459,7 @@ function traverse(aObject, aFunction, aParent) {
 	for(var i in keys) {
 		aFunction(keys[i], aObject[keys[i]], parent);
 
-		if(typeof aObject[keys[i]] == 'object') {
+		if (typeof aObject[keys[i]] == 'object') {
 			var newParent = parent + ((isNaN(Number(keys[i]))) ? "." + keys[i] : "[\"" + keys[i] + "\"]");
 			traverse(aObject[keys[i]], aFunction, newParent);
 		}
@@ -2476,6 +2502,16 @@ function searchValues(aObject, aSearchValue, useCase) {
 		}
 	});
 	return res;
+}
+
+/**
+ * <odoc>
+ * <key>searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) : Array</key>
+ * Shortcut to ow.obj.searchArray.
+ * </odoc>
+ */
+function searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) {
+	return ow.loadObj.searhArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel);
 }
 
 /**
@@ -3005,7 +3041,7 @@ if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 (function() {
 	var prof = "";
 	try {
-		prof = af.readFileString(java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE);
+		prof = io.readFileString(java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE);
 		af.compile(prof);
 	} catch(e) {
 		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
@@ -3013,7 +3049,7 @@ if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 	
 	prof ="";
 	try {
-		prof = af.readFileString(getOpenAFJar() + "::" + OPENAFPROFILE);
+		prof = io.readFileString(getOpenAFJar() + "::" + OPENAFPROFILE);
 		af.compile(prof);
 	} catch(e) {
 		if (!e.message.match(/java\.io\.FileNotFoundException/) &&

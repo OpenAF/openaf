@@ -121,6 +121,27 @@ function ojob_draw() {
 			return [];
 		}
 	}
+	
+	function getPaths(aJobName, res) {
+		var j = $from(oj.jobs).equals("name", aJobName).first();
+		
+		if (isUnDef(res)) res = {
+			from: [],
+			to  : []
+		};
+		
+		if (isUnDef(j)) return res;
+	
+		res = {
+			to  : res.to.concat(j.to),
+			from: (isDef(j.from) ? [ j.from ] : []).concat(res.from)
+		};
+		
+		res = getPaths(j.from, res);
+		res = getPaths(j.to, res);
+		
+		return res;
+	}
 
 	function getPath(aJobName) {
 		var msg = "";
@@ -130,7 +151,7 @@ function ojob_draw() {
 			msg += "!!NOT FOUND!!";
 		} else {
 			for(var i in deps) {
-				msg += " <- " + deps[i];
+				msg += " :" + deps[i];
 				var r = getPath(deps[i]);
 				if (r.length > 0) {
 					msg += " (" + r + ")";
@@ -146,12 +167,30 @@ function ojob_draw() {
 		print("Sequential dependencies are enabled.\n");
 	}
 	
+	ansiStart();
+	print(ansiColor("bold,underline", "\nDependencies:"));
 	$from(oj.todo).select(function(v) {
 		var nn = (isDef(v.name) ? v.name : v);
-		printnl("[" + nn + "]");
+		printnl("[" + ansiColor("bold", nn) + "]");
 		var deps = getDeps(nn);
 		print(getPath(nn));
 	});
+	
+	print(ansiColor("bold,underline", "\nPaths:"));
+	$from(oj.todo).select(function(v) {
+		var nn = (isDef(v.name) ? v.name : v);
+		var paths = getPaths(nn);
+		var msg = "";
+		for (var i in paths.from) {
+			msg += (isDef(paths.from[i]) ? paths.from[i] + " -> " : "");
+		}
+		msg += "[" + ansiColor("bold", nn) + "]";
+		for (var i in paths.to) {
+			msg += (isDef(paths.to[i]) ? " -> " + paths.to[i] : "");
+		}
+		print(msg);
+	});
+	ansiStop();
 	
 	ojob_shouldRun = false;
 }
