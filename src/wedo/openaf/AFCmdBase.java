@@ -1,7 +1,6 @@
 package wedo.openaf;
 
 import java.io.File;
-import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.ZipFile;
@@ -14,7 +13,8 @@ import wedo.openaf.rhino.RhinoEngine;
  * 
  */
 public class AFCmdBase {
-	final public static String VERSION = "20170413";
+	final public static String VERSION = "20170414";
+	final public static String LICENSE = "See license info in ";
 	
 	public static JSEngine jse;
 	public static String afcmd = "AFCmdBase"; 
