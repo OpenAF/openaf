@@ -641,7 +641,7 @@ function logWarn(msg) {
 			"m": msg
 		});
 	ansiStart();
-	print("" + data + " | " + ansiColor("red", "WARN") + " | " + msg);
+	print("" + data + " | " + ansiColor("yellow", "WARN") + " | " + msg);
 	ansiStop();
 }
 

@@ -871,7 +871,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		if (isDef(f)) {
 			j.type = f.type;
 			j.typeArgs = f.typeArgs;
-            j.args = f.args;
+            		j.args = f.args;
 			j.deps = f.deps;
 			j.exec = f.exec;
 			j.help = f.help;
@@ -884,7 +884,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		"name": aName,
 		"type": jobType,
 		"typeArgs": (isDef(j.typeArgs) ? merge(j.typeArgs, jobTypeArgs) : jobTypeArgs),
-        "args": (isDef(j.args) ? this.__processArgs(j.args, jobArgs) : this.__processArgs(jobArgs)),
+        	"args": (isDef(j.args) ? this.__processArgs(j.args, jobArgs) : this.__processArgs(jobArgs)),
 		"deps": (isDef(j.deps) ? j.deps.concat(jobDeps) : jobDeps),
 		"exec": (isDef(j.exec) ? j.exec : "") + fstr,
 		"help": (isDef(j.help) ? j.help : "") + jobHelp,
@@ -897,7 +897,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		if (isDef(f)) {
 			j.type = (isDef(f.type) ? f.type : j.type);
 			j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
-            j.args = (isDef(f.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(j.args));
+            		j.args = (isDef(f.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(j.args));
 			j.deps = (isDef(f.deps) ? j.deps.concat(f.deps) : j.deps);
 			j.exec = j.exec + (isDef(f.exec) ? f.exec : "");
 			j.help = j.help + (isDef(f.help) ? f.help : "");
