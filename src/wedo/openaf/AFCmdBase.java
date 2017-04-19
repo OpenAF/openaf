@@ -13,8 +13,8 @@ import wedo.openaf.rhino.RhinoEngine;
  * 
  */
 public class AFCmdBase {
-	final public static String VERSION = "20170418";
-	final public static String LICENSE = "See license info in https://github.com/nmaguiar/openaf/LICENSE";
+	final public static String VERSION = "20170419";
+	final public static String LICENSE = "See license info in ";
 	
 	public static JSEngine jse;
 	public static String afcmd = "AFCmdBase"; 

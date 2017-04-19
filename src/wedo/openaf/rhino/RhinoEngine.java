@@ -51,10 +51,10 @@ public class RhinoEngine implements JSEngine {
 	}
 	
 	@Override
-	public void start() {
+	public void start(int compLevel) {
 		// Initialize Rhino
 		cx = org.mozilla.javascript.Context.enter();
-		cx.setOptimizationLevel(9);
+		cx.setOptimizationLevel(compLevel);
 		cx.setLanguageVersion(Context.VERSION_1_8); 
 		globalscope = cx.initStandardObjects();
 		ready = true;

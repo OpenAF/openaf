@@ -46,8 +46,8 @@ public class IO extends wedo.openaf.core.IO {
 	}
 	
 	@JSFunction
-	public static Object listFiles(String filepath) throws IOException {
-		return wedo.openaf.core.IO.listFiles(filepath);
+	public static Object listFiles(String filepath, boolean posix) throws IOException {
+		return wedo.openaf.core.IO.listFiles(filepath, posix);
 	}	
 	
 	@JSFunction

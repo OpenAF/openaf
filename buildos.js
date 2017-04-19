@@ -113,7 +113,7 @@ if (EXTERNAL)
 else 
    javaAFCmd = javaAFCmd.replace(/final public static String LICENSE = "([^\"]+)";/m, "final public static String LICENSE = \"" + INTERNAL_LICENSE + "\";");
 
-af.writeFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java", javaAFCmd);
+io.writeFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java", javaAFCmd);
 
 log("Changing openaf.js variables according with release");
 var jsOpenAF = io.readFileString(OPENAF_BUILD_HOME + "/js/openaf.js");
@@ -122,7 +122,7 @@ if (EXTERNAL)
 else
    jsOpenAF = jsOpenAF.replace(/var noHomeComms = ([a-z]+);/m, "var noHomeComms = false;");
 
-af.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", jsOpenAF);
+io.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", jsOpenAF);
 
 af.mkdir(OPENAF_BIN);
 var cmd = JAVAC + " -cp " + classpath + " -Xlint:deprecation -d " + OPENAF_BIN + " " + buildSource();
@@ -206,7 +206,7 @@ parallel4Array(jsList, function(i) {
                 }
 	}
 	return i;
-}, 2);
+});
 
 
 // Build Manifest
