@@ -76,10 +76,10 @@ for(var i in homeServerURLs) {
 			zip.load(down.responseBytes());
 			var oldVersionFile = classPath.replace(/openaf.jar/, "openaf.jar.old");
 			log("Backup current version to " + oldVersionFile);
-			af.writeFileBytes(oldVersionFile, af.readFileBytes(classPath));
+			io.writeFileBytes(oldVersionFile, io.readFileBytes(classPath));
 			log("Upgrading openaf.jar");
 			try {
-				af.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar"), zip.getFile("openaf.jar"));
+				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar"), zip.getFile("openaf.jar"));
 			} catch(e) {
 				if(!e.message.match(/NoClassDefFoundError/)) {
 					throw e;

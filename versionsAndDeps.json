@@ -52,7 +52,7 @@
 		},		
 		{
 			"description": "jQuery minified",
-			"path"       : [ "js/underscore.js" ],
+			"path"       : [ "js/jquery.js" ],
 			"version"    : "3.1.1",
 			"changes"    : false,
 			"type"       : [ "js" ],
@@ -61,12 +61,12 @@
 			]
   		},
   		{
-  			"description": "Underscore",
-  			"path"       : [ "js/underscore.js" ],
-  			"version"    : "1.8.3",
+  			"description": "Lodash",
+  			"path"       : [ "js/lodash.js" ],
+  			"version"    : "4.17.4",
   			"changes"    : false,
   			"type"       : [ "js" ],
-  			"license"    : "https://github.com/jashkenas/underscore/blob/master/LICENSE",
+  			"license"    : "https://github.com/lodash/lodash/blob/master/LICENSE",
   			"deps"       : [
   			]
   		},

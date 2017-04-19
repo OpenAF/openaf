@@ -618,15 +618,40 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
 
-	    	ow.loadServer().checkIn(this.__ojob.unique.pidFile, function(aPid) {
-	    		if (parent.__ojob.unique.killPrevious || isDef(args.stop) || isDef(args.restart)) {
-	    			if (!pidKill(ow.server.getPid(aPid), false))
+	    	var s = ow.loadServer().checkIn(this.__ojob.unique.pidFile, function(aPid) {
+	    		if (parent.__ojob.unique.killPrevious || isDef(args.stop) || isDef(args.restart) || isDef(args.forcestop)) {
+	    			if (isDef(args.forcestop) || !pidKill(ow.server.getPid(aPid), false)) {
 	    				pidKill(ow.server.getPid(aPid), true);
-	    			if (isDef(args.stop)) return false; else return true;
-	    		} else {
-	    			return false;
+	    			}
+
+		    		var didDie = !(pidCheck(aPid));
+		    		
+		    		if ((isDef(args.restart) || isDef(args.killPrevious)) && didDie) {
+		    			log("Restarting");
+		    			return true;
+		    		}
+		    		if (isDef(args.stop) || isDef(args.forcestop)) {
+		    			if (didDie) {
+		    				log("Stopped"); exit(0);
+		    			} else {
+		    				log("Failed to stop (" + aPid + ")"); exit(-1);
+		    			}
+		    		}
 	    		}
+		    	if (isDef(args.status)) {
+		    		var pid = ow.server.getPid(aPid);
+					var word = (pidCheck(pid) ? "Running on" : "Not running but registered with")
+					if (isDef(pid)) log(word + " pid = " + pid);
+					return false;
+		    	}
+		    	
+		    	return false;
 	    	});
+	    	
+	    	if (isDef(args.status) && s) {
+	    		log("Not running");
+	    		exit(0);
+	    	}
 		}
 	}
 

@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -103,16 +105,17 @@ public class IO extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>io.listFiles(aFilePath)</key>
-	 * Returns a files array with a map with filename, filepath, lastModified, createTiem, lastAccess, 
-	 * size, permissions, isDirectory and isFile for each entry on a file path.
+	 * <key>io.listFiles(aFilePath, usePosix)</key>
+	 * Returns a files array with a map with filename, filepath, lastModified, createTime, lastAccess, 
+	 * size, permissions, isDirectory and isFile for each entry on a file path. Alternatively you can specify
+	 * to usePosix=true and it will add to the map the owner, group and full permissions of each file and folder.
 	 * </odoc>
 	 * @param filepath
 	 * @return
 	 * @throws IOException
 	 */
 	@JSFunction
-	public static Object listFiles(String filepath) throws IOException {
+	public static Object listFiles(String filepath, boolean posix) throws IOException {
         JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
         JSEngine.JSList filesMap = AFCmdBase.jse.getNewList(null);
         File f = new File(filepath);
@@ -122,7 +125,18 @@ public class IO extends ScriptableObject {
                 if (files != null) {
                         for(File file : files) {
                                 if (file != null) {
-                                        BasicFileAttributes attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                                		BasicFileAttributes attr;
+                                		if (posix) {
+                                			try {
+                                				attr = Files.readAttributes(file.toPath(), PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                                			} catch(Exception e) {
+                                				posix = false;
+                                				attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                                			}
+                                		} else {
+                                			attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                                		}
+                                		
                                         JSEngine.JSMap fileMap = AFCmdBase.jse.getNewMap(no.getMap());
                                         
                                                 StringBuilder sb = new StringBuilder();
@@ -138,6 +152,11 @@ public class IO extends ScriptableObject {
                                                 if (file.canRead())    sb.append("r");
                                                 if (file.canWrite())   sb.append("w");
                                                 fileMap.put("permissions", sb.toString());
+                                                if (posix) {
+                                                	fileMap.put("group", ((PosixFileAttributes) attr).group().getName());
+                                                	fileMap.put("user", ((PosixFileAttributes) attr).owner().getName());
+                                                	fileMap.put("posixPermissions", PosixFilePermissions.toString(((PosixFileAttributes) attr).permissions()));
+                                                }
                                                 
                                         filesMap.add(fileMap.getMap());
                                 }

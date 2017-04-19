@@ -11,7 +11,7 @@ import java.util.Iterator;
  */
 public interface JSEngine {
 
-	public void start(); 
+	public void start(int optimizationLevel); 
 	public void stop();
 	
 	public void defineSerialize();

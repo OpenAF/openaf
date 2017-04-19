@@ -2275,14 +2275,19 @@ function loadHandlebars() {
 /**
  * <odoc>
  * <key>loadUnderscore()</key>
- * Loads the Underscore javascript library into scope.\
+ * Loads the Underscore javascript library into scope (using the loadash alternative).\
  * \
- * See more in: http://underscorejs.org
+ * See more in: http://underscorejs.org and https://lodash.com/docs
  * </odoc>
  */
 function loadUnderscore() {
-	var res = loadLib(getOpenAFJar() + "::js/underscore.js");
+	var res = loadLib(getOpenAFJar() + "::js/lodash.js");
 	if (res) pods.declare("Underscore", loadUnderscore());
+	if (res) pods.declare("Lodash", loadUnderscore());
+}
+
+function loadLodash() {
+	loadUnderscore();
 }
 
 /**
@@ -3229,7 +3234,6 @@ $channels = function(a) {
  * </odoc>
  */
 $ch = $channels;
-
 // Set logging to ERROR 
 {
    var i = Packages.org.slf4j.LoggerFactory.getLogger(Packages.ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME).getLoggerContext().getLoggerList().iterator();

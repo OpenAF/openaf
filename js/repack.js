@@ -37,7 +37,14 @@ function getModulesToExclude() {
 		toExclude = toExclude.concat(_.without(libsOut, libsIn));
 	}
 
-	return _.uniq(toExclude);
+	toExclude = _.uniq(toExclude);
+	for(var i in toExclude) {
+		if (toExclude[i].match(/^lib\//)) {
+			toExclude[i] = toExclude[i].replace(/^lib\//, "");
+		}
+	}
+
+	return toExclude;
 }
 
 try {
@@ -90,7 +97,7 @@ if (!irj || __expr != "") {
 	
 	if (!irj) {
 		log("Backup to " + oldVersionFile);
-		af.writeFileBytes(oldVersionFile, af.readFileBytes(classPath));
+		io.writeFileBytes(oldVersionFile, io.readFileBytes(classPath));
 	}
 	
 	var toExclude = [];
@@ -101,11 +108,11 @@ if (!irj || __expr != "") {
 
 	for(i in list) {
 		var el = list[i];
-		
-		if (toExclude.indexOf(el.name) > 0) {
+
+		if (toExclude.indexOf(el.name) >= 0) {
 			log("Excluding " + el.name);
 			continue;
-		}
+		} 
 		
 		if(el.name.match(/\.jar$/)) {
 			var zipTemp = new ZIP();
@@ -132,7 +139,7 @@ if (!irj || __expr != "") {
 		}
 	}
 
-	af.writeFileBytes(classPath, zipNew.generate({"compressionLevel": 9}));
+	io.writeFileBytes(classPath, zipNew.generate({"compressionLevel": 9}));
 	zip.close();
 	zipNew.close();
 

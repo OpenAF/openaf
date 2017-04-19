@@ -36,7 +36,7 @@ function buildDeps() {
 function buildClasspath() {
 	var classpath = "";
 
-	var listfiles = af.listFiles(OPENAF_LIB);
+	var listfiles = io.listFiles(OPENAF_LIB);
 
 	if (isUndefined(listfiles)) {
 		logErr("Didn't found the OPENAF_LIB. Please configure it.");
@@ -62,7 +62,7 @@ function buildClasspath() {
 }
 
 function listFiles(aPath, aFilter, aExcludeFilter) {
-	var listfiles = af.listFiles(aPath);
+	var listfiles = io.listFiles(aPath);
 	var arrayFiles = [];
 
 	for(i in listfiles.files) {
@@ -177,7 +177,7 @@ for(i in hbsList) {
 	}
 }
 
-var jsList = af.listFiles(OPENAF_BUILD_HOME + "/js").files;
+var jsList = io.listFiles(OPENAF_BUILD_HOME + "/js").files;
 af.mkdir(OPENAF_BUILD_HOME + "/jsmin");
 //for(i in jsList) {
 parallel4Array(jsList, function(i) { 

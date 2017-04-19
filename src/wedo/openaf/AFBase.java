@@ -542,57 +542,68 @@ public class AFBase extends ScriptableObject {
 	
 	@JSFunction
 	public void writeFile(String filename, Object pmIn, String encoding, boolean sa) throws Exception {
-		wedo.openaf.core.IO.writeFile(filename, pmIn, encoding, sa);
+		throw(new Exception("af.writeFile was deprecated. Please replace with io.writeFile."));
+		//wedo.openaf.core.IO.writeFile(filename, pmIn, encoding, sa);
 	}
 	
 	@JSFunction
-	public void writeFileString(String filename, String pmIn, String encoding, boolean sa) throws java.io.IOException {
-		wedo.openaf.core.IO.writeFileString(filename, pmIn, encoding, sa);
+	public void writeFileString(String filename, String pmIn, String encoding, boolean sa) throws Exception {
+		throw(new Exception("af.writeFileString was deprecated. Please replace with io.writeFileString."));
+		//wedo.openaf.core.IO.writeFileString(filename, pmIn, encoding, sa);
 	}
 	
 	@JSFunction
-	public void writeFileXML(String filename, Object xml, String encoding, boolean sa) throws java.io.IOException {
-		wedo.openaf.core.IO.writeFileXML(filename, xml, encoding, sa);
+	public void writeFileXML(String filename, Object xml, String encoding, boolean sa) throws Exception {
+		throw(new Exception("af.writeFileXML was deprecated. Please replace with io.writeFileXML."));
+		//wedo.openaf.core.IO.writeFileXML(filename, xml, encoding, sa);
 	}
 
 	@JSFunction
 	public void writeFileBytes(String filename, Object pmIn) throws Exception {
-		wedo.openaf.core.IO.writeFileBytes(filename, pmIn);
+		throw(new Exception("af.writeFileBytes was deprecated. Please replace with io.writeFileBytes."));
+		//wedo.openaf.core.IO.writeFileBytes(filename, pmIn);
 	}
 	
 	@JSFunction
-	public void writeFileAsArray(String filename, Object lines, String encoding) throws Exception {	
-		wedo.openaf.core.IO.writeFileAsArray(filename, lines, encoding);
+	public void writeFileAsArray(String filename, Object lines, String encoding) throws Exception {
+		throw(new Exception("af.writeFileAsArray was deprecated. Please replace with io.writeFileAsArray."));
+		//wedo.openaf.core.IO.writeFileAsArray(filename, lines, encoding);
 	}
 
 	@JSFunction
-	public Object listFiles(String filepath) throws java.io.IOException {
-		return wedo.openaf.core.IO.listFiles(filepath);
+	public Object listFiles(String filepath) throws Exception {
+		throw(new Exception("af.listFiles was deprecated. Please replace with io.listFiles."));
+		//return wedo.openaf.core.IO.listFiles(filepath);
 	}
 	
 	@JSFunction
 	public Object readFile(String filename, String encoding) throws Exception {
-		return wedo.openaf.core.IO.readFile(filename, encoding);
+		throw(new Exception("af.readFile was deprecated. Please replace with io.readFile."));
+		//return wedo.openaf.core.IO.readFile(filename, encoding);
 	}
 
 	@JSFunction
-	public Object readFileAsArray(String filename, String encoding) throws java.io.IOException {
-		return wedo.openaf.core.IO.readFileAsArray(filename, encoding);
+	public Object readFileAsArray(String filename, String encoding) throws Exception {
+		throw(new Exception("af.readFileAsArray was deprecated. Please replace with io.readFileAsArray."));
+		//return wedo.openaf.core.IO.readFileAsArray(filename, encoding);
 	}
 
 	@JSFunction
-	public String readFileString(String filename, String encoding) throws java.io.IOException {
-		return wedo.openaf.core.IO.readFileString(filename, encoding);
+	public String readFileString(String filename, String encoding) throws Exception {
+		throw(new Exception("af.readFileString was deprecated. Please replace with io.readFileString."));
+		//return wedo.openaf.core.IO.readFileString(filename, encoding);
 	}
 		
 	@JSFunction
-	public Object readFileXML(String filename, int skipLines, String encoding) throws java.io.IOException {
-		return wedo.openaf.core.IO.readFileXML(filename, skipLines, encoding);
+	public Object readFileXML(String filename, int skipLines, String encoding) throws Exception {
+		throw(new Exception("af.readFileXML was deprecated. Please replace with io.readFileXML."));
+		//return wedo.openaf.core.IO.readFileXML(filename, skipLines, encoding);
 	}
 	
 	@JSFunction
-	public Object readFileBytes(String filename) throws java.io.IOException {
-		return wedo.openaf.core.IO.readFileBytes(filename);
+	public Object readFileBytes(String filename) throws Exception {
+		throw(new Exception("af.readFileBytes was deprecated. Please replace with io.readFileBytes."));
+		//return wedo.openaf.core.IO.readFileBytes(filename);
 	}	
 
 

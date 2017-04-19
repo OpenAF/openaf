@@ -1,6 +1,9 @@
 package wedo.openaf.plugins;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -18,7 +21,10 @@ import wedo.openaf.AFCmdBase;
 import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.EmailAttachment;
 import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.ImageHtmlEmail;
 import org.apache.commons.mail.MultiPartEmail;
+import org.apache.commons.mail.resolver.DataSourceFileResolver;
+import org.apache.commons.mail.resolver.DataSourceUrlResolver;
 import org.apache.commons.net.smtp.AuthenticatingSMTPClient;
 
 /**
@@ -42,6 +48,7 @@ public class Email extends ScriptableObject {
 	protected AuthenticatingSMTPClient.AUTH_METHOD credMethod;
 	protected Map<String, String> headers = new ConcurrentHashMap<String, String>();
 	protected boolean tlssecure;
+	protected boolean isHtml;
 	
 	/**
 	 * 
@@ -53,23 +60,28 @@ public class Email extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>Email.email(aServer, aSenderAddress, shouldSecure)</key>
+	 * <key>Email.email(aServer, aSenderAddress, shouldSecure, useTLS, isHTML)</key>
 	 * Creates a Email object instance using the aServer SMTP server to send
-	 * email with the from field set to aSenderAddress. Optionally you can specify if a secure protocol (TLS/SSL) should be
-	 * used with shouldSecure = true.
+	 * email with the from field set to aSenderAddress. Optionally you can specify if a secure protocol (SSL) should be
+	 * used with shouldSecure = true, TLS with useTLS = true and isHTML to use the setHTML function later.
 	 * </odoc>
 	 */
 	@JSConstructor
-	public void newEmail(String server, String sender, boolean shouldSecure, boolean tlssecure) {
+	public void newEmail(String server, String sender, boolean shouldSecure, boolean tlssecure, boolean isHTML) {
 		this.secureProto = shouldSecure;
 		this.sender = sender;
 		this.server = server;
 		this.tlssecure = tlssecure;
-		newEmailObj();
+		this.isHtml = isHTML;
+		newEmailObj(isHTML);
 	}
 	
-	protected void newEmailObj() {
-		this.email = new MultiPartEmail();
+	protected void newEmailObj(boolean isHtml) {
+		if (isHtml) {
+			this.email = new ImageHtmlEmail();
+		} else {
+			this.email = new MultiPartEmail();
+		}
 		if (secureProto) this.setSecure(true, this.tlssecure);
 		email.setHostName(this.server);
 		this.contentType = null;
@@ -130,6 +142,7 @@ public class Email extends ScriptableObject {
 	 * <odoc>
 	 * <key>Email.addHTMLHeader() : Email</key>
 	 * Adds the necessary headers to support HTML contents. 
+	 * To be deprecated in the future. Please use new Email with isHTML = true and the setHTML function.
 	 * </odoc>
 	 */
 	@JSFunction
@@ -238,13 +251,17 @@ public class Email extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>Email.setMessage(aMessage) : Email</key>
-	 * Sets the current email body message to send (raw). Please use Email.setContent to specify the mime type.
+	 * Sets the current email body message to send (raw). Please use Email.setContent to specify the mime type. For 
+	 * emails initialized with isHtml = true, sets the alternative text content to show.
 	 * </odoc>
 	 */
 	@JSFunction
 	public Email setMessage(String message) throws EmailException {
 		if (this.contentType == null) {
-			email.setMsg(message);
+			if (this.isHtml)
+				((ImageHtmlEmail) email).setTextMsg(message);
+			else
+				email.setMsg(message);
 		} else { 
 			this.setContent(message, contentType);
 		}
@@ -265,15 +282,19 @@ public class Email extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>Email.addAttachment(aPath, isInline) : Email</key>
+	 * <key>Email.addAttachment(aPath, isInline, noDisposition, aName) : Email</key>
 	 * Adds aPath file as an attachment for the current email. Optionally you can specify
-	 * if it's an inline (isInline) attachment. 
+	 * if it's an inline (isInline) attachment; noDisposition = true to not set it as inline or attachment (ignores
+	 * isInline); an internal aName.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Email addAttachment(String attach, boolean inline) throws EmailException {
+	public Email addAttachment(String attach, boolean inline, boolean noDisposition, Object name) throws EmailException {
 		EmailAttachment attachment = new EmailAttachment();
 		attachment.setPath(attach);	
+		if (name != null && name instanceof String) {
+			attachment.setName((String) name);
+		}
 		if (inline)
 			attachment.setDisposition(EmailAttachment.INLINE);
 		else
@@ -285,9 +306,80 @@ public class Email extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>Email.setSecure(shouldSecure, useTLS) : Email</key>
-	 * Sets if should use TLS/SSL when connecting to a email server. Do specify with useTLS = true if you 
-	 * want to establish a connection using TLS instead of SSL.
+	 * <key>Email.setHTML(aHTML) : Email</key>
+	 * If the Email object was initialized with isHtml = true then will set the HTML content to aHTML.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Email setHTML(String aHTML) throws Exception {
+		if (this.isHtml)
+			((ImageHtmlEmail) this.email).setHtmlMsg(aHTML);
+		else
+			throw new Exception("Not created as a HTML email.");
+		
+		return this;
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>Email.addExternalImage(aURL) : Email</key>
+	 * Retrieves an external image from aURL and set's everything for that URL to be used in HTML. 
+	 * Only available if the Email object was initialized with isHtml = true.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Email addExternalImage(String aURL) throws Exception {
+		if (this.isHtml) {
+			URL url = new URL(aURL);
+			((ImageHtmlEmail) this.email).setDataSourceResolver(new DataSourceUrlResolver(url));
+		} else {
+			throw new Exception("Not created as a HTML email.");
+		}
+		
+		return this;
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>Email.embedURL(aURL, aName) : Email</key>
+	 * Tries to embed aURL with aName and returns the cid to be used in HTML (e.g. img src="cid:xxx"). 
+	 * Only available if the Email object was initialized with isHtml = true.
+	 * </odoc>
+	 * @throws Exception 
+	 */
+	@JSFunction
+	public String embedURL(String aURL, String aName) throws Exception {
+		if (this.isHtml) {
+			((ImageHtmlEmail) this.email).setDataSourceResolver(new DataSourceUrlResolver(new URL(aURL)));
+			return ((ImageHtmlEmail) this.email).embed(aURL, aName);
+		} else {
+			throw new Exception("Not created as a HTML email.");
+		}
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>Email.embedFile(aFilePath, aName) : Email</key>
+	 * Tries to embed aFilePath with aName and returns the cid to be used in HTML (e.g. img src="cid:xxx"). 
+	 * Only available if the Email object was initialized with isHtml = true.
+	 * </odoc>
+	 * @throws Exception 
+	 */
+	@JSFunction
+	public String embedFile(String aFile, String aName) throws Exception {
+		if (this.isHtml) {
+			File f = new File(aFile);
+			((ImageHtmlEmail) this.email).setDataSourceResolver(new DataSourceFileResolver(f));
+			return ((ImageHtmlEmail) this.email).embed(f, aName);
+		} else {
+			throw new Exception("Not created as a HTML email.");
+		}
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>Email.setSecure(shouldSecure) : Email</key>
+	 * Sets if should use TLS/SSL when connecting to a email server.
 	 * </odoc>
 	 */
 	@JSFunction
@@ -323,11 +415,13 @@ public class Email extends ScriptableObject {
 	@JSFunction
 	public String send(Object asubject, String message, NativeArray toList, NativeArray ccList, NativeArray bccList, String thisSender) throws IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, EmailException {		
 		if (asubject != null && !(asubject instanceof Undefined)) {
+			if (message == null || message.length() == 0) message = " ";
+			
 			this.setSubject((String) asubject)
-			    .setMessage(message)
 			    .addTo(toList)
 			    .addCc(ccList)
-			    .addBcc(bccList);
+			    .addBcc(bccList) 
+			    .setMessage(message);
 			
 			String localSender;
 			if (thisSender != null && !thisSender.equals("undefined")) {
@@ -361,7 +455,7 @@ public class Email extends ScriptableObject {
 		
 		res = email.send();
 				
-		newEmailObj();
+		newEmailObj(this.isHtml);
 		
 		return res;
 	}

@@ -136,7 +136,7 @@ OpenWrap.obj.prototype.__getObj4Path = function(anObj, aPath) {
  * ignoreCase = true to ignore case (will only affect if useRegEx is true). And optionally also useParallel to
  * provide the number of threads to use. Example:\
  * \
- * ow.obj.searchArray(af.listFiles("/usr/bin").files, { "isFile": true, "filename": "^cal.*", "size": "&gt;=32000" }, true, true);\
+ * ow.obj.searchArray(io.listFiles("/usr/bin").files, { "isFile": true, "filename": "^cal.*", "size": "&gt;=32000" }, true, true);\
  * \
  * // you can use it, for example, in conjunction with jLinq\
  * $from(ow.obj.searchArray(listFilesRecursive("/usr/lib"), { "filepath": "/usr/lib/ruby", "size": "&gt;100000" }, true)).sort("size").select();\

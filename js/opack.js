@@ -1265,7 +1265,7 @@ function erase(args) {
 				deleteFile(args[0] + "/" + packag.files[i].replace(/^\/*/, ""));
 			}
 
-			var list = af.listFiles(args[0]);
+			var list = io.listFiles(args[0]);
 			for(i in list.files) {
 				if (list.files[i].isDirectory) {
 					rmdir(list.files[i].filepath);

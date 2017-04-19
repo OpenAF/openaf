@@ -69,6 +69,7 @@ public class AFCmdOS extends AFCmdBase  {
 	final protected static String OPTION_PIPE = "-p";
 	final protected static String OPTION_CODE = "-c";
 	final protected static String OPTION_SCRIPTFILE = "-f";
+	final protected static String OPTION_INTERPRET = "--i";
 	final protected static String PREFIX_SCRIPT = "script:";
 	final protected static String OPACK = ".package.json";
 	public static enum outputtype { OUTPUT_JSON };
@@ -310,6 +311,10 @@ public class AFCmdOS extends AFCmdBase  {
 				injectscript = true;
 				injectscriptfile = "/js/repack.js";
 				continue;
+			case OPTION_INTERPRET:
+				AFCmdBase.optLevel = -1;
+				AFCmdBase.restartEngine();
+				continue;				
 			case OPTION_CHECK:
 				check();
 				continue;

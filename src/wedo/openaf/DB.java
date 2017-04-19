@@ -41,6 +41,11 @@ public class DB extends ScriptableObject {
 	}
 	
 	@JSFunction
+	public Object getConnect() {
+		return coreDB.getConnect();
+	}
+	
+	@JSFunction
 	public void closeStatement(String aQuery) throws SQLException {
 		coreDB.closeStatement(aQuery);
 	}

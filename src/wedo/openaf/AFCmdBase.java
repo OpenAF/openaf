@@ -14,7 +14,7 @@ import wedo.openaf.rhino.RhinoEngine;
  * 
  */
 public class AFCmdBase {
-	final public static String VERSION = "20170413";
+	final public static String VERSION = "20170418";
 	final public static String LICENSE = "See license info in https://github.com/nmaguiar/openaf/LICENSE";
 	
 	public static JSEngine jse;
@@ -22,6 +22,7 @@ public class AFCmdBase {
 	public static String[] args;
 	public static AFCmdBase afc;
 	public static ZipFile zip;
+	public static int optLevel = 9;
 	
 	public String dIP(String aPass) {
 		return AFBase.decryptIfPossible(aPass);
@@ -36,9 +37,13 @@ public class AFCmdBase {
 				executor.shutdown();
 			}
 		});		
-		jse = new RhinoEngine();
-		jse.start();
+		restartEngine();
 		afc = this;
+	}
+	
+	public static void restartEngine() {
+		jse = new RhinoEngine();
+		jse.start(optLevel);
 	}
 	
 	protected void showHelp(String argHelp) {
