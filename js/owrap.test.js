@@ -265,7 +265,7 @@ OpenWrap.test.prototype.getChannel = function() {
 
 /**
  * <odoc>
- * <key>ow.test.test(testSuitesId, testSuitesName) : String</key>
+ * <key>ow.test.toJUnitXML(testSuitesId, testSuitesName) : String</key>
  * Returns a JUnit results XML using testSuitesId and testSuitesName as identifiers.
  * </odoc>
  */

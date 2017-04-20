@@ -632,6 +632,32 @@ OpenWrap.format.prototype.escapeString = function(str, except) {
 
 /**
  * <odoc>
+ * <key>ow.format.getPublicIP() : Map</key>
+ * Uses the functionality provided by http://ifconfig.co to return a map with the apparent current public ip address,
+ * public hostname and a guess of country and city. Please be aware of the request limits of the service (around 1 request
+ * per minute).
+ * </odoc>
+ */
+OpenWrap.format.prototype.getPublicIP = function() {
+	plugin("HTTP");
+	return JSON.parse((new HTTP("http://ifconfig.co/json")).response());
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.testPublicPort(aPort) : Map</key>
+ * Uses the functionality provided by http://ifconfig.co to return a map with the result of testing if aPort is within public 
+ * reach from your apparent current public ip address. Please be aware of the request limits of the service (around 1 request
+ * per minute).
+ * </odoc>
+ */
+OpenWrap.format.prototype.testPublicPort = function(aPort) {
+	plugin("HTTP");
+	return JSON.parse((new HTTP("http://ifconfig.co/port/" + String(aPort))).response());
+}
+
+/**
+ * <odoc>
  * <key>ow.format.escapeHTML(aString) : String</key>
  * Will escape, and return, aString for HTML/XML special characters.\
  * (available after ow.loadFormat())
