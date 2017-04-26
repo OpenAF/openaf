@@ -1,3 +1,4 @@
+
 plugin("Console");
 
 var __ansiflag = true;
@@ -118,7 +119,9 @@ function __desc(aClass, retList, noRecursive) {
 
 		printFunction(constructors, false);
 		printFunction(methods, true);
-	} else {
+	} 
+	//else {
+	
         var methods = [];
 
         if(aClass.match(/ *JSON */)) return ret;
@@ -136,24 +139,16 @@ function __desc(aClass, retList, noRecursive) {
 						}
 						return ret;
 					} else {
-						//if (!retList) {
-						
-						//} else {
 						var objType = Object.prototype.toString.call(af.eval(aClass)).replace(/\[object ([a-zA-Z0-9_]+)\]/, "$1");
-						
-						//ret = ret.concat(__desc(objType, retList));
-						//}
+
 						var keys = Object.keys(af.eval(aClass)).sort();
 						for(i in keys) {
-							//if (retList) {
 							ret.push(keys[i]);
-							//} else {
 							if (!retList) {
 								__outputConsoleComments("KEY: " + keys[i]);
 							}
 						}
 						
-						//if (ret.length < 1 &&
 						if (
 							(objType == 'Object') &&
 							(!aClass.match(/\.constructor$/)) && 
@@ -170,7 +165,6 @@ function __desc(aClass, retList, noRecursive) {
 									} catch(e) {}
 								}
 							}
-							//ret = ret.concat(__desc(Object.prototype.toString.call(af.eval(aClass)).replace(/\[object ([a-zA-Z0-9_]+)\]/, "$1"), retList));
 						}
 					}
 				}
@@ -181,7 +175,6 @@ function __desc(aClass, retList, noRecursive) {
 				return ret;
 			}
 
-			//methods = [ "constructor" ];
 			methods = [];
 			methods = methods.concat(Object.keys(af.eval(aClass + ".prototype")).sort());
 
@@ -218,7 +211,7 @@ function __desc(aClass, retList, noRecursive) {
 		} catch(e) {
 			return ret;
 		}
-	}
+	//}
 
 	return ret;
 }
@@ -591,7 +584,7 @@ function __clear() {
 function __readProfile(aProfile) { 
 	var prof = "";
 	try {
-		prof = af.readFileString(aProfile);
+		prof = io.readFileString(aProfile);
 		prof = prof.replace(/^([a-zA-Z0-9_]+)( +|$)(.*)/mg, function(match, $1, $2, $3) {
 			if ($1.match(RESERVEDWORDS)) {
 				var second = $3;
@@ -951,7 +944,7 @@ while(cmd != "exit") {
 	} else {
 		cmd = con.readLinePrompt(__pinprefix + "> ");
 	}
-
+	
 	if (cmd == "") {
 		__pinflag = false;
 		__pinprefix = "";
@@ -960,7 +953,7 @@ while(cmd != "exit") {
 			cmd = __pinprefix + " " + cmd;
 		}
 	}
-
+	
 	if(isDefined(jLineFileHistory)) jLineFileHistory.flush();
 }
 

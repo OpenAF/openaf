@@ -3,7 +3,7 @@
 		{
 			"description": "Materializecss",
 			"path"       : [ "js/materialize.js" ],
-			"version"    : "0.97.8",
+			"version"    : "0.98.2",
 			"changes"    : false,
 			"type"       : [ "js" ],
 			"license"    : "MIT",
@@ -53,7 +53,7 @@
 		{
 			"description": "jQuery minified",
 			"path"       : [ "js/jquery.js" ],
-			"version"    : "3.1.1",
+			"version"    : "3.2.1",
 			"changes"    : false,
 			"type"       : [ "js" ],
 			"license"    : "https://github.com/jquery/jquery/blob/master/LICENSE.txt",
@@ -112,16 +112,6 @@
   			]
   		},
   		{
-  			"description": "Apache Commons Compress",
-  			"path"       : [ "lib/commons-compress-1.13.jar" ],
-  			"version"    : "1.13",
-  			"changes"    : false,
-  			"type"       : [ "java" ],
-  			"license"    : "Apache License 2.0",
-  			"deps"       : [
-  			]
-  		},
-  		{
   			"description": "Eclipse Jar-In-Jar",
   			"path"       : [ "jar-in-jar-loader.jar" ],
   			"version"    : "",
@@ -164,11 +154,11 @@
   			"license"    : "https://github.com/fusesource/jansi/blob/master/license.txt",
   			"deps"       : [
   			]
-  		}
+  		},
   		{
   			"description": "Apache Commons IO",
-  			"path"       : [ "lib/commons-io-2.4.jar" ],
-  			"version"    : "2.4",
+  			"path"       : [ "lib/commons-io-2.5.jar" ],
+  			"version"    : "2.5",
   			"changes"    : false,
   			"type"       : [ "java" ],
   			"license"    : "Apache License 2.0",
@@ -185,6 +175,16 @@
   			"deps"       : [
   			]
   		},
+  		  {
+  			"description": "Apache Commons Compress",
+  			"path"       : [ "lib/commons-compress-1.13.jar" ],
+  			"version"    : "1.13",
+  			"changes"    : false,
+  			"type"       : [ "java" ],
+  			"license"    : "Apache License 2.0",
+  			"deps"       : [
+  			]
+  		},
   		{
   			"description": "Oracle JDBC 12g",
   			"path"       : [ "lib/ojdbc7.jar" ],
@@ -192,6 +192,16 @@
   			"changes"    : false,
   			"type"       : [ "java" ],
   			"license"    : "Oracle",
+  			"deps"       : [
+  			]
+  		},
+  		{
+  			"description": "PostgreSQL JDBC",
+  			"path"       : [ "lib/postgresql-42.0.0.jre7.jar" ],
+  			"version"    : "42.0.0",
+  			"changes"    : false,
+  			"type"       : [ "java" ],
+  			"license"    : "https://www.postgresql.org/about/licence/",
   			"deps"       : [
   			]
   		},
@@ -262,7 +272,7 @@
 			"name"     : "HTTP",
 			"removable": false,
 			"hardDeps" : [
-				"lib/commons-io-2.4.jar",
+				"lib/commons-io-2.5.jar",
 				"lib/jetty-io-9.3.15.jar",
 				"lib/jetty-util-9.3.15.jar",
 				"lib/websocket-api-9.3.15.jar",
@@ -283,7 +293,7 @@
 			"name"     : "Ignite",
 			"removable": true,
 			"deps"     : [
-				"lib/ignite-core-1.8.0.jar",
+				"lib/ignite-core-1.9.0.jar",
 				"lib/ignite-shmem-1.0.0.jar",
   				"lib/cache-api-1.0.0.jar"				
 			]
@@ -329,7 +339,7 @@
 			"name"     : "SSH",
 			"removable": true,
 			"hardDeps" : [
-				"lib/commons-io-2.4.jar"
+				"lib/commons-io-2.5.jar"
 			],
 			"deps"     : [
 				"lib/jsch-0.1.51.jar",
@@ -367,7 +377,7 @@
 			"name"     : "XLS",
 			"removable": true,
 			"hardDeps" : [
-				"lib/commons-io-2.4.jar",
+				"lib/commons-io-2.5.jar",
 				"lib/commons-collections4-4.1.jar",
 				"lib/commons-logging-1.2.jar",
 				"lib/commons-codec-1.10.jar"
@@ -393,7 +403,8 @@
 			"name"     : "ZIP",
 			"removable": false,
 			"hardDeps" : [
-				"lib/commons-io-2.4.jar"
+				"lib/commons-io-2.5.jar",
+				"lib/commons-compress-1.13.jar"
 			],
  			"deps"     : [
 			]

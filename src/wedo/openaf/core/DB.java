@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -179,7 +180,7 @@ public class DB {
 									else
 											in = rs.getAsciiStream(i);
 									StringWriter w = new StringWriter();
-									IOUtils.copy(in, w);
+									IOUtils.copy(in, w, (Charset) null);
 									record.put(rs.getMetaData().getColumnName(i), w.toString());
 								} catch(Exception e) {
 									SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting clob", e);
@@ -323,7 +324,7 @@ public class DB {
 										in = rs.getAsciiStream(i);
 								
 								StringWriter w = new StringWriter();
-								IOUtils.copy(in, w);
+								IOUtils.copy(in, w, (Charset) null);
 								record.put(rs.getMetaData().getColumnName(i), w.toString());
 								continue;
 							}
@@ -384,7 +385,7 @@ public class DB {
 					StringWriter w = new StringWriter();
 					try {
 						InputStream in = rs.getClob(1).getAsciiStream();
-						IOUtils.copy(in, w);
+						IOUtils.copy(in, w, (Charset) null);
 					} catch(Exception e) {
 						SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting clob", e);
 					}

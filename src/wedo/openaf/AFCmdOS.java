@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+import java.nio.charset.Charset;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
@@ -314,7 +315,7 @@ public class AFCmdOS extends AFCmdBase  {
 			case OPTION_INTERPRET:
 				AFCmdBase.optLevel = -1;
 				AFCmdBase.restartEngine();
-				continue;				
+				continue;	
 			case OPTION_CHECK:
 				check();
 				continue;
@@ -476,7 +477,7 @@ public class AFCmdOS extends AFCmdBase  {
 				    
 				    	if (isOpack) {
 				    		if (scriptfile.indexOf("::") <= 0) {
-					    		pm = new Gson().fromJson(IOUtils.toString(zip.getInputStream(zip.getEntry(OPACK))), JsonObject.class);
+					    		pm = new Gson().fromJson(IOUtils.toString(zip.getInputStream(zip.getEntry(OPACK)), (Charset) null), JsonObject.class);
 					    		try {
 					    			pm.get("main");
 					    		} catch(Exception e) { 
@@ -503,7 +504,7 @@ public class AFCmdOS extends AFCmdBase  {
 			    			}
 			    		}
 			    	} else {
-			    		script = FileUtils.readFileToString(new File(scriptfile));
+			    		script = FileUtils.readFileToString(new File(scriptfile), (Charset) null);
 				    	zip = null;
 			    	}
 			    }
@@ -577,7 +578,7 @@ public class AFCmdOS extends AFCmdBase  {
 			// Compile & execute script
 			try {
 				InputStream in1 = getClass().getResourceAsStream("/js/openaf.js");
-				includeScript = IOUtils.toString(in1);
+				includeScript = IOUtils.toString(in1, (Charset) null);
 				numberOfIncludedLines = numberOfIncludedLines + includeScript.split("\r\n|\r|\n").length;
 				AFCmdBase.jse.addNumberOfLines(includeScript);
 			} catch (Exception e) {

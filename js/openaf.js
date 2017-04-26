@@ -219,19 +219,20 @@ function tprintErr(aTemplateString, someData) {
 
 /**
  * <odoc>
- * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount) : String</key>
+ * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
- * Optionally you can specify aWidthLimit. If you want to include a count of rows just use displayCount = true
+ * Optionally you can specify aWidthLimit and useAnsi.
+ * If you want to include a count of rows just use displayCount = true.
  * </odoc>
  */
-function printTable(anArrayOfEntries, aWidthLimit, displayCount) {
+function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 	var count = 0;
 	var maxsize = {};
 	var output = "";
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
 	if (isUndefined(aWidthLimit)) aWidthLimit = -1;
-
+	
 	// Find sizes
 	anArrayOfEntries.forEach(function(row) {
 		var cols = Object.keys(row);
@@ -248,36 +249,37 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount) {
 		var outOfWidth = false;
 		var cols = Object.keys(row);
 		if (count == 0) {
-			output += "|"; lineSize = 1; outOfWidth = false;
+			output += (useAnsi ? ansiColor("bold", "|") : "|"); lineSize = 1; outOfWidth = false;
 			cols.forEach(function(col) {
 				if (outOfWidth) return;
 				lineSize += maxsize[String(col)] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += "..."; outOfWidth = true;
-				} else
-					output += String(col) + repeat(maxsize[String(col)] - String(col).length, ' ') + "|";
+					output += (useAnsi ? ansiColor("bold", "...") : "..."); outOfWidth = true;
+				} else {
+					output += (useAnsi ? ansiColor("bold", String(col)) : String(col)) + repeat(maxsize[String(col)] - String(col).length, ' ') + (useAnsi ? ansiColor("bold", "|") : "|");
+				}
 			});
 			output += "\n";
-			output += "+"; lineSize = 1; outOfWidth = false;
+			output += (useAnsi ? ansiColor("bold", "+") : "+"); lineSize = 1; outOfWidth = false;
 			cols.forEach(function(col) {
 				if (outOfWidth) return;
 				lineSize += maxsize[String(col)] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += "...";outOfWidth = true;
+					output += (useAnsi ? ansiColor("bold", "...") : "...");outOfWidth = true;
 				} else
-					output += repeat(maxsize[String(col)], '-') + "+";
+					output += (useAnsi ? ansiColor("bold", repeat(maxsize[String(col)], '-')) : repeat(maxsize[String(col)], '-')) + (useAnsi ? ansiColor("bold", "+") : "+");
 			});
 			output += "\n";
 		};
 
-		output += "|"; lineSize = 1; outOfWidth = false;
+		output += (useAnsi ? ansiColor("bold", "|") : "|"); lineSize = 1; outOfWidth = false;
 		cols.forEach(function(col) {
 			if (outOfWidth) return;
 			lineSize += maxsize[String(col)] + 1;
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 				output += "..."; outOfWidth = true;
 			} else			
-				output += String(row[String(col)]) + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ') + "|";
+				output += String(row[String(col)]) + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ') + (useAnsi ? ansiColor("bold", "|") : "|");
 		});
 		output += "\n";
 		count++;
@@ -285,9 +287,9 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount) {
 
 	if (displayCount) {
 		var summary = "[#" + count + " " + ((count <= 1) ? "row" : "rows") + "]";
-		output += summary;
+		output += (useAnsi ? ansiColor("bold", summary) : summary);
 	}
-
+	
 	return output;
 }
 
@@ -2148,14 +2150,14 @@ if (isUndefined(pods)) pods = new Pod();
 //END --------------------------------
 
 /**
- * <odoc>
- * <key>loadRequire(anArrayOfPaths, useSandbox)</key>
+ * 
+ * loadRequire(anArrayOfPaths, useSandbox)
  * Will add the require function to the current scope. The require function optionally use anArrayOfPaths
  * to search for scripts. If anArrayOfPaths is not provided all opack directories and current working directory will be 
  * used. Optionally you can also useSandbox = true to ensure that require loading is "sandboxed". 
- * </odoc>
+ *
  */
-function loadRequire(paths, useSandbox) {
+/*function loadRequire(paths, useSandbox) {
 	function toURI(aPath) {
 		return String(new java.io.File(aPath).toURI().toURL().toExternalForm());
 	}
@@ -2172,6 +2174,7 @@ function loadRequire(paths, useSandbox) {
 	af.loadRequire(paths, useSandbox);
 }
 loadRequire();
+*/
 
 /**
  * <odoc>
@@ -2180,6 +2183,32 @@ loadRequire();
  * plus the current working directory). Returns the exports object manipulated in aScript.
  * </odoc>
  */
+function require(aScript) {
+	var o;
+	
+	if (aScript.match(/::/)) {
+		var comps = aScript.match(/(.+)::(.+)/);
+		plugin("ZIP");
+		var zip = new ZIP();
+		o = af.eval(af.fromBytes2String(zip.streamGetFile(comps[1], comps[2])));
+		return o;
+	}
+	
+	try {
+		o = af.eval(io.readFileString(aScript));
+		return o;
+	} catch(e) {}
+	
+	var opackpaths = getOPackPaths();
+	for(var opack in opackpaths) {
+		try {
+			o = af.eval(io.readFileString(aScript));
+			return o;
+		} catch(e) {}
+	}
+	
+	return o;
+}
 
 // OpenWrap
 //
@@ -3234,10 +3263,3 @@ $channels = function(a) {
  * </odoc>
  */
 $ch = $channels;
-// Set logging to ERROR 
-{
-   var i = Packages.org.slf4j.LoggerFactory.getLogger(Packages.ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME).getLoggerContext().getLoggerList().iterator();
-   while(i.hasNext()) { 
-      Packages.org.slf4j.LoggerFactory.getLogger(i.next().getName()).setLevel(Packages.ch.qos.logback.classic.Level.ERROR);
-   }
-}

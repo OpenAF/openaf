@@ -631,16 +631,27 @@ OpenWrap.obj.prototype.pool = {
 			
 			/**
 			 * <odoc>
-			 * <key>ow.obj.pool.setFactoryRAIDDB(anAF, aConn)</key>
+			 * <key>ow.obj.pool.setFactoryRAIDDB(anAF, aConn, aKeepAlive)</key>
 			 * Setups: a factory function to create an DB object using anAF and aConn connection name from the RAID/WAF server;
-			 * a close function to close the DB object connection; a keep alive function that tries to execute a select from dual.
+			 * a close function to close the DB object connection; a keep alive function that tries to execute a select from dual
+			 * (you can override this function providing aKeepAlive function that receives a database object as argument).
 			 * </odoc>
 			 */
-			setFactoryRAIDDB: function(anAF, aConn) {
+			setFactoryRAIDDB: function(anAF, aConn, aKeepAlive) {
+				if (isUnDef(aKeepAlive)) {
+					aKeepAlive = function(a) {
+						if (a.getConnect().getMetaData().getDatabaseProductName().toLowerCase() == "postgresql") {
+							a.q("select 1");
+						} else {
+							a.q("select 1 from dual");
+						}
+					}
+				}
+				
 				this.setFactory(
 					function() { var db = getRAIDDB(anAF, aConn); return db; },
 					function(a) { a.close(); },
-					function(a) { a.q("select 1 from dual"); }
+					aKeepAlive
 				);
 			},
 			
@@ -651,11 +662,21 @@ OpenWrap.obj.prototype.pool = {
 			 * a close function to close the DB object connection; a keep alive function that tries to execute a select from dual.
 			 * </odoc>
 			 */
-			setFactoryDB: function(aDriver, aURL, aLogin, aPassword) {
+			setFactoryDB: function(aDriver, aURL, aLogin, aPassword, aKeepAlive) {
+				if (isUnDef(aKeepAlive)) {
+					aKeepAlive = function(a) {
+						if (a.getConnect().getMetaData().getDatabaseProductName().toLowerCase() == "postgresql") {
+							a.q("select 1");
+						} else {
+							a.q("select 1 from dual");
+						}
+					}
+				}
+				
 				this.setFactory(
 					function() { var db = new DB(aDriver, aURL, aLogin, aPassword); return db; },
 					function(a) { a.close(); },
-					function(a) { a.q("select 1 from dual"); }
+					aKeepAlive
 				);
 			},
 			

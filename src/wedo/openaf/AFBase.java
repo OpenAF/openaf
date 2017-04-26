@@ -17,6 +17,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -431,8 +432,8 @@ public class AFBase extends ScriptableObject {
 		String lines = new String(); 
 		String linesErr = new String();
 		
-		lines = IOUtils.toString(p.getInputStream());
-		linesErr = IOUtils.toString(p.getErrorStream());
+		lines = IOUtils.toString(p.getInputStream(), (Charset) null);
+		linesErr = IOUtils.toString(p.getErrorStream(), (Charset) null);
 		
 		IOUtils.closeQuietly(p.getInputStream());
 		IOUtils.closeQuietly(p.getErrorStream());
@@ -760,7 +761,7 @@ public class AFBase extends ScriptableObject {
 			try {
 				if (AFCmdBase.zip != null &&
 					AFCmdBase.zip.getEntry(js) != null) {
-					includeScript = IOUtils.toString(AFCmdBase.zip.getInputStream(AFCmdBase.zip.getEntry(js)));
+					includeScript = IOUtils.toString(AFCmdBase.zip.getInputStream(AFCmdBase.zip.getEntry(js)), (Charset) null);
 				} else {
 					if (ScriptableObject.getProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip") != Scriptable.NOT_FOUND) {
 						String zipfile = ScriptableObject.getProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip").toString();
@@ -775,7 +776,7 @@ public class AFBase extends ScriptableObject {
 					}
 					
 					if (includeScript == null)
-						includeScript = FileUtils.readFileToString(new File(js));
+						includeScript = FileUtils.readFileToString(new File(js), (Charset) null);
 				}
 			} catch (IOException e) {
 				SimpleLog.log(logtype.DEBUG,

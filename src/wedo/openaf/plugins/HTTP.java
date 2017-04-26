@@ -14,6 +14,7 @@ import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -411,7 +412,7 @@ public class HTTP extends ScriptableObject {
 			if (in instanceof String) {
 				if (!in.equals("")) {
 					con.setDoOutput(true);
-					IOUtils.write((String) in, con.getOutputStream());
+					IOUtils.write((String) in, con.getOutputStream(), (Charset) null);
 				}
 			} else {
 				con.setDoOutput(true);
@@ -427,12 +428,12 @@ public class HTTP extends ScriptableObject {
 			if (bytes) {
 				return new HTTPResponse(IOUtils.toByteArray(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
 			} else {
-				return new HTTPResponse(IOUtils.toString(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+				return new HTTPResponse(IOUtils.toString(con.getInputStream(), (Charset) null), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
 			}
 		} catch(Exception e) {
 			if (con.getErrorStream() != null) {
-				errorObj = IOUtils.toString(con.getErrorStream());
-				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream()), e);
+				errorObj = IOUtils.toString(con.getErrorStream(), (Charset) null);
+				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream(), (Charset) null), e);
 			}
 			throw e;
 		}
