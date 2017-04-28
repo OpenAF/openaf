@@ -2,7 +2,9 @@ package wedo.openaf.plugins;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,6 +35,7 @@ import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jgit.util.FileUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
@@ -414,6 +417,48 @@ public class ZIP extends ScriptableObject {
 		if (!dontReload) load(baos.toByteArray());
 		
 		return baos.toByteArray();
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>ZIP.generate2File(aFile, aMapOfOptions, dontReload) : anArrayOfBytes</key>
+	 * Will generate a ZIP into aFile given the provided options (a map where you can specify the compressionLevel
+	 * as a number). If dontReload = true then the internal ZIP object contents won't be reloaded after
+	 * generating.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void generate2File(String aFile, Object options, boolean dontReload) throws IOException {
+		FileOutputStream baos = new FileOutputStream(aFile);
+		ZipOutputStream zos = new ZipOutputStream(baos);
+		
+		if (options != null && options.equals("undefined") && !(options instanceof Undefined)) {
+			if (((NativeObject) options).containsKey("compressionLevel")) 
+				zos.setLevel(Integer.parseInt((String) ((NativeObject) options).get("compressionLevel")));
+		}
+			
+		SimpleLog.log(logtype.DEBUG, "number of entries " + zipEntries.size(), null);
+		for(Object ze : zipEntries.keySet()) {
+			SimpleLog.log(logtype.DEBUG, "generating " + zipEntries.get(ze).getName(), null);
+			
+			ZipEntry newZe = new ZipEntry(zipEntries.get(ze).getName());
+			zos.putNextEntry(newZe); 
+			if(zipData.containsKey(newZe.getName())) 
+				IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
+			else
+				if(!newZe.isDirectory()) 
+					IOUtils.copy(zipFile.getInputStream(newZe), zos);
+			
+			zos.closeEntry(); 
+		}
+		
+		zos.flush();
+		zos.finish();
+		zos.close();
+		baos.flush();
+		baos.close();
+
+		if (!dontReload) load(org.apache.commons.io.FileUtils.readFileToByteArray(new File(aFile)));
 	}
 	
 	/**

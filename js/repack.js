@@ -61,6 +61,7 @@ var zip    = new ZIP();
 var zipNew = new ZIP();
 
 var irj = isRepackJar(classPath);
+//var lowmemory = false;
 
 try {
 // Set .package.json	
@@ -101,14 +102,23 @@ if (!irj || __expr != "") {
 	}
 	
 	var toExclude = [];
+	/*if (__expr.match(/lowmemory/)) {
+		lowmemory = true;
+	}*/
 	if (__expr != "") toExclude = getModulesToExclude();
 
+	//if (!lowmemory) zip.loadFile(oldVersionFile);
 	zip.loadFile(oldVersionFile);
-	var list = zip.list();
+	
+	var list = zip.list(oldVersionFile);
 
+	var c = 0;
 	for(i in list) {
+		c++;
 		var el = list[i];
 
+		lognl("Progress " + c + "/" + Object.keys(list).length + "\r");
+		
 		if (toExclude.indexOf(el.name) >= 0) {
 			log("Excluding " + el.name);
 			continue;
@@ -116,30 +126,57 @@ if (!irj || __expr != "") {
 		
 		if(el.name.match(/\.jar$/)) {
 			var zipTemp = new ZIP();
-			zipTemp.load(zip.getFile(el.name));
+			//if (lowmemory)
+			//	zipTemp.load(zip.streamGetFile(oldVersionFile, el.name));
+			//else
+				zipTemp.load(zip.getFile(el.name));
 			var listTemp = zipTemp.list();
+							
 			for (ii in listTemp) {
 				var elTemp = listTemp[ii];
 				if (!(elTemp.name.match(/MANIFEST.MF$/)) && !(elTemp.name.match(/ECLIPSE_.RSA$/))) {
-					zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));
+					//if (lowmemory) {
+						//zip.streamPutFile(classPath + ".tmp", elTemp.name, zipTemp.getFile(elTemp.name));
+					//	zip.streamPutFile(classPath + ".tmp", elTemp.name, zipTemp.getFile(elTemp.name));
+					//} else {
+						zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));	
+					//}
 				}
 			}
 			zipTemp.close();
 		} else {
 			if( el.name.match(/MANIFEST.MF$/) ) {
-				var str = af.fromBytes2String(zip.getFile(el.name));
+				var str;
+
+				//if (lowmemory)
+				//	str = af.fromBytes2String(zip.streamGetFileStream(oldVersionFile, el.name));
+				//else
+					str = af.fromBytes2String(zip.getFile(el.name));
+				
 				if ((str.match(/jarinjarloader/) && str.match(/eclipse/) )) {
 					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, Packages.wedo.openaf.AFCmdBase.afc.getClass().getName());
-					zipNew.putFile(el.name, af.fromString2Bytes(str));
+
+					//if (lowmemory)
+					//	zip.streamPutFile(classPath + ".tmp", el.name, af.fromString2Bytes(str));
+					//else
+						zipNew.putFile(el.name, af.fromString2Bytes(str));
 				}
 			} else {				
-				if (!(el.name.match(/jarinjarloader/))) 
-					zipNew.putFile(el.name, zip.getFile(el.name));
+				if (!(el.name.match(/jarinjarloader/))) {
+					//if (lowmemory)
+						//zip.streamPutFile(classPath + ".tmp", el.name, zip.streamGetFile(oldVersionFile, el.name));
+					//	zip.streamPutFile(classPath + ".tmp", el.name, zip.getFile(el.name));
+					//else
+						zipNew.putFile(el.name, zip.getFile(el.name));
+				}
 			}
 		}
 	}
 
-	io.writeFileBytes(classPath, zipNew.generate({"compressionLevel": 9}));
+	//if (!lowmemory)	
+		zipNew.generate2File(classPath, {"compressionLevel": 9}, true);
+	//else
+	//	af.mv(classPath + ".tmp", classPath);
 	zip.close();
 	zipNew.close();
 

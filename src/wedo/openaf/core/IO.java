@@ -642,4 +642,15 @@ public class IO extends ScriptableObject {
 		return "IO";
 	}
 
+	/**
+	 * <odoc>
+	 * <key>io.fileExists(aFilename) : boolean</key>
+	 * Returns true or false to determine if aFilename exists on the filesystem.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static boolean fileExists(String aFile) {
+		return (new File(aFile)).exists();
+	}
+
 }

@@ -40,6 +40,17 @@ public class SMB extends ScriptableObject {
 		return "SMB";
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.SMB(aShareURL, aDomain, aUser, aPassword) : SMB</key>
+	 * Initializes a SMB object to access the aShareURL on aDomain with aUser and aPassword. Keep in mind to always add
+	 * a "/" on the end of URLs targeting a folder.\
+	 * \
+	 * Example:\
+	 *   var smb = new SMB("smb://a.server/shares/", "mydomain", "user", "...");\
+	 * \
+	 * </odoc>
+	 */
 	@JSConstructor
 	public void newSMB(String shareURL, String aDomain, String aUser, String aPassword) throws IOException, InstantiationException, IllegalAccessException {
 		npa = new NtlmPasswordAuthentication(aDomain, aUser, AFCmdBase.afc.dIP(aPassword));
@@ -47,11 +58,25 @@ public class SMB extends ScriptableObject {
 		smbf.connect();
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.getSmbFile() : SmbFile</key>
+	 * Returns the internal SmbFile object.
+	 * </odoc>
+	 */
 	@JSFunction
 	public Object getSmbFile() {
 		return smbf;
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.listFiles(aPath) : Map</key>
+	 * Returns a map with a files array containing filename, filepath, size, permissions, lastModified, createTime, isDirectory
+	 * and isFile properties per each entry on aPath. If no aPath is provided it will default to the aShareURL used to instantiate
+	 * the SMB object.
+	 * </odoc>
+	 */
 	@JSFunction
 	public Object listFiles(Object path) throws IOException {
 		Scriptable no = (Scriptable) AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
@@ -83,6 +108,12 @@ public class SMB extends ScriptableObject {
 		return no;
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.getFile(aSourceURL, aTarget) : Number</key>
+	 * Will retrieve aSourceURL file to the local filesystem aTarget. Returns the number of characters copied.
+	 * </odoc>
+	 */
 	@JSFunction
 	public Object getFile(String aSource, String aTarget) throws IOException {
 		SmbFile f = new SmbFile(aSource, npa);
@@ -94,6 +125,12 @@ public class SMB extends ScriptableObject {
 		return res;
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.putFile(aSource, aTargetURL) : Number</key>
+	 * Will copy aSource file from the local filesystem to aTargetURL. Returns the number of characters copied.
+	 * </odoc>
+	 */
 	@JSFunction
 	public Object putFile(String aSource, String aTarget) throws FileNotFoundException, IOException {
 		SmbFile f = new SmbFile(aTarget, npa);
@@ -105,6 +142,12 @@ public class SMB extends ScriptableObject {
 		return res;
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.getInputStream(aSourceURL) : SmbFileInputStream</key>
+	 * Returns a java InputStream to retrieve from aSourceURL.
+	 * </odoc>
+	 */
 	@JSFunction
 	public Object getInputStream(String aSource) throws MalformedURLException, SmbException, UnknownHostException {
 		SmbFile f = new SmbFile(aSource, npa);
@@ -112,6 +155,12 @@ public class SMB extends ScriptableObject {
 		return sfis;
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.getFileBytes(aSourceURL) : JavaByteArray</key>
+	 * Returns an array of bytes from the transfer of aSourceURL.
+	 * </odoc>
+	 */
 	@JSFunction
 	public Object getFileBytes(String aSource) throws IOException {
 		SmbFile f = new SmbFile(aSource, npa);
@@ -121,6 +170,12 @@ public class SMB extends ScriptableObject {
 		return res;
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.writeFileBytes(aTargetURL, arrayOfBytes, append)</key>
+	 * Will write an arrayOfBytes to the aTargetURL. The contents will be append if append = true.
+	 * </odoc>
+	 */
 	@JSFunction
 	public void writeFileBytes(String aTarget, Object ba, boolean append) throws IOException {
 		SmbFile f = new SmbFile(aTarget, npa);
@@ -129,6 +184,12 @@ public class SMB extends ScriptableObject {
 		IOUtils.closeQuietly(sfos);
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>SMB.writeFileStream(aTargetURL, javaOutputStream, append)</key>
+	 * Will write a javaOutputStream to the aTargetURL. The contents will be append if append = true.
+	 * </odoc>
+	 */
 	@JSFunction
 	public void writeFileStream(String aTarget, Object stream, boolean append) throws IOException {
 		SmbFile f = new SmbFile(aTarget, npa);

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
@@ -29,6 +30,7 @@ import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
@@ -363,15 +365,19 @@ public class HTTP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose) throws Exception {
+	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout) throws Exception {
 		URI uri = URI.create(anURL);
 		WebSocketClient client = new WebSocketClient();		
 		try {
-			client.start();
+			client.start(); 
 			EventSocket socket = new EventSocket(onConnect, onMsg, onError, onClose);
 			Future<Session> fut = client.connect(socket, uri);
 
-			Session session = fut.get();
+			Session session;
+			if (!(aTimeout instanceof Undefined))
+				session = fut.get((long) aTimeout, TimeUnit.MILLISECONDS);
+			else
+				session = fut.get();
 
 			return client;
 		} catch (Exception e) {
