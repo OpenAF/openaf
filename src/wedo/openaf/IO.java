@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
@@ -20,20 +21,14 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSFunction;
 import org.mozilla.javascript.xml.XMLObject;
 
-import wedo.open.utils.PMStringConvert;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
 import wedo.openaf.core.AF;
-import wedo.xml.DomWriter;
-import wedo.jaf.util.ParameterMapReaderDom;
-import wedo.jaf.util.ParameterMap;
 
 public class IO extends wedo.openaf.core.IO {
 
 	private static final long serialVersionUID = 2937437659041890404L;
-	
-	@JSFunction
-	public static boolean fileExists(String aFile) {
-		return wedo.openaf.core.IO.fileExists(aFile);
-	}
 	
 	@JSFunction
 	public static String getFileEncoding(String aFile) throws IOException {
@@ -88,11 +83,11 @@ public class IO extends wedo.openaf.core.IO {
 	@JSFunction
 	public static void writeFile(String filename, Object pmIn, String encoding, boolean shouldAppend) throws Exception {
 		//wedo.openaf.core.IO.writeFile(filename, pmIn, encoding, shouldAppend);
-		Object stringify = AFCmd.jse.stringify(pmIn);
+		Object stringify = AFCmdBase.jse.stringify(pmIn);
 		try {
 			if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
-			ParameterMap out = PMStringConvert.fromJSON(stringify.toString());
-			FileUtils.writeStringToFile(new File(filename), PMStringConvert.toJSON(out), encoding, shouldAppend);
+			JsonObject out = (new Gson()).fromJson(stringify.toString(), JsonObject.class);
+			FileUtils.writeStringToFile(new File(filename), (new Gson()).toJson(out), encoding, shouldAppend);
 
 		} catch (Exception e) {
 			SimpleLog.log(SimpleLog.logtype.DEBUG,
@@ -138,213 +133,10 @@ public class IO extends wedo.openaf.core.IO {
 	@JSFunction
 	public static Object readFile(String filename, String encoding) throws Exception {
 		Object res = wedo.openaf.core.IO.readFile(filename, encoding);
-		
-		switch (AFCmd.detectInput((String) res)) {
-		case INPUT_CONFIGPMAP:
-			break;
-		case INPUT_JSON:
-			return wedo.openaf.AF.fromJson((String) res);
-		case INPUT_PARAMETER_MAP:
-			return wedo.openaf.AF.fromParameterMap((String) res, "UTF-8");
-		case INPUT_PMAP:
-			return wedo.openaf.AF.fromPMap((String) res, "UTF-8");
-		default:
-			return res;
-		}
-		
-		if (res == null)
-			return new NativeObject();
-		else
-			return res;
-	}	
-	
-	/**
-	 * <odoc>
-	 * <key>io.readFileParameterMap(aFilename, anEncoding)</key>
-	 * Reads a given file as ParameterMap, optionally providing an encoding.\
-	 * Note: aFilename can contain "a.zip::afile" to read from zip files.
-	 * </odoc>
-	 * @param filename
-	 * @param encoding
-	 * @return
-	 * @throws Exception
-	 */
-	@JSFunction
-	public static Object readFileParameterMap(String filename, String encoding) throws Exception {
-		try {
-			if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
-			String pmap = __readFileToString(filename, encoding);
-			return wedo.openaf.AF.fromParameterMap(pmap, encoding);
-		} catch (IOException e) {
-			SimpleLog.log(SimpleLog.logtype.DEBUG, "Error reading file: "
-					+ filename + "; " + e.getMessage(), e);
-			throw e;
-		}
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>io.readFileJavaParameterMap(aFilename, anEncoding, aNumLines) : JavaParameterMap</key>
-	 * Reads a given aFilename as a Java ParameterMap, optionally providing an encoding and aNumLines to skip.\
-	 * </odoc>
-	 */
-	@JSFunction
-	public static Object readFileJavaParameterMap(String filename, String encoding, int numLines) throws Exception {
-		ParameterMapReaderDom reader = new ParameterMapReaderDom();
-		
-		if (numLines == 0) numLines = 1;
-		if (numLines < 0) numLines = 0;
-		
+	  
 		if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
-		return reader.unmarshall(new StringReader(removeLines(__readFileToString(filename, encoding), numLines)));
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>io.readFileJavaPMap(aFilename, anEncoding, aNumLines) : JavaParameterMap</key>
-	 * Reads a given aFilename (in PMap format) as a Java ParameterMap, optionally providing an encoding and aNumLines to skip.\
-	 * </odoc>
-	 */
-	@JSFunction
-	public static Object readFileJavaPMap(String filename, String encoding, int numLines) throws Exception {
-		try {
-			if (encoding != null && encoding.equals("undefined")) encoding = "UTF-8";
-			return PMStringConvert.fromPMap(removeLines(__readFileToString(filename, encoding), numLines), encoding);
-		} catch (IOException | wedo.jaf.services.object.exceptions.OMObjectSerializationException e) {
-			SimpleLog.log(SimpleLog.logtype.DEBUG,
-					"Error converting from pmap: " + e.getMessage(), e);
-			throw e;
-		}
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>io.readFilePMap(aFilename, anEncoding)</key>
-	 * Reads a given file as PMap, optionally providing an encoding.\
-	 * Note: aFilename can contain "a.zip::afile" to read from zip files.
-	 * </odoc>
-	 */
-	@JSFunction
-	public static Object readFilePMap(String filename, String encoding) throws Exception {
-		try {
-			if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
-			String pmap = __readFileToString(filename, encoding);
-			return wedo.openaf.AF.fromPMap(pmap, encoding);
-		} catch (IOException e) {
-			SimpleLog.log(SimpleLog.logtype.DEBUG, "Error reading file: "
-					+ filename + "; " + e.getMessage(), e);
-			throw e;
-		}
+		return wedo.openaf.AFBase.jsonParse((String) res);
 	}	
-	
-	/**
-	 * <odoc>
-	 * <key>io.writeFileConfigPMap(aFilename, aJSONobject, anEncoding)</key>
-	 * Writes a JSON object into a config PMap file, optionally providing an encoding
-	 * </odoc>
-	 * @param filename
-	 * @param pmIn
-	 * @param encoding
-	 * @throws Exception
-	 */
-	@JSFunction
-	public static void writeFileConfigPMap(String filename, Object pmIn, String encoding) throws Exception {
-		Object stringify = AFCmd.jse.stringify(pmIn);
-		
-		try {
-			if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
-			ParameterMap out = PMStringConvert.fromJSON(stringify.toString());
-			FileUtils.write(new File(filename), PMStringConvert.toXMLConfigPMap(out), encoding);
-		} catch (Exception e) {
-			SimpleLog.log(SimpleLog.logtype.DEBUG,
-					"Error converting and writing file: " + e.getMessage(), e);
-			throw e;
-		}	
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>io.writeFileParameterMap(aFilename, aJSONobject, anEncoding)</key>
-	 * Writes a JSON object into a parameter map, optionally providing an encoding
-	 * </odoc>
-	 * @param filename
-	 * @param pmIn
-	 * @param encoding
-	 * @throws Exception
-	 */
-	@JSFunction
-	public static void writeFileParameterMap(String filename, Object pmIn, String encoding) throws Exception {
-		Object stringify = AFCmd.jse.stringify(pmIn);
-		try {
-			if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
-			ParameterMap out = PMStringConvert.fromJSON(stringify.toString());
-			FileUtils.write(new File(filename), PMStringConvert.toXMLParameterMap(out), encoding);
-		} catch (Exception e) {
-			SimpleLog.log(SimpleLog.logtype.DEBUG,
-					"Error converting and writing file: " + e.getMessage(), e);
-			throw e;
-		}
-	}	
-	
-	/**
-	 * <odoc>
-	 * <key>io.writeFileJavaParameterMap(aFilename, aPMIn, anEncoding)</key>
-	 * Writes a ParameterMap aFilename given aPMIn Java Parameter Map, optionally providing an encoding
-	 * </odoc>
-	 */
-	@JSFunction
-	public static void writeFileJavaParameterMap(String filename, Object pmIn, String encoding) throws FileNotFoundException, UnsupportedEncodingException {
-		ParameterMapReaderDom reader = new ParameterMapReaderDom();
-		PrintWriter pw;
-		
-		if (pmIn instanceof NativeJavaObject) {
-			pmIn = ((NativeJavaObject) pmIn).unwrap();
-		}
-		
-		if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
-		pw = new PrintWriter(new File(filename), encoding); 
-		pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-		DomWriter.print(reader.prettyMarshall((ParameterMap) pmIn, new ArrayList<Object>()), pw);
-		pw.close();
-	}
-	/**
-	 * <odoc>
-	 * <key>io.writeFileJavaPMap(aFilename, aPMIn, anEncoding)</key>
-	 * Writes a PMap aFilename given aPMIn Java Parameter Map, optionally providing an encoding
-	 * </odoc>
-	 */
-	@JSFunction
-	public static void writeFileJavaPMap(String filename, Object pmIn, String encoding) throws IOException, XMLStreamException {
-		if (encoding != null && encoding.equals("undefined")) encoding = "UTF-8";
-		if (pmIn instanceof NativeJavaObject) {
-			pmIn = ((NativeJavaObject) pmIn).unwrap();
-		}
-		FileUtils.writeStringToFile(new File(filename), PMStringConvert.toXMLPMap((ParameterMap) pmIn), encoding);
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>io.writeFilePMap(aFilename, aJSONobject, anEncoding)</key>
-	 * Writes a JSON object into a PMap, optionally providing an encoding
-	 * </odoc>
-	 * @param filename
-	 * @param pmIn
-	 * @param encoding
-	 * @throws Exception
-	 */
-	@JSFunction
-	public static void writeFilePMap(String filename, Object pmIn, String encoding) throws Exception {
-		Object stringify = AFCmd.jse.stringify(pmIn);
-		try {			
-			if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";	
-			ParameterMap out = PMStringConvert.fromJSON(stringify.toString());
-			FileUtils.writeStringToFile(new File(filename), PMStringConvert.toXMLPMap(out), encoding);
-		} catch (Exception e) {
-			SimpleLog.log(SimpleLog.logtype.DEBUG,
-					"Error converting and writing file: " + e.getMessage(), e);
-			throw e;
-		}
-	}
 
 	@JSFunction
 	public static Object gzip(Object dataIn) throws IOException {
