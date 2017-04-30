@@ -31,6 +31,11 @@ public class IO extends wedo.openaf.core.IO {
 	private static final long serialVersionUID = 2937437659041890404L;
 	
 	@JSFunction
+ 	public static boolean fileExists(String aFile) {
+  		return wedo.openaf.core.IO.fileExists(aFile);
+  	}
+	
+	@JSFunction
 	public static String getFileEncoding(String aFile) throws IOException {
 		return wedo.openaf.core.IO.getFileEncoding(aFile);
 	}
