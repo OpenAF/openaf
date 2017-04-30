@@ -117,7 +117,7 @@ if (!irj || __expr != "") {
 		c++;
 		var el = list[i];
 
-		lognl("Progress " + c + "/" + Object.keys(list).length + "\r");
+		lognl("Progress " + Math.round(c * 100 / Object.keys(list).length) + "% (" + c + "/" + Object.keys(list).length + ")\r");
 		
 		if (toExclude.indexOf(el.name) >= 0) {
 			log("Excluding " + el.name);
@@ -174,7 +174,8 @@ if (!irj || __expr != "") {
 	}
 
 	//if (!lowmemory)	
-		zipNew.generate2File(classPath, {"compressionLevel": 9}, true);
+	log("Writing new repacked openaf.jar.");
+	zipNew.generate2File(classPath, {"compressionLevel": 9}, true);
 	//else
 	//	af.mv(classPath + ".tmp", classPath);
 	zip.close();
