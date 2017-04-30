@@ -1,9 +1,7 @@
 package wedo.openaf.plugins.HTTPd;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.mozilla.javascript.Context;
@@ -15,7 +13,7 @@ import wedo.openaf.AFCmdBase;
 import wedo.openaf.plugins.HTTPServer;
 
 import com.nwu.httpd.Codes;
-import com.nwu.httpd.HTTPd;
+import com.nwu.httpd.IHTTPd;
 import com.nwu.httpd.NanoHTTPD.Response.IStatus;
 import com.nwu.httpd.Request;
 import com.nwu.httpd.responses.Response;
@@ -32,11 +30,11 @@ public class JSResponse extends Response {
 	 * 
 	 * @param httpd
 	 * @param rUri
-	 * @param props
+	 * @param props 
 	 */
-	public JSResponse(HTTPd httpd, String rUri, Map<String, String> props) {
-		super(httpd, rUri);
-		this.props = props; 
+	public JSResponse(IHTTPd httpd, String rUri, Map<String, String> props) {
+		super(httpd, rUri); 
+		this.props = props;  
 	}
 	
 	public Scriptable toScriptable(Map<String, String> map) {
@@ -106,7 +104,7 @@ public class JSResponse extends Response {
 							(no.get("data") instanceof String) ? no.get("data").toString().getBytes()
 									                           : (byte[]) no.get("data"));
 						
-						this.size =	((no.get("data") instanceof String) ? no.get("data").toString().length()
+						this.size =	((no.get("data") instanceof String) ? no.get("data").toString().getBytes().length
 									                           : ((byte[]) no.get("data")).length);
 				} else {
 						this.data = new ByteArrayInputStream( ret.toString().getBytes());
