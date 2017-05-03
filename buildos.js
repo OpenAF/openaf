@@ -195,7 +195,12 @@ parallel4Array(jsList, function(i) {
                 	file.filename !== 'jquery.js') {
                 	var output = af.sh("java -jar compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
 			if (output.length > 0) log(file.filename + ": " + output);
-                	if (__stderr.length > 0) logErr(file.filename + ": " + __stderr);
+                	if (__stderr.length > 0) {
+                		if (__stderr.match(/ WARNING - /))
+                			logWarn(file.filename + ": " + __stderr);
+                		else
+                			logErr(file.filename + ": " + __stderr);
+                	}
 			sync(function() { 
                            tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
                         }, tempJar);
