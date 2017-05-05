@@ -30,11 +30,11 @@ public class JSResponse extends Response {
 	 * 
 	 * @param httpd
 	 * @param rUri
-	 * @param props 
+	 * @param props
 	 */
 	public JSResponse(IHTTPd httpd, String rUri, Map<String, String> props) {
-		super(httpd, rUri); 
-		this.props = props;  
+		super(httpd, rUri, props);
+		this.props = props; 
 	}
 	
 	public Scriptable toScriptable(Map<String, String> map) {
