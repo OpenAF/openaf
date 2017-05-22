@@ -63,11 +63,12 @@ public class Email extends ScriptableObject {
 	 * <key>Email.email(aServer, aSenderAddress, shouldSecure, useTLS, isHTML)</key>
 	 * Creates a Email object instance using the aServer SMTP server to send
 	 * email with the from field set to aSenderAddress. Optionally you can specify if a secure protocol (SSL) should be
-	 * used with shouldSecure = true, TLS with useTLS = true and isHTML to use the setHTML function later.
+	 * used with shouldSecure = true, to TLS add shouldSecure = true and useTLS = true and isHTML to use the setHTML function later.
 	 * </odoc>
+	 * @throws Exception 
 	 */
 	@JSConstructor
-	public void newEmail(String server, String sender, boolean shouldSecure, boolean tlssecure, boolean isHTML) {
+	public void newEmail(String server, String sender, boolean shouldSecure, boolean tlssecure, boolean isHTML) throws Exception {
 		this.secureProto = shouldSecure;
 		this.sender = sender;
 		this.server = server;
@@ -141,18 +142,21 @@ public class Email extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>Email.addHTMLHeader() : Email</key>
+	 * (deprecation) Please use the option in the constructor and the setHTML function.
 	 * Adds the necessary headers to support HTML contents. 
 	 * To be deprecated in the future. Please use new Email with isHTML = true and the setHTML function.
 	 * </odoc>
+	 * @throws Exception 
 	 */
 	@JSFunction
-	public Email addHTMLHeader() {
+	public Email addHTMLHeader() throws Exception {
+		throw new Exception("Please use the option in the constructor");
 		//headers.put("MIME-Version", "1.0");
 		//headers.put("Content-Type", "text/html; charset=ISO-8859-1");
 		//email.updateContentType("text/html; charset=ISO-8859-1");
-		this.contentType = "text/html; charset=ISO-8859-1";
+		/*this.contentType = "text/html; charset=ISO-8859-1";
 		
-		return this;
+		return this;*/
 	}
 	
 	/**
@@ -376,13 +380,6 @@ public class Email extends ScriptableObject {
 		}
 	}
 	
-	/**
-	 * <odoc>
-	 * <key>Email.setSecure(shouldSecure) : Email</key>
-	 * Sets if should use TLS/SSL when connecting to a email server.
-	 * </odoc>
-	 */
-	@JSFunction
 	public Email setSecure(boolean secure, boolean tls) {
 		this.secureProto = true;
 		if (!tls)

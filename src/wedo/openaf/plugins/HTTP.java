@@ -6,6 +6,7 @@ package wedo.openaf.plugins;
  *
  */
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Authenticator;
 import java.net.CookieHandler;
 import java.net.CookieManager;
@@ -14,7 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -34,7 +34,6 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
-import wedo.openaf.AFBase;
 import wedo.openaf.AFCmdBase;
 import wedo.openaf.SimpleLog;
 
@@ -58,6 +57,7 @@ public class HTTP extends ScriptableObject {
 		public int responseCode;
 		public String contentType;
 		public Map<String, List<String>> responseHeaders;
+		public InputStream responseStream;
 		
 		public HTTPResponse(String response, int responseCode, Map<String, List<String>> map, String contentType) {
 			this.response = response;
@@ -68,6 +68,13 @@ public class HTTP extends ScriptableObject {
 		
 		public HTTPResponse(byte[] response, int responseCode, Map<String, List<String>> map, String contentType) {
 			this.responseBytes = response;
+			this.responseCode = responseCode;
+			this.responseHeaders = map;
+			this.contentType = contentType;
+		}
+		
+		public HTTPResponse(InputStream stream, int responseCode, Map<String, List<String>> map, String contentType) {
+			this.responseStream = stream;
 			this.responseCode = responseCode;
 			this.responseHeaders = map;
 			this.contentType = contentType;
@@ -162,17 +169,18 @@ public class HTTP extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>HTTP.http(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout)</key>
+	 * <key>HTTP.http(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)</key>
 	 * Builds a HTTP request for the aURL provided with aRequestType (e.g. "GET" or "POST") sending
 	 * aIn body request (or "") and optionally sending aRequestMap headers and optionally specifying 
 	 * if the response isBytes and providing an optional custom HTTP aTimeout.  
 	 * If needed use java.lang.System.setProperty("sun.net.http.allowRestrictedHeaders", "true") to 
-	 * allow you to use restricted request headers.
+	 * allow you to use restricted request headers. If returnStream = true, the response will be in 
+	 * the form of a JavaStream (please use the returnStream function).
 	 * </odoc>
 	 */
 	@JSConstructor
-	public void newHTTP(String url, String requestType, Object in, NativeObject request, boolean bytes, int timeout) throws IOException {
-		exec(url, requestType, in, request, bytes, timeout);
+	public void newHTTP(String url, String requestType, Object in, NativeObject request, boolean bytes, int timeout, boolean stream) throws IOException {
+		exec(url, requestType, in, request, bytes, timeout, stream);
 	}
 	
 	/**
@@ -193,14 +201,15 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTP.exec(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout)</key>
+	 * <key>HTTP.exec(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) : Object</key>
 	 * Builds a HTTP request for the aURL provided with aRequestType (e.g. "GET" or "POST") sending
 	 * aIn body request (or "") and optionally sending aRequestMap headers and optionally specifying 
 	 * if the response isBytes and providing an optional custom HTTP aTimeout. 
+	 * If returnStream = true the response and return value will be in the form of a JavaStream.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object exec(String url, String requestType, Object in, NativeObject request, boolean bytes, int timeout) throws IOException {
+	public Object exec(String url, String requestType, Object in, NativeObject request, boolean bytes, int timeout, boolean stream) throws IOException {
 		Properties requestProps = new Properties();
 		
 		if (requestType.equals("undefined") || requestType == null) {
@@ -219,18 +228,24 @@ public class HTTP extends ScriptableObject {
 			}
 		}
 		
-		output = request(url, requestType, in, requestProps, bytes, timeout);
+		output = request(url, requestType, in, requestProps, bytes, stream, timeout);
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
 
+		no.put("responseCode", no, output.responseCode);
+		no.put("contentType", no, output.contentType);
+		
+		if (stream) {
+			return output.responseStream;
+		}
+		
 		if (bytes) {
 			no.put("responseBytes", no, output.responseBytes);
 		} else {
 			no.put("response", no, output.response);	
 		}
-		no.put("responseCode", no, output.responseCode);
-		no.put("contentType", no, output.contentType);
+		
 		outputObj = no;
 	
 		return outputObj;
@@ -238,28 +253,30 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTP.get(aUrl, aIn, aRequestMap, isBytes, aTimeout)</key>
+	 * <key>HTTP.get(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream)</key>
 	 * Builds a HTTP request for the aURL with a GET sending
 	 * aIn body request (or "") and optionally sending aRequestMap headers and optionally specifying 
-	 * if the response isBytes and providing an optional custom HTTP aTimeout. 
+	 * if the response isBytes and providing an optional custom HTTP aTimeout. If returnStream = true, the response will be in 
+	 * the form of a JavaStream (please use the returnStream function).
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object get(String url, Object in, NativeObject request, boolean bytes, int timeout) throws IOException {
-		return exec(url, "GET", in, request, bytes, timeout);
+	public Object get(String url, Object in, NativeObject request, boolean bytes, int timeout, boolean stream) throws IOException {
+		return exec(url, "GET", in, request, bytes, timeout, stream);
 	}
 	
 	/**
 	 * <odoc>
-	 * <key>HTTP.get(aUrl, aIn, aRequestMap, isBytes, aTimeout)</key>
+	 * <key>HTTP.get(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream)</key>
 	 * Builds a HTTP request for the aURL with a POST sending
 	 * aIn body request (or "") and optionally sending aRequestMap headers and optionally specifying 
-	 * if the response isBytes and providing an optional custom HTTP aTimeout. 
+	 * if the response isBytes and providing an optional custom HTTP aTimeout. If returnStream = true, the response will be in 
+	 * the form of a JavaStream (please use the returnStream function).
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object post(String url, Object in, NativeObject request, boolean bytes, int timeout) throws IOException {
-		return exec(url, "POST", in, request, bytes, timeout);
+	public Object post(String url, Object in, NativeObject request, boolean bytes, int timeout, boolean stream) throws IOException {
+		return exec(url, "POST", in, request, bytes, timeout, stream);
 	}
 	
 	/**
@@ -315,6 +332,17 @@ public class HTTP extends ScriptableObject {
 	@JSFunction
 	public String responseType() {
 		return output.contentType;
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>HTTP.responseStream() : JavaStream</key>
+	 * Returns a JavaStream if the option of returnStream = true in the previous instance function called.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object responseStream() {
+		return output.responseStream;
 	}
 	
 	/**
@@ -395,7 +423,7 @@ public class HTTP extends ScriptableObject {
 	 * @return
 	 * @throws IOException
 	 */
-	protected HTTPResponse request(String aURL, String method, Object in, Properties request, boolean bytes, int timeout) throws IOException {
+	protected HTTPResponse request(String aURL, String method, Object in, Properties request, boolean bytes, boolean stream, int timeout) throws IOException {
 		CookieHandler.setDefault(ckman);
 		
 		URL url = new URL(aURL);
@@ -418,7 +446,7 @@ public class HTTP extends ScriptableObject {
 			if (in instanceof String) {
 				if (!in.equals("")) {
 					con.setDoOutput(true);
-					IOUtils.write((String) in, con.getOutputStream(), (Charset) null);
+					IOUtils.write((String) in, con.getOutputStream());
 				}
 			} else {
 				con.setDoOutput(true);
@@ -432,14 +460,20 @@ public class HTTP extends ScriptableObject {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; responsecode = " + con.getResponseCode() + "; cookiesize = " + ckman.getCookieStore().getCookies().size(), null);
 	
 			if (bytes) {
-				return new HTTPResponse(IOUtils.toByteArray(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+				if (stream)
+					return new HTTPResponse(con.getInputStream(), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+				else
+					return new HTTPResponse(IOUtils.toByteArray(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
 			} else {
-				return new HTTPResponse(IOUtils.toString(con.getInputStream(), (Charset) null), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+				if (stream)
+					return new HTTPResponse(con.getInputStream(), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+				else
+					return new HTTPResponse(IOUtils.toString(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
 			}
 		} catch(Exception e) {
 			if (con.getErrorStream() != null) {
-				errorObj = IOUtils.toString(con.getErrorStream(), (Charset) null);
-				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream(), (Charset) null), e);
+				errorObj = IOUtils.toString(con.getErrorStream());
+				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream()), e);
 			}
 			throw e;
 		}
