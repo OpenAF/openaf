@@ -193,7 +193,7 @@ parallel4Array(jsList, function(i) {
 	 				file.filename !== 'js-yaml.js' &&
                     file.filename !== 'avsc.js' &&
                 	file.filename !== 'jquery.js') {
-                	var output = af.sh("java -jar compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+                	var output = af.sh("java -jar compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
 			if (output.length > 0) log(file.filename + ": " + output);
                 	if (__stderr.length > 0) {
                 		if (__stderr.match(/ WARNING - /))

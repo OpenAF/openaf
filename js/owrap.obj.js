@@ -1121,9 +1121,10 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.get(aBaseURI, aIndexMap, aLogin, aPassword, aTimeout, aRequestMap) : Map</key>
-	 * Tries to obtain aIndexMap from the REST aBaseURI service returning as a Map.
-	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request.
+	 * <key>ow.obj.rest.get(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : String</key>
+	 * Tries to obtain aIndexMap from the REST aBaseURI service returning as a string (uses the HTTP GET method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
 	 * </odoc>
 	 */
 	get: function(aURL, aIdx, _l, _p, _t, aRequestMap) { 
@@ -1142,23 +1143,36 @@ OpenWrap.obj.prototype.rest = {
 			h.login(_l, _p);
 		} 
  		
+ 		if (isDef(_l) && isFunction(_l)) {
+ 			_l(h);
+ 		}
+ 		
  		try {
  			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", undefined, aRequestMap, undefined, _t);
  		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + h.getErrorResponse();
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 			throw e;
  		}
 	},
 	
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.jsonGet(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : Map</key>
+	 * Tries to obtain aIndexMap from the REST aBaseURI service returning as a map (uses the HTTP GET method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object. 
+	 * </odoc>
+	 */
 	jsonGet: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
 		return jsonParse(this.get(aURL, aIdx, _l, _p, _t, aRequestMap).response);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.create(aBaseURI, aIndexMap, aDataRowMap, aLogin, aPassword, aTimeout, aRequestMap) : Map</key>
-	 * Tries to create a new aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a Map.
-	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request.
+	 * <key>ow.obj.rest.create(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : String</key>
+	 * Tries to create a new aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP POST method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
 	 * </odoc>
 	 */
 	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap) {
@@ -1176,24 +1190,39 @@ OpenWrap.obj.prototype.rest = {
 		if (isDefined(_l) && isDefined(_p)) {
 			h.login(_l, _p);
 		} 
-		var rmap = merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
+		
+ 		if (isDef(_l) && isFunction(_l)) {
+ 			_l(h);
+ 		}
+		
+		//var rmap = merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
+		var rmap = merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap);
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", stringify(aDataRow), rmap, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", stringify(aDataRow, undefined, ''), rmap, undefined, _t);
 		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + h.getErrorResponse();
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 			throw e;
 		}
 	},
 	
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.jsonCreate(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : Map</key>
+	 * Tries to create a new aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP POST method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
+	 * </odoc>
+	 */
 	jsonCreate: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap) {
 		return jsonParse(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap).response);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.set(aBaseURI, aIndexMap, aDataRowMap, aLogin, aPassword, aTimeout) : Map</key>
-	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a Map.
-	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request.
+	 * <key>ow.obj.rest.set(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout) : String</key>
+	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP PUT method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
 	 * </odoc>
 	 */
 	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap) {
@@ -1211,24 +1240,39 @@ OpenWrap.obj.prototype.rest = {
 		if (isDefined(_l) && isDefined(_p)) {
 			h.login(_l, _p);
 		} 
-		var rmap = merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
+		
+ 		if (isDef(_l) && isFunction(_l)) {
+ 			_l(h);
+ 		}
+		
+		//var rmap = merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
+		var rmap = merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap);		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", stringify(aDataRow), rmap, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", stringify(aDataRow, undefined, ''), rmap, undefined, _t);
 		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + h.getErrorResponse();
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 			throw e;
 		}
 	},
-	
-	jsonSet: function(aURL, aDataRow, _l, _p, _t, aRequestMap) {
-		return jsonParse(this.set(aURL, aDataRow, _l, _p, _t, aRequestMap).response);
+
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.jsonSet(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout) : Map</key>
+	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP PUT method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
+	 * </odoc>
+	 */
+	jsonSet: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap) {
+		return jsonParse(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap).response);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.remove(aBaseURI, aIndexMap, aLogin, aPassword, aTimeout, aRequestMap) : Map</key>
-	 * Tries to remove aIndexMap entry from the REST aBaseURI service returning the reply as a Map.
-	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request.
+	 * <key>ow.obj.rest.remove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : String</key>
+	 * Tries to remove aIndexMap entry from the REST aBaseURI service returning the reply as a string (uses the HTTP DELETE method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
 	 * </odoc>
 	 */
 	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
@@ -1247,14 +1291,26 @@ OpenWrap.obj.prototype.rest = {
 			h.login(_l, _p);
 		} 
 		
+ 		if (isDef(_l) && isFunction(_l)) {
+ 			_l(h);
+ 		}
+		
 		try {
 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", aRequestMap, undefined, undefined, _t);
 		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + h.getErrorResponse();
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 			throw e;
 		}
 	},
 	
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.jsonRemove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : Map</key>
+	 * Tries to remove aIndexMap entry from the REST aBaseURI service returning the reply as a map (uses the HTTP DELETE method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
+	 * </odoc>
+	 */
 	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
 		return jsonParse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap).response);
 	},
@@ -1274,7 +1330,7 @@ OpenWrap.obj.prototype.rest = {
 			surl += "/" + encodeURIComponent(parName) + "/" + encodeURIComponent(o);
 		}
 		
-		return encodeURIComponent(surl);
+		return surl;
 	}
 };
 
