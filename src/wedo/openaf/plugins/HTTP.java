@@ -7,6 +7,7 @@ package wedo.openaf.plugins;
  */
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Authenticator;
 import java.net.CookieHandler;
 import java.net.CookieManager;
@@ -21,6 +22,7 @@ import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -34,6 +36,8 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
+import wedo.openaf.AF;
+import wedo.openaf.AFBase;
 import wedo.openaf.AFCmdBase;
 import wedo.openaf.SimpleLog;
 
@@ -42,6 +46,10 @@ public class HTTP extends ScriptableObject {
 	protected HTTPResponse output = new HTTPResponse("", -1, null, "");
 	protected Object outputObj = new Object();
 	protected Object errorObj = new Object();
+	protected Authenticator authenticator = null;
+	protected boolean forceBasic = false;
+	protected String l = null;
+	protected String p = null;
 	
 	/**
 	 * 
@@ -185,18 +193,26 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTP.login(aUser, aPassword)</key>
-	 * Tries to build a simple password authentication with the provided aUser and aPassword (encripted or not)
+	 * <key>HTTP.login(aUser, aPassword, forceBasic)</key>
+	 * Tries to build a simple password authentication with the provided aUser and aPassword (encrypted or not).
+	 * By default it tries to use the Java Password Authentication but it forceBasic = true it will force basic
+	 * authentication to be use.
 	 * </odoc>
 	 */
 	@JSFunction
-	public void login(final String user, final String pass) {
-		Authenticator authenticator = new Authenticator() {
+	public void login(final String user, final String pass, boolean forceBasic) {
+		authenticator = new Authenticator() {
 			public PasswordAuthentication getPasswordAuthentication() {
 				return new PasswordAuthentication (user, (AFCmdBase.afc.dIP(pass)).toCharArray());
 			}
 		};
-		Authenticator.setDefault(authenticator);
+		//Authenticator.setDefault(authenticator);
+		if (forceBasic) {
+			this.forceBasic = true;
+			l = user;
+			p = pass;
+		}
+		SimpleLog.log(SimpleLog.logtype.DEBUG, "HTTP connection with authentication for " + user, null);
 	}
 	
 	/**
@@ -424,14 +440,16 @@ public class HTTP extends ScriptableObject {
 	 * @throws IOException
 	 */
 	protected HTTPResponse request(String aURL, String method, Object in, Properties request, boolean bytes, boolean stream, int timeout) throws IOException {
+		if (this.authenticator != null) Authenticator.setDefault(this.authenticator);
 		CookieHandler.setDefault(ckman);
 		
 		URL url = new URL(aURL);
 		
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 		con.setRequestMethod(method);
-		
+	
 		//con.addRequestProperty("Accept-Charset", Charset.defaultCharset().displayName());
+		con.addRequestProperty("host", url.getHost());
 		con.addRequestProperty("Accept", "*/*");
 		
 		if (request != null) {
@@ -440,36 +458,74 @@ public class HTTP extends ScriptableObject {
 			}
 		}
 		
-		con.setDoInput(true);  
+		if (forceBasic) {
+			con.addRequestProperty("Authorization", "Basic " + new String(Base64.encodeBase64(new String(l + ":" + p).getBytes())));
+		}
+		
+		if (timeout > 0) con.setConnectTimeout(timeout);
+		if (timeout > 0) con.setReadTimeout(timeout);
+		
+		InputStream is = null;
 		
 		if (!(in instanceof org.mozilla.javascript.Undefined))
 			if (in instanceof String) {
 				if (!in.equals("")) {
 					con.setDoOutput(true);
-					IOUtils.write((String) in, con.getOutputStream());
+					con.addRequestProperty("content-length", String.valueOf(((String) in).length()));
+					OutputStream os = con.getOutputStream();
+					IOUtils.write((String) in, os);
+					os.flush();
+					os.close();
+					is = con.getInputStream();
+					//con.setDoInput(true);
+					//IOUtils.closeQuietly(con.getOutputStream());
 				}
 			} else {
 				con.setDoOutput(true);
-				IOUtils.write((byte[]) in, con.getOutputStream());
+				con.addRequestProperty("content-length", String.valueOf(((byte[]) in).length));
+				OutputStream os = con.getOutputStream();
+				IOUtils.write((byte[]) in, os);
+				os.flush();
+				os.close();
+				is = con.getInputStream();
+				//con.setDoInput(true);
+				//IOUtils.closeQuietly(con.getOutputStream());
 			}
-				
-		if (timeout > 0) con.setConnectTimeout(timeout);
 		
-		con.connect(); 
+		//con.setDoInput(true);
+		if (is == null) {
+			con.setDoInput(true);
+			is = con.getInputStream();
+		}
+		
+		//con.connect(); 
 		try {
-			SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; responsecode = " + con.getResponseCode() + "; cookiesize = " + ckman.getCookieStore().getCookies().size(), null);
-	
+			SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; cookiesize = " + ckman.getCookieStore().getCookies().size(),  null);
+			//SimpleLog.log(SimpleLog.logtype.DEBUG, "URL = " + aURL + "; method = " + method + "; responsecode = " + con.getResponseCode() + "; cookiesize = " + ckman.getCookieStore().getCookies().size(), null);
+		
+			//con.setDoInput(true);
+			
+			HTTPResponse r;		
+			int responseCode = con.getResponseCode();
+			Map<String, List<String>> headerFields = con.getHeaderFields();
+			String contentType = con.getContentType();
+			
 			if (bytes) {
 				if (stream)
-					return new HTTPResponse(con.getInputStream(), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+					r = new HTTPResponse(is, responseCode, headerFields, contentType);
 				else
-					return new HTTPResponse(IOUtils.toByteArray(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+					r = new HTTPResponse(IOUtils.toByteArray(is), responseCode, headerFields, contentType);
 			} else {
 				if (stream)
-					return new HTTPResponse(con.getInputStream(), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+					r = new HTTPResponse(is, responseCode, headerFields, contentType);
 				else
-					return new HTTPResponse(IOUtils.toString(con.getInputStream()), con.getResponseCode(), con.getHeaderFields(), con.getContentType());
+					r = new HTTPResponse(IOUtils.toString(is), responseCode, headerFields, contentType);
 			}
+			
+			if (this.authenticator != null) 
+				Authenticator.setDefault(null);
+			
+			return r;
 		} catch(Exception e) {
 			if (con.getErrorStream() != null) {
 				errorObj = IOUtils.toString(con.getErrorStream());

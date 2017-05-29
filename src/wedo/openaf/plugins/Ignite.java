@@ -12,7 +12,6 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
-import wedo.openaf.AFBase;
 import wedo.openaf.AFCmdBase;
 
 public class Ignite extends ScriptableObject {
@@ -83,7 +82,7 @@ public class Ignite extends ScriptableObject {
 		if (name == null || name instanceof Undefined) {
 			ignite = Ignition.ignite();
 		} else {
-			config.setGridName((String) name);
+			config.setIgniteInstanceName((String) name);
 			ignite = Ignition.ignite((String) name);
 		}
 	}
