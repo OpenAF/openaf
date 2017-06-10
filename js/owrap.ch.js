@@ -386,6 +386,55 @@ OpenWrap.ch.prototype.__types = {
 			this.__cacheCh[aName].unset(aK);
 		}	
 	},	
+	// Dummy implementation
+	//
+	dummy: {
+		__channels: {},
+		create       : function(aName, shouldCompress, options) {
+			//ow.loadObj();
+			//this.__channels[aName] = options;
+		},
+		destroy      : function(aName) {
+			//delete this.__channels[aName];
+		},
+		size         : function(aName) {
+			//return this.getKeys(aName).length;
+			return 0;
+		},
+		forEach      : function(aName, aFunction) {
+			
+		},
+		getAll      : function(aName, full) {
+			return [];
+		},
+		getKeys      : function(aName, full) {
+			return [];
+		},
+		getSortedKeys: function(aName, full) {
+			return [];				
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			return {};
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			return {};
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			return {};		
+		},
+		get          : function(aName, aK) {
+			return {};
+		},
+		pop          : function(aName) {
+			return {};		
+		},
+		shift        : function(aName) {
+			return {};
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			return {};
+		}
+	},
 	// Remote channel implementation
 	//
 	remote: {
@@ -440,6 +489,174 @@ OpenWrap.ch.prototype.__types = {
 		},
 		unset        : function(aName, aK, aTimestamp) {
 			return ow.obj.rest.jsonRemove(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout);
+		}
+	},
+	// ElasticSearch channel implementation
+	//
+	elasticsearch: {
+		__channels: {},
+		create       : function(aName, shouldCompress, options) {
+			ow.loadObj();
+			if (isUnDef(options.index)) throw "Please define an elastic search index to use";
+			if (isUnDef(options.idKey)) options.idKey = "_id";
+			if (isUnDef(options.url))   throw "Please define the elastic search url";
+			if (isUnDef(options.user) || isUnDef(options.pass))  
+				throw "Please define an user and pass to access the elastic search";
+			this.__channels[aName] = options;
+		},
+		destroy      : function(aName) {
+			delete this.__channels[aName];
+		},
+		size         : function(aName) {
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			url += "/_count";
+			var parent = this;
+			
+			var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
+				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+			});
+			if (isDef(res) && isDef(res.count)) {
+				return res.count
+			} else {
+				return undefined
+			}
+		},
+		forEach      : function(aName, aFunction) {
+			var aKs = this.getKeys(aName);
+			for(var i in aKs) {
+				aFunction(aKs[i], this.get(aName, aKs[i]));
+			}
+		},
+		getAll      : function(aName, full) {
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			url += "/_search";
+			var ops = {};
+			
+			if (isDef(full) && isObject(full)) { ops = full; } 
+				
+			var parent = this;
+			var res = ow.obj.rest.jsonCreate(url, {}, ops, function(h) { 
+				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+			});
+			if (isDef(res) && isDef(res.hits) && isDef(res.hits.hits)) {
+				return $stream(res.hits.hits).map(function(r) {
+					r._source._id = r._id;
+					return r._source;
+				}).toArray();
+			} else {
+				return undefined
+			}			
+		},
+		getKeys      : function(aName, full) {
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			url += "/_search";
+			var ops = {};
+			
+			if (isDef(full) && isObject(full)) { ops = full; } 
+				
+			var parent = this;
+			var res = ow.obj.rest.jsonCreate(url, {}, merge(ops, { _source: false }), function(h) { 
+				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+			});
+			if (isDef(res) && isDef(res.hits) & isDef(res.hits.hits)) {
+				return $stream(res.hits.hits).map("_id").toArray();
+			} else {
+				return undefined
+			}	
+		},
+		getSortedKeys: function(aName, full) {
+			return this.getKeys(aName, full);	
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			throw "Channel operation not supported in Elastic Search";
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			url += "/" + this.__channels[aName].idKey;
+			
+			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
+				url += "/" + aK[this.__channels[aName].idKey];
+			} else {
+				if (isDef(aK.key)) url += "/" + aK.key;
+			}
+				
+			var parent = this;
+			var res = ow.obj.rest.jsonSet(url, {}, aV, function(h) { 
+				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+			});
+			return res;		
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			var url = this.__channels[aName].url;
+			url += "/_bulk";
+			var ops = "";
+			
+			for(var i in aVs) {
+				ops += stringify({ index: {
+					_index: this.__channels[aName].index, 
+					_type : this.__channels[aName].idKey,
+					_id   : aVs[i][this.__channels[aName].idKey] 
+				}}, undefined, "") + "\n" + 
+				stringify(aVs[i], undefined, "") + "\n";
+			}
+			
+			plugin("HTTP");
+			var h = new HTTP();
+			h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
+			try {
+				return h.exec(url, "POST", ops, {"Content-Type":"application/x-www-form-urlencoded"});
+			} catch(e) {
+				e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
+				throw e;
+			}		
+		},
+		get          : function(aName, aK) {
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			url += "/" + this.__channels[aName].idKey;
+			
+			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
+				url += "/" + aK[this.__channels[aName].idKey];
+			} else {
+				if (isDef(aK.key)) url += "/" + aK.key;
+			}
+				
+			var parent = this;
+			var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
+				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+			});
+			
+			if (isDef(res) && res.found) {
+				return res._source;
+			} else {
+				return undefined;
+			}	
+		},
+		pop          : function(aName) {
+			var aKs = this.getSortedKeys(aName);
+			var aK = aKs[aKs.length - 1];
+			var aV = this.get(aName, aK);
+			return aK;		
+		},
+		shift        : function(aName) {
+			var aK = this.getSortedKeys(aName)[0];
+			var aV = this.get(aName, aK);
+			return aK;
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			url += "/" + this.__channels[aName].idKey;
+			
+			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
+				url += "/" + aK[this.__channels[aName].idKey];
+			} else {
+				if (isDef(aK.key)) url += "/" + aK.key;
+			}
+				
+			var parent = this;
+			var res = ow.obj.rest.jsonRemove(url, {}, function(h) { 
+				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+			});
+			return res;	
 		}
 	},
 	// Ignite channel implementation
@@ -753,7 +970,7 @@ OpenWrap.ch.prototype.forEach = function(aName, aFunction, x) {
 	
 /**
  * <odoc>
- * <key>ow.ch.getAll(aName) : Array</key>
+ * <key>ow.ch.getAll(aName, fullInfo) : Array</key>
  * Will return all values for the channel identified by the aName provided.
  * </odoc>
  */
@@ -765,7 +982,7 @@ OpenWrap.ch.prototype.getAll = function(aName, x) {
 	
 	if (isDef(this.__types[this.channels[aName]].getAll)) {
 		sync(function() {
-			res = res.concat(parent.__types[parent.channels[aName]].getAll(aName));
+			res = res.concat(parent.__types[parent.channels[aName]].getAll(aName, x));
 		}, x);
 	} else {
 		this.forEach(aName, function(aKey, aValue) {
@@ -1121,6 +1338,13 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 };
 	
 OpenWrap.ch.prototype.utils = {
+    /**
+     * <odoc>
+     * <key>ow.ch.utils.getMirrorSubscriber(aTargetCh, aFunc) : Function</key>
+     * Returns a channel subscriber function that will mirror any changes to aTargetCh if aFunc returns true when invoked
+     * with the key being changed.
+     * </odoc>
+     */
 	getMirrorSubscriber: function(aTargetCh, aFunc) {
 		return function(aC, aO, aK, aV) {
 			if (isUnDef(aFunc)) aFunc = function() { return true; };
@@ -1137,6 +1361,38 @@ OpenWrap.ch.prototype.utils = {
 				if (aFunc(aK)) $ch(aTargetCh).unset(aK);
 				break;
 			}		
+		}
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.getLogStashSubscriber(aTargetCh, aType, aHost, aErrorFunc) : Function</key>
+	 * Returns a channel subscriber function that will transform changes to a log channel (see startLog and the __log channel)
+	 * and will replicate them in aTargetCh (this means expecting the value to have a 'd': date; 'm': message and 't' as the level/type).
+	 * The value set on aTargetCh will follow the LogStash format setting type to aType and host to aHost. The id and key will be set 
+	 * to a sha1 hash of the stringify version of the value being set. In case of error aErrorFunc will be invoked providing the exception
+	 * as an argument.
+	 * </odoc>
+	 */
+	getLogStashSubscriber: function(aTargetCh, aType, aHost, aErrorFunc) {
+		return function(aC, aO, aK, aV) {
+			try {
+				if (aO == "set") {
+					var _id = sha1(stringify(aV));
+					$ch(aTargetCh).set({
+						id: _id
+					}, {
+						"@version"  : 1,
+						"@timestamp": aV.d,
+						"message"   : aV.m,
+						"type"      : aType,
+						"host"      : aHost,
+						"level"     : aV.t,
+						"id"        : _id
+					});
+				}
+			} catch(e) {
+				aErrorFunc(e);
+			}
 		}
 	}
 };

@@ -7,7 +7,7 @@
  * </odoc>
  */
 OpenWrap.oJob = function() { 
-	startLog();
+	//startLog();
 
 	this.__host = "local";
 	this.__ip = "127.0.0.1";
@@ -76,6 +76,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	}
 	
 	if (isDef(this.__ojob.channels)) {
+		if (this.__ojob.channels.log) startLog();
 		if (this.__ojob.channels.expose) {
 			if (isDef(this.__ojob.channels.port)) {
 
@@ -112,7 +113,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	
 					if (isUnDef(this.__ojob.channels.list)) {
 						this.__ojob.channels.list = $ch().list();
-						this.__ojob.channels.list.push("__log");
+						//this.__ojob.channels.list.push("__log");
 					}
 	
 					for(var i in this.__ojob.channels.list) {
@@ -534,13 +535,22 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			if (existing.name != 'oJob Log') {
 				var msg = "[" + existing.name + "] | ";
 				if (existing.start && (!existing.error && !existing.success)) { 
-					printnl(_b(msg + "STARTED | " + new Date()) + "\n" + _g(aa) + _c(s)); 
+					var __d = new Date();
+					var __m = msg + "STARTED | " + __d;
+					printnl(_b(__m) + "\n" + _g(aa) + _c(s)); 
+					if (isDef(getChLog())) getChLog().set({ d: __d, t: "INFO" }, { d: __d, t: "INFO", m: __m });
 				}
 				if (existing.start && existing.error) { 
-					printErr("\n" + _e(ss) + _g(aa) + _b(msg + "Ended in ERROR  | " + new Date()) + "\n" + stringify(existing) + "\n" + _e(ss)); 
+					var __d = new Date();
+					var __m = msg + "Ended in ERROR  | " + __d;
+					printErr("\n" + _e(ss) + _g(aa) + _b(__m) + "\n" + stringify(existing) + "\n" + _e(ss)); 
+					if (isDef(getChLog())) getChLog().set({ d: __d, t: "ERROR" }, { d: __d, t: "ERROR", m: __m });
 				}
 				if (existing.start && existing.success) { 
-					printnl("\n" + _c(ss)); print(_g(aa) +_b(msg + "Ended with SUCCESS | " + new Date()) + "\n"); 
+					var __d = new Date();
+					var __m = msg + "Ended with SUCCESS | " + __d;
+					printnl("\n" + _c(ss)); print(_g(aa) +_b(__m) + "\n"); 
+					if (isDef(getChLog())) getChLog().set({ d: __d, t: "INFO" }, { d: __d, t: "INFO", m: __m });
 				}
 			}
 		} catch(e) { 
@@ -574,17 +584,20 @@ OpenWrap.oJob.prototype.stop = function() {
 	stopLog();
 }
 
-OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId) {
+OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 	var argss = {};
 	if (isDef(aArgsA)) {
 		if (isArray(aArgsA)) {
 			argss = merge(argss, { __oJobRepeat: aArgsA });	
 		} else {
 			if (isObject(aArgsA)) {
-				argss = merge(argss, aArgsA);
+				if (execStr && isDef(aArgsA.__oJobExec)) 
+					argss = merge(argss, this.__processArgs(eval(aArgsA.__oJobExec)));
+				else
+					argss = merge(argss, aArgsA);
 			} else {
 				if (isString(aArgsA)) {
-					argss = merge(argss, this.__processArgs(eval(aArgsA)));
+					argss = merge(argss, { __oJobExec: aArgsA });
 				}
 			}
 		}
@@ -770,7 +783,6 @@ OpenWrap.oJob.prototype.run = function(provideArgs, aId) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
-	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, undefined, aId) : {};
 	var parent = this;
 	var altId = (isDef(aId) ? aId : "");
 
@@ -785,7 +797,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 					canContinue = true;
 				} else {
 					canContinue = false;
-					this.__addLog("depsFail", aJob.name, undefined, args, undefined, aId);
+					this.__addLog("depsFail", aJob.name, undefined, provideArgs, undefined, aId);
 				}
 			}
 		}
@@ -811,6 +823,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 	}
 	
 	if (canContinue) {
+		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, undefined, aId, true) : {};
+		
 		args.objId = this.getID() + altId;
 		var uuid = this.__addLog("start", aJob.name, undefined, args, undefined, aId);
 		args.execid = uuid;

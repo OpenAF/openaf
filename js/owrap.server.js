@@ -169,6 +169,7 @@ OpenWrap.server.prototype.getPid = function(aPidFile) {
 }
 
 
+
 //-----------------------------------------------------------------------------------------------------
 // JMX
 //-----------------------------------------------------------------------------------------------------
@@ -350,6 +351,28 @@ OpenWrap.server.prototype.ldap = function(aServer, aUsername, aPassword) {
 
 /**
  * <odoc>
+ * <key>ow.server.ldap.startTLS()</key>
+ * Starts TLS over the current connection.
+ * </odoc>
+ */
+OpenWrap.server.prototype.ldap.prototype.startTLS = function() {
+	this.tls = this.ctx.extendedOperation(new javax.naming.ldap.StartTlsRequest());
+	this.ssl = this.tls.negotiate();
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.ldap.close()</key>
+ * Closes the current connection.
+ * </odoc>
+ */
+OpenWrap.server.prototype.ldap.prototype.close = function() {
+	if (isDef(this.tls)) this.tls.close();
+	this.ctx.close();
+}
+	
+/**
+ * <odoc>
  * <key>ow.server.ldap.search(baseSearch, searchFilter) : Array</key>
  * Tries to return the result of using searchFilter under the baseSearh.
  * See also ow.server.ldap 
@@ -448,9 +471,9 @@ OpenWrap.server.prototype.rest = {
 		
 		switch(aReq.method) {
 		case "GET": res.data = stringify(aGetFunc(idxs), undefined, ""); break;
-		case "POST":  
+		case "POST":
 			//res.data = stringify(aCreateFunc(idxs, JSON.parse(io.readFileString(aReq.files.content))));
-			res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.files.postData)), undefined, "");
+			res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.params["NanoHttpd.QUERY_STRING"])), undefined, "");
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
 			break;
 		case "PUT": 
@@ -541,7 +564,8 @@ OpenWrap.server.prototype.rest = {
 			if (props[i].length > 0)
 				propsObj[decodeURIComponent(props[i])] = jsonParse(decodeURIComponent(props[i + 1]));
 		}
-		for (var parName in req.params) {
+		
+		/*for (var parName in req.params) {
 			if (!parName.match(/^NanoHttpd\./) && parName.length > 0) {
 				propsObj[decodeURIComponent(parName)] = jsonParse(decodeURIComponent(req.params[parName]));
 			}
@@ -553,7 +577,7 @@ OpenWrap.server.prototype.rest = {
 			req.header["content-type"].match(/application\/json/i)) {
 			var data = jsonParse(req.files.postData);
 			propsObj = merge(propsObj, data);
-		}
+		}*/
 		
 		return propsObj;
 	},

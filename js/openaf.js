@@ -488,6 +488,7 @@ function genUUID() {
 	s4() + '-' + s4() + s4() + s4();
 }
 
+
 /**
  * <odoc>
  * <key>toCSV(anArray) : CSV</key>
@@ -505,13 +506,30 @@ if (isUndefined(__logStatus)) __logStatus = false;
 
 /**
  * <odoc>
- * <key>startLog()</key>
- * Starts collecting log messages logged with log* functions. See stopLog() and dumpLog()
+ * <key>startLog(externalLogging)</key>
+ * Starts collecting log messages logged with log* functions. See stopLog() and dumpLog().
+ * You can also specify externalLogging, a custom channel subscribe function. 
  * </odoc>
  */
-function startLog() {
+function startLog(externalLogging) {
 	$ch("__log").create();
 	__logStatus = true;
+	if (isDef(externalLogging) && isFunction(externalLogging)) {
+		return $ch("__log").subscribe(externalLogging);
+	}
+}
+
+/**
+ * <odoc>
+ * <key>getChLog() : Channel</key>
+ * Returns the current log dump channel.
+ * </odoc>
+ */
+function getChLog() {
+	if (__logStatus) 
+		return $ch("__log");
+	else
+		return undefined;
 }
 
 /**
@@ -813,6 +831,7 @@ function processExpr(aSep, ignoreCase) {
 function getVersion() {
 	return af.getVersion();
 }
+
 
 /**
  * <odoc>
@@ -2265,13 +2284,6 @@ OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.o
 OpenWrap.prototype.loadCh = function() { loadLib(getOpenAFJar() + "::js/owrap.ch.js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
 /**
  * <odoc>
- * <key>ow.loadPortal()</key>
- * Loads OpenWrap WAF portal functionality. 
- * </odoc>
- */
-OpenWrap.prototype.loadPortal = function() { loadLib(getOpenAFJar() + "::js/owrap.portal.js"); ow.portal = new OpenWrap.portal(); pods.declare("ow.portal", ow.portal); return ow.portal; }
-/**
- * <odoc>
  * <key>ow.loadOJob()</key>
  * Loads OpenWrap oJob functionality. 
  * </odoc>
@@ -2482,18 +2494,18 @@ function loadDBInMem(aDB, aFilename) {
 
 /**
  * <odoc>
- * <key>traverse(aObject, aFunction) : Map</key>
+ * <key>t(aObject, aFunction) : Map</key>
  * Traverses aObject executing aFunction for every single element. The aFunction will receive the arguments: aKey, aValue, aPath.
  * </odoc>
  */
 function traverse(aObject, aFunction, aParent) {
 	var keys = Object.keys(aObject);
-	var parent = isUndefined(aParent) ? "" : aParent;
+	var parent = isUnDef(aParent) ? "" : aParent;
 
 	for(var i in keys) {
 		aFunction(keys[i], aObject[keys[i]], parent);
 
-		if (typeof aObject[keys[i]] == 'object') {
+		if (isObject(aObject[keys[i]])) {
 			var newParent = parent + ((isNaN(Number(keys[i]))) ? "." + keys[i] : "[\"" + keys[i] + "\"]");
 			traverse(aObject[keys[i]], aFunction, newParent);
 		}
@@ -2981,6 +2993,7 @@ function newJavaArray(aJavaClass, aSize) {
 	return java.lang.reflect.Array.newInstance(aJavaClass, aSize);
 }
 
+
 var alert;
 if (isUndefined(alert)) alert = function(msg) {
 	printErr(String(msg));
@@ -3144,7 +3157,7 @@ IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileStri
  * - subscribe(aFunction, onlyFromNow, anId)\
  * - unsubscribe(aId)\
  * - forEach(aFunction)\
- * - getAll()\
+ * - getAll(fullInfo)\
  * - getKeys(fullInfo)\
  * - getSortedKeys(fullInfo)\
  * - set(aKey, aValue, aForcedTimestamp)\

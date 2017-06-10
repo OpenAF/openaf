@@ -44,8 +44,8 @@ import wedo.openaf.SimpleLog;
 public class HTTP extends ScriptableObject {
 	protected static CookieManager ckman = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
 	protected HTTPResponse output = new HTTPResponse("", -1, null, "");
-	protected Object outputObj = new Object();
-	protected Object errorObj = new Object();
+	protected Object outputObj = null;
+	protected Object errorObj = null;
 	protected Authenticator authenticator = null;
 	protected boolean forceBasic = false;
 	protected String l = null;
@@ -529,6 +529,9 @@ public class HTTP extends ScriptableObject {
 		} catch(Exception e) {
 			if (con.getErrorStream() != null) {
 				errorObj = IOUtils.toString(con.getErrorStream());
+				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream()), e);
+			} else {
+				errorObj = IOUtils.toString(con.getInputStream());
 				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream()), e);
 			}
 			throw e;
