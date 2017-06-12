@@ -36,7 +36,6 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
-import wedo.openaf.AF;
 import wedo.openaf.AFBase;
 import wedo.openaf.AFCmdBase;
 import wedo.openaf.SimpleLog;
