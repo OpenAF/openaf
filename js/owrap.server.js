@@ -168,8 +168,6 @@ OpenWrap.server.prototype.getPid = function(aPidFile) {
 	return io.readFileString(aPidFile);
 }
 
-
-
 //-----------------------------------------------------------------------------------------------------
 // JMX
 //-----------------------------------------------------------------------------------------------------
@@ -802,9 +800,10 @@ OpenWrap.server.prototype.httpd = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.server.httpd.replyFile(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction) : Map</key>
+	 * <key>ow.server.httpd.replyFile(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray) : Map</key>
 	 * Provides a helper aHTTPd reply that will enable the download of a file, from aBaseFilePath, given aURI part of 
-	 * aBaseURI. Optionally you can also provide a notFoundFunction. Example:\
+	 * aBaseURI. Optionally you can also provide a notFoundFunction and an array of file strings (documentRootArraY) to replace as
+	 * documentRoot. Example:\
 	 * \
 	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
 	 *    "/stuff/to/server": function(req) {\
@@ -818,7 +817,7 @@ OpenWrap.server.prototype.httpd = {
 	 * \
 	 * </odoc>
 	 */
-	replyFile: function(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction) {
+	replyFile: function(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray) {
 		if (isUndefined(notFoundFunction)) {
 			notFoundFunction = function() {
 				return aHTTPd.reply("Not found!", ow.server.httpd.mimes.TXT, ow.server.httpd.codes.NOTFOUND);
@@ -828,6 +827,14 @@ OpenWrap.server.prototype.httpd = {
 			var baseFilePath = aBaseFilePath;
 			var furi = String((new java.io.File(new java.io.File(baseFilePath),
 				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
+			
+			if (!(furi.match(new RegExp("^" + baseFilePath))))
+				for(var i in documentRootArray) {
+					furi = String((new java.io.File(new java.io.File(baseFilePath),
+						(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
+					if (furi.match(new RegExp("^" + baseFilePath))) break;
+				}
+			
 			if (furi.match(new RegExp("^" + baseFilePath)))
 				return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi));
 			else
