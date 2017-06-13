@@ -503,12 +503,20 @@ OpenWrap.ch.prototype.__types = {
 			if (isUnDef(options.user) || isUnDef(options.pass))  
 				throw "Please define an user and pass to access the elastic search";
 			this.__channels[aName] = options;
+			
+			if (isFunction(options.index)) {
+				this.__channels[aName].fnIndex = options.index;
+			} else {
+				this.__channels[aName].fnIndex = function() {
+					return options.index;
+				}
+			}
 		},
 		destroy      : function(aName) {
 			delete this.__channels[aName];
 		},
 		size         : function(aName) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
 			url += "/_count";
 			var parent = this;
 			
@@ -528,7 +536,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getAll      : function(aName, full) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
 			url += "/_search";
 			var ops = {};
 			
@@ -548,7 +556,7 @@ OpenWrap.ch.prototype.__types = {
 			}			
 		},
 		getKeys      : function(aName, full) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
 			url += "/_search";
 			var ops = {};
 			
@@ -571,7 +579,7 @@ OpenWrap.ch.prototype.__types = {
 			throw "Channel operation not supported in Elastic Search";
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
@@ -593,7 +601,7 @@ OpenWrap.ch.prototype.__types = {
 			
 			for(var i in aVs) {
 				ops += stringify({ index: {
-					_index: this.__channels[aName].index, 
+					_index: this.__channels[aName].fnIndex(), 
 					_type : this.__channels[aName].idKey,
 					_id   : aVs[i][this.__channels[aName].idKey] 
 				}}, undefined, "") + "\n" + 
@@ -611,7 +619,7 @@ OpenWrap.ch.prototype.__types = {
 			}		
 		},
 		get          : function(aName, aK) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
@@ -643,7 +651,7 @@ OpenWrap.ch.prototype.__types = {
 			return aK;
 		},
 		unset        : function(aName, aK, aTimestamp) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].index;
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
@@ -1393,6 +1401,19 @@ OpenWrap.ch.prototype.utils = {
 			} catch(e) {
 				aErrorFunc(e);
 			}
+		}
+	},
+	
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.getElasticIndex(aPrefix) : Function</key>
+	 * Returns a function to be use for generating ElasticSearch indexes with aPrefix-aDate (in the format of
+	 * YYYY-MM-DD). This helps to generate a specific index per day.
+	 * </odoc>
+	 */
+	getElasticIndex: function(aPrefix) {
+		return function() {
+			aPrefix + "-" + ow.loadFormat().fromDate(new Date(), 'yyyyMMdd');
 		}
 	}
 };

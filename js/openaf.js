@@ -488,7 +488,6 @@ function genUUID() {
 	s4() + '-' + s4() + s4() + s4();
 }
 
-
 /**
  * <odoc>
  * <key>toCSV(anArray) : CSV</key>
@@ -831,7 +830,6 @@ function processExpr(aSep, ignoreCase) {
 function getVersion() {
 	return af.getVersion();
 }
-
 
 /**
  * <odoc>
@@ -1411,13 +1409,14 @@ function merge(aObjectA, aObjectB) {
 
 /**
  * <odoc>
- * <key>restartOpenAF(aCommandLineArray)</key>
+ * <key>restartOpenAF(aCommandLineArray, preCommandLineArray)</key>
  * Terminates the current OpenAF execution and tries to start a new with the same command
  * line, if aCommandLineArray is not provided. If aCommandLineArray is provided each array
  * element will be use sequentially to build the command line to start a new OpenAF instance. 
+ * preCommandLineArray can be used to provide java arguments if defined.
  * </odoc>
  */
-function restartOpenAF(aCommandLineArray) {
+function restartOpenAF(aCommandLineArray, preLineArray) {
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
 	var currentJar;
 	try {
@@ -1433,6 +1432,11 @@ function restartOpenAF(aCommandLineArray) {
 	/* Build command: java -jar application.jar */
 	var command = new java.util.ArrayList();
 	command.add(javaBin);
+	if (isDef(preLineArray)) {
+		for(c in preLineArray) {
+			command.add(preLineArray[c]);
+		}
+	}
 	command.add("-jar");
 	command.add(currentJar.getPath());
 	if (isUndefined(aCommandLineArray)) {
@@ -2284,6 +2288,13 @@ OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.o
 OpenWrap.prototype.loadCh = function() { loadLib(getOpenAFJar() + "::js/owrap.ch.js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
 /**
  * <odoc>
+ * <key>ow.loadPortal()</key>
+ * Loads OpenWrap WAF portal functionality. 
+ * </odoc>
+ */
+OpenWrap.prototype.loadPortal = function() { loadLib(getOpenAFJar() + "::js/owrap.portal.js"); ow.portal = new OpenWrap.portal(); pods.declare("ow.portal", ow.portal); return ow.portal; }
+/**
+ * <odoc>
  * <key>ow.loadOJob()</key>
  * Loads OpenWrap oJob functionality. 
  * </odoc>
@@ -2495,7 +2506,7 @@ function loadDBInMem(aDB, aFilename) {
 /**
  * <odoc>
  * <key>t(aObject, aFunction) : Map</key>
- * Traverses aObject executing aFunction for every single element. The aFunction will receive the arguments: aKey, aValue, aPath.
+ * Traverses aObject executing aFunction for every single element. The aFunction will receive the arguments: aKey, aValue, aPath, aObject.
  * </odoc>
  */
 function traverse(aObject, aFunction, aParent) {
@@ -2503,12 +2514,12 @@ function traverse(aObject, aFunction, aParent) {
 	var parent = isUnDef(aParent) ? "" : aParent;
 
 	for(var i in keys) {
-		aFunction(keys[i], aObject[keys[i]], parent);
-
 		if (isObject(aObject[keys[i]])) {
 			var newParent = parent + ((isNaN(Number(keys[i]))) ? "." + keys[i] : "[\"" + keys[i] + "\"]");
-			traverse(aObject[keys[i]], aFunction, newParent);
+			traverse(aObject[keys[i]], aFunction, newParent, aObject);
 		}
+		
+		aFunction(keys[i], aObject[keys[i]], parent, aObject);
 	}
 }
 

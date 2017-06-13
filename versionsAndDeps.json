@@ -102,8 +102,8 @@
   		},
   		{
   			"description": "H2",
-  			"path"       : [ "lib/h2-1.4.195.jar" ],
-  			"version"    : "1.4.195",
+  			"path"       : [ "lib/h2-1.4.196.jar" ],
+  			"version"    : "1.4.196",
   			"changes"    : false,
   			"type"       : [ "java" ],
   			"license"    : "Mozilla Public License & Eclipse Public License",
