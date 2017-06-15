@@ -1413,7 +1413,7 @@ OpenWrap.ch.prototype.utils = {
 	 */
 	getElasticIndex: function(aPrefix) {
 		return function() {
-			aPrefix + "-" + ow.loadFormat().fromDate(new Date(), 'yyyyMMdd');
+			return aPrefix + "-" + ow.loadFormat().fromDate(new Date(), 'yyyyMMdd');
 		}
 	}
 };
@@ -1631,7 +1631,11 @@ OpenWrap.ch.prototype.server = {
 		if (isUnDef(ow.ch.size(aName))) throw "Channel " + aName + " doesn't exist.";
 
 		if (!(isObject(aLocalPortORServer))) {
-			hs = ow.server.httpd.start(aLocalPortORServer);
+			hs = ow.server.httpd.start(aLocalPortORServer, undefined, undefined, undefined, function(aT, aM, aE) {
+				if (aT.toString() != "DEBUG" && aE.getMessage() != "Broken pipe") {
+					logErr(aM);
+				}
+			});
 		} else {
 			hs = aLocalPortORServer;
 		}
@@ -1713,7 +1717,6 @@ OpenWrap.ch.prototype.server = {
 	 */
 	routeProcessing: function(aURI, aRequest, aName, aaUUID) {
 		ow.loadServer();
-		$ch("__commServer::" + aName).create();
 
 		function restSet(k, v) {
 			var cc;
@@ -1802,7 +1805,8 @@ OpenWrap.ch.prototype.server = {
 		function recordError(_op, _t, _k, _v, _e) {
 			var ct = nowUTC();
 
-			$ch("__comm::" + na).set({
+			$ch("__comm::" + aName).create();
+			$ch("__comm::" + aName).set({
 				"timeStamp": ct,
 				"operation": _op,
 				"keys"     : _k
@@ -1838,7 +1842,7 @@ OpenWrap.ch.prototype.server = {
 						aRequest.channelPermission.indexOf("r") < 0)
 						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restGet(i);
-					if (isUnDef(c)) return {};
+					if (isUnDef(c)) return {};					
 					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
 				} catch(e) {
 					recordError("get", undefined, i, d, e);
@@ -1852,7 +1856,7 @@ OpenWrap.ch.prototype.server = {
 						aRequest.channelPermission.indexOf("w") < 0)
 						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restSet(i, d);
-					if (isUnDef(c)) return {};
+					if (isUnDef(c)) return {};				
 					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
 				} catch(e) {
 					recordError("set", undefined, i, d, e);

@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
-import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
@@ -27,12 +26,8 @@ import wedo.openaf.SimpleLog.logtype;
 import wedo.openaf.plugins.HTTPd.JSResponse;
 
 import com.nwu.httpd.Codes;
-import com.nwu.httpd.NanoHTTPD.IHTTPSession;
+import com.nwu.httpd.HTTPd;
 import com.nwu.httpd.NanoHTTPD.Response.IStatus;
-import com.nwu.httpd.NanoWSD.WebSocket;
-import com.nwu.httpd.NanoWSD.WebSocketFrame;
-import com.nwu.httpd.NanoWSD.WebSocketFrame.CloseCode;
-import com.nwu.httpd.WSd;
 import com.nwu.httpd.responses.EchoResponse;
 import com.nwu.httpd.responses.FileResponse;
 import com.nwu.httpd.responses.StatusResponse;
@@ -44,7 +39,7 @@ public class HTTPServer extends ScriptableObject {
 	 * 
 	 */
 	private static final long serialVersionUID = -8638106468713717782L;
-	protected WSd httpd;
+	protected HTTPd httpd;
 	protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
 	protected String id;
 	protected int serverport;
@@ -61,7 +56,7 @@ public class HTTPServer extends ScriptableObject {
 	
 	public class HLog extends Log {
 		protected int port; 
-		protected NativeFunction callback;
+		protected NativeFunction callback = null;
 		
 		public HLog(int port, Object f) {
 			super(false);
@@ -74,13 +69,13 @@ public class HTTPServer extends ScriptableObject {
 			if (callback == null) {
 				switch(type) {
 				case DEBUG:
-					SimpleLog.log(logtype.DEBUG, "[HTTPD " + port + "]" + message, null);
+					SimpleLog.log(logtype.DEBUG, "[HTTPD " + port + "]" + message, e);
 					break;
 				case ERROR:
-					SimpleLog.log(logtype.ERROR, "[HTTPD " + port + "]" + message, null);
+					SimpleLog.log(logtype.ERROR, "[HTTPD " + port + "]" + message, e);
 					break;
 				case INFO:
-					SimpleLog.log(logtype.INFO, "[HTTPD " + port + "]" + message, null);
+					SimpleLog.log(logtype.INFO, "[HTTPD " + port + "]" + message, e);
 					break;
 				default:
 					break;
@@ -194,112 +189,18 @@ public class HTTPServer extends ScriptableObject {
 	 * And then add keystore.jks to the openaf.jar and have keyStorePath = "/keystore.jks".
 	 * </odoc>
 	 */
-	@SuppressWarnings("unchecked")
 	@JSConstructor
-	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, NativeObject websocket) throws IOException {
+	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction) throws IOException {
 		if (port <= 0) {
 			port = findRandomOpenPortOnAllLocalInterfaces();
 		}
 		
 		serverport = port;
 		
-		class WS extends WebSocket {
-
-			public WS(IHTTPSession handshakeRequest) {
-				super(handshakeRequest);
-			}
-
-			@Override
-			protected void onClose(CloseCode code, String reason, boolean initiatedByRemote) {
-				if (websocket != null && 
-					websocket.containsKey("onClose")) {
-					Context cx = (Context) AFCmdBase.jse.enterContext();
-					try {
-						NativeFunction nf = (NativeFunction) websocket.get("onClose");
-						nf.call(cx, 
-								(Scriptable) AFCmdBase.jse.getGlobalscope(), 
-								cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), 
-								new Object[] {code, reason, initiatedByRemote});
-					} finally {
-						AFCmdBase.jse.exitContext();
-					}
-				}
-			}
-
-			@Override
-			protected void onException(IOException exception) {
-				if (websocket != null && 
-					websocket.containsKey("onException")) {
-					Context cx = (Context) AFCmdBase.jse.enterContext();
-					try {
-						NativeFunction nf = (NativeFunction) websocket.get("onException");
-						nf.call(cx, 
-								(Scriptable) AFCmdBase.jse.getGlobalscope(), 
-								cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), 
-								new Object[] { exception });
-					} finally {
-						AFCmdBase.jse.exitContext();
-					}
-				}
-			}
-
-			@Override
-			protected void onMessage(WebSocketFrame message) {
-				if (websocket != null && 
-					websocket.containsKey("onClose")) {
-					Context cx = (Context) AFCmdBase.jse.enterContext();
-					try {
-						NativeFunction nf = (NativeFunction) websocket.get("onClose");
-						nf.call(cx, 
-								(Scriptable) AFCmdBase.jse.getGlobalscope(), 
-								cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), 
-								new Object[] {message});
-					} finally {
-						AFCmdBase.jse.exitContext();
-					}
-				}
-			}
-
-			@Override
-			protected void onOpen() {
-				if (websocket != null && 
-					websocket.containsKey("onOpen")) {
-					Context cx = (Context) AFCmdBase.jse.enterContext();
-					try {
-						NativeFunction nf = (NativeFunction) websocket.get("onOpen");
-						nf.call(cx, 
-								(Scriptable) AFCmdBase.jse.getGlobalscope(), 
-								cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), 
-								new Object[] {});
-					} finally {
-						AFCmdBase.jse.exitContext();
-					}
-				}
-			}
-
-			@Override
-			protected void onPong(WebSocketFrame pong) {
-				if (websocket != null &&  
-					websocket.containsKey("onPong")) {
-					Context cx = (Context) AFCmdBase.jse.enterContext();
-					try {
-						NativeFunction nf = (NativeFunction) websocket.get("onPong");
-						nf.call(cx, 
-								(Scriptable) AFCmdBase.jse.getGlobalscope(), 
-								cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), 
-								new Object[] {pong});
-					} finally {
-						AFCmdBase.jse.exitContext();
-					}
-				}
-			}
-			
-		}
-		
 		if (host == null || host instanceof Undefined) {
-			httpd = new com.nwu.httpd.WSd((Log) new HLog(port, errorFunction), port, (Class) WS.class);
+			httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), port);
 		} else {
-			httpd = new com.nwu.httpd.WSd((Log) new HLog(port, errorFunction), (String) host, port, (Class) WS.class);
+			httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), (String) host, port);
 		}
 
 		if (keyStorePath != null && !keyStorePath.equals("undefined") &&

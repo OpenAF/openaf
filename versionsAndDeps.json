@@ -286,7 +286,7 @@
 			"name"     : "HTTPServer",
 			"removable": true,
 			"deps"     : [
-				"lib/nwu-0.2.7.jar"
+				"lib/nwu-0.3.1.jar"
 			]
 		},
 		{

@@ -169,6 +169,76 @@ OpenWrap.server.prototype.getPid = function(aPidFile) {
 }
 
 //-----------------------------------------------------------------------------------------------------
+// OpenAF Server
+//-----------------------------------------------------------------------------------------------------
+OpenWrap.server.prototype.openafServer = {
+	/**
+	 * <odoc>
+	 * <key>ow.server.openafServer.start(aId, aPort, notLocal)</key>
+	 * Starts an internal JMX server with a give optional aId. If there is a need to access it externally 
+	 * (do keep in mind security) you can provide also aPort. This server allows for the load or execution 
+	 * of OpenAF scripts. In extreme cases you can use notLocal = true to make the server available outside
+	 * the localhost (NOT ADVISABLE!).
+	 * </odoc>
+	 */
+	start: function(aId, aPort, notLocal) {
+		plugin("JMXServer");
+		this.jmxs = new JMXServer("wedo.openaf:type=OpenAFServer-" + aId);
+		this.jmxs.start(aPort, !notLocal);
+		this.jmxs.addBean({},
+		  function(key) { },
+		  function(key, value) { },
+		  function(op, params) {
+		  	switch(op) {
+		  	case "load": return ow.server.jmx.serverExec(params, function(f) { 
+		  		__pmIn = jsonParse(Packages.wedo.open.utils.PMStringConvert.toJSON(Packages.wedo.openaf.OpenAF.__pmIn));
+		  		load(f);
+		  		Packages.wedo.openaf.OpenAF.__pmOut = Packages.wedo.open.utils.PMStringConvert.fromJSON(stringify(__pmOut)); });
+		  	case "exec": return ow.server.jmx.serverExec(params, function(f) { 
+				__pmIn = jsonParse(Packages.wedo.open.utils.PMStringConvert.toJSON(Packages.wedo.openaf.OpenAF.__pmIn));
+		  		var res = af.eval(f); 
+		  		Packages.wedo.openaf.OpenAF.__pmOut = Packages.wedo.open.utils.PMStringConvert.fromJSON(stringify(__pmOut));
+				return res; }); 
+		    }
+		  }
+		);
+	},
+	
+	/**
+	 * <odoc>
+	 * <key>ow.server.openafServer.exec(aId, aScript, aServerPid)</key>
+	 * Tries to execute the given aScript locally or in the aServerPid provided (created by a ow.server.openafServer.start).
+	 * Optionally you can also specify aId.
+	 * </odoc>
+	 */
+	exec: function(aId, aScript, aServerPid) {
+		ow.server.jmx.call(ow.server.jmx.localConnect(aServerPid), "wedo.openaf:type=OpenAFServer-" + aId, "exec", aScript);
+	},
+	
+	/**
+	 * <odoc>
+	 * <key>ow.server.openafServer.load(aId, aScriptFilePath, aServerPid)</key>
+	 * Tries to execute the given aScriptFilePath locally or in the aServerPid provided (created by a ow.server.openafServer.start).
+	 * Optionally you can also specify aId.
+	 * </odoc>
+	 */
+	load: function(aId, aScriptFilePath, aServerPid) {
+		ow.server.jmx.call(ow.server.jmx.localConnect(aServerPid), "wedo.openaf:type=OpenAFServer-" + aId, "load", aScriptFilePath);
+	},
+	
+	/**
+	 * <odoc>
+	 * <key>ow.server.openafServer.stop()</key>
+	 * Attempts to stop the existing server.
+	 * </odoc>
+	 */
+	stop: function() {
+		this.jmxs.stop();
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------------
 // JMX
 //-----------------------------------------------------------------------------------------------------
 OpenWrap.server.prototype.jmx = {
@@ -466,17 +536,21 @@ OpenWrap.server.prototype.rest = {
 		var idxs = ow.server.rest.parseIndexes(aBaseURI, aReq);
 		var res = {};
 		res.headers = {};
-		
+
 		switch(aReq.method) {
 		case "GET": res.data = stringify(aGetFunc(idxs), undefined, ""); break;
 		case "POST":
-			//res.data = stringify(aCreateFunc(idxs, JSON.parse(io.readFileString(aReq.files.content))));
-			res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.params["NanoHttpd.QUERY_STRING"])), undefined, "");
+			if (isDef(aReq.files.content)) {
+				res.data = stringify(aCreateFunc(idxs, jsonParse(io.readFileString(aReq.files.content))), undefined, "");
+			} else
+				res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.params["NanoHttpd.QUERY_STRING"])), undefined, "");
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
 			break;
-		case "PUT": 
-			res.data = stringify(aSetFunc(idxs, io.readFile(aReq.files.content)), undefined, "");
-			//res.data = stringify(aSetFunc(idxs, jsonParse(aReq.files.postData)));
+		case "PUT":
+			if (isDef(aReq.files.content))
+				res.data = stringify(aSetFunc(idxs, jsonParse(io.readFileString(aReq.files.content))), undefined, "");
+			else
+				res.data = stringify(aSetFunc(idxs, jsonParse(aReq.files.postData)), undefined, "");
 			break;
 		case "DELETE": res.data = stringify(aRemoveFunc(idxs), undefined, ""); break;
 		};
@@ -613,7 +687,7 @@ OpenWrap.server.prototype.httpd = {
 	start: function(aPort, aHost, keyStorePath, password, errorFunction) {
 		plugin("HTTPServer");
 		
-		if (isUndefined(aPort)) {
+		if (isUnDef(aPort)) {
 			aPort = findRandomOpenPort();
 		}
 		
