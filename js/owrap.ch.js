@@ -1361,9 +1361,14 @@ OpenWrap.ch.prototype.utils = {
 				if (aFunc(aK)) $ch(aTargetCh).set(aK, aV);
 				break;
 			case "setall": 
-				for (var k in aK) {
-					if (aFunc(aK[k])) $ch(aTargetCh).set(aK[k], aV[k]);
+				//for (var k in aK) {
+				//	if (aFunc(aK[k])) $ch(aTargetCh).set(aK[k], aV[k]);
+				//}
+				var sV = [];
+				for (var v in aV) {
+					if(aFunc(aV[v])) sV.push(aV[v]);
 				}
+				$ch(aTargetCh).setAll(aK, sV);
 				break;
 			case "unset": 
 				if (aFunc(aK)) $ch(aTargetCh).unset(aK);
