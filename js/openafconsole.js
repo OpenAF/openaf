@@ -16,6 +16,9 @@ var __aliasparam;
 var __message = "";
 var __afDBs = {};
 
+global.CONSOLETIMEOUT = undefined;
+global.CONSOLECTRLC   = false;
+
 /**
  * Describe an existing class with methods exposed to OpenAF
  *
@@ -693,11 +696,19 @@ function __processCmdLine(aCommand, returnOnly) {
 				//var __res;
 				if (timeCommand) {
 					__start = now();
-					__res = af.eval(aCommand);
+                    if (isDef(CONSOLETIMEOUT) || CONSOLECTRLC) {
+                            threadBox(function() { __res = af.eval(aCommand); }, CONSOLETIMEOUT, (CONSOLECTRLC) ? threadBoxCtrlC : undefined);
+                    } else {
+                            __res = af.eval(aCommand);
+                    }
 					__end = now();
 					__timeResult = __end - __start;
 				} else {
-					__res = af.eval(aCommand);
+                    if (isDef(CONSOLETIMEOUT) || CONSOLECTRLC) {
+                            threadBox(function() { __res = af.eval(aCommand); }, CONSOLETIMEOUT, (CONSOLECTRLC) ? threadBoxCtrlC : undefined);
+                    } else {
+                            __res = af.eval(aCommand);
+                    }
 				}
 
 				//if (timeCommand && aCommand.length > 0) __time(__end - __start);

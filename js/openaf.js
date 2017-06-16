@@ -2796,6 +2796,30 @@ function ioStreamRead(aStream, aFunction, aBufferSize, useNIO) {
 
 /**
  * <odoc>
+ * <key>ioStreamReadLines(aStream, aFunctionPerLine, aSeparator)</key>
+ * Given aStream will read the entire buffer and call aFunctionPerLine(withALine) per each \n found.
+ * Aditionally you can specify a different aSeparator for each line other than "\n".
+ * </odoc>
+ */
+function ioStreamReadLines(aStream, aFunction, aSeparator) {
+        var buf = "";
+        if (isUnDef(aSeparator)) aSeparator = "\n";
+ 
+        ioStreamRead(aStream, function(buffer) {
+                buf += buffer;
+                while (buf.indexOf(aSeparator) > 0) {
+                        aFunction(buf.substring(0, buf.indexOf(aSeparator)));
+                        buf = buf.substring(buf.indexOf(aSeparator) + 1);
+                }
+        });
+        while (buf.indexOf(aSeparator) > 0) {
+                aFunction(buf.substring(0, buf.indexOf(aSeparator)));
+                buf = buf.substring(buf.indexOf(aSeparator) + 1);
+        }
+}
+
+/**
+ * <odoc>
  * <key>ioStreamCopy(aOutputStream, aInputStream)</key>
  * Copies the contents of a Java aInputStream to a Java aOutputStream. The two streams will 
  * be closed in the end.
@@ -3004,6 +3028,72 @@ function newJavaArray(aJavaClass, aSize) {
 	return java.lang.reflect.Array.newInstance(aJavaClass, aSize);
 }
 
+/**
+ * <odoc>
+ * <key>threadBox(aExecFunction, aTimeout, aStopFunction)</key>
+ * Tries to execute aExecFunction inside a thread. If aTimeout is defined the thread
+ * will be terminated if it's still executing after aTimeout. If aStopFunction is defined 
+ * it will receive, as argument, a boolean indicating if the thread has stopped (true). If this
+ * function returns true the thread execution will be terminated, if false will continue.\
+ * Note: see threadBoxCtrlC as aStopFunction to stop executing on Ctrl-C
+ * </odoc>
+ */
+function threadBox(aFunction, aTimeout, aStopFunction) {
+        plugin("Threads");
+ 
+        if (isUnDef(aStopFunction)) aStopFunction = function(aR) { return aR; }
+ 
+        var t = new Threads();
+        var done = false;
+        var exc = undefined;
+ 
+        t.addThread(function(uuid) {
+                try {
+                        aFunction(uuid);
+                } catch(e) {
+                        exc = e;
+                        throw e;
+                } finally {
+                        done = true;
+                }
+                
+                return done;
+        });
+        t.startNoWait();
+        var s = now();
+ 
+        var res = false;
+        if (isDef(aTimeout)) {
+                while(!res && !done && ((now() - s) < aTimeout)) {
+                        res = aStopFunction(t.waitForThreads(50));
+                }
+        } else {
+                while(!res && !done) {
+                        res = aStopFunction(t.waitForThreads(50));
+                }
+        }
+        t.stop(true);
+ 
+        if (isDef(exc)) throw exc;
+}
+ 
+/**
+ * <odoc>
+ * <key>threadBoxCtrlC(aResult) : Boolean</key>
+ * Meant to be use as a stopFunction for threadBox will return true if
+ * Ctrl-C is detected and false otherwise. If the current terminal can't
+ * support ANSI if will default to aResult.
+ * </odoc>
+ */
+function threadBoxCtrlC(aRes) {
+        plugin("Console");
+        var console = new Console();
+        if (console.getConsoleReader().getTerminal().isAnsiSupported()) {
+                if (console.readCharNB() == 3) return true; else return false;
+        } else {
+                return aRes;
+        }
+}
 
 var alert;
 if (isUndefined(alert)) alert = function(msg) {
