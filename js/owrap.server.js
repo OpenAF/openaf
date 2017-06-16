@@ -629,27 +629,13 @@ OpenWrap.server.prototype.rest = {
 	 */
 	parseIndexes: function(aBaseURI, req) {
 		var baseURL = aBaseURI;
-		var props = req.uri.replace(new RegExp("^" + baseURL + "/*\#*"), "").split("/");
+		var props = req.originalURI.replace(new RegExp("^" + baseURL + "/*\#*"), "").split("/");
 		var propsObj = {};
 
 		for (var i = 0; i < props.length; i += 2) {
 			if (props[i].length > 0)
 				propsObj[decodeURIComponent(props[i])] = jsonParse(decodeURIComponent(props[i + 1]));
 		}
-		
-		/*for (var parName in req.params) {
-			if (!parName.match(/^NanoHttpd\./) && parName.length > 0) {
-				propsObj[decodeURIComponent(parName)] = jsonParse(decodeURIComponent(req.params[parName]));
-			}
-		}
-		
-		if (isDefined(req.files) && 
-			isDefined(req.files.postData) &&
-			isDefined(req.header["content-type"]) &&
-			req.header["content-type"].match(/application\/json/i)) {
-			var data = jsonParse(req.files.postData);
-			propsObj = merge(propsObj, data);
-		}*/
 		
 		return propsObj;
 	},

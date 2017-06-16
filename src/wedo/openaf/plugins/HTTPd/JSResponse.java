@@ -56,6 +56,7 @@ public class JSResponse extends Response {
 			Scriptable json = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 			
 			json.put("uri", json, request.getUri());
+			json.put("originalURI", json, request.getOriginalURI());
 			json.put("method", json, request.getMethod().toString());
 			json.put("header", json, toScriptable(request.getHeader()));
 			json.put("params", json, toScriptable(request.getParams()));
