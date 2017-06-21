@@ -138,7 +138,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 	if (isDef(res.include) && isArray(res.include)) {
 		for (var i in res.include) {
 			if (res.include[i].match(/\.js$/i)) load(res.include[i]);
-			if (res.include[i].match(/\.yaml$/i)) res = this.__merge(this.__loadFile(res.include[i]), res);
+			if (res.include[i].match(/\.ya?ml$/i)) res = this.__merge(this.__loadFile(res.include[i]), res);
 		}
 	}
 	
@@ -211,7 +211,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 		if (aFile.match(/\.js$/i)) {
 			res = this.__merge(_load(io.readFile), res);
 		}
-		if (aFile.match(/\.yaml$/i)) {
+		if (aFile.match(/\.ya?ml$/i)) {
 			res = this.__merge(_load(io.readFileYAML), res);
 		}
 	}

@@ -1378,15 +1378,15 @@ OpenWrap.ch.prototype.utils = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.ch.utils.getLogStashSubscriber(aTargetCh, aType, aHost, aErrorFunc) : Function</key>
+	 * <key>ow.ch.utils.getLogStashSubscriber(aTargetCh, aType, aHost, aErrorFunc, shouldHK) : Function</key>
 	 * Returns a channel subscriber function that will transform changes to a log channel (see startLog and the __log channel)
 	 * and will replicate them in aTargetCh (this means expecting the value to have a 'd': date; 'm': message and 't' as the level/type).
 	 * The value set on aTargetCh will follow the LogStash format setting type to aType and host to aHost. The id and key will be set 
 	 * to a sha1 hash of the stringify version of the value being set. In case of error aErrorFunc will be invoked providing the exception
-	 * as an argument.
+	 * as an argument. You can also indicate if you want to house keep the original channel to save the script's memory.
 	 * </odoc>
 	 */
-	getLogStashSubscriber: function(aTargetCh, aType, aHost, aErrorFunc) {
+	getLogStashSubscriber: function(aTargetCh, aType, aHost, aErrorFunc, shouldHK) {
 		return function(aC, aO, aK, aV) {
 			try {
 				if (aO == "set") {
@@ -1402,6 +1402,7 @@ OpenWrap.ch.prototype.utils = {
 						"level"     : aV.t,
 						"id"        : _id
 					});
+					if (shouldHK) $ch(aC).unset(aK);
 				}
 			} catch(e) {
 				aErrorFunc(e);

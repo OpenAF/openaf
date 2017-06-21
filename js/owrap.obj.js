@@ -616,14 +616,14 @@ OpenWrap.obj.prototype.pool = {
 			
 			/**
 			 * <odoc>
-			 * <key>ow.obj.pool.setFactoryAF(anURL)</key>
+			 * <key>ow.obj.pool.setFactoryAF(anURL, aTimeout)</key>
 			 * Setups: a factory function to create an AF object using anURL and tries to send a Ping operation; a close
 			 * function to close the AF object connection; a keep alive function that sends a Ping operation.
 			 * </odoc>
 			 */
-			setFactoryAF: function(anURL) {
+			setFactoryAF: function(anURL, timeout) {
 				this.setFactory(
-					function() { var a = new AF(anURL); a.exec("Ping", {}); return a; },
+					function() { var a = new AF(anURL, timeout); a.exec("Ping", {}); return a; },
 					function(a) { a.close(); },
 					function(a) { a.exec("Ping", {} )}
 				);

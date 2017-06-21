@@ -3039,60 +3039,71 @@ function newJavaArray(aJavaClass, aSize) {
  * </odoc>
  */
 function threadBox(aFunction, aTimeout, aStopFunction) {
-        plugin("Threads");
- 
-        if (isUnDef(aStopFunction)) aStopFunction = function(aR) { return aR; }
- 
-        var t = new Threads();
-        var done = false;
-        var exc = undefined;
- 
-        t.addThread(function(uuid) {
-                try {
-                        aFunction(uuid);
-                } catch(e) {
-                        exc = e;
-                        throw e;
-                } finally {
-                        done = true;
-                }
-                
-                return done;
-        });
-        t.startNoWait();
-        var s = now();
- 
-        var res = false;
-        if (isDef(aTimeout)) {
-                while(!res && !done && ((now() - s) < aTimeout)) {
-                        res = aStopFunction(t.waitForThreads(50));
-                }
-        } else {
-                while(!res && !done) {
-                        res = aStopFunction(t.waitForThreads(50));
-                }
+    plugin("Threads");
+
+    if (isUnDef(aStopFunction)) aStopFunction = function(aR) { return aR; }
+
+    //var t = new Threads();
+    var done = false;
+    var exc = undefined;
+
+    //t.addThread(function(uuid) {
+    var t = new java.lang.Thread(new java.lang.Runnable({
+    	run: function() {
+	        try {
+	            //aFunction(uuid);
+	            aFunction();
+	        } catch(e) {
+	            exc = e;
+	            throw e;
+	        } finally {
+	            done = true;
+	        }
+	        
+	        return done;
         }
-        t.stop(true);
- 
-        if (isDef(exc)) throw exc;
+    }));
+    //t.startSingleNoWait();
+    t.start();
+
+    var res = false;
+    if (isDef(aTimeout)) {
+    	var s = now();
+        while(!res && !done && ((now() - s) < aTimeout)) {
+            res = aStopFunction();
+        }
+    } else {
+        while(!res && !done) {
+            res = aStopFunction();
+        }
+    }
+    //t.stop(true);
+    if (!t.isAlive() && !t.interrupted()) {
+    	t.interrupt();
+    	//if (!t.isAlive()) {
+    		log("Stopping! " + t.stop());
+    	//}
+    }
+
+    if (isDef(exc)) throw exc;
 }
  
 /**
  * <odoc>
- * <key>threadBoxCtrlC(aResult) : Boolean</key>
+ * <key>threadBoxCtrlC() : Boolean</key>
  * Meant to be use as a stopFunction for threadBox will return true if
  * Ctrl-C is detected and false otherwise. If the current terminal can't
- * support ANSI if will default to aResult.
+ * support ANSI if will default to false.
  * </odoc>
  */
-function threadBoxCtrlC(aRes) {
-        plugin("Console");
-        var console = new Console();
-        if (console.getConsoleReader().getTerminal().isAnsiSupported()) {
-                if (console.readCharNB() == 3) return true; else return false;
-        } else {
-                return aRes;
-        }
+function threadBoxCtrlC() {
+    plugin("Console");
+    var console = new Console();
+    if (console.getConsoleReader().getTerminal().isAnsiSupported()) {
+        if (console.readCharNB() == 3) return true; else return false;
+    } else {
+        return false;
+    }
 }
 
 var alert;
