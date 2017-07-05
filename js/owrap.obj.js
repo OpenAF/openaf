@@ -631,13 +631,13 @@ OpenWrap.obj.prototype.pool = {
 			
 			/**
 			 * <odoc>
-			 * <key>ow.obj.pool.setFactoryRAIDDB(anAF, aConn, aKeepAlive)</key>
+			 * <key>ow.obj.pool.setFactoryRAIDDB(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver)</key>
 			 * Setups: a factory function to create an DB object using anAF and aConn connection name from the RAID/WAF server;
 			 * a close function to close the DB object connection; a keep alive function that tries to execute a select from dual
 			 * (you can override this function providing aKeepAlive function that receives a database object as argument).
 			 * </odoc>
 			 */
-			setFactoryRAIDDB: function(anAF, aConn, aKeepAlive) {
+			setFactoryRAIDDB: function(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver) {
 				if (isUnDef(aKeepAlive)) {
 					aKeepAlive = function(a) {
 						if (a.getConnect().getMetaData().getDatabaseProductName().toLowerCase() == "postgresql") {
@@ -649,7 +649,7 @@ OpenWrap.obj.prototype.pool = {
 				}
 				
 				this.setFactory(
-					function() { var db = getRAIDDB(anAF, aConn); return db; },
+					function() { var db = getRAIDDB(anAF, aConn, aURL, aPassword, useCIR, aDriver); return db; },
 					function(a) { a.close(); },
 					aKeepAlive
 				);
@@ -703,9 +703,9 @@ OpenWrap.obj.prototype.pool = {
 	 */
 	AF: function(anURL) { var p = this.create(); p.setFactoryAF(anURL); return p; },
 	/**
-	 * <odoc><key>ow.obj.pool.RAIDDB(anAF, aConn)</key>Creates a pool setting with ow.obj.pool.setFactoryRAIDDB.</odoc>
+	 * <odoc><key>ow.obj.pool.RAIDDB(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver)</key>Creates a pool setting with ow.obj.pool.setFactoryRAIDDB.</odoc>
 	 */
-	RAIDDB: function(anAF, aConn) { var p = this.create(); p.setFactoryRAIDDB(anAF, aConn); return p; },
+	RAIDDB: function(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver) { var p = this.create(); p.setFactoryRAIDDB(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver); return p; },
 	/**
 	 * <odoc><key>ow.obj.pool.DB(aDriver, aURL, aLogin, aPassword)</key>Creates a pool setting with ow.obj.pool.setFactoryDB.</odoc>
 	 */
