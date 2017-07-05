@@ -198,7 +198,15 @@ OpenWrap.template.prototype.delPartial = function(aPartial) {
  * </odoc>
  */
 OpenWrap.template.prototype.getTemplate = function(aSource) {
-	return Handlebars.compile(aSource);
+	var res;
+	var e;
+	sync(function() {
+		try {
+			res = Handlebars.compile(aSource);
+		} catch(ee) { e = ee; }
+	}, ow.loadTemplate());
+	if (isDef(e)) throw e;
+	return res;
 }
 
 /**
@@ -210,7 +218,16 @@ OpenWrap.template.prototype.getTemplate = function(aSource) {
  */
 OpenWrap.template.prototype.parse = function(aSource, someData) {
 	someData = (isUndefined(someData)) ? this : someData;
-	return (this.getTemplate(aSource))(someData);
+	var res;
+	var e;
+	var parent = this;
+	sync(function() {
+		try {
+			res = (parent.getTemplate(aSource))(someData);
+		} catch(ee) { e = ee; }
+	}, ow.loadTemplate());
+	if (isDef(e)) throw e;
+	return res;
 }
 
 /**
@@ -221,7 +238,16 @@ OpenWrap.template.prototype.parse = function(aSource, someData) {
  */
 OpenWrap.template.prototype.parseHBS = function(aFilename, someData) {
 	someData = (isUndefined(someData)) ? this : someData;
-	return (this.getTemplate(io.readFileString(aFilename)))(someData);
+	var res;
+	var e;
+	var parent = this;
+	sync(function() {
+		try {
+			res = (parent.getTemplate(io.readFileString(aFilename)))(someData);
+		} catch(ee) { e = ee; }
+	}, ow.loadTemplate());
+	if (isDef(e)) throw e;
+	return res;
 }
 
 /**
@@ -317,7 +343,15 @@ OpenWrap.template.prototype.saveCompiledHBS = function(aFilename, aSource, optio
  * </odoc>
  */
 OpenWrap.template.prototype.compile = function(aSource, optionsMap) {
-	return Handlebars.precompile(Handlebars.parse(aSource), optionsMap);
+	var res;
+	var e;
+	sync(function() {
+		try {
+			res = Handlebars.precompile(Handlebars.parse(aSource), optionsMap);
+		} catch(ee) { e = ee; }
+	}, ow.loadTemplate());
+	if (isDef(e)) throw ee;
+	return res;
 }
 
 /**
@@ -328,7 +362,15 @@ OpenWrap.template.prototype.compile = function(aSource, optionsMap) {
  * </odoc>
  */
 OpenWrap.template.prototype.execCompiled = function(aCompiledObject) {
-	return Handlebars.template(af.eval("(" + aCompiledObject + ")"));
+	var res;
+	var e;
+	sync(function() {
+		try {
+			res = Handlebars.template(af.eval("(" + aCompiledObject + ")"));
+		} catch(ee) { e = ee; }
+	}, ow.loadTemplate());
+	if (isDef(e)) throw ee;
+	return res;
 }
 
 /**
@@ -339,7 +381,15 @@ OpenWrap.template.prototype.execCompiled = function(aCompiledObject) {
  * </odoc>
  */
 OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
-	return ow.template.execCompiled(io.readFileString(aFilename));
+	var res;
+	var e;
+	sync(function() {
+		try {
+			res = ow.template.execCompiled(io.readFileString(aFilename));
+		} catch(ee) { e = ee; }
+	}, ow.loadTemplate());
+	if (isDef(e)) throw e;
+	return res;
 }
 
 OpenWrap.template.prototype.Handlebars = function() {

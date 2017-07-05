@@ -452,12 +452,7 @@ function jsonParse(astring) {
  */
 function templify(aTemplateString, someData) {
 	someData = (isUndefined(someData)) ? this : someData;
-	// Handlebars is not thread-safe
-	var res = "";
-	sync(function() {
-		res = ow.loadTemplate().parse(aTemplateString, someData);
-	}, ow.loadTemplate());
-	return res;
+	return ow.loadTemplate().parse(aTemplateString, someData);
 }
 
 /**
