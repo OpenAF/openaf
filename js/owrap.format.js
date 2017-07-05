@@ -492,6 +492,8 @@ OpenWrap.format.prototype.toDate = function(aStringDate, aFormat) {
  * </odoc>
  */
 OpenWrap.format.prototype.toWedoDate = function(aStringDate, aFormat) {
+	if (isUnDef(aFormat)) throw "Please define the string date format";
+	
 	var aConvertedDate = this.toDate(aStringDate, aFormat);
 	return {
 		"__wedo__type__": "date",
@@ -509,7 +511,7 @@ OpenWrap.format.prototype.getActualTime = function() {
 	plugin("XML");
 	plugin("HTTP");
 	
-	return new Date((new XML((new HTTP("http://nist.time.gov/actualtime.cgi")).response())).get("@time")/1000);
+	return new Date((new XML((new HTTP("https://nist.time.gov/actualtime.cgi")).response())).get("@time")/1000);
 }
 
 /**
@@ -562,6 +564,7 @@ OpenWrap.format.prototype.fromDate = function(aDate, aFormat, aTimeZone) {
  * </odoc>
  */
 OpenWrap.format.prototype.fromWedoDate = function(aWedoDate, aFormat) {
+	if (isUnDef(aFormat)) aFormat = "yyyy-MM-dd HH:mm:ss";
 	if (ow.format.isWedoDate(aWedoDate)) 
 		return ow.format.fromDate(new Date(aWedoDate.content[0]), aFormat);
 }
