@@ -811,7 +811,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				try {
 					return f(aValue, job, id);
 				} catch(e) {
-					errors.push(e);
+					errors.push(stringify({ args: aValue, exception: e}));
 				}
 			}, parent.__ojob.numThreads);
 			if (errors.length > 0) {

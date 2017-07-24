@@ -2,6 +2,7 @@
 // Author: nuno.aguiar@wedotechnologies.com
 
 plugin("ZIP");
+ow.loadObj();
 
 //Check if a Jar was repacked
 function isRepackJar(aJarFilePath) {
@@ -33,7 +34,7 @@ function getModulesToExclude() {
 	for(i in plugins) {
 		var libsOut = _.flatten($from(vad.plugins).equals("name", plugins[i]).equals("removable", true).select(function(r) { return r.deps; }));
 		var libsIn  = _.flatten($from(vad.plugins).not().equals("name", plugins[i]).select(function(r) { return r.deps; }));
-
+	
 		toExclude = toExclude.concat(_.without(libsOut, libsIn));
 	}
 
@@ -45,6 +46,22 @@ function getModulesToExclude() {
 	}
 
 	return toExclude;
+}
+
+function isRepacked() {
+	return irj;
+}
+
+function repackIncludeFile(aZipPath, aFilePath) {
+	includeMore[aZipPath] = {
+		name: aZipPath,
+		outside: true,
+		outsideName: aFilePath
+	}
+}
+
+function repackSetMainClass(aClass) {
+	mainClass = aClass;
 }
 
 try {
@@ -59,9 +76,10 @@ log("Repacking OpenAF for faster loading");
 
 var zip    = new ZIP();
 var zipNew = new ZIP();
+var includeMore = {}; 
+var mainClass = undefined;
 
 var irj = isRepackJar(classPath);
-//var lowmemory = false;
 
 try {
 // Set .package.json	
@@ -92,8 +110,18 @@ try {
 	logErr(e.message);
 }
 
-	
-if (!irj || __expr != "") {
+// PreRepack actions
+$from(ow.obj.fromObj2Array(getOPackLocalDB(), "path")).notEmpty("scripts.prerepack").select(function(r) {
+	log("Executing prepack actions from oPack '" + r.name + "'");
+	try {
+		var s = new Function(r.scripts.prerepack);
+		s();
+	} catch(e) {
+		logErr("opack '" + r.name + "': " + e);
+	}
+});
+
+if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	var oldVersionFile = classPath.replace(/openaf.jar/, "openaf.jar.orig");
 	
 	if (!irj) {
@@ -102,15 +130,17 @@ if (!irj || __expr != "") {
 	}
 	
 	var toExclude = [];
-	/*if (__expr.match(/lowmemory/)) {
-		lowmemory = true;
-	}*/
 	if (__expr != "") toExclude = getModulesToExclude();
 
-	//if (!lowmemory) zip.loadFile(oldVersionFile);
-	zip.loadFile(oldVersionFile);
+	try {
+		zip.loadFile(oldVersionFile);
+	} catch(e) {
+		logErr("For the repack operation, excluding or adding modules the original un-repacked openaf.jar version (openaf.jar.orig) is needed!");
+		throw e;
+	}
 	
 	var list = zip.list(oldVersionFile);
+	list = merge(list, includeMore);
 
 	var c = 0;
 	for(i in list) {
@@ -126,21 +156,16 @@ if (!irj || __expr != "") {
 		
 		if(el.name.match(/\.jar$/)) {
 			var zipTemp = new ZIP();
-			//if (lowmemory)
-			//	zipTemp.load(zip.streamGetFile(oldVersionFile, el.name));
-			//else
+			if (!el.outside) 
 				zipTemp.load(zip.getFile(el.name));
+			else
+				zipTemp.loadFile(el.outsideName);
 			var listTemp = zipTemp.list();
 							
 			for (ii in listTemp) {
 				var elTemp = listTemp[ii];
 				if (!(elTemp.name.match(/MANIFEST.MF$/)) && !(elTemp.name.match(/ECLIPSE_.RSA$/))) {
-					//if (lowmemory) {
-						//zip.streamPutFile(classPath + ".tmp", elTemp.name, zipTemp.getFile(elTemp.name));
-					//	zip.streamPutFile(classPath + ".tmp", elTemp.name, zipTemp.getFile(elTemp.name));
-					//} else {
-						zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));	
-					//}
+					zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));	
 				}
 			}
 			zipTemp.close();
@@ -148,39 +173,30 @@ if (!irj || __expr != "") {
 			if( el.name.match(/MANIFEST.MF$/) ) {
 				var str;
 
-				//if (lowmemory)
-				//	str = af.fromBytes2String(zip.streamGetFileStream(oldVersionFile, el.name));
-				//else
-					str = af.fromBytes2String(zip.getFile(el.name));
+				str = af.fromBytes2String(zip.getFile(el.name));
 				
 				if ((str.match(/jarinjarloader/) && str.match(/eclipse/) )) {
-					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, Packages.wedo.openaf.AFCmdBase.afc.getClass().getName());
+					var newClass = (isDef(mainClass)) ? mainClass : Packages.wedo.openaf.AFCmdBase.afc.getClass().getName();
+					
+					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, newClass);
 
-					//if (lowmemory)
-					//	zip.streamPutFile(classPath + ".tmp", el.name, af.fromString2Bytes(str));
-					//else
-						zipNew.putFile(el.name, af.fromString2Bytes(str));
+					zipNew.putFile(el.name, af.fromString2Bytes(str));
 				}
 			} else {				
 				if (!(el.name.match(/jarinjarloader/))) {
-					//if (lowmemory)
-						//zip.streamPutFile(classPath + ".tmp", el.name, zip.streamGetFile(oldVersionFile, el.name));
-					//	zip.streamPutFile(classPath + ".tmp", el.name, zip.getFile(el.name));
-					//else
+					if (!el.outside)
 						zipNew.putFile(el.name, zip.getFile(el.name));
+					else
+						zipNew.putFile(el.name, io.readFileBytes(el.outsideName));
 				}
 			}
 		}
 	}
 
-	//if (!lowmemory)	
 	log("Writing new repacked openaf.jar.");
 	zipNew.generate2File(classPath, {"compressionLevel": 9}, true);
-	//else
-	//	af.mv(classPath + ".tmp", classPath);
 	zip.close();
 	zipNew.close();
-
 } else {
 	log("No repacking needed.");
 }
