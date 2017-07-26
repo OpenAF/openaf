@@ -2780,23 +2780,23 @@ function ioStreamRead(aStream, aFunction, aBufferSize, useNIO) {
 		var buffer = af.fromString2Bytes(repeat(bufferSize, ' '));
 
 		var aRead;
-		while(aStream.available() > 0) {
+		do {
 			aRead = aStream.read(buffer, 0, bufferSize);
 			if (aRead > 0) {
 				aFunction(af.fromBytes2String(af.fromArray2Bytes(af.fromBytes2Array(buffer).slice(0, aRead))));
 			}
-		}
+		} while(aRead >= 0);
 	}
 }
 
 /**
  * <odoc>
- * <key>ioStreamReadLines(aStream, aFunctionPerLine, aSeparator)</key>
+ * <key>ioStreamReadLines(aStream, aFunctionPerLine, aSeparator, useNIO)</key>
  * Given aStream will read the entire buffer and call aFunctionPerLine(withALine) per each \n found.
  * Aditionally you can specify a different aSeparator for each line other than "\n".
  * </odoc>
  */
-function ioStreamReadLines(aStream, aFunction, aSeparator) {
+function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
         var buf = "";
         if (isUnDef(aSeparator)) aSeparator = "\n";
  
@@ -2806,7 +2806,7 @@ function ioStreamReadLines(aStream, aFunction, aSeparator) {
                         aFunction(buf.substring(0, buf.indexOf(aSeparator)));
                         buf = buf.substring(buf.indexOf(aSeparator) + 1);
                 }
-        });
+        }, undefined, useNIO);
         while (buf.indexOf(aSeparator) > 0) {
                 aFunction(buf.substring(0, buf.indexOf(aSeparator)));
                 buf = buf.substring(buf.indexOf(aSeparator) + 1);
@@ -2867,12 +2867,12 @@ function ioStreamReadBytes(aStream, aFunction, aBufferSize, useNIO) {
 		var buffer = af.fromString2Bytes(repeat(bufferSize, ' '));
 
 		var aRead;
-		while(aStream.available() > 0) {
+		do {
 			aRead = aStream.read(buffer, 0, bufferSize);
 			if (aRead > 0) {
 				aFunction(af.fromArray2Bytes(af.fromBytes2Array(buffer).slice(0, aRead)));
 			}
-		}
+		} while(aRead >= 0);
 
 		aStream.close();
 	}

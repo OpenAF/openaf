@@ -202,6 +202,6 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 }
 
 log("Done repacking OpenAF.jar");
-// We need to stop
-java.lang.System.exit(0);
+// We need to stop (but no longer needed)
+//java.lang.System.exit(0);
 } catch(e) { printErr(e); e.javaException.printStackTrace(); }

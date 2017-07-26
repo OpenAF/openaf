@@ -1,5 +1,6 @@
 package wedo.openaf.plugins;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,6 +23,7 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
+import wedo.jaf.services.connector.provider.ftp.SFTPConnector.SftpChannel;
 import wedo.openaf.AFCmdBase;
 import wedo.openaf.SimpleLog;
 import wedo.openaf.SimpleLog.logtype;
@@ -56,6 +58,8 @@ public class SSH extends ScriptableObject {
 	protected boolean compression = false;
 	protected JSch jsch;
 	protected int timeout = -1;
+	protected Channel sftpChannel;
+	protected Channel execChannel;
 	
 	@Override
 	public String getClassName() {
@@ -164,6 +168,8 @@ public class SSH extends ScriptableObject {
 	 */
 	@JSFunction
 	public void close() {
+		if (sftpChannel != null && sftpChannel.isConnected()) sftpChannel.disconnect();
+		if (execChannel != null && execChannel.isConnected()) execChannel.disconnect();
 		if (session != null) session.disconnect();
 	}
 	
@@ -202,6 +208,8 @@ public class SSH extends ScriptableObject {
      	session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
 	    
 		session.connect();
+		execChannel = null;
+		sftpChannel = null;
 	}
 	
 	/**
@@ -277,7 +285,11 @@ public class SSH extends ScriptableObject {
 	 */
 	@JSFunction 
 	public Object getSftpChannel() throws JSchException {
-		return session.openChannel("sftp");
+		if (sftpChannel == null) {
+			sftpChannel = session.openChannel("sftp");
+			sftpChannel.connect();
+		}
+		return sftpChannel;
 	}
 	
 	/**
@@ -288,7 +300,11 @@ public class SSH extends ScriptableObject {
 	 */
 	@JSFunction 
 	public Object getExecChannel() throws JSchException {
-		return session.openChannel("exec");
+		if (execChannel == null) {
+			execChannel = session.openChannel("exec");
+			execChannel.connect();
+		}
+		return execChannel;		
 	}
 	
 	/**
@@ -301,13 +317,13 @@ public class SSH extends ScriptableObject {
 	public void rename(String original, String newname) throws JSchException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			channel.rename(original, newname);
-			
-			channel.disconnect();
+		
+			//channel.disconnect();
 		}
 	}
 	
@@ -321,13 +337,12 @@ public class SSH extends ScriptableObject {
 	public void rm(String path) throws JSchException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		
-		channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			channel.rm(path);
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}		
 	}
 	
@@ -341,13 +356,13 @@ public class SSH extends ScriptableObject {
 	public void rmdir(String path) throws JSchException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			channel.rmdir(path);
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}		
 	}
 	
@@ -362,13 +377,13 @@ public class SSH extends ScriptableObject {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		String res = null;
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			res = channel.pwd();
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}		
 		
 		return res;
@@ -386,13 +401,13 @@ public class SSH extends ScriptableObject {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		String res = null;
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			channel.get(remoteFile, localFile);
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}		
 		
 		return res;
@@ -409,13 +424,13 @@ public class SSH extends ScriptableObject {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		byte[] res = null;
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			res = IOUtils.toByteArray(channel.get(remoteFile));
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}
 		
 		return res;
@@ -431,13 +446,13 @@ public class SSH extends ScriptableObject {
 	public void putBytes(String remoteFile, Object bytes) throws JSchException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		
-		channel = (ChannelSftp) getSftpChannel();	
+		//channel = (ChannelSftp) getSftpChannel();	
 		if (channel != null && bytes instanceof byte[]) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			channel.put(new ByteArrayInputStream((byte[]) bytes), remoteFile);
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}
 	}
 	
@@ -452,13 +467,13 @@ public class SSH extends ScriptableObject {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		String res = null;
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			channel.put(new FileInputStream(sourceFile), remoteFile);
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}
 	}
 	
@@ -472,13 +487,13 @@ public class SSH extends ScriptableObject {
 	public void cd(String path) throws JSchException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			channel.cd(path);
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}		
 	}
 	
@@ -500,9 +515,9 @@ public class SSH extends ScriptableObject {
 			path = path.replaceAll("/+", "/");
 		}
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			SftpStatVFS ssv = channel.statVFS(path);
 			no.put("size", no, ssv.getSize());
@@ -511,7 +526,7 @@ public class SSH extends ScriptableObject {
 			no.put("availableForRoot", no, ssv.getAvail());
 			no.put("capacityPerc", no, ssv.getCapacity());
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}	
 		
 		return no;
@@ -527,13 +542,13 @@ public class SSH extends ScriptableObject {
 	public void mkdir(String path) throws JSchException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		
-		channel = (ChannelSftp) getSftpChannel();
+		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			channel.mkdir(path);
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}		
 	}
 	
@@ -560,7 +575,7 @@ public class SSH extends ScriptableObject {
 		}
 		
 		if (channel != null) {
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			Vector v = channel.ls(path);
 			if (v != null) {
@@ -587,7 +602,7 @@ public class SSH extends ScriptableObject {
 				no.put("files", no, AFCmdBase.jse.newArray(no, list.toArray()));
 			}
 			
-			channel.disconnect();
+			//channel.disconnect();
 		}
 		
 		return no;
@@ -598,7 +613,7 @@ public class SSH extends ScriptableObject {
 		String output = null;
 		String outputErr = "";
 		
-		channel = session.openChannel("exec");
+		channel = (Channel) getExecChannel();
 
 		if (channel != null) {
 			ChannelExec ce = (ChannelExec) channel;
@@ -643,7 +658,7 @@ public class SSH extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 
 			br.close();
-			channel.disconnect();
+			//channel.disconnect();
 		}
 		
 		return output;
@@ -689,13 +704,13 @@ public class SSH extends ScriptableObject {
 		
 		try {
 			String command = "scp " + (ptimestamp ? "-p" : "") + " -t " + remoteFile;
-			Channel channel = session.openChannel("exec");
+			Channel channel = (Channel) getExecChannel();
 			((ChannelExec) channel).setCommand(command);
 			
 			OutputStream out = channel.getOutputStream();
 			InputStream in = channel.getInputStream();
 			
-			channel.connect();
+			//if (!channel.isConnected()) channel.connect();
 			
 			if (checkAck(in) != 0) {
 				return;
@@ -749,12 +764,53 @@ public class SSH extends ScriptableObject {
 				return;
 			}
 			
-			channel.disconnect();
+			//channel.disconnect();
 		} catch (IOException e) {
 			try { if(fis != null) fis.close();} catch (Exception ee) {}
 			throw e;
 		}
 	}
+	
+	/**
+	 * <odoc>
+	 * <key>SSH.sftpGet(aRemoteFile, aLocalFile) : JavaStream</key>
+	 * Retrieves a remote file over the SFTP connection to be stored on the local path provided. If aLocalFile is
+	 * not provided the remote file contents will be returned as a Java Stream
+	 * </odoc>
+	 * @throws IOException 
+	 */
+	@JSFunction
+	public Object sftpGet(String remoteFile, String localFile) throws SftpException, JSchException, IOException {
+		ChannelSftp ch = (ChannelSftp) getSftpChannel();
+		
+		if (localFile != null && !localFile.equals("") && !localFile.endsWith("undefined")) {
+			ch.get(remoteFile, localFile);
+		} else {
+			return IOUtils.toBufferedInputStream(ch.get(remoteFile));
+		}
+		return remoteFile;
+	}
+	
+	/**
+	 * <odoc>
+	 * <key>SSH.sftpPut(aSource, aRemoteFile)</key>
+	 * Sends aSource file (if string) or a Java stream to a remote file path over a SFTP connection.
+	 * </odoc>
+	 * @throws Exception 
+	 */
+	@JSFunction
+	public void sftpPut(Object aSource, String aRemoteFile) throws Exception {
+		ChannelSftp ch = (ChannelSftp) getSftpChannel();
+		
+		if (aSource instanceof String) {
+			ch.put((String) aSource, aRemoteFile);
+		} else {
+			if (aSource instanceof InputStream)
+				IOUtils.copyLarge((InputStream) aSource, ch.put(aRemoteFile));
+			else 
+				throw new Exception("Expecting a string source file name or a Java Input stream as source");
+		}
+	}	
 	
 	/**
 	 * <odoc>
@@ -784,14 +840,14 @@ public class SSH extends ScriptableObject {
 		      
 			// exec 'scp -f rfile' remotely
 			String command = "scp -f "+ remoteFile;
-			Channel channel = session.openChannel("exec");
+			Channel channel = (Channel) getExecChannel();
 			((ChannelExec)channel).setCommand(command);
 
 			// get I/O streams for remote scp
 			OutputStream out = channel.getOutputStream();
 			InputStream in = channel.getInputStream();
 
-			channel.connect();
+			if (!channel.isConnected()) channel.connect();
 
 			byte[] buf = new byte[1024];
 
