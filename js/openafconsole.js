@@ -74,7 +74,7 @@ function __desc(aClass, retList, noRecursive) {
 		}
 
 		function printFunction(m, withRets) {
-			for(var i in m.sort(function(a,b) {
+			for(let i in m.sort(function(a,b) {
 				if (a.getName() < b.getName()) return -1;
 				if (a.getName() > b.getName()) return 1;
 				return 0;
@@ -160,7 +160,7 @@ function __desc(aClass, retList, noRecursive) {
 							ret = ret.concat(tempret);
 							if (tempret.length < 1) {
 								var listScope = af.getScopeIds();
-								for(var i in listScope) {
+								for(let i in listScope) {
 									try {
 										if (eval(listScope[i] + " instanceof Object") && 
 										    eval(aClass + " instanceof " + listScope[i]))
@@ -267,7 +267,7 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 		if (descSQL) {
 			res = _db.qsRS(sql);
 			if (timeCommand) __timeResult = now() - __start;
-			for(var i = 1; i <= res.getMetaData().getColumnCount(); i++) {
+			for(let i = 1; i <= res.getMetaData().getColumnCount(); i++) {
 				outputres += res.getMetaData().getColumnName(i) + ": " + res.getMetaData().getColumnTypeName(i) + "(" + res.getMetaData().getColumnDisplaySize(i) + ((res.getMetaData().getScale(i) > 0) ? "," + res.getMetaData().getScale(i) : "" ) + ")\n";
 			}
 			
@@ -454,7 +454,7 @@ function __watch(aLineOfCommands) {
 
 function addAlias(aAssignment) {
 	if (!(aAssignment.match(/\=/))) {
-		for(var i in __alias) {
+		for(let i in __alias) {
 			if (i == "preto") continue;
 			if (i == "decrypt") continue;
 			__outputConsoleCommentsNoEnd(i + ": "); __outputConsoleEnd(__alias[i]);
@@ -508,7 +508,7 @@ function __help(aTerm) {
 			__outputConsoleComments(h[0].text);
 		} else {
 			if (h.length > 1) {
-				for(var i in h) {
+				for(let i in h) {
 					__outputConsoleComments(h[i].key);
 				}
 			} else {
