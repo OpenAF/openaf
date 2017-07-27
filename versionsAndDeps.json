@@ -3,7 +3,7 @@
 		{
 			"description": "Materializecss",
 			"path"       : [ "js/materialize.js" ],
-			"version"    : "0.99",
+			"version"    : "0.100.1",
 			"changes"    : false,
 			"type"       : [ "js" ],
 			"license"    : "MIT",
