@@ -23,7 +23,6 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
-import wedo.jaf.services.connector.provider.ftp.SFTPConnector.SftpChannel;
 import wedo.openaf.AFCmdBase;
 import wedo.openaf.SimpleLog;
 import wedo.openaf.SimpleLog.logtype;
