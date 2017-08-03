@@ -14,7 +14,7 @@ import wedo.openaf.rhino.RhinoEngine;
  */
 public class AFCmdBase {
 	final public static String VERSION = "20170419";
-	final public static String LICENSE = "See license info in ";
+	final public static String LICENSE = "See license info in https://github.com/nmaguiar/openaf/blob/master/LICENSE";
 	
 	public static JSEngine jse;
 	public static String afcmd = "AFCmdBase"; 

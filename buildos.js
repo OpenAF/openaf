@@ -15,8 +15,8 @@ var smallClassPath = "";
 var EXTERNAL = false;
 if (isDefined(params.external)) EXTERNAL = true;
 
-var INTERNAL_LICENSE = "See license info in ";
-var EXTERNAL_LICENSE = "See license info in ";
+var INTERNAL_LICENSE = "See license info in https://github.com/nmaguiar/openaf/blob/master/LICENSE";
+var EXTERNAL_LICENSE = "See license info in https://github.com/nmaguiar/openaf/blob/master/LICENSE";
 
 function buildDeps() {
 	loadUnderscore();

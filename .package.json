@@ -2,7 +2,7 @@
   "author": "nuno.aguiar@wedotechnologies.com",
   "scripts": {
     "posterase": "",
-    "postinstall": "print(af.sh('echo ' + getOpenAF() + ' --update'));",
+    "postinstall": "print(sh('echo ' + getOpenAF() + ' --update'));",
     "preerase": "",
     "preinstall": ""
   },
@@ -18,10 +18,10 @@
     "type": "http",
     "url": ""
   },
-  "description": "OpenAF is a command-line utility/script interpreter that enhances and goes beyond RAID's af-run-cmd. The initial goal was transforming between ParameterMap, PMap and JSON formats and provide scripting capabilities to automatize RAID operations in several RAID servers, at the same time, in different versions (from 6.3.x to 8.0.x).",
+  "description": "OpenAF is a command-line utility/script interpreter based on Javascript",
   "name": "OpenAF",
   "main": "",
-  "license": "See license info in ",
+  "license": "See license info in https://github.com/nmaguiar/openaf/blob/master/LICENSE",
   "version": "20161217",
   "dependencies": {},
   "files": [ ],
