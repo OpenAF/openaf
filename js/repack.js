@@ -175,13 +175,13 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 
 				str = af.fromBytes2String(zip.getFile(el.name));
 				
+				var newClass = (isDef(mainClass)) ? mainClass : "wedo.openaf.AFCmdOS"; 
 				if ((str.match(/jarinjarloader/) && str.match(/eclipse/) )) {
-					var newClass = (isDef(mainClass)) ? mainClass : Packages.wedo.openaf.AFCmdBase.afc.getClass().getName();
-					
 					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, newClass);
-
-					zipNew.putFile(el.name, af.fromString2Bytes(str));
-				}
+				} else {
+					str = str.replace(/^Main-Class: .+$/m, "Main-Class: " + newClass);
+                                }
+				zipNew.putFile(el.name, af.fromString2Bytes(str));
 			} else {				
 				if (!(el.name.match(/jarinjarloader/))) {
 					if (!el.outside)
