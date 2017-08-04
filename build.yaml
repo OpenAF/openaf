@@ -10,17 +10,19 @@ include:
 jobs:
    # Build OpenAF
    - name  : Build OpenAFOS
-     exec  :
-        load("buildos.js");
+     exec  : >
+        global.path = (isDef(args.path)) ? args.path : ".";
+        __expr = "withDir=" + global.path;
+        af.load(global.path + "/buildos.js");
 
    # Repack the recently build openaf
    - name  : Repack OpenAFOS
      to    : oJob sh
      deps  :
         - Build OpenAFOS
-     exec  :
+     exec  : >
         log("Repacking...");
-        args.cmd = "java -jar openaf.jar --repack";
+        args.cmd = "java -jar " + global.path + "/openaf.jar --repack";
 
    # Copy OpenAF to the right place for use
    - name  : Copy OpenAF
@@ -28,9 +30,9 @@ jobs:
      deps  :
         - Build OpenAFOS
         - Repack OpenAFOS
-     exec  :
+     exec  : >
         log("Copying...");
-        args.cmd = "cp openaf.jar dist/openaf.jar";
+        args.cmd = "cp " + global.path + "/openaf.jar " + global.path + "/dist/openaf.jar";
 
 todo:
    - Build OpenAFOS
