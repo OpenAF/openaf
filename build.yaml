@@ -1,12 +1,3 @@
-include:
-   - oJobBasics.yaml
-
-#ojob:
-#   channels:
-#     expose     : true
-#     port       : 17878
-#     permissions: rw
-
 jobs:
    # Build OpenAF
    - name  : Build OpenAFOS
@@ -17,22 +8,20 @@ jobs:
 
    # Repack the recently build openaf
    - name  : Repack OpenAFOS
-     to    : oJob sh
      deps  :
         - Build OpenAFOS
      exec  : >
         log("Repacking...");
-        args.cmd = "java -jar " + global.path + "/openaf.jar --repack";
+        sh("java -jar " + global.path + "/openaf.jar --repack", "", undefined, true);
 
    # Copy OpenAF to the right place for use
    - name  : Copy OpenAF
-     to    : oJob sh
      deps  :
         - Build OpenAFOS
         - Repack OpenAFOS
      exec  : >
         log("Copying...");
-        args.cmd = "cp " + global.path + "/openaf.jar " + global.path + "/dist/openaf.jar";
+        sh("cp " + global.path + "/openaf.jar " + global.path + "/dist/openaf.jar", "", undefined, true);
 
 todo:
    - Build OpenAFOS

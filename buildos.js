@@ -262,8 +262,8 @@ try {
 	};
         saveHelp(OPENAF_BUILD_HOME, helpFiles);
         log("Generating oDoc for Web");
-        af.mkdir("odocweb");
-        saveHelpWeb("odocweb", helpFiles);
+        af.mkdir(OPENAF_BUILD_HOME + "/odocweb");
+        saveHelpWeb(OPENAF_BUILD_HOME + "/odocweb", helpFiles);
 	tempJar.putFile(".odoc.db", io.readFileBytes(OPENAF_BUILD_HOME + "/.odoc.db"));
 } catch(e) {
 	logErr(e);
