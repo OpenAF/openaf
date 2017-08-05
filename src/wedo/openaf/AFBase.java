@@ -1022,6 +1022,17 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
+	 * <key>af.getDistribution() : String</key>
+	 * Returns the current OpenAF's distribution channel. 
+	 * </odoc>
+	 */
+	@JSFunction
+	public String getDistribution() {
+		return AFCmdBase.DISTRIBUTION;
+	}		
+	
+	/**
+	 * <odoc>
 	 * <key>af.getOpenAFJar() : String</key>
 	 * Retrives the fullpath for the OpenAF jar.
 	 * </odoc>

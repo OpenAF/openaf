@@ -80,9 +80,6 @@ var outputPath;
 var verb;
 var arg;
 
-var homeIP = "192.168.40.110";
-var alternativeIP = "172.25.1.32";
-
 // *********
 // FUNCTIONS
 // *********
@@ -659,19 +656,12 @@ function getPackage(packPath) {
 					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
 					output = af.fromBytes2String(http.responseBytes());
 				}
-				if (packPath.match(alternativeIP) && output.match(homeIP)) {
-					output = output.replace(new RegExp(homeIP, "g"), alternativeIP);
-				}
 				packag = fromJsonYaml(output);
 				if (isUndefined(packag)) throw(packPath + "/" + PACKAGESJSON);
 				packag.__filelocation = "url";
 			} catch(e) {
-				if (e.message.match(/Connection refused/) && packPath.match(homeIP)) {
-					return getPackage(packPath.replace(homeIP, alternativeIP));
-				} else {
-					logErr("Didn't find a package on '" + packPath + "' (" + e.message + ")");
-					return;					
-				}
+				logErr("Didn't find a package on '" + packPath + "' (" + e.message + ")");
+				return;					
 			}
  		}
 	} else {
@@ -870,7 +860,7 @@ function install(args) {
     	}
 
     	if (foundRepo) {
-    		OPACKCENTRALDB = args[i];
+    		if (__opackCentral.indexOf(args[i]) < 0) __opackCentral.unshift(args[i]);
     		foundRepo = false;
     	}
 
@@ -1134,7 +1124,7 @@ function update(args) {
 
     for(i in args) {
     	if (foundRepo) {
-    		OPACKCENTRALDB = args[i];
+    		if (__opackCentral.indexOf(args[i]) < 0) __opackCentral.unshift(args[i]);
     		foundRepo = false;
     	}
 
@@ -1345,7 +1335,7 @@ function __opack_search(args) {
 
     for(i in args) {
     	if (foundRepo) {
-    		OPACKCENTRALDB = args[i];
+    		if (__opackCentral.indexOf(args[i]) < 0) __opackCentral.unshift(args[i]);
     		foundRepo = false;
     	}
 

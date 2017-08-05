@@ -7,20 +7,14 @@ plugin("HTTP");
 
 // VARIABLES
 // ---------
-var homeServerURLs = [
-     "http://192.168.40.110/d/openaf/latest",
-     "http://172.25.1.32/d/openaf/latest"
-];
-var updateURLs = [
-     "http://192.168.40.110/d/openaf",
-     "http://172.25.1.32/d/openaf"
-];
+var homeServerURLs = __openafRelease;
+var updateURLs = __openafDownload;
 var currentVersion = getVersion();
 
 // FUNCTIONS
 // ---------
 function updateURL(pos, version) {
-	return updateURLs[pos] + "/openaf-" + version + ".zip";
+	return updateURLs[pos] + "/openaf-" + version + ".jar";
 }
 
 // MAIN

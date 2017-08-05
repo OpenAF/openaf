@@ -5,7 +5,53 @@
 var self = this;
 var global = self;
 
+/**
+ * <odoc>
+ * <key>getOpenAFJar() : String</key>
+ * Returns the complete filepath and name for the OpenAF jar file. (Shortcut for af.getOpenAFJar()).
+ * If __forcedOpenAFJar is defined the corresponding value will be used (useful when detection of the OpenAF jar
+ * doesn't work as expected or when OpenAF is embedded. 
+ * </odoc>
+ */
+var __forcedOpenAFJar;
+function getOpenAFJar() {
+	var res = "";
+	if (isDefined(__forcedOpenAFJar)) 
+		res = __forcedOpenAFJar;
+	else
+		res = String(af.getOpenAFJar()).replace(/\\/g, "/");
+	
+	return res;
+}
+
 var noHomeComms = false;
+//Set openaf variables
+var __openaf;
+try {
+	__openaf = io.readFile(getOpenAFJar() + "::openaf.json");
+} catch(e) {
+	__openaf = {};
+}
+
+noHomeComms = (isDef(__openaf.noHomeComms)) ? __openaf.noHomeComms : false;
+var __opackCentral = (isDef(__openaf.opackCentral)) ? __openaf.opackCentral : [
+	"https://openaf.io/opack.db"
+];
+const __openafBuild = (isDef(__openaf.openafBuild)) ? __openaf.openafBuild : [
+    "https://openaf.io/build"
+];
+const __openafRelease = (isDef(__openaf.openafRelease)) ? __openaf.openafRelease : [
+    "https://openaf.io/release"
+];
+const __openafDownload = (isDef(__openaf.openafDownload)) ? __openaf.openafDownload : [
+	"https://openaf.io"
+];
+const __odoc = (isDef(__openaf.odoc)) ? __openaf.odoc : [
+	"https://openaf.io/odoc"
+];
+
+//const __addToOpenAFjs = (isDef(__openaf.addToOpenAFjs)) ? __openaf.addToOpenAFjs : undefined;
+//const __addToOpenAFConsolejs = (isDef(__openaf.addToOpenAFConsolejs)) ? __openaf.addToOpenAFConsolejs : undefined;
 
 /**
  * Get serialize version detecting circular references (internal use)
@@ -828,6 +874,16 @@ function getVersion() {
 
 /**
  * <odoc>
+ * <key>getDistribution() : String</key>
+ * Returns the current distribution channel for this version of OpenAF.
+ * </odoc>
+ */
+function getDistribution() {
+	return af.getDistribution();
+}
+
+/**
+ * <odoc>
  * <key>getOpenAFPath() : String</key>
  * Returns the filesystem path to the openaf.jar currently being used for the script execution.
  * </odoc>
@@ -843,26 +899,6 @@ function getOpenAFPath() {
 	}
 }
 
-/**
- * <odoc>
- * <key>getOpenAFJar() : String</key>
- * Returns the complete filepath and name for the OpenAF jar file. (Shortcut for af.getOpenAFJar()).
- * If __forcedOpenAFJar is defined the corresponding value will be used (useful when detection of the OpenAF jar
- * doesn't work as expected or when OpenAF is embedded. 
- * </odoc>
- */
-//var __forcedOpenAFJar = String(af.getOpenAFJar()).replace(/\\/g, "/");
-var __forcedOpenAFJar;
-function getOpenAFJar() {
-	var res = "";
-	if (isDefined(__forcedOpenAFJar)) 
-		res = __forcedOpenAFJar;
-	else
-		res = String(af.getOpenAFJar()).replace(/\\/g, "/");
-	
-	return res;
-}
-
 //------------------------------------------
 //OPACK functions
 //------------------------------------------
@@ -871,8 +907,6 @@ var PACKAGEJSON  = ".package.json";
 var PACKAGEYAML  = ".package.yaml";
 var PACKAGESJSON = "packages.json";
 var PACKAGESJSON_DB = ".opack.db";
-var OPACKCENTRALDB = "http://192.168.40.110/d/opack/opack.central.db";
-var OPACKCENTRALDBBAK = "http://172.25.1.32/d/opack/opack.central.db";
 var OPACKCENTRALJSON = "packages.json";
 
 
@@ -892,20 +926,20 @@ function getOPackRemoteDB() {
 	var http;
 	var zip;
 
-	try {
-		http = new HTTP(OPACKCENTRALDB, "GET", "", {}, true, 1500);
-		zip = new ZIP(http.responseBytes());
-	} catch(e) {
+	for(let i in __opackCentral) {
 		try {
-			http = new HTTP(OPACKCENTRALDBBAK, "GET", "", {}, true, 1500);
+			http = new HTTP(__opackCentral[i], "GET", "", {}, true, 1500);
 			zip = new ZIP(http.responseBytes());
+			break;
 		} catch(e) {
-			return packages;
+			// Continue to next
 		}
 	}
+	
+	if (isUnDef(http)) return packages;
 
 	packages = af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON)));
-	if (!isUndefined(zip)) zip.close();
+	if (!isUnDef(zip)) zip.close();
 	return packages;
 }
 
@@ -2349,10 +2383,7 @@ function loadHelp() {
 }
 
 var __odocsurl;
-if (isUndefined(__odocsurl)) __odocsurl = [
-  "http://192.168.40.110/d/openaf/odoc",
-  "http://172.25.1.32/d/openaf/odoc"
-];
+if (isUnDef(__odocsurl)) __odocsurl = __odoc;
 var __odocs;
 var __offlineHelp;
 if (isUndefined(__offlineHelp)) {
@@ -2617,10 +2648,7 @@ function checkLatestVersion() {
 	var version = -1;
 	if (noHomeComms) return version;
 
-	var homeServerURLs2 = [
-	   "http://192.168.40.110/d/openaf/release",
-	   "http://172.25.1.32/d/openaf/release"
-	];
+	var homeServerURLs2 = __openafRelease;
 	
 	homeServerURLs2.forEach(function(aURL) {
 		try { 
@@ -3391,3 +3419,7 @@ $ch = $channels;
       Packages.org.slf4j.LoggerFactory.getLogger(i.next().getName()).setLevel(Packages.ch.qos.logback.classic.Level.ERROR);
    }
 }
+
+/*if (isDef(__addToOpenAFjs)) {
+	load(__addToOpenAFjs);
+}*/

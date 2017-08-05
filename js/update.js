@@ -8,24 +8,15 @@ plugin("ZIP");
 
 // VARIABLES
 // ---------
-var homeServerURLs = [
-     "http://192.168.40.110/d/openaf/latest",
-     "http://172.25.1.32/d/openaf/latest"
-];
-var homeServerURLs2 = [
-     "http://192.168.40.110/d/openaf/release",
-     "http://172.25.1.32/d/openaf/release"
-];
-var updateURLs = [
-     "http://192.168.40.110/d/openaf",
-     "http://172.25.1.32/d/openaf"
-];
+var homeServerURLs = __openafRelease;
+var homeServerURLs2 = __openafBuild;
+var updateURLs = __openafDownload;
 var currentVersion = getVersion();
 
 // FUNCTIONS
 // ---------
 function updateURL(pos, version) {
-	return updateURLs[pos] + "/openaf-" + version + ".zip";
+	return updateURLs[pos] + "/openaf-" + version + ".jar";
 }
 
 
@@ -72,14 +63,14 @@ for(var i in homeServerURLs) {
 			}
 			var down = new HTTP(updateURL(i, latestVersion), "GET", "", {}, true, 5000);
 			log("Processing download.");
-			var zip = new ZIP();
-			zip.load(down.responseBytes());
+			//var zip = new ZIP();
+			//zip.load(down.responseBytes());
 			var oldVersionFile = classPath.replace(/openaf.jar/, "openaf.jar.old");
 			log("Backup current version to " + oldVersionFile);
 			io.writeFileBytes(oldVersionFile, io.readFileBytes(classPath));
 			log("Upgrading openaf.jar");
 			try {
-				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar"), zip.getFile("openaf.jar"));
+				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar"), down);
 			} catch(e) {
 				if(!e.message.match(/NoClassDefFoundError/)) {
 					throw e;

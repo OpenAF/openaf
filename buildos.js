@@ -15,8 +15,8 @@ var smallClassPath = "";
 var EXTERNAL = false;
 if (isDefined(params.external)) EXTERNAL = true;
 
-var INTERNAL_LICENSE = "See license info in https://github.com/nmaguiar/openaf/blob/master/LICENSE";
-var EXTERNAL_LICENSE = "See license info in https://github.com/nmaguiar/openaf/blob/master/LICENSE";
+var INTERNAL_LICENSE = "See license info in https://openaf.io/LICENSE";
+var EXTERNAL_LICENSE = "See license info in https://openaf.io/LICENSE";
 
 function buildDeps() {
 	loadUnderscore();
@@ -148,6 +148,7 @@ var packjson = io.readFile(OPENAF_BUILD_HOME + "/.package.json");
 packjson.version = release + "";
 //tempJar.putFile("log4j.properties", io.readFileBytes(OPENAF_BUILD_HOME + "/log4j.properties"));
 tempJar.putFile("versionsAndDeps.json", io.readFileBytes(OPENAF_BUILD_HOME + "/versionsAndDeps.json"));
+tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_BUILD_HOME + "/openaf.json"));
 tempJar.putFile(".package.json", af.fromString2Bytes(beautifier(packjson)));
 
 log("Adding css files...");

@@ -103,7 +103,7 @@ public class AFCmdOS extends AFCmdBase  {
 	protected boolean injectcode = false;
 	protected JsonObject pmIn, pmOut;
 
-	public static String[] args;
+	//public static String[] args;
 	
 	@Override
 	public String dIP(String aPass) {
@@ -212,8 +212,6 @@ public class AFCmdOS extends AFCmdBase  {
 		boolean url = false;
 		boolean operation = false;
 		String checkOption = "";
-		
-		AFCmdBase.args = args;
 		
 		for (String a : args) {
 			if (checkNext) {
@@ -630,6 +628,7 @@ public class AFCmdOS extends AFCmdBase  {
 		}
 	
 		AFCmdOS afc = new AFCmdOS();
+		AFCmdBase.args = args;
 		
 		try {			
 			afc.processArgs(args);				

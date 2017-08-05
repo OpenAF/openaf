@@ -15,7 +15,7 @@
  * </odoc>
  */
 
-var morehelp = "Please check http://192.168.40.110/openaf_script_documentation or http://172.25.1.32/openaf_script_documentation for more."
+var morehelp = "Please check http://openaf.io for more."
 	
 var term = __args[1] + "";
 if (__args.length >= 1 && term != 'undefined') {
