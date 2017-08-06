@@ -51,7 +51,7 @@ public class AFCmdOS extends AFCmdBase  {
 			+ "\n"
 			+ "   -h                 - show this help information\n"
 			+ "   -helpscript (term) - show help on a search term on scripting\n"
-			+ "\n(version " + VERSION + ", " + LICENSE + ")";
+			+ "\n(version " + VERSION + " (" + DISTRIBUTION + "), " + LICENSE + ")";
 	final protected static String OPTION_OUTPUT_TYPE = "-o";
 	final protected static String OPTION_DEBUG = "-debug";
 	final protected static String OPTION_EXPR = "-e";
