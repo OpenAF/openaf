@@ -7,7 +7,7 @@
  */
 var ODoc = function(aoDoc) {
 	this.odoc = {};
-	if (isDefined(aoDoc)) this.addAll(aoDoc);
+	if (isDef(aoDoc)) this.addAll(aoDoc);
 }
 
 /**
@@ -92,9 +92,9 @@ var ODocs = function(aPath, aODocs, anArrayURLs, offline) {
 	this.offline = offline;
 	this.keysfile = "__odockeys";
 	this.arrayurls = anArrayURLs;
-	this.aFilename = (isUndefined(aPath)) ? getOpenAFJar() : aPath;
+	this.aFilename = (isUnDef(aPath)) ? getOpenAFJar() : aPath;
 	try { this.load(); if(!this.offline) this.backgroundLoadWeb(); } catch(e) {}
-	if (isDefined(aODocs)) this.addAll(aODocs);
+	if (isDef(aODocs)) this.addAll(aODocs);
 }
 
 /**
@@ -169,10 +169,12 @@ ODocs.prototype.loadWeb = function(aID) {
 	var parent = this;
 	
 	function getFromWeb(aSuffix) {
+ 		if (isUnDef(aSuffix) || aSuffix == "undefined.gz") return null;
+
 		for(var i in parent.arrayurls) {
 			try {
 				var h = new HTTP(parent.arrayurls[i] + "/" + aSuffix, "GET", "", {}, true, 500);
-				if (isDefined(h)) {
+				if (isDef(h)) {
 					return h.responseBytes();
 				} else {
 					return null;
@@ -243,7 +245,7 @@ ODocs.prototype.load = function(aID) {
 }
 
 ODocs.prototype.search = function(aTerm, anArrayOfIds) {
-	var ids = (isUndefined(anArrayOfIds)) ? Object.keys(this.aodocskeys) : anArrayOfIds;
+	var ids = (isUnDef(anArrayOfIds)) ? Object.keys(this.aodocskeys) : anArrayOfIds;
 	var resArray = [];
 
 	for(var id in this.aodocskeys) {
@@ -278,9 +280,9 @@ ODocs.prototype.get = function(aID, aKey) {
     // Clean stuff
     this.aodocs = {};
 
-    if (isUndefined(this.aodocskeys) ||
+    if (isUnDef(this.aodocskeys) ||
         this.aodocskeys == {} || 
-        isUndefined(this.aodocs[aID])) {
+        isUnDef(this.aodocs[aID])) {
     	this.load(aID);
     	if(!this.offline) {
     		this.backgroundLoadWeb(aID);

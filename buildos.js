@@ -5,6 +5,8 @@ plugin("ZIP");
 var params = processExpr();
 
 var OPENAF_BUILD_HOME = (isUndefined(params.withDir)) ? "." : params.withDir;
+var OPENAF_JSON = (isDef(params.withJSON)) ? params.withJSON : undefined;
+var OPENAF_DIST = (isDef(params.withDist)) ? params.withDist : undefined;
 var OPENAF_LIB = OPENAF_BUILD_HOME + "/lib";
 var OPENAF_SRC = OPENAF_BUILD_HOME + "/src";
 var OPENAF_BIN = OPENAF_BUILD_HOME + "/bin";
@@ -108,10 +110,14 @@ var classpath = buildClasspath();
 log("Changing AFCmdOS for release = " + release);
 var javaAFCmd = io.readFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java");
 javaAFCmd = javaAFCmd.replace(/final public static String VERSION = "([0-9]+)";/m, "final public static String VERSION = \"" + release + "\";");
+
 if (EXTERNAL) 
    javaAFCmd = javaAFCmd.replace(/final public static String LICENSE = "([^\"]+)";/m, "final public static String LICENSE = \"" + EXTERNAL_LICENSE + "\";");
 else 
    javaAFCmd = javaAFCmd.replace(/final public static String LICENSE = "([^\"]+)";/m, "final public static String LICENSE = \"" + INTERNAL_LICENSE + "\";");
+
+if (isDef(OPENAF_DIST)) 
+   javaAFCmd = javaAFCmd.replace(/final public static String DISTRIBUTION = "([^\"]+)";/m, "final public static String DISTRIBUTION = \"" + OPENAF_DIST + "\";");
 
 io.writeFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java", javaAFCmd);
 
@@ -148,7 +154,11 @@ var packjson = io.readFile(OPENAF_BUILD_HOME + "/.package.json");
 packjson.version = release + "";
 //tempJar.putFile("log4j.properties", io.readFileBytes(OPENAF_BUILD_HOME + "/log4j.properties"));
 tempJar.putFile("versionsAndDeps.json", io.readFileBytes(OPENAF_BUILD_HOME + "/versionsAndDeps.json"));
-tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_BUILD_HOME + "/openaf.json"));
+if (isUnDef(OPENAF_JSON)) {
+   tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_BUILD_HOME + "/openaf.json"));
+} else {
+   tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_JSON));
+}
 tempJar.putFile(".package.json", af.fromString2Bytes(beautifier(packjson)));
 
 log("Adding css files...");

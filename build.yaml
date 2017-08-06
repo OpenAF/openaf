@@ -3,7 +3,9 @@ jobs:
    - name  : Build OpenAFOS
      exec  : >
         global.path = (isDef(args.path)) ? args.path : ".";
-        __expr = "withDir=" + global.path;
+        if (isUnDef(args.openafJSON)) args.openafJSON = global.path + "/openaf.json";
+        if (isUnDef(args.openafDIST)) args.openafDIST = "nightly";
+        __expr = "withDir=" + global.path + ";withJSON=" + args.openafJSON + ";withDist=" + args.openafDIST;
         af.load(global.path + "/buildos.js");
 
    # Repack the recently build openaf
