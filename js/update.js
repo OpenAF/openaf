@@ -70,7 +70,7 @@ for(var i in homeServerURLs) {
 			io.writeFileBytes(oldVersionFile, io.readFileBytes(classPath));
 			log("Upgrading openaf.jar");
 			try {
-				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar"), down);
+				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar"), down.responseBytes());
 			} catch(e) {
 				if(!e.message.match(/NoClassDefFoundError/)) {
 					throw e;
