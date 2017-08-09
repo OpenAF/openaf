@@ -763,7 +763,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 function __checkVersion() {
 	var t = new Threads();
 	t.addThread(function() {
-		var current = checkLatestVersion();
+		var current = checkLatestVersion(); 
 		var myversion = getVersion();
 		if (current != -1) {
 			if (current > myversion)
@@ -879,7 +879,7 @@ con.getConsoleReader().setExpandEvents(false);
 //java.lang.System.setProperty("jansi.passthrough", true);
 
 // Startup
-__outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + ") (type help for commands)");
+__outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + "(" + getDistribution() + ")) (type help for commands)");
 var historyFile;
 var jLineFileHistory;
 
