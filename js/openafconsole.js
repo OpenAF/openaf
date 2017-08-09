@@ -879,7 +879,7 @@ con.getConsoleReader().setExpandEvents(false);
 //java.lang.System.setProperty("jansi.passthrough", true);
 
 // Startup
-__outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + "(" + getDistribution() + ")) (type help for commands)");
+__outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)");
 var historyFile;
 var jLineFileHistory;
 
