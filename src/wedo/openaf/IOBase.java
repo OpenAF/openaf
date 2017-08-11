@@ -26,7 +26,7 @@ import com.google.gson.JsonObject;
 
 import wedo.openaf.core.AF;
 
-public class IO extends wedo.openaf.core.IO {
+public class IOBase extends wedo.openaf.core.IO {
 
 	private static final long serialVersionUID = 2937437659041890404L;
 	

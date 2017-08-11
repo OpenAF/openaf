@@ -35,19 +35,19 @@ try {
 
 noHomeComms = (isDef(__openaf.noHomeComms)) ? __openaf.noHomeComms : false;
 var __opackCentral = (isDef(__openaf.opackCentral)) ? __openaf.opackCentral : [
-	"https://openaf.io/opack.db"
+	"http://openaf.io/opack.db"
 ];
 const __openafBuild = (isDef(__openaf.openafBuild)) ? __openaf.openafBuild : [
-    "https://openaf.io/build"
+    "http://openaf.io/build"
 ];
 const __openafRelease = (isDef(__openaf.openafRelease)) ? __openaf.openafRelease : [
-    "https://openaf.io/release"
+    "http://openaf.io/release"
 ];
 const __openafDownload = (isDef(__openaf.openafDownload)) ? __openaf.openafDownload : [
-	"https://openaf.io"
+	"https//openaf.io"
 ];
 const __odoc = (isDef(__openaf.odoc)) ? __openaf.odoc : [
-	"https://openaf.io/odoc"
+	"http://openaf.io/odoc"
 ];
 
 //const __addToOpenAFjs = (isDef(__openaf.addToOpenAFjs)) ? __openaf.addToOpenAFjs : undefined;
@@ -930,16 +930,19 @@ function getOPackRemoteDB() {
 		try {
 			http = new HTTP(__opackCentral[i], "GET", "", {}, true, 1500);
 			zip = new ZIP(http.responseBytes());
-			break;
+			if (isDef(http)) {
+				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON))));
+                        }
+			if (!isUnDef(zip)) zip.close();
 		} catch(e) {
 			// Continue to next
 		}
 	}
 	
-	if (isUnDef(http)) return packages;
+	//if (isUnDef(http)) return packages;
 
-	packages = af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON)));
-	if (!isUnDef(zip)) zip.close();
+	//packages = af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON)));
+	//if (!isUnDef(zip)) zip.close();
 	return packages;
 }
 

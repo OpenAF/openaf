@@ -612,7 +612,7 @@ public class SSH extends ScriptableObject {
 		String output = null;
 		String outputErr = "";
 		
-		channel = (Channel) getExecChannel();
+                channel = session.openChannel("exec");
 
 		if (channel != null) {
 			ChannelExec ce = (ChannelExec) channel;
@@ -703,7 +703,7 @@ public class SSH extends ScriptableObject {
 		
 		try {
 			String command = "scp " + (ptimestamp ? "-p" : "") + " -t " + remoteFile;
-			Channel channel = (Channel) getExecChannel();
+                        Channel channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand(command);
 			
 			OutputStream out = channel.getOutputStream();
@@ -839,7 +839,7 @@ public class SSH extends ScriptableObject {
 		      
 			// exec 'scp -f rfile' remotely
 			String command = "scp -f "+ remoteFile;
-			Channel channel = (Channel) getExecChannel();
+                        Channel channel = session.openChannel("exec");
 			((ChannelExec)channel).setCommand(command);
 
 			// get I/O streams for remote scp
