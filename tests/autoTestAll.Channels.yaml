@@ -1,9 +1,6 @@
 include:
    - oJobTest.yaml
 
-ojob:
-  sequential: true 
-  
 jobs:
    # CHANNELS tests
    # --------------

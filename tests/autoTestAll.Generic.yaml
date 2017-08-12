@@ -1,0 +1,35 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # OPENAF generic tests
+   # --------------------
+   - name: OpenAF::Get version
+     to  : oJob Test
+     args:
+       func: print(getVersion());
+ 
+   - name: OpenAF::Prints
+     to  : oJob Test
+     args: 
+       func: >
+          print("Hello World!");
+          printErr("Bye World!"); printErrnl("?");
+          printnl("no"); print(" line");
+
+   - name: OpenAF::SPrints
+     to  : oJob Test
+     args: 
+       func: >
+          var a = { a: 1, b: "a", c: [1, { d: 3 }]};
+          sprint(a);
+          sprintErr(a); sprintErrnl(a);
+          sprintnl(a); sprint(a); 
+  
+   - name: OpenAF::Logs
+     to  : oJob Test
+     args: 
+       func: >
+          log("Hello World!");
+          logErr("Bye World!"); logWarn("?");
+          lognl("no"); log(" line");

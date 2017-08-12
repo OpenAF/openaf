@@ -1,0 +1,21 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # OPENAF oDoc tests
+   # --------------------
+   - name: oDoc::Test access to oDoc
+     to  : oJob Test
+     args:
+       func: |
+          log("Online/Offline oDoc");
+          var od1 = searchHelp("index")[0];
+          var id1 = od1.id;
+          
+          log("Just offlie oDoc");
+          setOfflineHelp(true);
+          var od2 = searchHelp("index")[0];
+          var id2 = od2.id;
+
+          ow.test.assert(id1, "index", "Online or offline oDoc missing index.");
+          ow.test.assert(id2, "index", "Offline oDoc missing index.");
