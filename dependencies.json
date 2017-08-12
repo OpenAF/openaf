@@ -1,0 +1,76 @@
+{
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\backbone.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\check.js": [
+    "plugin(\"HTTP\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\example.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\genScripts.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\handlebars.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\jlinq.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\jquery.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\js-yaml.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\materialize.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\odoc.js": [
+    "plugin(\"ZIP\")",
+    "plugin(\"HTTP\")",
+    "plugin(\"Threads\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\ojob.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\opack.js": [
+    "plugin(\"ZIP\")",
+    "plugin(\"HTTP\")",
+    "plugin(\"wedo.openaf.plugins.Console\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\openaf.js": [
+    "plugin(\"Console\")",
+    "plugin(\"ZIP\")",
+    "plugin(\"HTTP\")",
+    "plugin(aPlugin)",
+    "plugin(\"wedo.openaf.plugins.HTTP\")",
+    "plugin(\"wedo.openaf.plugins.\" + aPlugin)",
+    "plugin(\"Threads\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\openafconsole.js": [
+    "plugin(\"Console\")",
+    "plugin(\"Threads\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\openafgui.js": [
+    "plugin(\"Threads\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\owrap.ch.js": [
+    "plugin(\"Ignite\")",
+    "plugin(\"Threads\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\owrap.format.js": [
+    "plugin(\"XML\")",
+    "plugin(\"HTTP\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\owrap.obj.js": [
+    "plugin(\"Threads\")",
+    "plugin(\"SSH\")",
+    "plugin(\"HTTP\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\owrap.oJob.js": [
+    "plugin(\"Threads\")",
+    "plugin(\"Console\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\owrap.server.js": [
+    "plugin(\"JMX\")",
+    "plugin(\"HTTPServer\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\owrap.template.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\owrap.test.js": [
+    "plugin(\"XML\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\repack.js": [
+    "plugin(\"ZIP\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\stream.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\tlsh.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\underscore.js": [],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\update.js": [
+    "plugin(\"HTTP\")",
+    "plugin(\"ZIP\")"
+  ],
+  "C:\\Users\\nuno\\git\\openaf\\.\\js\\vkbeautify.js": []
+}
