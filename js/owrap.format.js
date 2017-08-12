@@ -1011,7 +1011,7 @@ OpenWrap.format.prototype.cron = {
 	 * h - hours (0-23)\
 	 * D - month day (1-31)\
 	 * M - month (1-12)\
-	 * d - week day (1-7)\ 
+	 * d - week day (1-7)\
 	 * \
 	 * Example:\
 	 * \
@@ -1295,24 +1295,24 @@ OpenWrap.format.prototype.cron = {
 		var ct = ow.format.fromDate(d, "s m H d M u").split(/ /);
 		var cr = ow.format.cron.parse(aCronExpr);
 		if (cr.exceptions.length > 0) throw "Exceptions " + stringify(cr.exceptions);
-		var isMatch = false;
+		var isMatch = true;
 		var i = 0;
-		if (isDefined(cr.schedules[0].s) && aCronExpr.split(/ +/).length > 5) 
+		if (isDef(cr.schedules[0].s) && aCronExpr.split(/ +/).length > 5) 
 			isMatch = (cr.schedules[0].s.indexOf(Number(ct[i])) > -1);
 		i++;
-		if (isDefined(cr.schedules[0].m))
+		if (isDef(cr.schedules[0].m))
 			if (aCronExpr.split(/ +/).length > 5)
 				isMatch = isMatch && (cr.schedules[0].m.indexOf(Number(ct[i])) > -1);
 			else
 				isMatch = (cr.schedules[0].m.indexOf(Number(ct[i])) > -1);
 		i++;
-		if (isDefined(cr.schedules[0].h)) isMatch = isMatch && (cr.schedules[0].h.indexOf(Number(ct[i])) > -1);
+		if (isDef(cr.schedules[0].h)) isMatch = isMatch && (cr.schedules[0].h.indexOf(Number(ct[i])) > -1);
 		i++;
-		if (isDefined(cr.schedules[0].D)) isMatch = isMatch && (cr.schedules[0].D.indexOf(Number(ct[i])) > -1);
+		if (isDef(cr.schedules[0].D)) isMatch = isMatch && (cr.schedules[0].D.indexOf(Number(ct[i])) > -1);
 		i++;
-		if (isDefined(cr.schedules[0].M)) isMatch = isMatch && (cr.schedules[0].M.indexOf(Number(ct[i])) > -1);
+		if (isDef(cr.schedules[0].M)) isMatch = isMatch && (cr.schedules[0].M.indexOf(Number(ct[i])) > -1);
 		i++;
-		if (isDefined(cr.schedules[0].d)) isMatch = isMatch && (cr.schedules[0].d.indexOf(Number(ct[i])) > -1);
+		if (isDef(cr.schedules[0].d)) isMatch = isMatch && (cr.schedules[0].d.indexOf(Number(ct[i])+1) > -1);
 
 		return isMatch;
 	}
