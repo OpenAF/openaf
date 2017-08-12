@@ -1,1 +1,7 @@
-/bin/
+/bin/*
+/odocweb/*
+/jsmin/*
+openaf.jar
+openaf.jar.orig
+dependencies.json
+.odoc.db
