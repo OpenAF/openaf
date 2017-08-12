@@ -136,6 +136,8 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 	var res = aJSON;
 
 	if (isDef(res.include) && isArray(res.include)) {
+		loadLodash();
+		res.include = _.uniq(res.include);
 		for (var i in res.include) {
 			if (res.include[i].match(/\.js$/i)) load(res.include[i]);
 			if (res.include[i].match(/\.ya?ml$/i)) res = this.__merge(this.__loadFile(res.include[i]), res);
@@ -143,7 +145,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 	}
 	
 	if (!(isArray(res.ojob)) && !(isArray(res.todo))) {
-		throw("ojob and todo entries need to be defined as arrays.")
+		throw("ojob and todo entries need to be defined as arrays.");
 	}
 
 	return res;
@@ -157,6 +159,9 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	else
 		res.include = isDef(aJSONb.include) ? aJSONb.include : [];
 	
+	loadLodash();
+	res.include = _.uniq(res.include);
+
 	if (isDef(aJSONa.jobs)) 
 		res.jobs = aJSONa.jobs.concat(isDef(aJSONb.jobs) ? aJSONb.jobs : []);
 	else

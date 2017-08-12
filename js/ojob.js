@@ -99,7 +99,7 @@ function ojob_jobs() {
 	var file = ojob__getFile();
 	
 	if (isDef(file)) {
-		print(af.toYAML($stream(ow.loadOJob().previewFile(file).jobs).map("name").toArray().sort()));
+		print(af.toYAML($stream(ow.loadOJob().previewFile(file).jobs).map("name").distinct().toArray().sort()));
 	}
 	ojob_shouldRun = false;
 }
