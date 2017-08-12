@@ -5,3 +5,4 @@ openaf.jar
 openaf.jar.orig
 dependencies.json
 .odoc.db
+.opack.db
