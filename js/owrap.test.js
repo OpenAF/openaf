@@ -106,7 +106,7 @@ OpenWrap.test.prototype.stop = function(aKey) {
  * <odoc>
  * <key>ow.test.testExternally(aTest, aCommand, aTimeout) : Object</key>
  * Test executing aCommand for a give aTimeout (if provided) for a test named aTest. If aTest is divided
- * with "::" the first part sill be consider to be a test suite name. Will return whatever the command returns.\
+ * with "::" the first part will be consider to be a test suite name. Will return whatever the command returns.\
  * (available after ow.loadTest())
  * </odoc>
  */
