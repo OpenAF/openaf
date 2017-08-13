@@ -699,9 +699,9 @@ OpenWrap.obj.prototype.pool = {
 	},
 	
 	/**
-	 * <odoc><key>ow.obj.pool.AF(anURL)</key>Creates a pool setting with ow.obj.pool.setFactoryAF.</odoc>
+	 * <odoc><key>ow.obj.pool.AF(anURL, aTimeout)</key>Creates a pool setting with ow.obj.pool.setFactoryAF.</odoc>
 	 */
-	AF: function(anURL) { var p = this.create(); p.setFactoryAF(anURL); return p; },
+	AF: function(anURL, aTimeout) { var p = this.create(); p.setFactoryAF(anURL, aTimeout); return p; },
 	/**
 	 * <odoc><key>ow.obj.pool.RAIDDB(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver)</key>Creates a pool setting with ow.obj.pool.setFactoryRAIDDB.</odoc>
 	 */

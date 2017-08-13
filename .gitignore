@@ -1,0 +1,12 @@
+/bin/*
+/odocweb/*
+/jsmin/*
+openaf.jar
+openaf.jar.orig
+dependencies.json
+.odoc.db
+.opack.db
+/tests/autoTestAll.test
+/tests/autoTestAll.xlsx
+/tests/autoTestAll.xml
+/oJob-commons/*

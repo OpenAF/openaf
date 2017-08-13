@@ -611,7 +611,7 @@ test("Shell commands::Test shell commands", function() {
 
 test("oDoc::Test ODoc functionality", function() {
         log("Online/Offline ODoc");
-        var od1 = searchHelp("db")[0];
+        var od1 = searchHelp("index")[0];
 	var id1 = od1.id;
 	setOfflineHelp(true);
 
