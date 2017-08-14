@@ -73,7 +73,8 @@ for(var i in homeServerURLs) {
 			log("Upgrading openaf.jar");
 			try {
 				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp"), down.responseBytes());
-				endCommand = "af.mv('" + classPath.replace(/openaf.jar/, "openaf.jar.tmp") + "', '" + classPath + "');";
+				endCommand = "ioStreamCopy(io.writeFileStream('" + classPath.replace(/\\/g, "/") + ")', io.readFileStream('" + classPath.replace(/\\/g, "/").replace(/openaf.jar/, "openaf.jar.tmp") + "'));";
+				endCommand += "af.rm('" + classPath.replace(/\\/g, "/").replace(/openaf.jar/, "openaf.jar.tmp") + "');";
 			} catch(e) {
 				if(!e.message.match(/NoClassDefFoundError/)) {
 					throw e;

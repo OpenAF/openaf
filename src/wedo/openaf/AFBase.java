@@ -465,14 +465,39 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
+	 * <key>af.rename(aSourceFilePath, aTargetFilePath)</key>
+	 * Tries to rename aSourceFilePath to aTargetFilePath.
+	 * </odoc>
+	 * @throws IOException 
+	 */
+	@JSFunction
+	public boolean rename(String orig, String dest) {
+		return (new File(orig)).renameTo(new File(dest));
+	}
+
+	/**
+	 * <odoc>
 	 * <key>af.mv(aSourceFilePath, aTargetFilePath)</key>
-	 * Tries to move aSourceFilePath to aTargetFilePath.
+	 * Tries to move aSourceFilePath to aTargetFilePath preserving file attributes.
 	 * </odoc>
 	 * @throws IOException 
 	 */
 	@JSFunction
 	public boolean mv(String orig, String dest) throws IOException {
-		return Files.move((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING }) != null;
+		return Files.move((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE }) != null;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.cp(aSourceFilePath, aTargetFilePath)</key>
+	 * Tries to copy aSourceFilePath to aTargetFilePath preserving file attributes.
+	 * </odoc>
+	 * @throws IOException 
+	 */
+	@JSFunction
+	public boolean cp(String orig, String dest) throws IOException {
+		Files.copy((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.ATOMIC_MOVE });
+		return (new File(orig)).delete();
 	}
 	
 	/**

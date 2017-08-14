@@ -196,7 +196,8 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	log("Writing new repacked openaf.jar...");
 	zipNew.generate2File(classPath + ".tmp", {"compressionLevel": 9}, true);
 	addOnOpenAFShutdown(function() {
-		af.mv(classPath + ".tmp", classPath);
+		ioStreamCopy(io.writeFileStream(classPath.replace(/\\/g, "/")), io.readFileStream(classPath.replace(/\\/g, "/") + ".tmp"));
+		af.rm(classPath.replace(/\\/g, "/") + ".tmp");
 	});
 	zip.close();
 	zipNew.close();
