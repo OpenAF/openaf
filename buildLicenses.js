@@ -1,0 +1,22 @@
+plugin("HTTP");
+
+var ls = io.readFile("versionsAndDeps.json");
+var h = new HTTP();
+var lines = "";
+
+for(let i in ls.external) {
+    if (ls.external[i].license.match(/^https?:/i)) {
+        ls.external[i].license = h.exec(ls.external[i].license).response;
+    }
+    ls.external[i].path = ls.external[i].path.join(", ");
+
+    lines += templify("\
+Third-party name      : {{description}}\n\
+Version               : {{version}}\n\
+Changed from original : {{#if changed}}Yes{{else}}No{{/if}}\n\
+Location in openaf.jar: {{path}}\n\
+License               : \n\n{{license}}\n\
+-----------------------\n", ls.external[i]);
+}
+
+io.writeFileString("LICENSES.txt", lines);

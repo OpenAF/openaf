@@ -17,8 +17,8 @@ var smallClassPath = "";
 var EXTERNAL = false;
 if (isDefined(params.external)) EXTERNAL = true;
 
-var INTERNAL_LICENSE = "See license info in https://openaf.io/LICENSE";
-var EXTERNAL_LICENSE = "See license info in https://openaf.io/LICENSE";
+var INTERNAL_LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
+var EXTERNAL_LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 
 function buildDeps() {
 	loadUnderscore();
@@ -154,6 +154,8 @@ var packjson = io.readFile(OPENAF_BUILD_HOME + "/.package.json");
 packjson.version = release + "";
 //tempJar.putFile("log4j.properties", io.readFileBytes(OPENAF_BUILD_HOME + "/log4j.properties"));
 tempJar.putFile("versionsAndDeps.json", io.readFileBytes(OPENAF_BUILD_HOME + "/versionsAndDeps.json"));
+tempJar.putFile("LICENSE", io.readFileBytes(OPENAF_BUILD_HOME + "/LICENSE"));
+tempJar.putFile("LICENSES.txt", io.readFileBytes(OPENAF_BUILD_HOME + "/LICENSES.txt"));
 if (isUnDef(OPENAF_JSON)) {
    tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_BUILD_HOME + "/openaf.json"));
 } else {
@@ -199,7 +201,8 @@ parallel4Array(jsList, function(i) {
                 log("Compiling " + file.filename);
                 if (file.filename !== 'example.js' && 
                 	file.filename !== 'underscore.js' && 
-                	file.filename !== 'materialize.js' &&
+					file.filename !== 'materialize.js' &&
+					file.filename !== 'showdown.js' &&
 	 				file.filename !== 'stream.js' &&
 	 				file.filename !== 'js-yaml.js' &&
                     file.filename !== 'avsc.js' &&
@@ -238,43 +241,43 @@ tempJar.putFile("META-INF/MANIFEST.MF", af.fromString2Bytes(manifest));
 try {
 	log("Building ODoc documentation");
 	var helpFiles = {
-		"odoc"      : OPENAF_BUILD_HOME + "/js/odoc.js",
-		"ow.test"   : OPENAF_BUILD_HOME + "/js/owrap.test.js",
-		"ow.format" : OPENAF_BUILD_HOME + "/js/owrap.format.js",
+		"odoc": OPENAF_BUILD_HOME + "/js/odoc.js",
+		"ow.test": OPENAF_BUILD_HOME + "/js/owrap.test.js",
+		"ow.format": OPENAF_BUILD_HOME + "/js/owrap.format.js",
 		"ow.template": OPENAF_BUILD_HOME + "/js/owrap.template.js",
-		"ow.server" : OPENAF_BUILD_HOME + "/js/owrap.server.js",
-		"ow.obj"    : OPENAF_BUILD_HOME + "/js/owrap.obj.js",
-		"ow.ch"     : OPENAF_BUILD_HOME + "/js/owrap.ch.js",
-		"ow.oJob"   : OPENAF_BUILD_HOME + "/js/owrap.oJob.js",
-		"afbase"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/AFBase.java",
-		"io"        : OPENAF_BUILD_HOME + "/src/wedo/openaf/IOBase.java",
-		"iocore"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/IO.java",
-		"csv"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/CSV.java",
-		"db"        : OPENAF_BUILD_HOME + "/src/wedo/openaf/core/DB.java",
-		"console"   : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Console.java",
-        	"threads"   : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Threads.java",
-        	"email"     : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Email.java",
-        	"http"      : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/HTTP.java",
-        	"httpd"     : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/HTTPServer.java",
-        	"jmx"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/JMX.java",
-        	"jmxserver" : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/JMXServer.java",
-        	"ssh"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SSH.java",
-        	"snmp"      : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SNMP.java",
-        	"snmpd"     : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SNMPServer.java",
-        	"xml"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/XML.java",
-        	"xls"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/XLS.java",
-        	"svn"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SVN.java",
-        	"git"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/GIT.java",
-        	"zip"       : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/ZIP.java",
-        	"ignite"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Ignite.java",
-        	"bsdiff"    : OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/BSDiff.java",
-		"scope"     : OPENAF_BUILD_HOME + "/js/openaf.js",
-		"index"     : OPENAF_BUILD_HOME + "/js/example.js"
+		"ow.server": OPENAF_BUILD_HOME + "/js/owrap.server.js",
+		"ow.obj": OPENAF_BUILD_HOME + "/js/owrap.obj.js",
+		"ow.ch": OPENAF_BUILD_HOME + "/js/owrap.ch.js",
+		"ow.oJob": OPENAF_BUILD_HOME + "/js/owrap.oJob.js",
+		"afbase": OPENAF_BUILD_HOME + "/src/wedo/openaf/AFBase.java",
+		"io": OPENAF_BUILD_HOME + "/src/wedo/openaf/IOBase.java",
+		"iocore": OPENAF_BUILD_HOME + "/src/wedo/openaf/core/IO.java",
+		"csv": OPENAF_BUILD_HOME + "/src/wedo/openaf/core/CSV.java",
+		"db": OPENAF_BUILD_HOME + "/src/wedo/openaf/core/DB.java",
+		"console": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Console.java",
+		"threads": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Threads.java",
+		"email": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Email.java",
+		"http": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/HTTP.java",
+		"httpd": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/HTTPServer.java",
+		"jmx": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/JMX.java",
+		"jmxserver": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/JMXServer.java",
+		"ssh": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SSH.java",
+		"snmp": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SNMP.java",
+		"snmpd": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SNMPServer.java",
+		"xml": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/XML.java",
+		"xls": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/XLS.java",
+		"svn": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SVN.java",
+		"git": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/GIT.java",
+		"zip": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/ZIP.java",
+		"ignite": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Ignite.java",
+		"bsdiff": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/BSDiff.java",
+		"scope": OPENAF_BUILD_HOME + "/js/openaf.js",
+		"index": OPENAF_BUILD_HOME + "/js/example.js"
 	};
-        saveHelp(OPENAF_BUILD_HOME, helpFiles);
-        log("Generating oDoc for Web");
-        af.mkdir(OPENAF_BUILD_HOME + "/odocweb");
-        saveHelpWeb(OPENAF_BUILD_HOME + "/odocweb", helpFiles);
+	saveHelp(OPENAF_BUILD_HOME, helpFiles);
+	log("Generating oDoc for Web");
+	af.mkdir(OPENAF_BUILD_HOME + "/odocweb");
+	saveHelpWeb(OPENAF_BUILD_HOME + "/odocweb", helpFiles);
 	tempJar.putFile(".odoc.db", io.readFileBytes(OPENAF_BUILD_HOME + "/.odoc.db"));
 } catch(e) {
 	logErr(e);

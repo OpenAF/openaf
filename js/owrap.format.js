@@ -26,7 +26,7 @@ OpenWrap.format.prototype.string = {
 	    do {                    
 	        found = false;
 	        // Inserts new line at first whitespace of the line
-	        for (i = maxWidth - 1; i >= 0; i--) {
+	        for (var i = maxWidth - 1; i >= 0; i--) {
 	            if (testWhite(str.charAt(i))) {
 	                res = res + [str.slice(0, i), newLineStr].join('');
 	                str = str.slice(i + 1);
@@ -801,7 +801,7 @@ OpenWrap.format.prototype.dateDiff = {
 
 /**
  * <odoc>
- * <key>ow.format.elapsedTime4ms(aMs, aFormat) : String</<key>
+ * <key>ow.format.elapsedTime4ms(aMs, aFormat) : String</key>
  * Given aMs (milleseconds) will convert into a string with the corresponding human-readable time and date components
  * up to years. This is usually helpful when comparing dates (see also ow.format.elapsedTime). You can control the output
  * format by adding options to aFormat:\
@@ -814,8 +814,9 @@ OpenWrap.format.prototype.dateDiff = {
  *    pad  : false, // when true pads values with 0 on the left\
  *    colon: false, // when true outputs just values separated by ":"\
  *    sep  : ", ",  // customizes the values separator, defaults to ", " or "" (in case of abrev = true)\
- * }\
- * \
+ *    maxLeft : 7,  // the maximum number of time units to show counting from the left\
+ *    maxRight: 7   // the maximum number of time units to show counting from the right\
+ * }
  * </odoc>
  */
 OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {

@@ -91,7 +91,7 @@ for(var i in homeServerURLs) {
 }
 
 log("Done updating to the latest version."); //" Don't forget to run the --repack option before using for the first time for faster startup times.");
-log("Trying to --repack");
+log("Trying to --repack...");
 af.eval(endCommand);
 af.restartOpenAF(["--repack"]);
 

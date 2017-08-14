@@ -1,12 +1,22 @@
 {
 	"external": [
 		{
+			"description": "Showdown",
+			"path"       : [ "js/showdown.js" ],
+			"version"    : "1.7.2",
+			"changes"    : false,
+			"type"       : [ "js" ],
+			"license"    : "https://raw.githubusercontent.com/showdownjs/showdown/master/license.txt",
+			"deps"       : [
+			]
+		},
+		{
 			"description": "Materializecss",
 			"path"       : [ "js/materialize.js" ],
 			"version"    : "0.100.1",
 			"changes"    : false,
 			"type"       : [ "js" ],
-			"license"    : "MIT",
+			"license"    : "https://raw.githubusercontent.com/Dogfalo/materialize/master/LICENSE",
 			"deps"       : [
 			]
 		},
@@ -16,17 +26,17 @@
 			"version"    : "1.3.3",
 			"changes"    : false,
 			"type"       : [ "js" ],
-			"license"    : "https://github.com/jashkenas/backbone/blob/master/LICENSE",
+			"license"    : "https://raw.githubusercontent.com/jashkenas/backbone/master/LICENSE",
 			"deps"       : [
 			]
 		},
 		{
 			"description": "Handlebars",
 			"path"       : [ "js/handlebars.js" ],
-			"version"    : "4.0.8",
+			"version"    : "4.0.10",
 			"changes"    : false,
 			"type"       : [ "js" ],
-			"license"    : "https://github.com/wycats/handlebars.js/blob/master/LICENSE",
+			"license"    : "https://raw.githubusercontent.com/wycats/handlebars.js/master/LICENSE",
 			"deps"       : [
 			]
 		},
@@ -36,17 +46,17 @@
 			"version"    : "3.0.1",
 			"changes"    : false,
 			"type"       : [ "js" ],
-			"license"    : "http://creativecommons.org/licenses/by/3.0/",
+			"license"    : "https://raw.githubusercontent.com/licenses/license-templates/master/templates/cc_by_nc_sa.txt",
 			"deps"       : [
 			]
 		},
 		{
 			"description": "js-yaml",
 			"path"       : [ "js/js-yaml.js" ],
-			"version"    : "3.8.3",
+			"version"    : "3.9.1",
 			"changes"    : false,
 			"type"       : [ "js" ],
-			"license"    : "https://github.com/nodeca/js-yaml/blob/master/LICENSE",
+			"license"    : "https://raw.githubusercontent.com/nodeca/js-yaml/master/LICENSE",
 			"deps"       : [
 			]
 		},		
@@ -56,7 +66,7 @@
 			"version"    : "3.2.1",
 			"changes"    : false,
 			"type"       : [ "js" ],
-			"license"    : "https://github.com/jquery/jquery/blob/master/LICENSE.txt",
+			"license"    : "https://raw.githubusercontent.com/jquery/jquery/master/LICENSE.txt",
 			"deps"       : [
 			]
   		},
@@ -66,7 +76,7 @@
   			"version"    : "4.17.4",
   			"changes"    : false,
   			"type"       : [ "js" ],
-  			"license"    : "https://github.com/lodash/lodash/blob/master/LICENSE",
+  			"license"    : "https://raw.githubusercontent.com/lodash/lodash/master/LICENSE",
   			"deps"       : [
   			]
   		},
@@ -76,7 +86,7 @@
   			"version"    : "1.7.7.1",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "Mozilla Public License 2.0",
+  			"license"    : "https://raw.githubusercontent.com/mozilla/rhino/master/LICENSE.txt",
   			"deps"       : [
   			]
   		},
@@ -86,7 +96,7 @@
   			"version"    : "1.6.4",
   			"changes"    : false,
   			"type"       : [ "js" ],
-  			"license"    : "MIT License",
+  			"license"    : "https://raw.githubusercontent.com/winterbe/streamjs/master/LICENSE",
   			"deps"       : [
   			]
   		},
@@ -96,7 +106,7 @@
   			"version"    : "3.4.5",
   			"changes"    : false,
   			"type"       : [ "js" ],
-  			"license"    : "Apache License 2.0",
+  			"license"    : "https://raw.githubusercontent.com/trendmicro/tlsh/master/LICENSE",
   			"deps"       : [
   			]
   		},
@@ -106,7 +116,7 @@
   			"version"    : "1.4.196",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "Mozilla Public License & Eclipse Public License",
+  			"license"    : "This software contains unmodified binary redistributions for H2 database engine (http://www.h2database.com/), which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License). An original copy of the license agreement can be found at: http://www.h2database.com/html/license.html",
   			"deps"       : [
   				"lib/slf4j_api.jar"
   			]
@@ -117,7 +127,7 @@
   			"version"    : "",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "Eclipse Public License",
+  			"license"    : "https://raw.githubusercontent.com/licenses/license-templates/master/templates/epl.txt",
   			"deps"       : [
   			]
   		},
@@ -128,7 +138,7 @@
   			"changes"    : false,
   			"type"       : [ "java" ],
   			"url"        : "https://ignite.apache.org",
-  			"license"    : "Apache License 2.0",
+  			"license"    : "https://raw.githubusercontent.com/apache/ignite/master/LICENSE",
   			"deps"       : [
   				"lib/ignite-core-2.0.0.jar",
   				"lib/ignite-shmem-1.0.0.jar",
@@ -141,7 +151,7 @@
   			"version"    : "2.12.1",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "https://github.com/jline/jline2/blob/master/LICENSE.txt",
+  			"license"    : "https://raw.githubusercontent.com/jline/jline2/master/LICENSE.txt",
   			"deps"       : [
   			]
   		},
@@ -151,7 +161,7 @@
   			"version"    : "1.14",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "https://github.com/fusesource/jansi/blob/master/license.txt",
+  			"license"    : "https://raw.githubusercontent.com/fusesource/jansi/master/license.txt",
   			"deps"       : [
   			]
   		},
@@ -161,7 +171,7 @@
   			"version"    : "2.5",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "Apache License 2.0",
+  			"license"    : "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
   			"deps"       : [
   			]
   		},
@@ -171,7 +181,7 @@
   			"version"    : "1.4",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "Apache License 2.0",
+  			"license"    : "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
   			"deps"       : [
   			]
   		},
@@ -181,7 +191,7 @@
   			"version"    : "1.13",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "Apache License 2.0",
+  			"license"    : "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
   			"deps"       : [
   			]
   		},
@@ -191,17 +201,17 @@
   			"version"    : "12",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "Oracle",
+  			"license"    : "Check http://www.oracle.com/technetwork/licenses/distribution-license-152002.html",
   			"deps"       : [
   			]
   		},
   		{
   			"description": "PostgreSQL JDBC",
-  			"path"       : [ "lib/postgresql-42.0.0.jre7.jar" ],
-  			"version"    : "42.0.0",
+  			"path"       : [ "lib/postgresql-42.1.4.jre7.jar" ],
+  			"version"    : "42.1.4",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "https://www.postgresql.org/about/licence/",
+  			"license"    : "Check https://www.postgresql.org/about/licence/",
   			"deps"       : [
   			]
   		},
@@ -211,7 +221,7 @@
   			"version"    : "1.5.6",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "https://glassfish.java.net/public/CDDL+GPL_1_1.html",
+  			"license"    : "https://raw.githubusercontent.com/licenses/license-templates/master/templates/cddl.txt",
   			"deps"       : [
   			]
   		},
@@ -221,7 +231,7 @@
   			"version"    : "1.0",
   			"changes"    : false,
   			"type"       : [ "java" ],
-  			"license"    : "https://github.com/malensek/jbsdiff/blob/master/LICENSE.txt",
+  			"license"    : "https://raw.githubusercontent.com/malensek/jbsdiff/master/LICENSE.txt",
   			"deps"       : [
   				"lib/commons-compress-1.13.jar"
   			]
