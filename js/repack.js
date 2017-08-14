@@ -194,7 +194,10 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	}
 
 	log("Writing new repacked openaf.jar.");
-	zipNew.generate2File(classPath, {"compressionLevel": 9}, true);
+	zipNew.generate2File(classPath + ".tmp", {"compressionLevel": 9}, true);
+	addOnOpenAFShutdown(function() {
+		af.mv(classPath + ".tmp", classPath);
+	});
 	zip.close();
 	zipNew.close();
 } else {
@@ -205,4 +208,3 @@ log("Done repacking OpenAF.jar");
 // We need to stop (but no longer needed)
 //java.lang.System.exit(0);
 } catch(e) { printErr(e); e.javaException.printStackTrace(); }
->>>>>>> 0c942ae5c7e1c022a608a206624194b8cc8da1b6

@@ -137,11 +137,9 @@ function ojob_draw() {
 			from: (isDef(j.from) ? [ j.from ] : []).concat(res.from)
 		};
 	
-		var resf = getPaths(j.from);	
-		res.from = resf.from.concat(res.from.concat(resf.to)); 
-		var rest = getPaths(j.to);	
-		res.to = rest.from.concat(res.to.concat(rest.to)); 
-		
+		res = getPaths(j.from, res);
+		res = getPaths(j.to, res);
+
 		return res;
 	}
 

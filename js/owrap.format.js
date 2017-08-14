@@ -799,6 +799,92 @@ OpenWrap.format.prototype.dateDiff = {
     }
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.elapsedTime4ms(aMs, aFormat) : String</<key>
+ * Given aMs (milleseconds) will convert into a string with the corresponding human-readable time and date components
+ * up to years. This is usually helpful when comparing dates (see also ow.format.elapsedTime). You can control the output
+ * format by adding options to aFormat:\
+ * \
+ * Example:\
+ * \
+ * aFormat = {\
+ *    full : false, // when true outputs everything even if it's 0 value\
+ *    abrev: false, // when true outputs smaller "1h2m3s" instead of "1 hour, 2 minutes and 3 seconds"\
+ *    pad  : false, // when true pads values with 0 on the left\
+ *    colon: false, // when true outputs just values separated by ":"\
+ *    sep  : ", ",  // customizes the values separator, defaults to ", " or "" (in case of abrev = true)\
+ * }\
+ * \
+ * </odoc>
+ */
+OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {
+    var ms = Math.abs(aMs);
+
+    var msSecond = 1000,
+        msMinute = msSecond * 60,
+        msHour = msMinute * 60,
+        msDay = msHour * 24,
+        msMonth = msDay * 30,
+        msYear = msDay * 365;
+
+    var parts = {
+        year  : Math.floor(ms / msYear),
+        month : Math.floor((ms % msYear) / msMonth),
+        day   : Math.floor((ms % msMonth) / msDay),
+        hour  : Math.floor((ms % msDay) / msHour),
+        minute: Math.floor((ms % msHour) / msMinute),
+        second: Math.floor((ms % msMinute) / msSecond),
+        ms    : Math.floor((ms % msSecond))
+    }
+
+    if (isUnDef(aFormat)) aFormat = {}
+
+    var chunks = [], chunksCount = 0;
+    if (isUnDef(aFormat.maxLeft))  aFormat.maxLeft =  7;
+    if (isUnDef(aFormat.maxRight)) aFormat.maxRight = 7;
+    if (aFormat.colon && isUnDef(aFormat.sep)) aFormat.sep = ":";
+    if (isUnDef(aFormat.sep)) aFormat.sep = (aFormat.abrev) ? "" : ", ";
+
+    for(let part in parts) {
+        var val  = parts[part];
+        var name = ((aFormat.abrev) ? ((part == 'month') ? 'M' : ((part == 'ms') ? part : part.substring(0, 1))) : part + ((val == 1) ? "" : ((part == "ms") ?  "" : "s")));
+        if ((aFormat.full || val > 0) && aFormat.maxLeft > chunksCount && (6 - chunksCount) <= aFormat.maxRight) {
+            if (aFormat.pad) {
+                val = String(val);
+                switch(part) {
+                case 'month' : val = ow.format.string.leftPad(val, 2, "0"); break;
+                case 'day'   : val = ow.format.string.leftPad(val, 2, "0"); break;
+                case 'hour'  : val = ow.format.string.leftPad(val, 2, "0"); break;
+                case 'minute': val = ow.format.string.leftPad(val, 2, "0"); break;
+                case 'second': val = ow.format.string.leftPad(val, 2, "0"); break;
+                case 'ms'    : val = ow.format.string.leftPad(val, 3, "0"); break;
+                }
+            }
+            if (!aFormat.colon) 
+                chunks.push(val + (aFormat.abrev ? "" : " ") + name);
+            else
+                chunks.push(val);
+        }
+        chunksCount++;
+    }
+
+    return chunks.join(aFormat.sep);
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.elapsedTime(aStartTime, aEndTime, aFormat) : String</key>
+ * Shortcut for ow.format.elapsedTime4ms calculating the absolute difference, in ms, between
+ * aStartTime and aEndTime.
+ * </odoc>
+ */
+OpenWrap.format.prototype.elapsedTime = function(aStartTime, aEndTime, aFormat) {
+    var mi = aEndTime - aStartTime;
+    return ow.format.elapsedTime4ms(mi, aFormat);
+}
+
+
 OpenWrap.format.prototype.xls = {
 	/**
 	 * <odoc>
