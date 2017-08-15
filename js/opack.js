@@ -66,8 +66,9 @@ var verbs = {
  		"optionshelp" : []
  	},
  	"add2remotedb": {},
- 	"remove2remotedb": {}
-}
+	"remove2remotedb": {},
+	"help" : {}
+};
 
 plugin("ZIP");
 plugin("HTTP");
@@ -93,17 +94,17 @@ function showHelp() {
 	print("Usage: opack [verb] [package/path] [options]\n");
 
 	var maxVerb = 0;
-	for (i in verbs) {
+	for (let i in verbs) {
 		if (i.length > maxVerb) maxVerb = i.length;
 	}
 
     print("Verbs:\n");
-	for(i in verbs) {
+	for(let i in verbs) {
 		var verb = verbs[i];
 
 		if (!isUndefined(verb["help"])) {
 			print("   " + i + repeat(maxVerb - i.length + 1, ' ') + " - " + verb.help );
-			for(j in verb.optionshelp) {
+			for(let j in verb.optionshelp) {
 				print(repeat(maxVerb, ' ') + "          " + verb.optionshelp[j]);
 			}
 		}
@@ -280,7 +281,7 @@ function findLocalDBByName(aName) {
 
 	if(isUndefined(aName) || aName.length <= 0) return;
 
-	for(target in packages) {
+	for(let target in packages) {
 		var packag = packages[target];
 		if (packag.name.toUpperCase() == aName.toUpperCase()) return packag;
 	}
@@ -292,7 +293,7 @@ function findLocalDBTargetByName(aName) {
 
 	if(isUndefined(aName) || aName.length <= 0) return;
 
-	for(target in packages) {
+	for(let target in packages) {
 		var packag = packages[target];
 		if (packag.name.toUpperCase() == aName.toUpperCase()) return target;
 	}
@@ -313,7 +314,7 @@ function verifyDeps(packag) {
 		//logErr(e.message);
 	}
 
-	for(dep in packag.dependencies) {
+	for(let dep in packag.dependencies) {
 		var version = packag.dependencies[dep];
 
 		var compareTo = findLocalDBByName(dep);
@@ -384,7 +385,7 @@ function listFiles(startPath, relPath) {
 	relPath = relPath.replace(/\\+/g, "/");
 
 	var list = io.listFiles(startPath + "/" + relPath);
-	for(i in list.files) {
+	for(let i in list.files) {
 		var file = list.files[i];
 		if(file.isFile) {
 			files.push(relPath + file.filename.replace(/\\+/g, "/"));
@@ -404,7 +405,7 @@ function listFilesWithHash(startPath) {
 	var files = listFiles(startPath);
     var c = 0;
 	
-	for (i in files) {
+	for (let i in files) {
 		c++;
 		try {
 			lognl("Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
@@ -446,7 +447,7 @@ function verifyHashList(startPath, filesHash) {
 	}
 	
 	var c = 0;
-	for(file in filesHash) {
+	for(let file in filesHash) {
 		c++;
 		
 		printnl("Verifying (" + ow.format.round((c * 100) / Object.keys(filesHash).length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
@@ -639,7 +640,7 @@ function getPackage(packPath) {
 			if (isUndefined(packag.files)) {
 				packag.files = [];
 				var listOfFiles = opack.list();
-				for(i in listOfFiles) {
+				for(let i in listOfFiles) {
 					packag.files.push(i);
 				}
 			}
@@ -678,7 +679,7 @@ function getPackage(packPath) {
 				if (isUndefined(packag.files)) {
 					packag.files = [];
 					var listOfFiles = opack.list();
-					for(i in listOfFiles) {
+					for(let i in listOfFiles) {
 						packag.files.push(i);
 					}
 				}
@@ -770,7 +771,7 @@ function __opack_info(args) {
 	var hashResults;
 	if(!remote) hashResults = verifyHashList(args[0], packag.filesHash);
 	print("FILES       :");
-	for(i in packag.files) {
+	for(let i in packag.files) {
 		var file = packag.files[i];
 
 		if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
@@ -796,13 +797,13 @@ function __opack_list(args) {
 	var packages = getLocalDB(true);
 
 	var sortIds = {};
-	for(i in packages) {
+	for(let i in packages) {
 		if (isDef(packages[i].name)) 
 			sortIds[packages[i].name.toLowerCase()] = i;
 	}
 
 	var packsIds = Object.keys(sortIds).sort();
-	for (packageId in packsIds) {
+	for (let packageId in packsIds) {
 		packag = sortIds[packsIds[packageId]];
 		if (packag == 'OpenPackDB') continue;
 		print("[" + packages[packag].name + "] (version " + packages[packag].version + "):" + " " + packag + "");
@@ -852,7 +853,7 @@ function install(args) {
     var output;
 
     output = getOpenAFPath() + "/" + packag.name;
-    for(i in args) {
+    for(let i in args) {
     	if (foundOutput) {
     		output = args[i];
     		foundOutput = false;
@@ -921,7 +922,7 @@ function install(args) {
 	// Verify deps
 	var depsResults = verifyDeps(packag);
 	if (!force && !justCopy)
-		for(i in packag.dependencies) {
+		for(let i in packag.dependencies) {
 			var depend = packag.dependencies[i];
 
 			if (!(depsResults[i])) {
@@ -981,7 +982,6 @@ function install(args) {
 			});
 			log("All files copied.");
 			break;
-		    break;
 		case "opackurl":
 			var opack = getHTTPOPack(args[0]);
 			if(typeof opack == 'undefined') return;
@@ -1054,7 +1054,7 @@ function install(args) {
 	if (!nohash) {
 	    log("Verifying package files installed...");
 		var hashResults = verifyHashList(outputPath, packag.filesHash);
-		for(i in packag.files) {
+		for(let i in packag.files) {
 			var file = packag.files[i];
 			if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
 			if (!(hashResults[file])) {
@@ -1122,7 +1122,7 @@ function update(args) {
 	var all = false;
 	var erase = false;
 
-    for(i in args) {
+    for(let i in args) {
     	if (foundRepo) {
     		if (__opackCentral.indexOf(args[i]) < 0) __opackCentral.unshift(args[i]);
     		foundRepo = false;
@@ -1147,7 +1147,7 @@ function update(args) {
     	if (erase) ops.push("-erase");
 
     	var packages = getOPackLocalDB();
-    	for(i in packages) {
+    	for(let i in packages) {
     		if (packages[i].name.toUpperCase() == 'OPENAF') continue;
     		var pack = [];
     		pack.push(packages[i].name);
@@ -1201,7 +1201,7 @@ function erase(args) {
 	var force = false;
 	var foundArg = false;
 
-    for(i in args) {
+    for(let i in args) {
     	if (foundArg) {
     		arg = args[i];
     		foundArg = false;
@@ -1229,7 +1229,7 @@ function erase(args) {
 	if (typeof packag.dependencies !== 'undefined' &&
 		!force) {
 		var packages = getLocalDB(true);
-		for(pack in packages) {
+		for(let pack in packages) {
 			if (isArray(packages[pack].dependencies) &&
 				typeof packages[pack].dependencies[packag.name] !== 'undefined') {
 				logErr("'" + packages[pack].name + "' depends on '" + packag.name + "'");
@@ -1248,7 +1248,7 @@ function erase(args) {
 			log("Erasing files");
 
 			biggestMessage = 0;
-			for(i in packag.files) {
+			for(let i in packag.files) {
 				var message = "Removing " + packag.files[i].replace(/^\/*/, "") + "...";
 				if (message.length > biggestMessage) biggestMessage = message.length;
 				lognl(message);
@@ -1256,7 +1256,7 @@ function erase(args) {
 			}
 
 			var list = io.listFiles(args[0]);
-			for(i in list.files) {
+			for(let i in list.files) {
 				if (list.files[i].isDirectory) {
 					rmdir(list.files[i].filepath);
 				}
@@ -1333,7 +1333,7 @@ function __opack_search(args) {
     var foundRepo = false;
     var showAll = false;
 
-    for(i in args) {
+    for(let i in args) {
     	if (foundRepo) {
     		if (__opackCentral.indexOf(args[i]) < 0) __opackCentral.unshift(args[i]);
     		foundRepo = false;
@@ -1347,7 +1347,7 @@ function __opack_search(args) {
     var packs = getRemoteDB();
     var packsKeys = Object.keys(packs).sort();
 
-	for(packId in packsKeys) {
+	for(let packId in packsKeys) {
 		var pack = packsKeys[packId];
 		if (showAll) {
 			results.push({"name": packs[pack].name, "version": packs[pack].version, "description": packs[pack].description});
@@ -1364,7 +1364,7 @@ function __opack_search(args) {
 		}
 	}
 
-	for(result in results) {
+	for(let result in results) {
 		print("[" + results[result].name + "] (version " + results[result].version + "):\n  " + results[result].description + "\n");
 	}
 }
@@ -1382,7 +1382,7 @@ function pack(args) {
 	
 	var c = 0;
 	
-	for(i in packag.files) {
+	for(let i in packag.files) {
 		c++;
 		file = packag.files[i];
 		lognl("Packing (" + ow.format.round((c * 100) / packag.files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
@@ -1441,12 +1441,12 @@ function genpack(args) {
 // MAIN
 // ----------------------------------------------------------
 
-var showhelp = 1;
+var showhelp = (isUnDef(__opackParams)) ? 1 : 0;
 var verbfound = 0;
-var params = __expr.split(/ +/);
+var params = (isUnDef(__opackParams)) ? __expr.split(/ +/) : __opackParams.split(/ +/);
 
 // Check for existing verbs
-for(i in verbs) {
+for(let i in verbs) {
 	if (verbfound) continue;
 
 	if (params[0] == i) {
@@ -1467,7 +1467,8 @@ for(i in verbs) {
         case 'remove2remotedb': removeCentral(params); break;
         case 'search': __opack_search(params); break;
         case 'update': update(params); break;
-        case 'exec': __opack_exec(params); break;
+		case 'exec': __opack_exec(params); break;
+		case 'help': showhelp = 1; showHelp(); break;
         }
 
 		showhelp = 0;
@@ -1475,3 +1476,4 @@ for(i in verbs) {
 }
 
 if (showhelp) showHelp();
+if (isDef(__opackParams)) __opackParams = undefined;

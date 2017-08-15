@@ -144,7 +144,7 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	list = merge(list, includeMore);
 
 	var c = 0;
-	for(i in list) {
+	for(let i in list) {
 		c++;
 		var el = list[i];
 
@@ -208,4 +208,4 @@ af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
 log("Done repacking OpenAF.jar");
 // We need to stop (but no longer needed)
 //java.lang.System.exit(0);
-} catch(e) { printErr(e); e.javaException.printStacktrace(); }
+} catch(e) { printErr(e); e.javaException.printStackTrace(); }

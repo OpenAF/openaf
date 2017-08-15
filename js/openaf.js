@@ -909,6 +909,18 @@ var PACKAGESJSON = "packages.json";
 var PACKAGESJSON_DB = ".opack.db";
 var OPACKCENTRALJSON = "packages.json";
 
+var __opackParams;
+/**
+ * <odoc>
+ * <key>oPack(aParameters)</key>
+ * Tries to execute oPack with aParameters string. These string is equivalent to the opack command-line commands.
+ * aParameters = "help" will, for example, print all the help information. 
+ * </odoc> 
+ */
+function oPack(aCmd) { 
+	__opackParams = aCmd;
+	load(getOpenAFJar() + "::js/opack.js");
+}
 
 /**
  * <odoc>

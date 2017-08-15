@@ -7,12 +7,17 @@ var requirements = {
   "javaversion": [ "^1.7" ]
 };
 var DEFAULT_SH = "/bin/sh";
+var noopacks = false;
 
 var javaargs = "";
 for(var i in __args) {
 	if (__args[i].match(/^args=/i)) javaargs = __args[i].replaceAll("^args=", "");
 }
 if (javaargs != "") log("Java arguments to use = '" + javaargs + "'");
+
+for(var j in __args) {
+   if (__args[j].matches("--noopacks")) noopacks = true;
+}
 
 // FUNCTIONS
 // ---------
@@ -195,6 +200,14 @@ if (windows == 0) {
 } 
 
 log("Verify the generated scripts and change the JAVA_HOME and/or OPENAF variables accordingly");
+
+if (!noopacks) {
+  $from(io.listFiles(curDir).files).ends("filename", ".opack").select(function(r) {
+     log("Trying to install " + r.filename + "...");
+     oPack("install " + r.filepath);
+  });
+}
+
 log("Done installing scripts");
 
 af.load(classPath + "::js/repack.js");
