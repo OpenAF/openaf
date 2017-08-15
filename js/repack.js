@@ -13,7 +13,7 @@ function isRepackJar(aJarFilePath) {
 		aJar.loadFile(aJarFilePath);
 		var listJar = aJar.list();
 
-		for(i in listJar) {
+		for(let i in listJar) {
 			if(listJar[i].name.match(/jarinjarloader/) && listJar[i].name.match(/eclipse/)) {
 				res = false;
 			}
@@ -31,7 +31,7 @@ function getModulesToExclude() {
 
 	var vad = io.readFile(getOpenAFJar() + "::versionsAndDeps.json");
 
-	for(i in plugins) {
+	for(let i in plugins) {
 		var libsOut = _.flatten($from(vad.plugins).equals("name", plugins[i]).equals("removable", true).select(function(r) { return r.deps; }));
 		var libsIn  = _.flatten($from(vad.plugins).not().equals("name", plugins[i]).select(function(r) { return r.deps; }));
 	
@@ -67,6 +67,7 @@ function repackSetMainClass(aClass) {
 try {
   var curDir    = java.lang.System.getProperty("user.dir") + "";
   var classPath = java.lang.System.getProperty("java.class.path") + "";
+  var os        = String(java.lang.System.getProperty("os.name"));
 } catch (e) {
   logErr("Couldn't retrieve system properties: " + e.message);
   java.lang.System.exit(0);
@@ -162,7 +163,7 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 				zipTemp.loadFile(el.outsideName);
 			var listTemp = zipTemp.list();
 							
-			for (ii in listTemp) {
+			for (let ii in listTemp) {
 				var elTemp = listTemp[ii];
 				if (!(elTemp.name.match(/MANIFEST.MF$/)) && !(elTemp.name.match(/ECLIPSE_.RSA$/))) {
 					zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));	
@@ -195,17 +196,16 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 
 	log("Writing new repacked openaf.jar...");
 	zipNew.generate2File(classPath + ".tmp", {"compressionLevel": 9}, true);
-	addOnOpenAFShutdown(function() {
-		ioStreamCopy(io.writeFileStream(classPath.replace(/\\/g, "/")), io.readFileStream(classPath.replace(/\\/g, "/") + ".tmp"));
-		af.rm(classPath.replace(/\\/g, "/") + ".tmp");
-	});
 	zip.close();
 	zipNew.close();
 } else {
 	log("No repacking needed.");
 }
 
+io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
+af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
+
 log("Done repacking OpenAF.jar");
 // We need to stop (but no longer needed)
 //java.lang.System.exit(0);
-} catch(e) { printErr(e); e.javaException.printStackTrace(); }
+} catch(e) { printErr(e); e.javaException.printStacktrace(); }

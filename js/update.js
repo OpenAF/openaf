@@ -36,6 +36,7 @@ log("Current version = " + currentVersion);
 try {
   var curDir    = java.lang.System.getProperty("user.dir") + "";
   var classPath = java.lang.System.getProperty("java.class.path") + "";
+  var os        = String(java.lang.System.getProperty("os.name"));
 } catch (e) {
   logErr("Couldn't retrieve system properties: " + e.message);
   java.lang.System.exit(0);
@@ -73,8 +74,6 @@ for(var i in homeServerURLs) {
 			log("Upgrading openaf.jar");
 			try {
 				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp"), down.responseBytes());
-				endCommand = "ioStreamCopy(io.writeFileStream('" + classPath.replace(/\\/g, "/") + ")', io.readFileStream('" + classPath.replace(/\\/g, "/").replace(/openaf.jar/, "openaf.jar.tmp") + "'));";
-				endCommand += "af.rm('" + classPath.replace(/\\/g, "/").replace(/openaf.jar/, "openaf.jar.tmp") + "');";
 			} catch(e) {
 				if(!e.message.match(/NoClassDefFoundError/)) {
 					throw e;
@@ -93,7 +92,10 @@ for(var i in homeServerURLs) {
 
 log("Done updating to the latest version."); //" Don't forget to run the --repack option before using for the first time for faster startup times.");
 log("Trying to --repack...");
-af.eval(endCommand);
+
+io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
+af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
+
 af.restartOpenAF(["--repack"]);
 
 //af.load(classPath + "::js/repack.js");

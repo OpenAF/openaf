@@ -1465,18 +1465,18 @@ function restartOpenAF(aCommandLineArray, preLineArray) {
 	var command = new java.util.ArrayList();
 	command.add(javaBin);
 	if (isDef(preLineArray)) {
-		for(c in preLineArray) {
+		for(let c in preLineArray) {
 			command.add(preLineArray[c]);
 		}
 	}
 	command.add("-jar");
 	command.add(currentJar.getPath());
 	if (isUndefined(aCommandLineArray)) {
-		for(c in __args) {
+		for(let c in __args) {
 			command.add(__args[c]);
 		}
 	} else {
-		for(c in aCommandLineArray) {
+		for(let c in aCommandLineArray) {
 			command.add(aCommandLineArray[c]);
 		}
 	}
