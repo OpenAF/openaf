@@ -21,7 +21,7 @@
   "description": "OpenAF is a command-line utility/script interpreter based on Javascript",
   "name": "OpenAF",
   "main": "",
-  "license": "See license info in https://github.com/nmaguiar/openaf/blob/master/LICENSE",
+  "license": "See license info in https://github.com/OpenAF/openaf/blob/master/LICENSE",
   "version": "20161217",
   "dependencies": {},
   "files": [ ],
