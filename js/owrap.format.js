@@ -661,6 +661,27 @@ OpenWrap.format.prototype.testPublicPort = function(aPort) {
 
 /**
  * <odoc>
+ * <key>ow.format.testPort(aAddress, aPort, aCustomTimeout) : boolean</key>
+ * Tries to connect to aPort (e.g. 1234) on aAddress (e.g. 1.2.3.4). If the connection is successfull it will disconnect
+ * and return true, otherwise it will return false. If aCustomTimeout (in ms) is defined, it will use that value as the timeout
+ * instead of the 1,5 seconds by default.
+ * </odoc>
+ */
+OpenWrap.format.prototype.testPort = function(aAddress, aPort, aCustomTimeout) {
+    if (isUnDef(aCustomTimeout)) aCustomTimeout = 1500;
+
+    try {
+        var s = new java.net.Socket();
+        s.connect(new java.net.InetSocketAddress(aAddress, aPort), aCustomTimeout);
+        s.close();
+        return true;
+    } catch(e) {
+        return false;
+    }
+}
+
+/**
+ * <odoc>
  * <key>ow.format.escapeHTML(aString) : String</key>
  * Will escape, and return, aString for HTML/XML special characters.\
  * (available after ow.loadFormat())
