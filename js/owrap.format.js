@@ -275,13 +275,15 @@ OpenWrap.format.prototype.string = {
 	 * \
 	 * </odoc>
 	 */
-	progress: function(aPos, aMax, aMin, aSize, aIndicator) {
+	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator) {
 		if (isUnDef(aIndicator)) aIndicator = "#";
 		if (isUnDef(aSize))      aSize = 5;
 		if (isUnDef(aMax))       aMax = aPos;
 		if (isUnDef(aMin))       aMin = 0;
 	
 		var aScale = Math.abs(aMin) + Math.abs(aMax);
+		var aPos = (aOrigPos > aMax) ? aMax : aOrigPos;
+		aPos = (aOrigPos < aMin) ? aMin : aPos;
 
 		var res = 
 		  ( (aMin < 0) ?
