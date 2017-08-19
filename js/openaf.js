@@ -2247,34 +2247,40 @@ loadRequire();
  * <odoc>
  * <key>require(aScript) : Object</key>
  * Will try to load aScript from the directories specified in the loadRequire function (by default all opack directories
- * plus the current working directory). Returns the exports object manipulated in aScript.
+ * plus the current working directory). Returns the exports object manipulated in aScript (note: results are cached)
  * </odoc>
  */
-function require(aScript) {
-	var o;
+function require(aScript, force) {
+	var o, f, exports = {}, module = { id: aScript, uri: aScript, exports: exports };
 	
-	if (aScript.match(/::/)) {
-		var comps = aScript.match(/(.+)::(.+)/);
-		plugin("ZIP");
-		var zip = new ZIP();
-		o = af.eval(af.fromBytes2String(zip.streamGetFile(comps[1], comps[2])));
-		return o;
+	if (isUnDef(require.cache)) require.cache = {};
+
+	if (!force && isFunction(require.cache[aScript])) {
+		f = require.cache[aScript];
+	} else {	
+		if (aScript.match(/::/)) {
+			var comps = aScript.match(/(.+)::(.+)/);
+			plugin("ZIP");
+			var zip = new ZIP();
+			o = af.fromBytes2String(zip.streamGetFile(comps[1], comps[2]));
+		} else {	
+			o = io.readFileString(aScript);
+		}
+		
+		var opackpaths = getOPackPaths();
+		for(var opack in opackpaths) {
+			o = io.readFileString(aScript);
+		}
+		
+		f = new Function('require', 'exports', 'module', o);
+		require.cache[aScript] = f;
 	}
+
+	f.call({}, require, exports, module);
+
+	exports = module.exports || exports;
 	
-	try {
-		o = af.eval(io.readFileString(aScript));
-		return o;
-	} catch(e) {}
-	
-	var opackpaths = getOPackPaths();
-	for(var opack in opackpaths) {
-		try {
-			o = af.eval(io.readFileString(aScript));
-			return o;
-		} catch(e) {}
-	}
-	
-	return o;
+	return exports;
 }
 
 // OpenWrap
