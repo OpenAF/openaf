@@ -258,6 +258,43 @@ OpenWrap.format.prototype.string = {
 		var tB = new Tlsh();
 		tB.fromTlshStr(aHashB);
 		return tA.totalDiff(tB, !dontCareDiffSize);
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.progress(aValue, aMax, aMin, aSize, aIndicator) : String</key>
+	 * Outputs an in-line progress bar given aValue, aMax value, aMin value, the aSize of the bar and the aIndicator
+	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to 5 and aIndicator defaults to "#".
+	 * Example:\
+	 * \
+	 * loadLodash(); ow.loadFormat();\
+	 * var arr = [-30, -25, -10, 0, 3, 5], max = _.max(arr), min = _.min(arr);\
+	 * for(let i in arr) {\
+	 *    print(ow.format.string.progress(arr[i], max, min, 5, '-'));\
+	 * }\
+	 * \
+	 * </odoc>
+	 */
+	progress: function(aPos, aMax, aMin, aSize, aIndicator) {
+		if (isUnDef(aIndicator)) aIndicator = "#";
+		if (isUnDef(aSize))      aSize = 5;
+		if (isUnDef(aMax))       aMax = aPos;
+		if (isUnDef(aMin))       aMin = 0;
+	
+		var aScale = Math.abs(aMin) + Math.abs(aMax);
+
+		var res = 
+		  ( (aMin < 0) ?
+			  repeat(aSize + ((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), ' ') + 
+			  repeat(-((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) 
+			: "" ) +  
+		  ( (aMax > 0) ?
+			repeat(((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) + 
+			repeat(aSize - ((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), ' ')
+			: ""
+		  );
+	
+		return res;
 	}
 }
 	
@@ -720,6 +757,27 @@ OpenWrap.format.prototype.escapeHTML = function(string) {
 	  if (!possible.test(string)) { return string; }
 	  return string.replace(badChars, escapeChar);
 };
+
+/**
+ * <odoc>
+ * <key>ow.format.transposeArrayLines(anLineArray) : Array</key>
+ * Given anLineArray transposes into a new array of lines. 
+ * </odoc>
+ */
+OpenWrap.format.prototype.transposeArrayLines = function(anLineArray) {
+	var newArray = [];
+	var aLimit = 0;
+	for(let i in anLineArray) {
+		if (aLimit < anLineArray[i].length) aLimit = anLineArray[i].length;
+	}	
+	for(let j = 0; j <= aLimit; j++) {
+		if (isUnDef(newArray[j])) newArray[j] = "";
+		for(let i in anLineArray) {
+			newArray[j] += (isDef(anLineArray[i][aLimit-j])) ? anLineArray[i][aLimit-j] : " ";
+		}
+	}
+	return newArray;
+}
 
 OpenWrap.format.prototype.dateDiff = {
     /**
