@@ -262,10 +262,10 @@ OpenWrap.format.prototype.string = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.format.string.progress(aValue, aMax, aMin, aSize, aIndicator) : String</key>
-	 * Outputs an in-line progress bar given aValue, aMax value, aMin value, the aSize of the bar and the aIndicator
-	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to 5 and aIndicator defaults to "#".
-	 * Example:\
+	 * <key>ow.format.string.progress(aNumericValue, aMax, aMin, aSize, aIndicator, aSpace) : String</key>
+	 * Outputs an in-line progress bar given aNumericValue, aMax value, aMin value, the aSize of the bar and the aIndicator
+	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to 5, aIndicator defaults to "#" 
+	 * and aSpace defaults to " ". Example:\
 	 * \
 	 * loadLodash(); ow.loadFormat();\
 	 * var arr = [-30, -25, -10, 0, 3, 5], max = _.max(arr), min = _.min(arr);\
@@ -275,8 +275,9 @@ OpenWrap.format.prototype.string = {
 	 * \
 	 * </odoc>
 	 */
-	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator) {
+	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator, aSpace) {
 		if (isUnDef(aIndicator)) aIndicator = "#";
+		if (isUnDef(aSpace))     aSpace = " ";
 		if (isUnDef(aSize))      aSize = 5;
 		if (isUnDef(aMax))       aMax = aPos;
 		if (isUnDef(aMin))       aMin = 0;
@@ -287,12 +288,12 @@ OpenWrap.format.prototype.string = {
 
 		var res = 
 		  ( (aMin < 0) ?
-			  repeat(aSize + ((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), ' ') + 
+			  repeat(aSize + ((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), aSpace) + 
 			  repeat(-((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) 
 			: "" ) +  
 		  ( (aMax > 0) ?
 			repeat(((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) + 
-			repeat(aSize - ((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), ' ')
+			repeat(aSize - ((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aSpace)
 			: ""
 		  );
 	
