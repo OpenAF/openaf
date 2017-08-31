@@ -12,7 +12,7 @@ jobs:
           var od1 = searchHelp("index")[0];
           var id1 = od1.id;
           
-          log("Just offlie oDoc");
+          log("Just offline oDoc");
           setOfflineHelp(true);
           var od2 = searchHelp("index")[0];
           var id2 = od2.id;
