@@ -20,7 +20,19 @@ OpenWrap.test.prototype.getProfile = function() { return this.__profile; }
 OpenWrap.test.prototype.getAllProfileHits = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileHits(i)}; return r; }
 OpenWrap.test.prototype.getAllProfileAvg  = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileAvg(i)}; return r; }
 OpenWrap.test.prototype.getAllProfileLast = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileLast(i)}; return r; }
+/**
+ * <odoc>
+ * <key>ow.test.setShowStackTrace(aBooleanSetting)</key>
+ * Turns on (off by default) the display of java stack trace on java exceptions if aBooleanSetting = true.
+ * </odoc>
+ */
 OpenWrap.test.prototype.setShowStackTrace = function(aValue) { this.__showStackTrace = aValue; }
+/**
+ * <odoc>
+ * <key>ow.test.setMemoryProfile(aBooleanSetting)</key>
+ * Turns on (off by default) the gathering of memory differences if aBooleanSetting = true.
+ * </odoc>
+ */
 OpenWrap.test.prototype.setMemoryProfile  = function(aValue) { this.__memoryprofile  = aValue; }
 
 /**
@@ -163,7 +175,7 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 		if (this.__memoryprofile) {
 			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem;
 			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem;
-			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem); 
+			execInfo.diffMem = Math.abs((execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem)); 
 		}
  		logErr("FAIL | " + aMessage);
 		execInfo.status = "FAIL";

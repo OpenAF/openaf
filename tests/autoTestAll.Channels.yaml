@@ -4,25 +4,31 @@ include:
 jobs:
    # CHANNELS tests
    # --------------
+   - name: Channels::Init
+     exec: |
+       args.tests = require("autoTestAll.Channels.js");
+       args.tests.setChType(args.chType);
+
    - name: Channels::Creating a channel
+     from: Channels::Init
      to  : oJob Test
-     exec: >
-       $ch("test").create(true, args.chType);
-       args.func = "$ch('test').size()";
+     exec: args.func = args.tests.testCreateChannel;
 
    - name: Channels::Setting data into a channel
+     from: Channels::Init
      to  : oJob Test
      deps: 
        - Channels::Creating a channel
-     args:
-       func: >
-          var l = listFilesRecursive(",");
-          $ch("test").setAll(["filepath"], l);
-          ow.test.assert(l.length, $ch("test").size(), "Channel didn't store all values.");
+     exec: args.func = args.tests.testSettingData;
  
    - name: Channels::Destroy a channel
+     from: Channels::Init
      to  : oJob Test
      deps: 
        - Channels::Creating a channel
-     args: 
-       func: $ch("test").destroy(); 
+     exec: args.func = args.tests.testDestroyChannel;
+
+   - name: Channels::Test housekeeping
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHousekeeping;

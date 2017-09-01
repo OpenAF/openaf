@@ -793,28 +793,45 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 
 	// Check dep
 	var canContinue = true;
-	if (isDef(aJob.deps)) {
+	var depInfo = {};
+	if (isDef(aJob.deps)) {		
 		for(var j in aJob.deps) {
 			if (canContinue) {
-				var dep = aJob.deps[j];
-				var depInf = this.getLogCh().get({ "ojobId": this.getID() + altId, "name": dep });
-				if (isDef(depInf) && depInf.success) {
-					canContinue = true;
-				} else {
-					canContinue = false;
-					this.__addLog("depsFail", aJob.name, undefined, provideArgs, undefined, aId);
+				try {
+					var dep = (isObject(aJob.deps[j]) ? aJob.deps[j].name :  aJob.deps[j]);
+					var depInf = this.getLogCh().get({ "ojobId": this.getID() + altId, "name": dep });
+					depInfo[dep] = aJob.deps[j];
+
+					if (isDef(depInf) && depInf.success) {
+						canContinue = true;
+						if (isDef(aJob.deps[j].onSuccess)) {
+							var res = (new Function(aJob.deps[j].onSuccess))();
+							canContinue = res;
+						}
+						depInfo[dep].result = true;
+					} else {
+						canContinue = false;
+						this.__addLog("depsFail", aJob.name, undefined, provideArgs, undefined, aId);
+						if (isDef(aJob.deps[j].onFail) && isDef(depInf) && depInf.error) {
+							var res = (new Function(aJob.deps[j].onFail))();
+							canContinue = res;
+						}
+						depInfo[dep].result = false;
+					}
+				} catch(e) {
+					logWarn("Issue while trying to process dependency " + stringify(aJob.deps) + ": " + e);
 				}
 			}
 		}
 	}
 
 	function _run(aExec, args, job, id) {		
-		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; " + aExec);
+		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; " + aExec);
 		if (isDef(args.__oJobRepeat)) { 
 			var errors = [];
 			parallel4Array(args.__oJobRepeat, function(aValue) {
 				try {
-					return f(aValue, job, id);
+					return f(aValue, job, id, depInfo);
 				} catch(e) {
 					errors.push(stringify({ args: aValue, exception: e}));
 				}
@@ -823,7 +840,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				throw errors.join(", ");
 			}
 		} else {
-			f(args, job, id);
+			f(args, job, id, depInfo);
 		}
 	}
 	

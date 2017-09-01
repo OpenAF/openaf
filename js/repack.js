@@ -4,6 +4,8 @@
 plugin("ZIP");
 ow.loadObj();
 
+var createTmp = false;
+
 //Check if a Jar was repacked
 function isRepackJar(aJarFilePath) {
 	var res = true;
@@ -196,14 +198,17 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 
 	log("Writing new repacked openaf.jar...");
 	zipNew.generate2File(classPath + ".tmp", {"compressionLevel": 9}, true);
+	createTmp = true;
 	zip.close();
 	zipNew.close();
 } else {
 	log("No repacking needed.");
 }
 
-io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
-af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
+if (createTmp) {
+	io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
+	af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
+}
 
 log("Done repacking OpenAF.jar");
 // We need to stop (but no longer needed)

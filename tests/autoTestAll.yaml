@@ -6,6 +6,17 @@ include:
 
 ojob:
    sequential: true
+   channels:
+     expose : true
+     port   : 17878
+     log    : true
+   list:
+     oJob::log
+     oJob::jobs
+     oJob::todo
+     oJob::oJob
+     __owTest::tests
+
 
 jobs:
    # FINAL TEST RESULTS
@@ -13,11 +24,18 @@ jobs:
    - name: Results
      from: oJob Test Results
      args: 
-       quite: true
+       quiet: true
      exec: >
        tprint("Tests PASSED: {{pass}}/{{count}}", args.results);
        tprint("Tests FAILED: {{fail}}/{{count}}", args.results);
        if (args.results.fail > 0) throw "There are failed tests";
+
+   - name: JUnit results
+     to  : oJob Generate JUnit XML
+     exec: >
+       args.suitesName  = "Automatic OpenAF build test";
+       args.resultsFile = "autoTestAllResults.xml";
+       args.suitesId    = af.getVersion();
 
 todo:
    # Generic Tests
@@ -40,6 +58,7 @@ todo:
        chType: big
    - Channels::Setting data into a channel
    - Channels::Destroy a channel 
+   - Channels::Test housekeeping
 
    # Ignite
    #- name: Channels::Creating a channel
@@ -51,3 +70,4 @@ todo:
    # Final results
    # -------------
    - Results
+   - JUnit results

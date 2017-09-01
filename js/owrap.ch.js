@@ -763,11 +763,6 @@ OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 		plugin("Threads");
 		type = (isDef(type)) ? type : "big";
 
-//		switch(type) {
-//		case "ignite": { this.__types.ignite.create(aName, shouldCompress, options); break;}
-//		case "remote": { this.__types.remote.create(aName, shouldCompress, options); break;}
-//		default      : { this.__types.big.create(aName, shouldCompress); }
-//		}
 		this.__types[type].create(aName, shouldCompress, options);
 
 		this.subscribers[aName] = {};
@@ -800,7 +795,8 @@ OpenWrap.ch.prototype.getVersion = function(aName) {
 OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	if (isUnDef(aTimeout)) aTimeout = 2500;
 	for(var i in ow.ch.jobs[aName]) {
-		ow.ch.jobs[aName][i].waitForThreads(aTimeout);
+		if (ow.ch.jobs[aName][i] != null)
+			ow.ch.jobs[aName][i].waitForThreads(aTimeout);
 	}
 	return this;
 },
@@ -1412,6 +1408,25 @@ OpenWrap.ch.prototype.utils = {
 	
 	/**
 	 * <odoc>
+	 * <key>ow.ch.utils.getHousekeepSubscriber(aTargetCh, maxNumberOfKeys) : Function</key>
+	 * Returns a channel subscriber function that will keep the channel size to the maximum of maxNumberOfKeys (defaults to 100).
+	 * If the number of keys is bigger than maxNumberOfKeys than it will perform a channel shift operation (that will, depending on the
+	 * type of channel, remove the oldest element).
+	 * </odoc>
+	 */
+	getHousekeepSubscriber: function(aTargetCh, numberOfKeys) {
+		if (isUnDef(numberOfKeys)) numberOfKeys = 100;
+		return function(aC, aO, aK, aV) {
+			sync(function() {
+				if ($ch(aTargetCh).size() > numberOfKeys) {
+					$ch(aTargetCh).shift();
+				}
+			}, this);
+		};
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.ch.utils.getElasticIndex(aPrefix) : Function</key>
 	 * Returns a function to be use for generating ElasticSearch indexes with aPrefix-aDate (in the format of
 	 * YYYY-MM-DD). This helps to generate a specific index per day.
@@ -1615,12 +1630,13 @@ OpenWrap.ch.prototype.server = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.ch.server.expose(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc) : String</key>
+	 * <key>ow.ch.server.expose(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) : String</key>
 	 * Given aName channel and aLocalPortORServer will use the provided server, or start a simple http server on the 
 	 * provided port, to expose access to the aName channel on the URL aPath. It will return an unique identifier
 	 * to be use to identify incoming requests from this aPath and server on channel subscribe functions. Optionally
 	 * you can also provide aAuthFunc(user, pass, aServer, aRequest) and aUnAuthFunc(aServer, aRequest) functions using ow.server.httpd.authBasic.
-	 * The aAuthFunc can add aRequest.channelPermission to enforce read and/or write permissions on a channel (e.g. "r", "rw").\
+	 * The aAuthFunc can add aRequest.channelPermission to enforce read and/or write permissions on a channel (e.g. "r", "rw").
+	 * If needed you can ignore the checking if the aName channel exists with noCheck.\
 	 * \
 	 * Example:\
 	 * \
@@ -1629,12 +1645,16 @@ OpenWrap.ch.prototype.server = {
 	 * \
 	 * </odoc>
 	 */
-	expose: function(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc) {
+	expose: function(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) {
 		var hs;
 		var uuid = genUUID();
 		ow.loadServer();
+
+		//noCheck = (isUnDef(noCheck)) ? false : noCheck;
 		
-		if (isUnDef(ow.ch.size(aName))) throw "Channel " + aName + " doesn't exist.";
+		if (!noCheck) {
+			if (isUnDef(ow.ch.size(aName))) throw "Channel " + aName + " doesn't exist.";
+		}
 
 		if (!(isObject(aLocalPortORServer))) {
 			hs = ow.server.httpd.start(aLocalPortORServer, undefined, undefined, undefined, function(aT, aM, aE) {

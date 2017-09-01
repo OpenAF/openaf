@@ -377,8 +377,9 @@ function checkOpenAFinDB() {
 // ----------------------------------------------------------
 
 // Read local files recursively
-function listFiles(startPath, relPath) {
+function listFiles(startPath, relPath, excludingList) {
 	var files = [];
+	if (isUnDef(excludingList)) excludingList = [];
 
 	if (isUndefined(relPath)) relPath = "";
 	startPath = startPath.replace(/\\+/g, "/");
@@ -387,6 +388,8 @@ function listFiles(startPath, relPath) {
 	var list = io.listFiles(startPath + "/" + relPath);
 	for(let i in list.files) {
 		var file = list.files[i];
+		if (excludingList.indexOf(file.filename) >= 0) continue;
+
 		if(file.isFile) {
 			files.push(relPath + file.filename.replace(/\\+/g, "/"));
 		} else {
@@ -399,10 +402,10 @@ function listFiles(startPath, relPath) {
 }
 
 // Read local files an generate hash
-function listFilesWithHash(startPath) {
+function listFilesWithHash(startPath, excludingList) {
 	var filesHash = {};
 
-	var files = listFiles(startPath);
+	var files = listFiles(startPath, undefined, excludingList);
     var c = 0;
 	
 	for (let i in files) {
@@ -1399,7 +1402,12 @@ function pack(args) {
 // GENPACK
 function genpack(args) {
 	var packag = {};
+	var excludeList = [ ".svn", ".git" ];
 	try { packag = getPackage(args[0]) } catch(e) {};
+
+	for(let i in args) {
+    	if (args[i] == "--includeSCM") excludeList = [];
+    }
 	var packageNew = {};
 
 	packageNew.author              = (typeof packag.author !== 'undefined')              ? packag.author              : "The author(s) name(s)";
@@ -1420,20 +1428,20 @@ function genpack(args) {
 	packageNew.license             = (typeof packag.license !== 'undefined')             ? packag.license             : "The licence description";
 	packageNew.version             = (typeof packag.version !== 'undefined')             ? packag.version             : "20010101";
 	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": "20100101", "packb": "20120101" };
-	packageNew.files = listFiles(args[0]);
+	packageNew.files = listFiles(args[0], undefined, excludeList);
 	if (packageNew.files.indexOf(PACKAGEJSON) < 0 && packageNew.files.indexOf(PACKAGEYAML) < 0) {
 		if (args.indexOf("-inyaml") < 0)
 			packageNew.files.push(PACKAGEJSON);
 		else
 			packageNew.files.push(PACKAGEYAML);
 	}
-	packageNew.filesHash = listFilesWithHash(args[0]);
-	if (args.indexOf("-inyaml") >= 0 || packageNew.files.indexOf(PACKAGEYAML) >= 0) {
-	    log("Writing " + args[0] + "/" + PACKAGEYAML);
-		io.writeFileString(args[0] + "/" + PACKAGEYAML, af.toYAML(packageNew));			
-	} else {
+	packageNew.filesHash = listFilesWithHash(args[0], excludeList);
+	if (args.indexOf("-injson") >= 0 || packageNew.files.indexOf(PACKAGEJSON) >= 0) {
 	    log("Writing " + args[0] + "/" + PACKAGEJSON);
-		io.writeFileString(args[0] + "/" + PACKAGEJSON, stringify(packageNew));	
+		io.writeFileString(args[0] + "/" + PACKAGEJSON, stringify(packageNew));			
+	} else {
+	    log("Writing " + args[0] + "/" + PACKAGEYAML);
+		io.writeFileString(args[0] + "/" + PACKAGEYAML, af.toYAML(packageNew));	
 	}
 }
 

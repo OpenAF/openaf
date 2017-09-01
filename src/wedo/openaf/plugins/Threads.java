@@ -211,11 +211,12 @@ public class Threads extends ScriptableObject {
 	 */
 	@JSFunction
 	public void stop(boolean force) {
-		if (force) { 
-			executor.shutdownNow();
-		} else {
-			executor.shutdown();
-		}
+		if (executor != null)
+			if (force) { 
+				executor.shutdownNow();
+			} else {
+				executor.shutdown();
+			}
 	}
 	
 	/**
@@ -227,7 +228,10 @@ public class Threads extends ScriptableObject {
 	 */
 	@JSFunction
 	public boolean waitForThreads(double timeout) throws InterruptedException {
-		return executor.awaitTermination(Double.valueOf(timeout).longValue(), TimeUnit.MILLISECONDS);
+		if (executor != null)
+			return executor.awaitTermination(Double.valueOf(timeout).longValue(), TimeUnit.MILLISECONDS);
+		else
+			return false;
 	}
 	
 	/**

@@ -514,7 +514,7 @@ public class AFCmdOS extends AFCmdBase  {
 			script = script.replaceAll("^#.*", "//");
 			script = script.replaceFirst(PREFIX_SCRIPT, "");
 			
-			if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().simpleDaemon();";
+			if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().daemon();";
 			if (injectcode) script += code;
 			
 			Context cx = (Context) jse.getNotSafeContext();
