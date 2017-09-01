@@ -1178,6 +1178,16 @@ function cls() {
 
 /**
  * <odoc>
+ * <key>beep()</key>
+ * Tries to produce a beep sound.
+ * </odoc>
+ */
+function beep() {
+	Packages.java.awt.Toolkit.getDefaultToolkit().beep();
+}
+
+/**
+ * <odoc>
  * <key>watch(waitFor, aCommand, beautifyFlag)</key>
  * Executes javascript aCommand provided every waitFor periods of time (expressed in ms). The screen
  * will be cleared and the execution will repeat indefinitely until the 'q' key is pressed. 
