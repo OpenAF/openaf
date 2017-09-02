@@ -117,7 +117,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 					}
 	
 					for(var i in this.__ojob.channels.list) {
-						$ch(this.__ojob.channels.list[i]).expose(this.__hs, undefined, auth);
+						$ch(this.__ojob.channels.list[i]).expose(this.__hs, undefined, auth, undefined, true);
 					}
 				}
 			}

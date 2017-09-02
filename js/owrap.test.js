@@ -3,7 +3,9 @@
 // Test
 
 OpenWrap.test = function() {
-	this.reset();
+	if (isUnDef(ow.test)) {
+		this.reset();
+	}
 	return ow.test;
 }
 

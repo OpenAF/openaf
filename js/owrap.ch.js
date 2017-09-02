@@ -1651,7 +1651,7 @@ OpenWrap.ch.prototype.server = {
 		ow.loadServer();
 
 		//noCheck = (isUnDef(noCheck)) ? false : noCheck;
-		
+
 		if (!noCheck) {
 			if (isUnDef(ow.ch.size(aName))) throw "Channel " + aName + " doesn't exist.";
 		}
