@@ -1428,6 +1428,15 @@ function genpack(args) {
 	packageNew.license             = (typeof packag.license !== 'undefined')             ? packag.license             : "The licence description";
 	packageNew.version             = (typeof packag.version !== 'undefined')             ? packag.version             : "20010101";
 	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": "20100101", "packb": "20120101" };
+
+	if (isDef(packag.odoc) && isObject(packag.odoc)) {
+		for(let i in packag.odoc) {
+			log("Generating help for key " + i + " from " + packag.odoc[i] + "...");
+			saveHelp(args[0], packag.odoc[i]);
+		}
+		packageNew.odoc = packag.odoc;
+	}
+
 	packageNew.files = listFiles(args[0], undefined, excludeList);
 	if (packageNew.files.indexOf(PACKAGEJSON) < 0 && packageNew.files.indexOf(PACKAGEYAML) < 0) {
 		if (args.indexOf("-inyaml") < 0)
