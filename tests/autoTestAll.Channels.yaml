@@ -6,13 +6,13 @@ jobs:
    # --------------
    - name: Channels::Init
      exec: |
-       args.tests = require("autoTestAll.Channels.js");
+       args.tests = require("autoTestAll.Channels.js", true);
        args.tests.setChType(args.chType);
 
    - name: Channels::Creating a channel
      from: Channels::Init
      to  : oJob Test
-     exec: args.func = args.tests.testCreateChannel;
+     exec: args.func = args.tests.testCreateChannel; 
 
    - name: Channels::Setting data into a channel
      from: Channels::Init
@@ -32,3 +32,28 @@ jobs:
      from: Channels::Init
      to  : oJob Test
      exec: args.func = args.tests.testHousekeeping;
+
+todo:
+   # Channels tests
+   # --------------
+   
+   # Big
+   - name: Channels::Creating a channel
+     args:
+       chType: big
+   - name: Channels::Setting data into a channel
+     args:
+       chType: big
+   - name: Channels::Destroy a channel 
+     args:
+       chType: big   
+   - name: Channels::Test housekeeping
+     args:
+       chType: big   
+
+   # Ignite
+   #- name: Channels::Creating a channel
+   #  args:
+   #    chType: ignite
+   #- Channels::Setting data into a channel
+   #- Channels::Destroy a channel

@@ -1,0 +1,7 @@
+include:
+   - oJobTest.yaml
+   - autoTestAll.Generic.yaml
+   - autoTestAll.IO.yaml
+   - autoTestAll.Format.yaml
+   - autoTestAll.Channels.yaml
+   - autoTestAll.oDoc.yaml

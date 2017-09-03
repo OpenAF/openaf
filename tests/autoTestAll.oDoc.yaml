@@ -19,3 +19,8 @@ jobs:
 
           ow.test.assert(id1, "index", "Online or offline oDoc missing index.");
           ow.test.assert(id2, "index", "Offline oDoc missing index.");
+
+todo:
+   # oDoc Tests
+   # ----------
+   - oDoc::Test access to oDoc

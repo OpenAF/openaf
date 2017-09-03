@@ -3376,7 +3376,7 @@ $channels = function(a) {
 		storeAdd     : function(aFilename, anArrayOfKeys, shouldCompress) { ow.ch.persistence.create(a, aFilename, anArrayOfKeys, shouldCompress); return $channels(a) },
 		storeRestore : function(aFilename, anArrayOfKeys) { ow.ch.persistence.restore(a, aFilename, anArrayOfKeys); return $channels(a); },
 		
-		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc); },
+		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck); },
 		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); return $channels(a); },
 		
 		createRemote : function(aURL, aTimeout) {

@@ -1,48 +1,43 @@
 (function() {
     this.chType = "big";
 
-    function testCreateChannel() {
-        $ch("test").create(true, this.chType);
-        $ch('test').size();
-    }
-    exports.testCreateChannel = testCreateChannel;
+    exports.testCreateChannel = function() {
+        $ch(this.chType).create(true, this.chType);
+        $ch(this.chType).size();
+    };
 
-    function testSettingData() {
+    exports.testSettingData = function() {
         var l = listFilesRecursive(".");
-        $ch("test").setAll(["filepath"], l);
-        ow.test.assert(l.length, $ch("test").size(), "Channel didn't store all values.");
-    }
-    exports.testSettingData = testSettingData;
+        $ch(this.chType).setAll(["filepath"], l);
+        ow.test.assert(l.length, $ch(this.chType).size(), "Channel didn't store all values.");
+    };
 
-    function testDestroyChannel() {
-        $ch("test").destroy();
-    }
-    exports.testDestroyChannel = testDestroyChannel;
+    exports.testDestroyChannel = function() {
+        $ch(this.chType).destroy();
+    };
 
-    function testHousekeeping() {
-        $ch("testHK").destroy();
-        $ch("testHK").create();
+    exports.testHousekeeping = function() {
+        $ch(this.chType + "HK").destroy();
+        $ch(this.chType + "HK").create();
         
-        for(let i = 0; i < 10; i++) {
-            $ch("testHK").set(i, i);
+        for(var i = 0; i < 10; i++) {
+            $ch(this.chType + "HK").set(i, i);
         }
-        ow.test.assert($ch("testHK").size(), 10, "Channel didn't set all required values.");
+        ow.test.assert($ch(this.chType + "HK").size(), 10, "Channel didn't set all required values.");
 
-        $ch("testHK").subscribe(ow.ch.utils.getHousekeepSubscriber("testHK", 3));
-        sleep(5000); $ch("testHK").waitForJobs();
-        ow.test.assert($ch("testHK").size(), 3, "Housekeep subscriber didn't remove all values in time.");
+        $ch(this.chType + "HK").subscribe(ow.ch.utils.getHousekeepSubscriber(this.chType + "HK", 3));
+        sleep(5000); $ch(this.chType + "HK").waitForJobs();
+        ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values in time.");
 
-        for(let i = 10; i < 20; i++) {
-            $ch("testHK").set(i, i);
+        for(var i = 10; i < 20; i++) {
+            $ch(this.chType + "HK").set(i, i);
         }
-        sleep(5000); $ch("testHK").waitForJobs();
-        ow.test.assert($ch("testHK").size(), 3, "Housekeep subscriber didn't remove all values after setting.");
-        $ch("testHK").destroy();
-    }
-    exports.testHousekeeping = testHousekeeping;
+        sleep(5000); $ch(this.chType + "HK").waitForJobs();
+        ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values after setting.");
+        $ch(this.chType + "HK").destroy();
+    };
 
-    function setChType(aChType) {
+    exports.setChType = function(aChType) {
         this.chType = aChType;
-    }
-    exports.setChType = setChType;
+    };
 })();

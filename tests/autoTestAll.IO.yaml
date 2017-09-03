@@ -1,0 +1,37 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # IO tests
+   # --------------
+   - name: IO::Init
+     exec: |
+       args.tests = require("autoTestAll.IO.js");
+
+   - name: IO::IO Test copy streams
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testIOCopyStream;
+
+   - name: IO::IO Test JSON
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testIOJSON;
+ 
+   - name: IO::IO Test read/writeFileStream
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testIOStream;
+
+   - name: IO::IO Test read/writeFileStreamBytes
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testIOStreamBytes;
+
+todo:
+   # IO tests
+   # --------
+   - IO::IO Test JSON
+   - IO::IO Test copy streams
+   - IO::IO Test read/writeFileStream
+   - IO::IO Test read/writeFileStreamBytes
