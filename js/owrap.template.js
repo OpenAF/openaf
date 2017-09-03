@@ -4,8 +4,10 @@
 
 OpenWrap.template = function() {
 	//loadHandlebars();
-	this.hb = getOpenAFJar() + "::js/handlebars.js";
-	require(this.hb);
+	if (isUnDef(this.hb)) {
+		this.hb = getOpenAFJar() + "::js/handlebars.js";
+		require(this.hb);
+	}
 	return ow.template;
 }
 
@@ -223,11 +225,11 @@ OpenWrap.template.prototype.parse = function(aSource, someData) {
 	var res;
 	var e;
 	var parent = this;
-	sync(function() {
+	//sync(function() {
 		try {
 			res = (parent.getTemplate(aSource))(someData);
 		} catch(ee) { e = ee; }
-	}, ow.loadTemplate());
+	//}, ow.loadTemplate());
 	if (isDef(e)) throw e;
 	return res;
 }
@@ -243,11 +245,11 @@ OpenWrap.template.prototype.parseHBS = function(aFilename, someData) {
 	var res;
 	var e;
 	var parent = this;
-	sync(function() {
+	//sync(function() {
 		try {
 			res = (parent.getTemplate(io.readFileString(aFilename)))(someData);
 		} catch(ee) { e = ee; }
-	}, ow.loadTemplate());
+	//}, ow.loadTemplate());
 	if (isDef(e)) throw e;
 	return res;
 }
@@ -347,12 +349,12 @@ OpenWrap.template.prototype.saveCompiledHBS = function(aFilename, aSource, optio
 OpenWrap.template.prototype.compile = function(aSource, optionsMap) {
 	var res;
 	var e;
-	sync(function() {
+	//sync(function() {
 		try {
 			res = require(this.hb).precompile(require(this.hb).parse(aSource), optionsMap);
 		} catch(ee) { e = ee; }
-	}, ow.loadTemplate());
-	if (isDef(e)) throw ee;
+	//}, ow.loadTemplate());
+	if (isDef(e)) throw e;
 	return res;
 }
 
@@ -366,12 +368,12 @@ OpenWrap.template.prototype.compile = function(aSource, optionsMap) {
 OpenWrap.template.prototype.execCompiled = function(aCompiledObject) {
 	var res;
 	var e;
-	sync(function() {
+	//sync(function() {
 		try {
 			res = require(this.hb).template(af.eval("(" + aCompiledObject + ")"));
 		} catch(ee) { e = ee; }
-	}, ow.loadTemplate());
-	if (isDef(e)) throw ee;
+	//}, ow.loadTemplate());
+	if (isDef(e)) throw e;
 	return res;
 }
 
@@ -385,11 +387,11 @@ OpenWrap.template.prototype.execCompiled = function(aCompiledObject) {
 OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
 	var res;
 	var e;
-	sync(function() {
+	//sync(function() {
 		try {
 			res = ow.template.execCompiled(io.readFileString(aFilename));
 		} catch(ee) { e = ee; }
-	}, ow.loadTemplate());
+	//}, ow.loadTemplate());
 	if (isDef(e)) throw e;
 	return res;
 }

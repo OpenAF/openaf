@@ -154,7 +154,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	var res = { include: [], jobs: [], todo: [], ojob: {} };
 	
-	if (isDef(aJSONa.include)) 
+	if (isDef(aJSONa.include) && aJSONa.include != null) 
 		res.include = aJSONa.include.concat(isDef(aJSONb.include) ? aJSONb.include : []);
 	else
 		res.include = isDef(aJSONb.include) ? aJSONb.include : [];
@@ -162,12 +162,12 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	loadLodash();
 	res.include = _.uniq(res.include);
 
-	if (isDef(aJSONa.jobs)) 
+	if (isDef(aJSONa.jobs) && aJSONa.jobs != null) 
 		res.jobs = aJSONa.jobs.concat(isDef(aJSONb.jobs) ? aJSONb.jobs : []);
 	else
 		res.jobs = isDef(aJSONb.jobs) ? aJSONb.jobs : [];
 	
-	if (isDef(aJSONa.todo)) 
+	if (isDef(aJSONa.todo) && aJSONa.todo != null) 
 		res.todo = aJSONa.todo.concat(isDef(aJSONb.todo) ? aJSONb.todo : []);
 	else
 		res.todo = isDef(aJSONb.todo) ? aJSONb.todo : [];
@@ -978,7 +978,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		"type": jobType,
 		"typeArgs": (isDef(j.typeArgs) ? merge(j.typeArgs, jobTypeArgs) : jobTypeArgs),
         "args": (isDef(j.args) ? this.__processArgs(j.args, jobArgs) : this.__processArgs(jobArgs)),
-		"deps": (isDef(j.deps) ? j.deps.concat(jobDeps) : jobDeps),
+		"deps": (isDef(j.deps) && j.deps != null ? j.deps.concat(jobDeps) : jobDeps),
 		"exec": (isDef(j.exec) ? j.exec : "") + fstr,
 		"help": (isDef(j.help) ? j.help : "") + jobHelp,
 		"from": jobFrom,
@@ -991,7 +991,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 			j.type = (isDef(f.type) ? f.type : j.type);
 			j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
             j.args = (isDef(f.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(j.args));
-			j.deps = (isDef(f.deps) ? j.deps.concat(f.deps) : j.deps);
+			j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
 			j.exec = j.exec + (isDef(f.exec) ? f.exec : "");
 			j.help = j.help + (isDef(f.help) ? f.help : "");
 		}

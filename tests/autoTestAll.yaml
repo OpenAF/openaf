@@ -1,11 +1,8 @@
 include:
    - oJobTest.yaml
-   - autoTestAll.Generic.yaml
-   - autoTestAll.Channels.yaml
-   - autoTestAll.oDoc.yaml
 
 ojob:
-   sequential: true
+   sequential: false
    channels:
      expose : true
      port   : 17878
@@ -19,53 +16,40 @@ ojob:
 
 
 jobs:
+   # RUN TESTS
+   # ---------
+   - name    : Run Tests
+     type    : jobs
+     typeArgs:
+       file: autoTestAll.allJobs.yaml
+
    # FINAL TEST RESULTS
    # ------------------
    - name: Results
      from: oJob Test Results
+     deps:
+       - Run Tests
      args: 
        quiet: true
-     exec: >
+     exec: |
        tprint("Tests PASSED: {{pass}}/{{count}}", args.results);
        tprint("Tests FAILED: {{fail}}/{{count}}", args.results);
-       if (args.results.fail > 0) throw "There are failed tests";
+       if (args.results.fail > 0) printErr("There are failed tests");
 
    - name: JUnit results
      to  : oJob Generate JUnit XML
+     deps:
+       - Run Tests
      exec: >
        args.suitesName  = "Automatic OpenAF build test";
        args.resultsFile = "autoTestAllResults.xml";
        args.suitesId    = af.getVersion();
+       io.writeFileString("autoTestAll.md", ow.test.toMarkdown());
 
 todo:
-   # Generic Tests
-   # -------------
-   - OpenAF::Get version
-   - OpenAF::Prints
-   - OpenAF::SPrints
-   - OpenAF::Logs
-   
-   # oDoc Tests
-   # ----------
-   - oDoc::Test access to oDoc
-
-   # Channels tests
-   # --------------
-   
-   # Big
-   - name: Channels::Creating a channel
-     args:
-       chType: big
-   - Channels::Setting data into a channel
-   - Channels::Destroy a channel 
-   - Channels::Test housekeeping
-
-   # Ignite
-   #- name: Channels::Creating a channel
-   #  args:
-   #    chType: ignite
-   #- Channels::Setting data into a channel
-   #- Channels::Destroy a channel
+   # Run tests
+   # ---------
+   - Run Tests
    
    # Final results
    # -------------

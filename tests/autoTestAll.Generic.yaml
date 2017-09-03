@@ -4,32 +4,94 @@ include:
 jobs:
    # OPENAF generic tests
    # --------------------
+   - name: OpenAF::Init
+     exec: |
+       args.tests = require("autoTestAll.Generic.js");
+
    - name: OpenAF::Get version
+     from: OpenAF::Init
      to  : oJob Test
-     args:
-       func: print(getVersion());
+     exec: args.func = args.tests.testGetVersion;
  
    - name: OpenAF::Prints
+     from: OpenAF::Init
      to  : oJob Test
-     args: 
-       func: >
-          print("Hello World!");
-          printErr("Bye World!"); printErrnl("?");
-          printnl("no"); print(" line");
+     exec: args.func = args.tests.testPrints;
 
    - name: OpenAF::SPrints
+     from: OpenAF::Init
      to  : oJob Test
-     args: 
-       func: >
-          var a = { a: 1, b: "a", c: [1, { d: 3 }]};
-          sprint(a);
-          sprintErr(a); sprintErrnl(a);
-          sprintnl(a); sprint(a); 
+     exec: args.func = args.tests.testSPrints;
   
    - name: OpenAF::Logs
+     from: OpenAF::Init
      to  : oJob Test
-     args: 
-       func: >
-          log("Hello World!");
-          logErr("Bye World!"); logWarn("?");
-          lognl("no"); log(" line");
+     exec: args.func = args.tests.testLogs;
+
+   - name: OpenAF::Test SHA1
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSHA1;
+
+   - name: OpenAF::Test SHA256
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSHA256;
+
+   - name: OpenAF::Test SHA512
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSHA512;
+  
+   - name: OpenAF::Test Merge
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMerge;
+    
+   - name: OpenAF::Test Shell
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testShell;
+    
+   - name: OpenAF::Test Encoding
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testEncoding;
+
+   - name: OpenAF::Test Format Conversion to/from bytes
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFormatConversionBytes;
+
+   - name: OpenAF::Test Format Conversion to/from base64
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFormatConversionBase64;
+
+   - name: OpenAF::Test Object Compression
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjectCompression;
+
+   - name: OpenAF::Basic Parallel processing
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testParallel;
+
+todo:
+   # Generic Tests
+   # -------------
+   - OpenAF::Get version
+   - OpenAF::Prints
+   - OpenAF::SPrints
+   - OpenAF::Logs
+   - OpenAF::Test SHA1
+   - OpenAF::Test SHA256
+   - OpenAF::Test SHA512
+   - OpenAF::Test Merge
+   - OpenAF::Test Shell
+   - OpenAF::Test Encoding
+   - OpenAF::Test Format Conversion to/from bytes
+   - OpenAF::Test Format Conversion to/from base64
+   - OpenAF::Test Object Compression
+   - OpenAF::Basic Parallel processing

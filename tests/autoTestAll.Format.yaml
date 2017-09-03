@@ -1,0 +1,107 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # Format tests
+   # --------------
+   - name: Format::Init
+     exec: args.tests = require("autoTestAll.Format.js");
+
+   - name: Format::Load Format
+     from: Format::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLoadFormat; 
+
+   - name: Format::Add number separator
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testAddNumberSeparator;
+
+   - name: Format::Number abbreviation
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testAbbreviation;
+
+   - name: Format::Number rounding
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testRound;
+
+   - name: Format::Time ago
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testTimeAgo;
+
+   - name: Format::Date to/from
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testDate;     
+
+   - name: Format::Escape strings
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testEscape;      
+
+   - name: Format::Word wrap
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testWordWrap; 
+
+   - name: Format::String pad
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testPad; 
+
+   - name: Format::Date diff
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testDateDiff;      
+
+   - name: Format::Cron
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testCron;  
+
+   - name: Format::Conversions
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testConversions;  
+
+todo:
+   # Format tests
+   # ------------
+   
+   - Format::Load Format
+   - Format::Add number separator
+   - Format::Number abbreviation
+   - Format::Number rounding
+   - Format::Time ago
+   - Format::Date to/from
+   - Format::Escape strings
+   - Format::Word wrap
+   - Format::String pad
+   - Format::Date diff
+   - Format::Cron
+   - Format::Conversions

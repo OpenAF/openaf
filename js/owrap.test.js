@@ -277,6 +277,45 @@ OpenWrap.test.prototype.getChannel = function() {
 	return $ch("__owTest::tests");
 }
 
+OpenWrap.test.prototype.toMarkdown = function() {
+	var md = "# Test results\n\n";
+
+	md += "## Summary\n\n";
+
+	md += "* Number of tests performed: " + this.__countTest + "\n";
+	md += "* Number of tests passed: " + this.__countPass + "\n";
+	md += "* Number of tests failed: " + this.__countFail + "\n";
+
+    md += "## Result details\n\n";
+
+	md += "| Suite | Test | Status | Time | Fail message |\n";
+	md += "|-------|------|--------|------|--------------|\n";
+
+	var data = [];
+	this.getChannel().forEach((k, v) => {
+		for(let i in v.executions) {
+			data.push({
+				suite    : v.suite,
+				test     : v.test,
+				status   : v.executions[i].status,
+				time     : v.executions[i].elapsedTime,
+				exception: v.executions[i].exception
+			});
+		}
+	});
+
+	$from(data).sort("suite", "test").select(d => {
+		md += "|" + d.suite;
+		md += " | " + d.test;
+		md += " | <span style=\"background-color: " + (d.status == "PASS" ? "green" : "red") + "; color: white\">&nbsp;&nbsp;" + d.status + "&nbsp;&nbsp;</span>";
+		md += " | " + ow.loadFormat().elapsedTime4ms(d.time);
+		md += " | " + (isDef(d.exception) ? d.exception : "n/a");
+		md += " |\n"; 
+	});
+
+	return md;
+}
+
 /**
  * <odoc>
  * <key>ow.test.toJUnitXML(testSuitesId, testSuitesName) : String</key>
