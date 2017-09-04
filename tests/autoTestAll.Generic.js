@@ -98,12 +98,155 @@
     exports.testObjectCompression = function() {
         var obj = { "a": 1, "b": 2, "c": 3 };
         
-            var cobj = compress(obj);
-            var uobj = uncompress(cobj);
-        
-            if (uobj.a != 1 || uobj.b != 2 || uobj.c != 3)
-                throw "Something wrong with compressing and uncompressing objects.";        
+        var cobj = compress(obj);
+        var uobj = uncompress(cobj);
+    
+        if (uobj.a != 1 || uobj.b != 2 || uobj.c != 3)
+            throw "Something wrong with compressing and uncompressing objects.";        
     };
+
+    exports.testDo = function() {
+        var success = false;
+        $do((s, f) => {
+            success = true;
+            s(true);
+            return true;
+        });
+
+        sleep(100);
+        ow.test.assert(success, true, "Problem with simple $do");
+
+        success = false;
+        $do((s, f) => {
+            success = false;
+            s(123);
+        }).then((v) => {
+            if (v == 123) success = true;
+        });
+
+        sleep(100);
+        ow.test.assert(success, true, "Problem with $do().then() using onFullfilment");
+
+        success = false;
+        $do((s, f) => {
+            success = false;
+            return 123;
+        }).then((v) => {
+            if (v == 123) success = true;
+        });
+
+        sleep(100);
+        ow.test.assert(success, true, "Problem with $do().then() using return");
+
+        success = true;
+        $do((s, f) => {
+            success = true;
+            f(123);
+            return true;
+        }).then((v) => {
+            if (v == 123) success = true;
+        }).catch((r) => {
+            if (r == 123) success = false;
+        });
+
+        sleep(100);
+        ow.test.assert(success, false, "Problem with $do().then().catch() using onReject");
+
+        success = true;
+        $do((s, f) => {
+            success = true;
+            throw 123;
+        }).then((v) => {
+            if (v == 123) success = true;
+        }).catch((r) => {
+            if (String(r) == 123) success = false;
+        });
+
+        sleep(100);
+        ow.test.assert(success, false, "Problem with $do().then().catch() using throw");
+
+        success = true;
+        var res = false;
+        $do(() => {
+            success = true;
+            return success;
+        }).then((v) => {
+            if (v) success = true; else success = false;
+            return v;
+        }).catch((r) => {
+            if (r == 123) res = true; else res = false;
+        }).then((v) => {
+            if (!v) success = false; else success = true;
+            throw 123;
+        }).catch((r) => {
+            if (r == 123) res = false; else res = true;
+        });
+
+        sleep(100);
+        ow.test.assert(res, true, "Problem with multiple $do().then().catch()");
+    };
+
+    exports.testDoAll = function() {
+        var success = [];
+
+        $doAll([
+            1,
+            $do((s, f) => {
+                s(2);
+            })
+        ]).then((values) => {
+            if (compare(values, [1, 2])) success = values;
+        });
+
+        sleep(100);
+        ow.test.assert(success, [1, 2], "Problem with $doAll()");
+
+        var res = false;
+        $doAll([
+            1,
+            $do((s, f) => {
+                f(2);
+            })
+        ]).then((values) => {
+            if (compare(values, [1, 2])) success = values;
+        }).catch((reason) => {
+            if (reason == 2) res = true;
+        });
+
+        sleep(100);
+        ow.test.assert(res, true, "Problem with $doAll().catch()");
+    };
+
+    exports.testDoFirst = function() {
+        var success = 0;
+
+        $doFirst([
+            1,
+            $do((s, f) => {
+                sleep(50);
+                s(2);
+            })
+        ]).then((value) => {
+            if (value == 1) success = 1;
+        });
+
+        sleep(100);
+        ow.test.assert(success, 1, "Problem with $doFirst()");
+
+        var res = false;
+        $doFirst([
+            $do((s, f) => {
+                f(2);
+            })
+        ]).then((values) => {
+            if (compare(values, [1, 2])) success = values;
+        }).catch((reason) => {
+            if (reason == 2) res = true;
+        });
+
+        sleep(100);
+        ow.test.assert(res, true, "Problem with $doFirst().catch()");
+    };    
 
     exports.testParallel = function() {
         // Array parallel processing

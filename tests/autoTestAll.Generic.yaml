@@ -72,6 +72,21 @@ jobs:
      from: OpenAF::Init
      to  : oJob Test
      exec: args.func = args.tests.testObjectCompression;
+  
+   - name: OpenAF::Test $do
+     from: OpenAF::Init
+     then: oJob Test
+     exec: args.func = args.tests.testDo;
+
+   - name: OpenAF::Test $doAll
+     from: OpenAF::Init
+     then: oJob Test
+     exec: args.func = args.tests.testDoAll;
+
+   - name: OpenAF::Test $doFirst
+     from: OpenAF::Init
+     then: oJob Test
+     exec: args.func = args.tests.testDoFirst;     
 
    - name: OpenAF::Basic Parallel processing
      from: OpenAF::Init
@@ -94,4 +109,7 @@ todo:
    - OpenAF::Test Format Conversion to/from bytes
    - OpenAF::Test Format Conversion to/from base64
    - OpenAF::Test Object Compression
+   - OpenAF::Test $do
+   - OpenAF::Test $doAll
+   - OpenAF::Test $doFirst
    - OpenAF::Basic Parallel processing

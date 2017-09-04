@@ -3093,19 +3093,14 @@ function newJavaArray(aJavaClass, aSize) {
  * </odoc>
  */
 function threadBox(aFunction, aTimeout, aStopFunction) {
-    plugin("Threads");
+    if (isUnDef(aStopFunction)) aStopFunction = (aR) => { return aR; };
 
-    if (isUnDef(aStopFunction)) aStopFunction = function(aR) { return aR; }
+	var done = false;
+	var exc = undefined;
 
-    //var t = new Threads();
-    var done = false;
-    var exc = undefined;
-
-    //t.addThread(function(uuid) {
     var t = new java.lang.Thread(new java.lang.Runnable({
     	run: function() {
 	        try {
-	            //aFunction(uuid);
 	            aFunction();
 	        } catch(e) {
 	            exc = e;
@@ -3117,26 +3112,23 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
 	        return done;
         }
     }));
-    //t.startSingleNoWait();
     t.start();
 
     var res = false;
     if (isDef(aTimeout)) {
     	var s = now();
         while(!res && !done && ((now() - s) < aTimeout)) {
-            res = aStopFunction();
+            res = aStopFunction(done);
         }
     } else {
         while(!res && !done) {
-            res = aStopFunction();
+            res = aStopFunction(done);
         }
     }
-    //t.stop(true);
-    if (!t.isAlive() && !t.interrupted()) {
+    
+    if (!t.isAlive() && !t.interrupted) {
     	t.interrupt();
-    	//if (!t.isAlive()) {
-    		log("Stopping! " + t.stop());
-    	//}
+    	t.stop();
     }
 
     if (isDef(exc)) throw exc;
@@ -3442,6 +3434,266 @@ $channels = function(a) {
  * </odoc>
  */
 $ch = $channels;
+
+/**
+ * <odoc>
+ * <key>oPromise(aFunction) : oPromise</key>
+ * Custom Promise-like implementation. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
+ * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
+ * aFunction to provide a result with resolve(aResult) or an exception with reject(aReason). If you don't call theses functions the
+ * returned value will be used for resolve or any exception thrown will be use for reject. You can use the "then" method to add more
+ * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the 
+ * previous function will be passed as the value for the second. You can use the "catch" method to add aFunction that will receive
+ * a string or exception for any exception thrown with the reject functions.  
+ * </odoc>
+ */
+var oPromise = function(aFunction) {
+    this.states = {
+        NEW: 0, FULFILLED: 1, FAILED: 2
+    };
+
+    this.state = this.states.NEW;
+    this.executing = false;
+    this.executors = [];
+    this.rejects = [];
+
+    if (isDef(aFunction) && isFunction(aFunction)) this.__async(aFunction);
+};
+
+/**
+ * <odoc>
+ * <key>oPromise.then(onFulfilled, onRejected) : oPromise</key>
+ * Adds onFulfilled to the current oPromise stack to execute if the previous function was resolved successfully and receives the resolve/return
+ * value as parameter. Also adds onRejected to the current oPromise stack to execute if the previous function was rejected and receives the
+ * reason as parameter.
+ * </odoc>
+ */
+oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
+    if (isDef(aResolveFunction) && isFunction(aResolveFunction)) this.executors.push(aResolveFunction);  
+    if (isDef(aRejectFunction) && isFunction(aRejectFunction)) this.rejects.push(aRejectFunction);
+
+    return this;
+};
+
+/**
+ * <odoc>
+ * <key>oPromise.catch(onReject) : oPromise</key>
+ * Adds onRejected to the current oPromise stack to execute if the previous function was rejected and receives the
+ * reason as parameter.
+ * </odoc>
+ */
+oPromise.prototype.catch = function(onReject) {
+    this.rejects.push(onReject);
+
+    return this;
+};
+
+/**
+ * <odoc>
+ * <key>oPromise.all(anArray) : oPromise</key>
+ * Returns an oPromise that will be resolved when all oPromise part of the anArray are fullfiled. If any of the oPromises
+ * fails/rejects the returned oPromise will also be rejected/fail.
+ * </odoc>
+ */
+oPromise.prototype.all = function(anArray) {
+    if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+
+    this.__async((res, rej) => {
+        var shouldStop = false;
+        var values = [];
+        var c = 0;
+        
+        while(!shouldStop) {
+            c++;
+            if (c > 5) {
+                // Cooldown
+                sleep(50);
+                c = 0;
+            }
+
+            for(var i in anArray) {
+                if (anArray[i] != null) {
+                    if (anArray[i] instanceof oPromise) {
+                        switch(anArray[i].state) {
+                        case anArray[i].states.NEW:
+                            shouldStop = false;
+                            break;
+                        case anArray[i].states.FAILED:
+                            shouldStop = true;
+                            rej(anArray[i].reason);
+                            break;
+                        case anArray[i].states.FULFILLED:
+                            values.push(anArray[i].value);
+                            anArray = deleteFromArray(anArray, i);
+                            break;
+                        }
+                    } else {
+                        values.push(anArray[i]);
+                        anArray = deleteFromArray(anArray, i);
+                    }
+                }
+            }
+            if (anArray.length <= 0) shouldStop = true;
+        }
+    
+        res(values);
+    });
+
+    return this;
+};
+
+/**
+ * <odoc>
+ * <key>oPromise.race(anArray) : oPromise</key>
+ * Returns an oPromise that will be resolved when any oPromise part of the anArray is fullfiled. If any of the oPromises
+ * fails/rejects the returned oPromise will also be rejected/fail.
+ * </odoc>
+ */
+oPromise.prototype.race = function(anArray) {
+    if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+    
+    this.__async((res, rej) => {
+        var shouldStop = false;
+        var c = 0;
+        
+        while(!shouldStop) {
+            c++;
+            if (c > 5) {
+                // Cooldown
+                sleep(50);
+                c = 0;
+            }
+
+            for(var i in anArray) {
+                if (anArray[i] != null) {
+                    if (anArray[i] instanceof oPromise) {
+                        switch(anArray[i].state) {
+                        case anArray[i].states.NEW:
+                            shouldStop = false;
+                            break;
+                        case anArray[i].states.FAILED:
+                            shouldStop = true;
+                            rej(anArray[i].reason);
+                            return this;
+                        case anArray[i].states.FULFILLED:
+                            shouldStop = true;
+                            res(anArray[i].value);
+                            return this;
+                        }
+                    } else {
+                        shoudStop = true;
+                        res(anArray[i]);
+                        return this;
+                    }
+                }
+            }
+        }
+    
+        res();
+    });
+
+    return this;    
+};
+
+oPromise.prototype.reject = function(aReason) {
+    if (this.state != this.states.NEW) return this;
+
+    this.reason = aReason;
+    this.state = this.states.FAILED;
+
+    if (this.rejects.length <= 0) return this;
+
+    var func = this.rejects.shift();
+    if (isDef(func) && isFunction(func)) 
+        func(aReason);
+    else {
+        var c = this.rejects.shift();
+        if (isFunction(c)) c(aReason);
+    }
+
+    return this;
+};
+
+oPromise.prototype.resolve = function(aValue) {
+    if (this.state != this.states.NEW) return this;
+
+    this.value = aValue;
+    this.state = this.states.FULFILLED;
+
+    if (this.executors.length <= 0) return this;
+
+    var func = this.executors.shift();
+    if (isDef(func) && isFunction(func)) {
+        this.state = this.states.NEW;
+        this.__async(func, aValue);
+    }
+    return this;
+};
+
+oPromise.prototype.__async = function(aFunction, aValue) {
+    var thisOP = this;
+
+    var t = new java.lang.Thread(new java.lang.Runnable({
+        run: () => {
+            var res; 
+
+            try {
+                thisOP.executing = true;
+                if (isDef(aValue))
+                    res = thisOP.resolve(aFunction(aValue));
+                else   
+                    res = thisOP.resolve(aFunction((v) => { thisOP.resolve(v); }, (r) => { thisOP.reject(r); }));
+            } catch(e) {
+                thisOP.reject(e);
+            } finally {
+                thisOP.executing = false;
+            }
+
+            return res;
+        }
+    }));
+    t.start();
+    
+    return this;
+};
+
+/**
+ * <odoc>
+ * <key>$do(aFunction) : oPromise</key>
+ * Instantiates and returns a oPromise. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
+ * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
+ * aFunction to provide a result with resolve(aResult) or an exception with reject(aReason). If you don't call theses functions the
+ * returned value will be used for resolve or any exception thrown will be use for reject. You can use the "then" method to add more
+ * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the 
+ * previous function will be passed as the value for the second. You can use the "catch" method to add aFunction that will receive
+ * a string or exception for any exception thrown with the reject functions.  
+ * </odoc>
+ */
+var $do = function(aFunction) {
+    return new oPromise(aFunction);
+};
+
+/**
+ * <odoc>
+ * <key>$doAll(anArray) : oPromise</key>
+ * Returns an oPromise that will be resolved when all oPromise part of the anArray are fullfiled. If any of the oPromises
+ * fails/rejects the returned oPromise will also be rejected/fail.
+ * </odoc>
+ */
+var $doAll = function(anArray) {
+    return new oPromise().all(anArray);
+};
+
+/**
+ * <odoc>
+ * <key>$doFirst(anArray) : oPromise</key>
+ * Returns an oPromise that will be resolved when any oPromise part of the anArray is fullfiled. If any of the oPromises
+ * fails/rejects the returned oPromise will also be rejected/fail.
+ * </odoc>
+ */
+var $doFirst = function(anArray) {
+    return new oPromise().race(anArray);
+};
 
 // Set logging to ERROR 
 {

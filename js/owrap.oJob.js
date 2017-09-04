@@ -67,6 +67,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	}
 	
 	for(var i in jobs) {
+		if (isUnDef(jobs[i].from) && isDef(jobs[i].earlier)) jobs[i].from = jobs[i].earlier;
+		if (isUnDef(jobs[i].to)   && isDef(jobs[i].then))    jobs[i].to   = jobs[i].then;
 		this.addJob(this.getJobsCh(), jobs[i].name, jobs[i].deps, jobs[i].type, jobs[i].typeArgs, jobs[i].args, jobs[i].exec, jobs[i].from, jobs[i].to, jobs[i].help);
 	}
 	this.addTodos(todo, args, aId);
