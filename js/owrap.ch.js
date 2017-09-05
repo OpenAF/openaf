@@ -691,11 +691,11 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getKeys      : function(aName, full) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			var i = ch.primaryKeySet().iterator();
+			var ch = this.__ig.getIgnite().cache(aName);
+			var i = ch.iterator();
 			var keys = [];
 			while(i.hasNext()) {
-				keys.push(af.fromJavaMap(i.next()));
+				keys.push(af.fromJavaMap(i.next().getKey()));
 			}
 			return keys;
 		},
