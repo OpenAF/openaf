@@ -4,4 +4,5 @@ include:
    - autoTestAll.IO.yaml
    - autoTestAll.Format.yaml
    - autoTestAll.Channels.yaml
+   - autoTestAll.Template.yaml
    - autoTestAll.oDoc.yaml

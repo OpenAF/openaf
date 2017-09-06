@@ -65,7 +65,7 @@ OpenWrap.test.prototype.reset = function() {
  */
 OpenWrap.test.prototype.assert = function(aResult, checkValue, errorMessage, notShowDiff) {
 	if (!compare(aResult, checkValue)) {
-		throw errorMessage + ((notShowDiff) ? "" : " (got " + stringify(aResult) + " but expected " + stringify(checkValue) + ")");
+		throw errorMessage + ((notShowDiff) ? "" : " (got " + stringify(aResult) + " but expected " + stringify(checkValue, undefined, "") + ")");
 	}
 }
 
@@ -309,7 +309,7 @@ OpenWrap.test.prototype.toMarkdown = function() {
 		md += " | " + d.test;
 		md += " | <span style=\"background-color: " + (d.status == "PASS" ? "green" : "red") + "; color: white\">&nbsp;&nbsp;" + d.status + "&nbsp;&nbsp;</span>";
 		md += " | " + ow.loadFormat().elapsedTime4ms(d.time);
-		md += " | " + (isDef(d.exception) ? d.exception : "n/a");
+		md += " | " + (isDef(d.exception) ? d.exception.replace(/\n/mg, " ") : "n/a");
 		md += " |\n"; 
 	});
 

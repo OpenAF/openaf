@@ -14,7 +14,7 @@
 	<classpathentry kind="lib" path="lib/gson-2.8.0.jar"/>
 	<classpathentry kind="lib" path="lib/httpclient-4.5.1.jar"/>
 	<classpathentry kind="lib" path="lib/httpcore-4.4.4.jar"/>
-	<classpathentry kind="lib" path="lib/ignite-core-1.9.0.jar"/>
+	<classpathentry kind="lib" path="lib/ignite-core-2.1.0.jar"/>
 	<classpathentry kind="lib" path="lib/ignite-shmem-1.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/jackson-core-2.6.3.jar"/>
 	<classpathentry kind="lib" path="lib/jansi-1.14.jar"/>
@@ -62,10 +62,10 @@
 	<classpathentry kind="lib" path="lib/xercesImpl.jar"/>
 	<classpathentry kind="lib" path="lib/xml-apis.jar"/>
 	<classpathentry kind="lib" path="lib/xmlbeans-2.6.0.jar"/>
-	<classpathentry kind="lib" path="lib/h2-1.4.195.jar"/>
+	<classpathentry kind="lib" path="lib/h2-1.4.196.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.5.jar"/>
-	<classpathentry kind="lib" path="lib/postgresql-42.0.0.jre7.jar"/>
-	<classpathentry kind="lib" path="lib/nwu-0.3.1.jar"/>
+	<classpathentry kind="lib" path="lib/postgresql-42.1.4.jre7.jar"/>
+	<classpathentry kind="lib" path="lib/nwu-0.3.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

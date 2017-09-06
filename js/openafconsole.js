@@ -41,6 +41,8 @@ function __desc(aClass, retList, noRecursive) {
 		constructors = classObj.getConstructors();
 	} catch(e) {
 		try {
+			if (aClass.toLowerCase() == "io") aClass = "IOBase";
+			if (aClass.toLowerCase() == "af") aClass = "AFBase";
 			classObj = java.lang.Class.forName("wedo.openaf." + aClass);
 			methods = classObj.getMethods();
 			constructors = classObj.getConstructors();

@@ -244,7 +244,16 @@
 			"type"       : [ "javascript" ],
 			"license"    : "https://raw.githubusercontent.com/cazala/synaptic/master/LICENSE",
 			"deps"       : []
-		}   
+		},
+		{
+			"description": "Highlight",
+			"path"       : [ "js/highlight.js" ],
+			"version"    : "9.12.0",
+			"changes"    : false,
+			"type"       : [ "javascript" ],
+			"license"    : "https://raw.githubusercontent.com/isagalaev/highlight.js/master/LICENSE",
+			"deps"       : []
+		}
 	],
 	"plugins": [
 		{

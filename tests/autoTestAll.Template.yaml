@@ -1,0 +1,25 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # Template tests
+   # --------------
+   - name: Template::Init
+     exec: args.tests = require("autoTestAll.Template.js");
+
+   - name: Template::Load Template
+     from: Template::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLoadTemplate;
+
+   - name: Template::Test Markdown to HTML
+     from: Template::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMD2HTML;
+
+todo:
+   # Template tests
+   # --------------
+   
+   - Template::Load Template
+   - Template::Test Markdown to HTML

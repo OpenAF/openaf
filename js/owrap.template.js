@@ -396,6 +396,37 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
 	return res;
 }
 
+/**
+ * <odoc>
+ * <key>ow.template.parseMD2HTML(aMarkdownString, isFull) : String</key>
+ * Given aMarkdownString will parse it with showdown (using the github flavor) and return the HTML in a string. If isFull = true
+ * it will produce a complete HTML with references for the highlight library+css and github markdown css included internally in OpenAF.
+ * Example:\
+ * \
+ * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, { \
+ *    "/md": (req) => { return hs.replyOKHTML(ow.template.parseMD2HTML(io.readFileString("README.md"), true)) }\
+ * }), (req) => { return hs.replyOKText("nothing here...");})\
+ * \
+ * </odoc>
+ */
+OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull) {
+	var showdown = require(getOpenAFJar() + "::js/showdown.js");
+	showdown.setFlavor("github");
+	var converter = new showdown.Converter();
+
+	if (isFull) {
+		if (isUnDef(this.__templatemd)) {
+			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs");
+		}
+		
+		return this.parse(this.__templatemd, {
+			markdown: converter.makeHtml(aMarkdownString)
+		});
+	} else {
+		return converter.makeHtml(aMarkdownString);
+	}
+}
+
 OpenWrap.template.prototype.Handlebars = function() {
 	return require(this.hb);
 }
