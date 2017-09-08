@@ -113,7 +113,7 @@
             return true;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(success, true, "Problem with simple $do");
 
         success = false;
@@ -124,7 +124,7 @@
             if (v == 123) success = true;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(success, true, "Problem with $do().then() using onFullfilment");
 
         success = false;
@@ -135,7 +135,7 @@
             if (v == 123) success = true;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(success, true, "Problem with $do().then() using return");
 
         success = true;
@@ -149,7 +149,7 @@
             if (r == 123) success = false;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(success, false, "Problem with $do().then().catch() using onReject");
 
         success = true;
@@ -162,7 +162,7 @@
             if (String(r) == 123) success = false;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(success, false, "Problem with $do().then().catch() using throw");
 
         success = true;
@@ -182,7 +182,7 @@
             if (r == 123) res = false; else res = true;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(res, true, "Problem with multiple $do().then().catch()");
     };
 
@@ -198,8 +198,8 @@
             if (compare(values, [1, 2])) success = values;
         });
 
-        sleep(100);
-        ow.test.assert(success, [1, 2], "Problem with $doAll()");
+        sleep(250);
+        ow.test.assert(success.sort(), [1, 2], "Problem with $doAll()");
 
         var res = false;
         $doAll([
@@ -213,7 +213,7 @@
             if (reason == 2) res = true;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(res, true, "Problem with $doAll().catch()");
     };
 
@@ -230,7 +230,7 @@
             if (value == 1) success = 1;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(success, 1, "Problem with $doFirst()");
 
         var res = false;
@@ -244,7 +244,7 @@
             if (reason == 2) res = true;
         });
 
-        sleep(100);
+        sleep(250);
         ow.test.assert(res, true, "Problem with $doFirst().catch()");
     };    
 

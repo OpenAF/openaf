@@ -40,4 +40,11 @@
     exports.setChType = function(aChType) {
         this.chType = aChType;
     };
+
+    exports.testElasticIndex = () => {
+        var today = ow.loadFormat().fromDate(new Date(), "yyyy.MM.dd");
+        ow.test.assert(ow.ch.utils.getElasticIndex("a test")(), "a test-" + today, "Problem with getElasticIndex default format.");
+        today = ow.format.fromDate(new Date(), "yyyyMMdd");
+        ow.test.assert(ow.ch.utils.getElasticIndex("a test", "yyyyMMdd")(), "a test-" + today, "Problem with getElasticIndex custom format.");
+    };
 })();

@@ -1427,14 +1427,16 @@ OpenWrap.ch.prototype.utils = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.ch.utils.getElasticIndex(aPrefix) : Function</key>
+	 * <key>ow.ch.utils.getElasticIndex(aPrefix, aFormat) : Function</key>
 	 * Returns a function to be use for generating ElasticSearch indexes with aPrefix-aDate (in the format of
-	 * YYYY-MM-DD). This helps to generate a specific index per day.
+	 * YYYY.MM.DD). This helps to generate a specific index per day. If a specific format is needed you can provided
+	 * it as aFormat (see ow.format.fromDate)).
 	 * </odoc>
 	 */
-	getElasticIndex: function(aPrefix) {
+	getElasticIndex: function(aPrefix, aFormat) {
+		if (isUnDef(aFormat)) aFormat = "yyyy.MM.dd";
 		return function() {
-			return aPrefix + "-" + ow.loadFormat().fromDate(new Date(), 'yyyyMMdd');
+			return aPrefix + "-" + ow.loadFormat().fromDate(new Date(), aFormat);
 		}
 	}
 };

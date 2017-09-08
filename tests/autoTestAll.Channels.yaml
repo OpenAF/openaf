@@ -33,9 +33,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testHousekeeping;
 
+   - name: Channels::Test Elastic Index
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testElasticIndex;
+
 todo:
    # Channels tests
    # --------------
+   
+   - Channels::Test Elastic Index
    
    # Big
    - name: Channels::Creating a channel

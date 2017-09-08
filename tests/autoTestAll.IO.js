@@ -57,4 +57,14 @@
         ow.test.assert(h1, h2, "Problem with ioStreamCopy.");
         af.rm("autoTestAll.jar");
     };
+
+    exports.testGzipNativeToByte = () => {
+        var orig = io.readFileString(getOpenAFPath() + "/js/openaf.js", io.getDefaultEncoding());
+
+        io.writeFileBytes("autoTestAll.gz", io.gzip(io.readFileBytes(getOpenAFPath() + "/js/openaf.js")));
+        var a = Packages.org.apache.commons.io.IOUtils.toByteArray(io.readFileStream("autoTestAll.gz"));
+        var s = af.fromBytes2String(io.gunzip(a));
+
+        ow.test.assert(orig.length, s.length, "Problem with gzip native java array to byte array conversion.");
+    };
 })();
