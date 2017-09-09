@@ -9,4 +9,5 @@ dependencies.json
 /tests/autoTestAll.test
 /tests/autoTestAll.xlsx
 /tests/autoTestAll.xml
+/oJob-common/*
 /oJob-commons/*

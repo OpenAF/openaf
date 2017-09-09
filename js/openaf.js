@@ -3098,8 +3098,8 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
 	var done = false;
 	var exc = undefined;
 
-    var t = new java.lang.Thread(new java.lang.Runnable({
-    	run: function() {
+	var t = __getThreadPool().submit(new java.lang.Runnable({		
+    	run: () => {
 	        try {
 	            aFunction();
 	        } catch(e) {
@@ -3112,7 +3112,6 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
 	        return done;
         }
     }));
-    t.start();
 
     var res = false;
     if (isDef(aTimeout)) {
@@ -3126,10 +3125,9 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
         }
     }
     
-    if (!t.isAlive() && !t.interrupted) {
-    	t.interrupt();
-    	t.stop();
-    }
+    //if (!t.isDone() && !t.isCancelled()) {
+    	t.cancel(true);
+    //}
 
     if (isDef(exc)) throw exc;
 }
@@ -3435,6 +3433,18 @@ $channels = function(a) {
  */
 $ch = $channels;
 
+var __threadPool;
+var __threadPoolFactor = 1;
+
+function __getThreadPool() {
+	if (isUnDef(__threadPool)) {
+		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores();
+		__threadPool = new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+	}
+
+	return __threadPool;
+}
+
 /**
  * <odoc>
  * <key>oPromise(aFunction) : oPromise</key>
@@ -3455,9 +3465,11 @@ var oPromise = function(aFunction) {
     this.state = this.states.NEW;
     this.executing = false;
     this.executors = [];
-    this.rejects = [];
+	this.rejects = [];
 
-    if (isDef(aFunction) && isFunction(aFunction)) this.__async(aFunction);
+    if (isDef(aFunction) && isFunction(aFunction)) {
+		this.__async(aFunction);
+	}
 };
 
 /**
@@ -3469,8 +3481,10 @@ var oPromise = function(aFunction) {
  * </odoc>
  */
 oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
-    if (isDef(aResolveFunction) && isFunction(aResolveFunction)) this.executors.push(aResolveFunction);  
-    if (isDef(aRejectFunction) && isFunction(aRejectFunction)) this.rejects.push(aRejectFunction);
+    if (isDef(aResolveFunction) && isFunction(aResolveFunction)) this.executors.push(aResolveFunction);
+	if (isDef(aRejectFunction) && isFunction(aRejectFunction))   this.rejects.push(aRejectFunction);
+	
+	if (isDef(this.__f) && this.__f.isDone()) this.__runExecutor();
 
     return this;
 };
@@ -3484,6 +3498,8 @@ oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
  */
 oPromise.prototype.catch = function(onReject) {
     this.rejects.push(onReject);
+
+	if (isDef(this.__f) && this.__f.isDone()) this.__runReject();
 
     return this;
 };
@@ -3501,42 +3517,45 @@ oPromise.prototype.all = function(anArray) {
     this.__async((res, rej) => {
         var shouldStop = false;
         var values = [];
-        var c = 0;
-        
-        while(!shouldStop) {
-            c++;
-            if (c > 5) {
-                // Cooldown
-                sleep(50);
-                c = 0;
-            }
+		
+		try {
+			while(!shouldStop) {
+				for(var iii in anArray) {
+					if (anArray[iii] != null) {
+						if (anArray[iii] instanceof oPromise) {
+							if (isDef(anArray[iii].__f) && anArray[iii].__f.isDone()) {
+								//anArray[iii].__f.get(100, java.util.concurrent.TimeUnit.MILLISECONDS);
+								switch(anArray[iii].state) {
+								case anArray[iii].states.NEW:
+									shouldStop = false;
+									break;
+								case anArray[iii].states.FAILED:
+									shouldStop = true;
+									rej(anArray[iii].reason);
+									break;
+								case anArray[iii].states.FULFILLED:
+									values.push(anArray[iii].value);
+									anArray = deleteFromArray(anArray, iii);
+									break;
+								}
+							} else {
+								shouldStop = false;
+							}
+						} else {
+							values.push(anArray[iii]);
+							anArray = deleteFromArray(anArray, iii);
+						}
+					}
+				}
+				if (anArray.length <= 0) shouldStop = true;
+			}
+		
+			res(values);
+		} catch(e) {
+			rej(e);
+		}
 
-            for(var i in anArray) {
-                if (anArray[i] != null) {
-                    if (anArray[i] instanceof oPromise) {
-                        switch(anArray[i].state) {
-                        case anArray[i].states.NEW:
-                            shouldStop = false;
-                            break;
-                        case anArray[i].states.FAILED:
-                            shouldStop = true;
-                            rej(anArray[i].reason);
-                            break;
-                        case anArray[i].states.FULFILLED:
-                            values.push(anArray[i].value);
-                            anArray = deleteFromArray(anArray, i);
-                            break;
-                        }
-                    } else {
-                        values.push(anArray[i]);
-                        anArray = deleteFromArray(anArray, i);
-                    }
-                }
-            }
-            if (anArray.length <= 0) shouldStop = true;
-        }
-    
-        res(values);
+		return values;
     });
 
     return this;
@@ -3555,61 +3574,75 @@ oPromise.prototype.race = function(anArray) {
     this.__async((res, rej) => {
         var shouldStop = false;
         var c = 0;
-        
-        while(!shouldStop) {
-            c++;
-            if (c > 5) {
-                // Cooldown
-                sleep(50);
-                c = 0;
-            }
-
-            for(var i in anArray) {
-                if (anArray[i] != null) {
-                    if (anArray[i] instanceof oPromise) {
-                        switch(anArray[i].state) {
-                        case anArray[i].states.NEW:
-                            shouldStop = false;
-                            break;
-                        case anArray[i].states.FAILED:
-                            shouldStop = true;
-                            rej(anArray[i].reason);
-                            return this;
-                        case anArray[i].states.FULFILLED:
-                            shouldStop = true;
-                            res(anArray[i].value);
-                            return this;
-                        }
-                    } else {
-                        shoudStop = true;
-                        res(anArray[i]);
-                        return this;
-                    }
-                }
-            }
-        }
-    
-        res();
+		
+		try {
+			while(!shouldStop) {
+				for(var i in anArray) {
+					if (anArray[i] != null) {
+						if (anArray[i] instanceof oPromise) {
+							//anArray[i].__f.get(100, java.util.concurrent.TimeUnit.MILLISECONDS);
+							if (isDef(anArray[i].__f) && anArray[i].__f.isDone()) {
+								switch(anArray[i].state) {
+								case anArray[i].states.NEW:
+									shouldStop = false;				
+									break;
+								case anArray[i].states.FAILED:
+									shouldStop = true;
+									rej(anArray[i].reason);
+									return this;
+								case anArray[i].states.FULFILLED:
+									shouldStop = true;
+									res(anArray[i].value);
+									return this;
+								}
+							} else {
+								shouldStop = false;
+							}
+						} else {
+							shoudStop = true;
+							res(anArray[i]);
+							return this;
+						}
+					}
+				}
+			}
+		} catch(e) {
+			rej(e);
+		}
+		res();
+		return this;
     });
 
     return this;    
 };
 
+oPromise.prototype.__runReject = function() {
+	if (this.state == this.states.FAILED && this.rejects.length > 0) {
+		var func = this.rejects.shift();
+		if (isDef(func) && isFunction(func)) func(this.reason);
+	} else {
+		return this;
+	}
+}
+
+oPromise.prototype.__runExecutor = function() {
+	if (this.executors.length > 0) {
+		var func = this.executors.shift();
+		this.state = this.states.NEW;
+		if (isDef(func) && isFunction(func)) this.__async(func, this.value);
+	} else {
+		this.state = this.states.FULFILLED;
+		return this;
+	}
+}
+
 oPromise.prototype.reject = function(aReason) {
     if (this.state != this.states.NEW) return this;
 
-    this.reason = aReason;
-    this.state = this.states.FAILED;
+	this.reason = aReason;
+	this.state = this.states.FAILED;
 
-    if (this.rejects.length <= 0) return this;
-
-    var func = this.rejects.shift();
-    if (isDef(func) && isFunction(func)) 
-        func(aReason);
-    else {
-        var c = this.rejects.shift();
-        if (isFunction(c)) c(aReason);
-    }
+	this.__runReject(aReason);
 
     return this;
 };
@@ -3618,41 +3651,36 @@ oPromise.prototype.resolve = function(aValue) {
     if (this.state != this.states.NEW) return this;
 
     this.value = aValue;
-    this.state = this.states.FULFILLED;
 
-    if (this.executors.length <= 0) return this;
-
-    var func = this.executors.shift();
-    if (isDef(func) && isFunction(func)) {
-        this.state = this.states.NEW;
-        this.__async(func, aValue);
-    }
+    this.__runExecutor(aValue);
     return this;
 };
 
 oPromise.prototype.__async = function(aFunction, aValue) {
     var thisOP = this;
 
-    var t = new java.lang.Thread(new java.lang.Runnable({
-        run: () => {
+    this.__f = __getThreadPool().submit(new java.lang.Runnable({
+		run: () => {
             var res; 
 
+			var isRun = true;
             try {
-                thisOP.executing = true;
-                if (isDef(aValue))
-                    res = thisOP.resolve(aFunction(aValue));
-                else   
-                    res = thisOP.resolve(aFunction((v) => { thisOP.resolve(v); }, (r) => { thisOP.reject(r); }));
+				thisOP.executing = true;
+                if (isDef(aValue)) {
+					res = aFunction(aValue);
+				} else {
+					res = aFunction((v) => { thisOP.resolve(v); isRun = false; }, (r) => { thisOP.reject(r); isRun = false; });
+				}
+				if (isDef(res) && res != null && thisOP.state == thisOP.states.NEW && isRun) res = thisOP.resolve(res);
             } catch(e) {
-                thisOP.reject(e);
+                if (isRun) thisOP.reject(e);
             } finally {
                 thisOP.executing = false;
             }
 
-            return res;
-        }
+			return res;
+		}
     }));
-    t.start();
     
     return this;
 };
@@ -3694,6 +3722,28 @@ var $doAll = function(anArray) {
 var $doFirst = function(anArray) {
     return new oPromise().race(anArray);
 };
+
+/**
+ * <odoc>
+ * <key>$doWait(aPromise, aWaitTimeout, aTimeout) : oPromise</key>
+ * Blocks until aPromise is fullfilled or rejected. Optionally you can specify aTimeout between checks and/or a block timeout (with aWaitTimeout).
+ * Returns aPromise.
+ * </odoc>
+ */
+var $doWait = function(aPromise, aWaitTimeout, aTimeout) {
+	if (isDef(aWaitTimeout)) {
+		var init = now();
+		while(aPromise.state == aPromise.states.NEW && ((now() - init) < aWaitTimeout)) {
+			if (isDef(aTimeout)) sleep(aTimeout);
+		}
+	} else {
+		while(aPromise.state == aPromise.states.NEW) {
+			if (isDef(aTimeout)) sleep(aTimeout);
+		}
+	}
+
+	return aPromise;
+}
 
 // Set logging to ERROR 
 {
