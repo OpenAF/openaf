@@ -686,8 +686,8 @@ OpenWrap.ch.prototype.__types = {
 		},
 		forEach      : function(aName, aFunction) {
 			var keys = this.getKeys(aName);
-			while(o in keys) {
-				aFunction(o, this.get(aName, o));
+			for(let o in keys) {
+				aFunction(keys[o], this.get(aName, keys[o]));
 			}
 		},
 		getKeys      : function(aName, full) {
@@ -883,8 +883,8 @@ OpenWrap.ch.prototype.size = function(aName) {
  */
 OpenWrap.ch.prototype.subscribe = function(aName, aFunction, onlyFromNow, anId) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	//if (isUnDef(anId)) anId = genUUID();
-	if (isUnDef(anId)) anId = md5(aFunction.toString());
+	if (isUnDef(anId)) anId = genUUID();
+	//if (isUnDef(anId)) anId = md5(aFunction.toString());
 	
 	if (isDef(this.subscribers[aName][anId])) return anId;
 	
@@ -1709,14 +1709,17 @@ OpenWrap.ch.prototype.server = {
 	 */
 	peer: function(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc) {
 		var uuid = ow.ch.server.expose(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc);
+		var res = [];
 
 		if (isArray(aRemoteURLArray)) {
-			for(var i in aRemoteURLArray) {
-				ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid));
+			for(let i in aRemoteURLArray) {
+				res.push(ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid)));
 			}
 		} else {
-			ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray, uuid));
+			res.push(ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray, uuid)));
 		}
+
+		return res;
 	},
 
 	/**
