@@ -3235,31 +3235,6 @@ function oJobRunJob(aJob, args, aId) {
 	ow.oJob.runJob(aJob, args, aId);
 }
 
-// ---------------
-// Profile support
-
-var OPENAFPROFILE;
-if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
-
-(function() {
-	var prof = "";
-	try {
-		prof = io.readFileString(java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE);
-		af.compile(prof);
-	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
-	}
-	
-	prof ="";
-	try {
-		prof = io.readFileString(getOpenAFJar() + "::" + OPENAFPROFILE);
-		af.compile(prof);
-	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/) &&
-		    !e.message.match(/java\.lang\.NullPointerException: entry/)) throw e;
-	}
-})();
-
 /**
  * <odoc>
  * <key>loadJSYAML()</key>
@@ -3753,6 +3728,27 @@ var $doWait = function(aPromise, aWaitTimeout, aTimeout) {
    }
 }
 
-/*if (isDef(__addToOpenAFjs)) {
-	load(__addToOpenAFjs);
-}*/
+// ---------------
+// Profile support
+
+var OPENAFPROFILE;
+if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
+
+(function() {
+	var prof = "";
+	try {
+		prof = io.readFileString(java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE);
+		af.compile(prof);
+	} catch(e) {
+		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
+	}
+	
+	prof ="";
+	try {
+		prof = io.readFileString(getOpenAFJar() + "::" + OPENAFPROFILE);
+		af.compile(prof);
+	} catch(e) {
+		if (!e.message.match(/java\.io\.FileNotFoundException/) &&
+		    !e.message.match(/java\.lang\.NullPointerException: entry/)) throw e;
+	}
+})();

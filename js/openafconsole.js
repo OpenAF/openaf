@@ -9,7 +9,7 @@ var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
 var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|watch|clear|purge|pause|sql|esql|dsql|pin";
 var __alias = {
-	"opack": "__expr=__aliasparam;load(getOpenAFJar() + \"::js/opack.js\");",
+	"opack": "oPack(__aliasparam);",
 };
 
 var __aliasparam;
