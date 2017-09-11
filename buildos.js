@@ -109,15 +109,15 @@ var classpath = buildClasspath();
 
 log("Changing AFCmdOS for release = " + release);
 var javaAFCmd = io.readFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java");
-javaAFCmd = javaAFCmd.replace(/final public static String VERSION = "([0-9]+)";/m, "final public static String VERSION = \"" + release + "\";");
+javaAFCmd = javaAFCmd.replace(/public static String VERSION = "([0-9]+)";/m, "public static String VERSION = \"" + release + "\";");
 
 if (EXTERNAL) 
-   javaAFCmd = javaAFCmd.replace(/final public static String LICENSE = "([^\"]+)";/m, "final public static String LICENSE = \"" + EXTERNAL_LICENSE + "\";");
-else 
-   javaAFCmd = javaAFCmd.replace(/final public static String LICENSE = "([^\"]+)";/m, "final public static String LICENSE = \"" + INTERNAL_LICENSE + "\";");
+   javaAFCmd = javaAFCmd.replace(/public static String LICENSE = "([^\"]+)";/m, "public static String LICENSE = \"" + EXTERNAL_LICENSE + "\";");
+else
+   javaAFCmd = javaAFCmd.replace(/public static String LICENSE = "([^\"]+)";/m, "public static String LICENSE = \"" + INTERNAL_LICENSE + "\";");
 
 if (isDef(OPENAF_DIST)) 
-   javaAFCmd = javaAFCmd.replace(/final public static String DISTRIBUTION = "([^\"]+)";/m, "final public static String DISTRIBUTION = \"" + OPENAF_DIST + "\";");
+   javaAFCmd = javaAFCmd.replace(/public static String DISTRIBUTION = "([^\"]+)";/m, "public static String DISTRIBUTION = \"" + OPENAF_DIST + "\";");
 
 io.writeFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java", javaAFCmd);
 
