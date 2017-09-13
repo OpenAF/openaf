@@ -339,6 +339,19 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 	return output;
 }
 
+var __con;
+function __initializeCon() {
+	if (isUnDef(__con)) {
+		plugin("Console");
+		try {
+			__con = (new console()).getConsoleReader();
+			return true;
+		} catch(e) {
+			return false;
+		}
+	}
+}
+
 /**
  * <odoc>
  * <key>ansiColor(aAnsi, aString, force) : String</key>
@@ -354,14 +367,15 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
  * </odoc>
  */
 function ansiColor(aAnsi, aString, force) {
-	plugin("Console"); 
-	var con = (new Console()).getConsoleReader();
+	if (!__initializeCon()) return aString;
+
+	var con = __con;
 	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	var res = "";
 	
 	if (ansis) {
-		var res = Packages.org.fusesource.jansi.AnsiRenderer.render("@|" + aAnsi.toUpperCase() + " " + aString + "|@")
+		var res = Packages.org.fusesource.jansi.AnsiRenderer.render("@|" + aAnsi.toUpperCase() + " " + aString + "|@");
 		return res;
 	} else {
 		return aString;
@@ -375,8 +389,8 @@ function ansiColor(aAnsi, aString, force) {
  * </odoc>
  */
 function ansiStart(force) {
-	plugin("Console"); 
-	var con = (new Console()).getConsoleReader();
+	if (!__initializeCon()) return false;
+	var con = __con;
 	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	if (ansis) jansi.AnsiConsole.systemInstall();
@@ -389,8 +403,8 @@ function ansiStart(force) {
  * </odoc>
  */
 function ansiStop(force) {
-	plugin("Console"); 
-	var con = (new Console()).getConsoleReader();
+	if (!__initializeCon()) return false;
+	var con = __con;
 	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	if (ansis) jansi.AnsiConsole.systemUninstall();
@@ -542,7 +556,50 @@ function toCSV(anArray) {
 }
 
 var __logStatus;
-if (isUndefined(__logStatus)) __logStatus = false;
+if (isUnDef(__logStatus)) __logStatus = false;
+var __logFormat = {
+	dateFormat: "yyyy-MM-dd HH:mm:ss.SSS",
+	separator : " | ",
+	indent    : "",
+	async     : true,
+	asyncLevel: 3
+};
+var __logPromise;
+
+function __initializeLogPromise() {
+	if (__logFormat.async) {
+		if (isUnDef(__logPromise)) {
+			__logPromise = $do(() => {}).catch((e) => {});
+			addOnOpenAFShutdown(() => {
+				$doWait(__logPromise);
+			});
+		} else {
+			if (__logPromise.size > __logPromise.asyncLevel) {
+				$doWait(__logPromise);
+			}
+		}
+	}
+}
+
+/**
+ * <odoc>
+ * <key>setLog(aMap)</key>
+ * Sets the current log output settings:\
+ * \
+ * - off        (boolean) Turns off output to stdout/stderr\
+ * - offInfo    (boolean) Turns off output of INFO\
+ * - offError   (boolean) Turns off output of ERROR\
+ * - offWarn    (boolean) Turns off output of WARN\
+ * - dateFormat (string)  ow.format.fromDate format for date\
+ * - dateTZ     (string)  Time zone to use with ow.format.fromDate\
+ * - separator  (string)  String to use as separator\
+ * - async      (boolean) Run in async mode\
+ * \
+ * </odoc>
+ */
+function setLog(aMap) {
+	__logFormat = aMap;
+}
 
 /**
  * <odoc>
@@ -612,7 +669,23 @@ function log(msg) {
 			"t": "INFO",
 			"m": msg
 		});
-	print("" + data + " | INFO | " + msg);
+	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
+	if (go) {
+		__initializeLogPromise();
+		var f = () => {
+			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			ansiStart();
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(data, __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			print(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg);
+			ansiStop();
+			return 1;
+		};
+		if (isDef(__logFormat) && __logFormat.async) 
+			__logPromise = __logPromise.then(f);
+		else 
+			f();
+	}
 }
 
 /**
@@ -645,7 +718,24 @@ function lognl(msg) {
 			"t": "INFO",
 			"m": msg
 		});
-	printnl(data + " | INFO | " + msg + "\r");
+	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
+	if (go) {
+		__initializeLogPromise();
+		var f = () => {
+			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			ansiStart();
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(data, __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			printnl(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg + "\r");
+			ansiStop();
+			return 1;
+		};
+		if (isDef(__logFormat) && __logFormat.async) 
+			__logPromise = __logPromise.then(f);
+		else 
+			f();	
+		
+	}
 }
 
 /**
@@ -677,9 +767,24 @@ function logErr(msg) {
 			"t": "ERROR",
 			"m": msg
 		});
-	ansiStart();
-	printErr("" + data + " | " + ansiColor("red", "ERROR") + " | " + msg);
-	ansiStop();
+	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offError)) ? false : true;
+	if (go) {
+		__initializeLogPromise();
+		var f = () => {
+			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			ansiStart();
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(data, __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			printErr(ind + ansiColor("BOLD", data) + sep + ansiColor("red", "ERROR") + sep + msg);
+			ansiStop();
+			return 1;
+		};
+		if (isDef(__logFormat) && __logFormat.async) 
+			__logPromise = __logPromise.then(f);
+		else 
+			f();		
+
+	}	
 }
 
 /**
@@ -700,9 +805,23 @@ function logWarn(msg) {
 			"t": "WARN",
 			"m": msg
 		});
-	ansiStart();
-	print("" + data + " | " + ansiColor("yellow", "WARN") + " | " + msg);
-	ansiStop();
+	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offWarn)) ? false : true;
+	if (go) {
+		__initializeLogPromise();
+		var f = () => {
+			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			ansiStart();
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(data, __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			print(ind + ansiColor("BOLD", data) + sep + ansiColor("yellow", "WARN") + sep + msg);
+			ansiStop();
+			return 1;
+		};
+		if (isDef(__logFormat) && __logFormat.async) 
+			__logPromise = __logPromise.then(f);
+		else 
+			f();		
+	}		
 }
 
 /**
@@ -1164,10 +1283,9 @@ function listFilesRecursive(aPath) {
  * </odoc>
  */
 function cls() {
-	plugin("Console");
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 
-	con = new Console();
+	if (!__initializeCon()) return false;
 
 	if(con.getConsoleReader().getTerminal().isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
@@ -1198,8 +1316,8 @@ function watch(waitFor, aCommand, beautifyFlag) {
 	var c = -2;
 
 	plugin("Threads");
-	plugin("Console");
-	var con = new Console();
+	__initializeCon();
+	var con = __con;
 	var t = new Threads();
 
 	t.addThread(function() {
@@ -1631,14 +1749,23 @@ function getPid() {
 
 /**
  * <odoc>
- * <key>addOnOpenAFShutdown(aFunction)</key>
+ * <key>addOnOpenAFShutdown(aFunction) : Boolean</key>
  * Adds aFunction to try to execute whenever OpenAF is going to shutdown. The latest hook added will be the first to be
  * executed until the first hook added (actually a shortcut for Threads.addOpenAFShutdownHook).
  * </odoc>
  */
 function addOnOpenAFShutdown(aFunction) {
 	plugin("Threads");
-	(new Threads()).addOpenAFShutdownHook(aFunction);
+	try {
+		(new Threads()).addOpenAFShutdownHook(() => {
+			try {
+				aFunction();
+			} catch(e) {}
+		});
+		return true;
+	} catch(e) {
+		return false;
+	}
 }
 
 /**
@@ -3141,8 +3268,8 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
  * </odoc>
  */
 function threadBoxCtrlC() {
-    plugin("Console");
-    var console = new Console();
+	__initializeCon()
+	var console = __con;
     if (console.getConsoleReader().getTerminal().isAnsiSupported()) {
         if (console.readCharNB() == 3) return true; else return false;
     } else {
@@ -3342,7 +3469,7 @@ $channels = function(a) {
 		storeRestore : function(aFilename, anArrayOfKeys) { ow.ch.persistence.restore(a, aFilename, anArrayOfKeys); return $channels(a); },
 		
 		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck); },
-		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); return $channels(a); },
+		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); },
 		
 		createRemote : function(aURL, aTimeout) {
 			var u = new java.net.URL(aURL);
@@ -3441,8 +3568,10 @@ var oPromise = function(aFunction) {
     this.executing = false;
     this.executors = [];
 	this.rejects = [];
+	this.size = 0;
 
     if (isDef(aFunction) && isFunction(aFunction)) {
+		this.size = 1;
 		this.__async(aFunction);
 	}
 };
@@ -3456,10 +3585,18 @@ var oPromise = function(aFunction) {
  * </odoc>
  */
 oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
-    if (isDef(aResolveFunction) && isFunction(aResolveFunction)) this.executors.push(aResolveFunction);
-	if (isDef(aRejectFunction) && isFunction(aRejectFunction))   this.rejects.push(aRejectFunction);
+    if (isDef(aResolveFunction) && isFunction(aResolveFunction)) { 
+		this.state = this.states.NEW;
+		var parent = this;
+		sync(() => {
+			parent.size++;
+			parent.executors.push(aResolveFunction);
+		}, this.size);
+	}
+	if (isDef(aRejectFunction) && isFunction(aRejectFunction)) this.rejects.push(aRejectFunction);
 	
-	if (isDef(this.__f) && this.__f.isDone()) this.__runExecutor();
+	//if (isDef(this.__f) && this.__f.isDone()) this.__runExecutor();
+	this.__runExecutor();
 
     return this;
 };
@@ -3474,7 +3611,8 @@ oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
 oPromise.prototype.catch = function(onReject) {
     this.rejects.push(onReject);
 
-	if (isDef(this.__f) && this.__f.isDone()) this.__runReject();
+	//if (isDef(this.__f) && this.__f.isDone()) this.__runReject();
+	this.__runReject();
 
     return this;
 };
@@ -3488,6 +3626,9 @@ oPromise.prototype.catch = function(onReject) {
  */
 oPromise.prototype.all = function(anArray) {
     if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+
+	var parent = this;
+	sync(() => { parent.size++; });
 
     this.__async((res, rej) => {
         var shouldStop = false;
@@ -3545,7 +3686,10 @@ oPromise.prototype.all = function(anArray) {
  */
 oPromise.prototype.race = function(anArray) {
     if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
-    
+	
+	var parent = this;
+	sync(() => { parent.size++; });
+
     this.__async((res, rej) => {
         var shouldStop = false;
         var c = 0;
@@ -3592,23 +3736,25 @@ oPromise.prototype.race = function(anArray) {
 };
 
 oPromise.prototype.__runReject = function() {
-	if (this.state == this.states.FAILED && this.rejects.length > 0) {
+	while (this.state == this.states.FAILED && this.rejects.length > 0) {
 		var func = this.rejects.shift();
 		if (isDef(func) && isFunction(func)) func(this.reason);
-	} else {
-		return this;
-	}
+	} 
+
+	return this;
 }
 
 oPromise.prototype.__runExecutor = function() {
-	if (this.executors.length > 0) {
-		var func = this.executors.shift();
+	while(this.executors.length > 0) {
+		var func;
+		sync(() => {
+			func = this.executors.shift();
+		}, this.size);	
 		this.state = this.states.NEW;
 		if (isDef(func) && isFunction(func)) this.__async(func, this.value);
-	} else {
-		this.state = this.states.FULFILLED;
-		return this;
-	}
+	} 
+
+	return this;
 }
 
 oPromise.prototype.reject = function(aReason) {
@@ -3627,7 +3773,8 @@ oPromise.prototype.resolve = function(aValue) {
 
     this.value = aValue;
 
-    this.__runExecutor(aValue);
+	this.__runExecutor(aValue);
+
     return this;
 };
 
@@ -3650,7 +3797,14 @@ oPromise.prototype.__async = function(aFunction, aValue) {
             } catch(e) {
                 if (isRun) thisOP.reject(e);
             } finally {
-                thisOP.executing = false;
+				thisOP.executing = false;
+				var parentOP = thisOP;
+				sync(() => { 
+					parentOP.size--;
+					if (parentOP.size <= 0) {
+						parentOP.state = parentOP.states.FULFILLED;
+					}
+				}, parentOP.size);
             }
 
 			return res;
@@ -3706,14 +3860,17 @@ var $doFirst = function(anArray) {
  * </odoc>
  */
 var $doWait = function(aPromise, aWaitTimeout, aTimeout) {
+	if (isUnDef(aTimeout)) aTimeout = 15;
+
 	if (isDef(aWaitTimeout)) {
 		var init = now();
-		while(aPromise.state == aPromise.states.NEW && ((now() - init) < aWaitTimeout)) {
-			if (isDef(aTimeout)) sleep(aTimeout);
+		while((aPromise.state == aPromise.states.NEW || aPromise.size > 0) && 
+		      ((now() - init) < aWaitTimeout)) {
+			sleep(aTimeout);
 		}
 	} else {
-		while(aPromise.state == aPromise.states.NEW) {
-			if (isDef(aTimeout)) sleep(aTimeout);
+		while(aPromise.state == aPromise.states.NEW || aPromise.size > 0) {
+			sleep(aTimeout);
 		}
 	}
 

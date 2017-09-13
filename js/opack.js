@@ -945,11 +945,15 @@ function install(args) {
 				}
 
 				if (!deps) {
-					af.plugin("wedo.openaf.plugins.Console");
-					var con = new Console();
-					printnl("Do you want to try to install '" + i + "' [Y/N]: ");
-					var res = con.readChar("YNyn"); print(res);
-					if (res == 'N' || res == 'n') {
+					plugin("Console");
+					try {
+						var con = new Console();
+						printnl("Do you want to try to install '" + i + "' [Y/N]: ");
+						var res = con.readChar("YNyn"); print(res);
+						if (res == 'N' || res == 'n') {
+							return;
+						}
+					} catch(e) {
 						return;
 					}
 				}
@@ -993,7 +997,7 @@ function install(args) {
 			//for(i in packag.files) {
 			parallel4Array(packag.files, function(apackfile) {
 				mkdir(outputPath);
-				var message = "Unpacking " + apackfile + "...";
+				var message = "Unpacking " + apackfile + "...\r";
 				lognl(message);
 
 				try {
@@ -1252,7 +1256,7 @@ function erase(args) {
 
 			biggestMessage = 0;
 			for(let i in packag.files) {
-				var message = "Removing " + packag.files[i].replace(/^\/*/, "") + "...";
+				var message = "Removing " + packag.files[i].replace(/^\/*/, "") + "...\r";
 				if (message.length > biggestMessage) biggestMessage = message.length;
 				lognl(message);
 				deleteFile(args[0] + "/" + packag.files[i].replace(/^\/*/, ""));

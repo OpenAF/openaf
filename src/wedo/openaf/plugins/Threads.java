@@ -118,8 +118,8 @@ public class Threads extends ScriptableObject {
 	public void addOpenAFShutdownHook(final NativeFunction aFunction) {
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			public void run() {
-				Context cx = (Context) AFCmdBase.jse.enterContext();
 				try {
+					Context cx = (Context) AFCmdBase.jse.enterContext();
 					aFunction.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[]{ });
 				} catch (Exception e) {
 					throw e;
