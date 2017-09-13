@@ -3568,10 +3568,8 @@ var oPromise = function(aFunction) {
     this.executing = false;
     this.executors = [];
 	this.rejects = [];
-	this.size = 0;
 
     if (isDef(aFunction) && isFunction(aFunction)) {
-		this.size = 1;
 		this.__async(aFunction);
 	}
 };
@@ -3589,14 +3587,13 @@ oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
 		this.state = this.states.NEW;
 		var parent = this;
 		sync(() => {
-			parent.size++;
 			parent.executors.push(aResolveFunction);
-		}, this.size);
+		}, parent.executors);
 	}
 	if (isDef(aRejectFunction) && isFunction(aRejectFunction)) this.rejects.push(aRejectFunction);
 	
 	//if (isDef(this.__f) && this.__f.isDone()) this.__runExecutor();
-	this.__runExecutor();
+	if (!this.executing) this.__runExecutor();
 
     return this;
 };
@@ -3628,7 +3625,6 @@ oPromise.prototype.all = function(anArray) {
     if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
 
 	var parent = this;
-	sync(() => { parent.size++; });
 
     this.__async((res, rej) => {
         var shouldStop = false;
@@ -3688,7 +3684,6 @@ oPromise.prototype.race = function(anArray) {
     if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
 	
 	var parent = this;
-	sync(() => { parent.size++; });
 
     this.__async((res, rej) => {
         var shouldStop = false;
@@ -3749,9 +3744,11 @@ oPromise.prototype.__runExecutor = function() {
 		var func;
 		sync(() => {
 			func = this.executors.shift();
-		}, this.size);	
+		}, this.executors);	
 		this.state = this.states.NEW;
-		if (isDef(func) && isFunction(func)) this.__async(func, this.value);
+		if (isDef(func) && isFunction(func)) {
+			this.__async(func, this.value);
+		}
 	} 
 
 	return this;
@@ -3797,19 +3794,18 @@ oPromise.prototype.__async = function(aFunction, aValue) {
             } catch(e) {
                 if (isRun) thisOP.reject(e);
             } finally {
-				thisOP.executing = false;
 				var parentOP = thisOP;
 				sync(() => { 
-					parentOP.size--;
-					if (parentOP.size <= 0) {
+					if (parentOP.executors.length <= 0) {
 						parentOP.state = parentOP.states.FULFILLED;
 					}
-				}, parentOP.size);
+				}, parentOP.executors);
+				thisOP.executing = false;
             }
 
 			return res;
 		}
-    }));
+	}));
     
     return this;
 };
