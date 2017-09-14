@@ -344,11 +344,13 @@ function __initializeCon() {
 	if (isUnDef(__con)) {
 		plugin("Console");
 		try {
-			__con = (new console()).getConsoleReader();
+			__con = (new Console()).getConsoleReader();
 			return true;
 		} catch(e) {
 			return false;
 		}
+	} else {
+		return true;
 	}
 }
 
