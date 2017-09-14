@@ -3566,8 +3566,8 @@ var oPromise = function(aFunction) {
 
     this.state = this.states.NEW;
     this.executing = false;
-    this.executors = [];
-	this.rejects = [];
+    this.executors = new java.util.concurrent.ConcurrentLinkedQueue();
+	this.rejects = new java.util.concurrent.ConcurrentLinkedQueue();
 
     if (isDef(aFunction) && isFunction(aFunction)) {
 		this.__async(aFunction);
@@ -3583,17 +3583,12 @@ var oPromise = function(aFunction) {
  * </odoc>
  */
 oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
+	if (isDef(aRejectFunction) && isFunction(aRejectFunction)) this.rejects.add(aRejectFunction);
     if (isDef(aResolveFunction) && isFunction(aResolveFunction)) { 
 		this.state = this.states.NEW;
-		var parent = this;
-		sync(() => {
-			parent.executors.push(aResolveFunction);
-		}, parent.executors);
+		this.executors.add(aResolveFunction);
+		this.__runExecutor();
 	}
-	if (isDef(aRejectFunction) && isFunction(aRejectFunction)) this.rejects.push(aRejectFunction);
-	
-	//if (isDef(this.__f) && this.__f.isDone()) this.__runExecutor();
-	if (!this.executing) this.__runExecutor();
 
     return this;
 };
@@ -3606,7 +3601,7 @@ oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
  * </odoc>
  */
 oPromise.prototype.catch = function(onReject) {
-    this.rejects.push(onReject);
+    this.rejects.add(onReject);
 
 	//if (isDef(this.__f) && this.__f.isDone()) this.__runReject();
 	this.__runReject();
@@ -3636,7 +3631,6 @@ oPromise.prototype.all = function(anArray) {
 					if (anArray[iii] != null) {
 						if (anArray[iii] instanceof oPromise) {
 							if (isDef(anArray[iii].__f) && anArray[iii].__f.isDone()) {
-								//anArray[iii].__f.get(100, java.util.concurrent.TimeUnit.MILLISECONDS);
 								switch(anArray[iii].state) {
 								case anArray[iii].states.NEW:
 									shouldStop = false;
@@ -3694,7 +3688,6 @@ oPromise.prototype.race = function(anArray) {
 				for(var i in anArray) {
 					if (anArray[i] != null) {
 						if (anArray[i] instanceof oPromise) {
-							//anArray[i].__f.get(100, java.util.concurrent.TimeUnit.MILLISECONDS);
 							if (isDef(anArray[i].__f) && anArray[i].__f.isDone()) {
 								switch(anArray[i].state) {
 								case anArray[i].states.NEW:
@@ -3731,8 +3724,8 @@ oPromise.prototype.race = function(anArray) {
 };
 
 oPromise.prototype.__runReject = function() {
-	while (this.state == this.states.FAILED && this.rejects.length > 0) {
-		var func = this.rejects.shift();
+	while (this.state == this.states.FAILED && this.rejects.size() > 0) {
+		var func = this.rejects.poll();
 		if (isDef(func) && isFunction(func)) func(this.reason);
 	} 
 
@@ -3740,11 +3733,8 @@ oPromise.prototype.__runReject = function() {
 }
 
 oPromise.prototype.__runExecutor = function() {
-	while(this.executors.length > 0) {
-		var func;
-		sync(() => {
-			func = this.executors.shift();
-		}, this.executors);	
+	while(this.executors.size() > 0) {
+		var func = this.executors.poll();
 		this.state = this.states.NEW;
 		if (isDef(func) && isFunction(func)) {
 			this.__async(func, this.value);
@@ -3768,7 +3758,7 @@ oPromise.prototype.reject = function(aReason) {
 oPromise.prototype.resolve = function(aValue) {
     if (this.state != this.states.NEW) return this;
 
-    this.value = aValue;
+    this.value = isUnDef(aValue) ? null : aValue;
 
 	this.__runExecutor(aValue);
 
@@ -3776,12 +3766,16 @@ oPromise.prototype.resolve = function(aValue) {
 };
 
 oPromise.prototype.__async = function(aFunction, aValue) {
-    var thisOP = this;
+	var thisOP = this;
+	var prevf;
+
+	if (isDef(thisOP.__f)) prevf = thisOP.__f;
 
     this.__f = __getThreadPool().submit(new java.lang.Runnable({
 		run: () => {
             var res; 
 
+			if (isDef(prevf)) prevf.join();
 			var isRun = true;
             try {
 				thisOP.executing = true;
@@ -3794,12 +3788,9 @@ oPromise.prototype.__async = function(aFunction, aValue) {
             } catch(e) {
                 if (isRun) thisOP.reject(e);
             } finally {
-				var parentOP = thisOP;
-				sync(() => { 
-					if (parentOP.executors.length <= 0) {
-						parentOP.state = parentOP.states.FULFILLED;
-					}
-				}, parentOP.executors);
+				if (thisOP.executors.isEmpty()) {
+					thisOP.state = thisOP.states.FULFILLED;
+				};
 				thisOP.executing = false;
             }
 
