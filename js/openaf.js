@@ -3563,7 +3563,7 @@ function __getThreadPool() {
  */
 var oPromise = function(aFunction) {
     this.states = {
-        NEW: 0, FULFILLED: 1, FAILED: 2
+        NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
     };
 
     this.state = this.states.NEW;
@@ -3603,10 +3603,11 @@ oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
  * </odoc>
  */
 oPromise.prototype.catch = function(onReject) {
-    this.rejects.add(onReject);
+    if (isDef(onReject) && isFunction(onReject)) {
+		this.rejects.add(onReject);
 
-	//if (isDef(this.__f) && this.__f.isDone()) this.__runReject();
-	this.__runReject();
+		this.__runReject();
+	}
 
     return this;
 };
@@ -3635,6 +3636,9 @@ oPromise.prototype.all = function(anArray) {
 							if (isDef(anArray[iii].__f) && anArray[iii].__f.isDone()) {
 								switch(anArray[iii].state) {
 								case anArray[iii].states.NEW:
+									shouldStop = false;
+									break;
+								case anArray[iii].states.PREFAILED:
 									shouldStop = false;
 									break;
 								case anArray[iii].states.FAILED:
@@ -3695,6 +3699,9 @@ oPromise.prototype.race = function(anArray) {
 								case anArray[i].states.NEW:
 									shouldStop = false;				
 									break;
+								case anArray[i].states.PREFAILED:
+									shouldStop = false;				
+									break;
 								case anArray[i].states.FAILED:
 									shouldStop = true;
 									rej(anArray[i].reason);
@@ -3726,18 +3733,22 @@ oPromise.prototype.race = function(anArray) {
 };
 
 oPromise.prototype.__runReject = function() {
-	while (this.state == this.states.FAILED && this.rejects.size() > 0) {
+	while(this.rejects.size() > 0 && 
+	      (this.state == this.states.PREFAILED || this.state == this.states.FAILED)) {
 		var func = this.rejects.poll();
-		if (isDef(func) && isFunction(func)) func(this.reason);
+		if (isDef(func) && isFunction(func)) {
+			this.__async(func, this.reason, true);
+			//func(this.reason);
+		}
 	} 
 
-	return this;
+	return this;	
 }
 
 oPromise.prototype.__runExecutor = function() {
-	while(this.executors.size() > 0) {
+	while(this.executors.size() > 0 && this.state == this.states.NEW) {
 		var func = this.executors.poll();
-		this.state = this.states.NEW;
+		if (this.state != this.states.PREFAILED) this.state = this.states.NEW;
 		if (isDef(func) && isFunction(func)) {
 			this.__async(func, this.value);
 		}
@@ -3747,10 +3758,10 @@ oPromise.prototype.__runExecutor = function() {
 }
 
 oPromise.prototype.reject = function(aReason) {
-    if (this.state != this.states.NEW) return this;
+    if (this.state != this.states.NEW && this.state != this.states.PREFAILED) return this;
 
 	this.reason = aReason;
-	this.state = this.states.FAILED;
+	this.state = this.states.PREFAILED;
 
 	this.__runReject(aReason);
 
@@ -3759,7 +3770,6 @@ oPromise.prototype.reject = function(aReason) {
 
 oPromise.prototype.resolve = function(aValue) {
     if (this.state != this.states.NEW) return this;
-
     this.value = isUnDef(aValue) ? null : aValue;
 
 	this.__runExecutor(aValue);
@@ -3767,7 +3777,7 @@ oPromise.prototype.resolve = function(aValue) {
     return this;
 };
 
-oPromise.prototype.__async = function(aFunction, aValue) {
+oPromise.prototype.__async = function(aFunction, aValue, isFail) {
 	var thisOP = this;
 	var prevf;
 
@@ -3777,24 +3787,44 @@ oPromise.prototype.__async = function(aFunction, aValue) {
 		run: () => {
             var res; 
 
-			if (isDef(prevf)) prevf.join();
+			if (isDef(prevf)) {
+				prevf.join();
+				if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED) 
+					aValue = thisOP.value;
+				/*else
+					aValue = thisOP.reason;*/
+			}
 			var isRun = true;
             try {
 				thisOP.executing = true;
-                if (isDef(aValue)) {
-					res = aFunction(aValue);
+				if (!isFail) {
+					if (thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED) {
+						if (isDef(aValue)) {
+							res = aFunction(thisOP.value);
+						} else {
+							res = aFunction((v) => { thisOP.resolve(v); isRun = false; }, (r) => { thisOP.reject(r); isRun = false; });
+						}
+						if (isDef(res) && res != null && 
+							(thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED) && 
+							isRun) {
+							res = thisOP.resolve(res);
+							isRun = false;
+						}
+					}
 				} else {
-					res = aFunction((v) => { thisOP.resolve(v); isRun = false; }, (r) => { thisOP.reject(r); isRun = false; });
+					res = aFunction(thisOP.reason);
 				}
-				if (isDef(res) && res != null && thisOP.state == thisOP.states.NEW && isRun) res = thisOP.resolve(res);
             } catch(e) {
                 if (isRun) thisOP.reject(e);
-            } finally {
-				if (thisOP.executors.isEmpty()) {
-					thisOP.state = thisOP.states.FULFILLED;
-				};
-				thisOP.executing = false;
-            }
+            } 
+
+			thisOP.executing = false;
+			if (thisOP.state == thisOP.states.PREFAILED && thisOP.rejects.isEmpty()) {
+				thisOP.state = thisOP.states.FAILED;
+			}
+			if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty() && !isFail) {
+				thisOP.state = thisOP.states.FULFILLED;
+			};
 
 			return res;
 		}
@@ -3848,18 +3878,18 @@ var $doFirst = function(anArray) {
  * Returns aPromise.
  * </odoc>
  */
-var $doWait = function(aPromise, aWaitTimeout, aTimeout) {
-	if (isUnDef(aTimeout)) aTimeout = 15;
-
+var $doWait = function(aPromise, aWaitTimeout) {
 	if (isDef(aWaitTimeout)) {
 		var init = now();
-		while((aPromise.state == aPromise.states.NEW || aPromise.size > 0) && 
+		while((aPromise.state != aPromise.states.FULFILLED || aPromise.state != aPromise.states.FAILED) &&
+			  (isUnDef(aPromise.__f) || !aPromise.__f.isDone()) &&
 		      ((now() - init) < aWaitTimeout)) {
-			sleep(aTimeout);
+			aPromise.__f.join();	
 		}
 	} else {
-		while(aPromise.state == aPromise.states.NEW || aPromise.size > 0) {
-			sleep(aTimeout);
+		while((aPromise.state != aPromise.states.FULFILLED || aPromise.state != aPromise.states.FAILED) &&
+			(isUnDef(aPromise.__f) || !aPromise.__f.isDone())) {
+			aPromise.__f.join();
 		}
 	}
 

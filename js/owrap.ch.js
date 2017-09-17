@@ -500,8 +500,8 @@ OpenWrap.ch.prototype.__types = {
 			if (isUnDef(options.index)) throw "Please define an elastic search index to use";
 			if (isUnDef(options.idKey)) options.idKey = "_id";
 			if (isUnDef(options.url))   throw "Please define the elastic search url";
-			if (isUnDef(options.user) || isUnDef(options.pass))  
-				throw "Please define an user and pass to access the elastic search";
+			/*if (isUnDef(options.user) || isUnDef(options.pass))  
+				throw "Please define an user and pass to access the elastic search";*/
 			this.__channels[aName] = options;
 			
 			if (isFunction(options.index)) {
@@ -521,7 +521,8 @@ OpenWrap.ch.prototype.__types = {
 			var parent = this;
 			
 			var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			if (isDef(res) && isDef(res.count)) {
 				return res.count
@@ -544,7 +545,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonCreate(url, {}, ops, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			if (isDef(res) && isDef(res.hits) && isDef(res.hits.hits)) {
 				return $stream(res.hits.hits).map(function(r) {
@@ -552,7 +554,7 @@ OpenWrap.ch.prototype.__types = {
 					return r._source;
 				}).toArray();
 			} else {
-				return undefined
+				return undefined;
 			}			
 		},
 		getKeys      : function(aName, full) {
@@ -564,7 +566,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonCreate(url, {}, merge(ops, { _source: false }), function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			if (isDef(res) && isDef(res.hits) & isDef(res.hits.hits)) {
 				return $stream(res.hits.hits).map("_id").toArray();
@@ -590,7 +593,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonSet(url, {}, aV, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			return res;		
 		},
@@ -610,7 +614,8 @@ OpenWrap.ch.prototype.__types = {
 			
 			plugin("HTTP");
 			var h = new HTTP();
-			h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
+			if (isDef(this.__channels[aName].user))
+				h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
 			try {
 				return h.exec(url, "POST", ops, {"Content-Type":"application/x-www-form-urlencoded"});
 			} catch(e) {
@@ -630,7 +635,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			
 			if (isDef(res) && res.found) {
@@ -662,7 +668,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonRemove(url, {}, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			return res;	
 		}

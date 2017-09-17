@@ -107,39 +107,36 @@
 
     exports.testDo = function() {
         var success = false;
-        $do((s, f) => {
+        $doWait($do((s, f) => {
             success = true;
             s(true);
             return true;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(success, true, "Problem with simple $do");
 
         success = false;
-        $do((s, f) => {
+        $doWait($do((s, f) => {
             success = false;
             s(123);
         }).then((v) => {
             if (v == 123) success = true;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(success, true, "Problem with $do().then() using onFullfilment");
 
         success = false;
-        $do((s, f) => {
+        $doWait($do((s, f) => {
             success = false;
             return 123;
         }).then((v) => {
             if (v == 123) success = true;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(success, true, "Problem with $do().then() using return");
 
         success = true;
-        $do((s, f) => {
+        $doWait($do((s, f) => {
             success = true;
             f(123);
             return true;
@@ -147,27 +144,25 @@
             if (v == 123) success = true;
         }).catch((r) => {
             if (r == 123) success = false;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(success, false, "Problem with $do().then().catch() using onReject");
 
         success = true;
-        $do((s, f) => {
+        $doWait($do((s, f) => {
             success = true;
             throw 123;
         }).then((v) => {
             if (v == 123) success = true;
         }).catch((r) => {
             if (String(r) == 123) success = false;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(success, false, "Problem with $do().then().catch() using throw");
 
         success = true;
         var res = false;
-        $do(() => {
+        $doWait($do(() => {
             success = true;
             return success;
         }).then((v) => {
@@ -180,29 +175,27 @@
             throw 123;
         }).catch((r) => {
             if (r == 123) res = false; else res = true;
-        });
+        }));
 
-        sleep(250);
-        ow.test.assert(res, true, "Problem with multiple $do().then().catch()");
+        ow.test.assert(res, false, "Problem with multiple $do().then().catch()");
     };
 
     exports.testDoAll = function() {
         var success = [];
 
-        $doAll([
+        $doWait($doAll([
             1,
             $do((s, f) => {
                 s(2);
             })
         ]).then((values) => {
             if (compare(values, [1, 2])) success = values;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(success.sort(), [1, 2], "Problem with $doAll()");
 
         var res = false;
-        $doAll([
+        $doWait($doAll([
             1,
             $do((s, f) => {
                 f(2);
@@ -211,16 +204,15 @@
             if (compare(values, [1, 2])) success = values;
         }).catch((reason) => {
             if (reason == 2) res = true;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(res, true, "Problem with $doAll().catch()");
     };
 
     exports.testDoFirst = function() {
         var success = 0;
 
-        $doFirst([
+        $doWait($doFirst([
             1,
             $do((s, f) => {
                 sleep(50);
@@ -228,13 +220,12 @@
             })
         ]).then((value) => {
             if (value == 1) success = 1;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(success, 1, "Problem with $doFirst()");
 
         var res = false;
-        $doFirst([
+        $doWait($doFirst([
             $do((s, f) => {
                 f(2);
             })
@@ -242,9 +233,8 @@
             if (compare(values, [1, 2])) success = values;
         }).catch((reason) => {
             if (reason == 2) res = true;
-        });
+        }));
 
-        sleep(250);
         ow.test.assert(res, true, "Problem with $doFirst().catch()");
     };    
 
