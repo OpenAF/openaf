@@ -3899,7 +3899,8 @@ var $doWait = function(aPromise, aWaitTimeout) {
 // Startup
 // -------
 
-$do(() => { __initializeCon(); });
+//$do(() => { __initializeCon(); });
+__initializeCon();
 
 // Set logging to ERROR 
 $do(() => {

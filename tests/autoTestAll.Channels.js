@@ -26,13 +26,15 @@
         ow.test.assert($ch(this.chType + "HK").size(), 10, "Channel didn't set all required values.");
 
         $ch(this.chType + "HK").subscribe(ow.ch.utils.getHousekeepSubscriber(this.chType + "HK", 3));
-        sleep(5000); $ch(this.chType + "HK").waitForJobs();
+        sleep(2500); 
+        $ch(this.chType + "HK").waitForJobs();
         ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values in time.");
 
         for(var i = 10; i < 20; i++) {
             $ch(this.chType + "HK").set(i, i);
         }
-        sleep(5000); $ch(this.chType + "HK").waitForJobs();
+        sleep(2500); 
+        $ch(this.chType + "HK").waitForJobs();
         ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values after setting.");
         $ch(this.chType + "HK").destroy();
     };
