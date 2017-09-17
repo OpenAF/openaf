@@ -305,4 +305,21 @@
         if (res != 499500)
             throw "Something wrong with the parallel processing.";
     };
+
+    exports.testCSV = function() {
+        var csvString = "A;B;C\r\n1;a;\"b\"\n2;1;\"2\"";
+        var csv = new CSV(csvString);
+        if (csv.csv()[0].A != 1 ||
+            csv.csv()[0].B != 'a' ||
+            csv.csv()[0].C != 'b') throw "Failed CSV generation on constructor!";
+        var csvString = "A;B;C\n1;\"a\";\"b\"\n2;\"1\";\"2\"";
+        if(csv.w().replace(/\r/g, "") !== csvString) throw "Failed to convert CSV back to string!";
+    
+        var csvObj = csv.csv();
+        csv.clear();
+        csv.toCsv(csvObj);
+        if (csv.csv()[0].A != 1 ||
+            csv.csv()[0].B != 'a' ||
+            csv.csv()[0].C != 'b') throw "Failed CSV generation on toCsv!";    
+    };
 })();

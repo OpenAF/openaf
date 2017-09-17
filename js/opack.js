@@ -412,7 +412,7 @@ function listFilesWithHash(startPath, excludingList) {
 		c++;
 		try {
 			lognl("Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
-			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) || !(files[i].match(new RegExp(PACKAGEYAML + "$", ""))))
+			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) && !(files[i].match(new RegExp(PACKAGEYAML + "$", ""))))
 				filesHash[files[i]] = sha1(io.readFileStream(startPath + "/" + files[i])) + "";
 		} catch (e) {
 		}
@@ -1431,7 +1431,7 @@ function genpack(args) {
 	packageNew.mainJob             = (typeof packag.mainJob !== 'undefined')             ? packag.mainJob             : "";
 	packageNew.license             = (typeof packag.license !== 'undefined')             ? packag.license             : "The licence description";
 	packageNew.version             = (typeof packag.version !== 'undefined')             ? packag.version             : "20010101";
-	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": "20100101", "packb": "20120101" };
+	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": ">=20100101", "packb": "<20120101" };
 
 	if (isDef(packag.odoc) && isObject(packag.odoc)) {
 		for(let i in packag.odoc) {
@@ -1443,12 +1443,12 @@ function genpack(args) {
 
 	packageNew.files = listFiles(args[0], undefined, excludeList);
 	if (packageNew.files.indexOf(PACKAGEJSON) < 0 && packageNew.files.indexOf(PACKAGEYAML) < 0) {
-		if (args.indexOf("-inyaml") < 0)
-			packageNew.files.push(PACKAGEJSON);
-		else
+		if (args.indexOf("-injson") < 0)
 			packageNew.files.push(PACKAGEYAML);
+		else
+			packageNew.files.push(PACKAGEJSON);
 	}
-	packageNew.filesHash = listFilesWithHash(args[0], excludeList);
+	packageNew.filesHash = Object(listFilesWithHash(args[0], excludeList));
 	if (args.indexOf("-injson") >= 0 || packageNew.files.indexOf(PACKAGEJSON) >= 0) {
 	    log("Writing " + args[0] + "/" + PACKAGEJSON);
 		io.writeFileString(args[0] + "/" + PACKAGEJSON, stringify(packageNew));			

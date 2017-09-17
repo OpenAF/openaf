@@ -93,6 +93,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testParallel;
 
+   - name: CSV::Basic CSV plugin functionality
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testCSV;
+
 todo:
    # Generic Tests
    # -------------
@@ -113,3 +118,7 @@ todo:
    - OpenAF::Test $doAll
    - OpenAF::Test $doFirst
    - OpenAF::Basic Parallel processing
+  
+   # CSV Tests
+   # ---------
+   - CSV::Basic CSV plugin functionality

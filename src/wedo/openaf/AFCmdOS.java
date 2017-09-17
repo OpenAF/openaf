@@ -101,7 +101,7 @@ public class AFCmdOS extends AFCmdBase  {
 	protected boolean injectscript = false;
 	protected boolean daemon = false;
 	protected boolean injectcode = false;
-	protected JsonObject pmIn, pmOut;
+	protected com.google.gson.JsonObject pmIn, pmOut;
 
 	//public static String[] args;
 	
@@ -432,7 +432,7 @@ public class AFCmdOS extends AFCmdBase  {
 	 * @param appoperation2
 	 * @throws Exception  
 	 */
-	protected JsonObject execute(JsonObject pmIn,
+	protected com.google.gson.JsonObject execute(com.google.gson.JsonObject pmIn,
 			String op, boolean processScript, StringBuilder theInput, boolean isolatePMs) throws Exception {
 
 		// 3. Process input
@@ -458,7 +458,7 @@ public class AFCmdOS extends AFCmdBase  {
 				} else {		    	
 			    	boolean isZip = false;
 			    	boolean isOpack = false;
-			    	JsonObject pm = null;
+			    	com.google.gson.JsonObject pm = null;
 			    	ZipFile tmpZip = null;
 			    	
 			    	// Determine if it's opack/zip
@@ -602,8 +602,8 @@ public class AFCmdOS extends AFCmdBase  {
 			
 			// Convert to ParameterMap
 			Object stringify = NativeJSON.stringify(cx, (Scriptable) jse.getGlobalscope(), jsonPMOut, null, null);
-			Gson gson = new com.google.gson.Gson();
-			pmOut = gson.fromJson(stringify.toString(), JsonObject.class);
+			com.google.gson.Gson gson = new com.google.gson.Gson();
+			pmOut = gson.fromJson(stringify.toString(), com.google.gson.JsonObject.class);
 			
 			// Leave Rhino
 			//org.mozilla.javascript.Context.exit();

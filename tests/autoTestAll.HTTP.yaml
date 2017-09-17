@@ -1,0 +1,25 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # HTTP tests
+   # --------------
+   - name: HTTP::Init
+     exec: |
+       args.tests = require("autoTestAll.HTTP.js");
+
+   - name: HTTP::HTTP plugin basic functionality
+     from: HTTP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTP;
+
+   - name: HTTP::HTTP plugin web socket client
+     from: HTTP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPWSClient;
+
+todo:
+   # HTTP tests
+   # ----------
+   - HTTP::HTTP plugin basic functionality
+   - HTTP::HTTP plugin web socket client
