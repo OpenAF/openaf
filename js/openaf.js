@@ -2449,6 +2449,13 @@ OpenWrap.prototype.loadFormat = function() { loadLib(getOpenAFJar() + "::js/owra
 OpenWrap.prototype.loadTest = function() { loadLib(getOpenAFJar() + "::js/owrap.test.js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
 /**
  * <odoc>
+ * <key>ow.loadAI()</key>
+ * Loads OpenWrap AI functionality.
+ * </odoc>
+ */
+OpenWrap.prototype.loadAI = function() { loadLib(getOpenAFJar() + "::js/owrap.ai.js"); ow.ai = new OpenWrap.ai(); pods.declare("ow.ai", ow.ai); return ow.ai; }
+/**
+ * <odoc>
  * <key>ow.loadServer()</key>
  * Loads OpenWrap Server functionality. Basically functions to wrap access to server functionality.
  * </odoc>

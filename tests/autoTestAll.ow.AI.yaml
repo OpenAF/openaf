@@ -1,0 +1,25 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # ow.ai tests
+   # --------------
+   - name: owAI::Init
+     exec: |
+       args.tests = require("autoTestAll.ow.AI.js");
+
+   - name: owAI::Perceptron XOR
+     from: owAI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIPerceptronXOR;
+
+   - name: owAI::Perceptron network save and load
+     from: owAI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAINetworkSave;
+
+todo:
+   # ow.ai tests
+   # -----------
+   - owAI::Perceptron XOR
+   - owAI::Perceptron network save and load

@@ -222,11 +222,13 @@
             if (value == 1) success = 1;
         }));
 
+        sleep(50);
         ow.test.assert(success, 1, "Problem with $doFirst()");
 
         var res = false;
         $doWait($doFirst([
             $do((s, f) => {
+                sleep(50);
                 f(2);
             })
         ]).then((values) => {
@@ -235,6 +237,7 @@
             if (reason == 2) res = true;
         }));
 
+        sleep(50);
         ow.test.assert(res, true, "Problem with $doFirst().catch()");
     };    
 

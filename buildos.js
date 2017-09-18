@@ -248,6 +248,7 @@ try {
 		"ow.template": OPENAF_BUILD_HOME + "/js/owrap.template.js",
 		"ow.server": OPENAF_BUILD_HOME + "/js/owrap.server.js",
 		"ow.obj": OPENAF_BUILD_HOME + "/js/owrap.obj.js",
+		"ow.ai": OPENAF_BUILD_HOME + "/js/owrap.ai.js",
 		"ow.ch": OPENAF_BUILD_HOME + "/js/owrap.ch.js",
 		"ow.oJob": OPENAF_BUILD_HOME + "/js/owrap.oJob.js",
 		"afbase": OPENAF_BUILD_HOME + "/src/wedo/openaf/AFBase.java",
