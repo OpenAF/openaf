@@ -113,9 +113,18 @@ OpenWrap.ai.prototype.network.prototype.readFile = function(aFile) {
     this.fromJson(uncompress(io.readFileBytes(aFile)));
 };
 
-OpenWrap.ai.prototype.normalize.scaleArray = function(anArray, aMax, aMin) {
-    var max = isDef(aMax) ? aMax : anArray.reduce((a,b) => { return Math.max(a,b);});
-    var min = isDef(aMin) ? aMin : anArray.reduce((a,b) => { return Math.min(a,b);});
+OpenWrap.ai.prototype.normalize = {
+    /**
+     * <odoc>
+     * <key>ow.ai.normalize.scaleArray(anArray, aMax, aMin) : Array</key>
+     * Given anArray of numbers tries to normalize returning an array of values between 0 and 1. If
+     * aMax or aMin are not provided they will be infered from the provided anArray.
+     * </odoc>
+     */
+    scaleArray: function(anArray, aMax, aMin) {
+        var max = isDef(aMax) ? aMax : anArray.reduce((a,b) => { return Math.max(a,b);});
+        var min = isDef(aMin) ? aMin : anArray.reduce((a,b) => { return Math.min(a,b);});
 
-    return anArray.map((v) => { return (v - min)/(max - min)});
+        return anArray.map((v) => { return (v - min)/(max - min)});
+    }
 };
