@@ -27,6 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
@@ -384,13 +385,14 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTP.wsConnect(anURL, onConnect, onMsg, onError, onClose) : WebSocketClient</key>
+	 * <key>HTTP.wsConnect(anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned) : WebSocketClient</key>
 	 * Tries to establish a websocket connection (ws or wss) and returns a jetty WebSocketClient java object.
 	 * As callbacks you should defined onConnect, onMsg, onError and onClose. The onConnect callback will 
 	 * provide, as argument, the created session that you should use to send data; the onMsg callback will
 	 * provide, as arguments, aType (either "text" or "bytes"), aPayload (string or array of bytes) and an offset
 	 * and length (in case type is "bytes"); the onError callback will provide the cause; the onClose callback
-	 * will provide aStatusCode and aReason. Example:\
+	 * will provide aStatusCode and aReason. You can optionally provide aTimeout (number) and indicate if self signed SSL
+	 * certificates should be accepted (supportSelfSigned = true). Example:\
 	 * \
 	 * plugin("HTTP");\
 	 * var session; var output = "";\
@@ -408,9 +410,18 @@ public class HTTP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout) throws Exception {
+	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 		URI uri = URI.create(anURL);
-		WebSocketClient client = new WebSocketClient();		
+		WebSocketClient client;
+
+		if (!anURL.toLowerCase().startsWith("wss")) {
+			client = new WebSocketClient();	
+		} else { 
+			SslContextFactory ssl = new SslContextFactory(supportSelfSigned);
+			if (supportSelfSigned) ssl.setValidateCerts(false);
+			client = new WebSocketClient(ssl);	
+		}	
+
 		try {
 			client.start(); 
 			EventSocket socket = new EventSocket(onConnect, onMsg, onError, onClose);
