@@ -26,6 +26,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.mozilla.javascript.Context;
@@ -423,10 +424,23 @@ public class HTTP extends ScriptableObject {
 		}	
 
 		try {
+			ClientUpgradeRequest request = null;
+			if (this.l != null && this.p != null) {
+				request = new ClientUpgradeRequest();
+				request.setSubProtocols("xsCrossfire");
+				String s = new String(l + ":" + new String(AFCmdBase.afc.dIP(p).toCharArray()));
+				request.setHeader("Authorization", "Basic " + org.apache.commons.codec.binary.Base64.encodeBase64(s.getBytes()));
+			}
+
 			client.start(); 
 			EventSocket socket = new EventSocket(onConnect, onMsg, onError, onClose);
-			Future<Session> fut = client.connect(socket, uri);
-
+			Future<Session> fut;
+			if (request == null) {
+				fut = client.connect(socket, uri);
+			} else {
+				fut = client.connect(socket, uri, request);
+			}
+			
 			Session session;
 			if (!(aTimeout instanceof Undefined))
 				session = fut.get((long) aTimeout, TimeUnit.MILLISECONDS);
@@ -437,9 +451,23 @@ public class HTTP extends ScriptableObject {
 		} catch (Exception e) {
 			client.stop();
 			throw e;
-		}
+		} 
 	}
 	
+	/**
+	 * <odoc>
+	 * 
+	 * </odoc>
+	 */
+	@JSFunction
+	public void disableSSLHostnameVerify() {
+		javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(new javax.net.ssl.HostnameVerifier() {
+            public boolean verify(String s, javax.net.ssl.SSLSession sslSession) {
+                return true;
+            }
+        });
+	}
+
 	/**
 	 * 
 	 * @param aURL
