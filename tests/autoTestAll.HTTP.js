@@ -31,7 +31,7 @@
             function(aStatusCode, aReason) { });
         session.getRemote().sendString("Hello World!");
         while(output.length < 1) { sleep(100); };
-        client.stop();
+        session.stop();
     
         ow.test.assert(output, "Hello World!", "Problem with testing websockets against echo.websocket.org");    
     };
