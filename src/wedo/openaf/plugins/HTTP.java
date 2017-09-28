@@ -28,7 +28,9 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.client.HttpClient;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
@@ -207,11 +209,12 @@ public class HTTP extends ScriptableObject {
 				return new PasswordAuthentication (user, (AFCmdBase.afc.dIP(pass)).toCharArray());
 			}
 		};
+		l = user;
+		p = pass;
+		
 		//Authenticator.setDefault(authenticator);
 		if (forceBasic) {
 			this.forceBasic = true;
-			l = user;
-			p = pass;
 		}
 		SimpleLog.log(SimpleLog.logtype.DEBUG, "HTTP connection with authentication for " + user, null);
 	}
@@ -414,22 +417,37 @@ public class HTTP extends ScriptableObject {
 	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 		URI uri = URI.create(anURL);
 		WebSocketClient client;
+		HttpClient hclient;
 
-		if (!anURL.toLowerCase().startsWith("wss")) {
-			client = new WebSocketClient();	
-		} else { 
+		if (anURL.toLowerCase().startsWith("wss")) {
 			SslContextFactory ssl = new SslContextFactory(supportSelfSigned);
 			if (supportSelfSigned) ssl.setValidateCerts(false);
-			client = new WebSocketClient(ssl);	
-		}	
+			//hclient = new HttpClient(ssl);
+			client = new WebSocketClient(ssl);				
+		} else { 
+			client = new WebSocketClient();	
+		//} else {
+		//	hclient = new HttpClient();
+		}
+
+		if (this.l != null && this.p != null) {
+			if (this.authenticator != null) Authenticator.setDefault(this.authenticator);
+			client.getHttpClient().getAuthenticationStore().addAuthentication(
+				new BasicAuthentication(uri, "", this.l, new String(AFCmdBase.afc.dIP(this.p).toCharArray()))
+			);
+		}
+
+		//client = new WebSocketClient(hclient);
 
 		try {
 			ClientUpgradeRequest request = null;
 			if (this.l != null && this.p != null) {
 				request = new ClientUpgradeRequest();
-				request.setSubProtocols("xsCrossfire");
-				String s = new String(l + ":" + new String(AFCmdBase.afc.dIP(p).toCharArray()));
-				request.setHeader("Authorization", "Basic " + org.apache.commons.codec.binary.Base64.encodeBase64(s.getBytes()));
+				String s = new String(l + ":" + new String(AFCmdBase.afc.dIP(this.p).toCharArray()));
+				request.setHeader("Authorization", "Basic " + new String(org.apache.commons.codec.binary.Base64.encodeBase64(s.getBytes())));
+				/*client.getHttpClient().getAuthenticationStore().addAuthentication(
+					new BasicAuthentication(uri, "", this.l, this.p)
+				);*/
 			}
 
 			client.start(); 
@@ -440,14 +458,14 @@ public class HTTP extends ScriptableObject {
 			} else {
 				fut = client.connect(socket, uri, request);
 			}
-			
+
 			Session session;
 			if (!(aTimeout instanceof Undefined))
 				session = fut.get((long) aTimeout, TimeUnit.MILLISECONDS);
 			else
 				session = fut.get();
 
-			return client;
+			return fut;
 		} catch (Exception e) {
 			client.stop();
 			throw e;

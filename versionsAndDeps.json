@@ -310,8 +310,8 @@
 			"removable": false,
 			"hardDeps" : [
 				"lib/commons-io-2.5.jar",
-				"lib/jetty-io-9.3.15.jar",
-				"lib/jetty-util-9.3.15.jar",
+				"lib/jetty-io-9.4.1.jar",
+				"lib/jetty-util-9.4.1.jar",
 				"lib/websocket-api-9.3.15.jar",
 				"lib/websocket-client-9.3.15.jar",
 				"lib/websocket-common-9.3.15.jar"

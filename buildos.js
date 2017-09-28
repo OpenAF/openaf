@@ -191,6 +191,10 @@ for(i in hbsList) {
 }
 
 var jsList = io.listFiles(OPENAF_BUILD_HOME + "/js").files;
+var origjssha = { files: [] };
+var destjssha = { files: [] };
+try { origjssha = io.readFile(OPENAF_BUILD_HOME + "/buildSHA.json"); } catch(e) { }
+
 af.mkdir(OPENAF_BUILD_HOME + "/jsmin");
 //for(i in jsList) {
 parallel4Array(jsList, function(i) { 
@@ -198,7 +202,6 @@ parallel4Array(jsList, function(i) {
 	if(file.isFile) {
 		if (file.filename == 'ow.waf.js' || file.filename == 'ow.portal.js') return i;
 		log("Adding " + file.filename);
-                log("Compiling " + file.filename);
                 if (file.filename !== 'example.js' && 
                 	file.filename !== 'underscore.js' && 
 					file.filename !== 'materialize.js' &&
@@ -208,26 +211,47 @@ parallel4Array(jsList, function(i) {
 					file.filename !== 'highlight.js' &&
                     file.filename !== 'avsc.js' &&
                 	file.filename !== 'jquery.js') {
-                	var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
-			if (output.length > 0) log(file.filename + ": " + output);
-                	if (__stderr.length > 0) {
-                		if (__stderr.match(/ WARNING - /))
-                			logWarn(file.filename + ": " + __stderr);
-                		else
-                			logErr(file.filename + ": " + __stderr);
-                	}
-			sync(function() { 
-                           tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
-                        }, tempJar);
+
+					var doIt = true;
+					var origF = $from(origjssha.files).equals("file", file.filename).select();						
+					if (origF.length > 0) {
+						if (sha1(io.readFileStream(OPENAF_BUILD_HOME + "/js/" + file.filename)) == origF[0].orig &&
+					        sha1(io.readFileStream(OPENAF_BUILD_HOME + "/jsmin/" + file.filename)) == origF[0].dest) {
+							destjssha.files.push(origF[0]);
+							doIt = false;
+						} 
+					}
+
+					if (doIt) {
+						log("Compiling " + file.filename);
+						var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+						destjssha.files.push({
+							file: file.filename,
+							orig: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/js/" + file.filename)),
+							dest: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/jsmin/" + file.filename))
+						});
+						if (output.length > 0) log(file.filename + ": " + output);
+						if (__stderr.length > 0) {
+							if (__stderr.match(/ WARNING - /))
+								logWarn(file.filename + ": " + __stderr);
+							else
+								logErr(file.filename + ": " + __stderr);
+						}
+					}
+
+					sync(function () {
+						tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
+					}, tempJar);
                 } else {
-                        sync(function() {
-			   tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
+                        sync(function () {
+                        	tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
                         }, tempJar);
                 }
 	}
 	return i;
 });
 
+try { io.writeFile(OPENAF_BUILD_HOME + "/buildSHA.json", destjssha); } catch(e) { sprintErr(e); }
 
 // Build Manifest
 log("Adding manifest");

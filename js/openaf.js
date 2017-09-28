@@ -3785,7 +3785,7 @@ oPromise.prototype.resolve = function(aValue) {
 };
 
 oPromise.prototype.__async = function(aFunction, aValue, isFail) {
-	var thisOP = this;
+	var thisOP = this; 
 	var prevf;
 
 	if (isDef(thisOP.__f)) prevf = thisOP.__f;

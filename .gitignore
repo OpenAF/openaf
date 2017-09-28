@@ -3,6 +3,7 @@
 /jsmin/*
 openaf.jar
 openaf.jar.orig
+buildSHA.json
 dependencies.json
 .odoc.db
 .opack.db

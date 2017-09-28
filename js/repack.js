@@ -183,7 +183,7 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, newClass);
 				} else {
 					str = str.replace(/^Main-Class: .+$/m, "Main-Class: " + newClass);
-                                }
+                }
 				zipNew.putFile(el.name, af.fromString2Bytes(str));
 			} else {				
 				if (!(el.name.match(/jarinjarloader/))) {

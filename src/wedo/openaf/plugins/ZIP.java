@@ -269,9 +269,7 @@ public class ZIP extends ScriptableObject {
 						return res;
 					} catch(Exception e) {
 						throw e;
-					} finally {
-						//zipFile.close();
-					}
+					} 
 				}
 			} while(ne != null);
 		} catch(Exception e) {
