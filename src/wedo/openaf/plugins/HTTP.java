@@ -327,6 +327,8 @@ public class HTTP extends ScriptableObject {
 	 * client.stop();\
 	 * print(output);\
 	 * \
+	 * NOTE: this functionality is only available if used with JVM >= 1.8\
+	 * \
 	 * </odoc>
 	 */
 	@JSFunction
