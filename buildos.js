@@ -17,6 +17,17 @@ var smallClassPath = "";
 var EXTERNAL = false;
 if (isDefined(params.external)) EXTERNAL = true;
 
+log("Building params:");
+log("   BUILD_HOME = " + OPENAF_BUILD_HOME);
+log("   JSON       = " + OPENAF_JSON);
+log("   DIST       = " + OPENAF_DIST);
+log("   LIB        = " + OPENAF_LIB);
+log("   SRC        = " + OPENAF_SRC);
+log("   BIN        = " + OPENAF_BIN);
+log("   JS         = " + OPENAF_JS);
+log("   JAVAC      = " + JAVAC);
+log("   EXTERNAL   = " + EXTERNAL);
+
 var INTERNAL_LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 var EXTERNAL_LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 
