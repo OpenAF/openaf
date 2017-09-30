@@ -580,7 +580,7 @@ public class AFCmdOS extends AFCmdBase  {
 				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__args", args);
 				
 				// Add scriptfile object
-				if (!injectclass) {
+				if (filescript) {
 					Object scriptFile = Context.javaToJS(scriptfile, (Scriptable) jse.getGlobalscope());
 					ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__scriptfile", scriptFile);
 					ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__iszip", (zip == null) ? false: true);
@@ -630,7 +630,7 @@ public class AFCmdOS extends AFCmdBase  {
 			}
 			
 			Object res = null;
-			if (injectscript) {
+			if (injectscript || filescript || injectcode) {
 				Context cxl = (Context) jse.enterContext();
 				org.mozilla.javascript.Script compiledScript = cxl.compileString(includeScript + script, scriptfile, 1, null);
 				res = compiledScript.exec(cxl, (Scriptable) jse.getGlobalscope());
