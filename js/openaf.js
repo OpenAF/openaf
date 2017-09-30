@@ -1675,7 +1675,7 @@ function inherit(Child, Parent) {
  * </odoc>
  */
 $from = function(a) {
-	loadLib(getOpenAFJar() + "::js/jlinq.js");
+	loadCompiledLib("jlinq_js");
 
 	if(Object.prototype.toString.call(a) == '[object Array]') {
 		return jl.from(a);
@@ -1697,7 +1697,7 @@ $from = function(a) {
  * </odoc>
  */
 $stream = function(a) {
-	loadLib(getOpenAFJar() + "::js/stream.js");
+	loadCompiledLib("stream_js");
 	
 	if (isUndefined(a)) return Stream;
 	return Stream(a);
@@ -2167,6 +2167,27 @@ function loadLib(aLib, forceReload, aFunction) {
 
 /**
  * <odoc>
+ * <key>loadCompiledLib(aLibClass, forceReload, aFunction) : boolean</key>
+ * Loads the corresponding compiled javascript library class and keeps track if it was already loaded or not (in __loadedLibs).
+ * Optionally you can force reload and provide aFunction to execute after the successful loading.
+ * Returns true if successfull, false otherwise.
+ * </odoc>
+ */
+function loadCompiledLib(aClass, forceReload, aFunction) {
+	if (forceReload ||
+		isUndefined(__loadedLibs[aClass.toLowerCase()]) || 
+		__loadedLibs[aClass.toLowerCase()] == false) {		
+		af.runFromClass(af.getClass(aClass).newInstance());
+		__loadedLibs[aClass.toLowerCase()] = true;
+		if (isDefined(aFunction)) aFunction();
+		return true;
+	}
+	
+	return false;
+}
+
+/**
+ * <odoc>
  * <key>sync(aFunction, anObject)</key>
  * Will ensure that aFunction is synchronized, in multi-threaded scripts. Optionally you can provide
  * anObject to synchronized upon.
@@ -2439,63 +2460,64 @@ if (isUndefined(ow))
  * Loads OpenWrap format functionality. Basically functions to help with the formatting of strings, numbers, dates, etc...
  * </odoc>
  */
-OpenWrap.prototype.loadFormat = function() { loadLib(getOpenAFJar() + "::js/owrap.format.js"); ow.format = new OpenWrap.format(); pods.declare("ow.format", ow.format); return ow.format; }
+//OpenWrap.prototype.loadFormat = function() { loadLib(getOpenAFJar() + "::js/owrap.format.js"); ow.format = new OpenWrap.format(); pods.declare("ow.format", ow.format); return ow.format; }
+OpenWrap.prototype.loadFormat = function() { loadCompiledLib("owrap_format_js"); ow.format = new OpenWrap.format(); pods.declare("ow.format", ow.format); return ow.format; }
 /**
  * <odoc>
  * <key>ow.loadTest()</key>
  * Loads OpenWrap test functionality. Basically functions to unit test other functionality.
  * </odoc>
  */
-OpenWrap.prototype.loadTest = function() { loadLib(getOpenAFJar() + "::js/owrap.test.js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
+//OpenWrap.prototype.loadTest = function() { loadLib(getOpenAFJar() + "::js/owrap.test.js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
+OpenWrap.prototype.loadTest = function() { loadCompiledLib("owrap_test_js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
 /**
  * <odoc>
  * <key>ow.loadAI()</key>
  * Loads OpenWrap AI functionality.
  * </odoc>
  */
-OpenWrap.prototype.loadAI = function() { loadLib(getOpenAFJar() + "::js/owrap.ai.js"); ow.ai = new OpenWrap.ai(); pods.declare("ow.ai", ow.ai); return ow.ai; }
+//OpenWrap.prototype.loadAI = function() { loadLib(getOpenAFJar() + "::js/owrap.ai.js"); ow.ai = new OpenWrap.ai(); pods.declare("ow.ai", ow.ai); return ow.ai; }
+OpenWrap.prototype.loadAI = function() { loadCompiledLib("owrap_ai_js"); ow.ai = new OpenWrap.ai(); pods.declare("ow.ai", ow.ai); return ow.ai; }
 /**
  * <odoc>
  * <key>ow.loadServer()</key>
  * Loads OpenWrap Server functionality. Basically functions to wrap access to server functionality.
  * </odoc>
  */
-OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+//OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
 /**
  * <odoc>
  * <key>ow.loadTemplate()</key>
  * Loads OpenWrap template functionality. Basically functions to wrap access to Handlebars functionality.
  * </odoc>
  */
-OpenWrap.prototype.loadTemplate = function() { loadLib(getOpenAFJar() + "::js/owrap.template.js"); ow.template = new OpenWrap.template(); pods.declare("ow.template", ow.template); return ow.template; }
+//OpenWrap.prototype.loadTemplate = function() { loadLib(getOpenAFJar() + "::js/owrap.template.js"); ow.template = new OpenWrap.template(); pods.declare("ow.template", ow.template); return ow.template; }
+OpenWrap.prototype.loadTemplate = function() { loadCompiledLib("owrap_template_js"); ow.template = new OpenWrap.template(); pods.declare("ow.template", ow.template); return ow.template; }
 /**
  * <odoc>
  * <key>ow.loadObj()</key>
  * Loads OpenWrap object functionality. 
  * </odoc>
  */
-OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.obj.js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
+//OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.obj.js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
+OpenWrap.prototype.loadObj = function() { loadCompiledLib("owrap_obj_js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
 /**
  * <odoc>
  * <key>ow.loadCh()</key>
  * Loads OpenWrap channels functionality. 
  * </odoc>
  */
-OpenWrap.prototype.loadCh = function() { loadLib(getOpenAFJar() + "::js/owrap.ch.js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
-/**
- * <odoc>
- * <key>ow.loadPortal()</key>
- * Loads OpenWrap WAF portal functionality. 
- * </odoc>
- */
-OpenWrap.prototype.loadPortal = function() { loadLib(getOpenAFJar() + "::js/owrap.portal.js"); ow.portal = new OpenWrap.portal(); pods.declare("ow.portal", ow.portal); return ow.portal; }
+//OpenWrap.prototype.loadCh = function() { loadLib(getOpenAFJar() + "::js/owrap.ch.js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
+OpenWrap.prototype.loadCh = function() { loadCompiledLib("owrap_ch_js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
 /**
  * <odoc>
  * <key>ow.loadOJob()</key>
  * Loads OpenWrap oJob functionality. 
  * </odoc>
  */
-OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
+//OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
+OpenWrap.prototype.loadOJob = function() { loadCompiledLib("owrap_oJob_js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
 
 
 /**
@@ -2516,7 +2538,7 @@ OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.
  * </odoc>
  */
 function loadHandlebars() {
-	var res = loadLib(getOpenAFJar() + "::js/handlebars.js");
+	var res = loadCompiledLib("handlebars_js");
 	if (res) pods.declare("Handlebars", loadHandlebars());
 }
 
@@ -2529,7 +2551,7 @@ function loadHandlebars() {
  * </odoc>
  */
 function loadUnderscore() {
-	var res = loadLib(getOpenAFJar() + "::js/lodash.js");
+	var res = loadCompiledLib("lodash_js");
 	if (res) pods.declare("Underscore", loadUnderscore());
 	if (res) pods.declare("Lodash", loadUnderscore());
 }
@@ -2545,7 +2567,7 @@ function loadLodash() {
  * </odoc>
  */
 function loadHelp() {
-	var res = loadLib(getOpenAFJar() + "::js/odoc.js");
+	var res = loadCompiledLib("odoc_js");
 	if (res) pods.declare("Help", loadHelp());
 }
 
@@ -3378,7 +3400,7 @@ function oJobRunJob(aJob, args, aId) {
  * </odoc>
  */
 function loadJSYAML() {
-	loadLib(getOpenAFJar() + "::js/js-yaml.js");
+	loadCompiledLib("js-yaml_js");
 }
 
 /**

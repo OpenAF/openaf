@@ -857,7 +857,7 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public void compileToClasses(String classfile, String script, String path) {
 		ClassCompiler cc = new ClassCompiler(new CompilerEnvirons());
-		Object compiled[] = cc.compileToClassFiles(script, null, 1, classfile);
+		Object compiled[] = cc.compileToClassFiles(script, classfile, 1, classfile);
 		if (path == null || path.equals("undefined"))
 			path = "";
 		else
@@ -892,7 +892,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object runFromClass(Object cl) {
+	static public Object runFromClass(Object cl) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Object ret = ((Script) cl).exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();

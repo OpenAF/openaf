@@ -69,5 +69,6 @@
 	<classpathentry kind="lib" path="lib/commons-io-2.5.jar"/>
 	<classpathentry kind="lib" path="lib/postgresql-42.1.4.jre7.jar"/>
 	<classpathentry kind="lib" path="lib/nwu-0.3.2.jar"/>
+	<classpathentry kind="lib" path="lib/compiledJS.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
