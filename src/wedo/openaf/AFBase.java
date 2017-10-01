@@ -9,24 +9,17 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.net.InetAddress;
 import java.net.MalformedURLException;
-import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,12 +30,6 @@ import java.util.zip.ZipFile;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.net.SocketFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import javax.security.cert.X509Certificate;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -407,7 +394,7 @@ public class AFBase extends ScriptableObject {
 					}
 				};
 				t.start();
-				long tt = new Double(Double.parseDouble(timeout.toString())).longValue();
+				long tt = Double.valueOf(Double.parseDouble(timeout.toString())).longValue();
 				if (tt >= 0) {
 					try {
 						t.join(tt);
@@ -967,14 +954,14 @@ public class AFBase extends ScriptableObject {
 		if (arr instanceof byte[]) {
 			byte[] barr = (byte[]) arr;
 			for(int i = 0; i < barr.length; i++) {
-				out.add(new Integer((int) barr[i]));
+				out.add(Integer.valueOf((int) barr[i]));
 			}
 		}
 		
 		if (arr instanceof NativeJavaArray) {
 			byte[] barr = (byte[]) ((NativeJavaArray) arr).unwrap();
 			for(int i = 0; i < barr.length; i++) {
-				out.add(new Integer((int) barr[i]));
+				out.add(Integer.valueOf((int) barr[i]));
 			}			
 		} 
 		
@@ -1011,7 +998,7 @@ public class AFBase extends ScriptableObject {
 		
 		Scanner input = new Scanner(System.in);
 		System.out.println(message);
-		retMessage = new Byte(input.nextByte()).toString();
+		retMessage = Byte.valueOf(input.nextByte()).toString();
 		input.close();
 		
 		return retMessage;

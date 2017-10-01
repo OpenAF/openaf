@@ -110,7 +110,7 @@ public class CSV {
 	protected void readHeader(String line) {
 		int pos = 0;
 		for(String h : line.split(separator)) {
-			header.put(new Long(pos), h);
+			header.put(Long.valueOf(pos), h);
 			pos++;
 		}
 	}
@@ -119,14 +119,14 @@ public class CSV {
 		int pos = 0;
 		for(String v : line.split(separator)) {
 			if (v.startsWith(stringDelimeter) && v.endsWith(stringDelimeter)) {
-				headerType.put(new Long(pos), valuetypes.STRING);
+				headerType.put(Long.valueOf(pos), valuetypes.STRING);
 			} else {
 				if (v.length()>0) {
 					try {
 						Double.valueOf(v);
-						headerType.put(new Long(pos), valuetypes.NUMBER);
+						headerType.put(Long.valueOf(pos), valuetypes.NUMBER);
 					} catch (Exception e) {
-						headerType.put(new Long(pos), valuetypes.STRING);
+						headerType.put(Long.valueOf(pos), valuetypes.STRING);
 					}
 				}
 			}
@@ -145,8 +145,8 @@ public class CSV {
 		if (!isDetermineTypesComplete) determineTypes(line);
 
 		for(String v : line.split(separator)) {
-			if (headerType.get(new Long(pos)) != null &&
-					headerType.get(new Long(pos)).equals(valuetypes.STRING)) {
+			if (headerType.get(Long.valueOf(pos)) != null &&
+					headerType.get(Long.valueOf(pos)).equals(valuetypes.STRING)) {
 				if (v != null)
 					if (v.equals("\"\"")) {
 						v = "";
@@ -157,7 +157,7 @@ public class CSV {
 						}
 					}
 			}
-			value.put(header.get(new Long(pos)), v);
+			value.put(header.get(Long.valueOf(pos)), v);
 			pos++;
 		}
 
@@ -226,13 +226,13 @@ public class CSV {
 			for (int i = 0; i < ((Object[]) heads).length; i++) {
 				String key = (String) ((Object[]) heads)[i];
 				if (l == 0) {
-					header.put(new Long(pos), key.toString());
+					header.put(Long.valueOf(pos), key.toString());
 					if ((obj.get(key) instanceof Double) || 
 							(obj.get(key) instanceof Integer) || 
 							(obj.get(key) instanceof Long))
-						headerType.put(new Long(pos), valuetypes.NUMBER);
+						headerType.put(Long.valueOf(pos), valuetypes.NUMBER);
 					else {
-						headerType.put(new Long(pos), valuetypes.STRING);
+						headerType.put(Long.valueOf(pos), valuetypes.STRING);
 					}
 				}
 
@@ -285,10 +285,10 @@ public class CSV {
 				line = "";
 
 				for (long i = 0; i < header.keySet().size(); i++) {
-					if (headerType.get(new Long(i)) == valuetypes.NUMBER) {
-						line = line + ((String) v.get(header.get(new Long(i))));
+					if (headerType.get(Long.valueOf(i)) == valuetypes.NUMBER) {
+						line = line + ((String) v.get(header.get(Long.valueOf(i))));
 					} else {
-						line = line + stringDelimeter + ((String)v.get(this.header.get(new Long(i)))) + stringDelimeter;
+						line = line + stringDelimeter + ((String)v.get(this.header.get(Long.valueOf(i)))) + stringDelimeter;
 					}
 
 					if (i < this.header.keySet().size() - 1) {
@@ -344,10 +344,10 @@ public class CSV {
 		for (Map<String, String> v : values) {
 			line = "";
 			for (long i = 0; i < header.keySet().size(); i++) {
-				if (headerType.get(new Long(i)) == valuetypes.NUMBER)
-					line = line + ((String)v.get(header.get(new Long(i))));
+				if (headerType.get(Long.valueOf(i)) == valuetypes.NUMBER)
+					line = line + ((String)v.get(header.get(Long.valueOf(i))));
 				else {
-					line = line + stringDelimeter + ((String)v.get(header.get(new Long(i)))) + stringDelimeter;
+					line = line + stringDelimeter + ((String)v.get(header.get(Long.valueOf(i)))) + stringDelimeter;
 				}
 
 				if (i < header.keySet().size() - 1) {
@@ -426,28 +426,28 @@ public class CSV {
 			HashMap<String, Object> record = new HashMap<String, Object>();
 
 			for (long i = 0; i < header.keySet().size(); i++) {
-				if (this.headerType.get(new Long(i)) == valuetypes.NUMBER)
+				if (this.headerType.get(Long.valueOf(i)) == valuetypes.NUMBER)
 					try {
-						Long l = Long.getLong((String) v.get(header.get(new Long(i))));
+						Long l = Long.getLong((String) v.get(header.get(Long.valueOf(i))));
 						// jsong.writeNumberField((String)
 						// header.get(Long.valueOf(i)), l.longValue());
 						record.put((String) header.get(Long.valueOf(i)), l.longValue());
 					} catch (Exception e) {
 						try {
-							Double d = Double.valueOf((String) v.get(header.get(new Long(i))));
+							Double d = Double.valueOf((String) v.get(header.get(Long.valueOf(i))));
 							// jsong.writeNumberField((String)header.get(Long.valueOf(i)),
 							// d.doubleValue());
 							record.put((String) header.get(Long.valueOf(i)), d.doubleValue());
 						} catch (Exception e1) {
 							// jsong.writeStringField((String)header.get(Long.valueOf(i)),
-							// (String)v.get(header.get(new Long(i))));
-							record.put((String) header.get(Long.valueOf(i)), (String) v.get(header.get(new Long(i))));
+							// (String)v.get(header.get(Long.valueOf(i))));
+							record.put((String) header.get(Long.valueOf(i)), (String) v.get(header.get(Long.valueOf(i))));
 						}
 					}
 				else {
 					// jsong.writeStringField((String)header.get(Long.valueOf(i)),
-					// (String)v.get(header.get(new Long(i))));
-					record.put((String) header.get(Long.valueOf(i)), (String) v.get(header.get(new Long(i))));
+					// (String)v.get(header.get(Long.valueOf(i))));
+					record.put((String) header.get(Long.valueOf(i)), (String) v.get(header.get(Long.valueOf(i))));
 				}
 			}
 			// jsong.writeEndObject();

@@ -27,7 +27,7 @@ public class OpenAFConsoleCompleter extends ScriptableObject implements Complete
 		
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		if (func != null)
-			ret = (new Double((double) func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),  new Object[] { buffer, cursor, candidates }))).intValue();
+			ret = (Double.valueOf((double) func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),  new Object[] { buffer, cursor, candidates }))).intValue();
 		AFCmdBase.jse.exitContext();
 		
 		return ret;

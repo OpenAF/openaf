@@ -622,7 +622,7 @@ public class AFCmdOS extends AFCmdBase  {
 			} catch (Exception e) {
 				SimpleLog.log(logtype.DEBUG, "Error including openaf.js", e);
 			}*/
-			AFBase.runFromClass(Class.forName("openaf_js").newInstance());
+			AFBase.runFromClass(Class.forName("openaf_js").getDeclaredConstructor().newInstance());
 			cx.setErrorReporter(new WeDoOpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
@@ -638,7 +638,7 @@ public class AFCmdOS extends AFCmdBase  {
 			} 
 
 			if (injectclass) {
-				res = AFBase.runFromClass(Class.forName(injectclassfile).newInstance());
+				res = AFBase.runFromClass(Class.forName(injectclassfile).getDeclaredConstructor().newInstance());
 			}
 			
 			if (isolatePMs && res != null && !(res instanceof Undefined)) {

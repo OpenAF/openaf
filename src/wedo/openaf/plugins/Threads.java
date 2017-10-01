@@ -183,7 +183,7 @@ public class Threads extends ScriptableObject {
 	public void startAtFixedRate(double time) {
 		executor = Executors.newScheduledThreadPool(threads.size());
 		for(Runnable c : threads) {
-			((ScheduledExecutorService) executor).scheduleAtFixedRate(c, 0, (new Double(time)).longValue(), TimeUnit.MILLISECONDS);
+			((ScheduledExecutorService) executor).scheduleAtFixedRate(c, 0, (Double.valueOf(time)).longValue(), TimeUnit.MILLISECONDS);
 		}
 	}
 	
@@ -198,7 +198,7 @@ public class Threads extends ScriptableObject {
 	public void startWithFixedRate(double time) {
 		executor = Executors.newScheduledThreadPool(threads.size());
 		for(Runnable c : threads) {
-			((ScheduledExecutorService) executor).scheduleWithFixedDelay(c, 0, (new Double(time)).longValue(), TimeUnit.MILLISECONDS);
+			((ScheduledExecutorService) executor).scheduleWithFixedDelay(c, 0, (Double.valueOf(time)).longValue(), TimeUnit.MILLISECONDS);
 		}		
 	}
 	
