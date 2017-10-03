@@ -600,7 +600,7 @@ function __initializeLogPromise() {
  * </odoc>
  */
 function setLog(aMap) {
-	__logFormat = aMap;
+	__logFormat = merge(__logFormat, aMap);
 }
 
 /**
