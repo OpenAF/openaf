@@ -1592,15 +1592,15 @@ function merge(aObjectA, aObjectB) {
  */
 function restartOpenAF(aCommandLineArray, preLineArray) {
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
-	var currentJar;
-	try {
+	var currentJar = getOpenAFJar();
+	/*try {
 		currentJar = new java.io.File(af.getClass("wedo.openaf.AFCmd").getProtectionDomain().getCodeSource().getLocation().toURI());
 	} catch(e) {
 		currentJar = new java.io.File(java.lang.System.getProperties().getProperty("java.class.path"));
-	}
+	}*/
 	
 	/* is it a jar file? */
-	if(!currentJar.getName().endsWith(".jar"))
+	if(!currentJar.endsWith(".jar"))
 		return;
 
 	/* Build command: java -jar application.jar */
@@ -1612,7 +1612,7 @@ function restartOpenAF(aCommandLineArray, preLineArray) {
 		}
 	}
 	command.add("-jar");
-	command.add(currentJar.getPath());
+	command.add(currentJar);
 	if (isUndefined(aCommandLineArray)) {
 		for(let c in __args) {
 			command.add(__args[c]);
