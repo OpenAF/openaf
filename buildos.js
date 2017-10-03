@@ -278,7 +278,7 @@ try {
 		}
 	}
 	return i;
-} catch(e) { sprintErr(e); }
+} catch(e) { }
 });
 
 tempJar.putFile("compiledJS.jar", zipJSlib.generate({"compressionLevel": 9}));
