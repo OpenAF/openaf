@@ -2720,7 +2720,7 @@ function loadDBInMem(aDB, aFilename) {
 
 /**
  * <odoc>
- * <key>t(aObject, aFunction) : Map</key>
+ * <key>traverse(aObject, aFunction) : Map</key>
  * Traverses aObject executing aFunction for every single element. The aFunction will receive the arguments: aKey, aValue, aPath, aObject.
  * </odoc>
  */
