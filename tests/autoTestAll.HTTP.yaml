@@ -18,8 +18,14 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testHTTPWSClient;
 
+   - name: HTTP::HTTP plugin test basic auth
+     from: HTTP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testBasicAuth;
+
 todo:
    # HTTP tests
    # ----------
    - HTTP::HTTP plugin basic functionality
    - HTTP::HTTP plugin web socket client
+   - HTTP::HTTP plugin test basic auth

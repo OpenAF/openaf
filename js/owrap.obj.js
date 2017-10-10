@@ -1140,7 +1140,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
  		if (isDefined(_l) && isDefined(_p)) {
-			h.login(_l, _p);
+			h.login(_l, _p, false, aURL);
 		} 
  		
  		if (isDef(_l) && isFunction(_l)) {
@@ -1188,7 +1188,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
 		if (isDefined(_l) && isDefined(_p)) {
-			h.login(_l, _p);
+			h.login(_l, _p, false, aURL);
 		} 
 		
  		if (isDef(_l) && isFunction(_l)) {
@@ -1238,7 +1238,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
 		if (isDefined(_l) && isDefined(_p)) {
-			h.login(_l, _p);
+			h.login(_l, _p, false, aURL);
 		} 
 		
  		if (isDef(_l) && isFunction(_l)) {
@@ -1288,7 +1288,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
 		if (isDefined(_l) && isDefined(_p)) {
-			h.login(_l, _p);
+			h.login(_l, _p, false, aURL);
 		} 
 		
  		if (isDef(_l) && isFunction(_l)) {

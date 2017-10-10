@@ -14,22 +14,19 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
-import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
@@ -46,7 +43,19 @@ public class HTTP extends ScriptableObject {
 	protected boolean forceBasic = false;
 	protected String l = null;
 	protected String p = null;
+	protected String lpsID = null;
+	static protected ConcurrentHashMap<String, LPs> lps = new ConcurrentHashMap<String, LPs>();
 	
+	protected class LPs {
+		String l;
+		String p;
+
+		public LPs(String ll, String pp) {
+			this.l = ll;
+			this.p = pp;
+		}
+	}
+
 	/**
 	 * 
 	 */
@@ -112,19 +121,41 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTP.login(aUser, aPassword, forceBasic)</key>
+	 * <key>HTTP.login(aUser, aPassword, forceBasic, urlPartial)</key>
 	 * Tries to build a simple password authentication with the provided aUser and aPassword (encrypted or not).
 	 * By default it tries to use the Java Password Authentication but it forceBasic = true it will force basic
-	 * authentication to be use.
+	 * authentication to be use. It's advisable to use urlPartial to associate a login/password to a specific
+	 * URL location.
 	 * </odoc>
 	 */
 	@JSFunction
-	public void login(final String user, final String pass, boolean forceBasic) {
-		authenticator = new Authenticator() {
-			public PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication (user, (AFCmdBase.afc.dIP(pass)).toCharArray());
+	public void login(final String user, final String pass, boolean forceBasic, String urlPartial) {
+		if (urlPartial != "undefined" && urlPartial != null) {
+			urlPartial = "default";
+		}
+
+		if (!forceBasic) {
+			lps.put(urlPartial, new LPs(user, pass));
+			
+			if (authenticator == null) {
+				authenticator = new Authenticator() {
+					public PasswordAuthentication getPasswordAuthentication() {
+						URL url = getRequestingURL();
+						String getKey = null;
+						for(String key : lps.keySet()) {
+							if (key != "default" && url.toString().startsWith(key)) getKey = key;
+						}
+						if (getKey == null) {
+							return new PasswordAuthentication (user, (AFCmdBase.afc.dIP(pass)).toCharArray());
+						} else {
+							return new PasswordAuthentication (lps.get(getKey).l, (AFCmdBase.afc.dIP(lps.get(getKey).p)).toCharArray());
+						}
+					}
+				};
+				Authenticator.setDefault(authenticator);
 			}
-		};
+		} 
+
 		l = user;
 		p = pass;
 		
@@ -346,7 +377,7 @@ public class HTTP extends ScriptableObject {
 	 * @throws IOException
 	 */
 	protected HTTPResponse request(String aURL, String method, Object in, Properties request, boolean bytes, boolean stream, int timeout) throws IOException {
-		if (this.authenticator != null) Authenticator.setDefault(this.authenticator);
+		//if (this.authenticator != null && !forceBasic) Authenticator.setDefault(this.authenticator);
 		CookieHandler.setDefault(ckman);
 		
 		URL url = new URL(aURL);
@@ -428,8 +459,8 @@ public class HTTP extends ScriptableObject {
 					r = new HTTPResponse(IOUtils.toString(is), responseCode, headerFields, contentType);
 			}
 			
-			if (this.authenticator != null) 
-				Authenticator.setDefault(null);
+			//if (this.authenticator != null) 
+			//	Authenticator.setDefault(null);
 			
 			return r;
 		} catch(Exception e) {
