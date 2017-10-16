@@ -1449,7 +1449,7 @@ function genpack(args) {
 			packageNew.files.push(PACKAGEJSON);
 	}
 	packageNew.filesHash = Object(listFilesWithHash(args[0], excludeList));
-	if (args.indexOf("-injson") >= 0 || packageNew.files.indexOf(PACKAGEJSON) >= 0) {
+	if ((args.indexOf("-injson") >= 0 || packageNew.files.indexOf(PACKAGEJSON) >= 0) && args.indexOf("-inyaml") < 0) {
 	    log("Writing " + args[0] + "/" + PACKAGEJSON);
 		io.writeFileString(args[0] + "/" + PACKAGEJSON, stringify(packageNew));			
 	} else {
