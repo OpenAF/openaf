@@ -661,7 +661,7 @@ function stopLog() {
  * </odoc>
  */
 function log(msg) {
-	var data = new Date();
+	var data = (new Date()).toJSON();
 	if (__logStatus) 
 		$ch("__log").set({
 			"d": data,
@@ -710,7 +710,7 @@ function tlog(msg, someData) {
  * </odoc>
  */
 function lognl(msg) {
-	var data = new Date();
+	var data = (new Date()).toJSON();
 	if (__logStatus) 
 		$ch("__log").set({
 			"d": data,
@@ -759,7 +759,7 @@ function tlognl(msg, someData) {
  * </odoc>
  */
 function logErr(msg) {
-	var data = new Date();
+	var data = (new Date()).toJSON();
 	if (__logStatus) 
 		$ch("__log").set({
 			"d": data,
@@ -797,7 +797,7 @@ function logErr(msg) {
  * </odoc>
  */
 function logWarn(msg) {
-	var data = new Date();
+	var data = (new Date()).toJSON();
 	if (__logStatus) 
 		$ch("__log").set({
 			"d": data,
