@@ -678,7 +678,7 @@ function log(msg) {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
 			ansiStart();
-			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(data, __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
 			print(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg);
 			ansiStop();
 			return 1;
@@ -727,7 +727,7 @@ function lognl(msg) {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
 			ansiStart();
-			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(data, __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
 			printnl(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg + "\r");
 			ansiStop();
 			return 1;
@@ -776,7 +776,7 @@ function logErr(msg) {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
 			ansiStart();
-			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(data, __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
 			printErr(ind + ansiColor("BOLD", data) + sep + ansiColor("red", "ERROR") + sep + msg);
 			ansiStop();
 			return 1;
@@ -814,7 +814,7 @@ function logWarn(msg) {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
 			ansiStart();
-			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(data, __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
 			print(ind + ansiColor("BOLD", data) + sep + ansiColor("yellow", "WARN") + sep + msg);
 			ansiStop();
 			return 1;
