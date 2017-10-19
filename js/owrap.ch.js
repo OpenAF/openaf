@@ -1516,12 +1516,12 @@ OpenWrap.ch.prototype.utils = {
 		return function(aCh, aOp, aK, aV) {
 			if (aOp == "set") {
 			   var line = ow.template.execCompiled(lineTmpl)({ 
-				   timedate: ow.format.fromDate(aV.d, aLineDateFormat), 
+				   timedate: ow.format.fromDate(new Date(aV.d), aLineDateFormat), 
 				   type: aV.t, 
 				   message: aV.m 
 			   });
 			   var file = ow.template.execCompiled(fileTmpl)({
-					timedate: ow.format.fromDate(aV.d, aFileDateFormat)
+					timedate: ow.format.fromDate(new Date(aV.d), aFileDateFormat)
 				});
 			   // Write line
 			   io.writeFileString(aLogFolder + "/" + file, line, io.getDefaultEncoding(), true);	   
