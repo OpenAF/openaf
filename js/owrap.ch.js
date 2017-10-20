@@ -1445,7 +1445,7 @@ OpenWrap.ch.prototype.utils = {
 	getFileHousekeepSubscriber: function (aFolder, aRegExPattern, howLongAgoInMinutes, dontCompress, aBackupFolder) {
 		if (isUnDef(aFolder)) aFolder = ".";
 		if (isUnDef(aBackupFolder)) aBackupFolder = aFolder;
-		if (isUnDef(aRegExPattern)) aRegExPattern = "log-\\d{4]-\\d{2}-\\d{2}\\.log";
+		if (isUnDef(aRegExPattern)) aRegExPattern = "log-\\d{4}-\\d{2}-\\d{2}\\.log";
 
 		return function (aCh, aOp, aK, aV) {
 			if (aOp != "set") return;
@@ -1539,7 +1539,7 @@ OpenWrap.ch.prototype.utils = {
 	 * fileDateFormat        (string)  File date format to be used in filenameTemplate (defaults to 'yyyy-MM-dd')\
 	 * lineTemplate          (string)  ow.template for each log line (defaults to '{{timedate}} | {{type}} | {{message}}\n')\
 	 * lineDateFormat        (string)  Date format to be used in lineTemplate (defaults to 'yyyy-MM-dd HH:mm:ss.SSS')\
-	 * HKRegExPattern        (string)  Housekeeping regular expression pattern to find log files (defaults to 'log-\\d{4]-\\d{2}-\\d{2}\\.log')\
+	 * HKRegExPattern        (string)  Housekeeping regular expression pattern to find log files (defaults to 'log-\\d{4}-\\d{2}-\\d{2}\\.log')\
 	 * HKhowLongAgoInMinutes (number)  How many minutes of logs should be kept (if not defined won't delete files)\
 	 * dontCompress          (boolean) Defines if older files should not be gzip (default to false)\
 	 * backupFolder          (string)  If defined older log files will be moved to this folder (if not defined they won't be moved)\
