@@ -46,6 +46,14 @@ jobs:
        args.suitesId    = af.getVersion();
        io.writeFileString("autoTestAll.md", ow.test.toMarkdown());
 
+   - name: End
+     deps:
+       - Run Tests
+       - Results
+       - JUnit results
+     exec: >
+       exit(0);
+
 todo:
    # Run tests
    # ---------
@@ -55,3 +63,5 @@ todo:
    # -------------
    - Results
    - JUnit results
+   
+   - End

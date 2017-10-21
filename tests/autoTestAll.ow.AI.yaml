@@ -13,13 +13,37 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIPerceptronXOR;
 
+   - name: owAI::Liquid XOR
+     from: owAI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAILiquidXOR;
+
+   - name: owAI::LSTM XOR
+     from: owAI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAILSTMXOR;     
+
    - name: owAI::Perceptron network save and load
      from: owAI::Init
      to  : oJob Test
      exec: args.func = args.tests.testAINetworkSave;
 
+   - name: owAI::Liquid network save and load
+     from: owAI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAILiquidXORSave;
+
+   - name: owAI::LSTM network save and load
+     from: owAI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAILSTMXORSave;
+
 todo:
    # ow.ai tests
    # -----------
    - owAI::Perceptron XOR
+   - owAI::Liquid XOR
+   - owAI::LSTM XOR
    - owAI::Perceptron network save and load
+   - owAI::Liquid network save and load
+   - owAI::LSTM network save and load
