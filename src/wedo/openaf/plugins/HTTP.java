@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
@@ -130,9 +129,9 @@ public class HTTP extends ScriptableObject {
 	 */
 	@JSFunction
 	public void login(final String user, final String pass, boolean forceBasic, String urlPartial) {
-		if (urlPartial != "undefined" && urlPartial != null) {
+		if (urlPartial == null || urlPartial.equals("undefined") || urlPartial.equals("")) {
 			urlPartial = "default";
-		}
+		}		
 
 		if (!forceBasic) {
 			lps.put(urlPartial, new LPs(user, pass));
@@ -146,7 +145,7 @@ public class HTTP extends ScriptableObject {
 							if (key != "default" && url.toString().startsWith(key)) getKey = key;
 						}
 						if (getKey == null) {
-							return new PasswordAuthentication (user, (AFCmdBase.afc.dIP(pass)).toCharArray());
+							return new PasswordAuthentication (lps.get("default").l, (AFCmdBase.afc.dIP(lps.get("default").p)).toCharArray());
 						} else {
 							return new PasswordAuthentication (lps.get(getKey).l, (AFCmdBase.afc.dIP(lps.get(getKey).p)).toCharArray());
 						}

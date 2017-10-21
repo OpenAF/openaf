@@ -42,8 +42,8 @@
         var res2 = ow.obj.rest.jsonGet("https://httpbin.org/basic-auth/admin/no2admin", {}, "admin", "no2admin");
         
         var h = new HTTP();
-        h.login("admin", "noadminno");
-        var res3 = jsonParse(h.exec("https://httpbin.org/basic-auth/admin/noadminno").response);
+        h.login("admin", "2noadminno");
+        var res3 = jsonParse(h.exec("https://httpbin.org/basic-auth/admin/2noadminno").response);
 
         ow.test.assert(res1.authenticated, true, "Problem with basic auth.");
         ow.test.assert(res2.authenticated, true, "Problem with a second basic auth.");
