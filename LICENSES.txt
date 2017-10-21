@@ -1,5 +1,5 @@
 Third-party name      : Showdown
-Version               : 1.7.2
+Version               : 1.7.6
 Changed from original : No
 Location in openaf.jar: js/showdown.js
 License               : 
@@ -41,7 +41,7 @@ software, even if advised of the possibility of such damage.
 
 -----------------------
 Third-party name      : Materializecss
-Version               : 0.100.1
+Version               : 0.100.2
 Changed from original : No
 Location in openaf.jar: js/materialize.js
 License               : 
@@ -100,7 +100,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 -----------------------
 Third-party name      : Handlebars
-Version               : 4.0.10
+Version               : 4.0.11
 Changed from original : No
 Location in openaf.jar: js/handlebars.js
 License               : 
@@ -496,7 +496,7 @@ Creative Commons Notice
 
 -----------------------
 Third-party name      : js-yaml
-Version               : 3.9.1
+Version               : 3.10.0
 Changed from original : No
 Location in openaf.jar: js/js-yaml.js
 License               : 
@@ -1518,7 +1518,7 @@ jury trial in any resulting litigation.
 
 -----------------------
 Third-party name      : Ignite
-Version               : 2.1.0
+Version               : 2.2.0
 Changed from original : No
 Location in openaf.jar: lib/ignite.jar
 License               : 
