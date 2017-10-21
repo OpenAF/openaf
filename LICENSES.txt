@@ -105,7 +105,7 @@ Changed from original : No
 Location in openaf.jar: js/handlebars.js
 License               : 
 
-Copyright (C) 2011-2016 by Yehuda Katz
+Copyright (C) 2011-2017 by Yehuda Katz
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -3266,7 +3266,7 @@ License               :
 
 -----------------------
 Third-party name      : Synaptics
-Version               : 1.1.2
+Version               : 1.1.3
 Changed from original : No
 Location in openaf.jar: js/synaptic.js
 License               : 
@@ -3296,7 +3296,7 @@ THE SOFTWARE
 
 
 ********************************************************************************************
-                                  SYNAPTIC (v1.1.2)
+                                  SYNAPTIC (v1.1.3)
 ********************************************************************************************
 
 Synaptic is a javascript neural network library for node.js and the browser, its generalized
