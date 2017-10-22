@@ -213,4 +213,4 @@ if (createTmp) {
 log("Done repacking OpenAF.jar");
 // We need to stop (but no longer needed)
 //java.lang.System.exit(0);
-} catch(e) { printErr(e); e.javaException.printStackTrace(); }
+} catch(e) { printErr(e); if (isDef(e.javaException)) se.javaException.printStackTrace(); }

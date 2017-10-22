@@ -205,7 +205,7 @@ function removeRemoteDB(aPackage, aDB) {
 function addLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 
-	if (io.fileInfo(fileDB).permissions.match(/w/)) {
+	if (!io.fileInfo(fileDB).permissions.match(/w/)) {
 		throw fileDB + " is not acessible. Please check permissions.";
 	}
 
@@ -309,7 +309,7 @@ function verifyDeps(packag) {
 	var packages = {};
 	var results = {};
 
-	if (io.fileInfo(fileDB).permissions.match(/r/)) {
+	if (!io.fileInfo(fileDB).permissions.match(/r/)) {
 		throw fileDB + " is not acessible. Please check permissions.";
 	}
 
@@ -343,7 +343,7 @@ function verifyDeps(packag) {
 function removeLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 
-	if (io.fileInfo(fileDB).permissions.match(/w/)) {
+	if (!io.fileInfo(fileDB).permissions.match(/w/)) {
 		throw fileDB + " is not acessible. Please check permissions.";
 	}
 
@@ -418,18 +418,23 @@ function listFilesWithHash(startPath, excludingList) {
 	var filesHash = {};
 
 	var files = listFiles(startPath, undefined, excludingList);
-    var c = 0;
+    var c = 0, cmax = 0;
 	
 	for (let i in files) {
 		c++;
 		try {
-			lognl("Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
+			var str = "Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r";
+			lognl(str);
+			if (str.length > cmax) cmax = str.length;
 			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) && !(files[i].match(new RegExp(PACKAGEYAML + "$", ""))))
 				filesHash[files[i]] = sha1(io.readFileStream(startPath + "/" + files[i])) + "";
 		} catch (e) {
 		}
 	}
-	if (c > 0) print("");
+	if (c > 0) {
+		lognl(repeat(cmax, " ") + "\r");
+		log("All files checked.");
+	}
 
 	return filesHash;
 }
@@ -1006,7 +1011,10 @@ function install(args) {
 			if(typeof opack == 'undefined') return;
 
 			biggestMessage = 0;
-			//for(i in packag.files) {
+			for(var i in packag.files) {
+				var str = "Unpacking " + packag.files[i] + "...\r";
+				if (str.length > biggestMessage) biggestMessage = str.length;
+			}
 			parallel4Array(packag.files, function(apackfile) {
 				mkdir(outputPath);
 				var message = "Unpacking " + apackfile + "...\r";
@@ -1020,6 +1028,7 @@ function install(args) {
 				}
 				return 1;
 			});
+			lognl(repeat(biggestMessage, " ") + "\r");
 			log("All files unpacked.");
 		    break;
 		case "local": {
@@ -1399,15 +1408,20 @@ function pack(args) {
 	var packName = packag.name + "-" + packag.version + ".opack";
 	af.rm(packName);
 	
-	var c = 0;
+	var c = 0, cmax = 0;
 	
 	for(let i in packag.files) {
 		c++;
 		file = packag.files[i];
-		lognl("Packing (" + ow.format.round((c * 100) / packag.files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
+		var str = "Packing (" + ow.format.round((c * 100) / packag.files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r";
+		lognl(str);
+		if (str.length > cmax) cmax = str.length;
 		zip.streamPutFileStream(packName, file, io.readFileStream(args[0] + "/" + file));
 	}
-	if (c > 0) print("");
+	if (c > 0) {
+		lognl(repeat(cmax, " "));
+		log("All files packed.");
+	}
 
     log("Writing " + packName);
 	//io.writeFileBytes(packName, zip.generate({"compressionLevel": 9}));
