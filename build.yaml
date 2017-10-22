@@ -24,6 +24,7 @@ jobs:
      exec  : >
         log("Copying...");
         //sh("cp " + global.path + "/openaf.jar " + global.path + "/dist/openaf.jar", "", undefined, true);
+        af.mkdir(global.path + "/dist");
         af.cp(global.path + "/openaf.jar", global.path + "/dist/openaf.jar");
 
 todo:

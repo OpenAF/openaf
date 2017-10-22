@@ -25,7 +25,8 @@ var verbs = {
 		                  "'-repo'    : Use an alternatively repository for dependencies",
 		                  "'-deps'    : Automatically try to install dependencies",
 		                  "'-useunzip': Alternatively use unzip to save memory",
-		                  "'-noverify': Don't run hash verification on the end",
+						  "'-noverify': Don't run hash verification on the end",
+						  "'-cred'    : Provide authentication credentials (e.g. user:pass)",
 		                  "'-arg'     : Pass an argument to the pre/post install scripts"]
 	},
 	"erase": {
@@ -38,7 +39,8 @@ var verbs = {
 	"update": {
 		"help"		  : "Updates a package",
 		"optionshelp" : [ "The install/erase verbs options are valid also for update.",
-		                  "'-all'  : Tries to update all packages locally installed",
+						  "'-all'  : Tries to update all packages locally installed",
+						  "'-cred' : Provide authentication credentials (e.g. user:pass)",
 		                  "'-erase': When updating delete the package frist"]
 	},
 	"exec": {
@@ -80,6 +82,9 @@ var zipCache = {};
 var outputPath;
 var verb;
 var arg;
+var __remoteUser;
+var __remotePass;
+var __remoteHTTP;
 
 // *********
 // FUNCTIONS
@@ -122,7 +127,7 @@ function getHTTPOPack(aURL) {
 
 	log("Retriving " + aURL);
 	try {
-		var http = new HTTP(aURL.replace(/ /g, "%20"), "GET", "", {}, true);
+		var http = execHTTPWithCred(aURL.replace(/ /g, "%20"), "GET", "", {}, true);
 		var opack = new ZIP(http.responseBytes());
 		zipCache[aURL] = opack;
 		return opack;
@@ -453,7 +458,7 @@ function verifyHashList(startPath, filesHash) {
 	if (startPath.match(/\.(opack)|(jar)$/)) {
 		if (location == "http") {
 			location = "opackhttp";
-			http = new HTTP(startPath.replace(/ /g, "%20"), "GET", "", {}, true);
+			http = execHTTPWithCred(startPath.replace(/ /g, "%20"), "GET", "", {}, true);
 			zip = new ZIP(http.responseBytes());
 		} else {
 			location = "opack";
@@ -463,7 +468,7 @@ function verifyHashList(startPath, filesHash) {
 	}
 
 	if (location == "http") {
-	    http = new HTTP(startPath.replace(/ /g, "%20") + "/" + file.replace(/ /g, "%20"));
+	    http = execHTTPWithCred(startPath.replace(/ /g, "%20") + "/" + file.replace(/ /g, "%20"));
 	}
 	
 	var c = 0;
@@ -532,6 +537,30 @@ function rmdir(aNewDirectory) {
 // ----------------------------------------------------------
 // SCRIPT UTILITIES
 // ----------------------------------------------------------
+
+// Get credentials
+function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	if (isUnDef(__remoteHTTP)) __remoteHTTP = new HTTP();
+
+	try {
+		__remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+	} catch(e) {
+		if (String(e.message).match(/code: 401/)) {
+			if (isUnDef(__remoteUser) || isUnDef(__remotePass)) {
+				plugin("Console");
+				var con = new Console();
+				__remoteUser = con.readLinePrompt("Enter authentication user: ");
+				__remotePass = con.readLinePrompt("Enter authentication password: ", "*");
+			}
+			__remoteHTTP.login(__remoteUser, Packages.wedo.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
+			__remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+		} else {
+			throw e;
+		}
+	}
+	
+	return __remoteHTTP;
+}
 
 // Find OpenAF she-bang
 function getOpenAFSB() {
@@ -670,12 +699,14 @@ function getPackage(packPath) {
 			try {
 				var http, output;
 				try {
-					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEJSON, "GET", "", {}, true);
+					http = execHTTPWithCred(packPath.replace(/ /g, "%20") + "/" + PACKAGEJSON, "GET", "", {}, true);
 					// There should be no \n usually associated with package.json scripts
 					output = af.fromBytes2String(http.responseBytes()).replace(/\n/g, "");
+					retry = false;
 				} catch(e) {
-					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
+					http = execHTTPWithCred(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
 					output = af.fromBytes2String(http.responseBytes());
+					retry = false;
 				}
 				packag = fromJsonYaml(output);
 				if (isUndefined(packag)) throw(packPath + "/" + PACKAGESJSON);
@@ -858,13 +889,13 @@ function install(args) {
 	}
 
     checkOpenAFinDB();
-	var packag = getPackage(args[0]);
 
     // Find other options
     var foundOutput = false;
     var force = false;
     var foundRepo = false;
-    var foundArg = false;
+	var foundArg = false;
+	var foundCred = false;
     var justCopy = false;
     var useunzip = false;
     var nohash = false;
@@ -872,7 +903,6 @@ function install(args) {
     var forceOutput = false;
     var output;
 
-    output = getOpenAFPath() + "/" + packag.name;
     for(let i in args) {
     	if (foundOutput) {
     		output = args[i];
@@ -888,7 +918,13 @@ function install(args) {
     	if (foundArg) {
     		arg = args[i];
     		foundArg = false;
-    	}
+		}
+		
+		if (foundCred) {
+			var cred = args[i];
+			if (cred.indexOf(":") > 0) [__remoteUser, __remotePass] = cred.split(/:/);
+			foundCred = false;
+		}
 
     	if (args[i] == "-d") foundOutput = true;
     	if (args[i] == "-force") force = true;
@@ -897,9 +933,11 @@ function install(args) {
     	if (args[i] == "-arg") foundArg = true;
     	if (args[i] == "-justcopy") justCopy = true;
     	if (args[i] == "-noverify") nohash = true;
-    	if (args[i] == "-useunzip") useunzip = true;
+		if (args[i] == "-useunzip") useunzip = true;
+		if (args[i] == "-cred") foundCred = true;
     }
-    
+	var packag = getPackage(args[0]);
+	if (isUnDef(output)) output = getOpenAFPath() + "/" + packag.name;
 
 	if (isUndefined(packag.name)) {
 		//logErr("Couldn't find package on location " + args[0]);
@@ -996,7 +1034,7 @@ function install(args) {
 				
 				var http;
 				try {
-					http = new HTTP(args[0].replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true);
+					http = execHTTPWithCred(args[0].replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true);
 					io.writeFileBytes(outputPath + "/" + apackfile, http.responseBytes());
 				} catch(e) {
 					logErr("Can't copy remote file '" + apackfile + "' (" + e.message + ")");
@@ -1143,10 +1181,10 @@ function update(args) {
 		return;
 	}
 
-	var packag = getPackage(args[0]);
 	var force = false;
 	var foundRepo = false;
 	var foundArg = false;
+	var foundCred = false;
 	var all = false;
 	var erase = false;
 
@@ -1161,12 +1199,20 @@ function update(args) {
     		foundArg = false;
     	}
 
+		if (foundCred) {
+			var cred = args[i];
+			if (cred.indexOf(":") > 0) [__remoteUser, __remotePass] = cred.split(/:/);
+			foundCred = false;
+		}
+
     	if (args[i] == "-arg") foundArg = true;
     	if (args[i] == "-force") force = true;
     	if (args[i] == "-repo") foundRepo = true;
     	if (args[i] == "-all") all = true;
-    	if (args[i] == "-erase") erase = true;
-    }
+		if (args[i] == "-erase") erase = true;
+		if (args[i] == "-cred") foundCred = true;
+	}
+	var packag = getPackage(args[0]);
 
     if (all) {
     	var ops = [];
