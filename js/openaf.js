@@ -1089,18 +1089,33 @@ function getOPackRemoteDB() {
 function getOPackLocalDB() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 	var packages = {};
+	var exc;
 
+	// Verify fileDB
 	try {
-		plugin("ZIP");
-		var zip = new ZIP(io.readFileBytes(fileDB));
-		packages = af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON)));
-		zip.close();
-		
-		for(var pack in packages) {
-			if (packages[pack].name == "OpenAF") packages[pack].version = getVersion();
+		if (io.fileInfo(fileDB).permissions.match(/r/)) {
+			exc = fileDB + " is not acessible. Please check permissions.";
 		}
 	} catch(e) {
+		exc = e;
 	}
+
+	if (isUnDef(exc)) {
+		try {
+			plugin("ZIP");
+			var zip = new ZIP(io.readFileBytes(fileDB));
+			packages = af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON)));
+			zip.close();
+			
+			for(var pack in packages) {
+				if (packages[pack].name == "OpenAF") packages[pack].version = getVersion();
+			}
+		} catch(e) {
+			exc = e;
+		}
+	}
+
+	if (isDef(exc)) throw exc;
 
 	return packages;
 }
@@ -2611,7 +2626,10 @@ function searchHelp(aTerm, aPath, aId) {
 	if (isUndefined(aPath)) {
 		var res;
 		var paths = [ getOpenAFJar() ];
-		paths = paths.concat(Object.keys(getOPackLocalDB()));
+		try {
+			paths = paths.concat(Object.keys(getOPackLocalDB()));
+		} catch(e) {
+		}
 		for(var i in paths) {
 			var path = paths[i];
 			if (!(path.match(/\.(jar|db|zip)/))) path = path + "/";

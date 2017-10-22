@@ -205,6 +205,10 @@ function removeRemoteDB(aPackage, aDB) {
 function addLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 
+	if (io.fileInfo(fileDB).permissions.match(/w/)) {
+		throw fileDB + " is not acessible. Please check permissions.";
+	}
+
 	try {
 		aTarget = (new java.io.File(aTarget)).getCanonicalPath() + "";
 	} catch(e) {
@@ -305,6 +309,10 @@ function verifyDeps(packag) {
 	var packages = {};
 	var results = {};
 
+	if (io.fileInfo(fileDB).permissions.match(/r/)) {
+		throw fileDB + " is not acessible. Please check permissions.";
+	}
+
 	try {
 		//var zip = new ZIP(io.readFileBytes(fileDB));
 		var zip = new ZIP();
@@ -334,6 +342,10 @@ function verifyDeps(packag) {
 // OpenPack local register remove
 function removeLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+
+	if (io.fileInfo(fileDB).permissions.match(/w/)) {
+		throw fileDB + " is not acessible. Please check permissions.";
+	}
 
 	aTarget = (new java.io.File(aTarget)).getCanonicalPath() + "";
 
