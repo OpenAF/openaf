@@ -38,6 +38,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAILSTMXORSave;
 
+   - name: owAI::Normalize with schema
+     from: owAI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testNormalizeWithSchema;
+
 todo:
    # ow.ai tests
    # -----------
@@ -47,3 +52,4 @@ todo:
    - owAI::Perceptron network save and load
    - owAI::Liquid network save and load
    - owAI::LSTM network save and load
+   - owAI::Normalize with schema

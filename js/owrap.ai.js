@@ -185,5 +185,84 @@ OpenWrap.ai.prototype.normalize = {
         }
 
         return res;
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.ai.normalize.withSchema(aSimpleMapOfData, aMapSchema) : Array</key>
+     * Tries to normalize and return aSimpleMapOfData normalized according with aMapSchema provided. Each element of aMapSchema
+     * should be a map describing how to normalize aSimpleMapOfData. Example:\
+     * \
+     * var ar = [\
+     *    {name:'workout', duration:'120', enjoy: true, time:1455063275, tags:['gym', 'weights'], crucial: false },\
+     *    {name:'lunch', duration:'45', enjoy: false, time:1455063275, tags:['salad', 'wine'], crucial: true },\
+     *    {name:'sleep', duration:'420', enjoy: true, time:1455063275, tags:['bed', 'romance'], crucial: true}\
+     * ];\
+     * \
+     * var sar = {\
+     *    name    : { col: 0, oneOf: [ 'workout', 'lunch', 'sleep' ] },\
+     *    duration: { col: 1, min: 0, max: 1000 },\
+     *    enjoy   : { col: 2 },\
+     *    tags    : { col: 3, anyOf: [ 'gym', 'weights', 'salad', 'wine', 'bed', 'romance' ] },\
+     *    crucial : { col: 4, scaleOf: [\
+     *      { val: true,  weight: 0.85 },\
+     *      { val: false, weight: 0.15 }\
+     *    ]},\
+     * };\
+     * \
+     * $from(ar).sort("time").select((r) => { return normalize(r, sar); });\
+     * \
+     * </odoc>
+     */
+    withSchema: function(aAR, sAR) {
+        var res = [];
+        loadLodash();
+    
+        for(var s in sAR) {
+            // Ensure it has a col
+            if (isDef(sAR[s].col)) {
+                // If it has a max
+                if (isDef(sAR[s].max)) {
+                    res[sAR[s].col] = ow.ai.normalize.scaleArray([aAR[s]], sAR[s].max, sAR[s].min);
+                    continue;
+                }
+                if (isDef(sAR[s].oneOf) && !isArray(aAR[s])) {
+                    var subres = [];
+                    for(var ss = 0; ss < sAR[s].oneOf.length; ss++) {
+                        subres[ss] = 0;
+                    }
+                    subres[sAR[s].oneOf.indexOf(aAR[s])] = 1;
+                    res[sAR[s].col] = subres;
+                    continue;
+                }
+                if (isDef(sAR[s].anyOf) && isArray(aAR[s])) {
+                    var subres = [];
+                    for(var ss = 0; ss < sAR[s].anyOf.length; ss++) {
+                        subres[ss] = 0;
+                    }        
+                    for(var ss in aAR[s]) {
+                        subres[sAR[s].anyOf.indexOf(aAR[s][ss])] = 1;
+                    }
+                    res[sAR[s].col] = subres;
+                    continue;
+                }
+                if (isDef(sAR[s].scaleOf)) {
+                    if (isArray(aAR[s])) {
+                        var subres = [];
+                        for(var ss in aAR[s]) {
+                            subres[ss] = $stream(sAR[s].scaleOf).filter({ val: aAR[s][ss] }).toArray()[0].weight;
+                        }
+                        res[sAR[s].col] = subres;
+                    } else {
+                        res[sAR[s].col] = $stream(sAR[s].scaleOf).filter({ val: aAR[s] }).toArray()[0].weight;
+                    }
+                    continue;
+                }
+                // Else assume it's boolean
+                res[sAR[s].col] =  (aAR[s]) ? true : false;
+            }
+        }
+    
+        return _.flatten(res);
     }
 };

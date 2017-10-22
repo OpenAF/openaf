@@ -78,5 +78,47 @@
         ow.test.assert(Math.round(nn.get([0,0])), 0, "Problem with saves ow.ai liquid 1 XOR 0");   
 
         af.rm("autoTestAll.ai.xorNet.liquid.gz");
-    };    
+    };   
+    
+    exports.testNormalizeWithSchema = function() {
+        ow.loadAI();
+
+        var ar = [
+            {name:'workout', duration:'120', enjoy: true, time:1455063275, tags:['gym', 'weights'], crucial: true },
+            {name:'lunch', duration:'45', enjoy: false, time:1455063275, tags:['salad', 'wine'], crucial: false },
+            {name:'sleep', duration:'420', enjoy: true, time:1455063275, tags:['bed', 'romance'], crucial: true}
+        ];
+
+        var sar = {
+            name: {
+                col: 0,
+                oneOf: [ 'workout', 'lunch', 'sleep' ]
+            },
+            duration: {
+                col: 1,
+                min: 0,
+                max: 1000
+            },
+            enjoy: {
+                col: 2
+            },
+            tags: {
+                col: 3,
+                anyOf: [ 'gym', 'weights', 'salad', 'wine', 'bed', 'romance' ]
+            },
+            crucial: {
+                col: 4,
+                scaleOf: [
+                    { val: true,  weight: 0.85 },
+                    { val: false, weight: 0.15 }
+                ]
+            },    
+        };
+
+        var res = $from(ar).sort("time").select((r) => { return ow.ai.normalize.withSchema(r, sar); });
+
+        ow.test.assert(res[0], [1, 0, 0, 0.12, true, 1, 1, 0, 0, 0, 0, 0.85], "Problem with ow.ai.normalize.withSchema (1)");
+        ow.test.assert(res[1], [0, 1, 0, 0.045, false, 0, 0, 1, 1, 0, 0, 0.15], "Problem with ow.ai.normalize.withSchema (2)");
+        ow.test.assert(res[2], [0, 0, 1, 0.42, true, 0, 0, 0, 0, 1, 1, 0.85], "Problem with ow.ai.normalize.withSchema (3)");
+    };
 })();
