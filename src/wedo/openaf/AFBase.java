@@ -1188,5 +1188,17 @@ public class AFBase extends ScriptableObject {
 		AFCmdBase.jse.exitContext();
 		return ret;
 	}	
+
+	/**
+	 * <odoc>
+	 * <key>af.crypt(aKey, aSalt) : String</key>
+	 * Tries to mimic crypt(3) password encryption using the org.apache.commons.codec.digest.Crypt.crypt function. Please
+	 * check https://commons.apache.org/proper/commons-codec/apidocs/org/apache/commons/codec/digest/Crypt.html for more.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String crypt(String key, String salt) {
+		return org.apache.commons.codec.digest.Crypt.crypt(key, salt);
+	}
 	
 }

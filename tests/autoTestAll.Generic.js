@@ -325,4 +325,12 @@
             csv.csv()[0].B != 'a' ||
             csv.csv()[0].C != 'b') throw "Failed CSV generation on toCsv!";    
     };
+
+    exports.testCrypt = function() {
+        var res1 = af.crypt("secret", "$1$xxxx");
+        var res2 = af.crypt("secret", "xx");
+
+        ow.test.assert(res1, "$1$xxxx$aMkevjfEIpa35Bh3G4bAc.", "Problem with crypt for MD5");
+        ow.test.assert(res2, "xxWAum7tHdIUw", "Problem with crypt for DES");
+    };
 })();

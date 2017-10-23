@@ -98,6 +98,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testCSV;
 
+   - name: OpenAF::Crypt
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testCrypt;
+
 todo:
    # Generic Tests
    # -------------
@@ -118,6 +123,7 @@ todo:
    - OpenAF::Test $doAll
    - OpenAF::Test $doFirst
    - OpenAF::Basic Parallel processing
+   - OpenAF::Crypt
   
    # CSV Tests
    # ---------
