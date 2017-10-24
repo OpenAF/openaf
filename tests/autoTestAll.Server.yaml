@@ -1,0 +1,26 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # Server tests
+   # --------------
+   - name: Server::Init
+     exec: |
+       args.tests = require("autoTestAll.Server.js");
+
+   - name: Server::REST server
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRESTServer;
+
+   - name: Server::HTTP server 
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPServer;
+
+todo:
+   # Server tests
+   # ------------
+   - Server::Init
+   - Server::REST server
+   - Server::HTTP server

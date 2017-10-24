@@ -7,4 +7,7 @@ include:
    - autoTestAll.Channels.yaml
    - autoTestAll.Template.yaml
    - autoTestAll.oDoc.yaml
-   - autoTestAll.ow.AI.yaml
+   - autoTestAll.AI.yaml
+   - autoTestAll.Server.yaml
+   - autoTestAll.XLS.yaml
+   - autoTestAll.ZIP.yaml

@@ -26,7 +26,7 @@
         ow.test.assert($ch(this.chType + "HK").size(), 10, "Channel didn't set all required values.");
 
         $ch(this.chType + "HK").subscribe(ow.ch.utils.getHousekeepSubscriber(this.chType + "HK", 3));
-        sleep(2500); 
+        sleep(3500); 
         $ch(this.chType + "HK").waitForJobs();
         ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values in time.");
 

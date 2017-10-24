@@ -1,0 +1,61 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # ow.ai tests
+   # --------------
+   - name: AI::Init
+     exec: |
+       args.tests = require("autoTestAll.AI.js");
+
+   - name: AI::Perceptron XOR
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIPerceptronXOR;
+
+   - name: AI::Perceptron XOR save and load
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAINetworkSave;
+
+   - name: AI::Liquid XOR
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAILiquidXOR;
+
+   - name: AI::LSTM XOR
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAILSTMXOR;     
+
+   - name: AI::Perceptron network save and load
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAINetworkSave;
+
+   - name: AI::Liquid network save and load
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAILiquidXORSave;
+
+   - name: AI::LSTM network save and load
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAILSTMXORSave;
+
+   - name: AI::Normalize with schema
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testNormalizeWithSchema;
+
+todo:
+   # ow.ai tests
+   # -----------
+   - AI::Perceptron XOR
+   - AI::Liquid XOR
+   - AI::LSTM XOR
+   - AI::Perceptron network save and load
+   - AI::Liquid network save and load
+   - AI::LSTM network save and load
+   - AI::Normalize with schema
+   - AI::Perceptron XOR save and load 

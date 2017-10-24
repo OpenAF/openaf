@@ -25,6 +25,7 @@ jobs:
      from: Channels::Init
      to  : oJob Test
      deps: 
+       - Channels::Setting data into a channel
        - Channels::Creating a channel
      exec: args.func = args.tests.testDestroyChannel;
 
