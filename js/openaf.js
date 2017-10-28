@@ -2471,6 +2471,13 @@ if (isUndefined(ow))
 
 /**
  * <odoc>
+ * <key>ow.loadDev()</key>
+ * Loads OpenWrap dev functionality. Basically functions being tested.
+ * </odoc>
+ */
+OpenWrap.prototype.loadDev = function() { loadCompiledLib("owrap_dev_js"); ow.dev = new OpenWrap.dev(); pods.declare("ow.dev", ow.dev); return ow.dev; }
+/**
+ * <odoc>
  * <key>ow.loadFormat()</key>
  * Loads OpenWrap format functionality. Basically functions to help with the formatting of strings, numbers, dates, etc...
  * </odoc>
