@@ -1,0 +1,20 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # DB tests
+   # --------------
+   - name: DB::Init
+     exec: |
+       args.tests = require("autoTestAll.DB.js");
+
+   - name: DB::Simple DB in memory
+     from: DB::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDBInMemory;
+
+todo:
+   # DB tests
+   # ------------
+   - DB::Init
+   - DB::Simple DB in memory

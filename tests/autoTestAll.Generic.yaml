@@ -103,6 +103,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testCrypt;
 
+   - name: OpenAF::YAML
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testYAML;
+
 todo:
    # Generic Tests
    # -------------
@@ -124,6 +129,7 @@ todo:
    - OpenAF::Test $doFirst
    - OpenAF::Basic Parallel processing
    - OpenAF::Crypt
+   - OpenAF::YAML
   
    # CSV Tests
    # ---------

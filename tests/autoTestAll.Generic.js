@@ -333,4 +333,21 @@
         ow.test.assert(res1, "$1$xxxx$aMkevjfEIpa35Bh3G4bAc.", "Problem with crypt for MD5");
         ow.test.assert(res2, "xxWAum7tHdIUw", "Problem with crypt for DES");
     };
+
+    exports.testYAML = function() {
+        var r = {
+            a: 1,
+            b: "123",
+            c: true,
+            d: [ 1, 2, 3],
+            e: {
+                a: 1,
+                b: "123",
+                c: true
+            }
+        };
+
+        ow.test.assert(af.toYAML(r), "a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n", "Problem converting to yaml.");
+        ow.test.assert(af.fromYAML("a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n"), r, "Problem converting from yaml.");
+    };
 })();
