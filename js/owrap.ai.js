@@ -177,7 +177,7 @@ OpenWrap.ai.prototype.normalize = {
      * Returns anArray where all numbers have been rounded to an integer value.
      * </odoc>
      */
-    intArray: function(anArray) {
+    intArray: function(ar) {
         var res = [];
 
         for(var v in ar) {
