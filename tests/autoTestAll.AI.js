@@ -21,7 +21,7 @@
 
     exports.testAILSTMXOR = function() {
         ow.loadAI();
-        var nn = new ow.ai.network({ type: "lstm", args: [2, 4, 4, 4, 1]});
+        var nn = new ow.ai.network({ type: "lstm", args: [2, 6, 2, 1, 1]});
         nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}], { iterations: 100000, error: 0.001 });
         ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with ow.ai lstm 1 XOR 0");
         ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with ow.ai lstm 1 XOR 1");
@@ -48,7 +48,7 @@
 
     exports.testAILSTMXORSave = function() {
         ow.loadAI();
-        var nn = new ow.ai.network({ type: "lstm", args: [2, 4, 4, 4, 1]});
+        var nn = new ow.ai.network({ type: "lstm", args: [2, 6, 2, 1, 1]});
         nn.train([{input: [0,0], output: [0]}, {input: [0,1], output: [1]}, {input: [1,0], output: [1]}, {input: [1,1], output :[0]}], { iterations: 100000, error: 0.001 });
         nn.writeFile("autoTestAll.ai.xorNet.lstm.gz");
 
