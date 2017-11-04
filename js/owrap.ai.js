@@ -94,7 +94,7 @@ OpenWrap.ai.prototype.network.prototype.hopfield = function(args) {
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.train = function(trainingData, trainArgs) {
-    if (isUnDef(this.__net)) throw "Network not initialized."
+    if (isUnDef(this.__net)) throw "Network not initialized.";
 
     var t = new ow.ai.synaptic.Trainer(this.__net);
     t.train(trainingData, trainArgs);
@@ -109,7 +109,7 @@ OpenWrap.ai.prototype.network.prototype.train = function(trainingData, trainArgs
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.get = function(inputData) {
-    if (isUnDef(this.__net)) throw "Network not initialized."
+    if (isUnDef(this.__net)) throw "Network not initialized.";
 
     return this.__net.activate(inputData);
 };
@@ -121,7 +121,7 @@ OpenWrap.ai.prototype.network.prototype.get = function(inputData) {
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.toJson = function() {
-    if (isUnDef(this.__net)) throw "Network not initialized."
+    if (isUnDef(this.__net)) throw "Network not initialized.";
 
     return this.__net.toJSON();
 };

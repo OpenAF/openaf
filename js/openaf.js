@@ -1217,15 +1217,27 @@ function load(aScript) {
  * as plugin("HTTP")).
  * </odoc>
  */
+var __loadedPlugins;
 function plugin(aPlugin) {
+	if (isUnDef(__loadedPlugins)) __loadedPlugins = {};
+	var pluginLoaded;
 	try {
 		if (!aPlugin.match(/\./)) {
+			pluginLoaded = "wedo.openaf.plugins." + aPlugin;
+			
+			if (__loadedPlugins[pluginLoaded]) return;
 			af.plugin("wedo.openaf.plugins." + aPlugin);
+			__loadedPlugins[pluginLoaded] = true;
+
 			return;
 		}
 	} catch(e) {
 	}
+
+	pluginLoaded = aPlugin;
+	if (__loadedPlugins[pluginLoaded]) return;
 	af.plugin(aPlugin);
+	__loadedPlugins[pluginLoaded] = true;
 }
 
 /**
@@ -2155,6 +2167,16 @@ function isFunction(obj) {
  */
 function isString(obj) {
 	return typeof obj == 'string' || false;
+}
+
+/**
+ * <odoc>
+ * <key>isNumber(aObj) : boolean</key>
+ * Returns true if aObj is a number, false otherwise
+ * </odoc>
+ */
+function isNumber(obj) {
+	return !isNaN(parseFloat(obj)) && isFinite(obj);
 }
 
 /**
