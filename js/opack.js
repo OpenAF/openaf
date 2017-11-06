@@ -210,8 +210,14 @@ function removeRemoteDB(aPackage, aDB) {
 function addLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 
-	if (!io.fileInfo(fileDB).permissions.match(/w/)) {
-		throw fileDB + " is not acessible. Please check permissions.";
+	try {
+		if (!io.fileInfo(fileDB).permissions.match(/w/)) {
+			throw fileDB + " is not acessible. Please check permissions.";
+		}
+	} catch(e) {
+		if (!(e.message.match(/NoSuchFileException/))) {
+			throw e;
+		}
 	}
 
 	try {
@@ -274,6 +280,7 @@ function getLocalDB(shouldRefresh) {
 		if (!isUndefined(localDB)) return localDB;
 
 	localDB = getOPackLocalDB();
+	if (compare(localDB, {})) checkOpenAFinDB();
 
 	return localDB;
 }
@@ -310,22 +317,22 @@ function findLocalDBTargetByName(aName) {
 
 // dependencies
 function verifyDeps(packag) {
-	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
-	var packages = {};
+	//var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+	var packages = getOPackLocalDB();
 	var results = {};
 
-	if (!io.fileInfo(fileDB).permissions.match(/r/)) {
+	/*if (!io.fileInfo(fileDB).permissions.match(/r/)) {
 		throw fileDB + " is not acessible. Please check permissions.";
-	}
+	}*/
 
-	try {
+	/*try {
 		//var zip = new ZIP(io.readFileBytes(fileDB));
 		var zip = new ZIP();
 		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
 		//zip.close();
 	} catch(e) {
 		//logErr(e.message);
-	}
+	}*/
 
 	for(let dep in packag.dependencies) {
 		var version = packag.dependencies[dep];

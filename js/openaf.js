@@ -1115,7 +1115,7 @@ function getOPackLocalDB() {
 		}
 	}
 
-	if (isDef(exc) && (!exc.message.match(/NoSuchFileException/))) throw exc;
+	if (isDef(exc) && isDef(exc.message) && (!exc.message.match(/NoSuchFileException/))) throw exc;
 
 	return packages;
 }
