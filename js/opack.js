@@ -438,8 +438,11 @@ function listFilesWithHash(startPath, excludingList) {
 			var str = "Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r";
 			lognl(str);
 			if (str.length > cmax) cmax = str.length;
-			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) && !(files[i].match(new RegExp(PACKAGEYAML + "$", ""))))
-				filesHash[files[i]] = sha1(io.readFileStream(startPath + "/" + files[i])) + "";
+			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) && !(files[i].match(new RegExp(PACKAGEYAML + "$", "")))) {
+				var rfs = io.readFileStream(startPath + "/" + files[i]);
+				filesHash[files[i]] = sha1(rfs) + "";
+				rfs.close();
+			}
 		} catch (e) {
 		}
 	}
@@ -487,7 +490,11 @@ function verifyHashList(startPath, filesHash) {
 		var hash;
 
 		switch(location) {
-		case "local": hash = sha1(io.readFileStream(startPath + "/" + file)) + ""; break;
+		case "local": 
+			var rfs = io.readFileStream(startPath + "/" + file);
+			hash = sha1(rfs) + "";
+			rfs.close();
+			break;
 		case "http":
 			hash = sha1(http.responseBytes()) + "";
 			break;
@@ -1469,7 +1476,9 @@ function pack(args) {
 		var str = "Packing (" + ow.format.round((c * 100) / packag.files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r";
 		lognl(str);
 		if (str.length > cmax) cmax = str.length;
-		zip.streamPutFileStream(packName, file, io.readFileStream(args[0] + "/" + file));
+		var rfs = io.readFileStream(args[0] + "/" + file);
+		zip.streamPutFileStream(packName, file, rfs);
+		rfs.close();
 	}
 	if (c > 0) {
 		lognl(repeat(cmax, " "));
