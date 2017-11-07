@@ -21,6 +21,16 @@
 			]
 		},
 		{
+			"description": "FuseJS",
+			"path"       : [ "js/fusejs.js" ],
+			"version"    : "3.2.0",
+			"changes"    : false,
+			"type"       : [ "js" ],
+			"license"    : "https://raw.githubusercontent.com/krisk/Fuse/master/LICENSE",
+			"deps"       : [
+			]
+		},
+		{
 			"description": "Backbone",
 			"path"       : [ "js/backbone.js" ],
 			"version"    : "1.3.3",

@@ -233,6 +233,7 @@ try {
 			file.filename !== 'js-yaml.js' &&
 			file.filename !== 'highlight.js' &&
 			file.filename !== 'avsc.js' &&
+			file.filename !== 'fusejs.js' &&
 			file.filename !== 'jquery.js') {
 
 			var doIt = true;

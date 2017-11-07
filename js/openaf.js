@@ -2634,6 +2634,27 @@ function loadUnderscore() {
 	if (res) pods.declare("Lodash", loadUnderscore());
 }
 
+/**
+ * <odoc>
+ * <key>loadFuse</key>
+ * Loads the FuseJS javascript library into scope.\
+ * \
+ * See more in: http://fusejs.io/
+ * </odoc>
+ */
+function loadFuse() {
+	var res = loadCompiledLib("fusejs_js");
+	if (res) pods.declare("FuseJS", loadFuse());
+}
+
+/**
+ * <odoc>
+ * <key>loadLodash()</key>
+ * Loads the loadash javascript library.\
+ * \
+ * See more in https://lodash.com/docs
+ * </odoc>
+ */
 function loadLodash() {
 	loadUnderscore();
 }
