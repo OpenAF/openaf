@@ -418,7 +418,7 @@ function listFiles(startPath, relPath, excludingList) {
 			files.push(relPath + file.filename.replace(/\\+/g, "/"));
 		} else {
 			//files.push(relPath + file.filename);
-			files = files.concat(listFiles(startPath, file.filepath.replace(new RegExp(startPath + "[\\\\/]*", ""), "") + "/"));
+			files = files.concat(listFiles(startPath, file.filepath.replace(/\\/g, "/").replace(new RegExp(startPath + "[\\\\/]*", ""), "") + "/"));
 		}
 	}
 
