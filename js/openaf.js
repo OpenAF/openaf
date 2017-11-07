@@ -564,7 +564,8 @@ var __logFormat = {
 	separator : " | ",
 	indent    : "",
 	async     : true,
-	asyncLevel: 3
+	asyncLevel: 3,
+	profile   : false
 };
 var __logPromise;
 
@@ -596,6 +597,7 @@ function __initializeLogPromise() {
  * - dateTZ     (string)  Time zone to use with ow.format.fromDate\
  * - separator  (string)  String to use as separator\
  * - async      (boolean) Run in async mode\
+ * - profile    (boolean) Gathers memory and system load stats\
  * \
  * </odoc>
  */
@@ -661,19 +663,26 @@ function stopLog() {
  * </odoc>
  */
 function log(msg) {
-	var data = (new Date()).toJSON();
-	if (__logStatus) 
-		$ch("__log").set({
-			"d": data,
-			"t": "INFO"
-		}, {
-			"d": data,
-			"t": "INFO",
-			"m": msg
-		});
+	var data = (new Date()).toJSON(), k, v;
+	if (__logStatus) {
+		var f = () => {
+			k = { d: data, t: "INFO" };
+			v = { d: data, t: "INFO", m: msg };
+			if (isDef(__logFormat) && __logFormat.profile) {
+				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
+				v.systemLoad = getCPULoad();
+			}
+			$ch("__log").set(k, v);
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
 	if (go) {
-		__initializeLogPromise();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -683,9 +692,10 @@ function log(msg) {
 			ansiStop();
 			return 1;
 		};
-		if (isDef(__logFormat) && __logFormat.async) 
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
 			__logPromise = __logPromise.then(f);
-		else 
+		} else 
 			f();
 	}
 }
@@ -711,18 +721,25 @@ function tlog(msg, someData) {
  */
 function lognl(msg) {
 	var data = (new Date()).toJSON();
-	if (__logStatus) 
-		$ch("__log").set({
-			"d": data,
-			"t": "INFO"
-		}, {
-			"d": data,
-			"t": "INFO",
-			"m": msg
-		});
+	if (__logStatus) {
+		var f = () => {
+			k = { d: data, t: "INFO" };
+			v = { d: data, t: "INFO", m: msg };
+			if (isDef(__logFormat) && __logFormat.profile) {
+				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
+				v.systemLoad = getCPULoad();
+			}
+			$ch("__log").set(k, v);
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
 	if (go) {
-		__initializeLogPromise();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -732,9 +749,10 @@ function lognl(msg) {
 			ansiStop();
 			return 1;
 		};
-		if (isDef(__logFormat) && __logFormat.async) 
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
 			__logPromise = __logPromise.then(f);
-		else 
+		} else 
 			f();	
 		
 	}
@@ -760,18 +778,25 @@ function tlognl(msg, someData) {
  */
 function logErr(msg) {
 	var data = (new Date()).toJSON();
-	if (__logStatus) 
-		$ch("__log").set({
-			"d": data,
-			"t": "ERROR"
-		}, {
-			"d": data,
-			"t": "ERROR",
-			"m": msg
-		});
+	if (__logStatus) {
+		var f = () => {
+			k = { d: data, t: "ERROR" };
+			v = { d: data, t: "ERROR", m: msg };
+			if (isDef(__logFormat) && __logFormat.profile) {
+				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
+				v.systemLoad = getCPULoad();
+			}
+			$ch("__log").set(k, v);
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offError)) ? false : true;
 	if (go) {
-		__initializeLogPromise();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -781,9 +806,10 @@ function logErr(msg) {
 			ansiStop();
 			return 1;
 		};
-		if (isDef(__logFormat) && __logFormat.async) 
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
 			__logPromise = __logPromise.then(f);
-		else 
+		} else 
 			f();		
 
 	}	
@@ -798,18 +824,25 @@ function logErr(msg) {
  */
 function logWarn(msg) {
 	var data = (new Date()).toJSON();
-	if (__logStatus) 
-		$ch("__log").set({
-			"d": data,
-			"t": "WARN"
-		}, {
-			"d": data,
-			"t": "WARN",
-			"m": msg
-		});
+	if (__logStatus) {
+		var f = () => {
+			k = { d: data, t: "WARN" };
+			v = { d: data, t: "WARN", m: msg };
+			if (isDef(__logFormat) && __logFormat.profile) {
+				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
+				v.systemLoad = getCPULoad();
+			}
+			$ch("__log").set(k, v);
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offWarn)) ? false : true;
 	if (go) {
-		__initializeLogPromise();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -819,9 +852,10 @@ function logWarn(msg) {
 			ansiStop();
 			return 1;
 		};
-		if (isDef(__logFormat) && __logFormat.async) 
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
 			__logPromise = __logPromise.then(f);
-		else 
+		} else 
 			f();		
 	}		
 }
