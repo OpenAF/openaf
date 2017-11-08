@@ -613,7 +613,7 @@ function setLog(aMap) {
  * </odoc>
  */
 function startLog(externalLogging) {
-	$ch("__log").create();
+	$ch("__log").create(true);
 	__logStatus = true;
 	if (isDef(externalLogging) && isFunction(externalLogging)) {
 		return $ch("__log").subscribe(externalLogging);
@@ -663,11 +663,11 @@ function stopLog() {
  * </odoc>
  */
 function log(msg) {
-	var data = (new Date()).toJSON(), k, v;
+	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
 	if (__logStatus) {
 		var f = () => {
-			k = { d: data, t: "INFO" };
-			v = { d: data, t: "INFO", m: msg };
+			k = { n: nw, t: "INFO" };
+			v = { n: nw, d: data, t: "INFO", m: msg };
 			if (isDef(__logFormat) && __logFormat.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
@@ -720,11 +720,11 @@ function tlog(msg, someData) {
  * </odoc>
  */
 function lognl(msg) {
-	var data = (new Date()).toJSON();
+	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
 	if (__logStatus) {
 		var f = () => {
-			k = { d: data, t: "INFO" };
-			v = { d: data, t: "INFO", m: msg };
+			k = { n: nw, t: "INFO" };
+			v = { n: nw, d: data, t: "INFO", m: msg };
 			if (isDef(__logFormat) && __logFormat.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
@@ -777,11 +777,11 @@ function tlognl(msg, someData) {
  * </odoc>
  */
 function logErr(msg) {
-	var data = (new Date()).toJSON();
+	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
 	if (__logStatus) {
 		var f = () => {
-			k = { d: data, t: "ERROR" };
-			v = { d: data, t: "ERROR", m: msg };
+			k = { n: nw, t: "ERROR" };
+			v = { n: nw, d: data, t: "ERROR", m: msg };
 			if (isDef(__logFormat) && __logFormat.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
@@ -823,11 +823,11 @@ function logErr(msg) {
  * </odoc>
  */
 function logWarn(msg) {
-	var data = (new Date()).toJSON();
+	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
 	if (__logStatus) {
 		var f = () => {
-			k = { d: data, t: "WARN" };
-			v = { d: data, t: "WARN", m: msg };
+			k = { n: nw, t: "WARN" };
+			v = { n: nw, d: data, t: "WARN", m: msg };
 			if (isDef(__logFormat) && __logFormat.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());

@@ -121,6 +121,7 @@
             s(123);
         }).then((v) => {
             if (v == 123) success = true;
+            return v;
         }));
 
         ow.test.assert(success, true, "Problem with $do().then() using onFullfilment");
@@ -131,6 +132,7 @@
             return 123;
         }).then((v) => {
             if (v == 123) success = true;
+            return v;
         }));
 
         ow.test.assert(success, true, "Problem with $do().then() using return");
@@ -142,6 +144,7 @@
             return true;
         }).then((v) => {
             if (v == 123) success = true;
+            return v;
         }).catch((r) => {
             if (r == 123) success = false;
         }));
@@ -154,6 +157,7 @@
             throw 123;
         }).then((v) => {
             if (v == 123) success = true;
+            return v;
         }).catch((r) => {
             if (String(r) == 123) success = false;
         }));
@@ -190,6 +194,7 @@
             })
         ]).then((values) => {
             if (compare(values, [1, 2])) success = values;
+            return values;
         }));
 
         ow.test.assert(success.sort(), [1, 2], "Problem with $doAll()");
@@ -202,6 +207,7 @@
             })
         ]).then((values) => {
             if (compare(values, [1, 2])) success = values;
+            return values;
         }).catch((reason) => {
             if (reason == 2) res = true;
         }));
@@ -220,6 +226,7 @@
             })
         ]).then((value) => {
             if (value == 1) success = 1;
+            return value;
         }));
 
         sleep(50);
@@ -233,6 +240,7 @@
             })
         ]).then((values) => {
             if (compare(values, [1, 2])) success = values;
+            return values;
         }).catch((reason) => {
             if (reason == 2) res = true;
         }));
