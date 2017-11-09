@@ -523,6 +523,8 @@ var __colorFormat = {
 	default: "YELLOW"
 };
 function colorify(json) {
+	if (!(isObject(json))) return json;
+	
 	if (typeof json != 'string') {
 		json = JSON.stringify(json, undefined, 2);
 	}
@@ -542,11 +544,16 @@ function colorify(json) {
 		}
 		var res = ""; 
 		switch(cls) {
-		case "key": res = ansiColor(__colorFormat.key, match); break;
-		case "number": res = ansiColor(__colorFormat.number, match); break;
-		case "string": res = ansiColor(__colorFormat.string, match); break;
-		case "boolean": res = ansiColor(__colorFormat.boolean, match); break;
-		default: res = ansiColor(__colorFormat.default, match);
+		case "key"    : 
+		   if (isDef(__colorFormat) && isDef(__colorFormat.key)) res = ansiColor(__colorFormat.key, match); else res = match; break;
+		case "number" : 
+		   if (isDef(__colorFormat) && isDef(__colorFormat.number)) res = ansiColor(__colorFormat.number, match); else res = match; break;
+		case "string" : 
+		   if (isDef(__colorFormat) && isDef(__colorFormat.string)) res = ansiColor(__colorFormat.string, match); else res = match; break;
+		case "boolean": 
+	       if (isDef(__colorFormat) && isDef(__colorFormat.boolean)) res = ansiColor(__colorFormat.boolean, match); else res = match; break;
+		default: 
+		   if (isDef(__colorFormat) && isDef(__colorFormat.default)) res = ansiColor(__colorFormat.default, match); else res = match;
 		}
 		return res;
 	});
