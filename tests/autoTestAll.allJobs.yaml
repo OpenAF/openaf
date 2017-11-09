@@ -10,6 +10,7 @@ include:
    - autoTestAll.oDoc.yaml
    - autoTestAll.AI.yaml
    - autoTestAll.Server.yaml
+   - autoTestAll.Obj.yaml   
    - autoTestAll.JMX.yaml
    - autoTestAll.XLS.yaml
    - autoTestAll.ZIP.yaml

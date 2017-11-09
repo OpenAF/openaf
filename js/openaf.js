@@ -105,17 +105,24 @@ function print(str) {
 /**
  * <odoc>
  * <key>sprint(aStr)</key>
- * "Stringifies" and prints the aStr to the stdout (with a new line on the end) (example: print("hello world!"))
+ * "Stringifies" and prints the aStr to the stdout (with a new line on the end) (example: sprint("hello world!"))
  * </odoc>
  */
 function sprint(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return print(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprint(aStr)</key>
- * "Beautifies" and prints the aStr to the stdout (with a new line on the end) (example: print("hello world!"))
+ * "Beautifies" and prints the aStr to the stdout (with a new line on the end) (example: bprint("hello world!"))
  * </odoc>
  */
 function bprint(str) { return print(beautifier(str)); }
+/**
+ * <odoc>
+ * <key>cprint(aStr)</key>
+ * "Stringifies" in ANSI color and prints the aStr to the stdout (with a new line on the end) (example: cprint("hello world!"))
+ * </odoc>
+ */
+function cprint(str, delim) { ansiStart(); print(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
@@ -130,17 +137,24 @@ function printnl(str) {
 /**
  * <odoc>
  * <key>sprintnl(aStr)</key>
- * "Stringifies" and prints the aStr to the stdout (without adding a new line on the end) (example: printnl("hello world!"))
+ * "Stringifies" and prints the aStr to the stdout (without adding a new line on the end) (example: sprintnl("hello world!"))
  * </odoc>
  */
 function sprintnl(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printnl(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprintnl(aStr)</key>
- * "Beautifies" and prints the aStr to the stdout (without adding a new line on the end) (example: printnl("hello world!"))
+ * "Beautifies" and prints the aStr to the stdout (without adding a new line on the end) (example: bprintnl("hello world!"))
  * </odoc>
  */
 function bprintnl(str) { return printnl(beautifier(str)); }
+/**
+ * <odoc>
+ * <key>cprintnl(aStr)</key>
+ * "Stringifies" in ANSI color and prints the aStr to the stdout (with a new line on the end) (example: cprintnl("hello world!"))
+ * </odoc>
+ */
+function cprintnl(str, delim) { ansiStart(); printnl(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
@@ -190,17 +204,24 @@ function printErr(str) {
 /**
  * <odoc>
  * <key>sprintErr(aStr)</key>
- * "Stringifies" and prints the aStr to the stderr (with a new line on the end) (example: printErr("Hupps!! A problem!"))
+ * "Stringifies" and prints the aStr to the stderr (with a new line on the end) (example: sprintErr("Hupps!! A problem!"))
  * </odoc>
  */
 function sprintErr(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printErr(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprintErr(aStr)</key>
- * "Beautifies" and prints the aStr to the stderr (with a new line on the end) (example: printErr("Hupps!! A problem!"))
+ * "Beautifies" and prints the aStr to the stderr (with a new line on the end) (example: bprintErr("Hupps!! A problem!"))
  * </odoc>
  */
 function bprintErr(str) { return printErr(beautifier(str)); }
+/**
+ * <odoc>
+ * <key>cprintErr(aStr)</key>
+ * "Stringifies" in ANSI color and prints the aStr to the stderr (with a new line on the end) (example: cprintErr("Hupps!! A problem!"))
+ * </odoc>
+ */
+function cprintErr(str) { ansiStart(); printErr(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
@@ -215,7 +236,7 @@ function printErrnl(str) {
 /**
  * <odoc>
  * <key>sprintErrnl(aStr)</key>
- * "Stringifies" and prints the aStr to the stderr (without adding a new line on the end) (example: printErrnl("Hupps!! A problem!"))
+ * "Stringifies" and prints the aStr to the stderr (without adding a new line on the end) (example: sprintErrnl("Hupps!! A problem!"))
  * </odoc>
  */
 function sprintErrnl(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printErrnl(stringify(str, undefined, delim)); }
@@ -223,10 +244,18 @@ function sprintErrnl(str, delim) { delim = (isUndefined(delim) ? "  " : delim); 
 /**
  * <odoc>
  * <key>bprintErrnl(aStr)</key>
- * "Beautifies" and prints the aStr to the stderr (without adding a new line on the end) (example: printErrnl("Hupps!! A problem!"))
+ * "Beautifies" and prints the aStr to the stderr (without adding a new line on the end) (example: bprintErrnl("Hupps!! A problem!"))
  * </odoc>
  */
 function bprintErrnl(str) { return printErrnl(beautifier(str)); }
+
+/**
+ * <odoc>
+ * <key>cprintErrnl(aStr)</key>
+ * "Stringifies" in ANSI color and prints the aStr to the stderr (with a new line on the end) (example: cprintErrnl("Hupps!! A problem!"))
+ * </odoc>
+ */
+function cprintErrnl(str, delim) { ansiStart(); printErrnl(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
@@ -479,6 +508,49 @@ function stringify(aobj, replacer, space) {
 		}
 	}
 }
+
+/**
+ * <odoc>
+ * <key>colorify(aObject) : String</key>
+ * Tries to ANSI colorify a json aObject for use with cprint, cprintErr, cprintErrnl and cprintnl
+ * </odoc> 
+ */
+var __colorFormat = {
+	key: "BOLD,BLACK",
+	number: "GREEN",
+	string: "CYAN",
+	boolean: "RED",
+	default: ""
+};
+function colorify(json) {
+	if (typeof json != 'string') {
+			json = JSON.stringify(json, undefined, 2);
+	}
+	json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+		var cls = 'number';
+		if (/^"/.test(match)) {
+			if (/:$/.test(match)) {
+				cls = 'key';
+			} else {
+				cls = 'string';
+			}
+		} else if (/true|false/.test(match)) {
+			cls = 'boolean';
+		} else if (/null/.test(match)) {
+			cls = 'null';
+		}
+		var res = ""; 
+		switch(cls) {
+		case "key": res = ansiColor(__colorFormat.key, match); break;
+		case "number": res = ansiColor(__colorFormat.number, match); break;
+		case "string": res = ansiColor(__colorFormat.string, match); break;
+		case "boolean": res = ansiColor(__colorFormat.boolean, match); break;
+		default: res = ansiColor(__colorFormat.default, match);
+		}
+		return res;
+	});
+};
 
 /**
  * <odoc>

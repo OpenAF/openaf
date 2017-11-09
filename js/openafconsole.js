@@ -7,7 +7,7 @@ var __pinprefix = "";
 var CONSOLESEPARATOR = "-- "
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|watch|clear|purge|pause|sql|esql|dsql|pin";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|sql|esql|dsql|pin";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 };
@@ -396,6 +396,25 @@ function __beautify(aFlag) {
 }
 
 /**
+ * Turns on or off the color of output of commands
+ *
+ */
+function __color(aFlag) {
+	if (aFlag.match(/off|0/i)) colorCommand = false;
+	if (aFlag.match(/on|1/i)) colorCommand = true;
+	if (aFlag == "")
+		if (colorCommand)
+		colorCommand = false;
+		else
+		colorCommand = true;
+
+	if (colorCommand)
+		__outputConsoleComments("Color output of commands is enabled.");
+	else
+		__outputConsoleComments("Color output of commands is disabled.");
+}
+
+/**
  * Turn on/off watch functionality
  */
 function __watch(aLineOfCommands) {
@@ -673,6 +692,10 @@ function __processCmdLine(aCommand, returnOnly) {
 				internalCommand = true;
 				__beautify(aCommand.replace(/^beautify */, ""));
 			}
+			if (aCommand.match(/^color(?: +|$)/)) {
+				internalCommand = true;
+				__color(aCommand.replace(/^color */, ""));
+			}			
 			if (aCommand.match(/^watch(?: +|$)/)) {
 				internalCommand = true;
 				__watch(aCommand.replace(/^watch */, ""));
@@ -745,15 +768,21 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			var __pres = 0;
 			var lines = [];
 			if (beautifyCommand) {
-				__lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
+				if (colorCommand) 
+				   __lines = String(colorify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
+				else
+				   __lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 			} else {
 				__lines = String(__res).replace(/\"/g, "").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 			}
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
-			if (beautifyCommand)
-				__outputConsole(String(stringify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
-			else
+			if (beautifyCommand) {
+				if (colorCommand)
+					__outputConsole(String(colorify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
+				else
+					__outputConsole(String(stringify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
+			} else
 				__outputConsole(__res);
 		}	
 
@@ -871,6 +900,7 @@ var cmd = "";
 var timeCommand = false; var start; var end;
 var outputCommand = true;
 var beautifyCommand = true;
+var colorCommand = false;
 var pauseCommand = false;
 var watchCommand = false;
 var watchLine = "";
