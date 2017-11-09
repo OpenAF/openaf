@@ -556,7 +556,10 @@ function __outputConsoleNoEnd(anOutput) {
 function __outputConsoleEnd(anOutput) {
 	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
 		jansi.AnsiConsole.systemInstall();
-		print(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		if (colorCommand) 
+		   print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		else
+		   print(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutput);
