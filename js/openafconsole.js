@@ -539,14 +539,14 @@ function __help(aTerm) {
 	}
 }
 
-function __outputConsole(anOutput) {
-	__outputConsoleEnd(anOutput);
+function __outputConsole(anOutput, colorify) {
+	__outputConsoleEnd(anOutput, colorify);
 }
 
-function __outputConsoleNoEnd(anOutput) {
+function __outputConsoleNoEnd(anOutput, colorify) {
 	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
 		jansi.AnsiConsole.systemInstall();
-		if (colorCommand) 
+		if (colorCommand && colorify) 
 			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		else
 			printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
@@ -556,10 +556,10 @@ function __outputConsoleNoEnd(anOutput) {
 	}
 }
 
-function __outputConsoleEnd(anOutput) {
+function __outputConsoleEnd(anOutput, colorify) {
 	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
 		jansi.AnsiConsole.systemInstall();
-		if (colorCommand) 
+		if (colorCommand && colorify) 
 		   print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		else
 		   print(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
@@ -774,7 +774,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			var __pres = 0;
 			var lines = [];
 			if (beautifyCommand) {
-				if (colorCommand) 
+				if (colorCommand && isObject(__res)) 
 				   __lines = String(colorify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 				else
 				   __lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
@@ -784,8 +784,8 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
 			if (beautifyCommand) {
-				if (colorCommand)
-					__outputConsole(String(colorify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
+				if (colorCommand && isObject(__res))
+					__outputConsole(String(colorify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"), true);
 				else
 					__outputConsole(String(stringify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
 			} else
