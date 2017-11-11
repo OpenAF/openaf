@@ -813,19 +813,20 @@ function __opack_info(args) {
 
 	if (packag.__filelocation.match(/local$/)) remote = false; else remote = true;
 
-	print("INSTALLED IN: " + args[0]);
-	print("NAME        : " + packag.name);
-	print("VERSION     : " + packag.version);
-	print("DESCRIPTION : " + packag.description);
-	print("AUTHOR      : " + packag.author);
-	print("REPOSITORY  : [" + packag.repository.type + "] " + packag.repository.url);
-	print("DEPENDS ON  :");
+	ansiStart();
+	print(ansiColor("bold", "INSTALLED IN: ") + args[0]);
+	print(ansiColor("bold", "NAME        : ") + packag.name);
+	print(ansiColor("bold", "VERSION     : ") + packag.version);
+	print(ansiColor("bold", "DESCRIPTION : ") + packag.description);
+	print(ansiColor("bold", "AUTHOR      : ") + packag.author);
+	print(ansiColor("bold", "REPOSITORY  : ") + "[" + packag.repository.type + "] " + packag.repository.url);
+	print(ansiColor("bold", "DEPENDS ON  :"));
 	print("");
 
 	var depsResults;
 	if(!remote) depsResults = verifyDeps(packag);
 
-	for(i in packag.dependencies) {
+	for(let i in packag.dependencies) {
 		var depend = packag.dependencies[i];
 
 		if (!remote)
@@ -835,26 +836,30 @@ function __opack_info(args) {
 	}
 	var hashResults;
 	if(!remote) hashResults = verifyHashList(args[0], packag.filesHash);
-	print("FILES       :");
+	print(ansiColor("bold", "FILES       :") + "\n");
 	for(let i in packag.files) {
 		var file = packag.files[i];
+		var canGo = true;
 
-		if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
-		if (isUnDef(file) || file == null) continue;
+		if (file == PACKAGEJSON || file == PACKAGEYAML) canGo = false;
+		if (isUnDef(file) || file == null) canGo = false;
 
-		if (!remote) {
-			var status;
-			if (isUndefined(hashResults[file])) {
-				status = "not installed";
+		if (canGo) {
+			if (!remote) {
+				var status;
+				if (isUndefined(hashResults[file])) {
+					status = "not installed";
+				} else {
+					status = (hashResults[file]) ? "OK" : "CHANGED!";
+				}
+				
+				print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, "") + " [" + status + "]");
 			} else {
-				status = (hashResults[file]) ? "OK" : "CHANGED!";
+				print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, ""));
 			}
-			
-			print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, "") + " [" + status + "]");
-		} else {
-			print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, ""));
 		}
 	}
+	ansiStop();
 }
 
 // LIST
@@ -1444,7 +1449,7 @@ function __opack_search(args) {
 				packs[pack].description.match(new RegExp(args[0], "i"))) {
 				results.push({"name": packs[pack].name, "version": packs[pack].version, "description": packs[pack].description});
 			}
-			for(keyword in packs[pack].keywords) {
+			for(let keyword in packs[pack].keywords) {
 				if (keyword.match(new RegExp(args[0], "i"))) {
 					results.push({"name": packs[pack].name, "version": packs[pack].version, "description": packs[pack].description});
 				}
@@ -1453,7 +1458,10 @@ function __opack_search(args) {
 	}
 
 	for(let result in results) {
-		print("[" + results[result].name + "] (version " + results[result].version + "):\n  " + results[result].description + "\n");
+		ansiStart(); 
+		print(ansiColor("bold", "[" + results[result].name + "]") + " (version " + ansiColor("cyan", results[result].version) + "):");
+		print(results[result].description + "\n");
+		ansiStop();
 	}
 }
 
