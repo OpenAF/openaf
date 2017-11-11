@@ -876,7 +876,9 @@ function __opack_list(args) {
 	for (let packageId in packsIds) {
 		packag = sortIds[packsIds[packageId]];
 		if (packag == 'OpenPackDB') continue;
-		print("[" + packages[packag].name + "] (version " + packages[packag].version + "):" + " " + packag + "");
+		ansiStart();
+		print(ansiColor("bold", "[" + packages[packag].name + "]") + " (version " + ansiColor("green", packages[packag].version) + "):" + " " + ansiColor("cyan", packag) + "");
+		ansiStop();
     }
 }
 
@@ -1459,7 +1461,7 @@ function __opack_search(args) {
 
 	for(let result in results) {
 		ansiStart(); 
-		print(ansiColor("bold", "[" + results[result].name + "]") + " (version " + ansiColor("cyan", results[result].version) + "):");
+		print(ansiColor("bold", "[" + results[result].name + "]") + " (version " + ansiColor("green", results[result].version) + "):");
 		print(results[result].description + "\n");
 		ansiStop();
 	}
