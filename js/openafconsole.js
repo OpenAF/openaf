@@ -502,6 +502,7 @@ function __help(aTerm) {
 		__outputConsoleComments("time     Turns on or off the timing of any script command provided (default off)");
 		__outputConsoleComments("output   Turns on or off the output of commands (default on)");
 		__outputConsoleComments("beautify Turns on or off the beautify of output (default on)");
+		__outputConsoleComments("color    Turns on or off the colorify of json output (default on)");
 		__outputConsoleComments("desc     Provides a description of the available methods for a class (example 'desc AF')");
 		__outputConsoleComments("scope    Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')");
 		__outputConsoleComments("alias    Create an alias for an openaf-console command line (example 'alias ola=print(\"hi\");')");
@@ -906,7 +907,7 @@ var cmd = "";
 var timeCommand = false; var start; var end;
 var outputCommand = true;
 var beautifyCommand = true;
-var colorCommand = false;
+var colorCommand = true;
 var pauseCommand = false;
 var watchCommand = false;
 var watchLine = "";
