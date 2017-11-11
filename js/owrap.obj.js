@@ -1124,7 +1124,6 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 	}
 };
-
 OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	var r, canHaveIn = false;
 
@@ -1273,7 +1272,9 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 
 OpenWrap.obj.prototype.http.prototype.response = function() {
 	try {
-		var res = String(Packages.org.apache.http.util.EntityUtils.toString(this.__r.getEntity()));
+		var res;
+		if (this.__r.getEntity() != null)
+			res = String(Packages.org.apache.http.util.EntityUtils.toString(this.__r.getEntity()));
 		return res;
 	} finally {
 		this.__r.close();
@@ -1282,7 +1283,9 @@ OpenWrap.obj.prototype.http.prototype.response = function() {
 
 OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
 	try {
-		var res = Packages.org.apache.http.util.EntityUtils.toByteArray(this.__r.getEntity());
+		var res;
+		if (this.__r.getEntity() != null)
+			res = Packages.org.apache.http.util.EntityUtils.toByteArray(this.__r.getEntity());
 		return res;
 	} finally {
 		this.__r.close();
@@ -1511,7 +1514,7 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", aRequestMap, undefined, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", undefined, aRequestMap, undefined, _t);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
