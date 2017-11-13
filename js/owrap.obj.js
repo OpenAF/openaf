@@ -1272,9 +1272,9 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 
 OpenWrap.obj.prototype.http.prototype.response = function() {
 	try {
-		var res;
-		if (this.__r.getEntity() != null)
-			res = String(Packages.org.apache.http.util.EntityUtils.toString(this.__r.getEntity()));
+		var res, ent = this.__r.getEntity();
+		if (ent != null)
+			res = String(Packages.org.apache.http.util.EntityUtils.toString(ent));
 		return res;
 	} finally {
 		this.__r.close();
@@ -1283,9 +1283,9 @@ OpenWrap.obj.prototype.http.prototype.response = function() {
 
 OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
 	try {
-		var res;
-		if (this.__r.getEntity() != null)
-			res = Packages.org.apache.http.util.EntityUtils.toByteArray(this.__r.getEntity());
+		var res, ent = this.__r.getEntity();
+		if (ent != null)
+			res = Packages.org.apache.http.util.EntityUtils.toByteArray(ent);
 		return res;
 	} finally {
 		this.__r.close();
@@ -1307,7 +1307,11 @@ OpenWrap.obj.prototype.http.prototype.responseHeaders = function() {
 };
 
 OpenWrap.obj.prototype.http.prototype.responseStream = function() {
-	return this.__r.getEntity().getContent();
+	var ent = this.__r.getEntity();
+	if (ent != null)
+		return this.__r.getEntity().getContent();
+	else 
+		return undefined;
 };
 
 OpenWrap.obj.prototype.http.prototype.responseType = function() {
