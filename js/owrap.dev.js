@@ -11,6 +11,58 @@ OpenWrap.dev.prototype.overrideHTTP = function() {
 	printErr("OpenAF: using alternative HTTP plugin");
 }
 
+OpenWrap.dev.prototype.addMVSCh = function() {
+	ow.loadCh();
+
+	ow.ch.__types.mvs = {
+		__s: {},
+		create       : function(aName, shouldCompress, options) {
+			if (isUnDef(options)) options = {};
+			if (isUnDef(options.file)) options.file = undefined;
+
+			this.__s[aName] = Packages.org.h2.mvstore.MVStore.Builder().fileName(options.file);
+			if (shouldCompress) this.__s[aName] = this.s[aName].compress();
+			this.__s.open();
+
+			if (isUnDef(options.map)) {
+				options.map = function() { return "default"; };
+			}
+
+			this.__m[aName] = options.map;
+		},
+		destroy      : function(aName) {
+			this.__s[aName].close();
+		},
+		size         : function(aName) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+			return map.sizeAsLong();
+		},
+		forEach      : function(aName, aFunction) {},
+		getKeys      : function(aName, full) {},
+		getSortedKeys: function(aName, full) {},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {},
+		set          : function(aName, ak, av, aTimestamp) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+
+			map.put(stringify(ak), stringify(av));
+			this.__s[aName].commit();
+		},
+		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {},
+		get          : function(aName, aKey) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+
+			return jsonParse(map.get(stringify(ak)));
+		},
+		pop          : function(aName) {},
+		shift        : function(aName) {},
+		unset        : function(aName, aKey) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+
+			return map.remove(stringify(aKey));
+		}
+	}
+}
+
 OpenWrap.dev.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	this.__lps = {};
 	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
