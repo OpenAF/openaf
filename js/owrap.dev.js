@@ -15,17 +15,38 @@ OpenWrap.dev.prototype.addMVSCh = function() {
 	ow.loadCh();
 
 	ow.ch.__types.mvs = {
-		__s: {},
 		create       : function(aName, shouldCompress, options) {
 			if (isUnDef(options)) options = {};
 			if (isUnDef(options.file)) options.file = undefined;
 
-			this.__s[aName] = Packages.org.h2.mvstore.MVStore.Builder().fileName(options.file);
-			if (shouldCompress) this.__s[aName] = this.s[aName].compress();
-			this.__s.open();
+			if (isUnDef(this.__s)) this.__s = {};
+			if (isUnDef(this.__f)) this.__f = {};
+			if (isUnDef(this.__m)) this.__m = {};
+
+			var existing = false, absFile;
+			if (isDef(options.file)) {
+				absFile = String((new java.io.File(options.file)).getAbsoluteFile());
+			} else {
+				absFile = "memory";
+			}
+			if (isUnDef(this.__f[absFile])) {
+				this.__s[aName] = Packages.org.h2.mvstore.MVStore.Builder();
+				if (absFile != "memory") this.__s[aName] = this.__s[aName].fileName(absFile);
+				if (shouldCompress) this.__s[aName] = this.__s[aName].compress();
+				this.__s[aName] = this.__s[aName].open();
+
+				this.__f[absFile] = this.__s[aName];
+			} else {
+				existing = true;
+				this.__s[aName] = this.__f[absFile];
+			}
 
 			if (isUnDef(options.map)) {
 				options.map = function() { return "default"; };
+			} else {
+				if (isString(options.map)) {
+					options.map = new Function("return '" + options.map + "';");
+				}
 			}
 
 			this.__m[aName] = options.map;
@@ -37,8 +58,23 @@ OpenWrap.dev.prototype.addMVSCh = function() {
 			var map = this.__s[aName].openMap(this.__m[aName]());
 			return map.sizeAsLong();
 		},
-		forEach      : function(aName, aFunction) {},
-		getKeys      : function(aName, full) {},
+		forEach      : function(aName, aFunction, x) {
+			var aKs = this.getKeys(aName);
+
+			for(let i in aKs) {
+				aFunction(aKs[i], this.get(aName, aKs[i], x));
+			}
+		},
+		getKeys      : function(aName, full) {
+			var res = [];
+			var map = this.__s[aName].openMap(this.__m[aName]());
+
+			for(let i = 0; i < this.size(aName); i++) {
+				res.push(jsonParse(map.getKey(i)));
+			}
+
+			return res;
+		},
 		getSortedKeys: function(aName, full) {},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {},
 		set          : function(aName, ak, av, aTimestamp) {
@@ -47,11 +83,15 @@ OpenWrap.dev.prototype.addMVSCh = function() {
 			map.put(stringify(ak), stringify(av));
 			this.__s[aName].commit();
 		},
-		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {},
+		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
+			for(let i in anArrayOfMapData) {
+				this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
+			}
+		},
 		get          : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName]());
 
-			return jsonParse(map.get(stringify(ak)));
+			return jsonParse(map.get(stringify(aKey)));
 		},
 		pop          : function(aName) {},
 		shift        : function(aName) {},
