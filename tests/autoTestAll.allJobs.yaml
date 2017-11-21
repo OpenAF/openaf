@@ -2,6 +2,15 @@ include:
    - oJobTest.yaml
    - autoTestAll.Generic.yaml
    - autoTestAll.IO.yaml
+   - autoTestAll.DB.yaml   
+   - autoTestAll.HTTP.yaml
    - autoTestAll.Format.yaml
    - autoTestAll.Channels.yaml
+   - autoTestAll.Template.yaml
    - autoTestAll.oDoc.yaml
+   - autoTestAll.AI.yaml
+   - autoTestAll.Server.yaml
+   - autoTestAll.Obj.yaml   
+   - autoTestAll.JMX.yaml
+   - autoTestAll.XLS.yaml
+   - autoTestAll.ZIP.yaml

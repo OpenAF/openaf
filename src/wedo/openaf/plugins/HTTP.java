@@ -14,31 +14,24 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
-import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
-import wedo.openaf.AFBase;
 import wedo.openaf.AFCmdBase;
 import wedo.openaf.SimpleLog;
+import wedo.openaf.plugins.HTTPws.WebSockets;
 
 public class HTTP extends ScriptableObject {
 	protected static CookieManager ckman = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
@@ -49,7 +42,19 @@ public class HTTP extends ScriptableObject {
 	protected boolean forceBasic = false;
 	protected String l = null;
 	protected String p = null;
+	protected String lpsID = null;
+	static protected ConcurrentHashMap<String, LPs> lps = new ConcurrentHashMap<String, LPs>();
 	
+	protected class LPs {
+		String l;
+		String p;
+
+		public LPs(String ll, String pp) {
+			this.l = ll;
+			this.p = pp;
+		}
+	}
+
 	/**
 	 * 
 	 */
@@ -88,83 +93,6 @@ public class HTTP extends ScriptableObject {
 		}
 
 	}
-
-	public class EventSocket extends WebSocketAdapter {
-		NativeFunction onConnect, onMsg, onError, onClose;
-		
-		public EventSocket(NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
-				NativeFunction onClose) {
-			this.onConnect = onConnect;
-			this.onMsg = onMsg;
-			this.onError = onError;
-			this.onClose = onClose;
-		}
-
-		@Override
-		public void onWebSocketConnect(Session sess) {
-			super.onWebSocketConnect(sess);
-			try {
-				Context cx = (Context) AFCmdBase.jse.enterContext();
-				this.onConnect.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {sess});
-			} catch (Exception e) {
-				throw e;
-			} finally {
-				AFCmdBase.jse.exitContext();
-			}
-		}
-		
-		@Override
-		public void onWebSocketText(String payload) {
-			super.onWebSocketText(payload);
-			try {
-				Context cx = (Context) AFCmdBase.jse.enterContext();
-				this.onMsg.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {"text", payload});
-			} catch (Exception e) {
-				throw e;
-			} finally {
-				AFCmdBase.jse.exitContext();
-			}
-		}
-		
-		@Override
-		public void onWebSocketBinary(byte[] payload, int offset, int len) {
-			super.onWebSocketBinary(payload, offset, len);
-			try {
-				Context cx = (Context) AFCmdBase.jse.enterContext();
-				this.onMsg.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {"bytes", payload, offset, len});
-			} catch (Exception e) {
-				throw e;
-			} finally {
-				AFCmdBase.jse.exitContext();
-			}			
-		}
-		
-		@Override
-		public void onWebSocketClose(int statusCode, String reason) {
-			super.onWebSocketClose(statusCode, reason);
-			try {
-				Context cx = (Context) AFCmdBase.jse.enterContext();
-				this.onClose.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {statusCode, reason});
-			} catch (Exception e) {
-				throw e;
-			} finally {
-				AFCmdBase.jse.exitContext();
-			}
-		}
-		
-		@Override
-		public void onWebSocketError(Throwable cause) {
-			super.onWebSocketError(cause);
-			try {
-				Context cx = (Context) AFCmdBase.jse.enterContext();
-				this.onError.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {cause});
-			} catch (Exception e) {
-				throw e;
-			} finally {
-				AFCmdBase.jse.exitContext();
-			}
-		}
-	}
 	
 	/**
 	 * 
@@ -192,24 +120,47 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTP.login(aUser, aPassword, forceBasic)</key>
+	 * <key>HTTP.login(aUser, aPassword, forceBasic, urlPartial)</key>
 	 * Tries to build a simple password authentication with the provided aUser and aPassword (encrypted or not).
 	 * By default it tries to use the Java Password Authentication but it forceBasic = true it will force basic
-	 * authentication to be use.
+	 * authentication to be use. It's advisable to use urlPartial to associate a login/password to a specific
+	 * URL location.
 	 * </odoc>
 	 */
 	@JSFunction
-	public void login(final String user, final String pass, boolean forceBasic) {
-		authenticator = new Authenticator() {
-			public PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication (user, (AFCmdBase.afc.dIP(pass)).toCharArray());
+	public void login(final String user, final String pass, boolean forceBasic, String urlPartial) {
+		if (urlPartial == null || urlPartial.equals("undefined") || urlPartial.equals("")) {
+			urlPartial = "default";
+		}		
+
+		if (!forceBasic) {
+			lps.put(urlPartial, new LPs(user, pass));
+			
+			if (authenticator == null) {
+				authenticator = new Authenticator() {
+					public PasswordAuthentication getPasswordAuthentication() {
+						URL url = getRequestingURL();
+						String getKey = null;
+						for(String key : lps.keySet()) {
+							if (key != "default" && url.toString().startsWith(key)) getKey = key;
+						}
+						if (getKey == null) {
+							return new PasswordAuthentication (lps.get("default").l, (AFCmdBase.afc.dIP(lps.get("default").p)).toCharArray());
+						} else {
+							return new PasswordAuthentication (lps.get(getKey).l, (AFCmdBase.afc.dIP(lps.get(getKey).p)).toCharArray());
+						}
+					}
+				};
+				Authenticator.setDefault(authenticator);
 			}
-		};
+		} 
+
+		l = user;
+		p = pass;
+		
 		//Authenticator.setDefault(authenticator);
 		if (forceBasic) {
 			this.forceBasic = true;
-			l = user;
-			p = pass;
 		}
 		SimpleLog.log(SimpleLog.logtype.DEBUG, "HTTP connection with authentication for " + user, null);
 	}
@@ -384,13 +335,14 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTP.wsConnect(anURL, onConnect, onMsg, onError, onClose) : WebSocketClient</key>
+	 * <key>HTTP.wsConnect(anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned) : WebSocketClient</key>
 	 * Tries to establish a websocket connection (ws or wss) and returns a jetty WebSocketClient java object.
 	 * As callbacks you should defined onConnect, onMsg, onError and onClose. The onConnect callback will 
 	 * provide, as argument, the created session that you should use to send data; the onMsg callback will
 	 * provide, as arguments, aType (either "text" or "bytes"), aPayload (string or array of bytes) and an offset
 	 * and length (in case type is "bytes"); the onError callback will provide the cause; the onClose callback
-	 * will provide aStatusCode and aReason. Example:\
+	 * will provide aStatusCode and aReason. You can optionally provide aTimeout (number) and indicate if self signed SSL
+	 * certificates should be accepted (supportSelfSigned = true). Example:\
 	 * \
 	 * plugin("HTTP");\
 	 * var session; var output = "";\
@@ -405,30 +357,15 @@ public class HTTP extends ScriptableObject {
 	 * client.stop();\
 	 * print(output);\
 	 * \
+	 * NOTE: this functionality is only available if used with JVM >= 1.8\
+	 * \
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout) throws Exception {
-		URI uri = URI.create(anURL);
-		WebSocketClient client = new WebSocketClient();		
-		try {
-			client.start(); 
-			EventSocket socket = new EventSocket(onConnect, onMsg, onError, onClose);
-			Future<Session> fut = client.connect(socket, uri);
-
-			Session session;
-			if (!(aTimeout instanceof Undefined))
-				session = fut.get((long) aTimeout, TimeUnit.MILLISECONDS);
-			else
-				session = fut.get();
-
-			return client;
-		} catch (Exception e) {
-			client.stop();
-			throw e;
-		}
+	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+		return WebSockets.wsConnect(authenticator, l, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
-	
+
 	/**
 	 * 
 	 * @param aURL
@@ -439,7 +376,7 @@ public class HTTP extends ScriptableObject {
 	 * @throws IOException
 	 */
 	protected HTTPResponse request(String aURL, String method, Object in, Properties request, boolean bytes, boolean stream, int timeout) throws IOException {
-		if (this.authenticator != null) Authenticator.setDefault(this.authenticator);
+		//if (this.authenticator != null && !forceBasic) Authenticator.setDefault(this.authenticator);
 		CookieHandler.setDefault(ckman);
 		
 		URL url = new URL(aURL);
@@ -521,8 +458,8 @@ public class HTTP extends ScriptableObject {
 					r = new HTTPResponse(IOUtils.toString(is), responseCode, headerFields, contentType);
 			}
 			
-			if (this.authenticator != null) 
-				Authenticator.setDefault(null);
+			//if (this.authenticator != null) 
+			//	Authenticator.setDefault(null);
 			
 			return r;
 		} catch(Exception e) {

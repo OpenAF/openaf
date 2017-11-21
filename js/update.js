@@ -14,6 +14,7 @@ var updateURLs = __openafDownload;
 var currentVersion = getVersion();
 
 var endCommand = "";
+var updated = false;
 
 // FUNCTIONS
 // ---------
@@ -74,6 +75,7 @@ for(var i in homeServerURLs) {
 			log("Upgrading openaf.jar");
 			try {
 				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp"), down.responseBytes());
+				updated = true;
 			} catch(e) {
 				if(!e.message.match(/NoClassDefFoundError/)) {
 					throw e;
@@ -93,9 +95,11 @@ for(var i in homeServerURLs) {
 log("Done updating to the latest version."); //" Don't forget to run the --repack option before using for the first time for faster startup times.");
 log("Trying to --repack...");
 
-io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
-af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
+if (updated) {
+	io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
+	af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
 
-af.restartOpenAF(["--repack"]);
+	af.restartOpenAF(["--repack"]);
+}
 
 //af.load(classPath + "::js/repack.js");

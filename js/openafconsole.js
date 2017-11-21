@@ -7,9 +7,9 @@ var __pinprefix = "";
 var CONSOLESEPARATOR = "-- "
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|watch|clear|purge|pause|sql|esql|dsql|pin";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|sql|esql|dsql|pin";
 var __alias = {
-	"opack": "__expr=__aliasparam;load(getOpenAFJar() + \"::js/opack.js\");",
+	"opack": "oPack(__aliasparam);",
 };
 
 var __aliasparam;
@@ -41,6 +41,8 @@ function __desc(aClass, retList, noRecursive) {
 		constructors = classObj.getConstructors();
 	} catch(e) {
 		try {
+			if (aClass.toLowerCase() == "io") aClass = "IOBase";
+			if (aClass.toLowerCase() == "af") aClass = "AFBase";
 			classObj = java.lang.Class.forName("wedo.openaf." + aClass);
 			methods = classObj.getMethods();
 			constructors = classObj.getConstructors();
@@ -394,6 +396,25 @@ function __beautify(aFlag) {
 }
 
 /**
+ * Turns on or off the color of output of commands
+ *
+ */
+function __color(aFlag) {
+	if (aFlag.match(/off|0/i)) colorCommand = false;
+	if (aFlag.match(/on|1/i)) colorCommand = true;
+	if (aFlag == "")
+		if (colorCommand)
+		colorCommand = false;
+		else
+		colorCommand = true;
+
+	if (colorCommand)
+		__outputConsoleComments("Color output of commands is enabled.");
+	else
+		__outputConsoleComments("Color output of commands is disabled.");
+}
+
+/**
  * Turn on/off watch functionality
  */
 function __watch(aLineOfCommands) {
@@ -481,6 +502,7 @@ function __help(aTerm) {
 		__outputConsoleComments("time     Turns on or off the timing of any script command provided (default off)");
 		__outputConsoleComments("output   Turns on or off the output of commands (default on)");
 		__outputConsoleComments("beautify Turns on or off the beautify of output (default on)");
+		__outputConsoleComments("color    Turns on or off the colorify of json output (default on)");
 		__outputConsoleComments("desc     Provides a description of the available methods for a class (example 'desc AF')");
 		__outputConsoleComments("scope    Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')");
 		__outputConsoleComments("alias    Create an alias for an openaf-console command line (example 'alias ola=print(\"hi\");')");
@@ -518,24 +540,30 @@ function __help(aTerm) {
 	}
 }
 
-function __outputConsole(anOutput) {
-	__outputConsoleEnd(anOutput);
+function __outputConsole(anOutput, colorify) {
+	__outputConsoleEnd(anOutput, colorify);
 }
 
-function __outputConsoleNoEnd(anOutput) {
+function __outputConsoleNoEnd(anOutput, colorify) {
 	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
 		jansi.AnsiConsole.systemInstall();
-		printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		if (colorCommand && colorify) 
+			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		else
+			printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		jansi.AnsiConsole.systemUninstall();
 	} else {
 		printnl(anOutput);
 	}
 }
 
-function __outputConsoleEnd(anOutput) {
+function __outputConsoleEnd(anOutput, colorify) {
 	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
 		jansi.AnsiConsole.systemInstall();
-		print(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		if (colorCommand && colorify) 
+		   print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		else
+		   print(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutput);
@@ -671,6 +699,10 @@ function __processCmdLine(aCommand, returnOnly) {
 				internalCommand = true;
 				__beautify(aCommand.replace(/^beautify */, ""));
 			}
+			if (aCommand.match(/^color(?: +|$)/)) {
+				internalCommand = true;
+				__color(aCommand.replace(/^color */, ""));
+			}			
 			if (aCommand.match(/^watch(?: +|$)/)) {
 				internalCommand = true;
 				__watch(aCommand.replace(/^watch */, ""));
@@ -743,15 +775,21 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			var __pres = 0;
 			var lines = [];
 			if (beautifyCommand) {
-				__lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
+				if (colorCommand && isObject(__res)) 
+				   __lines = String(colorify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
+				else
+				   __lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 			} else {
 				__lines = String(__res).replace(/\"/g, "").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 			}
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
-			if (beautifyCommand)
-				__outputConsole(String(stringify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
-			else
+			if (beautifyCommand) {
+				if (colorCommand && isObject(__res))
+					__outputConsole(String(colorify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"), true);
+				else
+					__outputConsole(String(stringify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
+			} else
 				__outputConsole(__res);
 		}	
 
@@ -869,6 +907,7 @@ var cmd = "";
 var timeCommand = false; var start; var end;
 var outputCommand = true;
 var beautifyCommand = true;
+var colorCommand = true;
 var pauseCommand = false;
 var watchCommand = false;
 var watchLine = "";

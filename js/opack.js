@@ -25,7 +25,8 @@ var verbs = {
 		                  "'-repo'    : Use an alternatively repository for dependencies",
 		                  "'-deps'    : Automatically try to install dependencies",
 		                  "'-useunzip': Alternatively use unzip to save memory",
-		                  "'-noverify': Don't run hash verification on the end",
+						  "'-noverify': Don't run hash verification on the end",
+						  "'-cred'    : Provide authentication credentials (e.g. user:pass)",
 		                  "'-arg'     : Pass an argument to the pre/post install scripts"]
 	},
 	"erase": {
@@ -38,7 +39,8 @@ var verbs = {
 	"update": {
 		"help"		  : "Updates a package",
 		"optionshelp" : [ "The install/erase verbs options are valid also for update.",
-		                  "'-all'  : Tries to update all packages locally installed",
+						  "'-all'  : Tries to update all packages locally installed",
+						  "'-cred' : Provide authentication credentials (e.g. user:pass)",
 		                  "'-erase': When updating delete the package frist"]
 	},
 	"exec": {
@@ -80,6 +82,9 @@ var zipCache = {};
 var outputPath;
 var verb;
 var arg;
+var __remoteUser;
+var __remotePass;
+var __remoteHTTP;
 
 // *********
 // FUNCTIONS
@@ -122,7 +127,7 @@ function getHTTPOPack(aURL) {
 
 	log("Retriving " + aURL);
 	try {
-		var http = new HTTP(aURL.replace(/ /g, "%20"), "GET", "", {}, true);
+		var http = execHTTPWithCred(aURL.replace(/ /g, "%20"), "GET", "", {}, true);
 		var opack = new ZIP(http.responseBytes());
 		zipCache[aURL] = opack;
 		return opack;
@@ -206,6 +211,16 @@ function addLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 
 	try {
+		if (!io.fileInfo(fileDB).permissions.match(/w/)) {
+			throw fileDB + " is not acessible. Please check permissions.";
+		}
+	} catch(e) {
+		if (!(e.message.match(/NoSuchFileException/))) {
+			throw e;
+		}
+	}
+
+	try {
 		aTarget = (new java.io.File(aTarget)).getCanonicalPath() + "";
 	} catch(e) {
 		logErr(e.message);
@@ -265,6 +280,7 @@ function getLocalDB(shouldRefresh) {
 		if (!isUndefined(localDB)) return localDB;
 
 	localDB = getOPackLocalDB();
+	if (compare(localDB, {})) checkOpenAFinDB();
 
 	return localDB;
 }
@@ -301,18 +317,22 @@ function findLocalDBTargetByName(aName) {
 
 // dependencies
 function verifyDeps(packag) {
-	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
-	var packages = {};
+	//var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+	var packages = getOPackLocalDB();
 	var results = {};
 
-	try {
+	/*if (!io.fileInfo(fileDB).permissions.match(/r/)) {
+		throw fileDB + " is not acessible. Please check permissions.";
+	}*/
+
+	/*try {
 		//var zip = new ZIP(io.readFileBytes(fileDB));
 		var zip = new ZIP();
 		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
 		//zip.close();
 	} catch(e) {
 		//logErr(e.message);
-	}
+	}*/
 
 	for(let dep in packag.dependencies) {
 		var version = packag.dependencies[dep];
@@ -334,6 +354,10 @@ function verifyDeps(packag) {
 // OpenPack local register remove
 function removeLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+
+	if (!io.fileInfo(fileDB).permissions.match(/w/)) {
+		throw fileDB + " is not acessible. Please check permissions.";
+	}
 
 	aTarget = (new java.io.File(aTarget)).getCanonicalPath() + "";
 
@@ -394,7 +418,7 @@ function listFiles(startPath, relPath, excludingList) {
 			files.push(relPath + file.filename.replace(/\\+/g, "/"));
 		} else {
 			//files.push(relPath + file.filename);
-			files = files.concat(listFiles(startPath, file.filepath.replace(new RegExp(startPath + "[\\\\/]*", ""), "") + "/"));
+			files = files.concat(listFiles(startPath, file.filepath.replace(/\\/g, "/").replace(new RegExp(startPath + "[\\\\/]*", ""), "") + "/"));
 		}
 	}
 
@@ -406,18 +430,26 @@ function listFilesWithHash(startPath, excludingList) {
 	var filesHash = {};
 
 	var files = listFiles(startPath, undefined, excludingList);
-    var c = 0;
+    var c = 0, cmax = 0;
 	
 	for (let i in files) {
 		c++;
 		try {
-			lognl("Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
-			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) || !(files[i].match(new RegExp(PACKAGEYAML + "$", ""))))
-				filesHash[files[i]] = sha1(io.readFileStream(startPath + "/" + files[i])) + "";
+			var str = "Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r";
+			lognl(str);
+			if (str.length > cmax) cmax = str.length;
+			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) && !(files[i].match(new RegExp(PACKAGEYAML + "$", "")))) {
+				var rfs = io.readFileStream(startPath + "/" + files[i]);
+				filesHash[files[i]] = sha1(rfs) + "";
+				rfs.close();
+			}
 		} catch (e) {
 		}
 	}
-	if (c > 0) print("");
+	if (c > 0) {
+		lognl(repeat(cmax, " ") + "\r");
+		log("All files checked.");
+	}
 
 	return filesHash;
 }
@@ -436,7 +468,7 @@ function verifyHashList(startPath, filesHash) {
 	if (startPath.match(/\.(opack)|(jar)$/)) {
 		if (location == "http") {
 			location = "opackhttp";
-			http = new HTTP(startPath.replace(/ /g, "%20"), "GET", "", {}, true);
+			http = execHTTPWithCred(startPath.replace(/ /g, "%20"), "GET", "", {}, true);
 			zip = new ZIP(http.responseBytes());
 		} else {
 			location = "opack";
@@ -446,7 +478,7 @@ function verifyHashList(startPath, filesHash) {
 	}
 
 	if (location == "http") {
-	    http = new HTTP(startPath.replace(/ /g, "%20") + "/" + file.replace(/ /g, "%20"));
+	    http = execHTTPWithCred(startPath.replace(/ /g, "%20") + "/" + file.replace(/ /g, "%20"));
 	}
 	
 	var c = 0;
@@ -458,7 +490,11 @@ function verifyHashList(startPath, filesHash) {
 		var hash;
 
 		switch(location) {
-		case "local": hash = sha1(io.readFileStream(startPath + "/" + file)) + ""; break;
+		case "local": 
+			var rfs = io.readFileStream(startPath + "/" + file);
+			hash = sha1(rfs) + "";
+			rfs.close();
+			break;
 		case "http":
 			hash = sha1(http.responseBytes()) + "";
 			break;
@@ -515,6 +551,30 @@ function rmdir(aNewDirectory) {
 // ----------------------------------------------------------
 // SCRIPT UTILITIES
 // ----------------------------------------------------------
+
+// Get credentials
+function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	if (isUnDef(__remoteHTTP)) __remoteHTTP = new HTTP();
+
+	try {
+		__remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+	} catch(e) {
+		if (String(e.message).match(/code: 401/)) {
+			if (isUnDef(__remoteUser) || isUnDef(__remotePass)) {
+				plugin("Console");
+				var con = new Console();
+				__remoteUser = con.readLinePrompt("Enter authentication user: ");
+				__remotePass = con.readLinePrompt("Enter authentication password: ", "*");
+			}
+			__remoteHTTP.login(__remoteUser, Packages.wedo.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
+			__remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+		} else {
+			throw e;
+		}
+	}
+	
+	return __remoteHTTP;
+}
 
 // Find OpenAF she-bang
 function getOpenAFSB() {
@@ -653,12 +713,14 @@ function getPackage(packPath) {
 			try {
 				var http, output;
 				try {
-					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEJSON, "GET", "", {}, true);
+					http = execHTTPWithCred(packPath.replace(/ /g, "%20") + "/" + PACKAGEJSON, "GET", "", {}, true);
 					// There should be no \n usually associated with package.json scripts
 					output = af.fromBytes2String(http.responseBytes()).replace(/\n/g, "");
+					retry = false;
 				} catch(e) {
-					http = new HTTP(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
+					http = execHTTPWithCred(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
 					output = af.fromBytes2String(http.responseBytes());
+					retry = false;
 				}
 				packag = fromJsonYaml(output);
 				if (isUndefined(packag)) throw(packPath + "/" + PACKAGESJSON);
@@ -751,19 +813,20 @@ function __opack_info(args) {
 
 	if (packag.__filelocation.match(/local$/)) remote = false; else remote = true;
 
-	print("INSTALLED IN: " + args[0]);
-	print("NAME        : " + packag.name);
-	print("VERSION     : " + packag.version);
-	print("DESCRIPTION : " + packag.description);
-	print("AUTHOR      : " + packag.author);
-	print("REPOSITORY  : [" + packag.repository.type + "] " + packag.repository.url);
-	print("DEPENDS ON  :");
+	ansiStart();
+	print(ansiColor("bold", "INSTALLED IN: ") + args[0]);
+	print(ansiColor("bold", "NAME        : ") + packag.name);
+	print(ansiColor("bold", "VERSION     : ") + packag.version);
+	print(ansiColor("bold", "DESCRIPTION : ") + packag.description);
+	print(ansiColor("bold", "AUTHOR      : ") + packag.author);
+	print(ansiColor("bold", "REPOSITORY  : ") + "[" + packag.repository.type + "] " + packag.repository.url);
+	print(ansiColor("bold", "DEPENDS ON  :"));
 	print("");
 
 	var depsResults;
 	if(!remote) depsResults = verifyDeps(packag);
 
-	for(i in packag.dependencies) {
+	for(let i in packag.dependencies) {
 		var depend = packag.dependencies[i];
 
 		if (!remote)
@@ -773,26 +836,30 @@ function __opack_info(args) {
 	}
 	var hashResults;
 	if(!remote) hashResults = verifyHashList(args[0], packag.filesHash);
-	print("FILES       :");
+	print(ansiColor("bold", "FILES       :") + "\n");
 	for(let i in packag.files) {
 		var file = packag.files[i];
+		var canGo = true;
 
-		if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
-		if (isUnDef(file) || file == null) continue;
+		if (file == PACKAGEJSON || file == PACKAGEYAML) canGo = false;
+		if (isUnDef(file) || file == null) canGo = false;
 
-		if (!remote) {
-			var status;
-			if (isUndefined(hashResults[file])) {
-				status = "not installed";
+		if (canGo) {
+			if (!remote) {
+				var status;
+				if (isUndefined(hashResults[file])) {
+					status = "not installed";
+				} else {
+					status = (hashResults[file]) ? "OK" : "CHANGED!";
+				}
+				
+				print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, "") + " [" + status + "]");
 			} else {
-				status = (hashResults[file]) ? "OK" : "CHANGED!";
+				print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, ""));
 			}
-			
-			print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, "") + " [" + status + "]");
-		} else {
-			print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, ""));
 		}
 	}
+	ansiStop();
 }
 
 // LIST
@@ -809,7 +876,9 @@ function __opack_list(args) {
 	for (let packageId in packsIds) {
 		packag = sortIds[packsIds[packageId]];
 		if (packag == 'OpenPackDB') continue;
-		print("[" + packages[packag].name + "] (version " + packages[packag].version + "):" + " " + packag + "");
+		ansiStart();
+		print(ansiColor("bold", "[" + packages[packag].name + "]") + " (version " + ansiColor("green", packages[packag].version) + "):" + " " + ansiColor("cyan", packag) + "");
+		ansiStop();
     }
 }
 
@@ -841,13 +910,13 @@ function install(args) {
 	}
 
     checkOpenAFinDB();
-	var packag = getPackage(args[0]);
 
     // Find other options
     var foundOutput = false;
     var force = false;
     var foundRepo = false;
-    var foundArg = false;
+	var foundArg = false;
+	var foundCred = false;
     var justCopy = false;
     var useunzip = false;
     var nohash = false;
@@ -855,7 +924,6 @@ function install(args) {
     var forceOutput = false;
     var output;
 
-    output = getOpenAFPath() + "/" + packag.name;
     for(let i in args) {
     	if (foundOutput) {
     		output = args[i];
@@ -871,7 +939,13 @@ function install(args) {
     	if (foundArg) {
     		arg = args[i];
     		foundArg = false;
-    	}
+		}
+		
+		if (foundCred) {
+			var cred = args[i];
+			if (cred.indexOf(":") > 0) [__remoteUser, __remotePass] = cred.split(/:/);
+			foundCred = false;
+		}
 
     	if (args[i] == "-d") foundOutput = true;
     	if (args[i] == "-force") force = true;
@@ -880,9 +954,11 @@ function install(args) {
     	if (args[i] == "-arg") foundArg = true;
     	if (args[i] == "-justcopy") justCopy = true;
     	if (args[i] == "-noverify") nohash = true;
-    	if (args[i] == "-useunzip") useunzip = true;
+		if (args[i] == "-useunzip") useunzip = true;
+		if (args[i] == "-cred") foundCred = true;
     }
-    
+	var packag = getPackage(args[0]);
+	if (isUnDef(output)) output = getOpenAFPath() + "/" + packag.name;
 
 	if (isUndefined(packag.name)) {
 		//logErr("Couldn't find package on location " + args[0]);
@@ -945,11 +1021,15 @@ function install(args) {
 				}
 
 				if (!deps) {
-					af.plugin("wedo.openaf.plugins.Console");
-					var con = new Console();
-					printnl("Do you want to try to install '" + i + "' [Y/N]: ");
-					var res = con.readChar("YNyn"); print(res);
-					if (res == 'N' || res == 'n') {
+					plugin("Console");
+					try {
+						var con = new Console();
+						printnl("Do you want to try to install '" + i + "' [Y/N]: ");
+						var res = con.readChar("YNyn"); print(res);
+						if (res == 'N' || res == 'n') {
+							return;
+						}
+					} catch(e) {
 						return;
 					}
 				}
@@ -975,7 +1055,7 @@ function install(args) {
 				
 				var http;
 				try {
-					http = new HTTP(args[0].replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true);
+					http = execHTTPWithCred(args[0].replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true);
 					io.writeFileBytes(outputPath + "/" + apackfile, http.responseBytes());
 				} catch(e) {
 					logErr("Can't copy remote file '" + apackfile + "' (" + e.message + ")");
@@ -990,10 +1070,13 @@ function install(args) {
 			if(typeof opack == 'undefined') return;
 
 			biggestMessage = 0;
-			//for(i in packag.files) {
+			for(var i in packag.files) {
+				var str = "Unpacking " + packag.files[i] + "...\r";
+				if (str.length > biggestMessage) biggestMessage = str.length;
+			}
 			parallel4Array(packag.files, function(apackfile) {
 				mkdir(outputPath);
-				var message = "Unpacking " + apackfile + "...";
+				var message = "Unpacking " + apackfile + "...\r";
 				lognl(message);
 
 				try {
@@ -1004,6 +1087,7 @@ function install(args) {
 				}
 				return 1;
 			});
+			lognl(repeat(biggestMessage, " ") + "\r");
 			log("All files unpacked.");
 		    break;
 		case "local": {
@@ -1118,10 +1202,10 @@ function update(args) {
 		return;
 	}
 
-	var packag = getPackage(args[0]);
 	var force = false;
 	var foundRepo = false;
 	var foundArg = false;
+	var foundCred = false;
 	var all = false;
 	var erase = false;
 
@@ -1136,12 +1220,20 @@ function update(args) {
     		foundArg = false;
     	}
 
+		if (foundCred) {
+			var cred = args[i];
+			if (cred.indexOf(":") > 0) [__remoteUser, __remotePass] = cred.split(/:/);
+			foundCred = false;
+		}
+
     	if (args[i] == "-arg") foundArg = true;
     	if (args[i] == "-force") force = true;
     	if (args[i] == "-repo") foundRepo = true;
     	if (args[i] == "-all") all = true;
-    	if (args[i] == "-erase") erase = true;
-    }
+		if (args[i] == "-erase") erase = true;
+		if (args[i] == "-cred") foundCred = true;
+	}
+	var packag = getPackage(args[0]);
 
     if (all) {
     	var ops = [];
@@ -1252,7 +1344,7 @@ function erase(args) {
 
 			biggestMessage = 0;
 			for(let i in packag.files) {
-				var message = "Removing " + packag.files[i].replace(/^\/*/, "") + "...";
+				var message = "Removing " + packag.files[i].replace(/^\/*/, "") + "...\r";
 				if (message.length > biggestMessage) biggestMessage = message.length;
 				lognl(message);
 				deleteFile(args[0] + "/" + packag.files[i].replace(/^\/*/, ""));
@@ -1359,7 +1451,7 @@ function __opack_search(args) {
 				packs[pack].description.match(new RegExp(args[0], "i"))) {
 				results.push({"name": packs[pack].name, "version": packs[pack].version, "description": packs[pack].description});
 			}
-			for(keyword in packs[pack].keywords) {
+			for(let keyword in packs[pack].keywords) {
 				if (keyword.match(new RegExp(args[0], "i"))) {
 					results.push({"name": packs[pack].name, "version": packs[pack].version, "description": packs[pack].description});
 				}
@@ -1368,7 +1460,10 @@ function __opack_search(args) {
 	}
 
 	for(let result in results) {
-		print("[" + results[result].name + "] (version " + results[result].version + "):\n  " + results[result].description + "\n");
+		ansiStart(); 
+		print(ansiColor("bold", "[" + results[result].name + "]") + " (version " + ansiColor("green", results[result].version) + "):");
+		print(results[result].description + "\n");
+		ansiStop();
 	}
 }
 
@@ -1383,15 +1478,22 @@ function pack(args) {
 	var packName = packag.name + "-" + packag.version + ".opack";
 	af.rm(packName);
 	
-	var c = 0;
+	var c = 0, cmax = 0;
 	
 	for(let i in packag.files) {
 		c++;
 		file = packag.files[i];
-		lognl("Packing (" + ow.format.round((c * 100) / packag.files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
-		zip.streamPutFileStream(packName, file, io.readFileStream(args[0] + "/" + file));
+		var str = "Packing (" + ow.format.round((c * 100) / packag.files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r";
+		lognl(str);
+		if (str.length > cmax) cmax = str.length;
+		var rfs = io.readFileStream(args[0] + "/" + file);
+		zip.streamPutFileStream(packName, file, rfs);
+		rfs.close();
 	}
-	if (c > 0) print("");
+	if (c > 0) {
+		lognl(repeat(cmax, " "));
+		log("All files packed.");
+	}
 
     log("Writing " + packName);
 	//io.writeFileBytes(packName, zip.generate({"compressionLevel": 9}));
@@ -1427,7 +1529,7 @@ function genpack(args) {
 	packageNew.mainJob             = (typeof packag.mainJob !== 'undefined')             ? packag.mainJob             : "";
 	packageNew.license             = (typeof packag.license !== 'undefined')             ? packag.license             : "The licence description";
 	packageNew.version             = (typeof packag.version !== 'undefined')             ? packag.version             : "20010101";
-	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": "20100101", "packb": "20120101" };
+	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": ">=20100101", "packb": "<20120101" };
 
 	if (isDef(packag.odoc) && isObject(packag.odoc)) {
 		for(let i in packag.odoc) {
@@ -1439,13 +1541,13 @@ function genpack(args) {
 
 	packageNew.files = listFiles(args[0], undefined, excludeList);
 	if (packageNew.files.indexOf(PACKAGEJSON) < 0 && packageNew.files.indexOf(PACKAGEYAML) < 0) {
-		if (args.indexOf("-inyaml") < 0)
-			packageNew.files.push(PACKAGEJSON);
-		else
+		if (args.indexOf("-injson") < 0)
 			packageNew.files.push(PACKAGEYAML);
+		else
+			packageNew.files.push(PACKAGEJSON);
 	}
-	packageNew.filesHash = listFilesWithHash(args[0], excludeList);
-	if (args.indexOf("-injson") >= 0 || packageNew.files.indexOf(PACKAGEJSON) >= 0) {
+	packageNew.filesHash = Object(listFilesWithHash(args[0], excludeList));
+	if ((args.indexOf("-injson") >= 0 || packageNew.files.indexOf(PACKAGEJSON) >= 0) && args.indexOf("-inyaml") < 0) {
 	    log("Writing " + args[0] + "/" + PACKAGEJSON);
 		io.writeFileString(args[0] + "/" + PACKAGEJSON, stringify(packageNew));			
 	} else {

@@ -98,12 +98,156 @@
     exports.testObjectCompression = function() {
         var obj = { "a": 1, "b": 2, "c": 3 };
         
-            var cobj = compress(obj);
-            var uobj = uncompress(cobj);
-        
-            if (uobj.a != 1 || uobj.b != 2 || uobj.c != 3)
-                throw "Something wrong with compressing and uncompressing objects.";        
+        var cobj = compress(obj);
+        var uobj = uncompress(cobj);
+    
+        if (uobj.a != 1 || uobj.b != 2 || uobj.c != 3)
+            throw "Something wrong with compressing and uncompressing objects.";        
     };
+
+    exports.testDo = function() {
+        var success = false;
+        $doWait($do((s, f) => {
+            success = true;
+            s(true);
+            return true;
+        }));
+
+        ow.test.assert(success, true, "Problem with simple $do");
+
+        success = false;
+        $doWait($do((s, f) => {
+            success = false;
+            s(123);
+        }).then((v) => {
+            if (v == 123) success = true;
+            return v;
+        }));
+
+        ow.test.assert(success, true, "Problem with $do().then() using onFullfilment");
+
+        success = false;
+        $doWait($do((s, f) => {
+            success = false;
+            return 123;
+        }).then((v) => {
+            if (v == 123) success = true;
+            return v;
+        }));
+
+        ow.test.assert(success, true, "Problem with $do().then() using return");
+
+        success = true;
+        $doWait($do((s, f) => {
+            success = true;
+            f(123);
+            return true;
+        }).then((v) => {
+            if (v == 123) success = true;
+            return v;
+        }).catch((r) => {
+            if (r == 123) success = false;
+        }));
+
+        ow.test.assert(success, false, "Problem with $do().then().catch() using onReject");
+
+        success = true;
+        $doWait($do((s, f) => {
+            success = true;
+            throw 123;
+        }).then((v) => {
+            if (v == 123) success = true;
+            return v;
+        }).catch((r) => {
+            if (String(r) == 123) success = false;
+        }));
+
+        ow.test.assert(success, false, "Problem with $do().then().catch() using throw");
+
+        success = true;
+        var res = false;
+        $doWait($do(() => {
+            success = true;
+            return success;
+        }).then((v) => {
+            if (v) success = true; else success = false;
+            return v;
+        }).catch((r) => {
+            if (r == 123) res = true; else res = false;
+        }).then((v) => {
+            if (!v) success = false; else success = true;
+            throw 123;
+        }).catch((r) => {
+            if (r == 123) res = false; else res = true;
+        }));
+
+        ow.test.assert(res, false, "Problem with multiple $do().then().catch()");
+    };
+
+    exports.testDoAll = function() {
+        var success = [];
+
+        $doWait($doAll([
+            1,
+            $do((s, f) => {
+                s(2);
+            })
+        ]).then((values) => {
+            if (compare(values, [1, 2])) success = values;
+            return values;
+        }));
+
+        ow.test.assert(success.sort(), [1, 2], "Problem with $doAll()");
+
+        var res = false;
+        $doWait($doAll([
+            1,
+            $do((s, f) => {
+                f(2);
+            })
+        ]).then((values) => {
+            if (compare(values, [1, 2])) success = values;
+            return values;
+        }).catch((reason) => {
+            if (reason == 2) res = true;
+        }));
+
+        ow.test.assert(res, true, "Problem with $doAll().catch()");
+    };
+
+    exports.testDoFirst = function() {
+        var success = 0;
+
+        $doWait($doFirst([
+            1,
+            $do((s, f) => {
+                sleep(50);
+                s(2);
+            })
+        ]).then((value) => {
+            if (value == 1) success = 1;
+            return value;
+        }));
+
+        sleep(50);
+        ow.test.assert(success, 1, "Problem with $doFirst()");
+
+        var res = false;
+        $doWait($doFirst([
+            $do((s, f) => {
+                sleep(50);
+                f(2);
+            })
+        ]).then((values) => {
+            if (compare(values, [1, 2])) success = values;
+            return values;
+        }).catch((reason) => {
+            if (reason == 2) res = true;
+        }));
+
+        sleep(50);
+        ow.test.assert(res, true, "Problem with $doFirst().catch()");
+    };    
 
     exports.testParallel = function() {
         // Array parallel processing
@@ -171,5 +315,47 @@
 
         if (res != 499500)
             throw "Something wrong with the parallel processing.";
+    };
+
+    exports.testCSV = function() {
+        var csvString = "A;B;C\r\n1;a;\"b\"\n2;1;\"2\"";
+        var csv = new CSV(csvString);
+        if (csv.csv()[0].A != 1 ||
+            csv.csv()[0].B != 'a' ||
+            csv.csv()[0].C != 'b') throw "Failed CSV generation on constructor!";
+        var csvString = "A;B;C\n1;\"a\";\"b\"\n2;\"1\";\"2\"";
+        if(csv.w().replace(/\r/g, "") !== csvString) throw "Failed to convert CSV back to string!";
+    
+        var csvObj = csv.csv();
+        csv.clear();
+        csv.toCsv(csvObj);
+        if (csv.csv()[0].A != 1 ||
+            csv.csv()[0].B != 'a' ||
+            csv.csv()[0].C != 'b') throw "Failed CSV generation on toCsv!";    
+    };
+
+    exports.testCrypt = function() {
+        var res1 = af.crypt("secret", "$1$xxxx");
+        var res2 = af.crypt("secret", "xx");
+
+        ow.test.assert(res1, "$1$xxxx$aMkevjfEIpa35Bh3G4bAc.", "Problem with crypt for MD5");
+        ow.test.assert(res2, "xxWAum7tHdIUw", "Problem with crypt for DES");
+    };
+
+    exports.testYAML = function() {
+        var r = {
+            a: 1,
+            b: "123",
+            c: true,
+            d: [ 1, 2, 3],
+            e: {
+                a: 1,
+                b: "123",
+                c: true
+            }
+        };
+
+        ow.test.assert(af.toYAML(r), "a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n", "Problem converting to yaml.");
+        ow.test.assert(af.fromYAML("a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n"), r, "Problem converting from yaml.");
     };
 })();

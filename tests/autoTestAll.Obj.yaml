@@ -1,0 +1,20 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # Obj tests
+   # --------------
+   - name: Obj::Init
+     exec: |
+       args.tests = require("autoTestAll.Obj.js");
+
+   - name: Obj::REST Errors
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRESTErrors;
+
+todo:
+   # Obj tests
+   # ------------
+   - Obj::Init
+   - Obj::REST Errors

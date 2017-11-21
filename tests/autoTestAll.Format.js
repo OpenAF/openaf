@@ -60,4 +60,15 @@
         ow.test.assert(ow.format.fromOctal(ow.format.toOctal(12345)), 12345, "Problem with conversion to octal");
         ow.test.assert(ow.format.fromHex(ow.format.toHex(12345)), 12345, "Problem with conversion to hex");    
     };
+
+    exports.testLSH = function() {
+        var s1 = repeat(50, "This is a sample text to test this functionality. ");
+        var s2 = repeat(50, "USA means United States of America. ");
+        var s3 = repeat(50, "Isto é um texto exemplo para testar esta funcionalidade. ");
+    
+        ow.test.assert(ow.format.string.lsHash(s1, s2) > 200, true, "Problem with different sentences on LSH hashing.");
+        ow.test.assert(ow.format.string.lsHash(s1, s3) <= 200, true, "Problem with language similar sentences on LSH hashing.");
+        ow.test.assert(ow.format.string.lsHash(s1, "my stuff = " + s1, false) <= 200, true, "Problem with almost similar sentences on LSH hashing.");
+        ow.test.assert(ow.format.string.lsHash(s1, s1) <= 200, true, "Problem with identical sentences on LSH hashing.");
+    };
 })();

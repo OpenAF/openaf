@@ -1,0 +1,26 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # ZIP tests
+   # --------------
+   - name: ZIP::Init
+     exec: |
+       args.tests = require("autoTestAll.ZIP.js");
+
+   - name: ZIP::ZIP basic functionality
+     from: ZIP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testZIP;
+
+   - name: ZIP::ZIP streaming functionality 
+     from: ZIP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testZIPStream;
+
+todo:
+   # ZIP tests
+   # ------------
+   - ZIP::Init
+   - ZIP::ZIP basic functionality
+   - ZIP::ZIP streaming functionality 

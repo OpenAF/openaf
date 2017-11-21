@@ -1117,7 +1117,225 @@ OpenWrap.obj.prototype.fromJson = function(json) {
 	return res.create(json);
 };
 
+OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	this.__lps = {};
+	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
+	if (isDef(aURL)) {
+		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+	}
+};
+OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	var r, canHaveIn = false;
+
+	if (isUnDef(aRequestType)) aRequestType = "GET";
+
+	switch(aRequestType.toUpperCase()) {
+	case "GET": 
+		r = new Packages.org.apache.http.client.methods.HttpGet(aUrl);
+		break;
+	case "POST": 
+		r = new Packages.org.apache.http.client.methods.HttpPost(aUrl);
+		canHaveIn = true;
+		break;
+	case "DELETE": 
+		r = new Packages.org.apache.http.client.methods.HttpDelete(aUrl);
+		break;
+	case "HEAD":
+		r = new Packages.org.apache.http.client.methods.HttpHead(aUrl);
+		break;
+	case "PATCH":
+		r = new Packages.org.apache.http.client.methods.HttpPatch(aUrl);
+		canHaveIn = true;
+		break;
+	case "PUT":
+		r = new Packages.org.apache.http.client.methods.HttpPut(aUrl);
+		canHaveIn = true;
+		break;		
+	case "TRACE":
+		r = new Packages.org.apache.http.client.methods.HttpTrace(aUrl);
+		break;		
+	default:
+		r = new Packages.org.apache.http.client.methods.HttpGet(aUrl);
+		break;
+	}
+
+	// Set credentials
+	if (isDef(this.__l) && !(this.__forceBasic)) {
+		var getKey;
+		this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+		for(var key in this.__lps) {
+			if (aUrl.startsWith(key)) getKey = key;
+		}
+		if (isDef(getKey)) {
+			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]).build();
+		} else {
+			this.__h = this.__h.build();
+		}
+	} else {
+		if (isUnDef(this.__h)) this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
+	}
+
+	// Set timeout
+	if (isDef(aTimeout)) {
+		var rc = new Packages.org.apache.http.client.config.RequestConfig.custom();
+		rc.setConnectionRequestTimeout(aTimeout);
+		rc.setConnect(aTimeout);
+		r.setConfig(rc.build());
+	}
+
+	if (this.__forceBasic && isDef(this.__l)) {
+		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(this.__l + ":" + Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
+	}
+
+	for(var i in aRequestMap) {
+		r.addHeader(i, aRequestMap[i]);
+	}
+
+	if (isDef(aIn) && isString(aIn) && canHaveIn) {
+		r.setEntity(Packages.org.apache.http.entity.StringEntity(aIn));
+	}
+
+	this.outputObj = {};
+	if (isDef(r)) this.__r = this.__h.execute(r);
+	if (isBytes) {
+		this.outputObj =  {
+			responseCode: this.responseCode(),
+			contentType: this.responseType(),
+			responseBytes: this.responseBytes()
+		};
+	} else {
+		if (returnStream) {
+			this.outputObj = this.responseStream();
+		} else {
+			this.outputObj = {
+				responseCode: this.responseCode(),
+				contentType: this.responseType(),
+				response: this.response()
+			};
+		}
+	}
+
+	if (this.outputObj.responseCode >= 400) {
+		switch(this.outputObj.responseCode) {
+		case 404: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		case 410: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		default: throw "IOException Server returned HTTP response code: " + this.responseCode() + " for URL: " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		}
+	}
+	return this.outputObj;
+};
+
+OpenWrap.obj.prototype.http.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream);
+};
+
+OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	return this.exec(aUrl, "POST", aIn, aRequestMap, isBytes, aTimeout, returnStream);
+};
+
+OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) {
+	if (parseJson) {
+		var res = this.outputObj;
+		if (isDef(res.response)) res.response = jsonParse(res.response);
+		return res;	
+	} else
+		return this.outputObj;
+};
+
+OpenWrap.obj.prototype.http.prototype.getResponse = function() {
+	return this.outputObj;
+};
+	
+OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) {
+	if (isUnDef(urlPartial)) forceBasic = true;
+
+	if (!forceBasic) {
+		var url = new java.net.URL(urlPartial);
+		var port = url.getPort();
+		if (port < 0) {
+			switch(url.getProtocol()) {
+			case "http" : port = 80; break;
+			case "https": port = 443; break;
+			}
+		}
+		var as = new Packages.org.apache.http.auth.AuthScope(url.getHost(), port);
+		var up = new Packages.org.apache.http.auth.UsernamePasswordCredentials(aUser, Packages.wedo.openaf.AFCmdBase.afc.dIP(aPassword));
+		var cred = new org.apache.http.impl.client.BasicCredentialsProvider();
+		cred.setCredentials(as, up);
+		this.__lps[urlPartial] = cred;
+	}
+
+	this.__l = aUser;
+	this.__p = aPassword;
+	this.__forceBasic = forceBasic;
+};
+
+OpenWrap.obj.prototype.http.prototype.response = function() {
+	try {
+		var res, ent = this.__r.getEntity();
+		if (ent != null)
+			res = String(Packages.org.apache.http.util.EntityUtils.toString(ent));
+		return res;
+	} finally {
+		this.__r.close();
+	}
+};
+
+OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
+	try {
+		var res, ent = this.__r.getEntity();
+		if (ent != null)
+			res = Packages.org.apache.http.util.EntityUtils.toByteArray(ent);
+		return res;
+	} finally {
+		this.__r.close();
+	}
+};
+
+OpenWrap.obj.prototype.http.prototype.responseCode = function() {
+	return Number(this.__r.getStatusLine().getStatusCode());
+};
+
+OpenWrap.obj.prototype.http.prototype.responseHeaders = function() {
+	var ar = {};
+	var hh = this.__r.getAllHeaders();
+	for(var i in hh) {
+		ar[hh[i].getName()] = hh[i].getValue();
+	}
+
+	return ar;
+};
+
+OpenWrap.obj.prototype.http.prototype.responseStream = function() {
+	var ent = this.__r.getEntity();
+	if (ent != null)
+		return this.__r.getEntity().getContent();
+	else 
+		return undefined;
+};
+
+OpenWrap.obj.prototype.http.prototype.responseType = function() {
+	try {
+		return String(this.__r.getEntity().getContentType().getValue());
+	} catch(e) {
+		return "";
+	}
+};
+
 OpenWrap.obj.prototype.rest = {
+
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.exceptionParse(anException) : Map</key>
+	 * Tries to parse the response of a rest call exception and the response also if it's json.
+	 * </odoc>
+	 */
+	exceptionParse: function(anException) {
+		var er = jsonParse(anException.replace(/.+response =/, ""));
+		if (er.contentType.toLowerCase().match(/application\/json/))
+			er.response = jsonParse(er.response);
+		return er;
+	},
 	
 	/**
 	 * <odoc>
@@ -1128,8 +1346,9 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	get: function(aURL, aIdx, _l, _p, _t, aRequestMap) { 
-		plugin("HTTP");
-		var h = new HTTP();
+		//plugin("HTTP");
+		//var h = new HTTP();
+		var h = new ow.obj.http();
 		
 		if (isUndefined(_l) && isUndefined(_p)) {
 			var u = new java.net.URL(aURL);
@@ -1140,7 +1359,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
  		if (isDefined(_l) && isDefined(_p)) {
-			h.login(_l, _p);
+			h.login(_l, _p, false, aURL);
 		} 
  		
  		if (isDef(_l) && isFunction(_l)) {
@@ -1150,7 +1369,7 @@ OpenWrap.obj.prototype.rest = {
  		try {
  			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", undefined, aRequestMap, undefined, _t);
  		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
  		}
 	},
@@ -1176,9 +1395,10 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap) {
-		plugin("HTTP");
-		var h = new HTTP();
-		
+		//plugin("HTTP");
+		//var h = new HTTP();
+		var h = new ow.obj.http();
+
 		if (isUndefined(_l) && isUndefined(_p)) {
 			var u = new java.net.URL(aURL);
 			if (u.getUserInfo() != null) {
@@ -1188,7 +1408,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
 		if (isDefined(_l) && isDefined(_p)) {
-			h.login(_l, _p);
+			h.login(_l, _p, false, aURL);
 		} 
 		
  		if (isDef(_l) && isFunction(_l)) {
@@ -1200,7 +1420,7 @@ OpenWrap.obj.prototype.rest = {
 		try {
 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", stringify(aDataRow, undefined, ''), rmap, undefined, _t);
 		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		}
 	},
@@ -1226,9 +1446,10 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap) {
-		plugin("HTTP");
-		var h = new HTTP();
-		
+		//plugin("HTTP");
+		//var h = new HTTP();
+		var h = new ow.obj.http();
+
 		if (isUndefined(_l) && isUndefined(_p)) {
 			var u = new java.net.URL(aURL);
 			if (u.getUserInfo() != null) {
@@ -1238,7 +1459,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
 		if (isDefined(_l) && isDefined(_p)) {
-			h.login(_l, _p);
+			h.login(_l, _p, false, aURL);
 		} 
 		
  		if (isDef(_l) && isFunction(_l)) {
@@ -1250,7 +1471,7 @@ OpenWrap.obj.prototype.rest = {
 		try {
 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", stringify(aDataRow, undefined, ''), rmap, undefined, _t);
 		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		}
 	},
@@ -1276,9 +1497,10 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
-		plugin("HTTP");
-		var h = new HTTP();
-		
+		//plugin("HTTP");
+		//var h = new HTTP();
+		var h = new ow.obj.http();
+				
 		if (isUndefined(_l) && isUndefined(_p)) {
 			var u = new java.net.URL(aURL);
 			if (u.getUserInfo() != null) {
@@ -1288,7 +1510,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
 		if (isDefined(_l) && isDefined(_p)) {
-			h.login(_l, _p);
+			h.login(_l, _p, false, aURL);
 		} 
 		
  		if (isDef(_l) && isFunction(_l)) {
@@ -1296,9 +1518,9 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", aRequestMap, undefined, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", undefined, aRequestMap, undefined, _t);
 		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
 		}
 	},

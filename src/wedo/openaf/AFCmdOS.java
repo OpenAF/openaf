@@ -88,9 +88,11 @@ public class AFCmdOS extends AFCmdBase  {
 	protected String code = "";
 	protected String classfile = "";
 	protected String injectscriptfile = "";
+	protected String injectclassfile = "";
 	protected long numberOfIncludedLines = 0;
 	
 	protected boolean silentMode = false;
+	protected boolean silenceRepack = false;
 	protected boolean pipe = false;
 	protected boolean compile = false;
 	protected boolean filescript = false;
@@ -99,9 +101,10 @@ public class AFCmdOS extends AFCmdBase  {
 	protected boolean console = false;
 	protected boolean ojob = false;
 	protected boolean injectscript = false;
+	protected boolean injectclass = false;
 	protected boolean daemon = false;
 	protected boolean injectcode = false;
-	protected JsonObject pmIn, pmOut;
+	protected com.google.gson.JsonObject pmIn, pmOut;
 
 	//public static String[] args;
 	
@@ -274,48 +277,74 @@ public class AFCmdOS extends AFCmdBase  {
 				showHelp();
 				continue;
 			case OPTION_INSTALL:
-				install();
+				//install();
+				silenceRepack = true;
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				injectclass = true;
+				injectclassfile = "genScripts_js";
 				continue;
 			case OPTION_UPDATE:
-				update();
+				//update();
+				silenceRepack = true;
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				injectclass = true;
+				injectclassfile = "update_js";
 				continue;		
 			case OPTION_OPACK:
-				filescript = true;
+				filescript = false;
 				silentMode = true;
 				INPUT_TYPE = inputtype.INPUT_SCRIPT;
 				opack = true;
-				injectscript = true;
-				injectscriptfile = "/js/opack.js";
+				//injectscript = true;
+				//injectscriptfile = "/js/opack.js";
+				injectclass = true;
+				injectclassfile = "opack_js";
 				continue;
             case OPTION_OJOB:
-                filescript = true;
+                filescript = false;
                 silentMode = true;
                 INPUT_TYPE = inputtype.INPUT_SCRIPT;
                 ojob = true;
-                injectscript = true;
-                injectscriptfile = "/js/ojob.js";
+                //injectscript = true;
+				//injectscriptfile = "/js/ojob.js";
+				injectclass = true;
+                injectclassfile = "ojob_js";
                 continue;
 			case OPTION_CONSOLE:
-				filescript = true;
+				filescript = false;
 				silentMode = true;
 				INPUT_TYPE = inputtype.INPUT_SCRIPT;
 				console = true;
-				injectscript = true;
-				injectscriptfile = "/js/openafconsole.js";
+				//injectscript = true;
+				//injectscriptfile = "/js/openafconsole.js";
+				injectclass = true;
+				injectclassfile = "openafconsole_js";
 				continue;
 			case OPTION_REPACK:
-				filescript = true;
+				filescript = false;
 				silentMode = true;
+				silenceRepack = true;
 				INPUT_TYPE = inputtype.INPUT_SCRIPT;
-				injectscript = true;
-				injectscriptfile = "/js/repack.js";
+				//injectscript = true;
+				//injectscriptfile = "/js/repack.js";
+				injectclass = true;
+				injectclassfile = "repack_js";
 				continue;
 			case OPTION_INTERPRET:
 				AFCmdBase.optLevel = -1;
 				AFCmdBase.restartEngine();
 				continue;	
 			case OPTION_CHECK:
-				check();
+				//check();
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				injectclass = true;
+				injectclassfile = "check_js";
 				continue;
 			case OPTION_CODE:
 				checkNext = true;
@@ -325,11 +354,16 @@ public class AFCmdOS extends AFCmdBase  {
 				injectcode = true;
 				continue;
 			case OPTION_SCRIPTHELP:
-				try {
+				/*try {
 					showHelpScript();
 				} catch (IOException e) {
 					SimpleLog.log(logtype.ERROR, "Error obtaining script example: " + e.getMessage(), e);
-				}
+				}*/
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				injectclass = true;
+				injectclassfile = "example_js";
 				continue;
 			}
 		}
@@ -348,8 +382,7 @@ public class AFCmdOS extends AFCmdBase  {
 		StringBuilder input = new StringBuilder();
 		
 		// Check repack
-		if (this.getClass().getResourceAsStream("/af.jar") != null &&
-			!injectscriptfile.contains("repack"))
+		if (this.getClass().getResourceAsStream("/js.jar") != null && !silenceRepack)
 			System.err.println("Warning: Please consider repacking OpenAF (use --repack).");
 		
 		// 1. Read the input from stdin and option -e and from a file
@@ -432,33 +465,36 @@ public class AFCmdOS extends AFCmdBase  {
 	 * @param appoperation2
 	 * @throws Exception  
 	 */
-	protected JsonObject execute(JsonObject pmIn,
+	protected com.google.gson.JsonObject execute(com.google.gson.JsonObject pmIn,
 			String op, boolean processScript, StringBuilder theInput, boolean isolatePMs) throws Exception {
 
 		// 3. Process input
 		//
 		INPUT_TYPE = inputtype.INPUT_SCRIPT;
 		
-		if (((!pipe) && (!filescript) && (!processScript) && (!injectcode))) {
+		if (((!pipe) && (!filescript) && (!processScript) && (!injectcode) && (!injectclass))) {
 			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-				injectscript = true;
+				/*injectscript = true;
 				injectscriptfile = "/js/openafgui.js";
-				filescript = true;
+				filescript = true;*/
+				injectclass = true;
+				injectclassfile = "openafgui_js";
+				filescript = false;
 				silentMode = true;
 			}
 		}
 
-		if (processScript || filescript || injectcode) {
+		if (processScript || filescript || injectcode || injectclass) {
 			// Obtain script
-			String script;
+			String script = null;
 			
 			if (filescript) {				
 				if (injectscript) {
-					script =  IOUtils.toString(getClass().getResourceAsStream(injectscriptfile), "UTF-8");
+					script = IOUtils.toString(getClass().getResourceAsStream(injectscriptfile), "UTF-8");
 				} else {		    	
 			    	boolean isZip = false;
 			    	boolean isOpack = false;
-			    	JsonObject pm = null;
+			    	com.google.gson.JsonObject pm = null;
 			    	ZipFile tmpZip = null;
 			    	
 			    	// Determine if it's opack/zip
@@ -508,14 +544,16 @@ public class AFCmdOS extends AFCmdBase  {
 			    }
 			    	
 			} else {
-				script = theInput.toString();
+				if (!injectclass) script = theInput.toString();
 			}
 			
-			script = script.replaceAll("^#.*", "//");
-			script = script.replaceFirst(PREFIX_SCRIPT, "");
-			
-			if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().daemon();";
-			if (injectcode) script += code;
+			if (script != null) {
+				script = script.replaceAll("^#.*", "//");
+				script = script.replaceFirst(PREFIX_SCRIPT, "");
+				
+				if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().daemon();";
+				if (injectcode) script += code;
+			}
 			
 			Context cx = (Context) jse.getNotSafeContext();
 			cx.setErrorReporter(new WeDoOpenRhinoErrorReporter());
@@ -542,10 +580,12 @@ public class AFCmdOS extends AFCmdBase  {
 				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__args", args);
 				
 				// Add scriptfile object
-				Object scriptFile = Context.javaToJS(scriptfile, (Scriptable) jse.getGlobalscope());
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__scriptfile", scriptFile);
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__iszip", (zip == null) ? false: true);
-	
+				if (filescript) {
+					Object scriptFile = Context.javaToJS(scriptfile, (Scriptable) jse.getGlobalscope());
+					ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__scriptfile", scriptFile);
+					ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__iszip", (zip == null) ? false: true);
+				}
+
 				// Add AF class
 				ScriptableObject.defineClass((Scriptable) jse.getGlobalscope(), AFBase.class, false, true);
 				
@@ -574,24 +614,32 @@ public class AFCmdOS extends AFCmdBase  {
 			}
 			
 			// Compile & execute script
-			try {
+			/*try {
 				InputStream in1 = getClass().getResourceAsStream("/js/openaf.js");
 				includeScript = IOUtils.toString(in1, (Charset) null);
 				numberOfIncludedLines = numberOfIncludedLines + includeScript.split("\r\n|\r|\n").length;
 				AFCmdBase.jse.addNumberOfLines(includeScript);
 			} catch (Exception e) {
 				SimpleLog.log(logtype.DEBUG, "Error including openaf.js", e);
-			}
+			}*/
+			AFBase.runFromClass(Class.forName("openaf_js").getDeclaredConstructor().newInstance());
 			cx.setErrorReporter(new WeDoOpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
 				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + AFBase.jsonParse(pmIn.toString()) + ")";
 			}
 			
-			Context cxl = (Context) jse.enterContext();
-			org.mozilla.javascript.Script compiledScript = cxl.compileString(includeScript + script, scriptfile, 1, null);
-			Object res = compiledScript.exec(cxl, (Scriptable) jse.getGlobalscope());
-			jse.exitContext();
+			Object res = null;
+			if (injectscript || filescript || injectcode) {
+				Context cxl = (Context) jse.enterContext();
+				org.mozilla.javascript.Script compiledScript = cxl.compileString(includeScript + script, scriptfile, 1, null);
+				res = compiledScript.exec(cxl, (Scriptable) jse.getGlobalscope());
+				jse.exitContext();
+			} 
+
+			if (injectclass) {
+				res = AFBase.runFromClass(Class.forName(injectclassfile).getDeclaredConstructor().newInstance());
+			}
 			
 			if (isolatePMs && res != null && !(res instanceof Undefined)) {
 				jsonPMOut = (NativeObject) res;
@@ -602,8 +650,8 @@ public class AFCmdOS extends AFCmdBase  {
 			
 			// Convert to ParameterMap
 			Object stringify = NativeJSON.stringify(cx, (Scriptable) jse.getGlobalscope(), jsonPMOut, null, null);
-			Gson gson = new com.google.gson.Gson();
-			pmOut = gson.fromJson(stringify.toString(), JsonObject.class);
+			com.google.gson.Gson gson = new com.google.gson.Gson();
+			pmOut = gson.fromJson(stringify.toString(), com.google.gson.JsonObject.class);
 			
 			// Leave Rhino
 			//org.mozilla.javascript.Context.exit();

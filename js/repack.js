@@ -183,7 +183,7 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, newClass);
 				} else {
 					str = str.replace(/^Main-Class: .+$/m, "Main-Class: " + newClass);
-                                }
+                }
 				zipNew.putFile(el.name, af.fromString2Bytes(str));
 			} else {				
 				if (!(el.name.match(/jarinjarloader/))) {
@@ -213,4 +213,4 @@ if (createTmp) {
 log("Done repacking OpenAF.jar");
 // We need to stop (but no longer needed)
 //java.lang.System.exit(0);
-} catch(e) { printErr(e); e.javaException.printStackTrace(); }
+} catch(e) { printErr(e); if (isDef(e.javaException)) se.javaException.printStackTrace(); }

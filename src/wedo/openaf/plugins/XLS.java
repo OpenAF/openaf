@@ -10,7 +10,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
-import org.apache.commons.io.IOUtils;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -436,7 +435,7 @@ public class XLS extends ScriptableObject {
 		if (type == CellType.STRING) cell.setCellValue(value.toString());
 		else if (type == CellType.FORMULA) cell.setCellFormula((value.toString()).replaceFirst("=", ""));
 		else if (type == CellType.NUMERIC) { 
-			if (value instanceof Integer) value = new Double((Integer) value);
+			if (value instanceof Integer) value = Double.valueOf((Integer) value);
 			cell.setCellValue((Double) value); 
 		}
 		else if (type == CellType.BOOLEAN) cell.setCellValue((Boolean) value); 

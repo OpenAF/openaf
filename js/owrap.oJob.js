@@ -67,6 +67,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	}
 	
 	for(var i in jobs) {
+		if (isUnDef(jobs[i].from) && isDef(jobs[i].earlier)) jobs[i].from = jobs[i].earlier;
+		if (isUnDef(jobs[i].to)   && isDef(jobs[i].then))    jobs[i].to   = jobs[i].then;
 		this.addJob(this.getJobsCh(), jobs[i].name, jobs[i].deps, jobs[i].type, jobs[i].typeArgs, jobs[i].args, jobs[i].exec, jobs[i].from, jobs[i].to, jobs[i].help);
 	}
 	this.addTodos(todo, args, aId);
@@ -538,24 +540,28 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			}
 
 			if (existing.name != 'oJob Log') {
-				var msg = "[" + existing.name + "] | ";
+				var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+				var msg = "[" + existing.name + "]" + sep;
 				if (existing.start && (!existing.error && !existing.success)) { 
-					var __d = new Date();
-					var __m = msg + "STARTED | " + __d;
+					//var __d = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(), __logFormat.dateFormat, __logFormat.dateTZ) : new Date();
+					var __d = (new Date()).toJSON(); var __n = nowNano();
+					var __m = msg + "STARTED" + sep + __d;
 					printnl(_b(__m) + "\n" + _g(aa) + _c(s)); 
-					if (isDef(getChLog())) getChLog().set({ d: __d, t: "INFO" }, { d: __d, t: "INFO", m: __m });
+					if (isDef(getChLog())) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
 				}
 				if (existing.start && existing.error) { 
-					var __d = new Date();
-					var __m = msg + "Ended in ERROR  | " + __d;
+					//var __d = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(), __logFormat.dateFormat, __logFormat.dateTZ) : new Date();
+					var __d = (new Date()).toJSON(); var __n = nowNano();
+					var __m = msg + "Ended in ERROR" + sep + __d;
 					printErr("\n" + _e(ss) + _g(aa) + _b(__m) + "\n" + stringify(existing) + "\n" + _e(ss)); 
-					if (isDef(getChLog())) getChLog().set({ d: __d, t: "ERROR" }, { d: __d, t: "ERROR", m: __m });
+					if (isDef(getChLog())) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m });
 				}
 				if (existing.start && existing.success) { 
-					var __d = new Date();
-					var __m = msg + "Ended with SUCCESS | " + __d;
+					//var __d = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(), __logFormat.dateFormat, __logFormat.dateTZ) : new Date();
+					var __d = (new Date()).toJSON(); var __n = nowNano();
+					var __m = msg + "Ended with SUCCESS" + sep + __d;
 					printnl("\n" + _c(ss)); print(_g(aa) +_b(__m) + "\n"); 
-					if (isDef(getChLog())) getChLog().set({ d: __d, t: "INFO" }, { d: __d, t: "INFO", m: __m });
+					if (isDef(getChLog())) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
 				}
 			}
 		} catch(e) { 

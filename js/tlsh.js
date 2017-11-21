@@ -24,7 +24,7 @@
  */
 
 /*
- * Changed by nuno.aguia@wedotechnologies.com to adapt to OpenAF
+ * Changed by nuno.aguiar@wedotechnologies.com to adapt to OpenAF
  */
 
 /*

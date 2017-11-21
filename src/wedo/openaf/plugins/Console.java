@@ -59,7 +59,7 @@ public class Console extends ScriptableObject {
 		if (maskChar != null &&
 			!maskChar.equals("undefined") && 
 			maskChar.length() > 0) 
-			c = new Character(maskChar.charAt(0));
+			c = Character.valueOf(maskChar.charAt(0));
 		else 
 			return cr.readLine(prompt);
 		
@@ -80,7 +80,7 @@ public class Console extends ScriptableObject {
 		if (maskChar != null &&
 			!maskChar.equals("undefined") && 
 			maskChar.length() > 0) 
-			c = new Character(maskChar.charAt(0));
+			c = Character.valueOf(maskChar.charAt(0));
 		else 
 			return cr.readLine();
 		

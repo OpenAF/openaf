@@ -500,8 +500,8 @@ OpenWrap.ch.prototype.__types = {
 			if (isUnDef(options.index)) throw "Please define an elastic search index to use";
 			if (isUnDef(options.idKey)) options.idKey = "_id";
 			if (isUnDef(options.url))   throw "Please define the elastic search url";
-			if (isUnDef(options.user) || isUnDef(options.pass))  
-				throw "Please define an user and pass to access the elastic search";
+			/*if (isUnDef(options.user) || isUnDef(options.pass))  
+				throw "Please define an user and pass to access the elastic search";*/
 			this.__channels[aName] = options;
 			
 			if (isFunction(options.index)) {
@@ -521,7 +521,8 @@ OpenWrap.ch.prototype.__types = {
 			var parent = this;
 			
 			var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			if (isDef(res) && isDef(res.count)) {
 				return res.count
@@ -544,7 +545,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonCreate(url, {}, ops, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			if (isDef(res) && isDef(res.hits) && isDef(res.hits.hits)) {
 				return $stream(res.hits.hits).map(function(r) {
@@ -552,7 +554,7 @@ OpenWrap.ch.prototype.__types = {
 					return r._source;
 				}).toArray();
 			} else {
-				return undefined
+				return undefined;
 			}			
 		},
 		getKeys      : function(aName, full) {
@@ -564,7 +566,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonCreate(url, {}, merge(ops, { _source: false }), function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			if (isDef(res) && isDef(res.hits) & isDef(res.hits.hits)) {
 				return $stream(res.hits.hits).map("_id").toArray();
@@ -590,7 +593,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonSet(url, {}, aV, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			return res;		
 		},
@@ -610,7 +614,8 @@ OpenWrap.ch.prototype.__types = {
 			
 			plugin("HTTP");
 			var h = new HTTP();
-			h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
+			if (isDef(this.__channels[aName].user))
+				h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
 			try {
 				return h.exec(url, "POST", ops, {"Content-Type":"application/x-www-form-urlencoded"});
 			} catch(e) {
@@ -630,7 +635,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			
 			if (isDef(res) && res.found) {
@@ -662,7 +668,8 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = ow.obj.rest.jsonRemove(url, {}, function(h) { 
-				h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				if (isDef(parent.__channels[aName].user))
+					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});
 			return res;	
 		}
@@ -686,16 +693,16 @@ OpenWrap.ch.prototype.__types = {
 		},
 		forEach      : function(aName, aFunction) {
 			var keys = this.getKeys(aName);
-			while(o in keys) {
-				aFunction(o, this.get(aName, o));
+			for(let o in keys) {
+				aFunction(keys[o], this.get(aName, keys[o]));
 			}
 		},
 		getKeys      : function(aName, full) {
-			var ch = this.__ig.getIgnite().getCache(aName);
-			var i = ch.primaryKeySet().iterator();
+			var ch = this.__ig.getIgnite().cache(aName);
+			var i = ch.iterator();
 			var keys = [];
 			while(i.hasNext()) {
-				keys.push(af.fromJavaMap(i.next()));
+				keys.push(af.fromJavaMap(i.next().getKey()));
 			}
 			return keys;
 		},
@@ -883,8 +890,8 @@ OpenWrap.ch.prototype.size = function(aName) {
  */
 OpenWrap.ch.prototype.subscribe = function(aName, aFunction, onlyFromNow, anId) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	//if (isUnDef(anId)) anId = genUUID();
-	if (isUnDef(anId)) anId = md5(aFunction.toString());
+	if (isUnDef(anId)) anId = genUUID();
+	//if (isUnDef(anId)) anId = md5(aFunction.toString());
 	
 	if (isDef(this.subscribers[aName][anId])) return anId;
 	
@@ -1427,14 +1434,141 @@ OpenWrap.ch.prototype.utils = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.ch.utils.getElasticIndex(aPrefix) : Function</key>
-	 * Returns a function to be use for generating ElasticSearch indexes with aPrefix-aDate (in the format of
-	 * YYYY-MM-DD). This helps to generate a specific index per day.
+	 * <key>ow.ch.utils.getFileHousekeepSubscriber(aFolder, aRegExPattern, howLongAgoInMinutes, dontCompress, aBackupFolder) : Function</key>
+	 * Returns a channel subscriber function to perform file housekeep (specially useful with ow.ch.utils.getLogFilePerDate) given the main
+	 * aFolder where just the newest file whose filename matches aRegExPattern (e.g. "log\\d{4}-\\d{2}-\\d{2}\\.log") will be kept uncompressed.
+	 * All other files will be gziped (if dontCompress = false) and moved to aBackupFolder (if defined, defaults to aFolder). If howLongAgoInMinutes is defined all 
+	 * files older than now - howLongAgoInMinutes will be deleted from the aBackupFolder.
+	 * </odoc>
+	 * 
+	 */
+	getFileHousekeepSubscriber: function (aFolder, aRegExPattern, howLongAgoInMinutes, dontCompress, aBackupFolder) {
+		if (isUnDef(aFolder)) aFolder = ".";
+		if (isUnDef(aBackupFolder)) aBackupFolder = aFolder;
+		if (isUnDef(aRegExPattern)) aRegExPattern = "log-\\d{4}-\\d{2}-\\d{2}\\.log";
+
+		return function (aCh, aOp, aK, aV) {
+			if (aOp != "set") return;
+
+			var listFilesFolder = io.listFiles(aFolder).files;
+
+			var donttouch = $from(listFilesFolder)
+				.equals("isFile", true)
+				.match("filename", new RegExp(aRegExPattern))
+				.notEnds("filename", ".gz")
+				.sort("-lastModified")
+				.first();
+
+			if (isDef(donttouch)) donttouch = donttouch.filename;
+
+			af.mkdir(aBackupFolder);
+
+			// Search files for compression
+			if (!dontCompress) {
+				$from(listFilesFolder)
+					.notEquals("filename", donttouch)
+					.notEnds("filename", ".gz")
+					.match("filename", new RegExp(aRegExPattern))
+					.select(function (r) {
+						ioStreamCopy(io.writeFileGzipStream(aBackupFolder + "/" + r.filename + ".gz"),
+							io.readFileStream(r.filepath));
+						af.rm(r.filepath);
+					});
+			}
+
+			// Delete files from backup folder
+			if (isDef(howLongAgoInMinutes)) {
+				$from(io.listFiles(aBackupFolder).files)
+					.notEquals("filename", donttouch)
+					.match("filename", new RegExp(aRegExPattern + "\\.gz$"))
+					.less("createTime", new Date() - (howLongAgoInMinutes * 60 * 1000))
+					.select(function (r) {
+						af.rm(r.filepath);
+					});
+			}
+		}
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.getLogFilePerDate(aLogFolder, aTemplate, aFileDateFormat, aLineTemplate, aLineDateFormat) : Function</key>
+	 * Returns a function to be used to generate a log file in aLogFolder path. If the log file already exists it will append to it.
+	 * You can customize the log filename format using a aTemplate (e.g. "log-{{timedate}}.log" by default). The "timedate"
+	 * is defined on the aFileDateFormat (e.g. "yyyy-MM-dd" by day, "yyyy-MM-dd-HH" by hour (check ow.format.fromDate for
+	 * more options)). Each line that will be append to the file can be defined by aLineTemplate (e.g. "{{timedate}} | {{type}} | {{message}}" 
+	 * by default) where "type" is the of logging (INFO, WARN, ERROR), "message" the logged message and "timedate" is defined
+	 * on the aLineDateFormat (e.g. "yyyy-MM-dd HH:mm:ss.SSS" by default (check ow.format.fromDate for more options)).
 	 * </odoc>
 	 */
-	getElasticIndex: function(aPrefix) {
+	getLogFilePerDate: function(aLogFolder, aTemplate, aFileDateFormat, aLineTemplate, aLineDateFormat) {
+		if (isUnDef(aLogFolder))        aLogFolder      = ".";
+		if (isUnDef(aTemplate))         aTemplate       = "log-{{timedate}}.log";
+		if (isUnDef(aFileDateFormat))   aFileDateFormat = "yyyy-MM-dd";
+		if (isUnDef(aLineTemplate))     aLineTemplate   = "{{timedate}} | {{type}} | {{message}}\n";
+		if (isUnDef(aLineDateFormat))   aLineDateFormat = "yyyy-MM-dd HH:mm:ss.SSS";
+
+		ow.loadFormat();
+		var uuid = genUUID();
+
+		var lineTmpl = ow.loadTemplate().compile(aLineTemplate);
+		var fileTmpl = ow.loadTemplate().compile(aTemplate);
+
+		return function(aCh, aOp, aK, aV) {
+			if (aOp == "set") {
+			   var line = ow.template.execCompiled(lineTmpl)({ 
+				   timedate: ow.format.fromDate(new Date(aV.d), aLineDateFormat), 
+				   type: aV.t, 
+				   message: aV.m 
+			   });
+			   var file = ow.template.execCompiled(fileTmpl)({
+					timedate: ow.format.fromDate(new Date(aV.d), aFileDateFormat)
+				});
+			   // Write line
+			   io.writeFileString(aLogFolder + "/" + file, line, io.getDefaultEncoding(), true);	   
+			}
+		}
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.setLogToFile(aConfigMap)</key>
+	 * Shortcut to set OpenAF's logging into a rotating per date set of log files. You can set any of these options:\
+	 * \
+	 * logFolder             (string)  Where the current log file should be written (defaults to '.')\
+	 * filenameTemplate      (string)  ow.template for the log filename (defaults to 'log-{{timedate}}.log')\
+	 * fileDateFormat        (string)  File date format to be used in filenameTemplate (defaults to 'yyyy-MM-dd')\
+	 * lineTemplate          (string)  ow.template for each log line (defaults to '{{timedate}} | {{type}} | {{message}}\n')\
+	 * lineDateFormat        (string)  Date format to be used in lineTemplate (defaults to 'yyyy-MM-dd HH:mm:ss.SSS')\
+	 * HKRegExPattern        (string)  Housekeeping regular expression pattern to find log files (defaults to 'log-\\d{4}-\\d{2}-\\d{2}\\.log')\
+	 * HKhowLongAgoInMinutes (number)  How many minutes of logs should be kept (if not defined won't delete files)\
+	 * dontCompress          (boolean) Defines if older files should not be gzip (default to false)\
+	 * backupFolder          (string)  If defined older log files will be moved to this folder (if not defined they won't be moved)\
+	 * numberOfEntriesToKeep (number)  Number of OpenAF log channel entries to keep in memory (defaults to 100)\
+	 * setLogOff             (boolean) Turns off console logging (defaults to false)\
+	 * \
+	 * </odoc>
+	 */
+	setLogToFile: function(aConfigMap) {
+		if (isUnDef(aConfigMap)) aConfigMap = {};
+
+		startLog(ow.ch.utils.getLogFilePerDate(aConfigMap.logFolder, aConfigMap.filenameTemplate, aConfigMap.fileDateFormat, aConfigMap.lineTemplate, aConfigMap.lineDateFormat));
+		getChLog().subscribe(ow.ch.utils.getFileHousekeepSubscriber(aConfigMap.logFolder, aConfigMap.HKRegExPattern, aConfigMap.HKhowLongAgoInMinutes, aConfigMap.dontCompress, aConfigMap.backupFolder));
+		getChLog().subscribe(ow.ch.utils.getHousekeepSubscriber(getChLog(), aConfigMap.numberOfEntriesToKeep));
+		if (aConfigMap.setLogOff) setLog( { off: true });
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.getElasticIndex(aPrefix, aFormat) : Function</key>
+	 * Returns a function to be used for generating ElasticSearch indexes with aPrefix-aDate (in the format of
+	 * YYYY.MM.DD). This helps to generate a specific index per day. If a specific format is needed you can provided
+	 * it as aFormat (see ow.format.fromDate)).
+	 * </odoc>
+	 */
+	getElasticIndex: function(aPrefix, aFormat) {
+		if (isUnDef(aFormat)) aFormat = "yyyy.MM.dd";
 		return function() {
-			return aPrefix + "-" + ow.loadFormat().fromDate(new Date(), 'yyyyMMdd');
+			return aPrefix + "-" + ow.loadFormat().fromDate(new Date(), aFormat);
 		}
 	}
 };
@@ -1707,14 +1841,17 @@ OpenWrap.ch.prototype.server = {
 	 */
 	peer: function(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc) {
 		var uuid = ow.ch.server.expose(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc);
+		var res = [];
 
 		if (isArray(aRemoteURLArray)) {
-			for(var i in aRemoteURLArray) {
-				ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid));
+			for(let i in aRemoteURLArray) {
+				res.push(ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid)));
 			}
 		} else {
-			ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray, uuid));
+			res.push(ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray, uuid)));
 		}
+
+		return res;
 	},
 
 	/**

@@ -28,6 +28,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testIOStreamBytes;
 
+   - name: IO::IO Test Gzip Native to Byte array
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGzipNativeToByte;
+
 todo:
    # IO tests
    # --------
@@ -35,3 +40,4 @@ todo:
    - IO::IO Test copy streams
    - IO::IO Test read/writeFileStream
    - IO::IO Test read/writeFileStreamBytes
+   - IO::IO Test Gzip Native to Byte array

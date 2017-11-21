@@ -3,10 +3,15 @@
 /jsmin/*
 openaf.jar
 openaf.jar.orig
+buildSHA.json
 dependencies.json
 .odoc.db
 .opack.db
 /tests/autoTestAll.test
 /tests/autoTestAll.xlsx
 /tests/autoTestAll.xml
+/oJob-common/*
 /oJob-commons/*
+/jslib/*
+/lib/compiledJS.jar
+/dist

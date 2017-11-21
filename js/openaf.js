@@ -105,17 +105,24 @@ function print(str) {
 /**
  * <odoc>
  * <key>sprint(aStr)</key>
- * "Stringifies" and prints the aStr to the stdout (with a new line on the end) (example: print("hello world!"))
+ * "Stringifies" and prints the aStr to the stdout (with a new line on the end) (example: sprint("hello world!"))
  * </odoc>
  */
 function sprint(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return print(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprint(aStr)</key>
- * "Beautifies" and prints the aStr to the stdout (with a new line on the end) (example: print("hello world!"))
+ * "Beautifies" and prints the aStr to the stdout (with a new line on the end) (example: bprint("hello world!"))
  * </odoc>
  */
 function bprint(str) { return print(beautifier(str)); }
+/**
+ * <odoc>
+ * <key>cprint(aStr)</key>
+ * "Stringifies" in ANSI color and prints the aStr to the stdout (with a new line on the end) (example: cprint("hello world!"))
+ * </odoc>
+ */
+function cprint(str, delim) { ansiStart(); print(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
@@ -130,17 +137,24 @@ function printnl(str) {
 /**
  * <odoc>
  * <key>sprintnl(aStr)</key>
- * "Stringifies" and prints the aStr to the stdout (without adding a new line on the end) (example: printnl("hello world!"))
+ * "Stringifies" and prints the aStr to the stdout (without adding a new line on the end) (example: sprintnl("hello world!"))
  * </odoc>
  */
 function sprintnl(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printnl(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprintnl(aStr)</key>
- * "Beautifies" and prints the aStr to the stdout (without adding a new line on the end) (example: printnl("hello world!"))
+ * "Beautifies" and prints the aStr to the stdout (without adding a new line on the end) (example: bprintnl("hello world!"))
  * </odoc>
  */
 function bprintnl(str) { return printnl(beautifier(str)); }
+/**
+ * <odoc>
+ * <key>cprintnl(aStr)</key>
+ * "Stringifies" in ANSI color and prints the aStr to the stdout (with a new line on the end) (example: cprintnl("hello world!"))
+ * </odoc>
+ */
+function cprintnl(str, delim) { ansiStart(); printnl(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
@@ -190,17 +204,24 @@ function printErr(str) {
 /**
  * <odoc>
  * <key>sprintErr(aStr)</key>
- * "Stringifies" and prints the aStr to the stderr (with a new line on the end) (example: printErr("Hupps!! A problem!"))
+ * "Stringifies" and prints the aStr to the stderr (with a new line on the end) (example: sprintErr("Hupps!! A problem!"))
  * </odoc>
  */
 function sprintErr(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printErr(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprintErr(aStr)</key>
- * "Beautifies" and prints the aStr to the stderr (with a new line on the end) (example: printErr("Hupps!! A problem!"))
+ * "Beautifies" and prints the aStr to the stderr (with a new line on the end) (example: bprintErr("Hupps!! A problem!"))
  * </odoc>
  */
 function bprintErr(str) { return printErr(beautifier(str)); }
+/**
+ * <odoc>
+ * <key>cprintErr(aStr)</key>
+ * "Stringifies" in ANSI color and prints the aStr to the stderr (with a new line on the end) (example: cprintErr("Hupps!! A problem!"))
+ * </odoc>
+ */
+function cprintErr(str) { ansiStart(); printErr(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
@@ -215,7 +236,7 @@ function printErrnl(str) {
 /**
  * <odoc>
  * <key>sprintErrnl(aStr)</key>
- * "Stringifies" and prints the aStr to the stderr (without adding a new line on the end) (example: printErrnl("Hupps!! A problem!"))
+ * "Stringifies" and prints the aStr to the stderr (without adding a new line on the end) (example: sprintErrnl("Hupps!! A problem!"))
  * </odoc>
  */
 function sprintErrnl(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printErrnl(stringify(str, undefined, delim)); }
@@ -223,10 +244,18 @@ function sprintErrnl(str, delim) { delim = (isUndefined(delim) ? "  " : delim); 
 /**
  * <odoc>
  * <key>bprintErrnl(aStr)</key>
- * "Beautifies" and prints the aStr to the stderr (without adding a new line on the end) (example: printErrnl("Hupps!! A problem!"))
+ * "Beautifies" and prints the aStr to the stderr (without adding a new line on the end) (example: bprintErrnl("Hupps!! A problem!"))
  * </odoc>
  */
 function bprintErrnl(str) { return printErrnl(beautifier(str)); }
+
+/**
+ * <odoc>
+ * <key>cprintErrnl(aStr)</key>
+ * "Stringifies" in ANSI color and prints the aStr to the stderr (with a new line on the end) (example: cprintErrnl("Hupps!! A problem!"))
+ * </odoc>
+ */
+function cprintErrnl(str, delim) { ansiStart(); printErrnl(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
@@ -339,6 +368,21 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 	return output;
 }
 
+var __con;
+function __initializeCon() {
+	if (isUnDef(__con)) {
+		plugin("Console");
+		try {
+			__con = (new Console()).getConsoleReader();
+			return true;
+		} catch(e) {
+			return false;
+		}
+	} else {
+		return true;
+	}
+}
+
 /**
  * <odoc>
  * <key>ansiColor(aAnsi, aString, force) : String</key>
@@ -354,14 +398,15 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
  * </odoc>
  */
 function ansiColor(aAnsi, aString, force) {
-	plugin("Console"); 
-	var con = (new Console()).getConsoleReader();
+	if (!__initializeCon()) return aString;
+
+	var con = __con;
 	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	var res = "";
 	
 	if (ansis) {
-		var res = Packages.org.fusesource.jansi.AnsiRenderer.render("@|" + aAnsi.toUpperCase() + " " + aString + "|@")
+		var res = Packages.org.fusesource.jansi.AnsiRenderer.render("@|" + aAnsi.toUpperCase() + " " + aString + "|@");
 		return res;
 	} else {
 		return aString;
@@ -375,8 +420,8 @@ function ansiColor(aAnsi, aString, force) {
  * </odoc>
  */
 function ansiStart(force) {
-	plugin("Console"); 
-	var con = (new Console()).getConsoleReader();
+	if (!__initializeCon()) return false;
+	var con = __con;
 	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	if (ansis) jansi.AnsiConsole.systemInstall();
@@ -389,8 +434,8 @@ function ansiStart(force) {
  * </odoc>
  */
 function ansiStop(force) {
-	plugin("Console"); 
-	var con = (new Console()).getConsoleReader();
+	if (!__initializeCon()) return false;
+	var con = __con;
 	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	if (ansis) jansi.AnsiConsole.systemUninstall();
@@ -463,6 +508,58 @@ function stringify(aobj, replacer, space) {
 		}
 	}
 }
+
+/**
+ * <odoc>
+ * <key>colorify(aObject) : String</key>
+ * Tries to ANSI colorify a json aObject for use with cprint, cprintErr, cprintErrnl and cprintnl
+ * </odoc> 
+ */
+var __colorFormat = {
+	key: "BOLD,BLACK",
+	number: "GREEN",
+	string: "CYAN",
+	boolean: "RED",
+	default: "YELLOW"
+};
+function colorify(json) {
+	if (typeof json != 'string') {
+		//json = JSON.stringify(json, undefined, 2);
+		json = stringify(json, undefined, 2);
+	} else {
+		return json;
+	}
+	
+	//json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	return String(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+		var cls = 'number';
+		if (/^"/.test(match)) {
+			if (/:$/.test(match)) {
+				cls = 'key';
+			} else {
+				cls = 'string';
+			}
+		} else if (/true|false/.test(match)) {
+			cls = 'boolean';
+		} else if (/null/.test(match)) {
+			cls = 'null';
+		}
+		var res = ""; 
+		switch(cls) {
+		case "key"    : 
+		   if (isDef(__colorFormat) && isDef(__colorFormat.key)) res = ansiColor(__colorFormat.key, match); else res = match; break;
+		case "number" : 
+		   if (isDef(__colorFormat) && isDef(__colorFormat.number)) res = ansiColor(__colorFormat.number, match); else res = match; break;
+		case "string" : 
+		   if (isDef(__colorFormat) && isDef(__colorFormat.string)) res = ansiColor(__colorFormat.string, match); else res = match; break;
+		case "boolean": 
+	       if (isDef(__colorFormat) && isDef(__colorFormat.boolean)) res = ansiColor(__colorFormat.boolean, match); else res = match; break;
+		default: 
+		   if (isDef(__colorFormat) && isDef(__colorFormat.default)) res = ansiColor(__colorFormat.default, match); else res = match;
+		}
+		return res;
+	});
+};
 
 /**
  * <odoc>
@@ -542,7 +639,52 @@ function toCSV(anArray) {
 }
 
 var __logStatus;
-if (isUndefined(__logStatus)) __logStatus = false;
+if (isUnDef(__logStatus)) __logStatus = false;
+var __logFormat = {
+	dateFormat: "yyyy-MM-dd HH:mm:ss.SSS",
+	separator : " | ",
+	indent    : "",
+	async     : true,
+	asyncLevel: 3,
+	profile   : false
+};
+var __logPromise;
+
+function __initializeLogPromise() {
+	if (__logFormat.async) {
+		if (isUnDef(__logPromise)) {
+			__logPromise = $do(() => {}).catch((e) => {});
+			addOnOpenAFShutdown(() => {
+				$doWait(__logPromise);
+			});
+		} else {
+			if (__logPromise.size > __logPromise.asyncLevel) {
+				$doWait(__logPromise);
+			}
+		}
+	}
+}
+
+/**
+ * <odoc>
+ * <key>setLog(aMap)</key>
+ * Sets the current log output settings:\
+ * \
+ * - off        (boolean) Turns off output to stdout/stderr\
+ * - offInfo    (boolean) Turns off output of INFO\
+ * - offError   (boolean) Turns off output of ERROR\
+ * - offWarn    (boolean) Turns off output of WARN\
+ * - dateFormat (string)  ow.format.fromDate format for date\
+ * - dateTZ     (string)  Time zone to use with ow.format.fromDate\
+ * - separator  (string)  String to use as separator\
+ * - async      (boolean) Run in async mode\
+ * - profile    (boolean) Gathers memory and system load stats\
+ * \
+ * </odoc>
+ */
+function setLog(aMap) {
+	__logFormat = merge(__logFormat, aMap);
+}
 
 /**
  * <odoc>
@@ -552,7 +694,7 @@ if (isUndefined(__logStatus)) __logStatus = false;
  * </odoc>
  */
 function startLog(externalLogging) {
-	$ch("__log").create();
+	$ch("__log").create(true);
 	__logStatus = true;
 	if (isDef(externalLogging) && isFunction(externalLogging)) {
 		return $ch("__log").subscribe(externalLogging);
@@ -602,17 +744,41 @@ function stopLog() {
  * </odoc>
  */
 function log(msg) {
-	var data = new Date();
-	if (__logStatus) 
-		$ch("__log").set({
-			"d": data,
-			"t": "INFO"
-		}, {
-			"d": data,
-			"t": "INFO",
-			"m": msg
-		});
-	print("" + data + " | INFO | " + msg);
+	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	if (__logStatus) {
+		var f = () => {
+			k = { n: nw, t: "INFO" };
+			v = { n: nw, d: data, t: "INFO", m: msg };
+			if (isDef(__logFormat) && __logFormat.profile) {
+				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
+				v.systemLoad = getCPULoad();
+			}
+			$ch("__log").set(k, v);
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
+	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
+	if (go) {
+		var f = () => {
+			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			ansiStart();
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			print(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg);
+			ansiStop();
+			return 1;
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
 }
 
 /**
@@ -635,17 +801,42 @@ function tlog(msg, someData) {
  * </odoc>
  */
 function lognl(msg) {
-	var data = new Date();
-	if (__logStatus) 
-		$ch("__log").set({
-			"d": data,
-			"t": "INFO"
-		}, {
-			"d": data,
-			"t": "INFO",
-			"m": msg
-		});
-	printnl(data + " | INFO | " + msg + "\r");
+	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	if (__logStatus) {
+		var f = () => {
+			k = { n: nw, t: "INFO" };
+			v = { n: nw, d: data, t: "INFO", m: msg };
+			if (isDef(__logFormat) && __logFormat.profile) {
+				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
+				v.systemLoad = getCPULoad();
+			}
+			$ch("__log").set(k, v);
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
+	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
+	if (go) {
+		var f = () => {
+			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			ansiStart();
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			printnl(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg + "\r");
+			ansiStop();
+			return 1;
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();	
+		
+	}
 }
 
 /**
@@ -667,19 +858,42 @@ function tlognl(msg, someData) {
  * </odoc>
  */
 function logErr(msg) {
-	var data = new Date();
-	if (__logStatus) 
-		$ch("__log").set({
-			"d": data,
-			"t": "ERROR"
-		}, {
-			"d": data,
-			"t": "ERROR",
-			"m": msg
-		});
-	ansiStart();
-	printErr("" + data + " | " + ansiColor("red", "ERROR") + " | " + msg);
-	ansiStop();
+	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	if (__logStatus) {
+		var f = () => {
+			k = { n: nw, t: "ERROR" };
+			v = { n: nw, d: data, t: "ERROR", m: msg };
+			if (isDef(__logFormat) && __logFormat.profile) {
+				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
+				v.systemLoad = getCPULoad();
+			}
+			$ch("__log").set(k, v);
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
+	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offError)) ? false : true;
+	if (go) {
+		var f = () => {
+			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			ansiStart();
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			printErr(ind + ansiColor("BOLD", data) + sep + ansiColor("red", "ERROR") + sep + msg);
+			ansiStop();
+			return 1;
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();		
+
+	}	
 }
 
 /**
@@ -690,19 +904,41 @@ function logErr(msg) {
  * </odoc>
  */
 function logWarn(msg) {
-	var data = new Date();
-	if (__logStatus) 
-		$ch("__log").set({
-			"d": data,
-			"t": "WARN"
-		}, {
-			"d": data,
-			"t": "WARN",
-			"m": msg
-		});
-	ansiStart();
-	print("" + data + " | " + ansiColor("yellow", "WARN") + " | " + msg);
-	ansiStop();
+	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	if (__logStatus) {
+		var f = () => {
+			k = { n: nw, t: "WARN" };
+			v = { n: nw, d: data, t: "WARN", m: msg };
+			if (isDef(__logFormat) && __logFormat.profile) {
+				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
+				v.systemLoad = getCPULoad();
+			}
+			$ch("__log").set(k, v);
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();
+	}
+	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offWarn)) ? false : true;
+	if (go) {
+		var f = () => {
+			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			ansiStart();
+			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			print(ind + ansiColor("BOLD", data) + sep + ansiColor("yellow", "WARN") + sep + msg);
+			ansiStop();
+			return 1;
+		};
+		if (isDef(__logFormat) && __logFormat.async) {
+			__initializeLogPromise();
+			__logPromise = __logPromise.then(f);
+		} else 
+			f();		
+	}		
 }
 
 /**
@@ -968,18 +1204,33 @@ function getOPackRemoteDB() {
 function getOPackLocalDB() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
 	var packages = {};
+	var exc;
 
+	// Verify fileDB
 	try {
-		plugin("ZIP");
-		var zip = new ZIP(io.readFileBytes(fileDB));
-		packages = af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON)));
-		zip.close();
-		
-		for(var pack in packages) {
-			if (packages[pack].name == "OpenAF") packages[pack].version = getVersion();
+		if (!io.fileInfo(fileDB).permissions.match(/r/)) {
+			exc = fileDB + " is not acessible. Please check permissions (" + io.fileInfo(fileDB).permissions + ").";
 		}
 	} catch(e) {
+		exc = e;
 	}
+
+	if (isUnDef(exc)) {
+		try {
+			plugin("ZIP");
+			var zip = new ZIP(io.readFileBytes(fileDB));
+			packages = af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON)));
+			zip.close();
+			
+			for(var pack in packages) {
+				if (packages[pack].name == "OpenAF") packages[pack].version = getVersion();
+			}
+		} catch(e) {
+			exc = e;
+		}
+	}
+
+	if (isDef(exc) && isDef(exc.message) && (!exc.message.match(/NoSuchFileException/))) throw exc;
 
 	return packages;
 }
@@ -1081,15 +1332,27 @@ function load(aScript) {
  * as plugin("HTTP")).
  * </odoc>
  */
+var __loadedPlugins;
 function plugin(aPlugin) {
+	if (isUnDef(__loadedPlugins)) __loadedPlugins = {};
+	var pluginLoaded;
 	try {
 		if (!aPlugin.match(/\./)) {
+			pluginLoaded = "wedo.openaf.plugins." + aPlugin;
+			
+			if (__loadedPlugins[pluginLoaded]) return;
 			af.plugin("wedo.openaf.plugins." + aPlugin);
+			__loadedPlugins[pluginLoaded] = true;
+
 			return;
 		}
 	} catch(e) {
 	}
+
+	pluginLoaded = aPlugin;
+	if (__loadedPlugins[pluginLoaded]) return;
 	af.plugin(aPlugin);
+	__loadedPlugins[pluginLoaded] = true;
 }
 
 /**
@@ -1164,10 +1427,9 @@ function listFilesRecursive(aPath) {
  * </odoc>
  */
 function cls() {
-	plugin("Console");
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 
-	con = new Console();
+	if (!__initializeCon()) return false;
 
 	if(con.getConsoleReader().getTerminal().isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
@@ -1198,8 +1460,8 @@ function watch(waitFor, aCommand, beautifyFlag) {
 	var c = -2;
 
 	plugin("Threads");
-	plugin("Console");
-	var con = new Console();
+	__initializeCon();
+	var con = __con;
 	var t = new Threads();
 
 	t.addThread(function() {
@@ -1472,15 +1734,15 @@ function merge(aObjectA, aObjectB) {
  */
 function restartOpenAF(aCommandLineArray, preLineArray) {
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
-	var currentJar;
-	try {
+	var currentJar = getOpenAFJar();
+	/*try {
 		currentJar = new java.io.File(af.getClass("wedo.openaf.AFCmd").getProtectionDomain().getCodeSource().getLocation().toURI());
 	} catch(e) {
 		currentJar = new java.io.File(java.lang.System.getProperties().getProperty("java.class.path"));
-	}
+	}*/
 	
 	/* is it a jar file? */
-	if(!currentJar.getName().endsWith(".jar"))
+	if(!currentJar.endsWith(".jar"))
 		return;
 
 	/* Build command: java -jar application.jar */
@@ -1492,7 +1754,7 @@ function restartOpenAF(aCommandLineArray, preLineArray) {
 		}
 	}
 	command.add("-jar");
-	command.add(currentJar.getPath());
+	command.add(currentJar);
 	if (isUndefined(aCommandLineArray)) {
 		for(let c in __args) {
 			command.add(__args[c]);
@@ -1555,7 +1817,7 @@ function inherit(Child, Parent) {
  * </odoc>
  */
 $from = function(a) {
-	loadLib(getOpenAFJar() + "::js/jlinq.js");
+	loadCompiledLib("jlinq_js");
 
 	if(Object.prototype.toString.call(a) == '[object Array]') {
 		return jl.from(a);
@@ -1577,7 +1839,7 @@ $from = function(a) {
  * </odoc>
  */
 $stream = function(a) {
-	loadLib(getOpenAFJar() + "::js/stream.js");
+	loadCompiledLib("stream_js");
 	
 	if (isUndefined(a)) return Stream;
 	return Stream(a);
@@ -1631,14 +1893,23 @@ function getPid() {
 
 /**
  * <odoc>
- * <key>addOnOpenAFShutdown(aFunction)</key>
+ * <key>addOnOpenAFShutdown(aFunction) : Boolean</key>
  * Adds aFunction to try to execute whenever OpenAF is going to shutdown. The latest hook added will be the first to be
  * executed until the first hook added (actually a shortcut for Threads.addOpenAFShutdownHook).
  * </odoc>
  */
 function addOnOpenAFShutdown(aFunction) {
 	plugin("Threads");
-	(new Threads()).addOpenAFShutdownHook(aFunction);
+	try {
+		(new Threads()).addOpenAFShutdownHook(() => {
+			try {
+				aFunction();
+			} catch(e) {}
+		});
+		return true;
+	} catch(e) {
+		return false;
+	}
 }
 
 /**
@@ -2015,6 +2286,16 @@ function isString(obj) {
 
 /**
  * <odoc>
+ * <key>isNumber(aObj) : boolean</key>
+ * Returns true if aObj is a number, false otherwise
+ * </odoc>
+ */
+function isNumber(obj) {
+	return !isNaN(parseFloat(obj)) && isFinite(obj);
+}
+
+/**
+ * <odoc>
  * <key>loadLib(aLib, forceReload, aFunction) : boolean</key>
  * Loads the corresponding javascript library and keeps track if it was already loaded or not (in __loadedLibs).
  * Optionally you can force reload and provide aFunction to execute after the successful loading.
@@ -2029,6 +2310,27 @@ function loadLib(aLib, forceReload, aFunction) {
 		__loadedLibs[aLib.toLowerCase()] == false) {
 		load(aLib);
 		__loadedLibs[aLib.toLowerCase()] = true;
+		if (isDefined(aFunction)) aFunction();
+		return true;
+	}
+	
+	return false;
+}
+
+/**
+ * <odoc>
+ * <key>loadCompiledLib(aLibClass, forceReload, aFunction) : boolean</key>
+ * Loads the corresponding compiled javascript library class and keeps track if it was already loaded or not (in __loadedLibs).
+ * Optionally you can force reload and provide aFunction to execute after the successful loading.
+ * Returns true if successfull, false otherwise.
+ * </odoc>
+ */
+function loadCompiledLib(aClass, forceReload, aFunction) {
+	if (forceReload ||
+		isUndefined(__loadedLibs[aClass.toLowerCase()]) || 
+		__loadedLibs[aClass.toLowerCase()] == false) {		
+		af.runFromClass(af.getClass(aClass).newInstance());
+		__loadedLibs[aClass.toLowerCase()] = true;
 		if (isDefined(aFunction)) aFunction();
 		return true;
 	}
@@ -2306,60 +2608,75 @@ if (isUndefined(ow))
 
 /**
  * <odoc>
+ * <key>ow.loadDev()</key>
+ * Loads OpenWrap dev functionality. Basically functions being tested.
+ * </odoc>
+ */
+OpenWrap.prototype.loadDev = function() { loadCompiledLib("owrap_dev_js"); ow.dev = new OpenWrap.dev(); pods.declare("ow.dev", ow.dev); return ow.dev; }
+/**
+ * <odoc>
  * <key>ow.loadFormat()</key>
  * Loads OpenWrap format functionality. Basically functions to help with the formatting of strings, numbers, dates, etc...
  * </odoc>
  */
-OpenWrap.prototype.loadFormat = function() { loadLib(getOpenAFJar() + "::js/owrap.format.js"); ow.format = new OpenWrap.format(); pods.declare("ow.format", ow.format); return ow.format; }
+//OpenWrap.prototype.loadFormat = function() { loadLib(getOpenAFJar() + "::js/owrap.format.js"); ow.format = new OpenWrap.format(); pods.declare("ow.format", ow.format); return ow.format; }
+OpenWrap.prototype.loadFormat = function() { loadCompiledLib("owrap_format_js"); ow.format = new OpenWrap.format(); pods.declare("ow.format", ow.format); return ow.format; }
 /**
  * <odoc>
  * <key>ow.loadTest()</key>
  * Loads OpenWrap test functionality. Basically functions to unit test other functionality.
  * </odoc>
  */
-OpenWrap.prototype.loadTest = function() { loadLib(getOpenAFJar() + "::js/owrap.test.js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
+//OpenWrap.prototype.loadTest = function() { loadLib(getOpenAFJar() + "::js/owrap.test.js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
+OpenWrap.prototype.loadTest = function() { loadCompiledLib("owrap_test_js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
+/**
+ * <odoc>
+ * <key>ow.loadAI()</key>
+ * Loads OpenWrap AI functionality.
+ * </odoc>
+ */
+//OpenWrap.prototype.loadAI = function() { loadLib(getOpenAFJar() + "::js/owrap.ai.js"); ow.ai = new OpenWrap.ai(); pods.declare("ow.ai", ow.ai); return ow.ai; }
+OpenWrap.prototype.loadAI = function() { loadCompiledLib("owrap_ai_js"); ow.ai = new OpenWrap.ai(); pods.declare("ow.ai", ow.ai); return ow.ai; }
 /**
  * <odoc>
  * <key>ow.loadServer()</key>
  * Loads OpenWrap Server functionality. Basically functions to wrap access to server functionality.
  * </odoc>
  */
-OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+//OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
 /**
  * <odoc>
  * <key>ow.loadTemplate()</key>
  * Loads OpenWrap template functionality. Basically functions to wrap access to Handlebars functionality.
  * </odoc>
  */
-OpenWrap.prototype.loadTemplate = function() { loadLib(getOpenAFJar() + "::js/owrap.template.js"); ow.template = new OpenWrap.template(); pods.declare("ow.template", ow.template); return ow.template; }
+//OpenWrap.prototype.loadTemplate = function() { loadLib(getOpenAFJar() + "::js/owrap.template.js"); ow.template = new OpenWrap.template(); pods.declare("ow.template", ow.template); return ow.template; }
+OpenWrap.prototype.loadTemplate = function() { loadCompiledLib("owrap_template_js"); ow.template = new OpenWrap.template(); pods.declare("ow.template", ow.template); return ow.template; }
 /**
  * <odoc>
  * <key>ow.loadObj()</key>
  * Loads OpenWrap object functionality. 
  * </odoc>
  */
-OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.obj.js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
+//OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.obj.js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
+OpenWrap.prototype.loadObj = function() { loadCompiledLib("owrap_obj_js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
 /**
  * <odoc>
  * <key>ow.loadCh()</key>
  * Loads OpenWrap channels functionality. 
  * </odoc>
  */
-OpenWrap.prototype.loadCh = function() { loadLib(getOpenAFJar() + "::js/owrap.ch.js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
-/**
- * <odoc>
- * <key>ow.loadPortal()</key>
- * Loads OpenWrap WAF portal functionality. 
- * </odoc>
- */
-OpenWrap.prototype.loadPortal = function() { loadLib(getOpenAFJar() + "::js/owrap.portal.js"); ow.portal = new OpenWrap.portal(); pods.declare("ow.portal", ow.portal); return ow.portal; }
+//OpenWrap.prototype.loadCh = function() { loadLib(getOpenAFJar() + "::js/owrap.ch.js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
+OpenWrap.prototype.loadCh = function() { loadCompiledLib("owrap_ch_js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
 /**
  * <odoc>
  * <key>ow.loadOJob()</key>
  * Loads OpenWrap oJob functionality. 
  * </odoc>
  */
-OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
+//OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
+OpenWrap.prototype.loadOJob = function() { loadCompiledLib("owrap_oJob_js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
 
 
 /**
@@ -2380,7 +2697,7 @@ OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.
  * </odoc>
  */
 function loadHandlebars() {
-	var res = loadLib(getOpenAFJar() + "::js/handlebars.js");
+	var res = loadCompiledLib("handlebars_js");
 	if (res) pods.declare("Handlebars", loadHandlebars());
 }
 
@@ -2393,11 +2710,32 @@ function loadHandlebars() {
  * </odoc>
  */
 function loadUnderscore() {
-	var res = loadLib(getOpenAFJar() + "::js/lodash.js");
+	var res = loadCompiledLib("lodash_js");
 	if (res) pods.declare("Underscore", loadUnderscore());
 	if (res) pods.declare("Lodash", loadUnderscore());
 }
 
+/**
+ * <odoc>
+ * <key>loadFuse</key>
+ * Loads the FuseJS javascript library into scope.\
+ * \
+ * See more in: http://fusejs.io/
+ * </odoc>
+ */
+function loadFuse() {
+	var res = loadCompiledLib("fusejs_js");
+	if (res) pods.declare("FuseJS", loadFuse());
+}
+
+/**
+ * <odoc>
+ * <key>loadLodash()</key>
+ * Loads the loadash javascript library.\
+ * \
+ * See more in https://lodash.com/docs
+ * </odoc>
+ */
 function loadLodash() {
 	loadUnderscore();
 }
@@ -2409,7 +2747,7 @@ function loadLodash() {
  * </odoc>
  */
 function loadHelp() {
-	var res = loadLib(getOpenAFJar() + "::js/odoc.js");
+	var res = loadCompiledLib("odoc_js");
 	if (res) pods.declare("Help", loadHelp());
 }
 
@@ -2453,7 +2791,10 @@ function searchHelp(aTerm, aPath, aId) {
 	if (isUndefined(aPath)) {
 		var res;
 		var paths = [ getOpenAFJar() ];
-		paths = paths.concat(Object.keys(getOPackLocalDB()));
+		try {
+			paths = paths.concat(Object.keys(getOPackLocalDB()));
+		} catch(e) {
+		}
 		for(var i in paths) {
 			var path = paths[i];
 			if (!(path.match(/\.(jar|db|zip)/))) path = path + "/";
@@ -2562,7 +2903,7 @@ function loadDBInMem(aDB, aFilename) {
 
 /**
  * <odoc>
- * <key>t(aObject, aFunction) : Map</key>
+ * <key>traverse(aObject, aFunction) : Map</key>
  * Traverses aObject executing aFunction for every single element. The aFunction will receive the arguments: aKey, aValue, aPath, aObject.
  * </odoc>
  */
@@ -3093,19 +3434,14 @@ function newJavaArray(aJavaClass, aSize) {
  * </odoc>
  */
 function threadBox(aFunction, aTimeout, aStopFunction) {
-    plugin("Threads");
+    if (isUnDef(aStopFunction)) aStopFunction = (aR) => { return aR; };
 
-    if (isUnDef(aStopFunction)) aStopFunction = function(aR) { return aR; }
+	var done = false;
+	var exc = undefined;
 
-    //var t = new Threads();
-    var done = false;
-    var exc = undefined;
-
-    //t.addThread(function(uuid) {
-    var t = new java.lang.Thread(new java.lang.Runnable({
-    	run: function() {
+	var t = __getThreadPool().submit(new java.lang.Runnable({		
+    	run: () => {
 	        try {
-	            //aFunction(uuid);
 	            aFunction();
 	        } catch(e) {
 	            exc = e;
@@ -3117,27 +3453,22 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
 	        return done;
         }
     }));
-    //t.startSingleNoWait();
-    t.start();
 
     var res = false;
     if (isDef(aTimeout)) {
     	var s = now();
         while(!res && !done && ((now() - s) < aTimeout)) {
-            res = aStopFunction();
+            res = aStopFunction(done);
         }
     } else {
         while(!res && !done) {
-            res = aStopFunction();
+            res = aStopFunction(done);
         }
     }
-    //t.stop(true);
-    if (!t.isAlive() && !t.interrupted()) {
-    	t.interrupt();
-    	//if (!t.isAlive()) {
-    		log("Stopping! " + t.stop());
-    	//}
-    }
+    
+    //if (!t.isDone() && !t.isCancelled()) {
+    	t.cancel(true);
+    //}
 
     if (isDef(exc)) throw exc;
 }
@@ -3151,8 +3482,8 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
  * </odoc>
  */
 function threadBoxCtrlC() {
-    plugin("Console");
-    var console = new Console();
+	__initializeCon()
+	var console = __con;
     if (console.getConsoleReader().getTerminal().isAnsiSupported()) {
         if (console.readCharNB() == 3) return true; else return false;
     } else {
@@ -3245,31 +3576,6 @@ function oJobRunJob(aJob, args, aId) {
 	ow.oJob.runJob(aJob, args, aId);
 }
 
-// ---------------
-// Profile support
-
-var OPENAFPROFILE;
-if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
-
-(function() {
-	var prof = "";
-	try {
-		prof = io.readFileString(java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE);
-		af.compile(prof);
-	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
-	}
-	
-	prof ="";
-	try {
-		prof = io.readFileString(getOpenAFJar() + "::" + OPENAFPROFILE);
-		af.compile(prof);
-	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/) &&
-		    !e.message.match(/java\.lang\.NullPointerException: entry/)) throw e;
-	}
-})();
-
 /**
  * <odoc>
  * <key>loadJSYAML()</key>
@@ -3277,7 +3583,7 @@ if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
  * </odoc>
  */
 function loadJSYAML() {
-	loadLib(getOpenAFJar() + "::js/js-yaml.js");
+	loadCompiledLib("js-yaml_js");
 }
 
 /**
@@ -3377,7 +3683,7 @@ $channels = function(a) {
 		storeRestore : function(aFilename, anArrayOfKeys) { ow.ch.persistence.restore(a, aFilename, anArrayOfKeys); return $channels(a); },
 		
 		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck); },
-		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); return $channels(a); },
+		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); },
 		
 		createRemote : function(aURL, aTimeout) {
 			var u = new java.net.URL(aURL);
@@ -3443,14 +3749,400 @@ $channels = function(a) {
  */
 $ch = $channels;
 
+var __threadPool;
+var __threadPoolFactor = 1;
+
+function __getThreadPool() {
+	if (isUnDef(__threadPool)) {
+		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores();
+		__threadPool = new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+	}
+
+	return __threadPool;
+}
+
+/**
+ * <odoc>
+ * <key>oPromise(aFunction) : oPromise</key>
+ * Custom Promise-like implementation. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
+ * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
+ * aFunction to provide a result with resolve(aResult) or an exception with reject(aReason). If you don't call theses functions the
+ * returned value will be used for resolve or any exception thrown will be use for reject. You can use the "then" method to add more
+ * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the 
+ * previous function will be passed as the value for the second. You can use the "catch" method to add aFunction that will receive
+ * a string or exception for any exception thrown with the reject functions.  
+ * </odoc>
+ */
+var oPromise = function(aFunction) {
+    this.states = {
+        NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
+    };
+
+    this.state = this.states.NEW;
+    this.executing = false;
+    this.executors = new java.util.concurrent.ConcurrentLinkedQueue();
+	this.rejects = new java.util.concurrent.ConcurrentLinkedQueue();
+
+    if (isDef(aFunction) && isFunction(aFunction)) {
+		this.__async(aFunction);
+	}
+};
+
+/**
+ * <odoc>
+ * <key>oPromise.then(onFulfilled, onRejected) : oPromise</key>
+ * Adds onFulfilled to the current oPromise stack to execute if the previous function was resolved successfully and receives the resolve/return
+ * value as parameter. Also adds onRejected to the current oPromise stack to execute if the previous function was rejected and receives the
+ * reason as parameter.
+ * </odoc>
+ */
+oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
+	if (isDef(aRejectFunction) && isFunction(aRejectFunction)) this.rejects.add(aRejectFunction);
+    if (isDef(aResolveFunction) && isFunction(aResolveFunction)) { 
+		this.state = this.states.NEW;
+		this.executors.add(aResolveFunction);
+		this.__runExecutor();
+	}
+
+    return this;
+};
+
+/**
+ * <odoc>
+ * <key>oPromise.catch(onReject) : oPromise</key>
+ * Adds onRejected to the current oPromise stack to execute if the previous function was rejected and receives the
+ * reason as parameter.
+ * </odoc>
+ */
+oPromise.prototype.catch = function(onReject) {
+    if (isDef(onReject) && isFunction(onReject)) {
+		this.rejects.add(onReject);
+
+		this.__runReject();
+	}
+
+    return this;
+};
+
+/**
+ * <odoc>
+ * <key>oPromise.all(anArray) : oPromise</key>
+ * Returns an oPromise that will be resolved when all oPromise part of the anArray are fullfiled. If any of the oPromises
+ * fails/rejects the returned oPromise will also be rejected/fail.
+ * </odoc>
+ */
+oPromise.prototype.all = function(anArray) {
+    if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+
+	var parent = this;
+
+    this.__async((res, rej) => {
+        var shouldStop = false;
+        var values = [];
+		
+		try {
+			while(!shouldStop) {
+				for(var iii in anArray) {
+					if (anArray[iii] != null) {
+						if (anArray[iii] instanceof oPromise) {
+							if (isDef(anArray[iii].__f) && anArray[iii].__f.isDone()) {
+								switch(anArray[iii].state) {
+								case anArray[iii].states.NEW:
+									shouldStop = false;
+									break;
+								case anArray[iii].states.PREFAILED:
+									shouldStop = false;
+									break;
+								case anArray[iii].states.FAILED:
+									shouldStop = true;
+									rej(anArray[iii].reason);
+									break;
+								case anArray[iii].states.FULFILLED:
+									values.push(anArray[iii].value);
+									anArray = deleteFromArray(anArray, iii);
+									break;
+								}
+							} else {
+								shouldStop = false;
+							}
+						} else {
+							values.push(anArray[iii]);
+							anArray = deleteFromArray(anArray, iii);
+						}
+					}
+				}
+				if (anArray.length <= 0) shouldStop = true;
+			}
+		
+			res(values);
+		} catch(e) {
+			rej(e);
+		}
+
+		return values;
+    });
+
+    return this;
+};
+
+/**
+ * <odoc>
+ * <key>oPromise.race(anArray) : oPromise</key>
+ * Returns an oPromise that will be resolved when any oPromise part of the anArray is fullfiled. If any of the oPromises
+ * fails/rejects the returned oPromise will also be rejected/fail.
+ * </odoc>
+ */
+oPromise.prototype.race = function(anArray) {
+    if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+	
+	var parent = this;
+
+    this.__async((res, rej) => {
+        var shouldStop = false;
+        var c = 0;
+		
+		try {
+			while(!shouldStop) {
+				for(var i in anArray) {
+					if (anArray[i] != null) {
+						if (anArray[i] instanceof oPromise) {
+							if (isDef(anArray[i].__f) && anArray[i].__f.isDone()) {
+								switch(anArray[i].state) {
+								case anArray[i].states.NEW:
+									shouldStop = false;				
+									break;
+								case anArray[i].states.PREFAILED:
+									shouldStop = false;				
+									break;
+								case anArray[i].states.FAILED:
+									shouldStop = true;
+									rej(anArray[i].reason);
+									return this;
+								case anArray[i].states.FULFILLED:
+									shouldStop = true;
+									res(anArray[i].value);
+									return this;
+								}
+							} else {
+								shouldStop = false;
+							}
+						} else {
+							shoudStop = true;
+							res(anArray[i]);
+							return this;
+						}
+					}
+				}
+			}
+		} catch(e) {
+			rej(e);
+		}
+		res();
+		return this;
+    });
+
+    return this;    
+};
+
+oPromise.prototype.__runReject = function() {
+	while(this.rejects.size() > 0 && 
+	      (this.state == this.states.PREFAILED || this.state == this.states.FAILED)) {
+		var func = this.rejects.poll();
+		if (isDef(func) && isFunction(func)) {
+			this.__async(func, this.reason, true);
+			//func(this.reason);
+		}
+	} 
+
+	return this;	
+}
+
+oPromise.prototype.__runExecutor = function() {
+	while(this.executors.size() > 0 && this.state == this.states.NEW) {
+		var func = this.executors.poll();
+		if (this.state != this.states.PREFAILED) this.state = this.states.NEW;
+		if (isDef(func) && isFunction(func)) {
+			this.__async(func, this.value);
+		}
+	} 
+
+	return this;
+}
+
+oPromise.prototype.reject = function(aReason) {
+    if (this.state != this.states.NEW && this.state != this.states.PREFAILED) return this;
+
+	this.reason = aReason;
+	this.state = this.states.PREFAILED;
+
+	this.__runReject(aReason);
+
+    return this;
+};
+
+oPromise.prototype.resolve = function(aValue) {
+    if (this.state != this.states.NEW) return this;
+    this.value = isUnDef(aValue) ? null : aValue;
+
+	this.__runExecutor(aValue);
+
+    return this;
+};
+
+oPromise.prototype.__async = function(aFunction, aValue, isFail) {
+	var thisOP = this; 
+	var prevf;
+
+	if (isDef(thisOP.__f)) prevf = thisOP.__f;
+
+    this.__f = __getThreadPool().submit(new java.lang.Runnable({
+		run: () => {
+            var res; 
+
+			if (isDef(prevf)) {
+				prevf.join();
+				if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED) 
+					aValue = thisOP.value;
+				/*else
+					aValue = thisOP.reason;*/
+			}
+			var isRun = true;
+            try {
+				thisOP.executing = true;
+				if (!isFail) {
+					if (thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED) {
+						if (isDef(aValue)) {
+							res = aFunction(thisOP.value);
+						} else {
+							res = aFunction((v) => { thisOP.resolve(v); isRun = false; }, (r) => { thisOP.reject(r); isRun = false; });
+						}
+						if (isDef(res) && res != null && 
+							(thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED) && 
+							isRun) {
+							res = thisOP.resolve(res);
+							isRun = false;
+						}
+					}
+				} else {
+					res = aFunction(thisOP.reason);
+				}
+            } catch(e) {
+                if (isRun) thisOP.reject(e);
+            } 
+
+			thisOP.executing = false;
+			if (thisOP.state == thisOP.states.PREFAILED && thisOP.rejects.isEmpty()) {
+				thisOP.state = thisOP.states.FAILED;
+			}
+			if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty() && !isFail) {
+				thisOP.state = thisOP.states.FULFILLED;
+			};
+
+			return res;
+		}
+	}));
+    
+    return this;
+};
+
+/**
+ * <odoc>
+ * <key>$do(aFunction) : oPromise</key>
+ * Instantiates and returns a oPromise. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
+ * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
+ * aFunction to provide a result with resolve(aResult) or an exception with reject(aReason). If you don't call theses functions the
+ * returned value will be used for resolve or any exception thrown will be use for reject. You can use the "then" method to add more
+ * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the 
+ * previous function will be passed as the value for the second. You can use the "catch" method to add aFunction that will receive
+ * a string or exception for any exception thrown with the reject functions.  
+ * </odoc>
+ */
+var $do = function(aFunction) {
+    return new oPromise(aFunction);
+};
+
+/**
+ * <odoc>
+ * <key>$doAll(anArray) : oPromise</key>
+ * Returns an oPromise that will be resolved when all oPromise part of the anArray are fullfiled. If any of the oPromises
+ * fails/rejects the returned oPromise will also be rejected/fail.
+ * </odoc>
+ */
+var $doAll = function(anArray) {
+    return new oPromise().all(anArray);
+};
+
+/**
+ * <odoc>
+ * <key>$doFirst(anArray) : oPromise</key>
+ * Returns an oPromise that will be resolved when any oPromise part of the anArray is fullfiled. If any of the oPromises
+ * fails/rejects the returned oPromise will also be rejected/fail.
+ * </odoc>
+ */
+var $doFirst = function(anArray) {
+    return new oPromise().race(anArray);
+};
+
+/**
+ * <odoc>
+ * <key>$doWait(aPromise, aWaitTimeout, aTimeout) : oPromise</key>
+ * Blocks until aPromise is fullfilled or rejected. Optionally you can specify aTimeout between checks and/or a block timeout (with aWaitTimeout).
+ * Returns aPromise.
+ * </odoc>
+ */
+var $doWait = function(aPromise, aWaitTimeout) {
+	if (isDef(aWaitTimeout)) {
+		var init = now();
+		while((aPromise.state != aPromise.states.FULFILLED || aPromise.state != aPromise.states.FAILED) &&
+			  (isUnDef(aPromise.__f) || !aPromise.__f.isDone()) &&
+		      ((now() - init) < aWaitTimeout)) {
+			aPromise.__f.join();	
+		}
+	} else {
+		while((aPromise.state != aPromise.states.FULFILLED || aPromise.state != aPromise.states.FAILED) &&
+			(isUnDef(aPromise.__f) || !aPromise.__f.isDone())) {
+			aPromise.__f.join();
+		}
+	}
+
+	return aPromise;
+}
+
+// Startup
+// -------
+
+//$do(() => { __initializeCon(); });
+__initializeCon();
+
 // Set logging to ERROR 
 {
    let i = Packages.org.slf4j.LoggerFactory.getLogger(Packages.ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME).getLoggerContext().getLoggerList().iterator();
    while(i.hasNext()) { 
       Packages.org.slf4j.LoggerFactory.getLogger(i.next().getName()).setLevel(Packages.ch.qos.logback.classic.Level.ERROR);
    }
-}
+};
 
-/*if (isDef(__addToOpenAFjs)) {
-	load(__addToOpenAFjs);
-}*/
+// ---------------
+// Profile support
+
+var OPENAFPROFILE;
+if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
+
+(function() {
+	var prof = "";
+	try {
+		prof = io.readFileString(java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE);
+		af.compile(prof);
+	} catch(e) {
+		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
+	}
+	
+	prof ="";
+	try {
+		prof = io.readFileString(getOpenAFJar() + "::" + OPENAFPROFILE);
+		af.compile(prof);
+	} catch(e) {
+		if (!e.message.match(/java\.io\.FileNotFoundException/) &&
+		    !e.message.match(/java\.lang\.NullPointerException: entry/)) throw e;
+	}
+})();

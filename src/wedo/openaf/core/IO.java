@@ -514,6 +514,9 @@ public class IO extends ScriptableObject {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		
 		GZIPOutputStream gos = new GZIPOutputStream(baos);
+		if (dataIn instanceof org.mozilla.javascript.NativeJavaArray) {
+			dataIn = ((org.mozilla.javascript.NativeJavaArray) dataIn).unwrap();
+		}
 		IOUtils.write((byte[]) dataIn, gos);
 		
 		gos.flush();
@@ -538,6 +541,9 @@ public class IO extends ScriptableObject {
 	public static Object gunzip(Object dataIn) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		
+		if (dataIn instanceof org.mozilla.javascript.NativeJavaArray) {
+			dataIn = ((org.mozilla.javascript.NativeJavaArray) dataIn).unwrap();
+		}
 		GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream((byte[]) dataIn));
 		IOUtils.copy(gis, baos);
 		

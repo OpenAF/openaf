@@ -1,0 +1,20 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # JMS tests
+   # --------------
+   - name: JMX::Init
+     exec: |
+       args.tests = require("autoTestAll.JMX.js");
+
+   - name: JMX::JMX test
+     from: JMX::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testJMX;
+
+todo:
+   # JMX tests
+   # ------------
+   - JMX::Init
+   - JMX::JMX test

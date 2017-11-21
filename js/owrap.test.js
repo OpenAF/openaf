@@ -12,30 +12,39 @@ OpenWrap.test = function() {
 OpenWrap.test.prototype.getCountTest = function() { return this.__countTest; };
 OpenWrap.test.prototype.getCountPass = function() { return this.__countPass; };
 OpenWrap.test.prototype.getCountFail = function() { return this.__countFail; };
-OpenWrap.test.prototype.getProfileHits = function(aProfileKey) { return this.__profile[aProfileKey].hits; }
-OpenWrap.test.prototype.getProfileAvg  = function(aProfileKey) { return this.__profile[aProfileKey].sum / this.__profile[aProfileKey].hits; }
-OpenWrap.test.prototype.getProfileLast = function(aProfileKey) { return this.__profile[aProfileKey].last; }
+OpenWrap.test.prototype.getProfileHits = function(aProfileKey) { return this.__profile[aProfileKey].hits; };
+OpenWrap.test.prototype.getProfileAvg  = function(aProfileKey) { return this.__profile[aProfileKey].sum / this.__profile[aProfileKey].hits; };
+OpenWrap.test.prototype.getProfileLast = function(aProfileKey) { return this.__profile[aProfileKey].last; };
+OpenWrap.test.prototype.getProfileMax  = (aProfileKey) => { return this.__profile[aProfileKey].max; };
+OpenWrap.test.prototype.getProfileMin  = (aProfileKey) => { return this.__profile[aProfileKey].min; };
 OpenWrap.test.prototype.profileReset   = function(aProfileKey) { this.__profile[aProfileKey] = {
 		hits: 0, sum: 0, last: 0, start: 0
-}}
-OpenWrap.test.prototype.getProfile = function() { return this.__profile; }
-OpenWrap.test.prototype.getAllProfileHits = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileHits(i)}; return r; }
-OpenWrap.test.prototype.getAllProfileAvg  = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileAvg(i)}; return r; }
-OpenWrap.test.prototype.getAllProfileLast = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileLast(i)}; return r; }
+}};
+OpenWrap.test.prototype.getProfile = function() { return this.__profile; };
+OpenWrap.test.prototype.getAllProfileHits = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileHits(i)}; return r; };
+OpenWrap.test.prototype.getAllProfileAvg  = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileAvg(i)}; return r; };
+OpenWrap.test.prototype.getAllProfileLast = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileLast(i)}; return r; };
 /**
  * <odoc>
  * <key>ow.test.setShowStackTrace(aBooleanSetting)</key>
  * Turns on (off by default) the display of java stack trace on java exceptions if aBooleanSetting = true.
  * </odoc>
  */
-OpenWrap.test.prototype.setShowStackTrace = function(aValue) { this.__showStackTrace = aValue; }
+OpenWrap.test.prototype.setShowStackTrace = function(aValue) { this.__showStackTrace = aValue; };
 /**
  * <odoc>
  * <key>ow.test.setMemoryProfile(aBooleanSetting)</key>
  * Turns on (off by default) the gathering of memory differences if aBooleanSetting = true.
  * </odoc>
  */
-OpenWrap.test.prototype.setMemoryProfile  = function(aValue) { this.__memoryprofile  = aValue; }
+OpenWrap.test.prototype.setMemoryProfile  = function(aValue) { this.__memoryprofile  = aValue; };
+/**
+ * <odoc>
+ * <key>ow.test.setOutput(aBooleanSetting)</key>
+ * Turns off (on by default) the output of the result of each test.
+ * </odoc>
+ */
+OpenWrap.test.prototype.setOutput         = (aValue) => { this.__showOutput = aValue; };
 
 /**
  * <odoc>
@@ -53,6 +62,7 @@ OpenWrap.test.prototype.reset = function() {
 	this.__profile = {};
 	this.__showStackTrace = true;
 	this.__memoryprofile  = false;
+	this.__showOutput     = true;
 }
 
 /**
@@ -65,7 +75,7 @@ OpenWrap.test.prototype.reset = function() {
  */
 OpenWrap.test.prototype.assert = function(aResult, checkValue, errorMessage, notShowDiff) {
 	if (!compare(aResult, checkValue)) {
-		throw errorMessage + ((notShowDiff) ? "" : " (got " + stringify(aResult) + " but expected " + stringify(checkValue) + ")");
+		throw errorMessage + ((notShowDiff) ? "" : " (got " + stringify(aResult) + " but expected " + stringify(checkValue, undefined, "") + ")");
 	}
 }
 
@@ -113,6 +123,10 @@ OpenWrap.test.prototype.stop = function(aKey) {
 	this.__profile[aKey].last = elapsed;
 	this.__profile[aKey].hits++;
 	this.__profile[aKey].sum = this.__profile[aKey].sum + elapsed;
+	if (isUnDef(this.__profile[aKey].max) ||  elapsed > this.__profile[aKey].max)
+		this.__profile[aKey].max = elapsed;
+	if (isUnDef(this.__profile[aKey].min) ||  elapsed < this.__profile[aKey].min)
+		this.__profile[aKey].min = elapsed;
 	return elapsed;
 }
 
@@ -126,7 +140,7 @@ OpenWrap.test.prototype.stop = function(aKey) {
  */
 OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) {
 	var info = this.getChannel().get(aMessage);
-	if (isUndefined(info)) info = {
+	if (isUnDef(info)) info = {
 		"test" : aMessage.replace(/.+::/, ""),
 		"suite": (aMessage.indexOf("::") > 0) ? aMessage.replace(/::.+/, "") : "Test suite", 
 		"hits": 0,
@@ -163,7 +177,7 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 		info.exitCode = __exitcode;
 		
 		if (__exitcode != 0) throw "exit code " + __exitcode;
-		log("PASS | " + aMessage);
+		if (this.__showOutput) log("PASS | " + aMessage);
 		this.__countPass++;
 		execInfo.status = "PASS";
 		info.pass++;
@@ -179,7 +193,7 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem;
 			execInfo.diffMem = Math.abs((execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem)); 
 		}
- 		logErr("FAIL | " + aMessage);
+		if (this.__showOutput) logErr("FAIL | " + aMessage);
 		execInfo.status = "FAIL";
 		execInfo.exception = String(e);
 		info.fail++;
@@ -237,7 +251,7 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 		execInfo.status = "PASS";
 		info.pass++;
 		
-		log("PASS | " + aMessage);
+		if (this.__showOutput) log("PASS | " + aMessage);
 		this.__countPass++;
 		
 		info.executions.push(execInfo);
@@ -251,7 +265,7 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem;
 			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem); 
 		}
-		log("FAIL | " + aMessage + " | " + e);
+		if (this.__showOutput) log("FAIL | " + aMessage + " | " + e);
 		execInfo.status = "FAIL";
 		execInfo.exception = String(e);
 		info.fail++;
@@ -309,7 +323,7 @@ OpenWrap.test.prototype.toMarkdown = function() {
 		md += " | " + d.test;
 		md += " | <span style=\"background-color: " + (d.status == "PASS" ? "green" : "red") + "; color: white\">&nbsp;&nbsp;" + d.status + "&nbsp;&nbsp;</span>";
 		md += " | " + ow.loadFormat().elapsedTime4ms(d.time);
-		md += " | " + (isDef(d.exception) ? d.exception : "n/a");
+		md += " | " + (isDef(d.exception) ? d.exception.replace(/\n/mg, " ") : "n/a");
 		md += " |\n"; 
 	});
 
