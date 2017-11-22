@@ -18,8 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.IOUtils;
 import org.h2.tools.Server;
+import org.mozilla.javascript.Scriptable;
 
-import wedo.openaf.AFBase;
 import wedo.openaf.AFCmdBase;
 import wedo.openaf.JSEngine;
 import wedo.openaf.SimpleLog;
@@ -36,6 +36,7 @@ public class DB {
 	protected Connection con;
 	protected Server h2Server;
 	protected ConcurrentHashMap<String, PreparedStatement> preparedStatements = new ConcurrentHashMap<String, PreparedStatement>();
+	protected boolean convertDates = false;
 	public String url;
 	
 	/**
@@ -58,7 +59,7 @@ public class DB {
 			connect(driver, url, login, pass);
 		}
 	}
-		
+
 	/**
 	 * <odoc>
 	 * <key>DB.close()</key>
@@ -160,7 +161,8 @@ public class DB {
 						if ((rs.getMetaData().getColumnType(i) == java.sql.Types.NUMERIC) ||
 						    (rs.getMetaData().getColumnType(i) == java.sql.Types.DECIMAL) ||
 						    (rs.getMetaData().getColumnType(i) == java.sql.Types.DOUBLE)  ||
-						    (rs.getMetaData().getColumnType(i) == java.sql.Types.FLOAT)) {
+							(rs.getMetaData().getColumnType(i) == java.sql.Types.FLOAT) ||
+							(rs.getMetaData().getColumnType(i) == java.sql.Types.INTEGER)) {
 							// TODO: Need to change for more performance
 							
 							if (rs.getObject(i) != null) {
@@ -206,6 +208,25 @@ public class DB {
 								continue;
 							}
 
+							if (convertDates) {
+								if((rs.getMetaData().getColumnType(i) == java.sql.Types.DATE)) {
+									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
+									continue;
+								}
+
+								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP) || 
+								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE)) {
+									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
+									continue;
+								}
+
+								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIME) ||
+								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIME_WITH_TIMEZONE)) {
+									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
+									continue;
+								}
+							}
+
 							if (rs.getObject(i) != null) {
 								//jsong.writeStringField(rs.getMetaData().getColumnName(i), rs.getObject(i).toString());
 								record.put(rs.getMetaData().getColumnName(i), rs.getObject(i).toString());
@@ -218,7 +239,7 @@ public class DB {
 					
 					records.add(record.getMap());
 				}
-				
+
 				rs.close();
 				ps.close();
 				no.put("results", records.getList());
@@ -304,7 +325,8 @@ public class DB {
 						if ((rs.getMetaData().getColumnType(i) == java.sql.Types.NUMERIC) ||
 						    (rs.getMetaData().getColumnType(i) == java.sql.Types.DECIMAL) ||
 						    (rs.getMetaData().getColumnType(i) == java.sql.Types.DOUBLE)  ||
-						    (rs.getMetaData().getColumnType(i) == java.sql.Types.FLOAT)) {
+							(rs.getMetaData().getColumnType(i) == java.sql.Types.FLOAT) ||
+							(rs.getMetaData().getColumnType(i) == java.sql.Types.INTEGER)) {
 							// TODO: Need to change for more performance
 							
 							if (rs.getObject(i) != null) {
@@ -339,6 +361,25 @@ public class DB {
 										in = rs.getBinaryStream(i);
 								record.put(rs.getMetaData().getColumnName(i), IOUtils.toByteArray(in));
 								continue;
+							}
+
+							if (convertDates) {
+								if((rs.getMetaData().getColumnType(i) == java.sql.Types.DATE)) {
+									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
+									continue;
+								}
+
+								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP) || 
+								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE)) {
+									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
+									continue;
+								}
+
+								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIME) ||
+								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIME_WITH_TIMEZONE)) {
+									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
+									continue;
+								}
 							}
 
 							if (rs.getObject(i) != null) {
@@ -704,6 +745,16 @@ public class DB {
 	 */
 	public void h2StopServer() {
 		h2Server.stop();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>DB.convertDates(aFlag)</key>
+	 * Sets to true or false (defaults to false) the conversion of Dates to javascript Date objects instead of strings.
+	 * </odoc>
+	 */
+	public void convertDates(boolean toggle) {
+		convertDates = toggle;
 	}
 
 }

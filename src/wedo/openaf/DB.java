@@ -186,4 +186,9 @@ public class DB extends ScriptableObject {
 	public void h2StopServer() {
 		coreDB.h2StopServer();
 	}
+
+	@JSFunction
+	public void convertDates(boolean toggle) {
+		coreDB.convertDates(toggle);
+	}
 }

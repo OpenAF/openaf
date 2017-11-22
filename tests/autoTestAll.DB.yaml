@@ -5,8 +5,7 @@ jobs:
    # DB tests
    # --------------
    - name: DB::Init
-     exec: |
-       args.tests = require("autoTestAll.DB.js");
+     exec: args.tests = require("autoTestAll.DB.js");
 
    - name: DB::Simple DB in memory
      from: DB::Init
