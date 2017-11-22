@@ -2730,6 +2730,17 @@ function loadFuse() {
 
 /**
  * <odoc>
+ * <key>loadDiff</key>
+ * Loads the JsDiff javascript library into scope (check https://github.com/kpdecker/jsdiff).
+ * </odoc>
+ */
+function loadDiff() {
+	var res = loadCompiledLib("diff_js");
+	if (res) pods.declare("JsDiff", loadDiff());
+}
+
+/**
+ * <odoc>
  * <key>loadLodash()</key>
  * Loads the loadash javascript library.\
  * \

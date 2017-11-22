@@ -81,6 +81,15 @@
 			"deps": []
 		},
 		{
+			"description": "JsDiff",
+			"path": [ "js/diff.js" ],
+			"version": "3.4.0",
+			"changes": false,
+			"type": [ "js" ],
+			"license": "https://raw.githubusercontent.com/kpdecker/jsdiff/master/LICENSE",
+			"deps": []
+		},
+		{
 			"description": "Rhino",
 			"path": ["lib/js.jar"],
 			"version": "1.7.7.2",
