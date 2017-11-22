@@ -342,6 +342,13 @@
         ow.test.assert(res2, "xxWAum7tHdIUw", "Problem with crypt for DES");
     };
 
+    exports.testEncryptDecrypt = function() {
+        var res1 = "My very secret sentence.";
+
+        ow.test.assert(af.decrypt(af.encrypt(res1, "openappframework"), "openappframework"), res1, "Problem with default encrypt/decrypt.");
+        ow.test.assert(af.decrypt(af.encrypt(res1, "1234567890123456"), "1234567890123456"), res1, "Problem with custom encrypt/decrypt.");
+    };
+
     exports.testYAML = function() {
         var r = {
             a: 1,

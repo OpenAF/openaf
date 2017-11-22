@@ -108,6 +108,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testYAML;
 
+   - name: OpenAF::Encrypt/Decrypt
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testEncryptDecrypt;
+
 todo:
    # Generic Tests
    # -------------
@@ -129,6 +134,7 @@ todo:
    - OpenAF::Test $doFirst
    - OpenAF::Basic Parallel processing
    - OpenAF::Crypt
+   - OpenAF::Encrypt/Decrypt
    - OpenAF::YAML
   
    # CSV Tests
