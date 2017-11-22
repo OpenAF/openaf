@@ -26,4 +26,19 @@
     
         db.close();
     };
+
+    exports.testDBTypeConversion = function() {
+        var db = createDBInMem("test2", false);
+        db.convertDates(true);
+
+        var res = db.q("select 1 i, 1.5 f1, 1.0 f2, 'abc' t, sysdate d from dual").results[0];
+
+        ow.test.assert(res.I === 1, true, "Problem with db integer conversion");
+        ow.test.assert(res.F1 === 1.5, true, "Problem with db float conversion 1");
+        ow.test.assert(res.F2 === 1.0, true, "Problem with db float conversion 2");
+        ow.test.assert(res.T === "abc", true, "Problem with db string conversion");
+        ow.test.assert(Object.prototype.toString.call(res.D) == "[object Date]", true, "Problem with db date conversion");
+
+        db.close();
+    };
 })();

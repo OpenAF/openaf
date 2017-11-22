@@ -52,6 +52,7 @@ jobs:
        - Results
        - JUnit results
      exec: >
+       sleep(1000);
        exit(0);
 
 todo:

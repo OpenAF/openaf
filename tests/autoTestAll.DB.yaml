@@ -12,8 +12,14 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testDBInMemory;
 
+   - name: DB::DB type conversion to JS
+     from: DB::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDBTypeConversion;     
+
 todo:
    # DB tests
    # ------------
    - DB::Init
    - DB::Simple DB in memory
+   - DB::DB type conversion to JS
