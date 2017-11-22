@@ -368,7 +368,7 @@ public class DB {
 	
 	/**
 	 * <odoc>
-	 * <key>DB.qLob(aSQL) : Map</key>
+	 * <key>DB.qLob(aSQL) : Object</key>
 	 * Performs aSQL query on the current DB object instance. It tries to return only the first result set
 	 * row and the first object that can be either a CLOB (returns a string) or a BLOB (byte array). In case
 	 * of error an exception will be thrown. 

@@ -14,6 +14,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.CopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -659,4 +662,70 @@ public class IO extends ScriptableObject {
 		return (new File(aFile)).exists();
 	}
 
+	/**
+	 * <odoc>
+	 * <key>io.mkdir(aNewDirectory) : boolean</key>
+	 * Tries to create aNewDirectory. Returns true if successfull, false otherwise.
+	 * </odoc>
+	 */
+	@JSFunction
+	public boolean mkdir(String newDirectory) throws IOException {
+		return (new File(newDirectory)).mkdirs();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>io.rm(aFilePath)</key>
+	 * Tries to delete a file or a directory on the provided aFilePath. In case it's a directory it will try to 
+	 * recursively delete all directory contents.
+	 * </odoc>
+	 */
+	@JSFunction
+	public boolean rm(String filepath) throws java.io.IOException {
+		File file = new File(filepath);
+
+		if (!(file.isDirectory())) {
+			return Files.deleteIfExists(Paths.get(filepath, new String[0]));
+		} 
+		
+		FileUtils.deleteDirectory(new File(filepath));
+		return true;
+	}	
+
+	/**
+	 * <odoc>
+	 * <key>io.rename(aSourceFilePath, aTargetFilePath)</key>
+	 * Tries to rename aSourceFilePath to aTargetFilePath.
+	 * </odoc>
+	 * @throws IOException 
+	 */
+	@JSFunction
+	public boolean rename(String orig, String dest) {
+		return (new File(orig)).renameTo(new File(dest));
+	}
+
+    /**
+	 * <odoc>
+	 * <key>io.mv(aSourceFilePath, aTargetFilePath)</key>
+	 * Tries to move aSourceFilePath to aTargetFilePath preserving file attributes.
+	 * </odoc>
+	 * @throws IOException 
+	 */
+	@JSFunction
+	public boolean mv(String orig, String dest) throws IOException {
+		return Files.move((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE }) != null;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>io.cp(aSourceFilePath, aTargetFilePath)</key>
+	 * Tries to copy aSourceFilePath to aTargetFilePath preserving file attributes.
+	 * </odoc>
+	 * @throws IOException 
+	 */
+	@JSFunction
+	public boolean cp(String orig, String dest) throws IOException {
+		Files.copy((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.ATOMIC_MOVE });
+		return (new File(orig)).delete();
+	}
 }

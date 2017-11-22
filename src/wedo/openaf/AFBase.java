@@ -490,39 +490,39 @@ public class AFBase extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>af.encrypt(aString, aKey) : String</key>
-	 * Encrypts the provided aString to be used in RAID/WAF or as password for most of the OpenAF password
+	 * Encrypts the provided aString as password for most of the OpenAF password
 	 * functionality. If aKey is provided it will encrypt using it.
 	 * </odoc>
 	 * @throws Exception 
 	 */
 	@JSFunction
 	public static String encrypt(String aString, Object key) throws Exception {
-            	if (key == null || key instanceof Undefined) key = "openappframework";
+		if (key == null || key instanceof Undefined) key = "openappframework";
 		if (key instanceof String) key = ((String) key).getBytes();
 		if (((byte[]) key).length != 16) throw new Exception("Invalid key size. Key should be 16 bytes."); 
 
-    		SecureRandom sc = new SecureRandom();
-    		byte[] biv = sc.generateSeed(16);
-        	IvParameterSpec iv = new IvParameterSpec(biv);
-        	SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
+		SecureRandom sc = new SecureRandom();
+		byte[] biv = sc.generateSeed(16);
+		IvParameterSpec iv = new IvParameterSpec(biv);
+		SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
 
-        	Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-        	cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
+		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+		cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
 
-        	byte[] encrypted = cipher.doFinal(aString.getBytes());
-        	return (Hex.encodeHexString(encrypted) + Hex.encodeHexString(biv)).toUpperCase();
+		byte[] encrypted = cipher.doFinal(aString.getBytes());
+		return (Hex.encodeHexString(encrypted) + Hex.encodeHexString(biv)).toUpperCase();
 	}
 	
 	/**
 	 * <odoc>
 	 * <key>af.decrypt(aString, aKey) : String</key>
-	 * Decrypts the provided aString with the provided aKey.
+	 * Decrypts the provided aString with the provided aKey. 
 	 * </odoc>
 	 * @throws Exception
 	 */
 	@JSFunction
 	public static String decrypt(String aString, Object key) throws Exception {
-		if (key != null || !(key instanceof Undefined)) key = "openappframework"; 
+		if (key == null || key instanceof Undefined) key = "openappframework"; 
 		if (key instanceof String) key = ((String) key).getBytes();
 		
 		if (((byte[]) key).length != 16) throw new Exception("Invalid key size. Key should be 16 bytes."); 
