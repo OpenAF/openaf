@@ -1117,6 +1117,50 @@ OpenWrap.obj.prototype.fromJson = function(json) {
 	return res.create(json);
 };
 
+/**
+ * <odoc>
+ * <key>ow.obj.diff(aOriginalJSON, aFinalJSON, optionsMap) : String</key>
+ * Produces a string representation with the difference between aOriginalJSON and aFinalJSON.\
+ * If optionsMap.printColor = true it will be immediately print with ANSI colors if available.\
+ * If optionsMap.justAnsi it won't print and just produce the ANSI color codes.\
+ * If optionsMap.justChanges = true only the changed lines will be represented.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
+	loadDiff();
+	var ar = JsDiff.diffJson(aOrig, aFinal); 
+
+	if (isUnDef(optionsMap) || !(isObject(optionsMap))) optionsMap = { printColor: false, justChanges: false, justAnsi: false };
+	
+	if (optionsMap.printColor) ansiStart();
+	var s = "";
+	for(var i in ar) {
+		var color;
+		if (optionsMap.printColor || optionsMap.justAnsi) {
+		    color = (ar[i].added) ? (optionsMap.justChanges ? "BOLD,WHITE" : "BG_GREEN,BOLD,WHITE") 
+								  : (ar[i].removed && !optionsMap.justChanges) ? "BG_RED,WHITE,BOLD" 
+													                           : "BOLD,BLACK";
+		}
+
+		var value = (ar[i].added) ? ar[i].value.replace(/(.*)\n/gm, " +$1\n")
+								  : (ar[i].removed) ? (optionsMap.justChanges ? "" : ar[i].value.replace(/(.*)\n/gm, " -$1\n"))
+													: ar[i].value.replace(/(.*)\n/gm, "  $1\n");
+
+		value = value.replace(/^([^ +-])/mg, "  $1");
+
+		if (optionsMap.printColor || optionsMap.justAnsi) 
+			s = s + String(ansiColor(color, value));
+		else
+			s = s + value;
+	}
+	if (optionsMap.printColor) { 
+		print(s);
+		ansiStop();
+ 	} else {
+		return s; 
+	}
+};
+
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	this.__lps = {};
 	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
