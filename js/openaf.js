@@ -2717,7 +2717,7 @@ function loadUnderscore() {
 
 /**
  * <odoc>
- * <key>loadFuse</key>
+ * <key>loadFuse()</key>
  * Loads the FuseJS javascript library into scope.\
  * \
  * See more in: http://fusejs.io/
@@ -2730,7 +2730,7 @@ function loadFuse() {
 
 /**
  * <odoc>
- * <key>loadDiff</key>
+ * <key>loadDiff()</key>
  * Loads the JsDiff javascript library into scope (check https://github.com/kpdecker/jsdiff).
  * </odoc>
  */
