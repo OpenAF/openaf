@@ -1123,28 +1123,29 @@ OpenWrap.obj.prototype.fromJson = function(json) {
  * Produces a string representation with the difference between aOriginalJSON and aFinalJSON.\
  * If optionsMap.printColor = true it will be immediately print with ANSI colors if available.\
  * If optionsMap.justAnsi it won't print and just produce the ANSI color codes.\
- * If optionsMap.justChanges = true only the changed lines will be represented.
+ * If optionsMap.justChanges = true only the changed lines will be represented with the rest.\
+ * If optionsMap.justDiff = true only the changed lines will be included.
  * </odoc>
  */
 OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
 	loadDiff();
 	var ar = JsDiff.diffJson(aOrig, aFinal); 
 
-	if (isUnDef(optionsMap) || !(isObject(optionsMap))) optionsMap = { printColor: false, justChanges: false, justAnsi: false };
+	if (isUnDef(optionsMap) || !(isObject(optionsMap))) optionsMap = { printColor: false, justChanges: false, justAnsi: false, justDiff: false };
 	
 	if (optionsMap.printColor) ansiStart();
 	var s = "";
 	for(var i in ar) {
 		var color;
 		if (optionsMap.printColor || optionsMap.justAnsi) {
-		    color = (ar[i].added) ? (optionsMap.justChanges ? "BOLD,WHITE" : "BG_GREEN,BOLD,WHITE") 
-								  : (ar[i].removed && !optionsMap.justChanges) ? "BG_RED,WHITE,BOLD" 
-													                           : "BOLD,BLACK";
+		    color = (ar[i].added) ? (optionsMap.justChanges ? "BOLD,BLACK" : "GREEN,BOLD") 
+								  : (ar[i].removed && !optionsMap.justChanges) ? "RED,BOLD" 
+													                           : "BOLD,WHITE";
 		}
 
 		var value = (ar[i].added) ? ar[i].value.replace(/(.*)\n/gm, " +$1\n")
 								  : (ar[i].removed) ? (optionsMap.justChanges ? "" : ar[i].value.replace(/(.*)\n/gm, " -$1\n"))
-													: ar[i].value.replace(/(.*)\n/gm, "  $1\n");
+													: ((optionsMap.justDiff) ? "" : ar[i].value.replace(/(.*)\n/gm, "  $1\n"));
 
 		value = value.replace(/^([^ +-])/mg, "  $1");
 
