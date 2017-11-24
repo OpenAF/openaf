@@ -146,7 +146,8 @@ public class IO extends ScriptableObject {
                                                 fileMap.put("isDirectory", file.isDirectory());
                                                 fileMap.put("isFile", file.isFile());
                                                 fileMap.put("filename", file.getName());
-                                                fileMap.put("filepath", file.getPath());
+												fileMap.put("filepath", file.getPath().replaceAll("\\\\", "/"));
+												fileMap.put("canonicalPath", file.getCanonicalPath().replaceAll("\\\\", "/"));
                                                 fileMap.put("lastModified", file.lastModified());
                                                 fileMap.put("createTime", attr.creationTime().toMillis());
                                                 fileMap.put("lastAccess", attr.lastAccessTime().toMillis());
@@ -190,7 +191,8 @@ public class IO extends ScriptableObject {
 			no.put("isDirectory", file.isDirectory());
 			no.put("isFile", file.isFile());
 			no.put("filename", file.getName());
-			no.put("filepath", file.getPath());
+			no.put("filepath", file.getPath().replaceAll("\\\\", "/"));
+			no.put("canonicalPath", file.getCanonicalPath().replaceAll("\\\\", "/"));
 			no.put("lastModified", file.lastModified());
 			no.put("createTime", attr.creationTime().toMillis());
 			no.put("lastAccess", attr.lastAccessTime().toMillis());
