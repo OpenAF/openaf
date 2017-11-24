@@ -7,9 +7,18 @@ OpenWrap.template = function() {
 	if (isUnDef(this.hb)) {
 		this.hb = getOpenAFJar() + "::js/handlebars.js";
 		require(this.hb);
+		this.__helpers = {};
+		this.__partials = {};
 	}
 	return ow.template;
-}
+};
+
+OpenWrap.template.prototype.__requireHB = function() {
+	var hb = require(this.hb);
+	this.__addHelpers(hb);
+	this.__addPartials(hb);
+	return hb;
+};
 
 /**
  * <odoc>
@@ -23,9 +32,16 @@ OpenWrap.template.prototype.addHelpers = function(aPrefix, aObject) {
 	var m = Object.keys(aObject.constructor.prototype);
 	if (m.length < 1) m = Object.keys(aObject.prototype);
 	m.forEach((aMethod) => {
-		require(this.hb).registerHelper(aPrefix + aMethod, aObject[aMethod]);
+		this.__helpers[aPrefix + aMethod] = aObject[aMethod];
+		//require(this.hb).registerHelper(aPrefix + aMethod, aObject[aMethod]);
 	});
-}
+};
+
+OpenWrap.template.prototype.__addHelpers = function(aHB) {
+	for(var i in this.__helpers) {
+		aHB.registerHelper(i, this.__helpers[i]);
+	}
+};
 
 /**
  * <odoc>
@@ -161,7 +177,8 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
  * </odoc>
  */
 OpenWrap.template.prototype.addHelper = function(aHelperName, aFunction) {
-	require(this.hb).registerHelper(aHelperName, aFunction);
+	this.__helpers[aHelperName] = aFunction;
+	//require(this.hb).registerHelper(aHelperName, aFunction);
 }
 
 /**
@@ -171,8 +188,9 @@ OpenWrap.template.prototype.addHelper = function(aHelperName, aFunction) {
  * </odoc>
  */
 OpenWrap.template.prototype.delHelper = function(aHelperName) {
-	require(this.hb).unregisterHelper(aHelperName);
-}
+	delete this.__helpers[aHelperName];
+	//require(this.hb).unregisterHelper(aHelperName);
+};
 
 /**
  * <odoc>
@@ -181,8 +199,15 @@ OpenWrap.template.prototype.delHelper = function(aHelperName) {
  * </odoc>
  */
 OpenWrap.template.prototype.addPartial = function(aPartial, aSource) {
-	require(this.hb).registerPartial(aPartial, aSource);
-}
+	this.__partials[aPartial] = aSource;
+	//require(this.hb).registerPartial(aPartial, aSource);
+};
+
+OpenWrap.template.prototype.__addPartials = function(aHB) {
+	for(var i in this.__partials) {
+		aHB.registerPartial(i, this.__partials[i]);
+	}
+};
 
 /**
  * <odoc>
@@ -191,7 +216,8 @@ OpenWrap.template.prototype.addPartial = function(aPartial, aSource) {
  * </odoc>
  */
 OpenWrap.template.prototype.delPartial = function(aPartial) {
-	require(this.hb).unregisterPartial(aPartial);
+	delete this.__partials[aPartial];
+	//require(this.hb).unregisterPartial(aPartial);
 }
 
 /**
@@ -206,7 +232,7 @@ OpenWrap.template.prototype.getTemplate = function(aSource) {
 	var e;
 	//sync(function() {
 	try {
-		res = require(this.hb).compile(aSource);
+		res = this.__requireHB().compile(aSource);
 	} catch(ee) { e = ee; }
 	//}, ow.loadTemplate());
 	if (isDef(e)) throw e;
@@ -296,7 +322,7 @@ OpenWrap.template.prototype.loadPartialHBSs = function(aMapOfPartialHBSs) {
 			ow.template.addPartial(i, io.readFileString(aMapOfPartialHBSs[i]));
 		}
 	}
-}
+};
 
 /**
  * <odoc>
@@ -308,7 +334,7 @@ OpenWrap.template.prototype.unloadPartialHBSs = function(aMapOfPartialHBSs) {
 	for(var i in aMapOfPartialHBSs) {
 		ow.template.delPartial(i);
 	}
-}
+};
 
 /**
  * <odoc>
@@ -318,7 +344,7 @@ OpenWrap.template.prototype.unloadPartialHBSs = function(aMapOfPartialHBSs) {
  */
 OpenWrap.template.prototype.saveHBS = function(aFilename, aSource) {
 	io.writeFileString(aFilename, aSource);
-}
+};
 
 /**
  * <odoc>
@@ -337,7 +363,7 @@ OpenWrap.template.prototype.saveHBS = function(aFilename, aSource) {
  */
 OpenWrap.template.prototype.saveCompiledHBS = function(aFilename, aSource, optionsMap) {
 	io.writeFileString(aFilename, ow.template.compile(aSource, optionsMap));
-}
+};
 
 /**
  * <odoc>
@@ -351,12 +377,12 @@ OpenWrap.template.prototype.compile = function(aSource, optionsMap) {
 	var e;
 	//sync(function() {
 		try {
-			res = require(this.hb).precompile(require(this.hb).parse(aSource), optionsMap);
+			res = this.__requireHB().precompile(this.__requireHB().parse(aSource), optionsMap);
 		} catch(ee) { e = ee; }
 	//}, ow.loadTemplate());
 	if (isDef(e)) throw e;
 	return res;
-}
+};
 
 /**
  * <odoc>
@@ -370,12 +396,12 @@ OpenWrap.template.prototype.execCompiled = function(aCompiledObject) {
 	var e;
 	//sync(function() {
 		try {
-			res = require(this.hb).template(af.eval("(" + aCompiledObject + ")"));
+			res = this.__requireHB().template(af.eval("(" + aCompiledObject + ")"));
 		} catch(ee) { e = ee; }
 	//}, ow.loadTemplate());
 	if (isDef(e)) throw e;
 	return res;
-}
+};
 
 /**
  * <odoc>
@@ -394,7 +420,7 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
 	//}, ow.loadTemplate());
 	if (isDef(e)) throw e;
 	return res;
-}
+};
 
 /**
  * <odoc>
@@ -425,8 +451,8 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull) {
 	} else {
 		return converter.makeHtml(aMarkdownString);
 	}
-}
+};
 
 OpenWrap.template.prototype.Handlebars = function() {
-	return require(this.hb);
-}
+	return this.__requireHB();
+};

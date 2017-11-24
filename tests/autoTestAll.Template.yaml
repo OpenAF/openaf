@@ -17,9 +17,33 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testMD2HTML;
 
+   - name: Template::Test simple template
+     from: Template::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSimpleTemplate;
+
+   - name: Template::Test format helpers
+     from: Template::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFormatHelpers;
+
+   - name: Template::Test conditional helpers
+     from: Template::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testConditionalHelpers;
+
+   - name: Template::Test partial helpers
+     from: Template::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPartialHelpers;                    
+
 todo:
    # Template tests
    # --------------
    
    - Template::Load Template
    - Template::Test Markdown to HTML
+   - Template::Test simple template
+   - Template::Test format helpers
+   - Template::Test conditional helpers
+   - Template::Test partial helpers
