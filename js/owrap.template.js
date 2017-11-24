@@ -22,7 +22,7 @@ OpenWrap.template = function() {
 OpenWrap.template.prototype.addHelpers = function(aPrefix, aObject) {
 	var m = Object.keys(aObject.constructor.prototype);
 	if (m.length < 1) m = Object.keys(aObject.prototype);
-	m.forEach(function(aMethod) {
+	m.forEach((aMethod) => {
 		require(this.hb).registerHelper(aPrefix + aMethod, aObject[aMethod]);
 	});
 }
