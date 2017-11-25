@@ -1598,6 +1598,23 @@ OpenWrap.obj.prototype.rest = {
 		}
 		
 		return surl;
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.writeQuery(aMap) : String</key>
+	 * Given aMap will return a URL query string. Example:\
+	 * "http://some.thing/other/stuff?" + ow.obj.rest.writeQuery({ a: 1, b: 2}));\
+	 * \
+	 * </odoc>
+	 */
+	writeQuery: function(aMap) {
+		var str = [];
+        for(var p in aMap)
+            if (aMap.hasOwnProperty(p)) {
+            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(aMap[p]));
+            }
+        return str.join("&");
 	}
 };
 
