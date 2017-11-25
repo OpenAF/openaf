@@ -1459,12 +1459,12 @@ function __opack_search(args) {
 		}
 	}
 
-	for(let result in results) {
+	$from(results).sort("name").select((result) => {
 		ansiStart(); 
-		print(ansiColor("bold", "[" + results[result].name + "]") + " (version " + ansiColor("green", results[result].version) + "):");
-		print(results[result].description + "\n");
+		print(ansiColor("bold", "[" + result.name + "]") + " (version " + ansiColor("green", result.version) + "):");
+		print(result.description + "\n");
 		ansiStop();
-	}
+	});
 }
 
 // PACK
