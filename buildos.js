@@ -153,9 +153,12 @@ var tempJar = new ZIP(io.readFileBytes(OPENAF_BUILD_HOME + "/jar-in-jar-loader.z
 var binFiles = listFiles(OPENAF_BIN, "\.class$");
 log("#" + binFiles.length + " binary files identified.");
 binFiles = binFiles.concat(classpath.split(PATHSEPARATOR));
-var transformPathBin = (os.match(/Windows/)) ? OPENAF_BIN.replace(/\//g, "\\") : OPENAF_BIN;
-var transformPathLib = (os.match(/Windows/)) ? OPENAF_LIB.replace(/\//g, "\\") : OPENAF_LIB;
-for (i in binFiles) {
+//var transformPathBin = (os.match(/Windows/)) ? OPENAF_BIN.replace(/\//g, "\\") : OPENAF_BIN;
+//var transformPathLib = (os.match(/Windows/)) ? OPENAF_LIB.replace(/\//g, "\\") : OPENAF_LIB;
+var transformPathBin = OPENAF_BIN;
+var transformPathLib = OPENAF_LIB;
+for (var i in binFiles) {
+	print(binFiles[i]);
 	tempJar.putFile(binFiles[i].replace(transformPathLib, "").replace(transformPathBin, "").replace(/\\/g, "/").replace(/^\//, ""), io.readFileBytes(binFiles[i]));
 }
 
