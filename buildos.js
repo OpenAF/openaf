@@ -158,7 +158,6 @@ binFiles = binFiles.concat(classpath.split(PATHSEPARATOR));
 var transformPathBin = OPENAF_BIN;
 var transformPathLib = OPENAF_LIB;
 for (var i in binFiles) {
-	print(binFiles[i]);
 	tempJar.putFile(binFiles[i].replace(transformPathLib, "").replace(transformPathBin, "").replace(/\\/g, "/").replace(/^\//, ""), io.readFileBytes(binFiles[i]));
 }
 
