@@ -114,7 +114,9 @@ function generateUnixScript(options){
   s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
   s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
+  s = s + "EXITCODE=$?\n";
   s = s + "stty icanon echo 2>/dev/null\n";
+  s = s + "exit $EXITCODE\n";
   return s;
 }
 
