@@ -54,7 +54,7 @@ if (Object.keys(params).length >= 1 && ojob_shouldRun) {
 function ojob_showHelp() {
 	print("Usage: ojob aYamlFile.yaml [options]\n");
 	print("  -compile       Compile all includes and current file into a single yaml output.");
-	print("  -tojson        Outputs all includes and current fiel into a single json output.")
+	print("  -tojson        Outputs all includes and current file into a single json output.");
 	print("  -jobs          List all jobs available.");
 	print("  -todo          List the final todo list.");
 	print("  -deps          Draws a list of dependencies of todo jobs on a file.");
