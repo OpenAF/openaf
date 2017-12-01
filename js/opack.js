@@ -555,9 +555,10 @@ function rmdir(aNewDirectory) {
 // Get credentials
 function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	if (isUnDef(__remoteHTTP)) __remoteHTTP = new HTTP();
+    var res;
 
 	try {
-		__remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+		res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 	} catch(e) {
 		if (String(e.message).match(/code: 401/)) {
 			if (isUnDef(__remoteUser) || isUnDef(__remotePass)) {
@@ -567,13 +568,16 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 				__remotePass = con.readLinePrompt("Enter authentication password: ", "*");
 			}
 			__remoteHTTP.login(__remoteUser, Packages.wedo.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
-			__remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+			res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 		} else {
 			throw e;
 		}
 	}
-	
-	return __remoteHTTP;
+
+	if (returnStream)
+		return res;
+	else
+		return __remoteHTTP;
 }
 
 // Find OpenAF she-bang
@@ -1048,22 +1052,25 @@ function install(args) {
 		case "url":
 			log("Copying remote files...");
 			//for(i in packag.files) {
-			parallel4Array(packag.files, function(apackfile) {
-				mkdir(outputPath);
+			mkdir(outputPath);
+			var pres = parallel4Array(packag.files, function(apackfile) {
 				var message = "Copying " + apackfile + "...";
 				log(message);
 				
-				var http;
 				try {
-					http = execHTTPWithCred(args[0].replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true);
-					io.writeFileBytes(outputPath + "/" + apackfile, http.responseBytes());
+					var http = execHTTPWithCred(args[0].replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true, undefined, true);
+					//io.writeFileBytes(outputPath + "/" + apackfile, http.responseBytes());
+					ioStreamCopy(io.writeFileStream(outputPath + "/" + apackfile), http);
 				} catch(e) {
 					logErr("Can't copy remote file '" + apackfile + "' (" + e.message + ")");
-					return;
+					return 0;
 				}
 				return 1;
 			});
-			log("All files copied.");
+			if (pres.length == packag.files.length) 
+				log("All files copied.");
+			else
+				log("Not all files were copied (" + pres.length + "/" + packag.files.length + ")");
 			break;
 		case "opackurl":
 			var opack = getHTTPOPack(args[0]);
