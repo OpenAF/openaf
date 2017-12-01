@@ -4152,10 +4152,17 @@ __initializeCon();
 
 // Set logging to ERROR 
 {
-   let i = Packages.org.slf4j.LoggerFactory.getLogger(Packages.ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME).getLoggerContext().getLoggerList().iterator();
-   while(i.hasNext()) { 
-      Packages.org.slf4j.LoggerFactory.getLogger(i.next().getName()).setLevel(Packages.ch.qos.logback.classic.Level.ERROR);
-   }
+	// Issue 34
+	if (java.lang.System.getProperty("java.util.logging.config.file") == null) {
+		java.lang.System.setProperty("java.util.logging.config.file", "");
+	}
+
+	try {
+		let i = Packages.org.slf4j.LoggerFactory.getLogger(Packages.ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME).getLoggerContext().getLoggerList().iterator();
+		while (i.hasNext()) {
+			Packages.org.slf4j.LoggerFactory.getLogger(i.next().getName()).setLevel(Packages.ch.qos.logback.classic.Level.ERROR);
+		}
+	} catch (e) {}
 };
 
 // ---------------
