@@ -1761,6 +1761,24 @@ OpenWrap.ch.prototype.persistence = {
 
 OpenWrap.ch.prototype.server = {
 	__counter: {},
+    __log: () => {},
+
+	/**
+	 * <odoc>
+	 * <key>ow.ch.server.setLog(aLogFunction)</key>
+	 * Sets aLogFunction to act as audit for external communication to access a channel. The aLogFunction
+	 * will be called passing, as a single argument, a map with:\
+	 *    - name    (the channel name)\
+	 *    - op      (the operation can be AUTH_OK, AUTH_NOT_OK, GET, SET, REMOVE or CREATE)\
+	 *    - request (the HTTP request map)\
+	 * \
+	 * The request, when available, will include an entry with the current user.\
+	 * \
+	 * </odoc>
+	 */
+	setLog: function(aLogFunction) {
+		this.__log = aLogFunction;
+	},
 
 	/**
 	 * <odoc>
@@ -1806,7 +1824,16 @@ OpenWrap.ch.prototype.server = {
 		if (isDef(aAuthFunc)) {
 			routes[aPath] = function(r) { 
 				return ow.server.httpd.authBasic(aName, hs, r, 
-						aAuthFunc, 
+						(u, p, s, r) => {
+							var res = aAuthFunc(u, p, s, r);
+							r.user = u;
+							if (res) {
+								ow.ch.server.__log({ name: aName, request: r, op: "AUTH_OK" });
+							} else {
+								ow.ch.server.__log({ name: aName, request: r, op: "AUTH_NOT_OK" });
+							}
+							return res;
+						}, 
 						function(hss, rr) { 
 							if (isUnDef(rr.channelPermission)) rr.channelPermission = "rw";
 							return ow.ch.server.routeProcessing(aPath, rr, aName, uuid);
@@ -1986,13 +2013,14 @@ OpenWrap.ch.prototype.server = {
 		return ow.server.rest.reply(aURI, aRequest, 
 			function(i, d) { 
 				// Create
+				ow.ch.server.__log({ request: aRequest, name: aName, op: "CREATE" });
 				try {
 					if (isDef(aRequest.channelPermission) && 
 						aRequest.channelPermission.indexOf("w") < 0)
 						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restSet(i, d);
 					if (isUnDef(c)) return {};
-					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r };
 				} catch(e) {
 					recordError("create", undefined, i, d, e);
 					return {};
@@ -2000,13 +2028,14 @@ OpenWrap.ch.prototype.server = {
 			}, 
 			function(i) {	
 				// Get
+				ow.ch.server.__log({ request: aRequest, name: aName, op: "GET" });
 				try {
 					if (isDef(aRequest.channelPermission) && 
 						aRequest.channelPermission.indexOf("r") < 0)
 						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restGet(i);
 					if (isUnDef(c)) return {};					
-					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r };
 				} catch(e) {
 					recordError("get", undefined, i, d, e);
 					return {};
@@ -2014,13 +2043,14 @@ OpenWrap.ch.prototype.server = {
 			}, 
 			function(i, d) {
 				// Set
+				ow.ch.server.__log({ request: aRequest, name: aName, op: "SET" });
 				try {
 					if (isDef(aRequest.channelPermission) && 
 						aRequest.channelPermission.indexOf("w") < 0)
 						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restSet(i, d);
 					if (isUnDef(c)) return {};				
-					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r };
 				} catch(e) {
 					recordError("set", undefined, i, d, e);
 					return {};
@@ -2028,13 +2058,14 @@ OpenWrap.ch.prototype.server = {
 			}, 
 			function(i) {
 				// Remove
+				ow.ch.server.__log({ request: aRequest, name: aName, op: "REMOVE" });
 				try {
 					if (isDef(aRequest.channelPermission) && 
 						aRequest.channelPermission.indexOf("w") < 0)
 						return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": -1, "r": {} };
 					var c = restUnset(i);
 					if (isUnDef(c)) return {};
-					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r }
+					return { "l": $ch(aName).size(), "v": $ch(aName).getVersion(), "c": c.c, "r": c.r };
 				} catch(e) {
 					recordError("remove", undefined, i, d, e);
 					return {};

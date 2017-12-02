@@ -1414,7 +1414,7 @@ OpenWrap.obj.prototype.rest = {
  		try {
  			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", undefined, aRequestMap, undefined, _t);
  		} catch(e) {
-			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
+			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 			throw e;
  		}
 	},

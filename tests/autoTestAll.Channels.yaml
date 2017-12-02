@@ -20,6 +20,11 @@ jobs:
      deps: 
        - Channels::Creating a channel
      exec: args.func = args.tests.testSettingData;
+    
+   - name: Channels::Remote channel access auditing
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAuditLog;
  
    - name: Channels::Destroy a channel
      from: Channels::Init
@@ -44,6 +49,7 @@ todo:
    # --------------
    
    - Channels::Test Elastic Index
+   - Channels::Remote channel access auditing
    
    # Big
    - name: Channels::Creating a channel
