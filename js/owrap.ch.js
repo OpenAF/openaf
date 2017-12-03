@@ -1569,7 +1569,7 @@ OpenWrap.ch.prototype.utils = {
 		if (isUnDef(aFormat)) aFormat = "yyyy.MM.dd";
 		return function() {
 			return aPrefix + "-" + ow.loadFormat().fromDate(new Date(), aFormat);
-		}
+		};
 	}
 };
 

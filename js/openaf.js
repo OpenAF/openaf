@@ -1287,7 +1287,17 @@ function load(aScript) {
 	var error = "";
 	
 	try {
-		af.load(aScript);
+		try {
+			af.load(aScript);
+		} catch(e) {
+			if (e.message == "\"exports\" is not defined.") {
+				var exp = require(aScript);
+				global[io.fileInfo(aScript).filename.replace(/\.js$/, "")] = exp;
+				return aScript;
+			} else {
+				throw e;
+			}
+		}
 		return aScript;
 	} catch(e0) {
 		if (e0.message.match(/FileNotFoundException/) || e0.message == "\"exports\" is not defined.") {
@@ -1295,7 +1305,7 @@ function load(aScript) {
 			try {
 				if (e0.message == "\"exports\" is not defined.") {
 					exp = require(aScript + ".js");
-					global[aScript.replace(/\.js$/, "")] = exp;
+					global[io.fileInfo(aScript).filename.replace(/\.js$/, "")] = exp;
 					return aScript;
 				} else {
 					af.load(aScript + ".js");
@@ -1307,7 +1317,7 @@ function load(aScript) {
 					var paths = getOPackPaths();
 					paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
 			
-					for(i in paths) {
+					for(var i in paths) {
 						try {
 							paths[i] = paths[i].replace(/\\+/g, "/");
 							if (e0.message == "\"exports\" is not defined.") {
