@@ -395,6 +395,22 @@ function __beautify(aFlag) {
 		__outputConsoleComments("Output beautify of commands is disabled.");
 }
 
+function __diff(aString) {
+	ow.loadObj();
+
+	let i = aString.split(/ with(Full|Changes|New)? /);
+	let m = { printColor: 1 }; 
+	
+	if (i[1] == "Changes") 
+	   m = merge(m, { justChanges: 1 }); 
+	   if (i[1] == "New") 
+		  m = merge(m, { justDiff: 1, justChanges: 1});
+		  if (i[1] == "") 
+			 m = merge(m, { justDiff: 1});
+			 (i.length == 3) ? ow.obj.diff(eval("(" + i[0] + ")"), eval("(" + i[2] + ")"), m) 
+			                 : "Usage: 'diff oldObject with newObject' (with/withNew/withChanges/withFull)";
+}
+
 /**
  * Turns on or off the color of output of commands
  *
@@ -511,6 +527,7 @@ function __help(aTerm) {
 		__outputConsoleComments("sql      Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')");
 		__outputConsoleComments("dsql     Returns the list of columns produced by a SQL query over a db connection.");
 		__outputConsoleComments("esql     Executes the SQL statement, over a db connection (example 'esql db update...')");
+		__outputConsoleComments("diff     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
 		__outputConsoleComments("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
 		__outputConsoleComments("clear    Tries to clear the screen.");
 		__outputConsoleComments("purge    Purge all the command history");
@@ -718,6 +735,10 @@ function __processCmdLine(aCommand, returnOnly) {
 			if (aCommand.match(/^pause(?: +|$)/)) {
 				internalCommand = true;
 				__pause(aCommand.replace(/^pause */, ""));
+			}
+			if (aCommand.match(/^diff(?: +|$)/)) {
+				internalCommand = true;
+			    __diff(aCommand.replace(/^diff */, ""));
 			}
 			if (aCommand.match(/^pin(?: +|$)/)) {
 				internalCommand = true;

@@ -1128,6 +1128,15 @@ OpenWrap.obj.prototype.fromJson = function(json) {
  * </odoc>
  */
 OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
+	if (isUnDef(this.__diffColorFormat)) {
+		this.__diffColorFormat = {
+			addedJustChanges: "BOLD,BLACK",
+			removed: "RED,BOLD",
+			added: "GREEN,BOLD",
+			removedJustChanges: "WHITE"
+		};
+	}
+
 	loadDiff();
 	var ar = JsDiff.diffJson(aOrig, aFinal); 
 
@@ -1138,9 +1147,9 @@ OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
 	for(var i in ar) {
 		var color;
 		if (optionsMap.printColor || optionsMap.justAnsi) {
-		    color = (ar[i].added) ? (optionsMap.justChanges ? "BOLD,BLACK" : "GREEN,BOLD") 
-								  : (ar[i].removed && !optionsMap.justChanges) ? "RED,BOLD" 
-													                           : "BOLD,WHITE";
+		    color = (ar[i].added) ? (optionsMap.justChanges ? this.__diffColorFormat.addedJustChanges : this.__diffColorFormat.added) 
+								  : (ar[i].removed && !optionsMap.justChanges) ? this.__diffColorFormat.removed 
+													                           : this.__diffColorFormat.removedJustChanges;
 		}
 
 		var value = (ar[i].added) ? ar[i].value.replace(/(.*)\n/gm, " +$1\n")
