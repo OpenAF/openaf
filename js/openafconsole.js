@@ -230,7 +230,7 @@ function __scope(aRegExpRestriction, retList) {
 	var objects = af.getScopeIds();
 	var ret = [];
 
-	for(i in objects.sort()) {
+	for(let i in objects.sort()) {
 		if (aRegExpRestriction.length > 0 &&
 		    !objects[i].match(new RegExp(aRegExpRestriction, "i"))) continue;
 		if (retList)
@@ -951,7 +951,6 @@ initThread.addThread(function(uuid) {
 	historyFile = java.lang.System.getProperty("user.home") + "/" + CONSOLEHISTORY;
 	jLineFileHistory = new Packages.jline.console.history.FileHistory(new java.io.File(historyFile));
 	con.getConsoleReader().setHistory(jLineFileHistory);
-
 	con.getConsoleReader().addCompleter(
 		new Packages.wedo.openaf.jline.OpenAFConsoleCompleter(function(buf, cursor, candidates) {
 			if (buf == null) return null;
@@ -964,9 +963,7 @@ initThread.addThread(function(uuid) {
 				tmpbuf[3] = tmpbuf[3].replace(/\.$/, "");
                 try {
 					var tmpList = __desc(tmpbuf[1].replace(/.+[\[\(\"\']([^\]\)]+)$/, "$1"), true);
-					//var javaPacks = java.lang.Package.getPackages();
-					//for (i in javaPacks) { tmpList.push(javaPacks[i].getName()); }
-					for(elem in tmpList) {
+					for(let elem in tmpList) {
 						if(tmpList[elem].indexOf(tmpbuf[3]) == 0) {
 							candidates.add(tmpList[elem]);
 						}
@@ -981,8 +978,8 @@ initThread.addThread(function(uuid) {
 					ret = cursor - tmpbuf[1].length;
 					try {
 						var tmpList = __scope(tmpbuf[1], true);
-						for(elem in tmpList) {
-							if(tmpList[elem].indexOf(tmpbuf[1]) == 0) {
+						for(let elem in tmpList) {
+							if(tmpList[elem].indexOf(tmpbuf[1]) == 0) {							
 								candidates.add(tmpList[elem]);
 							}
 						}
@@ -991,9 +988,10 @@ initThread.addThread(function(uuid) {
 				}
 			}
 
-			return ret + 0;
+			return Number(ret);
 		})
 	);
+	con.getConsoleReader().getCompletionHandler().setPrintSpaceAfterFullCompletion(false);
 
 	// Read profile
 	__readProfile(java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE);
