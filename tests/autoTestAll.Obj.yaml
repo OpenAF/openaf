@@ -8,6 +8,11 @@ jobs:
      exec: |
        args.tests = require("autoTestAll.Obj.js");
 
+   - name: Obj::Flatten
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFlatten;
+
    - name: Obj::REST Errors
      from: Obj::Init
      to  : oJob Test
@@ -17,4 +22,5 @@ todo:
    # Obj tests
    # ------------
    - Obj::Init
+   - Obj::Flatten
    - Obj::REST Errors

@@ -1,4 +1,44 @@
 (function() {
+    exports.testFlatten = function() {
+        ow.loadObj();
+
+        var ar = [];
+        ar.push({ a: 1, b: true, c: "a"});
+        ar.push({ a: 2, b: true, c: "a"});
+        ar.push({ a: 3, b: true, c: "a", d: [ 5,6,7 ]});
+        ar.push({ a: 4, b: true, c: "a", d: { a: 12, b: true, c: "b" }});
+        ar.push({ a: 5, b: true, c: "a", d: { a: 34, b: true, c: "c" }});
+        ar.push({ a: 6, b: true, c: "a", d: { a: 89, b: true, c: "d", d: [ { x: 1, y: 2 } ] }});
+        ar.push({ a: 7, b: true, c: "a", d: { a: 99, b: true, c: "e", d: [ { x: 1, y: 2 }, { x: 3, y: 4} ] }});
+
+        var res = ow.obj.flatten(ar);
+        ow.test.assert(res.length, 10, "Total result from ow.obj.flatten is different from expected");
+        ow.test.assert($from(res).equals("d_d_x", 3).at(0).d_d_y, 4, "Problem with value on map inside an array");
+        ow.test.assert($from(res).equals("b", true).count(), 10, "Problem with replication of booleans");
+        ow.test.assert($from(res).equals("c", "a").count(), 10, "Problem with replication of strings");
+        ow.test.assert($from(res).equals("d_d_x", 3).notEquals("d_a", 99).none(), true, "Problem with replication of numbers");
+        ow.test.assert($from(res).equals("d_b", true).count(), 5, "Problem with replication of map through sub-arrays");
+        ow.test.assert($from(res).equals("d_d_x", "").count(), 7, "Problem with initalizing no existing values");
+
+        var res2 = ow.obj.flatten(ar, ":");
+        ow.test.assert(res2.length, 10, "Total result from ow.obj.flatten is different from expected for different separator");
+        ow.test.assert($from(res2).equals("d:d:x", 3).at(0)["d:d:y"], 4, "Problem with value on map inside an array for different separator");
+        ow.test.assert($from(res2).equals("b", true).count(), 10, "Problem with replication of booleans for different separator");
+        ow.test.assert($from(res2).equals("c", "a").count(), 10, "Problem with replication of strings for different separator");
+        ow.test.assert($from(res2).equals("d:d:x", 3).notEquals("d:a", 99).none(), true, "Problem with replication of numbers for different separator");
+        ow.test.assert($from(res2).equals("d:b", true).count(), 5, "Problem with replication of map through sub-arrays for different separator");
+        ow.test.assert($from(res2).equals("d:d:x", "").count(), 7, "Problem with initalizing no existing values for different separator");
+
+        var res3 = ow.obj.flatten(ar, ":", "n/a");
+        ow.test.assert(res3.length, 10, "Total result from ow.obj.flatten is different from expected for different separator and default n/a");
+        ow.test.assert($from(res3).equals("d:d:x", 3).at(0)["d:d:y"], 4, "Problem with value on map inside an array for different separator and default n/a");
+        ow.test.assert($from(res3).equals("b", true).count(), 10, "Problem with replication of booleans for different separator and default n/a");
+        ow.test.assert($from(res3).equals("c", "a").count(), 10, "Problem with replication of strings for different separator and default n/a");
+        ow.test.assert($from(res3).equals("d:d:x", 3).notEquals("d:a", 99).none(), true, "Problem with replication of numbers for different separator and default n/a");
+        ow.test.assert($from(res3).equals("d:b", true).count(), 5, "Problem with replication of map through sub-arrays for different separator and default n/a");
+        ow.test.assert($from(res3).equals("d:d:x", "n/a").count(), 7, "Problem with initalizing no existing values for different separator and default n/a");
+    };
+
     exports.testRESTErrors = function() {
         ow.loadObj();
 

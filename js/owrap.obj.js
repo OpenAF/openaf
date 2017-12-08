@@ -125,7 +125,106 @@ OpenWrap.obj.prototype.__getObj4Path = function(anObj, aPath) {
     }
 
     return obj;
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.flatten(arrayOfMaps, aSeparator, aNADefault) : Array</key>
+ * Converts any structured arrayOfMaps into a flat array of maps with only one level of keys. The map key path will be converted
+ * into a single key using aSeparator (defaults to "_") and the value will be represented as aNADefault (defaults to "") when no 
+ * value or key exists in other entries. For each array entry a new array element will be created replicated all other keys.
+ * Usefull to convert data to output into CSV for example.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
+	if (!isArray(data)) throw "ow.obj.flatten: need an array of data.";
+	if (isUnDef(aSeparator)) aSeparator = "_";
+	if (isUnDef(aNADefault)) aNADefault = "";
+	loadLodash();
+
+	function getFlatUniqKey(aK, aP) {
+		var key = "";
+		if (isDef(aP)) {
+			key = aP.replace(/\./g, aSeparator) + (isNumber(aK) ? "" : aSeparator + aK.replace(/\./g, aSeparator));
+		} else {
+			key = aK.replace(/\./g, aSeparator);
+		}
+	
+		return key.replace(/\["\d+"\]/g, "").replace(new RegExp("^" + aSeparator), "");
+	}
+	
+	function getFlatKeys(anArrayOfMaps) {
+		var keys = [];
+		anArrayOfMaps.forEach((r) => {
+			traverse(r, (aK, aV, aP, aO) => {
+				if (!isObject(aV)) keys.push(getFlatUniqKey(aK, aP));
+			});
+		});
+	
+		return _.uniq(keys);
+	}
+	
+	function genFlatMap(flatKeys) {
+		var res = {};
+	
+		for(var i in flatKeys) {
+			res[flatKeys[i]] = aNADefault;
+		}
+	
+		return res;
+	}
+
+	var keys = getFlatKeys(data);
+	var resData = [];
+
+	_trav = (aM, aD, aP) => {
+		var _keys = Object.keys(aD);
+		var parent = isUnDef(aP) ? "" : aP;
+		var m = aM;
+		var res = [];
+
+		// First pass to get non-objects
+		for(let j in _keys) {
+			if (!isObject(aD[_keys[j]])) {
+				m[getFlatUniqKey(_keys[j], parent)] = aD[_keys[j]];
+			} 
+		}
+
+		// Second pass for maps
+		for(let j in _keys) {
+			if (isObject(aD[_keys[j]]) && !isArray(aD[_keys[j]])) {
+				var newParent = parent + ((isNaN(Number(_keys[j]))) ? "." + _keys[j] : "");
+				res = res.concat(_trav(aM, aD[_keys[j]], newParent));
+			}
+		}
+
+		// Third pass for arrays
+		for(let j in _keys) {
+			if (isArray(aD[_keys[j]])) {
+				var newParent = parent + ((isNaN(Number(_keys[j]))) ? "." + _keys[j] : "");
+				for(let l in aD[_keys[j]]) {
+					var nm = clone(m);
+					if (isObject(aD[_keys[j]][l])) {
+						res = res.concat(_trav(nm, aD[_keys[j]][l], newParent));
+					} else {
+						nm[_keys[j]] = aD[_keys[j]][l];
+						res.push(nm);
+					}
+				}
+			}
+		}
+		
+		if (res.length == 0) res = [ m ];
+
+		return _.flattenDeep(res);
+	};
+
+	for(var i in data) {
+		resData = resData.concat(_trav(genFlatMap(keys), data[i]));
+	}
+
+	return _.flattenDeep(resData);
+};
 
 /**
  * <odoc>
