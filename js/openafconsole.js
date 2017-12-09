@@ -401,14 +401,17 @@ function __diff(aString) {
 	let i = aString.split(/ with(Full|Changes|New)? /);
 	let m = { printColor: 1 }; 
 	
-	if (i[1] == "Changes") 
+	if (i[1] == "Changes") {
 	   m = merge(m, { justChanges: 1 }); 
-	   if (i[1] == "New") 
+	} else {
+	   if (i[1] == "New") { 
 		  m = merge(m, { justDiff: 1, justChanges: 1});
-		  if (i[1] == "") 
-			 m = merge(m, { justDiff: 1});
-			 (i.length == 3) ? ow.obj.diff(eval("(" + i[0] + ")"), eval("(" + i[2] + ")"), m) 
-			                 : "Usage: 'diff oldObject with newObject' (with/withNew/withChanges/withFull)";
+	   } else {
+		  if (i[1] == "") m = merge(m, { justDiff: 1});
+	   }
+	}
+	(i.length == 3) ? ow.obj.diff(af.eval("(" + i[0] + ")"), af.eval("(" + i[2] + ")"), m) 
+					: "Usage: 'diff oldObject with newObject' (with/withNew/withChanges/withFull)";
 }
 
 /**
