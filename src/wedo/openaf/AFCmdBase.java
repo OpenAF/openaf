@@ -9,11 +9,11 @@ import wedo.openaf.rhino.RhinoEngine;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20171001";
+	public static String VERSION = "20171210";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 	

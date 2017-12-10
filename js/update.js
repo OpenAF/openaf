@@ -1,5 +1,5 @@
 //
-// Author: nuno.aguiar@wedotechnologies.com
+// Author: Nuno Aguiar
 
 // Update to the latest version
 //

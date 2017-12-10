@@ -50,7 +50,7 @@ import wedo.openaf.SimpleLog.logtype;
 
 /**
  * Core ZIP plugin 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class ZIP extends ScriptableObject {

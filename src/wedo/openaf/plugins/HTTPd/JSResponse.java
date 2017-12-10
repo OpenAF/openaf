@@ -20,7 +20,7 @@ import com.nwu.httpd.responses.Response;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class JSResponse extends Response {

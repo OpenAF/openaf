@@ -604,8 +604,12 @@ function templify(aTemplateString, someData) {
  * Shortcut for af.sleep function. Will pause execution for a given period of time expressed in milliseconds.
  * </odoc>
  */
-function sleep(millis) {
-	af.sleep(millis);
+function sleep(millis, alternative) {
+	if (alternative) {
+		af.sleep(millis);
+	} else {
+		java.util.concurrent.TimeUnit.MILLISECONDS.sleep(millis);			
+	}
 }
 
 /**

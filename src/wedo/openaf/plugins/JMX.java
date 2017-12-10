@@ -46,7 +46,7 @@ import wedo.openaf.SimpleLog.logtype;
 /**
  * OpenAF plugin to access remote beans through JMX
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class JMX extends ScriptableObject {

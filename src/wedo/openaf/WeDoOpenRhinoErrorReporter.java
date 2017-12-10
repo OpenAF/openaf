@@ -5,7 +5,7 @@ import org.mozilla.javascript.EvaluatorException;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class WeDoOpenRhinoErrorReporter implements ErrorReporter {

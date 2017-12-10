@@ -26,7 +26,7 @@ import wedo.openaf.AFCmdBase;
 /**
  * OpenAF plugin to access remote Windows/Samba shares using jcifs
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class SMB extends ScriptableObject {

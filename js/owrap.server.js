@@ -1,5 +1,5 @@
 // OpenWrap v2
-// Author: nuno.aguiar@wedotechnologies.com
+// Author: Nuno Aguiar
 // Server
 
 OpenWrap.server = function() {

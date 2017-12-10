@@ -43,7 +43,7 @@ import wedo.openaf.SimpleLog;
 /**
  * Core IO plugin
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class IO extends ScriptableObject {

@@ -41,7 +41,7 @@ import com.jcraft.jsch.UserInfo;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class SSH extends ScriptableObject {

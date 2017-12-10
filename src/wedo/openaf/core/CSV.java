@@ -18,7 +18,7 @@ import wedo.openaf.SimpleLog;
 /**
  * Core CSV plugin
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  */
 public class CSV {
 	protected enum valuetypes { STRING, NUMBER };

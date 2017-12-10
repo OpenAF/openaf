@@ -27,7 +27,7 @@ import wedo.openaf.SimpleLog;
 /**
  * Core DB plugin
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class DB {

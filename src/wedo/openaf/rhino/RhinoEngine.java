@@ -14,7 +14,7 @@ import wedo.openaf.JSEngine;
 /**
  * Rhino JSEngine implementation
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class RhinoEngine implements JSEngine {
