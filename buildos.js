@@ -169,11 +169,13 @@ packjson.version = release + "";
 tempJar.putFile("versionsAndDeps.json", io.readFileBytes(OPENAF_BUILD_HOME + "/versionsAndDeps.json"));
 tempJar.putFile("LICENSE", io.readFileBytes(OPENAF_BUILD_HOME + "/LICENSE"));
 tempJar.putFile("LICENSES.txt", io.readFileBytes(OPENAF_BUILD_HOME + "/LICENSES.txt"));
-if (isUnDef(OPENAF_JSON)) {
+/*if (isUnDef(OPENAF_JSON)) {
 	tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_BUILD_HOME + "/openaf.json"));
+        log("Added " + OPENAF_BUILD_HOME + "/openaf.json...");
 } else {
 	tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_JSON));
-}
+        log("Added " + OPENAF_JSON + "...");
+}*/
 tempJar.putFile(".package.json", af.fromString2Bytes(beautifier(packjson)));
 
 log("Adding css files...");
@@ -349,14 +351,20 @@ try {
 	logErr(e);
 }
 
+if (isUnDef(OPENAF_JSON)) {
+	tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_BUILD_HOME + "/openaf.json"));
+        log("Added " + OPENAF_BUILD_HOME + "/openaf.json...");
+} else {
+	tempJar.putFile("openaf.json", io.readFileBytes(OPENAF_JSON));
+        log("Added " + OPENAF_JSON + "...");
+}
+
 //Build deps
 log("Building dependencies");
 io.writeFileString(OPENAF_BUILD_HOME + "/dependencies.json", stringify(buildDeps()));
 
-log("Creating the openaf.jar");
-io.writeFileBytes(OPENAF_BUILD_HOME + "/openaf.jar", tempJar.generate({
-	"compressionLevel": 9
-}));
+log("Creating the openaf.jar in " + OPENAF_BUILD_HOME);
+tempJar.generate2File(OPENAF_BUILD_HOME + "/openaf.jar", { compressionLevel: 9 }, true);
 tempJar.close();
 
 log("Done build");
