@@ -661,10 +661,12 @@ function __initializeLogPromise() {
 			addOnOpenAFShutdown(() => {
 				$doWait(__logPromise);
 			});
+			return true;
 		} else {
 			if (__logPromise.size > __logPromise.asyncLevel) {
 				$doWait(__logPromise);
 			}
+			return false;
 		}
 	}
 }
@@ -768,6 +770,7 @@ function log(msg) {
 	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
 	if (go) {
+		if (isUnDef(__con)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -825,6 +828,7 @@ function lognl(msg) {
 	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
 	if (go) {
+		if (isUnDef(__con)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -882,6 +886,7 @@ function logErr(msg) {
 	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offError)) ? false : true;
 	if (go) {
+		if (isUnDef(__con)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -928,6 +933,7 @@ function logWarn(msg) {
 	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offWarn)) ? false : true;
 	if (go) {
+		if (isUnDef(__con)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
