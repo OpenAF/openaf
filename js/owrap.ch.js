@@ -582,7 +582,7 @@ OpenWrap.ch.prototype.__types = {
 			throw "Channel operation not supported in Elastic Search";
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
@@ -605,7 +605,7 @@ OpenWrap.ch.prototype.__types = {
 			
 			for(var i in aVs) {
 				ops += stringify({ index: {
-					_index: this.__channels[aName].fnIndex(), 
+					_index: this.__channels[aName].fnIndex(aKs[i]), 
 					_type : this.__channels[aName].idKey,
 					_id   : aVs[i][this.__channels[aName].idKey] 
 				}}, undefined, "") + "\n" + 
@@ -624,7 +624,7 @@ OpenWrap.ch.prototype.__types = {
 			}		
 		},
 		get          : function(aName, aK) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
@@ -657,7 +657,7 @@ OpenWrap.ch.prototype.__types = {
 			return aK;
 		},
 		unset        : function(aName, aK, aTimestamp) {
-			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex();
+			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
@@ -754,7 +754,7 @@ OpenWrap.ch.prototype.__types = {
 			return undefined;		
 		},
 		set          : function(aName, ak, av, aTimestamp) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
+			var map = this.__s[aName].openMap(this.__m[aName](ak));
 
 			map.put(stringify(ak), stringify(av));
 			this.__s[aName].commit();
@@ -765,22 +765,22 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		get          : function(aName, aKey) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
+			var map = this.__s[aName].openMap(this.__m[aName](ak));
 
 			return jsonParse(map.get(stringify(aKey)));
 		},
 		pop          : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
+			var map = this.__s[aName].openMap(this.__m[aName](ak));
 			var aKey = map.lastKey();
 			return jsonParse(map.remove(aKey));	
 		},
 		shift        : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
+			var map = this.__s[aName].openMap(this.__m[aName](ak));
 			var aKey = map.firstKey();
 			return jsonParse(map.remove(aKey));
 		},
 		unset        : function(aName, aKey) {
-			var map = this.__s[aName].openMap(this.__m[aName]());
+			var map = this.__s[aName].openMap(this.__m[aName](ak));
 
 			return jsonParse(map.remove(stringify(aKey)));
 		}
