@@ -17,8 +17,6 @@ jobs:
    - name: Channels::Setting data into a channel
      from: Channels::Init
      to  : oJob Test
-     deps: 
-       - Channels::Creating a channel
      exec: args.func = args.tests.testSettingData;
     
    - name: Channels::Remote channel access auditing
@@ -29,9 +27,6 @@ jobs:
    - name: Channels::Destroy a channel
      from: Channels::Init
      to  : oJob Test
-     deps: 
-       - Channels::Setting data into a channel
-       - Channels::Creating a channel
      exec: args.func = args.tests.testDestroyChannel;
 
    - name: Channels::Test housekeeping
@@ -44,6 +39,54 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testElasticIndex;
 
+   # Big
+   # ---
+   - name: Channels::Creating a channel (big)
+     to  : Channels::Creating a channel
+     args:
+       chType: big
+   - name: Channels::Setting data into a channel (big)
+     to  : Channels::Setting data into a channel
+     deps: 
+       - Channels::Creating a channel (big)
+     args:
+       chType: big
+   - name: Channels::Destroy a channel (big)
+     to  : Channels::Destroy a channel 
+     deps: 
+       - Channels::Setting data into a channel (big)
+       - Channels::Creating a channel (big)
+     args:
+       chType: big   
+   - name: Channels::Test housekeeping (big)
+     to  : Channels::Test housekeeping
+     args:
+       chType: big 
+
+   # Mvs
+   # ---
+   - name: Channels::Creating a channel (mvs)
+     to  : Channels::Creating a channel
+     args:
+       chType: mvs
+   - name: Channels::Setting data into a channel (mvs)
+     to  : Channels::Setting data into a channel
+     deps: 
+       - Channels::Creating a channel (mvs)
+     args:
+       chType: mvs
+   - name: Channels::Destroy a channel (mvs)
+     to  : Channels::Destroy a channel 
+     deps: 
+       - Channels::Setting data into a channel (mvs)
+       - Channels::Creating a channel (mvs)
+     args:
+       chType: mvs   
+   - name: Channels::Test housekeeping (mvs)
+     to  : Channels::Test housekeeping
+     args:
+       chType: mvs        
+
 todo:
    # Channels tests
    # --------------
@@ -52,18 +95,16 @@ todo:
    - Channels::Remote channel access auditing
    
    # Big
-   - name: Channels::Creating a channel
-     args:
-       chType: big
-   - name: Channels::Setting data into a channel
-     args:
-       chType: big
-   - name: Channels::Destroy a channel 
-     args:
-       chType: big   
-   - name: Channels::Test housekeeping
-     args:
-       chType: big   
+   - Channels::Creating a channel (big)
+   - Channels::Setting data into a channel (big)
+   - Channels::Destroy a channel (big)
+   - Channels::Test housekeeping (big) 
+
+   # Mvs
+   - Channels::Creating a channel (mvs)
+   - Channels::Setting data into a channel (mvs)
+   - Channels::Destroy a channel (mvs)
+   - Channels::Test housekeeping (mvs)    
 
    # Ignite
    #- name: Channels::Creating a channel

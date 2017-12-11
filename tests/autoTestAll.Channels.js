@@ -45,22 +45,26 @@
     exports.testHousekeeping = function() {
         $ch(this.chType + "HK").destroy();
         $ch(this.chType + "HK").create();
-        
+        $ch(this.chType + "HK").subscribe(ow.ch.utils.getHousekeepSubscriber(this.chType + "HK", 3));
+
         for(var i = 0; i < 10; i++) {
             $ch(this.chType + "HK").set(i, i);
         }
-        ow.test.assert($ch(this.chType + "HK").size(), 10, "Channel didn't set all required values.");
 
-        $ch(this.chType + "HK").subscribe(ow.ch.utils.getHousekeepSubscriber(this.chType + "HK", 3));
-        sleep(3500); 
-        $ch(this.chType + "HK").waitForJobs();
+        while($ch(this.chType + "HK").size() > 3) {
+            sleep(1000);
+        }
+        $ch(this.chType + "HK").waitForJobs(30000);
         ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values in time.");
 
         for(var i = 10; i < 20; i++) {
             $ch(this.chType + "HK").set(i, i);
         }
-        sleep(2500); 
-        $ch(this.chType + "HK").waitForJobs();
+        
+        while($ch(this.chType + "HK").size() > 3) {
+            sleep(1000);
+        }
+        $ch(this.chType + "HK").waitForJobs(30000);
         ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values after setting.");
         $ch(this.chType + "HK").destroy();
     };

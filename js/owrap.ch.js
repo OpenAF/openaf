@@ -1,10 +1,10 @@
 // OpenWrap v2
-// Author: nuno.aguiar@wedotechnologies.com
+// Author: Nuno Aguiar
 // Channels
 
 OpenWrap.ch = function() {
 	return ow.ch;
-}
+};
 
 OpenWrap.ch.prototype.subscribers = {};
 OpenWrap.ch.prototype.jobs = {};
@@ -337,9 +337,9 @@ OpenWrap.ch.prototype.__types = {
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  { 
 			var res;
-			res = this.get(aName, aKey);
+			res = this.get(aName, aK);
 			if ($stream([res]).anyMatch(aMatch)) {
-				return this.set(aName, aKey, aValue, aTimestamp);
+				return this.set(aName, aK, aV, aTimestamp);
 			}
 			return undefined;
 		},
@@ -674,6 +674,117 @@ OpenWrap.ch.prototype.__types = {
 			return res;	
 		}
 	},
+	mvs: {
+		create       : function(aName, shouldCompress, options) {
+			if (isUnDef(options)) options = {};
+			if (isUnDef(options.file)) options.file = undefined;
+
+			if (isUnDef(this.__s)) this.__s = {};
+			if (isUnDef(this.__f)) this.__f = {};
+			if (isUnDef(this.__m)) this.__m = {};
+
+			var existing = false, absFile;
+			if (isDef(options.file)) {
+				absFile = String((new java.io.File(options.file)).getAbsoluteFile());
+			} else {
+				absFile = "memory";
+			}
+			if (isUnDef(this.__f[absFile])) {
+				this.__s[aName] = Packages.org.h2.mvstore.MVStore.Builder();
+				if (absFile != "memory") this.__s[aName] = this.__s[aName].fileName(absFile);
+				if (shouldCompress) this.__s[aName] = this.__s[aName].compress();
+				this.__s[aName] = this.__s[aName].open();
+
+				this.__f[absFile] = this.__s[aName];
+			} else {
+				existing = true;
+				this.__s[aName] = this.__f[absFile];
+			}
+
+			if (isUnDef(options.map)) {
+				options.map = function() { return "default"; };
+			} else {
+				if (isString(options.map)) {
+					options.map = new Function("return '" + options.map + "';");
+				}
+			}
+
+			this.__m[aName] = options.map;
+
+			if (isDef(options.compact) && options.compact) {
+				this.__s[aName].compactMoveChuncks();
+			}
+		},
+		destroy      : function(aName) {
+			if (isDef(options.compact) && options.compact) {
+				this.__s[aName].compactMoveChuncks();
+			}			
+			this.__s[aName].close();
+		},
+		size         : function(aName) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+			return map.sizeAsLong();
+		},
+		forEach      : function(aName, aFunction, x) {
+			var aKs = this.getKeys(aName);
+
+			for(let i in aKs) {
+				aFunction(aKs[i], this.get(aName, aKs[i], x));
+			}
+		},
+		getKeys      : function(aName, full) {
+			var res = [];
+			var map = this.__s[aName].openMap(this.__m[aName]());
+
+			for(let i = 0; i < this.size(aName); i++) {
+				res.push(jsonParse(map.getKey(i)));
+			}
+
+			return res;
+		},
+		getSortedKeys: function(aName, full) {
+			return this.getKeys(aName, full);
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res;
+			res = this.get(aName, aK);
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp);
+			}
+			return undefined;		
+		},
+		set          : function(aName, ak, av, aTimestamp) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+
+			map.put(stringify(ak), stringify(av));
+			this.__s[aName].commit();
+		},
+		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
+			for(let i in anArrayOfMapData) {
+				this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
+			}
+		},
+		get          : function(aName, aKey) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+
+			return jsonParse(map.get(stringify(aKey)));
+		},
+		pop          : function(aName) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+			var aKey = map.lastKey();
+			return jsonParse(map.remove(aKey));	
+		},
+		shift        : function(aName) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+			var aKey = map.firstKey();
+			return jsonParse(map.remove(aKey));
+		},
+		unset        : function(aName, aKey) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+
+			return jsonParse(map.remove(stringify(aKey)));
+		}
+	},
 	// Ignite channel implementation
 	//
 	ignite: {
@@ -801,9 +912,11 @@ OpenWrap.ch.prototype.getVersion = function(aName) {
  */
 OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	if (isUnDef(aTimeout)) aTimeout = 2500;
-	for(var i in ow.ch.jobs[aName]) {
-		if (ow.ch.jobs[aName][i] != null)
-			ow.ch.jobs[aName][i].waitForThreads(aTimeout);
+	while(this.jobs[aName].length > 0) {
+		for(var i in ow.ch.jobs[aName]) {
+			if (ow.ch.jobs[aName][i] != null)
+				ow.ch.jobs[aName][i].waitForThreads(aTimeout);
+		}
 	}
 	return this;
 },
@@ -831,7 +944,7 @@ OpenWrap.ch.prototype.stopAllJobs = function(aName) {
 OpenWrap.ch.prototype.list = function() {
 	return Object.keys(this.channels);
 };
-	
+	 
 /**
  * <odoc>
  * <key>ow.ch.destroy(aName) : ow.ch</key>
@@ -856,6 +969,10 @@ OpenWrap.ch.prototype.destroy = function(aName) {
 	return this;
 };
 	
+OpenWrap.ch.prototype.close = function(aName) {
+	return this.destroy(aName);
+};
+
 /**
  * <odoc>
  * <key>ow.ch.size(aName) : Number</key>
@@ -1203,7 +1320,7 @@ OpenWrap.ch.prototype.get = function(aName, aKey, x) {
  */
 OpenWrap.ch.prototype.pop = function(aName) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	
+
 	var res, out;
 	if (this.size(aName) > 0) {
 //		switch(this.channels[aName]) {
@@ -1275,7 +1392,7 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
  */
 OpenWrap.ch.prototype.shift = function(aName) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-	
+
 	var res, out;
 	if (this.size(aName) > 0) {
 //		switch(this.channels[aName]) {
@@ -1410,7 +1527,7 @@ OpenWrap.ch.prototype.utils = {
 			} catch(e) {
 				aErrorFunc(e);
 			}
-		}
+		};
 	},
 	
 	/**
@@ -1425,7 +1542,7 @@ OpenWrap.ch.prototype.utils = {
 		if (isUnDef(numberOfKeys)) numberOfKeys = 100;
 		return function(aC, aO, aK, aV) {
 			sync(function() {
-				if ($ch(aTargetCh).size() > numberOfKeys) {
+				while ($ch(aTargetCh).size() > numberOfKeys) {
 					$ch(aTargetCh).shift();
 				}
 			}, this);
