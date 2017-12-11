@@ -4135,8 +4135,8 @@ var $doFirst = function(anArray) {
 
 /**
  * <odoc>
- * <key>$doWait(aPromise, aWaitTimeout, aTimeout) : oPromise</key>
- * Blocks until aPromise is fullfilled or rejected. Optionally you can specify aTimeout between checks and/or a block timeout (with aWaitTimeout).
+ * <key>$doWait(aPromise, aWaitTimeout) : oPromise</key>
+ * Blocks until aPromise is fullfilled or rejected. Optionally you can specify aWaitTimeout between checks.
  * Returns aPromise.
  * </odoc>
  */
@@ -4146,12 +4146,12 @@ var $doWait = function(aPromise, aWaitTimeout) {
 		while((aPromise.state != aPromise.states.FULFILLED || aPromise.state != aPromise.states.FAILED) &&
 			  (isUnDef(aPromise.__f) || !aPromise.__f.isDone()) &&
 		      ((now() - init) < aWaitTimeout)) {
-			aPromise.__f.join();	
+			aPromise.__f.get();	
 		}
 	} else {
 		while((aPromise.state != aPromise.states.FULFILLED || aPromise.state != aPromise.states.FAILED) &&
 			(isUnDef(aPromise.__f) || !aPromise.__f.isDone())) {
-			aPromise.__f.join();
+			aPromise.__f.get();
 		}
 	}
 
@@ -4162,7 +4162,7 @@ var $doWait = function(aPromise, aWaitTimeout) {
 // -------
 
 //$do(() => { __initializeCon(); });
-__initializeCon();
+//__initializeCon();
 
 // Set logging to ERROR 
 {
