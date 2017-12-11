@@ -30,7 +30,7 @@ import wedo.openaf.AFCmdBase;
 /**
  * SVN plugin
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  * 
  */
 public class SVN extends ScriptableObject {

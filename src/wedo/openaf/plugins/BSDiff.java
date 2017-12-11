@@ -23,7 +23,7 @@ import io.sigpipe.jbsdiff.Patch;
  * BSDiff plugin
  * OpenAF plugin to provide binary diff
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class BSDiff extends ScriptableObject {

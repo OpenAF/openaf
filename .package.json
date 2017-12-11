@@ -1,5 +1,5 @@
 {
-  "author": "nuno.aguiar@wedotechnologies.com",
+  "author": "Nuno Aguiar",
   "scripts": {
     "posterase": "",
     "postinstall": "print(sh('echo ' + getOpenAF() + ' --update'));",

@@ -42,7 +42,7 @@ import wedo.openaf.AFCmdBase;
 /**
  * XLS plugin
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  * 
  */
 public class XLS extends ScriptableObject {

@@ -6,7 +6,7 @@ import java.util.Iterator;
 /**
  * Generic JS Engine interface
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public interface JSEngine {

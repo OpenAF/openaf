@@ -2,7 +2,7 @@ package wedo.openaf.plugins;
 
 /**
  * Core HTTP plugin
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 import java.io.IOException;

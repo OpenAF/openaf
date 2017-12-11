@@ -63,6 +63,11 @@ import com.google.gson.reflect.TypeToken;
 
 import wedo.openaf.SimpleLog.logtype;
 
+/**
+ * 
+ * @author Nuno Aguiar
+ * 
+ */
 public class AFBase extends ScriptableObject {
 
 	/**

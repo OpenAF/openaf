@@ -25,7 +25,7 @@ import wedo.openaf.SimpleLog;
 /**
  * Core Threads plugin
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class Threads extends ScriptableObject {

@@ -8,7 +8,7 @@ import java.util.logging.Logger;
  * 
  * With static methods allows for a very simple and straightforward logging 
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  * 
  */ 
 public class SimpleLog {

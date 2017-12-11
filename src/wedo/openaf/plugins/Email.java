@@ -29,7 +29,7 @@ import org.apache.commons.net.smtp.AuthenticatingSMTPClient;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class Email extends ScriptableObject {

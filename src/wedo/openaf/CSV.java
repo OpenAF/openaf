@@ -14,7 +14,7 @@ import org.mozilla.javascript.annotations.JSFunction;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class CSV extends ScriptableObject {

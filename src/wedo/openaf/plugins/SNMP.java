@@ -28,7 +28,7 @@ import wedo.openaf.SimpleLog.logtype;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class SNMP extends ScriptableObject {

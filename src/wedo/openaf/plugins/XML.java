@@ -24,7 +24,7 @@ import com.jamesmurty.utils.XMLBuilder2;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 public class XML extends ScriptableObject {

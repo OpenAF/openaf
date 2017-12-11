@@ -50,8 +50,15 @@ OpenWrap.dev.prototype.addMVSCh = function() {
 			}
 
 			this.__m[aName] = options.map;
+
+			if (isDef(options.compact) && options.compact) {
+				this.__s[aName].compactMoveChuncks();
+			}
 		},
 		destroy      : function(aName) {
+			if (isDef(options.compact) && options.compact) {
+				this.__s[aName].compactMoveChuncks();
+			}			
 			this.__s[aName].close();
 		},
 		size         : function(aName) {
@@ -75,8 +82,17 @@ OpenWrap.dev.prototype.addMVSCh = function() {
 
 			return res;
 		},
-		getSortedKeys: function(aName, full) {},
-		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {},
+		getSortedKeys: function(aName, full) {
+			return this.getKeys(aName, full);
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res;
+			res = this.get(aName, aK);
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp);
+			}
+			return undefined;		
+		},
 		set          : function(aName, ak, av, aTimestamp) {
 			var map = this.__s[aName].openMap(this.__m[aName]());
 
@@ -93,15 +109,23 @@ OpenWrap.dev.prototype.addMVSCh = function() {
 
 			return jsonParse(map.get(stringify(aKey)));
 		},
-		pop          : function(aName) {},
-		shift        : function(aName) {},
+		pop          : function(aName) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+			var aKey = map.lastKey();
+			return jsonParse(map.remove(aKey));	
+		},
+		shift        : function(aName) {
+			var map = this.__s[aName].openMap(this.__m[aName]());
+			var aKey = map.firstKey();
+			return jsonParse(map.remove(aKey));
+		},
 		unset        : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName]());
 
-			return map.remove(stringify(aKey));
+			return jsonParse(map.remove(stringify(aKey)));
 		}
-	}
-}
+	};
+};
 
 OpenWrap.dev.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	this.__lps = {};

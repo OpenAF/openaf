@@ -2,7 +2,7 @@ package wedo.openaf.plugins;
 
 /**
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  *
  */
 import java.io.IOException;

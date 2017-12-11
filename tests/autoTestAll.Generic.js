@@ -298,7 +298,7 @@
                 var sum = 0;
                 while(arr.length > 0) {
                     var val;
-                    t.sync(function() { val = arr.pop(); });
+                    sync(() => { val = arr.pop(); }, arr);
                     sum += (isDefined(val) ? val : 0);
                 }
                 log("Thread: " + uuid + "; " + sum);

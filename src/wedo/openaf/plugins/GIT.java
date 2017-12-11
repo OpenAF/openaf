@@ -29,7 +29,7 @@ import wedo.openaf.AFCmdBase;
 /**
  * GIT plugin
  * 
- * @author Nuno Aguiar <nuno.aguiar@wedotechnologies.com>
+ * @author Nuno Aguiar
  * 
  */
 public class GIT extends ScriptableObject {
