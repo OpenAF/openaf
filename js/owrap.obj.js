@@ -1911,5 +1911,35 @@ OpenWrap.obj.prototype.pmSchema = {
 		
 		return out;
 	}
-}
+};
 
+/**
+ * <odoc>
+ * <key>ow.obj.getPath(aObject, aPath) : Object</key>
+ * Given aObject it will try to parse the aPath a retrive the corresponding object under that path. Example:\
+ * \
+ * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
+ * \
+ * print(a, "b.c"); // 2\
+ * sprint(a, "b.d"); // [0, 1]\
+ * print(a, "b.d[0]") // 0\
+ * \
+ * </odoc>
+ */
+OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
+	if (!isObject(aObj)) return undefined;
+
+	aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
+	aPath = aPath.replace(/^\./, '');       
+	
+    var a = aPath.split('.');
+    for (var i = 0, n = a.length; i < n; ++i) {
+        var k = a[i];
+        if (k in aObj) {
+            aObj = aObj[k];
+        } else {
+            return;
+        }
+    }
+    return aObj;
+};

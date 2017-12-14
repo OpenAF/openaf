@@ -69,4 +69,14 @@
         }
         ow.test.assert(res500.response, "500 Internal Server Error", "Problem with obtaining and parsing the HTTP 500 code");
     };
+
+    exports.testGetPath = function() {
+        ow.loadObj();
+
+        var a = { a : 1, b : { c: 2, d: [0, 1] } };
+
+        ow.test.assert(ow.obj.getPath(a, "b.c"), 2, "Problem with retriving a number with ow.obj.getPath");
+        ow.test.assert(ow.obj.getPath(a, "b.d"), [0, 1], "Problem with retriving an array with ow.obj.getPath");
+        ow.test.assert(ow.obj.getPath(a, "b.d[0]"), 0, "Problem with retriving an element of an array with ow.obj.getPath");
+    };
 })();
