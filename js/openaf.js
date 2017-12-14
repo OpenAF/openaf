@@ -2341,6 +2341,16 @@ function isNumber(obj) {
 
 /**
  * <odoc>
+ * <key>isDate(aObj) : boolean</key>
+ * Returns true if aObj is a date, false otherwise
+ * </odoc>
+ */
+function isDate(obj) { 
+	return (null != obj) && !isNaN(obj) && ("undefined" !== typeof obj.getDate); 
+}
+
+/**
+ * <odoc>
  * <key>loadLib(aLib, forceReload, aFunction) : boolean</key>
  * Loads the corresponding javascript library and keeps track if it was already loaded or not (in __loadedLibs).
  * Optionally you can force reload and provide aFunction to execute after the successful loading.
