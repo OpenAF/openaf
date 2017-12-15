@@ -1920,9 +1920,9 @@ OpenWrap.obj.prototype.pmSchema = {
  * \
  * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
  * \
- * print(a, "b.c"); // 2\
- * sprint(a, "b.d"); // [0, 1]\
- * print(a, "b.d[0]") // 0\
+ * print(ow.obj.getPath(a, "b.c")); // 2\
+ * sprint(ow.obj.getPath(a, "b.d")); // [0, 1]\
+ * print(ow.obj.getPath(a, "b.d[0]")); // 0\
  * \
  * </odoc>
  */
@@ -1942,4 +1942,38 @@ OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
         }
     }
     return aObj;
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.setPath(aObject, aPath, aNewValue) : Object</key>
+ * Given aObject it will try to parse the aPath a set the corresponding object under that path to aNewValue. Example:\
+ * \
+ * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
+ * \
+ * print(ow.obj.setPath(a, "b.c", 123); // { a : 1, b : { c: 123, d: [0, 1] } }\
+ * \
+ * </odoc>
+ */
+OpenWrap.obj.prototype.setPath = function(aObj, aPath, aValue) {
+    if (!isObject(aObj)) return undefined;
+    var orig = aObj;
+
+	aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
+	aPath = aPath.replace(/^\./, '');       
+	
+    var a = aPath.split('.');
+    var prev, prevK;
+    for (var i = 0, n = a.length; i < n; ++i) {
+        var k = a[i];
+        if (k in aObj) {
+            prev = aObj;
+            prevK = k;
+            aObj = aObj[k];
+        } else {
+            return;
+        }
+    }
+    prev[prevK] = newValue;
+    return orig;
 };
