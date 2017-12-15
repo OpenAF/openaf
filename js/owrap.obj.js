@@ -1974,6 +1974,6 @@ OpenWrap.obj.prototype.setPath = function(aObj, aPath, aValue) {
             return;
         }
     }
-    prev[prevK] = newValue;
+    prev[prevK] = aValue;
     return orig;
 };
