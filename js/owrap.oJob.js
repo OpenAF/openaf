@@ -112,6 +112,26 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 						}
 					}
 	
+					if (isDef(parent.__ojob.channels.audit)) {
+						var turnAuditOn = false;
+						var OJOB_LOG_AUDIT_TMPL = "AUDIT | User: {{request.user}} | Channel: {{name}} | Operation: {{op}} | Key: {{{key}}}";
+
+						if (isString(parent.__ojob.channels.audit)) {
+							OJOB_LOG_AUDIT_TMPL = parent.__ojob.channels.audit;
+							turnAuditOn = true;
+						} else {
+							if (parent.__ojob.channels.audit) {
+								turnAuditOn = true;
+							}
+						}
+						if (turnAuditOn) {
+							ow.ch.server.setLog(function(aMap) {
+								aMap = merge(aMap, { key: stringify(jsonParse(aMap.request.uri.replace(/.+({[^}]+}).*/, "$1").replace(/&quot;/g, "\'")),undefined,"").replace(/\"/g, "") });
+								tlog(OJOB_LOG_AUDIT_TMPL, aMap);
+							});
+						}
+					}
+					
 					if (isUnDef(this.__ojob.channels.list)) {
 						this.__ojob.channels.list = $ch().list();
 						//this.__ojob.channels.list.push("__log");
@@ -293,15 +313,15 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
  *       pidFile     : helloworld.pid\
  *       killPrevious: true\
  *    channels:\
- *       expose     : true\
+ *            : true\
  *       port       : 17878\
  *       permissions: r\
- *    #list       :\
- *    #  - oJob::log\
- *    #auth       :\
- *    #  - login: ojob\
- *    #    pass : ojob\
- *    #    permissions: r\
+ *       #list       :\
+ *       #  - oJob::log\
+ *       #auth       :\
+ *       #  - login: ojob\
+ *       #    pass : ojob\
+ *       #    permissions: r\
  * \
  * </odoc>
  */
@@ -854,13 +874,15 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, undefined, aId, true) : {};
 		
 		args.objId = this.getID() + altId;
-		var uuid = this.__addLog("start", aJob.name, undefined, args, undefined, aId);
-		args.execid = uuid;
-        args = merge(args, aJob.args);
+		args = merge(args, aJob.args);
 
 		switch(aJob.type) {
 		case "single":
 			try {
+				var uuid = this.__addLog("start", aJob.name, undefined, args, undefined, aId);
+				args.execid = uuid;
+				args = merge(args, aJob.args);
+				
 				_run(aJob.exec, args, aJob, altId);
 				this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 				return true;
@@ -873,6 +895,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 			if (isDef(aJob.typeArgs.file)) {
 				try {
 					if (isDef(args.__oJobRepeat)) {
+						var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
+						args.execid = uuid;
+						args = merge(args, aJob.args);
+
 						var errors = [];
 						parallel4Array(args.__oJobRepeat, function(aV) {
 							try {
@@ -901,12 +927,38 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		case "shutdown":
 			addOnOpenAFShutdown(function() {
 				try {
+					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
+					args.execid = uuid;
+					args = merge(args, aJob.args);
+
 					_run(aJob.exec, args, aJob, altId);
 					parent.__addLog("success", aJob.name, uuid, undefined, aId);
 				} catch(e) {
 					parent.__addLog("error", aJob.name, uuid, args, e, aId);
 				}
 			});
+			break;
+		case "subscribe":
+			var subs = function() { 
+				return function(aCh, aOp, aK, aV) {	
+					uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
+					args.execid = uuid;
+					try {
+						_run(aJob.exec, merge(args, { ch: aCh, op: aOp, k: aK, v: aV }), aJob, altId);
+						parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
+					} catch(e) {
+						parent.__addLog("error", aJob.name, uuid, args, e, aId);
+					}
+
+					return true;
+				};
+			};
+
+			if (isDef(aJob.typeArgs)) {
+				if (isDef(aJob.typeArgs.chSubscribe)) {
+					$ch(aJob.typeArgs.chSubscribe).subscribe(subs());
+				}
+			}
 			break;
 		case "periodic":
 			var t = new Threads();
