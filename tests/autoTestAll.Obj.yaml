@@ -23,6 +23,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testGetPath;
 
+   - name: Obj::Set Path
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSetPath;
+
 todo:
    # Obj tests
    # ------------
@@ -30,3 +35,4 @@ todo:
    - Obj::Flatten
    - Obj::REST Errors
    - Obj::Get Path
+   - Obj::Set Path   

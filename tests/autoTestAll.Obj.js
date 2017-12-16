@@ -79,4 +79,14 @@
         ow.test.assert(ow.obj.getPath(a, "b.d"), [0, 1], "Problem with retriving an array with ow.obj.getPath");
         ow.test.assert(ow.obj.getPath(a, "b.d[0]"), 0, "Problem with retriving an element of an array with ow.obj.getPath");
     };
+
+     exports.testSetPath = function() {
+        ow.loadObj();
+
+        var a = { a : 1, b : { c: 2, d: [0, 1] } };
+
+        ow.test.assert(ow.obj.getPath(ow.obj.setPath(a, "b.c", 1234), "b.c"), 1234, "Problem with retriving a number after ow.obj.setPath");
+        ow.test.assert(ow.obj.getPath(ow.obj.setPath(a, "b.d", [ 0, 1, 2 ]), "b.d"), [0, 1, 2], "Problem with retriving an array after ow.obj.setPath");
+        ow.test.assert(ow.obj.getPath(ow.obj.setPath(a, "b.d[0]", 4321), "b.d[0]"), 4321, "Problem with retriving an element of an array after ow.obj.setPath");
+    };   
 })();
