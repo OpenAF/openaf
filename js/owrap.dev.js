@@ -1,9 +1,48 @@
 // OpenWrap
-// Author: nmaguiar@gmail.com
+// Author: Nuno Aguiar
 // Dev
 
 OpenWrap.dev = function() {
 	return ow.dev;
+};
+
+OpenWrap.dev.prototype.loadPoolDB = function() {
+	ow.loadCh();
+	ow.loadObj();
+
+	ow.ch.__types.pooldb = {
+		__o: { },
+		create       : function(aName, shouldCompress, options) { 
+			this.__o[aName] = options || {};
+			
+			if (isUnDef(this.__o[aName].dbPool)) {
+				this.__o[aName].dbPool = ow.obj.pool.DB("org.h2.Driver", "jdbc:h2:mem:", "sa", "sa");
+			}
+
+			if (isUnDef(this.__o[aName].tableName)) {
+				throw "Need a specific options.tableName";
+			}
+		},
+		destroy      : function(aName) { },
+		size         : function(aName) { 
+			var parent = this, res;
+			this.__o[aName].dbPool.use((aDb) => {
+				res = Number(aDb.q("select count(*) C from " + parent.__o[aName].tableName).results[0].C);
+			});
+
+			return res;
+		},
+		forEach      : function(aName, aFunction, x) { },
+		getKeys      : function(aName, full) { },
+		getSortedKeys: function(aName, full) { },
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  { },
+		set          : function(aName, ak, av, aTimestamp) { },
+		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) { },
+		get          : function(aName, aKey) { },
+		pop          : function(aName) { },
+		shift        : function(aName) { },
+		unset        : function(aName, aKey) { }
+	};
 };
 
 OpenWrap.dev.prototype.overrideHTTP = function() {
@@ -127,6 +166,7 @@ OpenWrap.dev.prototype.addMVSCh = function() {
 	};
 };
 
+/*
 OpenWrap.dev.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	this.__lps = {};
 	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
@@ -364,3 +404,4 @@ OpenWrap.dev.prototype.http.prototype.wsConnect = function(anURL, onConnect, onM
 		(isNumber(aTimeout)) ? new java.lang.Long(aTimeout) : Packages.org.mozilla.javascript.Undefined.instance, 
 		(isUnDef(supportSelfSigned)) ? false : supportSelfSigned);
 };
+*/
