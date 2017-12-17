@@ -491,8 +491,20 @@ OpenWrap.ch.prototype.__types = {
 			return ow.obj.rest.jsonRemove(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout);
 		}
 	},
-	// ElasticSearch channel implementation
-	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.elasticsearch</key>
+	 * This OpenAF implementation connects to an ElasticSearch (ES) server/cluster. The creation options are:\
+	 * \
+	 *    - index (String/Function) The ES index to use or a function to return the name (see also ow.ch.utils.getElasticIndex).\
+	 *    - idKey (String) The ES key id field. Defaults to '_id'.\
+	 *    - url (String) The HTTP(S) URL to access the ES server/cluster.\
+	 *    - user (String) Optionally provide a user name to access the ES server/cluster.\
+	 *    - pass (String) Optionally provide a password to access the ES server/cluster (encrypted or not).\
+	 * \
+	 * The getAll/getKeys functions accept an extra argument to provide a ES query map to restrict the results.
+	 * </odoc>
+	 */
 	elasticsearch: {
 		__channels: {},
 		create       : function(aName, shouldCompress, options) {
@@ -674,6 +686,21 @@ OpenWrap.ch.prototype.__types = {
 			return res;	
 		}
 	},
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.mvs</key>
+	 * The channel type mvs uses H2 MVStore to keep key/value structures either in memory or in files.
+	 * The creation options are:\
+	 * \
+	 *    - file (String) If not defined it will default to the in-memory implementation otherwise a file.\
+	 *    - shouldCompress (Boolean) Specifies if it should compress the entire structure or not.\
+	 *    - compact (Boolean) Upon channel create/destroy it will try to run a compact operation over the file to save space.\
+	 *    - map (String/Function) The map name (defaults to 'default'). If defined as a function it will receive the key as argument if possible (only for get/set/unset/setall)
+	 * for sharding proposes.\
+	 * \
+	 * The map will be created if it doesn't exist.\
+	 * </odoc>
+	 */
 	mvs: {
 		create       : function(aName, shouldCompress, options) {
 			if (isUnDef(options)) options = {};
@@ -726,7 +753,7 @@ OpenWrap.ch.prototype.__types = {
 			return map.sizeAsLong();
 		},
 		forEach      : function(aName, aFunction, x) {
-			var aKs = this.getKeys(aName);
+			var aKs = this.getKeys(aName, x);
 
 			for(let i in aKs) {
 				aFunction(aKs[i], this.get(aName, aKs[i], x));
@@ -734,7 +761,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		getKeys      : function(aName, full) {
 			var res = [];
-			var map = this.__s[aName].openMap(this.__m[aName]());
+			var map = this.__s[aName].openMap(this.__m[aName](full));
 
 			for(let i = 0; i < this.size(aName); i++) {
 				res.push(jsonParse(map.getKey(i)));
@@ -765,28 +792,36 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		get          : function(aName, aKey) {
-			var map = this.__s[aName].openMap(this.__m[aName](ak));
+			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
 			return jsonParse(map.get(stringify(aKey)));
 		},
 		pop          : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName](ak));
+			var map = this.__s[aName].openMap(this.__m[aName]());
 			var aKey = map.lastKey();
 			return jsonParse(map.remove(aKey));	
 		},
 		shift        : function(aName) {
-			var map = this.__s[aName].openMap(this.__m[aName](ak));
+			var map = this.__s[aName].openMap(this.__m[aName]());
 			var aKey = map.firstKey();
 			return jsonParse(map.remove(aKey));
 		},
 		unset        : function(aName, aKey) {
-			var map = this.__s[aName].openMap(this.__m[aName](ak));
+			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
 			return jsonParse(map.remove(stringify(aKey)));
 		}
 	},
-	// Ignite channel implementation
-	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.ignite</key>
+	 * This channel type will use an Ignite Data Grid. The creation options are:\
+	 * \
+	 *    - ignite (Ignite) Use a previously instantiated Ignite plugin (defaults to a new instance).\
+	 *    - gridName (String) Use a specific Ignite grid name.\
+	 * \
+	 * </odoc>
+	 */
 	ignite: {
 		create       : function(aName, shouldCompress, options) {
 			plugin("Ignite");
