@@ -497,7 +497,8 @@ function beautifier(aobj) {
  */
 function stringify(aobj, replacer, space) {
 	if (aobj instanceof java.lang.Object) aobj = String(aobj);
-	if (isUndefined(space)) space = "  ";
+	if (isUnDef(space)) space = "  ";
+	if (isUnDef(replacer)) replacer = (k, v) => { return isJavaObject(v) ? String(v) : v; };
 	try {
 		return JSON.stringify(aobj, replacer, space);
 	} catch(e) {
@@ -2351,6 +2352,16 @@ function isDate(obj) {
 
 /**
  * <odoc>
+ * <key>isJavaObject(aObj) : boolean</key>
+ * Returns true if aObj is a Java object, false otherwise
+ * </odoc>
+ */
+function isJavaObject(obj) {
+	return Object.prototype.toString.call(obj) === '[object JavaObject]';
+}
+
+/**
+ * <odoc>
  * <key>loadLib(aLib, forceReload, aFunction) : boolean</key>
  * Loads the corresponding javascript library and keeps track if it was already loaded or not (in __loadedLibs).
  * Optionally you can force reload and provide aFunction to execute after the successful loading.
@@ -2974,12 +2985,14 @@ function loadDBInMem(aDB, aFilename) {
  * </odoc>
  */
 function traverse(aObject, aFunction, aParent) {
-	var keys = Object.keys(aObject);
+	var keys = (isJavaObject(aObject)) ? [] : Object.keys(aObject);
 	var parent = isUnDef(aParent) ? "" : aParent;
 
 	for(var i in keys) {
 		if (isObject(aObject[keys[i]])) {
-			var newParent = parent + ((isNaN(Number(keys[i]))) ? "." + keys[i] : "[\"" + keys[i] + "\"]");
+			var newParent = parent + ((isNaN(Number(keys[i]))) ? 
+							"." + keys[i] : 
+							(isNumber(keys[i]) ? "[" + keys[i] + "]" : "[\"" + keys[i] + "\"]"));
 			traverse(aObject[keys[i]], aFunction, newParent, aObject);
 		}
 		

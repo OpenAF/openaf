@@ -150,7 +150,7 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 			key = aK.replace(/\./g, aSeparator);
 		}
 	
-		return key.replace(/\["\d+"\]/g, "").replace(new RegExp("^" + aSeparator), "");
+		return key.replace(/\["?\d+"?\]/g, "").replace(new RegExp("^" + aSeparator), "");
 	}
 	
 	function getFlatKeys(anArrayOfMaps) {
@@ -1951,7 +1951,7 @@ OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
  * \
  * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
  * \
- * print(ow.obj.setPath(a, "b.c", 123); // { a : 1, b : { c: 123, d: [0, 1] } }\
+ * sprint(ow.obj.setPath(a, "b.c", 123); // { a : 1, b : { c: 123, d: [0, 1] } }\
  * \
  * </odoc>
  */
@@ -1965,13 +1965,14 @@ OpenWrap.obj.prototype.setPath = function(aObj, aPath, aValue) {
     var a = aPath.split('.');
     var prev, prevK;
     for (var i = 0, n = a.length; i < n; ++i) {
-        var k = a[i];
+		var k = a[i];
+		prev = aObj;
+		prevK = k;
         if (k in aObj) {
-            prev = aObj;
-            prevK = k;
             aObj = aObj[k];
         } else {
-            return;
+			aObj[k] = {};
+			aObj = aObj[k];
         }
     }
     prev[prevK] = aValue;
