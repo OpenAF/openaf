@@ -488,19 +488,27 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 	case "success" :
 		existing.success = true;
 		existing.count++;
-		var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
-		execJob.endTime = now();
-		existing.totalTime += execJob.endTime - execJob.startTime;
-		existing.avgTime = existing.totalTime / existing.count;
+		try { 
+			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
+			execJob.endTime = now();
+			existing.totalTime += execJob.endTime - execJob.startTime;
+			existing.avgTime = existing.totalTime / existing.count;
+		} catch(e) {
+			logErr("Can't add success log for '" + aJobName + "' for job exec id '" + aJobExecId + "': " + e.message);
+		}
 		break;
 	case "error"   :
 		existing.error   = true;
 		existing.count++;
-		var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
-		execJob.error = anException;
-		execJob.endTime  = now();
-		existing.totalTime += execJob.endTime - execJob.startTime;
-		existing.avgTime = existing.totalTime / existing.count;
+		try {
+			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
+			execJob.error = anException;
+			execJob.endTime  = now();
+			existing.totalTime += execJob.endTime - execJob.startTime;
+			existing.avgTime = existing.totalTime / existing.count;
+		} catch(e) {
+			logErr("Can't add error log for '" + aJobName + "' for job exec id '" + aJobExecId + "': " + e.message);
+		}
 		break;
 	case "depsfail":
 		existing.deps    = false;
@@ -894,8 +902,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		case "jobs":
 			if (isDef(aJob.typeArgs.file)) {
 				try {
+					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
 					if (isDef(args.__oJobRepeat)) {
-						var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
 						args.execid = uuid;
 						args = merge(args, aJob.args);
 
