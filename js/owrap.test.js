@@ -307,15 +307,16 @@ OpenWrap.test.prototype.toMarkdown = function() {
 
 	var data = [];
 	this.getChannel().forEach((k, v) => {
-		for(let i in v.executions) {
-			data.push({
-				suite    : v.suite,
-				test     : v.test,
-				status   : v.executions[i].status,
-				time     : v.executions[i].elapsedTime,
-				exception: v.executions[i].exception
-			});
-		}
+		if (v != null)
+			for(let i in v.executions) {
+				data.push({
+					suite    : v.suite,
+					test     : v.test,
+					status   : v.executions[i].status,
+					time     : v.executions[i].elapsedTime,
+					exception: v.executions[i].exception
+				});
+			}
 	});
 
 	$from(data).sort("suite", "test").select(d => {

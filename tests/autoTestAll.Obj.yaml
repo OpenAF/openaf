@@ -28,6 +28,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testSetPath;
 
+   - name: Obj::Array to object conversion
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testArray2Obj;
+
+   - name: Obj::Object to array conversion
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObj2Array;
+
 todo:
    # Obj tests
    # ------------
@@ -36,3 +46,5 @@ todo:
    - Obj::REST Errors
    - Obj::Get Path
    - Obj::Set Path   
+   - Obj::Array to object conversion
+   - Obj::Object to array conversion

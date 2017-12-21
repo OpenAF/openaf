@@ -89,4 +89,58 @@
         ow.test.assert(ow.obj.getPath(ow.obj.setPath(a, "b.d", [ 0, 1, 2 ]), "b.d"), [0, 1, 2], "Problem with retriving an array after ow.obj.setPath");
         ow.test.assert(ow.obj.getPath(ow.obj.setPath(a, "b.d[0]", 4321), "b.d[0]"), 4321, "Problem with retriving an element of an array after ow.obj.setPath");
     };   
+
+    exports.testArray2Obj = function() {
+        ow.loadObj();
+
+        var ar = [{a:1, b:true}, {a:2, b:false}, {a:3, b:true}];
+
+        var res1 = ow.obj.fromArray2Obj(ar);
+        var res2 = ow.obj.fromArray2Obj(ar, "a");
+
+        ow.test.assert(Object.keys(res1), ["row0", "row1", "row2"], "Problem with array to obj simple");
+        ow.test.assert(res1.row1.b, false, "Problem with array to obj simple 2");
+        ow.test.assert(Object.keys(res2), [ "1", "2", "3" ], "Problem with array to obj indexed by a field");
+        ow.test.assert(res2["2"].b, false, "Problem with array to obj indexed by a filed 2");
+    };
+
+    exports.testObj2Array = function() {
+        ow.loadObj();
+
+        var ar = { "a1": { a:1, b: true}, "a2": { a:2, b: false}, "a3": { a:3, b: true} };
+        var res1 = ow.obj.fromObj2Array(ar); 
+        var res2 = ow.obj.fromObj2Array(ar, "key");
+        
+        ow.test.assert(res1[1].b, false, "Problem with obj to array simple.");
+        ow.test.assert(res2[1].key, "a2", "Problem with obj to array simple 2");
+    };
+
+    exports.testArray2OrdObj = function() {
+        ow.loadObj();
+
+        var ar = [ {a:1}, {a:2}, {a:3}];
+        var res = ow.obj.fromArray2OrderedObj(ar);
+
+        ow.test.assert(res["0"], 1, "Problem with first map element on array to ordered object");
+        ow.test.assert(res["2"], 3, "Problem with last map element on array to ordered object");
+        ow.test.assert(res["1"], 2, "Problem with middle map element on array to ordered object");
+    };
+
+    exports.testOrdObj2Array = function() {
+        ow.loadObj();
+
+        var ar = { "1": { a:1}, "2": {a:2}, "3": {a:3}}
+        var res = ow.obj.fromOrderedObj2Array(ar);
+
+        ow.test.assert(res[0], 1, "Problem with first map element on array to ordered object");
+        ow.test.assert(res[2], 3, "Problem with last map element on array to ordered object");
+        ow.test.assert(res[1], 2, "Problem with middle map element on array to ordered object");
+
+        ar = { "row_2": { a:3}, "row_1": {a:2}, "row_0": {a:1}};
+        res = ow.obj.fromOrderedObj2Array(ar, (a,b) => { return Number(a.replace(/row_/,"")) - Number(b.replace(/row_/,"")) });
+
+        ow.test.assert(res[0], 1, "Problem with first map element on array to ordered object with function");
+        ow.test.assert(res[2], 3, "Problem with last map element on array to ordered object with function");
+        ow.test.assert(res[1], 2, "Problem with middle map element on array to ordered object with function");
+    };    
 })();
