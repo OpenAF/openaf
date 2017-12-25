@@ -3842,29 +3842,27 @@ function __getThreadPool() {
 
 /**
  * <odoc>
- * <key>oPromise(aFunction) : oPromise</key>
+ * <key>oPromise(aFunction, aRejFunction) : oPromise</key>
  * Custom Promise-like implementation. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
  * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
  * aFunction to provide a result with resolve(aResult) or an exception with reject(aReason). If you don't call theses functions the
  * returned value will be used for resolve or any exception thrown will be use for reject. You can use the "then" method to add more
  * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the 
  * previous function will be passed as the value for the second. You can use the "catch" method to add aFunction that will receive
- * a string or exception for any exception thrown with the reject functions.  
+ * a string or exception for any exception thrown with the reject functions. You can also provide a aRejFunction that works like a "catch"
+ * method as previously described.
  * </odoc>
  */
-var oPromise = function(aFunction) {
-    this.states = {
-        NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
-    };
+var oPromise = function(aFunction, aRejFunction) {
+	this.states = {
+		NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
+	};
 
-    this.state = this.states.NEW;
-    this.executing = false;
-    this.executors = new java.util.concurrent.ConcurrentLinkedQueue();
-	this.rejects = new java.util.concurrent.ConcurrentLinkedQueue();
+	this.state = this.states.NEW;
+	this.executing = false;
+	this.executors = new java.util.concurrent.ConcurrentLinkedQueue();
 
-    if (isDef(aFunction) && isFunction(aFunction)) {
-		this.__async(aFunction);
-	}
+	this.then(aFunction, aRejFunction);
 };
 
 /**
@@ -3875,15 +3873,13 @@ var oPromise = function(aFunction) {
  * reason as parameter.
  * </odoc>
  */
-oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
-	if (isDef(aRejectFunction) && isFunction(aRejectFunction)) this.rejects.add(aRejectFunction);
-    if (isDef(aResolveFunction) && isFunction(aResolveFunction)) { 
-		this.state = this.states.NEW;
-		this.executors.add(aResolveFunction);
-		this.__runExecutor();
+oPromise.prototype.then = function(aResolveFunc, aRejectFunc) {
+	if (isDef(aRejectFunc) && isFunction(aRejectFunc)) this.executors.add({ type: "reject", func: aRejectFunc });
+	if (isDef(aResolveFunc) && isFunction(aResolveFunc)) {
+		this.executors.add({ type: "exec", func: aResolveFunc});
+		this.__exec();
 	}
-
-    return this;
+	return this;
 };
 
 /**
@@ -3894,13 +3890,11 @@ oPromise.prototype.then = function(aResolveFunction, aRejectFunction) {
  * </odoc>
  */
 oPromise.prototype.catch = function(onReject) {
-    if (isDef(onReject) && isFunction(onReject)) {
-		this.rejects.add(onReject);
-
-		this.__runReject();
+	if (isDef(onReject) && isFunction(onReject)) {
+		this.executors.add({ type: "reject", func: onReject });
+		this.__exec();
 	}
-
-    return this;
+	return this;
 };
 
 /**
@@ -3911,20 +3905,20 @@ oPromise.prototype.catch = function(onReject) {
  * </odoc>
  */
 oPromise.prototype.all = function(anArray) {
-    if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+	if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
 
 	var parent = this;
 
-    this.__async((res, rej) => {
-        var shouldStop = false;
-        var values = [];
+	this.then((res, rej) => {
+		var shouldStop = false;
+		var values = [];
 		
 		try {
 			while(!shouldStop) {
 				for(var iii in anArray) {
 					if (anArray[iii] != null) {
 						if (anArray[iii] instanceof oPromise) {
-							if (isDef(anArray[iii].__f) && anArray[iii].__f.isDone()) {
+							if (!anArray[iii].executing) {
 								switch(anArray[iii].state) {
 								case anArray[iii].states.NEW:
 									shouldStop = false;
@@ -3959,9 +3953,9 @@ oPromise.prototype.all = function(anArray) {
 		}
 
 		return values;
-    });
+	});
 
-    return this;
+	return this;
 };
 
 /**
@@ -3972,20 +3966,20 @@ oPromise.prototype.all = function(anArray) {
  * </odoc>
  */
 oPromise.prototype.race = function(anArray) {
-    if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+	if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
 	
 	var parent = this;
 
-    this.__async((res, rej) => {
-        var shouldStop = false;
-        var c = 0;
+	this.then((res, rej) => {
+		var shouldStop = false;
+		var c = 0;
 		
 		try {
 			while(!shouldStop) {
 				for(var i in anArray) {
 					if (anArray[i] != null) {
 						if (anArray[i] instanceof oPromise) {
-							if (isDef(anArray[i].__f) && anArray[i].__f.isDone()) {
+							if (!anArray[i].executing) {
 								switch(anArray[i].state) {
 								case anArray[i].states.NEW:
 									shouldStop = false;				
@@ -4018,126 +4012,107 @@ oPromise.prototype.race = function(anArray) {
 		}
 		res();
 		return this;
-    });
+	});
 
-    return this;    
+	return this;    
 };
 
-oPromise.prototype.__runReject = function() {
-	while(this.rejects.size() > 0 && 
-	      (this.state == this.states.PREFAILED || this.state == this.states.FAILED)) {
-		var func = this.rejects.poll();
-		if (isDef(func) && isFunction(func)) {
-			this.__async(func, this.reason, true);
-			//func(this.reason);
-		}
-	} 
-
-	return this;	
-}
-
-oPromise.prototype.__runExecutor = function() {
-	while(this.executors.size() > 0 && this.state == this.states.NEW) {
-		var func = this.executors.poll();
-		if (this.state != this.states.PREFAILED) this.state = this.states.NEW;
-		if (isDef(func) && isFunction(func)) {
-			this.__async(func, this.value);
-		}
-	} 
-
-	return this;
-}
-
 oPromise.prototype.reject = function(aReason) {
-    if (this.state != this.states.NEW && this.state != this.states.PREFAILED) return this;
-
 	this.reason = aReason;
 	this.state = this.states.PREFAILED;
 
-	this.__runReject(aReason);
-
-    return this;
+	return this;
 };
 
 oPromise.prototype.resolve = function(aValue) {
-    if (this.state != this.states.NEW) return this;
-    this.value = isUnDef(aValue) ? null : aValue;
-
-	this.__runExecutor(aValue);
-
-    return this;
+	if (this.state == this.states.FULFILLED) this.state = this.states.NEW;
+	this.value = isUnDef(aValue) ? null : aValue;
+	return this;
 };
 
-oPromise.prototype.__async = function(aFunction, aValue, isFail) {
-	var thisOP = this; 
-	var prevf;
+oPromise.prototype.__exec = function() {
+	var thisOP = this;
+	do {
+		this.__f = __getThreadPool().submit(new java.lang.Runnable({
+			run: () => {
+				var ignore = false;
+				sync(() => { if (thisOP.executing) ignore = true; else thisOP.executing = true; }, thisOP.executing);
+				if (ignore) return;
 
-	if (isDef(thisOP.__f)) prevf = thisOP.__f;
+				while (thisOP.executors.size() > 0) {
+					var f = thisOP.executors.poll();
+					// Exec
+					if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED && f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
+						var res, done = false;
+						try {
+							var checkResult = true;
+							if (isDef(thisOP.value)) {
+								res = f.func(thisOP.value);
+							} else {
+								res = f.func(function (v) { checkResult = false; thisOP.resolve(v); },
+											 function (r) { checkResult = false; thisOP.reject(r); });
+							}
 
-    this.__f = __getThreadPool().submit(new java.lang.Runnable({
-		run: () => {
-            var res; 
-
-			if (isDef(prevf)) {
-				prevf.join();
-				if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED) 
-					aValue = thisOP.value;
-				/*else
-					aValue = thisOP.reason;*/
-			}
-			var isRun = true;
-            try {
-				thisOP.executing = true;
-				if (!isFail) {
-					if (thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED) {
-						if (isDef(aValue)) {
-							res = aFunction(thisOP.value);
-						} else {
-							res = aFunction((v) => { thisOP.resolve(v); isRun = false; }, (r) => { thisOP.reject(r); isRun = false; });
-						}
-						if (isDef(res) && res != null && 
-							(thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED) && 
-							isRun) {
-							res = thisOP.resolve(res);
-							isRun = false;
+							if (checkResult &&
+								isDef(res) &&
+								res != null &&
+								(thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED)) {
+								res = thisOP.resolve(res);
+							}
+						} catch (e) {
+							thisOP.reject(e);
 						}
 					}
-				} else {
-					res = aFunction(thisOP.reason);
+					// Reject
+					if (thisOP.state == thisOP.states.PREFAILED || thisOP.state == thisOP.states.FAILED) {
+						while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
+							f = thisOP.executors.poll();
+						}
+
+						if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
+							try {
+								f.func(thisOP.reason);
+								thisOP.state = thisOP.states.FULFILLED;
+							} catch (e) {
+								thisOP.state = thisOP.states.FAILED;
+								throw e;
+							}
+						} else {
+							if (isUnDef(f) || f == null) thisOP.state = thisOP.states.FAILED;
+						}
+					}
 				}
-            } catch(e) {
-                if (isRun) thisOP.reject(e);
-            } 
 
-			thisOP.executing = false;
-			if (thisOP.state == thisOP.states.PREFAILED && thisOP.rejects.isEmpty()) {
-				thisOP.state = thisOP.states.FAILED;
+				sync(() => { thisOP.executing = false; }, thisOP.executing);
+
+				if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty()) {
+					thisOP.state = thisOP.states.FULFILLED;
+				}
+
+				if (thisOP.state == thisOP.states.PREFAILED && thisOP.executors.isEmpty()) {
+					thisOP.state = thisOP.states.FAILED;
+				}
 			}
-			if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty() && !isFail) {
-				thisOP.state = thisOP.states.FULFILLED;
-			};
+		}));
 
-			return res;
-		}
-	}));
-    
-    return this;
+	} while (isUnDef(this.__f) || this.__f == null || !this.executors.isEmpty());
 };
 
 /**
  * <odoc>
- * <key>$do(aFunction) : oPromise</key>
+ * <key>$do(aFunction, aRejFunction) : oPromise</key>
  * Instantiates and returns a oPromise. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
  * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
  * aFunction to provide a result with resolve(aResult) or an exception with reject(aReason). If you don't call theses functions the
  * returned value will be used for resolve or any exception thrown will be use for reject. You can use the "then" method to add more
  * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the 
  * previous function will be passed as the value for the second. You can use the "catch" method to add aFunction that will receive
- * a string or exception for any exception thrown with the reject functions.  
+ * a string or exception for any exception thrown with the reject functions. You can also provide aRejFunction to work as a "catch"
+ * method as previously described before.
  * </odoc>
  */
-var $do = function(aFunction) {
-    return new oPromise(aFunction);
+var $do = function(aFunction, aRejFunction) {
+    return new oPromise(aFunction, aRejFunction);
 };
 
 /**
@@ -4172,15 +4147,23 @@ var $doFirst = function(anArray) {
 var $doWait = function(aPromise, aWaitTimeout) {
 	if (isDef(aWaitTimeout)) {
 		var init = now();
-		while((aPromise.state != aPromise.states.FULFILLED || aPromise.state != aPromise.states.FAILED) &&
-			  (isUnDef(aPromise.__f) || !aPromise.__f.isDone()) &&
+		while(aPromise.state != aPromise.states.FULFILLED && 
+			  aPromise.state != aPromise.states.FAILED &&
+			  (isUnDef(aPromise.__f) || aPromise.executing) &&
 		      ((now() - init) < aWaitTimeout)) {
-			aPromise.__f.get();	
+			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
+		}
+		while(aPromise.executing && ((now() - init) < aWaitTimeout)) {
+			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
 		}
 	} else {
-		while((aPromise.state != aPromise.states.FULFILLED || aPromise.state != aPromise.states.FAILED) &&
-			(isUnDef(aPromise.__f) || !aPromise.__f.isDone())) {
-			aPromise.__f.get();
+		while(aPromise.state != aPromise.states.FULFILLED && 
+			  aPromise.state != aPromise.states.FAILED &&
+			  (isUnDef(aPromise.__f) || aPromise.executing)) {
+			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
+		}
+		while(aPromise.executing) {
+			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
 		}
 	}
 
