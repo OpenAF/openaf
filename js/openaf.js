@@ -664,7 +664,7 @@ function __initializeLogPromise() {
 			});
 			return true;
 		} else {
-			if (__logPromise.size > __logPromise.asyncLevel) {
+			if (__logPromise.executors.size() > __logPromise.asyncLevel) {
 				$doWait(__logPromise);
 			}
 			return false;
@@ -765,7 +765,7 @@ function log(msg) {
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f);
+			__logPromise = __logPromise.then(f, ()=>{});
 		} else 
 			f();
 	}
@@ -783,7 +783,7 @@ function log(msg) {
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f);
+			__logPromise = __logPromise.then(f, ()=>{});
 		} else 
 			f();
 	}
@@ -823,7 +823,7 @@ function lognl(msg) {
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f);
+			__logPromise = __logPromise.then(f, ()=>{});
 		} else 
 			f();
 	}
@@ -841,7 +841,7 @@ function lognl(msg) {
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f);
+			__logPromise = __logPromise.then(f, ()=>{});
 		} else 
 			f();	
 		
@@ -881,7 +881,7 @@ function logErr(msg) {
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f);
+			__logPromise = __logPromise.then(f, ()=>{});
 		} else 
 			f();
 	}
@@ -899,7 +899,7 @@ function logErr(msg) {
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f);
+			__logPromise = __logPromise.then(f, ()=>{});
 		} else 
 			f();		
 
@@ -928,7 +928,7 @@ function logWarn(msg) {
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f);
+			__logPromise = __logPromise.then(f, ()=>{});
 		} else 
 			f();
 	}
@@ -946,7 +946,7 @@ function logWarn(msg) {
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f);
+			__logPromise = __logPromise.then(f, ()=>{});
 		} else 
 			f();		
 	}		
