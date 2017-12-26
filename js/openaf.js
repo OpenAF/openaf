@@ -3127,24 +3127,25 @@ function checkLatestVersion() {
 
 /**
  * <odoc>
- * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory) : String</key>
+ * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap) : String</key>
  * Tries to execute commandArguments (either a String or an array of strings) in the operating system as a shortcut for 
  * AF.sh except that it will run them through the OS shell. Optionally aStdIn can be provided, aTimeout can be defined 
  * for the execution and if shouldInheritIO is true the stdout, stderr and stdin will be inherit from OpenAF. If 
  * shouldInheritIO is not defined or false it will return the stdout of the command execution. It's possible also to 
  * provide a different working aDirectory.
  * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly.
+ * In alternative if returnMap = true a map will be returned with stdout, stderr and exitcode.
  * </odoc>
  */
-function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory) {
+function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap) {
 	if (typeof commandArguments == "string") {
 		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
-			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory);
+			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap);
 		} else {
-			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory);
+			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap);
 		}
 	} else {
-		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory);
+		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap);
 	}
 }
 

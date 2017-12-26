@@ -338,16 +338,17 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory) : String</key>
+	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap) : String/Map</key>
 	 * Tries to execute commandArguments (either a String or an array of strings) in the operating system. Optionally
 	 * aStdIn can be provided, aTimeout can be defined for the execution and if shouldInheritIO is true the stdout, stderr and stdin
 	 * will be inherit from OpenAF. If shouldInheritIO is not defined or false it will return the stdout of the command execution.
 	 * It's possible also to provide a different working aDirectory.
-	 * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly.
+	 * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly. In alternative 
+	 * if returnMap = true a map will be returned with stdout, stderr and exitcode.
 	 * </odoc>
 	 */
 	@JSFunction
-	public String sh(Object s, String in, Object timeout, boolean inheritIO, Object directory) throws IOException, InterruptedException {
+	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj) throws IOException, InterruptedException {
 		ProcessBuilder pb = null;
 		if (s instanceof NativeArray) {
 			ArrayList<String> al = new ArrayList<String>();
@@ -430,9 +431,17 @@ public class AFBase extends ScriptableObject {
 		IOUtils.closeQuietly(p.getInputStream());
 		IOUtils.closeQuietly(p.getErrorStream());
 		
-		((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__exitcode", exit, ScriptableObject.PERMANENT);
-		((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__stderr", linesErr, ScriptableObject.PERMANENT);
-		return lines;
+		if (returnObj) {
+			JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
+			no.put("stdout", lines);
+			no.put("stderr", linesErr);
+			no.put("exitcode", exit);
+			return no.getMap();
+		} else {
+			((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__exitcode", exit, ScriptableObject.PERMANENT);
+			((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__stderr", linesErr, ScriptableObject.PERMANENT);
+			return lines;
+		}
 	}
 	
 

@@ -79,6 +79,25 @@
             throw "Shell result wasn't expected: '" + res + "' expected '" + cP + "'";
     };
 
+    exports.testShellWithMap = function() {
+        var isWindows = java.lang.System.getProperty("os.name").match(/Windows/);
+        //var cP = java.lang.System.getProperty("java.class.path") + "";
+        var cP = "1234567890";
+        var res = "";
+        //var cs, c;
+
+        if (isWindows) {
+            //c = cP.replace(/.$/, "\?");
+            res = sh("echo " + cP, void 0, void 0, void 0, void 0, true);
+        } else {
+            //cs = cP.replace(/\\/g, "/");
+            //c = cs.replace(/.$/, "\?");
+            res = sh("echo " + cP, void 0, void 0, void 0, void 0, true);
+        }
+        if (res.stdout.replace(/[\n\r]/g, "") != cP && res.exitcode == 0 && res.stderr == "")
+            throw "Shell result wasn't expected: '" + res + "' expected '" + cP + "'";
+    };
+
     exports.testEncoding = function() {
         ow.test.assert(toEncoding("€", "UTF-8"), utf8("€"), "Problem with utf8 or toEncoding function.");        
     };

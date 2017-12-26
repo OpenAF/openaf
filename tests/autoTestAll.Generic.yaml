@@ -52,6 +52,11 @@ jobs:
      from: OpenAF::Init
      to  : oJob Test
      exec: args.func = args.tests.testShell;
+
+   - name: OpenAF::Test Shell with Map
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testShellWithMap;  
     
    - name: OpenAF::Test Encoding
      from: OpenAF::Init
@@ -125,6 +130,7 @@ todo:
    - OpenAF::Test SHA512
    - OpenAF::Test Merge
    - OpenAF::Test Shell
+   - OpenAF::Test Shell with Map
    - OpenAF::Test Encoding
    - OpenAF::Test Format Conversion to/from bytes
    - OpenAF::Test Format Conversion to/from base64
