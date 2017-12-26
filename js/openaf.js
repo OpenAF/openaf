@@ -368,17 +368,22 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 	return output;
 }
 
-var __con;
+var __con, __conStatus;
 function __initializeCon() {
+	if (isDef(__conStatus)) return __conStatus;
+
 	if (isUnDef(__con)) {
 		plugin("Console");
 		try {
 			__con = (new Console()).getConsoleReader();
+			__conStatus = true;
 			return true;
 		} catch(e) {
+			__conStatus = false;
 			return false;
 		}
 	} else {
+		__conStatus = true;
 		return true;
 	}
 }
@@ -424,7 +429,10 @@ function ansiStart(force) {
 	var con = __con;
 	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
-	if (ansis) jansi.AnsiConsole.systemInstall();
+	if (ansis) {
+		java.lang.System.out.flush(); java.lang.System.err.flush();
+		jansi.AnsiConsole.systemInstall();
+	}
 }
 
 /**
@@ -438,7 +446,10 @@ function ansiStop(force) {
 	var con = __con;
 	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
-	if (ansis) jansi.AnsiConsole.systemUninstall();
+	if (ansis) {
+		jansi.AnsiConsole.systemUninstall();
+		java.lang.System.out.flush(); java.lang.System.err.flush();
+	}
 }
 
 /**
