@@ -234,7 +234,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	}
 	
 	if (isDef(aFile)) {		
-		if (aFile.match(/\.js$/i)) {
+		if (aFile.match(/\.js(on)?$/i)) {
 			res = this.__merge(_load(io.readFile), res);
 		}
 		if (aFile.match(/\.ya?ml$/i)) {

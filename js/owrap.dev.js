@@ -45,6 +45,41 @@ OpenWrap.dev.prototype.loadPoolDB = function() {
 	};
 };
 
+OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isClient) {
+	ow.dev.__i = [];
+
+	var initI = () => {
+		plugin("Ignite");
+		var grid = (isUnDef(aGridName)) ? "default" : aGridName;
+		if (isUnDef(aIgnite)) {
+			ow.dev.__i[grid] = new Ignite();
+			ow.dev.__i[grid].start(aGridName, secretKey, isClient);
+		} else {
+			ow.dev.__i[grid] = aIgnite;
+		}
+	};
+
+	oPromise.prototype.thenAny = function(aFunc, aRejFunc, aGridName) {
+		if (isUnDef(ow.dev.__i)) initI();
+		return this.then(() => {
+			var grid = (isUnDef(aGridName)) ? "default" : aGridName;
+			return ow.dev.__i[grid].call(ow.dev.__i[grid].getIgnite(), aFunc.toSource().replace(/[^{]*{([\s\S]*)}[^}]*/, "$1").replace(/"/mg, "\\\""));
+		}, aRejFunc);
+	};
+
+
+	oPromise.prototype.thenAll = function(aFunc, aRejFunc, aGridName) {
+		if (isUnDef(ow.dev.__i)) initI();
+		return this.then(() => {
+			var grid = (isUnDef(aGridName)) ? "default" : aGridName;
+			return ow.dev.__i[grid].broadcast(ow.dev.__i[grid].getIgnite(), aFunc.toSource().replace(/[^{]*{([\s\S]*)}[^}]*/, "$1").replace(/"/mg, "\\\""));
+		}, aRejFunc);
+	};
+
+	initI();
+};
+
+/*
 OpenWrap.dev.prototype.overridePromise = function () {
 	oPromise = function (aFunction, aRejFunction) {
 		this.states = {
@@ -263,6 +298,7 @@ OpenWrap.dev.prototype.overridePromise = function () {
 		} while (isUnDef(this.__f) || this.__f == null || !this.executors.isEmpty());
 	};
 };
+*/
 
 /*
 OpenWrap.dev.prototype.overrideHTTP = function() {

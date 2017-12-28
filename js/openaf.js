@@ -16,7 +16,7 @@ var global = self;
 var __forcedOpenAFJar;
 function getOpenAFJar() {
 	var res = "";
-	if (isDefined(__forcedOpenAFJar)) 
+	if (isDef(__forcedOpenAFJar)) 
 		res = __forcedOpenAFJar;
 	else
 		res = String(af.getOpenAFJar()).replace(/\\/g, "/");
@@ -108,7 +108,7 @@ function print(str) {
  * "Stringifies" and prints the aStr to the stdout (with a new line on the end) (example: sprint("hello world!"))
  * </odoc>
  */
-function sprint(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return print(stringify(str, undefined, delim)); }
+function sprint(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return print(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprint(aStr)</key>
@@ -140,7 +140,7 @@ function printnl(str) {
  * "Stringifies" and prints the aStr to the stdout (without adding a new line on the end) (example: sprintnl("hello world!"))
  * </odoc>
  */
-function sprintnl(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printnl(stringify(str, undefined, delim)); }
+function sprintnl(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printnl(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprintnl(aStr)</key>
@@ -170,7 +170,7 @@ function cprintnl(str, delim) { ansiStart(); printnl(colorify(str)); ansiStop();
  * </odoc>
  */
 function tprintnl(aTemplateString, someData) {
-	someData = (isUndefined(someData)) ? this : someData;
+	someData = (isUnDef(someData)) ? this : someData;
 	printnl(templify(aTemplateString, someData));
 }
 
@@ -207,7 +207,7 @@ function printErr(str) {
  * "Stringifies" and prints the aStr to the stderr (with a new line on the end) (example: sprintErr("Hupps!! A problem!"))
  * </odoc>
  */
-function sprintErr(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printErr(stringify(str, undefined, delim)); }
+function sprintErr(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printErr(stringify(str, undefined, delim)); }
 /**
  * <odoc>
  * <key>bprintErr(aStr)</key>
@@ -239,7 +239,7 @@ function printErrnl(str) {
  * "Stringifies" and prints the aStr to the stderr (without adding a new line on the end) (example: sprintErrnl("Hupps!! A problem!"))
  * </odoc>
  */
-function sprintErrnl(str, delim) { delim = (isUndefined(delim) ? "  " : delim); return printErrnl(stringify(str, undefined, delim)); }
+function sprintErrnl(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printErrnl(stringify(str, undefined, delim)); }
 
 /**
  * <odoc>
@@ -271,7 +271,7 @@ function cprintErrnl(str, delim) { ansiStart(); printErrnl(colorify(str)); ansiS
  * </odoc>
  */
 function tprintErrnl(aTemplateString, someData) {
-	someData = (isUndefined(someData)) ? this : someData;
+	someData = (isUnDef(someData)) ? this : someData;
 	printErrnl(templify(aTemplateString, someData));
 }
 
@@ -306,13 +306,13 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 	var output = "";
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
-	if (isUndefined(aWidthLimit)) aWidthLimit = -1;
+	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
 	
 	// Find sizes
 	anArrayOfEntries.forEach(function(row) {
 		var cols = Object.keys(row);
 		cols.forEach(function(col) {
-			if (isUndefined(maxsize[col])) 
+			if (isUnDef(maxsize[col])) 
 				maxsize[String(col)] = col.length;
 			if (maxsize[String(col)] < String(row[String(col)]).length) maxsize[String(col)] = String(row[String(col)]).length;
 		});
@@ -580,7 +580,7 @@ function colorify(json) {
  * </odoc>
  */
 function jsonParse(astring) {
-	if (isDefined(astring) && String(astring).length > 0) {
+	if (isDef(astring) && String(astring).length > 0) {
 		try {
 			var a = JSON.parse(astring);
 			return a;
@@ -606,7 +606,7 @@ function jsonParse(astring) {
  * </odoc>
  */
 function templify(aTemplateString, someData) {
-	someData = (isUndefined(someData)) ? this : someData;
+	someData = (isUnDef(someData)) ? this : someData;
 	return ow.loadTemplate().parse(aTemplateString, someData);
 }
 
@@ -1093,7 +1093,7 @@ function splitBySeparator(aString, aSep) {
  * </odoc>
  */
 function processExpr(aSep, ignoreCase) {
-	if (isUndefined(aSep)) aSep = ";";
+	if (isUnDef(aSep)) aSep = ";";
 	//var args = __expr.replace(new RegExp(aSep, "g"), "\\" + aSep).replace(new RegExp("\\\\\\\\(?=" + aSep + ")", "g") , "").split("\\" + aSep + "");
 	var args = splitBySeparator(__expr, aSep);
 	var pairs = {};
@@ -1103,9 +1103,9 @@ function processExpr(aSep, ignoreCase) {
 
 		var pair = splitBySeparator(arg, "=");
 		if (!ignoreCase)
-			pairs[pair[0]] = (isUndefined(pair[1]) ? "" : pair[1]);
+			pairs[pair[0]] = (isUnDef(pair[1]) ? "" : pair[1]);
 		else
-			pairs[pair[0].toLowerCase()] = (isUndefined(pair[1]) ? "" : pair[1]);
+			pairs[pair[0].toLowerCase()] = (isUnDef(pair[1]) ? "" : pair[1]);
 	}
 
 	//load __pmIn to pairs
@@ -1339,7 +1339,7 @@ function load(aScript) {
 					var paths = getOPackPaths();
 					paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
 			
-					for(var i in paths) {
+					for(let i in paths) {
 						try {
 							paths[i] = paths[i].replace(/\\+/g, "/");
 							if (e0.message == "\"exports\" is not defined.") {
@@ -1438,7 +1438,7 @@ function isDefined(aObject) {
  * <odoc>
  * <key>isDef(aObject) : boolean</key>
  * Returns true if the provided aObject is defined as a javascript variable. It will return false otherwise.
- * (see also isUndefined). Shortcut for the isDefined function.
+ * (see also isUnDef). Shortcut for the isDefined function.
  * </odoc>
  */
 function isDef(aObject)   { return (!(typeof aObject == 'undefined')) ? true : false; }
@@ -1446,7 +1446,7 @@ function isDef(aObject)   { return (!(typeof aObject == 'undefined')) ? true : f
  * <odoc>
  * <key>isUnDef(aObject) : boolean</key>
  * Returns true if the provided aObject is undefined as a javascript variable. It will return false otherwise.
- * (see also isDefined). Shortcut for the isUndefined function.
+ * (see also isDef). Shortcut for the isUndefined function.
  * </odoc>
  */
 function isUnDef(aObject) { return (typeof aObject == 'undefined') ? true : false; }
@@ -1459,13 +1459,13 @@ function isUnDef(aObject) { return (typeof aObject == 'undefined') ? true : fals
  * </odoc>
  */
 function listFilesRecursive(aPath) {
-	if (isUndefined(aPath)) return [];
+	if (isUnDef(aPath)) return [];
 
 	var files = io.listFiles(aPath);
-	if(isUndefined(files)) return [];
+	if(isUnDef(files)) return [];
 	var ret = [];
 	files = files.files;
-	if (isUndefined(files)) return [];
+	if (isUnDef(files)) return [];
 	ret = files.concat(ret);
 
 	for(i in files) {
@@ -1590,7 +1590,7 @@ function quickSort(items, aCompareFunction) {
 		return i;
 	}
 
-	if (isUndefined(aCompareFunction)) {
+	if (isUnDef(aCompareFunction)) {
 		aCompareFunction = function(a, b) { return a - b; }
 	}
 
@@ -1746,7 +1746,7 @@ function extend() {
  * </odoc>
  */
 function exit(exitCode) {
-	if(isUndefined(exitCode)) exitCode = 0;
+	if(isUnDef(exitCode)) exitCode = 0;
 
 	java.lang.System.exit(exitCode);
 }
@@ -1770,11 +1770,11 @@ function clone(aObject) {
  */
 function merge(aObjectA, aObjectB) {
 	if (isObject(aObjectA) && isArray(aObjectB)) {
-		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA)); }
+		for(let i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA)); }
 		return aObjectB;
 	}
 	if (isObject(aObjectB) && isArray(aObjectA)) {
-		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB)); }
+		for(let i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB)); }
 		return aObjectA;
 	}
 	return extend(true, clone(aObjectA), aObjectB);
@@ -1812,7 +1812,7 @@ function restartOpenAF(aCommandLineArray, preLineArray) {
 	}
 	command.add("-jar");
 	command.add(currentJar);
-	if (isUndefined(aCommandLineArray)) {
+	if (isUnDef(aCommandLineArray)) {
 		for(let c in __args) {
 			command.add(__args[c]);
 		}
@@ -1898,7 +1898,7 @@ $from = function(a) {
 $stream = function(a) {
 	loadCompiledLib("stream_js");
 	
-	if (isUndefined(a)) return Stream;
+	if (isUnDef(a)) return Stream;
 	return Stream(a);
 }
 
@@ -2076,12 +2076,12 @@ function pidCheckOut(aFilename) {
  */
 function splitArray(anArray, numberOfParts) {
     var res = [];
-    if (isUndefined(numberOfParts)) numberOfParts = getNumberOfCores();
+    if (isUnDef(numberOfParts)) numberOfParts = getNumberOfCores();
     
 	if (numberOfParts >= anArray.length) {
-		for(var i in anArray) { res.push([anArray[i]]); }
+		for(let i in anArray) { res.push([anArray[i]]); }
 	} else {
-	    for(var i = 0; i < numberOfParts; i++) {
+	    for(let i = 0; i < numberOfParts; i++) {
 	        var lower = Math.round(anArray.length/numberOfParts * i);
 	        var upper = Math.round(anArray.length/numberOfParts * (i+1));
 	        res.push(anArray.slice(lower, upper));
@@ -2106,13 +2106,13 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 	plugin("Threads");
 
 	var __threads = new Threads();
-	if (isUndefined(__cpucores)) __cpucores = __threads.getNumberOfCores();
-	if (isUndefined(numThreads)) {
+	if (isUnDef(__cpucores)) __cpucores = __threads.getNumberOfCores();
+	if (isUnDef(numThreads)) {
 		numThreads = __cpucores + 1;
 		balance = true;
 	}
 
-	if (isDefined(threads)) {
+	if (isDef(threads)) {
 		threads["__threads"]  = __threads;
 		threads["__numThreads"] = numThreads;
 		threads.uuids = [];
@@ -2133,12 +2133,12 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 	}
 	
 	var results = [];
-	for(var i = 0; i < numThreads; i++) {
+	for(let i = 0; i < numThreads; i++) {
 		var uuid = __threads.addThread(function(uuid) {
 			results.push(aFunction(uuid, __threads));
 			if (balance) __balance();
 		});
-		if (isDefined(threads)) {
+		if (isDef(threads)) {
 			threads.uuids.push(uuid);
 		}
 	}
@@ -2147,7 +2147,7 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 	__threads.stop();
 
 	// Aggregate results
-	if(isUndefined(aAggFunction))
+	if(isUnDef(aAggFunction))
 		return results;
 	else
 		return aAggFunction(results);
@@ -2168,7 +2168,7 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numThreads, threads) {
 	plugin("Threads");
 
-	if (isUndefined(anArray) || isUndefined(aReduceFunction)) {
+	if (isUnDef(anArray) || isUnDef(aReduceFunction)) {
 		throw "Need an array and a function."
 	}
 	
@@ -2196,8 +2196,8 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 	
 	var results = [];
 	var __threads = new Threads();
-	if (isUndefined(__cpucores)) __cpucores = __threads.getNumberOfCores();
-	if (isUndefined(numThreads)) {
+	if (isUnDef(__cpucores)) __cpucores = __threads.getNumberOfCores();
+	if (isUnDef(numThreads)) {
 		numThreads = __cpucores + 1;
 		balance = true;
 	}
@@ -2205,16 +2205,16 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 	// Map it to threads
 	var myMap = [];
 	if (numThreads >= anArray.length) {
-		for(var i in anArray) { myMap.push([anArray[i]]); }
+		for(let i in anArray) { myMap.push([anArray[i]]); }
 	} else {
-		for(var i = 0; i < numThreads; i++) {
+		for(let i = 0; i < numThreads; i++) {
 			var lower = Math.round(anArray.length/numThreads * i);
 			var upper = Math.round(anArray.length/numThreads * (i+1));
 			myMap.push(anArray.slice(lower, upper));
 		}
 	}
 	
-	if (isDefined(threads)) {
+	if (isDef(threads)) {
 		threads["__threads"]  = __threads;
 		threads["__numThreads"] = numThreads;
 		threads.uuids = [];
@@ -2231,7 +2231,7 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 		});
 		xx[uuid] = myMap[x];
 		
-		if (isDefined(threads)) {
+		if (isDef(threads)) {
 			threads.uuids.push(uuid); 
 			threads.uuidsArrayLength[uuid] = myMap[x].length;
 		}
@@ -2241,7 +2241,7 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 	__threads.stop();
 
 	// Aggregate results
-	if(isUndefined(aAggFunction))
+	if(isUnDef(aAggFunction))
 		return results;
 	else
 		return aAggFunction(results, this);
@@ -2275,7 +2275,7 @@ function parallel4Array(anArray, aFunction, numberOfThreads, threads) {
 			return [ subres ].concat(p);
 		},
 		[],
-		function(arr) { var res = []; for(var i in arr) { res = res.concat(arr[i]); } return res; },
+		function(arr) { var res = []; for(let i in arr) { res = res.concat(arr[i]); } return res; },
 		numberOfThreads,
 		threads
 	);
@@ -2368,7 +2368,8 @@ function isDate(obj) {
  * </odoc>
  */
 function isJavaObject(obj) {
-	return Object.prototype.toString.call(obj) === '[object JavaObject]';
+	var s = Object.prototype.toString.call(obj);
+	return (s === '[object JavaObject]' || s === '[object JavaArray]');
 }
 
 /**
@@ -2380,14 +2381,14 @@ function isJavaObject(obj) {
  * </odoc>
  */
 var __loadedLibs;
-if (isUndefined(__loadedLibs)) __loadedLibs = {};
+if (isUnDef(__loadedLibs)) __loadedLibs = {};
 function loadLib(aLib, forceReload, aFunction) {
 	if (forceReload ||
-		isUndefined(__loadedLibs[aLib.toLowerCase()]) || 
+		isUnDef(__loadedLibs[aLib.toLowerCase()]) || 
 		__loadedLibs[aLib.toLowerCase()] == false) {
 		load(aLib);
 		__loadedLibs[aLib.toLowerCase()] = true;
-		if (isDefined(aFunction)) aFunction();
+		if (isDef(aFunction)) aFunction();
 		return true;
 	}
 	
@@ -2404,11 +2405,11 @@ function loadLib(aLib, forceReload, aFunction) {
  */
 function loadCompiledLib(aClass, forceReload, aFunction) {
 	if (forceReload ||
-		isUndefined(__loadedLibs[aClass.toLowerCase()]) || 
+		isUnDef(__loadedLibs[aClass.toLowerCase()]) || 
 		__loadedLibs[aClass.toLowerCase()] == false) {		
 		af.runFromClass(af.getClass(aClass).newInstance());
 		__loadedLibs[aClass.toLowerCase()] = true;
-		if (isDefined(aFunction)) aFunction();
+		if (isDef(aFunction)) aFunction();
 		return true;
 	}
 	
@@ -2545,7 +2546,7 @@ Pod.require = function (req, callback) {
 	// Wrap a single dependency definition in an array.
 	req = single ? [req] : req.slice();
 	
-	for (var i = 0; i < req.length; i++) {
+	for (let i = 0; i < req.length; i++) {
 	    var id = req[i];
 	
 	    if (this._m.hasOwnProperty(id)) {
@@ -2600,7 +2601,7 @@ Pod.prototype = {
 };
 
 var pods;
-if (isUndefined(pods)) pods = new Pod();
+if (isUnDef(pods)) pods = new Pod();
 
 //FROM https://github.com/gmac/pods.js
 //END --------------------------------
@@ -2618,7 +2619,7 @@ if (isUndefined(pods)) pods = new Pod();
 		return String(new java.io.File(aPath).toURI().toURL().toExternalForm());
 	}
 	
-	if (isUndefined(paths)) {
+	if (isUnDef(paths)) {
 		paths = [];
 		var opackpaths = getOPackPaths(); 
 		for(var opack in opackpaths) {
@@ -2676,11 +2677,11 @@ function require(aScript, force) {
 //
 
 var OpenWrap;
-if (isUndefined(OpenWrap))
+if (isUnDef(OpenWrap))
 	OpenWrap = function() {}
 
 var ow;
-if (isUndefined(ow))
+if (isUnDef(ow))
 	ow = new OpenWrap();
 
 /**
@@ -2843,7 +2844,7 @@ var __odocsurl;
 if (isUnDef(__odocsurl)) __odocsurl = __odoc;
 var __odocs;
 var __offlineHelp;
-if (isUndefined(__offlineHelp)) {
+if (isUnDef(__offlineHelp)) {
 	if (noHomeComms)
 		__offlineHelp = true;
 	else
@@ -2860,7 +2861,7 @@ if (isUndefined(__offlineHelp)) {
  */
 function setOfflineHelp(aBoolean) {
 	__offlineHelp = aBoolean;
-	if (isDefined(__odocs)) __odocs = undefined; //__odocs.offline = __offlineHelp;
+	if (isDef(__odocs)) __odocs = undefined; //__odocs.offline = __offlineHelp;
 }
 
 /**
@@ -2876,14 +2877,14 @@ function setOfflineHelp(aBoolean) {
 function searchHelp(aTerm, aPath, aId) {
 	loadHelp();
 	
-	if (isUndefined(aPath)) {
+	if (isUnDef(aPath)) {
 		var res;
 		var paths = [ getOpenAFJar() ];
 		try {
 			paths = paths.concat(Object.keys(getOPackLocalDB()));
 		} catch(e) {
 		}
-		for(var i in paths) {
+		for(let i in paths) {
 			var path = paths[i];
 			if (!(path.match(/\.(jar|db|zip)/))) path = path + "/";
 			res = searchHelp(aTerm, path, aId);
@@ -2957,8 +2958,8 @@ function saveHelpWeb(aPath, aMapOfFiles) {
  */
 function createDBInMem(aName, dontClose, aLogin, aPass, inMemFileSystem, inMemCompressed, useNIO) {
 	var suffix = (dontClose) ? ";DB_CLOSE_DELAY=-1" : "";
-	var login = (isUndefined(aLogin)) ? "sa" : aLogin;
-	var pass = (isUndefined(aPass)) ? "sa" : aPass;
+	var login = (isUnDef(aLogin)) ? "sa" : aLogin;
+	var pass = (isUnDef(aPass)) ? "sa" : aPass;
 	var type = "mem";
 	if (inMemFileSystem) type = "memFS";
 	if (inMemCompressed) type = "memLZF";
@@ -2999,7 +3000,7 @@ function traverse(aObject, aFunction, aParent) {
 	var keys = (isJavaObject(aObject)) ? [] : Object.keys(aObject);
 	var parent = isUnDef(aParent) ? "" : aParent;
 
-	for(var i in keys) {
+	for(let i in keys) {
 		if (isObject(aObject[keys[i]])) {
 			var newParent = parent + ((isNaN(Number(keys[i]))) ? 
 							"." + keys[i] : 
@@ -3180,7 +3181,7 @@ function ioStreamWrite(aStream, aString, aBufferSize, useNIO) {
 	if (!useNIO) {
 		aStream.write(af.fromString2Bytes(aString));
 	} else {
-		var bufferSize = (isUndefined(aBufferSize)) ? 1024 : aBufferSize;
+		var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -3210,7 +3211,7 @@ function ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, useNIO) {
 	if (!useNIO) {
 		aStream.write(aArrayBytes);
 	} else {
-		var bufferSize = (isUndefined(aBufferSize)) ? 1024 : aBufferSize;
+		var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -3238,7 +3239,7 @@ function ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, useNIO) {
  * </odoc>
  */
 function ioStreamRead(aStream, aFunction, aBufferSize, useNIO) {
-	var bufferSize = (isUndefined(aBufferSize)) ? 1024 : aBufferSize;
+	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 
 	if (useNIO) {
 		var channel;
@@ -3326,7 +3327,7 @@ function ioStreamCopy(aOutputStream, aInputStream) {
  * </odoc>
  */
 function ioStreamReadBytes(aStream, aFunction, aBufferSize, useNIO) {
-	var bufferSize = (isUndefined(aBufferSize)) ? 1024 : aBufferSize;
+	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 
 	if (!useNIO) {
 		var channel;
@@ -3376,7 +3377,7 @@ function ioStreamReadBytes(aStream, aFunction, aBufferSize, useNIO) {
  * </odoc>
  */
 function toEncoding(aString, anEncoding) {
-	if (isUndefined(anEncoding)) anEncoding = "UTF-8";
+	if (isUnDef(anEncoding)) anEncoding = "UTF-8";
 	return String(new java.lang.String(af.fromString2Bytes(aString), anEncoding));
 }
 
@@ -3400,7 +3401,7 @@ function utf8(aString) {
 function getFromZip(aZipFile, aResource, isBytes, encoding) {
 	plugin("ZIP");
 
-	if (isDefined(aResource)) {
+	if (isDef(aResource)) {
 		var zip = new ZIP();
 		zip.loadFile(aZipFile);
 		var ab = zip.getFile(aResource);
@@ -3409,7 +3410,7 @@ function getFromZip(aZipFile, aResource, isBytes, encoding) {
 			return ab;
 		else {
 			ab = af.fromBytes2String(ab);
-			if (isDefined(encoding)) ab = toEncoding(ab, encoding);
+			if (isDef(encoding)) ab = toEncoding(ab, encoding);
 			return ab;
 		}
 	} else {
@@ -3583,15 +3584,15 @@ function threadBoxCtrlC() {
 }
 
 var alert;
-if (isUndefined(alert)) alert = function(msg) {
+if (isUnDef(alert)) alert = function(msg) {
 	printErr(String(msg));
-}
+};
 
 __timeout = {};
 function setTimeout(aFunction, aPeriod) {
 	sleep(aPeriod);
 	var args = [];
-	for(var i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
+	for(let i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
 	aFunction.apply(this, args);
 }
 
@@ -3600,7 +3601,7 @@ function setInterval(aFunction, aPeriod) {
 	var t = new Threads();
 
 	var args = [];
-	for(var i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
+	for(let i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
 	var pf = aFunction;
     var parent = this;
 
@@ -3988,7 +3989,7 @@ oPromise.prototype.race = function(anArray) {
 		
 		try {
 			while(!shouldStop) {
-				for(var i in anArray) {
+				for(let i in anArray) {
 					if (anArray[i] != null) {
 						if (anArray[i] instanceof oPromise) {
 							if (!anArray[i].executing) {
@@ -4038,7 +4039,7 @@ oPromise.prototype.reject = function(aReason) {
 
 oPromise.prototype.resolve = function(aValue) {
 	if (this.state == this.states.FULFILLED) this.state = this.states.NEW;
-	this.value = isUnDef(aValue) ? null : aValue;
+	this.value = (!isJavaObject(aValue) && isUnDef(aValue)) ? null : aValue;
 	return this;
 };
 
@@ -4066,7 +4067,7 @@ oPromise.prototype.__exec = function() {
 							}
 
 							if (checkResult &&
-								isDef(res) &&
+								(isJavaObject(res) || isDef(res)) &&
 								res != null &&
 								(thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED)) {
 								res = thisOP.resolve(res);
@@ -4207,7 +4208,7 @@ var $doWait = function(aPromise, aWaitTimeout) {
 // Profile support
 
 var OPENAFPROFILE;
-if (isUndefined(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
+if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 
 (function() {
 	var prof = "";

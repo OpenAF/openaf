@@ -2,11 +2,13 @@ package wedo.openaf.plugins;
 
 import java.io.IOException;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.lang.IgniteCallable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
@@ -21,7 +23,27 @@ public class Ignite extends ScriptableObject {
 	private static final long serialVersionUID = -1058394978145136847L;
 	protected IgniteConfiguration config = new IgniteConfiguration();
 	protected org.apache.ignite.Ignite ignite;
-	
+
+	@JSFunction
+	public static Object broadcast(Object i, final String s) {
+		Collection<Object> res = ((org.apache.ignite.Ignite) i).compute().broadcast(new IgniteCallable<Object>() {
+			@Override public Object call() {
+				return wedo.openaf.AFBase.eval("(new Function(\"" + s + "\"))()");
+			}
+		});
+		return AFCmdBase.jse.newArray(AFCmdBase.jse.getGlobalscope(), res.toArray());
+	}
+
+	@JSFunction
+	public static Object call(Object i, final String s) {
+		Object res = ((org.apache.ignite.Ignite) i).compute().call(new IgniteCallable<Object>() {
+			@Override public Object call() {
+				return wedo.openaf.AFBase.eval("(new Function(\"" + s + "\"))()");
+			}
+		});
+		return res;
+	}
+
 	@Override
 	public String getClassName() {
 		return "Ignite";
@@ -78,11 +100,12 @@ public class Ignite extends ScriptableObject {
 		if (isClient) config.setClientMode(true);
 		if (secretKey != null && !(secretKey instanceof Undefined))
 			config.getConnectorConfiguration().setSecretKey(AFCmdBase.afc.dIP((String) secretKey));
+		if (name != null && !(name instanceof Undefined)) config.setIgniteInstanceName((String) name);
 		Ignition.getOrStart(config);
 		if (name == null || name instanceof Undefined) {
 			ignite = Ignition.ignite();
 		} else {
-			config.setIgniteInstanceName((String) name);
+			//config.setIgniteInstanceName((String) name);
 			ignite = Ignition.ignite((String) name);
 		}
 	}

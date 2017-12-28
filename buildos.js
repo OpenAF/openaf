@@ -141,7 +141,8 @@ else
 
 io.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", jsOpenAF);
 
-af.mkdir(OPENAF_BIN);
+io.rm(OPENAF_BIN);
+io.mkdir(OPENAF_BIN);
 var cmd = JAVAC + " -cp " + classpath + " -source 1.7 -target 1.7 -Xlint:deprecation -d " + OPENAF_BIN + " " + buildSource();
 log("Compiling...");
 log(af.sh(cmd, "", undefined, true));

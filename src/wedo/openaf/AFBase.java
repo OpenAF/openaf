@@ -1196,7 +1196,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object eval(String script) {
+	public static Object eval(String script) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Object ret = cx.evaluateString((Scriptable) AFCmdBase.jse.getGlobalscope(), script, "", 1, null);
 		AFCmdBase.jse.exitContext();

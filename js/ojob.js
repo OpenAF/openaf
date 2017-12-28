@@ -52,7 +52,7 @@ if (Object.keys(params).length >= 1 && ojob_shouldRun) {
 }
 
 function ojob_showHelp() {
-	print("Usage: ojob aYamlFile.yaml [options]\n");
+	print("Usage: ojob aYamlFile.yaml/json [options]\n");
 	print("  -compile       Compile all includes and current file into a single yaml output.");
 	print("  -tojson        Outputs all includes and current file into a single json output.");
 	print("  -jobs          List all jobs available.");
