@@ -4045,70 +4045,76 @@ oPromise.prototype.resolve = function(aValue) {
 
 oPromise.prototype.__exec = function() {
 	var thisOP = this;
+
 	do {
-		this.__f = __getThreadPool().submit(new java.lang.Runnable({
-			run: () => {
-				var ignore = false;
-				sync(() => { if (thisOP.executing) ignore = true; else thisOP.executing = true; }, thisOP.executing);
-				if (ignore) return;
+		try {
+			this.__f = __getThreadPool().submit(new java.lang.Runnable({
+				run: () => {
+					var ignore = false;
+					sync(() => { if (thisOP.executing) ignore = true; else thisOP.executing = true; }, thisOP.executing);
+					if (ignore) return;
 
-				while (thisOP.executors.size() > 0) {
-					var f = thisOP.executors.poll();
-					// Exec
-					if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED && f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
-						var res, done = false;
-						try {
-							var checkResult = true;
-							if (isDef(thisOP.value)) {
-								res = f.func(thisOP.value);
-							} else {
-								res = f.func(function (v) { checkResult = false; thisOP.resolve(v); },
-											 function (r) { checkResult = false; thisOP.reject(r); });
-							}
-
-							if (checkResult &&
-								(isJavaObject(res) || isDef(res)) &&
-								res != null &&
-								(thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED)) {
-								res = thisOP.resolve(res);
-							}
-						} catch (e) {
-							thisOP.reject(e);
-						}
-					}
-					// Reject
-					if (thisOP.state == thisOP.states.PREFAILED || thisOP.state == thisOP.states.FAILED) {
-						while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
-							f = thisOP.executors.poll();
-						}
-
-						if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
+					while (thisOP.executors.size() > 0) {
+						var f = thisOP.executors.poll();
+						// Exec
+						if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED && f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
+							var res, done = false;
 							try {
-								f.func(thisOP.reason);
-								thisOP.state = thisOP.states.FULFILLED;
+								var checkResult = true;
+								if (isDef(thisOP.value)) {
+									res = f.func(thisOP.value);
+								} else {
+									res = f.func(function (v) { checkResult = false; thisOP.resolve(v); },
+												function (r) { checkResult = false; thisOP.reject(r); });
+								}
+
+								if (checkResult &&
+									(isJavaObject(res) || isDef(res)) &&
+									res != null &&
+									(thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED)) {
+									res = thisOP.resolve(res);
+								}
 							} catch (e) {
-								thisOP.state = thisOP.states.FAILED;
-								throw e;
+								thisOP.reject(e);
 							}
-						} else {
-							if (isUnDef(f) || f == null) thisOP.state = thisOP.states.FAILED;
+						}
+						// Reject
+						if (thisOP.state == thisOP.states.PREFAILED || thisOP.state == thisOP.states.FAILED) {
+							while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
+								f = thisOP.executors.poll();
+							}
+
+							if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
+								try {
+									f.func(thisOP.reason);
+									thisOP.state = thisOP.states.FULFILLED;
+								} catch (e) {
+									thisOP.state = thisOP.states.FAILED;
+									throw e;
+								}
+							} else {
+								if (isUnDef(f) || f == null) thisOP.state = thisOP.states.FAILED;
+							}
 						}
 					}
+
+					sync(() => { thisOP.executing = false; }, thisOP.executing);
+
+					if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty()) {
+						thisOP.state = thisOP.states.FULFILLED;
+					}
+
+					if (thisOP.state == thisOP.states.PREFAILED && thisOP.executors.isEmpty()) {
+						thisOP.state = thisOP.states.FAILED;
+					}
 				}
+			}));
+		} catch(e) {
+			if (!String(e).match(/RejectedExecutionException/)) throw e;
+		}
+		// Try again if null
+	} while(isUnDef(this.__f) || this.__f == null);
 
-				sync(() => { thisOP.executing = false; }, thisOP.executing);
-
-				if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty()) {
-					thisOP.state = thisOP.states.FULFILLED;
-				}
-
-				if (thisOP.state == thisOP.states.PREFAILED && thisOP.executors.isEmpty()) {
-					thisOP.state = thisOP.states.FAILED;
-				}
-			}
-		}));
-
-	} while (isUnDef(this.__f) || this.__f == null || !this.executors.isEmpty());
 };
 
 /**
@@ -4162,7 +4168,7 @@ var $doWait = function(aPromise, aWaitTimeout) {
 		var init = now();
 		while(aPromise.state != aPromise.states.FULFILLED && 
 			  aPromise.state != aPromise.states.FAILED &&
-			  (isUnDef(aPromise.__f) || aPromise.executing) &&
+			  (isUnDef(aPromise.__f) || !aPromise.executing) &&
 		      ((now() - init) < aWaitTimeout)) {
 			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
 		}
@@ -4172,7 +4178,7 @@ var $doWait = function(aPromise, aWaitTimeout) {
 	} else {
 		while(aPromise.state != aPromise.states.FULFILLED && 
 			  aPromise.state != aPromise.states.FAILED &&
-			  (isUnDef(aPromise.__f) || aPromise.executing)) {
+			  (isUnDef(aPromise.__f) || !aPromise.executing)) {
 			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
 		}
 		while(aPromise.executing) {

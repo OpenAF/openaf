@@ -197,8 +197,8 @@
 		},
 		{
 			"description": "Apache Commons HTTPComponents",
-			"path": ["lib/httpclient-4.5.3.jar", "lib/httpcore-4.4.6.jar"],
-			"version": "4.5.3",
+			"path": ["lib/httpclient-4.5.4.jar", "lib/httpcore-4.4.8.jar"],
+			"version": "4.5.4",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",

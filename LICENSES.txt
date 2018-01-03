@@ -2918,9 +2918,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons HTTPComponents
-Version               : 4.5.3
+Version               : 4.5.4
 Changed from original : No
-Location in openaf.jar: lib/httpclient-4.5.3.jar, lib/httpcore-4.4.6.jar
+Location in openaf.jar: lib/httpclient-4.5.4.jar, lib/httpcore-4.4.8.jar
 License               : 
 
 Apache License
