@@ -30,9 +30,13 @@ OpenWrap.template.prototype.__requireHB = function() {
  */
 OpenWrap.template.prototype.addHelpers = function(aPrefix, aObject) {
 	var m = Object.keys(aObject.constructor.prototype);
-	if (m.length < 1) m = Object.keys(aObject.prototype);
+	if (m.length < 1) m = (isDef(aObject.prototype)) ? Object.keys(aObject.prototype) : Object.keys(aObject);
 	m.forEach((aMethod) => {
-		this.__helpers[aPrefix + aMethod] = aObject[aMethod];
+		var subs = Object.keys(aObject[aMethod]);
+		if (subs.length == 0)
+			this.__helpers[aPrefix + aMethod] = aObject[aMethod];
+		else 
+			this.addHelpers(aPrefix + aMethod + "_", aObject[aMethod]);
 		//require(this.hb).registerHelper(aPrefix + aMethod, aObject[aMethod]);
 	});
 };

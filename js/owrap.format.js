@@ -593,6 +593,8 @@ OpenWrap.format.prototype.getActualTime = function(useAlternative) {
  * </odoc>
  */
 OpenWrap.format.prototype.fromDate = function(aDate, aFormat, aTimeZone) {
+	if (isString(aDate) && new Date(aDate) != null) aDate = new Date(aDate);
+
 	var sdf = new java.text.SimpleDateFormat(aFormat);
 	var jd = new java.util.Date();
 	if (isDefined(aTimeZone)) sdf.setTimeZone(java.util.TimeZone.getTimeZone(aTimeZone));
@@ -795,7 +797,8 @@ OpenWrap.format.prototype.dateDiff = {
      * </odoc>
      */
     inSeconds: function(d1, d2, shouldRound) {
-      if (isUndefined(d2)) d2 = new Date();
+	  if (isString(d1) && new Date(d1) != null) d1 = new Date(d1);
+      if (isUnDef(d2)) d2 = new Date();
       var t2 = d2.getTime();
       var t1 = d1.getTime();
 
@@ -809,7 +812,8 @@ OpenWrap.format.prototype.dateDiff = {
      * </odoc>
      */
     inMinutes: function(d1, d2, shouldRound) {
-      if (isUndefined(d2)) d2 = new Date();
+	  if (isString(d1) && new Date(d1) != null) d1 = new Date(d1);
+      if (isUnDef(d2)) d2 = new Date();
       var t2 = d2.getTime();
       var t1 = d1.getTime();
 
@@ -823,7 +827,8 @@ OpenWrap.format.prototype.dateDiff = {
      * </odoc>
      */
     inHours: function(d1, d2, shouldRound) {
-      if (isUndefined(d2)) d2 = new Date(); 
+	  if (isString(d1) && new Date(d1) != null) d1 = new Date(d1);
+      if (isUnDef(d2)) d2 = new Date(); 
       var t2 = d2.getTime();
       var t1 = d1.getTime();
 
@@ -837,7 +842,8 @@ OpenWrap.format.prototype.dateDiff = {
      * </odoc>
      */
     inDays: function(d1, d2, shouldRound) {
-    	if (isUndefined(d2)) d2 = new Date();
+		if (isString(d1) && new Date(d1) != null) d1 = new Date(d1);
+    	if (isUnDef(d2)) d2 = new Date();
     	var t2 = d2.getTime();
         var t1 = d1.getTime();
 
@@ -851,7 +857,8 @@ OpenWrap.format.prototype.dateDiff = {
      * </odoc>
      */
     inWeeks: function(d1, d2, shouldRound) {
-    	if (isUndefined(d2)) d2 = new Date();
+		if (isString(d1) && new Date(d1) != null) d1 = new Date(d1);
+    	if (isUnDef(d2)) d2 = new Date();
     	var t2 = d2.getTime();
         var t1 = d1.getTime();
 
@@ -865,7 +872,8 @@ OpenWrap.format.prototype.dateDiff = {
      * </odoc>
      */
     inMonths: function(d1, d2) {
-    	if (isUndefined(d2)) d2 = new Date();
+		if (isString(d1) && new Date(d1) != null) d1 = new Date(d1);
+    	if (isUnDef(d2)) d2 = new Date();
         var d1Y = d1.getFullYear();
         var d2Y = d2.getFullYear();
         var d1M = d1.getMonth();
@@ -881,7 +889,8 @@ OpenWrap.format.prototype.dateDiff = {
      * </odoc>
      */
     inYears: function(d1, d2) {
-    	if (isUndefined(d2)) d2 = new Date();
+		if (isString(d1) && new Date(d1) != null) d1 = new Date(d1);
+    	if (isUnDef(d2)) d2 = new Date();
         return d2.getFullYear()-d1.getFullYear();
     }
 }
