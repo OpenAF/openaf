@@ -541,16 +541,22 @@ OpenWrap.server.prototype.rest = {
 		case "GET": res.data = stringify(aGetFunc(idxs), undefined, ""); break;
 		case "POST":
 			if (isDef(aReq.files.content)) {
-				res.data = stringify(aCreateFunc(idxs, jsonParse(io.readFileString(aReq.files.content))), undefined, "");
-			} else
+				var fdata = "";
+				try { fdata = io.readFileString(aReq.files.content); } catch(e) { };
+				res.data = stringify(aCreateFunc(idxs, jsonParse(fdata)), undefined, "");
+			} else {
 				res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.params["NanoHttpd.QUERY_STRING"])), undefined, "");
+			}
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
 			break;
 		case "PUT":
-			if (isDef(aReq.files.content))
-				res.data = stringify(aSetFunc(idxs, jsonParse(io.readFileString(aReq.files.content))), undefined, "");
-			else
+			if (isDef(aReq.files.content)) {
+				var fdata = "";
+				try { fdata = io.readFileString(aReq.files.content); } catch(e) { };
+				res.data = stringify(aSetFunc(idxs, jsonParse(fdata)), undefined, "");
+			} else {
 				res.data = stringify(aSetFunc(idxs, jsonParse(aReq.files.postData)), undefined, "");
+			}
 			break;
 		case "DELETE": res.data = stringify(aRemoveFunc(idxs), undefined, ""); break;
 		};

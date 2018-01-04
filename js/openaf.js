@@ -4168,20 +4168,20 @@ var $doWait = function(aPromise, aWaitTimeout) {
 		var init = now();
 		while(aPromise.state != aPromise.states.FULFILLED && 
 			  aPromise.state != aPromise.states.FAILED &&
-			  (isUnDef(aPromise.__f) || !aPromise.executing) &&
+			  (isUnDef(aPromise.__f) || aPromise.executing || !aPromise.executors.isEmpty()) &&
 		      ((now() - init) < aWaitTimeout)) {
 			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
 		}
-		while(aPromise.executing && ((now() - init) < aWaitTimeout)) {
+		while(aPromise.executing && ((now() - init) < aWaitTimeout) && !aPromise.executors.isEmpty()) {
 			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
 		}
 	} else {
 		while(aPromise.state != aPromise.states.FULFILLED && 
 			  aPromise.state != aPromise.states.FAILED &&
-			  (isUnDef(aPromise.__f) || !aPromise.executing)) {
+			  (isUnDef(aPromise.__f) || aPromise.executing || !aPromise.executors.isEmpty())) {
 			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
 		}
-		while(aPromise.executing) {
+		while(aPromise.executing && !aPromise.executors.isEmpty()) {
 			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
 		}
 	}
