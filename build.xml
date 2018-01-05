@@ -1,0 +1,12 @@
+<target name="openaf">
+    <exec executable="wget">
+        <arg value="https://openaf.io/nightly/openaf.jar"/>
+        <arg value="-O"/>
+        <arg value="dist/openaf.jar"/>
+    </exec>
+    <exec executable="java">
+        <arg value="-jar"/>
+        <arg value="openaf.jar"/>
+        <arg value="--install"/>
+    </exec>
+</target>
