@@ -73,6 +73,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testFormatConversionBase64;
 
+   - name: OpenAF::Test Stream conversions
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFormatConversionStream;
+
    - name: OpenAF::Test Object Compression
      from: OpenAF::Init
      to  : oJob Test
@@ -134,6 +139,7 @@ todo:
    - OpenAF::Test Encoding
    - OpenAF::Test Format Conversion to/from bytes
    - OpenAF::Test Format Conversion to/from base64
+   - OpenAF::Test Stream conversions
    - OpenAF::Test Object Compression
    - OpenAF::Test $do
    - OpenAF::Test $doAll

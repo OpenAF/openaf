@@ -4,21 +4,36 @@
         
         log("Creating HTTP server on port 12345");
         var httpd = new HTTPd(12345);
-        httpd.setDefault("/abc");
-        httpd.add("/abc", function(aReq) {
-            if(aReq.params.abc != 123) throw "Failed to receive data from client correctly!";
-    
-            return httpd.replyOKJSON("ALLOK");
-        });
-    
-        plugin("HTTP");
-        log("Accessing HTTP server with HTTP client");
-        var http = new HTTP("http://127.0.0.1:12345?abc=123");
-        if (http.getResponse().responseCode != 200 ||
-            http.getResponse().response != "ALLOK")
-                throw "Failed to receive response from server correctly!";
-    
-        httpd.stop();
+        try {
+            httpd.setDefault("/abc");
+            httpd.add("/abc", function(aReq) {
+                if(aReq.params.abc != 123) throw "Failed to receive data from client correctly!";
+        
+                return httpd.replyOKJSON("ALLOK");
+            });
+            httpd.add("/stream", function(aReq) {
+                if (aReq.params.abc != 123) throw "Failed to received data from client correctly on /stream!";
+
+                //return httpd.replyStream(af.fromString2OutputStream("ALLOK"), "text/plain", 200);
+                return httpd.replyOKJSON("ALLOK");
+            });
+        
+            plugin("HTTP");
+            log("Accessing HTTP server with HTTP client");
+            var http = new HTTP("http://127.0.0.1:12345?abc=123");
+            if (http.getResponse().responseCode != 200 ||
+                http.getResponse().response != "ALLOK")
+                    throw "Failed to receive response from server correctly!";
+        
+            http = new HTTP("http://127.0.0.1:12345/stream?abc=123");
+            if (http.getResponse().responseCode != 200 ||
+                http.getResponse().response != "ALLOK")
+                    throw "Failed to receive response from the server correctly (for /stream)";
+        } catch(e) {
+            throw e;
+        } finally {
+            httpd.stop();
+        }
     };
 
     exports.testHTTPWSClient = function() {

@@ -1,9 +1,11 @@
 package wedo.openaf;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -1215,4 +1217,107 @@ public class AFBase extends ScriptableObject {
 		return org.apache.commons.codec.digest.Crypt.crypt(key, salt);
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>af.fromInputStream2String(aStream) : String</key>
+	 * Tries to convert an input aStream into a String.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String fromInputStream2String(Object aStream) throws IOException {
+		if (aStream instanceof InputStream) {
+			return IOUtils.toString((InputStream) aStream);
+		}
+
+		return null;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.fromInputStream2Bytes(aStream) : anArrayOfBytes</key>
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object fromInputStream2Bytes(Object aStream) throws IOException {
+		if (aStream instanceof InputStream) {
+			return IOUtils.toByteArray((InputStream) aStream);
+		}
+
+		return null;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.fromBytes2OutputStream(anArrayOfBytes) : Stream</key>
+	 * Converts anArrayOfBytes into a ByteArrayOutputStream. After using this stream you can, for example, use
+	 * .toString and toByteArray methods from the resulting stream.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object fromBytes2OutputStream(Object bytes) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		if (bytes instanceof NativeJavaArray) bytes = ((NativeJavaArray) bytes).unwrap();
+		if (bytes != null && !(bytes instanceof Undefined) && bytes instanceof byte[]) {
+			baos.write((byte[]) bytes);
+		}
+
+		return baos;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.fromString2OutputStream(aString) : Stream</key>
+	 * Converts aString into a ByteArrayOutputStream. After using this stream you can, for example, use
+	 * .toString and toByteArray methods from the resulting stream.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object fromString2OutputStream(String str) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		if (str != null) baos.write(str.getBytes());
+		return baos;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.fromBytes2InputStream(anArrayOfBytes) : Stream</key>
+	 * Converts anArrayOfBytes into a ByteArrayInputStream.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object fromBytes2InputStream(Object bytes) {
+		if (bytes instanceof NativeJavaArray) bytes = ((NativeJavaArray) bytes).unwrap();
+		if (bytes != null && !(bytes instanceof Undefined) && bytes instanceof byte[]) {
+			return new ByteArrayInputStream((byte[]) bytes);
+		} else {
+			return new ByteArrayInputStream(new String().getBytes());
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.fromString2InputStream(aString) : Stream</key>
+	 * Converts aString into a ByteArrayInputStream.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object fromString2InputStream(String str) {
+		if (str != null)
+			return fromBytes2InputStream(str.getBytes());
+		else
+			return fromBytes2InputStream((new String().getBytes()));
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.newOutputStream() : Stream</key>
+	 * Creates a new ByteArrayOutputStream. After using this stream you can, for example, use
+	 * .toString and toByteArray methods from the resulting stream.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object newOutputStream() {
+		return new ByteArrayOutputStream();
+	}
 }

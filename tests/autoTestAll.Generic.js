@@ -110,6 +110,28 @@
 		}
     };
 
+    exports.testFormatConversionStream = function() {
+        var str = "my test string where hi = olá";
+
+        var istream = af.fromString2InputStream(str);
+        var ostream = af.newOutputStream();
+        ioStreamCopy(ostream, istream);
+        ow.test.assert(String(ostream.toString()), str, "Problem with creating input stream from string");
+
+        istream = af.fromBytes2InputStream(af.fromString2Bytes(str));
+        ostream = af.newOutputStream();
+        ioStreamCopy(ostream, istream);
+        ow.test.assert(String(ostream.toString()), str, "Problem with creating input stream from an array of bytes");
+
+        ow.test.assert(String(af.fromString2OutputStream(str).toString()), str, "Problem with converting string to an output stream");
+
+        istream = af.fromString2InputStream(str);
+        ow.test.assert(String(af.fromInputStream2String(istream)), str, "Problem with converting an input stream into a string");
+
+        istream = af.fromString2InputStream(str);
+        ow.test.assert(af.fromBytes2String(af.fromInputStream2Bytes(istream)), str, "Problem with converting an input stream into an array of bytes");
+    };
+
     exports.testFormatConversionBase64 = function() {
 		ow.test.assert(af.fromBytes2String(af.fromBase64(af.toBase64Bytes("OpenAF"))), "OpenAF", "Problem with af.fromBase64 or af.toBase64Bytes");        
     };
