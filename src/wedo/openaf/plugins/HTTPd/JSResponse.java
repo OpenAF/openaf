@@ -101,15 +101,19 @@ public class JSResponse extends Response {
 				}
 				
 				if (no.containsKey("data")) {
-						this.data = new ByteArrayInputStream( 
-							(no.get("data") instanceof String) ? no.get("data").toString().getBytes()
-									                           : (byte[]) no.get("data"));
+					this.data = new ByteArrayInputStream( 
+						(no.get("data") instanceof String) ? no.get("data").toString().getBytes()
+									                        : (byte[]) no.get("data"));
 						
-						this.size =	((no.get("data") instanceof String) ? no.get("data").toString().getBytes().length
-									                           : ((byte[]) no.get("data")).length);
+					this.size =	((no.get("data") instanceof String) ? no.get("data").toString().getBytes().length
+									                        : ((byte[]) no.get("data")).length);
 				} else {
+					if (no.containsKey("stream")) {
+						this.data = (java.io.InputStream) no.get("stream");
+					} else {
 						this.data = new ByteArrayInputStream( ret.toString().getBytes());
 						this.size = ret.toString().length();
+					}
 				}
 				
 			} else {

@@ -512,6 +512,9 @@ public class HTTPServer extends ScriptableObject {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
+		if (data instanceof org.mozilla.javascript.NativeJavaArray) {
+			data = ((org.mozilla.javascript.NativeJavaArray) data).unwrap();
+		}
 
 		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
 		if(code <= 0) code = 200;
@@ -519,6 +522,31 @@ public class HTTPServer extends ScriptableObject {
 		no.put("status", no, code);
 		no.put("mimetype", no, mimetype);
 		no.put("data", no, (byte[]) data);
+		no.put("header", no, headers);
+		
+		return no;			
+	}
+
+	/**
+	 * <odoc>
+	 * <key>HTTPd.replyStream(stream, aMimetype, aHTTPCode, aMapOfHeaders) : Object</key>
+	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
+	 * It will return aMimetype (string representation) with the provided input stream, the aHTTPCode and the map
+	 * of extra HTTP headers.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object replyStream(Object data, String mimetype, int code, Object headers) {
+		Context cx = (Context) AFCmdBase.jse.enterContext();
+		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+		AFCmdBase.jse.exitContext();
+
+		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
+		if(code <= 0) code = 200;
+		
+		no.put("status", no, code);
+		no.put("mimetype", no, mimetype);
+		no.put("stream", no, data);
 		no.put("header", no, headers);
 		
 		return no;			

@@ -3,28 +3,14 @@ package wedo.openaf;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-
-import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeJavaObject;
-import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSFunction;
 import org.mozilla.javascript.xml.XMLObject;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
-import wedo.openaf.core.AF;
 
 public class IOBase extends wedo.openaf.core.IO {
 
@@ -120,19 +106,7 @@ public class IOBase extends wedo.openaf.core.IO {
 	
 	@JSFunction
 	public static void writeFileAsArray(String filename, Object lines, String encoding) throws Exception {	
-		/*
-		if (lines instanceof NativeArray) {
-			if (encoding != null && encoding.equals("undefined")) encoding = null;
-			
-			NativeArray na = (NativeArray) lines;
-			ArrayList<String> al = new ArrayList<String>();
-			
-			for (Object line : na) {
-				al.add(Context.toString(line));
-			}
-		*/
-			wedo.openaf.core.IO.writeFileAsArray(filename, lines, encoding);
-		//} 
+		wedo.openaf.core.IO.writeFileAsArray(filename, lines, encoding);
 	}	
 	
 	@JSFunction
