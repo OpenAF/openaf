@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
@@ -543,6 +544,8 @@ public class HTTPServer extends ScriptableObject {
 
 		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
 		if(code <= 0) code = 200;
+
+		if (data instanceof NativeJavaObject) data = ((NativeJavaObject) data).unwrap();
 		
 		no.put("status", no, code);
 		no.put("mimetype", no, mimetype);

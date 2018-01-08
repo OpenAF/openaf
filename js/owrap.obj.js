@@ -1368,8 +1368,8 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		}
 	}
 
-	if (this.outputObj.responseCode >= 400) {
-		switch(this.outputObj.responseCode) {
+	if (this.responseCode() >= 400) {
+		switch(this.responseCode()) {
 		case 404: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
 		case 410: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
 		default: throw "IOException Server returned HTTP response code: " + this.responseCode() + " for URL: " + aUrl + "; response = " + stringify(this.getErrorResponse());

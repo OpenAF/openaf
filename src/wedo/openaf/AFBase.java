@@ -1225,6 +1225,7 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public String fromInputStream2String(Object aStream) throws IOException {
+		if (aStream instanceof NativeJavaObject) aStream = ((NativeJavaObject) aStream).unwrap();
 		if (aStream instanceof InputStream) {
 			return IOUtils.toString((InputStream) aStream);
 		}
@@ -1239,6 +1240,7 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public Object fromInputStream2Bytes(Object aStream) throws IOException {
+		if (aStream instanceof NativeJavaObject) aStream = ((NativeJavaObject) aStream).unwrap();
 		if (aStream instanceof InputStream) {
 			return IOUtils.toByteArray((InputStream) aStream);
 		}
