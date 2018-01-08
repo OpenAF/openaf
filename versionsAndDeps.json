@@ -9,6 +9,15 @@
 			"deps": []
 		},
 		{
+			"description": "Later",
+			"path": ["js/later.js"],
+			"version": "1.2.0",
+			"changes": false,
+			"type": ["js"],
+			"license": "https://raw.githubusercontent.com/bunkat/later/master/LICENSE",
+			"deps": []
+		},
+		{
 			"description": "Materializecss",
 			"path": ["js/materialize.js"],
 			"version": "0.100.2",
