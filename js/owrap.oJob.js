@@ -1020,7 +1020,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				else
 					t.startAtFixedRate(aJob.typeArgs.timeInterval);
 			} else {
-				t.start();
+				t.startNoWait();
 			}
 			break;
 		}
