@@ -148,12 +148,15 @@ public class Threads extends ScriptableObject {
 	 * <odoc>
 	 * <key>Threads.start()</key>
 	 * Start normally all threads added. Will wait for the end of execution of all threads.
+	 * Note: it won't work if any of the other start* or init* methods has been used.
 	 * </odoc>
 	 */
 	@JSFunction
 	public void start() throws InterruptedException {
-		executor = Executors.newCachedThreadPool();
-		executor.invokeAll(threads);
+		if (executor == null) {
+			executor = Executors.newCachedThreadPool();
+			executor.invokeAll(threads);
+		}
 	}
 	
 	/**
@@ -161,14 +164,16 @@ public class Threads extends ScriptableObject {
 	 * <key>Threads.startNoWait()</key>
 	 * Start normally all threads added. Will not wait for the end of the execution of all threads.
 	 * See Threads.waitForThreads for waiting for the execution of threads when needed or, in alternative,
-	 * to Threads.start.
+	 * to Threads.start. Note: it won't work if any of the other start* or init* methods has been used.
 	 * </odoc>
 	 */
 	@JSFunction
 	public void startNoWait() throws InterruptedException, ExecutionException {
-		executor = Executors.newCachedThreadPool();
-		for(Runnable c : threads) {
-			executor.execute(c);
+		if (executor == null) {
+			executor = Executors.newCachedThreadPool();
+			for(Runnable c : threads) {
+				executor.execute(c);
+			}
 		}
 	}
 	
@@ -177,13 +182,16 @@ public class Threads extends ScriptableObject {
 	 * <key>Threads.startAtFixedRate(aTime)</key>
 	 * Start all threads and restarts them at a fixed rate determined by aTime (in ms) independently of the time
 	 * when the thread execution ends. Execution will stop upon Threads.stop. 
+	 * Note: it won't work if any of the other start* or init* methods has been used.
 	 * </odoc>
 	 */
 	@JSFunction
 	public void startAtFixedRate(double time) {
-		executor = Executors.newScheduledThreadPool(threads.size());
-		for(Runnable c : threads) {
-			((ScheduledExecutorService) executor).scheduleAtFixedRate(c, 0, (Double.valueOf(time)).longValue(), TimeUnit.MILLISECONDS);
+		if (executor == null) {
+			executor = Executors.newScheduledThreadPool(threads.size());
+			for(Runnable c : threads) {
+				((ScheduledExecutorService) executor).scheduleAtFixedRate(c, 0, (Double.valueOf(time)).longValue(), TimeUnit.MILLISECONDS);
+			}
 		}
 	}
 	
@@ -192,14 +200,116 @@ public class Threads extends ScriptableObject {
 	 * <key>Threads.startWithFixedRate(aTime)</key>
 	 * Start all threads and restarts them at a fixed rate determined by aTime (in ms) starting on the time when
 	 * the thread execution ends. Execution will stop upon Threads.stop.
+	 * Note: it won't work if any of the other start* or init* methods has been used.
 	 * </odoc>
 	 */
 	@JSFunction
 	public void startWithFixedRate(double time) {
-		executor = Executors.newScheduledThreadPool(threads.size());
-		for(Runnable c : threads) {
-			((ScheduledExecutorService) executor).scheduleWithFixedDelay(c, 0, (Double.valueOf(time)).longValue(), TimeUnit.MILLISECONDS);
-		}		
+		if (executor == null) {
+			executor = Executors.newScheduledThreadPool(threads.size());
+			for(Runnable c : threads) {
+				((ScheduledExecutorService) executor).scheduleWithFixedDelay(c, 0, (Double.valueOf(time)).longValue(), TimeUnit.MILLISECONDS);
+			}		
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.initScheduledThreadPool(numberOfThreads)</key>
+	 * Uses a thread pool situable for scheduled threads where you can specify the numberOfThreads to use (by defauly the number of cores).
+	 * Note: it ignores any previous thread added using addThread; It won't work if any of the other start* or init* methods has been used.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void initCachedThreadPool() {
+		executor = Executors.newCachedThreadPool();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.initScheduledThreadPool(numberOfThreads)</key>
+	 * Uses a thread pool situable for scheduled threads where you can specify the numberOfThreads to use (by defauly the number of cores).
+	 * Note: it ignores any previous thread added using addThread; It won't work if any of the other start* or init* methods has been used.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void initScheduledThreadPool(int nThreads) {
+		if (executor == null) {
+			// Get number of cores if undefined
+			if (nThreads < 1) {
+				nThreads = this.getNumberOfCores();
+			}
+
+			executor = Executors.newScheduledThreadPool(nThreads);
+		}	
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.addScheduleThread(aFunction, aDelay) : String</key>
+	 * Adds to the scheduled thread pool aFunction to be executed within aDelay in ms. Returns an UUID associated with the thread. The aFunction will receive
+	 * the corresponding UUID as the first parameter. Note: it calls initScheduledThreadPool if it wasn't previously and it won't work if any of the other
+	 * start* or init* methods has been used previously.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String addScheduleThread(NativeFunction aFunction, double delay) {
+		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
+
+		UUID uuid = UUID.randomUUID();
+		((ScheduledExecutorService) executor).schedule((Runnable) new ScriptFunction(uuid, aFunction), (Double.valueOf(delay)).longValue(), TimeUnit.MILLISECONDS);
+		return uuid.toString();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.addCachedThread(aFunction) : String</key>
+	 * Adds to the cached thread pool aFunction to be executed. Returns an UUID associated with the thread. The aFunction will receive
+	 * the corresponding UUID as the first parameter. Note: it calls initCachedThreadPool if it wasn't previously and it won't work if any of the other
+	 * start* of init* methods has been used previously.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String addCachedThread(NativeFunction aFunction) {
+		if (executor == null) initCachedThreadPool();
+
+		UUID uuid = UUID.randomUUID();
+		executor.execute((Runnable) new ScriptFunction(uuid, aFunction));
+		return uuid.toString();	
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.addScheduleThreadAtFixedRate(aFunction, aRate) : String</key>
+	 * Adds to the scheduled thread pool aFunction to be executed at a fixed aRate in ms. Returns an UUID associated with the thread. The aFunction will receive
+	 * the corresponding UUID as the first parameter. Note: it calls initScheduledThreadPool if it wasn't previously and it won't work if any of the other
+	 * start* or init* methods has been used previously.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String addScheduleThreadAtFixedRate(NativeFunction aFunction, double time) {
+		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
+
+		UUID uuid = UUID.randomUUID();
+		((ScheduledExecutorService) executor).scheduleAtFixedRate((Runnable) new ScriptFunction(uuid, aFunction), 0, (Double.valueOf(time)).longValue(), TimeUnit.MILLISECONDS);
+		return uuid.toString();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.addScheduleThreadWithFixedDelay(aFunction, aDelay) : String</key>
+	 * Adds to the scheduled thread pool aFunction to be executed at a fixed aDelay in ms. Returns an UUID associated with the thread. The aFunction will receive
+	 * the corresponding UUID as the first parameter. Note: it calls initScheduledThreadPool if it wasn't previously and it won't work if any of the other
+	 * start* or init* methods has been used previously.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String addScheduleThreadWithFixedDelay(NativeFunction aFunction, double time) {
+		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
+
+		UUID uuid = UUID.randomUUID();
+		((ScheduledExecutorService) executor).scheduleWithFixedDelay((Runnable) new ScriptFunction(uuid, aFunction), 0, (Double.valueOf(time)).longValue(), TimeUnit.MILLISECONDS);
+		return uuid.toString();
 	}
 	
 	/**
