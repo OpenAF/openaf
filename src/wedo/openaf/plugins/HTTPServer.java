@@ -611,6 +611,8 @@ public class HTTPServer extends ScriptableObject {
 	}
 	
 	public static IStatus translateToNanoHTTPD(int code) {
+		return com.nwu.httpd.NanoHTTPD.Response.Status.lookup(code);
+		/*
 		switch(code) {
 		case 101: return com.nwu.httpd.NanoHTTPD.Response.Status.SWITCH_PROTOCOL; 
 		case 200: return com.nwu.httpd.NanoHTTPD.Response.Status.OK; 
@@ -618,9 +620,12 @@ public class HTTPServer extends ScriptableObject {
 		case 202: return com.nwu.httpd.NanoHTTPD.Response.Status.ACCEPTED; 
 		case 204: return com.nwu.httpd.NanoHTTPD.Response.Status.NO_CONTENT; 
 		case 206: return com.nwu.httpd.NanoHTTPD.Response.Status.PARTIAL_CONTENT; 
+		case 207: return com.nwu.httpd.NanoHTTPD.Response.Status.MULTI_STATUS;
 		case 301: return com.nwu.httpd.NanoHTTPD.Response.Status.REDIRECT;
+		case 302: return com.nwu.httpd.NanoHTTPD.Response.Status.FOUND;
 		case 303: return com.nwu.httpd.NanoHTTPD.Response.Status.REDIRECT_SEE_OTHER;
 		case 304: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_MODIFIED; 
+		case 307: return com.nwu.httpd.NanoHTTPD.Response.Status.TEMPORARY_REDIRECT;
 		case 400: return com.nwu.httpd.NanoHTTPD.Response.Status.BAD_REQUEST; 
 		case 401: return com.nwu.httpd.NanoHTTPD.Response.Status.UNAUTHORIZED; 
 		case 403: return com.nwu.httpd.NanoHTTPD.Response.Status.FORBIDDEN; 
@@ -629,11 +634,19 @@ public class HTTPServer extends ScriptableObject {
 		case 406: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_ACCEPTABLE;
 		case 408: return com.nwu.httpd.NanoHTTPD.Response.Status.REQUEST_TIMEOUT;
 		case 409: return com.nwu.httpd.NanoHTTPD.Response.Status.CONFLICT;
+		case 410: return com.nwu.httpd.NanoHTTPD.Response.Status.GONE;
+		case 411: return com.nwu.httpd.NanoHTTPD.Response.Status.LENGTH_REQUIRED;
+		case 412: return com.nwu.httpd.NanoHTTPD.Response.Status.PRECONDITION_FAILED;
+		case 413: return com.nwu.httpd.NanoHTTPD.Response.Status.PAYLOAD_TOO_LARGE;
+		case 415: return com.nwu.httpd.NanoHTTPD.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 		case 416: return com.nwu.httpd.NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE; 
+		case 417: return com.nwu.httpd.NanoHTTPD.Response.Status.EXPECTATION_FAILED;
+		case 429: return com.nwu.httpd.NanoHTTPD.Response.Status.TOO_MANY_REQUESTS;
 		case 500: return com.nwu.httpd.NanoHTTPD.Response.Status.INTERNAL_ERROR;
 		case 501: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_IMPLEMENTED;
+		case 503: return com.nwu.httpd.NanoHTTPD.Response.Status.SERVICE_UNAVAILABLE;
 		case 505: return com.nwu.httpd.NanoHTTPD.Response.Status.UNSUPPORTED_HTTP_VERSION;
 		default: return Codes.HTTP_OK;
-		}
+		}*/
 	}
 }
