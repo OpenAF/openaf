@@ -266,7 +266,7 @@ ODocs.prototype.search = function(aTerm, anArrayOfIds) {
 	}
 
 	return resArray;
-}
+};
 
 ODocs.prototype.backgroundLoadWeb = function(aID) {
 	var parent = this;

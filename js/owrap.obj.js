@@ -1272,11 +1272,23 @@ OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
 
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	this.__lps = {};
+	this.__config = {};
 	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
 	if (isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 	}
 };
+
+OpenWrap.obj.prototype.http.prototype.setConfig = function(aMap) {
+	this.__config = aMap;
+};
+
+OpenWrap.obj.prototype.http.prototype.__handleConfig = function(aH) {
+	if (isDef(this.__config.disableCookie) && this.__config.disableCookie) aH = aH.disableCookieManagement();
+	if (isDef(this.__config.disableRedirectHandling) && this.__config.disableRedirectHandling) aH = aH.disableRedirectHandling();
+	return aH;
+};
+
 OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	var r, canHaveIn = false;
 
@@ -1320,12 +1332,19 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 			if (aUrl.startsWith(key)) getKey = key;
 		}
 		if (isDef(getKey)) {
-			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]).build();
+			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]);
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
 		} else {
+			this.__h = this.__handleConfig(this.__h);
 			this.__h = this.__h.build();
 		}
 	} else {
-		if (isUnDef(this.__h)) this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
+		if (isUnDef(this.__h)) {
+			this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		}
 	}
 
 	// Set timeout
@@ -1568,10 +1587,9 @@ OpenWrap.obj.prototype.rest = {
  			_l(h);
  		}
 		
-		/*var rmap = (urlEncode) ?
+		var rmap = (urlEncode) ?
 				   merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);*/
-		var rmap = merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap);
+				   merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
 
 		try {
 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, undefined, _t);
@@ -1622,10 +1640,10 @@ OpenWrap.obj.prototype.rest = {
  			_l(h);
  		}
 		
-		/*var rmap = (urlEncode) ?
+		var rmap = (urlEncode) ?
 		           merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);*/
-		var rmap = merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap);				   	
+				   merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
+		
 		try {
 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, undefined, _t);
 		} catch(e) {
