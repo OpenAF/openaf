@@ -1368,7 +1368,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	}
 
 	this.outputObj = {};
-	if (isDef(r)) this.__r = this.__h.execute(r);
+	this.__r = this.__h.execute(r);
 	if (isBytes) {
 		this.outputObj =  {
 			responseCode: this.responseCode(),
@@ -1472,7 +1472,12 @@ OpenWrap.obj.prototype.http.prototype.responseHeaders = function() {
 	var ar = {};
 	var hh = this.__r.getAllHeaders();
 	for(var i in hh) {
-		ar[hh[i].getName()] = hh[i].getValue();
+		var name = hh[i].getName();
+		if (isDef(ar[name]) && name.toLowerCase() == "set-cookie") {
+			ar[name] = ar[name] + ";" + hh[i].getValue();
+		} else {
+			ar[hh[i].getName()] = hh[i].getValue();
+		}
 	}
 
 	return ar;
