@@ -1282,5 +1282,128 @@ OpenWrap.format.prototype.cron = {
 		if (isDef(cr.schedules[0].d)) isMatch = isMatch && (cr.schedules[0].d.indexOf(Number(ct[i])+1) > -1);
 
 		return isMatch;
+	},
+
+	scheduler: function() {
+		plugin("Threads");
+		ow.loadFormat();
+
+		var r = {
+			__entries: {},
+			__repeat: "",
+			__t: new Threads()
+		}
+
+		r.addEntry = function(aCronExpr, aFunction, waitForFinish) {
+			var uuid = genUUID();
+		
+			this.__entries[uuid] = {
+				expr : aCronExpr,
+				func : aFunction,
+				wff  : waitForFinish,
+				exec : false,
+				next : now() + ow.format.cron.timeUntilNext(aCronExpr)
+			}
+		
+			this.resetSchThread();
+		};
+
+		r.timeUntilNext = function() {
+			var t;
+			var ref = new Date();
+		
+			for(let i in this.__entries) {
+				var c = new Date(ow.format.cron.nextScheduled(this.__entries[i].expr)) - ref;
+				if (isUnDef(t)) {
+					t = c;
+				} else {
+					if (c >= 0 && c < t) t = c;
+				}
+			}
+		
+			return t;
+		};
+
+		r.nextUUID = function() {
+			var t;
+			var r = -1;
+			var ref = new Date();
+		
+			for(let i in this.__entries) {
+				var c = new Date(ow.format.cron.nextScheduled(this.__entries[i].expr)) - ref;
+				if (isUnDef(t)) {
+					t = c;
+					r = i;
+				} else {
+					if (c >= 0 && c < t) {
+						t = c;
+						r = i;
+					}
+				}
+			}
+		
+			return r;
+		};
+
+		r.resetSchThread = function(aErrFunction) {
+			var parent = this;
+			var ruuid = genUUID();
+		
+			if (isUnDef(aErrFunction)) aErrFunction = (r) => { logErr(String(r)); }
+			this.__errfunc = aErrFunction;
+		
+			this.__repeat = ruuid;
+			this.__t.stop(true);
+			this.__t = new Threads();
+		
+			this.__t.addCachedThread(function(uuid) {
+		
+				do {
+					var ts = void 0;
+					for(let i in parent.__entries) {
+						var entry = parent.__entries[i];
+		
+						// Check if it's time to execute
+						// If wff = true it's not okay to execute if it's executing.
+						if (ow.format.cron.isCronMatch(new Date(), entry.expr) && ((entry.wff && !entry.exec) || !entry.wff)) {
+							parent.__t.addCachedThread(function() {
+								var res;
+								var si = String(i);
+								try {
+									if (!parent.__entries[si].exec && parent.__entries[si].next <= now()) {
+										parent.__entries[si].exec = true;
+										res = parent.__entries[si].func();
+										while (ow.format.cron.timeUntilNext(parent.__entries[si].expr) < 0) {
+											sleep(500);
+										}
+										parent.__entries[si].next = now() + ow.format.cron.timeUntilNext(parent.__entries[si].expr);
+										parent.__entries[si].exec = false;
+									}
+								} catch(e) {
+									parent.__errfunc(e);
+								} 
+									return res;
+							});
+						}
+		
+						// Determine the minimum waiting time
+						if (isUnDef(ts)) {
+							ts = ow.format.cron.timeUntilNext(entry.expr, void 0, new Date() + 1);
+						} else {
+							var c = ow.format.cron.timeUntilNext(entry.expr);
+							if (c < ts) ts = c;
+						}
+					}
+		
+					if (ts > 0) {
+						sleep(ts);
+					} else {
+						sleep(500);
+					}
+				} while(parent.__repeat == String(ruuid));
+			});
+		};
+
+		return r;
 	}
 }
