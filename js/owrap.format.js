@@ -1283,4 +1283,5 @@ OpenWrap.format.prototype.cron = {
 
 		return isMatch;
 	}
+
 }

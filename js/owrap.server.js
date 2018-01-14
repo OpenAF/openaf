@@ -514,6 +514,19 @@ OpenWrap.server.prototype.ldap.prototype.searchStrings = function(baseSearch, se
 
 OpenWrap.server.prototype.rest = {
 	
+	parseQuery: (s) => {
+		var r = jsonParse(s);
+		if (isObject(r)) return r;
+
+		r = {};
+		var l = splitBySeparator(s, "&");
+		for(let i in l) {
+			var a = splitBySeparator(l[i], "=");
+			if (a.length == 2) r[decodeURIComponent(a[0])] = decodeURIComponent(a[1]);
+		}
+		return r;
+	},
+
 	/**
 	 * <odoc>
 	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc) : RequestReply</key>
@@ -542,10 +555,14 @@ OpenWrap.server.prototype.rest = {
 		case "POST":
 			if (isDef(aReq.files.content)) {
 				var fdata = "";
-				try { fdata = io.readFileString(aReq.files.content); } catch(e) { };
-				res.data = stringify(aCreateFunc(idxs, jsonParse(fdata)), undefined, "");
+				try { fdata = io.readFileString(aReq.files.content); } catch(e) { }
+				res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata)), undefined, "");
 			} else {
-				res.data = stringify(aCreateFunc(idxs, jsonParse(aReq.params["NanoHttpd.QUERY_STRING"])), undefined, "");
+				if (isDef(aReq.files.postData)) {
+					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData)), undefined, "");
+				} else {
+					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"])), undefined, "");
+				}
 			}
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
 			break;
@@ -553,9 +570,9 @@ OpenWrap.server.prototype.rest = {
 			if (isDef(aReq.files.content)) {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { };
-				res.data = stringify(aSetFunc(idxs, jsonParse(fdata)), undefined, "");
+				res.data = stringify(aSetFunc(idxs, ow.server.rest.parseQuery(fdata)), undefined, "");
 			} else {
-				res.data = stringify(aSetFunc(idxs, jsonParse(aReq.files.postData)), undefined, "");
+				res.data = stringify(aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData)), undefined, "");
 			}
 			break;
 		case "DELETE": res.data = stringify(aRemoveFunc(idxs), undefined, ""); break;
@@ -656,7 +673,183 @@ OpenWrap.server.prototype.rest = {
 	writeIndexes: function(aPropsObj) {
 		return ow.loadObj().rest.writeIndexes(aPropsObj)
 	}
-}
+};
+
+//-----------------------------------------------------------------------------------------------------
+//CRON SCHEDULER
+//-----------------------------------------------------------------------------------------------------
+
+/**
+ * <odoc>
+ * <key>ow.server.scheduler.scheduler()</key>
+ * Creates a new instance of a cron based scheduler with its own thread pool.
+ * </odoc>
+ */
+OpenWrap.server.prototype.scheduler = function () {
+	plugin("Threads");
+	ow.loadFormat();
+
+	var r = {
+		__entries: {},
+		__repeat: "",
+		__t: new Threads()
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.scheduler.stop()</key>
+	 * Attempts to force stop the current scheduler thread pool.
+	 * </odoc>
+	 */
+	r.stop = function () {
+		this.__t.stop(true);
+
+		this.__entries = {};
+		this.__repeat = "";
+		this.__t = new Threads();
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.scheduler.addEntry(aCronExpr, aFunction, waitForFinish) : String</key>
+	 * Adds a new scheduler entry with a give aCronExpr"ession" that will trigger the scheduled execution of
+	 * aFunction. If waitForFinish = true it will not execute until the previous execution has finished.
+	 * </odoc>
+	 */
+	r.addEntry = function (aCronExpr, aFunction, waitForFinish) {
+		var uuid = genUUID();
+
+		this.__entries[uuid] = {
+			expr: aCronExpr,
+			func: aFunction,
+			wff: waitForFinish,
+			exec: false,
+			next: now() + ow.format.cron.timeUntilNext(aCronExpr)
+		};
+
+		this.resetSchThread();
+		return uuid;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.scheduler.timeUntilNext() : Number</key>
+	 * Returns the number of ms until the next scheduled execution.
+	 * </odoc>
+	 */
+	r.timeUntilNext = function () {
+		var t;
+		var ref = new Date();
+
+		for (let i in this.__entries) {
+			var c = new Date(ow.format.cron.nextScheduled(this.__entries[i].expr)) - ref;
+			if (isUnDef(t)) {
+				t = c;
+			} else {
+				if (c >= 0 && c < t) t = c;
+			}
+		}
+
+		return t;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.scheduler.nextUUID() : String</key>
+	 * Returns the uuid of the next entry that will be executed.
+	 * </odoc>
+	 */
+	r.nextUUID = function () {
+		var t;
+		var r = -1;
+		var ref = new Date();
+
+		for (let i in this.__entries) {
+			var c = new Date(ow.format.cron.nextScheduled(this.__entries[i].expr)) - ref;
+			if (isUnDef(t)) {
+				t = c;
+				r = i;
+			} else {
+				if (c >= 0 && c < t) {
+					t = c;
+					r = i;
+				}
+			}
+		}
+
+		return r;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.scheduler.resetSchThread(aErrFunction)</key>
+	 * Resets the current scheduler thread pool adding a loop cached thread that will sleep until the next
+	 * execution is due. When it executes it will add a new cached thread to execute the scheduled entry
+	 * by executing the entry function provided, as argument, it's uuid.
+	 * </odoc>
+	 */
+	r.resetSchThread = function (aErrFunction) {
+		var parent = this;
+		var ruuid = genUUID();
+
+		if (isUnDef(aErrFunction)) aErrFunction = (r) => { logErr(String(r)); };
+		this.__errfunc = aErrFunction;
+
+		this.__repeat = ruuid;
+		this.__t.stop(true);
+		this.__t = new Threads();
+
+		this.__t.addCachedThread(function (uuid) {
+
+			do {
+				var ts = void 0;
+				for (let i in parent.__entries) {
+					var entry = parent.__entries[i];
+
+					// Check if it's time to execute
+					// If wff = true it's not okay to execute if it's executing.
+					if (ow.format.cron.isCronMatch(new Date(), entry.expr) && ((entry.wff && !entry.exec) || !entry.wff)) {
+						parent.__t.addCachedThread(function () {
+							var res;
+							var si = String(i);
+							try {
+								if (parent.__entries[si].next <= now()) {
+									parent.__entries[si].next = (new Date(ow.format.cron.nextScheduled(parent.__entries[si].expr, void 0, now()+1000))).getTime();
+									parent.__entries[si].exec = true;
+									res = parent.__entries[si].func(si);
+									while (ow.format.cron.timeUntilNext(parent.__entries[si].expr) < 0) {
+										sleep(500);
+									}
+									parent.__entries[si].exec = false;
+								}
+							} catch (e) {
+								if (!(e.message.match(/java\.lang\.InterruptedException: sleep interrupted/)))
+									parent.__errfunc(e);
+							}
+							return res;
+						});
+					}
+
+					// Determine the minimum waiting time
+					if (isUnDef(ts)) {
+						ts = ow.format.cron.timeUntilNext(entry.expr, void 0, now()+1000);
+					} else {
+						var c = ow.format.cron.timeUntilNext(entry.expr);
+						if (c < ts) ts = c;
+					}
+				}
+
+				if (ts > 0) {
+					sleep(ts);
+				} else {
+					sleep(500);
+				}
+			} while (parent.__repeat == String(ruuid));
+		});
+	};
+
+	return r;
+};
 
 //-----------------------------------------------------------------------------------------------------
 // HTTP SERVER

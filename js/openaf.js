@@ -1081,6 +1081,9 @@ function sha512(obj) {
  * </odoc>
  */
 function splitBySeparator(aString, aSep) {
+	if (isUnDef(aString) || aString == null) return [];
+	if (isUnDef(aSep)) aSep = ";";
+
 	return aString.replace(new RegExp(aSep, "g"), "\\" + aSep).replace(new RegExp("\\\\\\\\(?=" + aSep + ")", "g") , "").split("\\" + aSep + "");
 }
 
