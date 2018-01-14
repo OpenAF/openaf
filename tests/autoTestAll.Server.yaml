@@ -18,9 +18,15 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testHTTPServer;
 
+   - name: Server::Scheduler
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testScheduler;
+
 todo:
    # Server tests
    # ------------
    - Server::Init
+   - Server::Scheduler
    - Server::REST server
    - Server::HTTP server

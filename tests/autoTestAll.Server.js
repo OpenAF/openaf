@@ -27,6 +27,34 @@
         ow.server.httpd.stop(hs);
     };
 
+    exports.testScheduler = function() {
+        var a = 0, b = 0, c = 0;
+
+        var sch = new ow.loadServer().scheduler();
+
+        sch.addEntry("*/5 * * * * *", function() {
+            if (c > 0 && c <= 10) a++;
+            //log("A = " + a);
+        });
+
+        sch.addEntry("*/2 * * * * *", function() {
+            if (c > 0 && c <= 10) b++;
+            //log("B = " + b);
+        });
+
+        sch.addEntry("*/1 * * * * *", function() {
+            c++; 
+            //log("C = " + c);
+        });
+
+        sleep(12000);
+        sch.stop();
+
+        ow.test.assert(c >= 10, true, "Problem scheduling an every second function.");
+        ow.test.assert(a, 2, "Problem scheduling an every 2 seconds function.");
+        ow.test.assert(b, 5, "Problem scheduling an every 5 seconds function.");
+    };
+
     exports.testHTTPServer = function() {
         ow.loadServer();
         var hs1 = ow.server.httpd.start(18081);
