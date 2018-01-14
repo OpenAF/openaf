@@ -1284,6 +1284,12 @@ OpenWrap.format.prototype.cron = {
 		return isMatch;
 	},
 
+	/**
+	 * <odoc>
+	 * <key>ow.format.cron.scheduler.scheduler()</key>
+	 * Creates a new instance of a cron based scheduler with its own thread pool.
+	 * </odoc>
+	 */
 	scheduler: function() {
 		plugin("Threads");
 		ow.loadFormat();
@@ -1294,6 +1300,29 @@ OpenWrap.format.prototype.cron = {
 			__t: new Threads()
 		}
 
+		/**
+		 * <odoc>
+		 * <key>ow.format.cron.scheduler.stop()</key>
+		 * Attempts to force stop the current scheduler thread pool.
+		 * </odoc>
+		 */
+		r.stop = function() {
+			this.__t.stop(true);
+
+			var r = {
+				__entries: {},
+				__repeat: "",
+				__t: new Threads()
+			}
+		};
+
+		/**
+		 * <odoc>
+		 * <key>ow.format.cron.scheduler.addEntry(aCronExpr, aFunction, waitForFinish) : String</key>
+		 * Adds a new scheduler entry with a give aCronExpr"ession" that will trigger the scheduled execution of
+		 * aFunction. If waitForFinish = true it will not execute until the previous execution has finished.
+		 * </odoc>
+		 */
 		r.addEntry = function(aCronExpr, aFunction, waitForFinish) {
 			var uuid = genUUID();
 		
@@ -1306,8 +1335,15 @@ OpenWrap.format.prototype.cron = {
 			}
 		
 			this.resetSchThread();
+			return uuid;
 		};
 
+		/**
+		 * <odoc>
+		 * <key>ow.format.cron.scheduler.timeUntilNext() : Number</key>
+		 * Returns the number of ms until the next scheduled execution.
+		 * </odoc>
+		 */
 		r.timeUntilNext = function() {
 			var t;
 			var ref = new Date();
@@ -1324,6 +1360,12 @@ OpenWrap.format.prototype.cron = {
 			return t;
 		};
 
+		/**
+		 * <odoc>
+		 * <key>ow.format.cron.scheduler.nextUUID() : String</key>
+		 * Returns the uuid of the next entry that will be executed.
+		 * </odoc>
+		 */
 		r.nextUUID = function() {
 			var t;
 			var r = -1;
@@ -1345,6 +1387,14 @@ OpenWrap.format.prototype.cron = {
 			return r;
 		};
 
+		/**
+		 * <odoc>
+		 * <key>ow.format.cron.scheduler.resetSchThread(aErrFunction)</key>
+		 * Resets the current scheduler thread pool adding a loop cached thread that will sleep until the next
+		 * execution is due. When it executes it will add a new cached thread to execute the scheduled entry
+		 * by executing the entry function provided, as argument, it's uuid.
+		 * </odoc>
+		 */
 		r.resetSchThread = function(aErrFunction) {
 			var parent = this;
 			var ruuid = genUUID();
@@ -1372,7 +1422,7 @@ OpenWrap.format.prototype.cron = {
 								try {
 									if (!parent.__entries[si].exec && parent.__entries[si].next <= now()) {
 										parent.__entries[si].exec = true;
-										res = parent.__entries[si].func();
+										res = parent.__entries[si].func(si);
 										while (ow.format.cron.timeUntilNext(parent.__entries[si].expr) < 0) {
 											sleep(500);
 										}
@@ -1380,7 +1430,8 @@ OpenWrap.format.prototype.cron = {
 										parent.__entries[si].exec = false;
 									}
 								} catch(e) {
-									parent.__errfunc(e);
+									if (!(e.message.match(/java\.lang\.InterruptedException: sleep interrupted/)))
+										parent.__errfunc(e);
 								} 
 									return res;
 							});
