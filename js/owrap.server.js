@@ -712,8 +712,9 @@ OpenWrap.server.prototype.scheduler = function () {
 	/**
 	 * <odoc>
 	 * <key>ow.server.scheduler.addEntry(aCronExpr, aFunction, waitForFinish) : String</key>
-	 * Adds a new scheduler entry with a give aCronExpr"ession" that will trigger the scheduled execution of
+	 * Adds a new scheduler entry with a given aCronExpr"ession" that will trigger the scheduled execution of
 	 * aFunction. If waitForFinish = true it will not execute until the previous execution has finished.
+	 * Returns an UUID that can be used with the function modifyEntry later, if needed.
 	 * </odoc>
 	 */
 	r.addEntry = function (aCronExpr, aFunction, waitForFinish) {
@@ -729,6 +730,28 @@ OpenWrap.server.prototype.scheduler = function () {
 
 		this.resetSchThread();
 		return uuid;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.scheduler.modifyEntry(aUUID, aCronExpr, aFunction, waitForFinish) : String</key>
+	 * Changes an existing scheduler entry (aUUID) with a given aCronExpr"ession" that will trigger the scheduled execution of
+	 * aFunction. If waitForFinish = true it will not execute until the previous execution has finished.
+	 * </odoc>
+	 */
+	r.modifyEntry = function(aUUID, aCronExpr, aFunction, waitForFinish) {
+		if (isUnDef(this.__entries[aUUID])) return void 0;
+		
+		this.__entries[aUUID] = {
+			expr: aCronExpr,
+			func: aFunction,
+			wff: waitForFinish,
+			exec: false,
+			next: now() + ow.format.cron.timeUntilNext(aCronExpr)
+		};
+
+		this.resetSchThread();
+		return aUUID;
 	};
 
 	/**
