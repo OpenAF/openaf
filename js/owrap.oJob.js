@@ -23,6 +23,7 @@ OpenWrap.oJob = function() {
 	this.__threads = {};
 	this.__ojob = { log: true, logArgs: false, numThreads: undefined, logToConsole: true };
 	this.__expr = processExpr(" ");
+	this.__logLimit = 100;
 
 	plugin("Threads");
 	ow.loadFormat();
@@ -75,6 +76,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
+	if (isDef(ojob.logLimit)) this.__logLimit = ojob.__logLimit;
 	
 	if (isDef(this.__ojob.channels)) {
 		if (this.__ojob.channels.log) startLog();
@@ -525,12 +527,12 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				delete temp.execid;
 				aa = "[" + existing.name + "] | " + JSON.stringify(temp) + "\n";
 			}
+
+			if (isUnDef(__conAnsi)) __initializeCon();
+			var ansis = __conAnsi && (java.lang.System.console() != null);
 			try {
 				var s = "", ss = "";
-				plugin("Console"); 
-				var con = (new Console()).getConsoleReader();
-				var w = con.getTerminal().getWidth();
-				var ansis = con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null);
+				var w = (isDef(__con)) ? __con.getTerminal().getWidth() : 80;
 				var jansi = JavaImporter(Packages.org.fusesource.jansi);
 				
 				if (ansis) {
@@ -599,7 +601,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		};
 
 		// Housekeeping
-		if (existing.log.length > 1000) existing.log.shift();
+		if (existing.log.length > this.__logLimit) existing.log.shift();
 
 		this.getLogCh().set({ "ojobId": this.__id + aId, "name": aJobName }, existing);
 	}
@@ -790,9 +792,6 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 	if (this.__ojob != {} && this.__ojob.daemon == true && this.__ojob.sequential == true)
 		ow.loadServer().daemon(this.__ojob.timeInterval);
-	/*if (this.__ojob != {} && this.__ojob.daemon == true) {
-		ow.loadServer().daemon(this.__ojob.timeInterval);
-	}*/
 
 	if (!(this.__ojob.sequential)) {
 		try {
@@ -800,7 +799,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 			t.stop();
 		} catch(e) {}
 	}
-}
+};
 
 /**
  * <odoc>
@@ -969,58 +968,51 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 			}
 			break;
 		case "periodic":
-			var t = new Threads();
-			t.addThread(function() {
-				var repeat = false, doIt = true;
-
-				do {
-					if (isDef(aJob.typeArgs.cron)) {
-						if (isUnDef(aJob.typeArgs.timeInterval) || aJob.typeArgs.timeInterval <= 0) {
-							repeat = true;
-							// If same second wait
-							while (ow.format.cron.timeUntilNext(aJob.typeArgs.cron) < 0) {
-								sleep(500);
-							}
-							// Wait until next cron
-							ow.format.cron.sleepUntilNext(aJob.typeArgs.cron);
-							// Did sleep went as expected?
-							if (ow.format.cron.isCronMatch(new Date(), aJob.typeArgs.cron)) doIt = true;
-						} else {
-							if (!(ow.format.cron.isCronMatch(new Date(), aJob.typeArgs.cron))) {
-								doIt = false;
-								return false;
-							}
-						}
-					} 
-
-					if (doIt) {
-						uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
-						args.execid = uuid;
-						try {
-							_run(aJob.exec, args, aJob, altId);
-							parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
-						} catch(e) {
-							parent.__addLog("error", aJob.name, uuid, args, e, aId);
-						}
-					}
-				} while(repeat);
+			var f = function() {
+				uuid = parent.__addLog("start", aJob.name, void 0, args, aId);
+				args.execid = uuid;
+				try {
+					_run(aJob.exec, args, aJob, altId);
+					parent.__addLog("success", aJob.name, uuid, args, void 0, aId);
+				} catch(e) {
+					parent.__addLog("error", aJob.name, uuid, args, e, aId);
+				}
 
 				return true;
-			});
-			if (isDef(this.__threads[aJob.name]))
-				parent.__threads[aJob.name].push(t);
-			else
-				parent.__threads[aJob.name] = [ t ];
+			};
 
 			if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
-			//if (isUnDef(aJob.typeArgs.timeInterval)) aJob.typeArgs.timeInterval = 2000;
 			if (isDef(aJob.typeArgs.timeInterval) && aJob.typeArgs.timeInterval > 0) {
+				var t = new Threads();
+				t.addThread(f);
+
+				if (isDef(this.__threads[aJob.name]))
+					parent.__threads[aJob.name].push(t);
+				else
+					parent.__threads[aJob.name] = [ t ]; 
+
 				if (isDef(aJob.typeArgs.waitForFinish) && aJob.typeArgs.waitForFinish)
 					t.startWithFixedRate(aJob.typeArgs.timeInterval);
 				else
 					t.startAtFixedRate(aJob.typeArgs.timeInterval);
 			} else {
-				t.startNoWait();
+				if (isDef(aJob.typeArgs.cron)) {
+					if (isUnDef(parent.__sch)) {
+						ow.loadServer(); 
+						parent.__sch = new ow.server.scheduler();
+					}
+					if (isUnDef(parent.__schList)) {
+						parent.__schList = {};
+					}
+					if (isDef(parent.__schList[aJob.name])) {
+				        if ((parent.__sch.__entries[parent.__schList[aJob.name]].cron != aJob.typeArgs.cron) ||
+						    (parent.__sch.__entries[parent.__schList[aJob.name]].exec != aJob.exec)) {
+							parent.__schList[aJob.name] = parent.__sch.modifyEntry(parent.__schList[aJob.name], aJob.typeArgs.cron, f, aJob.typeArgs.waitForFinish);
+						}
+					} else {
+						parent.__schList[aJob.name] = parent.__sch.addEntry(aJob.typeArgs.cron, f, aJob.typeArgs.waitForFinish);
+					}
+				}
 			}
 			break;
 		}
@@ -1029,7 +1021,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 	}
 
 	return true;
-}
+};
 
 /**
  * <odoc>
