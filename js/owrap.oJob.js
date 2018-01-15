@@ -970,57 +970,37 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 			break;
 		case "periodic":
 			var t = new Threads();
-			t.addThread(function() {
-				var repeat = false, doIt = true;
-
-				do {
-					if (isDef(aJob.typeArgs.cron)) {
-						if (isUnDef(aJob.typeArgs.timeInterval) || aJob.typeArgs.timeInterval <= 0) {
-							repeat = true;
-							// If same second wait
-							while (ow.format.cron.timeUntilNext(aJob.typeArgs.cron) < 0) {
-								sleep(500);
-							}
-							// Wait until next cron
-							ow.format.cron.sleepUntilNext(aJob.typeArgs.cron);
-							// Did sleep went as expected?
-							if (ow.format.cron.isCronMatch(new Date(), aJob.typeArgs.cron)) doIt = true;
-						} else {
-							if (!(ow.format.cron.isCronMatch(new Date(), aJob.typeArgs.cron))) {
-								doIt = false;
-								return false;
-							}
-						}
-					} 
-
-					if (doIt) {
-						uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
-						args.execid = uuid;
-						try {
-							_run(aJob.exec, args, aJob, altId);
-							parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
-						} catch(e) {
-							parent.__addLog("error", aJob.name, uuid, args, e, aId);
-						}
-					}
-				} while(repeat);
+			var f = function() {
+				uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
+				args.execid = uuid;
+				try {
+					_run(aJob.exec, args, aJob, altId);
+					parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
+				} catch(e) {
+					parent.__addLog("error", aJob.name, uuid, args, e, aId);
+				}
 
 				return true;
-			});
-			if (isDef(this.__threads[aJob.name]))
-				parent.__threads[aJob.name].push(t);
-			else
-				parent.__threads[aJob.name] = [ t ];
+			};
 
 			if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
-			//if (isUnDef(aJob.typeArgs.timeInterval)) aJob.typeArgs.timeInterval = 2000;
 			if (isDef(aJob.typeArgs.timeInterval) && aJob.typeArgs.timeInterval > 0) {
+				t.addThread(f);
+				if (isDef(this.__threads[aJob.name]))
+					parent.__threads[aJob.name].push(t);
+				else
+					parent.__threads[aJob.name] = [ t ]; 
+
 				if (isDef(aJob.typeArgs.waitForFinish) && aJob.typeArgs.waitForFinish)
 					t.startWithFixedRate(aJob.typeArgs.timeInterval);
 				else
 					t.startAtFixedRate(aJob.typeArgs.timeInterval);
 			} else {
-				t.startNoWait();
+				if (isUnDef(parent.__sch)) {
+					ow.loadServer(); 
+					parent.__sch = new ow.server.sch();
+				}
+				parent.__sch.addEntry(aJob.typeArgs.cron, f);
 			}
 			break;
 		}
