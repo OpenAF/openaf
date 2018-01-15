@@ -527,12 +527,12 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				delete temp.execid;
 				aa = "[" + existing.name + "] | " + JSON.stringify(temp) + "\n";
 			}
+
+			if (isUnDef(__conAnsi)) __initializeCon();
+			var ansis = __conAnsi && (java.lang.System.console() != null);
 			try {
 				var s = "", ss = "";
-				plugin("Console"); 
-				var con = (new Console()).getConsoleReader();
-				var w = con.getTerminal().getWidth();
-				var ansis = con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null);
+				var w = (isDef(__con)) ? __con.getTerminal().getWidth() : 80;
 				var jansi = JavaImporter(Packages.org.fusesource.jansi);
 				
 				if (ansis) {
@@ -792,9 +792,6 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 	if (this.__ojob != {} && this.__ojob.daemon == true && this.__ojob.sequential == true)
 		ow.loadServer().daemon(this.__ojob.timeInterval);
-	/*if (this.__ojob != {} && this.__ojob.daemon == true) {
-		ow.loadServer().daemon(this.__ojob.timeInterval);
-	}*/
 
 	if (!(this.__ojob.sequential)) {
 		try {
@@ -802,7 +799,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 			t.stop();
 		} catch(e) {}
 	}
-}
+};
 
 /**
  * <odoc>
@@ -1004,7 +1001,17 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 						ow.loadServer(); 
 						parent.__sch = new ow.server.scheduler();
 					}
-					parent.__sch.addEntry(aJob.typeArgs.cron, f, aJob.typeArgs.waitForFinish);
+					if (isUnDef(parent.__schList)) {
+						parent.__schList = {};
+					}
+					if (isDef(parent.__schList[aJob.name])) {
+				        if ((parent.__sch.__entries[parent.__schList[aJob.name]].cron != aJob.typeArgs.cron) ||
+						    (parent.__sch.__entries[parent.__schList[aJob.name]].exec != aJob.exec)) {
+							parent.__schList[aJob.name] = parent.__sch.modifyEntry(parent.__schList[aJob.name], aJob.typeArgs.cron, f, aJob.typeArgs.waitForFinish);
+						}
+					} else {
+						parent.__schList[aJob.name] = parent.__sch.addEntry(aJob.typeArgs.cron, f, aJob.typeArgs.waitForFinish);
+					}
 				}
 			}
 			break;
@@ -1014,7 +1021,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 	}
 
 	return true;
-}
+};
 
 /**
  * <odoc>
