@@ -368,7 +368,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 	return output;
 }
 
-var __con, __conStatus;
+var __con, __conStatus, __conAnsi;
 function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;
 
@@ -377,13 +377,16 @@ function __initializeCon() {
 		try {
 			__con = (new Console()).getConsoleReader();
 			__conStatus = true;
+			__conAnsi = __con.getTerminal().isAnsiSupported();
 			return true;
 		} catch(e) {
 			__conStatus = false;
+			__conAnsi = false;
 			return false;
 		}
 	} else {
 		__conStatus = true;
+		__conAnsi = true;
 		return true;
 	}
 }
@@ -406,7 +409,7 @@ function ansiColor(aAnsi, aString, force) {
 	if (!__initializeCon()) return aString;
 
 	var con = __con;
-	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
+	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	var res = "";
 	
@@ -427,7 +430,7 @@ function ansiColor(aAnsi, aString, force) {
 function ansiStart(force) {
 	if (!__initializeCon()) return false;
 	var con = __con;
-	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
+	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	if (ansis) {
 		java.lang.System.out.flush(); java.lang.System.err.flush();
@@ -444,7 +447,7 @@ function ansiStart(force) {
 function ansiStop(force) {
 	if (!__initializeCon()) return false;
 	var con = __con;
-	var ansis = force || (con.getTerminal().isAnsiSupported() && (java.lang.System.console() != null));
+	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	if (ansis) {
 		jansi.AnsiConsole.systemUninstall();
@@ -782,7 +785,7 @@ function log(msg) {
 	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
 	if (go) {
-		if (isUnDef(__con)) __initializeCon();
+		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -840,7 +843,7 @@ function lognl(msg) {
 	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
 	if (go) {
-		if (isUnDef(__con)) __initializeCon();
+		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -898,7 +901,7 @@ function logErr(msg) {
 	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offError)) ? false : true;
 	if (go) {
-		if (isUnDef(__con)) __initializeCon();
+		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -945,7 +948,7 @@ function logWarn(msg) {
 	}
 	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offWarn)) ? false : true;
 	if (go) {
-		if (isUnDef(__con)) __initializeCon();
+		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
@@ -1491,7 +1494,7 @@ function cls() {
 
 	if (!__initializeCon()) return false;
 
-	if(con.getConsoleReader().getTerminal().isAnsiSupported()) {
+	if(__conAnsi) {
 		jansi.AnsiConsole.systemInstall();
 		printnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
 		jansi.AnsiConsole.systemUninstall();
@@ -1520,7 +1523,7 @@ function watch(waitFor, aCommand, beautifyFlag) {
 	var c = -2;
 
 	plugin("Threads");
-	__initializeCon();
+	if (isUnDef(__conStatus)) __initializeCon();
 	var con = __con;
 	var t = new Threads();
 
@@ -3577,9 +3580,9 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
  * </odoc>
  */
 function threadBoxCtrlC() {
-	__initializeCon()
+	if (isUnDef(__conStatus)) __initializeCon();
 	var console = __con;
-    if (console.getConsoleReader().getTerminal().isAnsiSupported()) {
+    if (__conAnsi) {
         if (console.readCharNB() == 3) return true; else return false;
     } else {
         return false;
