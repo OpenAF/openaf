@@ -23,6 +23,7 @@ OpenWrap.oJob = function() {
 	this.__threads = {};
 	this.__ojob = { log: true, logArgs: false, numThreads: undefined, logToConsole: true };
 	this.__expr = processExpr(" ");
+	this.__logLimit = 100;
 
 	plugin("Threads");
 	ow.loadFormat();
@@ -75,6 +76,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
+	if (isDef(ojob.logLimit)) this.__logLimit = ojob.__logLimit;
 	
 	if (isDef(this.__ojob.channels)) {
 		if (this.__ojob.channels.log) startLog();
@@ -599,7 +601,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		};
 
 		// Housekeeping
-		if (existing.log.length > 1000) existing.log.shift();
+		if (existing.log.length > this.__logLimit) existing.log.shift();
 
 		this.getLogCh().set({ "ojobId": this.__id + aId, "name": aJobName }, existing);
 	}
@@ -969,13 +971,12 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 			}
 			break;
 		case "periodic":
-			var t = new Threads();
 			var f = function() {
-				uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
+				uuid = parent.__addLog("start", aJob.name, void 0, args, aId);
 				args.execid = uuid;
 				try {
 					_run(aJob.exec, args, aJob, altId);
-					parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
+					parent.__addLog("success", aJob.name, uuid, args, void 0, aId);
 				} catch(e) {
 					parent.__addLog("error", aJob.name, uuid, args, e, aId);
 				}
@@ -985,7 +986,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 
 			if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
 			if (isDef(aJob.typeArgs.timeInterval) && aJob.typeArgs.timeInterval > 0) {
+				var t = new Threads();
 				t.addThread(f);
+
 				if (isDef(this.__threads[aJob.name]))
 					parent.__threads[aJob.name].push(t);
 				else
@@ -996,11 +999,13 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				else
 					t.startAtFixedRate(aJob.typeArgs.timeInterval);
 			} else {
-				if (isUnDef(parent.__sch)) {
-					ow.loadServer(); 
-					parent.__sch = new ow.server.sch();
+				if (isDef(aJob.typeArgs.cron)) {
+					if (isUnDef(parent.__sch)) {
+						ow.loadServer(); 
+						parent.__sch = new ow.server.scheduler();
+					}
+					parent.__sch.addEntry(aJob.typeArgs.cron, f, aJob.typeArgs.waitForFinish);
 				}
-				parent.__sch.addEntry(aJob.typeArgs.cron, f);
 			}
 			break;
 		}
