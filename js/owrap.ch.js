@@ -1547,7 +1547,7 @@ OpenWrap.ch.prototype.utils = {
 				if (aO == "set") {
 					var _id = sha1(stringify(aV));
 					$ch(aTargetCh).set({
-						id: _id
+						"id": _id
 					}, {
 						"@version"  : 1,
 						"@timestamp": aV.d,

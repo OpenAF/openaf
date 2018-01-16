@@ -1594,7 +1594,7 @@ OpenWrap.obj.prototype.rest = {
 		
 		var rmap = (urlEncode) ?
 				   merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
+				   merge({"Content-Type":"application/json"} , aRequestMap);
 
 		try {
 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, undefined, _t);
@@ -1647,7 +1647,7 @@ OpenWrap.obj.prototype.rest = {
 		
 		var rmap = (urlEncode) ?
 		           merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json", "content-type": "application/json"} , aRequestMap);
+				   merge({"Content-Type":"application/json"} , aRequestMap);
 		
 		try {
 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, undefined, _t);
