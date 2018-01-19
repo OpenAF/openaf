@@ -151,8 +151,9 @@ function ojob_draw() {
 			msg += "!!NOT FOUND!!";
 		} else {
 			for(var i in deps) {
-				msg += " :" + deps[i];
-				var r = getPath(deps[i]);
+				var dep = (isDef(deps[i].name)) ? deps[i].name : deps[i];
+				msg += " :" + dep;
+				var r = getPath(dep);
 				if (r.length > 0) {
 					msg += " (" + r + ")";
 				}	
