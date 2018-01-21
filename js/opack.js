@@ -8,6 +8,8 @@
 // Verbs to be used
 var verbs = {
 	"script": {},
+	"daemon": {},
+	"ojob"  : {},
 	"info": {
 		"help"        : "Provides information about the current package.",
 		"optionshelp" : [ "If no option is provided will look for the package in the current directory.",
@@ -1204,7 +1206,7 @@ function __opack_exec(args) {
 }
 
 // SCRIPT
-function __opack_script(args) {
+function __opack_script(args, isDaemon, isJob) {
 	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
 		logErr("Please use 'openaf' to execute OpenAF");
 		return;
@@ -1287,25 +1289,26 @@ function __opack_script(args) {
 	}
 
 	loadLodash();
-	if (typeof packag.main !== 'undefined' && packag.main.length > 0) {
+	var scriptCommand = (isDaemon) ? "--daemon " : "--script ";
+	if (typeof packag.main !== 'undefined' && packag.main.length > 0 && !isJob) {
 		if (windows)
-			io.writeFileString(curDir + "/_" + _.camelCase(packag.name) + ".bat", generateWinScript("--script " + target + "/" + packag.main + " -e \"%*\""));
+			io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name) + ".bat", generateWinScript(scriptCommand + target + "/" + packag.main + " -e \"%*\""));
 		else {
-			io.writeFileString(curDir + "/_" + _.camelCase(packag.name), generateUnixScript("--script " + target + "/" + packag.main + " -e \"$*\""));
-			sh("chmod u+x " + curDir + "/_" + _.camelCase(packag.name));
+			io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name), generateUnixScript(scriptCommand + target + "/" + packag.main + " -e \"$*\""));
+			sh("chmod u+x " + curDir + "/opack_" + _.camelCase(packag.name));
 		}
-		log("Created script in " + curDir + "/_" + _.camelCase(packag.name));
+		log("Created script in " + curDir + "/opack_" + _.camelCase(packag.name));
 	} else {
 		if (isDef(packag.mainJob) && packag.mainJob.length > 0) {
 			if (windows)
-				io.writeFileString(curDir + "/_" + _.camelCase(packag.name), generateWinScript("--ojob -e \"" + target + "/" + packag.main + " \"%*\""));
+				io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name), generateWinScript("--ojob -e \"" + target + "/" + packag.mainJob + " %*\""));
 			else {
-				io.writeFileString(curDir + "/_" + _.camelCase(packag.name), generateUnixScript("--ojob -e \"" + target + "/" + packag.main + " \"$*\""));
-				sh("chmod u+x " + curDir + "/_" + _.camelCase(packag.name));
+				io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name), generateUnixScript("--ojob -e \"" + target + "/" + packag.mainJob + " $*\""));
+				sh("chmod u+x " + curDir + "/opack_" + _.camelCase(packag.name));
 			}
-			log("Created script in " + curDir + "/_" + _.camelCase(packag.name));
+			log("Created ojob script in " + curDir + "/opack_" + _.camelCase(packag.name));
 		} else {
-			logErr("Can't generate script for package " + packag.name);
+			logErr("Can't generate ojob script for package " + packag.name);
 		}
 	}
 }
@@ -1700,6 +1703,8 @@ for(let i in verbs) {
         case 'add2remotedb': addCentral(params); break;
 		case 'remove2remotedb': removeCentral(params); break;
 		case 'script': __opack_script(params); break;
+		case 'daemon': __opack_script(params, true); break;
+		case 'ojob'  : __opack_script(params, false, true); break;
         case 'search': __opack_search(params); break;
         case 'update': update(params); break;
 		case 'exec': __opack_exec(params); break;
