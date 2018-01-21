@@ -3266,7 +3266,12 @@ function ioStreamRead(aStream, aFunction, aBufferSize, useNIO) {
 				buf.push(Number(buffer.get()));
 			}
 
-			aFunction(af.fromBytes2String(af.fromArray2Bytes(buf)));
+			var res = aFunction(af.fromBytes2String(af.fromArray2Bytes(buf)));
+			if (res == true) {
+				channel.close();
+				aStream.close();
+				return;
+			}
 
 			buffer.clear();
 			bRead = channel.read(buffer);
@@ -3281,7 +3286,10 @@ function ioStreamRead(aStream, aFunction, aBufferSize, useNIO) {
 		do {
 			aRead = aStream.read(buffer, 0, bufferSize);
 			if (aRead > 0) {
-				aFunction(af.fromBytes2String(af.fromArray2Bytes(af.fromBytes2Array(buffer).slice(0, aRead))));
+				var res = aFunction(af.fromBytes2String(af.fromArray2Bytes(af.fromBytes2Array(buffer).slice(0, aRead))));
+				if (res == true) {
+					return;
+				}
 			}
 		} while(aRead >= 0);
 	}
@@ -3299,15 +3307,19 @@ function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
         if (isUnDef(aSeparator)) aSeparator = "\n";
  
         ioStreamRead(aStream, function(buffer) {
-                buf += buffer;
-                while (buf.indexOf(aSeparator) > 0) {
-                        aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-                        buf = buf.substring(buf.indexOf(aSeparator) + 1);
-                }
-        }, undefined, useNIO);
-        while (buf.indexOf(aSeparator) > 0) {
-                aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-                buf = buf.substring(buf.indexOf(aSeparator) + 1);
+			var res;
+			buf += buffer;
+			while (buf.indexOf(aSeparator) >= 0) {
+				res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
+				buf = buf.substring(buf.indexOf(aSeparator) + 1);
+				if (res == true) return;
+			}
+			return res;
+		}, void 0, useNIO);
+        while (buf.indexOf(aSeparator) >= 0) {
+			var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
+			buf = buf.substring(buf.indexOf(aSeparator) + 1);
+			if (res == true) return;
         }
 }
 
