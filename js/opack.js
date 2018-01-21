@@ -7,6 +7,7 @@
 
 // Verbs to be used
 var verbs = {
+	"script": {},
 	"info": {
 		"help"        : "Provides information about the current package.",
 		"optionshelp" : [ "If no option is provided will look for the package in the current directory.",
@@ -1202,6 +1203,113 @@ function __opack_exec(args) {
 	}
 }
 
+// SCRIPT
+function __opack_script(args) {
+	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
+		logErr("Please use 'openaf' to execute OpenAF");
+		return;
+	}
+
+	packag = findLocalDBByName(args[0]);
+	var target;
+
+	if (typeof packag == 'undefined' || typeof packag["name"] == 'undefined') {
+		packag = getPackage(args[0]);
+		if (packag.__filelocation != 'local') {
+			if (packag.__filelocation == 'opacklocal') {
+				logErr("Please use 'openaf-sb " + args[0] + "' instead.");
+				return;
+			} else {
+				logErr("Package not found (note: only installed or local packages can be executed)");
+				return;
+			}
+		}
+		target = args[0];
+	} else {
+		target = findLocalDBTargetByName(args[0]);
+	}
+
+	var DEFAULT_SH = "/bin/sh";
+	var javaHome  = java.lang.System.getProperty("java.home") + "";
+	var classPath = java.lang.System.getProperty("java.class.path") + "";
+	var os        = java.lang.System.getProperty("os.name") + "";
+	var curDir    = java.lang.System.getProperty("user.dir") + "";
+	var windows   = (os.match(/Windows/)) ? 1 : 0;
+	classPath = (new java.io.File(classPath)).getAbsoluteFile();
+	var javaargs = "";
+	for(var i in __args) {
+		if (__args[i].match(/^args=/i)) javaargs = __args[i].replaceAll("^args=", "");
+	}
+
+	function generateUnixScript(options) {
+		var s;
+	  
+		if (typeof shLocation === 'undefined') {
+		  if (windows == 1) {
+			// for cygwin
+			shLocation = DEFAULT_SH; 
+			javaHome = javaHome.replace(/\\/g, "/");
+			javaHome = javaHome.replace(/(\w)\:/,"/cygdrive/$1").toLowerCase();
+		  } else {
+			try {
+			  shLocation = sh("which sh", "", null, false);
+			} catch (e) {
+			  logErr("Couldn't determine path for sh, assuming " + DEFAULT_SH + ": " + e.message);
+			  shLocation = DEFAULT_SH;
+			}
+		  }
+	  
+		  log("sh located in "+ shLocation);
+		}
+	  
+		s = "#!" + shLocation + "\n\n";
+		s = s + "stty -icanon min 1 -echo 2>/dev/null\n";
+		s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
+		s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
+		s = s + "\n";
+		s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
+		s = s + "EXITCODE=$?\n";
+		s = s + "stty icanon echo 2>/dev/null\n";
+		s = s + "exit $EXITCODE\n";
+		return s;
+	}
+
+	function generateWinScript(options) {
+		var s;
+  
+		s = "@echo off\n\n";
+		s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
+		s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
+		s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
+		s = s + "\n";
+		s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -jar %OPENAF_DIR% " + options + "\n";
+		return s;
+	}
+
+	loadLodash();
+	if (typeof packag.main !== 'undefined' && packag.main.length > 0) {
+		if (windows)
+			io.writeFileString(curDir + "/_" + _.camelCase(packag.name) + ".bat", generateWinScript("--script " + target + "/" + packag.main + " -e \"%*\""));
+		else {
+			io.writeFileString(curDir + "/_" + _.camelCase(packag.name), generateUnixScript("--script " + target + "/" + packag.main + " -e \"$*\""));
+			sh("chmod u+x " + curDir + "/_" + _.camelCase(packag.name));
+		}
+		log("Created script in " + curDir + "/_" + _.camelCase(packag.name));
+	} else {
+		if (isDef(packag.mainJob) && packag.mainJob.length > 0) {
+			if (windows)
+				io.writeFileString(curDir + "/_" + _.camelCase(packag.name), generateWinScript("--ojob -e \"" + target + "/" + packag.main + " \"%*\""));
+			else {
+				io.writeFileString(curDir + "/_" + _.camelCase(packag.name), generateUnixScript("--ojob -e \"" + target + "/" + packag.main + " \"$*\""));
+				sh("chmod u+x " + curDir + "/_" + _.camelCase(packag.name));
+			}
+			log("Created script in " + curDir + "/_" + _.camelCase(packag.name));
+		} else {
+			logErr("Can't generate script for package " + packag.name);
+		}
+	}
+}
+
 // UPDATE
 function update(args) {
 	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
@@ -1590,7 +1698,8 @@ for(let i in verbs) {
         case 'add2db': add(params); break;
         case 'remove2db': remove(params); break;
         case 'add2remotedb': addCentral(params); break;
-        case 'remove2remotedb': removeCentral(params); break;
+		case 'remove2remotedb': removeCentral(params); break;
+		case 'script': __opack_script(params); break;
         case 'search': __opack_search(params); break;
         case 'update': update(params); break;
 		case 'exec': __opack_exec(params); break;
