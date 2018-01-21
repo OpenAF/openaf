@@ -48,7 +48,7 @@ License               :
 
 The MIT License (MIT)
 
-Copyright Â© 2013 BunKat
+Copyright © 2013 BunKat
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -3758,7 +3758,7 @@ License               :
 
 -----------------------
 Third-party name      : Synaptics
-Version               : 1.1.3
+Version               : 1.1.4
 Changed from original : No
 Location in openaf.jar: js/synaptic.js
 License               : 
