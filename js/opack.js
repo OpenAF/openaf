@@ -1291,22 +1291,25 @@ function __opack_script(args, isDaemon, isJob) {
 	loadLodash();
 	var scriptCommand = (isDaemon) ? "--daemon " : "--script ";
 	if (typeof packag.main !== 'undefined' && packag.main.length > 0 && !isJob) {
-		if (windows)
+		if (windows) {
 			io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name) + ".bat", generateWinScript(scriptCommand + target + "/" + packag.main + " -e \"%*\""));
-		else {
+			log("Created script in " + curDir + "/opack_" + _.camelCase(packag.name) + ".bat");
+			
+		} else {
 			io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name), generateUnixScript(scriptCommand + target + "/" + packag.main + " -e \"$*\""));
 			sh("chmod u+x " + curDir + "/opack_" + _.camelCase(packag.name));
+			log("Created script in " + curDir + "/opack_" + _.camelCase(packag.name));
 		}
-		log("Created script in " + curDir + "/opack_" + _.camelCase(packag.name));
 	} else {
 		if (isDef(packag.mainJob) && packag.mainJob.length > 0) {
-			if (windows)
-				io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name), generateWinScript("--ojob -e \"" + target + "/" + packag.mainJob + " %*\""));
-			else {
+			if (windows) {
+				io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name) + ".bat", generateWinScript("--ojob -e \"" + target + "/" + packag.mainJob + " %*\""));
+				log("Created script in " + curDir + "/opack_" + _.camelCase(packag.name) + ".bat");
+			} else {
 				io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name), generateUnixScript("--ojob -e \"" + target + "/" + packag.mainJob + " $*\""));
 				sh("chmod u+x " + curDir + "/opack_" + _.camelCase(packag.name));
+				log("Created script in " + curDir + "/opack_" + _.camelCase(packag.name));
 			}
-			log("Created ojob script in " + curDir + "/opack_" + _.camelCase(packag.name));
 		} else {
 			logErr("Can't generate ojob script for package " + packag.name);
 		}
