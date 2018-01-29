@@ -1116,7 +1116,7 @@ OpenWrap.server.prototype.httpd = {
 		try {
 			var baseFilePath = aBaseFilePath;
 			var furi = String((new java.io.File(new java.io.File(baseFilePath),
-				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
+				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath()).replace(/\\/g, "/");
 			
 			if (!(furi.match(new RegExp("^" + baseFilePath))))
 				for(var i in documentRootArray) {
