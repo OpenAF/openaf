@@ -1656,7 +1656,7 @@ OpenWrap.ch.prototype.utils = {
 		if (isUnDef(aLogFolder))        aLogFolder      = ".";
 		if (isUnDef(aTemplate))         aTemplate       = "log-{{timedate}}.log";
 		if (isUnDef(aFileDateFormat))   aFileDateFormat = "yyyy-MM-dd";
-		if (isUnDef(aLineTemplate))     aLineTemplate   = "{{timedate}} | {{type}} | {{message}}\n";
+		if (isUnDef(aLineTemplate))     aLineTemplate   = "{{timedate}} | {{type}} | {{{message}}}\n";
 		if (isUnDef(aLineDateFormat))   aLineDateFormat = "yyyy-MM-dd HH:mm:ss.SSS";
 
 		ow.loadFormat();
