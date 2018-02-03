@@ -22,10 +22,13 @@ OpenWrap.ch.prototype.__types = {
 		size   : function(aName) { return this.__channels[aName].getSize(); },
 		forEach: function(aName, aFunction) { 
 			var parent = this;
-			this.__channels[aName].find(function(aKey) {
+			this.getKeys(aName).forEach((aK, aV) => {
+				aFunction(aK, parent.get(aName, aK));
+			});
+			/*this.__channels[aName].find(function(aKey) {
 				aFunction(aKey, parent.get(aName, aKey));
 				return aKey;
-			});
+			});*/
 		},
 		getKeys: function(aName, full) {
 			var keys = [];
@@ -162,14 +165,14 @@ OpenWrap.ch.prototype.__types = {
 		},
 		forEach: function(aName, aFunction, x) {
 			var i = this.getKeys(aName);
-			for(j in i) {
+			for(var j in i) {
 				aFunction(i[j], this.get(aName, i[j]));
 			}
 		},
 		getKeys: function(aName, full) { 
 			var i = $stream(this.__db[aName].q("select key from " + this.__table[aName]).results).map("KEY").toArray();
 			var res = [];
-			for(j in i) {
+			for(var j in i) {
 				res.push(JSON.parse(i[j]));
 			}
 			return res;
@@ -177,7 +180,7 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) {
 			var i = $stream(this.__db[aName].q("select key from " + this.__table[aName] + " order by ts").results).map("KEY").toArray();
 			var res = [];
-			for(j in i) {
+			for(var j in i) {
 				res.push(JSON.parse(i[j]));
 			}
 			return res;
@@ -947,13 +950,14 @@ OpenWrap.ch.prototype.getVersion = function(aName) {
  */
 OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	if (isUnDef(aTimeout)) aTimeout = 2500;
-	while(this.jobs[aName].length > 0) {
+	//while(this.jobs[aName].length > 0) {
 		for(var i in ow.ch.jobs[aName]) {
-			if (ow.ch.jobs[aName][i] != null)
+			if (isDef(ow.ch.jobs[aName][i])) {
 				//ow.ch.jobs[aName][i].waitForThreads(aTimeout);
 				$doWait(ow.ch.jobs[aName][i]);
+			}
 		}
-	}
+	//}
 	return this;
 },
 	
