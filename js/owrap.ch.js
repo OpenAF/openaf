@@ -22,10 +22,13 @@ OpenWrap.ch.prototype.__types = {
 		size   : function(aName) { return this.__channels[aName].getSize(); },
 		forEach: function(aName, aFunction) { 
 			var parent = this;
-			this.__channels[aName].find(function(aKey) {
+			this.getKeys(aName).forEach((aK, aV) => {
+				aFunction(aK, parent.get(aName, aK));
+			});
+			/*this.__channels[aName].find(function(aKey) {
 				aFunction(aKey, parent.get(aName, aKey));
 				return aKey;
-			});
+			});*/
 		},
 		getKeys: function(aName, full) {
 			var keys = [];
@@ -162,14 +165,14 @@ OpenWrap.ch.prototype.__types = {
 		},
 		forEach: function(aName, aFunction, x) {
 			var i = this.getKeys(aName);
-			for(j in i) {
+			for(var j in i) {
 				aFunction(i[j], this.get(aName, i[j]));
 			}
 		},
 		getKeys: function(aName, full) { 
 			var i = $stream(this.__db[aName].q("select key from " + this.__table[aName]).results).map("KEY").toArray();
 			var res = [];
-			for(j in i) {
+			for(var j in i) {
 				res.push(JSON.parse(i[j]));
 			}
 			return res;
@@ -177,7 +180,7 @@ OpenWrap.ch.prototype.__types = {
 		getSortedKeys: function(aName, full) {
 			var i = $stream(this.__db[aName].q("select key from " + this.__table[aName] + " order by ts").results).map("KEY").toArray();
 			var res = [];
-			for(j in i) {
+			for(var j in i) {
 				res.push(JSON.parse(i[j]));
 			}
 			return res;
@@ -919,7 +922,7 @@ OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 		this.__types[type].create(aName, shouldCompress, options);
 
 		this.subscribers[aName] = {};
-		this.jobs[aName] = [];
+		this.jobs[aName] = {};
 		this.channels[aName] = type;
 		this.vers[aName] = nowUTC();
 	}
@@ -947,12 +950,14 @@ OpenWrap.ch.prototype.getVersion = function(aName) {
  */
 OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	if (isUnDef(aTimeout)) aTimeout = 2500;
-	while(this.jobs[aName].length > 0) {
+	//while(this.jobs[aName].length > 0) {
 		for(var i in ow.ch.jobs[aName]) {
-			if (ow.ch.jobs[aName][i] != null)
-				ow.ch.jobs[aName][i].waitForThreads(aTimeout);
+			if (isDef(ow.ch.jobs[aName][i])) {
+				//ow.ch.jobs[aName][i].waitForThreads(aTimeout);
+				$doWait(ow.ch.jobs[aName][i]);
+			}
 		}
-	}
+	//}
 	return this;
 },
 	
@@ -965,7 +970,8 @@ OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
  */
 OpenWrap.ch.prototype.stopAllJobs = function(aName) {
 	for(var i in ow.ch.jobs[aName]) {
-		ow.ch.jobs[aName][i].stop();
+		//ow.ch.jobs[aName][i].stop();
+		ow.ch.jobs[aName][i].cancel();
 	}	
 	return this;
 };
@@ -1043,50 +1049,30 @@ OpenWrap.ch.prototype.size = function(aName) {
 OpenWrap.ch.prototype.subscribe = function(aName, aFunction, onlyFromNow, anId) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 	if (isUnDef(anId)) anId = genUUID();
-	//if (isUnDef(anId)) anId = md5(aFunction.toString());
 	
 	if (isDef(this.subscribers[aName][anId])) return anId;
 	
 	this.subscribers[aName][anId] = aFunction;
 	if (this.size(aName) > 0 && !onlyFromNow) {
-		var t = new Threads();
-		var ig = new Threads();
 		var parent = this;
 
 		var func = function(aKey) {
 			var aValue = parent.get(aName, aKey);
-			t.addThread(function(uuid) {
-				aFunction(aName, "set", aKey, aValue, parent, uuid);
-				return uuid;
-			})
+			var uuid = genUUID();
+			if (isUnDef(parent.jobs[aName][anId])) {
+				parent.jobs[aName][anId] = $do(function() {
+					aFunction(aName, "set", aKey, aValue, parent, uuid);
+					return uuid;
+				});
+			} else {
+				parent.jobs[aName][anId].then(function() {
+					aFunction(aName, "set", aKey, aValue, parent, uuid);
+					return uuid;
+				});
+			}			
 		};
 		
-//		switch(parent.channels[aName]) {
-//		case "ignite": { res = parent.__types.ignite.forEach(aName, func); break; }
-//		case "remote": { res = parent.__types.remote.forEach(aName, func); break; }
-//		default      : { res = parent.__types.big.forEach(aName, func); }
-//		}
 		res = parent.__types[parent.channels[aName]].forEach(aName, func);
-
-		ig.addThread(function() {
-			//sync(function() {
-			var tt;
-			while(parent.jobs[aName].length > 0) {
-				tt = parent.jobs[aName].shift();
-				tt.start();
-				tt.stop();
-			}
-			ig.waitForThreads();
-			ig.stop();
-			return 1;
-		});
-		
-		//sync(function() {
-			parent.jobs[aName].push(t);
-		//}, parent.jobs[aName]);
-		
-		
-		ig.startNoWait();
 	}
 	return anId;
 };
@@ -1210,39 +1196,30 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 	var res;
 
 	sync(function() {
-//		switch(parent.channels[aName]) {
-//		case "ignite": { parent.__types.ignite.set(aName, ak, av, aTimestamp); break; }
-//		case "remote": { parent.__types.remote.set(aName, ak, av, aTimestamp); break; }
-//		default      : { parent.__types.big.set(aName, ak, av, aTimestamp); }
-//		}
 		res = parent.__types[parent.channels[aName]].set(aName, ak, av, aTimestamp, x); 
 		parent.vers[aName] = nowUTC();
 	}, this.channels[aName]);
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
-		var t = new Threads();
-		var ig = new Threads();
-		var fns = {};
 		for(var _i in this.subscribers[aName]) {
-			var uid = t.addThread(function(uuid) {
-				fns[uuid](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
-				return uuid;
-			});
-			
-			fns[uid] = parent.subscribers[aName][_i];
-		};
-		ig.addThread(function() {
-			var tt;
-			while(parent.jobs[aName].length > 0) {
-				tt = parent.jobs[aName].shift();
-				tt.start();
-				tt.stop();
+			if (isUnDef(parent.jobs[aName][_i])) {
+				var f = (ii) => {
+					return () => {				
+						parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i] = $do(f(_i));
+			} else {				
+				var f = (ii) => {
+					return () => {
+						parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i].then(f(_i));
 			}
-			ig.stop();		
-			return 1;
-		})			
-		parent.jobs[aName].push(t);
-		ig.startNoWait();
+		}
 	}
 
 	return res;
@@ -1279,41 +1256,30 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 	var res;
 	
 	sync(function() {
-//		switch(parent.channels[aName]) {
-//		case "ignite": { parent.__types.ignite.setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp); break; }
-//		case "remote": { parent.__types.remote.setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp); break; }
-//		default      : { parent.__types.big.setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp); }
-//		}
 		res = parent.__types[parent.channels[aName]].setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
 		parent.vers[aName] = nowUTC();
 	}, this.channels[aName]);
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
-		var t = new Threads();
-		var ig = new Threads();
-		var fns = {};
 		for(var _i in this.subscribers[aName]) {
-			var uid = t.addThread(function(uuid) {
-				fns[uuid](aName, "setall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
-				return uuid;
-			});
-			
-			fns[uid] = parent.subscribers[aName][_i];
-		};
-		ig.addThread(function() {
-			var tt;
-			while(parent.jobs[aName].length > 0) {
-				tt = parent.jobs[aName].shift();
-				tt.start();
-				tt.stop();
+			if (isUnDef(parent.jobs[aName][_i])) {
+				var f = (ii) => {
+					return () => {				
+						parent.subscribers[aName][ii](aName, "setall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i] = $do(f(_i));
+			} else {				
+				var f = (ii) => {
+					return () => {
+						parent.subscribers[aName][ii](aName, "setall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i].then(f(_i));
 			}
-			ig.stop();
-			return 1;
-		});
-		
-		parent.jobs[aName].push(t);
-		
-		ig.startNoWait();
+		}		
 	}
 
 	return res;
@@ -1333,11 +1299,6 @@ OpenWrap.ch.prototype.get = function(aName, aKey, x) {
 	var res;
 	var parent = this;
 	sync(function() {
-//		switch(parent.channels[aName]) {
-//		case "ignite": { res = parent.__types.ignite.get(aName, aKey); break; }
-//		case "remote": { res = parent.__types.remote.get(aName, aKey); break; }
-//		default      : { res = parent.__types.big.get(aName, aKey); }
-//		}
 		res = parent.__types[parent.channels[aName]].get(aName, aKey, x);
 	}, this.channels[aName]);
 	if (isDef(res) && Object.keys(res) == [ "value" ])
@@ -1358,11 +1319,6 @@ OpenWrap.ch.prototype.pop = function(aName) {
 
 	var res, out;
 	if (this.size(aName) > 0) {
-//		switch(this.channels[aName]) {
-//		case "ignite": { res = this.__types.ignite.pop(aName); break; }
-//		case "remote": { res = this.__types.remote.pop(aName); break; }
-//		default      : { res = this.__types.big.pop(aName); break; }
-//		}
 		res = this.__types[this.channels[aName]].pop(aName);
 		out = this.get(aName, res);
 		this.unset(aName, res);
@@ -1390,29 +1346,25 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 	}, this.channels[aName]);
 	
 	if (Object.keys(this.subscribers[aName]).length > 0) {
-		var t = new Threads();
-		var ig = new Threads();
-		var fns = {};
 		for(var _i in this.subscribers[aName]) {
-			var uid = t.addThread(function(uuid) {
-				fns[uuid](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
-				return uuid;
-			});
-			
-			fns[uid] = parent.subscribers[aName][_i];
-		};
-		ig.addThread(function() {
-			var tt;
-			while(parent.jobs[aName].length > 0) {
-				tt = parent.jobs[aName].shift();
-				tt.start();
-				tt.stop();
+			if (isUnDef(parent.jobs[aName][_i])) {
+				var f = (ii) => {
+					return () => {				
+						parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i] = $do(f(_i));
+			} else {				
+				var f = (ii) => {
+					return () => {
+						parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i].then(f(_i));
 			}
-			ig.stop();		
-			return 1;
-		})			
-		parent.jobs[aName].push(t);
-		ig.startNoWait();
+		}
 	}
 
 	return res;
@@ -1460,42 +1412,31 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	if (typeof aKey != "object") ak = { "key": aKey };
 
 	var parent = this;
-	sync(function() {
-//		switch(parent.channels[aName]) {
-//		case "ignite": { res = parent.__types.ignite.unset(aName, ak); break; }
-//		case "remote": { res = parent.__types.remote.unset(aName, ak); break; }
-//		default      : { res = parent.__types.big.unset(aName, ak); break; }
-//		}			
+	sync(function() {	
 		res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
 		parent.vers[aName] = nowUTC();
 	}, this.channels[aName]);
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
-		var t = new Threads();
-		var ig = new Threads();
-		var fns = {};
 		for(var _i in this.subscribers[aName]) {
-			var uid = t.addThread(function(uuid) {
-				fns[uuid](aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
-				return uuid;
- 			});
-			
-			fns[uid] = parent.subscribers[aName][_i];
-		};
-		ig.addThread(function() {
-			var tt;
-			while(parent.jobs[aName].length > 0) {
-				tt = parent.jobs[aName].shift();
-				tt.start();
-				tt.stop();
+			if (isUnDef(parent.jobs[aName][_i])) {
+				var f = (ii) => {
+					return () => {				
+						parent.subscribers[aName][ii](aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i] = $do(f(_i));
+			} else {				
+				var f = (ii) => {
+					return () => {
+						parent.subscribers[aName][ii](aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i].then(f(_i));
 			}
-			ig.stop();
-			return 1;
-		});
-		
-		parent.jobs[aName].push(t);
-		
-		ig.startNoWait();
+		}
 	}	
 	return this;
 };

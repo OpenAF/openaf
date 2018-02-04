@@ -3870,6 +3870,12 @@ $ch = $channels;
 var __threadPool;
 var __threadPoolFactor = 1;
 
+function __resetThreadPool(poolFactor) {
+	__threadPoolFactor = poolFactor;
+	__threadPool = void 0;
+	__getThreadPool();
+}
+
 function __getThreadPool() {
 	if (isUnDef(__threadPool)) {
 		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores();
@@ -4067,6 +4073,12 @@ oPromise.prototype.resolve = function(aValue) {
 	if (this.state == this.states.FULFILLED) this.state = this.states.NEW;
 	this.value = (!isJavaObject(aValue) && isUnDef(aValue)) ? null : aValue;
 	return this;
+};
+
+oPromise.prototype.cancel = function() {
+	if (isDef(this.__f)) {
+		return this.__f.cancel(true);
+	}
 };
 
 oPromise.prototype.__exec = function() {
