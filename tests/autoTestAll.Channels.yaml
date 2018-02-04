@@ -39,6 +39,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testElasticIndex;
 
+   - name: Channels::Subscribers test
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testChannelSubscribers;
+
    # Big
    # ---
    - name: Channels::Creating a channel (big)
@@ -93,6 +98,7 @@ todo:
    
    - Channels::Test Elastic Index
    - Channels::Remote channel access auditing
+   - Channels::Subscribers test
    
    # Big
    - Channels::Creating a channel (big)
