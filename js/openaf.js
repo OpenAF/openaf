@@ -1815,6 +1815,11 @@ function restartOpenAF(aCommandLineArray, preLineArray) {
 		for(let c in preLineArray) {
 			command.add(preLineArray[c]);
 		}
+	} else {
+		var ar = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
+		for(var ari = 0; ari < ar.size(); ari++) {
+			command.add(String(ar.get(ari)));
+		}
 	}
 	command.add("-jar");
 	command.add(currentJar);
