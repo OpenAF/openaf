@@ -544,15 +544,16 @@ OpenWrap.format.prototype.toWedoDate = function(aStringDate, aFormat) {
 /**
  * <odoc>
  * <key>ow.format.getActualTime(useAlternative) : Date</key>
- * Retrieves the current actual time from NIST. The current actual time will be returned in UTC.
- * If useAlternative = true it will use now.httpbin.org.
+ * Retrieves the current actual time from NIST (through https). The current actual time will be returned in a Date.
+ * If useAlternative = true it will use now.httpbin.org (through http)
  * </odoc>
  */
 OpenWrap.format.prototype.getActualTime = function(useAlternative) {
 	plugin("HTTP");
 
 	if (useAlternative) {
-		return jsonParse(new HTTP("https://now.httpbin.org").getResponse().response).now.rfc3339;
+		var h = ow.loadObj();
+		return new Date(ow.obj.rest.jsonGet("http://now.httpbin.org").now.epoch * 1000);
 	} else {
 		plugin("XML");
 		return new Date((new XML((new HTTP("https://nist.time.gov/actualtime.cgi")).response())).get("@time")/1000);
