@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Vector;
 
@@ -67,28 +68,54 @@ public class SSH extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>SSH.SSH(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression) : SSH</key>
+	 * <key>SSH.SSH(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression, aTimeout) : SSH</key>
 	 * Creates an instance of a SSH client (and connects) given a host, port, login username, password and, 
-	 * optionally a identity file path and the indication of use of compression.
+	 * optionally a identity file path and the indication of use of compression. Alternatively you can provide 
+	 * just a simple url where aHost = ssh://user:pass@host:port/identificationKey?timeout=1234&amp;compression=true.
 	 * </odoc>
-	 * @throws IllegalAccessException 
-	 * @throws InstantiationException 
+	 * @throws Exception
 	 */
 	@JSConstructor
-	public void newSSH(String host, int port, String login, String pass, Object identityFile, boolean compression, int timeout) throws JSchException, InstantiationException, IllegalAccessException {
-		this.login = login;
-		this.host = host;
-		this.password = AFCmdBase.afc.dIP(pass);
-		this.port = port;
-		
-		this.identity = null;
-		if(identityFile instanceof String && ((String) identityFile).length() > 0) {
-			this.identity = (String) identityFile;
+	public void newSSH(String host, int port, String login, String pass, Object identityFile, boolean compression, int timeout) throws Exception {
+		if (host.toLowerCase().startsWith(("ssh:"))) {
+			URI uri = new URI(host);
+
+			if (uri.getScheme().toLowerCase().equals("ssh")) {
+				this.port = uri.getPort();
+				this.login = uri.getUserInfo().split(":")[0];
+				this.password = AFCmdBase.afc.dIP(uri.getUserInfo().split(":")[1]);
+				this.identity = uri.getPath();
+
+				if (uri.getQuery() != null) {
+					String[] parts = uri.getQuery().split("&");
+					for(String part : parts) {
+						switch(part.toLowerCase().split("=")[0]) {
+						case "timeout"    : setTimeout(Integer.valueOf(part.toLowerCase().split("=")[1])); break;
+						case "compression": this.compression = Boolean.getBoolean(part.toLowerCase().split("=")[1]); break;
+						}
+					}
+				}
+				
+				this.host = uri.getHost();
+				if (this.port <= 0) this.port = 22;
+			} else {
+				throw new Exception("Host or SSH url not correct.");
+			}
+		} else {
+			this.login = login;
+			this.host = host;
+			this.password = AFCmdBase.afc.dIP(pass);
+			this.port = port;
+			
+			this.identity = null;
+			if(identityFile instanceof String && ((String) identityFile).length() > 0) {
+				this.identity = (String) identityFile;
+			}
+			
+			this.compression = compression;
+			if (timeout > 0) setTimeout(timeout);
 		}
-		
-		this.compression = compression;
-		if (timeout > 0) setTimeout(timeout);
-		
+	
 		connectSSH();
 	}
 	
