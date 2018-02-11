@@ -980,7 +980,7 @@ initThread.addThread(function(uuid) {
 					var tmpbuf = buf.substr(0, cursor).match(/[^a-zA-Z0-9_\[\]\(\)\"\']*([a-zA-Z0-9_\[\]\(\)\"\']+)$/);
 					ret = cursor - tmpbuf[1].length;
 					try {
-						var tmpList = __scope(tmpbuf[1], true);
+						var tmpList = __scope(tmpbuf[1], true).concat(Object.keys(__alias));
 						for(let elem in tmpList) {
 							if(tmpList[elem].indexOf(tmpbuf[1]) == 0) {							
 								candidates.add(tmpList[elem]);
