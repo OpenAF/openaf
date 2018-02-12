@@ -120,8 +120,10 @@ public class SMB extends ScriptableObject {
 		SmbFileInputStream sfis = new SmbFileInputStream(f);
 		FileOutputStream fw = new FileOutputStream(aTarget);
 		long res = IOUtils.copyLarge(sfis, fw);
-		IOUtils.closeQuietly(fw);
-		IOUtils.closeQuietly(sfis);
+		/*IOUtils.closeQuietly(fw);
+		IOUtils.closeQuietly(sfis);*/
+		fw.close();
+		sfis.close();
 		return res;
 	}
 	
@@ -137,8 +139,10 @@ public class SMB extends ScriptableObject {
 		SmbFileOutputStream sfos = new SmbFileOutputStream(f);
 		FileInputStream fis = new FileInputStream(aSource);
 		long res = IOUtils.copyLarge(fis, sfos);
-		IOUtils.closeQuietly(sfos);
-		IOUtils.closeQuietly(fis);
+		/*IOUtils.closeQuietly(sfos);
+		IOUtils.closeQuietly(fis);*/
+		sfos.close();
+		fis.close();
 		return res;
 	}
 	
@@ -166,7 +170,8 @@ public class SMB extends ScriptableObject {
 		SmbFile f = new SmbFile(aSource, npa);
 		SmbFileInputStream sfis = new SmbFileInputStream(f);
 		byte[] res = IOUtils.toByteArray(sfis);
-		IOUtils.closeQuietly(sfis);
+		//IOUtils.closeQuietly(sfis);
+		sfis.close();
 		return res;
 	}
 	
@@ -181,7 +186,8 @@ public class SMB extends ScriptableObject {
 		SmbFile f = new SmbFile(aTarget, npa);
 		SmbFileOutputStream sfos = new SmbFileOutputStream(f, append);
 		IOUtils.write((byte[]) ba, sfos);
-		IOUtils.closeQuietly(sfos);
+		//IOUtils.closeQuietly(sfos);
+		sfos.close();
 	}
 	
 	/**
@@ -195,6 +201,7 @@ public class SMB extends ScriptableObject {
 		SmbFile f = new SmbFile(aTarget, npa);
 		SmbFileOutputStream sfos = new SmbFileOutputStream(f, append);
 		IOUtils.copyLarge((InputStream) stream, sfos);
-		IOUtils.closeQuietly(sfos);
+		//IOUtils.closeQuietly(sfos);
+		sfos.close();
 	}
 }

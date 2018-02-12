@@ -430,8 +430,10 @@ public class AFBase extends ScriptableObject {
 		lines = IOUtils.toString(p.getInputStream(), (Charset) null);
 		linesErr = IOUtils.toString(p.getErrorStream(), (Charset) null);
 		
-		IOUtils.closeQuietly(p.getInputStream());
-		IOUtils.closeQuietly(p.getErrorStream());
+		/*IOUtils.closeQuietly(p.getInputStream());
+		IOUtils.closeQuietly(p.getErrorStream());*/
+		p.getInputStream().close();
+		p.getErrorStream().close();
 		
 		if (returnObj) {
 			JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
@@ -1227,7 +1229,7 @@ public class AFBase extends ScriptableObject {
 	public String fromInputStream2String(Object aStream) throws IOException {
 		if (aStream instanceof NativeJavaObject) aStream = ((NativeJavaObject) aStream).unwrap();
 		if (aStream instanceof InputStream) {
-			return IOUtils.toString((InputStream) aStream);
+			return IOUtils.toString((InputStream) aStream, System.getProperty("file.encoding"));
 		}
 
 		return null;

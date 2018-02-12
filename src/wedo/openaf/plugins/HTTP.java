@@ -15,6 +15,7 @@ import java.net.CookiePolicy;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -409,7 +410,7 @@ public class HTTP extends ScriptableObject {
 					con.setDoOutput(true);
 					con.addRequestProperty("content-length", String.valueOf(((String) in).length()));
 					OutputStream os = con.getOutputStream();
-					IOUtils.write((String) in, os);
+					IOUtils.write((String) in, os, Charset.defaultCharset());
 					os.flush();
 					os.close();
 					is = con.getInputStream();
@@ -455,7 +456,7 @@ public class HTTP extends ScriptableObject {
 				if (stream)
 					r = new HTTPResponse(is, responseCode, headerFields, contentType);
 				else
-					r = new HTTPResponse(IOUtils.toString(is), responseCode, headerFields, contentType);
+					r = new HTTPResponse(IOUtils.toString(is, Charset.defaultCharset()), responseCode, headerFields, contentType);
 			}
 			
 			//if (this.authenticator != null) 
@@ -464,11 +465,11 @@ public class HTTP extends ScriptableObject {
 			return r;
 		} catch(Exception e) {
 			if (con.getErrorStream() != null) {
-				errorObj = IOUtils.toString(con.getErrorStream());
-				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream()), e);
+				errorObj = IOUtils.toString(con.getErrorStream(), Charset.defaultCharset());
+				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream(), Charset.defaultCharset()), e);
 			} else {
-				errorObj = IOUtils.toString(con.getInputStream());
-				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream()), e);
+				errorObj = IOUtils.toString(con.getInputStream(), Charset.defaultCharset());
+				SimpleLog.log(SimpleLog.logtype.DEBUG, "Response = " + IOUtils.toString(con.getErrorStream(), Charset.defaultCharset()), e);
 			}
 			throw e;
 		}
