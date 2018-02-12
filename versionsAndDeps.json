@@ -170,7 +170,7 @@
 		},
 		{
 			"description": "JAnsi",
-			"path": ["lib/jansi-1.14.jar"],
+			"path": ["lib/jansi-1.17.jar"],
 			"version": "1.14",
 			"changes": false,
 			"type": ["java"],
