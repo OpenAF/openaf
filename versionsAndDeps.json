@@ -297,8 +297,8 @@
 			"name": "Email",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-net-3.3.jar",
-				"lib/commons-email-1.4.jar",
+				"lib/commons-net-3.6.jar",
+				"lib/commons-email-1.5.jar",
 				"lib/javax.mail.jar"
 			],
 			"deps": []
@@ -322,7 +322,7 @@
 			"name": "HTTP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.5.jar",
+				"lib/commons-io-2.6.jar",
 				"lib/jetty-io-9.4.1.jar",
 				"lib/jetty-util-9.4.1.jar",
 				"lib/websocket-api-9.3.15.jar",
@@ -387,7 +387,7 @@
 			"name": "SSH",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.5.jar"
+				"lib/commons-io-2.6.jar"
 			],
 			"deps": [
 				"lib/jsch-0.1.51.jar",
@@ -424,18 +424,18 @@
 			"name": "XLS",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.5.jar",
+				"lib/commons-io-2.6.jar",
 				"lib/commons-collections4-4.1.jar",
 				"lib/commons-logging-1.2.jar",
-				"lib/commons-codec-1.10.jar"
+				"lib/commons-codec-1.11.jar"
 			],
 			"deps": [
 				"lib/xmlbeans-2.6.0.jar",
-				"lib/poi-3.15.jar",
-				"lib/poi-excelant-3.15.jar",
-				"lib/poi-ooxml-3.15.jar",
-				"lib/poi-ooxml-schemas-3.15.jar",
-				"lib/poi-scratchpad-3.15.jar"
+				"lib/poi-3.17.jar",
+				"lib/poi-excelant-3.17.jar",
+				"lib/poi-ooxml-3.17.jar",
+				"lib/poi-ooxml-schemas-3.17.jar",
+				"lib/poi-scratchpad-3.17.jar"
 			]
 		},
 		{
@@ -450,8 +450,8 @@
 			"name": "ZIP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.5.jar",
-				"lib/commons-compress-1.13.jar"
+				"lib/commons-io-2.6.jar",
+				"lib/commons-compress-1.16.1.jar"
 			],
 			"deps": []
 		},
@@ -460,7 +460,7 @@
 			"removable": true,
 			"hardDeps": [
 				"lib/jbsdiff-1.0.jar",
-				"lib/commons-compress-1.13.jar"
+				"lib/commons-compress-1.16.1.jar"
 			]
 		}
 	]
