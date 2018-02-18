@@ -109,7 +109,7 @@ public class Email extends ScriptableObject {
 	 */
 	@JSFunction
 	public Email setCredentials(String aLogin, String aPassword) {
-		this.login = aLogin;
+		this.login = AFCmdBase.afc.dIP(aLogin);
 		this.pass = AFCmdBase.afc.dIP(aPassword);
 		return this;
 	}

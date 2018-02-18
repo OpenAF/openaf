@@ -67,11 +67,11 @@ public class SVN extends ScriptableObject {
 			String p = AFCmdBase.afc.dIP((String) pass);
 			if (svnurl.getProtocol().equals("svn") || svnurl.getProtocol().equals("http") || svnurl.getProtocol().equals("https")) {
 				DefaultSVNOptions options = SVNWCUtil.createDefaultOptions(true);
-				svncli = SVNClientManager.newInstance(options, (String) userName, (String) p);
+				svncli = SVNClientManager.newInstance(options, AFCmdBase.afc.dIP((String) userName), (String) p);
 			}
 			if (svnurl.getProtocol().equals("svn+ssh")) {
 				if (!(file instanceof Undefined)) System.setProperty("svnkit.ssh2.key", (String) file);
-				System.setProperty("svnkit.ssh2.username", (String) userName);
+				System.setProperty("svnkit.ssh2.username", AFCmdBase.afc.dIP((String) userName));
 				System.setProperty("svnkit.ssh2.password", p);
 				System.setProperty("svnkit.ssh2.port", Integer.toString(port));
 				
@@ -83,7 +83,7 @@ public class SVN extends ScriptableObject {
 			//}
 			if (svnurl.getProtocol().equals("file")) {
 				DefaultSVNOptions options = SVNWCUtil.createDefaultOptions(true);
-				svncli = SVNClientManager.newInstance(options, (String) userName, (String) p);
+				svncli = SVNClientManager.newInstance(options, AFCmdBase.afc.dIP((String) userName), (String) p);
 			}	
 		} 
 		

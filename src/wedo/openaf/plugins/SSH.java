@@ -82,7 +82,7 @@ public class SSH extends ScriptableObject {
 
 			if (uri.getScheme().toLowerCase().equals("ssh")) {
 				this.port = uri.getPort();
-				this.login = uri.getUserInfo().split(":")[0];
+				this.login = AFCmdBase.afc.dIP(uri.getUserInfo().split(":")[0]);
 				this.password = AFCmdBase.afc.dIP(uri.getUserInfo().split(":")[1]);
 				this.identity = uri.getPath();
 
@@ -102,7 +102,7 @@ public class SSH extends ScriptableObject {
 				throw new Exception("Host or SSH url not correct.");
 			}
 		} else {
-			this.login = login;
+			this.login = AFCmdBase.afc.dIP(login);
 			this.host = host;
 			this.password = AFCmdBase.afc.dIP(pass);
 			this.port = port;
@@ -144,7 +144,7 @@ public class SSH extends ScriptableObject {
 	public String execSudo(String command, Object user, String input, boolean shouldOutputAlso, boolean pty) throws JSchException, IOException {
 		String u = "";
 		if (user != null && user instanceof Undefined) {
-			u = (String) user;
+			u = AFCmdBase.afc.dIP((String) user);
 		}
 		return executeSSH("echo " + AFCmdBase.afc.dIP(password) + " | sudo -u " + user + " -S " + command, input, shouldOutputAlso, pty);
 	}

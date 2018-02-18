@@ -492,7 +492,7 @@ OpenWrap.dev.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	}
 
 	if (this.__forceBasic && isDef(this.__l)) {
-		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(this.__l + ":" + Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
+		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
 	}
 
 	for(var i in aRequestMap) {
@@ -562,7 +562,7 @@ OpenWrap.dev.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 			}
 		}
 		var as = new Packages.org.apache.http.auth.AuthScope(url.getHost(), port);
-		var up = new Packages.org.apache.http.auth.UsernamePasswordCredentials(aUser, Packages.wedo.openaf.AFCmdBase.afc.dIP(aPassword));
+		var up = new Packages.org.apache.http.auth.UsernamePasswordCredentials(Packages.wedo.openaf.AFCmdBase.afc.dIP(aUser), Packages.wedo.openaf.AFCmdBase.afc.dIP(aPassword));
 		var cred = new org.apache.http.impl.client.BasicCredentialsProvider();
 		cred.setCredentials(as, up);
 		this.__lps[urlPartial] = cred;
@@ -624,7 +624,7 @@ OpenWrap.dev.prototype.http.prototype.wsConnect = function(anURL, onConnect, onM
 		auth = new java.net.Authenticator.Authenticator({
 			getPasswordAuthenticator: function() {
 				if (this.__forceBasic) {
-					return new java.net.PasswordAuthentication(this.__l, Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p));
+					return new java.net.PasswordAuthentication(Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__l), Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p));
 				} else {
 					var getKey;
 					for(var key in this.__lps) {
@@ -642,7 +642,7 @@ OpenWrap.dev.prototype.http.prototype.wsConnect = function(anURL, onConnect, onM
 						}
 						var as = new Packages.org.apache.http.auth.AuthScope(url.getHost(), port);
 						return new java.net.PasswordAuthentication(
-							h.__lps[getKey].getCredentials(as).getUserName(), 
+							Packages.wedo.openaf.AFCmdBase.afc.dIP(h.__lps[getKey].getCredentials(as).getUserName()), 
 							Packages.wedo.openaf.AFCmdBase.afc.dIP(h.__lps[getKey].getCredentials(as).getPassword()));
 					}
 				}

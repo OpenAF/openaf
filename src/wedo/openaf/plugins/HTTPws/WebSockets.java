@@ -128,7 +128,7 @@ public class WebSockets {
             if (authenticator != null)
                 Authenticator.setDefault(authenticator);
             client.getHttpClient().getAuthenticationStore()
-                    .addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", u,
+                    .addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u),
                             new String(AFCmdBase.afc.dIP(p).toCharArray())));
         }
 
@@ -138,7 +138,7 @@ public class WebSockets {
             org.eclipse.jetty.websocket.client.ClientUpgradeRequest request = null;
             if (u != null && p != null) {
                 request = new org.eclipse.jetty.websocket.client.ClientUpgradeRequest();
-                String s = new String(u + ":" + new String(AFCmdBase.afc.dIP(p).toCharArray()));
+                String s = new String(AFCmdBase.afc.dIP(u) + ":" + new String(AFCmdBase.afc.dIP(p).toCharArray()));
                 request.setHeader("Authorization",
                         "Basic " + new String(org.apache.commons.codec.binary.Base64.encodeBase64(s.getBytes())));
                 /*client.getHttpClient().getAuthenticationStore().addAuthentication(

@@ -689,7 +689,7 @@ public class DB {
 			
 			Properties props = new Properties();
 			
-			props.setProperty("user", login);
+			props.setProperty("user", AFCmdBase.afc.dIP(login));
 			props.setProperty("password", AFCmdBase.afc.dIP(pass));
 			
 			con = DriverManager.getConnection(url, props);
