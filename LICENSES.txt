@@ -1795,7 +1795,7 @@ jury trial in any resulting litigation.
 
 -----------------------
 Third-party name      : Ignite
-Version               : 2.2.0
+Version               : 2.3.0
 Changed from original : No
 Location in openaf.jar: lib/ignite.jar
 License               : 
@@ -2048,9 +2048,9 @@ with this eBook or online at www.gutenberg.org
 
 -----------------------
 Third-party name      : JLine
-Version               : 2.12.1
+Version               : 2.14.5
 Changed from original : No
-Location in openaf.jar: lib/jline-2.12.1.jar
+Location in openaf.jar: lib/jline-2.14.5.jar
 License               : 
 
 Copyright (c) 2002-2016, the original author or authors.
@@ -2301,9 +2301,9 @@ License               :
 
 -----------------------
 Third-party name      : Apache Commons IO
-Version               : 2.5
+Version               : 2.6
 Changed from original : No
-Location in openaf.jar: lib/commons-io-2.5.jar
+Location in openaf.jar: lib/commons-io-2.6.jar
 License               : 
 
 Apache License
@@ -2516,9 +2516,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons Email
-Version               : 1.4
+Version               : 1.5
 Changed from original : No
-Location in openaf.jar: lib/commons-email-1.4.jar
+Location in openaf.jar: lib/commons-email-1.5.jar
 License               : 
 
 Apache License
@@ -2731,9 +2731,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons Compress
-Version               : 1.13
+Version               : 1.16.1
 Changed from original : No
-Location in openaf.jar: lib/commons-compress-1.13.jar
+Location in openaf.jar: lib/commons-compress-1.16.1.jar
 License               : 
 
 Apache License
@@ -2946,9 +2946,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons HTTPComponents
-Version               : 4.5.4
+Version               : 4.5.5
 Changed from original : No
-Location in openaf.jar: lib/httpclient-4.5.4.jar, lib/httpcore-4.4.8.jar
+Location in openaf.jar: lib/httpclient-4.5.5.jar, lib/httpcore-4.4.9.jar
 License               : 
 
 Apache License
@@ -3548,9 +3548,9 @@ software, even if advised of the possibility of such damage.
 
 -----------------------
 Third-party name      : GSON
-Version               : 2.8.1
+Version               : 2.8.2
 Changed from original : No
-Location in openaf.jar: lib/gson-2.8.1.jar
+Location in openaf.jar: lib/gson-2.8.2.jar
 License               : 
 
 
