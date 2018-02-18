@@ -570,7 +570,7 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 				__remoteUser = con.readLinePrompt("Enter authentication user: ");
 				__remotePass = con.readLinePrompt("Enter authentication password: ", "*");
 			}
-			__remoteHTTP.login(Packages.wedo.openaf.wedo.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.wedo.openaf.wedo.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
+			__remoteHTTP.login(Packages.wedo.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.wedo.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
 			res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 		} else {
 			throw e;

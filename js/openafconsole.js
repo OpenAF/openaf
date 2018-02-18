@@ -10,6 +10,7 @@ var CONSOLEPROFILE = ".openaf-console_profile";
 var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|sql|esql|dsql|pin";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
+	"encryptText": "af.encryptText();"
 };
 
 var __aliasparam;

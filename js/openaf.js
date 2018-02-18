@@ -3722,7 +3722,14 @@ AF.prototype.toYAML = function(aJson) { loadJSYAML(); return jsyaml.dump(aJson);
  * Tries to parse aYaml into a javascript map.
  * </odoc>
  */
-AF.prototype.fromYAML = function(aYAML) { loadJSYAML(); return jsyaml.load(aYAML); }
+AF.prototype.fromYAML = function(aYAML) { loadJSYAML(); return jsyaml.load(aYAML); };
+/**
+ * <odoc>
+ * <key>AF.encryptText()</key>
+ * Interactevly asks to enter a text and then uses af.encrypt to print to stdout the result.
+ * </odoc>
+ */
+AF.prototype.encryptText = function() { plugin("Console"); print("Encrypted text: " + af.encrypt((new Console()).readLinePrompt("Enter text: ", "*"))); };
 /**
  * <odoc>
  * <key>IO.readFileYAML(aYAMLFile) : Object</key>
