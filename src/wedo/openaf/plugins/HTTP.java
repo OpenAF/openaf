@@ -146,9 +146,9 @@ public class HTTP extends ScriptableObject {
 							if (key != "default" && url.toString().startsWith(key)) getKey = key;
 						}
 						if (getKey == null) {
-							return new PasswordAuthentication (lps.get("default").l, (AFCmdBase.afc.dIP(lps.get("default").p)).toCharArray());
+							return new PasswordAuthentication (AFCmdBase.afc.dIP(lps.get("default").l), (AFCmdBase.afc.dIP(lps.get("default").p)).toCharArray());
 						} else {
-							return new PasswordAuthentication (lps.get(getKey).l, (AFCmdBase.afc.dIP(lps.get(getKey).p)).toCharArray());
+							return new PasswordAuthentication (AFCmdBase.afc.dIP(lps.get(getKey).l), (AFCmdBase.afc.dIP(lps.get(getKey).p)).toCharArray());
 						}
 					}
 				};

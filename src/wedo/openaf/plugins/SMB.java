@@ -53,7 +53,7 @@ public class SMB extends ScriptableObject {
 	 */
 	@JSConstructor
 	public void newSMB(String shareURL, String aDomain, String aUser, String aPassword) throws IOException, InstantiationException, IllegalAccessException {
-		npa = new NtlmPasswordAuthentication(aDomain, aUser, AFCmdBase.afc.dIP(aPassword));
+		npa = new NtlmPasswordAuthentication(aDomain, AFCmdBase.afc.dIP(aUser), AFCmdBase.afc.dIP(aPassword));
 		smbf = new SmbFile(shareURL, npa);
 		smbf.connect();
 	}

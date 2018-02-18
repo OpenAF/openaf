@@ -62,7 +62,11 @@ import org.mozilla.javascript.xml.XMLObject;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
+import com.warrenstrange.googleauth.GoogleAuthenticator;
+import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
+import com.warrenstrange.googleauth.GoogleAuthenticatorQRGenerator;
+import wedo.openaf.JSEngine.JSList;
+import wedo.openaf.JSEngine.JSMap;
 import wedo.openaf.SimpleLog.logtype;
 
 /**
@@ -1323,5 +1327,63 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public Object newOutputStream() {
 		return new ByteArrayOutputStream();
+	}
+
+	// TOTP/2FA
+
+	@JSFunction
+	/**
+	 * <odoc>
+	 * <key>af.create2FACredentials(anAccountName, anIssuer) : Map</key>
+	 * Given anAccountName and anIssuer will create a the 2FA/TOTP (Time-Based One-Time Password) returning a map with
+	 * the scratchCodes, the verificationCode, the key, the openaf encryptedKey, the QR code URL 
+	 * and the OTP URL.
+	 * </odoc>
+	 */
+	public Object create2FACredentials(String issuer, String accountName) throws Exception {
+		JSMap map = AFCmdBase.jse.getNewMap(null);
+
+		if (issuer == null) issuer = "openaf";
+		if (accountName == null) accountName = "user@openaf.io";
+
+		GoogleAuthenticator gauth = new GoogleAuthenticator();
+		GoogleAuthenticatorKey gkey = gauth.createCredentials();
+		JSList sCds = AFCmdBase.jse.getNewList(null);
+		sCds.addAll(gkey.getScratchCodes());
+		map.put("scratchCodes", sCds.getList());
+		map.put("verificationCode", gkey.getVerificationCode());
+		map.put("key", gkey.getKey());
+		map.put("encryptedKey", encrypt(gkey.getKey(), null));
+		map.put("qrChart", GoogleAuthenticatorQRGenerator.getOtpAuthURL(issuer, accountName, gkey));
+		map.put("otpURL", GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(issuer, accountName, gkey));
+
+		return map.getMap();
+	}
+
+	@JSFunction
+	/**
+	 * <odoc>
+	 * <key>af.validate2FA(aKey, aToken) : boolean</key>
+	 * Given aToken and a 2FA aKey returns true if it's valid. Note: it will use
+	 * the current date/time of the system so it must be in sync with the authenticator
+	 * app; scratchCodes are not handled.
+	 * </odoc>
+	 */
+	public boolean validate2FA(String aKey, int aToken) {
+		GoogleAuthenticator gauth = new GoogleAuthenticator();
+		return gauth.authorize(AFCmdBase.afc.dIP(aKey), aToken);
+	}
+
+	@JSFunction
+	/**
+	 * <odoc>
+	 * <key>af.get2FAToken(aKey) : Number</key>
+	 * Given 2FA aKey it will return the current token. Note: it will use the current
+	 * date/time of the system so it must be in sync with the authenticator
+	 * </odoc>
+	 */
+	public int get2FAToken(String aKey) {
+		GoogleAuthenticator gauth = new GoogleAuthenticator();
+		return gauth.getTotpPassword(AFCmdBase.afc.dIP(aKey));
 	}
 }

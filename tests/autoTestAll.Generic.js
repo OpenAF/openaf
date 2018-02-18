@@ -390,6 +390,18 @@
         ow.test.assert(af.decrypt(af.encrypt(res1, "1234567890123456"), "1234567890123456"), res1, "Problem with custom encrypt/decrypt.");
     };
 
+    exports.test2FA = function() {
+        ow.loadFormat();
+
+        var code = af.create2FACredentials("test", "openaf");
+        var init = new Date();
+
+        var token = af.get2FAToken(code.encryptedKey);
+
+        ow.test.assert(af.validate2FA(code.encryptedKey, token), true, "Problem while validating a 2FA generated " + ow.format.timeago(init).toLowerCase());
+        ow.test.assert(af.validate2FA(code.encryptedKey, token + 1), false, "Problem while validating a wrong 2FA key generated " + ow.format.timeago(init).toLowerCase());
+    };
+
     exports.testYAML = function() {
         var r = {
             a: 1,

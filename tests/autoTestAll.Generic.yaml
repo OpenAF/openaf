@@ -122,6 +122,11 @@ jobs:
      from: OpenAF::Init
      to  : oJob Test
      exec: args.func = args.tests.testEncryptDecrypt;
+    
+   - name: OpenAF::Two factor authentication
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.test2FA;
 
 todo:
    # Generic Tests
@@ -148,6 +153,7 @@ todo:
    - OpenAF::Crypt
    - OpenAF::Encrypt/Decrypt
    - OpenAF::YAML
+   - OpenAF::Two factor authentication
   
    # CSV Tests
    # ---------

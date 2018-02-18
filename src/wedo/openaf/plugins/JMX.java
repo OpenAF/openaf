@@ -89,7 +89,7 @@ public class JMX extends ScriptableObject {
 			
 			if ( (login != null && login instanceof String) &&
 				 (password != null && password instanceof String) ) {
-				env.put(JMXConnector.CREDENTIALS, new String[] {(String) login, AFCmdBase.afc.dIP((String) password)});
+				env.put(JMXConnector.CREDENTIALS, new String[] {AFCmdBase.afc.dIP((String) login), AFCmdBase.afc.dIP((String) password)});
 			}
 			
 			if (provider != null && provider instanceof String) {

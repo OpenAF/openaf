@@ -66,7 +66,7 @@ public class GIT extends ScriptableObject {
 		open(dir);
 		if (alogin != null && !(alogin instanceof Undefined) &&
 			apass != null && !(apass instanceof Undefined)) {
-			login = (String) alogin;
+			login = AFCmdBase.afc.dIP((String) alogin);
 			pass = AFCmdBase.afc.dIP((String) apass);
 		}
 	}
