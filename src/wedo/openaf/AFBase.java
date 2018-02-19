@@ -1351,7 +1351,7 @@ public class AFBase extends ScriptableObject {
 		JSList sCds = AFCmdBase.jse.getNewList(null);
 		sCds.addAll(gkey.getScratchCodes());
 		map.put("scratchCodes", sCds.getList());
-		map.put("verificationCode", gkey.getVerificationCode());
+		map.put("verificationCode", String.format("%06d", gkey.getVerificationCode()));
 		map.put("key", gkey.getKey());
 		map.put("encryptedKey", encrypt(gkey.getKey(), null));
 		map.put("qrChart", GoogleAuthenticatorQRGenerator.getOtpAuthURL(issuer, accountName, gkey));
@@ -1369,21 +1369,22 @@ public class AFBase extends ScriptableObject {
 	 * app; scratchCodes are not handled.
 	 * </odoc>
 	 */
-	public boolean validate2FA(String aKey, int aToken) {
+	public boolean validate2FA(String aKey, String aToken) {
 		GoogleAuthenticator gauth = new GoogleAuthenticator();
-		return gauth.authorize(AFCmdBase.afc.dIP(aKey), aToken);
+		return gauth.authorize(AFCmdBase.afc.dIP(aKey), Integer.valueOf(aToken));
 	}
 
 	@JSFunction
 	/**
 	 * <odoc>
-	 * <key>af.get2FAToken(aKey) : Number</key>
+	 * <key>af.get2FAToken(aKey) : String</key>
 	 * Given 2FA aKey it will return the current token. Note: it will use the current
 	 * date/time of the system so it must be in sync with the authenticator
 	 * </odoc>
 	 */
-	public int get2FAToken(String aKey) {
+	public String get2FAToken(String aKey) {
 		GoogleAuthenticator gauth = new GoogleAuthenticator();
-		return gauth.getTotpPassword(AFCmdBase.afc.dIP(aKey));
+
+		return String.format("%06d", gauth.getTotpPassword(AFCmdBase.afc.dIP(aKey)));
 	}
 }
