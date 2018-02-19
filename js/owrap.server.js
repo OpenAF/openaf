@@ -412,6 +412,14 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 	this.is2FA = function(aUser) {
 		return isDef(this.aListOfAuths[aUser].k);
 	};
+
+	this.loadFile = function(aFile, aKey) {
+		this.initialize(io.readFileString(aFile), aKey);
+	};
+
+	this.saveFile = function(aFile, aKey) {
+		io.writeFileString(aFile, this.dumpEncrypt(aKey));
+	};
 	
 	/**
 	 * <odoc>
@@ -439,7 +447,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 		} else {
 			if (res) {
 				user.n = 0;
-				user.l = void 0;
+				user.l = undefined;
 			} else {
 				user.n++;
 				if (user.n > this.triesToLock) {
