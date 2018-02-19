@@ -327,18 +327,38 @@ OpenWrap.server.prototype.jmx = {
 //-----------------------------------------------------------------------------------------------------
 // AUTHENTICATION
 //-----------------------------------------------------------------------------------------------------
-OpenWrap.server.prototype.auth = {
-	aListOfAuths: {},
+OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
+	this.aListOfAuths = {};
+	this.lockTimeout = 15 * 60;
+	this.triesToLock = 3;
+
+	this.setLockTimeout = function(aTimeout) {
+		this.lockTimeout = aTimeout;
+	};
+
+	this.setTriesToLock = function(numberOfTries) {
+		this.triesToLock = numberOfTries;
+	};
 	
+	this.isLocked = function(aUser) {
+		ow.loadFormat();
+		return isDef(this.aListOfAuths[aUser].l) && ow.format.dateDiff.inSeconds(this.aListOfAuths[aUser].l) < this.lockTimeout;
+	};
+
 	/**
 	 * <odoc>
-	 * <key>ow.server.auth.initialize(aPreviousDumpMap)</key>
-	 * Initializes with a previous dump from ow.server.auth.dump.
+	 * <key>ow.server.auth.initialize(aPreviousDumpMap, aKey)</key>
+	 * Initializes with a previous dump from ow.server.auth.dump or ow.server.auth.dumpEncrypt (including an optional aKey if used)
 	 * </odoc>
 	 */
-	initialize: function(aIniAuth) {
-		this.aListOfAuths = aIniAuth;
-	},
+	this.initialize = function(aIniAuth, aKey) {
+		if (isString(aIniAuth)) {
+			this.aListOfAuths = jsonParse(af.decrypt(aIniAuth, (isDef(aKey) ? Packages.wedo.openaf.AFCmdBase.afc.dIP(aKey) : void 0)));
+		} else {
+			this.aListOfAuths = aIniAuth;
+		}
+		if (isUnDef(this.aListOfAuths)) this.aListOfAuths = {};
+	};
 	
 	/**
 	 * <odoc>
@@ -346,19 +366,32 @@ OpenWrap.server.prototype.auth = {
 	 * Dumps the current authentication list into a Map.
 	 * </odoc>
 	 */
-	dump: function() {
+	this.dump = function() {
 		return this.aListOfAuths;
-	},
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.dumpEncrypt(aKey) : Map</key>
+	 * Dumps the current authentication list into an encrypted string (optionally using an encryption aKey).
+	 * </odoc>
+	 */
+	this.dumpEncrypt = function(aKey) {
+		return af.encrypt(stringify(this.aListOfAuths), (isDef(aKey) ? Packages.wedo.openaf.AFCmdBase.afc.dIP(aKey) : void 0));
+	};
 	
 	/**
 	 * <odoc>
-	 * <key>ow.server.auth.add(aUser, aPass)</key>
-	 * Adds the aUser and aPass to the current authentication list.
+	 * <key>ow.server.auth.add(aUser, aPass, aKey)</key>
+	 * Adds the aUser and aPass to the current authentication list. Optionally a 2FA aKey.
 	 * </odoc>
 	 */
-	add: function(aUser, aPass) {
-		this.aListOfAuths[aUser] = sha1(aPass);
-	},
+	this.add = function(aUser, aPass, aKey) {
+		this.aListOfAuths[aUser] = {
+			p: sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass)),
+			k: aKey
+		};
+	};
 	
 	/**
 	 * <odoc>
@@ -366,21 +399,61 @@ OpenWrap.server.prototype.auth = {
 	 * Removes the aUSer from the current authentication list.
 	 * </odoc>
 	 */
-	del: function(aUser) {
+	this.del = function(aUser) {
 		delete this.aListOfAuths[aUser];
-	},
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.is2FA(aUser) : boolean</key>
+	 * Returns true if aUser has 2FA authentication, false otherwise.
+	 * </odoc>
+	 */
+	this.is2FA = function(aUser) {
+		return isDef(this.aListOfAuths[aUser].k);
+	};
 	
 	/**
 	 * <odoc>
 	 * <key>ow.server.auth.check(aUser, aPass) : boolean</key>
 	 * Checks if the aUser and aPass provided are authenticated with the current internal list (returns true)
-	 * or not (returns false).
+	 * or not (returns false). If a 2FA authentication was provided the token should be suffix to the password.
 	 * </odoc>
 	 */
-	check: function(aUser, aPass) {
-		return (this.aListOfAuths[aUser] == sha1(aPass));
-	}
-}
+	this.check = function(aUser, aPass) {
+		var user = this.aListOfAuths[aUser];
+		var res = false;
+
+		if (isDef(user.k)) {
+			// 2FA
+			aPass = String(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass));
+			var token = aPass.substr(-6);
+			var pass = aPass.substr(0, aPass.length - 6);
+			res = (user.p == sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(pass)) && af.validate2FA(user.k, token));
+		} else {
+			res = (user.p == sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass)));
+		}
+
+		if (this.isLocked(aUser)) {
+			user.l = new Date();
+		} else {
+			if (res) {
+				user.n = 0;
+				user.l = void 0;
+			} else {
+				user.n++;
+				if (user.n > this.triesToLock) {
+					user.l = new Date();
+				}
+			}
+		}
+
+		return res;
+	};
+
+	this.initialize(aIniAuth, aKey);
+	return this;
+};
 
 //-----------------------------------------------------------------------------------------------------
 // LDAP Check
@@ -1162,7 +1235,7 @@ OpenWrap.server.prototype.httpd = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.server.httpd.authBasic(aRealm. aHTTPd, aReq, aAuthFunc, aReplyFunc, aUnAuthFunc) : Map</key>
+	 * <key>ow.server.httpd.authBasic(aRealm, aHTTPd, aReq, aAuthFunc, aReplyFunc, aUnAuthFunc) : Map</key>
 	 * Wraps a httpd reply with basic HTTP authentication for the provided aRealm on the aHTTPd server. The aReq
 	 * request map should be provided along with aAuthFunc (that receives the user and password and should return
 	 * true of false if authentication is successful). If authentication is successful aReplyFunc will be executed
