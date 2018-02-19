@@ -332,15 +332,34 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 	this.lockTimeout = 15 * 60;
 	this.triesToLock = 3;
 
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.setLockTimeout(aTimeout)</key>
+	 * Set the current lock timeout in seconds. Defaults to 15 minutes.
+	 * </odoc>
+	 */
 	this.setLockTimeout = function(aTimeout) {
 		this.lockTimeout = aTimeout;
 	};
 
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.setTriesToLock(numberOfTries)</key>
+	 * Set the current number of wrong tries until a user is locked. Defaults to 3.
+	 * </odoc>
+	 */
 	this.setTriesToLock = function(numberOfTries) {
 		this.triesToLock = numberOfTries;
 	};
 	
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.isLocked(aUser) : boolean</key>
+	 * For a given aUser returns if the user is currently considered as lock or not.
+	 * </odoc>
+	 */
 	this.isLocked = function(aUser) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
 		ow.loadFormat();
 		return isDef(this.aListOfAuths[aUser].l) && ow.format.dateDiff.inSeconds(this.aListOfAuths[aUser].l) < this.lockTimeout;
 	};
@@ -392,6 +411,32 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 			k: aKey
 		};
 	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.setExtra(aUser, aX)</key>
+	 * Sets an extra object (aX) to be associated with aUser (for example, the correspondings permissions).
+	 * You can later retrieve this extra object with ow.server.auth.getExtra.
+	 * </odoc>
+	 */
+	this.setExtra = function(aUser, aX) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
+		var user = this.aListOfAuths[aUser];
+		user.x = aX;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.getExtra(aUser) : Object</key>
+	 * Gets the extra object associated with aUser (previously set with ow.server.auth.setExtra).
+	 * </odoc>
+	 */
+	this.getExtra = function(aUser) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
+		return this.aListOfAuths[aUser].x;
+	};
 	
 	/**
 	 * <odoc>
@@ -400,6 +445,8 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 	 * </odoc>
 	 */
 	this.del = function(aUser) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
 		delete this.aListOfAuths[aUser];
 	};
 
@@ -410,13 +457,29 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 	 * </odoc>
 	 */
 	this.is2FA = function(aUser) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
 		return isDef(this.aListOfAuths[aUser].k);
 	};
 
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.loadFile(aFile, aKey)</key>
+	 * Loads aFile (previously saved with ow.server.auth.saveFile), optionally providing aKey, (re)initializing 
+	 * the current authentication information.
+	 * </odoc>
+	 */
 	this.loadFile = function(aFile, aKey) {
 		this.initialize(io.readFileString(aFile), aKey);
 	};
 
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.saveFile(aFile, aKey)</key>
+	 * Saves into aFile, optionally providing aKey, the current authentication information. You can use ow.server.auth.loadFile
+	 * later to reload this info.
+	 * </odoc>
+	 */
 	this.saveFile = function(aFile, aKey) {
 		io.writeFileString(aFile, this.dumpEncrypt(aKey));
 	};
@@ -429,6 +492,8 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 	 * </odoc>
 	 */
 	this.check = function(aUser, aPass) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
 		var user = this.aListOfAuths[aUser];
 		var res = false;
 
@@ -450,7 +515,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 				user.l = undefined;
 			} else {
 				user.n++;
-				if (user.n > this.triesToLock) {
+				if (user.n >= this.triesToLock) {
 					user.l = new Date();
 				}
 			}

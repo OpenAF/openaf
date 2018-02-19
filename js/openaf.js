@@ -324,37 +324,49 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 		var outOfWidth = false;
 		var cols = Object.keys(row);
 		if (count == 0) {
-			output += (useAnsi ? ansiColor("bold", "|") : "|"); lineSize = 1; outOfWidth = false;
+			//output += (useAnsi ? ansiColor("bold", "|") : "|"); 
+			output += (useAnsi ? ansiColor("bold", "") : ""); 
+			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(function(col) {
 				if (outOfWidth) return;
 				lineSize += maxsize[String(col)] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 					output += (useAnsi ? ansiColor("bold", "...") : "..."); outOfWidth = true;
 				} else {
-					output += (useAnsi ? ansiColor("bold", String(col)) : String(col)) + repeat(maxsize[String(col)] - String(col).length, ' ') + (useAnsi ? ansiColor("bold", "|") : "|");
+					output += repeat(Math.floor((maxsize[String(col)] - String(col).length)/2), ' ') + (useAnsi ? ansiColor("bold", String(col)) : String(col)) + repeat(Math.round((maxsize[String(col)] - String(col).length) / 2), ' ');
+					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor("bold", "|") : "|");
 				}
+				colNum++;
 			});
 			output += "\n";
-			output += (useAnsi ? ansiColor("bold", "+") : "+"); lineSize = 1; outOfWidth = false;
+			//output += (useAnsi ? ansiColor("bold", "+") : "+"); 
+			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(function(col) {
 				if (outOfWidth) return;
 				lineSize += maxsize[String(col)] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor("bold", "...") : "...");outOfWidth = true;
-				} else
-					output += (useAnsi ? ansiColor("bold", repeat(maxsize[String(col)], '-')) : repeat(maxsize[String(col)], '-')) + (useAnsi ? ansiColor("bold", "+") : "+");
+					output += (useAnsi ? ansiColor("bold", "...") : "..."); outOfWidth = true;
+				} else {
+					output += (useAnsi ? ansiColor("bold", repeat(maxsize[String(col)], '-')) : repeat(maxsize[String(col)], '-'));
+					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor("bold", "+") : "+");
+				}
+				colNum++;
 			});
 			output += "\n";
 		};
 
-		output += (useAnsi ? ansiColor("bold", "|") : "|"); lineSize = 1; outOfWidth = false;
+		//output += (useAnsi ? ansiColor("bold", "|") : "|"); 
+		lineSize = 1; outOfWidth = false; colNum = 0;
 		cols.forEach(function(col) {
 			if (outOfWidth) return;
 			lineSize += maxsize[String(col)] + 1;
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 				output += "..."; outOfWidth = true;
-			} else			
-				output += String(row[String(col)]) + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ') + (useAnsi ? ansiColor("bold", "|") : "|");
+			} else {	
+				output += String(row[String(col)]).replace(/\n/g, " ") + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ');
+				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor("bold", "|") : "|");
+			}
+			colNum++;
 		});
 		output += "\n";
 		count++;
