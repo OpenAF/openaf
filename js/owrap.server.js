@@ -327,18 +327,57 @@ OpenWrap.server.prototype.jmx = {
 //-----------------------------------------------------------------------------------------------------
 // AUTHENTICATION
 //-----------------------------------------------------------------------------------------------------
-OpenWrap.server.prototype.auth = {
-	aListOfAuths: {},
+OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
+	this.aListOfAuths = {};
+	this.lockTimeout = 15 * 60;
+	this.triesToLock = 3;
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.setLockTimeout(aTimeout)</key>
+	 * Set the current lock timeout in seconds. Defaults to 15 minutes.
+	 * </odoc>
+	 */
+	this.setLockTimeout = function(aTimeout) {
+		this.lockTimeout = aTimeout;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.setTriesToLock(numberOfTries)</key>
+	 * Set the current number of wrong tries until a user is locked. Defaults to 3.
+	 * </odoc>
+	 */
+	this.setTriesToLock = function(numberOfTries) {
+		this.triesToLock = numberOfTries;
+	};
 	
 	/**
 	 * <odoc>
-	 * <key>ow.server.auth.initialize(aPreviousDumpMap)</key>
-	 * Initializes with a previous dump from ow.server.auth.dump.
+	 * <key>ow.server.auth.isLocked(aUser) : boolean</key>
+	 * For a given aUser returns if the user is currently considered as lock or not.
 	 * </odoc>
 	 */
-	initialize: function(aIniAuth) {
-		this.aListOfAuths = aIniAuth;
-	},
+	this.isLocked = function(aUser) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+		ow.loadFormat();
+		return isDef(this.aListOfAuths[aUser].l) && ow.format.dateDiff.inSeconds(this.aListOfAuths[aUser].l) < this.lockTimeout;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.initialize(aPreviousDumpMap, aKey)</key>
+	 * Initializes with a previous dump from ow.server.auth.dump or ow.server.auth.dumpEncrypt (including an optional aKey if used)
+	 * </odoc>
+	 */
+	this.initialize = function(aIniAuth, aKey) {
+		if (isString(aIniAuth)) {
+			this.aListOfAuths = jsonParse(af.decrypt(aIniAuth, (isDef(aKey) ? Packages.wedo.openaf.AFCmdBase.afc.dIP(aKey) : void 0)));
+		} else {
+			this.aListOfAuths = aIniAuth;
+		}
+		if (isUnDef(this.aListOfAuths)) this.aListOfAuths = {};
+	};
 	
 	/**
 	 * <odoc>
@@ -346,19 +385,58 @@ OpenWrap.server.prototype.auth = {
 	 * Dumps the current authentication list into a Map.
 	 * </odoc>
 	 */
-	dump: function() {
+	this.dump = function() {
 		return this.aListOfAuths;
-	},
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.dumpEncrypt(aKey) : Map</key>
+	 * Dumps the current authentication list into an encrypted string (optionally using an encryption aKey).
+	 * </odoc>
+	 */
+	this.dumpEncrypt = function(aKey) {
+		return af.encrypt(stringify(this.aListOfAuths), (isDef(aKey) ? Packages.wedo.openaf.AFCmdBase.afc.dIP(aKey) : void 0));
+	};
 	
 	/**
 	 * <odoc>
-	 * <key>ow.server.auth.add(aUser, aPass)</key>
-	 * Adds the aUser and aPass to the current authentication list.
+	 * <key>ow.server.auth.add(aUser, aPass, aKey)</key>
+	 * Adds the aUser and aPass to the current authentication list. Optionally a 2FA aKey.
 	 * </odoc>
 	 */
-	add: function(aUser, aPass) {
-		this.aListOfAuths[aUser] = sha1(aPass);
-	},
+	this.add = function(aUser, aPass, aKey) {
+		this.aListOfAuths[aUser] = {
+			p: sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass)),
+			k: aKey
+		};
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.setExtra(aUser, aX)</key>
+	 * Sets an extra object (aX) to be associated with aUser (for example, the correspondings permissions).
+	 * You can later retrieve this extra object with ow.server.auth.getExtra.
+	 * </odoc>
+	 */
+	this.setExtra = function(aUser, aX) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
+		var user = this.aListOfAuths[aUser];
+		user.x = aX;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.getExtra(aUser) : Object</key>
+	 * Gets the extra object associated with aUser (previously set with ow.server.auth.setExtra).
+	 * </odoc>
+	 */
+	this.getExtra = function(aUser) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
+		return this.aListOfAuths[aUser].x;
+	};
 	
 	/**
 	 * <odoc>
@@ -366,21 +444,89 @@ OpenWrap.server.prototype.auth = {
 	 * Removes the aUSer from the current authentication list.
 	 * </odoc>
 	 */
-	del: function(aUser) {
+	this.del = function(aUser) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
 		delete this.aListOfAuths[aUser];
-	},
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.is2FA(aUser) : boolean</key>
+	 * Returns true if aUser has 2FA authentication, false otherwise.
+	 * </odoc>
+	 */
+	this.is2FA = function(aUser) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
+		return isDef(this.aListOfAuths[aUser].k);
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.loadFile(aFile, aKey)</key>
+	 * Loads aFile (previously saved with ow.server.auth.saveFile), optionally providing aKey, (re)initializing 
+	 * the current authentication information.
+	 * </odoc>
+	 */
+	this.loadFile = function(aFile, aKey) {
+		this.initialize(io.readFileString(aFile), aKey);
+	};
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.saveFile(aFile, aKey)</key>
+	 * Saves into aFile, optionally providing aKey, the current authentication information. You can use ow.server.auth.loadFile
+	 * later to reload this info.
+	 * </odoc>
+	 */
+	this.saveFile = function(aFile, aKey) {
+		io.writeFileString(aFile, this.dumpEncrypt(aKey));
+	};
 	
 	/**
 	 * <odoc>
 	 * <key>ow.server.auth.check(aUser, aPass) : boolean</key>
 	 * Checks if the aUser and aPass provided are authenticated with the current internal list (returns true)
-	 * or not (returns false).
+	 * or not (returns false). If a 2FA authentication was provided the token should be suffix to the password.
 	 * </odoc>
 	 */
-	check: function(aUser, aPass) {
-		return (this.aListOfAuths[aUser] == sha1(aPass));
-	}
-}
+	this.check = function(aUser, aPass) {
+		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
+
+		var user = this.aListOfAuths[aUser];
+		var res = false;
+
+		if (isDef(user.k)) {
+			// 2FA
+			aPass = String(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass));
+			var token = aPass.substr(-6);
+			var pass = aPass.substr(0, aPass.length - 6);
+			res = (user.p == sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(pass)) && af.validate2FA(user.k, token));
+		} else {
+			res = (user.p == sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass)));
+		}
+
+		if (this.isLocked(aUser)) {
+			user.l = new Date();
+		} else {
+			if (res) {
+				user.n = 0;
+				user.l = undefined;
+			} else {
+				user.n++;
+				if (user.n >= this.triesToLock) {
+					user.l = new Date();
+				}
+			}
+		}
+
+		return res;
+	};
+
+	this.initialize(aIniAuth, aKey);
+	return this;
+};
 
 //-----------------------------------------------------------------------------------------------------
 // LDAP Check
@@ -1162,7 +1308,7 @@ OpenWrap.server.prototype.httpd = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.server.httpd.authBasic(aRealm. aHTTPd, aReq, aAuthFunc, aReplyFunc, aUnAuthFunc) : Map</key>
+	 * <key>ow.server.httpd.authBasic(aRealm, aHTTPd, aReq, aAuthFunc, aReplyFunc, aUnAuthFunc) : Map</key>
 	 * Wraps a httpd reply with basic HTTP authentication for the provided aRealm on the aHTTPd server. The aReq
 	 * request map should be provided along with aAuthFunc (that receives the user and password and should return
 	 * true of false if authentication is successful). If authentication is successful aReplyFunc will be executed

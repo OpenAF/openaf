@@ -23,6 +23,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testScheduler;
 
+   - name: Server::Auth
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAuth;
+
 todo:
    # Server tests
    # ------------
@@ -30,3 +35,4 @@ todo:
    - Server::Scheduler
    - Server::REST server
    - Server::HTTP server
+   - Server::Auth

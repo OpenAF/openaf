@@ -27,6 +27,46 @@
         ow.server.httpd.stop(hs);
     };
 
+    exports.testAuth = function() {
+        ow.loadServer();
+        
+        var auth = new ow.server.auth();
+        auth.add("user1", "pass1");
+        var fa2 = af.create2FACredentials();
+        auth.add("user2", "pass2", fa2.encryptedKey);
+
+        auth.saveFile("autoTestAll.auth.db");
+
+        var auth2 = new ow.server.auth();
+        auth2.loadFile("autoTestAll.auth.db");
+
+        ow.test.assert(auth.isLocked("user1"), false, "Problem accessing info for user1");
+        ow.test.assert(auth.isLocked("user2"), false, "Problem accessing info for user2");
+        ow.test.assert(auth.is2FA("user1"), false, "Problem accessing 2FA info for user1");
+        ow.test.assert(auth.is2FA("user2"), true, "Problem accessing 2FA info for user2");
+
+        ow.test.assert(auth2.check("user1", "pass1"), true, "Problem with checking password for user1");
+        ow.test.assert(auth2.check("user2", "pass2" + af.get2FAToken(fa2.encryptedKey)), true, "Problem with checking password + token for user2");
+
+        auth2.setLockTimeout(3);
+        auth2.setTriesToLock(3);
+        auth2.check("user1", "wrong"); auth2.check("user1", "wrong"); auth2.check("user1", "wrong"); 
+        ow.test.assert(auth2.isLocked("user1"), true, "Problem with locking user1");
+        ow.test.assert(auth2.isLocked("user2"), false, "Problem with checking lock for user2");
+        sleep(3000);
+        ow.test.assert(auth2.isLocked("user1"), false, "Problem with checking locking user1 after waiting for timeout");
+        ow.test.assert(auth2.isLocked("user2"), false, "Problem with checking lock for user2 after waiting for timeout");
+
+        auth2.check("user2", "wrong"); auth2.check("user2", "wrong"); auth2.check("user2", "wrong"); 
+        ow.test.assert(auth2.isLocked("user2"), true, "Problem with locking user2");
+        ow.test.assert(auth2.isLocked("user1"), false, "Problem with checking lock for user1");
+        sleep(3000);
+        ow.test.assert(auth2.isLocked("user2"), false, "Problem with checking locking user2 after waiting for timeout");
+        ow.test.assert(auth2.isLocked("user1"), false, "Problem with checking lock for user1 after waiting for timeout");
+
+        io.rm("autoTestAll.auth.db");
+    };
+
     exports.testScheduler = function() {
         var a = 0, b = 0, c = 0;
 
