@@ -4,7 +4,9 @@ import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.ZipFile;
-
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Scriptable;
 import wedo.openaf.rhino.RhinoEngine;
 
 /**
@@ -13,7 +15,7 @@ import wedo.openaf.rhino.RhinoEngine;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20171210";
+	public static String VERSION = "20180220";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 	
@@ -24,8 +26,42 @@ public class AFCmdBase {
 	public static ZipFile zip;
 	public static int optLevel = 9;
 	
-	public String dIP(String aPass) {
-		return AFBase.decryptIfPossible(aPass);
+	public String dIP(Object aPass) {
+		if (aPass instanceof String) {
+			return (String) AFBase.decryptIfPossible((String) aPass);
+		} 
+		if (aPass instanceof NativeFunction) {
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				return (String) ((NativeFunction) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                            new Object[] { });
+			} catch(Exception e) {
+				return "";
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+		return null;
+	}
+
+	public String fURL(Object aF) {
+		if (aF instanceof String) {
+			return (String) aF;
+		} 
+		if (aF instanceof NativeFunction) {
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				return (String) ((NativeFunction) aF).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                            new Object[] { });
+			} catch(Exception e) {
+				return "";
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+		return null;
 	}
 	
 	public AFCmdBase() {	

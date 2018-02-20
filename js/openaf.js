@@ -3828,7 +3828,7 @@ $channels = function(a) {
 		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); },
 		
 		createRemote : function(aURL, aTimeout) {
-			var u = new java.net.URL(aURL);
+			var u = new java.net.URL(Packages.wedo.openaf.AFCmdBase.afc.fURL(aURL));
 			var urlPort = u.getPort();
 			
 			if (urlPort < 0 && u.getProtocol() == "https") urlPort = 443;

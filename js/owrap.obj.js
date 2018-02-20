@@ -1356,7 +1356,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	}
 
 	if (this.__forceBasic && isDef(this.__l)) {
-		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
+		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p).getBytes())))));
 	}
 
 	for(var i in aRequestMap) {
@@ -1528,7 +1528,7 @@ OpenWrap.obj.prototype.rest = {
 		var h = new ow.obj.http();
 		
 		if (isUndefined(_l) && isUndefined(_p)) {
-			var u = new java.net.URL(aURL);
+			var u = new java.net.URL(Packages.wedo.openaf.AFCmdBase.afc.fURL(aURL));
 			if (u.getUserInfo() != null) {
 				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
 				_p = String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8"));
@@ -1577,7 +1577,7 @@ OpenWrap.obj.prototype.rest = {
 		var h = new ow.obj.http();
 
 		if (isUndefined(_l) && isUndefined(_p)) {
-			var u = new java.net.URL(aURL);
+			var u = new java.net.URL(Packages.wedo.openaf.AFCmdBase.afc.fURL(aURL));
 			if (u.getUserInfo() != null) {
 				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
 				_p = String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8"));
@@ -1630,7 +1630,7 @@ OpenWrap.obj.prototype.rest = {
 		var h = new ow.obj.http();
 
 		if (isUndefined(_l) && isUndefined(_p)) {
-			var u = new java.net.URL(aURL);
+			var u = new java.net.URL(Packages.wedo.openaf.AFCmdBase.afc.fURL(aURL));
 			if (u.getUserInfo() != null) {
 				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
 				_p = String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8"));
@@ -1683,7 +1683,7 @@ OpenWrap.obj.prototype.rest = {
 		var h = new ow.obj.http();
 				
 		if (isUndefined(_l) && isUndefined(_p)) {
-			var u = new java.net.URL(aURL);
+			var u = new java.net.URL(Packages.wedo.openaf.AFCmdBase.afc.fURL(aURL));
 			if (u.getUserInfo() != null) {
 				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
 				_p = String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8"));

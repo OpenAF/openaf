@@ -372,7 +372,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 	 */
 	this.initialize = function(aIniAuth, aKey) {
 		if (isString(aIniAuth)) {
-			this.aListOfAuths = jsonParse(af.decrypt(aIniAuth, (isDef(aKey) ? Packages.wedo.openaf.AFCmdBase.afc.dIP(aKey) : void 0)));
+			this.aListOfAuths = jsonParse(af.decrypt(aIniAuth, (isDef(aKey) ? aKey : void 0)));
 		} else {
 			this.aListOfAuths = aIniAuth;
 		}
@@ -396,7 +396,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 	 * </odoc>
 	 */
 	this.dumpEncrypt = function(aKey) {
-		return af.encrypt(stringify(this.aListOfAuths), (isDef(aKey) ? Packages.wedo.openaf.AFCmdBase.afc.dIP(aKey) : void 0));
+		return af.encrypt(stringify(this.aListOfAuths), (isDef(aKey) ? aKey : void 0));
 	};
 	
 	/**

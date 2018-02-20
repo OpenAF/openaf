@@ -18,6 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.IdScriptableObject;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeJSON;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
@@ -109,10 +110,25 @@ public class AFCmdOS extends AFCmdBase  {
 	//public static String[] args;
 	
 	@Override
-	public String dIP(String aPass) {
-		return AFBase.decryptIfPossible(aPass);
+	public String dIP(Object aPass) {
+		if (aPass instanceof String) {
+			return (String) AFBase.decryptIfPossible((String) aPass);
+		} 
+		if (aPass instanceof NativeFunction) {
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				return (String) ((NativeFunction) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                            new Object[] { });
+			} catch(Exception e) {
+				return "";
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+		return null;
 	}
-	
+
 	/**
 	 * 
 	 */
