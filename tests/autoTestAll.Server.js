@@ -64,6 +64,13 @@
         ow.test.assert(auth2.isLocked("user2"), false, "Problem with checking locking user2 after waiting for timeout");
         ow.test.assert(auth2.isLocked("user1"), false, "Problem with checking lock for user1 after waiting for timeout");
 
+        auth2.setCustomFunction((u, p) => {
+            if (p == "nopass") return true; else return false;
+        });
+
+        ow.test.assert(auth2.check("user1", "pass1"), false, "Problem with custom authentication function with wrong password.");
+        ow.test.assert(auth2.check("user1", "nopass"), true, "Problem with custom authentication function with correct password.");
+
         io.rm("autoTestAll.auth.db");
     };
 

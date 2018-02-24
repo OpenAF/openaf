@@ -327,11 +327,23 @@ OpenWrap.server.prototype.jmx = {
 //-----------------------------------------------------------------------------------------------------
 // AUTHENTICATION
 //-----------------------------------------------------------------------------------------------------
-OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
+OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 	this.aListOfAuths = {};
 	this.lockTimeout = 15 * 60;
 	this.triesToLock = 3;
 
+	/**
+	 * <odoc>
+	 * <key>ow.server.auth.setCustomFunction(aCustomFunction)</key>
+	 * Sets a custom authentication function that receives the provided user and password and should return true if
+	 * authenticated or false otherwise.
+	 * </odoc>
+	 */
+	this.setCustomFunction = function(aCustomFunction) {
+		if (isDef(aCustomFunction) && isFunction(aCustomFunction)) {
+			this.customFunction = aCustomFunction;
+		}
+	}
 	/**
 	 * <odoc>
 	 * <key>ow.server.auth.setLockTimeout(aTimeout)</key>
@@ -366,17 +378,20 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.auth.initialize(aPreviousDumpMap, aKey)</key>
-	 * Initializes with a previous dump from ow.server.auth.dump or ow.server.auth.dumpEncrypt (including an optional aKey if used)
+	 * <key>ow.server.auth.initialize(aPreviousDumpMap, aKey, aCustomFunc)</key>
+	 * Initializes with a previous dump from ow.server.auth.dump or ow.server.auth.dumpEncrypt (including an optional aKey if used).
+	 * Optionally aCustomFunc can be provided as a custom authentication function that receives the provided user and password and should return true if
+	 * authenticated or false otherwise.
 	 * </odoc>
 	 */
-	this.initialize = function(aIniAuth, aKey) {
+	this.initialize = function(aIniAuth, aKey, aCustomFunc) {
 		if (isString(aIniAuth)) {
 			this.aListOfAuths = jsonParse(af.decrypt(aIniAuth, (isDef(aKey) ? aKey : void 0)));
 		} else {
 			this.aListOfAuths = aIniAuth;
 		}
 		if (isUnDef(this.aListOfAuths)) this.aListOfAuths = {};
+		this.setCustomFunction(aCustomFunc);
 	};
 	
 	/**
@@ -492,6 +507,14 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 	 * </odoc>
 	 */
 	this.check = function(aUser, aPass) {
+		var checkPassword = (p) => {
+			if (isDef(this.customFunction)) {
+				return this.customFunction(aUser, p);
+			} else {
+				return user.p == sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(p));
+			}
+		};
+
 		if (isUnDef(this.aListOfAuths[aUser])) throw "User not found";
 
 		var user = this.aListOfAuths[aUser];
@@ -502,9 +525,9 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 			aPass = String(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass));
 			var token = aPass.substr(-6);
 			var pass = aPass.substr(0, aPass.length - 6);
-			res = (user.p == sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(pass)) && af.validate2FA(user.k, token));
+			res = (checkPassword(pass) && af.validate2FA(user.k, token));
 		} else {
-			res = (user.p == sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass)));
+			res = checkPassword(aPass);
 		}
 
 		if (this.isLocked(aUser)) {
@@ -524,7 +547,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey) {
 		return res;
 	};
 
-	this.initialize(aIniAuth, aKey);
+	this.initialize(aIniAuth, aKey, aCustomFunction);
 	return this;
 };
 
