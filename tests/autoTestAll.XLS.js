@@ -1,6 +1,6 @@
 (function() {
     exports.testXLSSimple = function() {
-        af.rm("autoTestAll.xlsx");
+        io.rm("autoTestAll.xlsx");
         plugin("XLS");
         var xls = new XLS();
         var sheet = xls.getSheet("testSheet");
@@ -24,6 +24,6 @@
         xls.close();
         ow.test.assert(arr.table[1].First, "BB1", "Problem 1 with getting cell value");
         ow.test.assert(arr.table[2].Last, "CC2", "Problem 2 with getting cell value");
-        af.rm("autoTestAll.xlsx");
+        io.rm("autoTestAll.xlsx");
     };
 })();

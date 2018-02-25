@@ -1554,7 +1554,7 @@ OpenWrap.ch.prototype.utils = {
 
 			if (isDef(donttouch)) donttouch = donttouch.filename;
 
-			af.mkdir(aBackupFolder);
+			io.mkdir(aBackupFolder);
 
 			// Search files for compression
 			if (!dontCompress) {
@@ -1565,7 +1565,7 @@ OpenWrap.ch.prototype.utils = {
 					.select(function (r) {
 						ioStreamCopy(io.writeFileGzipStream(aBackupFolder + "/" + r.filename + ".gz"),
 							io.readFileStream(r.filepath));
-						af.rm(r.filepath);
+						io.rm(r.filepath);
 					});
 			}
 
@@ -1576,7 +1576,7 @@ OpenWrap.ch.prototype.utils = {
 					.match("filename", new RegExp(aRegExPattern + "\\.gz$"))
 					.less("createTime", new Date() - (howLongAgoInMinutes * 60 * 1000))
 					.select(function (r) {
-						af.rm(r.filepath);
+						io.rm(r.filepath);
 					});
 			}
 		}

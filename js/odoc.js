@@ -149,7 +149,7 @@ ODocs.prototype.saveWeb = function() {
 	plugin("ZIP");
 
 	var zip = new ZIP();
-	af.mkdir(this.aFilename);
+	io.mkdir(this.aFilename);
 	var odocskeys = {};
 	try {
 		odocskeys = af.fromJson(zip.gunzip(af.fromBytes2String(io.readFileBytes(this.aFilename + "/" + this.keysfile + ".gz"))));

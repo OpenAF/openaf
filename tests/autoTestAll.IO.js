@@ -5,7 +5,7 @@
     
         io.writeFile(file, a);
         ow.test.assert(io.readFile(file).a, a.a, "Problem with io.read/writeFile.");
-        af.rm(file);
+        io.rm(file);
     };
 
     exports.testIOStream = function() {
@@ -23,7 +23,7 @@
         stream.close();
     
         ow.test.assert(res, "Hello World! €áä", "Problem with read/writeFileStream or ioStreamRead/Write.");
-        af.rm(file);   
+        io.rm(file);   
     };
 
     exports.testIOStreamBytes = function() {
@@ -55,7 +55,7 @@
         s2.close();
         
         ow.test.assert(h1, h2, "Problem with ioStreamCopy.");
-        af.rm("autoTestAll.jar");
+        io.rm("autoTestAll.jar");
     };
 
     exports.testGzipNativeToByte = () => {

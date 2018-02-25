@@ -43,7 +43,7 @@
         ow.test.assert(Math.round(na.get([0,1])), Math.round(nn.get([0,1])), "Problem with saved ow.ai perceptron 0 AND 1");
         ow.test.assert(Math.round(na.get([0,0])), Math.round(nn.get([0,0])), "Problem with saved ow.ai perceptron 1 AND 0");
 
-        af.rm("autoTestAll.xorNet.gz"); 
+        io.rm("autoTestAll.xorNet.gz"); 
     };    
 
     exports.testAILSTMXORSave = function() {
@@ -60,7 +60,7 @@
         ow.test.assert(Math.round(nn.get([0,1])), 1, "Problem with saved ow.ai lstm 0 XOR 1");
         ow.test.assert(Math.round(nn.get([0,0])), 0, "Problem with saves ow.ai lstm 1 XOR 0");   
 
-        af.rm("autoTestAll.ai.xorNet.lstm.gz");
+        io.rm("autoTestAll.ai.xorNet.lstm.gz");
     };
 
     exports.testAILiquidXORSave = function() {
@@ -77,7 +77,7 @@
         ow.test.assert(Math.round(nn.get([0,1])), 1, "Problem with saved ow.ai liquid 0 XOR 1");
         ow.test.assert(Math.round(nn.get([0,0])), 0, "Problem with saves ow.ai liquid 1 XOR 0");   
 
-        af.rm("autoTestAll.ai.xorNet.liquid.gz");
+        io.rm("autoTestAll.ai.xorNet.liquid.gz");
     };   
     
     exports.testNormalizeWithSchema = function() {

@@ -538,17 +538,17 @@ function copyFile(source, target) {
 
 // Delete files from target
 function deleteFile(target) {
-	af.rm(target);
+	io.rm(target);
 }
 
 // Make directory
 function mkdir(aNewDirectory) {
-    af.mkdir(aNewDirectory);
+    io.mkdir(aNewDirectory);
 }
 
 // Remove directory
 function rmdir(aNewDirectory) {
-	af.rm(aNewDirectory);
+	io.rm(aNewDirectory);
 }
 
 // ----------------------------------------------------------
@@ -1597,7 +1597,7 @@ function pack(args) {
 
 	var zip = new ZIP();
 	var packName = packag.name + "-" + packag.version + ".opack";
-	af.rm(packName);
+	io.rm(packName);
 	
 	var c = 0, cmax = 0;
 	

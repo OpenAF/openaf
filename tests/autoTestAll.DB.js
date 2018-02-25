@@ -17,7 +17,7 @@
     
         db = createDBInMem("test2", false);
         loadDBInMem(db, f);
-        af.rm(f);
+        io.rm(f);
     
         var t3 = Number(db.q("select count(1) as c from test").results[0].C);
     

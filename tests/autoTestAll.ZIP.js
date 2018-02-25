@@ -28,6 +28,6 @@
         ow.test.assert(h, hc, "The contents by streamPutFile are different from the original.");
         
         zip.streamRemoveFile("autoTestAll.zip", "o.jar");
-        af.rm("autoTestAll.zip");
+        io.rm("autoTestAll.zip");
     };
 })();

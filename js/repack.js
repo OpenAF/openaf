@@ -207,7 +207,7 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 
 if (createTmp) {
 	io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
-	af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
+	io.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
 }
 
 log("Done repacking OpenAF.jar");

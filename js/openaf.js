@@ -2081,7 +2081,7 @@ function pidKill(aPidNumber, isForce) {
 function pidCheckOut(aFilename) {
 	try {
 		io.writeFileString(aFilename, "");
-		if (af.rm(aFilename)) {
+		if (io.rm(aFilename)) {
 			return true;
 		}
 	} catch(e) {

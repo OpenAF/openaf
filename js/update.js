@@ -97,7 +97,7 @@ log("Trying to --repack...");
 
 if (updated) {
 	io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
-	af.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
+	io.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
 
 	af.restartOpenAF(["--repack"]);
 }

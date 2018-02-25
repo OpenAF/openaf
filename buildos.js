@@ -217,8 +217,8 @@ try {
 	origjssha = io.readFile(OPENAF_BUILD_HOME + "/buildSHA.json");
 } catch (e) {}
 
-af.mkdir(OPENAF_BUILD_HOME + "/jsmin");
-af.mkdir(OPENAF_BUILD_HOME + "/jslib");
+io.mkdir(OPENAF_BUILD_HOME + "/jsmin");
+io.mkdir(OPENAF_BUILD_HOME + "/jslib");
 
 var zipJSlib = new ZIP();
 var validationForCompile = (filename) => { return (filename != "materialize.js" && filename != "jquery.js" && filename != "highlight.js" && filename != "backbone.js"); };
@@ -345,7 +345,7 @@ try {
 	};
 	saveHelp(OPENAF_BUILD_HOME, helpFiles);
 	log("Generating oDoc for Web");
-	af.mkdir(OPENAF_BUILD_HOME + "/odocweb");
+	io.mkdir(OPENAF_BUILD_HOME + "/odocweb");
 	saveHelpWeb(OPENAF_BUILD_HOME + "/odocweb", helpFiles);
 	tempJar.putFile(".odoc.db", io.readFileBytes(OPENAF_BUILD_HOME + "/.odoc.db"));
 } catch (e) {
