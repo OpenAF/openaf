@@ -575,10 +575,11 @@ OpenWrap.server.prototype.ldap = function(aServer, aUsername, aPassword) {
 	
 	if (isUnDef(aUsername) && isUnDef(aPassword)) {
 		env.put(javax.naming.Context.SECURITY_AUTHENTICATION, "none");
+	} else {
+		env.put(javax.naming.Context.SECURITY_PRINCIPAL, Packages.wedo.openaf.AFCmdBase.afc.dIP(aUsername));
+		env.put(javax.naming.Context.SECURITY_CREDENTIALS, Packages.wedo.openaf.AFCmdBase.afc.dIP(aPassword));
 	}
 	//env.put(javax.naming.Context.SECURITY_AUTHENTICATION, "simple");
-	env.put(javax.naming.Context.SECURITY_PRINCIPAL, Packages.wedo.openaf.AFCmdBase.afc.dIP(aUsername));
-	env.put(javax.naming.Context.SECURITY_CREDENTIALS, Packages.wedo.openaf.AFCmdBase.afc.dIP(aPassword));
 	env.put(javax.naming.Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
 	env.put(javax.naming.Context.PROVIDER_URL, aServer);
 
