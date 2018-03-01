@@ -627,16 +627,18 @@ OpenWrap.ch.prototype.__types = {
 				stringify(aVs[i], undefined, "") + "\n";
 			}
 			
+			/*
 			plugin("HTTP");
-			var h = new HTTP();
+			var h = new HTTP();*/
+			var h = new ow.obj.http();
 			if (isDef(this.__channels[aName].user))
 				h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
 			try {
-				return h.exec(url, "POST", ops, {"Content-Type":"application/x-www-form-urlencoded"});
+				return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
 			} catch(e) {
 				e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 				throw e;
-			}		
+			}
 		},
 		get          : function(aName, aK) {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
@@ -1474,22 +1476,23 @@ OpenWrap.ch.prototype.utils = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.ch.utils.getLogStashSubscriber(aTargetCh, aType, aHost, aErrorFunc, shouldHK) : Function</key>
+	 * <key>ow.ch.utils.getLogStashSubscriber(aTargetCh, aType, aHost, aErrorFunc, shouldHK, stampMap) : Function</key>
 	 * Returns a channel subscriber function that will transform changes to a log channel (see startLog and the __log channel)
 	 * and will replicate them in aTargetCh (this means expecting the value to have a 'd': date; 'm': message and 't' as the level/type).
 	 * The value set on aTargetCh will follow the LogStash format setting type to aType and host to aHost. The id and key will be set 
 	 * to a sha1 hash of the stringify version of the value being set. In case of error aErrorFunc will be invoked providing the exception
-	 * as an argument. You can also indicate if you want to house keep the original channel to save the script's memory.
+	 * as an argument. You can also indicate if you want to house keep the original channel to save the script's memory and a stampMap to force
+	 * entries on all maps sent.
 	 * </odoc>
 	 */
-	getLogStashSubscriber: function(aTargetCh, aType, aHost, aErrorFunc, shouldHK) {
+	getLogStashSubscriber: function(aTargetCh, aType, aHost, aErrorFunc, shouldHK, stampMap) {
 		return function(aC, aO, aK, aV) {
 			try {
 				if (aO == "set") {
-					var _id = sha1(stringify(aV));
+					var _id = sha1(stringify(aV) + stringify(stampMap));
 					$ch(aTargetCh).set({
 						"id": _id
-					}, {
+					}, merge({
 						"@version"  : 1,
 						"@timestamp": aV.d,
 						"message"   : aV.m,
@@ -1497,7 +1500,7 @@ OpenWrap.ch.prototype.utils = {
 						"host"      : aHost,
 						"level"     : aV.t,
 						"id"        : _id
-					});
+					}, stampMap));
 					if (shouldHK) $ch(aC).unset(aK);
 				}
 			} catch(e) {
