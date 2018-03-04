@@ -459,14 +459,14 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull) {
 
 /**
  * <odoc>
- * <key>ow.template.addInlineCSS2HTML(aHTML, aCustomCSSMap) : String</key>
+ * <key>ow.template.addInLineCSS2HTML(aHTML, aCustomCSSMap) : String</key>
  * Given aHTML (usually the result of parseMD2HTML) applies a custom inline css (aCustomCSSMap) usually useful to send HTML to 
  * email clients. This custom map should be composed of a html tag entity tag (e.g. "p") and, as value, the css style to apply (e.g. "color: red;").
  * The map will be applied to all html entities on aHTML. If aCustomCSSMap is not provided a default one (suited for markdown
  * html) will be applied.
  * </odoc>
  */
-OpenWrap.template.prototype.addInlineCSS2HTML = function(aHTML, aCustomCSSMap) {
+OpenWrap.template.prototype.addInLineCSS2HTML = function(aHTML, aCustomCSSMap) {
 	var acss = {};
 	if (isUnDef(aCustomCSSMap)) {
 		if (isUnDef(this.__markdowncss)) {
