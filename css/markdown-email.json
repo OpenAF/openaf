@@ -1,0 +1,43 @@
+{
+
+    "body": "-ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; line-height: 1.5; color: #24292e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; font-size: 16px; line-height: 1.5; word-wrap: break-word",
+
+    "a": "background-color: transparent; -webkit-text-decoration-skip: objects; color: #0366d6; text-decoration: none",
+
+    "strong": "font-weight: bolder; font-weight: 600",
+
+    "img": "border-style: none; max-width: 100%; box-sizing: content-box; background-color: #fff",
+
+    "code": "font-family: monospace, monospace; font-size: 1em; font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 12px;     padding: 0; padding-top: .2em; padding-bottom: .2em; margin: 0; font-size: 85%; background-color: rgba(27, 31, 35, .05); border-radius: 3px",
+    "kbd": "font-family: monospace, monospace; font-size: 1em; display: inline-block; padding: 3px 5px; font-size: 11px; line-height: 10px; color: #444d56; vertical-align: middle; background-color: #fafbfc; border: solid 1px #c6cbd1; border-bottom-color: #959da5; border-radius: 3px; box-shadow: inset 0 -1px 0 #959da5",
+    "pre": "font-family: monospace, monospace; font-size: 1em; margin-top: 0; margin-bottom: 0; font: 12px SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Courier, monospace; word-wrap: normal;     padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: #f6f8fa; border-radius: 3px",
+
+    "hr": "box-sizing: content-box; height: 0; overflow: visible; height: 0; margin: 15px 0; overflow: hidden; background: 0 0; border: 0; border-bottom: 1px solid #dfe2e5; height: .25em; padding: 0; margin: 24px 0; background-color: #e1e4e8; border: 0; border-bottom-color: #eee",
+
+    "input": "font: inherit; margin: 0; overflow: visible font-family: inherit; font-size: inherit; line-height: inherit",
+
+    "table": "border-spacing: 0; border-collapse: collapse; display: block; width: 100%; overflow: auto",
+
+    "td": "padding: 0; padding: 6px 13px; border: 1px solid #dfe2e5",
+
+    "th": "padding: 0; font-weight: 600; padding: 6px 13px; border: 1px solid #dfe2e5",
+
+    "h1": "font-size: 2em; margin: .67em 0; margin-top: 0; margin-bottom: 0; font-size: 32px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; padding-bottom: .3em; font-size: 2em; border-bottom: 1px solid #eaecef",
+    "h2": "margin-top: 0; margin-bottom: 0; font-size: 24px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; padding-bottom: .3em; font-size: 1.5em; border-bottom: 1px solid #eaecef",
+    "h3": "margin-top: 0; margin-bottom: 0; font-size: 20px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; font-size: 1.25em",
+    "h4": "margin-top: 0; margin-bottom: 0; font-size: 16px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; font-size: 1em",
+    "h5": "margin-top: 0; margin-bottom: 0; font-size: 14px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; font-size: .875em",
+    "h6": "margin-top: 0; margin-bottom: 0; font-size: 12px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; font-size: .85em; color: #6a737d",
+
+    "p": "margin-top: 0; margin-bottom: 10px",
+
+    "blockquote": "margin: 0; padding: 0 1em; color: #6a737d; border-left: .25em solid #dfe2e5",
+
+    "ol": "padding-left: 0; margin-top: 0; margin-bottom: 0; padding-left: 2em",
+    "ul": "padding-left: 0; margin-top: 0; margin-bottom: 0; padding-left: 2em",
+
+    "dd": "margin-left: 0",
+    "dl": "padding: 0",
+
+    "tr": "background-color: #fff; border-top: 1px solid #c6cbd1"
+}
