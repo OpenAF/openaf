@@ -2,7 +2,7 @@
 	"external": [{
 			"description": "Showdown",
 			"path": ["js/showdown.js"],
-			"version": "1.7.6",
+			"version": "1.8.6",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/showdownjs/showdown/master/license.txt",
