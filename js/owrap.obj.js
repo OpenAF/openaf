@@ -1273,6 +1273,8 @@ OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	this.__lps = {};
 	this.__config = {};
+	this.__r = void 0;
+	this.__rb = void 0; 
 	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
 	if (isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
@@ -1369,7 +1371,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 
 	this.outputObj = {};
 	this.__r = this.__h.execute(r);
-	if (isBytes) {
+	if (isBytes && !returnStream) {
 		this.outputObj =  {
 			responseCode: this.responseCode(),
 			contentType: this.responseType(),
@@ -1443,10 +1445,11 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 };
 
 OpenWrap.obj.prototype.http.prototype.response = function() {
+	//if (isDef(this.__r)) return this.__r;
 	try {
 		var res, ent = this.__r.getEntity();
-		if (ent != null)
-			res = String(Packages.org.apache.http.util.EntityUtils.toString(ent));
+		if (ent != null) res = String(Packages.org.apache.http.util.EntityUtils.toString(ent));
+		//this.__r = res;
 		return res;
 	} finally {
 		this.__r.close();
@@ -1454,10 +1457,11 @@ OpenWrap.obj.prototype.http.prototype.response = function() {
 };
 
 OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
+	//if (isDef(this.__rb)) return this.__rb;
 	try {
 		var res, ent = this.__r.getEntity();
-		if (ent != null)
-			res = Packages.org.apache.http.util.EntityUtils.toByteArray(ent);
+		if (ent != null) res = Packages.org.apache.http.util.EntityUtils.toByteArray(ent);
+		//this.__rb = res;
 		return res;
 	} finally {
 		this.__r.close();

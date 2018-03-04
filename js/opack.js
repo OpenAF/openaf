@@ -78,6 +78,7 @@ var verbs = {
 plugin("ZIP");
 plugin("HTTP");
 ow.loadFormat();
+ow.loadObj();
 
 var localDB;
 var remoteDB;
@@ -131,7 +132,7 @@ function getHTTPOPack(aURL) {
 	log("Retriving " + aURL);
 	try {
 		var http = execHTTPWithCred(aURL.replace(/ /g, "%20"), "GET", "", {}, true);
-		var opack = new ZIP(http.responseBytes());
+		var opack = new ZIP(http);
 		zipCache[aURL] = opack;
 		return opack;
 	} catch(e) {
@@ -472,7 +473,7 @@ function verifyHashList(startPath, filesHash) {
 		if (location == "http") {
 			location = "opackhttp";
 			http = execHTTPWithCred(startPath.replace(/ /g, "%20"), "GET", "", {}, true);
-			zip = new ZIP(http.responseBytes());
+			zip = new ZIP(http);
 		} else {
 			location = "opack";
 			zip = new ZIP();
@@ -499,7 +500,7 @@ function verifyHashList(startPath, filesHash) {
 			rfs.close();
 			break;
 		case "http":
-			hash = sha1(http.responseBytes()) + "";
+			hash = sha1(http) + "";
 			break;
 		case "opack":
 			if (location == "opack") 
@@ -557,7 +558,8 @@ function rmdir(aNewDirectory) {
 
 // Get credentials
 function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
-	if (isUnDef(__remoteHTTP)) __remoteHTTP = new HTTP();
+	//if (isUnDef(__remoteHTTP)) __remoteHTTP = new HTTP();
+	if (isUnDef(__remoteHTTP)) __remoteHTTP = new ow.obj.http();
     var res;
 
 	try {
@@ -577,10 +579,11 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 		}
 	}
 
-	if (returnStream)
+	if (returnStream) {
 		return res;
-	else
-		return __remoteHTTP;
+	} else {
+		return res.responseBytes;
+	}
 }
 
 // Find OpenAF she-bang
@@ -722,12 +725,16 @@ function getPackage(packPath) {
 				try {
 					http = execHTTPWithCred(packPath.replace(/ /g, "%20") + "/" + PACKAGEJSON, "GET", "", {}, true);
 					// There should be no \n usually associated with package.json scripts
-					output = af.fromBytes2String(http.responseBytes()).replace(/\n/g, "");
+					output = af.fromBytes2String(http).replace(/\n/g, "");
 					retry = false;
 				} catch(e) {
-					http = execHTTPWithCred(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
-					output = af.fromBytes2String(http.responseBytes());
-					retry = false;
+					try {
+						http = execHTTPWithCred(packPath.replace(/ /g, "%20") + "/" + PACKAGEYAML, "GET", "", {}, true);
+						output = af.fromBytes2String(http);
+						retry = false;
+					} catch(e1) {
+						logErr("Error while retriving remote package: " + String(e1));
+					}
 				}
 				packag = fromJsonYaml(output);
 				if (isUndefined(packag)) throw(packPath + "/" + PACKAGESJSON);
