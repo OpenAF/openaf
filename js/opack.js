@@ -1637,6 +1637,12 @@ function genpack(args) {
 
 	for(let i in args) {
     	if (args[i] == "--includeSCM") excludeList = [];
+	}
+	for(let i in args) {
+    	if (args[i] == "--exclude") {
+			log("Excluding '" + args[Number(i) + 1] + "'...");
+			excludeList.push(args[Number(i) + 1]);
+		}
     }
 	var packageNew = {};
 
