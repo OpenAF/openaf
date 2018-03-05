@@ -564,6 +564,7 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 
 	try {
 		res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+		if (res.responseCode == 401) throw "code: 401";
 	} catch(e) {
 		if (String(e.message).match(/code: 401/)) {
 			if (isUnDef(__remoteUser) || isUnDef(__remotePass)) {
