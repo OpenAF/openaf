@@ -38,6 +38,7 @@ import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.util.FileUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.NativeJavaArray;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
@@ -469,6 +470,7 @@ public class ZIP extends ScriptableObject {
 	public ZIP load(Object data) throws IOException {
 		clean();
 		
+		if (data instanceof NativeJavaArray) data = ((NativeJavaArray) data).unwrap();
 		ByteArrayInputStream bais = new ByteArrayInputStream((byte[]) data);
 		ZipInputStream zis = new ZipInputStream(bais);
 		ZipEntry ze;
