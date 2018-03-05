@@ -1358,7 +1358,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	}
 
 	if (this.__forceBasic && isDef(this.__l)) {
-		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p).getBytes())))));
+		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.wedo.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
 	}
 
 	for(var i in aRequestMap) {
