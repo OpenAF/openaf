@@ -477,13 +477,15 @@ OpenWrap.obj.prototype.pool = {
 
 				sync(function() {
 					if (parent.__checkLimits()) {
-						parent.__currentSize++;
-						parent.__pool.push({
-							"inUse": inUse,
-							"obj": aObject
-						});
-						if (!inUse) parent.__currentFree++;
-						res = true;
+						if (parent.__max < 1 || parent.__currentSize <= parent.__max) {
+							parent.__currentSize++;
+							parent.__pool.push({
+								"inUse": inUse,
+								"obj": aObject
+							});
+							if (!inUse) parent.__currentFree++;
+							res = true;
+						}
 					}
 				}, this.__currentSize);
 
@@ -502,7 +504,14 @@ OpenWrap.obj.prototype.pool = {
 			setFactory: function(aFactoryFunction, aCloseFunction, aKeepaliveFunction) {
 				this.__factory = aFactoryFunction;
 				this.__close = aCloseFunction;
-				this.__keepalive = aKeepaliveFunction;
+				this.__keepalive = function(obj) {
+					try {
+						aKeepaliveFunction(obj);
+						return true;
+					} catch(e) {
+						return false;
+					}
+				}
 				var parent = this;
 
 				addOnOpenAFShutdown(function() {
@@ -564,19 +573,29 @@ OpenWrap.obj.prototype.pool = {
 				return obj;
 			},
 			
-			__getUnused: function() {
-				var obj = undefined;
-				var i = 0;
+			__getUnused: function(shouldTest) {	
+				var obj = void 0;
+				var i = 0, r = 0;
 				var parent = this;
 
 				sync(function() {
-					while(isUndefined(obj) && i < parent.__currentSize) {
+					while(isUnDef(obj) && i < parent.__currentSize) {
 						var inUse = undefined;
 						inUse = parent.__pool[i].inUse;
 						if (inUse == false) {
-							obj = parent.__pool[i].obj;
-							parent.__pool[i].inUse = true;
-							parent.__currentFree--;
+							var useit = !shouldTest;						
+							if (shouldTest) {
+								useit = parent.__keepalive(parent.__pool[i].obj);
+								if (!useit) parent.__cleanup(parent.__pool[i].obj);
+							} 
+							if (useit) {
+								obj = parent.__pool[i].obj;
+								parent.__pool[i].inUse = true;
+								parent.__currentFree--;
+							} else {
+								r++;
+								if (r <= parent.__retry) i = 0;
+							}
 						} else {
 							i++;
 						}
@@ -586,8 +605,8 @@ OpenWrap.obj.prototype.pool = {
 				if (i >= parent.__currentSize) {
 					if (parent.__checkFree()) {
 						obj = parent.__createObj(true);
-						if (!isDefined(obj)) {
-							obj = parent.__getUnused();
+						if (!isDef(obj)) {
+							obj = parent.__getUnused(shouldTest);
 						}
 					}
 				}
@@ -625,6 +644,7 @@ OpenWrap.obj.prototype.pool = {
 						this.__currentSize--;
 					}
 					this.__currentFree = 0;
+					this.__currentSize = 0;
 					this.__pool = [];
 				}
 			},
@@ -636,11 +656,11 @@ OpenWrap.obj.prototype.pool = {
 			 * if no object is available even after retrying.
 			 * </odoc>
 			 */
-			checkOut: function() {
+			checkOut: function(shouldTest) {
 				var obj, i = 0;
 				var parent = this;
 
-				obj = parent.__getUnused();
+				obj = parent.__getUnused(shouldTest);
 
 				if (isDefined(obj))
 					return obj;
@@ -648,10 +668,23 @@ OpenWrap.obj.prototype.pool = {
 					throw "No available objects in pool.";
 			},
 			
+			__cleanup: function(obj) {
+				var parent = this;
+
+				try { parent.__close(parent.__pool[i].obj) } catch (e) {}
+				delete parent.__pool[i];
+				parent.__currentSize--;
+				loadUnderscore();
+				parent.__pool = _.compact(parent.__pool);
+				for(var i = parent.__currentSize; i < parent.__min; i++) {
+					parent.__createObj();
+				}
+			},
+
 			/**
 			 * <odoc>
-			 * <key>ow.obj.pool.checkIn(aObject, shouldDestroy)</key>
-			 * Returns the aObject instance back to the pool removing the mark that is in use. If shouldDestroy = true the
+			 * <key>ow.obj.pool.checkIn(aObject, shouldKeep)</key>
+			 * Returns the aObject instance back to the pool removing the mark that is in use. If shouldKeep = false the
 			 * object instance will be removed from the pool (trying to call the closeFunction and ignoring any exception).
 			 * </odoc>
 			 */
@@ -663,14 +696,15 @@ OpenWrap.obj.prototype.pool = {
 
 					if (badObj == false) {
 						// Tries to run close and ignores any error since is upon for delete
-						try { parent.__close(parent.__pool[i].obj) } catch (e) {}
+						/*try { parent.__close(parent.__pool[i].obj) } catch (e) {}
 						delete parent.__pool[i];
 						parent.__currentSize--;
 						loadUnderscore();
 						parent.__pool = _.compact(parent.__pool);
 						for(var i = parent.__currentSize; i < parent.__min; i++) {
 							parent.__createObj();
-						}
+						}*/
+						__cleanup(obj);
 					} else {
 						parent.__pool[i].inUse = false;
 						parent.__currentFree++;
@@ -689,12 +723,12 @@ OpenWrap.obj.prototype.pool = {
 			 * with it).
 			 * </odoc>
 			 */
-			use: function(aFunction) {
+			use: function(aFunction, doCheck) {
 				// Get free objects
 				var obj, i = 0;
 
 				var parent = this;
-				obj = this.checkOut();
+				obj = this.checkOut(doCheck);
 
 				// Got an object, use it
 				if (isDefined(obj)) {
@@ -744,7 +778,7 @@ OpenWrap.obj.prototype.pool = {
 						} else {
 							a.q("select 1 from dual");
 						}
-					}
+					};
 				}
 				
 				this.setFactory(
