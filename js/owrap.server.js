@@ -1306,6 +1306,64 @@ OpenWrap.server.prototype.httpd = {
 	
 	/**
 	 * <odoc>
+	 * <key>ow.server.httpd.replyFileMD(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray) : Map</key>
+	 * Provides a helper aHTTPd reply that will enable the parsing markdown file-based sites, from aBaseFilePath, given aURI part of 
+	 * aBaseURI. Optionally you can also provide a notFoundFunction and an array of file strings (documentRootArraY) to replace as
+	 * documentRoot. Example:\
+	 * \
+	 * ow.server.httpd.route((hs, ow.server.httpd.mapRoutesWithLibs(hs, {)\
+	 *    "/stuff/to/server": function(req) {\
+	 *       return ow.server.httpd.replyFileMD(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri);\
+	 *    }\
+	 * },\
+	 * function(req) {\
+	 *    return hs.replyOKText("nothing here...");\
+	 * }\
+	 * );\
+	 * \
+	 * </odoc>
+	 */
+	replyFileMD: function(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray) {
+		ow.loadTemplate();
+
+		if (isUnDef(notFoundFunction)) {
+			notFoundFunction = function() {
+				return aHTTPd.reply("Not found!", ow.server.httpd.mimes.TXT, ow.server.httpd.codes.NOTFOUND);
+			}
+		}
+		try {
+			var baseFilePath = aBaseFilePath;
+			var furi = String((new java.io.File(new java.io.File(baseFilePath),
+				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath()).replace(/\\/g, "/");
+			
+			if (isUnDef(documentRootArray)) documentRootArray = [ "index.md" ];
+
+			if (io.fileExists(furi) && io.fileInfo(furi).isDirectory) {
+				for(var i in documentRootArray) {
+					furi = String((new java.io.File(new java.io.File(baseFilePath),
+						(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
+					if (furi.match(new RegExp("^" + baseFilePath))) break;
+				}
+			}
+
+			if (!(furi.match(/[^/]+\.[^/]+$/))) furi = furi + ".md";
+
+			if (furi.match(new RegExp("^" + baseFilePath))) {
+				if (furi.match(/\.md$/)) {
+					return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(io.readFileString(furi), 1));
+				} else {
+					return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi));
+				}
+			} else {
+			    return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI);
+			}
+		} catch(e) { 
+			return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e);
+		}
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.server.httpd.replyRedirect(aHTTPd, newLocation) : Map</key>
 	 * Provides a helper aHTTPd reply that will redirect the request to the newLocation provided (HTTP code 303).
 	 * </odoc>
