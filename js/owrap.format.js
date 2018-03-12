@@ -1056,21 +1056,21 @@ OpenWrap.format.prototype.xls = {
 		if (isDefined(aStyleMap.indention)) rcs.setIndention(aStyleMap.indention);
 		if (isDefined(aStyleMap.valign)) {
 			switch(aStyleMap.valign) {
-			case "top": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.VERTICAL_TOP);
-			case "bottom": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.VERTICAL_BOTTOM);
-			case "center": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.VERTICAL_CENTER);
-			case "justify": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.VERTICAL_JUSTIFY);
+			case "top": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.TOP); break;
+			case "bottom": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.BOTTOM); break;
+			case "center": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.CENTER); break;
+			case "justify": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.JUSTIFY); break;
 			}
 		};
 		if (isDefined(aStyleMap.align)) {
 			switch(aStyleMap.align) {
-			case "center": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.ALIGN_CENTER);
-			case "centerSelection": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.ALIGN_CENTER_SELECTION);
-			case "fill": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.ALIGN_FILL);
-			case "general": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.ALIGN_GENERAL);
-			case "justify": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.ALIGN_JUSTIFY);
-			case "left": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.ALIGN_LEFT);
-			case "right": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.CellStyle.ALIGN_RIGHT);
+			case "center": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_CENTER); break;
+			case "centerSelection": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_CENTER_SELECTION); break;
+			case "fill": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_FILL); break;
+			case "general": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_GENERAL); break;
+			case "justify": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_JUSTIFY); break;
+			case "left": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_LEFT); break;
+			case "right": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_RIGHT); break;
 			}
 		};
 		rcs.setFont(rcf);
