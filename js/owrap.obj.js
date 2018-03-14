@@ -424,7 +424,7 @@ OpenWrap.obj.prototype.pool = {
 				var isThereRoom = false;
 
 				sync(function() {
-					if ((parent.__max > 0 && parent.__max <= parent.__currentSize) && parent.__currentFree < 1) {
+					if ((parent.__max > 0 && parent.__max <= (parent.__currentSize + 1)) && parent.__currentFree < 1) {
 						isThereRoom = false;
 					} else {
 						isThereRoom = true;
@@ -555,9 +555,9 @@ OpenWrap.obj.prototype.pool = {
 				var parent = this;
 				var obj;
 
-				inUse = (isUndefined(inUse)) ? false : inUse;
+				inUse = (isUnDef(inUse)) ? false : inUse;
 
-				if (isDefined(parent.__factory)) {
+				if (isDef(parent.__factory)) {
 					obj = parent.__factory();
 					if (parent.__inc > 1) {
 						for(var i = 0; i < parent.__inc - 1; i++) {
@@ -580,7 +580,7 @@ OpenWrap.obj.prototype.pool = {
 
 				sync(function() {
 					while(isUnDef(obj) && i < parent.__currentSize) {
-						var inUse = undefined;
+						var inUse = void 0;
 						inUse = parent.__pool[i].inUse;
 						if (inUse == false) {
 							var useit = !shouldTest;						
@@ -603,8 +603,14 @@ OpenWrap.obj.prototype.pool = {
 				}, this.__currentSize);
 
 				if (i >= parent.__currentSize) {
-					if (parent.__checkFree()) {
-						obj = parent.__createObj(true);
+					var resCheckFree;
+					resCheckFree = parent.__checkFree();
+					sync(function() {
+						if (resCheckFree && parent.__checkLimits()) {						
+							obj = parent.__createObj(true);
+						} 
+					}, this.__currentSize);
+					if (resCheckFree) {
 						if (!isDef(obj)) {
 							obj = parent.__getUnused(shouldTest);
 						}
