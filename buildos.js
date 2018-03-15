@@ -304,6 +304,7 @@ manifest += "Class-Path: .\n";
 manifest += "Rsrc-Main-Class: wedo.openaf.AFCmdOS\n";
 manifest += "Main-Class: org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader\n";
 tempJar.putFile("META-INF/MANIFEST.MF", af.fromString2Bytes(manifest));
+tempJar.putFile("META-INF/services/javax.script.ScriptEngineFactory", af.fromString2Bytes("wedo.openaf.OAFEngineFactory"));
 
 // Build ODoc
 try {
