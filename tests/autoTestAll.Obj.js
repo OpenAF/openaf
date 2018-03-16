@@ -143,4 +143,72 @@
         ow.test.assert(res[2], 3, "Problem with last map element on array to ordered object with function");
         ow.test.assert(res[1], 2, "Problem with middle map element on array to ordered object with function");
     };    
+
+    exports.testObjPool = function() {
+        ow.loadObj();
+
+        var createOps = [], closeOps = [], keepOps = [];
+        var createFunc = () => {
+            var u = genUUID();
+            createOps.push("CREATED " + u);
+            return u;
+        };
+        var closeFunc = (u) => {
+            closeOps.push("CLOSE " + u);
+        };
+        var keepFunc = (u) => {
+            keepOps.push("KEEP " + u);
+        };
+
+        var p = ow.obj.pool.create();
+        p.setMax(2); 
+        p.setFactory(createFunc, closeFunc, keepFunc);
+
+        var res;
+        p.use((u) => { res = u; });
+        ow.test.assert(createOps.length, 1, "Provided pool object was not the first created.");
+        p.use((u) => { res = u; });
+        ow.test.assert(createOps.length, 1, "Provided pool object was not reused.");
+
+        res = "";
+        var promise = $do( () => { 
+            p.use( (u) => {
+                sleep(50);
+                res = u; 
+            }); 
+        }); 
+        p.use((u) => { sleep(5); });
+        $doWait(promise);
+
+        ow.test.assert(createOps.length, 2, "Provided pool object was not the second created.");
+
+        res = "";
+        promise = $do( () => { 
+            p.use( (u) => {
+                sleep(50);
+            }); 
+        }); 
+        p.use((u) => { res = u; sleep(5); return false; });
+        p.use((u) => { sleep(5); });
+        $doWait(promise);
+
+        ow.test.assert(createOps.length, 3, "Althought an object was considered dirty a new one was not created.");
+        ow.test.assert(closeOps.length, 1, "Althought an object was considered dirty it wasn't closed.");
+        ow.test.assert($from(p.__pool).equals("obj", res).count(), 0, "Althought an object was considered dirty it wasn't removed from the pool.");
+
+        p.setKeepalive(50);
+        sleep(500);
+        p.stop();
+
+        createOps = []; closeOps = []; keepOps = [];
+        p = ow.obj.pool.create();
+        p.setMin(2); 
+        p.setFactory(createFunc, closeFunc, keepFunc);
+        p.start();
+
+        ow.test.assert(createOps.length, 2, "Minimum number of objects in pool is not correct.");
+
+        p.stop();
+        ow.test.assert(closeOps.length, 2, "Objects in pool were not closed properly.");
+    };
 })();

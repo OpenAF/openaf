@@ -677,6 +677,12 @@ OpenWrap.obj.prototype.pool = {
 			__cleanup: function(obj) {
 				var parent = this;
 
+				var i = 0;
+				while(parent.__pool[i].obj != obj && i < parent.__pool.length) {
+					i++;
+				}
+				if (i == parent.__pool.length) return;
+
 				try { parent.__close(parent.__pool[i].obj) } catch (e) {}
 				delete parent.__pool[i];
 				parent.__currentSize--;
@@ -710,7 +716,7 @@ OpenWrap.obj.prototype.pool = {
 						for(var i = parent.__currentSize; i < parent.__min; i++) {
 							parent.__createObj();
 						}*/
-						__cleanup(obj);
+						parent.__cleanup(obj);
 					} else {
 						parent.__pool[i].inUse = false;
 						parent.__currentFree++;
