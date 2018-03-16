@@ -1071,13 +1071,28 @@ OpenWrap.server.prototype.httpd = {
 		
 		var hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction);
 		
-		this.__routes[hs.getPort()] = {};
-		this.__defaultRoutes[hs.getPort()] = {};
-		this.__preRoutes[hs.getPort()] = {};
-		
+		this.resetRoutes(hs);
+
 		return hs;
 	},
 	
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.resetRoutes(aHTTPd)</key>
+	 * Given aHTTPd it will reset all internal mapped routes to a reply HTTP code 401 to everything.
+	 * </odoc>
+	 */
+	resetRoutes: function(aHTTPd) {
+		this.__routes[aHTTPd.getPort()] = {};
+		this.__defaultRoutes[aHTTPd.getPort()] = {};
+		this.__preRoutes[aHTTPd.getPort()] = {};
+
+		var nullFunc = function(r) { return aHTTPd.reply("", "", 401, {}); };
+		this.route(aHTTPd, { "/": nullFunc }, nullFunc);
+
+		return aHTTPd;
+	},
+
 	/**
 	 * <odoc>
 	 * <key>ow.server.httpd.getFromOpenAF(aResource, inBytes, anEncoding) : anArrayOfBytes</key>
@@ -1124,8 +1139,8 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	route: function(aHTTPd, aMapOfRoutes, aDefaultRoute, aPath, aPreRouteFunc) {
-		if (isUndefined(aPath)) aPath = "/r/";
-		if (isUndefined(aMapOfRoutes)) aMapOfRoutes = {};
+		if (isUnDef(aPath)) aPath = "/r/";
+		if (isUnDef(aMapOfRoutes)) aMapOfRoutes = {};
 		ow.loadFormat();
 		
 		var parent = this;
@@ -1154,7 +1169,7 @@ OpenWrap.server.prototype.httpd = {
 	},
 	
 	mapWithExistingRoutes: function(aHTTPd, aMapOfRoutes) {
-		if (isUndefined(aMapOfRoutes)) aMapOfRoutes = {};
+		if (isUnDef(aMapOfRoutes)) aMapOfRoutes = {};
 		var res = {};
 		for(var i in aMapOfRoutes) { res[i] = aMapOfRoutes[i]; }
 		for(var i in this.__routes[aHTTPd.getPort()]) { res[i] = this.__routes[aHTTPd.getPort()][i]; }

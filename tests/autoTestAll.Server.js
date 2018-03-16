@@ -107,6 +107,18 @@
         var hs1 = ow.server.httpd.start(18081);
         var hs2 = ow.server.httpd.start(18082);
     
+        ow.loadObj();
+        var h = new ow.obj.http();
+        var test = false;
+        try {
+            h.get("http://127.0.0.1:18081");
+            test = false;
+        } catch(e) {
+            if (h.responseCode() == 401) test = true;
+        }
+
+        ow.test.assert(test, true, "Unexpected reply from server 1 without routes");
+
         ow.server.httpd.route(hs1, 
             { "/normal": function(req) { return hs1.replyOKText("normal 1"); } }, 
             function(req) { return hs1.replyOKText("I am 1"); });
@@ -136,6 +148,18 @@
             "Problem with server 2 on /normal response"
         );
     
+        ow.server.httpd.resetRoutes(hs1);
+        h = new ow.obj.http();
+        test = false;
+        try {
+            h.get("http://127.0.0.1:18081");
+            test = false;
+        } catch(e) {
+            if (h.responseCode() == 401) test = true;
+        }
+
+        ow.test.assert(test, true, "Unexpected reply from server 1 after routes reset");
+
         ow.server.httpd.stop(hs1);
         ow.server.httpd.stop(hs2);
     };

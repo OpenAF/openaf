@@ -642,7 +642,7 @@ public class AFCmdOS extends AFCmdBase  {
 			cx.setErrorReporter(new WeDoOpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
-				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + AFBase.jsonParse(pmIn.toString()) + ")";
+				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + pmIn.toString() + ")";
 			}
 			
 			Object res = null;
