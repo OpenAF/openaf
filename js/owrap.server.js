@@ -1171,8 +1171,8 @@ OpenWrap.server.prototype.httpd = {
 	mapWithExistingRoutes: function(aHTTPd, aMapOfRoutes) {
 		if (isUnDef(aMapOfRoutes)) aMapOfRoutes = {};
 		var res = {};
-		for(var i in aMapOfRoutes) { res[i] = aMapOfRoutes[i]; }
 		for(var i in this.__routes[aHTTPd.getPort()]) { res[i] = this.__routes[aHTTPd.getPort()][i]; }
+		for(var i in aMapOfRoutes) { res[i] = aMapOfRoutes[i]; }
 		return res;
 	},
 	
