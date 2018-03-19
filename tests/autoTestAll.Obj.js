@@ -196,8 +196,9 @@
         ow.test.assert(closeOps.length, 1, "Althought an object was considered dirty it wasn't closed.");
         ow.test.assert($from(p.__pool).equals("obj", res).count(), 0, "Althought an object was considered dirty it wasn't removed from the pool.");
 
-        p.setKeepalive(50);
-        sleep(500);
+        p.setKeepalive(1);
+        sleep(2000);
+        ow.test.assert(keepOps.length > 0, true, "Keepalive didn't trigger as expected.");
         p.stop();
 
         createOps = []; closeOps = []; keepOps = [];

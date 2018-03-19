@@ -38,6 +38,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testObj2Array;
 
+   - name: Obj::Object pool
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjPool;
+
 todo:
    # Obj tests
    # ------------
@@ -48,3 +53,4 @@ todo:
    - Obj::Set Path   
    - Obj::Array to object conversion
    - Obj::Object to array conversion
+   - Obj::Object pool

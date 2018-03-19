@@ -511,7 +511,7 @@ OpenWrap.obj.prototype.pool = {
 					} catch(e) {
 						return false;
 					}
-				}
+				};
 				var parent = this;
 
 				addOnOpenAFShutdown(function() {
