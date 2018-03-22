@@ -39,6 +39,13 @@
         ow.test.assert(res.T === "abc", true, "Problem with db string conversion");
         ow.test.assert(Object.prototype.toString.call(res.D) == "[object Date]", true, "Problem with db date conversion");
 
+        db.u("create table teste (a varchar(10), b date)");
+        db.u("insert into teste values ('aaa', SYSDATE)");
+        db.u("insert into teste values ('bbb', SYSDATE)");
+        db.u("insert into teste values ('ccc', null)");
+        
+        ow.test.assert(db.q("select * from teste").results.length, 3, "Problem with null dates conversion");
+
         db.close();
     };
 })();
