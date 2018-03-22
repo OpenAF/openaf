@@ -210,19 +210,28 @@ public class DB {
 
 							if (convertDates) {
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.DATE)) {
-									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
+									if (rs.getDate(i) != null)
+										record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
+									else
+										record.put(rs.getMetaData().getColumnName(i), null);
 									continue;
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP) || 
 								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE)) {
-									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
+									if (rs.getTimestamp(i) != null)
+										record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
+									else
+										record.put(rs.getMetaData().getColumnName(i), null);
 									continue;
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIME) ||
 								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIME_WITH_TIMEZONE)) {
-									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
+									if (rs.getTime(i) != null)
+										record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
+									else  
+										record.put(rs.getMetaData().getColumnName(i), null);
 									continue;
 								}
 							}
