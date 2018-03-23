@@ -23,10 +23,10 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAILiquidXOR;
 
-   - name: AI::LSTM XOR
+   - name: AI::LSTM AND
      from: AI::Init
      to  : oJob Test
-     exec: args.func = args.tests.testAILSTMXOR;     
+     exec: args.func = args.tests.testAILSTMAND;     
 
    - name: AI::Perceptron network save and load
      from: AI::Init
@@ -41,7 +41,7 @@ jobs:
    - name: AI::LSTM network save and load
      from: AI::Init
      to  : oJob Test
-     exec: args.func = args.tests.testAILSTMXORSave;
+     exec: args.func = args.tests.testAILSTMANDSave;
 
    - name: AI::Normalize with schema
      from: AI::Init
@@ -53,7 +53,7 @@ todo:
    # -----------
    - AI::Perceptron XOR
    - AI::Liquid XOR
-   - AI::LSTM XOR
+   - AI::LSTM AND
    - AI::Perceptron network save and load
    - AI::Liquid network save and load
    - AI::LSTM network save and load
