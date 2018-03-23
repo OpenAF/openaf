@@ -788,7 +788,7 @@ function __processCmdLine(aCommand, returnOnly) {
 
 		}
 	} catch(e) {
-		__outputConsoleError(e.message);
+		__outputConsoleError(String(e));
 	}
 
 	internalCommand = false;
