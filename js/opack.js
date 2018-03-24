@@ -1247,8 +1247,10 @@ function __opack_script(args, isDaemon, isJob) {
 	var windows   = (os.match(/Windows/)) ? 1 : 0;
 	classPath = (new java.io.File(classPath)).getAbsoluteFile();
 	var javaargs = "";
-	for(var i in __args) {
-		if (__args[i].match(/^args=/i)) javaargs = __args[i].replaceAll("^args=", "");
+	var params = splitBySeparator(__expr, " ");
+	for(var i in params) {
+		var param = splitBySeparator(params[i], "=");
+		if (param.length == 2 && param[0] == "args") javaargs = param[1];
 	}
 
 	function generateUnixScript(options) {
