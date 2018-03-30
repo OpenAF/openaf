@@ -489,7 +489,7 @@ test("JMX Plugin::Test JMX client and server plugins", function() {
 	plugin("JMXServer");
 
 	log("Creating JMX server on port 12346");
-	var jmxServer = new JMXServer("wedo.openaf:type=Values");
+	var jmxServer = new JMXServer("com.openaf:type=Values");
 	var BINGO = "OK";
 	jmxServer.start(12346);
 	jmxServer.addBean({"a": "writable double", "b": "long", "c": "writable string" },
@@ -508,7 +508,7 @@ test("JMX Plugin::Test JMX client and server plugins", function() {
 	log("Using JMX client to connect to JMX server");
 	plugin("JMX");
 	var jmx = new JMX("service:jmx:rmi:///jndi/rmi://127.0.0.1:12346/jmxrmi");
-	var jmxObj = jmx.getObject("wedo.openaf:type=Values");
+	var jmxObj = jmx.getObject("com.openaf:type=Values");
 	if (jmxObj.get("a") != 12.3 ||
 		jmxObj.get("b") != 123 ||
 		jmxObj.get("c") != "OK") throw "Couldn't retrieve the correct values from the JMX server";

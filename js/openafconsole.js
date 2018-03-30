@@ -23,7 +23,7 @@ global.CONSOLECTRLC     = false;
 /**
  * Describe an existing class with methods exposed to OpenAF
  *
- * @param  {[type]} aClass The class name (if not found it will search also "wedo.openaf.*")
+ * @param  {[type]} aClass The class name (if not found it will search also "openaf.*")
  */
 function __desc(aClass, retList, noRecursive) {
 	var methods = [];
@@ -44,12 +44,12 @@ function __desc(aClass, retList, noRecursive) {
 		try {
 			if (aClass.toLowerCase() == "io") aClass = "IOBase";
 			if (aClass.toLowerCase() == "af") aClass = "AFBase";
-			classObj = java.lang.Class.forName("wedo.openaf." + aClass);
+			classObj = java.lang.Class.forName("openaf." + aClass);
 			methods = classObj.getMethods();
 			constructors = classObj.getConstructors();
 		} catch(e) {
 			try {
-				classObj = java.lang.Class.forName("wedo.openaf.plugins." + aClass);
+				classObj = java.lang.Class.forName("openaf.plugins." + aClass);
 				methods = classObj.getMethods();
 				constructors = classObj.getConstructors();
 			} catch(e) {
@@ -956,7 +956,7 @@ initThread.addThread(function(uuid) {
 	jLineFileHistory = new Packages.jline.console.history.FileHistory(new java.io.File(historyFile));
 	con.getConsoleReader().setHistory(jLineFileHistory);
 	con.getConsoleReader().addCompleter(
-		new Packages.wedo.openaf.jline.OpenAFConsoleCompleter(function(buf, cursor, candidates) {
+		new Packages.openaf.jline.OpenAFConsoleCompleter(function(buf, cursor, candidates) {
 			if (buf == null) return null;
 			var ret = 0;
 

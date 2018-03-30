@@ -120,7 +120,7 @@ function showHelp() {
 	}
 
 	print("");
-	print("(version " + af.getVersion() + ", " + Packages.wedo.openaf.AFCmdBase.LICENSE +")");
+	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE +")");
 }
 
 // Retrieve OPack file using HTTP
@@ -573,7 +573,7 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 				__remoteUser = con.readLinePrompt("Enter authentication user: ");
 				__remotePass = con.readLinePrompt("Enter authentication password: ", "*");
 			}
-			__remoteHTTP.login(Packages.wedo.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.wedo.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
+			__remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
 			res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 		} else {
 			throw e;

@@ -97,7 +97,6 @@ function buildSource() {
 
 	log("Finding sources...");
 	var excludeFilter;
-	//if (EXTERNAL) excludeFilter = "plugins/Wedo";
 	excludeFilter = "plugins/Wedo";
 	var arrayList = listFiles(OPENAF_SRC, ".+\.java$", excludeFilter);
 	log("Found #" + arrayList.length + " java sources.");
@@ -119,7 +118,7 @@ log("Building relase " + release);
 var classpath = buildClasspath();
 
 log("Changing AFCmdOS for release = " + release);
-var javaAFCmd = io.readFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java");
+var javaAFCmd = io.readFileString(OPENAF_SRC + "/openaf/AFCmdBase.java");
 javaAFCmd = javaAFCmd.replace(/public static String VERSION = "([0-9]+)";/m, "public static String VERSION = \"" + release + "\";");
 
 if (EXTERNAL)
@@ -130,7 +129,7 @@ else
 if (isDef(OPENAF_DIST))
 	javaAFCmd = javaAFCmd.replace(/public static String DISTRIBUTION = "([^\"]+)";/m, "public static String DISTRIBUTION = \"" + OPENAF_DIST + "\";");
 
-io.writeFileString(OPENAF_SRC + "/wedo/openaf/AFCmdBase.java", javaAFCmd);
+io.writeFileString(OPENAF_SRC + "/openaf/AFCmdBase.java", javaAFCmd);
 
 log("Changing openaf.js variables according with release");
 var jsOpenAF = io.readFileString(OPENAF_BUILD_HOME + "/js/openaf.js");
@@ -301,10 +300,10 @@ log("Adding manifest");
 var manifest = "Manifest-Version: 1.0\n";
 manifest += "Rsrc-Class-Path: ./" + smallClassPath + "\n";
 manifest += "Class-Path: .\n";
-manifest += "Rsrc-Main-Class: wedo.openaf.AFCmdOS\n";
+manifest += "Rsrc-Main-Class: openaf.AFCmdOS\n";
 manifest += "Main-Class: org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader\n";
 tempJar.putFile("META-INF/MANIFEST.MF", af.fromString2Bytes(manifest));
-tempJar.putFile("META-INF/services/javax.script.ScriptEngineFactory", af.fromString2Bytes("wedo.openaf.OAFEngineFactory"));
+tempJar.putFile("META-INF/services/javax.script.ScriptEngineFactory", af.fromString2Bytes("openaf.OAFEngineFactory"));
 
 // Build ODoc
 try {
@@ -319,28 +318,28 @@ try {
 		"ow.ai": OPENAF_BUILD_HOME + "/js/owrap.ai.js",
 		"ow.ch": OPENAF_BUILD_HOME + "/js/owrap.ch.js",
 		"ow.oJob": OPENAF_BUILD_HOME + "/js/owrap.oJob.js",
-		"afbase": OPENAF_BUILD_HOME + "/src/wedo/openaf/AFBase.java",
-		"io": OPENAF_BUILD_HOME + "/src/wedo/openaf/IOBase.java",
-		"iocore": OPENAF_BUILD_HOME + "/src/wedo/openaf/core/IO.java",
-		"csv": OPENAF_BUILD_HOME + "/src/wedo/openaf/core/CSV.java",
-		"db": OPENAF_BUILD_HOME + "/src/wedo/openaf/core/DB.java",
-		"console": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Console.java",
-		"threads": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Threads.java",
-		"email": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Email.java",
-		"http": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/HTTP.java",
-		"httpd": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/HTTPServer.java",
-		"jmx": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/JMX.java",
-		"jmxserver": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/JMXServer.java",
-		"ssh": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SSH.java",
-		"snmp": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SNMP.java",
-		"snmpd": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SNMPServer.java",
-		"xml": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/XML.java",
-		"xls": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/XLS.java",
-		"svn": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/SVN.java",
-		"git": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/GIT.java",
-		"zip": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/ZIP.java",
-		"ignite": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/Ignite.java",
-		"bsdiff": OPENAF_BUILD_HOME + "/src/wedo/openaf/plugins/BSDiff.java",
+		"afbase": OPENAF_BUILD_HOME + "/src/openaf/AFBase.java",
+		"io": OPENAF_BUILD_HOME + "/src/openaf/IOBase.java",
+		"iocore": OPENAF_BUILD_HOME + "/src/openaf/core/IO.java",
+		"csv": OPENAF_BUILD_HOME + "/src/openaf/core/CSV.java",
+		"db": OPENAF_BUILD_HOME + "/src/openaf/core/DB.java",
+		"console": OPENAF_BUILD_HOME + "/src/openaf/plugins/Console.java",
+		"threads": OPENAF_BUILD_HOME + "/src/openaf/plugins/Threads.java",
+		"email": OPENAF_BUILD_HOME + "/src/openaf/plugins/Email.java",
+		"http": OPENAF_BUILD_HOME + "/src/openaf/plugins/HTTP.java",
+		"httpd": OPENAF_BUILD_HOME + "/src/openaf/plugins/HTTPServer.java",
+		"jmx": OPENAF_BUILD_HOME + "/src/openaf/plugins/JMX.java",
+		"jmxserver": OPENAF_BUILD_HOME + "/src/openaf/plugins/JMXServer.java",
+		"ssh": OPENAF_BUILD_HOME + "/src/openaf/plugins/SSH.java",
+		"snmp": OPENAF_BUILD_HOME + "/src/openaf/plugins/SNMP.java",
+		"snmpd": OPENAF_BUILD_HOME + "/src/openaf/plugins/SNMPServer.java",
+		"xml": OPENAF_BUILD_HOME + "/src/openaf/plugins/XML.java",
+		"xls": OPENAF_BUILD_HOME + "/src/openaf/plugins/XLS.java",
+		"svn": OPENAF_BUILD_HOME + "/src/openaf/plugins/SVN.java",
+		"git": OPENAF_BUILD_HOME + "/src/openaf/plugins/GIT.java",
+		"zip": OPENAF_BUILD_HOME + "/src/openaf/plugins/ZIP.java",
+		"ignite": OPENAF_BUILD_HOME + "/src/openaf/plugins/Ignite.java",
+		"bsdiff": OPENAF_BUILD_HOME + "/src/openaf/plugins/BSDiff.java",
 		"scope": OPENAF_BUILD_HOME + "/js/openaf.js",
 		"index": OPENAF_BUILD_HOME + "/js/example.js"
 	};

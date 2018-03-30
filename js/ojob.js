@@ -60,7 +60,7 @@ function ojob_showHelp() {
 	print("  -deps          Draws a list of dependencies of todo jobs on a file.");
 	print("  -jobhelp (job) Display any available help information for a job.");
 	print("");
-	print("(version " + af.getVersion() + ", " + Packages.wedo.openaf.AFCmdBase.LICENSE +")");
+	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE +")");
 	ojob_shouldRun = false;
 }
 

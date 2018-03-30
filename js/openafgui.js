@@ -109,7 +109,7 @@ var defaultPage = {
           "Do you want to install OpenAF? &nbsp;&nbsp;<p class=\"regular\"><a class=\"waves-effect waves-light orange regular btn\" href=\"/exec/install\"><i class=\"material-icons left\">play_for_work</i>Install</a></p><span class=\"thin\">(install will create scripts in " + getOpenAFPath() + " to make it easier to use OpenAF).</span>"
         ) +
        "</p>" + "<p/><hr/>" +
-       "<div class=\"thin flow-text\" style=\"font-family: monospace; font-size: 8pt\">" + String(Packages.wedo.openaf.AFCmdOS.argHelp).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;") + "</div>"
+       "<div class=\"thin flow-text\" style=\"font-family: monospace; font-size: 8pt\">" + String(Packages.openaf.AFCmdOS.argHelp).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;") + "</div>"
 };
 
 

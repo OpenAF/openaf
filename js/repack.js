@@ -178,7 +178,7 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 
 				str = af.fromBytes2String(zip.getFile(el.name));
 				
-				var newClass = (isDef(mainClass)) ? mainClass : "wedo.openaf.AFCmdOS"; 
+				var newClass = (isDef(mainClass)) ? mainClass : "openaf.AFCmdOS"; 
 				if ((str.match(/jarinjarloader/) && str.match(/eclipse/) )) {
 					str = str.replace(/org\.eclipse\.jdt\.internal\.jarinjarloader\.JarRsrcLoader/, newClass);
 				} else {

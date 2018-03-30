@@ -183,7 +183,7 @@ OpenWrap.server.prototype.openafServer = {
 	 */
 	start: function(aId, aPort, notLocal) {
 		plugin("JMXServer");
-		this.jmxs = new JMXServer("wedo.openaf:type=OpenAFServer-" + aId);
+		this.jmxs = new JMXServer("com.openaf:type=OpenAFServer-" + aId);
 		this.jmxs.start(aPort, !notLocal);
 		this.jmxs.addBean({},
 		  function(key) { },
@@ -191,13 +191,13 @@ OpenWrap.server.prototype.openafServer = {
 		  function(op, params) {
 		  	switch(op) {
 		  	case "load": return ow.server.jmx.serverExec(params, function(f) { 
-		  		__pmIn = jsonParse(Packages.wedo.open.utils.PMStringConvert.toJSON(Packages.wedo.openaf.OpenAF.__pmIn));
+		  		__pmIn = jsonParse(Packages.wedo.open.utils.PMStringConvert.toJSON(Packages.openaf.OpenAF.__pmIn));
 		  		load(f);
-		  		Packages.wedo.openaf.OpenAF.__pmOut = Packages.wedo.open.utils.PMStringConvert.fromJSON(stringify(__pmOut)); });
+		  		Packages.openaf.OpenAF.__pmOut = Packages.wedo.open.utils.PMStringConvert.fromJSON(stringify(__pmOut)); });
 		  	case "exec": return ow.server.jmx.serverExec(params, function(f) { 
-				__pmIn = jsonParse(Packages.wedo.open.utils.PMStringConvert.toJSON(Packages.wedo.openaf.OpenAF.__pmIn));
+				__pmIn = jsonParse(Packages.wedo.open.utils.PMStringConvert.toJSON(Packages.openaf.OpenAF.__pmIn));
 		  		var res = af.eval(f); 
-		  		Packages.wedo.openaf.OpenAF.__pmOut = Packages.wedo.open.utils.PMStringConvert.fromJSON(stringify(__pmOut));
+		  		Packages.openaf.OpenAF.__pmOut = Packages.wedo.open.utils.PMStringConvert.fromJSON(stringify(__pmOut));
 				return res; }); 
 		    }
 		  }
@@ -212,7 +212,7 @@ OpenWrap.server.prototype.openafServer = {
 	 * </odoc>
 	 */
 	exec: function(aId, aScript, aServerPid) {
-		ow.server.jmx.call(ow.server.jmx.localConnect(aServerPid), "wedo.openaf:type=OpenAFServer-" + aId, "exec", aScript);
+		ow.server.jmx.call(ow.server.jmx.localConnect(aServerPid), "com.openaf:type=OpenAFServer-" + aId, "exec", aScript);
 	},
 	
 	/**
@@ -223,7 +223,7 @@ OpenWrap.server.prototype.openafServer = {
 	 * </odoc>
 	 */
 	load: function(aId, aScriptFilePath, aServerPid) {
-		ow.server.jmx.call(ow.server.jmx.localConnect(aServerPid), "wedo.openaf:type=OpenAFServer-" + aId, "load", aScriptFilePath);
+		ow.server.jmx.call(ow.server.jmx.localConnect(aServerPid), "com.openaf:type=OpenAFServer-" + aId, "load", aScriptFilePath);
 	},
 	
 	/**
@@ -263,7 +263,7 @@ OpenWrap.server.prototype.jmx = {
 	 * be transmitted to the calling JMX client. Example:\
 	 * \
 	 * plugin("JMX");\
-	 * var jmxs = new JMXServer("wedo.openaf:type=server");\
+	 * var jmxs = new JMXServer("com.openaf:type=server");\
 	 * jmxs.start();\
 	 * \
 	 * var c = 0;\
@@ -290,8 +290,8 @@ OpenWrap.server.prototype.jmx = {
 	 * you can provide extra arguments to be passed to the jmx remote operation. Example (based on ow.server.jmx.serverExec):\
 	 * \
 	 * var jmx = ow.loadServer().jmx.localConnect("12345");\
-	 * ow.server.jmx.call(jmx, "wedo.openaf:type=server", "increment"); // 1\
-	 * ow.server.jmx.call(jmx, "wedo.openaf:type=server", "resetTo", 10); // 10
+	 * ow.server.jmx.call(jmx, "com.openaf:type=server", "increment"); // 1\
+	 * ow.server.jmx.call(jmx, "com.openaf:type=server", "resetTo", 10); // 10
 	 * </odoc>
 	 */
 	call: function(aJMX, objName, aOp) {
@@ -422,7 +422,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 	 */
 	this.add = function(aUser, aPass, aKey) {
 		this.aListOfAuths[aUser] = {
-			p: sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass)),
+			p: sha512(Packages.openaf.AFCmdBase.afc.dIP(aPass)),
 			k: aKey
 		};
 	};
@@ -511,7 +511,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 			if (isDef(this.customFunction)) {
 				return this.customFunction(aUser, p);
 			} else {
-				return user.p == sha512(Packages.wedo.openaf.AFCmdBase.afc.dIP(p));
+				return user.p == sha512(Packages.openaf.AFCmdBase.afc.dIP(p));
 			}
 		};
 
@@ -522,7 +522,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 
 		if (isDef(user.k)) {
 			// 2FA
-			aPass = String(Packages.wedo.openaf.AFCmdBase.afc.dIP(aPass));
+			aPass = String(Packages.openaf.AFCmdBase.afc.dIP(aPass));
 			var token = aPass.substr(-6);
 			var pass = aPass.substr(0, aPass.length - 6);
 			res = (checkPassword(pass) && af.validate2FA(user.k, token));
@@ -576,8 +576,8 @@ OpenWrap.server.prototype.ldap = function(aServer, aUsername, aPassword) {
 	if (isUnDef(aUsername) && isUnDef(aPassword)) {
 		env.put(javax.naming.Context.SECURITY_AUTHENTICATION, "none");
 	} else {
-		env.put(javax.naming.Context.SECURITY_PRINCIPAL, Packages.wedo.openaf.AFCmdBase.afc.dIP(aUsername));
-		env.put(javax.naming.Context.SECURITY_CREDENTIALS, Packages.wedo.openaf.AFCmdBase.afc.dIP(aPassword));
+		env.put(javax.naming.Context.SECURITY_PRINCIPAL, Packages.openaf.AFCmdBase.afc.dIP(aUsername));
+		env.put(javax.naming.Context.SECURITY_CREDENTIALS, Packages.openaf.AFCmdBase.afc.dIP(aPassword));
 	}
 	//env.put(javax.naming.Context.SECURITY_AUTHENTICATION, "simple");
 	env.put(javax.naming.Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
@@ -1197,7 +1197,7 @@ OpenWrap.server.prototype.httpd = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.server.httpd.mapRouteWithLibs(aHTTPd, aMapOfRoutes) : Map</key>
+	 * <key>ow.server.httpd.mapRoutesWithLibs(aHTTPd, aMapOfRoutes) : Map</key>
 	 * Helper to use with ow.server.httpd.route to automatically add routes for JQuery, Backbone,
 	 * Handlebars, jLinq and Underscore from the openaf.jar.
 	 * </odoc>

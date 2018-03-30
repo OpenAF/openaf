@@ -1403,7 +1403,7 @@ function load(aScript) {
  * <odoc>
  * <key>plugin(aPlugin)</key>
  * Provides a shortcut for the af.plugin function. It also provides a shortcut for plugins with
- * the java package "wedo.openaf.plugins" (e.g. af.plugin("wedo.openaf.plugins.HTTP") is the same
+ * the java package "openaf.plugins" (e.g. af.plugin("openaf.plugins.HTTP") is the same
  * as plugin("HTTP")).
  * </odoc>
  */
@@ -1413,10 +1413,10 @@ function plugin(aPlugin) {
 	var pluginLoaded;
 	try {
 		if (!aPlugin.match(/\./)) {
-			pluginLoaded = "wedo.openaf.plugins." + aPlugin;
+			pluginLoaded = "openaf.plugins." + aPlugin;
 			
 			if (__loadedPlugins[pluginLoaded]) return;
-			af.plugin("wedo.openaf.plugins." + aPlugin);
+			af.plugin("openaf.plugins." + aPlugin);
 			__loadedPlugins[pluginLoaded] = true;
 
 			return;
@@ -1810,11 +1810,6 @@ function merge(aObjectA, aObjectB) {
 function restartOpenAF(aCommandLineArray, preLineArray) {
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
 	var currentJar = getOpenAFJar();
-	/*try {
-		currentJar = new java.io.File(af.getClass("wedo.openaf.AFCmd").getProtectionDomain().getCodeSource().getLocation().toURI());
-	} catch(e) {
-		currentJar = new java.io.File(java.lang.System.getProperties().getProperty("java.class.path"));
-	}*/
 	
 	/* is it a jar file? */
 	if(!currentJar.endsWith(".jar"))
@@ -3828,7 +3823,7 @@ $channels = function(a) {
 		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); },
 		
 		createRemote : function(aURL, aTimeout) {
-			var u = new java.net.URL(Packages.wedo.openaf.AFCmdBase.afc.fURL(aURL));
+			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
 			var urlPort = u.getPort();
 			
 			if (urlPort < 0 && u.getProtocol() == "https") urlPort = 443;
