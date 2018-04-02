@@ -1168,6 +1168,13 @@ OpenWrap.server.prototype.httpd = {
 		aHTTPd.setDefault(aPath);
 	},
 	
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.mapWithExistingRoutes(aHTTPd, aMapOfRoutes) : Map</key>
+	 * Builds a map of routes taking into account the already defined routes for aHTTPd thus effectively
+	 * letting add new routes. 
+	 * </odoc>
+	 */
 	mapWithExistingRoutes: function(aHTTPd, aMapOfRoutes) {
 		if (isUnDef(aMapOfRoutes)) aMapOfRoutes = {};
 		var res = {};
