@@ -10,6 +10,8 @@ import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 
 import openaf.AFCmdBase;
+import openaf.SimpleLog;
+import openaf.SimpleLog.logtype;
 import openaf.plugins.HTTPServer;
 
 import com.nwu.httpd.Codes;
@@ -102,16 +104,16 @@ public class JSResponse extends Response {
 				
 				if (no.containsKey("data")) {
 					this.data = new ByteArrayInputStream( 
-						(no.get("data") instanceof String) ? no.get("data").toString().getBytes()
+						(no.get("data") instanceof String) ? no.get("data").toString().getBytes("UTF-8")
 									                        : (byte[]) no.get("data"));
 						
-					this.size =	((no.get("data") instanceof String) ? no.get("data").toString().getBytes().length
+					this.size =	((no.get("data") instanceof String) ? no.get("data").toString().getBytes("UTF-8").length
 									                        : ((byte[]) no.get("data")).length);
 				} else {
 					if (no.containsKey("stream")) {
 						this.data = (java.io.InputStream) no.get("stream");
 					} else {
-						this.data = new ByteArrayInputStream( ret.toString().getBytes());
+						this.data = new ByteArrayInputStream( ret.toString().getBytes("UTF-8"));
 						this.size = ret.toString().length();
 					}
 				}
@@ -119,11 +121,12 @@ public class JSResponse extends Response {
 			} else {
 				this.status = Codes.HTTP_OK;
 				this.mimeType = Codes.MIME_PLAINTEXT;
-				this.data = new ByteArrayInputStream( ret.toString().getBytes());
-				this.size = ret.toString().getBytes().length;
+				this.data = new ByteArrayInputStream( ret.toString().getBytes("UTF-8"));
+				this.size = ret.toString().getBytes("UTF-8").length;
 			}
 		} catch (Exception e) {
-			throw e;
+			//throw e;
+			SimpleLog.log(logtype.DEBUG, "Exception " + e.getMessage(), e);
 		} finally {
 			AFCmdBase.jse.exitContext();
 		}
