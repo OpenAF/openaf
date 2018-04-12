@@ -44,7 +44,7 @@ OpenWrap.test.prototype.setMemoryProfile  = function(aValue) { this.__memoryprof
  * Turns off (on by default) the output of the result of each test.
  * </odoc>
  */
-OpenWrap.test.prototype.setOutput         = (aValue) => { this.__showOutput = aValue; };
+OpenWrap.test.prototype.setOutput         = function(aValue) { this.__showOutput = aValue; };
 
 /**
  * <odoc>
