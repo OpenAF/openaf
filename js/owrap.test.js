@@ -44,7 +44,7 @@ OpenWrap.test.prototype.setMemoryProfile  = function(aValue) { this.__memoryprof
  * Turns off (on by default) the output of the result of each test.
  * </odoc>
  */
-OpenWrap.test.prototype.setOutput         = (aValue) => { this.__showOutput = aValue; };
+OpenWrap.test.prototype.setOutput         = function(aValue) { this.__showOutput = aValue; };
 
 /**
  * <odoc>
@@ -149,7 +149,7 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 		"executions": []
 	};
 	
-	log("TEST | " + aMessage);
+	if (this.__showOutput) log("TEST | " + aMessage);
 	this.__countTest++;
 	
 	var execInfo = {};
@@ -165,7 +165,7 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 	try {
 		info.hits++;
 		
-		log("Running " + aCommand);
+		if (this.__showOutput) log("Running " + aCommand);
  		var res = sh(aCommand, "", aTimeout);
  		
 		execInfo.elapsedTime = this.stop(aMessage);
@@ -225,7 +225,7 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 		"executions": []
 	};
 	
-	log("TEST | " + aMessage);
+	if (this.__showOutput) log("TEST | " + aMessage);
 	this.__countTest++;
 	
 	var execInfo = {};
