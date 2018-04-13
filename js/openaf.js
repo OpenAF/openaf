@@ -294,16 +294,20 @@ function tprintErr(aTemplateString, someData) {
 
 /**
  * <odoc>
- * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) : String</key>
+ * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorMap) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
  * Optionally you can specify aWidthLimit and useAnsi.
- * If you want to include a count of rows just use displayCount = true.
+ * If you want to include a count of rows just use displayCount = true. If useAnsy = true you can provide a colorMap with colors
+ * for lines (default bold) and values (default CYAN).
  * </odoc>
  */
-function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
+function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorMap) {
 	var count = 0;
 	var maxsize = {};
 	var output = "";
+	if (isUnDef(colorMap)) colorMap = {};
+	if (isUnDef(colorMap.lines)) colorMap.lines = "bold";
+	if (isUnDef(colorMap.values)) colorMap.values = "CYAN";
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
 	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
@@ -325,37 +329,37 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 		var cols = Object.keys(row);
 		if (count == 0) {
 			//output += (useAnsi ? ansiColor("bold", "|") : "|"); 
-			output += (useAnsi ? ansiColor("bold", "") : ""); 
+			output += (useAnsi ? ansiColor(colorMap.lines, "") : ""); 
 			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(function(col) {
 				if (outOfWidth) return;
 				lineSize += maxsize[String(col)] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor("bold", "...") : "..."); outOfWidth = true;
+					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
 				} else {
-					output += repeat(Math.floor((maxsize[String(col)] - String(col).length)/2), ' ') + (useAnsi ? ansiColor("bold", String(col)) : String(col)) + repeat(Math.round((maxsize[String(col)] - String(col).length) / 2), ' ');
-					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor("bold", "|") : "|");
+					output += repeat(Math.floor((maxsize[String(col)] - String(col).length)/2), ' ') + (useAnsi ? ansiColor(colorMap.lines, String(col)) : String(col)) + repeat(Math.round((maxsize[String(col)] - String(col).length) / 2), ' ');
+					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, "|") : "|");
 				}
 				colNum++;
 			});
 			output += "\n";
-			//output += (useAnsi ? ansiColor("bold", "+") : "+"); 
+			//output += (useAnsi ? ansiColor(colorMap.lines, "+") : "+"); 
 			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(function(col) {
 				if (outOfWidth) return;
 				lineSize += maxsize[String(col)] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor("bold", "...") : "..."); outOfWidth = true;
+					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
 				} else {
-					output += (useAnsi ? ansiColor("bold", repeat(maxsize[String(col)], '-')) : repeat(maxsize[String(col)], '-'));
-					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor("bold", "+") : "+");
+					output += (useAnsi ? ansiColor(colorMap.lines, repeat(maxsize[String(col)], '-')) : repeat(maxsize[String(col)], '-'));
+					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, "+") : "+");
 				}
 				colNum++;
 			});
 			output += "\n";
 		};
 
-		//output += (useAnsi ? ansiColor("bold", "|") : "|"); 
+		//output += (useAnsi ? ansiColor(colorMap.lines, "|") : "|"); 
 		lineSize = 1; outOfWidth = false; colNum = 0;
 		cols.forEach(function(col) {
 			if (outOfWidth) return;
@@ -363,8 +367,9 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 				output += "..."; outOfWidth = true;
 			} else {	
-				output += String(row[String(col)]).replace(/\n/g, " ") + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ');
-				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor("bold", "|") : "|");
+				var value = String(row[String(col)]).replace(/\n/g, " ");
+				output += (useAnsi ? ansiColor(colorMap.values, value) : value) + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ');
+				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, "|") : "|");
 			}
 			colNum++;
 		});
@@ -374,7 +379,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi) {
 
 	if (displayCount) {
 		var summary = "[#" + count + " " + ((count <= 1) ? "row" : "rows") + "]";
-		output += (useAnsi ? ansiColor("bold", summary) : summary);
+		output += (useAnsi ? ansiColor(colorMap.lines, summary) : summary);
 	}
 	
 	return output;
