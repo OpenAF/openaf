@@ -286,7 +286,7 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 			if (timeCommand) __timeResult = now() - __start;
 			if (res.results.length > 0) {
 				if (!descSQL) {
-					outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly);
+					outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly, con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag);
 				} /* else {
 					outputres = Object.keys(res.results[0]).join("\n");
 				}*/
