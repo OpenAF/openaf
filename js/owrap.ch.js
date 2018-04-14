@@ -744,12 +744,12 @@ OpenWrap.ch.prototype.__types = {
 			this.__m[aName] = options.map;
 
 			if (isDef(options.compact) && options.compact) {
-				this.__s[aName].compactMoveChuncks();
+				this.__s[aName].compactMoveChunks();
 			}
 		},
 		destroy      : function(aName) {
 			if (isDef(options.compact) && options.compact) {
-				this.__s[aName].compactMoveChuncks();
+				this.__s[aName].compactMoveChunks();
 			}			
 			this.__s[aName].close();
 		},
