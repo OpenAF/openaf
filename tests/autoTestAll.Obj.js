@@ -90,6 +90,18 @@
         ow.test.assert(ow.obj.getPath(ow.obj.setPath(a, "b.d[0]", 4321), "b.d[0]"), 4321, "Problem with retriving an element of an array after ow.obj.setPath");
     };   
 
+    exports.testFuzzySearch = function() {
+        ow.loadObj();
+
+        var data = [{n: "World War I"}, {n: "World War II"}, {n: "Name a war"}, {n: "Name some war"}];
+
+        var res1 = ow.obj.fuzzySearch(["n"], data, "world");
+        var res2 = ow.obj.fuzzySearch(["n"], data, "name");
+
+        ow.test.assert(res1.length, 2, "Problem fuzzy searching by world.");
+        ow.test.assert(res2.length, 2, "Problem fuzzy searching by name.");
+    };
+
     exports.testArray2Obj = function() {
         ow.loadObj();
 

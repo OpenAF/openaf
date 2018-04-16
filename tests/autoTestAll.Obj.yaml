@@ -43,6 +43,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testObjPool;
 
+   - name: Obj::Object fuzzy search
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFuzzySearch;
+
 todo:
    # Obj tests
    # ------------
@@ -54,3 +59,4 @@ todo:
    - Obj::Array to object conversion
    - Obj::Object to array conversion
    - Obj::Object pool
+   - Obj::Object fuzzy search

@@ -7,9 +7,6 @@
 
 // Verbs to be used
 var verbs = {
-	"script": {},
-	"daemon": {},
-	"ojob"  : {},
 	"info": {
 		"help"        : "Provides information about the current package.",
 		"optionshelp" : [ "If no option is provided will look for the package in the current directory.",
@@ -69,7 +66,16 @@ var verbs = {
  	"remove4db": {
  		"help"        : "Remove a package entry from the local OpenPack database",
  		"optionshelp" : []
- 	},
+	},
+	"script": {
+		"help"        : "Creates a shell script, on the current path, to execute a opack (--script)"
+	},
+	"daemon": {
+		"help"        : "Creates a shell script, on the current path, to execute an opack as a daemon (--daemon)"
+	},
+	"ojob"  : {
+		"help"        : "Creates a shell script, on the current path, to execute an opack as a ojob (--ojob)"
+	},	 
  	"add2remotedb": {},
 	"remove2remotedb": {},
 	"help" : {}
@@ -174,11 +180,9 @@ function addRemoteDB(aPackage, aDB) {
 
   try {
   	zip.streamPutFile(aDB, OPACKCENTRALJSON, af.fromString2Bytes(stringify(packages)));
-	//io.writeFileBytes(aDB, zip.generate({"compressionLevel":9}));
   } catch(e) {
   	logErr(e.message);
   }
-  //zip.close();
 }
 
 // Delete a package from a remote DB
