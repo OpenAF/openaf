@@ -207,7 +207,7 @@ public class HTTPServer extends ScriptableObject {
 		if (keyStorePath != null && !keyStorePath.equals("undefined") &&
 			password != null && !(password instanceof Undefined)) {
 			httpd.stop();
-			httpd.makeSecure(com.nwu.httpd.HTTPd.makeSSLSocketFactory(keyStorePath, ((String) password).toCharArray()), null);
+			httpd.makeSecure(com.nwu.httpd.HTTPd.makeSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
 			httpd.start();
 		}
 		

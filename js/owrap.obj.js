@@ -228,6 +228,29 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 
 /**
  * <odoc>
+ * <key>ow.obj.fuzzySearch(anArrayOfKeys, anArrayOfObjects, searchString, fuseOptions) : Array</key>
+ * Given anArrayOfObjects (similar objects) will fuzzy search the searchString on the values for the keys in anArrayOfKeys.
+ * Returns an array of the most probable objects to match the searchString (you can use fuseOptions = { shouldSort: true } to 
+ * ensure that the array is ordered by score).
+ * It uses the FuseJS library internally so fuseOptions can be used to add more options (check more in http://fusejs.io/).\
+ * \
+ * For example:\
+ *    ow.obj.fuzzySearch(["n"], [{n: "World War I"}, {n: "World War II"}, {n: "Name a war"}, {n: "Name some war"}], "world");\
+ * \
+ * </odoc>
+ */
+OpenWrap.obj.prototype.fuzzySearch = function(anArrayOfKeys, anArrayOfObjects, searchString, fuseOptions) {
+	loadFuse();
+
+	if (!isArray(anArrayOfObjects)) throw "anArrayOfObjects should be an array of objects.";
+	if (!isArray(anArrayOfKeys)) throw "anArrayOfKeys should be an array of keys.";
+
+	var fuse = new Fuse(anArrayOfObjects, merge({ keys: anArrayOfKeys }, fuseOptions));
+	return fuse.search(searchString);
+};
+
+/**
+ * <odoc>
  * <key>ow.obj.searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) : Array</key>
  * Searches anArray of maps for entries where aPartialMap matches. If useRegEx is true all string entries
  * on aPartialMap will be interpreted as regular expressions. For number entries on the original map you can 
