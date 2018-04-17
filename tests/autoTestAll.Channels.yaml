@@ -92,6 +92,11 @@ jobs:
      args:
        chType: mvs        
 
+   - name: Channels::Test MVS Utils
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMVSUtils; 
+
 todo:
    # Channels tests
    # --------------
@@ -99,6 +104,7 @@ todo:
    - Channels::Test Elastic Index
    - Channels::Remote channel access auditing
    - Channels::Subscribers test
+   - Channels::Test MVS Utils
    
    # Big
    - Channels::Creating a channel (big)
