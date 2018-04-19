@@ -714,6 +714,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isUnDef(this.__s)) this.__s = {};
 			if (isUnDef(this.__f)) this.__f = {};
 			if (isUnDef(this.__m)) this.__m = {};
+			if (isUnDef(this.__o)) this.__o = {};
 
 			var existing = false, absFile;
 			if (isDef(options.file)) {
@@ -721,6 +722,8 @@ OpenWrap.ch.prototype.__types = {
 			} else {
 				absFile = "memory";
 			}
+			options.absFile = absFile;
+			
 			if (isUnDef(this.__f[absFile])) {
 				this.__s[aName] = Packages.org.h2.mvstore.MVStore.Builder();
 				if (absFile != "memory") this.__s[aName] = this.__s[aName].fileName(absFile);
@@ -746,12 +749,28 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(options.compact) && options.compact) {
 				this.__s[aName].compactMoveChunks();
 			}
+
+			this.__o[aName] = options;
 		},
 		destroy      : function(aName) {
-			if (isDef(options.compact) && options.compact) {
+			if (isDef(this.__o[aName].compact) && this.__o[aName].compact) {
 				this.__s[aName].compactMoveChunks();
 			}			
-			this.__s[aName].close();
+
+			var found = false;
+			for(var i in this.__s) {
+				if (i != aName && 
+					this.__s[i] == this.__f[this.__o[aName].absFile]) 
+				   found = true;
+			}
+
+			if (!found) {
+				this.__s[aName].close();
+				delete this.__f[this.__o[aName].absFile];
+			}
+
+			delete this.__s[aName];
+			delete this.__o[aName];
 		},
 		size         : function(aName) {
 			var map = this.__s[aName].openMap(this.__m[aName]());
@@ -1666,6 +1685,102 @@ OpenWrap.ch.prototype.utils = {
 		return function() {
 			return aPrefix + "-" + ow.loadFormat().fromDate(new Date(), aFormat);
 		};
+	},
+
+	mvs: {
+		/**
+		 * <odoc>
+		 * <key>ow.ch.utils.mvs.list(aMVSFile) : Array</key>
+		 * Returns a list of names of maps in the corresponding aMVSFile.
+		 * </odoc>
+		 */
+		list: function(aFile) {
+			var absFile = String((new java.io.File(aFile)).getAbsoluteFile());
+			var mvs, mvsLocal = false;
+
+			if (isUnDef(ow.ch.__types.mvs.__f) || isUnDef(ow.ch.__types.mvs.__f[absFile])) {
+				mvs = Packages.org.h2.mvstore.MVStore.Builder();
+				mvs = mvs.fileName(absFile);
+				mvs = mvs.open();
+				mvsLocal = true;
+			} else {
+				mvs = ow.ch.__types.mvs.__f[absFile];
+			}
+
+			var res = [];
+			var maps = mvs.getMapNames().toArray();
+
+			for(var i in maps) {
+				res.push(String(maps[i]));
+			}
+
+			if (mvsLocal) {
+				mvs.close();
+			}
+
+			return res;
+		},
+
+		/**
+		 * <odoc>
+		 * <key>ow.ch.utils.mvs.rename(aMVSFile, anOriginalMap, aDestinationMap)</key>
+		 * Renames anOriginalMap by aDestinationMap on the provided aMVSFile.
+		 * </odoc>
+		 */
+		rename: function(aFile, anOriginalMap, aDestinationMap) {
+			var absFile = String((new java.io.File(aFile)).getAbsoluteFile());
+
+			var mvs, mvsLocal = false;
+
+			if (isUnDef(ow.ch.__types.mvs.__f) || isUnDef(ow.ch.__types.mvs.__f[absFile])) {
+				mvs = Packages.org.h2.mvstore.MVStore.Builder();
+				mvs = mvs.fileName(absFile);
+				mvs = mvs.open();
+				mvsLocal = true;
+			} else {
+				mvs = ow.ch.__types.mvs.__f[absFile];
+			}
+			
+			var omap = mvs.openMap(anOriginalMap);
+			mvs.renameMap(omap, aDestinationMap);
+
+			if (mvsLocal) {
+				mvs.close();
+			}
+
+			return true;
+		},
+
+		/**
+		 * <odoc>
+		 * <key>ow.ch.utils.mvs.remove(aMVSFile, aMapToRemove)</key>
+		 * Removes aMapToRemove on the provided aMVSFile.
+		 * </odoc>
+		 */
+		remove: function(aFile, aMapToRemove) {
+			var absFile = String((new java.io.File(aFile)).getAbsoluteFile());
+			if (isUnDef(aMapToRemove)) throw "Need to specify aMapToRemove.";
+
+			var mvs, mvsLocal = false;
+
+			if (isUnDef(ow.ch.__types.mvs.__f) || isUnDef(ow.ch.__types.mvs.__f[absFile])) {
+				mvs = Packages.org.h2.mvstore.MVStore.Builder();
+				mvs = mvs.fileName(absFile);
+				mvs = mvs.open();
+				mvsLocal = true;
+			} else {
+				mvs = ow.ch.__types.mvs.__f[absFile];
+			}
+			
+			var omap = mvs.openMap(aMapToRemove);
+			mvs.removeMap(omap);
+
+			if (mvsLocal) {
+				mvs.close();
+			}
+
+			return true;			
+		}
 	}
 };
 

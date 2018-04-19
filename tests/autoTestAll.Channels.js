@@ -1,6 +1,33 @@
 (function() {
     this.chType = "big";
 
+    exports.testMVSUtils = function() {
+        io.rm("testMVS.db");
+
+        $ch("mvs").create(1, "mvs", { file: "testMVS.db", map: "teste" });
+        $ch("mvs").set(1, 1); 
+        $ch("mvs").set(2, 2);
+        $ch("mvs").set(3, 3);
+
+        var res = ow.ch.utils.mvs.list("testMVS.db");
+        ow.test.assert(res, [ "teste" ], "Problem with listing maps on a mvs file.");
+
+        ow.ch.utils.mvs.rename("testMVS.db", "teste", "teste2");
+        res = ow.ch.utils.mvs.list("testMVS.db");
+        ow.test.assert(res, [ "teste2" ], "Problem with listing maps on a mvs file (2).");
+        ow.ch.utils.mvs.rename("testMVS.db", "teste2", "teste");
+
+        $ch("mvs").destroy();
+        res = ow.ch.utils.mvs.list("testMVS.db");
+        ow.test.assert(res, [ "teste" ], "Problem with listing maps on a mvs file (3).");
+
+        ow.ch.utils.mvs.remove("testMVS.db", "teste");
+        res = ow.ch.utils.mvs.list("testMVS.db");
+        ow.test.assert(res, [ ], "Problem with listing maps on a mvs file (4).");
+
+        io.rm("testMVS.db");
+    };
+
     exports.testCreateChannel = function() {
         $ch(this.chType).create(true, this.chType);
         $ch(this.chType).size();
