@@ -699,9 +699,11 @@ OpenWrap.server.prototype.rest = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc) : RequestReply</key>
+	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams) : RequestReply</key>
 	 * Provides a REST compliant HTTPServer request replier given a aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc
-	 * and aRemoveFunc. Each function will receive a map with the provided indexes from the request.\
+	 * and aRemoveFunc. Each function will receive a map with the provided indexes from the request. Optionally you can 
+	 * specify with returnWithParams = true that each function will not return just the data map but a composed map with: data (the actual
+	 * json of data), status (the HTTP code to return) and mimetype.\
 	 * \
 	 * var hs = ow.loadServer().httpd.start(8080);\
 	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
@@ -715,23 +717,49 @@ OpenWrap.server.prototype.rest = {
 	 * \ 
 	 * </odoc>
 	 */
-	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc) {
+	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams) {
 		var idxs = ow.server.rest.parseIndexes(aBaseURI, aReq);
 		var res = {};
 		res.headers = {};
+		var params;
+
+		res.mimetype = ow.server.httpd.mimes.JSON;
 
 		switch(aReq.method) {
-		case "GET": res.data = stringify(aGetFunc(idxs), undefined, ""); break;
+		case "GET": 
+			if (returnWithParams) {
+				params = aGetFunc(idxs);
+				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.status))   res.status = params.status;
+				if (isDef(params.mimetype)) res.mimetype = params.mimetype;
+			} else {
+				res.data = stringify(aGetFunc(idxs), void 0, ""); 
+			}
+			break;
 		case "POST":
 			if (isDef(aReq.files.content)) {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { }
-				res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata)), undefined, "");
+				if (returnWithParams) {
+					params = aCreateFunc(idxs, ow.server.rest.parseQuery(fdata));
+					if (isDef(params.data))     res.data = stringify(params.data);
+					if (isDef(params.status))   res.status = params.status;
+					if (isDef(params.mimetype)) res.mimetype = params.mimetype;
+				} else { 
+					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata)), void 0, "");
+				}
 			} else {
 				if (isDef(aReq.files.postData)) {
-					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData)), undefined, "");
+					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData));
 				} else {
-					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"])), undefined, "");
+					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"]));
+				}
+				if (returnWithParams) {
+					if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+					if (isDef(params.status))   res.status = params.status;
+					if (isDef(params.mimetype)) res.mimetype = params.mimetype;					
+				} else {
+					res.data = stringify(params, void 0, "");
 				}
 			}
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
@@ -740,15 +768,30 @@ OpenWrap.server.prototype.rest = {
 			if (isDef(aReq.files.content)) {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { };
-				res.data = stringify(aSetFunc(idxs, ow.server.rest.parseQuery(fdata)), undefined, "");
+				params = aSetFunc(idxs, ow.server.rest.parseQuery(fdata));
 			} else {
-				res.data = stringify(aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData)), undefined, "");
+				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData));
+			}
+			if (returnWithParams) {
+				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.status))   res.status = params.status;
+				if (isDef(params.mimetype)) res.mimetype = params.mimetype;	
+			} else {
+				res.data = stringify(params, void 0, "");
 			}
 			break;
-		case "DELETE": res.data = stringify(aRemoveFunc(idxs), undefined, ""); break;
-		};
-		
-		res.mimetype = ow.server.httpd.mimes.JSON;
+		case "DELETE": 
+			params = aRemoveFunc(idxs); 
+			if (returnWithParams) {
+				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.status))   res.status = params.status;
+				if (isDef(params.mimetype)) res.mimetype = params.mimetype;	
+			} else {
+				res.data = stringify(params, void 0, "");
+			}
+			break;
+		}
+
 		return res;
 	},
 	
