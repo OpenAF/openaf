@@ -128,6 +128,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.test2FA;
 
+   - name: OpenAF::Java RegExp
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testJavaRegExp;
+
 todo:
    # Generic Tests
    # -------------
@@ -154,6 +159,7 @@ todo:
    - OpenAF::Encrypt/Decrypt
    - OpenAF::YAML
    - OpenAF::Two factor authentication
+   - OpenAF::Java RegExp
   
    # CSV Tests
    # ---------
