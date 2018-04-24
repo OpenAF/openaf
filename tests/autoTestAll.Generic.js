@@ -402,6 +402,28 @@
         ow.test.assert(af.validate2FA(code.encryptedKey, token + 1), false, "Problem while validating a wrong 2FA key generated " + ow.format.timeago(init).toLowerCase());
     };
 
+    exports.testJavaRegExp = function() {
+        var text = "This is a test within a Test";
+
+        ow.test.assert(text.match(/test/i)[0], javaRegExp(text).match("test", "i")[0], "Problem with javaRegExp match");
+        ow.test.assert(text.match(/test/ig)[0], javaRegExp(text).match("test", "ig")[0], "Problem with javaRegExp match with g modifier");
+        ow.test.assert(text.match(/test/ig)[0], javaRegExp(text).matchAll("test", "i")[0], "Problem with javaRegExp matchAll");
+        ow.test.assert(text.replace(/test/i, "dump"), javaRegExp(text).replace("test", "dump", "i"), "Problem with javaRegExp replace");
+        ow.test.assert(text.replace(/test/ig, "dump"), javaRegExp(text).replace("test", "dump", "ig"), "Problem with javaRegExp replace with g modifier");
+        ow.test.assert(new RegExp("test", "i").test(text), javaRegExp(text).test("test", "i"), "Problem with javaRegExp test");
+
+        javaRegExp().preCompile("test", "i");
+        ow.test.assert(text.match(/test/i)[0], javaRegExp(text).match("test", "i")[0], "Problem with javaRegExp match (precompiled)");
+        ow.test.assert(text.match(/test/ig)[0], javaRegExp(text).match("test", "ig")[0], "Problem with javaRegExp match with g modifier (precompiled)");
+        ow.test.assert(text.match(/test/ig)[0], javaRegExp(text).matchAll("test", "i")[0], "Problem with javaRegExp matchAll (precompiled)");
+        ow.test.assert(text.replace(/test/i, "dump"), javaRegExp(text).replace("test", "dump", "i"), "Problem with javaRegExp replace (precompiled)");
+        ow.test.assert(text.replace(/test/ig, "dump"), javaRegExp(text).replace("test", "dump", "ig"), "Problem with javaRegExp replace with g modifier (precompiled)");
+        ow.test.assert(new RegExp("test", "i").test(text), javaRegExp(text).test("test", "i"), "Problem with javaRegExp test (precompiled)");
+        javaRegExp().removePreCompiled("test", "i");
+
+        ow.test.assert(text.split(/test/i)[0], javaRegExp(text).split("test", "i")[0], "Problem with javaRegExp split");
+    };
+
     exports.testYAML = function() {
         var r = {
             a: 1,

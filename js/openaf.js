@@ -4179,6 +4179,156 @@ oPromise.prototype.__exec = function() {
 
 };
 
+var javaRegExp = (text) => {
+    var s = java.lang.String(text);
+    var calcMods = (mods) => {
+        if (isUnDef(mods)) return 0;
+        if (isNumber(mods)) return mods;
+
+        var v = 0;
+
+        if (mods.indexOf("i") >= 0) v += java.util.regex.Pattern.CASE_INSENSITIVE;
+        if (mods.indexOf("m") >= 0) v += java.util.regex.Pattern.MULTILINE;
+
+        return v;
+    };
+
+    var addPC = (regexp, mods) => {
+        if (isUnDef(global.__javaRegExp)) {
+            global.__javaRegExp = {};
+        }
+
+        var id = regexp + String(mods);
+        global.__javaRegExp[id] = java.util.regex.Pattern.compile(regexp, calcMods(mods));
+        return id;
+    };
+
+    var removePC = (regexp, mods) => {
+        if (isUnDef(global.__javaRegExp)) return;
+        var id = regexp + String(mods);
+        delete global.__javaRegExp[id];
+        return id;
+    };
+
+    var getPC = (regexp, mods) => {
+        if (isUnDef(global.__javaRegExp)) {
+            return java.util.regex.Pattern.compile(regexp, calcMods(mods));
+        } else {
+            var id = regexp + String(mods);
+            if (isDef(global.__javaRegExp[id])) {
+                return global.__javaRegExp[id];
+            } else {
+                return java.util.regex.Pattern.compile(regexp, calcMods(mods));
+            }
+        }
+    };
+
+    return {
+        /**
+		 * <odoc>
+		 * <key>javaRegExp(text).match(regExp, mods) : Array</key>
+		 * Mimics, using Java, the javascript match function. Supported mods are "g", "m" and "i" or the java integer composed 
+		 * mods. Returns the corresponding array.
+		 * </odoc>
+		 */
+        match: (regexp, mods) => {
+            var m = getPC(regexp, mods).matcher(s);
+            var r = [];
+            if (isDef(mods) && mods.indexOf("g") >= 0) {
+                while(m.find()) { r.push(String(m.group())); }
+            } else {
+                m.find();
+                r.push(String(m.group()));
+            }
+            return r;
+        },
+    	/**
+		 * <odoc>
+		 * <key>javaRegExp(text).matchAll(regExp, mods) : Array</key>
+		 * Mimics, using Java, the javascript match function with the "g" modifier. Supported mods are "m" and "i" or the java integer composed 
+		 * mods. Returns the corresponding array.
+		 * </odoc>
+		 */
+        matchAll: (regexp, mods) => {
+            var m = getPC(regexp, mods).matcher(s);
+            var r = [];
+            while(m.find()) { r.push(String(m.group())); }
+            return r;
+        },
+    	/**
+		 * <odoc>
+		 * <key>javaRegExp(text).match(regExp, mods) : Array</key>
+		 * Mimics, using Java, the javascript match function. Supported mods are "g", "m" and "i" or the java integer composed 
+		 * mods. Returns the corresponding array.
+		 * </odoc>
+		 */
+        replace: (regexp, replaceStr, mods) => {
+            var m = getPC(regexp, mods).matcher(s);
+            if (isDef(mods) && mods.indexOf("g") >= 0) {
+                return String(m.replaceAll(replaceStr));
+            } else {
+                return String(m.replaceFirst(replaceStr));
+            }     
+		},
+		/**
+		 * <odoc>
+		 * <key>javaRegExp(text).replaceAll(regExp, mods) : Array</key>
+		 * Mimics, using Java, the javascript replace function with the "g" modifier. Supported mods are "m" and "i" or the java integer composed 
+		 * mods. Returns the corresponding array.
+		 * </odoc>
+		 */
+        replaceAll: (regexp, replaceStr, mods) => {
+            var m = getPC(regexp, mods).matcher(s);
+            return String(m.replaceAll(replaceStr));
+		},
+		/**
+		 * <odoc>
+		 * <key>javaRegExp().preCompile(regExp, mods)</key>
+		 * Pre-compiles the regExp with the corresponding mods to be used by match, matchAll, replace, replaceAll, split and test until removePreCompiled
+		 * is invoked for the same combination of regExp and mods.
+		 * </odoc>
+		 */
+        preCompile: (regexp, mods) => {
+            return addPC(regexp, mods);
+		},
+		/**
+		 * <odoc>
+		 * <key>javaRegExp().removePreCompiled(regExp, mods)</key>
+		 * Removes a previously added pre compiled combination of regExp and mods.
+		 * </odoc>
+		 */
+        removePreCompiled: (regexp, mods) => {
+            return removePC(regexp, mods);
+		},
+		/**
+		 * <odoc>
+		 * <key>javaRegExp(text).split(regExp, mods) : Array</key>
+		 * Returns an array of the result of spliting text using the provided regExp and mods. Supported mods are "g", "m" and "i" or the java integer composed 
+		 * mods.
+		 * </odoc>
+		 */
+        split: (regexp, mods) => {
+			var ar = getPC(regexp, mods).split(s);
+			var res = [];
+			for(var ii = 0; ii < ar.length; ii++) {
+				res.push(String(ar[ii]));
+			}
+			return res;
+		},
+		/**
+		 * <odoc>
+		 * <key>javaRegExp(text).test(regExp, mods) : boolean</key>
+		 * Mimics, using Java, the javascript RegExp test function. Supported mods are "g", "m" and "i" or the java integer composed 
+		 * mods. Returns the corresponding boolean value.
+		 * </odoc>
+		 */
+        test: (regexp, mods) => {
+            var m = getPC(regexp, mods).matcher(s);
+            return m.find();
+        }
+    };
+};
+
 /**
  * <odoc>
  * <key>$do(aFunction, aRejFunction) : oPromise</key>
