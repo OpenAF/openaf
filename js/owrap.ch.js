@@ -1463,6 +1463,61 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 };
 	
 OpenWrap.ch.prototype.utils = {
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.keepHistory(timeRepeatExpression, aName, aFunction, withKeys, historySize) : Object</key>
+	 * For a given aName channel (preferably a temporary one) will execute aFunction periodically given a timeRepeatExpression
+	 * (if a Number the ms interval, if a String a cron expression). That aFunction should return aMap for which the withKeys array
+	 * will be used to determine the keys entries to set it on the provided aName channel (if withKeys is not provided, id will be assumed
+	 * and filled with nowNano()). The channel aName will be filled with entries with the result of executing aFunction
+	 * periodically thus keeping an history of results (by default 10 if a historySize is not provided). If timeRepeatExpression
+	 * is a cron expression the result will be a ow.server.scheduler object, if it's a number a thread object will be returned. Either
+	 * object enables you to stop the keepHistory periodical behaviour of runnning aFunction and keeping the results in the channal aName.
+	 * </odoc>
+	 */
+	keepHistory: function(every, named, runningFunc, withKeys, historySize) {
+		// create channel
+		if ($ch().list().indexOf(named) < 0) {
+			$ch(named).create();
+		}
+
+		if (isUnDef(historySize)) historySize = 10;
+
+		$ch(named).subscribe(ow.ch.utils.getHousekeepSubscriber(named, historySize));
+
+		// check key to use
+		var useId = false;
+		if (isUnDef(withKeys)) { 
+			withKeys = [ "id" ];
+			useId = true;
+		}
+		if (!(isArray(withKeys))) witKeys = [ withKeys ];
+
+		// function to process
+		var __f = function() { 
+			var res = runningFunc();
+			if (isUnDef(res) || isArray(res) || !isObject(res)) res = {};
+			if (useId) res["id"] = nowNano();
+
+			$ch(named).set(ow.obj.filterKeys(withKeys, res), res);
+		}
+
+		// prepare periodic running
+		if (isString(every)) {
+			ow.loadServer();
+			var sch = new ow.server.scheduler();
+			sch.addEntry(every, __f);
+			return sch;
+		}
+
+		if (isNumber(every)) {
+			plugin("Threads");
+			var t = new Threads();
+			t.addScheduleThreadWithFixedDelay(__f, every);
+			return t;
+		}
+	},
+
     /**
      * <odoc>
      * <key>ow.ch.utils.getMirrorSubscriber(aTargetCh, aFunc) : Function</key>

@@ -44,6 +44,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testChannelSubscribers;
 
+   - name: Channels::Keep history util
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testKeepHistory;
+
    # Big
    # ---
    - name: Channels::Creating a channel (big)
@@ -105,6 +110,7 @@ todo:
    - Channels::Remote channel access auditing
    - Channels::Subscribers test
    - Channels::Test MVS Utils
+   - Channels::Keep history util
    
    # Big
    - Channels::Creating a channel (big)
