@@ -95,6 +95,19 @@
         $ch(chName).destroy();
     };
 
+    exports.testKeepHistory = function() {
+        var t = ow.ch.utils.keepHistory(100, "__keepHistoryTest", () => { return { tt: new Date() } });
+        sleep(1500);
+        t.stop();
+        ow.test.assert($ch("__keepHistoryTest").size(), 10, "Problem with a simple ow.ch.utils.keepHistory setup.");
+
+        $ch("__keepHistoryTest").destroy();
+        var t = ow.ch.utils.keepHistory(100, "__keepHistoryTest", () => { return { id: nowNano(), tt: new Date() } }, ["id"], 20);
+        sleep(2500);
+        t.stop();
+        ow.test.assert($ch("__keepHistoryTest").size(), 20, "Problem with changing history size on ow.ch.utils.keepHistory.");
+    };
+
     exports.testHousekeeping = function() {
         $ch(this.chType + "HK").destroy();
         $ch(this.chType + "HK").create();
