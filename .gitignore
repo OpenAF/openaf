@@ -15,3 +15,4 @@ dependencies.json
 /jslib/*
 /lib/compiledJS.jar
 /dist
+/docs/odoc
