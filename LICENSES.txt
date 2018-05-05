@@ -806,7 +806,7 @@ the terms above.
 
 -----------------------
 Third-party name      : Lodash
-Version               : 4.17.4
+Version               : 4.17.10
 Changed from original : No
 Location in openaf.jar: js/lodash.js
 License               : 
