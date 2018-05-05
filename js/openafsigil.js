@@ -14,11 +14,11 @@ const $$ = function(aObj) {
 		 * </odoc>
 		 */
 		get: (aPath) => {
-			if (!isObject(aObj)) return void 0;
+            if (!$$(aObj).isObject()) return void 0;
 
 			aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
 			aPath = aPath.replace(/^\./, '');       
-			
+
 			var a = aPath.split('.');
 			for (var i = 0, n = a.length; i < n; ++i) {
 				var k = a[i];
@@ -28,7 +28,7 @@ const $$ = function(aObj) {
 					return;
 				}
 			}
-			return aObj;
+            return aObj;
 		},
 		/**
 		 * <odoc>
@@ -41,8 +41,8 @@ const $$ = function(aObj) {
 		 * \
 		 * </odoc>
 		 */		
-		set: (aPath, aNewValue) => {
-			if (!isObject(aObj)) return void 0;
+		set: (aPath, aValue) => {
+			if (!$$(aObj).isObject()) return void 0;
 			var orig = aObj;
 		
 			aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
