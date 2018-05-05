@@ -1,9 +1,8 @@
 //OPENAF common functions
+//Author: Nuno Aguiar
 
-//Author: nmaguiar@gmail.com
-
-var self = this;
-var global = self;
+const self = this;
+const global = self;
 
 /**
  * <odoc>
@@ -2331,7 +2330,15 @@ function uncompress(aCompressedObject) {
  * Returns true if aObj is an array, false otherwise.
  * </odoc>
  */
-var isArray = Array.isArray;
+const isArray = Array.isArray;
+
+/**
+ * <odoc>
+ * <key>isMap(aObj) : boolean</key>
+ * Returns true if aObj is a map, false otherwise.
+ * </odoc>
+ */
+const isMap = (a) => { return (Object.prototype.toString.call(a) == "[object Object]"); }
 
 /**
  * <odoc>
@@ -3720,6 +3727,8 @@ function oJobRunJob(aJob, args, aId) {
 function loadJSYAML() {
 	loadCompiledLib("js-yaml_js");
 }
+
+loadCompiledLib("openafsigil_js");
 
 /**
  * <odoc>

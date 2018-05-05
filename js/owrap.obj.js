@@ -2028,6 +2028,7 @@ OpenWrap.obj.prototype.pmSchema = {
  * </odoc>
  */
 OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
+	// Moving to $$().get()
 	if (!isObject(aObj)) return undefined;
 
 	aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
@@ -2057,6 +2058,8 @@ OpenWrap.obj.prototype.getPath = function(aObj, aPath) {
  * </odoc>
  */
 OpenWrap.obj.prototype.setPath = function(aObj, aPath, aValue) {
+	// Moving to $$().set()
+
     if (!isObject(aObj)) return undefined;
     var orig = aObj;
 

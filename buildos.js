@@ -341,6 +341,7 @@ try {
 		"ignite": OPENAF_BUILD_HOME + "/src/openaf/plugins/Ignite.java",
 		"bsdiff": OPENAF_BUILD_HOME + "/src/openaf/plugins/BSDiff.java",
 		"scope": OPENAF_BUILD_HOME + "/js/openaf.js",
+		"scopesigil": OPENAF_BUILD_HOME + "/js/openafsigil.js",
 		"index": OPENAF_BUILD_HOME + "/js/example.js"
 	};
 	saveHelp(OPENAF_BUILD_HOME, helpFiles);
