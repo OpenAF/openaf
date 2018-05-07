@@ -199,7 +199,7 @@ public class AFBase extends ScriptableObject {
 		} catch (Exception e) {} 
 		return res;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>af.js2s(aObject) : String</key>
@@ -391,6 +391,12 @@ public class AFBase extends ScriptableObject {
 			IOUtils.copy(p.getInputStream(), System.out);
 		}
 
+		String lines = new String(); 
+		String linesErr = new String();
+		
+		lines = IOUtils.toString(p.getInputStream(), (Charset) null);
+		linesErr = IOUtils.toString(p.getErrorStream(), (Charset) null);
+
 		int exit = -1; 
 		try {
 			if (timeout == null || timeout instanceof org.mozilla.javascript.Undefined)
@@ -420,22 +426,11 @@ public class AFBase extends ScriptableObject {
 				} else {
 					return null;
 				}
-				
-//				p.wait(Long.parseLong(timeout.toString()));
-//				p.destroy();
 			}
 		} catch(IllegalMonitorStateException e) {
 			//exit = p.exitValue();
 		}
 
-		String lines = new String(); 
-		String linesErr = new String();
-		
-		lines = IOUtils.toString(p.getInputStream(), (Charset) null);
-		linesErr = IOUtils.toString(p.getErrorStream(), (Charset) null);
-		
-		/*IOUtils.closeQuietly(p.getInputStream());
-		IOUtils.closeQuietly(p.getErrorStream());*/
 		p.getInputStream().close();
 		p.getErrorStream().close();
 		
