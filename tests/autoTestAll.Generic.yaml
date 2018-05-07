@@ -133,6 +133,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testJavaRegExp;
 
+   - name: OpenAF::Get Path
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGetPath;
+
+   - name: OpenAF::Set Path
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSetPath;     
+
 todo:
    # Generic Tests
    # -------------
@@ -160,6 +170,8 @@ todo:
    - OpenAF::YAML
    - OpenAF::Two factor authentication
    - OpenAF::Java RegExp
+   - OpenAF::Get Path
+   - OpenAF::Set Path
   
    # CSV Tests
    # ---------

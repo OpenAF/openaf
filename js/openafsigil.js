@@ -119,7 +119,12 @@ const _$ = function(aValue, aPrefixMessage) {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not a map";
             if (defined && !$$(aValue).isMap()) throw aMessage;
             return __r;
-		},
+        },
+        isObject: (aMessage) => {
+            if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not an object";
+            if (defined && !$$(aValue).isObject()) throw aMessage;
+            return __r;
+        },
 		isJavaObject: (aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not a java object";
             if (defined && !isJavaObject(aValue)) throw aMessage;

@@ -440,4 +440,24 @@
         ow.test.assert(af.toYAML(r), "a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n", "Problem converting to yaml.");
         ow.test.assert(af.fromYAML("a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n"), r, "Problem converting from yaml.");
     };
+
+    exports.testGetPath = function() {
+        ow.loadObj();
+
+        var a = { a : 1, b : { c: 2, d: [0, 1] } };
+
+        ow.test.assert($$(a).get("b.c"), 2, "Problem with retriving a number with $$().get()");
+        ow.test.assert($$(a).get("b.d"), [0, 1], "Problem with retriving an array with $$().get()");
+        ow.test.assert($$(a).get("b.d[0]"), 0, "Problem with retriving an element of an array with $$().get()");
+    };
+
+     exports.testSetPath = function() {
+        ow.loadObj();
+
+        var a = { a : 1, b : { c: 2, d: [0, 1] } };
+
+        ow.test.assert($$($$(a).set("b.c", 1234)).get("b.c"), 1234, "Problem with retriving a number after $$().set()");
+        ow.test.assert($$($$(a).set("b.d", [ 0, 1, 2 ])).get("b.d"), [0, 1, 2], "Problem with retriving an array after $$().set()");
+        ow.test.assert($$($$(a).set("b.d[0]", 4321)).get("b.d[0]"), 4321, "Problem with retriving an element of an array after $$().set()");
+    };       
 })();
