@@ -115,12 +115,16 @@ try {
 
 // PreRepack actions
 $from(ow.obj.fromObj2Array(getOPackLocalDB(), "path")).notEmpty("scripts.prerepack").select(function(r) {
-	log("Executing prepack actions from oPack '" + r.name + "'");
-	try {
-		var s = new Function(r.scripts.prerepack);
-		s();
-	} catch(e) {
-		logErr("opack '" + r.name + "': " + e);
+	if (r.name == "OpenCli" && r.version != af.getVersion()) {
+		logWarn("Please update OpenCli to match the version " + af.getVersion());
+	} else {
+		log("Executing prepack actions from oPack '" + r.name + "'");
+		try {
+			var s = new Function(r.scripts.prerepack);
+			s();
+		} catch(e) {
+			logErr("opack '" + r.name + "': " + e);
+		}
 	}
 });
 
