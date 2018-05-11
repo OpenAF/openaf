@@ -73,6 +73,30 @@ jobs:
      args:
        chType: big 
 
+   # Simple
+   # ------
+   - name: Channels::Creating a channel (simple)
+     to  : Channels::Creating a channel
+     args:
+       chType: simple
+   - name: Channels::Setting data into a channel (simple)
+     to  : Channels::Setting data into a channel
+     deps: 
+       - Channels::Creating a channel (simple)
+     args:
+       chType: simple
+   - name: Channels::Destroy a channel (simple)
+     to  : Channels::Destroy a channel 
+     deps: 
+       - Channels::Setting data into a channel (simple)
+       - Channels::Creating a channel (simple)
+     args:
+       chType: simple   
+   - name: Channels::Test housekeeping (simple)
+     to  : Channels::Test housekeeping
+     args:
+       chType: simple 
+
    # Mvs
    # ---
    - name: Channels::Creating a channel (mvs)
@@ -117,6 +141,12 @@ todo:
    - Channels::Setting data into a channel (big)
    - Channels::Destroy a channel (big)
    - Channels::Test housekeeping (big) 
+
+   # Simple
+   - Channels::Creating a channel (simple)
+   - Channels::Setting data into a channel (simple)
+   - Channels::Destroy a channel (simple)
+   - Channels::Test housekeeping (simple) 
 
    # Mvs
    - Channels::Creating a channel (mvs)

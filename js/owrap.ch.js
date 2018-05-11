@@ -438,6 +438,103 @@ OpenWrap.ch.prototype.__types = {
 			return {};
 		}
 	},
+	// Simple implementation
+	//
+	simple: {
+		__channels: {},
+		create       : function(aName, shouldCompress, options) {
+			this.__channels[aName] = {};
+		},
+		destroy      : function(aName) {
+			delete this.__channels[aName];
+		},
+		size         : function(aName) {
+			return Object.keys(this.__channels[aName]).length;
+		},
+		forEach      : function(aName, aFunction) {
+			Object.keys(this.__channels[aName]).forEach((element) => {
+				aFunction(this.__channels[aName][element].k, this.__channels[aName][element].v);
+			});
+		},
+		getAll      : function(aName, full) {
+			var res = [];
+			Object.keys(this.__channels[aName]).forEach((element) => {
+				res.push(this.__channels[aName][element].v);
+			});
+			return res;
+		},
+		getKeys      : function(aName, full) {
+			var res = [];
+			Object.keys(this.__channels[aName]).forEach((element) => {
+				res.push(this.__channels[aName][element].k);
+			});
+			return res;
+		},
+		getSortedKeys: function(aName, full) {
+			var res = [];
+			Object.keys(this.__channels[aName]).forEach((element) => {
+				res.push({ k: this.__channels[aName][element].k, t: this.__channels[aName][element].t });
+			});
+			return $from(res).sort("t").select((r) => {
+				return r.k;
+			});		
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res;
+			res = this.get(aName, aK);
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp);
+			}
+			return undefined;
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var id = stringify(aK, void 0, "");
+			var old = this.__channels[aName][id];
+			if (isUnDef(old)) {
+				this.__channels[aName][id] = {
+					k: aK,
+					v: aV,
+					t: aTimestamp
+				};
+			} else {
+				old.v = aV;
+				old.t = aTimestamp;
+			}
+			return id;
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj();
+			for(let i in aVs) {
+				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},
+		get          : function(aName, aK) {
+			var id = stringify(aK, void 0, "");
+			var res = this.__channels[aName][id];
+			if (isDef(res)) 
+				return res.v;
+			else
+				return void 0;
+		},
+		pop          : function(aName) {
+			var elems = this.getSortedKeys(aName);
+			var elem = elems[elems.length - 1];
+			var res = clone(this.get(aName, elem));
+			this.unset(aName, elem);
+			return res;
+		},
+		shift        : function(aName) {
+			var elems = this.getSortedKeys(aName);
+			var elem = elems[0];
+			var res = clone(this.get(aName, elem));
+			this.unset(aName, elem);
+			return res;
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var id = stringify(aK, void 0, "");
+			delete this.__channels[aName][id];
+		}
+	},	
 	// Remote channel implementation
 	//
 	remote: {
