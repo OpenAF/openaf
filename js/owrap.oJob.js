@@ -587,7 +587,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "Ended in ERROR" + sep + __d;
 						if (this.__ojob.logToConsole) { printErr("\n" + _e(ss) + _g(aa) + _b(__m) + "\n" + stringify(existing) + "\n" + _e(ss)); }
-						if (isDef(getChLog())) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m });
+						if (isDef(getChLog())) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m + "\n" + stringify(existing) });
 					}
 					if (existing.start && existing.success) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
