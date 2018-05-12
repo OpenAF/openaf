@@ -72,7 +72,8 @@ const $$ = function(aObj) {
         isFunction: () => { return typeof aObj == 'function' || false; },
         isString: () => { return typeof aObj == 'string' || false; },
         isNumber: () => { return !isNaN(parseFloat(aObj)) && isFinite(aObj); },
-        isDate: () => { return (null != aObj) && !isNaN(aObj) && ("undefined" !== typeof aObj.getDate); }
+        isDate: () => { return (null != aObj) && !isNaN(aObj) && ("undefined" !== typeof aObj.getDate); },
+        isRegExp: () => { return (aObj instanceof RegExp); }
 	};
 	return _r;
 };
@@ -125,6 +126,21 @@ const _$ = function(aValue, aPrefixMessage) {
             if (defined && !$$(aValue).isObject()) throw aMessage;
             return __r;
         },
+        isDate: (aMessage) => {
+            if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not a date";
+            if (defined && !$$(aValue).isDate()) throw aMessage;
+            return __r;
+        },    
+        isRegExp: (aMessage) => {
+            if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not a RegExp";
+            if (defined && !$$(aValue).isRegExp()) throw aMessage;
+            return __r;
+        },                    
+        isFunction: (aMessage) => {
+            if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not a function";
+            if (defined && !$$(aValue).isFunction()) throw aMessage;
+            return __r;
+        },        
 		isJavaObject: (aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not a java object";
             if (defined && !isJavaObject(aValue)) throw aMessage;
