@@ -1036,25 +1036,30 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp) {
-	if (isUnDef(jobDeps)) jobDeps = [];
-	if (isUnDef(jobType)) jobType = "single";
-	if (isUnDef(jobFunc)) jobFunc = function() {};
-	if (isUnDef(jobHelp)) jobHelp = "";
+	jobDeps = _$(jobDeps).isArray().default([]);
+    jobType = _$(jobType).isString().default("single");
+	jobFunc = _$(jobFunc).default(function() {});
+	jobHelp = _$(jobHelp).isString().default("");
 
-	var j = {};
+	var j = [];
 	var fstr = jobFunc.toString();
 	
 	if (isDef(jobFrom)) {
-		var f = aJobsCh.get({ "name": jobFrom });
-		if (isDef(f)) {
-			j.type = f.type;
-			j.typeArgs = f.typeArgs;
-            j.args = f.args;
-			j.deps = f.deps;
-			j.exec = f.exec;
-			j.help = f.help;
-		} else {
-			logWarn("Didn't found dep job '" + jobFrom + "' for job '" + aName + "'");
+		if (isString(jobFrom)) jobFrom = [ jobFrom ];
+		_$(jobFrom).isArray();
+
+		for(let jfi in jobFrom) {
+			var f = aJobsCh.get({ "name": jobFrom[jfi] });
+			if (isDef(f)) {
+				j.type = _$(j.type).isString().default(f.type);
+				j.typeArgs = (isDef(j.typeArgs) ? merge(j.typeArgs, f.typeArgs) : f.typeArgs);
+				j.args = (isDef(j.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(f.args));
+				j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
+				j.exec = (isDef(j.exec) ? j.exec : "") + f.exec;
+				j.help = (isDef(j.help) ? j.help : "") + f.help;
+			} else {
+				logWarn("Didn't found from/earlier job '" + jobFrom[jfi] + "' for job '" + aName + "'");
+			}
 		}
 	}
 	
@@ -1071,14 +1076,21 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 	};	
 	
 	if (isDef(jobTo)) {
-		var f = aJobsCh.get({ "name": jobTo });
-		if (isDef(f)) {
-			j.type = (isDef(f.type) ? f.type : j.type);
-			j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
-            j.args = (isDef(f.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(j.args));
-			j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
-			j.exec = j.exec + (isDef(f.exec) ? f.exec : "");
-			j.help = j.help + (isDef(f.help) ? f.help : "");
+		if (isString(jobTo)) jobTo = [ jobTo ];
+		_$(jobTo).isArray();
+
+		for(let jfi in jobFrom) {
+			var f = aJobsCh.get({ "name": jobTo[jfi] });
+			if (isDef(f)) {
+				j.type = (isDef(f.type) ? f.type : j.type);
+				j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
+				j.args = (isDef(f.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(j.args));
+				j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
+				j.exec = j.exec + (isDef(f.exec) ? f.exec : "");
+				j.help = j.help + (isDef(f.help) ? f.help : "");
+			} else {
+				logWarn("Didn't found to/then job '" + jobTo[jfi] + "' for job '" + aName + "'");
+			}
 		}
 	}
 	
