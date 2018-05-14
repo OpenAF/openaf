@@ -1055,8 +1055,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 				j.typeArgs = (isDef(j.typeArgs) ? merge(j.typeArgs, f.typeArgs) : f.typeArgs);
 				j.args = (isDef(j.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(f.args));
 				j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
-				j.exec = (isDef(j.exec) ? j.exec : "") + f.exec;
-				j.help = (isDef(j.help) ? j.help : "") + f.help;
+				j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + f.exec;
+				j.help = (isDef(j.help) ? j.help : "") + "\n" + f.help;
 			} else {
 				logWarn("Didn't found from/earlier job '" + jobFrom[jfi] + "' for job '" + aName + "'");
 			}
@@ -1069,8 +1069,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		"typeArgs": (isDef(j.typeArgs) ? merge(j.typeArgs, jobTypeArgs) : jobTypeArgs),
         "args": (isDef(j.args) ? this.__processArgs(j.args, jobArgs) : this.__processArgs(jobArgs)),
 		"deps": (isDef(j.deps) && j.deps != null ? j.deps.concat(jobDeps) : jobDeps),
-		"exec": (isDef(j.exec) ? j.exec : "") + fstr,
-		"help": (isDef(j.help) ? j.help : "") + jobHelp,
+		"exec": (isDef(j.exec) ? j.exec : "") + "\n" + fstr,
+		"help": (isDef(j.help) ? j.help : "") + "\n" + jobHelp,
 		"from": jobFrom,
 		"to"  : jobTo
 	};	
@@ -1079,15 +1079,15 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		if (isString(jobTo)) jobTo = [ jobTo ];
 		_$(jobTo).isArray();
 
-		for(let jfi in jobFrom) {
+		for(let jfi in jobTo) {
 			var f = aJobsCh.get({ "name": jobTo[jfi] });
 			if (isDef(f)) {
 				j.type = (isDef(f.type) ? f.type : j.type);
 				j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
 				j.args = (isDef(f.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(j.args));
 				j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
-				j.exec = j.exec + (isDef(f.exec) ? f.exec : "");
-				j.help = j.help + (isDef(f.help) ? f.help : "");
+				j.exec = j.exec + "\n" + (isDef(f.exec) ? f.exec : "");
+				j.help = j.help + "\n" + (isDef(f.help) ? f.help : "");
 			} else {
 				logWarn("Didn't found to/then job '" + jobTo[jfi] + "' for job '" + aName + "'");
 			}

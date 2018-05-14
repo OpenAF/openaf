@@ -134,7 +134,7 @@ function ojob_draw() {
 	
 		res = {
 			to  : res.to.concat(j.to),
-			from: (isDef(j.from) ? [ j.from ] : []).concat(res.from)
+			from: res.from.concat(j.from)
 		};
 	
 		res = getPaths(j.from, res);
