@@ -21,7 +21,7 @@ OpenWrap.oJob = function() {
 
 	this.__id = sha256(this.__host + this.__ip);
 	this.__threads = {};
-	this.__ojob = { log: true, logArgs: false, numThreads: undefined, logToConsole: true };
+	this.__ojob = { recordLog: true, logArgs: false, numThreads: undefined, logToConsole: true };
 	this.__expr = processExpr(" ");
 	this.__logLimit = 100;
 
@@ -85,7 +85,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	}
 
 	if (isDef(this.__ojob.channels)) {
-		if (this.__ojob.channels.log) startLog();
+		if (this.__ojob.channels.recordLog) startLog();
 		if (this.__ojob.channels.expose) {
 			if (isDef(this.__ojob.channels.port)) {
 
