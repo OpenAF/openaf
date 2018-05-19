@@ -85,6 +85,16 @@ public class Threads extends ScriptableObject {
 		return "Threads";
 	}
 
+	@JSFunction
+	public Object getThreads() {
+		return this.threads;
+	}
+
+	@JSFunction
+	public Object getExecutorService() {
+		return this.executor;
+	}
+
 	/**
 	 * <odoc>
 	 * <key>Threads.Threads() : Threads</key>

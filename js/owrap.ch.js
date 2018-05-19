@@ -1063,19 +1063,20 @@ OpenWrap.ch.prototype.getVersion = function(aName) {
  * <odoc>
  * <key>ow.ch.waitForJobs(aName, aTimeout) : ow.ch</key>
  * Each channel subscription (using ow.ch.subscribe) will create internal jobs (threads). To wait for 
- * this jobs to finish provide the channel aName and, optionally, aTimeout (defaults to 2.5 seconds). 
+ * this jobs to finish provide the channel aName and, optionally, aTimeout.
  * </odoc>
  */
 OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
-	if (isUnDef(aTimeout)) aTimeout = 2500;
-	//while(this.jobs[aName].length > 0) {
-		for(var i in ow.ch.jobs[aName]) {
-			if (isDef(ow.ch.jobs[aName][i])) {
-				//ow.ch.jobs[aName][i].waitForThreads(aTimeout);
-				$doWait(ow.ch.jobs[aName][i]);
+	aTimeout = _$(aTimeout).isNumber("aTimeout should be a number").default(-1);
+	var shouldContinue = false, tini = now();
+	do {
+		for(let ii in this.jobs[aName]) {
+			if (this.jobs[aName][ii].state == this.jobs[aName][ii].states.NEW) {
+				shouldContinue = true;
+				$doWait(this.jobs[aName][ii], (aTimeout >= 0 ? aTimeout : void 0));
 			}
 		}
-	//}
+	} while(shouldContinue && (now() - tini) < aTimeout);		
 	return this;
 },
 	
@@ -1179,12 +1180,16 @@ OpenWrap.ch.prototype.subscribe = function(aName, aFunction, onlyFromNow, anId) 
 			var uuid = genUUID();
 			if (isUnDef(parent.jobs[aName][anId])) {
 				parent.jobs[aName][anId] = $do(function() {
-					aFunction(aName, "set", aKey, aValue, parent, uuid);
+					try {
+						aFunction(aName, "set", aKey, aValue, parent, uuid);
+					} catch(e) {}
 					return uuid;
 				});
 			} else {
 				parent.jobs[aName][anId].then(function() {
-					aFunction(aName, "set", aKey, aValue, parent, uuid);
+					try {
+						aFunction(aName, "set", aKey, aValue, parent, uuid);
+					} catch(e) {}
 					return uuid;
 				});
 			}			
@@ -1322,20 +1327,24 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 		for(var _i in this.subscribers[aName]) {
 			if (isUnDef(parent.jobs[aName][_i])) {
 				var f = (ii) => {
-					return () => {				
-						parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+					return () => {		
+						try {		
+							parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						} catch(e) {}
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i));
+				parent.jobs[aName][_i] = $do(f(_i), ()=>{});
 			} else {				
 				var f = (ii) => {
 					return () => {
-						parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						try {
+							parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						} catch(e) {}
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i].then(f(_i));
+				parent.jobs[aName][_i].then(f(_i), ()=>{});
 			}
 		}
 	}

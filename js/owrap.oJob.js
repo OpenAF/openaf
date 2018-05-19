@@ -619,13 +619,13 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  * </odoc>
  */
 OpenWrap.oJob.prototype.stop = function() {
-	this.getLogCh().waitForJobs(2000);
+	this.getLogCh().waitForJobs(3000);
 	for(var i in this.__threads) {
 		for(var j in this.__threads[i]) {
 			this.__threads[i][j].stop();
 		}
 	}
-	stopLog();
+	//stopLog();
 };
 
 OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {

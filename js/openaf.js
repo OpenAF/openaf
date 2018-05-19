@@ -731,9 +731,13 @@ function setLog(aMap) {
  * </odoc>
  */
 function startLog(externalLogging) {
-	$ch("__log").create(true);
+	$ch("__log").create(true, "simple");
 	__logStatus = true;
+	global.__logQueue = [];
 	if (isDef(externalLogging) && isFunction(externalLogging)) {
+		addOnOpenAFShutdown(function() {
+			stopLog();
+		});
 		return $ch("__log").subscribe(externalLogging);
 	}
 }
@@ -770,6 +774,15 @@ function dumpLog() {
  */
 function stopLog() {
 	__logStatus = false;
+	/*if (isDef(global.__logQueue) && global.__logQueue > 0) {
+		var it = now();
+		while((now() - it < 3000) && global.__logQueue > 0) {
+			$ch("__log").waitForJobs();
+		}
+		delete global.__logQueue;
+	}*/
+	//sleep(100);
+	$ch("__log").waitForJobs(-1);
 	$ch("__log").destroy();
 }
 
@@ -794,8 +807,13 @@ function log(msg) {
 			$ch("__log").set(k, v);
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
+			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f, ()=>{});
+			__logPromise = __logPromise.then(f, ()=> {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			}).then(() => {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			});
 		} else 
 			f();
 	}
@@ -812,8 +830,13 @@ function log(msg) {
 			return 1;
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
+			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f, ()=>{});
+			__logPromise = __logPromise.then(f, ()=>{
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			}).then(() => {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			});
 		} else 
 			f();
 	}
@@ -852,8 +875,13 @@ function lognl(msg) {
 			$ch("__log").set(k, v);
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
+			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f, ()=>{});
+			__logPromise = __logPromise.then(f, ()=>{
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			}).then(() => {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			});
 		} else 
 			f();
 	}
@@ -870,8 +898,13 @@ function lognl(msg) {
 			return 1;
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
+			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f, ()=>{});
+			__logPromise = __logPromise.then(f, ()=>{
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			}).then(() => {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			});
 		} else 
 			f();	
 		
@@ -910,8 +943,13 @@ function logErr(msg) {
 			$ch("__log").set(k, v);
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
+			if (isDef(global.__logQueue)) global.__logQueue.push(nw);
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f, ()=>{});
+			__logPromise = __logPromise.then(f, ()=>{
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw));
+			}).then(() => {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw));
+			});
 		} else 
 			f();
 	}
@@ -928,8 +966,13 @@ function logErr(msg) {
 			return 1;
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
+			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f, ()=>{});
+			__logPromise = __logPromise.then(f, ()=>{
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			}).then(() => {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			});
 		} else 
 			f();		
 
@@ -957,8 +1000,13 @@ function logWarn(msg) {
 			$ch("__log").set(k, v);
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
+			if (isDef(global.__logQueue)) global.__logQueue.push(nw);
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f, ()=>{});
+			__logPromise = __logPromise.then(f, ()=>{
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw));
+			}).then(() => {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw));
+			});
 		} else 
 			f();
 	}
@@ -975,8 +1023,13 @@ function logWarn(msg) {
 			return 1;
 		};
 		if (isDef(__logFormat) && __logFormat.async) {
+			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
-			__logPromise = __logPromise.then(f, ()=>{});
+			__logPromise = __logPromise.then(f, ()=>{
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			}).then(() => {
+				if (isDef(global.__logQueue)) deleteFromArray(global.__logQueue, global.__logQueue.indexOf(nw + "S"));
+			});
 		} else 
 			f();		
 	}		
