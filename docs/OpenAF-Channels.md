@@ -51,6 +51,7 @@ Currently there are several different implementations built-in (on the included 
 * Cache
 * ElasticSearch
 * Mvs
+* Simple
 * Dummy (for testing)
 
 And some available through oPacks:
@@ -231,9 +232,142 @@ To just restore the values just use:
 > $ch("mychannel").storeRestore("mychannel.channel", ["date", "person"]) 
 ````
 
-Do be aware that there is no locking mechanism preventing access to the file and that current implementation (e.g. memory, database, remote, etc…) contents will always override the filesystem values except, of course, on the initial data restore. So changing the file while a channel is “live” won't change it and on the next set/unset/setall all data on the file will be overwritten. For these reasons it's suitable to be used for small/medium size channels depending on the values size and keeping channel data always preserved. If you are looking for a solution to store large sized channels you can either use getAll or forEach to save them when needed or build a more sophisticated subscribe function (for example: keeping each value as a separate file on a folder structured indexed by keys). 
+Do be aware that there is no locking mechanism preventing access to the file and that current implementation (e.g. memory, database, remote, etc…) contents will always override the filesystem values except, of course, on the initial data restore. So changing the file while a channel is “live” won't change it and on the next set/unset/setall all data on the file will be overwritten. For these reasons it's suitable to be used for small/medium size channels depending on the values size and keeping channel data always preserved. If you are looking for a solution to store large sized channels you can either use getAll or forEach to save them when needed or build a more sophisticated subscribe function (for example: keeping each value as a separate file on a folder structured indexed by keys).
 
-_tbc_
+#### Details specific to each implementation
+
+### DB
+
+*tbc*
+
+### Ignite
+
+The Ignite implementation encapsulates access to an Ignite data grid using functionality from the Ignite plugin. Upon creation the shouldCompress is ignored and the options available are not mandatory:
+
+* *gridName* - The Ignite grid name to access
+* *ignite* - A Ignite object from the Ignite plugin that you previously instatiated.
+
+The name of the channel is actually the name of Ignite data grid cache that will be used. All functionality is available.
+
+### Ops
+
+The ops or operations implementation is a special channel that won't store values but will actually execute a specific function for each key and return the corresponding value (e.g. usefull for exposing functionality). That function will receive as argument the value map. On the creation the shouldCompress is obviously ignored and the options is actually the map of functions as demonstrated on the next example:
+
+````javascript
+$ch("myops").create(1, "ops", {
+    "help": () => { return { "add": "Add an argument a with b" } },
+    "add" : (v) => { return { result: v.a + v.b }; }
+});
+````
+
+The to use it:
+
+````javascript
+> $ch("myops").get("help");
+{
+    "add": "Add an argument a with b"
+}
+> $ch("myops").set("add", { a: 2, b: 3 });
+{
+    "result": 5
+}
+````
+
+Due to the nature of this implementation setAll, pop, shift and unset are not implemented and will just execute returning undefined.
+
+### Cache
+
+The cache implementation lets you define a channel that will use a provided function to retrieve and return the corresponding value given a key. The value will be kept in another OpenAF channel acting as a cache from which the value will be retrieved for a specific TTL (time-to-live) in ms. After the TTL the function will be executed again and the result kept in the other OpenAF channel. This is useful when you know that you will have a lot of gets but it's slow to retrieve each value and a key/value cache mechanism is usefull. 
+
+To create, the shouldCompress option is ignored and the following options can be used:
+
+| Option | Mandatory | Type | Description |
+|--------|-----------|------|-------------|
+| func | Yes | Function | The function that receives a key and returns the corresponding value to be returned and cached for a TTL. |
+| ttl | No | Number | The cache time-to-live in ms (defaults to 5 seconds) |
+| ch | No | String | The name of the secundary OpenAF channel to store the cached values. This channel can already exist (for example if you don't want to cache values in memory). Defaults to the current name suffixed with "::__cache". Note: Upon "destroy" of the cache channel this channel will be also destroyed. |
+
+The set/setAll functions will actually ignore the value provided and call the function with the key provided updating the cache value and ignoring/reseting the current TTL.
+
+### ElasticSearch
+
+The ElasticSearch implementation encapsulates the access to an ElasticSearch server/cluster. Pretty much all OpenAF channel functionality is available and there are some extensions to enable the use of ElasticSearch functionality. On creation, the shouldCompress is ignored but the options map should contain:
+
+| Option | Mandatory | Type | Description |
+|--------|-----------|------|-------------|
+| index | Yes | String/Function | The ES index string or a function that returns the name (see also ow.ch.utils.getElasticIndex) |
+| idKey | No | String | If the ES index uses an id field you can specify it (defaults to '_id') |
+| url | Yes | String | The URL string to access the ES cluster/server using HTTP/HTTPs |
+| user | No | String | If the ES cluster/server requires authentication credentials, you can specify the username. |
+| pass | No | String | If the ES cluster/server requires authentication credentials, you can specify the password (encrypted or not). |
+
+Examples:
+
+````javascript
+> $ch("myvalues").create(1, "elasticsearch", { url: "http://es.local", index: "myvalues" });
+> $ch("values").create(1, "elasticsearch", { url: "http://es.local", index: ow.ch.utils.getElasticIndex("value", ow.ch.utils.getElasticIndex("values", "yyyy.w"))});
+````
+
+The getAll/getKeys functions accept an extra argument to provide an ES query map to restrict the results.
+
+Nevertheless please use the ElasticSearch oPack that encapsulates more functionality not available through the OpenAF channel implementation and enables the easy creation of ElasticSearch channels.
+
+### MVS
+
+MVS or MVStore is the a "persistent, log structured key-value store" which is the actual storage subsystem of H2. It's fast, small and a good alternative to keeping channel data in memory at all althought it can also keep it in-memory. The shouldCompress option specifies if the entire data structure should be compress by MVS or not. Pretty much all channels functionality is available. Additionally you can specify on the options map:
+
+| Option | Mandatory | Type | Description |
+|--------|-----------|------|-------------|
+| file   | No | String | Specifies the file where MVS will store data to. If not defined it stores data in-memory. |
+| compact | No | Boolean | If yes upon channel creation/destruction it will run the MVS compact operation over the file trying to save storage space. |
+| map | No | String/Function | If not defined defaults to the string "default". Each file can contain several "collections" or maps of values. If defined as a function, the function will receive the key in use as an argument and it should return the map name to use (e.g. usefull for sharding) and a default map name when a key is not provided. |
+
+Examples:
+
+````javascript
+> $ch("test").create(1, "mvs"); // Creates an in-memory mvs channel for map 'default'
+> $ch("mymap").create(1, "mvs", { map: "mymap" }); // Creates an in-memory mvs channel for map 'mymap'
+````
+
+````javascript
+// Creates a mvs file 'myfile.db' with a map 'mymap'
+$ch("myfile").create(1, "mvs", { file: "myfile.db", map: "mymap" });
+
+// Creates a mvs file 'myfile.db' with distributing values using the field date from the key to map names like "logs-yyyy.MM.dd"
+var func = (key) => { 
+    key = _$(key).isMap().default({}); 
+    var d = _$(key.date).isDate().default(new Date); 
+    
+    return "logs-" + ow.format.fromDate(d, "yyyy.MM.dd"); 
+};
+$ch("myfile").create(1, "mvs", { file: "myfile.db", map: func });
+````
+
+**Note:** function based map channels should only be used for adding/modifying values. For accessing you should create specific channels for the specific map name. Keep in mind that MVS supports concurrent read and write.
+
+There are utilitary functions for mvs files in ow.ch.utils.mvs.* namely:
+
+* *list(aFile)* - returning an array with all maps contained on a MVS file.
+* *remove(aFile, aMapToRemove)* - deleting any map contained on a MVS file.
+* *rename(aFile, oldMapName, newMapName)* - to rename an existing map contained on a MVS file.
+
+### Simple
+
+The simple implementation instead of using the OpenWrap Big Objects uses plain javascript objects (e.g. arrays and maps). It benefits on add/modify performance but uses more memory in the overall for large or varying size values. All functionality is available and similar behaviour to the default implementation should be expected althought the shouldCompress option is ignored.
+
+To create one just:
+
+````javascript
+> $ch("test").create(1, "simple")
+````
+
+### Dummy
+
+In this implementation all functionality will simple return without executing anything. It's mainly use for testing proposes.
+
+### Mongo (through oPack)
+
+Please check the Mongo oPack documentation (tbc).
 
 ### Exposing channels externally
 
