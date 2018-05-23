@@ -389,7 +389,45 @@ The channel “remoteChannel” can now be used normally. All operations will be
 
 ### Peering channels
 
-_tbc_
+Peering is an advance mode of using remote channels where instead of unidirectional communication between from a source channel to a target channel there is actually bidirectional communication trying to keep both channels up to date.
+
+On side A you simply execute (similar to *expose*):
+
+````javascript
+> $ch("mychannelOnA").peer(8010, "/mychannel", [ "http://the.other.guy:8011/mychannel" ]);
+````
+
+and on the other side B:
+
+````javascript
+> $ch("mychannelOnB").peer(8011, "/mychannel", [ "http://the.original.guy:8010/mychannel" ]);
+````
+
+If you look carefully on will notice the peer is actually contained on an array because you can actually have a list of peers (that should include all for each side). Let's add a side C:
+
+On side A:
+
+````javascript
+> $ch("mychannelOnA").peer(8010, "/mychannel", [ "http://the.other.guy:8011/mychannel", "http://the.extra.guy:8012/mychannel" ]);
+````
+
+on side B:
+
+````javascript
+> $ch("mychannelOnB").peer(8011, "/mychannel", [ "http://the.original.guy:8010/mychannel", "http://the.extra.guy:8012/mychannel" ]);
+````
+
+and on side C:
+
+````javascript
+> $ch("mychannelOnC").peer(8012, "/mychannel", [ "http://the.original.guy:8010/mychannel", "http://the.other.guy:8011/mychannel" ]);
+````
+
+The peering functionality is a little similar to the Ignite type with the following differences:
+
+* Subscribers will get triggered in each side upon data change
+* Each side should mirrors all data
+* Static list of peers
 
 ### Channels REST API
 
