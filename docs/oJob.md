@@ -277,7 +277,8 @@ This is where you set specific settings on how the ojob should run. Here is a li
 | logArgs | _boolean_ | _If true the arguments provided to each job execution will be logged (defaults to false)._ |
 | logToConsole | _boolean_ | _If false ojob logging won't be output to the console (defaults to true)._ |
 | logLimit | _number_ | _The number of internal execution logs per job that should be kept (default to 100)._ |
-| unique | _boolean_ | _Map to ensure that only one instance of ojob runs. The map can define pidFile (defaults to ojob.pid) and killPrevious (defaults to false)._ |
+| logJobs | _boolean_ | _If false no job start, end or error will be logged. (default to true)._ |
+| unique | _map_ | _Map to ensure that only one instance of ojob runs. The map can define pidFile (defaults to ojob.pid) and killPrevious (defaults to false)._ |
 | sequential | _boolean_ | _If true each todo entry will be executed only when the previous has ended it's execution. Otherwise it will try to execute in parallel._ |
 | daemon | _boolean_ | _If true the ojob will behave like a daemon. It will only exit if the process is killed or if executed with the arguments stop, forcestop or restart._ | 
 | numThreads | _number_ | _Force the maximum number of threads to use. If not defined it will try to automatically assess an ideal number of threads to use._ |
