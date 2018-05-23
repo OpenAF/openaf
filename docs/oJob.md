@@ -62,8 +62,8 @@ Each job definition has the following possible entries:
 | deps  | _array_ | _no_ | _An array of job dependencies where you refer other jobs by their unique name or a map with the following entries: name, onSuccess, onFail. The onSuccess and onFail can be used to define OpenAF code to execute on the success or failure of the job dependency executions. If the code returns true it will be consider as a satisfied dependency allowing the current job definition to execute, if false it will be consider that the current job definition can't be executed._ |
 | type  | _string_ | _no_ | _The oJob type. By default they are of type "single". But you can specify other types of jobs like shutdown, periodic and "jobs". See more on the job types sub-chapter._ |
 | typeArgs | _map_ | _no_ | _A map of arguments to be provided for each job type. See more on the job types sub-chapter._ |
-| from  | _string_ | _no_ | _The name of a job whose execution will be prefixed (like a document header) with the current job execution (e.g. if you want all job executions to execute another job initially)._ |
-| to    | _string_ | _no_ | _The name of a job whose execution will be suffixed (like a document footer) with the current job execution (e.g. if you want all job executions to execute another job when they end)._ | 
+| from  | _string/array_ | _no_ | _The name of a job (or ordered list) whose execution will be prefixed (like a document header) with the current job execution (e.g. if you want all job executions to execute another job initially)._ |
+| to    | _string/array_ | _no_ | _The name of a job (or ordered list) whose execution will be suffixed (like a document footer) with the current job execution (e.g. if you want all job executions to execute another job when they end)._ | 
 | help  | _string_ | _no_ | _A help text to be presented whenever you execute "ojob -jobhelp 'My job'"_ |
 
 ## Job types
@@ -271,7 +271,9 @@ This is where you set specific settings on how the ojob should run. Here is a li
 
 | Entry | Type | Description |
 |-------|------|-------------|
-| log | _boolean_ | _Determines if it should use startLog to log into the __log channel._ |
+| logToFile | _map_ | _Map with the same options as ow.ch.utils.setLogToFile_ |
+| log | _map_ | _Map with the same options as setLog_ |
+| recordLog | _boolean_ | _Determines if it should use startLog to log into the __log channel._ |
 | logArgs | _boolean_ | _If true the arguments provided to each job execution will be logged (defaults to false)._ |
 | logToConsole | _boolean_ | _If false ojob logging won't be output to the console (defaults to true)._ |
 | logLimit | _number_ | _The number of internal execution logs per job that should be kept (default to 100)._ |
