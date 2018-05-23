@@ -76,7 +76,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
-	if (isDef(ojob.logLimit)) this.__logLimit = ojob.__logLimit;
+	if (isDef(ojob.logLimit)) this.__logLimit = ojob.logLimit;
+	ojob.logJobs = _$(ojob.logJobs).default(true);
 	if (isDef(ojob.logToFile) && isMap(ojob.logToFile)) {
 		ow.ch.utils.setLogToFile(ojob.logToFile);
 	}
@@ -581,19 +582,19 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "STARTED" + sep + __d;
 						if (this.__ojob.logToConsole) { printnl(_b(__m) + "\n" + _g(aa) + _c(s)); }
-						if (isDef(getChLog())) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
+						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
 					}
 					if (existing.start && existing.error) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "Ended in ERROR" + sep + __d;
 						if (this.__ojob.logToConsole) { printErr("\n" + _e(ss) + _g(aa) + _b(__m) + "\n" + stringify(existing) + "\n" + _e(ss)); }
-						if (isDef(getChLog())) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m + "\n" + stringify(existing) });
+						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m + "\n" + stringify(existing) });
 					}
 					if (existing.start && existing.success) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "Ended with SUCCESS" + sep + __d;
 						if (this.__ojob.logToConsole) { printnl("\n" + _c(ss)); print(_g(aa) +_b(__m) + "\n"); }
-						if (isDef(getChLog())) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
+						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
 					}
 				}
 			} catch(e) { 
@@ -604,7 +605,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		};
 
 		// Housekeeping
-		if (existing.log.length > this.__logLimit) existing.log.shift();
+		while (existing.log.length > this.__logLimit) existing.log.shift();
 
 		this.getLogCh().set({ "ojobId": this.__id + aId, "name": aJobName }, existing);
 	}
