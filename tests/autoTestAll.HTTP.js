@@ -39,14 +39,15 @@
     exports.testHTTPWSClient = function() {
         plugin("HTTP");
         var session; var output = "";
-        var client = (new HTTP()).wsConnect("ws://echo.websocket.org",
+        var res = (new HTTP()).wsClient("ws://echo.websocket.org",
             function(aSession) { session = aSession; },
             function(aType, aPayload, aOffset, aLength) { if (aType == "text") output += aPayload; },
             function(aCause) { },
             function(aStatusCode, aReason) { });
         session.getRemote().sendString("Hello World!");
-        while(output.length < 1) { sleep(100); };
+        while(output.length < 1) { res.fut.get(); sleep(100); };
         session.stop();
+        res.client.stop();
     
         ow.test.assert(output, "Hello World!", "Problem with testing websockets against echo.websocket.org");    
     };

@@ -368,6 +368,39 @@ public class HTTP extends ScriptableObject {
 	}
 
 	/**
+	 * <odoc>
+	 * <key>HTTP.wsClient(anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned) : WebSocketsReply</key>
+	 * Tries to establish a websocket connection (ws or wss) and returns a jetty WebSocketClient java object.
+	 * As callbacks you should defined onConnect, onMsg, onError and onClose. The onConnect callback will 
+	 * provide, as argument, the created session that you should use to send data; the onMsg callback will
+	 * provide, as arguments, aType (either "text" or "bytes"), aPayload (string or array of bytes) and an offset
+	 * and length (in case type is "bytes"); the onError callback will provide the cause; the onClose callback
+	 * will provide aStatusCode and aReason. You can optionally provide aTimeout (number) and indicate if self signed SSL
+	 * certificates should be accepted (supportSelfSigned = true). Example:\
+	 * \
+	 * plugin("HTTP");\
+	 * var session; var output = "";\
+	 * var res = (new HTTP()).wsClient("ws://echo.websocket.org",\
+	 *   function(aSession) { log("Connected"); session = aSession; },\
+	 *   function(aType, aPayload, aOffset, aLength) { if (aType == "text") output += aPayload; },\
+	 *   function(aCause) { logErr(aCause); },\
+	 *   function(aStatusCode, aReason) { log("Closed (" + aReason + ")"); }\
+	 * );\
+	 * session.getRemote().sendString("Hello World!");\
+	 * while(output.length &lt; 1) { sleep(100); };\
+	 * res.client.stop();\
+	 * print(output);\
+	 * \
+	 * NOTE: this functionality is only available if used with JVM >= 1.8\
+	 * \
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object wsClient(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+		return WebSockets.wsClient(authenticator, l, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
+	}
+
+	/**
 	 * 
 	 * @param aURL
 	 * @param method

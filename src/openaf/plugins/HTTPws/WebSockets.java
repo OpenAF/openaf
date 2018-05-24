@@ -15,11 +15,22 @@ import org.mozilla.javascript.Undefined;
 
 /**
  * HTTP plugin websockets extension
- * @author Nuno Aguiar <nmaguiar@gmail.com>
+ * @author Nuno Aguiar
  */
 
 public class WebSockets {
+    static public class WebSocketsReply {
+        public org.eclipse.jetty.websocket.client.WebSocketClient client;
+        public Future<org.eclipse.jetty.websocket.api.Session> fut;
+    }
+
     static public Object wsConnect(Authenticator authenticator, String u, String p, String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
+            NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+        Object res = wsClient(authenticator, u, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
+        return ((WebSocketsReply) res).fut;
+    }
+
+    static public Object wsClient(Authenticator authenticator, String u, String p, String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
             NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 
         class EventSocket extends org.eclipse.jetty.websocket.api.WebSocketAdapter {
@@ -161,7 +172,11 @@ public class WebSockets {
             else
                 session = fut.get();
 
-            return fut;
+            WebSocketsReply res = new WebSocketsReply();
+            res.fut = fut;
+            res.client = client;
+
+            return res;
         } catch (Exception e) {
             client.stop();
             throw e;
