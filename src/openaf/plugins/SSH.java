@@ -121,32 +121,35 @@ public class SSH extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.exec(aCommand, aStdIn, shouldOutputAlso, pty) : String</key>
+	 * <key>SSH.exec(aCommand, aStdIn, shouldOutputAlso, pty, outputMap) : Object</key>
 	 * Executes a command over the SSH connection. You can optionally provide the input and indicate that it shouldOutputAlso 
 	 * (boolean) to stdout and if you want to allocate a pty (boolean). The stderr will be stored in __stderr and also output 
-	 * if shouldOutputAlso = true.
+	 * if shouldOutputAlso = true. If outputMap instead of the stdout string a map with stdout, stderr and exitcode will be returned.
 	 * </odoc>
 	 */
 	@JSFunction
-	public String exec(String command, String input, boolean shouldOutputAlso, boolean pty) throws JSchException, IOException {
-		return executeSSH(command, input, shouldOutputAlso, pty);
+	public Object exec(String command, String input, boolean shouldOutputAlso, boolean pty, boolean returnMap) throws JSchException, IOException {
+		return executeSSH(command, input, shouldOutputAlso, pty, returnMap);
 	}
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.execSudo(aCommandWithSudo, aUser, aStdIn, shouldOutputAlso, pty) : String</key>
+	 * <key>SSH.execSudo(aCommandWithSudo, aUser, aStdIn, shouldOutputAlso, pty, outputMap) : Object</key>
 	 * Executes a command over the SSH connection using sudo to aUser. You can optionally provide the input and indicate that
 	 * it shouldOutputAlso (boolean) to stdout and if you want to allocate a pty (boolean). The stderr will be stored in 
-	 * __stderr and also output if shouldOutputAlso = true.
+	 * __stderr and also output if shouldOutputAlso = true. If outputMap instead of the stdout string a map with stdout, stderr and exitcode will be returned.
 	 * </odoc>
 	 */
 	@JSFunction
-	public String execSudo(String command, Object user, String input, boolean shouldOutputAlso, boolean pty) throws JSchException, IOException {
+	public Object execSudo(String command, Object user, String input, boolean shouldOutputAlso, boolean pty, boolean returnMap) throws JSchException, IOException {
 		String u = "";
 		if (user != null && user instanceof Undefined) {
 			u = AFCmdBase.afc.dIP((String) user);
 		}
-		return executeSSH("echo " + AFCmdBase.afc.dIP(password) + " | sudo -u " + user + " -S " + command, input, shouldOutputAlso, pty);
+		if (this.identity == null)
+			return executeSSH("echo " + AFCmdBase.afc.dIP(password) + " | sudo -i -u " + user + " -S /bin/sh -c '" + command + "'", input, shouldOutputAlso, pty, returnMap);
+		else
+			return executeSSH("sudo -i -u " + user + " -S /bin/sh -c '" + command + "'", input, shouldOutputAlso, pty, returnMap);
 	}
 	
 	public static class SUserInfo implements UserInfo, UIKeyboardInteractive {
@@ -634,12 +637,13 @@ public class SSH extends ScriptableObject {
 		return no;
 	}
 	
-	protected String executeSSH(String command, String input, boolean outputStdout, boolean pty) throws JSchException, IOException {
+	protected Object executeSSH(String command, String input, boolean outputStdout, boolean pty, boolean returnMap) throws JSchException, IOException {
 		Channel channel = null;
 		String output = null;
 		String outputErr = "";
-		
-                channel = session.openChannel("exec");
+		Object res = null;
+
+        channel = session.openChannel("exec");
 
 		if (channel != null) {
 			ChannelExec ce = (ChannelExec) channel;
@@ -678,16 +682,27 @@ public class SSH extends ScriptableObject {
 				outputErr = sb.toString();
 			}
 			
-			Context cx = (Context) AFCmdBase.jse.enterContext();
-			cx.evaluateString((Scriptable) AFCmdBase.jse.getGlobalscope(), "__exitcode = " + ce.getExitStatus() + ";", "af", 1, null);
-			ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__stderr", outputErr);
-			AFCmdBase.jse.exitContext();
+			if (returnMap) {
+				openaf.JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
+				no.put("stdout", output);
+				no.put("stderr", outputErr);
+				no.put("exitcode", ce.getExitStatus());
+				
+				res = no.getMap();
+			} else {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				cx.evaluateString((Scriptable) AFCmdBase.jse.getGlobalscope(), "__exitcode = " + ce.getExitStatus() + ";", "af", 1, null);
+				ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__stderr", outputErr);
+				AFCmdBase.jse.exitContext();
+
+				res = output;
+			}
 
 			br.close();
 			//channel.disconnect();
 		}
 		
-		return output;
+		return res;
 	}
 
 	static int checkAck(InputStream in) throws IOException {
