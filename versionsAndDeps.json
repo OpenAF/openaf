@@ -187,6 +187,15 @@
 			"deps": []
 		},
 		{
+			"description": "Apache Commons Lang",
+			"path": ["lib/commons-lang3-3.7.jar"],
+			"version": "3.7",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+			"deps": []
+		},		
+		{
 			"description": "Apache Commons Email",
 			"path": ["lib/commons-email-1.5.jar"],
 			"version": "1.5",
