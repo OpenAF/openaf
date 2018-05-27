@@ -29,7 +29,7 @@
 	<classpathentry kind="lib" path="lib/jline-2.14.5.jar"/>
 	<classpathentry kind="lib" path="lib/jna-4.1.0.jar"/>
 	<classpathentry kind="lib" path="lib/jna-platform-4.1.0.jar"/>
-	<classpathentry kind="lib" path="lib/jodd-3.6.6.jar"/>
+	<classpathentry kind="lib" path="lib/jodd-3.9.1.jar"/>
 	<classpathentry kind="lib" path="lib/js.jar"/>
 	<classpathentry kind="lib" path="lib/jsch-0.1.51.jar"/>
 	<classpathentry kind="lib" path="lib/jsch.agentproxy.connector-factory-0.0.7.jar"/>

@@ -40,8 +40,10 @@ import com.sun.tools.attach.VirtualMachineDescriptor;
 
 import openaf.AFBase;
 import openaf.AFCmdBase;
+import openaf.JSEngine;
 import openaf.SimpleLog;
 import openaf.SimpleLog.logtype;
+import openaf.JSEngine.JSList;
 
 /**
  * OpenAF plugin to access remote beans through JMX
@@ -257,7 +259,7 @@ public class JMX extends ScriptableObject {
 		 * @throws ReflectionException
 		 * @throws IOException
 		 */
-		public Object exec(String operationName, String[] params, String[] signature) throws InstanceNotFoundException, MBeanException, ReflectionException, IOException {
+		public Object exec(String operationName, Object[] params, String[] signature) throws InstanceNotFoundException, MBeanException, ReflectionException, IOException {
 			return mbeanCon.invoke(obj, operationName, params, signature);
 		}
 	}
@@ -290,19 +292,19 @@ public class JMX extends ScriptableObject {
 		ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
 	
 		List<VirtualMachineDescriptor> vms = VirtualMachine.list();
-		HashMap<String, Object> pmap = new HashMap<String, Object>();
-		ArrayList<HashMap<String, Object>> list = new ArrayList<HashMap<String, Object>>();
+		JSEngine.JSList list = AFCmdBase.jse.getNewList(AFCmdBase.jse.getGlobalscope());
 		
 		for(VirtualMachineDescriptor vm : vms) {
-			HashMap<String, Object> p = new HashMap<String, Object>();
+			JSEngine.JSMap p = AFCmdBase.jse.getNewMap(AFCmdBase.jse.getGlobalscope());
 			p.put("id", vm.id());
 			p.put("name", vm.displayName());
-			list.add(p);
+			list.add(p.getMap()); 
 		}
-		pmap.put("Locals", list);
+		JSEngine.JSMap pmap = AFCmdBase.jse.getNewMap(AFCmdBase.jse.getGlobalscope());
+		pmap.put("Locals", list.getList());
 		
 		//return AF.jsonParse(PMStringConvert.toJSON4NativeProcessing(pmap));
-		return pmap;
+		return pmap.getMap();
 	}
 	/**
 	 * <odoc>
@@ -344,6 +346,6 @@ public class JMX extends ScriptableObject {
 	    local.put("Agent", new HashMap<String, Object>(map));
 
 		//return AF.jsonParse(PMStringConvert.toJSON4NativeProcessing(local));
-	    return local;
+	    return AFBase.fromJavaMap(local);
 	}
 }
