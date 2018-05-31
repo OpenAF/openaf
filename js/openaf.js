@@ -4463,6 +4463,12 @@ var $doWait = function(aPromise, aWaitTimeout) {
 	return aPromise;
 }
 
+var __OpenAFUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)";
+function __setUserAgent(aNewAgent) {
+	__OpenAFUserAgent = _$(aNewAgent).isString().default(__OpenAFUserAgent);
+	java.lang.System.setProperty("http.agent", __OpenAFUserAgent);
+}
+
 // Startup
 // -------
 
@@ -4483,6 +4489,11 @@ var $doWait = function(aPromise, aWaitTimeout) {
 		}
 	} catch (e) {}
 };
+
+// Set user agent
+{
+	__setUserAgent();
+}
 
 // ---------------
 // Profile support

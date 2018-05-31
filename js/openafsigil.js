@@ -85,7 +85,19 @@ const _$ = function(aValue, aPrefixMessage) {
     if ($$(aValue).isDef()) defined = true; else defined = false;
 
     const __r = {
-		// Defaults
+        // Defaults
+        /**
+         * <odoc>
+         * <key>_$(aObject)</key>
+         * Shortcut to facilitate argument pre-validation and promote defensive programming.\
+         * \
+         * .default(aNewObject) : aObject\
+         * Checks if aObject is defined and returns aObject. If it's not defined it will return aNewObject (the default value).\
+         * \
+         * $_(aMessage) : aObject\
+         * Throws an exception with aMessage if aObject is not defined otherwise returns aObject.
+         * </odoc>
+         */
         default : (aVal) => {
             if (!defined) return aVal; else return aValue;
         },
