@@ -23,9 +23,15 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testBasicAuth;
 
+   - name: HTTP::HTTP changing user agent
+     from: HTTP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testChangingUserAgent
+
 todo:
    # HTTP tests
    # ----------
    - HTTP::HTTP plugin basic functionality
    - HTTP::HTTP plugin web socket client
    - HTTP::HTTP plugin test basic auth
+   - HTTP::HTTP changing user agent

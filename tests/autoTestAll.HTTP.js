@@ -64,5 +64,30 @@
         ow.test.assert(res1.authenticated, true, "Problem with basic auth.");
         ow.test.assert(res2.authenticated, true, "Problem with a second basic auth.");
         ow.test.assert(res3.authenticated, true, "Problem with default basic auth.");
-    }
+    };
+
+    exports.testChangingUserAgent = function() {
+        ow.loadObj();
+        plugin("HTTP");
+
+        var res1= ow.obj.rest.jsonGet("https://httpbin.org/headers");
+        ow.test.assert(res1.headers["User-Agent"], __OpenAFUserAgent, "User agent using ow.obj.http is incorrect.");
+        
+        var h = new HTTP();
+        var res2 = jsonParse(h.get("https://httpbin.org/headers").response);
+        ow.test.assert(res2.headers["User-Agent"].startsWith(__OpenAFUserAgent), true, "User agent using HTTP plugin is incorrect.");
+
+        // Changing user agent
+        var old = __OpenAFUserAgent;
+        __setUserAgent("OpenAF");
+
+        var res3= ow.obj.rest.jsonGet("https://httpbin.org/headers");
+        ow.test.assert(res3.headers["User-Agent"], __OpenAFUserAgent, "User agent using ow.obj.http, after change, is incorrect.");
+
+        var h2 = new HTTP();
+        var res4 = jsonParse(h2.get("https://httpbin.org/headers", "", { "User-Agent": __OpenAFUserAgent }).response);
+        ow.test.assert(res4.headers["User-Agent"], __OpenAFUserAgent, "User agent using HTTP plugin, after change, is incorrect.");
+
+        __setUserAgent(old);
+    };
 })();

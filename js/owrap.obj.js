@@ -1426,6 +1426,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		r.setConfig(rc.build());
 	}
 
+	r.addHeader("User-Agent", __OpenAFUserAgent);
 	if (this.__forceBasic && isDef(this.__l)) {
 		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
 	}
