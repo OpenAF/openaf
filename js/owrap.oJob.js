@@ -669,7 +669,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	var parent = this;
 	
 	if (this.__ojob != {}) {
-	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 2000;
+	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 100;
 
 	    //if (isUnDef(this.__ojob.unique)) this.__ojob.unique = {};
 	    if (isDef(this.__ojob.unique)) {
@@ -795,7 +795,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	if (!(this.__ojob.sequential)) t.start();
 
 	if (this.__ojob != {} && this.__ojob.daemon == true && this.__ojob.sequential == true)
-		ow.loadServer().daemon(this.__ojob.timeInterval);
+		ow.loadServer().daemon();
 
 	if (!(this.__ojob.sequential)) {
 		try {
