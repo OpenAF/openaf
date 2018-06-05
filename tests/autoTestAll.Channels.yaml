@@ -51,75 +51,37 @@ jobs:
 
    # Big
    # ---
-   - name: Channels::Creating a channel (big)
-     to  : Channels::Creating a channel
+   - name: Channels::Test channel (big)
+     to  :
+       - Channels::Creating a channel
+       - Channels::Setting data into a channel
+       - Channels::Destroy a channel 
+       - Channels::Test housekeeping
      args:
        chType: big
-   - name: Channels::Setting data into a channel (big)
-     to  : Channels::Setting data into a channel
-     deps: 
-       - Channels::Creating a channel (big)
-     args:
-       chType: big
-   - name: Channels::Destroy a channel (big)
-     to  : Channels::Destroy a channel 
-     deps: 
-       - Channels::Setting data into a channel (big)
-       - Channels::Creating a channel (big)
-     args:
-       chType: big   
-   - name: Channels::Test housekeeping (big)
-     to  : Channels::Test housekeeping
-     args:
-       chType: big 
 
    # Simple
    # ------
-   - name: Channels::Creating a channel (simple)
-     to  : Channels::Creating a channel
+   - name: Channels::Test channel (simple)
+     to  :
+       - Channels::Creating a channel
+       - Channels::Setting data into a channel
+       - Channels::Destroy a channel 
+       - Channels::Test housekeeping
      args:
        chType: simple
-   - name: Channels::Setting data into a channel (simple)
-     to  : Channels::Setting data into a channel
-     deps: 
-       - Channels::Creating a channel (simple)
-     args:
-       chType: simple
-   - name: Channels::Destroy a channel (simple)
-     to  : Channels::Destroy a channel 
-     deps: 
-       - Channels::Setting data into a channel (simple)
-       - Channels::Creating a channel (simple)
-     args:
-       chType: simple   
-   - name: Channels::Test housekeeping (simple)
-     to  : Channels::Test housekeeping
-     args:
-       chType: simple 
 
    # Mvs
    # ---
-   - name: Channels::Creating a channel (mvs)
-     to  : Channels::Creating a channel
+   - name: Channels::Test channel (mvs)
+     to  :
+       - Channels::Creating a channel
+       - Channels::Setting data into a channel
+       - Channels::Destroy a channel 
+       - Channels::Test housekeeping
      args:
        chType: mvs
-   - name: Channels::Setting data into a channel (mvs)
-     to  : Channels::Setting data into a channel
-     deps: 
-       - Channels::Creating a channel (mvs)
-     args:
-       chType: mvs
-   - name: Channels::Destroy a channel (mvs)
-     to  : Channels::Destroy a channel 
-     deps: 
-       - Channels::Setting data into a channel (mvs)
-       - Channels::Creating a channel (mvs)
-     args:
-       chType: mvs   
-   - name: Channels::Test housekeeping (mvs)
-     to  : Channels::Test housekeeping
-     args:
-       chType: mvs        
+      
 
    - name: Channels::Test MVS Utils
      from: Channels::Init
@@ -129,7 +91,6 @@ jobs:
 todo:
    # Channels tests
    # --------------
-   
    - Channels::Test Elastic Index
    - Channels::Remote channel access auditing
    - Channels::Subscribers test
@@ -137,22 +98,13 @@ todo:
    - Channels::Keep history util
    
    # Big
-   - Channels::Creating a channel (big)
-   - Channels::Setting data into a channel (big)
-   - Channels::Destroy a channel (big)
-   - Channels::Test housekeeping (big) 
+   - Channels::Test channel (big)
 
    # Simple
-   - Channels::Creating a channel (simple)
-   - Channels::Setting data into a channel (simple)
-   - Channels::Destroy a channel (simple)
-   - Channels::Test housekeeping (simple) 
+   - Channels::Test channel (simple)
 
    # Mvs
-   - Channels::Creating a channel (mvs)
-   - Channels::Setting data into a channel (mvs)
-   - Channels::Destroy a channel (mvs)
-   - Channels::Test housekeeping (mvs)    
+   - Channels::Test channel (mvs)
 
    # Ignite
    #- name: Channels::Creating a channel

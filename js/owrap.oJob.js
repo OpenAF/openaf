@@ -23,6 +23,7 @@ OpenWrap.oJob = function() {
 	this.__threads = {};
 	this.__ojob = { recordLog: true, logArgs: false, numThreads: undefined, logToConsole: true };
 	this.__expr = processExpr(" ");
+	if (isDef(this.__expr[""])) delete this.__expr[""];
 	this.__logLimit = 100;
 
 	plugin("Threads");
@@ -629,27 +630,40 @@ OpenWrap.oJob.prototype.stop = function() {
 	//stopLog();
 };
 
+OpenWrap.oJob.prototype.__mergeArgs = function(a, b) {
+	var arep = false, brep = false, r = void 0;
+	if (isObject(a) && isDef(a["__oJobRepeat"])) arep = true;
+	if (isObject(b) && isDef(b["__oJobRepeat"])) brep = true;
+
+	if (arep && !brep)  { a["__oJobRepeat"] = merge(a["__oJobRepeat"], b); r = a; }
+	if (!arep && brep)  { b["__oJobRepeat"] = merge(a, b["__oJobRepeat"]); r = b; }
+	if (arep && brep)   { loadLodash(); a["__oJobRepeat"] = _.flatten(merge(a["__oJobRepeat"], b["__oJobRepeat"])); r = a; }
+	if (!arep && !brep) { r = merge(a, b); }
+
+	return r;
+};
+
 OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 	var argss = {};
 	if (isDef(aArgsA)) {
 		if (isArray(aArgsA)) {
-			argss = merge(argss, { __oJobRepeat: aArgsA });	
+			argss = this.__mergeArgs(argss, { __oJobRepeat: aArgsA });	
 		} else {
 			if (isObject(aArgsA)) {
 				if (execStr && isDef(aArgsA.__oJobExec)) 
-					argss = merge(argss, this.__processArgs(eval(aArgsA.__oJobExec)));
+					argss = this.__mergeArgs(argss, this.__processArgs(eval(aArgsA.__oJobExec)));
 				else
-					argss = merge(argss, aArgsA);
+					argss = this.__mergeArgs(argss, aArgsA);
 			} else {
 				if (isString(aArgsA)) {
-					argss = merge(argss, { __oJobExec: aArgsA });
+					argss = this.__mergeArgs(argss, { __oJobExec: aArgsA });
 				}
 			}
 		}
 	}
 	
 	if (isDef(aArgsB)) {
-		argss = merge(argss, this.__processArgs(aArgsB));
+		argss = this.__mergeArgs(argss, this.__processArgs(aArgsB));
 	}
 	
 	argss.__id = aId;
@@ -667,7 +681,7 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, this.__expr, aId) : this.__expr;
 	var parent = this;
-	
+
 	if (this.__ojob != {}) {
 	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 100;
 
@@ -884,15 +898,15 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 	if (canContinue) {
 		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, undefined, aId, true) : {};
 		
-		args.objId = this.getID() + altId;
-		args = merge(args, aJob.args);
+		args.objId = this.getID() + altId;	
+		args = this.__mergeArgs(args, aJob.args);
 
 		switch(aJob.type) {
 		case "single":
 			try {
 				var uuid = this.__addLog("start", aJob.name, undefined, args, undefined, aId);
-				args.execid = uuid;
-				args = merge(args, aJob.args);
+				args.execid = uuid;			
+				args = this.__mergeArgs(args, aJob.args);
 				
 				_run(aJob.exec, args, aJob, altId);
 				this.__addLog("success", aJob.name, uuid, args, undefined, aId);
@@ -908,7 +922,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
 					if (isDef(args.__oJobRepeat)) {
 						args.execid = uuid;
-						args = merge(args, aJob.args);
+						args = this.__mergeArgs(args, aJob.args);
 
 						var errors = [];
 						parallel4Array(args.__oJobRepeat, function(aV) {
@@ -940,7 +954,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				try {
 					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
 					args.execid = uuid;
-					args = merge(args, aJob.args);
+					args = this.__mergeArgs(args, aJob.args);
 
 					_run(aJob.exec, args, aJob, altId);
 					parent.__addLog("success", aJob.name, uuid, undefined, aId);
@@ -955,7 +969,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 					uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
 					args.execid = uuid;
 					try {
-						_run(aJob.exec, merge(args, { ch: aCh, op: aOp, k: aK, v: aV }), aJob, altId);
+						_run(aJob.exec, this.__mergeArgs(args, { ch: aCh, op: aOp, k: aK, v: aV }), aJob, altId);
 						parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
 					} catch(e) {
 						parent.__addLog("error", aJob.name, uuid, args, e, aId);
@@ -1075,7 +1089,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		"from": jobFrom,
 		"to"  : jobTo
 	};	
-	
+
 	if (isDef(jobTo)) {
 		if (isString(jobTo)) jobTo = [ jobTo ];
 		_$(jobTo).isArray();
@@ -1094,7 +1108,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 			}
 		}
 	}
-	
+
 	aJobsCh.set({
 		"name": aName
 	}, j);

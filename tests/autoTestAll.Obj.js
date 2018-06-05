@@ -51,7 +51,7 @@
         } catch(e) {
             res400 = ow.obj.rest.exceptionParse(e);
         }
-        ow.test.assert(res400.response, "400 Bad Request", "Problem with obtaining and parsing the HTTP 400 code");
+        ow.test.assert(res400.responseCode, 400, "Problem with obtaining and parsing the HTTP 400 code");
 
         var res401;
         try {
@@ -59,7 +59,7 @@
         } catch(e) {
             res401 = ow.obj.rest.exceptionParse(e);
         }
-        ow.test.assert(res401.response, "401 Unauthorized", "Problem with obtaining and parsing the HTTP 401 code");
+        ow.test.assert(res401.responseCode, 401, "Problem with obtaining and parsing the HTTP 401 code");
 
         var res500;
         try {
@@ -67,7 +67,7 @@
         } catch(e) {
             res500 = ow.obj.rest.exceptionParse(e);
         }
-        ow.test.assert(res500.response, "500 Internal Server Error", "Problem with obtaining and parsing the HTTP 500 code");
+        ow.test.assert(res500.responseCode, 500, "Problem with obtaining and parsing the HTTP 500 code");
     };
 
     exports.testGetPath = function() {
