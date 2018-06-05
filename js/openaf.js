@@ -3763,12 +3763,23 @@ function oJobRun(aJson, args, aId) {
  * <odoc>
  * <key>oJobRunJob(aJob, args, aId)</key>
  * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
- * Optionally you can provide aId to segment this specific job.
+ * Optionally you can provide aId to segment this specific job. If aJob is a string it will try to retrieve the job
+ * from the jobs channel.
  * </odoc>
  */
 function oJobRunJob(aJob, args, aId) {
 	ow.loadOJob();
-	ow.oJob.runJob(aJob, args, aId);
+	if (isString(aJob)) {
+		if (isUnDef(aId)) aId = genUUID();
+		var job = ow.oJob.getJobsCh().get({ name: aJob });
+		if (isDef(job)) {
+			ow.oJob.runJob(job, args, aId);
+		} else {
+			throw "Job '" + aJob + "' not found.";
+		}
+	} else {
+		ow.oJob.runJob(aJob, args, aId);
+	}
 }
 
 /**
