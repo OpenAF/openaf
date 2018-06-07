@@ -3784,6 +3784,26 @@ function oJobRunJob(aJob, args, aId) {
 
 /**
  * <odoc>
+ * <key>getEnvVar(anEnvironmentVariable) : String</key>
+ * Returns the current value of the operating system anEnvironmentVariable.
+ * </odoc>
+ */
+function getEnv(anEnvironmentVariable) {
+	return java.lang.System.getenv().get(anEnvironmentVariable); 
+}
+
+/**
+ * <odoc>
+ * <key>getEnvVars() : Map</key>
+ * Returns a map of key and values with the operating system environment variables.
+ * </odoc>
+ */
+function getEnvs() {
+	return af.fromJavaMap(java.lang.System.getenv());
+}
+
+/**
+ * <odoc>
  * <key>loadJSYAML()</key>
  * Loads the JS-YAML library.
  * </odoc>

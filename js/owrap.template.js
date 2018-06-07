@@ -49,6 +49,30 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
 
 /**
  * <odoc>
+ * <key>ow.template.addOpenAFHelpers()</key>
+ * Adds custom helpers:\
+ * \
+ *   - debug           -- calls sprint for the parameter\
+ *   - stringify       -- stringify the parameter\
+ *   - stringifyInLine -- stringify in the same line the parameter\
+ *   - toYAML          -- returns the YAML version of the parameter\
+ *   - env             -- returns the current environment variable identified by the parameter\
+ *   - escape          -- returns an escaped version of the parameter\
+ * \
+ * </odoc>
+ */
+OpenWrap.template.prototype.addOpenAFHelpers = function() {
+	ow.loadFormat();
+	ow.template.addHelper("debug", (s) => { sprint(s); });
+	ow.template.addHelper("stringify", (s) => { return stringify(s); });
+	ow.template.addHelper("stringifyInLine", (s) => { return stringify(s, void 0, ""); });
+	ow.template.addHelper("toYAML", (s) => { return af.toYAML(s); });
+	ow.template.addHelper("env", (s) => { return String(java.lang.System.getenv().get(s)); });
+	ow.template.addHelper("escape", (s) => { return s.replace(/['"]/g, "\\$1"); });	
+};
+
+/**
+ * <odoc>
  * <key>ow.template.addFormatHelpers()</key>
  * Adds all functions of ow.format as helpers with the prefix owFormat_.
  * </odoc>
