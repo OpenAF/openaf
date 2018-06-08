@@ -26,9 +26,7 @@ public class OAFEngineFactory implements ScriptEngineFactory {
     }
 
     public ScriptEngine getScriptEngine() {
-        OAFEngine e = new OAFEngine();
-        e.setFactory(this);
-        return e;
+        return new OAFEngine(this);
     }
 
     public String getProgram(String... statements) {

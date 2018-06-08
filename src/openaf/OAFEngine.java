@@ -1,11 +1,16 @@
 package openaf;
 
 import com.google.gson.JsonObject;
-
 import org.apache.commons.io.IOUtils;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.ScriptableObject;
 
 import java.io.Reader;
+
+import javax.script.AbstractScriptEngine;
 import javax.script.Bindings;
+import javax.script.Invocable;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
@@ -18,7 +23,7 @@ import javax.script.SimpleBindings;
  * 
  */
 
-public class OAFEngine implements ScriptEngine, AutoCloseable {   
+public class OAFEngine extends AbstractScriptEngine implements ScriptEngine, AutoCloseable, Invocable {   
     protected OAFEngineFactory engine;
     protected ScriptContext context;
     protected ScriptEngineFactory factory;
@@ -29,7 +34,15 @@ public class OAFEngine implements ScriptEngine, AutoCloseable {
     protected static AFCmdOS afcmd;
 
     static {
-		afcmd = new AFCmdOS();
+        if (AFCmdBase.afc != null) {
+            afcmd = (AFCmdOS) AFCmdBase.afc;
+        } else {
+            afcmd = new AFCmdOS();
+        }
+    }
+
+    OAFEngine(ScriptEngineFactory factory) {
+        this.factory = factory;
     }
 
     @Override
@@ -46,7 +59,7 @@ public class OAFEngine implements ScriptEngine, AutoCloseable {
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
         try {
             this.setContext(context);
-			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(IOUtils.toString(reader)), true);
+			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(IOUtils.toString(reader)), false);
 		} catch (Exception e) {
 			throw (ScriptException) new ScriptException(e.getMessage()).initCause(e);
 		}
@@ -55,7 +68,7 @@ public class OAFEngine implements ScriptEngine, AutoCloseable {
     @Override
     public Object eval(Reader reader, Bindings bindings) throws ScriptException {
         try {
-			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(IOUtils.toString(reader)), true);
+			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(IOUtils.toString(reader)), false);
 		} catch (Exception e) {
 			throw (ScriptException) new ScriptException(e.getMessage()).initCause(e);
 		}
@@ -70,7 +83,7 @@ public class OAFEngine implements ScriptEngine, AutoCloseable {
     public Object eval(String line, ScriptContext context) throws ScriptException {
         try {
             this.setContext(context);
-			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(line), true);
+			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(line), false);
 		} catch (Exception e) {
 			throw (ScriptException) new ScriptException(e.getMessage()).initCause(e);
 		}
@@ -79,7 +92,7 @@ public class OAFEngine implements ScriptEngine, AutoCloseable {
     @Override
     public Object eval(String line, Bindings b) throws ScriptException {
         try {
-			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(line), true);
+			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(line), false);
 		} catch (Exception e) {
 			throw (ScriptException) new ScriptException(e.getMessage()).initCause(e);
 		}
@@ -133,7 +146,54 @@ public class OAFEngine implements ScriptEngine, AutoCloseable {
     
     }
 
-	public void setFactory(OAFEngineFactory oafEngineFactory) {
-        engine = oafEngineFactory;
+	@Override
+	public <T> T getInterface(Class<T> clasz) {
+		return getInterface(this, clasz);
 	}
+
+	@Override
+	public <T> T getInterface(Object thiz, Class<T> clasz) {
+        Context ctx = (Context) AFCmdBase.jse.enterContext();
+        @SuppressWarnings("unchecked")
+        T t = (T) ctx.jsToJava(thiz, clasz);
+        AFCmdBase.jse.exitContext();
+        return t;
+	}
+
+	@Override
+	public Object invokeFunction(String name, Object... args) throws ScriptException, NoSuchMethodException {
+        Context ctx = (Context) AFCmdBase.jse.enterContext();
+        ScriptableObject gs = (ScriptableObject) AFCmdBase.jse.getGlobalscope();
+        Object res = null;
+        try { 
+            Object o = gs.getProperty(gs, name);
+            if (o instanceof Function) {
+                res = ((Function) o).call(ctx, gs, gs, args);
+            }
+            return res;
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            AFCmdBase.jse.exitContext();
+        }
+	}
+
+	@Override
+	public Object invokeMethod(Object thiz, String name, Object... args) throws ScriptException, NoSuchMethodException {
+        Context ctx = (Context) AFCmdBase.jse.enterContext();
+        ScriptableObject gs = (ScriptableObject) AFCmdBase.jse.getGlobalscope();
+        Object res = null;
+        try { 
+            Object o = gs.getProperty(gs, name);
+            if (o instanceof Function) {
+                res = ((Function) o).call(ctx, gs, gs, args);
+            }
+            return res;
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            AFCmdBase.jse.exitContext();
+        }
+	}
+
 }
