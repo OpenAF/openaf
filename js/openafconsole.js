@@ -648,7 +648,7 @@ function __readProfile(aProfile) {
 		});
 		af.compile(prof);
 	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
+		if (!String(e).match(/java\.io\.FileNotFoundException/)) throw e;
 	}
 }
 
@@ -998,7 +998,11 @@ initThread.addThread(function(uuid) {
 	con.getConsoleReader().getCompletionHandler().setPrintSpaceAfterFullCompletion(false);
 
 	// Read profile
-	__readProfile(java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE);
+	try {
+		__readProfile(java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE);
+	} catch(e) {
+		printErr("Error while loading " + java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE + ": " + String(e));
+	}
 	
 	if (!noHomeComms) __checkVersion();
 	initThread.stop();
