@@ -48,6 +48,21 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testNormalizeWithSchema;
 
+   - name: AI::Test ID3
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testID3;
+
+   - name: AI::Test C45
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testC45;     
+
+   - name: AI::Test KMeans
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testKMeans;  
+
 todo:
    # ow.ai tests
    # -----------
@@ -59,3 +74,6 @@ todo:
    - AI::LSTM network save and load
    - AI::Normalize with schema
    - AI::Perceptron XOR save and load 
+   - AI::Test ID3
+   - AI::Test C45
+   - AI::Test KMeans
