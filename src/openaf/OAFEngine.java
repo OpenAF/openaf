@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 import java.io.Reader;
@@ -168,7 +169,11 @@ public class OAFEngine extends AbstractScriptEngine implements ScriptEngine, Aut
         try { 
             Object o = gs.getProperty(gs, name);
             if (o instanceof Function) {
-                res = ((Function) o).call(ctx, gs, gs, args);
+                Scriptable json = ctx.newObject(gs);
+                for(Object k : bindings.keySet()) {
+                    json.put(k.toString(), json, bindings.get(k));
+                }
+                res = ((Function) o).call(ctx, gs, json, args);
             }
             return res;
         } catch (Exception e) {
