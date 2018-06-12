@@ -26,7 +26,7 @@ OpenWrap.ai.prototype.network = function(args) {
         case 'hopfield'  : this.hopfield.apply(this, args.args); break;
         }
     }
-}
+};
 
 /**
  * <odoc>
@@ -267,7 +267,44 @@ OpenWrap.ai.prototype.normalize = {
     }
 };
 
-OpenWrap.ai.prototype.ID3 = (function() {
+OpenWrap.ai.prototype.decisionTree = function(args) {
+    if (isDef(args) && isObject(args)) {
+        switch (args.type.toLowerCase()) {
+        case 'id3': 
+            var dt = new this.ID3.DecisionTree(args); 
+            break;
+        case 'randomforest':
+            var dt = new this.ID3.RandomForest(args);
+            break;
+        case 'c45':
+            var c45 = new this.C45();
+            c45.train(args, args.callback);
+            break;
+        }
+    }
+};
+
+OpenWrap.ai.prototype.decisionTree.__toJsonID3 = function(aID3) {
+    _$(aID3).isObject().$_("Please provide an ID3");
+
+    return aID3;
+};
+
+OpenWrap.ai.prototype.decisionTree.__fromJsonID3DT = function(aJson) {
+    _$(aJson).isObject().$_("Please provide aJson structure.");
+
+    ow.loadObj();
+    return ow.obj.fromJson(aJson).withObject(ow.ai.decisionTree.ID3.DecisionTree.prototype).build();
+};
+
+OpenWrap.ai.prototype.decisionTree.__fromJsonID3RF = function(aJson) {
+    _$(aJson).isObject().$_("Please provide aJson structure.");
+
+    ow.loadObj();
+    return ow.obj.fromJson(aJson).withObject(ow.ai.decisionTree.ID3.RandomForest.prototype).build();
+};
+
+OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
     // FROM: https://github.com/lagodiuk/decision-tree-js/
     // LICENSE: MIT
 
@@ -668,7 +705,7 @@ OpenWrap.ai.prototype.ID3 = (function() {
  * FROM: https://github.com/miguelmota/C4.5
  * LICENSE: MIT
  */
-OpenWrap.ai.prototype.C45 = (function(root) {  
+OpenWrap.ai.prototype.decisionTree.C45 = (function(root) {  
     function unique(col) {
       var u = {}, a = [];
       for(var i = 0, l = col.length; i < l; ++i){
