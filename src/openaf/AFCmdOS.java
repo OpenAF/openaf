@@ -35,7 +35,7 @@ import openaf.SimpleLog.logtype;
  * @author Nuno Aguiar
  * 
  */
-public class AFCmdOS extends AFCmdBase  {
+public class AFCmdOS extends AFCmdBase {
 	final public static String argHelp = "Usage: openaf [options]\n\n"
 			+ "Options:\n" 
 			+ "   -e (input)         - provide input directly instead of using stdin\n"
@@ -135,6 +135,7 @@ public class AFCmdOS extends AFCmdBase  {
 	public AFCmdOS() {	
 		super();
 		afc = this;
+		afcmd = "AFCmdOS";
 	}
 	
 	/**
@@ -473,7 +474,7 @@ public class AFCmdOS extends AFCmdBase  {
 			out.close();
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param in
@@ -683,7 +684,7 @@ public class AFCmdOS extends AFCmdBase  {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		afcmd = "AFCmdOS";
+		
 		// Java version check
 		String version = System.getProperty("java.version");
 		if (version.startsWith("1.7") && version.lastIndexOf('_') > 0 &&

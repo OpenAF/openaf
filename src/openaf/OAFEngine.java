@@ -1,6 +1,5 @@
 package openaf;
 
-import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -18,6 +17,8 @@ import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 
+import com.google.gson.JsonObject;
+
 /**
  * 
  * @author Nuno Aguiar
@@ -32,18 +33,28 @@ public class OAFEngine extends AbstractScriptEngine implements ScriptEngine, Aut
     protected Bindings bindings = new SimpleBindings();
     protected Bindings globalBindings = new SimpleBindings();
 
-    protected static AFCmdOS afcmd;
+    protected static AFCmdBase afcmd;
 
-    static {
-        if (AFCmdBase.afc != null) {
-            afcmd = (AFCmdOS) AFCmdBase.afc;
-        } else {
-            afcmd = new AFCmdOS();
+    protected void init(ScriptEngineFactory factory, boolean iniAFCmd) {
+        this.factory = factory;
+        if (iniAFCmd) {
+            if (afcmd == null) {
+                if (AFCmdBase.afc == null) {
+                    afcmd = new AFCmdOS();
+                    try { ((AFCmdOS)afcmd).execute(new JsonObject(), "", true, new StringBuilder(""), false); } catch(Exception e) { }
+                } else {
+                    afcmd = (AFCmdOS) AFCmdBase.afc;
+                }
+            }
         }
     }
 
     OAFEngine(ScriptEngineFactory factory) {
-        this.factory = factory;
+        init(factory, true);
+    }
+
+    OAFEngine(ScriptEngineFactory factory, boolean iniAFCmd) {
+        init(factory, iniAFCmd);
     }
 
     @Override
@@ -60,7 +71,7 @@ public class OAFEngine extends AbstractScriptEngine implements ScriptEngine, Aut
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
         try {
             this.setContext(context);
-			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(IOUtils.toString(reader)), false);
+			return AFBase.eval(IOUtils.toString(reader));
 		} catch (Exception e) {
 			throw (ScriptException) new ScriptException(e.getMessage()).initCause(e);
 		}
@@ -69,7 +80,7 @@ public class OAFEngine extends AbstractScriptEngine implements ScriptEngine, Aut
     @Override
     public Object eval(Reader reader, Bindings bindings) throws ScriptException {
         try {
-			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(IOUtils.toString(reader)), false);
+			return AFBase.eval(IOUtils.toString(reader));
 		} catch (Exception e) {
 			throw (ScriptException) new ScriptException(e.getMessage()).initCause(e);
 		}
@@ -84,7 +95,7 @@ public class OAFEngine extends AbstractScriptEngine implements ScriptEngine, Aut
     public Object eval(String line, ScriptContext context) throws ScriptException {
         try {
             this.setContext(context);
-			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(line), false);
+            return AFBase.eval(line);
 		} catch (Exception e) {
 			throw (ScriptException) new ScriptException(e.getMessage()).initCause(e);
 		}
@@ -93,7 +104,7 @@ public class OAFEngine extends AbstractScriptEngine implements ScriptEngine, Aut
     @Override
     public Object eval(String line, Bindings b) throws ScriptException {
         try {
-			return afcmd.execute(new JsonObject(), "", true, new StringBuilder(line), false);
+			return AFBase.eval(line);
 		} catch (Exception e) {
 			throw (ScriptException) new ScriptException(e.getMessage()).initCause(e);
 		}
