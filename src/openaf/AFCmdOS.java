@@ -92,6 +92,8 @@ public class AFCmdOS extends AFCmdBase {
 	protected String injectclassfile = "";
 	protected long numberOfIncludedLines = 0;
 	
+	protected boolean __noSLF4JErrorOnly = true;
+
 	protected boolean silentMode = false;
 	protected boolean silenceRepack = false;
 	protected boolean pipe = false;
@@ -138,6 +140,10 @@ public class AFCmdOS extends AFCmdBase {
 		afcmd = "AFCmdOS";
 	}
 	
+	public void setNoSLF4JErrorOnly(boolean aFlag) {
+		__noSLF4JErrorOnly = aFlag;
+	}
+
 	/**
 	 * 
 	 */
@@ -582,6 +588,9 @@ public class AFCmdOS extends AFCmdBase {
 				Object opmIn;
 				opmIn = AFBase.jsonParse(pmIn.toString());
 				
+				Object noSLF4JErrorOnly = Context.javaToJS(__noSLF4JErrorOnly, (Scriptable) jse.getGlobalscope());
+				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__noSLF4JErrorOnly", noSLF4JErrorOnly);
+
 				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "pmIn", opmIn);
 				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__pmIn", opmIn);
 									
