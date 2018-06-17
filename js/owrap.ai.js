@@ -264,23 +264,88 @@ OpenWrap.ai.prototype.normalize = {
         }
     
         return _.flatten(res);
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.ai.normalize.toFeaturesArray(anArrayOfObjects, ignoredAttrs) : Map</key>
+     * Tries to convert anArrayOfObjects into an array of array of values where each value is positioned
+     * in the resulting array by the corresponding key sorted. The result will be a map with the resulting array
+     * in 'data' (with the features values ignoring any key on ignoredAttrs), the 'ignoredAttrs' and keys with all the 'keys'
+     * identified.
+     * </odoc>
+     */
+    toFeaturesArray: function(anArrayOfObj, ignoredAttrs) {
+        ignoredAttrs = _$(ignoredAttrs).isArray().default([]);
+
+        var res = [], allkeys = [];
+        // Get keys
+        for(let obji in anArrayOfObj) {
+            var obj = anArrayOfObj[obji];
+            var keys = Object.keys(obj);
+            for(let ki in keys) {
+                if (allkeys.indexOf(keys[ki]) < 0 && ignoredAttrs.indexOf(keys[ki]) < 0) {
+                    allkeys.push(keys[ki]);
+                }
+            }
+        }
+        allkeys = allkeys.sort();
+
+        // Get data
+        for(let obji in anArrayOfObj) {
+            var obj = anArrayOfObj[obji];
+            var line = [];
+            for(let k in allkeys) {
+                line.push(obj[allkeys[k]]);
+            }
+            res.push(line);
+        }
+
+        return {
+            data: res,
+            ignoredAttrs: ignoredAttrs,
+            keys: allkeys
+        };
     }
 };
 
 OpenWrap.ai.prototype.decisionTree = function(args) {
-    if (isDef(args) && isObject(args)) {
-        switch (args.type.toLowerCase()) {
-        case 'id3': 
-            var dt = new this.ID3.DecisionTree(args); 
-            break;
-        case 'randomforest':
-            var dt = new this.ID3.RandomForest(args);
-            break;
-        case 'c45':
-            var c45 = new this.C45();
-            c45.train(args, args.callback);
-            break;
+    args = _$(args).isObject().default({ type: "c45" });
+
+    var robj = {
+        predict  : ()=>{},
+        fromJson : ()=>{},
+        toJson   : ()=>{},
+        readFile : function(aFile) {
+            this.fromJson(uncompress(io.readFileBytes(aFile)));
+        },
+        writeFile: function(aFile) {
+            io.writeFileBytes(aFile, compress(this.toJson()));
         }
+    };
+
+    var dt, c45;
+    switch (args.type.toLowerCase()) {
+    case 'id3': 
+        dt = new this.ID3.DecisionTree(args);
+
+        robj.dt = dt;
+        robj.predict  = (data) => { return this.dt.predict(data); };
+        robj.fromJson = (j) => { this.dt.ow.ai.decisionTree.__fromJsonID3DT(j); };
+        robj.toJson   = (j) => { this.dt.ow.ai.decisionTree.__toJsonID3(j); };
+        return robj;
+    case 'randomforest':
+        dt = new this.ID3.RandomForest(args);
+
+        robj.dt = dt;
+        robj.predict  = (data) => { return this.dt.predict(data); };
+        robj.fromJson = (j) => { this.dt.ow.ai.decisionTree.__fromJsonID3RF(j); };
+        robj.toJson   = (j) => { this.dt.ow.ai.decisionTree.__toJsonID3(j); };
+        return robj;
+    case 'c45':
+        c45 = new this.C45();
+        c45.train(args, args.callback);
+        break;
     }
 };
 
@@ -1037,11 +1102,28 @@ OpenWrap.ai.prototype.decisionTree.C45 = (function(root) {
   
 })(this);
 
+OpenWrap.ai.prototype.cluster = function(args) {
+    args = _$(args).isObject().default({ type: "kmeans" });
+
+    var robj = {
+        classify: () => {}
+    };
+
+    switch (args.type.toLowerCase()) {
+    case 'kmeans':
+        args.numberOfClusters = _$(args).isNumber().default(5);
+        robj.classify = (vectors) => {
+            return ow.ai.cluster.kmeans().__kmeans(args.numberOfClusters, vectors);
+        };
+        return robj;
+    }
+};
+
 /**
  * FROM: https://github.com/nantunes/figue
  * LICENSE: MIT
  */
-OpenWrap.ai.prototype.cluster = function () {
+OpenWrap.ai.prototype.cluster.kmeans = function () {
     function __arrayCompare(th, testArr) {
         if (th.length != testArr.length) return false;
         for (var i = 0; i < testArr.length; i++) {

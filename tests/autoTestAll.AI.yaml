@@ -48,6 +48,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testNormalizeWithSchema;
 
+   - name: AI::Normalize features array
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFeaturesArray;
+
    - name: AI::Test ID3
      from: AI::Init
      to  : oJob Test
@@ -73,6 +78,7 @@ todo:
    - AI::Liquid network save and load
    - AI::LSTM network save and load
    - AI::Normalize with schema
+   - AI::Normalize features array
    - AI::Perceptron XOR save and load 
    - AI::Test ID3
    - AI::Test C45
