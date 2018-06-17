@@ -250,9 +250,31 @@
             labels[i] = data[i]['company'];
             vectors[i] = [ data[i]['size'], data[i]['revenue'] ];
         }
-
+ 
         var clusters = ow.ai.cluster.kmeans().__kmeans(4, vectors);
         loadLodash();
         ow.test.assert(_.uniq(clusters.assignments).length, 4, "Problem with KMeans.");
+
+        // ---
+        data = [
+            { night: "good", weekend: true, slept: 8 },
+            { night: "good", weekend: true, slept: 7 },
+            { night: "average", weekend: false, slept: 5 },
+            { night: "bad", weekend: false, slept: 4 },
+            { night: "average", weekend: false, slept: 6 },
+            { night: "good", weekend: true, slept: 9 },
+            { night: "good", weekend: false, slept: 7 }
+        ];
+
+        vectors = $from(data).select((d) => { 
+            return ow.ai.normalize.withSchema(d, {
+                night  : {col: 0, oneOf: [ 'good', 'average', 'bad' ] },
+                weekend: {col: 1 },
+                slept  : {col: 2, min: 0, max: 24 }
+            });
+        });
+
+        var res = ow.ai.cluster({ numberOfClusters: 3, type: 'kmeans' }).classify(vectors);
+        ow.test.assert(_.uniq(res.assignments).length, 3, "KMeans didn't classify correctly after data was normalized.");
     };
 })();

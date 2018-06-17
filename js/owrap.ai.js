@@ -1102,8 +1102,22 @@ OpenWrap.ai.prototype.decisionTree.C45 = (function(root) {
   
 })(this);
 
+/**
+ * <odoc>
+ * <key>ow.ai.cluster(args) : Object</key>
+ * Wraps access to clustering of data. The result will be an object with a classify method that will 
+ * return the clustering result given the provided data. Args expects different arguments depending on type of 
+ * clustering:\
+ * \
+ *    args.type                (String) "kmeans" (default)\
+ *    args.numberOfClusters    (Number) number of clusters to use (default to 5)\
+ *    classify(normalizedData) (Map)    returns a map of centroids and cluster assignments\
+ * \
+ * </odoc>
+ */
 OpenWrap.ai.prototype.cluster = function(args) {
     args = _$(args).isObject().default({ type: "kmeans" });
+    args.type = _$(args.type).isString().default("kmeans");
 
     var robj = {
         classify: () => {}
@@ -1111,7 +1125,7 @@ OpenWrap.ai.prototype.cluster = function(args) {
 
     switch (args.type.toLowerCase()) {
     case 'kmeans':
-        args.numberOfClusters = _$(args).isNumber().default(5);
+        args.numberOfClusters = _$(args.numberOfClusters).isNumber().default(5);
         robj.classify = (vectors) => {
             return ow.ai.cluster.kmeans().__kmeans(args.numberOfClusters, vectors);
         };
