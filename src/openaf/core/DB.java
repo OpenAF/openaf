@@ -218,7 +218,8 @@ public class DB {
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP) || 
-								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE)) {
+								   (rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE) ||
+								   (rs.getMetaData().getColumnTypeName(i).equals("TIMESTAMP WITH TIME ZONE"))) {
 									if (rs.getTimestamp(i) != null)
 										record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
 									else
@@ -379,7 +380,8 @@ public class DB {
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP) || 
-								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE)) {
+								   (rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE) ||
+								   (rs.getMetaData().getColumnTypeName(i).equals("TIMESTAMP WITH TIME ZONE"))) {
 									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
 									continue;
 								}
