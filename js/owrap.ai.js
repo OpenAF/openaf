@@ -327,26 +327,50 @@ OpenWrap.ai.prototype.decisionTree = function(args) {
     var dt, c45;
     switch (args.type.toLowerCase()) {
     case 'id3': 
-        dt = new this.ID3.DecisionTree(args);
+        if (Object.keys(args).length > 1) {
+            dt = new this.ID3.DecisionTree(args);
+            robj.dt = dt;
+        }
 
-        robj.dt = dt;
-        robj.predict  = (data) => { return this.dt.predict(data); };
-        robj.fromJson = (j) => { this.dt.ow.ai.decisionTree.__fromJsonID3DT(j); };
-        robj.toJson   = (j) => { this.dt.ow.ai.decisionTree.__toJsonID3(j); };
+        robj.predict  = (data) => { return robj.dt.predict(data); };
+        robj.fromJson = (j) => { robj.dt = ow.ai.decisionTree.__fromJsonID3DT(j); };
+        robj.toJson   = ( ) => { return ow.ai.decisionTree.__toJsonID3(robj.dt); };
         return robj;
     case 'randomforest':
-        dt = new this.ID3.RandomForest(args);
+        if (Object.keys(args).length > 1) {
+            dt = new this.ID3.RandomForest(args);
+            robj.dt = dt;
+        }
 
-        robj.dt = dt;
-        robj.predict  = (data) => { return this.dt.predict(data); };
-        robj.fromJson = (j) => { this.dt.ow.ai.decisionTree.__fromJsonID3RF(j); };
-        robj.toJson   = (j) => { this.dt.ow.ai.decisionTree.__toJsonID3(j); };
+        robj.predict  = (data) => { return robj.dt.predict(data); };
+        robj.fromJson = (j) => { robj.dt = ow.ai.decisionTree.__fromJsonID3RF(j); };
+        robj.toJson   = ( ) => { return ow.ai.decisionTree.__toJsonID3(robj.dt); };
         return robj;
     case 'c45':
-        c45 = new this.C45();
-        c45.train(args, args.callback);
-        break;
+        if (Object.keys(args).length > 1) {
+            c45 = new ow.ai.decisionTree.C45();
+            c45.train(args, (e) => { if (e) { if(isDef(args.error) && isFunction(args.error)) { args.error(e); } else { logErr(e); } } });
+            robj.dt = c45;
+        }
+
+        robj.predict  = (data) => { return robj.dt.classify(data); };
+        robj.fromJson = (j) => { robj.dt = ow.ai.decisionTree.__fromJsonC45(j); };
+        robj.toJson   = ( ) => { return ow.ai.decisionTree.__toJsonC45(robj.dt); };
+        return robj;
     }
+};
+
+OpenWrap.ai.prototype.decisionTree.__toJsonC45 = function(aC45) {
+    _$(aC45).isObject().$_("Please provide a C45");
+
+    return aC45;
+};
+
+OpenWrap.ai.prototype.decisionTree.__fromJsonC45 = function(aJson) {
+    _$(aJson).isObject().$_("Please provide aJson structure.");
+
+    ow.loadObj();
+    return ow.obj.fromJson(aJson).withObject(ow.ai.decisionTree.C45.prototype).build();
 };
 
 OpenWrap.ai.prototype.decisionTree.__toJsonID3 = function(aID3) {
@@ -391,7 +415,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
         });
     }
           
-    DecisionTree.prototype.predict = function (item) {
+    DecisionTree.prototype.predict = function(item) {
         return predict(this.root, item);
     }
 
@@ -558,7 +582,6 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
      * Function for building decision tree
      */
     function buildDecisionTree(builder) {
-
         var trainingSet = builder.trainingSet;
         var minItemsCount = builder.minItemsCount;
         var categoryAttr = builder.categoryAttr;
@@ -779,7 +802,7 @@ OpenWrap.ai.prototype.decisionTree.C45 = function() {
     this.featureTypes = void 0;
     this.targets = void 0;
     this.model = void 0;
-    this._model = void 0;
+    this.error = void 0;
 };
   
 OpenWrap.ai.prototype.decisionTree.C45.prototype = {
@@ -836,10 +859,12 @@ OpenWrap.ai.prototype.decisionTree.C45.prototype = {
         this.target = options.target;
         this.features = options.features;
         this.featureTypes = options.featureTypes;
+        this.error = options.error;
+        var parent = this;
 
         this.featureTypes.forEach(function (f) {
             if (['number', 'category'].indexOf(f) === -1) {
-                callback(new Error('Unrecognized feature type'));
+                parent.error = new Error('Unrecognized feature type');
                 return;
             }
         });
@@ -849,57 +874,49 @@ OpenWrap.ai.prototype.decisionTree.C45.prototype = {
         }));
         //this.features = features;
         //this.targets = targets;
-        var parent = this;
 
-        this._model = this._c45(this.data, this.target, this.features, this.featureTypes, 0);
+        this.model = this._c45(this.data, this.target, this.features, this.featureTypes, 0);
         //callback(null, this.model);
     },
 
-    model: {
-        features: this.features,
-        targets: this.targets,
+    classify: function classify(sample) {
+        // root is feature (attribute) containing all sub values
+        var root = this.model;
 
-        // model is the generated tree structure
-        //model: ,
-        classify: function classify(sample) {
-            // root is feature (attribute) containing all sub values
-            var root = this._model;
-
-            if (typeof root === 'undefined') {
-                this.errors = new Error('model is undefined');
-            }
-
-            while (root.type !== 'result') {
-                var childNode;
-
-                if (root.type === 'feature_number') {
-                    var featureName = root.name;
-                    var sampleVal = parseFloat(sample[featureName]);
-
-                    if (sampleVal <= root.cut) {
-                        childNode = root.values[1];
-                    } else {
-                        childNode = root.values[0];
-                    }
-                } else {
-                    // feature syn attribute
-                    var feature = root.name;
-                    var sampleValue = sample[this.features.indexOf(feature)];
-
-                    // sub value , containing 2 childs
-                    childNode = parent.find(root.values, function (x) {
-                        return x.name === sampleValue;
-                    });
-                }
-
-                // non trained feature
-                if (typeof childNode === 'undefined') {
-                    return 'unknown';
-                }
-                root = childNode.child;
-            }
-            return root.value;
+        if (typeof root === 'undefined') {
+            this.errors = new Error('model is undefined');
         }
+
+        while (root.type !== 'result') {
+            var childNode;
+
+            if (root.type === 'feature_number') {
+                var featureName = root.name;
+                var sampleVal = parseFloat(sample[featureName]);
+
+                if (sampleVal <= root.cut) {
+                    childNode = root.values[1];
+                } else {
+                    childNode = root.values[0];
+                }
+            } else {
+                // feature syn attribute
+                var feature = root.name;
+                var sampleValue = sample[this.features.indexOf(feature)];
+
+                // sub value , containing 2 childs
+                childNode = this.find(root.values, function (x) {
+                    return x.name === sampleValue;
+                });
+            }
+
+            // non trained feature
+            if (typeof childNode === 'undefined') {
+                return 'unknown';
+            }
+            root = childNode.child;
+        }
+        return root.value;
     },
 
     _c45: function (data, target, features, featureTypes, depth) {

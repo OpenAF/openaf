@@ -242,13 +242,13 @@
             {'company': 'Skype' , 'size': 700, 'revenue': 716},
             {'company': 'SAP' , 'size': 48000, 'revenue': 11567},
             {'company': 'Yahoo!' , 'size': 14000 , 'revenue': 6426 },
-            {'company': 'eBay' , 'size': 15000, 'revenue': 8700},
+            {'company': 'eBay' , 'size': 15000, 'revenue': 8700}
         ];
          
         var labels = [], vectors = [];
-        for(let i = 0; i < data.length; i++) {
-            labels[i] = data[i]['company'];
-            vectors[i] = [ data[i]['size'], data[i]['revenue'] ];
+        for(var ii = 0; ii < data.length; ii++) {
+            labels[ii] = data[ii]['company'];
+            vectors[ii] = [ data[ii]['size'], data[ii]['revenue'] ];
         }
  
         var clusters = ow.ai.cluster.kmeans().__kmeans(4, vectors);
