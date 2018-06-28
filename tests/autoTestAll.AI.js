@@ -139,29 +139,59 @@
 
         var comic = {person: 'Comic guy', hairLength: 8, weight: 290, age: 38};
 
-        var dt = new ow.ai.decisionTree.ID3.DecisionTree({
+        var dt = new ow.ai.decisionTree.ID3();
+        dt.DecisionTree({
             trainingSet      : data,
             categoryAttr     : 'sex',
             ignoredAttributes: [ 'person' ]
         });
- 
-        ow.test.assert(dt.predict(comic), 'male', "The ID3 Decision Tree didn't predict has expected.");
+
+        ow.test.assert(dt.DecisionTree_predict(comic), 'male', "The ID3 Decision Tree didn't predict as expected.");
 
         var jsonData = clone(ow.ai.decisionTree.__toJsonID3(dt));
         var _dt = ow.ai.decisionTree.__fromJsonID3DT(jsonData);
-        ow.test.assert(_dt.predict(comic), 'male', "The ID3 Decision Tree copy from JSON didn't predict has expected.");
-
-        var rt = new ow.ai.decisionTree.ID3.RandomForest({
+        ow.test.assert(_dt.DecisionTree_predict(comic), 'male', "The ID3 Decision Tree copy from JSON didn't predict as expected.");
+        
+        dt = new ow.ai.decisionTree.ID3();
+        dt.RandomForest({
             trainingSet      : data,
             categoryAttr     : 'sex',
             ignoredAttributes: [ 'person' ]
         }, 3);
-
-        ow.test.assert(rt.predict(comic), { male: 3 }, "The ID3 Random Forest didn't predict has expected.");
-
-        jsonData = clone(ow.ai.decisionTree.__toJsonID3(rt));
+        ow.test.assert(dt.RandomForest_predict(comic), { male: 3 }, "The ID3 Random Forest didn't predict as expected.");
+        jsonData = clone(ow.ai.decisionTree.__toJsonID3(dt));
         var _rf = ow.ai.decisionTree.__fromJsonID3RF(jsonData);
-        ow.test.assert(_rf.predict(comic), { male: 3 }, "The ID3 Random Forest from JSON didn't predict has expected.");
+        ow.test.assert(_rf.RandomForest_predict(comic), { male: 3 }, "The ID3 Random Forest from JSON didn't predict as expected.");
+
+        dt = ow.ai.decisionTree({
+            type             : "id3",
+            trainingSet      : data,
+            categoryAttr     : 'sex',
+            ignoredAttributes: [ 'person' ]
+        });
+        ow.test.assert(dt.predict(comic), 'male', "The wrapper to access id3 decision tree didn't predict as expected.");
+        dt.writeFile("dt.json.gz");
+        dt = void 0;
+        dt = ow.ai.decisionTree({ type: 'id3' });
+        dt.readFile("dt.json.gz");
+        ow.test.assert(dt.predict(comic), 'male', "The wrapper, after persisting, to access id3 decision tree didn't predict as expected.");
+        io.rm("dt.json.gz");
+        
+        var rt = ow.ai.decisionTree({
+            type             : 'randomforest',
+            trainingSet      : data,
+            categoryAttr     : 'sex',
+            ignoredAttributes: [ 'person' ],
+            treesNumber      : 3
+        });
+        ow.test.assert(rt.predict(comic), { male: 3 }, "The wrapper to access id3 random forest didn't predict as expected.");
+
+        rt.writeFile("rt.json.gz");
+        rt = void 0;
+        rt = ow.ai.decisionTree({ type: 'randomforest' });
+        rt.readFile("rt.json.gz");
+        ow.test.assert(rt.predict(comic), { male: 3 }, "The wrapper, after persisting, to access id3 random forest didn't predict as expected.");
+        io.rm("rt.json.gz");
     };
 
     exports.testC45 = function() {
@@ -209,6 +239,22 @@
             ow.test.assert(model.classify(testData[1]), 'CLASS2', "Problem 2 with Decision Tree C45.");
         });
 
+        var testData = [
+            ["B", 71, 'False'],
+            ["C", 70, 'True']
+        ];
+
+        C45 = ow.ai.decisionTree({ type: 'c45', data: data, target: target, features: features, featureTypes: featureTypes });
+        ow.test.assert(C45.predict(testData[0]), 'CLASS1', "Problem 1, using wrapper, with Decision Tree C45.");
+        ow.test.assert(C45.predict(testData[1]), 'CLASS2', "Problem 2, using wrapper,  with Decision Tree C45.");
+
+        C45.writeFile("C45.json.gz");
+        C45 = void 0;
+        C45 = ow.ai.decisionTree({ type: 'c45' });
+        C45.readFile("C45.json.gz");
+        ow.test.assert(C45.predict(testData[0]), 'CLASS1', "Problem 1, using wrapper after persisting, with Decision Tree C45.");
+        ow.test.assert(C45.predict(testData[1]), 'CLASS2', "Problem 2, using wrapper after persisting, with Decision Tree C45.");
+        io.rm("C45.json.gz");
     };
 
     exports.testFeaturesArray = function() {

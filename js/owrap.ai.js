@@ -309,6 +309,12 @@ OpenWrap.ai.prototype.normalize = {
     }
 };
 
+/**
+ * <odoc>
+ * <key>ow.ai.decisionTree(aMap) : Object</key>
+ * Provides a wrapper to access the existing decision tree algorithms included. 
+ * </odoc>
+ */
 OpenWrap.ai.prototype.decisionTree = function(args) {
     args = _$(args).isObject().default({ type: "c45" });
 
@@ -328,21 +334,24 @@ OpenWrap.ai.prototype.decisionTree = function(args) {
     switch (args.type.toLowerCase()) {
     case 'id3': 
         if (Object.keys(args).length > 1) {
-            dt = new this.ID3.DecisionTree(args);
+            dt = new ow.ai.decisionTree.ID3();
+            dt.DecisionTree(args);
             robj.dt = dt;
         }
 
-        robj.predict  = (data) => { return robj.dt.predict(data); };
+        robj.predict  = (data) => { return robj.dt.DecisionTree_predict(data); };
         robj.fromJson = (j) => { robj.dt = ow.ai.decisionTree.__fromJsonID3DT(j); };
         robj.toJson   = ( ) => { return ow.ai.decisionTree.__toJsonID3(robj.dt); };
         return robj;
     case 'randomforest':
         if (Object.keys(args).length > 1) {
-            dt = new this.ID3.RandomForest(args);
+            args.treesNumber = _$(args.treesNumber).default(3);
+            dt = new ow.ai.decisionTree.ID3();
+            dt.RandomForest(args, args.treesNumber);
             robj.dt = dt;
         }
 
-        robj.predict  = (data) => { return robj.dt.predict(data); };
+        robj.predict  = (data) => { return robj.dt.RandomForest_predict(data); };
         robj.fromJson = (j) => { robj.dt = ow.ai.decisionTree.__fromJsonID3RF(j); };
         robj.toJson   = ( ) => { return ow.ai.decisionTree.__toJsonID3(robj.dt); };
         return robj;
@@ -383,19 +392,25 @@ OpenWrap.ai.prototype.decisionTree.__fromJsonID3DT = function(aJson) {
     _$(aJson).isObject().$_("Please provide aJson structure.");
 
     ow.loadObj();
-    return ow.obj.fromJson(aJson).withObject(ow.ai.decisionTree.ID3.DecisionTree.prototype).build();
+    return ow.obj.fromJson(aJson).withObject(ow.ai.decisionTree.ID3.prototype).build();
 };
 
 OpenWrap.ai.prototype.decisionTree.__fromJsonID3RF = function(aJson) {
     _$(aJson).isObject().$_("Please provide aJson structure.");
 
     ow.loadObj();
-    return ow.obj.fromJson(aJson).withObject(ow.ai.decisionTree.ID3.RandomForest.prototype).build();
+    return ow.obj.fromJson(aJson).withObject(ow.ai.decisionTree.ID3.prototype).build();
 };
 
-OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
-    // FROM: https://github.com/lagodiuk/decision-tree-js/
-    // LICENSE: MIT
+// FROM: https://github.com/lagodiuk/decision-tree-js/
+// LICENSE: MIT
+OpenWrap.ai.prototype.decisionTree.ID3 = function() { 
+};
+
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.predicates = {
+        '==': function (a, b) { return a == b },
+        '>=': function (a, b) { return a >= b }
+    };
 
     /**
      * Creates an instance of DecisionTree
@@ -404,20 +419,20 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
      * @param builder - contains training set and
      *                  some configuration parameters
      */
-    function DecisionTree(builder) {        
-        this.root = buildDecisionTree({
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.DecisionTree = function(builder) {        
+        this.root = this.buildDecisionTree({
             trainingSet: builder.trainingSet,
-            ignoredAttributes: arrayToHashSet(builder.ignoredAttributes),
+            ignoredAttributes: this.arrayToHashSet(builder.ignoredAttributes),
             categoryAttr: builder.categoryAttr || 'category',
             minItemsCount: builder.minItemsCount || 1,
             entropyThrehold: builder.entropyThrehold || 0.01,
             maxTreeDepth: builder.maxTreeDepth || 70
         });
-    }
+    };
           
-    DecisionTree.prototype.predict = function(item) {
-        return predict(this.root, item);
-    }
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.DecisionTree_predict = function(item) {
+        return this.predict(this.root, item);
+    };
 
     /**
      * Creates an instance of RandomForest
@@ -428,19 +443,19 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
      *                  configuration parameters for
      *                  building decision trees
      */
-    function RandomForest(builder, treesNumber) {
-        this.trees = buildRandomForest(builder, treesNumber);
-    }
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.RandomForest = function(builder, treesNumber) {
+        this.trees = this.buildRandomForest(builder, treesNumber);
+    };
           
-    RandomForest.prototype.predict = function (item) {
-        return predictRandomForest(this.trees, item);
-    }
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.RandomForest_predict = function (item) {
+        return this.predictRandomForest(this.trees, item);
+    };
     
     /**
      * Transforming array to object with such attributes 
      * as elements of array (afterwards it can be used as HashSet)
      */
-    function arrayToHashSet(array) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.arrayToHashSet = function(array) {
         var hashSet = {};
         if (array) {
             for(var i in array) {
@@ -449,7 +464,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
             }
         }
         return hashSet;
-    }
+    };
     
     /**
      * Calculating how many objects have the same 
@@ -460,7 +475,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
      * @param attr  - variable with name of attribute, 
      *                which embedded in each object
      */
-    function countUniqueValues(items, attr) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.countUniqueValues = function(items, attr) {
         var counter = {};
 
         // detecting different values of attribute
@@ -487,10 +502,10 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
      * @param attr  - variable with name of attribute, 
      *                which embedded in each object
      */
-    function entropy(items, attr) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.entropy = function(items, attr) {
         // counting number of occurrences of each of values
         // of attribute
-        var counter = countUniqueValues(items, attr);
+        var counter = this.countUniqueValues(items, attr);
 
         var entropy = 0;
         var p;
@@ -500,7 +515,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
         }
 
         return entropy;
-    }
+    };
           
     /**
      * Splitting array of objects by value of specific attribute, 
@@ -522,7 +537,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
      *                calling predicate function:
      *                e.g. predicate(item[attr], pivot)
      */
-    function split(items, attr, predicate, pivot) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.split = function(items, attr, predicate, pivot) {
         var match = [];
         var notMatch = [];
 
@@ -544,7 +559,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
             match: match,
             notMatch: notMatch
         };
-    }
+    };
 
     /**
      * Finding value of specific attribute which is most frequent
@@ -555,10 +570,10 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
      * @param attr  - variable with name of attribute, 
      *                which embedded in each object
      */
-    function mostFrequentValue(items, attr) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.mostFrequentValue = function(items, attr) {
         // counting number of occurrences of each of values
         // of attribute
-        var counter = countUniqueValues(items, attr);
+        var counter = this.countUniqueValues(items, attr);
 
         var mostFrequentCount = 0;
         var mostFrequentValue;
@@ -571,17 +586,13 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
         };
 
         return mostFrequentValue;
-    }
-          
-    var predicates = {
-        '==': function (a, b) { return a == b },
-        '>=': function (a, b) { return a >= b }
     };
+
 
     /**
      * Function for building decision tree
      */
-    function buildDecisionTree(builder) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.buildDecisionTree = function(builder) {
         var trainingSet = builder.trainingSet;
         var minItemsCount = builder.minItemsCount;
         var categoryAttr = builder.categoryAttr;
@@ -594,18 +605,18 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
             // or size of training set is to small
             // so we have to terminate process of building tree
             return {
-                category: mostFrequentValue(trainingSet, categoryAttr)
+                category: this.mostFrequentValue(trainingSet, categoryAttr)
             };
         }
 
-        var initialEntropy = entropy(trainingSet, categoryAttr);
+        var initialEntropy = this.entropy(trainingSet, categoryAttr);
 
         if (initialEntropy <= entropyThrehold) {
             // entropy of training set too small
             // (it means that training set is almost homogeneous),
             // so we have to terminate process of building tree
             return {
-                category: mostFrequentValue(trainingSet, categoryAttr)
+                category: this.mostFrequentValue(trainingSet, categoryAttr)
             };
         }
 
@@ -648,14 +659,14 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
                 }
                 alreadyChecked[attrPredPivot] = true;
 
-                var predicate = predicates[predicateName];
+                var predicate = this.predicates[predicateName];
           
                 // splitting training set by given 'attribute-predicate-value'
-                var currSplit = split(trainingSet, attr, predicate, pivot);
+                var currSplit = this.split(trainingSet, attr, predicate, pivot);
 
                 // calculating entropy of subsets
-                var matchEntropy = entropy(currSplit.match, categoryAttr);
-                var notMatchEntropy = entropy(currSplit.notMatch, categoryAttr);
+                var matchEntropy = this.entropy(currSplit.match, categoryAttr);
+                var notMatchEntropy = this.entropy(currSplit.notMatch, categoryAttr);
 
                 // calculating informational gain
                 var newEntropy = 0;
@@ -679,7 +690,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
 
         if (!bestSplit.gain) {
             // can't find optimal split
-            return { category: mostFrequentValue(trainingSet, categoryAttr) };
+            return { category: this.mostFrequentValue(trainingSet, categoryAttr) };
         }
 
         // building subtrees
@@ -687,10 +698,10 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
         builder.maxTreeDepth = maxTreeDepth - 1;
 
         builder.trainingSet = bestSplit.match;
-        var matchSubTree = buildDecisionTree(builder);
+        var matchSubTree = this.buildDecisionTree(builder);
 
         builder.trainingSet = bestSplit.notMatch;
-        var notMatchSubTree = buildDecisionTree(builder);
+        var notMatchSubTree = this.buildDecisionTree(builder);
 
         return {
             attribute: bestSplit.attribute,
@@ -702,12 +713,12 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
             matchedCount: bestSplit.match.length,
             notMatchedCount: bestSplit.notMatch.length
         };
-    }
+    };
 
     /**
      * Classifying item, using decision tree
      */
-    function predict(tree, item) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.predict = function(tree, item) {
         var attr,
             value,
             predicate,
@@ -724,7 +735,8 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
             attr = tree.attribute;
             value = item[attr];
 
-            predicate = tree.predicate;
+            //predicate = tree.predicate;
+            predicate = this.predicates[tree.predicateName];
             pivot = tree.pivot;
 
             // move to one of subtrees
@@ -734,12 +746,12 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
                 tree = tree.notMatch;
             }
         }
-    }
+    };
 
     /**
      * Building array of decision trees
      */
-    function buildRandomForest(builder, treesNumber) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.buildRandomForest = function(builder, treesNumber) {
         var items = builder.trainingSet;
           
         // creating training sets for each tree
@@ -759,11 +771,12 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
         for (var t = 0; t < treesNumber; t++) {
             builder.trainingSet = trainingSets[t];
 
-            var tree = new DecisionTree(builder);
-            forest.push(tree);
+            var dt = new ow.ai.decisionTree.ID3();
+            var tree = dt.DecisionTree(builder);
+            forest.push(dt);
         }
         return forest;
-    }
+    };
 
     /**
      * Each of decision tree classifying item
@@ -773,7 +786,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
      * all classifying results, and number of votes 
      * which were given for each of classifying results
      */
-    function predictRandomForest(forest, item) {
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.predictRandomForest = function(forest, item) {
         var result = {};
         for (var i in forest) {
             var tree = forest[i];
@@ -781,13 +794,12 @@ OpenWrap.ai.prototype.decisionTree.ID3 = (function() {
             result[prediction] = result[prediction] ? result[prediction] + 1 : 1;
         }
         return result;
-    }
+    };
 
-    var exports = {};
+    /*var exports = {};
     exports.DecisionTree = DecisionTree;
     exports.RandomForest = RandomForest;
-    return exports;
-})();
+    return exports;*/
 
 /**
  * FROM: https://github.com/miguelmota/C4.5
