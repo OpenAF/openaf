@@ -138,7 +138,7 @@
         ];
 
         var comic = {person: 'Comic guy', hairLength: 8, weight: 290, age: 38};
-
+        
         var dt = new ow.ai.decisionTree.ID3();
         dt.DecisionTree({
             trainingSet      : data,
@@ -147,11 +147,11 @@
         });
 
         ow.test.assert(dt.DecisionTree_predict(comic), 'male', "The ID3 Decision Tree didn't predict as expected.");
-
+        
         var jsonData = clone(ow.ai.decisionTree.__toJsonID3(dt));
         var _dt = ow.ai.decisionTree.__fromJsonID3DT(jsonData);
         ow.test.assert(_dt.DecisionTree_predict(comic), 'male', "The ID3 Decision Tree copy from JSON didn't predict as expected.");
-        
+    
         dt = new ow.ai.decisionTree.ID3();
         dt.RandomForest({
             trainingSet      : data,

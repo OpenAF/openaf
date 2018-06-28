@@ -548,7 +548,8 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
             item = items[i];
             attrValue = item[attr];
 
-            if (predicate(attrValue, pivot)) {
+            var fn = eval(predicate);
+            if (fn(attrValue, pivot)) {
                 match.push(item);
             } else {
                 notMatch.push(item);
@@ -659,7 +660,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
                 }
                 alreadyChecked[attrPredPivot] = true;
 
-                var predicate = this.predicates[predicateName];
+                var predicate = this.predicates[predicateName].toString();
           
                 // splitting training set by given 'attribute-predicate-value'
                 var currSplit = this.split(trainingSet, attr, predicate, pivot);
@@ -734,9 +735,9 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
 
             attr = tree.attribute;
             value = item[attr];
-
-            //predicate = tree.predicate;
-            predicate = this.predicates[tree.predicateName];
+            
+            predicate = eval(tree.predicate);
+            //predicate = this.predicates[tree.predicateName];
             pivot = tree.pivot;
 
             // move to one of subtrees
@@ -790,7 +791,10 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
         var result = {};
         for (var i in forest) {
             var tree = forest[i];
-            var prediction = tree.predict(item);
+            //var fn = eval(tree.predicate);
+            if (isUnDef(tree.predict)) tree.predict = this.predict;
+            var prediction = tree.predict(tree.root, item);
+            //var prediction = fn(item);
             result[prediction] = result[prediction] ? result[prediction] + 1 : 1;
         }
         return result;
