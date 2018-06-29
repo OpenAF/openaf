@@ -312,7 +312,28 @@ OpenWrap.ai.prototype.normalize = {
 /**
  * <odoc>
  * <key>ow.ai.decisionTree(aMap) : Object</key>
- * Provides a wrapper to access the existing decision tree algorithms included. 
+ * Provides a wrapper to access the existing decision tree algorithms included:\
+ * \
+ * ID3:\
+ *   type              'id3'
+ *   trainingSet       (array of maps)   The training data\
+ *   categoryAttr      (key name)        The map key to build the decision tree on\
+ *   ignoredAttributes (array of keys)   The list of keys to be ignored in each map\
+ * \
+ * RandomForest:\
+ *   type              'randomforest'
+ *   trainingSet       (array of maps)   The training data\
+ *   categoryAttr      (key name)        The map key to build the decision tree on\
+ *   ignoredAttributes (array of keys)   The list of keys to be ignored in each map\
+ *   treesNumber       (number)          The number of decision trees to use\
+ * \
+ * C45:\
+ *   type              'c45' 
+ *   data              (array of arrays) The training data\
+ *   features          (arrays of keys)  The keys name by order of each array data value\
+ *   featureTypes      (arrays of types) Categorization of each attribute between 'category' and 'number'\
+ *   target            (key)             The target key name (the last of each array data value)\
+ * \
  * </odoc>
  */
 OpenWrap.ai.prototype.decisionTree = function(args) {
