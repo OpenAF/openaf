@@ -43,6 +43,7 @@ openaf --update
 * [oJob](oJob)
 * [OpenAF Channels](OpenAF-Channels)
 * [OpenAF oPromises](OpenAF-oPromise)
+* [Code tips & tricks](Tips-&-tricks)
 
 ## Building
 
