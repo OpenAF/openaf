@@ -603,6 +603,11 @@ public class DB {
 			try {
 				PreparedStatement ps = con.prepareStatement(sql);
 				//Clob clobOut = con.createClob();
+
+				if (lob instanceof org.mozilla.javascript.NativeJavaArray) {
+					lob = ((org.mozilla.javascript.NativeJavaArray) lob).unwrap();
+				}
+
 				if (lob instanceof byte[]) {
 					ps.setBlob(1, new ByteArrayInputStream((byte []) lob));
 				} else {
@@ -638,6 +643,11 @@ public class DB {
 					int i = 0;
 					for(Object lob : lobs) {
 						i++;
+						
+						if (lob instanceof org.mozilla.javascript.NativeJavaArray) {
+							lob = ((org.mozilla.javascript.NativeJavaArray) lob).unwrap();
+						}
+						
 						if (lob instanceof byte[]) {
 							ps.setBlob(i, new ByteArrayInputStream((byte []) lob));
 						} else {
