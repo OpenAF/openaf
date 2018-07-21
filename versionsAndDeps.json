@@ -147,17 +147,15 @@
 		},
 		{
 			"description": "Ignite",
-			"path": ["lib/ignite.jar"],
-			"version": "2.3.0",
+			"path": ["lib/ignite-core-2.6.0.jar",
+				"lib/ignite-shmem-1.0.0.jar",
+				"lib/cache-api-1.0.0.jar"],
+			"version": "2.6.0",
 			"changes": false,
 			"type": ["java"],
 			"url": "https://ignite.apache.org",
 			"license": "https://raw.githubusercontent.com/apache/ignite/master/LICENSE",
-			"deps": [
-				"lib/ignite-core-2.3.0.jar",
-				"lib/ignite-shmem-1.0.0.jar",
-				"lib/cache-api-1.0.0.jar"
-			]
+			"deps": []
 		},
 		{
 			"description": "JLine",
@@ -352,7 +350,7 @@
 			"name": "Ignite",
 			"removable": true,
 			"deps": [
-				"lib/ignite-core-2.3.0.jar",
+				"lib/ignite-core-2.6.0.jar",
 				"lib/ignite-shmem-1.0.0.jar",
 				"lib/cache-api-1.0.0.jar"
 			]
