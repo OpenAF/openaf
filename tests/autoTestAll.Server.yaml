@@ -13,6 +13,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testRESTServer;
 
+   - name: Server::REST server simple
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRESTServer2;
+
    - name: Server::HTTP server 
      from: Server::Init
      to  : oJob Test
@@ -34,5 +39,6 @@ todo:
    - Server::Init
    - Server::Scheduler
    - Server::REST server
+   - Server::REST server simple
    - Server::HTTP server
    - Server::Auth
