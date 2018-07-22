@@ -701,17 +701,17 @@ OpenWrap.server.prototype.rest = {
 	 * <odoc>
 	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams) : RequestReply</key>
 	 * Provides a REST compliant HTTPServer request replier given a aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc
-	 * and aRemoveFunc. Each function will receive a map with the provided indexes from the request. Optionally you can 
+	 * and aRemoveFunc. Each function will receive a map with the provided indexes and data from the request plus the request itself. Optionally you can 
 	 * specify with returnWithParams = true that each function will not return just the data map but a composed map with: data (the actual
 	 * json of data), status (the HTTP code to return) and mimetype.\
 	 * \
 	 * var hs = ow.loadServer().httpd.start(8080);\
 	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
 	 *    "/rest": function(req) { return ow.server.rest.reply("/rest", req,\
-	 *       function(idxs, data) { // Create and return a map },\
-	 *       function(idxs)       { // Get and return a map },\
-	 *       function(idxs, data) { // Set and return a map },\
-	 *       function(idxs)       { // Remove and return a map }\
+	 *       function(idxs, data, r) { // Create and return a map },\
+	 *       function(idxs, r)       { // Get and return a map },\
+	 *       function(idxs, data, r) { // Set and return a map },\
+	 *       function(idxs, r)       { // Remove and return a map }\
 	 *    )}}, function(req) { return hs.replyOKText("nothing here"); });\
 	 * ow.server.daemon();\
 	 * \ 
@@ -728,12 +728,12 @@ OpenWrap.server.prototype.rest = {
 		switch(aReq.method) {
 		case "GET": 
 			if (returnWithParams) {
-				params = aGetFunc(idxs);
+				params = aGetFunc(idxs, aReq);
 				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
 				if (isDef(params.status))   res.status = params.status;
 				if (isDef(params.mimetype)) res.mimetype = params.mimetype;
 			} else {
-				res.data = stringify(aGetFunc(idxs), void 0, ""); 
+				res.data = stringify(aGetFunc(idxs, aReq), void 0, ""); 
 			}
 			break;
 		case "POST":
@@ -741,18 +741,18 @@ OpenWrap.server.prototype.rest = {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { }
 				if (returnWithParams) {
-					params = aCreateFunc(idxs, ow.server.rest.parseQuery(fdata));
+					params = aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq);
 					if (isDef(params.data))     res.data = stringify(params.data);
 					if (isDef(params.status))   res.status = params.status;
 					if (isDef(params.mimetype)) res.mimetype = params.mimetype;
 				} else { 
-					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata)), void 0, "");
+					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq), void 0, "");
 				}
 			} else {
 				if (isDef(aReq.files.postData)) {
-					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData));
+					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData), aReq);
 				} else {
-					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"]));
+					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"]), aReq);
 				}
 				if (returnWithParams) {
 					if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
@@ -768,9 +768,9 @@ OpenWrap.server.prototype.rest = {
 			if (isDef(aReq.files.content)) {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { };
-				params = aSetFunc(idxs, ow.server.rest.parseQuery(fdata));
+				params = aSetFunc(idxs, ow.server.rest.parseQuery(fdata), aReq);
 			} else {
-				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData));
+				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData), aReq);
 			}
 			if (returnWithParams) {
 				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
@@ -781,7 +781,7 @@ OpenWrap.server.prototype.rest = {
 			}
 			break;
 		case "DELETE": 
-			params = aRemoveFunc(idxs); 
+			params = aRemoveFunc(idxs, aReq); 
 			if (returnWithParams) {
 				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
 				if (isDef(params.status))   res.status = params.status;

@@ -27,6 +27,59 @@
         ow.server.httpd.stop(hs);
     };
 
+    exports.testRESTServer2 = function() {
+        ow.loadServer();
+        ow.loadObj();
+
+        var port = findRandomOpenPort();
+        var hs = ow.loadServer().httpd.start(port);
+
+        var met = "";
+        var res = {};
+
+        ow.server.httpd.route(hs, {
+            "/rest": function(req) {
+                return ow.server.rest.reply("/rest", req, 
+                    function(i,d,r) { 
+                        met = r.method; // POST
+                        return merge(i,d);
+                    },
+                    function(i,r) { 
+                        met = r.method; // GET
+                        return i; 
+                    },
+                    function(i,d,r) { 
+                        met = r.method; // PUT
+                        return merge(i,d); 
+                    },
+                    function(i,r) { 
+                        met = r.method; // DELETE
+                        return i; 
+                    }       
+                );
+            }
+        });
+
+        var rr = {};
+        rr = ow.obj.rest.jsonCreate("http://127.0.0.1:" + port + "/rest", { i: 1 }, { d: 2 });
+        ow.test.assert(met, "POST", "Problem with REST server request variable on POST request");
+        ow.test.assert(rr, { i: 1, d: 2 }, "Problem with REST server return data on POST");
+
+        rr = ow.obj.rest.jsonGet("http://127.0.0.1:" + port + "/rest", { i: 1 });
+        ow.test.assert(met, "GET", "Problem with REST server request variable on GET request");
+        ow.test.assert(rr, { i: 1 }, "Problem with REST server return data on GET");
+
+        rr = ow.obj.rest.jsonSet("http://127.0.0.1:" + port + "/rest", { i: 1 }, { d: 2 });
+        ow.test.assert(met, "PUT", "Problem with REST server request variable on PUT request");
+        ow.test.assert(rr, { i: 1, d: 2 }, "Problem with REST server return data on PUT");
+
+        rr = ow.obj.rest.jsonRemove("http://127.0.0.1:" + port + "/rest", { i: 1 });
+        ow.test.assert(met, "DELETE", "Problem with REST server request variable on DELETE request");
+        ow.test.assert(rr, { i: 1 }, "Problem with REST server return data on DELETE");
+
+        ow.server.httpd.stop(hs);
+    };
+
     exports.testAuth = function() {
         ow.loadServer();
         
