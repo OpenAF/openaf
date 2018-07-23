@@ -789,25 +789,27 @@ function stopLog() {
 
 /**
  * <odoc>
- * <key>log(msg)</key>
+ * <key>log(msg, formatOptions)</key>
  * Outputs to the current stdout a line composed of the current date, indication of INFO and the provided msg.
+ * Optionally you can provide a formatOptions map for overriding the defaults from setLog.
  * Note: you can use startLog, stopLog and dumpLog to keep an internal record of theses messages.
  * </odoc>
  */
-function log(msg) {
+function log(msg, formatOptions) {
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
 	if (__logStatus) {
 		var f = () => {
 			k = { n: nw, t: "INFO" };
 			v = { n: nw, d: data, t: "INFO", m: msg };
-			if (isDef(__logFormat) && __logFormat.profile) {
+			if (isDef(__logFormat) && formatOptions.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
 				v.systemLoad = getCPULoad();
 			}
 			$ch("__log").set(k, v);
 		};
-		if (isDef(__logFormat) && __logFormat.async) {
+		if (isDef(__logFormat) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=> {
@@ -818,19 +820,19 @@ function log(msg) {
 		} else 
 			f();
 	}
-	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
+	var go = (isDef(__logFormat) && (formatOptions.off || formatOptions.offInfo)) ? false : true;
 	if (go) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
-			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
 			ansiStart();
-			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
 			print(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg);
 			ansiStop();
 			return 1;
 		};
-		if (isDef(__logFormat) && __logFormat.async) {
+		if (isDef(__logFormat) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -845,37 +847,39 @@ function log(msg) {
 
 /**
  * <odoc>
- * <key>tlog(msg, someData)</key>
+ * <key>tlog(msg, someData, formatOptions)</key>
  * Outputs to the current stdout a line composed of the current date, indication of INFO and the provided msg using the templify function.
- * Optionally you can provide also someData. 
+ * Optionally you can provide also someData and you can provide a formatOptions map for overriding the defaults from setLog.
  * Note: you can use startLog, stopLog and dumpLog to keep an internal record of theses messages.
  * </odoc>
  */
-function tlog(msg, someData) {
-	log(templify(msg, someData));
+function tlog(msg, someData, formatOptions) {
+	log(templify(msg, someData), formatOptions);
 }
 
 /**
  * <odoc>
- * <key>lognl(msg)</key>
+ * <key>lognl(msg, formatOptions)</key>
  * Outputs to the current stdout, without a new line, a sentence composed of the current date, indication of INFO and the provided msg.
+ * Optionally you can provide a formatOptions map for overriding the defaults from setLog.
  * Note: you can use startLog, stopLog and dumpLog to keep an internal record of theses messages.
  * </odoc>
  */
-function lognl(msg) {
+function lognl(msg, formatOptions) {
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
 	if (__logStatus) {
 		var f = () => {
 			k = { n: nw, t: "INFO" };
 			v = { n: nw, d: data, t: "INFO", m: msg };
-			if (isDef(__logFormat) && __logFormat.profile) {
+			if (isDef(__logFormat) && formatOptions.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
 				v.systemLoad = getCPULoad();
 			}
 			$ch("__log").set(k, v);
 		};
-		if (isDef(__logFormat) && __logFormat.async) {
+		if (isDef(__logFormat) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -886,19 +890,19 @@ function lognl(msg) {
 		} else 
 			f();
 	}
-	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offInfo)) ? false : true;
+	var go = (isDef(__logFormat) && (formatOptions.off || formatOptions.offInfo)) ? false : true;
 	if (go) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
-			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
 			ansiStart();
-			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
 			printnl(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg + "\r");
 			ansiStop();
 			return 1;
 		};
-		if (isDef(__logFormat) && __logFormat.async) {
+		if (isDef(__logFormat) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -914,36 +918,39 @@ function lognl(msg) {
 
 /**
  * <odoc>
- * <key>tlognl(msg, someData)</key>
+ * <key>tlognl(msg, someData, formatOptions)</key>
  * Outputs to the current stdout, without a new line, a sentence composed of the current date, indication of INFO and the provided msg using the templify function.
+ * Optionally you can provide a formatOptions map for overriding the defaults from setLog.
  * Optinionally you can provide also someData.
  * </odoc>
  */
-function tlognl(msg, someData) {
-	lognl(templify(msg, someData));
+function tlognl(msg, someData, formatOptions) {
+	lognl(templify(msg, someData), formatOptions);
 }
 
 /**
  * <odoc>
- * <key>logErr(msg)</key>
+ * <key>logErr(msg, formatOptions)</key>
  * Outputs to the current stderr a line composed of the current date, indication of ERROR and the provided msg.
+ * Optionally you can provide a formatOptions map for overriding the defaults from setLog.
  * Note: you can use startLog, stopLog and dumpLog to keep an internal record of theses messages.
  * </odoc>
  */
-function logErr(msg) {
+function logErr(msg, formatOptions) {
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
 	if (__logStatus) {
 		var f = () => {
 			k = { n: nw, t: "ERROR" };
 			v = { n: nw, d: data, t: "ERROR", m: msg };
-			if (isDef(__logFormat) && __logFormat.profile) {
+			if (isDef(__logFormat) && formatOptions.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
 				v.systemLoad = getCPULoad();
 			}
 			$ch("__log").set(k, v);
 		};
-		if (isDef(__logFormat) && __logFormat.async) {
+		if (isDef(__logFormat) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw);
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -954,19 +961,19 @@ function logErr(msg) {
 		} else 
 			f();
 	}
-	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offError)) ? false : true;
+	var go = (isDef(__logFormat) && (formatOptions.off || formatOptions.offError)) ? false : true;
 	if (go) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
-			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
 			ansiStart();
-			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
 			printErr(ind + ansiColor("BOLD", data) + sep + ansiColor("red", "ERROR") + sep + msg);
 			ansiStop();
 			return 1;
 		};
-		if (isDef(__logFormat) && __logFormat.async) {
+		if (isDef(__logFormat) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -982,25 +989,27 @@ function logErr(msg) {
 
 /**
  * <odoc>
- * <key>logWarn(msg)</key>
+ * <key>logWarn(msg, formatOptions)</key>
  * Outputs to the current warning in a line composed of the current date, indication of WARN and the provided msg.
+ * Optionally you can provide a formatOptions map for overriding the defaults from setLog.
  * Note: you can use startLog, stopLog and dumpLog to keep an internal record of theses messages.
  * </odoc>
  */
-function logWarn(msg) {
+function logWarn(msg, formatOptions) {
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
 	if (__logStatus) {
 		var f = () => {
 			k = { n: nw, t: "WARN" };
 			v = { n: nw, d: data, t: "WARN", m: msg };
-			if (isDef(__logFormat) && __logFormat.profile) {
+			if (isDef(__logFormat) && formatOptions.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
 				v.systemLoad = getCPULoad();
 			}
 			$ch("__log").set(k, v);
 		};
-		if (isDef(__logFormat) && __logFormat.async) {
+		if (isDef(__logFormat) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw);
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -1011,19 +1020,19 @@ function logWarn(msg) {
 		} else 
 			f();
 	}
-	var go = (isDef(__logFormat) && (__logFormat.off || __logFormat.offWarn)) ? false : true;
+	var go = (isDef(__logFormat) && (formatOptions.off || formatOptions.offWarn)) ? false : true;
 	if (go) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
-			var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(__logFormat.indent))) ? __logFormat.indent : "";
+			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
+			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? __logFoformatOptionsrmat.indent : "";
 			ansiStart();
-			data = (isDef(__logFormat) && isDef(__logFormat.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), __logFormat.dateFormat, __logFormat.dateTZ) : data;
+			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
 			print(ind + ansiColor("BOLD", data) + sep + ansiColor("yellow", "WARN") + sep + msg);
 			ansiStop();
 			return 1;
 		};
-		if (isDef(__logFormat) && __logFormat.async) {
+		if (isDef(__logFormat) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -1038,24 +1047,26 @@ function logWarn(msg) {
 
 /**
  * <odoc>
- * <key>tlogErr(msg, someData)</key>
+ * <key>tlogErr(msg, someData, formatOptions)</key>
  * Outputs to the current stderr a line composed of the current date, indication of ERROR and the provided msg using the templify function.
+ * Optionally you can provide a formatOptions map for overriding the defaults from setLog. 
  * Optinionally you can provide also someData.
  * </odoc>
  */
-function tlogErr(msg, someData) {
-	logErr(templify(msg, someData));
+function tlogErr(msg, someData, formatOptions) {
+	logErr(templify(msg, someData), formatOptions);
 }
 
 /**
  * <odoc>
- * <key>tlogWarn(msg, someData)</key>
+ * <key>tlogWarn(msg, someData, formatOptions)</key>
  * Outputs to the current warning in a line composed of the current date, indication of WARN and the provided msg using the templify function.
+ * Optionally you can provide a formatOptions map for overriding the defaults from setLog. 
  * Optinionally you can provide also someData.
  * </odoc>
  */
-function tlogWarn(msg, someData) {
-	logWarn(templify(msg, someData));
+function tlogWarn(msg, someData, formatOptions) {
+	logWarn(templify(msg, someData), formatOptions);
 }
 
 /**
