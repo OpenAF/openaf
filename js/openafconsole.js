@@ -4,13 +4,14 @@ plugin("Console");
 var __ansiflag = true;
 var __pinflag = false;
 var __pinprefix = "";
-var CONSOLESEPARATOR = "-- "
+var CONSOLESEPARATOR = "-- ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
 var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|sql|esql|dsql|pin";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
-	"encryptText": "af.encryptText();"
+	"encryptText": "af.encryptText();",
+	"sh": "sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/bash \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")+(!ow.format.isWindows()?\" && stty -icanon min 1 -echo 2>/dev/null\":\"\"),void 0,void 0,true);void 0;"
 };
 
 var __aliasparam;
