@@ -705,7 +705,67 @@ OpenWrap.format.prototype.getPublicIP = function() {
 OpenWrap.format.prototype.testPublicPort = function(aPort) {
 	plugin("HTTP");
 	return JSON.parse((new HTTP("http://ifconfig.co/port/" + String(aPort))).response());
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.isWindows() : Boolean</key>
+ * Returns true if the operating system is identified as Windows otherwise returns false.
+ * </odoc>
+ */
+OpenWrap.format.prototype.isWindows = function() {
+	return (String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false);
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.getOS() : String</key>
+ * Returns the current operating system identifier string.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getOS = function() {
+	return String(java.lang.System.getProperty("os.name"));
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.getCurrentDirectory() : String</key>
+ * Returns the current working directory.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getCurrentDirectory = function() {
+	return String(java.lang.System.getProperty("user.dir"));
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.getJavaVersion() : String</key>
+ * Returns the current java version.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getJavaVersion = function() {
+	return String(java.lang.System.getProperty("java.version"));
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.getJavaHome() : String</key>
+ * Returns the current java home directory.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getJavaHome = function() {
+	return String(java.lang.System.getProperty("java.home"));
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.getClasspath() : String</key>
+ * Returns the current java classpath.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getClasspath = function() {
+	return String(java.lang.System.getProperty("java.class.path"));
+};
 
 /**
  * <odoc>
