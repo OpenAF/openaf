@@ -1025,7 +1025,7 @@ function logWarn(msg, formatOptions) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
 			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? __logFoformatOptionsrmat.indent : "";
+			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
 			ansiStart();
 			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
 			print(ind + ansiColor("BOLD", data) + sep + ansiColor("yellow", "WARN") + sep + msg);
