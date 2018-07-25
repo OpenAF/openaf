@@ -82,4 +82,14 @@
         ow.test.assert(ow.format.string.lsHash(s1, "my stuff = " + s1, false) <= 200, true, "Problem with almost similar sentences on LSH hashing.");
         ow.test.assert(ow.format.string.lsHash(s1, s1) <= 200, true, "Problem with identical sentences on LSH hashing.");
     };
+    
+    exports.testUnixDateConversions = function() {
+        var d = new Date();
+        ow.test.assert(ow.format.fromUnixDate(ow.format.toUnixDate(d)).getTime(), Math.round(d.getTime()/1000) * 1000, "Problem with from/to unix date conversion.");
+    };
+
+    exports.testLDAPDateConversions = function() {
+        var d = new Date();
+        ow.test.assert(ow.format.fromLDAPDate(ow.format.toLDAPDate(d)).getTime(), d.getTime(), "Problem with LDAP date conversions.");
+    };
 })();

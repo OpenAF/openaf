@@ -625,7 +625,27 @@ OpenWrap.format.prototype.fromWedoDate = function(aWedoDate, aFormat) {
  */
 OpenWrap.format.prototype.fromUnixDate = function(aUnixDate) {
 	return new Date(Number(aUnixDate) * 1000);
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.fromLDAPDate(aLDAPDate) : Date</key>
+ * Converts a numeric aLDAPDate (also known as Windows NT time format, Active Directory timestamps) into a javascript Date.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromLDAPDate = function(aLDAPDate) {
+	return new Date(((aLDAPDate / 10000000) - 11644473600) * 1000);
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.toLDAPDate(aDate) : Number</key>
+ * Converts a javascript Date into a LDAP date (also known as Windows NT time format, Active Directory timestamps)
+ * </odoc>
+ */
+OpenWrap.format.prototype.toLDAPDate = function(aDate) {
+	return ((aDate.getTime() / 1000) + 11644473600) * 10000000;
+};
 
 /**
  * <odoc>

@@ -96,6 +96,20 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testLSH;      
 
+   - name: Format::Unix date to/from
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testUnixDateConversions; 
+
+   - name: Format::LDAP date to/from
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testLDAPDateConversions;      
+
 todo:
    # Format tests
    # ------------
@@ -106,6 +120,8 @@ todo:
    - Format::Number rounding
    - Format::Time ago
    - Format::Date to/from
+   - Format::Unix date to/from
+   - Format::LDAP date to/from
    - Format::Escape strings
    - Format::Word wrap
    - Format::String pad
