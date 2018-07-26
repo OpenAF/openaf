@@ -387,42 +387,60 @@ public class AFBase extends ScriptableObject {
 			} catch(IOException e) {}
 		}
 
+		InputStream is, iserr;
 		if(inheritIO) {
+			is = null; iserr = null;
 			IOUtils.copy(p.getInputStream(), System.out);
+			IOUtils.copy(p.getErrorStream(), System.err);
+		} else {
+			is = p.getInputStream();
+			iserr = p.getErrorStream();
 		}
 
 		String lines = new String(); 
 		String linesErr = new String();
-		
-		lines = IOUtils.toString(p.getInputStream(), (Charset) null);
-		linesErr = IOUtils.toString(p.getErrorStream(), (Charset) null);
 
 		int exit = -1; 
 		try {
-			if (timeout == null || timeout instanceof org.mozilla.javascript.Undefined)
+			if (timeout == null || timeout instanceof org.mozilla.javascript.Undefined) {
+				if (is != null   ) lines = IOUtils.toString(is, (Charset) null);
+				if (iserr != null) linesErr = IOUtils.toString(iserr, (Charset) null);
 				exit = p.waitFor(); 
-			else {
+				if (is != null   ) is.close();
+				if (iserr != null) iserr.close();
+			} else {
 				Thread t = new Thread() {
 					public void run() {
 						try {
-							p.waitFor();
-						} catch(InterruptedException  e) {
+							p.waitFor();						
+						} catch(InterruptedException e) {
 							return;
 						}
 					}
 				};
-				t.start();
+				//t.start();
 				long tt = Double.valueOf(Double.parseDouble(timeout.toString())).longValue();
 				if (tt >= 0) {
 					try {
-						t.join(tt);
+						//t.join(tt); // not working in some cases
+						long limit = java.lang.System.currentTimeMillis() + tt;
+						while(java.lang.System.currentTimeMillis() < limit && p.isAlive()) {
+							Thread.sleep(10);
+							//long now = java.lang.System.currentTimeMillis();
+							//if (limit > now) t.wait(limit - now);
+						}
 					} catch(InterruptedException e) {
 						t.interrupt();
 						Thread.currentThread().interrupt();
 					} finally {
+						if (is != null    && !p.isAlive()) lines = IOUtils.toString(is, (Charset) null);
+						if (iserr != null && !p.isAlive()) linesErr = IOUtils.toString(iserr, (Charset) null);
 						p.destroy();
+						p.destroyForcibly();
+						if (is != null   ) is.close();
+						if (iserr != null) iserr.close();
 					}
-					exit = p.exitValue();
+					if (!p.isAlive()) exit = p.exitValue();
 				} else {
 					return null;
 				}
