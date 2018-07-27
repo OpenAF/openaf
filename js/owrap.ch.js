@@ -1148,7 +1148,22 @@ OpenWrap.ch.prototype.size = function(aName) {
 //	}
 	return this.__types[this.channels[aName]].size(aName);
 };
-	
+
+OpenWrap.ch.prototype.__errorHandle = function(id, e) {
+	try {
+		var d = new Date();
+		$ch("__ch::errors").set({
+			id: id,
+			date: d
+		}, {
+			id: id,
+			date: d,
+			exception: String(e)
+		});
+	} catch(e1) {
+	}
+};
+
 /**
  * <odoc>
  * <key>ow.ch.subscribe(aName, aFunction, onlyFromNowm, anId) : String</key>
@@ -1334,7 +1349,13 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i), ()=>{});
+				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+					ow.ch.__errorHandle({ 
+						chName: aName,
+						op: "set",
+						key: aKey
+					}, e);
+				});
 			} else {				
 				var f = (ii) => {
 					return () => {
@@ -1396,7 +1417,13 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i));
+				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+					ow.ch.__errorHandle({ 
+						chName: aName,
+						op: "set",
+						key: aKey
+					}, e);
+				});
 			} else {				
 				var f = (ii) => {
 					return () => {
@@ -1481,7 +1508,13 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i));
+				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+					ow.ch.__errorHandle({ 
+						chName: aName,
+						op: "set",
+						key: aKey
+					}, e);
+				});
 			} else {				
 				var f = (ii) => {
 					return () => {
@@ -1553,7 +1586,13 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i));
+				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+					ow.ch.__errorHandle({ 
+						chName: aName,
+						op: "set",
+						key: aKey
+					}, e);
+				});
 			} else {				
 				var f = (ii) => {
 					return () => {
