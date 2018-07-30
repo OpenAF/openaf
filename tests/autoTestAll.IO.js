@@ -11,15 +11,33 @@
     exports.testIOStream = function() {
         var file = "autoTestAll.test";
         var stream = io.writeFileStream(file);
-        ioStreamWrite(stream, "Hello ");
-        ioStreamWrite(stream, "World! €áä");
+        ioStreamWrite(stream, "Hello ", void 0, false);
+        ioStreamWrite(stream, "World! €áä", void 0, false);
         stream.close();
     
         stream = io.readFileStream(file);
         var res = "";
         ioStreamRead(stream, function(buffer) {
             res += buffer;
-        });
+        }, void 0, false);
+        stream.close();
+    
+        ow.test.assert(res, "Hello World! €áä", "Problem with read/writeFileStream or ioStreamRead/Write.");
+        io.rm(file);   
+    };
+
+    exports.testIOStreamNIO = function() {
+        var file = "autoTestAll.test";
+        var stream = io.writeFileStream(file);
+        ioStreamWrite(stream, "Hello ", void 0, true);
+        ioStreamWrite(stream, "World! €áä", void 0, true);
+        stream.close();
+    
+        stream = io.readFileStream(file);
+        var res = "";
+        ioStreamRead(stream, function(buffer) {
+            res += buffer;
+        }, void 0, true);
         stream.close();
     
         ow.test.assert(res, "Hello World! €áä", "Problem with read/writeFileStream or ioStreamRead/Write.");
@@ -29,19 +47,36 @@
     exports.testIOStreamBytes = function() {
         var file = "autoTestAll.test";
         var stream = io.writeFileStream(file);
-        ioStreamWriteBytes(stream, af.fromString2Bytes("Hello "));
-        ioStreamWriteBytes(stream, af.fromString2Bytes("World! €áä"));
+        ioStreamWriteBytes(stream, af.fromString2Bytes("Hello "), void 0, false);
+        ioStreamWriteBytes(stream, af.fromString2Bytes("World! €áä"), void 0, false);
         stream.close();
     
         stream = io.readFileStream(file);
         var res = "";
         ioStreamReadBytes(stream, function(buffer) {
             res += af.fromBytes2String(buffer);
-        });
+        }, void 0, false);
         stream.close();
     
         ow.test.assert(res, "Hello World! €áä", "Problem with read/writeFileStream or ioStreamReadBytes/WriteBytes.");    
     };
+
+    exports.testIOStreamBytesNIO = function() {
+        var file = "autoTestAll.test";
+        var stream = io.writeFileStream(file);
+        ioStreamWriteBytes(stream, af.fromString2Bytes("Hello "), void 0, true);
+        ioStreamWriteBytes(stream, af.fromString2Bytes("World! €áä"), void 0, true);
+        stream.close();
+    
+        stream = io.readFileStream(file);
+        var res = "";
+        ioStreamReadBytes(stream, function(buffer) {
+            res += af.fromBytes2String(buffer);
+        }, void 0, true);
+        stream.close();
+    
+        ow.test.assert(res, "Hello World! €áä", "Problem with read/writeFileStream or ioStreamReadBytes/WriteBytes.");    
+    };    
 
     exports.testIOCopyStream = function() {
         var s1 = io.readFileStream(getOpenAFJar());
