@@ -3265,16 +3265,30 @@ function findRandomOpenPort() {
 // STREAM HANDLING
 //
 
+var __ioNIO = true;
 /**
  * <odoc>
- * <key>ioStreamWrite(aStream, aString, aBufferSize, dontUseNIO)</key>
- * Given a Java input or output stream helps to write aString into the same. Optionally you can provide a different
- * aBufferSize (default: 1024) and/or also specify that Java NIO functionality should not be used. 
+ * <key>ioSetNIO(aFlag)</key>
+ * Sets the default use of NIO in ioStream* functions. It's overridden if the ioStream* function defines
+ * a value for the useNIO function argument.
  * </odoc>
  */
-function ioStreamWrite(aStream, aString, aBufferSize, dontUseNIO) {
-	if (dontUseNIO) {
-		aStream.write(af.fromString2Bytes(aString));
+function ioSetNIO(aFlag) {
+	_$(aFlag).isBoolean();
+	__ioNIO = aFlag;
+}
+
+/**
+ * <odoc>
+ * <key>ioStreamWrite(aStream, aString, aBufferSize, useNIO)</key>
+ * Given a Java input or output stream helps to write aString into the same. Optionally you can provide a different
+ * aBufferSize (default: 1024) and/or also specify that Java NIO functionality should be used. 
+ * </odoc>
+ */
+function ioStreamWrite(aStream, aString, aBufferSize, useNIO) {
+	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
+	if (useNIO) {
+		Packages.org.apache.commons.io.IOUtils.write(aString, aStream, "utf-8");
 	} else {
 		var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 		var channel;
@@ -3297,14 +3311,15 @@ function ioStreamWrite(aStream, aString, aBufferSize, dontUseNIO) {
 
 /**
  * <odoc>
- * <key>ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, dontUseNIO)</key>
+ * <key>ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, useNIO)</key>
  * Given a Java input or output stream helps to write aArrayBytes into the same. Optionally you can provide a different
- * aBufferSize (default: 1024) and/or also specify that Java NIO functionality should not be used. 
+ * aBufferSize (default: 1024) and/or also specify that Java NIO functionality should be used. 
  * </odoc>
  */
-function ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, dontUseNIO) {
-	if (dontUseNIO) {
-		aStream.write(aArrayBytes);
+function ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, useNIO) {
+	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
+	if (useNIO) {
+		Packages.org.apache.commons.io.IOUtils.write(aArrayBytes, aStream);
 	} else {
 		var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 		var channel;
@@ -3327,16 +3342,17 @@ function ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, dontUseNIO) {
 
 /**
  * <odoc>
- * <key>ioStreamRead(aStream, aFunction, aBufferSize, dontUseNIO)</key>
+ * <key>ioStreamRead(aStream, aFunction, aBufferSize, useNIO)</key>
  * Given a Java input or output stream helps to read strings by using aFunction with a string argument for each buffer size 
  * (default 1024 characters). Optionally you can provide a different aBufferSize (default: 1024) and/or also specify that 
- * Java NIO functionality should not be used. If aFunction returns true the read operation stops.
+ * Java NIO functionality should be used. If aFunction returns true the read operation stops.
  * </odoc>
  */
-function ioStreamRead(aStream, aFunction, aBufferSize, dontUseNIO) {
+function ioStreamRead(aStream, aFunction, aBufferSize, useNIO) {
+	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 
-	if (!dontUseNIO) {
+	if (useNIO) {
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -3346,16 +3362,18 @@ function ioStreamRead(aStream, aFunction, aBufferSize, dontUseNIO) {
 
 		var buffer = java.nio.ByteBuffer.allocate(bufferSize);
 
-		var bRead = channel.read(buffer);
-		while(bRead != -1) {
+		//var bRead = channel.read(buffer);
+		var bRead = Packages.org.apache.commons.io.IOUtils.read(channel, buffer);
+		while(bRead > 0) {
 			buffer.flip();
 
-			var buf = [];
+			/*var buf = [];
 			while(buffer.hasRemaining()) {
 				buf.push(Number(buffer.get()));
-			}
+			}*/
 
-			var res = aFunction(af.fromBytes2String(af.fromArray2Bytes(buf)));
+			//var res = aFunction(af.fromBytes2String(af.fromArray2Bytes(buf)));
+			var res = aFunction(String(java.nio.charset.StandardCharsets.UTF_8.decode(buffer).toString()));
 			if (res == true) {
 				channel.close();
 				aStream.close();
@@ -3363,7 +3381,8 @@ function ioStreamRead(aStream, aFunction, aBufferSize, dontUseNIO) {
 			}
 
 			buffer.clear();
-			bRead = channel.read(buffer);
+			//bRead = channel.read(buffer);
+			bRead = Packages.org.apache.commons.io.IOUtils.read(channel, buffer);
 		}
 
 		channel.close();
@@ -3386,31 +3405,32 @@ function ioStreamRead(aStream, aFunction, aBufferSize, dontUseNIO) {
 
 /**
  * <odoc>
- * <key>ioStreamReadLines(aStream, aFunctionPerLine, aSeparator, dontUseNIO)</key>
+ * <key>ioStreamReadLines(aStream, aFunctionPerLine, aSeparator, useNIO)</key>
  * Given aStream will read the entire buffer and call aFunctionPerLine(withALine) per each \n found.
  * Aditionally you can specify a different aSeparator for each line other than "\n". 
  * If aFunctionPerLine returns true the read operation stops.
  * </odoc>
  */
-function ioStreamReadLines(aStream, aFunction, aSeparator, dontUseNIO) {
-        var buf = "";
-        if (isUnDef(aSeparator)) aSeparator = "\n";
- 
-        ioStreamRead(aStream, function(buffer) {
-			var res;
-			buf += buffer;
-			while (buf.indexOf(aSeparator) >= 0) {
-				res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-				buf = buf.substring(buf.indexOf(aSeparator) + 1);
-				if (res == true) return;
-			}
-			return res;
-		}, void 0, dontUseNIO);
-        while (buf.indexOf(aSeparator) >= 0) {
-			var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
+function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
+	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
+	var buf = "";
+	if (isUnDef(aSeparator)) aSeparator = "\n";
+
+	ioStreamRead(aStream, function(buffer) {
+		var res;
+		buf += buffer;
+		while (buf.indexOf(aSeparator) >= 0) {
+			res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
 			buf = buf.substring(buf.indexOf(aSeparator) + 1);
 			if (res == true) return;
-        }
+		}
+		return res;
+	}, void 0, useNIO);
+	while (buf.indexOf(aSeparator) >= 0) {
+		var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
+		buf = buf.substring(buf.indexOf(aSeparator) + 1);
+		if (res == true) return;
+	}
 }
 
 /**
@@ -3428,16 +3448,17 @@ function ioStreamCopy(aOutputStream, aInputStream) {
 
 /**
  * <odoc>
- * <key>ioStreamReadBytes(aStream, aFunction, aBufferSize, dontUseNIO)</key>
+ * <key>ioStreamReadBytes(aStream, aFunction, aBufferSize, useNIO)</key>
  * Given a Java input or output stream helps to read an array of bytes by using aFunction with anArrayOfBytes argument for 
  * each buffer size (default 1024 characters). Optionally you can provide a different aBufferSize (default: 1024) and/or 
- * also specify that Java NIO functionality should not be used. If aFunction returns true the read operation stops.
+ * also specify that Java NIO functionality should be used. If aFunction returns true the read operation stops.
  * </odoc>
  */
-function ioStreamReadBytes(aStream, aFunction, aBufferSize, dontUseNIO) {
+function ioStreamReadBytes(aStream, aFunction, aBufferSize, useNIO) {
+	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 
-	if (dontUseNIO) {
+	if (useNIO) {
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -3446,16 +3467,19 @@ function ioStreamReadBytes(aStream, aFunction, aBufferSize, dontUseNIO) {
 		}
 		var buffer = java.nio.ByteBuffer.allocate(bufferSize);
 
-		var bRead = channel.read(buffer);
-		while(bRead != -1) {
+		var bRead = Packages.org.apache.commons.io.IOUtils.read(channel, buffer);
+		//var bRead = channel.read(buffer);
+		while(bRead > 0) {
 			buffer.flip();
 
-			var buf = [];
+			/*var buf = [];
 			while(buffer.hasRemaining()) {
 				buf.push(Number(buffer.get()));
-			}
+			}*/
+			var buf = newJavaArray(java.lang.Byte.TYPE, buffer.remaining());
+			buffer.get(buf, 0, buf.length);
 
-			var res = aFunction(af.fromArray2Bytes(buf));
+			var res = aFunction(buf);
 			if (res == true) {
 				channel.close();
 				aStream.close();
@@ -3463,7 +3487,7 @@ function ioStreamReadBytes(aStream, aFunction, aBufferSize, dontUseNIO) {
 			}
 
 			buffer.clear();
-			bRead = channel.read(buffer);
+			bRead = Packages.org.apache.commons.io.IOUtils.read(channel, buffer);
 		}
 
 		channel.close();
