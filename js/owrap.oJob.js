@@ -257,7 +257,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 
 /**
  * <odoc>
- * <key>ow.oJob.loadFile(aFile, aId)</key>
+ * <key>ow.oJob.loadFile(aFile, args, aId)</key>
  * Loads the configuration from a YAML or JSON aFile and loads all configuration.\
  * Optionally you can provide aId to segment these specific jobs.\
  * \
@@ -323,7 +323,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
  *       pidFile     : helloworld.pid\
  *       killPrevious: true\
  *    channels:\
- *            : true\
+ *       expose     : true\
  *       port       : 17878\
  *       permissions: r\
  *       #list       :\
@@ -335,21 +335,25 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
  * \
  * </odoc>
  */
-OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId) {
+OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob) {
 	var s = this.__loadFile(aFile);
-	if (isDef(s))
+	if (isDef(s)) {
+		if (isSubJob && isDef(s.ojob)) {
+			s.ojob.__subjob = true;
+		}
 		this.load(s.jobs, s.todo, s.ojob, args, aId);
+	}
 }
 
 /**
  * <odoc>
- * <key>ow.oJob.runFile(aFile, args, aId)</key>
+ * <key>ow.oJob.runFile(aFile, args, aId, isSubJob)</key>
  * Loads aFile configuration and executes the oJob defined with the provided args.
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-OpenWrap.oJob.prototype.runFile = function(aFile, args, aId) {
-	this.loadFile(aFile, args, aId);
+OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob) {
+	this.loadFile(aFile, args, aId, isSubJob);
 
 	this.start(args, true, aId);
 }
@@ -357,7 +361,7 @@ OpenWrap.oJob.prototype.runFile = function(aFile, args, aId) {
 /**
  * <odoc>
  * <key>ow.oJob.previewFile(aFile) : Map</key>
- * Returns a map with a preview of the oJob configuration that would be executed with aFile.
+  * Returns a map with a preview of the oJob configuration that would be executed with aFile.
  * </odoc>
  */
 OpenWrap.oJob.prototype.previewFile = function(aFile) {
@@ -686,7 +690,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 100;
 
 	    //if (isUnDef(this.__ojob.unique)) this.__ojob.unique = {};
-	    if (isDef(this.__ojob.unique)) {
+	    if (isDef(this.__ojob.unique) && !this.__ojob.__subjob) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
 
@@ -927,7 +931,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 						var errors = [];
 						parallel4Array(args.__oJobRepeat, function(aV) {
 							try {
-								parent.runFile(aJob.typeArgs.file, aV, aJob.typeArgs.file + md5(stringify(aV)));
+								parent.runFile(aJob.typeArgs.file, aV, aJob.typeArgs.file + md5(stringify(aV)), true);
 								return aV;
 							} catch(e1) {
 								errors.push({ k: aV, e: e1});
@@ -936,7 +940,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 						if (errors.length > 0) throw stringify(errors);
 						this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 					} else {
-						parent.runFile(aJob.typeArgs.file, args, aJob.typeArgs.file);
+						parent.runFile(aJob.typeArgs.file, args, aJob.typeArgs.file, true);
 						this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 					}
 					return true;
