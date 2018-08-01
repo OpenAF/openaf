@@ -3917,7 +3917,7 @@ IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileStri
  * \
  * Channel basic persistence:\
  * \
- * - storeAdd(aFilename, anArrayOfKeys, shouldCompress)\
+ * - storeAdd(aFilename, anArrayOfKeys, shouldCompress, runSubscribersForAll)\
  * - storeRestore(aFilename, anArrayOfKeys)\
  * \
  * Inter-channel HTTP REST:\
@@ -3951,7 +3951,7 @@ $channels = function(a) {
 		shift        : function(aKey) { return ow.ch.shift(a, aKey); },
 		getVersion   : function() { return ow.ch.getVersion(a); },
 		
-		storeAdd     : function(aFilename, anArrayOfKeys, shouldCompress) { ow.ch.persistence.create(a, aFilename, anArrayOfKeys, shouldCompress); return $channels(a) },
+		storeAdd     : function(aFilename, anArrayOfKeys, shouldCompress, forAll) { ow.ch.persistence.create(a, aFilename, anArrayOfKeys, shouldCompress, forAll); return $channels(a) },
 		storeRestore : function(aFilename, anArrayOfKeys) { ow.ch.persistence.restore(a, aFilename, anArrayOfKeys); return $channels(a); },
 		
 		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck); },
