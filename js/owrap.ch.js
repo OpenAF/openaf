@@ -391,6 +391,19 @@ OpenWrap.ch.prototype.__types = {
 	},	
 	// Buffer implementation
 	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.buffer</key>
+	 * This OpenAF implementation establishes a buffer to another channel. The creation options are:\
+	 * \
+	 *    - bufferCh       (String) The channel that will receive data from the buffer channel.\
+	 *    - bufferIdxs     (Array)  An array of keys to use for faster performance (defaults to []).\
+	 *    - bufferByTime   (Number) How much time before flushing contents from the buffer channel (default 2500ms).\
+	 *    - bufferByNumber (Number) How many entries before flushing contents from the buffer channel (default 100).\
+	 *    - bufferTmpCh    (String) The auxiliary temporary buffer storage channel to use (default creates [name]::__buffer).\
+	 * \
+	 * </odoc>
+	 */
 	buffer: {
 		create       : function(aName, shouldCompress, options) {
 			options                 = _$(options).isMap("Options must be a map.").default({});
@@ -429,7 +442,7 @@ OpenWrap.ch.prototype.__types = {
 							ar.push(v); 
 							$ch(parent.__bt[aName]).unset(k);
 						});
-						$ch(parent.__bc[aName]).setAll(parent.__bi[aName], ar);
+						if (ar.length > 0) $ch(parent.__bc[aName]).setAll(parent.__bi[aName], ar);
 					} else {
 						$ch(parent.__bt[aName]).forEach((k, v) => {
 							$ch(parent.__bc[aName]).set(k, v); 
@@ -852,13 +865,15 @@ OpenWrap.ch.prototype.__types = {
 			url += "/_bulk";
 			var ops = "";
 			
-			for(var i in aVs) {
+			if (isDef(aVs) && isArray(aVs) && aVs.length <= 0) return;
+
+			for(var ii in aVs) {
 				ops += stringify({ index: {
-					_index: this.__channels[aName].fnIndex(aKs[i]), 
+					_index: this.__channels[aName].fnIndex(aKs[ii]), 
 					_type : this.__channels[aName].idKey,
-					_id   : aVs[i][this.__channels[aName].idKey] 
+					_id   : aVs[ii][this.__channels[aName].idKey] 
 				}}, undefined, "") + "\n" + 
-				stringify(aVs[i], undefined, "") + "\n";
+				stringify(aVs[ii], undefined, "") + "\n";
 			}
 			
 			/*
