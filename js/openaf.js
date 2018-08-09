@@ -3851,6 +3851,8 @@ function loadJSYAML() {
 
 loadCompiledLib("openafsigil_js");
 
+var __correctYAML = true;
+
 /**
  * <odoc>
  * <key>AF.toYAML(aJson) : String</key>
@@ -3864,7 +3866,7 @@ AF.prototype.toYAML = function(aJson) { loadJSYAML(); return jsyaml.dump(aJson);
  * Tries to parse aYaml into a javascript map.
  * </odoc>
  */
-AF.prototype.fromYAML = function(aYAML) { loadJSYAML(); return jsyaml.load(aYAML); };
+AF.prototype.fromYAML = function(aYAML) { loadJSYAML(); if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); return jsyaml.load(aYAML); };
 /**
  * <odoc>
  * <key>AF.encryptText()</key>
