@@ -3889,6 +3889,47 @@ IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFile
  */
 IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileString(aYAMLFile, af.toYAML(aObj)); }
 
+function isBinaryArray(anArrayOfBytes, confirmLimit, previous) {
+	var isBin = _$(previous).isBoolean().default(true);
+	var rcstream = 0;
+	confirmLimit = _$(confirmLimit).isNumber().default(1024);
+
+	for(var iv in anArrayOfBytes) {
+		var c = anArrayOfBytes[iv] & 0xFF;
+
+		// from https://www.java-forums.org/advanced-java/82143-how-check-if-file-plain-text-binary.html
+		if (c == 10 || c == 11 || c == 13 || c >= 32 && c <= 126) {
+			isBin = false;
+		} else if (c == 153 || c >= 160 && c <= 255) {
+			isBin = false;
+		} else if (c == 884 || c == 885 || c == 890 || c == 894 || c >= 900 && c <= 974) {
+			isBin = false;
+		} else {
+			isBin = true;
+		}
+		rcstream++;
+		if (confirmLimit > 0 && rcstream >= confirmLimit) return isBin;
+	}
+
+	return isBin;
+}
+
+IO.prototype.isBinaryFile = function(aFile, confirmLimit) {
+	var rstream = io.readFileStream(aFile);
+	var rcstream = 0;
+	var isBin = true;
+	confirmLimit = _$(confirmLimit).isNumber().default(1024);
+
+	ioStreamReadBytes(rstream, (v) => {
+		rcstream += v.length;
+		isBin = isBinaryArray(v, 1024, isBin);
+		if (confirmLimit > 0 && rcstream >= confirmLimit) return isBin;
+	});
+	rstream.close();
+	
+	return isBin;
+}
+
 /**
  * <odoc>
  * <key>$channels(aChannel)</key>
