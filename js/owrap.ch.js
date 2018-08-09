@@ -437,12 +437,17 @@ OpenWrap.ch.prototype.__types = {
 			this.__f[aName] = function(force) {
 				if ($ch(parent.__bt[aName]).size() >= parent.__bn[aName] || force) {
 					if (parent.__bi[aName].length > 0) {
-						var ar = [];
+						var ar = [], ak = [];
 						$ch(parent.__bt[aName]).forEach((k, v) => {
+							ak.push(k);
 							ar.push(v); 
-							$ch(parent.__bt[aName]).unset(k);
+							//$ch(parent.__bt[aName]).unset(k);
 						});
-						if (ar.length > 0) $ch(parent.__bc[aName]).setAll(parent.__bi[aName], ar);
+				
+						if (ar.length > 0) {
+							$ch(parent.__bc[aName]).setAll(parent.__bi[aName], ar);
+							for(var ii in ak) { $ch(parent.__bt[aName]).unset(ak[ii]); }
+						}
 					} else {
 						$ch(parent.__bt[aName]).forEach((k, v) => {
 							$ch(parent.__bc[aName]).set(k, v); 
@@ -868,25 +873,26 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(aVs) && isArray(aVs) && aVs.length <= 0) return;
 
 			for(var ii in aVs) {
-				ops += stringify({ index: {
-					_index: this.__channels[aName].fnIndex(aKs[ii]), 
-					_type : this.__channels[aName].idKey,
-					_id   : aVs[ii][this.__channels[aName].idKey] 
-				}}, undefined, "") + "\n" + 
-				stringify(aVs[ii], undefined, "") + "\n";
+				if (aVs[ii] != null && isDef(aVs[ii][this.__channels[aName].idKey])) {
+					ops += stringify({ index: {
+						_index: this.__channels[aName].fnIndex(aKs[ii]), 
+						_type : this.__channels[aName].idKey,
+						_id   : aVs[ii][this.__channels[aName].idKey] 
+					}}, void 0, "") + "\n" + 
+					stringify(aVs[ii], void 0, "") + "\n";
+				}
 			}
 			
-			/*
-			plugin("HTTP");
-			var h = new HTTP();*/
-			var h = new ow.obj.http();
-			if (isDef(this.__channels[aName].user))
-				h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
-			try {
-				return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
-			} catch(e) {
-				e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
-				throw e;
+			if (ops.length > 0) {
+				var h = new ow.obj.http();
+				if (isDef(this.__channels[aName].user))
+					h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
+				try {
+					return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
+				} catch(e) {
+					e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
+					throw e;
+				}
 			}
 		},
 		get          : function(aName, aK) {
