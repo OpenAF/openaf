@@ -43,6 +43,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testGzipNativeToByte;
 
+   - name: IO::IO Test binary file detection
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testBinaryFileDetection;
+
 todo:
    # IO tests
    # --------
@@ -53,3 +58,4 @@ todo:
    - IO::IO Test read/writeFileStream NIO
    - IO::IO Test read/writeFileStreamBytes NIO
    - IO::IO Test Gzip Native to Byte array
+   - IO::IO Test binary file detection

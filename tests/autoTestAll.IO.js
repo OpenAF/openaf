@@ -102,4 +102,9 @@
 
         ow.test.assert(orig.length, s.length, "Problem with gzip native java array to byte array conversion.");
     };
+
+    exports.testBinaryFileDetection = () => {
+        ow.test.assert(io.isBinaryFile(getOpenAFJar()), true, "Problem with io.isBinaryFile detecting binary files.");
+        ow.test.assert(io.isBinaryFile(getOpenAFPath() + "/js/openaf.js"), false, "Problem with io.isBinaryFile detecting text files.");
+    };
 })();
