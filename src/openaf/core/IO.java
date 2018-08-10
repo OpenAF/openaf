@@ -33,8 +33,6 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSFunction;
 import org.mozilla.universalchardet.UniversalDetector;
 
-import com.google.gson.Gson;
-
 import openaf.AFBase;
 import openaf.AFCmdBase;
 import openaf.JSEngine;
