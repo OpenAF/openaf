@@ -433,6 +433,45 @@ function listFiles(startPath, relPath, excludingList) {
 	return files;
 }
 
+function generateHash(aObject) {
+	var res = "";
+
+	if (isString(aObject)) {
+		if (io.isBinaryFile(aObject)) {
+			var rfs = io.readFileStream(aObject);
+			res = String(sha1(rfs));
+			rfs.close();
+		} else {	
+			var rfs = io.readFileStream(aObject);
+			var digest = Packages.org.apache.commons.codec.digest.DigestUtils.getDigest(Packages.org.apache.commons.codec.digest.MessageDigestAlgorithms.SHA_1);
+			ioStreamReadBytes(rfs, (bs) => {
+				var nbs = [];
+				for(var ibs in bs) {
+					if (bs[ibs] != 13) nbs.push(bs[ibs]);
+				}
+				digest.update(nbs);
+			});
+			res = String(Packages.org.apache.commons.codec.binary.Hex.encodeHexString(digest.digest()));
+		}		
+	}
+
+	if (isByteArray(aObject)) {
+		if (isBinaryArray(aObject)) {
+			return sha1(aObject);
+		} else {
+			var nbs = [];
+			for(var ibs in aObject) {
+				if (aObject[ibs] != 13) nbs.push(aObject[ibs]);
+			}
+			return sha1(nbs);
+		}
+	}
+
+	if (res == "") throw "Object type for generateHash couldn't be determined.";
+
+	return res;
+}
+
 // Read local files an generate hash
 function listFilesWithHash(startPath, excludingList) {
 	var filesHash = {};
@@ -447,9 +486,7 @@ function listFilesWithHash(startPath, excludingList) {
 			lognl(str);
 			if (str.length > cmax) cmax = str.length;
 			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) && !(files[i].match(new RegExp(PACKAGEYAML + "$", "")))) {
-				var rfs = io.readFileStream(startPath + "/" + files[i]);
-				filesHash[files[i]] = sha1(rfs) + "";
-				rfs.close();
+				filesHash[files[i]] = generateHash(startPath + "/" + files[i]);
 			}
 		} catch (e) {
 		}
@@ -499,24 +536,22 @@ function verifyHashList(startPath, filesHash) {
 
 		switch(location) {
 		case "local": 
-			var rfs = io.readFileStream(startPath + "/" + file);
-			hash = sha1(rfs) + "";
-			rfs.close();
+			hash = generateHash(startPath + "/" + file);
 			break;
 		case "http":
-			hash = sha1(http) + "";
+			hash = generateHash(http);
 			break;
 		case "opack":
 			if (location == "opack") 
-				hash = sha1(zip.streamGetFile(file));
+				hash = generateHash(zip.streamGetFile(file));
 			else
-				hash = sha1(zip.getFile(file)) + "";
+				hash = generateHash(zip.getFile(file));
 			break;
 		case "opackhttp":
 			if (location == "opackhttp")
-				hash = sha1(zip.streamGetFile(file));
+				hash = generateHash(zip.streamGetFile(file));
 			else
-				hash = sha1(zip.getFile(file)) + "";
+				hash = generateHash(zip.getFile(file));
 			break;
 		}
 

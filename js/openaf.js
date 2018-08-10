@@ -2513,6 +2513,16 @@ function isJavaObject(obj) {
 
 /**
  * <odoc>
+ * <key>isByteArray(aObj) : boolean</key>
+ * Returns true if aObj is a byte array object, false otherwise.
+ * </odoc>
+ */
+function isByteArray(obj) {
+	return (isDef(obj.getClass) && obj.getClass().getName() == "byte[]");
+}
+
+/**
+ * <odoc>
  * <key>loadLib(aLib, forceReload, aFunction) : boolean</key>
  * Loads the corresponding javascript library and keeps track if it was already loaded or not (in __loadedLibs).
  * Optionally you can force reload and provide aFunction to execute after the successful loading.
