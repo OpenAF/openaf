@@ -1540,6 +1540,50 @@ function isUnDef(aObject) { return (typeof aObject == 'undefined') ? true : fals
 
 /**
  * <odoc>
+ * <key>isBinaryArray(anArrayOfChars, confirmLimit, previousResult) : boolean</key>
+ * Tries to determine if the provided anArrayOfChars is binary or text. The detection is performed with the first 1024 chars (
+ * that can be changed if confirmLimit is provided). Additionally is possible to link multiple calls providing the last result
+ * on previousResult for multiple subsequences of a main array of chars sequence. Should work for utf8, iso-8859-1, iso-8859-7,
+*  windows-1252 and windows-1253. Returns true if file is believed to be binary.
+ * </odoc>
+ */
+function isBinaryArray(anArrayOfChars, confirmLimit) {
+	var rcstream = 0;
+	confirmLimit = _$(confirmLimit).isNumber().default(1024);
+	var isit = {
+		text: 0,
+		bin : 0
+	};
+
+	function evaluateIsIt() {
+		if (isit.bin == 0)
+			return false;
+		else
+			return true;
+	}
+
+	for(var ii = 0; ii < anArrayOfChars.length; ii++) {
+		var c = anArrayOfChars[ii];
+
+		// based on https://www.java-forums.org/advanced-java/82143-how-check-if-file-plain-text-binary.html
+		if (c == 9 || c == 10 || c == 11 || c == 13 || (c >= 32 && c <= 126)) {
+			isit.text++;
+		} else if (c == 153 || (c >= 160 && c <= 255)) {
+			isit.text++;
+		} else if (c == 884 || c == 885 || c == 890 || c == 894 || (c >= 900 && c <= 974)) {
+			isit.text++;
+		} else {
+			isit.bin++;
+		}
+		rcstream++;
+		if (confirmLimit > 0 && rcstream >= confirmLimit) return evaluateIsIt();
+	}
+
+	return evaluateIsIt();
+}
+
+/**
+ * <odoc>
  * <key>listFilesRecursive(aPath) : Map</key>
  * Performs the io.listFiles function recursively given aPath. The returned map will be equivalent to
  * the io.listFiles function (see more in io.listFiles). 
@@ -3342,14 +3386,15 @@ function ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, useNIO) {
 
 /**
  * <odoc>
- * <key>ioStreamRead(aStream, aFunction, aBufferSize, useNIO)</key>
+ * <key>ioStreamRead(aStream, aFunction, aBufferSize, useNIO, encoding)</key>
  * Given a Java input or output stream helps to read strings by using aFunction with a string argument for each buffer size 
  * (default 1024 characters). Optionally you can provide a different aBufferSize (default: 1024) and/or also specify that 
  * Java NIO functionality should be used. If aFunction returns true the read operation stops.
  * </odoc>
  */
-function ioStreamRead(aStream, aFunction, aBufferSize, useNIO) {
+function ioStreamRead(aStream, aFunction, aBufferSize, useNIO, encoding) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
+	encoding = _$(encoding).isString().default("UTF-8");
 	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 
 	if (useNIO) {
@@ -3373,7 +3418,7 @@ function ioStreamRead(aStream, aFunction, aBufferSize, useNIO) {
 			}*/
 
 			//var res = aFunction(af.fromBytes2String(af.fromArray2Bytes(buf)));
-			var res = aFunction(String(java.nio.charset.StandardCharsets.UTF_8.decode(buffer).toString()));
+			var res = aFunction(String(java.nio.charset.Charset.forName(encoding).newDecoder().decode(buffer).toString()));
 			if (res == true) {
 				channel.close();
 				aStream.close();
@@ -3889,43 +3934,26 @@ IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFile
  */
 IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileString(aYAMLFile, af.toYAML(aObj)); }
 
-function isBinaryArray(anArrayOfBytes, confirmLimit, previous) {
-	var isBin = _$(previous).isBoolean().default(true);
-	var rcstream = 0;
-	confirmLimit = _$(confirmLimit).isNumber().default(1024);
-
-	for(var iv in anArrayOfBytes) {
-		var c = anArrayOfBytes[iv] & 0xFF;
-
-		// from https://www.java-forums.org/advanced-java/82143-how-check-if-file-plain-text-binary.html
-		if (c == 10 || c == 11 || c == 13 || c >= 32 && c <= 126) {
-			isBin = false;
-		} else if (c == 153 || c >= 160 && c <= 255) {
-			isBin = false;
-		} else if (c == 884 || c == 885 || c == 890 || c == 894 || c >= 900 && c <= 974) {
-			isBin = false;
-		} else {
-			isBin = true;
-		}
-		rcstream++;
-		if (confirmLimit > 0 && rcstream >= confirmLimit) return isBin;
-	}
-
-	return isBin;
-}
-
+/**
+ * <odoc>
+ * <key>IO.isBinaryFile(aFile, confirmLimit) : boolean</key>
+ * Tries to determine if the provided aFile is a binary or text file by checking the first 1024 chars (limit can be changed using
+ * confirmLimit). Returns true if file is believed to be binary. Based on the function isBinaryArray.
+ * </odoc>
+ */
 IO.prototype.isBinaryFile = function(aFile, confirmLimit) {
 	var rstream = io.readFileStream(aFile);
 	var rcstream = 0;
 	var isBin = true;
 	confirmLimit = _$(confirmLimit).isNumber().default(1024);
 
-	ioStreamReadBytes(rstream, (v) => {
-		rcstream += v.length;
-		isBin = isBinaryArray(v, 1024, isBin);
-		if (confirmLimit > 0 && rcstream >= confirmLimit) return isBin;
-	});
+	var v = [];
+	while((rstream.available() > 0) && (confirmLimit > 0 && rcstream < confirmLimit)) {
+		rcstream++;
+		v.push(rstream.read());
+	}
 	rstream.close();
+	isBin = isBinaryArray(v, confirmLimit);
 	
 	return isBin;
 }
