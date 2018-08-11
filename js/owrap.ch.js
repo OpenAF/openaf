@@ -2054,6 +2054,24 @@ OpenWrap.ch.prototype.utils = {
 		};
 	},
 
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.getElasticQuery(aQueryString) : Map</key>
+	 * Returns a query map using aQueryString (using lucene query string (like in Kibana)) to be used on getAll, for example.
+	 * </odoc>
+	 */
+	getElasticQuery: function(aQueryString) {
+		_$(aQueryString).isString();
+
+		return {
+			query: {
+				query_string: {
+					query: aQueryString
+				}
+			}
+		};
+	},
+
 	mvs: {
 		/**
 		 * <odoc>
