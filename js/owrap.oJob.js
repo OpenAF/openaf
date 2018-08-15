@@ -647,6 +647,20 @@ OpenWrap.oJob.prototype.__mergeArgs = function(a, b) {
 	return r;
 };
 
+OpenWrap.oJob.prototype.__processTypeArg = function(aTypeArg) {
+	if (isString(aTypeArg)) {
+		var res;
+		try {
+			res = eval(aTypeArg);
+		} catch(e) {
+			res = aTypeArg;
+		}
+		return res;
+	} else {
+		return aTypeArg;
+	}
+};
+
 OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 	var argss = {};
 	if (isDef(aArgsA)) {
@@ -900,10 +914,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 	}
 	
 	if (canContinue) {
-		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, undefined, aId, true) : {};
+		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, void 0, aId, true) : {};
 		
 		args.objId = this.getID() + altId;	
-		args = this.__mergeArgs(args, aJob.args);
+		args = this.__mergeArgs(args, this.__processArgs(aJob.args, void 0, void 0, true));
 
 		switch(aJob.type) {
 		case "single":
@@ -922,6 +936,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 			break;
 		case "jobs":
 			if (isDef(aJob.typeArgs.file)) {
+				aJob.typeArgs.file = this.__processTypeArg(aJob.typeArgs.file);
 				try {
 					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
 					if (isDef(args.__oJobRepeat)) {
@@ -985,7 +1000,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 
 			if (isDef(aJob.typeArgs)) {
 				if (isDef(aJob.typeArgs.chSubscribe)) {
-					$ch(aJob.typeArgs.chSubscribe).subscribe(subs());
+					$ch(this.__processTypeArg(aJob.typeArgs.chSubscribe)).subscribe(subs());
 				}
 			}
 			break;
@@ -1004,6 +1019,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 			};
 
 			if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
+
+			aJob.typeArgs.timeInterval = this.__processTypeArg(aJob.typeArgs.timeInterval);
 			if (isDef(aJob.typeArgs.timeInterval) && aJob.typeArgs.timeInterval > 0) {
 				var t = new Threads();
 				t.addThread(f);
@@ -1013,12 +1030,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				else
 					parent.__threads[aJob.name] = [ t ]; 
 
+				aJob.typeArgs.waitForFinish = this.__processTypeArg(aJob.typeArgs.waitForFinish);
 				if (isDef(aJob.typeArgs.waitForFinish) && aJob.typeArgs.waitForFinish)
 					t.startWithFixedRate(aJob.typeArgs.timeInterval);
 				else
 					t.startAtFixedRate(aJob.typeArgs.timeInterval);
 			} else {
 				if (isDef(aJob.typeArgs.cron)) {
+					aJob.typeArgs.cron = this.__processTypeArg(aJob.typeArgs.cron);
 					if (isUnDef(parent.__sch)) {
 						ow.loadServer(); 
 						parent.__sch = new ow.server.scheduler();
