@@ -3853,25 +3853,38 @@ function oJobRun(aJson, args, aId) {
 
 /**
  * <odoc>
- * <key>oJobRunJob(aJob, args, aId)</key>
+ * <key>oJobRunJob(aJob, args, aId) : boolean</key>
  * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
  * Optionally you can provide aId to segment this specific job. If aJob is a string it will try to retrieve the job
- * from the jobs channel.
+ * from the jobs channel. Returns true if the job executed or false otherwise (e.g. failed deps).
  * </odoc>
  */
 function oJobRunJob(aJob, args, aId) {
 	ow.loadOJob();
 	if (isString(aJob)) {
-		if (isUnDef(aId)) aId = genUUID();
+		if (isUnDef(aId)) aId = "";
 		var job = ow.oJob.getJobsCh().get({ name: aJob });
 		if (isDef(job)) {
-			ow.oJob.runJob(job, args, aId);
+			return ow.oJob.runJob(job, args, aId);
 		} else {
 			throw "Job '" + aJob + "' not found.";
 		}
 	} else {
-		ow.oJob.runJob(aJob, args, aId);
+		return ow.oJob.runJob(aJob, args, aId);
 	}
+}
+
+/**
+ * <odoc>
+ * <key>oJobRunJobAsync(aJob, args, aId) : oPromise</key>
+ * Creates an oPromise to run the same arguments for oJobRunJob thus executing the job async. Returns
+ * the generate oPromise.
+ * </odoc>
+ */
+function oJobRunJobAsync(aJob, args, aId) {
+	return $do(() => {
+		return oJobRunJob(aJob, args, aId);
+	});
 }
 
 /**
