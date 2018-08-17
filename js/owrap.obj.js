@@ -326,9 +326,9 @@ OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ig
  * \
  * fromObj2Array(a, "key");\
  * // [\
- * //  { "abc": "123", "xpt": "000", "key": "A1" },\
- * //  { "abc": "456", "xpt": "001", "key": "A2" },\
- * //  { "abc": "789", "xpt": "002", "key": "A3" }\
+ * //  { "key": "A1", "abc": "123", "xpt": "000" },\
+ * //  { "key": "A2", "abc": "456", "xpt": "001" },\
+ * //  { "key": "A3", "abc": "789", "xpt": "002" }\
  * // ]\
  * \
  * </odoc>
@@ -336,12 +336,18 @@ OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ig
 OpenWrap.obj.prototype.fromObj2Array = function(aObj, aKey) {
 	var res = [];
 	for(var i in aObj) {
-		var item = clone(aObj[i]);
-		if (isDefined(aKey)) item[aKey] = i;
+		var item;
+		if (isDef(aKey)) {
+			var m = {};
+			m[aKey] = i;
+			item = merge(m, aObj[i]);
+		} else {
+			item = clone(aObj[i]);
+		}
 		res.push(item);
 	}
 	return res;
-}
+};
 
 /**
  * <odoc>
@@ -356,7 +362,7 @@ OpenWrap.obj.prototype.filterKeys = function(anArrayKeyNames, aRow) {
 		keys[anArrayKeyNames[i]] = aRow[anArrayKeyNames[i]];
 	}
 	return keys;
-}
+};
 
 /**
  * <odoc>
@@ -365,18 +371,18 @@ OpenWrap.obj.prototype.filterKeys = function(anArrayKeyNames, aRow) {
  * it will be used to create the map keys (otherwise will fallback to "row[number]"). And can also
  * optionally indicate by dontRemove = true that aKey shouldn't be removed from each map.
  * \
- * var a = {\
- *    "A1": { "abc": "123", "xpt": "000" },\
- *    "A2": { "abc": "456", "xpt": "001" },\
- *    "A3": { "abc": "789", "xpt": "002" }\
- * }\
+ * var a = [\
+ *   { "abc": "123", "xpt": "000", "key": "A1" },\
+ *   { "abc": "456", "xpt": "001", "key": "A2" },\
+ *   { "abc": "789", "xpt": "002", "key": "A3" }\
+ * ]\
  * \
- * fromObj2Array(a, "key");\
- * // [\
- * //  { "abc": "123", "xpt": "000", "key": "A1" },\
- * //  { "abc": "456", "xpt": "001", "key": "A2" },\
- * //  { "abc": "789", "xpt": "002", "key": "A3" }\
- * // ]\
+ * fromArray2Obj(a, "key");\
+ * // {\
+ * //   "A1": { "abc": "123", "xpt": "000" },\
+ * //   "A2": { "abc": "456", "xpt": "001" },\
+ * //   "A3": { "abc": "789", "xpt": "002" }\
+ * // }\
  * \
  * </odoc>
  */
@@ -384,7 +390,7 @@ OpenWrap.obj.prototype.fromArray2Obj = function(anArray, aKey, dontRemove) {
 	var res = {};
 	for(var i in anArray) {
 		var item = clone(anArray[i]);
-		if (isDefined(aKey) && isDefined(item[aKey])) {
+		if (isDef(aKey) && isDef(item[aKey])) {
 			res[item[aKey]] = item;
 			if (!dontRemove) delete item[aKey];
 		} else {
@@ -392,7 +398,7 @@ OpenWrap.obj.prototype.fromArray2Obj = function(anArray, aKey, dontRemove) {
 		}
 	}
 	return res;
-}
+};
 
 OpenWrap.obj.prototype.pool = {
 	/**
