@@ -1159,6 +1159,34 @@ function sha512(obj) {
 
 /**
  * <odoc>
+ * <key>bcrypt(aText, aVerifyHash, hashingRounds) : String/boolean</key>
+ * If aText is provided it will return the resulting string of applying the bcrypt hash to aText. Optionally the bcrypt hashingRounds (between 4 and 
+ * 31, default 10) can be provided (note: the more rounds, the more slower and secure).
+ * If aVerifyHash is provided it will return a boolean determining if the provided aVerifyHash (result of a previous bcrypt)
+ * matches the aText provided (hashingRounds will be ignored since the hash string already provides the rounds used).
+ * </odoc>
+ */
+function bcrypt(aText, aVerifyHash, hashingRounds) {
+	_$(aText).isString().$_("Please provide a string text");
+	_$(aVerifyHash).isString();
+	_$(hashingRounds).isNumber().check((v) => { return (v >= 4 || v <= 31); }, "hashingRounds need to be between 4 and 31");
+
+	var salt;
+	if (isDef(hashingRounds)) {
+		salt = Packages.org.springframework.security.crypto.bcrypt.BCrypt.gensalt(hashingRounds);
+	} else {
+		salt = Packages.org.springframework.security.crypto.bcrypt.BCrypt.gensalt();
+	}
+
+	if (isDef(aVerifyHash)) {
+		return Packages.org.springframework.security.crypto.bcrypt.BCrypt.checkpw(aText, aVerifyHash);
+	} else {
+		return String(Packages.org.springframework.security.crypto.bcrypt.BCrypt.hashpw(aText, salt));
+	}
+}
+
+/**
+ * <odoc>
  * <key>splitBySeparator(aString, aSeparator) : Array</key>
  * Will split aString using the provided aSeparator. If the aSeparator is escaped (for example if ';' is the aSeparator and 
  * aString 'abc\\;def;123" only the second ';' will be considered.
