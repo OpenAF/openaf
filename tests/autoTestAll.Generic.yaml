@@ -42,7 +42,12 @@ jobs:
      from: OpenAF::Init
      to  : oJob Test
      exec: args.func = args.tests.testSHA512;
-  
+
+   - name: OpenAF::Test BCrypt
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testBCrypt;  
+
    - name: OpenAF::Test Merge
      from: OpenAF::Init
      to  : oJob Test
@@ -153,6 +158,7 @@ todo:
    - OpenAF::Test SHA1
    - OpenAF::Test SHA256
    - OpenAF::Test SHA512
+   - OpenAF::Test BCrypt
    - OpenAF::Test Merge
    - OpenAF::Test Shell
    - OpenAF::Test Shell with Map

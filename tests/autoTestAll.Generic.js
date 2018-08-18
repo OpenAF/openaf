@@ -43,6 +43,18 @@
         }        
     };
 
+    exports.testBCrypt = function() {
+        var test = "This is a nice test";
+        var res = bcrypt(test);
+        ow.test.assert(bcrypt(test, res), true, "Problem with BCrypt simple test (default rounds)");
+
+        res = bcrypt(test, void 0, 4);
+        ow.test.assert(bcrypt(test, res), true, "Problem with BCrypt with 4 rounds.");
+
+        res = bcrypt(test, void 0, 12);
+        ow.test.assert(bcrypt(test, res), true, "Problem with BCrypt with 12 rounds.");
+    };
+
     exports.testMerge = function() {
         var a = { a: 1, b: 2};
         var b = { b: 3, c: 1};
