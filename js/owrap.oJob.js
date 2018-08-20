@@ -898,10 +898,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; " + aExec);
 		if (isDef(args.__oJobRepeat)) { 
 			var errors = [];
-			var single = ((isDef(parent.__ojob.numThreads) && parent.__ojob.numThreads > 1) ||
-			              isDef(aJob.typeArgs.single)) 
-					     ? aJob.typeArgs.single 
-						 : false;
+			var single = false;
+			if (isDef(parent.__ojob.numThreads) && parent.__ojob.numThreads <= 1) single = true;
+	        if (isDef(aJob.typeArgs.single)) single = aJob.typeArgs.single;
 			if (!single) {
 				parallel4Array(args.__oJobRepeat, function(aValue) {
 					try {
