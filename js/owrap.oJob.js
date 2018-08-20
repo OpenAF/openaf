@@ -898,13 +898,28 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; " + aExec);
 		if (isDef(args.__oJobRepeat)) { 
 			var errors = [];
-			parallel4Array(args.__oJobRepeat, function(aValue) {
-				try {
-					return f(aValue, job, id, depInfo);
-				} catch(e) {
-					errors.push(stringify({ args: aValue, exception: e}));
+			var single = ((isDef(parent.__ojob.numThreads) && parent.__ojob.numThreads > 1) ||
+			              isDef(aJob.typeArgs.single)) 
+					     ? aJob.typeArgs.single 
+						 : false;
+			if (!single) {
+				parallel4Array(args.__oJobRepeat, function(aValue) {
+					try {
+						return f(aValue, job, id, depInfo);
+					} catch(e) {
+						errors.push(stringify({ args: aValue, exception: e}));
+					}
+				}, parent.__ojob.numThreads);
+			} else {
+				for(var aVi in args.__oJobRepeat) {
+					try {
+						f(args.__oJobRepeat[aVi], job, id, depInfo);
+					} catch(e) {
+						errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+					}
 				}
-			}, parent.__ojob.numThreads);
+			}
+
 			if (errors.length > 0) {
 				throw errors.join(", ");
 			}
@@ -918,9 +933,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		
 		args.objId = this.getID() + altId;	
 		args = this.__mergeArgs(args, this.__processArgs(aJob.args, void 0, void 0, true));
+		if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
 
 		switch(aJob.type) {
-		case "single":
+		case "simple":
 			try {
 				var uuid = this.__addLog("start", aJob.name, undefined, args, undefined, aId);
 				args.execid = uuid;			
@@ -944,14 +960,25 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 						args = this.__mergeArgs(args, aJob.args);
 
 						var errors = [];
-						parallel4Array(args.__oJobRepeat, function(aV) {
-							try {
-								parent.runFile(aJob.typeArgs.file, aV, aJob.typeArgs.file + md5(stringify(aV)), true);
-								return aV;
-							} catch(e1) {
-								errors.push({ k: aV, e: e1});
+						if (parent.__ojob.numThreads > 1 && !aJob.typeArgs.single) {
+							parallel4Array(args.__oJobRepeat, function(aV) {
+								try {
+									parent.runFile(aJob.typeArgs.file, aV, aJob.typeArgs.file + md5(stringify(aV)), true);
+									return aV;
+								} catch(e1) {
+									errors.push({ k: aV, e: e1});
+								}
+							}, parent.__ojob.numThreads);
+						} else {
+							for(var aVi in args.__oJobRepeat) {
+								try {
+									parent.runFile(aJob.typeArgs.file, args.__oJobRepeat[aVi], aJob.typeArgs.file + md5(stringify(args.__oJobRepeat[aVi])), true);
+									return args.__oJobRepeat[aVi];
+								} catch(e1) {
+									errors.push({ k: args.__oJobRepeat[aVi], e: e1});
+								}								
 							}
-						}, parent.__ojob.numThreads);
+						}
 						if (errors.length > 0) throw stringify(errors);
 						this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 					} else {
@@ -1018,7 +1045,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				return true;
 			};
 
-			if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
+			//if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
 
 			aJob.typeArgs.timeInterval = this.__processTypeArg(aJob.typeArgs.timeInterval);
 			if (isDef(aJob.typeArgs.timeInterval) && aJob.typeArgs.timeInterval > 0) {
@@ -1068,14 +1095,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
  * <odoc>
  * <key>ow.oJob.addJob(aJobsCh, aName, jobDeps, jobType, aJobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp)</key>
  * Provided aJobsCh (a jobs channel) adds a new job with the provided aName, an array of jobDeps (job dependencies),
- * a jobType (e.g. single, peoridic, shutdown), aJobTypeArgs (a map), jobArgs and a jobFunc (a job function). 
+ * a jobType (e.g. simple, periodic, shutdown), aJobTypeArgs (a map), jobArgs and a jobFunc (a job function). 
  * Optionally you can inherit the job definition from a jobFrom and/or jobTo name ("from" will execute first, "to" will execute after).
  * Also you can include jobHelp.
  * </odoc>
  */
 OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp) {
 	jobDeps = _$(jobDeps).isArray().default([]);
-    jobType = _$(jobType).isString().default("single");
+    jobType = _$(jobType).isString().default("simple");
 	jobFunc = _$(jobFunc).default(function() {});
 	jobHelp = _$(jobHelp).isString().default("");
 
