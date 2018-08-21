@@ -3983,7 +3983,37 @@ IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFile
  * Tries to write a javascript aObj into a aYAMLFile.
  * </odoc>
  */
-IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileString(aYAMLFile, af.toYAML(aObj)); }
+IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileString(aYAMLFile, af.toYAML(aObj)); };
+
+/**
+ * <odoc>
+ * <key>IO.writeLineNDJSON(aNDJSONFile, aObj, aEncode)</key>
+ * Writes aObj into a single line on aNDJSONFile (newline delimited JSON). Optionally you can provide
+ * an encoding.
+ * </odoc>
+ */
+IO.prototype.writeLineNDJSON = function(aNDJSONFile, aObj, aEncode) {
+	io.writeFileString(aNDJSONFile, stringify(aObj, void 0, "")+"\n", aEncode, true);
+};
+
+/**
+ * <odoc>
+ * <key>IO.readLinesNDJSON(aNDJSONFile, aFuncCallback, aErrorCallback)</key>
+ * Opens aNDJSONFile (a newline delimited JSON) as a stream call aFuncCallback with each parse JSON. If
+ * aFuncCallback returns true the cycle will be interrupted. For any parse error it calls the aErrorCallback 
+ * with each exception.
+ * </odoc>
+ */
+IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallback) {
+	var rfs = io.readFileStream(aNDJSONFile);
+	ioStreamReadLines(rfs, (line) => {
+		try {
+			return aFuncCallback(jsonParse(line));
+		} catch(e) {
+			aErrorCallback(e);
+		}
+	});
+};
 
 /**
  * <odoc>

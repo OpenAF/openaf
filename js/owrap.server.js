@@ -321,12 +321,73 @@ OpenWrap.server.prototype.jmx = {
 		var obj = aJMX.getObject(objName);
 		obj.set(aVar, newValue);
 	}
-}
+};
 
 
 //-----------------------------------------------------------------------------------------------------
 // AUTHENTICATION
 //-----------------------------------------------------------------------------------------------------
+/**
+ * <odoc>
+ * <key>ow.server.authAppGen(anAppPassword, aUserPassword, a2FAToken, numRounds) : String</key>
+ * Generates an application token to be used for server communication given anAppPassword (encrypted or not),
+ * an application user password (aUserPassword encrypted or not) and an application a2FAToken. Optionally you
+ * can specify the numRounds for the bcrypt function used.
+ * </odoc>
+ */
+OpenWrap.server.prototype.authAppGen = function(anAppPassword, aUserPassword, a2FAToken, numRounds) {
+	_$(anAppPassword)
+	 .isString("The app password is not a string.")
+	 .check((v) => { return v.length == 16; }, "The app password needs to be 16 chars.")
+	 .$_("Please provide an app password.");
+	
+	_$(aUserPassword)
+	 .isString("The user password is not a string.")
+	 .check((v) => { return v.length >= 16; }, "The user password needs to be 10 chars.")
+	 .$_("Please provide a user password.");
+
+	_$(a2FAToken)
+	 .isString("The 2FA token is not a string.")
+	 .check((v) => { return v.length >= 16; }, "The 2FA token needs to be 16 chars or more (encrypted).")
+	 .$_("Please provde a 2FA token");
+
+	numRounds = _$(numRounds)
+	 .isNumber()
+	 .check((v) => { return (v >= 4 || v <= 31); }, "hashingRounds need to be between 4 and 31")
+	 .default(10);
+
+	var appPass = String(Packages.openaf.AFCmdBase.afc.dIP(anAppPassword));
+	var aPass = String(Packages.openaf.AFCmdBase.afc.dIP(aUserPassword));
+	var token = String(Packages.openaf.AFCmdBase.afc.dIP(a2FAToken));
+
+	return af.encrypt(bcrypt(sha512(aPass + String(af.get2FAToken(token))), void 0, numRounds), appPass);
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.authAppCheck(anAppPassword, aReceivedToken, aUserPassword, a2FAToken) : boolean</key>
+ * Checks the validity of the aReceivedToken given anAppPassword, corresponding aUserPasswork and a2FAToken returning
+ * true if it's valid or false otherwise.
+ * </odoc>
+ */
+OpenWrap.server.prototype.authAppCheck = function(anAppPassword, aTestString, aUserPassword, a2FAToken) {
+	_$(anAppPassword)
+	.isString()
+	.check((v) => { return v.length == 16; }, "The app password needs to be 16 chars.")
+	.$_("Please provide an app password.");
+
+	_$(a2FAToken)
+	 .isString()
+	 .check((v) => { return v.length >= 16; }, "The 2FA token needs to be 16 chars or more (encrypted).")
+	 .$_("Please provde a 2FA token");
+
+	var appPass = String(Packages.openaf.AFCmdBase.afc.dIP(anAppPassword));
+	var aPass = String(Packages.openaf.AFCmdBase.afc.dIP(aUserPassword));
+	var token = String(Packages.openaf.AFCmdBase.afc.dIP(a2FAToken));
+
+	return bcrypt(sha512(aPass + String(af.get2FAToken(token))), af.decrypt(aTestString, appPass));
+};
+
 OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 	this.aListOfAuths = {};
 	this.lockTimeout = 15 * 60;
@@ -343,7 +404,8 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 		if (isDef(aCustomFunction) && isFunction(aCustomFunction)) {
 			this.customFunction = aCustomFunction;
 		}
-	}
+	};
+
 	/**
 	 * <odoc>
 	 * <key>ow.server.auth.setLockTimeout(aTimeout)</key>

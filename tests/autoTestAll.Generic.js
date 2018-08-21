@@ -472,4 +472,23 @@
         ow.test.assert($$($$(a).set("b.d", [ 0, 1, 2 ])).get("b.d"), [0, 1, 2], "Problem with retriving an array after $$().set()");
         ow.test.assert($$($$(a).set("b.d[0]", 4321)).get("b.d[0]"), 4321, "Problem with retriving an element of an array after $$().set()");
     };       
+
+    exports.testNDJSON = function() {
+        var o = [];
+        var filename = "autoTest.ndjson";
+        o.push({ a: 1, b: true, c: "test 1"});
+        o.push({ a: 2, b: false, c: "test 2"});
+        o.push({ a: 3, b: true, c: "test 3"});
+
+        io.rm(filename);
+        for(var oo in o) {
+            io.writeLineNDJSON(filename, o[oo]);
+        }
+
+        var r = [];
+        io.readLinesNDJSON(filename, (obj) => {
+            r.push(o);
+        });
+        io.rm(filename);
+    };
 })();

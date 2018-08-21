@@ -123,6 +123,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testYAML;
 
+   - name: OpenAF::NDJSON
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testNDJSON;     
+
    - name: OpenAF::Encrypt/Decrypt
      from: OpenAF::Init
      to  : oJob Test
@@ -174,6 +179,7 @@ todo:
    - OpenAF::Crypt
    - OpenAF::Encrypt/Decrypt
    - OpenAF::YAML
+   - OpenAF::NDJSON
    - OpenAF::Two factor authentication
    - OpenAF::Java RegExp
    - OpenAF::Get Path
