@@ -473,6 +473,19 @@
         ow.test.assert($$($$(a).set("b.d[0]", 4321)).get("b.d[0]"), 4321, "Problem with retriving an element of an array after $$().set()");
     };       
 
+    exports.testSearchKeyAndValues = function() {
+        var a = { abc: 123, m: { xpto: 2, arr: [ { bbb: 1 }, { bbb: 2}]}};
+
+        ow.test.assert(searchKeys(a, "xpto"), { ".m.xpto": 2 }, "Problem with searching a simple key.");
+        ow.test.assert(searchKeys(a, "bbb"), {
+            ".m.arr[0].bbb": 1,
+            ".m.arr[1].bbb": 2
+        }, "Problem with searching a key inside an array.");
+
+        ow.test.assert(searchValues(a, "123"), { ".abc": 123 }, "Problem with searching a simple value.");
+        ow.test.assert(searchValues(a, "2"), { ".abc": 123, ".m.xpto": 2, ".m.arr[1].bbb": 2 }, "Problem with searching multiple values.");
+    };
+
     exports.testNDJSON = function() {
         var o = [];
         var filename = "autoTest.ndjson";
