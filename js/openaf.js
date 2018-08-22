@@ -4074,9 +4074,9 @@ IO.prototype.isBinaryFile = function(aFile, confirmLimit) {
  * \
  * Inter-channel HTTP REST:\
  * \
- * - expose(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc)\
+ * - expose(aLocalPortOrServer, aPath, aLogin, aPassword)\
  * - peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc)\
- * - createRemote(aURL, aTimeout)
+ * - createRemote(aURL, aTimeout, aLogin, aPass)
  * </odoc>
  */
 $channels = function(a) {
@@ -4109,16 +4109,25 @@ $channels = function(a) {
 		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck); },
 		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); },
 		
-		createRemote : function(aURL, aTimeout) {
+		createRemote : function(aURL, aTimeout, aLogin, aPassword) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
 			var urlPort = u.getPort();
 			
 			if (urlPort < 0 && u.getProtocol() == "https") urlPort = 443;
 			if (urlPort < 0) urlPort = 80;
 			
+			var login, pass;
+			if (isUnDef(aLogin)) {
+				login = (u.getUserInfo() != null) ? String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8")) : undefined;
+				pass  = (u.getUserInfo() != null) ? String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8")) : undefined;
+			} else {
+				login = aLogin;
+				pass  = aPassword;
+			};
+
 			var opts = {
-				"login"   : (u.getUserInfo() != null) ? String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8")) : undefined,
-				"password": (u.getUserInfo() != null) ? String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8")) : undefined,
+				"login"   : login,
+				"password": pass,
 				"url"     : String(u.getProtocol() + "://" + u.getHost() + ":" + urlPort + u.getPath())
 			};
 			
