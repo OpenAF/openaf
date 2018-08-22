@@ -127,6 +127,41 @@
         io.rm("autoTestAll.auth.db");
     };
 
+    exports.testAuthApp = function() {
+        ow.loadServer();
+
+        ow.test.assert(
+            ow.server.authAppCheck(
+                "Password12345678", 
+                ow.server.authAppGen(
+                    "Password12345678", 
+                    "12345678Password", 
+                    "7A8A70AA022BC488D7A294A0F402D8FB14F915F4C2A45E649BA1D54AB2A2551C4566873ACF928D78C124EB4E29C4514B"
+                ),
+                "12345678Password", 
+                "7A8A70AA022BC488D7A294A0F402D8FB14F915F4C2A45E649BA1D54AB2A2551C4566873ACF928D78C124EB4E29C4514B"
+            ),
+            true,
+            "Problem with AuthApp without bcrypt."
+        );
+        ow.test.assert(
+            ow.server.authAppCheck(
+                "Password12345678", 
+                ow.server.authAppGen(
+                    "Password12345678", 
+                    "12345678Password", 
+                    "7A8A70AA022BC488D7A294A0F402D8FB14F915F4C2A45E649BA1D54AB2A2551C4566873ACF928D78C124EB4E29C4514B",
+                    10
+                ),
+                "12345678Password", 
+                "7A8A70AA022BC488D7A294A0F402D8FB14F915F4C2A45E649BA1D54AB2A2551C4566873ACF928D78C124EB4E29C4514B",
+                true
+            ),
+            true,
+            "Problem with AuthApp with bcrypt."
+        );        
+    };
+
     exports.testScheduler = function() {
         var a = 0, b = 0, c = 0;
 

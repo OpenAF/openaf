@@ -534,7 +534,7 @@ public class AFBase extends ScriptableObject {
 	public static String encrypt(String aString, Object key) throws Exception {
 		if (key == null || key instanceof Undefined) key = "openappframework";
 		if (key instanceof String) key = ((String) key).getBytes();
-		if (((byte[]) key).length != 16) throw new Exception("Invalid key size. Key should be 16 bytes."); 
+		if (((byte[]) key).length < 16) throw new Exception("Invalid key size. Key should be, at least, 16 bytes."); 
 
 		SecureRandom sc = new SecureRandom();
 		byte[] biv = sc.generateSeed(16);
@@ -560,7 +560,7 @@ public class AFBase extends ScriptableObject {
 		if (key == null || key instanceof Undefined) key = "openappframework"; 
 		if (key instanceof String) key = ((String) key).getBytes();
 		
-		if (((byte[]) key).length != 16) throw new Exception("Invalid key size. Key should be 16 bytes."); 
+		if (((byte[]) key).length < 16) throw new Exception("Invalid key size. Key should be, at least, 16 bytes."); 
 		String initVector = aString.substring(aString.length() - 32);
 		IvParameterSpec iv = new IvParameterSpec(Hex.decodeHex(initVector.toCharArray()));
 		SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
@@ -1379,14 +1379,23 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	/**
 	 * <odoc>
-	 * <key>af.get2FAToken(aKey) : String</key>
+	 * <key>af.get2FAToken(aKey, aSpecificTime) : String</key>
 	 * Given 2FA aKey it will return the current token. Note: it will use the current
-	 * date/time of the system so it must be in sync with the authenticator
+	 * date/time of the system so it must be in sync with the authenticator. Optionally
+	 * you can provide aSpecificTime.
 	 * </odoc>
 	 */
-	public String get2FAToken(String aKey) {
+	public String get2FAToken(String aKey, double ti) {
 		GoogleAuthenticator gauth = new GoogleAuthenticator();
 
-		return String.format("%06d", gauth.getTotpPassword(AFCmdBase.afc.dIP(aKey)));
+		long t = -1;
+		if (!(Double.isNaN(ti))) {
+			t = (new Double(ti)).longValue();
+		}
+		
+		if (t >= 0)
+        	return String.format("%06d", gauth.getTotpPassword(AFCmdBase.afc.dIP(aKey), t));
+		else
+			return String.format("%06d", gauth.getTotpPassword(AFCmdBase.afc.dIP(aKey)));
 	}
 }
