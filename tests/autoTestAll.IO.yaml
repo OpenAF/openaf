@@ -48,6 +48,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testBinaryFileDetection;
 
+   - name: IO::IO Test copy/move/delete file
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testCopyMoveDeleteFile;
+
 todo:
    # IO tests
    # --------
@@ -59,3 +64,4 @@ todo:
    - IO::IO Test read/writeFileStreamBytes NIO
    - IO::IO Test Gzip Native to Byte array
    - IO::IO Test binary file detection
+   - IO::IO Test copy/move/delete file
