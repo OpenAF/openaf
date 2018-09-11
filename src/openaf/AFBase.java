@@ -517,9 +517,8 @@ public class AFBase extends ScriptableObject {
 	 * @throws IOException 
 	 */
 	@JSFunction
-	public boolean cp(String orig, String dest) throws IOException {
-		Files.copy((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.ATOMIC_MOVE });
-		return (new File(orig)).delete();
+	public void cp(String orig, String dest) throws IOException {
+		Files.copy((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES });
 	}
 	
 	/**
