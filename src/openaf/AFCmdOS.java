@@ -12,6 +12,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
@@ -404,9 +407,6 @@ public class AFCmdOS extends AFCmdBase {
 		
 		StringBuilder input = new StringBuilder();
 		
-		// Check repack
-		if (this.getClass().getResourceAsStream("/js.jar") != null && !silenceRepack)
-			System.err.println("Warning: Please consider repacking OpenAF (use --repack).");
 		
 		// 1. Read the input from stdin and option -e and from a file
 		//
@@ -704,6 +704,39 @@ public class AFCmdOS extends AFCmdBase {
 		AFCmdOS afc = new AFCmdOS();
 		AFCmdBase.args = args;
 		
+		// Check repack
+		if (afc.getClass().getResourceAsStream("/js.jar") != null) {
+			System.err.println("Warning: Repacking OpenAF...");
+			File currentJar;
+			try {
+				currentJar = new File(Class.forName("openaf.AFCmdBase").getProtectionDomain().getCodeSource().getLocation().toURI());
+			} catch(Exception e) {
+				currentJar = new File(java.lang.System.getProperties().getProperty("java.class.path"));
+			}
+			try {
+				Files.copy(currentJar.toPath(), (new File(currentJar + ".orig")).toPath(),
+						new CopyOption[] { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES });
+			} catch (IOException e) {
+				SimpleLog.log(SimpleLog.logtype.ERROR, "Error with copying " + currentJar.toPath() + " to " + currentJar.toPath() + ".orig: " + e.getMessage(), null);
+				SimpleLog.log(SimpleLog.logtype.DEBUG, "", e);
+			}
+
+			StringBuffer targs = new StringBuffer();
+			targs.append(java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java");
+			targs.append("-jar");
+			targs.append(currentJar.getPath());
+
+			for(String s : AFCmdBase.args) {
+				targs.append(s); targs.append(" ");
+			}
+			try {
+				OAFRepack.repackAndReplace(currentJar.getPath(), targs.substring(0, targs.length() - 1));
+			} catch (IOException e) {
+				SimpleLog.log(SimpleLog.logtype.ERROR, "Error with the repack: " + e.getMessage(), null);
+				SimpleLog.log(SimpleLog.logtype.DEBUG, "", e);
+			}
+		}
+
 		try {			
 			afc.processArgs(args);				
 		} catch (MalformedURLException e1) {
