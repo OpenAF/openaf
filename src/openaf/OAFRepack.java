@@ -158,20 +158,20 @@ public class OAFRepack {
         }
     }
 
-    public static void repackAndReplace(String jarFile) throws IOException {
+    public static void repackAndReplace(String jarFile, String cmd) throws IOException {
         repack(jarFile, jarFile + ".tmp", "openaf.AFCmdOS");
         
         ArrayList<String> command = new ArrayList<String>();
-        boolean unix = !(System.getProperty("os.name").matches("Windows"));
+        boolean unix = ( System.getProperty("os.name").indexOf("Windows") < 0);
 
         if (unix) {
             command.add("/bin/sh");
             command.add("-c");
-            command.add("mv " + jarFile + ".tmp " + jarFile + " && java -jar " + jarFile + " -h"); 
+            command.add("mv " + jarFile + ".tmp " + jarFile + " && " + cmd); 
         } else {
             command.add("cmd");
             command.add("/c");
-            command.add("move " + jarFile + ".tmp " + jarFile + " && java -jar " + jarFile + " -h"); 
+            command.add("move " + jarFile + ".tmp " + jarFile + " && " + cmd); 
         }
 
         ProcessBuilder builder = new ProcessBuilder(command);
@@ -181,7 +181,12 @@ public class OAFRepack {
     }
 
     public static void main(String args[]) throws IOException {
-        System.out.println("0 = " + args[0]);
-        repackAndReplace(args[0]);
+        if (args.length >= 1) {
+            System.out.println("Repacking " + args[0]);
+
+            String cmd = "java -jar openaf.jar -h";
+            if (args.length > 1) cmd = args[1];
+            repackAndReplace(args[0], cmd);
+        }
     }
 }
