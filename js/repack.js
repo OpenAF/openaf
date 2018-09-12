@@ -200,6 +200,14 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 		}
 	}
 
+	ow.loadObj();
+	var ilist = "JarIndex-Version: 1.0\n\n" + 
+				$from(ow.obj.fromObj2Array(zipNew.list()))
+				.notStarts("name", "META-INF/")
+				.ends("name", "/")
+				.select((r)=>{ return r.name.substr(0, r.name.length -1); })
+				.join("\n");
+	zipNew.putFile("META-INF/INDEX.LIST", af.fromString2Bytes(ilist));
 	log("Writing new repacked openaf.jar...");
 	zipNew.generate2File(classPath + ".tmp", {"compressionLevel": 9}, true);
 	createTmp = true;

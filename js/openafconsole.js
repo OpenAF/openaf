@@ -11,7 +11,7 @@ var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "af.encryptText();",
-	"sh": "sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/bash \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")+(!ow.format.isWindows()?\" && stty -icanon min 1 -echo 2>/dev/null\":\"\"),void 0,void 0,true);void 0;"
+	"sh": "sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/sh \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")+(!ow.format.isWindows()?\" && stty -icanon min 1 -echo 2>/dev/null\":\"\"),void 0,void 0,true);void 0;"
 };
 
 var __aliasparam;

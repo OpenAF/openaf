@@ -39,7 +39,7 @@ function generateWinBat() {
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -jar %OPENAF_DIR% %*";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% %*";
   return s;
 }
 
@@ -51,7 +51,7 @@ function generateWinPackBat() {
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -jar %OPENAF_DIR% --opack -e \"%*\"";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --opack -e \"%*\"";
   return s;
 }
 
@@ -63,7 +63,7 @@ function generateWinJobBat() {
 	  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
 	  s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
 	  s = s + "\n";
-	  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -jar %OPENAF_DIR% --ojob -e \"%*\"";
+	  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --ojob -e \"%*\"";
 	  return s;
 	}
 
@@ -75,7 +75,7 @@ function generateWinConsoleBat() {
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -jar %OPENAF_DIR% --console %*";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --console %*";
   return s;
 }
 
@@ -83,7 +83,7 @@ function generateWinConsolePSBat() {
   var s;
 
   s = "@echo off\n\n";
-  s = s + "powershell -ExecutionPolicy Unrestricted -command \"&{ [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(1252); $pshost = get-host; $console = $pshost.UI.RawUI; $console.WindowTitle = 'OpenAF-console'; $console.ForegroundColor = 'black'; $console.BackgroundColor = 'white'; $newsize = $console.buffersize; $newsize.width = 120; $newsize.height = 3000; $console.buffersize = $newsize; $newsize = $console.windowsize; $newsize.width = 120; $newsize.height = 55; $console.windowsize = $newsize; Clear-Host; $JAVA_HOME = '" + javaHome + "'; $OPENAF_DIR = '" + classPath + "'; $cmd = '&\\\"' + $JAVA_HOME + '\\bin\\java\\\" " + javaargs + " -jar \"' + $OPENAF_DIR + '\" --console'; iex $cmd; }\"";
+  s = s + "powershell -ExecutionPolicy Unrestricted -command \"&{ [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(1252); $pshost = get-host; $console = $pshost.UI.RawUI; $console.WindowTitle = 'OpenAF-console'; $console.ForegroundColor = 'black'; $console.BackgroundColor = 'white'; $newsize = $console.buffersize; $newsize.width = 120; $newsize.height = 3000; $console.buffersize = $newsize; $newsize = $console.windowsize; $newsize.width = 120; $newsize.height = 55; $console.windowsize = $newsize; Clear-Host; $JAVA_HOME = '" + javaHome + "'; $OPENAF_DIR = '" + classPath + "'; $cmd = '&\\\"' + $JAVA_HOME + '\\bin\\java\\\" " + javaargs + " -D\\\"java.system.class.loader=openaf.OAFdCL\\\" -jar \"' + $OPENAF_DIR + '\" --console'; iex $cmd; }\"";
   return s;
 }
 
@@ -113,7 +113,7 @@ function generateUnixScript(options){
   s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
-  s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
+  s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
   s = s + "EXITCODE=$?\n";
   s = s + "stty icanon echo 2>/dev/null\n";
   s = s + "exit $EXITCODE\n";
