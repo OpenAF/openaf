@@ -999,7 +999,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				try {
 					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
 					args.execid = uuid;
-					args = this.__mergeArgs(args, aJob.args);
+					args = parent.__mergeArgs(args, aJob.args);
 
 					_run(aJob.exec, args, aJob, altId);
 					parent.__addLog("success", aJob.name, uuid, undefined, aId);
@@ -1014,7 +1014,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 					uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
 					args.execid = uuid;
 					try {
-						_run(aJob.exec, this.__mergeArgs(args, { ch: aCh, op: aOp, k: aK, v: aV }), aJob, altId);
+						_run(aJob.exec, parent.__mergeArgs(args, { ch: aCh, op: aOp, k: aK, v: aV }), aJob, altId);
 						parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
 					} catch(e) {
 						parent.__addLog("error", aJob.name, uuid, args, e, aId);
