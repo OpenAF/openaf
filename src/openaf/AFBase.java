@@ -751,7 +751,7 @@ public class AFBase extends ScriptableObject {
 			throw e;
 		}
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>af.externalAddClasspath(aURL)</key>
@@ -762,11 +762,16 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void externalAddClasspath(String url) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, MalformedURLException {
-		ClassLoader sysloader = ClassLoader.getSystemClassLoader();
-		Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[] { URL.class });
-		method.setAccessible(true);
-		method.invoke(sysloader, new Object[]{ new URL(url) });
+	public void externalAddClasspath(String url) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, MalformedURLException {		
+		if (Thread.currentThread().getContextClassLoader() instanceof OAFdCL) {
+			OAFdCL dyna = OAFdCL.getInstance(Thread.currentThread().getContextClassLoader());
+			dyna.addURL(new URL(url));
+		} else {
+			ClassLoader sysloader = ClassLoader.getSystemClassLoader();
+			Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[] { URL.class });
+			method.setAccessible(true);
+			method.invoke(sysloader, new Object[]{ new URL(url) });
+		}
 	}
 	
 	/**
