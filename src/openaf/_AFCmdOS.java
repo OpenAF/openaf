@@ -20,7 +20,7 @@ public class _AFCmdOS {
 
         // Check repack
         if (OAFRepack.class.getResourceAsStream("/js.jar") != null) {
-            System.err.println("Warning: Repacking OpenAF...");
+            System.err.println("Repacking OpenAF...");
             File currentJar;
             try {
                 currentJar = new File(Class.forName("openaf.AFCmdBase").getProtectionDomain().getCodeSource().getLocation().toURI());

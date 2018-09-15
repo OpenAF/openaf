@@ -16,6 +16,11 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * 
+ * @author Nuno Aguiar
+ * 
+ */
 public class OAFRepack {
     protected static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 

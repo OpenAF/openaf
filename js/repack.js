@@ -76,7 +76,7 @@ try {
   java.lang.System.exit(0);
 }
 
-log("Repacking OpenAF for faster loading");
+log("Checking if repacking OpenAF for faster loading is needed...");
 
 var zip    = new ZIP();
 var zipNew = new ZIP();
@@ -215,7 +215,7 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	zip.close();
 	zipNew.close();
 } else {
-	log("No repacking needed.");
+	log("OpenAF is repacked.");
 }
 
 if (createTmp) {
