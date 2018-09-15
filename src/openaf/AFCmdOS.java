@@ -404,9 +404,6 @@ public class AFCmdOS extends AFCmdBase {
 		
 		StringBuilder input = new StringBuilder();
 		
-		// Check repack
-		if (this.getClass().getResourceAsStream("/js.jar") != null && !silenceRepack)
-			System.err.println("Warning: Please consider repacking OpenAF (use --repack).");
 		
 		// 1. Read the input from stdin and option -e and from a file
 		//
@@ -693,17 +690,16 @@ public class AFCmdOS extends AFCmdBase {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
 		// Java version check
 		String version = System.getProperty("java.version");
 		if (version.startsWith("1.7") && version.lastIndexOf('_') > 0 &&
 			Integer.valueOf(version.substring(version.lastIndexOf('_') +1)) < 32) {
 			System.err.println("Warning: You are using java " + version + ". Please consider upgrading to >= 1.7.0_32.");
 		}
-	
+
 		AFCmdOS afc = new AFCmdOS();
 		AFCmdBase.args = args;
-		
+
 		try {			
 			afc.processArgs(args);				
 		} catch (MalformedURLException e1) {

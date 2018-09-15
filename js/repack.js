@@ -16,7 +16,8 @@ function isRepackJar(aJarFilePath) {
 		var listJar = aJar.list();
 
 		for(let i in listJar) {
-			if(listJar[i].name.match(/jarinjarloader/) && listJar[i].name.match(/eclipse/)) {
+			//if(listJar[i].name.match(/jarinjarloader/) && listJar[i].name.match(/eclipse/)) {
+			if (listJar[i].name.match(/\/js\.jar/)) {
 				res = false;
 			}
 		}
@@ -75,7 +76,7 @@ try {
   java.lang.System.exit(0);
 }
 
-log("Repacking OpenAF for faster loading");
+log("Checking if repacking OpenAF for faster loading is needed...");
 
 var zip    = new ZIP();
 var zipNew = new ZIP();
@@ -214,7 +215,7 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	zip.close();
 	zipNew.close();
 } else {
-	log("No repacking needed.");
+	log("OpenAF is repacked.");
 }
 
 if (createTmp) {
