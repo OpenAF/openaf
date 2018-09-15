@@ -163,15 +163,14 @@ public class OAFRepack {
         
         ArrayList<String> command = new ArrayList<String>();
         boolean unix = ( System.getProperty("os.name").indexOf("Windows") < 0);
-
         if (unix) {
             command.add("/bin/sh");
             command.add("-c");
-            command.add("mv " + jarFile + ".tmp " + jarFile + " && " + cmd); 
+            command.add("mv '" + jarFile + ".tmp' '" + jarFile + "' && " + cmd + ""); 
         } else {
             command.add("cmd");
             command.add("/c");
-            command.add("move " + jarFile + ".tmp " + jarFile + " && " + cmd); 
+            command.add("move \"" + jarFile + ".tmp\" \"" + jarFile + "\" && " + cmd + ""); 
         }
 
         ProcessBuilder builder = new ProcessBuilder(command);

@@ -300,7 +300,7 @@ log("Adding manifest");
 var manifest = "Manifest-Version: 1.0\n";
 manifest += "Rsrc-Class-Path: ./" + smallClassPath + "\n";
 manifest += "Class-Path: .\n";
-manifest += "Rsrc-Main-Class: openaf.AFCmdOS\n";
+manifest += "Rsrc-Main-Class: openaf._AFCmdOS\n";
 manifest += "Main-Class: org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader\n";
 tempJar.putFile("META-INF/MANIFEST.MF", af.fromString2Bytes(manifest));
 tempJar.putFile("META-INF/services/javax.script.ScriptEngineFactory", af.fromString2Bytes("openaf.OAFEngineFactory"));

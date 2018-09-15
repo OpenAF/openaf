@@ -16,7 +16,8 @@ function isRepackJar(aJarFilePath) {
 		var listJar = aJar.list();
 
 		for(let i in listJar) {
-			if(listJar[i].name.match(/jarinjarloader/) && listJar[i].name.match(/eclipse/)) {
+			//if(listJar[i].name.match(/jarinjarloader/) && listJar[i].name.match(/eclipse/)) {
+			if (listJar[i].name.match(/\/js\.jar/)) {
 				res = false;
 			}
 		}

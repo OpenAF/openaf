@@ -7,7 +7,6 @@ package openaf;
 
 import java.net.URL;
 import java.net.URLClassLoader;
-
 public class OAFdCL extends URLClassLoader {
     protected static OAFdCL oafdcl = null;
 
