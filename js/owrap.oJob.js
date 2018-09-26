@@ -88,7 +88,23 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 
 	if (isDef(this.__ojob.channels)) {
 		if (this.__ojob.channels.recordLog) startLog();
-		if (this.__ojob.channels.expose) {
+		if (isDef(this.__ojob.channels.create) && isArray(this.__ojob.channels.create)) {
+			for(var cI in this.__ojob.channels.create) {
+				var cObj = this.__ojob.channels.create[cI]; 
+				try {
+					_$(cObj).isMap("Each ojob.channels.create entry needs to be a map.")
+					_$(cObj.name).$_("Each ojob.channels.create entry needs to have a 'name' entry.");
+					cObj.type = _$(cObj.type).isString("Each ojob.channels.create entry might have a string 'type'.").default(void 0);
+					cObj.compress = _$(cObj.compress).isBoolean("Each ojob.channels.create entry might have a boolean 'compress' option.").default(void 0);
+					cObj.options = _$(cObj.options).isMap("Each ojob.channels.create entry might have a map 'options'").default(void 0);
+
+					$ch(cObj.name).create(cObj.compress, cObj.type, cObj.options);
+				} catch(e) {
+					logErr("Can't create ojob.channels.create entry #" + cI + ", error: " + String(e));
+				}
+			}
+		}
+		if (this.__ojob.channels.expose || isDef(this.__ojob.channels.peers)) {
 			if (isDef(this.__ojob.channels.port)) {
 
 				if (isUnDef(this.__hs)) {
@@ -147,8 +163,20 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 						//this.__ojob.channels.list.push("__log");
 					}
 	
+					var addSuffix = (anArray, suffix) => {
+						return $from(anArray).select((r) => { return r + suffix; });
+					};
+
 					for(var i in this.__ojob.channels.list) {
-						$ch(this.__ojob.channels.list[i]).expose(this.__hs, undefined, auth, undefined, true);
+						if (this.__ojob.channels.expose) {
+							$ch(this.__ojob.channels.list[i]).expose(this.__hs, undefined, auth, undefined, true);
+						} else {
+							if (isDef(this.__ojob.channels.peers) && isArray(this.__ojob.channels.peers)) {
+								$ch(this.__ojob.channels.list[i]).peer(this.__hs, void 0, 
+									addSuffix(this.__ojob.channels.peers, "/" + this.__ojob.channels.list[i]),
+									auth, void 0);
+							}
+						}
 					}
 				}
 			}
