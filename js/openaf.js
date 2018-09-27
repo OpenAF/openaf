@@ -4075,7 +4075,7 @@ IO.prototype.isBinaryFile = function(aFile, confirmLimit) {
  * Inter-channel HTTP REST:\
  * \
  * - expose(aLocalPortOrServer, aPath, aLogin, aPassword)\
- * - peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc)\
+ * - peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount)\
  * - createRemote(aURL, aTimeout, aLogin, aPass)
  * </odoc>
  */
@@ -4107,7 +4107,7 @@ $channels = function(a) {
 		storeRestore : function(aFilename, anArrayOfKeys) { ow.ch.persistence.restore(a, aFilename, anArrayOfKeys); return $channels(a); },
 		
 		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck); },
-		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc); },
+		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount); },
 		
 		createRemote : function(aURL, aTimeout, aLogin, aPassword) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));

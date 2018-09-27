@@ -2171,7 +2171,46 @@ OpenWrap.ch.prototype.utils = {
 
 OpenWrap.ch.prototype.comms = {
 	__counter: {},
-	
+
+	getRetrySubscriberFunc: function(subsFunc, aMaxTime, aMaxCount, aUUID) {
+		aMaxTime = _$(aMaxTime).isNumber("Please provide a number max time.").default(void 0);
+		aMaxCount = _$(aMaxCount).isNumber("Please provide a number max count.").default(10);
+
+		return function(aN, aOp, aK, aV) {
+			if (isDef(aMaxTime)) {
+				$from($ch("__comm::" + aN).getKeys())
+				.lessEquals("timeStamp", (now() - aMaxTime))
+				.select((r) => {
+					$ch("__comm::" + aN).unset(r);
+				});
+			}
+
+			if (isDef(aMaxCount)) {
+				if ($ch("__comm::" + aN).size() >= aMaxCount) {
+					$from($ch("__comm::" + aN).getKeys())
+					.sort("timeStamp")
+					.select()
+					.forEach((v) => {
+						if ($ch("__comm::" + aN).size() >= aMaxCount) $ch("__comm::" + aN).unset(v);
+					});
+				}
+			}
+
+			$from($ch("__comm::" + aN).getAll())
+			.sort("timeStamp")
+			.select((v) => {
+				if (isDef(v) && isDef(v.operation)) {
+					subsFunc(aN, v.operation, v.keys, v.values, void 0, v.forcedTimeStamp, aUUID);
+					$ch("__comm::" + aN).unset({
+						timeStamp: v.timeStamp,
+						operation: v.operation,
+						keys     : v.keys
+					});
+				}
+			});
+		};
+	},
+
 	/**
 	 * <odoc>
 	 * <key>ow.ch.comms.getSubscriberFunc(aURL, aUUID, aLogin, aPassword, aTimeout)</key>
@@ -2259,11 +2298,14 @@ OpenWrap.ch.prototype.comms = {
 					}, aURL);
 					break;				
 				default      : 
-					var res;
+					var res, resk;
 				    sync(function() {
-				    	res = ow.obj.rest.jsonGet(aURL, { "o": "e", "k": ak }, aL, aP, aT);
+						//res = ow.obj.rest.jsonGet(aURL, { "o": "e", "k": ak }, aL, aP, aT);
+						res = ow.obj.rest.jsonGet(aURL, { "o": "a" }, aL, aP, aT);
+						resk = ow.obj.rest.jsonGet(aURL, { "o": "k" }, aL, aP, aT);
 						shouldReset(res);
-				    }, aURL);
+					}, aURL);
+					if (res.r.length > 0) $do(() => { $ch(na).setAll(Object.keys(resk.r[0]), res.r); });
 				}
 			} catch(e) {
 				recordError(op, t, ak, v, e);
@@ -2450,11 +2492,12 @@ OpenWrap.ch.prototype.server = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.ch.server.peer(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc)</key>
+	 * <key>ow.ch.server.peer(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount)</key>
 	 * Exposes aName channel in the same way as ow.ch.server.expose but it also add a subscribe function to 
 	 * the aName channel to remotely peer with other expose channel(s) given aRemoteURLArray. Optionally
 	 * you can also provide aAuthFunc(user, pass) and aUnAuthFunc(aServer, aRequest) functions using ow.server.httpd.authBasic.
-	 * The aAuthFunc can add aRequest.channelPermission to enforce read and/or write permissions on a channel (e.g. "r", "rw").\
+	 * The aAuthFunc can add aRequest.channelPermission to enforce read and/or write permissions on a channel (e.g. "r", "rw").
+	 * Optionally you can provide aMaxTime for expiration of commands to retry to communicate and aMaxCount of commands to retry to communicate.\
 	 * \
 	 * Example:\
 	 * \
@@ -2462,18 +2505,21 @@ OpenWrap.ch.prototype.server = {
 	 * \
 	 * </odoc>
 	 */
-	peer: function(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc) {
+	peer: function(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount) {
 		var uuid = ow.ch.server.expose(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc);
 		var res = [];
 
-		if (isArray(aRemoteURLArray)) {
-			for(let i in aRemoteURLArray) {
-				res.push(ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid)));
-			}
-		} else {
-			res.push(ow.ch.subscribe(aName, ow.ch.comms.getSubscribeFunc(aRemoteURLArray, uuid)));
+		if (!(isArray(aRemoteURLArray))) aRemoteURLArray = [ aRemoteURLArray ];
+		
+		ow.loadObj();
+		for(let i in aRemoteURLArray) {
+			var fn = ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid);
+			var hkfn = ow.ch.comms.getRetrySubscriberFunc(fn, aMaxTime, aMaxCount, uuid);
+			fn(aName, "reset");
+			res.push(ow.ch.subscribe(aName, hkfn));
+			res.push(ow.ch.subscribe(aName, fn));
 		}
-
+	
 		return res;
 	},
 
