@@ -58,6 +58,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	if (isUnDef(todo)) todo = [];
 	if (isDef(ojob)) this.__ojob = merge(this.__ojob, ojob);
 
+	if (isUnDef(aId) && isDef(this.__ojob.id)) aId = this.__ojob.id;
+
 	for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
 			var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).first();
@@ -466,6 +468,7 @@ OpenWrap.oJob.prototype.removeJob = function(aJobName) {
  */
 OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 	var altId = (isDef(aId) ? aId : "");
+	aId = altId;
 	for(var i in todoList) {
 		if(isDef(aJobArgs) && isObject(todoList[i])) 
 			todoList[i].args = this.__processArgs(todoList[i].args, aJobArgs, aId);
@@ -481,7 +484,7 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 
 /**
  * <odoc>
- * <key>oJob.__addLog(aOperation, aJobName, aJobExecId, anErrorMessage) : String</key>
+ * <key>oJob.__addLog(aOperation, aJobName, aJobExecId, args, anErrorMessage, aId) : String</key>
  * Adds a new log entry to the channel oJob::log for the aJobName provided for the following operations:\
  * \
  * - start (start of a job)\
@@ -731,6 +734,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	if (this.__ojob != {}) {
 	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 100;
 
+		if (isDef(this.__ojob.id) && isUnDef(aId)) aId = this.__ojob.id;
+
 	    //if (isUnDef(this.__ojob.unique)) this.__ojob.unique = {};
 	    if (isDef(this.__ojob.unique) && !this.__ojob.__subjob) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
@@ -776,6 +781,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	var t = new Threads();
 	var parent = this;
 	var altId = (isDef(aId) ? aId : "");
+	aId = altId;
 
 	if (this.__ojob.sequential) {
 		var job = undefined;
@@ -887,6 +893,7 @@ OpenWrap.oJob.prototype.run = function(provideArgs, aId) {
 OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 	var parent = this;
 	var altId = (isDef(aId) ? aId : "");
+	aId = altId;
 
 	// Check dep
 	var canContinue = true;
@@ -969,7 +976,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				args.execid = uuid;			
 				args = this.__mergeArgs(args, aJob.args);
 				
-				_run(aJob.exec, args, aJob, altId);
+				_run(aJob.exec, args, aJob, aId);
 				this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 				return true;
 			} catch(e) {
@@ -1029,7 +1036,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 					args.execid = uuid;
 					args = parent.__mergeArgs(args, aJob.args);
 
-					_run(aJob.exec, args, aJob, altId);
+					_run(aJob.exec, args, aJob, aId);
 					parent.__addLog("success", aJob.name, uuid, undefined, aId);
 				} catch(e) {
 					parent.__addLog("error", aJob.name, uuid, args, e, aId);
@@ -1039,10 +1046,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		case "subscribe":
 			var subs = function() { 
 				return function(aCh, aOp, aK, aV) {	
-					uuid = parent.__addLog("start", aJob.name, undefined, args, aId);
+					uuid = parent.__addLog("start", aJob.name, undefined, args, void 0, aId);
 					args.execid = uuid;
 					try {
-						_run(aJob.exec, parent.__mergeArgs(args, { ch: aCh, op: aOp, k: aK, v: aV }), aJob, altId);
+						_run(aJob.exec, parent.__mergeArgs(args, { ch: aCh, op: aOp, k: aK, v: aV }), aJob, aId);
 						parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
 					} catch(e) {
 						parent.__addLog("error", aJob.name, uuid, args, e, aId);
@@ -1060,10 +1067,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 			break;
 		case "periodic":
 			var f = function() {
-				uuid = parent.__addLog("start", aJob.name, void 0, args, aId);
+				uuid = parent.__addLog("start", aJob.name, void 0, args, void 0, aId);
 				args.execid = uuid;
 				try {
-					_run(aJob.exec, args, aJob, altId);
+					_run(aJob.exec, args, aJob, aId);
 					parent.__addLog("success", aJob.name, uuid, args, void 0, aId);
 				} catch(e) {
 					parent.__addLog("error", aJob.name, uuid, args, e, aId);
