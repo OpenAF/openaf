@@ -41,22 +41,23 @@ public class DB {
 	
 	/**
 	 * <odoc>
-	 * <key>DB.db(aDriver, aURL, aLogin, aPassword)</key>
+	 * <key>DB.db(aDriver, aURL, aLogin, aPassword,aTimeout)</key>
 	 * Creates a new instance of the object DB providing java class aDriver (e.g. oracle.jdbc.OracleDriver)
 	 * that must be included on OpenAF's classpath, a JDBC aURL, aLogin and aPassword. If the aDriver is 
-	 * null or undefined the Oracle driver will be used. 
+	 * null or undefined the Oracle driver will be used. aTimeout is the connection timeout in millseconds,
+     * if null, no connection timeout will be set
 	 * </odoc>
 	 */
-	public void newDB(String driver, String url, String login, String pass) throws Exception {
+	public void newDB(String driver, String url, String login, String pass, String timeout) throws Exception {
 		// Are we in the wrong constructor?
 		if (pass == null || pass.equals("undefined")) {
 			if (url != null) {
 				// Ok, use it as if it was another constructor
-				connect(ORACLE_DRIVER, driver, url, login);
+				connect(ORACLE_DRIVER, driver, url, login, timeout);
 			}
 		} else {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "New DB with driver='" + driver + "'|url='" + url + "'|login='"+login+"'|pass='"+pass+"'", null);
-			connect(driver, url, login, pass);
+			connect(driver, url, login, pass, timeout);
 		}
 	}
 
@@ -703,7 +704,7 @@ public class DB {
 		}
 	}
 	
-	protected void connect(String driver, String url, String login, String pass) throws Exception {
+	protected void connect(String driver, String url, String login, String pass, String timeout) throws Exception {
 		try {
 			Class.forName(driver);
 			this.url = url;
@@ -712,6 +713,10 @@ public class DB {
 			
 			props.setProperty("user", AFCmdBase.afc.dIP(login));
 			props.setProperty("password", AFCmdBase.afc.dIP(pass));
+            if (timeout != null)
+            {
+                props.setProperty("connectTimeout", AFCmdBase.afc.dIP(timeout));
+            }
 			
 			con = DriverManager.getConnection(url, props);
 			con.setAutoCommit(false);
