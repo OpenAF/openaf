@@ -29,10 +29,10 @@ OpenWrap.oJob = function() {
 	plugin("Threads");
 	ow.loadFormat();
 
-	this.getTodoCh().create();
-	this.getJobsCh().create();
+	this.getTodoCh().create(0, "simple");
+	this.getJobsCh().create(0, "simple");
 	this.getLogCh().create();
-	this.getMainCh().create();
+	this.getMainCh().create(0, "simple");
 
 	this.getMainCh().set(
 		{ "uuid": this.__id },
@@ -252,9 +252,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 		} catch(e1) {
 			if (e1.message.match(/FileNotFoundException/)) {
 				var paths = getOPackPaths();
-				//paths["__default"] = java.lang.System.getProperty("java.class.path") + "::oJob";
 				
-				for(i in paths) {
+				for(var i in paths) {
 					try {
 						paths[i] = paths[i].replace(/\\+/g, "/");
 						paths[i] = paths[i].replace(/\/+/g, "/");
@@ -736,7 +735,6 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 		if (isDef(this.__ojob.id) && isUnDef(aId)) aId = this.__ojob.id;
 
-	    //if (isUnDef(this.__ojob.unique)) this.__ojob.unique = {};
 	    if (isDef(this.__ojob.unique) && !this.__ojob.__subjob) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
@@ -813,12 +811,13 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	} else {
 		t.addThread(function() {
 			// Check all jobs in the todo queue
-			var job = undefined; 
+			var job = void 0; 
 			var shouldStop = false;
 			while(!shouldStop) {
 				try {
-					if ($from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID() + altId).any()) {
-						var todo = parent.getTodoCh().get($from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID() + altId).first());
+					var parentOJob = $from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID() + altId);
+					if (parentOJob.any()) {
+						var todo = parent.getTodoCh().get(parentOJob.first());
 						job = parent.getJobsCh().get({ "name": todo.name });
 						var argss = args;
 						if (isDef(todo.args)) {
@@ -837,12 +836,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 							parent.getTodoCh().unset({
 								"ojobId": todo.ojobId,
 								"todoId": todo.todoId
-							})
+							});
 						}
 					}
 					if (!shouldStop && 
 						!(isDef(parent.__ojob) && isDef(parent.__ojob.daemon) && parent.__ojob.daemon == true) &&
-		                $from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID() + altId).none()
+		                parentOJob.none()
 		               ) {
 		               	  shouldStop = true;
 		               	  try {
