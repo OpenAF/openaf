@@ -1826,9 +1826,11 @@ OpenWrap.obj.prototype.rest = {
 	 */
 	writeQuery: function(aMap) {
 		var str = [];
+		if (isUnDef(aMap)) return "";
+
         for(var p in aMap)
-            if (aMap.hasOwnProperty(p)) {
-            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(aMap[p]));
+            if (aMap.hasOwnProperty(p) && isDef(aMap[p])) {
+            	str.push(encodeURIComponent(p) + "=" + encodeURIComponent(aMap[p]));
             }
         return str.join("&");
 	}
