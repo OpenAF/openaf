@@ -3229,6 +3229,36 @@ function searchValues(aObject, aSearchValue, useCase) {
 
 /**
  * <odoc>
+ * <key>mapArray(anArray, selectors) : Array</key>
+ * Helper functions to map selectors (inputs for ow.obj.getPath) from anArray returning the filtered array. IF
+ * selectors is a string or just one array entry the result will be an array with just the value results.
+ * </odoc>
+ */
+function mapArray(anArray, selectors) {
+	_$(anArray).isArray("Please provide an array.");
+	var res = [];
+
+	if (isString(selectors)) selectors = [ selectors ];
+	if (isArray(selectors)) {
+		for(var jj in anArray) {
+			ow.loadObj();
+			var entry = {};
+			if (selectors.length == 1) {
+				entry = ow.obj.getPath(anArray[jj], selectors[0]);
+			} else {
+				for(var ii in selectors) {
+					entry[selectors[ii]]= ow.obj.getPath(anArray[jj], selectors[ii]);
+				}
+			}
+			res.push(entry);
+		}
+	}
+
+	return res;
+}
+
+/**
+ * <odoc>
  * <key>searchArray(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) : Array</key>
  * Shortcut to ow.obj.searchArray.
  * </odoc>

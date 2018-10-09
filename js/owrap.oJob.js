@@ -864,7 +864,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 	if (!(this.__ojob.sequential)) {
 		try {
-			t.waitForThreads(2500);
+			t.waitForThreads(500);
 			t.stop();
 		} catch(e) {}
 	}
