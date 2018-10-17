@@ -674,10 +674,10 @@ function __table(aCmd) {
 	if (isArray(__res) && isObject(__res[0]) && isObject(__res[__res.length -1])) {
 		var __pres = 0;
 		if (pauseCommand) {
-			var __lines = printTable(__res, void 0, true).split(/\n/);
+			var __lines = printTable(__res, void 0, colorCommand).split(/\n/);
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
-			__outputConsole(printTable(__res, void 0, true, true));
+			__outputConsole(printTable(__res, void 0, true, colorCommand));
 		}
 		return true;
 	}
