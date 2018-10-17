@@ -7,7 +7,7 @@ var __pinprefix = "";
 var CONSOLESEPARATOR = "-- ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|sql|esql|dsql|pin";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|sql|esql|dsql|pin";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "af.encryptText();",
@@ -517,7 +517,7 @@ function addAlias(aAssignment) {
  * Provides a help screen
  */
 function __help(aTerm) {
-	if(isUndefined(aTerm) || aTerm.length <= 0) {
+	if(isUnDef(aTerm) || aTerm.length <= 0) {
 		__outputConsoleComments("help     Display this help text");
 		__outputConsoleComments("exit     Exit this console");
 		__outputConsoleComments("time     Turns on or off the timing of any script command provided (default off)");
@@ -534,6 +534,7 @@ function __help(aTerm) {
 		__outputConsoleComments("esql     Executes the SQL statement, over a db connection (example 'esql db update...')");
 		__outputConsoleComments("diff     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
 		__outputConsoleComments("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
+		__outputConsoleComments("table    Tries to show the command result as an ascii table.");
 		__outputConsoleComments("clear    Tries to clear the screen.");
 		__outputConsoleComments("purge    Purge all the command history");
 		__outputConsoleComments("[others] Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
@@ -668,6 +669,21 @@ function __pause(aFlag) {
 		__outputConsoleComments("Pause of output is disabled.");
 }
 
+function __table(aCmd) {
+	var __res = __processCmdLine(aCmd, true);
+	if (isArray(__res) && isObject(__res[0]) && isObject(__res[__res.length -1])) {
+		var __pres = 0;
+		if (pauseCommand) {
+			var __lines = printTable(__res, void 0, true).split(/\n/);
+			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
+		} else {
+			__outputConsole(printTable(__res, void 0, true, true));
+		}
+		return true;
+	}
+	return false;
+}
+
 function __processCmdLine(aCommand, returnOnly) {
 	var internalCommand = false;
 	aCommand = aCommand.replace(/^ *([^ ].*)/, "$1");
@@ -717,6 +733,9 @@ function __processCmdLine(aCommand, returnOnly) {
 				internalCommand = true;
 				__output(aCommand.replace(/^output */, ""));
 			}
+			if (aCommand.match(/^table(?: +|$)/)) {
+				internalCommand = __table(aCommand.replace(/^table */, ""));
+			}			
 			if (aCommand.match(/^beautify(?: +|$)/)) {
 				internalCommand = true;
 				__beautify(aCommand.replace(/^beautify */, ""));
@@ -796,15 +815,15 @@ function __processCmdLine(aCommand, returnOnly) {
 }
 
 function __showResultProcessCmdLine(__res, __cmd) {
-	if(isDefined(__res)) {
+	if(isDef(__res)) {
 		if (pauseCommand) {
 			var __pres = 0;
 			var lines = [];
 			if (beautifyCommand) {
 				if (colorCommand && isObject(__res)) 
-				   __lines = String(colorify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
+					__lines = String(colorify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 				else
-				   __lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
+					__lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 			} else {
 				__lines = String(__res).replace(/\"/g, "").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 			}
@@ -818,7 +837,6 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			} else
 				__outputConsole(__res);
 		}	
-
 	} 
 	
 	if (timeCommand && !__cmd.match(/^time(?: +|$)/)) __time(__timeResult);
