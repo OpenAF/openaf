@@ -674,10 +674,10 @@ function __table(aCmd) {
 	if (isArray(__res) && isObject(__res[0]) && isObject(__res[__res.length -1])) {
 		var __pres = 0;
 		if (pauseCommand) {
-			var __lines = printTable(__res, void 0, colorCommand).split(/\n/);
+			var __lines = printTable(__res, con.getConsoleReader().getTerminal().getWidth(), colorCommand).split(/\n/);
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
-			__outputConsole(printTable(__res, void 0, true, colorCommand));
+			__outputConsole(printTable(__res, con.getConsoleReader().getTerminal().getWidth(), true, colorCommand));
 		}
 		return true;
 	}
@@ -865,7 +865,7 @@ function __pauseArray(aText, aStart) {
 		return -1;
 	}
 
-	if (isUndefined(aStart) || aStart < 0)
+	if (isUnDef(aStart) || aStart < 0)
 		aStart = 0;
 	else
 		if(aStart > (lines - height +1)) aStart = (lines - height +1);
