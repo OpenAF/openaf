@@ -671,7 +671,7 @@ function __pause(aFlag) {
 
 function __table(aCmd) {
 	var __res = __processCmdLine(aCmd, true);
-	if (isArray(__res) && isObject(__res[0]) && isObject(__res[__res.length -1])) {
+	if (isArray(__res) && __res.length > 0 && isObject(__res[0]) && isObject(__res[__res.length -1])) {
 		var __pres = 0;
 		if (pauseCommand) {
 			var __lines = printTable(__res, con.getConsoleReader().getTerminal().getWidth(), colorCommand).split(/\n/);
@@ -679,6 +679,9 @@ function __table(aCmd) {
 		} else {
 			__outputConsole(printTable(__res, con.getConsoleReader().getTerminal().getWidth(), true, colorCommand));
 		}
+		return true;
+	} else {
+		__outputConsoleError("Not an array of maps object or empty array.");
 		return true;
 	}
 	return false;
