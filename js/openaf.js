@@ -3229,18 +3229,26 @@ function searchValues(aObject, aSearchValue, useCase) {
 
 /**
  * <odoc>
- * <key>mapArray(anArray, selectors) : Array</key>
+ * <key>mapArray(anArray, selectors, limit) : Array</key>
  * Helper functions to map selectors (inputs for ow.obj.getPath) from anArray returning the filtered array. IF
  * selectors is a string or just one array entry the result will be an array with just the value results.
+ * Optionally you can also limit the number of results to the first "limit" (number).
  * </odoc>
  */
-function mapArray(anArray, selectors) {
+function mapArray(anArray, selectors, limit) {
 	_$(anArray).isArray("Please provide an array.");
-	var res = [];
+	var res = [], c = 1;
 
 	if (isString(selectors)) selectors = [ selectors ];
 	if (isArray(selectors)) {
 		for(var jj in anArray) {
+			if (isDef(limit) & isNumber(limit)) {
+				if (c > limit) {
+					return res;
+				} else {
+					c++;
+				}
+			} 
 			ow.loadObj();
 			var entry = {};
 			if (selectors.length == 1) {
