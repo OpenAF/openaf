@@ -156,7 +156,12 @@ jobs:
    - name: OpenAF::Set Path
      from: OpenAF::Init
      to  : oJob Test
-     exec: args.func = args.tests.testSetPath;     
+     exec: args.func = args.tests.testSetPath;    
+
+   - name: OpenAF::Map Array
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMapArray; 
 
 todo:
    # Generic Tests
@@ -190,6 +195,7 @@ todo:
    - OpenAF::Java RegExp
    - OpenAF::Get Path
    - OpenAF::Set Path
+   - OpenAF::Map Array
   
    # CSV Tests
    # ---------

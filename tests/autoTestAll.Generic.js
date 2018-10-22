@@ -504,4 +504,21 @@
         });
         io.rm(filename);
     };
+
+    exports.testMapArray = function() {
+        var o = [];
+        o.push({ a: 1, b: true, c: "test 1"});
+        o.push({ a: 2, b: false, c: "test 2"});
+        o.push({ a: 3, b: true, c: "test 3"});
+
+        var r = mapArray(o, ["a", "b"]);
+        ow.test.assert(r.length, 3, "Problem with mapArray returning the full original array");
+        ow.test.assert(isDef(r[0].c), false, "Problem with mapArray selectors (1)");
+        ow.test.assert(isDef(r[0].b), true, "Problem with mapArray selectors (2)");
+
+        var r2 = mapArray(o, ["a", "c"], 1);
+        ow.test.assert(r2.length, 1, "Problem with mapArray returning the full original array limited");
+        ow.test.assert(isDef(r2[0].b), false, "Problem with mapArray selectors (1) limited");
+        ow.test.assert(isDef(r2[0].a), true, "Problem with mapArray selectors (2) limited");
+    };
 })();
