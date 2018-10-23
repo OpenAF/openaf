@@ -4,40 +4,27 @@ Changed from original : No
 Location in openaf.jar: js/showdown.js
 License               : 
 
-Showdown Copyright (c) 2007, John Fraser
-&lt;http://www.attacklab.net/&gt;
-All rights reserved.
+MIT License
 
-Original Markdown copyright (c) 2004, John Gruber
-&lt;http://daringfireball.net/&gt;
-All rights reserved.
+Copyright (c) 2018 ShowdownJS
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-* Redistributions of source code must retain the above copyright notice,
-  this list of conditions and the following disclaimer.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-* Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.
-
-* Neither the name &quot;Markdown&quot; nor the names of its contributors may
-  be used to endorse or promote products derived from this software
-  without specific prior written permission.
-
-This software is provided by the copyright holders and contributors &quot;as
-is&quot; and any express or implied warranties, including, but not limited
-to, the implied warranties of merchantability and fitness for a
-particular purpose are disclaimed. In no event shall the copyright owner
-or contributors be liable for any direct, indirect, incidental, special,
-exemplary, or consequential damages (including, but not limited to,
-procurement of substitute goods or services; loss of use, data, or
-profits; or business interruption) however caused and on any theory of
-liability, whether in contract, strict liability, or tort (including
-negligence or otherwise) arising in any way out of the use of this
-software, even if advised of the possibility of such damage.
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 -----------------------
 Third-party name      : Later
@@ -2075,9 +2062,9 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -----------------------
 Third-party name      : JAnsi
-Version               : 1.14
+Version               : 1.17.1
 Changed from original : No
-Location in openaf.jar: lib/jansi-1.14.jar
+Location in openaf.jar: lib/jansi-1.17.1.jar
 License               : 
 
 
@@ -3782,9 +3769,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -----------------------
 Third-party name      : GSON
-Version               : 2.8.2
+Version               : 2.8.5
 Changed from original : No
-Location in openaf.jar: lib/gson-2.8.2.jar
+Location in openaf.jar: lib/gson-2.8.5.jar
 License               : 
 
 
@@ -3989,6 +3976,22 @@ License               :
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+-----------------------
+Third-party name      : Jackson Core
+Version               : 2.9.7
+Changed from original : No
+Location in openaf.jar: lib/jackson-core-2.9.7.jar
+License               : 
+
+This copy of Jackson JSON processor streaming parser/generator is licensed under the
+Apache (Software) License, version 2.0 (&quot;the License&quot;).
+See the License for details about distribution rights, and the
+specific rights regarding derivate works.
+
+You may obtain a copy of the License at:
+
+http://www.apache.org/licenses/LICENSE-2.0
 
 -----------------------
 Third-party name      : Synaptics

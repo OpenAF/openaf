@@ -5,7 +5,7 @@
 			"version": "1.8.6",
 			"changes": false,
 			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/showdownjs/showdown/master/license.txt",
+			"license": "https://raw.githubusercontent.com/showdownjs/showdown/master/LICENSE",
 			"deps": []
 		},
 		{
@@ -168,12 +168,16 @@
 		},
 		{
 			"description": "JAnsi",
-			"path": ["lib/jansi-1.14.jar"],
-			"version": "1.14",
+			"path": ["lib/jansi-1.17.1.jar"],
+			"version": "1.17.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/fusesource/jansi/master/license.txt",
-			"deps": []
+			"deps": [],
+			"maven": {
+				"id"  : "org.fusesource.jansi.jansi",
+				"file": "jansi-{{version}}.jar"
+			}
 		},
 		{
 			"description": "Apache Commons IO",
@@ -269,12 +273,29 @@
 		},
 		{
 			"description": "GSON",
-			"path": ["lib/gson-2.8.2.jar"],
-			"version": "2.8.2",
+			"path": ["lib/gson-2.8.5.jar"],
+			"version": "2.8.5",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/google/gson/master/LICENSE",
-			"deps": []
+			"deps": [],
+			"maven": {
+				"id"  : "com.google.code.gson.gson",
+				"file": "gson-{{version}}.jar"
+			}
+		},
+		{
+			"description": "Jackson Core",
+			"path": ["lib/jackson-core-2.9.7.jar"],
+			"version": "2.9.7",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/src/main/resources/META-INF/LICENSE",
+			"deps": [],
+			"maven": {
+				"id"  : "com.fasterxml.jackson.core.jackson-core",
+				"file": "jackson-core-{{version}}.jar"
+			}
 		},
 		{
 			"description": "Synaptics",
