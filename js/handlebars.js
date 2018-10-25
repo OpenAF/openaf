@@ -1,7 +1,7 @@
 /**!
 
  @license
- handlebars v4.0.11
+ handlebars v4.0.12
 
 Copyright (C) 2011-2017 by Yehuda Katz
 
@@ -275,7 +275,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _logger2 = _interopRequireDefault(_logger);
 
-	var VERSION = '4.0.11';
+	var VERSION = '4.0.12';
 	exports.VERSION = VERSION;
 	var COMPILER_REVISION = 7;
 
@@ -2786,7 +2786,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	function stripComment(comment) {
-	  return comment.replace(/^\{\{~?\!-?-?/, '').replace(/-?-?~?\}\}$/, '');
+	  return comment.replace(/^\{\{~?!-?-?/, '').replace(/-?-?~?\}\}$/, '');
 	}
 
 	function preparePath(data, parts, loc) {
@@ -2794,8 +2794,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  var original = data ? '@' : '',
 	      dig = [],
-	      depth = 0,
-	      depthString = '';
+	      depth = 0;
 
 	  for (var i = 0, l = parts.length; i < l; i++) {
 	    var part = parts[i].part,
@@ -2810,7 +2809,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        throw new _exception2['default']('Invalid path: ' + original, { loc: loc });
 	      } else if (part === '..') {
 	        depth++;
-	        depthString += '../';
 	      }
 	    } else {
 	      dig.push(part);
@@ -3045,11 +3043,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	      'lookup': true
 	    };
 	    if (knownHelpers) {
+	      // the next line should use "Object.keys", but the code has been like this a long time and changing it, might
+	      // cause backwards-compatibility issues... It's an old library...
+	      // eslint-disable-next-line guard-for-in
 	      for (var _name in knownHelpers) {
-	        /* istanbul ignore else */
-	        if (_name in knownHelpers) {
-	          this.options.knownHelpers[_name] = knownHelpers[_name];
-	        }
+	        this.options.knownHelpers[_name] = knownHelpers[_name];
 	      }
 	    }
 
