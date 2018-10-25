@@ -220,7 +220,7 @@ io.mkdir(OPENAF_BUILD_HOME + "/jsmin");
 io.mkdir(OPENAF_BUILD_HOME + "/jslib");
 
 var zipJSlib = new ZIP();
-var validationForCompile = (filename) => { return (filename != "materialize.js" && filename != "jquery.js" && filename != "highlight.js" && filename != "backbone.js"); };
+var validationForCompile = (filename) => { return (filename != "materialize.js" && filename != "handlebars.js" && filename != "jquery.js" && filename != "highlight.js" && filename != "backbone.js"); };
 
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {
@@ -238,6 +238,7 @@ try {
 			file.filename !== 'highlight.js' &&
 			file.filename !== 'avsc.js' &&
 			file.filename !== 'fusejs.js' &&
+			file.filename !== 'handlebars.js' &&
 			file.filename !== 'jquery.js') {
 
 			var doIt = true;
@@ -251,8 +252,9 @@ try {
 			}
 
 			if (doIt) {
-				log("Compiling " + file.filename);
+				log("-> Compiling " + file.filename);
 				var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+				log("<- Compiled  " + file.filename);
 				destjssha.files.push({
 					file: file.filename,
 					orig: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/js/" + file.filename)),
@@ -284,6 +286,7 @@ try {
 	}
 	return i;
 } catch(e) { }
+return true;
 });
 
 tempJar.putFile("compiledJS.jar", zipJSlib.generate({"compressionLevel": 9}));

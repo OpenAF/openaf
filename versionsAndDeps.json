@@ -2,7 +2,7 @@
 	"external": [{
 			"description": "Showdown",
 			"path": ["js/showdown.js"],
-			"version": "1.8.6",
+			"version": "1.8.7",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/showdownjs/showdown/master/LICENSE",
@@ -29,7 +29,7 @@
 		{
 			"description": "FuseJS",
 			"path": ["js/fusejs.js"],
-			"version": "3.2.0",
+			"version": "3.3.0",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/krisk/Fuse/master/LICENSE",
@@ -47,7 +47,7 @@
 		{
 			"description": "Handlebars",
 			"path": ["js/handlebars.js"],
-			"version": "4.0.11",
+			"version": "4.0.12",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/wycats/handlebars.js/master/LICENSE",
@@ -65,7 +65,7 @@
 		{
 			"description": "js-yaml",
 			"path": ["js/js-yaml.js"],
-			"version": "3.10.0",
+			"version": "3.12.0",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/nodeca/js-yaml/master/LICENSE",
@@ -74,7 +74,7 @@
 		{
 			"description": "jQuery minified",
 			"path": ["js/jquery.js"],
-			"version": "3.2.1",
+			"version": "3.3.1",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/jquery/jquery/master/LICENSE.txt",
