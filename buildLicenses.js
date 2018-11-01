@@ -13,7 +13,7 @@ for(let i in ls.external) {
     lines += templify("\
 Third-party name      : {{description}}\n\
 Version               : {{version}}\n\
-Changed from original : {{#if changed}}Yes{{else}}No{{/if}}\n\
+Changed from original : {{#if changes}}Yes{{else}}No{{/if}}\n\
 Location in openaf.jar: {{path}}\n\
 License               : \n\n{{license}}\n\
 -----------------------\n", ls.external[i]);
