@@ -63,6 +63,15 @@
 			"deps": []
 		},
 		{
+			"description": "JMESPath",
+			"path": ["js/jmespath.js"],
+			"version": "0.15.0",
+			"changes": true,
+			"type": ["js"],
+			"license": "https://raw.githubusercontent.com/jmespath/jmespath.js/master/LICENSE",
+			"deps": []
+		},		
+		{
 			"description": "js-yaml",
 			"path": ["js/js-yaml.js"],
 			"version": "3.12.0",

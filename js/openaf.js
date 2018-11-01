@@ -2045,7 +2045,46 @@ $from = function(a) {
 		}));
 		//throw "Only queries to arrays of objects.";
 	}
-}
+};
+
+/**
+ * <odoc>
+ * <key>$path(obj, path, customFunctions) : Object</key>
+ * Shortcut for the JMESPath library for easy query and access to arrays/objects. To see all the available options
+ * please refer to http://jmespath.org. Optional you can provide a map of customFunctions. Examples:\
+ * \
+ * [Slicing]: \
+ *   $path(arr, "[0:5]"); $path(arr, "[5:10]"); $path(arr, "[:5]"); $path(arr, "[::2]"); $path(arr, "[::-1]");\
+ * \
+ * [Projections]: \
+ *   $path(arr, "a[*].first"); $path(arr, "a.*.b"); $path(arr, "[]");\
+ * \
+ * [Filters]: \
+ *   $path(arr, "a[?b=='xyz'].c"); $path(arr, "a[?b>`1`].x");\
+ * \
+ * [MultiSelect]: \
+ *   $path(arr, "a[].[x, y]"); $path(arr, "a[].{ x: x, y: y }");\
+ * \
+ * [Pipe]: \
+ *   $path(arr, "a[*].b | [0]"); \
+ * \
+ * [Functions]: \
+ *   abs(x), avg(x), contains(x, y), ceil(x), floor(x), join(x, arr), keys(obj), length(x), map(expr, arr), max(x), max_by(x, y), merge(a, b), min(a), min_by(a, b), not_null(a), reverse(arr), sort(arr), sort_by(a, y), starts_with(a, b), sum(a), to_array(a), to_string(a), to_number(a), type(a), values(a)\
+ *   $path(arr, "a[?contains(@, 'b') == `true`]")\
+ * \
+ * Custom functions:\
+ *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
+ * \
+ * </odoc>
+ */
+$path = function(aObj, aPath, customFunctions) {
+	loadCompiledLib("jmespath_js");
+	
+	if (isDef(aObj))
+		return jmespath.search(aObj, aPath, customFunctions);
+	else
+		return jmespath.types;
+};
 
 /**
  * <odoc>
