@@ -280,6 +280,7 @@ public class AFCmdOS extends AFCmdBase {
 				checkNext = true;
 				checkOption = OPTION_SCRIPTFILE;
 				filescript = true;
+				silentMode = true;
 				continue;
 			case OPTION_SCRIPTOPTION:
 				checkNext = true;
