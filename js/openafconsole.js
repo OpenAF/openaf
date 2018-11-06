@@ -259,58 +259,63 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 		return;
 	}
 
-	var outputres = "";
-	var res;
-	var __start;
-	
-	if (timeCommand) __start = now();
-	if (!executeSQL) {
-		var sql = params[2];
-		sql = sql.replace(/\;\s*/, "");
+	try {
+		var outputres = "";
+		var res;
+		var __start;
 		
-		if (descSQL) {
-			res = _db.qsRS(sql);
-			if (timeCommand) __timeResult = now() - __start;
-			for(let i = 1; i <= res.getMetaData().getColumnCount(); i++) {
-				outputres += res.getMetaData().getColumnName(i) + ": " + res.getMetaData().getColumnTypeName(i) + "(" + res.getMetaData().getColumnDisplaySize(i) + ((res.getMetaData().getScale(i) > 0) ? "," + res.getMetaData().getScale(i) : "" ) + ")\n";
-			}
+		if (timeCommand) __start = now();
+		if (!executeSQL) {
+			var sql = params[2];
+			sql = sql.replace(/\;\s*/, "");
 			
-			if (!returnOnly) {
-				var __pres = 0;
-				var __lines = String(outputres).replace(/\"/g, "").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
-				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
-			}
-			
-			res.close();
-		} else {
-			res = _db.q(sql);
-			if (timeCommand) __timeResult = now() - __start;
-			if (res.results.length > 0) {
-				if (!descSQL) {
-					outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly, con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag);
-				} /* else {
-					outputres = Object.keys(res.results[0]).join("\n");
-				}*/
+			if (descSQL) {
+				res = _db.qsRS(sql);
+				if (timeCommand) __timeResult = now() - __start;
+				for(let i = 1; i <= res.getMetaData().getColumnCount(); i++) {
+					outputres += res.getMetaData().getColumnName(i) + ": " + res.getMetaData().getColumnTypeName(i) + "(" + res.getMetaData().getColumnDisplaySize(i) + ((res.getMetaData().getScale(i) > 0) ? "," + res.getMetaData().getScale(i) : "" ) + ")\n";
+				}
 				
 				if (!returnOnly) {
 					var __pres = 0;
 					var __lines = String(outputres).replace(/\"/g, "").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 					while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
-					__outputConsoleComments(res.results.length + " rows selected.");
 				}
+				
+				res.close();
 			} else {
-				if (returnOnly)
-					outputres += "No results.";
-				else
-					__outputConsoleComments("No results.");
+				res = _db.q(sql);
+				if (timeCommand) __timeResult = now() - __start;
+				if (res.results.length > 0) {
+					if (!descSQL) {
+						outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly, con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag);
+					} /* else {
+						outputres = Object.keys(res.results[0]).join("\n");
+					}*/
+					
+					if (!returnOnly) {
+						var __pres = 0;
+						var __lines = String(outputres).replace(/\"/g, "").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
+						while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
+						__outputConsoleComments(res.results.length + " rows selected.");
+					}
+				} else {
+					if (returnOnly)
+						outputres += "No results.";
+					else
+						__outputConsoleComments("No results.");
+				}
 			}
+		} else {
+			res = _db.u(params[2]);
+			if (returnOnly)
+				outputres += "Executed over #" + res + " lines.";
+			else
+				__outputConsoleComments("Executed over #" + res + " lines.");
 		}
-	} else {
-		res = _db.u(params[2]);
-		if (returnOnly)
-			outputres += "Executed over #" + res + " lines.";
-		else
-			__outputConsoleComments("Executed over #" + res + " lines.");
+	} catch(e) {
+		_db.rollback();
+		throw e;
 	}
 	
 	if (timeCommand) {
