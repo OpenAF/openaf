@@ -1596,16 +1596,16 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.get(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : String</key>
+	 * <key>ow.obj.rest.get(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : String</key>
 	 * Tries to obtain aIndexMap from the REST aBaseURI service returning as a string (uses the HTTP GET method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object.
 	 * </odoc>
 	 */
-	get: function(aURL, aIdx, _l, _p, _t, aRequestMap) { 
+	get: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h) { 
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = new ow.obj.http();
+		var h = (isDef(__h)) ? __h : new ow.obj.http();
 		
 		if (isUndefined(_l) && isUndefined(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -1633,28 +1633,28 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonGet(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : Map</key>
+	 * <key>ow.obj.rest.jsonGet(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : Map</key>
 	 * Tries to obtain aIndexMap from the REST aBaseURI service returning as a map (uses the HTTP GET method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. 
 	 * </odoc>
 	 */
-	jsonGet: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
-		return jsonParse(this.get(aURL, aIdx, _l, _p, _t, aRequestMap).response);
+	jsonGet: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h) {
+		return jsonParse(this.get(aURL, aIdx, _l, _p, _t, aRequestMap, __h).response);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.create(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode) : String</key>
+	 * <key>ow.obj.rest.create(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP) : String</key>
 	 * Tries to create a new aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP POST method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
 	 * </odoc>
 	 */
-	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode) {
+	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = new ow.obj.http();
+		var h = (isDef(__h)) ? __h : new ow.obj.http();
 
 		if (isUndefined(_l) && isUndefined(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -1686,28 +1686,28 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonCreate(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode) : Map</key>
+	 * <key>ow.obj.rest.jsonCreate(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP) : Map</key>
 	 * Tries to create a new aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP POST method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object.  If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
 	 * </odoc>
 	 */
-	jsonCreate: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode) {
-		return jsonParse(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode).response);
+	jsonCreate: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
+		return jsonParse(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.set(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode) : String</key>
+	 * <key>ow.obj.rest.set(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP) : String</key>
 	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP PUT method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
 	 * </odoc>
 	 */
-	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode) {
+	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = new ow.obj.http();
+		var h = (isDef(__h)) ? __h : new ow.obj.http();
 
 		if (isUndefined(_l) && isUndefined(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -1739,28 +1739,28 @@ OpenWrap.obj.prototype.rest = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonSet(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode) : Map</key>
+	 * <key>ow.obj.rest.jsonSet(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP) : Map</key>
 	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP PUT method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
 	 * </odoc>
 	 */
-	jsonSet: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode) {
-		return jsonParse(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode).response);
+	jsonSet: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
+		return jsonParse(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.remove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : String</key>
+	 * <key>ow.obj.rest.remove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : String</key>
 	 * Tries to remove aIndexMap entry from the REST aBaseURI service returning the reply as a string (uses the HTTP DELETE method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object.
 	 * </odoc>
 	 */
-	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
+	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = new ow.obj.http();
+		var h = (isDef(__h)) ? __h : new ow.obj.http();
 				
 		if (isUndefined(_l) && isUndefined(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -1788,14 +1788,14 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonRemove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap) : Map</key>
+	 * <key>ow.obj.rest.jsonRemove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : Map</key>
 	 * Tries to remove aIndexMap entry from the REST aBaseURI service returning the reply as a map (uses the HTTP DELETE method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object.
 	 * </odoc>
 	 */
-	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap) {
-		return jsonParse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap).response);
+	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h) {
+		return jsonParse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap, __h).response);
 	},
 	
 	/**
