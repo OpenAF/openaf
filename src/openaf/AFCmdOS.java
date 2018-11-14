@@ -674,8 +674,13 @@ public class AFCmdOS extends AFCmdBase {
 			
 			// Convert to ParameterMap
 			Object stringify = NativeJSON.stringify(cx, (Scriptable) jse.getGlobalscope(), jsonPMOut, null, null);
-			com.google.gson.Gson gson = new com.google.gson.Gson();
-			pmOut = gson.fromJson(stringify.toString(), com.google.gson.JsonObject.class);
+			try {
+				com.google.gson.Gson gson = new com.google.gson.Gson();
+				pmOut = gson.fromJson(stringify.toString(), com.google.gson.JsonObject.class);
+			} catch(Exception e) {
+				//
+			}
+
 			
 			// Leave Rhino
 			//org.mozilla.javascript.Context.exit();
