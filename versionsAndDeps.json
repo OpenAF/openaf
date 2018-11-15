@@ -20,7 +20,7 @@
 		{
 			"description": "Materializecss",
 			"path": ["js/materialize.js"],
-			"version": "0.100.2",
+			"version": "1.0.0",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/Dogfalo/materialize/master/LICENSE",
