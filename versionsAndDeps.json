@@ -198,6 +198,15 @@
 			"deps": []
 		},
 		{
+			"description": "Apache Commons CSV",
+			"path": ["lib/commons-csv-1.6.jar"],
+			"version": "1.6",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+			"deps": []
+		},
+		{
 			"description": "Apache Commons Lang",
 			"path": ["lib/commons-lang3-3.7.jar"],
 			"version": "3.7",

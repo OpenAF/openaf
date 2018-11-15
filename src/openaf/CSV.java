@@ -2,6 +2,7 @@ package openaf;
 
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import org.mozilla.javascript.NativeArray;
@@ -54,6 +55,11 @@ public class CSV extends ScriptableObject {
 	@JSFunction
 	public void load(String aFile) throws IOException {
 		csv.load(aFile);
+	}
+
+	@JSFunction
+	public void fromStream(InputStream aStream) {
+		csv.fromStream(aStream);
 	}
 	
 	@JSFunction
