@@ -40,6 +40,8 @@ public interface JSEngine {
 	}
 	
 	public interface JSMap {
+		public abstract boolean contains(String key);
+		public abstract Object get(String key);
 		public abstract void put(String key, Object item);
 		public abstract Object getMap();
 	}

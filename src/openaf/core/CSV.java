@@ -64,10 +64,6 @@ public class CSV {
 		stringDelimeter = sdelim;
 	}
 
-	public void fromStream(InputStream aStream) {
-		CSVParser csvParser; 
-	}
-
 	/**
 	 * being deprecated
 	 */

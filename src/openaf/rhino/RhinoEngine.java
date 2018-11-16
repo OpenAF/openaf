@@ -168,7 +168,15 @@ public class RhinoEngine implements JSEngine {
 		public void put(String key, Object item) {
 			no.put(key, no, item);
 		}
+
+		public Object get(String key) {
+			return no.get(key, parentNo);
+		}
 		
+		public boolean contains(String key) {
+			return no.has(key, parentNo);
+		}
+
 		public Object getMap() {
 			return no;
 		}
