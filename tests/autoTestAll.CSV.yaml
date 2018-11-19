@@ -1,0 +1,25 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # ow.ai tests
+   # --------------
+   - name: CSV::Init
+     exec: |
+       args.tests = require("autoTestAll.CSV.js");
+
+   - name: CSV::Generic CSV
+     from: CSV::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testCSV;
+
+   - name: CSV::Stream CSV
+     from: CSV::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testStreamCSV;
+
+todo:
+   # CSV tests
+   # ---------
+   - CSV::Generic CSV
+   - CSV::Stream CSV

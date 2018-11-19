@@ -108,11 +108,6 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testParallel;
 
-   - name: CSV::Basic CSV plugin functionality
-     from: OpenAF::Init
-     to  : oJob Test
-     exec: args.func = args.tests.testCSV;
-
    - name: OpenAF::Crypt
      from: OpenAF::Init
      to  : oJob Test
@@ -197,6 +192,3 @@ todo:
    - OpenAF::Set Path
    - OpenAF::Map Array
   
-   # CSV Tests
-   # ---------
-   - CSV::Basic CSV plugin functionality
