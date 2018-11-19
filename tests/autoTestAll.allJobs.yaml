@@ -1,6 +1,7 @@
 include:
    - oJobTest.yaml
    - autoTestAll.Generic.yaml
+   - autoTestAll.CSV.yaml
    - autoTestAll.IO.yaml
    - autoTestAll.DB.yaml   
    - autoTestAll.HTTP.yaml

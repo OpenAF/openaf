@@ -41,8 +41,8 @@ OpenWrap.obj.prototype.fromDBRS2Obj = function (aDBRS, doDates) {
 
 /**
  * <odoc>
- * <key>ow.obj.fromArray2DB(anArray, aDB, aDBFrom, useParallel) : Number</key>
- * Given anArray composed of maps where each key is a field name tries to insert into the aDBFrom (table or query between '(', ')')
+ * <key>ow.obj.fromArray2DB(anArray, aDB, aDBTable, useParallel) : Number</key>
+ * Given anArray composed of maps where each key is a field name tries to insert into the aDBTable
  * for a provided aDB. Optionally you can specify how many threads should be used with useParallel.
  * This function doesn't perform any database commit. Returns the number of records inserted.
  * (available after ow.loadObj())
@@ -55,6 +55,10 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 	if (useParallel < 1) useParallel = 1;
 
 	var okeys = Object.keys(anArray[0]).join(",").toUpperCase();
+	var binds = [];
+	Object.keys(anArray[0]).forEach((v) => {
+		binds.push("?");
+	});
 	var ctrl = {};
 
 	var t = parallel4Array(anArray,
@@ -64,7 +68,7 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 			for(var k in okeysstr) {
 				values.push(aValue[k]);
 			}
-			return aDB.us("insert into " + aTableName + "(" + okeys + ") values (?, ?)", values);
+			return aDB.us("insert into " + aTableName + "(" + okeys + ") values (" + binds.join(",") + ")", values);
 		},
 		useParallel,
 		ctrl

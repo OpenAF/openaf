@@ -1,8 +1,11 @@
 package openaf;
 
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -11,10 +14,13 @@ import java.util.Map;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.QuoteMode;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -36,7 +42,7 @@ public class CSV extends ScriptableObject {
 	 */
 	private static final long serialVersionUID = -7745871696050328345L;
 	protected openaf.core.CSV csv;
-	protected CSVFormat csvFormat = CSVFormat.DEFAULT;
+	protected CSVFormat csvFormat = CSVFormat.DEFAULT.withQuoteMode(QuoteMode.NON_NUMERIC);
 	protected Map<String, Integer> heads = null;
 
 	@Override
@@ -70,7 +76,32 @@ public class CSV extends ScriptableObject {
 	}
 
 	@JSFunction
-	public void setCSVFormat(NativeObject objs) {
+	public Object getStreamFormat() {
+		return this.csvFormat;
+	}
+
+	@JSFunction
+	/**
+	 * <odoc>
+	 * <key>CSV.setStreamFormat(aMap)</key>
+	 * Set the options that will be used with CSV.fromStream. Available options are:\
+	 * \
+	 * format: String\
+	 *   You can choose between DEFAULT, EXCEL, INFORMIX_UNLOAD, INFORMIX_UNLOAD_CSV, MYSQL, RFC4180, ORACLE, POSTGRESQL_CSV, POSTGRESQL_TEXT and TDF (please check http://commons.apache.org/proper/commons-csv/user-guide.html)\
+	 * withHeader: Boolean\
+	 *   Tries to automatically use the available header\
+	 * withHeaders: Array\
+	 *   An array of header strings in the order that data lines will appear.\
+	 * quoteMode: String\
+	 *   You can choose between ALL, ALL_NON_NULL, MINIMAL, NON_NUMERIC and NONE.\
+	 * \
+	 * </odoc>
+	 */
+	public void setStreamFormat(Object objs) {
+		if (objs instanceof NativeJavaObject) {
+			this.csvFormat = (CSVFormat) ((NativeJavaObject) objs).unwrap();
+		}
+
 		if (objs instanceof NativeObject) {
 			NativeObject obj = (NativeObject) objs;
 			JSEngine.JSMap jsMap = AFCmdBase.jse.getNewMap(AFCmdBase.jse.getGlobalscope());
@@ -94,29 +125,92 @@ public class CSV extends ScriptableObject {
 				default: this.csvFormat = CSVFormat.DEFAULT;
 				}
 			}
-
+			
+			if (jsMap.contains("quoteMode")) {
+				switch(((String) jsMap.get("quoteMode")).toUpperCase()) {
+				case "ALL": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.ALL); break;
+				case "ALL_NON_NULL": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.ALL_NON_NULL); break;
+				case "MINIMAL": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.MINIMAL); break;
+				case "NON_NUMERIC": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.NON_NUMERIC); break;
+				case "NONE": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.NONE); break;
+				default: this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.NON_NUMERIC);
+				}
+			}
+			
 			if (jsMap.contains("withHeader") && ((boolean) jsMap.get("withHeader"))) {
 				this.csvFormat = this.csvFormat.withHeader();
 			}
 
 			if (jsMap.contains("withHeaders")) {
-				NativeArray na = ((NativeArray) jsMap.get("withHeaders"));
 				int c = 0;
+				NativeArray na = ((NativeArray) jsMap.get("withHeaders"));
+				String[] hs = new String[na.size()];
+
 				this.heads = new HashMap<String, Integer>();
 				for(Object ob : na) {
+					hs[c] = (String) ob;
 					this.heads.put((String) ob, new java.lang.Integer(c++));
 				}
+				this.csvFormat = this.csvFormat.withHeader(hs);
 			}
 		}
 	}
 
 	@JSFunction
+	/**
+	 * <odoc>
+	 * <key>CSV.fromStream(aStream, aFunction)</key>
+	 * Tries to write a CSV to aStream calling aFunction and expecting it to return a map with the fields previously set with CSV.setStreamFormat and
+	 * corresponding values for each line (each call will represent a line). The fields
+	 * need to be specificed in withHeaders map property in CSV.setStreamFormat. The aFunction will be called continuosly until a different output from a map is
+	 * returned. Note: aStream won't be closed.
+	 * </odoc>
+	 */
+	public void toStream(Object aStream, NativeFunction func) throws IOException {
+		if (aStream instanceof OutputStream) {
+			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter((OutputStream) aStream));
+
+			try {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				CSVPrinter ppp = new CSVPrinter(bw, this.csvFormat);
+				
+				Object res;
+				do {
+					Object[] values = new Object[this.heads.size()];
+					res = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { });
+					if (res instanceof NativeObject) {
+						NativeObject obj = ((NativeObject) res);
+						for(String head : this.heads.keySet()) {
+							if (obj.containsKey(head)) {
+								values[this.heads.get(head)] = obj.get(head);
+							}
+						}
+						ppp.printRecord(values);
+					}
+				} while(res != null && res instanceof NativeObject);
+				ppp.flush();
+				ppp.close();
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+	}
+
+	@JSFunction
+	/**
+	 * <odoc>
+	 * <key>CSV.fromStream(aStream, aFunction)</key>
+	 * Tries to read a CSV from aStream a calls aFunction with a map representing the fields of each line. The format
+	 * is determined by CSV.setStreamFormat and each map entry will have either the number of the field or the corresponding name
+	 * depending on the header options.
+	 * </odoc>
+	 */
 	public void fromStream(Object aStream, NativeFunction func) throws IOException {
 		if (aStream instanceof InputStream) {
 			boolean hasHeaders = false;
 			String[] headers = null;
 			Reader reader = new InputStreamReader(((InputStream) aStream), "UTF-8");
-			CSVParser parser = new CSVParser(reader, this.csvFormat);
+			CSVParser parser = new CSVParser(reader, this.csvFormat.withSkipHeaderRecord());
 			
 			if (parser.getHeaderMap() != null || this.heads != null) {
 				if (this.heads == null) this.heads = parser.getHeaderMap();
@@ -135,7 +229,7 @@ public class CSV extends ScriptableObject {
 					try {
 						JSMap m = AFCmdBase.jse.getNewMap(null);
 						int c = 0;
-						for(String value : record) {
+						for(Object value : record) {
 							if (hasHeaders && headers.length > c) {
 								m.put(headers[c], value);
 							} else {
