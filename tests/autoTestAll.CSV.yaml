@@ -18,8 +18,14 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testStreamCSV;
 
+   - name: CSV::ToFrom CSV
+     from: CSV::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testToFromArrayCSV;
+
 todo:
    # CSV tests
    # ---------
    - CSV::Generic CSV
    - CSV::Stream CSV
+   - CSV::ToFrom CSV

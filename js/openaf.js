@@ -4114,7 +4114,75 @@ IO.prototype.isBinaryFile = function(aFile, confirmLimit) {
 	isBin = isBinaryArray(v, confirmLimit);
 	
 	return isBin;
-}
+};
+
+/**
+ * <odoc>
+ * <key>CSV.fromArray2File(anArray, aFile, withHeadersOrStreamFormat) : Number</key>
+ * Tries to wirte anArray to aFile. If withHeadersOrStreamFormat is provided, if an array it will 
+ * be interpreted as the files of headers otherwise as the new streamFormat object to use.
+ * </odoc>
+ */
+CSV.prototype.fromArray2File = function(anArray, aFile, withHeadersOrStreamFormat) {
+	var os = io.writeFileStream(aFile);
+
+	if (anArray.length <= 0) return 0;
+	var csv = new CSV();
+
+	if (isDef(withHeadersOrStreamFormat)) {
+		if (isArray(withHeadersOrStreamFormat)) {
+			csv.setStreamFormat({ withHeaders: withHeaders });
+		} else {
+			csv.setStreamFormat(withHeadersOrStreamFormat);
+		}
+	} else {
+		csv.setStreamFormat({ withHeaders: Object.keys(anArray[0]) });
+	}
+	 
+	var c = 0;
+	try {
+		csv.toStream(os, function() {
+			if (c < anArray.length) return anArray[c++];
+		});
+	} finally {
+		os.close();
+	}
+	return c;
+};
+
+/**
+ * <odoc>
+ * <key>CSV.fromFile2Array(aFile, withHeadersOrStreamFormat) : Array</key>
+ * Tries to read a CSV file and convert it into an array. If withHeadersOrStreamFormat is provided, if an array it will 
+ * be interpreted as the files of headers otherwise as the new streamFormat object to use.
+ * </odoc>
+ */
+CSV.prototype.fromFile2Array = function(aFile, withHeadersOrStreamFormat) {
+	var res = [];
+	var is = io.readFileStream(aFile);
+	var csv = new CSV();
+
+	if (isDef(withHeadersOrStreamFormat)) {
+		if (isArray(withHeadersOrStreamFormat)) {
+			csv.setStreamFormat({ withHeaders: withHeaders });
+		} else {
+			csv.setStreamFormat(withHeadersOrStreamFormat);
+		}
+	} else {
+		csv.setStreamFormat({ withHeader: true });
+	}
+
+	try {
+		csv.fromStream(is, function(m) {
+			res.push(m);
+		});
+	} finally {
+		is.close();
+	}
+
+	return res;
+};
+
 
 /**
  * <odoc>
