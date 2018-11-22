@@ -40,6 +40,7 @@ public class AFCmdOS extends AFCmdBase {
 			+ "Options:\n" 
 			+ "   -e (input)         - provide input directly instead of using stdin\n"
 			+ "   -p                 - received streaming input (OS pipe)\n"
+			+ "   -s                 - silent mode (no __pmOut displayed)\n"
 			+ "   -f (script file)   - provide a script file directly\n"
 			+ "\n"
 			+ "   --install          - generates scripts to use openaf on the current directory\n"
@@ -56,6 +57,7 @@ public class AFCmdOS extends AFCmdBase {
 	final protected static String OPTION_OUTPUT_TYPE = "-o";
 	final protected static String OPTION_DEBUG = "-debug";
 	final protected static String OPTION_EXPR = "-e";
+	final protected static String OPTION_SILENT = "-s";
 	final protected static String OPTION_HELP = "-h";
 	final protected static String OPTION_SCRIPTHELP = "-helpscript";
 	final protected static String OPTION_INPUT_TYPE = "-i";
@@ -261,6 +263,9 @@ public class AFCmdOS extends AFCmdBase {
 			case OPTION_PIPE:
 				pipe = true;
 				continue;
+			case OPTION_SILENT:
+				silentMode = true;
+				continue;
 			case OPTION_OUTPUT_TYPE:
 				checkNext = true;
 				checkOption = OPTION_OUTPUT_TYPE;
@@ -410,7 +415,6 @@ public class AFCmdOS extends AFCmdBase {
 		//
 		
 		StringBuilder theInput = new StringBuilder();
-		pmIn = new JsonObject();
 		
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
 		
@@ -445,22 +449,32 @@ public class AFCmdOS extends AFCmdBase {
 		pmOut = new JsonObject();
 		
 		// 2.1 Auto detect the input
-		if (INPUT_TYPE == inputtype.INPUT_AUTO) {
-			if (theInput.toString().startsWith(PREFIX_SCRIPT) || theInput.toString().startsWith("#!")) 
-				INPUT_TYPE = inputtype.INPUT_SCRIPT;
-		} 
-		
 		if (theInput.length() > 0) {
+			if (INPUT_TYPE == inputtype.INPUT_AUTO) {
+				if (theInput.toString().startsWith(PREFIX_SCRIPT) || theInput.toString().startsWith("#!")) 
+					INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				else
+					INPUT_TYPE = inputtype.INPUT_JSON;
+			} 
+		
 			switch(INPUT_TYPE) {
 			case INPUT_JSON:
-				pmIn = (new com.google.gson.Gson()).fromJson(theInput.toString(), JsonObject.class);
-				break;
+				try {
+					pmIn = (new com.google.gson.Gson()).fromJson(theInput.toString(), JsonObject.class);
+					break;
+				} catch(Exception e) {
+					INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				}
 			case INPUT_SCRIPT:
+				pmIn = new JsonObject();
 				processScript = true;
 				break;
 			default:
+				pmIn = new JsonObject();
 				break;
 			}
+		} else {
+			pmIn = new JsonObject();
 		}
 		
 		JsonObject pmOut = execute(pmIn, op, processScript, theInput, false);
@@ -675,8 +689,10 @@ public class AFCmdOS extends AFCmdBase {
 			// Convert to ParameterMap
 			Object stringify = NativeJSON.stringify(cx, (Scriptable) jse.getGlobalscope(), jsonPMOut, null, null);
 			try {
-				com.google.gson.Gson gson = new com.google.gson.Gson();
-				pmOut = gson.fromJson(stringify.toString(), com.google.gson.JsonObject.class);
+				// Issue #125
+				Class.forName("com.google.gson.Gson");
+				Gson gson = new Gson();
+				pmOut = gson.fromJson(stringify.toString(), JsonObject.class);
 			} catch(Exception e) {
 				//
 			}
