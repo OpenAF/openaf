@@ -446,7 +446,6 @@ public class AFCmdOS extends AFCmdBase {
 		
 		// 2. Recognize input
 		//
-		pmOut = new JsonObject();
 		
 		// 2.1 Auto detect the input
 		if (theInput.length() > 0) {
@@ -521,7 +520,7 @@ public class AFCmdOS extends AFCmdBase {
 
 		if (processScript || filescript || injectcode || injectclass) {
 			// Obtain script
-			String script = null;
+			String script = "";
 			
 			if (filescript) {				
 				if (injectscript) {
@@ -593,7 +592,6 @@ public class AFCmdOS extends AFCmdBase {
 			Context cx = (Context) jse.getNotSafeContext();
 			cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
-			String includeScript = "";
 			NativeObject jsonPMOut = new NativeObject();
 			
 			synchronized(this) {
@@ -651,15 +649,6 @@ public class AFCmdOS extends AFCmdBase {
 				
 			}
 			
-			// Compile & execute script
-			/*try {
-				InputStream in1 = getClass().getResourceAsStream("/js/openaf.js");
-				includeScript = IOUtils.toString(in1, (Charset) null);
-				numberOfIncludedLines = numberOfIncludedLines + includeScript.split("\r\n|\r|\n").length;
-				AFCmdBase.jse.addNumberOfLines(includeScript);
-			} catch (Exception e) {
-				SimpleLog.log(logtype.DEBUG, "Error including openaf.js", e);
-			}*/
 			AFBase.runFromClass(Class.forName("openaf_js").getDeclaredConstructor().newInstance());
 			cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
@@ -670,7 +659,7 @@ public class AFCmdOS extends AFCmdBase {
 			Object res = null;
 			if (injectscript || filescript || injectcode || processScript) {
 				Context cxl = (Context) jse.enterContext();
-				org.mozilla.javascript.Script compiledScript = cxl.compileString(includeScript + script, scriptfile, 1, null);
+				org.mozilla.javascript.Script compiledScript = cxl.compileString(script, scriptfile, 1, null);
 				res = compiledScript.exec(cxl, (Scriptable) jse.getGlobalscope());
 				jse.exitContext();
 			} 
@@ -696,11 +685,6 @@ public class AFCmdOS extends AFCmdBase {
 			} catch(Exception e) {
 				//
 			}
-
-			
-			// Leave Rhino
-			//org.mozilla.javascript.Context.exit();
-			//jse.exitContext();
 		}
 		
 		return pmOut;
