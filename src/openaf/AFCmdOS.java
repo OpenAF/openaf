@@ -40,7 +40,7 @@ public class AFCmdOS extends AFCmdBase {
 			+ "Options:\n" 
 			+ "   -e (input)         - provide input directly instead of using stdin\n"
 			+ "   -p                 - received streaming input (OS pipe)\n"
-			+ "   -s                 - silent mode (no __pmOut displayed)\n"
+			+ "   -o                 - output mode (__pmOut displayed)\n"
 			+ "   -f (script file)   - provide a script file directly\n"
 			+ "\n"
 			+ "   --install          - generates scripts to use openaf on the current directory\n"
@@ -54,7 +54,7 @@ public class AFCmdOS extends AFCmdBase {
 			+ "   -h                 - show this help information\n"
 			+ "   -helpscript (term) - show help on a search term on scripting\n"
 			+ "\n(version " + VERSION + " (" + DISTRIBUTION + "), " + LICENSE + ")";
-	final protected static String OPTION_OUTPUT_TYPE = "-o";
+	final protected static String OPTION_OUTPUT_MODE = "-o";
 	final protected static String OPTION_DEBUG = "-debug";
 	final protected static String OPTION_EXPR = "-e";
 	final protected static String OPTION_SILENT = "-s";
@@ -96,7 +96,7 @@ public class AFCmdOS extends AFCmdBase {
 	
 	protected boolean __noSLF4JErrorOnly = true;
 
-	protected boolean silentMode = false;
+	protected boolean silentMode = true;
 	protected boolean silenceRepack = false;
 	protected boolean pipe = false;
 	protected boolean compile = false;
@@ -237,8 +237,6 @@ public class AFCmdOS extends AFCmdBase {
 	 */
 	protected void processArgs(String[] args) throws MalformedURLException {
 		boolean checkNext = false;
-		boolean url = false;
-		boolean operation = false;
 		String checkOption = "";
 		
 		for (String a : args) {
@@ -266,9 +264,8 @@ public class AFCmdOS extends AFCmdBase {
 			case OPTION_SILENT:
 				silentMode = true;
 				continue;
-			case OPTION_OUTPUT_TYPE:
-				checkNext = true;
-				checkOption = OPTION_OUTPUT_TYPE;
+			case OPTION_OUTPUT_MODE:
+				silentMode = false;
 				continue;
 			case OPTION_INPUT_TYPE:
 				checkNext = true;
