@@ -90,6 +90,10 @@
 
     exports.testLDAPDateConversions = function() {
         var d = new Date();
-        ow.test.assert(ow.format.fromLDAPDate(ow.format.toLDAPDate(d)).getTime(), d.getTime(), "Problem with LDAP date conversions.");
+        ow.test.assert(
+            Math.floor(Number(ow.format.fromLDAPDate(ow.format.toLDAPDate(d)).getTime())/1000), 
+            Math.floor(Number(d.getTime())/1000), 
+            "Problem with LDAP date conversions."
+        );
     };
 })();

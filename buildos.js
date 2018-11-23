@@ -220,7 +220,7 @@ io.mkdir(OPENAF_BUILD_HOME + "/jsmin");
 io.mkdir(OPENAF_BUILD_HOME + "/jslib");
 
 var zipJSlib = new ZIP();
-var validationForCompile = (filename) => { return (filename != "materialize.js" && filename != "handlebars.js" && filename != "jquery.js" && filename != "highlight.js" && filename != "backbone.js"); };
+var validationForCompile = (filename) => { return (filename != "materialize.js" && filename != "handlebars.js" && filename != "jquery.js" && filename != "highlight.js"); };
 
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {

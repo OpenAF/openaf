@@ -182,7 +182,7 @@
             //log("C = " + c);
         });
 
-        sleep(12000);
+        sleep(15000);
         sch.stop();
 
         ow.test.assert(c >= 10, true, "Problem scheduling an every second function.");

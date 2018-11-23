@@ -1346,14 +1346,13 @@ OpenWrap.server.prototype.httpd = {
 	/**
 	 * <odoc>
 	 * <key>ow.server.httpd.mapRoutesWithLibs(aHTTPd, aMapOfRoutes) : Map</key>
-	 * Helper to use with ow.server.httpd.route to automatically add routes for JQuery, Backbone,
+	 * Helper to use with ow.server.httpd.route to automatically add routes for JQuery,
 	 * Handlebars, jLinq and Underscore from the openaf.jar.
 	 * </odoc>
 	 */
 	mapRoutesWithLibs: function(aHTTPd, aMapOfRoutes) {
 		if (isUndefined(aMapOfRoutes)) aMapOfRoutes = {};
 		aMapOfRoutes["/js/jquery.js"] = function() { return ow.server.httpd.replyJQuery(aHTTPd); };
-		aMapOfRoutes["/js/backbone.js"] = function() { return ow.server.httpd.replyBackbone(aHTTPd); };
 		aMapOfRoutes["/js/handlebars.js"] = function() { return ow.server.httpd.replyHandlebars(aHTTPd); };
 		aMapOfRoutes["/js/stream.js"] = function() { return ow.server.httpd.replyStream(aHTTPd); };
 		aMapOfRoutes["/js/jlinq.js"] = function() { return ow.server.httpd.replyJLinq(aHTTPd); };
@@ -1397,10 +1396,6 @@ OpenWrap.server.prototype.httpd = {
 	
 	replyJQuery: function(aHTTPd) {
 		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/jquery.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK);
-	},
-	
-	replyBackbone: function(aHTTPd) {
-		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/backbone.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK);
 	},
 	
 	replyHandlebars: function(aHTTPd) {
