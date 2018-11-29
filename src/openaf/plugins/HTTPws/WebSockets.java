@@ -128,7 +128,7 @@ public class WebSockets {
             if (supportSelfSigned)
                 ssl.setValidateCerts(false);
             //hclient = new HttpClient(ssl);
-            client = new org.eclipse.jetty.websocket.client.WebSocketClient(ssl);
+            client = new org.eclipse.jetty.websocket.client.WebSocketClient(new org.eclipse.jetty.client.HttpClient(ssl));
         } else {
             client = new org.eclipse.jetty.websocket.client.WebSocketClient();
             //} else {
