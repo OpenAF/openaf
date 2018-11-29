@@ -8,6 +8,11 @@ jobs:
      exec: |
        args.tests = require("autoTestAll.Server.js");
 
+   - name: Server::Locks
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLocks;
+
    - name: Server::REST server
      from: Server::Init
      to  : oJob Test
@@ -46,5 +51,6 @@ todo:
    - Server::REST server
    - Server::REST server simple
    - Server::HTTP server
+   - Server::Locks
    - Server::Auth
    - Server::AuthApp

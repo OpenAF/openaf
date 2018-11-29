@@ -190,6 +190,27 @@
         ow.test.assert(b, 5, "Problem scheduling an every 5 seconds function.");
     };
 
+    exports.testLocks = function() {
+        ow.loadServer();
+        var l = new ow.server.locks(true);
+
+        l.lock("test");
+
+        var it = now();
+        var of = now();
+        var p = $do(() => {
+            l.whenUnLocked("test", function() {
+                of = now();
+            }, 1000, 5);
+        });
+        l.lock("test", 1000, 1);
+        l.unlock("test");
+        $doWait(p);
+
+        ow.test.assert(of - it >= 1000, true, "Problem with local locks.");
+        l.clear("test");
+    };
+
     exports.testHTTPServer = function() {
         ow.loadServer();
         var hs1 = ow.server.httpd.start(18081);

@@ -1186,6 +1186,178 @@ OpenWrap.server.prototype.scheduler = function () {
 };
 
 //-----------------------------------------------------------------------------------------------------
+// Locks
+//-----------------------------------------------------------------------------------------------------
+
+/**
+ * <odoc>
+ * <key>ow.server.locks(justInternal, aCh)</key>
+ * Creates a lock managing object instance. You can optional make it internal (using a __openAFLocks::local simple channel) or global
+ * using a __openAFLocks:global ignite channel. Optional you can also provide an already created channel aCh.
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks = function (justInternal, aCh) {
+	this.timeout = 500;
+	this.retries = 5;
+
+	justInternal = _$(justInternal).isBoolean().default(true);
+	this.name = _$(aCh).isString().default("__openAFLocks::" + (justInternal ? "local" : "global"));
+
+	if (isUnDef(aCh)) {
+		if (justInternal) {
+			$ch(this.name).create(1, "simple");
+		} else {
+			$ch(this.name).create(1, "ignite");
+		}
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.locks.setTryTimeout(aTimeout)</key>
+ * Sets the default wait time (in ms) for each try (see ow.server.locks.setRetries) checking if a lock is free. Defaults to 500 ms.
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks.prototype.setTryTimeout = function (aTimeout) {
+	this.timeout = aTimeout;
+	return this;
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.locks.setRetries(aNumber)</key>
+ * Sets the number of tries for checking if a lock is free waiting a specific time on each (see ow.server.locks.setRetries). Defaults to 5.
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks.prototype.setRetries = function (aNumber) {
+	this.retries = aNumber;
+	return this;
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.locks.isLocked(aLockName) : boolean</key>
+ * Determines if aLockName is locked (true) or not (false).
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks.prototype.isLocked = function (aLockName) {
+	var r = false;
+	try {
+		r = $ch(this.name).get({
+			lock: aLockName
+		});
+		if (isUnDef(r)) {
+			$ch(this.name).set({
+				lock: aLockName
+			}, {
+				lock: aLockName,
+				value: false
+			});
+			r = $ch(this.name).get({
+				lock: aLockName
+			});
+		}
+	} catch (e) {
+		$ch(this.name).set({
+			lock: aLockName
+		}, {
+			lock: aLockName,
+			value: false
+		});
+		r = $ch(this.name).get({
+			lock: aLockName
+		});
+	}
+
+	return r;
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.locks.lock(aLockName, aTryTimeout, aNumRetries) : boolean</key>
+ * Locks the lock aLockName optionally using a specific aTryTimeout and aNumRetries instead of the defaults ones (see
+ * ow.server.locks.setTryTimeout and ow.server.locks.setRetries). If successfull in locking returns true, otherwiser returns false.
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks.prototype.lock = function (aLockName, aTryTimeout, aNumRetries) {
+	var c = _$(aNumRetries).isNumber().default(this.retries);
+	aTryTimeout = _$(aTryTimeout).isNumber().default(this.timeout);
+	var lock = true;
+	var r;
+
+	do {
+		var res = this.isLocked(aLockName);
+		if (res.value == false) lock = false;
+		else sleep(aTryTimeout);
+		if (c > 0) c--;
+	} while ((c > 0 || c < 0) && lock);
+
+	if (!lock) {
+		$ch(this.name).getSet({
+			value: false
+		}, {
+			lock: aLockName
+		}, {
+			lock: aLockName,
+			value: true
+		});
+	}
+
+	return !lock;
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.locks.unlock(aLockName)</key>
+ * Tries to unlock aLockName.
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks.prototype.unlock = function (aLockName) {
+	this.isLocked(aLockName);
+	$ch(this.name).getSet({
+		value: true
+	}, {
+		lock: aLockName
+	}, {
+		lock: aLockName,
+		value: false
+	});
+	return this;
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.locks.clear(aLockName)</key>
+ * Clears an existing aLockName. Note: This might also unlock an inuse lock.
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks.prototype.clear = function(aLockName) {
+	$ch(this.name).unset({ lock: aLockName });
+	return this;
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.locks.whenUnLocked(aLockName, aFunction, aTryTimeout, aNumRetries) : boolean</key>
+ * A wrapper for ow.server.locks.lock that will try to lock aLockName, execute the provide function and then unlock it
+ * even in case an exception is raised. Returns if the lock was successfull (true) or not (false).
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks.prototype.whenUnLocked = function (aLockName, aFunc, aTryTimeout, aNumRetries) {
+	if (this.lock(aLockName, aTryTimeout, aNumRetries)) {
+		try {
+			aFunc();
+		} finally {
+			this.unlock(aLockName);
+		}
+		return true;
+	}
+
+	return false;
+};
+  
+
+//-----------------------------------------------------------------------------------------------------
 // HTTP SERVER
 //-----------------------------------------------------------------------------------------------------
 
