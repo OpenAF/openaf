@@ -4047,6 +4047,19 @@ var __correctYAML = true;
 
 /**
  * <odoc>
+ * <key>AF.fromJavaArray(aJavaArray) : Array</key>
+ * Tries to convert aJavaArray into a native an array.
+ * </odoc>
+ */
+AF.prototype.fromJavaArray = function(aJavaArray) {
+    var ar = [];
+    for(var el in aJavaArray) {
+        ar.push(aJavaArray[el]);
+    }
+    return ar;
+};
+/**
+ * <odoc>
  * <key>AF.toYAML(aJson) : String</key>
  * Tries to dump aJson into a YAML string.
  * </odoc>
