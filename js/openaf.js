@@ -1414,6 +1414,19 @@ function opackExec(aPackageName) {
 
 /**
  * <odoc>
+ * <key>loadExternalJars(aPath)</key>
+ * Given a path will try to add to the current classpath (using af.externalAddClasspath) all files with the extension
+ * '.jar'
+ * </odoc>
+ */
+function loadExternalJars(aPath) {
+	$path(io.listFiles(aPath).files, "[?ends_with(filename, '.jar') == `true`].canonicalPath").forEach((v) => {
+        af.externalAddClasspath("file:///" + v);
+    });
+}
+
+/**
+ * <odoc>
  * <key>load(aScript)</key>
  * Provides a shortcut for the af.load function (see more af.load). If the provided aScript is not found
  * this function will try to search the script on the openaf.jar::js folder and on the installed opacks.
@@ -2971,7 +2984,13 @@ OpenWrap.prototype.loadCh = function() { loadCompiledLib("owrap_ch_js"); ow.ch =
  */
 //OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
 OpenWrap.prototype.loadOJob = function() { loadCompiledLib("owrap_oJob_js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
-
+/**
+ * <odoc>
+ * <key>ow.loadJava()</key>
+ * Loads OpenWrap Java functionality. 
+ * </odoc>
+ */
+OpenWrap.prototype.loadJava = function() { loadCompiledLib("owrap_java_js"); ow.java = new OpenWrap.java(); pods.declare("ow.java", ow.java); return ow.java; }
 
 /**
  * <odoc>
