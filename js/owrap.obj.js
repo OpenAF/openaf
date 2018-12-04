@@ -41,22 +41,28 @@ OpenWrap.obj.prototype.fromDBRS2Obj = function (aDBRS, doDates) {
 
 /**
  * <odoc>
- * <key>ow.obj.fromArray2DB(anArray, aDB, aDBTable, useParallel) : Number</key>
+ * <key>ow.obj.fromArray2DB(anArray, aDB, aDBTable, useParallel,caseSensitive) : Number</key>
  * Given anArray composed of maps where each key is a field name tries to insert into the aDBTable
- * for a provided aDB. Optionally you can specify how many threads should be used with useParallel.
+ * for a provided aDB. Optionally you can specify how many threads should be used with useParallel
+ * and use the case sensitive name of fields with caseSensitive = true.
  * This function doesn't perform any database commit. Returns the number of records inserted.
  * (available after ow.loadObj())
  * </odoc>
  */
-OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, useParallel) {
+OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, useParallel, caseSensitive) {
 	if (isUndefined(useParallel)) useParallel = getNumberOfCores();
 
 	if (isUndefined(anArray) || anArray.length < 1) return 0;
 	if (useParallel < 1) useParallel = 1;
 
-	var okeys = Object.keys(anArray[0]).join(",").toUpperCase();
+	var okeys, ookeys = Object.keys(anArray[0]);
+	if (caseSensitive) 
+		okeys = "\"" + ookeys.join("\", \"") + "\"";
+	else 
+		okeys = ookeys.join(",").toUpperCase();
+
 	var binds = [];
-	Object.keys(anArray[0]).forEach((v) => {
+	ookeys.forEach((v) => {
 		binds.push("?");
 	});
 	var ctrl = {};
@@ -64,9 +70,8 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 	var t = parallel4Array(anArray,
 		function(aValue) {
 			var values = [];
-			var okeysstr = okeys.split(",");
-			for(var k in okeysstr) {
-				values.push(aValue[k]);
+			for(var k in ookeys) {
+				values.push(aValue[ookeys[k]]);
 			}
 			return aDB.us("insert into " + aTableName + "(" + okeys + ") values (" + binds.join(",") + ")", values);
 		},
