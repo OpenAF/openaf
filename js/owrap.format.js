@@ -357,6 +357,27 @@ OpenWrap.format.prototype.toBinary = function(aNumber, aLength) {
 
 /**
  * <odoc>
+ * <key>ow.format.toBase36(aNumber, aLength) : String</key>
+ * Converts a provided aNumber to the base36 representation. Optionally you can provide a length for 0 left pad.
+ * </odoc>
+ */
+OpenWrap.format.prototype.toBase36 = function(aNumber, aLength) {
+	var t = Number(aNumber).toString(36);
+	return (isDef(aLength)) ? ow.format.string.leftPad(t , aLength, "0") : t;
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.fromBase36(aString) : Number</key>
+ * Converts a provided base36 aString into the corresponding number.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromBase36 = function(aString) {
+	return parseInt(aString, 36);
+};
+
+/**
+ * <odoc>
  * <key>ow.format.fromHex(aString) : Number</key>
  * Converts a provided hexadecimal aString into the decimal number.
  * </odoc>
