@@ -130,6 +130,73 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].remove(ak);
 		}
 	},
+	ndb: {
+		__getMeta: function(aTablePrefix, aValue) {
+			ow.loadFormat();
+			var meta = [], tableT = {}, tableC = {}, tt = 1, pp = [];
+
+			traverse(aValue, (k, v, p, o) => {
+				if (pp.indexOf(p) < 0) { 
+					if (isUnDef(tableT[p])) tableT[p] = tt++;
+					if (isUnDef(tableC[p])) tableC[p] = 0;
+					pp.push(p); 
+				}
+
+				if (isObject(v)) {
+
+				} else {
+					tableC[p]++;
+					meta.push({
+						path: (p == "" ? "." + k : p + "." + k),
+						tableName: aTablePrefix + ow.format.toBase36(tableT[p]).toUpperCase(),
+						columnName: "C" + ow.format.toBase36(tableC[p]).toUpperCase()
+					});
+				}
+			});
+
+			return meta;
+		},
+		create       : function(aName, shouldCompress, options) {
+		},
+		destroy      : function(aName) {
+		},
+		size         : function(aName) {
+			return 0;
+		},
+		forEach      : function(aName, aFunction) {
+			
+		},
+		getAll      : function(aName, full) {
+			return [];
+		},
+		getKeys      : function(aName, full) {
+			return [];
+		},
+		getSortedKeys: function(aName, full) {
+			return [];				
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			return {};
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			return {};
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			return {};		
+		},
+		get          : function(aName, aK) {
+			return {};
+		},
+		pop          : function(aName) {
+			return {};		
+		},
+		shift        : function(aName) {
+			return {};
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			return {};
+		}
+	},
 	db: {
 		__db: {},
 		__table: {},
