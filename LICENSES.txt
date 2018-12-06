@@ -1757,9 +1757,9 @@ jury trial in any resulting litigation.
 
 -----------------------
 Third-party name      : Ignite
-Version               : 2.6.0
+Version               : 2.7.0
 Changed from original : No
-Location in openaf.jar: lib/ignite-core-2.6.0.jar, lib/ignite-shmem-1.0.0.jar, lib/cache-api-1.0.0.jar
+Location in openaf.jar: lib/ignite-core-2.7.0.jar, lib/ignite-shmem-1.0.0.jar, lib/cache-api-1.0.0.jar
 License               : 
 
 

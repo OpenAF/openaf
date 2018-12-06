@@ -147,10 +147,10 @@
 		},
 		{
 			"description": "Ignite",
-			"path": ["lib/ignite-core-2.6.0.jar",
+			"path": ["lib/ignite-core-2.7.0.jar",
 				"lib/ignite-shmem-1.0.0.jar",
 				"lib/cache-api-1.0.0.jar"],
-			"version": "2.6.0",
+			"version": "2.7.0",
 			"changes": false,
 			"type": ["java"],
 			"url": "https://ignite.apache.org",
@@ -391,7 +391,7 @@
 			"name": "Ignite",
 			"removable": true,
 			"deps": [
-				"lib/ignite-core-2.6.0.jar",
+				"lib/ignite-core-2.7.0.jar",
 				"lib/ignite-shmem-1.0.0.jar",
 				"lib/cache-api-1.0.0.jar"
 			]
