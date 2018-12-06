@@ -156,12 +156,67 @@ OpenWrap.ch.prototype.__types = {
 
 			return meta;
 		},
+		__setMeta: function(aName, aKey, aValue) {
+			var db = this.__options[aName].db; // TODO: support also db pools
+			var meta = this.__getMeta(this.__options[aName].tablePrefix, aKey);
+			var tableName = "\"" + this.__options[aName].tablePrefix + "META\"";
+			var metaIns = [];
+			for(var ii in meta) {
+				if (meta[ii].path != ".") {
+					metaIns.push([ String(meta[ii].path), String(meta[ii].tableName), String(meta[ii].columnName), 1 ]);
+				}
+			}
+
+			db.usArray("insert into " + tableName + " (path, tab, col, iskey) values (?, ?, ?, ?)", metaIns);
+
+			meta = this.__getMeta(this.__options[aName].tablePrefix, aValue);
+			metaIns = [];
+			for(var ii in meta) {
+				if (meta[ii].path != ".") {
+					metaIns.push([ String(meta[ii].path), String(meta[ii].tableName), String(meta[ii].columnName), 0 ]);
+				}
+			}
+			db.usArray("insert into " + tableName + " (path, tab, col, iskey) values (?, ?, ?, ?)", metaIns);
+			db.commit();
+		},
+		__readMeta: function(aName) {
+			var db = this.__options[aName].db; // TODO: support also db pools
+			var tableName = "\"" + this.__options[aName].tablePrefix + "META\"";
+			var res;
+			try {
+				res = db.qs("select path, tab, col from " + tableName, [], true).results;
+				
+			} catch(e) {
+				db.u("create table " + tableName + " (path varchar2(4000), tab varchar2(30), col varchar2(30), iskey number(1))");
+				db.us("insert into " + tableName + " (path, tab, col, iskey) values (?, ?, ?, ?)", [ ".", String(this.__options[aName].tablePrefix), null, null ], true);
+				db.commit();
+				res = db.qs("select path, tab, col, iskey from " + tableName, [], true).results;
+			}
+
+			return res;
+		},
+		__options: {},
 		create       : function(aName, shouldCompress, options) {
+			ow.loadObj();
+			this.__options[aName] = _$(options).isMap().default({});
+			_$(options.db).isObject("Need to provide a database object");
+			// TODO: support also db pools
+			this.__options[aName].db = options.db;
+			this.__options[aName].tablePrefix = _$(options.tablePrefix).isString().default("CH_" + aName.toUpperCase() + "_");
+			this.__options[aName].meta =_$(options.meta).isMap().default({});
 		},
 		destroy      : function(aName) {
+			delete this.__options[aName];
 		},
 		size         : function(aName) {
-			return 0;
+			var db = this.__options[aName].db; // TODO: support also db pools
+			try {
+				var meta = this.__readMeta(aName); 
+				var res = db.q("select count(1) c from \"" + $path(meta, "[?PATH=='.'].tab") + "\"").results;
+				return res[0].C;
+			} catch(e) {
+				return 0;
+			}
 		},
 		forEach      : function(aName, aFunction) {
 			
@@ -179,7 +234,23 @@ OpenWrap.ch.prototype.__types = {
 			return {};
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
-			return {};
+			var db = this.__options[aName].db; // TODO: support also db pools
+			
+			var meta = this.__readMeta(aName);
+			if (meta.length <= 1) {
+				this.__setMeta(aName, aK, aV);
+				meta = this.__readMeta(aName);
+				var tabs = $path(meta, "[?PATH!='.'].TAB").filter((v, i, s) => {
+					return s.indexOf(v) === i;
+				});
+				for(var ii in tabs) {
+					var cols = $path(meta, "[?TAB=='" + tabs[ii] + "'].COL").filter((v, i, s) => {
+						return s.indexOf(v) === i;
+					});
+					db.u("create table " + tabs[ii] + " (" + cols.join(" varchar2(4000), ") + " varchar2(4000))");
+					db.commit();
+				}
+			}
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
 			return {};		
