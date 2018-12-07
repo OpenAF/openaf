@@ -388,6 +388,100 @@ OpenWrap.ch.prototype.__types = {
 		unset        : function(aName, aK, aTimestamp) { 
 			this.__cacheCh[aName].unset(aK);
 		}	
+	},
+	// DB Lookup implementation
+	//
+	dblk: {
+		__channels: {},
+		__performQuery: function(aName, aSQL, withBinds) {
+			var dbpool = this.__channels[aName].dbpool;
+			var db = this.__channels[aName].db;
+
+			var res;
+			if (isDef(dbpool)) {
+				dbpool.use((db) => {
+					if (isDef(withBinds))
+						res = db.qs(aSQL, withBinds);
+					else
+						res = db.q(aSQL);
+					db.rollback();
+				});
+			} else {
+				if (isDef(withBinds))
+					res = db.qs(aSQL, withBinds);
+				else
+					res = db.q(aSQL);
+				db.rollback();
+			}
+			return res;
+		},
+		create       : function(aName, shouldCompress, options) {
+			//ow.loadObj();
+			this.__channels[aName] = options;
+			_$(options.table).$_("Please provide a db table.");
+			_$(options.keys).$_("Please provide an array of keys");
+			if (isUnDef(options.db) && isUnDef(options.dbpool)) throw "You need to provide a db or a dbpool.";
+		},
+		destroy      : function(aName) {
+			delete this.__channels[aName];
+		},
+		size         : function(aName) {
+			var res = this.__performQuery(aName, "select count(1) C from " + this.__channels[aName].table).results[0].C;
+			return Number(res);
+		},
+		forEach      : function(aName, aFunction) {
+			
+		},
+		getAll      : function(aName, full) {
+			var res = this.__performQuery(aName, "select * from " + this.__channels[aName].table).results;
+			return res;
+		},
+		getKeys      : function(aName, full) {
+			var res = this.__performQuery(aName, "select \"" + this.__channels[aName].keys.join("\", \"") + "\" from " + this.__channels[aName].table).results;
+			return [];
+		},
+		getSortedKeys: function(aName, full) {
+			return [];				
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			return {};
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var keys = this.__channels[aName].keys;
+			var where = [], values = [], cond = [];
+			for(var ii in keys) {
+				if (isUnDef(aK[keys[ii]])) throw "Missing " + keys[ii];
+				where.push("\"" + keys[ii] + "\" = ?");
+				values.push(aK[keys[ii]]);
+				cond.push("\"" + keys[ii] + "\" = " + aK[keys[ii]]);
+			}
+
+			// tbc
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			return {};		
+		},
+		get          : function(aName, aK) {
+			var keys = this.__channels[aName].keys;
+			var where = [], values = [];
+			for(var ii in keys) {
+				if (isUnDef(aK[keys[ii]])) throw "Missing " + keys[ii];
+				where.push("\"" + keys[ii] + "\" = ?");
+				values.push(aK[keys[ii]]);
+			}
+
+			var res = this.__performQuery(aName, "select * from " + this.__channels[aName].table + " where " + where.join(" AND "), values).results;
+			return res[0];
+		},
+		pop          : function(aName) {
+			return {};		
+		},
+		shift        : function(aName) {
+			return {};
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			return {};
+		}
 	},	
 	// Buffer implementation
 	//
