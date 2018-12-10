@@ -2500,7 +2500,7 @@ function parallel4Array(anArray, aFunction, numberOfThreads, threads) {
  * </odoc>
  */
 function compress(anObject) {
-	return io.gzip(af.fromString2Bytes(stringify(anObject)));
+	return io.gzip(af.fromString2Bytes(stringify(anObject, void 0, "")));
 }
 
 /**

@@ -596,7 +596,7 @@ OpenWrap.obj.prototype.pool = {
 					});
 					this.__keepaliveThread.startWithFixedRate(aTime);
 				} else {
-					if (isDefined(this.__keepaliveThread)) { this.__keepaliveThread.stop(true); }
+					if (isDef(this.__keepaliveThread)) { this.__keepaliveThread.stop(true); }
 				}
 				return this; 
 			},
@@ -691,8 +691,8 @@ OpenWrap.obj.prototype.pool = {
 			 * </odoc>
 			 */
 			stop: function() {
-				if (isDefined(this.__keepaliveThread)) { this.__keepaliveThread.stop(true); }
-				if (isDefined(this.__close)) {
+				if (isDef(this.__keepaliveThread)) { this.__keepaliveThread.stop(true); }
+				if (isDef(this.__close)) {
 					for(var i in this.__pool) {
 						// Tries to run close and ignores any error since is upon for delete
 						try { this.__close(this.__pool[i].obj); } catch(e) {}
@@ -718,7 +718,7 @@ OpenWrap.obj.prototype.pool = {
 
 				obj = parent.__getUnused(shouldTest);
 
-				if (isDefined(obj))
+				if (isDef(obj))
 					return obj;
 				else
 					throw "No available objects in pool.";
@@ -736,7 +736,7 @@ OpenWrap.obj.prototype.pool = {
 				try { parent.__close(parent.__pool[i].obj) } catch (e) {}
 				delete parent.__pool[i];
 				parent.__currentSize--;
-				loadUnderscore();
+				loadLodash();
 				parent.__pool = _.compact(parent.__pool);
 				for(var i = parent.__currentSize; i < parent.__min; i++) {
 					parent.__createObj();
@@ -758,14 +758,6 @@ OpenWrap.obj.prototype.pool = {
 
 					if (badObj == false) {
 						// Tries to run close and ignores any error since is upon for delete
-						/*try { parent.__close(parent.__pool[i].obj) } catch (e) {}
-						delete parent.__pool[i];
-						parent.__currentSize--;
-						loadUnderscore();
-						parent.__pool = _.compact(parent.__pool);
-						for(var i = parent.__currentSize; i < parent.__min; i++) {
-							parent.__createObj();
-						}*/
 						parent.__cleanup(obj);
 					} else {
 						parent.__pool[i].inUse = false;
@@ -793,11 +785,12 @@ OpenWrap.obj.prototype.pool = {
 				obj = this.checkOut(doCheck);
 
 				// Got an object, use it
-				if (isDefined(obj)) {
+				if (isDef(obj)) {
 					var res;
 
 					try {
-						res = aFunction(obj);
+						var rf = aFunction(obj);
+						if (isDef(rf)) res = rf; else res = true;
 					} catch(e) {
 						this.checkIn(obj, false);
 						throw e;
