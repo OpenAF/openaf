@@ -568,6 +568,18 @@ OpenWrap.obj.prototype.pool = {
 			 * </odoc>
 			 */
 			setKeepalive: function(aTime) { 
+				return this.setKeepaliveInMs(aTime * 1000);
+			},
+
+			/**
+			 * <odoc>
+			 * <key>ow.obj.pool.setKeepaliveInMs(aTimeInMs)</key>
+			 * Sets the aTimeInMs for the keep alive function to be called for all object instances in the pool. After setting
+			 * to aTimeInMs > 0 the keep alive cycle will be started. Otherwise any existing keep alive cycle will be stopped.
+			 * Note: don't forget to use ow.obj.pool.stop to keep the keep alive thread from running after you no longer need it.
+			 * </odoc>
+			 */
+			setKeepaliveInMs: function(aTime) {
 				this.__keepaliveTime = aTime;
 				var parent = this;
 				if (aTime > 0) {
@@ -582,7 +594,7 @@ OpenWrap.obj.prototype.pool = {
 						} catch(e) {
 						}
 					});
-					this.__keepaliveThread.startWithFixedRate(aTime * 1000);
+					this.__keepaliveThread.startWithFixedRate(aTime);
 				} else {
 					if (isDefined(this.__keepaliveThread)) { this.__keepaliveThread.stop(true); }
 				}
