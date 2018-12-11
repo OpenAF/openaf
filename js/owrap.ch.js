@@ -675,16 +675,16 @@ OpenWrap.ch.prototype.__types = {
 		pop          : function(aName) {
 			var elems = this.getSortedKeys(aName);
 			var elem = elems[elems.length - 1];
-			var res = clone(this.get(aName, elem));
-			this.unset(aName, elem);
-			return res;
+			//var res = clone(this.get(aName, elem));
+			//this.unset(aName, elem);
+			return elem;
 		},
 		shift        : function(aName) {
 			var elems = this.getSortedKeys(aName);
 			var elem = elems[0];
-			var res = clone(this.get(aName, elem));
-			this.unset(aName, elem);
-			return res;
+			//var res = clone(this.get(aName, elem));
+			//this.unset(aName, elem);
+			return elem;
 		},
 		unset        : function(aName, aK, aTimestamp) {
 			var id = stringify(aK, void 0, "");
