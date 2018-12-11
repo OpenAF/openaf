@@ -41,24 +41,25 @@ Using the example: T_he copyFiles.js will add a key/value pair per each file it 
 
 OpenAF channels can have different implementations on how the key/value set is stored and shared while maintaining the same interface methods. This means that, as a general rule, whatever implementation a channel uses the get/set/push/pop/etc… methods should be available.
 
-Currently there are several different implementations built-in (on the included OpenWrap Channel library): 
+Currently there are several different implementations built-in (on the included OpenWrap Channel library):
 
-* Big (default)
+* Big (default until 20181210)
 * DB
 * Ignite
 * Ops
 * Remote
 * Cache
 * ElasticSearch
-* Mvs
-* Simple
+* MVS
+* Simple (default from 20181210)
+* Buffer
 * Dummy (for testing)
 
 And some available through oPacks:
 
 * Mongo
 
-The default implementation Big uses the OpenWrap Big Objects functionality (from the OpenWrap Object library). You don't need to know how this functionality works internally. For the sake of simplicity let's assume it's like an internal JavaScript Array of a Map with a Key and Value.
+The default implementation, until version 20181210, Big uses the OpenWrap Big Objects functionality (from the OpenWrap Object library). You don't need to know how this functionality works internally. For the sake of simplicity let's assume it's like an internal JavaScript Array of a Map with a Key and Value.
 
 The remote implementation allows for the creation of a channel whose implementation is held on a different OpenAF script that can be accessed for a REST API. We will get into the details of how this is done and setup later but this implementation is important to access channels with local script storage (like the default implementation is). 
 
@@ -353,12 +354,28 @@ There are utilitary functions for mvs files in ow.ch.utils.mvs.* namely:
 
 ### Simple
 
-The simple implementation instead of using the OpenWrap Big Objects uses plain javascript objects (e.g. arrays and maps). It benefits on add/modify performance but uses more memory in the overall for large or varying size values. All functionality is available and similar behaviour to the default implementation should be expected althought the shouldCompress option is ignored.
+The simple implementation, default since version 20181210, instead of using the OpenWrap Big Objects uses plain javascript objects (e.g. arrays and maps). It benefits on add/modify performance but uses more memory in the overall for large or varying size values. All functionality is available and similar behaviour to the default implementation should be expected althought the shouldCompress option is ignored.
 
 To create one just:
 
 ````javascript
 > $ch("test").create(1, "simple")
+````
+
+### Buffer
+
+The buffer implementation acts as a "proxy" to another channel. It can buffer values for a specific time and/or number of values before sending it to a target channel.
+
+To create one just:
+
+````javascript
+> $ch("buffer").create(1, "buffer", {
+    bufferCh      : "targetCh",
+    bufferIdxs    : [ "key1", "key2" ],
+    bufferByTime  : 2500,
+    bufferByNumber: 100,
+    bufferTmpCh   : "buffer::__buffer"
+});
 ````
 
 ### Dummy
