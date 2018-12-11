@@ -435,7 +435,13 @@ OpenWrap.ch.prototype.__types = {
 	
 			var parent = this;
 			this.__f[aName] = function(force) {
-				if ($ch(parent.__bt[aName]).size() >= parent.__bn[aName] || force) {
+				var cont = false;
+
+				if (isDef(parent.__bf[aName]) && isFunction(parent.__bf[aName])) {
+					cont = parent.__bf[aName](parent.__bt[aName]);
+				}
+
+				if ($ch(parent.__bt[aName]).size() >= parent.__bn[aName] || force || cont) {
 					if (parent.__bi[aName].length > 0) {
 						var ar = [], ak = [];
 						$ch(parent.__bt[aName]).forEach((k, v) => {
@@ -479,18 +485,18 @@ OpenWrap.ch.prototype.__types = {
 			$ch(options.bufferTmpCh).create();
 		},
 		destroy      : function(aName) {
-			this.__s[aName].stop();
-			this.__f[aName](true);
+			if (isDef(ow.ch.__types.buffer.__s[aName])) ow.ch.__types.buffer.__s[aName].stop();
+			if (isDef(ow.ch.__types.buffer.__f[aName])) ow.ch.__types.buffer.__f[aName](true);
 	
-			delete this.__bn[aName];
-			delete this.__bt[aName];
-			delete this.__bf[aName];
-			delete this.__bc[aName];
-			$ch(this.__bt[aName]).destroy();
-			delete this.__bt[aName];
-			delete this.__bi[aName];
-			delete this.__f[aName];
-			delete this.__s[aName];
+			if (isDef(ow.ch.__types.buffer.__bn[aName])) delete ow.ch.__types.buffer.__bn[aName];
+			if (isDef(ow.ch.__types.buffer.__bt[aName])) delete ow.ch.__types.buffer.__bt[aName];
+			if (isDef(ow.ch.__types.buffer.__bf[aName])) delete ow.ch.__types.buffer.__bf[aName];
+			if (isDef(ow.ch.__types.buffer.__bc[aName])) delete ow.ch.__types.buffer.__bc[aName];
+			if (isDef(ow.ch.__types.buffer.__bt[aName])) $ch(ow.ch.__types.buffer.__bt[aName]).destroy();
+			if (isDef(ow.ch.__types.buffer.__bt[aName])) delete ow.ch.__types.buffer.__bt[aName];
+			if (isDef(ow.ch.__types.buffer.__bi[aName])) delete ow.ch.__types.buffer.__bi[aName];
+			if (isDef(ow.ch.__types.buffer.__f[aName])) delete ow.ch.__types.buffer.__f[aName];
+			if (isDef(ow.ch.__types.buffer.__s[aName])) delete ow.ch.__types.buffer.__s[aName];
 		},
 		size         : function(aName) {
 			return $ch(this.__bc[aName]).size() + $ch(this.__bt[aName]).size();
