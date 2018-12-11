@@ -922,6 +922,7 @@ OpenWrap.obj.prototype.big = {
 		var res = {
 			internalData: {},
 			internalIndex: {},
+			threshold: getNumberOfCores() * 2048,
 			compressKeys: shoudCompress,
 
 			/**
@@ -936,22 +937,21 @@ OpenWrap.obj.prototype.big = {
 			 * </odoc>
 			 */
 			set: function(aKeys, aColumns, aTime) {
-				var existing = this.getID(aKeys);
+				var hash = this.__genHash(aKeys);
+				var existing = this.getID(aKeys, hash);
+				var ett = (isUnDef(aTime)) ? nowUTC() : aTime;
 			    var uuid;
-			    var hash;
-			    var ett = (isUndefined(aTime)) ? nowUTC() : aTime;
 			
 			    if (Object.keys(aKeys) <= 0) return;
 			    
-				hash = this.__genHash(aKeys);
-				if(isDefined(existing)) {
+				if(isDef(existing)) {
 					uuid = existing;
 				} else {
 					uuid = genUUID();
 				}
 			
 				this.internalData[uuid] = compress(aColumns);
-			    if (isUndefined(this.internalIndex[hash])) { this.internalIndex[hash] = []; }
+			    if (isUnDef(this.internalIndex[hash])) { this.internalIndex[hash] = []; }
 			
 			    var k;
 			    if (this.compressKeys) {
@@ -972,7 +972,7 @@ OpenWrap.obj.prototype.big = {
 			    
 			    if(notfound) {
 			    	this.internalIndex[hash].push({"u": uuid, "k": k, "t": ett, "n": nowNano() });
-			    };
+			    }
 			    
 			    return uuid;
 			},
@@ -988,7 +988,7 @@ OpenWrap.obj.prototype.big = {
 				var uuid;
 				var hash = this.__genHash(aKeys);
 				
-				if(isDefined(existing)) {
+				if(isDef(existing)) {
 					uuid = existing;
 					
 					delete this.internalData[uuid];
@@ -1019,21 +1019,23 @@ OpenWrap.obj.prototype.big = {
 			setAll: function(anArrayKeyNames, anArray, aTimestamp) {
 				var parent = this;
 
-				parallel4Array(anArray,
-					function(aValue) {
-						parent.set(ow.obj.filterKeys(anArrayKeyNames, aValue), aValue, aTimestamp);
-						return aValue;
-					}
-				);
+				var fn = function(aValue) {
+					parent.set(ow.obj.filterKeys(anArrayKeyNames, aValue), aValue, aTimestamp);
+					return aValue;
+				};
+
+				if (this.threshold > this.internalIndex.length) {
+					anArray.forEach(fn);
+				} else {
+					parallel4Array(anArray, fn);
+				}
 			},
 		
 			__genHash: function(aKeys) {
 				var str = "";
-				var keys = Object.keys(aKeys).sort();
-				for(var i in keys) {
-					str += aKeys[keys[i]];
-				}
-				str += str.length;
+				Object.keys(aKeys).sort().forEach((v, i, a) => {
+					str += aKeys[v];
+				});
 				return sha1(str);
 			},
 		
@@ -1063,8 +1065,8 @@ OpenWrap.obj.prototype.big = {
 				return this.__getIndex()[aId];
 			},
 			
-			getID: function(aKeys) {
-				var keys = this.__getIndex()[this.__genHash(aKeys)];
+			getID: function(aKeys, hash) {
+				var keys = (isDef(hash) ? this.__getIndex()[hash] : this.__getIndex()[this.__genHash(aKeys)]);
 				for(var i in keys) {
 					if (this.compressKeys) {
 						if (compare(uncompress(keys[i].k), aKeys)) {
@@ -1076,11 +1078,11 @@ OpenWrap.obj.prototype.big = {
 						}
 					}
 				}
-				return undefined;
+				return void 0;
 			},
 		
 			getColsByID: function(anId) {
-				if (isUndefined(anId)) return undefined;
+				if (isUnDef(anId)) return void 0;
 				return uncompress(this.__getData()[anId]);
 			},
 		
@@ -1088,12 +1090,16 @@ OpenWrap.obj.prototype.big = {
 				var arr = [];
 				var parent = this;
 			
-				parallel4Array(anArrayOfIds,
-					function(aValue) {
-						arr.push(parent.getColsByID(aValue));
-						return aValue;
-					}
-				);
+				var fn = function(aValue) {
+					arr.push(parent.getColsByID(aValue));
+					return aValue;
+				};
+
+				if (this.threshold > this.internalIndex.length) {
+					anArrayOfIds.forEach(fn);
+				} else {
+					parallel4Array(anArrayOfIds, fn);
+				}
 			
 				return arr;
 			},
@@ -1142,21 +1148,25 @@ OpenWrap.obj.prototype.big = {
 				var uuids = [];
 				var parent = this;
 			
-				parallel4Array(Object.keys(this.__getIndex()),
-					function(aValue) {
-						var keys = parent.__getIndex()[aValue];
-						for(var i in keys) {
-							var key;
-							if (parent.compressKeys) key = uncompress(keys[i].k);
-							else key = keys[i].k;
-			
-							if (aFunction(key)) {
-								uuids.push(keys[i].u);
-							}
+				var fn = function(aValue) {
+					var keys = parent.__getIndex()[aValue];
+					for(var i in keys) {
+						var key;
+						if (parent.compressKeys) key = uncompress(keys[i].k);
+						else key = keys[i].k;
+		
+						if (aFunction(key)) {
+							uuids.push(keys[i].u);
 						}
-						return aValue;
 					}
-				);
+					return aValue;
+				};
+
+				if (this.threshold > this.internalIndex.length) {
+					Object.keys(this.__getIndex()).forEach(fn);
+				} else {
+					parallel4Array(Object.keys(this.__getIndex()), fn);
+				}
 			
 				return uuids;
 			},
@@ -1172,29 +1182,34 @@ OpenWrap.obj.prototype.big = {
 				var objs = [];
 				var parent = this;
 			
-				parallel4Array(Object.keys(this.__getIndex()),
-					function(aValue) {
-						var keys = parent.__getIndex()[aValue];
-						for(var i in keys) {
-							var key;
-							if (parent.compressKeys) key = uncompress(keys[i].k);
-							else key = keys[i].k;
-			
-							if (aFunction(key)) {
-								objs.push(parent.getColsByID(keys[i].u));
-							}
+				var fn = function(aValue) {
+					var keys = parent.__getIndex()[aValue];
+					for(var i in keys) {
+						var key;
+						if (parent.compressKeys) key = uncompress(keys[i].k);
+						else key = keys[i].k;
+		
+						if (aFunction(key)) {
+							objs.push(parent.getColsByID(keys[i].u));
 						}
-						
-						return aValue;
 					}
-				);
+					
+					return aValue;
+				};
+
+				
+				if (this.threshold > this.internalIndex.length) {
+					Object.keys(this.__getIndex()).forEach(fn);
+				} else {
+					parallel4Array(Object.keys(this.__getIndex()), fn);
+				}
 			
 				return objs;
 			}
-		}
+		};
 		return res;
 	}
-}
+};
 
 /**
  * <odoc>

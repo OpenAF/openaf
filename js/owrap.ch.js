@@ -636,9 +636,10 @@ OpenWrap.ch.prototype.__types = {
 			Object.keys(this.__channels[aName]).forEach((element) => {
 				res.push({ k: this.__channels[aName][element].k, t: this.__channels[aName][element].t });
 			});
-			return $from(res).sort("t").select((r) => {
+			/*return $from(res).sort("t").select((r) => {
 				return r.k;
-			});		
+			});*/
+			return $path(res, "sort_by([], &t)[*].k");		
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
 			var res;
@@ -646,7 +647,7 @@ OpenWrap.ch.prototype.__types = {
 			if ($stream([res]).anyMatch(aMatch)) {
 				return this.set(aName, aK, aV, aTimestamp);
 			}
-			return undefined;
+			return void 0;
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
 			var id = stringify(aK, void 0, "");
@@ -680,16 +681,16 @@ OpenWrap.ch.prototype.__types = {
 		pop          : function(aName) {
 			var elems = this.getSortedKeys(aName);
 			var elem = elems[elems.length - 1];
-			var res = clone(this.get(aName, elem));
-			this.unset(aName, elem);
-			return res;
+			//var res = clone(this.get(aName, elem));
+			//this.unset(aName, elem);
+			return elem;
 		},
 		shift        : function(aName) {
 			var elems = this.getSortedKeys(aName);
 			var elem = elems[0];
-			var res = clone(this.get(aName, elem));
-			this.unset(aName, elem);
-			return res;
+			//var res = clone(this.get(aName, elem));
+			//this.unset(aName, elem);
+			return elem;
 		},
 		unset        : function(aName, aK, aTimestamp) {
 			var id = stringify(aK, void 0, "");
@@ -1199,7 +1200,7 @@ OpenWrap.ch.prototype.__types = {
 OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 	if (Object.keys(this.channels).indexOf(aName) < 0) {
 		plugin("Threads");
-		type = (isDef(type)) ? type : "big";
+		type = (isDef(type)) ? type : "simple";
 
 		this.__types[type].create(aName, shouldCompress, options);
 
