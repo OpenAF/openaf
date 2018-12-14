@@ -396,11 +396,12 @@ OpenWrap.ch.prototype.__types = {
 	 * <key>ow.ch.types.buffer</key>
 	 * This OpenAF implementation establishes a buffer to another channel. The creation options are:\
 	 * \
-	 *    - bufferCh       (String) The channel that will receive data from the buffer channel.\
-	 *    - bufferIdxs     (Array)  An array of keys to use for faster performance (defaults to []).\
-	 *    - bufferByTime   (Number) How much time before flushing contents from the buffer channel (default 2500ms).\
-	 *    - bufferByNumber (Number) How many entries before flushing contents from the buffer channel (default 100).\
-	 *    - bufferTmpCh    (String) The auxiliary temporary buffer storage channel to use (default creates [name]::__buffer).\
+	 *    - bufferCh       (String)   The channel that will receive data from the buffer channel.\
+	 *    - bufferIdxs     (Array)    An array of keys to use for faster performance (defaults to []).\
+	 *    - bufferByTime   (Number)   How much time before flushing contents from the buffer channel (default 2500ms).\
+	 *    - bufferByNumber (Number)   How many entries before flushing contents from the buffer channel (default 100).\
+	 *    - bufferTmpCh    (String)   The auxiliary temporary buffer storage channel to use (default creates [name]::__bufferStorage).\
+	 *    - bufferFunc     (Function) Optional function that if returns true will trigger the buffer flush to bufferCh.\
 	 * \
 	 * </odoc>
 	 */
@@ -409,7 +410,7 @@ OpenWrap.ch.prototype.__types = {
 			options                 = _$(options).isMap("Options must be a map.").default({});
 			options.bufferByNumber  = _$(options.bufferByNumber).isNumber("bufferByNumber must be a number").default(100);
 			options.bufferByTime    = _$(options.bufferByTime).isNumber("bufferByTime must be a number of ms").default(2500);
-			options.bufferTmpCh     = _$(options.bufferTmpCh).isString("bufferTmpCh must be a string").default(aName + "::__buffer");
+			options.bufferTmpCh     = _$(options.bufferTmpCh).isString("bufferTmpCh must be a string").default(aName + "::__bufferStorage");
 			options.bufferIdxs      = _$(options.bufferIdxs).isArray("bufferIdxs must be an array").default([]);
 			options.timeout         = _$(options.timeout).isNumber("timeout is a number (ms)").default(1500);
 			_$(options.bufferCh).isString("bufferCh must be a string").$_("Please provide a bufferCh");
@@ -597,6 +598,98 @@ OpenWrap.ch.prototype.__types = {
 		},
 		unset        : function(aName, aK, aTimestamp) {
 			return {};
+		}
+	},
+	// Proxy implementation
+	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.proxy</key>
+	 * This OpenAF implementation establishes a proxy to another channel. The creation options are:\
+	 * \
+	 *    - chTarget  (String)   The channel that will receive all operations (if proxyFunc doesn't return).\
+	 *    - proxyFunc (Function) Function that receives a map (by reference that can be changed) with: op (operation),
+	 * name (target channel), function (where applicable), full (where applicable), match (the match of getSet), k (the key(s)),
+	 * v (the value(s)) and timestamp. If this function returns something no operation will be executed on the chTarget and the
+	 * value returned by the function will be the value returned by this channel.\
+	 * \
+	 * </odoc>
+	 */
+	proxy: {
+		__channels: {},
+		create       : function(aName, shouldCompress, options) {
+			this.__channels[aName] = options;
+			options.chTarget = _$(options.chTarget).$_("Need to provide a chTarget.");
+			options.proxyFunc = _$(options.proxyFunc).$_("Need to provide a proxyFunc.");
+		},
+		destroy      : function(aName) {
+			delete this.__channels[aName];
+		},
+		size         : function(aName) {
+			var m = { op: "size", name: this.__channels[aName].chTarget };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).size();
+		},
+		forEach      : function(aName, aFunction) {
+			var m = { op: "forEach", name: this.__channels[aName].chTarget, function: aFunction };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).forEach(m.function);
+		},
+		getAll      : function(aName, full) {
+			var m = { op: "getAll", name: this.__channels[aName].chTarget, full: full };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).getAll(m.full);
+		},
+		getKeys      : function(aName, full) {
+			var m = { op: "getKeys", name: this.__channels[aName].chTarget, full: full };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).getKeys(m.full);
+		},
+		getSortedKeys: function(aName, full) {
+			var m = { op: "getSortedKeys", name: this.__channels[aName].chTarget, full: full };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).getSortedKeys(full);
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var m = {
+				op: "getSet", name: this.__channels[aName].chTarget, match: aMatch, k: aK, v: aV, timestamp: aTimestamp
+			};
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).getSet(m.match, m.k, m.v, m.timestamp);
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var m = {
+				op: "set", name: this.__channels[aName].chTarget, k: aK, v: aV, timestamp: aTimestamp
+			};
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).set(m.k, m.v, m.timestamp);
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			var m = {
+				op: "setAll", name: this.__channels[aName].chTarget, k: aKs, v: aVs, timestamp: aTimestamp
+			};
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).setAll(m.k, m.v, m.timestamp);
+		},
+		get          : function(aName, aK) {
+			var m = { op: "get", name: this.__channels[aName].chTarget, k: aK };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).get(m.k);
+		},
+		pop          : function(aName) {
+			var m = { op: "pop", name: this.__channels[aName].chTarget };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).pop();
+		},
+		shift        : function(aName) {
+			var m = { op: "shift", name: this.__channels[aName].chTarget };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).shift();
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var m = { op: "unset", name: this.__channels[aName].chTarget, k: aK, timestamp: aTimestamp };
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).unset(m.k, m.timestamp);
 		}
 	},
 	// Simple implementation
@@ -1836,7 +1929,105 @@ OpenWrap.ch.prototype.utils = {
 			};
 		}
 	},
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.getBufferSubscriber(aSourceCh, indexes, byNumber, byTimeInMs, aBufferCh, aTmpBufferCh, aFilterFunc, aBufferFunc) : Function</key>
+	 * Returns a channel subscriber function that will buffer set, setall and unset operations from aSourceCh channel to aBufferCh (by
+	 * default a dummy channel to be subscribed, if not defined the name will be aSourceCh + "::buffer"). As a temporary buffer channel
+	 * aTmpBufferCh will be used (if not defined the name will be aSourceCh + "::__bufferStorage"). The aBufferCh will be configured with
+	 * the provided indexes, byNumber (number of times to trigger the buffer) and byTimeInMs (amount of time in ms to trigger the buffer).
+	 * Additionally you can specify aFilterFunc (with arguments channel, operation, key(s) and value(s)) that will only buffer if returns false
+	 * and aBufferFunc that will trigger the buffer flush if it returns true. 
+	 * </odoc>
+	 */
+	getBufferSubscriber: function(aSourceCh, idxs, byNumber, byTime, aBufferCh, aTmpBufferCh, aFilterFunc, aBufferFunc) {
+		aBufferCh = _$(aBufferCh).isString().default(aSourceCh + "::buffer");
+		aTmpBufferCh = _$(aTmpBufferCh).isString().default(aSourceCh + "::__bufferTransit");
+		_$(idxs).isArray().$_("Need to provide a source channel indexes");
 
+		$ch(aBufferCh).create(1, "dummy");
+		$ch(aTmpBufferCh).create(1, "buffer", {
+			bufferCh      : aBufferCh,
+			bufferIdxs    : idxs,
+			bufferByNumber: byNumber,
+			bufferByTime  : byTime,
+			bufferFunc    : aBufferFunc
+		});
+
+		return function(aC, aO, aK, aV) {
+			var cont = true;
+			if (isDef(aFilterFunc) && isFunction(aFilterFunc)) cont = aFilterFunc(aC, aO, aK, aV);
+			if (cont) {
+				aK = merge(aK, { ___bufferT: nowNano() });
+				switch(aO) {
+				case "set"   : $ch(aTmpBufferCh).set(aK, aV);    break;
+				case "setall": $ch(aTmpBufferCh).setAll(aK, aV); break;
+				case "unset" : $ch(aTmpBufferCh).unset(aK);      break;
+				}
+			}
+		};
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.getStatsProxyFunction(aStatsCh) : Function</key>
+	 * Returns a proxy function to be use with a proxy channel. The aStatsCh where to store the channel access statistics.
+	 * </odoc>
+	 */
+	getStatsProxyFunction: function(aStatsCh) {
+		aStatsCh = _$(aStatsCh).isString().$_("Please provide a statistics channel.");
+
+		return function(m) {
+			var r = $ch(aStatsCh).get(m.name);
+			if (isUnDef(r)) r = {};
+			if (isUnDef(r.name)) r.name = m.name;
+			if (isUnDef(r[m.op])) r[m.op] = { count: 0 };
+			
+			r[m.op].count++;
+
+			switch(m.op) {
+			case "size"         : break;
+			case "forEach"      : break;
+			case "getAll"       : 
+				var rr = $ch(m.name).getAll(m.full);
+				if (isUnDef(r[m.op].countValues)) 
+					r[m.op].countValues = rr.length; 
+				else 
+					r[m.op].countValues += rr.length;
+				$ch(aStatsCh).set(m.name, r);
+				return rr;
+			case "getKeys"      : 
+				var rr = $ch(m.name).getKeys(m.full);
+				if (isUnDef(r[m.op].countValues)) 
+					r[m.op].countValues = rr.length; 
+				else 
+					r[m.op].countValues += rr.length;
+				$ch(aStatsCh).set(m.name, r);
+				return rr;
+			case "getSortedKeys": 
+				var rr = $ch(m.name).getSortedKeys(m.full);
+				if (isUnDef(r[m.op].countValues)) 
+					r[m.op].countValues = rr.length; 
+				else 
+					r[m.op].countValues += rr.length;
+				$ch(aStatsCh).set(m.name, r);
+				return rr;
+			case "getSet"       : break;
+			case "set"          : break;
+			case "setAll"       : 
+				if (isUnDef(r[m.op].countValues)) 
+					r[m.op].countValues = m.v.length; 
+				else 
+					r[m.op].countValues += m.v.length;
+				break;
+			case "get"          : break;
+			case "pop"          : break;
+			case "shift"        : break;
+			case "unset"        : break;
+			}
+
+			$ch(aStatsCh).set(m.name, r);
+		};
+    },
     /**
      * <odoc>
      * <key>ow.ch.utils.getMirrorSubscriber(aTargetCh, aFunc) : Function</key>

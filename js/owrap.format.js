@@ -298,8 +298,68 @@ OpenWrap.format.prototype.string = {
 		  );
 	
 		return res;
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.printable(aByteArray, aDefaultChar) : String</key>
+	 * Tries to convert aByteArray into a printable string. If aDefaultChar to replace the non-printable characters
+	 * is not provided it will default to ".".
+	 * </odoc>
+	 */
+	printable: function(aByteArray, aDefaultChar) {
+		aDefaultChar = _$(aDefaultChar).isString().default(".");
+
+		var res = "";
+		for(var ii = 0; ii < aByteArray.length; ii++) {
+			res += (aByteArray[ii] & 255) >= 32 ? String.fromCharCode(aByteArray[ii] & 255) : aDefaultChar;
+		}
+
+		return res;
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.toHex(aByteArray, aSeparator) : String</key>
+	 * Tries to convert aByteArray into a string of hex values separated by aSeparator (defaults to " ").
+	 * </odoc>
+	 */
+	toHex: function(aByteArray, aSeparator) {
+		aSeparator = _$(aSeparator).isString().default(" ");
+
+		var res =  "";
+		for(var ii = 0; ii < aByteArray.length; ii++) {
+			res += ow.format.string.leftPad(ow.format.toHex(Number(aByteArray[ii] & 255)).toUpperCase(), 2, "0");
+			if (ii < aByteArray.length) res += aSeparator;
+		}
+		return res;
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.toHexArray(aByteArray, perLine) : String</key>
+	 * Returns an array with the ow.format.string.toHex of aByteArray and ow.format.string.printable with a maximum 
+	 * of perLine (defaults to 30) characters per array element.
+	 * </odoc>
+	 */
+	toHexArray: function(aByteArray, perLine) {
+		perLine = _$(perLine).isNumber().default(30);
+
+		var res = [], ii = 0;
+		do {
+			var e = [];
+			for(var jj = 0; jj < perLine && ii < aByteArray.length; jj++) {
+				e.push(aByteArray[ii]);
+				ii++;
+			}
+			var ba = af.fromArray2Bytes(e);
+			res.push({
+				pos: ii - perLine,
+				hex: this.toHex(ba),
+				characters: this.printable(ba)
+			});
+		} while(ii < aByteArray.length);
+
+		return res;
 	}
-}
+};
 	
 /**
  * <odoc>
