@@ -25,6 +25,7 @@ OpenWrap.oJob = function() {
 	this.__expr = processExpr(" ");
 	if (isDef(this.__expr[""])) delete this.__expr[""];
 	this.__logLimit = 100;
+	this.__running = false;
 
 	plugin("Threads");
 	ow.loadFormat();
@@ -80,6 +81,13 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
 	if (isDef(ojob.logLimit)) this.__logLimit = ojob.logLimit;
+
+	this.__ojob.checkStall = _$(ojob.checkStall).isMap().default(void 0);
+	if (isDef(this.__ojob_checkStall)) {
+		this.__ojob.checkStall.everySeconds = _$(this.__ojob.checkStall.everySeconds).isNumber("Check stall needs to be a number in seconds.").default(60);
+		this.__ojob.checkStall.killAfterSeconds = _$(this.__ojob.checkStall.killAfterSeconds).isNumber("Kill everything after a number of seconds").default(-1);
+	}
+
 	ojob.logJobs = _$(ojob.logJobs).default(true);
 	if (isDef(ojob.logToFile) && isMap(ojob.logToFile)) {
 		ow.ch.utils.setLogToFile(ojob.logToFile);
@@ -655,12 +663,16 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  * </odoc>
  */
 OpenWrap.oJob.prototype.stop = function() {
+	this.__running = false;
+	print("0-----" + this.__running);
 	this.getLogCh().waitForJobs(3000);
 	for(var i in this.__threads) {
 		for(var j in this.__threads[i]) {
-			this.__threads[i][j].stop();
+			this.__threads[i][j].stop(true);
 		}
 	}
+	this.gt.stop();
+	this.mt.stop();
 	//stopLog();
 };
 
@@ -777,9 +789,29 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	}
 
 	var t = new Threads();
+	this.mt = new Threads();
+
+ 	this.__running = true;
+
 	var parent = this;
 	var altId = (isDef(aId) ? aId : "");
 	aId = altId;
+
+	if (this.__ojob.daemon != true && isDef(this.__ojob.checkStall) && isNumber(this.__ojob.checkStall.everySeconds) && this.__ojob.checkStall.everySeconds > 0) {
+		this.__mtStart = now();
+		this.mt.addScheduleThreadAtFixedRate(function() {
+			try {
+			if ((now() - parent.__mtStart) > (parent.__ojob.checkStall.killAfterSeconds * 1000)) {
+				logErr("Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
+				printErr("Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
+				exit(-1);
+			} else {
+				print((now() - parent.__mtStart) + " -- " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
+			}
+			} catch(e) { sprintErr(e); }
+		}, this.__ojob.checkStall.everySeconds * 1000);
+		print("s...." + this.__ojob.checkStall.everySeconds * 1000);
+	}
 
 	if (this.__ojob.sequential) {
 		var job = undefined;
@@ -961,7 +993,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		}
 	}
 	
-	if (canContinue) {
+	if (canContinue && this.__running) {
 		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, void 0, aId, true) : {};
 		
 		args.objId = this.getID() + altId;	
