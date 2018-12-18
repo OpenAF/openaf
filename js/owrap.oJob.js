@@ -27,7 +27,6 @@ OpenWrap.oJob = function() {
 	this.__expr = processExpr(" ");
 	if (isDef(this.__expr[""])) delete this.__expr[""];
 	this.__logLimit = 10;
-	this.__running = false;
 
 	plugin("Threads");
 	ow.loadFormat();
@@ -673,7 +672,6 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  * </odoc>
  */
 OpenWrap.oJob.prototype.stop = function() {
-	this.__running = false;
 	this.getLogCh().waitForJobs(3000);
 	for(var i in this.__threads) {
 		for(var j in this.__threads[i]) {
@@ -800,8 +798,6 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	var t = new Threads();
 	this.mt = new Threads();
 
- 	this.__running = true;
-
 	//var parent = this;
 	var altId = (isDef(aId) ? aId : "");
 	aId = altId;
@@ -852,8 +848,9 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 			while(!shouldStop) {
 				try {
 					var parentOJob = $from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID() + altId);
-					if (parentOJob.any()) {
-						var todo = parent.getTodoCh().get(parentOJob.first());
+					var pjobs = [];
+					for (var ipoj = 0; ipoj < parentOJob.count(); ipoj++) {
+						var todo = parent.getTodoCh().get(parentOJob.at(ipoj));
 						job = parent.getJobsCh().get({ "name": todo.name });
 						var argss = args;
 						if (isDef(todo.args)) {
@@ -997,7 +994,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 		}
 	}
 	
-	if (canContinue && this.__running) {
+	if (canContinue) {
 		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, void 0, aId, true) : {};
 		
 		args.objId = this.getID() + altId;	
