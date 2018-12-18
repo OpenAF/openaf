@@ -21,10 +21,12 @@ OpenWrap.oJob = function() {
 
 	this.__id = sha256(this.__host + this.__ip);
 	this.__threads = {};
+	ow.loadServer(); 
+	this.__sch = new ow.server.scheduler();
 	this.__ojob = { recordLog: true, logArgs: false, numThreads: undefined, logToConsole: true };
 	this.__expr = processExpr(" ");
 	if (isDef(this.__expr[""])) delete this.__expr[""];
-	this.__logLimit = 100;
+	this.__logLimit = 10;
 	this.__running = false;
 
 	plugin("Threads");
@@ -40,7 +42,8 @@ OpenWrap.oJob = function() {
 		{
 			"uuid": this.__id,
 			"host": this.__host,
-			"ip"  : this.__ip
+			"ip"  : this.__ip,
+			"tags": []
 		}
 	);
 
@@ -82,6 +85,13 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
 	if (isDef(ojob.logLimit)) this.__logLimit = ojob.logLimit;
 
+	this.__ojob.tags = _$(ojob.tags).isArray("The ojob.tags needs to be an array.").default([]);
+	if (isDef(this.__ojob.tags) && this.__ojob.tags.length > 0) {
+		var oj = this.getMainCh().get({ "uuid": this.__id });
+		oj.tags = this.__ojob.tags;
+		this.getMainCh().set({ "uuid": this.__id }, oj);
+	}
+
 	this.__ojob.checkStall = _$(ojob.checkStall).isMap().default(void 0);
 	if (isDef(this.__ojob_checkStall)) {
 		this.__ojob.checkStall.everySeconds = _$(this.__ojob.checkStall.everySeconds).isNumber("Check stall needs to be a number in seconds.").default(60);
@@ -118,7 +128,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 			if (isDef(this.__ojob.channels.port)) {
 
 				if (isUnDef(this.__hs)) {
-					this.__hs = ow.loadServer().httpd.start(this.__ojob.channels.port, this.__ojob.channels.host, this.__ojob.channels.keyStorePath, this.__ojob.channels.keyPassword);
+					this.__hs = ow.server.httpd.start(this.__ojob.channels.port, this.__ojob.channels.host, this.__ojob.channels.keyStorePath, this.__ojob.channels.keyPassword);
 				
 					var parent = this;
 	
@@ -664,14 +674,13 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  */
 OpenWrap.oJob.prototype.stop = function() {
 	this.__running = false;
-	print("0-----" + this.__running);
 	this.getLogCh().waitForJobs(3000);
 	for(var i in this.__threads) {
 		for(var j in this.__threads[i]) {
 			this.__threads[i][j].stop(true);
 		}
 	}
-	this.gt.stop();
+	this.__sch.stop();
 	this.mt.stop();
 	//stopLog();
 };
@@ -751,7 +760,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
 
-	    	var s = ow.loadServer().checkIn(this.__ojob.unique.pidFile, function(aPid) {
+	    	var s = ow.server.checkIn(this.__ojob.unique.pidFile, function(aPid) {
 	    		if (parent.__ojob.unique.killPrevious || isDef(args.stop) || isDef(args.restart) || isDef(args.forcestop)) {
 	    			if (isDef(args.forcestop) || !pidKill(ow.server.getPid(aPid), false)) {
 	    				pidKill(ow.server.getPid(aPid), true);
@@ -793,24 +802,19 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
  	this.__running = true;
 
-	var parent = this;
+	//var parent = this;
 	var altId = (isDef(aId) ? aId : "");
 	aId = altId;
 
 	if (this.__ojob.daemon != true && isDef(this.__ojob.checkStall) && isNumber(this.__ojob.checkStall.everySeconds) && this.__ojob.checkStall.everySeconds > 0) {
 		this.__mtStart = now();
 		this.mt.addScheduleThreadAtFixedRate(function() {
-			try {
 			if ((now() - parent.__mtStart) > (parent.__ojob.checkStall.killAfterSeconds * 1000)) {
-				logErr("Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
-				printErr("Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
+				logErr("oJob: Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
+				printErr("oJob: Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
 				exit(-1);
-			} else {
-				print((now() - parent.__mtStart) + " -- " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
-			}
-			} catch(e) { sprintErr(e); }
+			} 
 		}, this.__ojob.checkStall.everySeconds * 1000);
-		print("s...." + this.__ojob.checkStall.everySeconds * 1000);
 	}
 
 	if (this.__ojob.sequential) {
@@ -892,7 +896,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	if (!(this.__ojob.sequential)) t.start();
 
 	if (this.__ojob != {} && this.__ojob.daemon == true && this.__ojob.sequential == true)
-		ow.loadServer().daemon();
+		ow.server.daemon();
 
 	if (!(this.__ojob.sequential)) {
 		try {
@@ -1117,7 +1121,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 				var t = new Threads();
 				t.addThread(f);
 
-				if (isDef(this.__threads[aJob.name]))
+				if (isDef(parent.__threads[aJob.name]))
 					parent.__threads[aJob.name].push(t);
 				else
 					parent.__threads[aJob.name] = [ t ]; 
@@ -1130,10 +1134,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId) {
 			} else {
 				if (isDef(aJob.typeArgs.cron)) {
 					aJob.typeArgs.cron = this.__processTypeArg(aJob.typeArgs.cron);
-					if (isUnDef(parent.__sch)) {
+					/*if (isUnDef(parent.__sch)) {
 						ow.loadServer(); 
 						parent.__sch = new ow.server.scheduler();
-					}
+					}*/
 					if (isUnDef(parent.__schList)) {
 						parent.__schList = {};
 					}
