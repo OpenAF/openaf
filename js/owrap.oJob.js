@@ -95,6 +95,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	if (isDef(this.__ojob_checkStall)) {
 		this.__ojob.checkStall.everySeconds = _$(this.__ojob.checkStall.everySeconds).isNumber("Check stall needs to be a number in seconds.").default(60);
 		this.__ojob.checkStall.killAfterSeconds = _$(this.__ojob.checkStall.killAfterSeconds).isNumber("Kill everything after a number of seconds").default(-1);
+		this.__ojob.checkStall.checkFunc = _$(this.__ojob.checkStall.checkFunc).isString("Please provide a function to check if should kill or not").default(void 0);
 	}
 
 	ojob.logJobs = _$(ojob.logJobs).default(true);
@@ -780,7 +781,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	    		}
 		    	if (isDef(args.status)) {
 		    		var pid = ow.server.getPid(aPid);
-					var word = (pidCheck(pid) ? "Running on" : "Not running but registered with")
+					var word = (pidCheck(pid) ? "Running on" : "Not running but registered with");
 					if (isDef(pid)) log(word + " pid = " + pid);
 					return false;
 		    	}
@@ -805,6 +806,10 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	if (this.__ojob.daemon != true && isDef(this.__ojob.checkStall) && isNumber(this.__ojob.checkStall.everySeconds) && this.__ojob.checkStall.everySeconds > 0) {
 		this.__mtStart = now();
 		this.mt.addScheduleThreadAtFixedRate(function() {
+			if (isDef(parent.__ojob.checkStall.checkFunc)) {
+				var res = (new Function(parent.__ojob.checkStall.checkFunc))(parent.__mtStart);
+				if (res) exit(-1);
+			}
 			if ((now() - parent.__mtStart) > (parent.__ojob.checkStall.killAfterSeconds * 1000)) {
 				logErr("oJob: Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
 				printErr("oJob: Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
