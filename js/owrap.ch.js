@@ -423,6 +423,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isUnDef(this.__bt)) this.__bt = {};
 			if (isUnDef(this.__bi)) this.__bi = {};
 			if (isUnDef(this.__t))  this.__t = {};
+			if (isUnDef(this.__lcks))  this.__lcks = {};
 			if (isUnDef(this.__s))  this.__s = {};
 			if (isUnDef(this.__f)) { this.__f = {}; addShut = true; }
 			
@@ -434,6 +435,9 @@ OpenWrap.ch.prototype.__types = {
 			this.__bi[aName] = options.bufferIdxs;
 			this.__t[aName]  = options.timeout;
 	
+			ow.loadServer();
+			this.__lcks[aName] = new ow.server.locks(true);
+
 			var parent = this;
 			this.__f[aName] = function(force) {
 				var cont = false;
@@ -443,24 +447,35 @@ OpenWrap.ch.prototype.__types = {
 				}
 
 				if ($ch(parent.__bt[aName]).size() >= parent.__bn[aName] || force || cont) {
-					if (parent.__bi[aName].length > 0) {
-						var ar = [], ak = [];
-						$ch(parent.__bt[aName]).forEach((k, v) => {
-							ak.push(k);
-							ar.push(v); 
-							//$ch(parent.__bt[aName]).unset(k);
-						});
-				
-						if (ar.length > 0) {
-							$ch(parent.__bc[aName]).setAll(parent.__bi[aName], ar);
-							for(var ii in ak) { $ch(parent.__bt[aName]).unset(ak[ii]); }
+					// Lock
+					if (!force) {
+						if (parent.__lcks[aName].lock("openaf::ch::buffer::" + aName, 50, 1)) {
+							cont = true;
+						} else {
+							return true;
 						}
 					} else {
-						$ch(parent.__bt[aName]).forEach((k, v) => {
-							$ch(parent.__bc[aName]).set(k, v); 
-							$ch(parent.__bt[aName]).unset(k);
-						});
+						parent.__lcks[aName].lock("openaf::ch::buffer::" + aName, 50, -1);
 					}
+
+					try {
+						if (parent.__bi[aName].length > 0) {
+							var ak = $ch(parent.__bt[aName]).getKeys();
+							var ar = $ch(parent.__bt[aName]).getAll();
+							if (ar.length > 0) {
+								$ch(parent.__bc[aName]).setAll(parent.__bi[aName], ar);
+								for(var ii in ak) { $ch(parent.__bt[aName]).unset(ak[ii]); }
+							}
+						} else {
+							$ch(parent.__bt[aName]).forEach((k, v) => {
+								$ch(parent.__bc[aName]).set(k, v); 
+								$ch(parent.__bt[aName]).unset(k);
+							});
+						}
+					} finally {
+						// Unlock
+						parent.__lcks[aName].unlock("openaf::ch::buffer::" + aName);
+					} 
 				}
 			};
 	
@@ -498,6 +513,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(ow.ch.__types.buffer.__bi[aName])) delete ow.ch.__types.buffer.__bi[aName];
 			if (isDef(ow.ch.__types.buffer.__f[aName])) delete ow.ch.__types.buffer.__f[aName];
 			if (isDef(ow.ch.__types.buffer.__s[aName])) delete ow.ch.__types.buffer.__s[aName];
+			if (isDef(ow.ch.__types.buffer.__lcks[aName])) delete ow.ch.__types.buffer.__lcks[aName];
 		},
 		size         : function(aName) {
 			return $ch(this.__bc[aName]).size() + $ch(this.__bt[aName]).size();
@@ -1958,11 +1974,20 @@ OpenWrap.ch.prototype.utils = {
 			var cont = true;
 			if (isDef(aFilterFunc) && isFunction(aFilterFunc)) cont = aFilterFunc(aC, aO, aK, aV);
 			if (cont) {
-				aK = merge(aK, { ___bufferT: nowNano() });
 				switch(aO) {
-				case "set"   : $ch(aTmpBufferCh).set(aK, aV);    break;
-				case "setall": $ch(aTmpBufferCh).setAll(aK, aV); break;
-				case "unset" : $ch(aTmpBufferCh).unset(aK);      break;
+				case "set"   : 
+					aK = merge(aK, { ___bufferT: nowNano() }); 
+					$ch(aTmpBufferCh).set(aK, aV);    
+					break;
+				case "setall": 
+					aK.push("___bufferT"); 
+					aV = merge(aV,  { ___bufferT: nowNano() }); 
+					$ch(aTmpBufferCh).setAll(aK, aV); 
+					break;
+				case "unset" : 
+					aK = merge(aK, { ___bufferT: nowNano() }); 
+					$ch(aTmpBufferCh).unset(aK);      
+					break;
 				}
 			}
 		};
