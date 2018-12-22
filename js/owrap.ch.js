@@ -2731,22 +2731,63 @@ OpenWrap.ch.prototype.server = {
 	 */
 	peer: function(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount) {
 		var uuid = ow.ch.server.expose(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc);
-		var res = [];
 
 		if (!(isArray(aRemoteURLArray))) aRemoteURLArray = [ aRemoteURLArray ];
 		
 		ow.loadObj();
-		for(let i in aRemoteURLArray) {
-			var fn = ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid);
-			var hkfn = ow.ch.comms.getRetrySubscriberFunc(fn, aMaxTime, aMaxCount, uuid);
-			fn(aName, "reset");
-			res.push(ow.ch.subscribe(aName, hkfn));
-			res.push(ow.ch.subscribe(aName, fn));
+		if ($ch().list().indexOf("__ch::peers") < 0) {
+			$ch("__ch::peers").create(1, "simple");
+			$ch("__ch::peers").subscribe((aC, aO, aK, aV) => {
+				if (aO == "set" || aO == "setall") {
+					if (!(isArray(aV))) aV = [ aV ];
+					for (var ii in aV) {
+						var fn = ow.ch.comms.getSubscribeFunc(aV[ii].peer, aV[ii].uuid);
+						var hkfn = ow.ch.comms.getRetrySubscriberFunc(fn, aV[ii].maxTime, aV[ii].maxCount, aV[ii].uuid);
+						fn(aName, "reset");
+						$ch("__ch::peers").set({
+							name: aV[ii].name,
+							peer: aV[ii].peer,
+							uuid: aV[ii].uuid
+						}, {
+							name: aV[ii].name,
+							peer: aV[ii].peer,
+							uuid: aV[ii].uuid,
+							subsFunc: ow.ch.subscribe(aName, fn),
+							retryFunc: ow.ch.subscribe(aName, hkfn)
+						});
+					}
+				}
+			});
 		}
-	
-		return res;
-	},
 
+		var res = [];
+		for(let i in aRemoteURLArray) {
+			res.push({
+				name: aName,
+				peer: aRemoteURLArray[i],
+				uuid: uuid
+			});
+		}
+		$ch("__ch::peers").setAll(["name", "peer", "uuid"], res);
+
+		return uuid;
+	},
+	unpeer: function(aName, aPeer, aUUID) {
+		var r = $ch("__ch::peers").get({
+			name: aName,
+			peer: aPeer,
+			uuid: aUUID
+		});
+
+		ow.ch.unsubscribe(aName, r.subsFunc);
+		ow.ch.unsubscribe(aName, r.retryFunc);
+
+		$ch("__ch::peers").unset({
+			name: aName,
+			peer: aPeer,
+			uuid: aUUID
+		});
+	},
 	/**
 	 * <odoc>
 	 * <key>ow.ch.server.routeProcessing(aURI, aRequest, aName) : HTTPServerReply</key>
