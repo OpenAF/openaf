@@ -1221,7 +1221,19 @@ OpenWrap.ch.prototype.__types = {
 		create       : function(aName, shouldCompress, options) {
 			plugin("Ignite");
 			if (isUnDef(options) || isUnDef(options.ignite)) this.__ig = new Ignite(); else this.__ig = options.ignite;
-			if (isUnDef(options) || isUnDef(options.gridName)) this.__ig.start(); else this.__ig.start(options.gridName);
+			if (isDef(options) && isDef(options.persist)) {
+				var storageCfg = new Packages.org.apache.ignite.configuration.DataStorageConfiguration();
+				storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+				storageCfg.setStoragePath(options.persist);
+				storageCfg.setWalPath(options.persist);
+				storageCfg.setWalArchivePath(options.persist);
+
+				this.__ig.getConfiguration().setDataStorageConfiguration(storageCfg);
+			}
+			if (isUnDef(options) || isUnDef(options.gridName)) this.__ig.start(); else this.__ig.start(options.gridName, void 0, options.client);
+			if (isDef(options) && isDef(options.persist)) {
+				this.__ig.getIgnite().active(true);
+			}
 			var ch = this.__ig.getIgnite().getOrCreateCache(aName);
 		},
 		destroy      : function(aName) {

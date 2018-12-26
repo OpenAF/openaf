@@ -691,7 +691,7 @@ function __initializeLogPromise() {
 		if (isUnDef(__logPromise)) {
 			__logPromise = $do(() => {}).catch((e) => {});
 			addOnOpenAFShutdown(() => {
-				$doWait(__logPromise);
+				$doWait(__logPromise, 5000);
 			});
 			return true;
 		} else {
