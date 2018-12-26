@@ -1297,6 +1297,16 @@ function oPack(aCmd) {
 
 /**
  * <odoc>
+ * <key>addOPackRemoteDB(aURL)</key>
+ * Adds a path to an opack.db file to the current search path.
+ * </odoc>
+ */
+function addOPackRemoteDB(aURL) {
+	__opackCentral.push(aURL);
+}
+
+/**
+ * <odoc>
  * <key>getOPackRemoteDB() : Array</key>
  * Returns an Array of maps. Each map element is an opack package description registered in the OpenAF central repository.
  * </odoc>
