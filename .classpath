@@ -44,7 +44,7 @@
 	<classpathentry kind="lib" path="lib/logback-classic.jar"/>
 	<classpathentry kind="lib" path="lib/logback-core.jar"/>
 	<classpathentry kind="lib" path="lib/ojdbc7.jar"/>
-	<classpathentry kind="lib" path="lib/org.eclipse.jgit-4.5.0.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.jgit-4.10.0.jar"/>
 	<classpathentry kind="lib" path="lib/poi-4.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/poi-excelant-4.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/poi-ooxml-4.0.0.jar"/>
