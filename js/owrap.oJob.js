@@ -751,6 +751,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	var parent = this;
 
 	if (this.__ojob != {}) {
+		if (isDef(this.__ojob.argsFromEnvs) && this.__ojob.argsFromEnvs) args = this.__processArgs(getEnvs(), args, aId);
+
 	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 100;
 
 		if (isDef(this.__ojob.id) && isUnDef(aId)) aId = this.__ojob.id;
