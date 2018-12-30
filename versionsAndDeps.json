@@ -254,11 +254,13 @@
 		{
 			"description": "JavaMail API",
 			"path": ["lib/javax.mail.jar"],
-			"version": "1.5.6",
+			"version": "1.6.2",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/cddl.txt",
-			"deps": []
+			"deps": [
+				"lib/jakarta.activation.jar"
+			]
 		},
 		{
 			"description": "JBSDiff",
