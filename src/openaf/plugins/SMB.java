@@ -204,4 +204,16 @@ public class SMB extends ScriptableObject {
 		//IOUtils.closeQuietly(sfos);
 		sfos.close();
 	}
+
+	/**
+	 * <odoc>
+	 * <key>SMB.rm(aTargetURL)</key>
+	 * Tries to delete aTargetURL.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void rm(String aTarget) throws MalformedURLException, SmbException {
+		SmbFile f = new SmbFile(aTarget, npa);
+		f.delete();
+	}
 }
