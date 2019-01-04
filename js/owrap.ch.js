@@ -1857,7 +1857,7 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	var ak = aKey;
 	if (typeof aKey != "object") ak = { "key": aKey };
 
-	var parent = this;
+	var parent = this, res;
 	sync(function() {	
 		res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
 		parent.vers[aName] = nowUTC();
@@ -1890,7 +1890,7 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 			}
 		}
 	}	
-	return this;
+	return res;
 };
 	
 OpenWrap.ch.prototype.utils = {
