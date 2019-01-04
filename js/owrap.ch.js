@@ -434,6 +434,8 @@ OpenWrap.ch.prototype.__types = {
 			this.__bt[aName] = options.bufferTmpCh;
 			this.__bi[aName] = options.bufferIdxs;
 			this.__t[aName]  = options.timeout;
+
+			if (options.bufferByTime < 0 && options.bufferByNumber < 0) throw "Needs to be buffered by time and/or number.";
 	
 			ow.loadServer();
 			this.__lcks[aName] = new ow.server.locks(true);
@@ -446,7 +448,7 @@ OpenWrap.ch.prototype.__types = {
 					cont = parent.__bf[aName](parent.__bt[aName]);
 				}
 
-				if ($ch(parent.__bt[aName]).size() >= parent.__bn[aName] || force || cont) {
+				if ((parent.__bn[aName] >= 0 && $ch(parent.__bt[aName]).size() >= parent.__bn[aName]) || force || cont) {
 					// Lock
 					if (!force) {
 						if (parent.__lcks[aName].lock("openaf::ch::buffer::" + aName, 50, 1)) {
@@ -479,7 +481,7 @@ OpenWrap.ch.prototype.__types = {
 				}
 			};
 	
-			if (isDef(this.__bm[aName])) {
+			if (isDef(this.__bm[aName]) && this.__bm[aName] > 0) {
 				plugin("Threads");
 				this.__s[aName] = new Threads();
 				this.__s[aName].addScheduleThreadWithFixedDelay(function() { parent.__f[aName](true); }, this.__bm[aName]);
