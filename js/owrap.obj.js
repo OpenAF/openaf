@@ -1457,7 +1457,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	if (isDef(aTimeout)) {
 		var rc = new Packages.org.apache.http.client.config.RequestConfig.custom();
 		rc.setConnectionRequestTimeout(aTimeout);
-		rc.setConnect(aTimeout);
+		rc.setConnectTimeout(aTimeout);
 		r.setConfig(rc.build());
 	}
 
