@@ -149,7 +149,7 @@ public class CSV extends ScriptableObject {
 				this.heads = new HashMap<String, Integer>();
 				for(Object ob : na) {
 					hs[c] = (String) ob;
-					this.heads.put((String) ob, new java.lang.Integer(c++));
+					this.heads.put((String) ob, java.lang.Integer.valueOf(c++));
 				}
 				this.csvFormat = this.csvFormat.withHeader(hs);
 			}

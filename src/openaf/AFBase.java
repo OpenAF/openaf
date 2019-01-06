@@ -1394,7 +1394,7 @@ public class AFBase extends ScriptableObject {
 
 		long t = -1;
 		if (!(Double.isNaN(ti))) {
-			t = (new Double(ti)).longValue();
+			t = (long) ti;
 		}
 		
 		if (t >= 0)
