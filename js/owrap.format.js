@@ -325,10 +325,10 @@ OpenWrap.format.prototype.string = {
 	toHex: function(aByteArray, aSeparator) {
 		aSeparator = _$(aSeparator).isString().default(" ");
 
-		var res =  "";
-		for(var ii = 0; ii < aByteArray.length; ii++) {
-			res += ow.format.string.leftPad(ow.format.toHex(Number(aByteArray[ii] & 255)).toUpperCase(), 2, "0");
-			if (ii < aByteArray.length) res += aSeparator;
+		var res =  "", hex = String(javax.xml.bind.DatatypeConverter.printHexBinary(aByteArray));
+		for(var ii = 0; ii < hex.length; ii = ii + 2) {
+			//res += ow.format.string.leftPad(ow.format.toHex(Number(aByteArray[ii] & 255)).toUpperCase(), 2, "0");
+			res += hex[ii] + hex[ii+1] + ((ii + 2) >= hex.length ? "" : aSeparator);
 		}
 		return res;
 	},
