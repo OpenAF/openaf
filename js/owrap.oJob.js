@@ -99,6 +99,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 	}
 
 	ojob.logJobs = _$(ojob.logJobs).default(true);
+        this.__ojob.logJobs = ojob.logJobs;
 	if (isDef(ojob.logToFile) && isMap(ojob.logToFile)) {
 		ow.ch.utils.setLogToFile(ojob.logToFile);
 	}
