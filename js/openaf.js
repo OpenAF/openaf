@@ -3059,6 +3059,7 @@ function loadFuse() {
  */
 function loadDiff() {
 	var res = loadCompiledLib("diff_js");
+	global.JsDiff = global.Diff;
 	if (res) pods.declare("JsDiff", loadDiff());
 }
 

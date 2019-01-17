@@ -65,7 +65,7 @@
 		{
 			"description": "js-yaml",
 			"path": ["js/js-yaml.js"],
-			"version": "3.12.0",
+			"version": "3.12.1",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/nodeca/js-yaml/master/LICENSE",
@@ -92,7 +92,7 @@
 		{
 			"description": "JsDiff",
 			"path": [ "js/diff.js" ],
-			"version": "3.5.0",
+			"version": "4.0.1",
 			"changes": false,
 			"type": [ "js" ],
 			"license": "https://raw.githubusercontent.com/kpdecker/jsdiff/master/LICENSE",
@@ -441,7 +441,7 @@
 				"lib/commons-io-2.6.jar"
 			],
 			"deps": [
-				"lib/jsch-0.1.54.jar",
+				"lib/jsch-0.1.55.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
