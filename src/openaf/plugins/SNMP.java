@@ -3,21 +3,37 @@ package openaf.plugins;
 import java.io.IOException;
 
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
+import org.snmp4j.AbstractTarget;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
+import org.snmp4j.ScopedPDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.Target;
 import org.snmp4j.TransportMapping;
+import org.snmp4j.UserTarget;
 import org.snmp4j.event.ResponseEvent;
+import org.snmp4j.mp.MPv3;
 import org.snmp4j.mp.SnmpConstants;
+import org.snmp4j.security.SecurityLevel;
+import org.snmp4j.security.SecurityModels;
+import org.snmp4j.security.SecurityProtocols;
+import org.snmp4j.security.USM;
+import org.snmp4j.security.UsmUser;
 import org.snmp4j.smi.Address;
+import org.snmp4j.smi.Counter32;
 import org.snmp4j.smi.GenericAddress;
+import org.snmp4j.smi.Integer32;
+import org.snmp4j.smi.Null;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
+import org.snmp4j.smi.TimeTicks;
+import org.snmp4j.smi.UnsignedInteger32;
 import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.transport.DefaultTcpTransportMapping;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
@@ -42,6 +58,13 @@ public class SNMP extends ScriptableObject {
 	protected long timeout;
 	protected int retries;
 	protected OctetString community;
+	protected String securityName;
+	protected OID authProtocol = org.snmp4j.security.AuthSHA.ID;
+	protected String authPassphrase;
+	protected OID privProtocol = org.snmp4j.security.PrivDES.ID;
+	protected String privPassphrase;
+	protected int version;
+	protected byte[] engineID;
 
 	/**
 	 * 
@@ -53,13 +76,22 @@ public class SNMP extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>SNMP.SNMP(anAddress, aCommunity, aTimeout, retries)</key>
-	 * Tries to establish a SNMP connection to the given address (anAddress) of a specific community (aCommunity)
-	 * with a provided timeout (aTimeout) and number of retries.
+	 * <key>SNMP.SNMP(anAddress, aCommunity, aTimeout, retries, version, securityMap)</key>
+	 * Tries to establish a SNMP connection to the given address (anAddress in the form of udp:x.x.x.x/port) of a specific community (aCommunity (e.g public))
+	 * with a provided timeout (aTimeout) and number of retries. You can also specify the version (2 or 3). For version 3
+	 * you can also provide a securityMap with the following entries:\
+	 * \
+	 *    securityName   (String)\
+	 *    authProtocol   (String) HMAC128SHA224, HMAC192SHA256, HMAC256SHA384, HMAC384SHA512, MD5, SHA\
+	 *    privProtocol   (String) 3DES, AES128, AES192, AES256, DES\
+	 *    authPassphrase (String)\
+	 *    privPassphrase (String)\
+	 *    engineId       (String)\
+	 * \
 	 * </odoc>
 	 */
 	@JSConstructor
-	public void newSNMP(String addr, String community, int tout, int ret) throws IOException {
+	public void newSNMP(String addr, String community, int tout, int ret, int version, Object security) throws IOException {
 		address = addr;
 		if (tout <= 0) timeout = 1500; else timeout = tout; 
 		if (ret <= 0) retries = 2; else retries = ret; 
@@ -68,6 +100,42 @@ public class SNMP extends ScriptableObject {
 		else 
 			this.community = new OctetString("public");
 		
+		if (version <= 1) this.version = 2; else this.version = version;
+		if (version >= 2 && security instanceof NativeObject) {
+			NativeObject smap = (NativeObject) security;
+			if (smap.containsKey("securityName")) this.securityName = (String) smap.get("securityName");
+			if (smap.containsKey("engineId")) this.engineID = ((String) smap.get("engineId")).getBytes();
+		}
+		if (version >= 3) {
+			if (security instanceof NativeObject) {
+				NativeObject smap = (NativeObject) security;
+				if (smap.containsKey("authProtocol")) {
+					switch((String) smap.get("authProtocol")) {
+					case "HMAC128SHA224": authProtocol = org.snmp4j.security.AuthHMAC128SHA224.ID; break;
+					case "HMAC192SHA256": authProtocol = org.snmp4j.security.AuthHMAC192SHA256.ID; break;
+					case "HMAC256SHA384": authProtocol = org.snmp4j.security.AuthHMAC256SHA384.ID; break;
+					case "HMAC384SHA512": authProtocol = org.snmp4j.security.AuthHMAC384SHA512.ID; break;
+					case "MD5": authProtocol = org.snmp4j.security.AuthMD5.ID; break;
+					case "SHA": authProtocol = org.snmp4j.security.AuthSHA.ID; break;
+					}
+				}
+				if (smap.containsKey("privProtocol")) {
+					switch((String) smap.get("privProtocol")) {
+					case "3DES": privProtocol = org.snmp4j.security.Priv3DES.ID; break;
+					case "AES128": privProtocol = org.snmp4j.security.PrivAES128.ID; break;
+					case "AES192": privProtocol = org.snmp4j.security.PrivAES192.ID; break;
+					case "AES256": privProtocol = org.snmp4j.security.PrivAES256.ID; break;
+					case "DES": privProtocol = org.snmp4j.security.PrivDES.ID; break;
+					}
+				}
+				if (smap.containsKey("authPassphrase")) {
+					this.authPassphrase = (String) smap.get("authPassphrase");	
+				}
+				if (smap.containsKey("privPassphrase")) {
+					this.privPassphrase = (String) smap.get("privPassphrase");	
+				}
+			}
+		}
 		start();
 	}
 	
@@ -88,22 +156,46 @@ public class SNMP extends ScriptableObject {
 		}
 		
 		snmp = new Snmp(transport);
+		if (this.version >= 3) {
+			if (this.engineID == null) this.engineID = MPv3.createLocalEngineID();
+			USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(this.engineID), 0);
+			SecurityModels.getInstance().addSecurityModel(usm);
+			snmp.getUSM().addUser(new OctetString(this.securityName), new UsmUser(new OctetString(this.securityName), this.authProtocol, new OctetString(this.authPassphrase), this.privProtocol, new OctetString(this.privPassphrase)));
+		}
 
 		transport.listen();
 	}
-	
+
 	/**
 	 * 
 	 * @return
 	 */
 	protected Target getTarget() {
 		Address targetAddress = GenericAddress.parse(address);
-		CommunityTarget target = new CommunityTarget();
-		target.setCommunity(community);
+		AbstractTarget target;
+		if (this.authPassphrase != null || this.privPassphrase != null) {
+			target = new UserTarget();
+		} else {
+			target = new CommunityTarget();
+			((CommunityTarget) target).setCommunity(community);
+		}
+		
 		target.setAddress(targetAddress);
 		target.setRetries(retries);
 		target.setTimeout(timeout);
-		target.setVersion(SnmpConstants.version2c);
+
+		if (this.version == 2) target.setVersion(SnmpConstants.version2c);
+		if (this.version == 3) target.setVersion(SnmpConstants.version3);
+		if (this.securityName != null) target.setSecurityName(new OctetString(securityName));
+		if (this.authPassphrase != null && this.privPassphrase == null) {
+			target.setSecurityLevel(SecurityLevel.AUTH_NOPRIV);
+		}
+		if (this.authPassphrase != null && this.privPassphrase != null) {
+			target.setSecurityLevel(SecurityLevel.AUTH_PRIV);
+		}
+		if (this.authPassphrase == null && this.privPassphrase == null) {
+			target.setSecurityLevel(SecurityLevel.NOAUTH_NOPRIV);
+		}
 		return target;
 	}
 	
@@ -182,6 +274,77 @@ public class SNMP extends ScriptableObject {
 		}
 		
 		return no;
+	}
+
+	@JSFunction
+	public Object trap(String oid, Object data, boolean inform) throws IOException {
+		PDU trap;
+		if (this.version >= 3) {
+			trap = new ScopedPDU();
+		} else {
+			trap = new PDU();
+		}
+		if (!inform) 
+			trap.setType(PDU.TRAP);
+		else 
+			trap.setType(PDU.INFORM);
+
+		OID ooid = new OID(oid);
+		trap.add(new VariableBinding(SnmpConstants.snmpTrapOID, ooid));
+		if (data instanceof NativeArray) {
+			NativeArray no = (NativeArray) data;
+			for(Object mentry : no) {
+				if (mentry instanceof NativeObject) {
+					NativeObject nmentry = (NativeObject) mentry;
+
+					if (nmentry.containsKey("type") && nmentry.containsKey("value") && nmentry.containsKey("OID")) {
+						// Value types: i - integer, u - unsigned, c - counter32, s - string, x - hex string, d - decimal string, n - nullobj, o - objid, t - timeticks, a - ipaddress, b - bits
+						OID toid = new OID((String) nmentry.get("OID"));
+						switch((String) nmentry.get("type")) {
+						case "i": 
+							trap.add(new VariableBinding(toid, new Integer32((Integer) nmentry.get("value"))));
+							break;
+						case "u": 
+							trap.add(new VariableBinding(toid, new UnsignedInteger32((Integer) nmentry.get("value"))));
+							break;
+						case "c": 
+							trap.add(new VariableBinding(toid, new Counter32((Integer) nmentry.get("value"))));
+							break;
+						case "n": 
+							trap.add(new VariableBinding(toid, new Null()));
+							break;
+						case "o": 
+							trap.add(new VariableBinding(toid, new OID((String) nmentry.get("value"))));
+							break;
+						case "t": 
+							trap.add(new VariableBinding(toid, new TimeTicks((Integer) nmentry.get("value"))));
+							break;
+						case "a": 
+							trap.add(new VariableBinding(toid, new TimeTicks((Integer) nmentry.get("value"))));
+							break;
+						case "b": 
+							break;
+						case "s": 
+						default:
+						trap.add(new VariableBinding(toid, new OctetString((String) nmentry.get("value"))));
+						}
+					} else {
+						System.out.println("ERR: doesn't have type, value and OID");
+					}
+				} else {
+					System.out.println("ERR: Not a native object");
+				}
+			}
+		} else {
+			System.out.println("ERR: Not a native array");
+		}
+
+		return this.snmp.send(trap, getTarget());
+	}
+
+	@JSFunction
+	public Object inform(String oid, Object data) throws IOException {
+		return this.trap(oid, data, true);
 	}
 }
 

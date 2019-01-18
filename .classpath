@@ -52,8 +52,8 @@
 	<classpathentry kind="lib" path="lib/poi-scratchpad-4.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/sequence-library-1.0.3.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api.jar"/>
-	<classpathentry kind="lib" path="lib/snmp4j-2.3.4.jar"/>
-	<classpathentry kind="lib" path="lib/snmp4j-agent-2.4.0.jar"/>
+	<classpathentry kind="lib" path="lib/snmp4j-2.7.0.jar"/>
+	<classpathentry kind="lib" path="lib/snmp4j-agent-2.6.3.jar"/>
 	<classpathentry kind="lib" path="lib/sqljet-1.1.10.jar"/>
 	<classpathentry kind="lib" path="lib/svnkit-1.8.12.jar"/>
 	<classpathentry kind="lib" path="lib/svnkit-cli-1.8.12.jar"/>
