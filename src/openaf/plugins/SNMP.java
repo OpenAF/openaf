@@ -199,12 +199,6 @@ public class SNMP extends ScriptableObject {
 		return target;
 	}
 	
-	/**
-	 * 
-	 * @param oids
-	 * @return
-	 * @throws IOException
-	 */
 	public ResponseEvent getOIDs(OID oids[]) throws IOException {
 		PDU pdu = new PDU();
 		for(OID oid : oids) {
@@ -276,6 +270,14 @@ public class SNMP extends ScriptableObject {
 		return no;
 	}
 
+	/**
+	 * <odoc>
+	 * <key>SNMP.trap(aOID, aDataArray, shouldInform)</key>
+	 * Tries to send a trap based on aOID and using aDataArray where each element should be a map with
+	 * oid, type (i - integer, u - unsigned, c - counter32, s - string, x - hex string, d - decimal string, n - nullobj, o - objid, t - timeticks, a - ipaddress,) and value.
+	 * Optionally you can determine if shouldInform instead of sending the trap.
+	 * </odoc>
+	 */
 	@JSFunction
 	public Object trap(String oid, Object data, boolean inform) throws IOException {
 		PDU trap;
@@ -342,6 +344,12 @@ public class SNMP extends ScriptableObject {
 		return this.snmp.send(trap, getTarget());
 	}
 
+	/** <odoc>
+	 * <key>SNMP.inform(aOID, aDataArray)</key>
+	 * Tries to send an inform based on aOID and using aDataArray where each element should be a map with
+	 * oid, type (i - integer, u - unsigned, c - counter32, s - string, x - hex string, d - decimal string, n - nullobj, o - objid, t - timeticks, a - ipaddress,) and value.
+	 *  </odoc>
+	 **/
 	@JSFunction
 	public Object inform(String oid, Object data) throws IOException {
 		return this.trap(oid, data, true);
