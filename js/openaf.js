@@ -2197,8 +2197,8 @@ function addOnOpenAFShutdown(aFunction) {
  * </odoc>
  */
 function pidCheck(aPid) {
-	
 	try {
+		aPid = Number(aPid);
 		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
 			if (af.sh("cmd /c tasklist /NH /FI \"PID eq " + aPid + "\"").match(aPid)) {
 				return true;
@@ -2229,6 +2229,7 @@ function pidCheckIn(aFilename) {
 	
 	try {
 		checkPid = io.readFileString(aFilename);
+		if (isString(checkPid)) checkPid = checkPid.replace(/^(\d+)[.\n\r]*/mg, "$1");
 		if (pidCheck(checkPid)) return false;
 	} catch(e) {
 	}
