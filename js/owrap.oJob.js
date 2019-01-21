@@ -565,7 +565,15 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.count++;
 		try {
 			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
-			execJob.error = anException;
+			if (isDef(anException.javaException)) {
+				var ar = anException.javaException.getStackTrace();
+				execJob.error = [ String(anException.javaException) ];
+				for(var er in ar) { 
+					execJob.error.push(" at "+ ar[er]);
+				}
+			} else {
+				execJob.error = String(anException);
+			}
 			execJob.endTime  = now();
 			existing.totalTime += execJob.endTime - execJob.startTime;
 			existing.avgTime = existing.totalTime / existing.count;
