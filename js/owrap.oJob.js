@@ -643,19 +643,19 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					if (existing.start && (!existing.error && !existing.success)) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "STARTED" + sep + __d;
-						if (this.__ojob.logToConsole) { printnl(_g(aa) + _b(__m) + " " + _c(s.substr(0, s.length - __m.length - 2))); }
+						if (this.__ojob.logToConsole) { printnl(_g(aa) + _c(">> ") + _b(__m) + " " + _c(s.substr(0, s.length - __m.length - 2 - 3))); }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
 					}
 					if (existing.start && existing.error) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "Ended in ERROR" + sep + __d;
-						if (this.__ojob.logToConsole) { printErr("\n" + _g(aa) + _b(__m) + " " + _e(ss.substr(0, ss.length - __m.length - 2)) + af.toYAML(existing.log) + "\n" + _e(ss)); }
+						if (this.__ojob.logToConsole) { printErr("\n" + _e("!! ") + _g(aa) + _b(__m) + " " + _e(ss.substr(0, ss.length - __m.length - 2 - 3)) + af.toYAML(existing.log) + "\n" + _e(ss)); }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m + "\n" + stringify(existing.log) });
 					}
 					if (existing.start && existing.success) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "Ended with SUCCESS" + sep + __d;
-						if (this.__ojob.logToConsole) { printnl("\n" + _g(aa) + _b(__m) + " " + _c(ss.substr(0, ss.length - __m.length - 2))); }
+						if (this.__ojob.logToConsole) { printnl("\n" + _g(aa) + _c("<< ") + _b(__m) + " " + _c(ss.substr(0, ss.length - __m.length - 2 - 3))); }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
 					}
 				}
