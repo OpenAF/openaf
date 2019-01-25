@@ -360,49 +360,37 @@ OpenWrap.format.prototype.string = {
 		return res;
 	},
 
-	nLinesTemplate: function(src, initMap) {
-		if (__initializeCon()) {
+	nLinesTemplate: function(src, initMap, alternativeTemplate, alternativePrint) {
+		alternativeTemplate = _$(alternativeTemplate).isString().default(src);
+		src                 = _$(src).isString().$_("Please provide a template.");
+		initMap             = _$(initMap).isMap().default({});
+		alternativePrint    = _$(alternativePrint).isFunction().default(print);
+
+		ow.loadTemplate(); ow.template.addFormatHelpers();
+		var isAnsi = __initializeCon();
+
+		if (isAnsi) {
 			var jansi = JavaImporter(Packages.org.fusesource.jansi);
-			ow.loadTemplate(); ow.template.addFormatHelpers();
-		
-			initMap = _$(initMap).isMap().default({});
 		
 			var tmpl = ow.template.execCompiled(ow.template.compile(src, initMap));
-			print(tmpl());
+			alternativePrint(tmpl(initMap));
 		
 			return function(aMap) {
 				ansiStart();
 				var out = tmpl(aMap);
-				print(jansi.Ansi.ansi().cursorUp(out.split(/\n/).length).a(out).a(jansi.Ansi.Attribute.RESET));
+				alternativePrint(jansi.Ansi.ansi().cursorUp(out.split(/\n/).length).a(out).a(jansi.Ansi.Attribute.RESET));
 				ansiStop();
 			};
+		} else {
+			if (alternativeTemplate != "") {
+				var tmpl = ow.template.execCompiled(ow.template.compile(alternativeTemplate, initMap));
+				alternativePrint(tmpl(initMap));
+	
+				return function(aMap) {
+					alternativePrint(tmpl(aMap));
+				};
+			}
 		}
-	},
-
-	progressReport: function(aMainFunc, aProgressFunc) {
-		var stop = false;
-		try {
-			var p = $do(() => {
-				while(!stop) {
-					try {
-						aProgressFunc();
-					} catch(e) {}
-				}
-			});
-			aMainFunc();
-		} catch(e) {
-			throw e;
-		} finally {
-			stop = true; $doWait(p);
-		}
-	},
-
-	fileProgressReport: function(aTargetFile, aMainFunc, aProgressFunc) {
-		this.progressReport(aMainFunc, () => {
-			var info = io.fileInfo(aTargetFile);
-			var perc = Math.floor((info.size * 100) / file.size);
-			aProgressFunc(info, perc);
-		});
 	}
 };
 	
@@ -1175,6 +1163,35 @@ OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {
 
     return chunks.join(aFormat.sep);
 }
+
+OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, timeout) {
+	var stop = false;
+	timeout = _$(timeout).isNumber().default(150);
+
+	try {
+		var p = $do(() => {
+			while(!stop) {
+				try {
+					aProgressFunc();
+					sleep(timeout);
+				} catch(e) {}
+			}
+		});
+		aMainFunc();
+	} catch(e) {
+		throw e;
+	} finally {
+		stop = true; $doWait(p);
+	}
+};
+
+OpenWrap.format.prototype.fileProgressReport = function(aTargetFile, aMainFunc, aProgressFunc, timeout) {
+	this.progressReport(aMainFunc, () => {
+		var info = io.fileInfo(aTargetFile);
+		var perc = Math.floor((info.size * 100) / file.size);
+		aProgressFunc(info, perc);
+	}, aProgressFunc, timeout);
+};
 
 /**
  * <odoc>
