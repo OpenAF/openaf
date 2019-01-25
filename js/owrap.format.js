@@ -358,6 +358,51 @@ OpenWrap.format.prototype.string = {
 		} while(ii < aByteArray.length);
 
 		return res;
+	},
+
+	nLinesTemplate: function(src, initMap) {
+		if (__initializeCon()) {
+			var jansi = JavaImporter(Packages.org.fusesource.jansi);
+			ow.loadTemplate(); ow.template.addFormatHelpers();
+		
+			initMap = _$(initMap).isMap().default({});
+		
+			var tmpl = ow.template.execCompiled(ow.template.compile(src, initMap));
+			print(tmpl());
+		
+			return function(aMap) {
+				ansiStart();
+				var out = tmpl(aMap);
+				print(jansi.Ansi.ansi().cursorUp(out.split(/\n/).length).a(out).a(jansi.Ansi.Attribute.RESET));
+				ansiStop();
+			};
+		}
+	},
+
+	progressReport: function(aMainFunc, aProgressFunc) {
+		var stop = false;
+		try {
+			var p = $do(() => {
+				while(!stop) {
+					try {
+						aProgressFunc();
+					} catch(e) {}
+				}
+			});
+			aMainFunc();
+		} catch(e) {
+			throw e;
+		} finally {
+			stop = true; $doWait(p);
+		}
+	},
+
+	fileProgressReport: function(aTargetFile, aMainFunc, aProgressFunc) {
+		this.progressReport(aMainFunc, () => {
+			var info = io.fileInfo(aTargetFile);
+			var perc = Math.floor((info.size * 100) / file.size);
+			aProgressFunc(info, perc);
+		});
 	}
 };
 	
