@@ -162,7 +162,12 @@ const _$ = function(aValue, aPrefixMessage) {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not an instance of " + aClass;
             if (defined && !(aValue instanceof aClass)) throw aMessage;
             return __r;
-		},
+        },
+        isNotNull: (aMessage) => {
+            if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is null";
+            if (defined && (aValue == null)) throw aMessage;
+            return __r;
+        },
 
 		// Generic validations
         check: (aFunction, aMessage) => {
