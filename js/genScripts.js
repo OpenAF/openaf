@@ -7,6 +7,7 @@ var requirements = {
   "javaversion": [ "^1.7" ]
 };
 var extraArgsForJava9 = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+var extraArgsForJava10 = "-Xshare:off";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -139,7 +140,7 @@ var shLocation;
 try {
   var os        = java.lang.System.getProperty("os.name") + "";
   var curDir    = java.lang.System.getProperty("user.dir") + "";
-  var javaVer   = java.lang.System.getProperty("java.version") + "";
+  var javaVer   = String(java.lang.System.getProperty("java.version")).replace(/(\d+).*/, "$1");
   var javaHome  = java.lang.System.getProperty("java.home") + "";
   var classPath = java.lang.System.getProperty("java.class.path") + "";
   
@@ -164,6 +165,7 @@ log("Java home = '" + javaHome + "'");
 log("Checking requirements");
 
 if (Number(javaVer) != null && Number(javaVer) > 8) javaargs += " " + extraArgsForJava9;  
+if (Number(javaVer) != null && Number(javaVer) > 9) javaargs += " " + extraArgsForJava10;
 
 var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
