@@ -360,6 +360,15 @@ OpenWrap.format.prototype.string = {
 		return res;
 	},
 
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.nLinesTemplate(aSourceTemplate, initMap, alternativeTemplate, alternativePrintFunction) : Function</key>
+	 * Returns a function to print multiple lines at the same time (using ansi cursor up). The function accepts a map parameter since
+	 * it's based on the aSourceTemplate (handlebars). The initial render is performed using initMap. If ansi support is not 
+	 * available and if alternativeTemplate is defined (and different of "" otherwise it defaults to aSourceTemplate) it will use
+	 * it as alternative. Optionally it's also possible to define a different print function (alternativePrintFunction) to print (like log, for example).
+	 * </odoc>
+	 */
 	nLinesTemplate: function(src, initMap, alternativeTemplate, alternativePrint) {
 		alternativeTemplate = _$(alternativeTemplate).isString().default(src);
 		src                 = _$(src).isString().$_("Please provide a template.");
@@ -1162,8 +1171,15 @@ OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {
     }
 
     return chunks.join(aFormat.sep);
-}
+};
 
+/**
+ * <odoc>
+ * <key>ow.format.progressReport(aMainFunc, aProgressFunc, aTimeout)</key>
+ * Executes aMainFunc to execute some synchronous function while aProgressFunc is called asynchronously to 
+ * keep track of progress. You can also provide an alternative aTimeout between aProgressFunc calls (defaults to 150ms).
+ * </odoc>
+ */
 OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, timeout) {
 	var stop = false;
 	timeout = _$(timeout).isNumber().default(150);
@@ -1185,12 +1201,30 @@ OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, ti
 	}
 };
 
-OpenWrap.format.prototype.fileProgressReport = function(aTargetFile, aMainFunc, aProgressFunc, timeout) {
+/**
+ * <odoc>
+ * <key>ow.format.percProgressReport(aMainFunc, aProgressFunc, aTimeout)</key>
+ * Percentage progress report help function over a function on aMainFunc calling aProgressFunc in parallel
+ * with a percentage function parameter (receiving target and source numbers). You can also provide an alternative
+ * aTimeout between aProgressFunc calls (defaults to 150ms).\
+ * \
+ * Example:\
+ * \
+ * ow.format.fileProgreeReport(() => {\
+ *    ioStreamCopy(io.writeFileStream("target.file"), io.readFileStream("source.file"));\
+ * }, (percFunc) => {\
+ * 	  var perc = percFunc(io.fileInfo("target.file").size, io.fileInfo("source.file").size);\
+ *    ...\
+ * });\
+ * \
+ * </odoc>
+ */
+OpenWrap.format.prototype.percProgressReport = function(aMainFunc, aProgressFunc, timeout) {
 	this.progressReport(aMainFunc, () => {
-		var info = io.fileInfo(aTargetFile);
-		var perc = Math.floor((info.size * 100) / file.size);
-		aProgressFunc(info, perc);
-	}, aProgressFunc, timeout);
+		aProgressFunc((t, o) => {
+			return Math.floor((t * 100) / o);
+		});
+	}, timeout);
 };
 
 /**
