@@ -833,24 +833,24 @@ function getPackage(packPath) {
 
 // INFO
 function __opack_info(args) {
-	if(isUndefined(args[0]) || args[0] == "") return;
+	if(isUnDef(args[0]) || args[0] == "") return;
 
 	var packag = getPackage(args[0]);
 	var remote = false;
 
-	if (isUndefined(packag) || isUndefined(packag["name"])) {
+	if (isUnDef(packag) || isUnDef(packag["name"])) {
 		packag = findLocalDBByName(args[0]);
 
-		if (isUndefined(packag) || isUndefined(packag["name"])) {
+		if (isUnDef(packag) || isUnDef(packag["name"])) {
 			var packs = getRemoteDB();
 			var packFound = findCaseInsensitive(packs, args[0]);
-			if (isUndefined(packFound)) {
+			if (isUnDef(packFound)) {
 				logErr("No entry for '" + args[0] + "' on remote OPack database.");
 				logErr("Package not found.");
 				return;
 			} else {
 				packag = getPackage(packFound.repository.url);
-				if (isUndefined(packag) && !(isUndefined(packFound.repository.backupurl))) {
+				if (isUnDef(packag) && !(isUnDef(packFound.repository.backupurl))) {
 					packag = getPackage(packFound.repository.backupurl)
 				}
 				args[0] = packag.repository.url;
@@ -1014,13 +1014,13 @@ function install(args) {
 	var packag = getPackage(args[0]);
 	if (isUnDef(output)) output = getOpenAFPath() + "/" + packag.name;
 
-	if (isUndefined(packag.name)) {
+	if (isUnDef(packag.name) && packag.__filelocation != "opackurl") {
 		//logErr("Couldn't find package on location " + args[0]);
 
 		log("Checking remote OPack database");
 		var packs = getRemoteDB();
 		var packFound = findCaseInsensitive(packs, args[0]);
-		if (isUndefined(packFound)) {
+		if (isUnDef(packFound)) {
 			logErr("No entry for '" + args[0] + "' on remote OPack database.");
 			return;
 		} else {
@@ -1034,7 +1034,9 @@ function install(args) {
 	if (checkVersion(packag, force) || justCopy) {
 		log((justCopy ? "COPYING" : "INSTALLING") + " -- " + packag.name + " version " + packag.version);
 	} else {
-		log("Checking remote OPack database");
+		log("No need to install/update " + args[0]);
+		return;
+		/*log("Checking remote OPack database");
 		var packs = getRemoteDB();
 		var packFound = findCaseInsensitive(packs, args[0]);
 		if (isUndefined(packFound)) {
@@ -1049,7 +1051,7 @@ function install(args) {
 			log("UPDATING -- " + packag.name + " version " + packag.version);
 		} else {
 			return;
-		}
+		}*/
 	}
 
 	// Verify deps
