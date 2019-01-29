@@ -1422,16 +1422,20 @@ function opackExec(aPackageName) {
 	load(getOpenAFJar() + "::js/opack.js");
 }
 
+var __loadedJars = [];
 /**
  * <odoc>
- * <key>loadExternalJars(aPath)</key>
+ * <key>loadExternalJars(aPath, dontCheck)</key>
  * Given a path will try to add to the current classpath (using af.externalAddClasspath) all files with the extension
- * '.jar'
+ * '.jar'. Optionally you can override the dontCheck if it was loaded with this command previously.
  * </odoc>
  */
-function loadExternalJars(aPath) {
+function loadExternalJars(aPath, dontCheck) {
 	$path(io.listFiles(aPath).files, "[?ends_with(filename, '.jar') == `true`].canonicalPath").forEach((v) => {
-        af.externalAddClasspath("file:///" + v);
+		if (!dontCheck && __loadedJars.indexOf(v) < 0) {
+			af.externalAddClasspath("file:///" + v);
+			__loadedJars.push(v);
+		}
     });
 }
 

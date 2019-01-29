@@ -15,6 +15,7 @@ import org.mozilla.javascript.Undefined;
 
 /**
  * HTTP plugin websockets extension
+ * debug with -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog -Dorg.eclipse.jetty.client.LEVEL=DEBUG
  * @author Nuno Aguiar
  */
 
@@ -120,15 +121,14 @@ public class WebSockets {
 
         URI uri = URI.create(anURL);
         org.eclipse.jetty.websocket.client.WebSocketClient client;
-        org.eclipse.jetty.client.HttpClient hclient;
+        org.eclipse.jetty.client.HttpClient hclient = null;
 
         if (anURL.toLowerCase().startsWith("wss")) {
             org.eclipse.jetty.util.ssl.SslContextFactory ssl = new org.eclipse.jetty.util.ssl.SslContextFactory(
                     supportSelfSigned);
-            if (supportSelfSigned)
-                ssl.setValidateCerts(false);
-            //hclient = new HttpClient(ssl);
-            client = new org.eclipse.jetty.websocket.client.WebSocketClient(new org.eclipse.jetty.client.HttpClient(ssl));
+            if (supportSelfSigned) { ssl.setValidateCerts(false); ssl.setTrustAll(true); }
+            hclient = new org.eclipse.jetty.client.HttpClient(ssl);
+            client = new org.eclipse.jetty.websocket.client.WebSocketClient(hclient);
         } else {
             client = new org.eclipse.jetty.websocket.client.WebSocketClient();
             //} else {
@@ -136,11 +136,9 @@ public class WebSockets {
         }
 
         if (u != null && p != null) {
-            if (authenticator != null)
-                Authenticator.setDefault(authenticator);
-            client.getHttpClient().getAuthenticationStore()
-                    .addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u),
-                            new String(AFCmdBase.afc.dIP(p).toCharArray())));
+            if (authenticator != null) Authenticator.setDefault(authenticator);
+            client.getHttpClient().getAuthenticationStore().addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));
+            if (hclient != null) hclient.getAuthenticationStore().addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));;
         }
 
         //client = new WebSocketClient(hclient);
@@ -157,6 +155,7 @@ public class WebSockets {
                 );*/
             }
 
+            if (hclient != null) hclient.start();
             client.start();
             EventSocket socket = new EventSocket(onConnect, onMsg, onError, onClose);
             Future<org.eclipse.jetty.websocket.api.Session> fut;
@@ -165,7 +164,7 @@ public class WebSockets {
             } else {
                 fut = client.connect(socket, uri, request);
             }
-
+            
             org.eclipse.jetty.websocket.api.Session session;
             if (!(aTimeout instanceof Undefined))
                 session = fut.get((long) aTimeout, TimeUnit.MILLISECONDS);
