@@ -1431,10 +1431,11 @@ var __loadedJars = [];
  * </odoc>
  */
 function loadExternalJars(aPath, dontCheck) {
-	$path(io.listFiles(aPath).files, "[?ends_with(filename, '.jar') == `true`].canonicalPath").forEach((v) => {
-		if (!dontCheck && __loadedJars.indexOf(v) < 0) {
-			af.externalAddClasspath("file:///" + v);
-			__loadedJars.push(v);
+	$path(io.listFiles(aPath).files, "[?ends_with(filename, '.jar') == `true`]").forEach((v) => {
+		var libfile = v.filename;
+		if (!dontCheck && __loadedJars.indexOf(libfile) < 0) {
+			af.externalAddClasspath("file:///" + v.canonicalPath);
+			__loadedJars.push(libfile);
 		}
     });
 }
