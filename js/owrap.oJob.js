@@ -21,6 +21,7 @@ OpenWrap.oJob = function() {
 
 	this.__id = sha256(this.__host + this.__ip);
 	this.__threads = {};
+	this.__promises = [];
 	ow.loadServer(); 
 	this.__sch = new ow.server.scheduler();
 	this.__ojob = { recordLog: true, logArgs: false, numThreads: undefined, logToConsole: true };
@@ -685,6 +686,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  * </odoc>
  */
 OpenWrap.oJob.prototype.stop = function() {
+	$doWait($doAll(this.__promises));
 	this.getLogCh().waitForJobs(3000);
 	for(var i in this.__threads) {
 		for(var j in this.__threads[i]) {
@@ -992,9 +994,11 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			if (!single) {
 				parallel4Array(args.__oJobRepeat, function(aValue) {
 					try {
-						return f(aValue, job, id, depInfo);
+						f(aValue, job, id, depInfo);
 					} catch(e) {
 						errors.push(stringify({ args: aValue, exception: e}));
+					} finally {
+						return true;
 					}
 				}, parent.__ojob.numThreads);
 			} else {
@@ -1033,13 +1037,13 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 					_run(aJob.exec, args, aJob, aId);
 					this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 				} else {
-					$do(() => {
+					parent.__promises.push($do(() => {
 						_run(aJob.exec, args, aJob, aId); 
 					}).then(() => {
 						parent.__addLog("success", aJob.name, uuid, args, void 0, aId);
 					}).catch((e) => {
 						parent.__addLog("error", aJob.name, uuid, args, e, aId);
-					});
+					}));
 				}
 			} catch(e) {
 				this.__addLog("error", aJob.name, uuid, args, e, aId);
@@ -1142,7 +1146,6 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			};
 
 			//if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
-
 			aJob.typeArgs.timeInterval = this.__processTypeArg(aJob.typeArgs.timeInterval);
 			if (isDef(aJob.typeArgs.timeInterval) && aJob.typeArgs.timeInterval > 0) {
 				var t = new Threads();

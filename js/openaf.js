@@ -2396,11 +2396,10 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 	plugin("Threads");
 
 	if (isUnDef(anArray) || isUnDef(aReduceFunction)) {
-		throw "Need an array and a function."
+		throw "Need an array and a function.";
 	}
 	
 	if (!isArray(anArray)) {
-		//throw "The object provided is not an array.";
 		anArray = Object.keys(anArray);
 		if (!isArray(anArray)) {
 			throw "The object provided is not an array.";
