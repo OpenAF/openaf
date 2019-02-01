@@ -1,3 +1,6 @@
+ojob:
+   async: true
+   
 jobs:
    # Build OpenAF
    - name  : Build OpenAFOS
