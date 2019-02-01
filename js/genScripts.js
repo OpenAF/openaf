@@ -140,7 +140,7 @@ var shLocation;
 try {
   var os        = java.lang.System.getProperty("os.name") + "";
   var curDir    = java.lang.System.getProperty("user.dir") + "";
-  var javaVer   = String(java.lang.System.getProperty("java.version")).replace(/(\d+).*/, "$1");
+  var javaVer   = String(java.lang.System.getProperty("java.version")).replace(/^1\./, "").replace(/(\d+).*/, "$1");
   var javaHome  = java.lang.System.getProperty("java.home") + "";
   var classPath = java.lang.System.getProperty("java.class.path") + "";
   
