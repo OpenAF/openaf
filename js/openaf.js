@@ -3221,6 +3221,46 @@ function createDBInMem(aName, dontClose, aLogin, aPass, inMemFileSystem, inMemCo
 
 /**
  * <odoc>
+ * <key>createDBServer(aFile, aPort, aLogin, aPass) : DB</key>
+ * Creates a DB object instantiated with a server based H2 database, on the provided aPort (defaults to 9090), for the aFile provided. Optionally you can use
+ * aLogin and aPass(word).
+ * </odoc>
+ */
+function createDBServer(aFile, aPort, aLogin, aPass) 
+	aPort = _$(aPort).isNumber().default(9090);
+	aFile = _$(aFile).isString().$_("Please provide a filename");
+
+	return new DB("org.h2.Driver", "jdbc:h2:" + aFile + ";AUTO_SERVER=TRUE;AUTO_SERVER_PORT=" + aPort, aLogin, aPass);
+};
+
+/**
+ * <odoc>
+ * <key>createDB(aFile, aLogin, aPass) : DB</key>
+ * Creates a DB object instantiated with a file based H2 database for the aFile provided. Optionally you can use
+ * aLogin and aPass(word).
+ * </odoc>
+ */
+function createDB(aFile, aLogin, aPass) {
+	aFile = _$(aFile).isString().$_("Please provide a filename");
+	return new DB("org.h2.Driver", "jdbc:h2:" + aFile, aLogin, aPass);
+};
+
+/**
+ * <odoc>
+ * <key>showH2Console() : Console</key>
+ * Instantiates and returns a H2 Console object openning a browser (if possible) to interact with the H2 Console. With 
+ * the returned object you can later invoke .shutdown() or unload it from the console. Invoking a second time will result in
+ * a port bind error since it the first instance wasn't shutdown.
+ * </odoc>
+ */
+function showH2Console() {
+	var o = new Packages.org.h2.tools.Console();
+	o.runTool();
+	return o;
+};
+
+/**
+ * <odoc>
  * <key>persistDBInMem(aDB, aFilename) : Array</key>
  * Tries to persist a in-memory database, aDB object, previously created by the function createDBInMem into a SQL aFilename.
  * This can later be used to load again using the loadDBInMem function.
