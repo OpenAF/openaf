@@ -3226,7 +3226,7 @@ function createDBInMem(aName, dontClose, aLogin, aPass, inMemFileSystem, inMemCo
  * aLogin and aPass(word).
  * </odoc>
  */
-function createDBServer(aFile, aPort, aLogin, aPass) 
+function createDBServer(aFile, aPort, aLogin, aPass) {
 	aPort = _$(aPort).isNumber().default(9090);
 	aFile = _$(aFile).isString().$_("Please provide a filename");
 

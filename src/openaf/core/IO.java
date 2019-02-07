@@ -228,6 +228,7 @@ public class IO extends ScriptableObject {
 							records.add(file.toAbsolutePath().toString());
 					}
 				}
+				stream.close();
 			}
 		}
 		
