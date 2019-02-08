@@ -1099,6 +1099,8 @@ OpenWrap.ch.prototype.__types = {
 			
 			if (isUnDef(this.__f[absFile])) {
 				this.__s[aName] = Packages.org.h2.mvstore.MVStore.Builder();
+				this.__s[aName] = this.__s[aName].autoCommitDisabled();
+
 				if (absFile != "memory") this.__s[aName] = this.__s[aName].fileName(absFile);
 				if (shouldCompress) this.__s[aName] = this.__s[aName].compress();
 				this.__s[aName] = this.__s[aName].open();
@@ -1108,6 +1110,9 @@ OpenWrap.ch.prototype.__types = {
 				existing = true;
 				this.__s[aName] = this.__f[absFile];
 			}
+
+			//this.__s[aName].setVersionsToKeep(2);
+			this.__s[aName].setReuseSpace(true);
 
 			if (isUnDef(options.map)) {
 				options.map = function() { return "default"; };
@@ -1124,6 +1129,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 
 			this.__o[aName] = options;
+			if (isUnDef(options.internalTrim)) this.__o[aName].stry = ""; else this.__o[aName].stry = options.internalTrim;
 		},
 		destroy      : function(aName) {
 			if (isDef(this.__o[aName].compact) && this.__o[aName].compact) {
@@ -1180,18 +1186,24 @@ OpenWrap.ch.prototype.__types = {
 		set          : function(aName, ak, av, aTimestamp) {
 			var map = this.__s[aName].openMap(this.__m[aName](ak));
 
-			map.put(stringify(ak), stringify(av));
+			map.put(stringify(ak, void 0, this.__o[aName].stry), stringify(av, void 0, this.__o[aName].stry));
 			this.__s[aName].commit();
 		},
 		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
-			for(let i in anArrayOfMapData) {
-				this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
+			ow.loadObj();
+			for(var iii in anArrayOfMapData) {
+				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
+				var av = anArrayOfMapData[iii];
+				var map = this.__s[aName].openMap(this.__m[aName](ak));
+				map.put(stringify(ak, void 0, this.__o[aName].stry), stringify(av, void 0, this.__o[aName].stry));
 			}
+			this.__s[aName].sync();
+			this.__s[aName].commit();
 		},
 		get          : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
-			return jsonParse(map.get(stringify(aKey)));
+			return jsonParse(map.get(stringify(aKey, void 0, this.__o[aName].stry)));
 		},
 		pop          : function(aName) {
 			var map = this.__s[aName].openMap(this.__m[aName]());
@@ -1206,7 +1218,7 @@ OpenWrap.ch.prototype.__types = {
 		unset        : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
-			return jsonParse(map.remove(stringify(aKey)));
+			return jsonParse(map.remove(stringify(aKey, void 0, this.__o[aName].stry)));
 		}
 	},
 	/**
