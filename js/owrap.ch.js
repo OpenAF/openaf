@@ -1089,6 +1089,8 @@ OpenWrap.ch.prototype.__types = {
 			if (isUnDef(this.__m)) this.__m = {};
 			if (isUnDef(this.__o)) this.__o = {};
 
+			var shut = _$(options.closeOnShutdown).isBoolean().default(true);
+
 			var existing = false, absFile;
 			if (isDef(options.file)) {
 				absFile = String((new java.io.File(options.file)).getAbsoluteFile());
@@ -1130,6 +1132,11 @@ OpenWrap.ch.prototype.__types = {
 
 			this.__o[aName] = options;
 			if (isUnDef(options.internalTrim)) this.__o[aName].stry = ""; else this.__o[aName].stry = options.internalTrim;
+
+			if (shut) {
+				var parent = this;
+				addOnOpenAFShutdown(function() { if (isDef(parent.__s[aName])) parent.destroy(aName);	});
+			}
 		},
 		destroy      : function(aName) {
 			if (isDef(this.__o[aName].compact) && this.__o[aName].compact) {
