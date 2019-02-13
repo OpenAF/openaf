@@ -1377,12 +1377,17 @@ OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	this.__lps = {};
 	this.__config = {};
+	this.__throwExceptions = true;
 	this.__r = void 0;
 	this.__rb = void 0; 
 	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
 	if (isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 	}
+};
+
+OpenWrap.obj.prototype.http.prototype.setThrowExceptions = function(should) {
+	this.__throwExceptions = should;
 };
 
 OpenWrap.obj.prototype.http.prototype.setConfig = function(aMap) {
@@ -1494,7 +1499,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		}
 	}
 
-	if (this.responseCode() >= 400) {
+	if (this.responseCode() >= 400 && this.__throwExceptions) {
 		switch(this.responseCode()) {
 		case 404: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
 		case 410: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
