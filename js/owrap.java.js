@@ -95,18 +95,18 @@ OpenWrap.java.prototype.maven.prototype.getLatestVersion = function(aURI) {
 
 /**
  * <odoc>
- * <key>ow.java.maven.getFile(artifactId, aFilenameTemplate, aOutputDir)</key>
- * Given the artifactId (prefixed with the group id using ".") will try to download the latest version of the aFilenameTemplate (where
+ * <key>ow.java.maven.getFileVersion(artifactId, aFilenameTemplate, aVersion, aOutputDir)</key>
+ * Given the artifactId (prefixed with the group id using ".") will try to download the specific version of the aFilenameTemplate (where
  * version will translate to the latest version) on the provided aOutputDir.\
  * \
  * Example:\
- *    getFile("com.google.code.gson.gson", "gson-{{version}}.jar", ".")\
+ *    getFile("com.google.code.gson.gson", "gson-{{version}}.jar", "1.2.3", ".")\
  * \
  * </odoc>
  */
-OpenWrap.java.prototype.maven.prototype.getFile = function(artifactId, aFilenameTemplate, aOutputDir) {
+OpenWrap.java.prototype.maven.prototype.getFileVersion = function(artifactId, aFilenameTemplate, aVersion, aOutputDir) {
     var aURI = this._translateArtifact(artifactId);
-    var version = this.getLatestVersion(aURI);
+    var version = aVersion;
     var filename = templify(aFilenameTemplate, {
         version: version
     });
@@ -121,15 +121,88 @@ OpenWrap.java.prototype.maven.prototype.getFile = function(artifactId, aFilename
 
 /**
  * <odoc>
- * <key>ow.java.maven.removeOldVersions(artifactId, aFilenameTemplate, aOutputDir, aFunction)</key>
- * Given the artifactId (prefixed with the group id using ".") will try to delete from aOutputDir all versions that aren't the latest version 
- * of the aFilenameTemplate (where version will translate to the latest version). Optionally you can provide aFunction that receives
+ * <key>ow.java.maven.processMavenFile(aFolder, shouldDeleteOld, aLogFunc)</key>
+ * Processes a ".maven.yaml" or ".maven.json" on aFolder. Optionally you can specify that is should not delete old versions and/or
+ * provide a specific log function (defaults to log). The ".maven.yaml/json" file is expected to contain an artifacts map with an array
+ * of maps each with: group (maven artifact group), id (maven id), version (optionally if not the latest), output (optionally specify a different
+ * output folder than aFolder), testFunc (optionally a test function to determine which files should be deleted).
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.processMavenFile = function(aDirectory, deleteOld, aLogFunc) {
+    var arts;
+    if (io.fileExists(aDirectory + "/.maven.yaml")) {
+        arts = io.readFileYAML(aDirectory + "/.maven.yaml");
+    } else {
+        if (io.fileExists(aDirectory + "/.maven.json")) {
+            arts = io.readFile(aDirectory + "/.maven.json");
+        } else {
+            throw "no .maven.yaml or .maven.json found at " + aDirectory;
+        }
+    }
+    aLogFunc = _$(aLogFunc).isFunction().default(log);
+    deleteOld = _$(deleteOld).isBoolean().default(true);
+
+    if (isDef(arts) && isDef(arts.artifacts)) {
+        var maven = new ow.java.maven();
+        arts.artifacts.forEach((arts) => {
+            var version, hasVersion = false;
+
+            if (isDef(arts.version) && arts != "latest") {
+                version = arts.version;
+                hasVersion = true;
+            } else {
+                version = "{{version}}";
+                hasVersion = false;
+            }
+
+            var testfunc;
+            if (isDef(arts.testFunc)) {
+                testfunc = new Function(arts.testFunc);
+            }
+
+            var outputDir = _$(arts.output).isString().default(aDirectory);
+            var filenameTemplate = _$(arts.template).isString().default(arts.id + "-{{version}}.jar");
+            if (hasVersion) {
+                aLogFunc("Downloading " + arts.id + " version " + version + " jar file...");
+                maven.getFileVersion(arts.group + "." + arts.id, filenameTemplate, version, outputDir);
+                if (deleteOld) maven.removeOldVersionsSpecific(arts.id, filenameTemplate, version, outputDir, testfunc);
+            } else {
+                aLogFunc("Downloading latest " + arts.id + " jar file...");
+                maven.getFile(arts.group + "." + arts.id, filenameTemplate, outputDir);
+                if (deleteOld) maven.removeOldVersions(arts.id, filenameTemplate, outputDir, testfunc);
+            }
+        });
+    }
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.maven.getFile(artifactId, aFilenameTemplate, aOutputDir)</key>
+ * Given the artifactId (prefixed with the group id using ".") will try to download the latest version of the aFilenameTemplate (where
+ * version will translate to the latest version) on the provided aOutputDir.\
+ * \
+ * Example:\
+ *    getFile("com.google.code.gson.gson", "gson-{{version}}.jar", ".")\
+ * \
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.getFile = function(artifactId, aFilenameTemplate, aOutputDir) {
+    var aURI = this._translateArtifact(artifactId);
+    var version = this.getLatestVersion(aURI);
+    return this.getFileVersion(artifactId, aFilenameTemplate, version, aOutputDir);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.maven.removeOldVersions(artifactId, aFilenameTemplate, aVersion, aOutputDir, aFunction)</key>
+ * Given the artifactId (prefixed with the group id using ".") will try to delete from aOutputDir all versions that aren't the specific aVersion 
+ * of the aFilenameTemplate (where version will translate to the specific version). Optionally you can provide aFunction that receives
  * the canonical filename of each potential version and will only delete it if the function returns true.
  * </odoc>
  */
-OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId, aFilenameTemplate, aOutputDir, aFunction) {
+OpenWrap.java.prototype.maven.prototype.removeOldVersionsSpecific = function(artifactId, aFilenameTemplate, aVersion, aOutputDir, aFunction) {
     var aURI = this._translateArtifact(artifactId);
-    var version = this.getLatestVersion(aURI);
+    var version = aVersion;
     var filename = templify(aFilenameTemplate, {
         version: version
     });
@@ -147,4 +220,17 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId,
     .select((r) => {
         if (aFunction(r.canonicalPath)) io.rm(r.canonicalPath);
     });
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.maven.removeOldVersions(artifactId, aFilenameTemplate, aOutputDir, aFunction)</key>
+ * Given the artifactId (prefixed with the group id using ".") will try to delete from aOutputDir all versions that aren't the latest version 
+ * of the aFilenameTemplate (where version will translate to the latest version). Optionally you can provide aFunction that receives
+ * the canonical filename of each potential version and will only delete it if the function returns true.
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId, aFilenameTemplate, aOutputDir, aFunction) {
+    var aURI = this._translateArtifact(artifactId);
+    return this.removeOldVersionsSpecific(artifactId, aFilenameTemplate, this.getLatestVersion(aURI), aOutputDir, aFunction);
 };
