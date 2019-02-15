@@ -100,7 +100,11 @@ function generateUnixScript(options){
       javaHome = javaHome.replace(/(\w)\:/,"/cygdrive/$1").toLowerCase();
     } else {
       try {
-        shLocation = af.sh("which sh", "", null, false);
+        if (io.fileExists(DEFAULT_SH)) {
+          shLocation = DEFAULT_SH;
+        } else {
+          shLocation = af.sh("which sh", "", null, false);
+        }
       } catch (e) {
         logErr("Couldn't determine path for sh, assuming " + DEFAULT_SH + ": " + e.message);
         shLocation = DEFAULT_SH;
