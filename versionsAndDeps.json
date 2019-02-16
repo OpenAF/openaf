@@ -412,13 +412,6 @@
 			"deps": []
 		},
 		{
-			"name": "SMB",
-			"removable": true,
-			"deps": [
-				"lib/jcifs-1.3.18.jar"
-			]
-		},
-		{
 			"name": "SNMP",
 			"removable": true,
 			"deps": [
