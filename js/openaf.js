@@ -1431,6 +1431,7 @@ var __loadedJars = [];
  * </odoc>
  */
 function loadExternalJars(aPath, dontCheck) {
+	if (!io.fileExists(aPath) || io.fileInfo(aPath).isFile) throw "Folder not found.";
 	$path(io.listFiles(aPath).files, "[?ends_with(filename, '.jar') == `true`]").forEach((v) => {
 		var libfile = v.filename;
 		if (!dontCheck && __loadedJars.indexOf(libfile) < 0) {
@@ -1541,6 +1542,8 @@ function plugin(aPlugin) {
 			pluginLoaded = "openaf.plugins." + aPlugin;
 			
 			if (__loadedPlugins[pluginLoaded]) return;
+			// Because ZIP is used in getOPackPath
+			if (aPlugin != "ZIP" && isDef(getOPackPath("plugin-" + aPlugin))) loadExternalJars(getOPackPath("plugin-" + aPlugin));
 			af.plugin("openaf.plugins." + aPlugin);
 			__loadedPlugins[pluginLoaded] = true;
 
@@ -1551,8 +1554,16 @@ function plugin(aPlugin) {
 
 	pluginLoaded = aPlugin;
 	if (__loadedPlugins[pluginLoaded]) return;
-	af.plugin(aPlugin);
-	__loadedPlugins[pluginLoaded] = true;
+	try {
+		// Because ZIP is used in getOPackPath
+		if (aPlugin != "ZIP" && isDef(getOPackPath("plugin-" + aPlugin))) loadExternalJars(getOPackPath("plugin-" + aPlugin));
+		af.plugin(aPlugin);
+		__loadedPlugins[pluginLoaded] = true;
+	} catch(e) {
+		if (String(e).indexOf("java.lang.ClassNotFoundException: SMB") >= 0) {
+			throw("The SMB plugin is no longer included. Please install the SMB oPack (\"opack install SMB\").");
+		}
+	}
 }
 
 /**
