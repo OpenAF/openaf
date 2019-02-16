@@ -116,6 +116,21 @@ OpenWrap.ai.prototype.network.prototype.get = function(inputData) {
 
 /**
  * <odoc>
+ * <key>ow.ai.network.put(inputArray, outputArray, learningRate)</key>
+ * Given an inputArray of decimal values, normalize between 0 and 1, will activate the current network and then
+ * the outputArray of decimal values, normalize between 0 and 1, with an optionial learningRate (defaults to 0.3).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.network.prototype.put = function(inputData, outputData, learningRate) {
+    _$(this.__net).$_("Network not initialized.");
+    learningRate = _$(learningRate).isNumber().default(0.3);
+
+    this.__net.activate(inputData);
+    this.__net.propagate(learningRate, outputData);
+};
+
+/**
+ * <odoc>
  * <key>ow.ai.network.toJson() : Map</key>
  * Returns a map representation of the current network to be later rebuilt with the fromJson function.
  * </odoc>

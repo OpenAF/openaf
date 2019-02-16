@@ -13,6 +13,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIPerceptronXOR;
 
+   - name: AI::Perceptron XOR Put
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIPerceptronXORPut;
+
    - name: AI::Perceptron XOR save and load
      from: AI::Init
      to  : oJob Test
@@ -72,6 +77,7 @@ todo:
    # ow.ai tests
    # -----------
    - AI::Perceptron XOR
+   - AI::Perceptron XOR Put
    - AI::Liquid XOR
    - AI::LSTM AND
    - AI::Perceptron network save and load

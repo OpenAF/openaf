@@ -9,6 +9,23 @@
         ow.test.assert(Math.round(nn.get([0,0])), 0, "Problem with ow.ai perceptron 1 XOR 0");
     };
 
+    exports.testAIPerceptronXORPut = function() {
+        ow.loadAI();
+        var nn = new ow.ai.network({ type: "perceptron", args: [2, 3, 1]});
+        
+        for(var ii = 0; ii < 20000; ii++) {
+            nn.put([0, 0], [0]);
+            nn.put([0, 1], [1]);
+            nn.put([1, 0], [1]);
+            nn.put([1, 1], [0]);
+        }
+
+        ow.test.assert(Math.round(nn.get([1,0])), 1, "Problem with ow.ai perceptron put 1 XOR 0");
+        ow.test.assert(Math.round(nn.get([1,1])), 0, "Problem with ow.ai perceptron put 1 XOR 1");
+        ow.test.assert(Math.round(nn.get([0,1])), 1, "Problem with ow.ai perceptron put 0 XOR 1");
+        ow.test.assert(Math.round(nn.get([0,0])), 0, "Problem with ow.ai perceptron put 1 XOR 0");
+    };
+
     exports.testAILiquidXOR = function() {
         ow.loadAI();
         var nn = new ow.ai.network({ type: "liquid", args: [2, 40, 1, 2, 1]});
