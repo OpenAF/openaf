@@ -1561,7 +1561,7 @@ function plugin(aPlugin) {
 		__loadedPlugins[pluginLoaded] = true;
 	} catch(e) {
 		if (String(e).indexOf("java.lang.ClassNotFoundException: SMB") >= 0) {
-			throw("The SMB plugin is no longer included. Please install the SMB oPack (\"opack install SMB\").");
+			throw("The SMB plugin is no longer included. Please install the SMB oPack (\"opack install plugin-SMB\").");
 		}
 	}
 }
