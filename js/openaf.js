@@ -2608,6 +2608,16 @@ function isDate(obj) {
 
 /**
  * <odoc>
+ * <key>isBoolean(aObj) : boolean</key>
+ * Returns true if aObj is boolean, false otherwise
+ * </odoc>
+ */
+function isBoolean(obj) {
+	return typeof obj == 'boolean' || false;
+}
+
+/**
+ * <odoc>
  * <key>isJavaObject(aObj) : boolean</key>
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
