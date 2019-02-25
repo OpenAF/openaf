@@ -39,9 +39,10 @@ var verbs = {
 	"update": {
 		"help"		  : "Updates a package",
 		"optionshelp" : [ "The install/erase verbs options are valid also for update.",
-						  "'-all'  : Tries to update all packages locally installed",
-						  "'-cred' : Provide authentication credentials (e.g. user:pass)",
-		                  "'-erase': When updating delete the package frist"]
+				"'-all'       : Tries to update all packages locally installed",
+				"'-cred'      : Provide authentication credentials (e.g. user:pass)",
+				"'-noerase'   : When updating don't delete the package first",
+			  "'-erasefolder: Erase previous version folder while updating to a new version"]
 	},
 	"exec": {
 		"help"		  : "Executes code from an installed package",
@@ -955,10 +956,10 @@ function checkVersion(packag, force) {
 
 // INSTALL
 function install(args) {
-	if (isUndefined(args[0]) || args[0].length <= 0)
+	if (isUnDef(args[0]) || args[0].length <= 0)
 		return;
 
-	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
+	if (!isUnDef(args[0]) && args[0].toUpperCase() == 'OPENAF') {
 		logErr("Can't install OpenAF. Please install manually or using another package manager (e.g. RPM). To update execute 'openaf --update'.");
 		return;
 	}
@@ -969,8 +970,8 @@ function install(args) {
     var foundOutput = false;
     var force = false;
     var foundRepo = false;
-	var foundArg = false;
-	var foundCred = false;
+	  var foundArg = false;
+	  var foundCred = false;
     var justCopy = false;
     var useunzip = false;
     var nohash = false;
@@ -1008,8 +1009,8 @@ function install(args) {
     	if (args[i] == "-arg") foundArg = true;
     	if (args[i] == "-justcopy") justCopy = true;
     	if (args[i] == "-noverify") nohash = true;
-		if (args[i] == "-useunzip") useunzip = true;
-		if (args[i] == "-cred") foundCred = true;
+		  if (args[i] == "-useunzip") useunzip = true;
+		  if (args[i] == "-cred") foundCred = true;
     }
 	var packag = getPackage(args[0]);
 	if (isUnDef(output)) output = getOpenAFPath() + "/" + packag.name;
@@ -1036,22 +1037,6 @@ function install(args) {
 	} else {
 		log("No need to install/update " + args[0]);
 		return;
-		/*log("Checking remote OPack database");
-		var packs = getRemoteDB();
-		var packFound = findCaseInsensitive(packs, args[0]);
-		if (isUndefined(packFound)) {
-			logErr("No entry for '" + args[0] + "' on remote OPack database.");
-			return;
-		} else {
-			packag = getPackage(packFound.repository.url);
-			if (!forceOutput) output = getOpenAFPath() + "/" + packag.name;
-			args[0] = packag.repository.url;
-		}
-		if (checkVersion(packag, force)) {
-			log("UPDATING -- " + packag.name + " version " + packag.version);
-		} else {
-			return;
-		}*/
 	}
 
 	// Verify deps
@@ -1071,7 +1056,7 @@ function install(args) {
 				log("Checking remote OPack database");
 				var packs = getRemoteDB();
 				var packFound = findCaseInsensitive(packs, i);
-				if (isUndefined(packFound)) {
+				if (isUnDef(packFound)) {
 					logErr("No entry for '" + i + "' on remote OPack database.");
 					return;
 				}
@@ -1098,7 +1083,7 @@ function install(args) {
 		}
 
 	outputPath = output;
-    if (!isUndefined(packag.scripts.preinstall) && !justCopy) runScript(packag.scripts.preinstall);
+    if (!isUnDef(packag.scripts.preinstall) && !justCopy) runScript(packag.scripts.preinstall);
 
 	switch(packag.__filelocation) {
 		case "url":
@@ -1369,7 +1354,7 @@ function __opack_script(args, isDaemon, isJob) {
 
 // UPDATE
 function update(args) {
-	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
+	if (!isUnDef(args[0]) && args[0].toUpperCase() == 'OPENAF') {
 		logErr("Please use 'openaf --update' to update OpenAF");
 		return;
 	}
@@ -1379,18 +1364,19 @@ function update(args) {
 	var foundArg = false;
 	var foundCred = false;
 	var all = false;
-	var erase = false;
+	var ferase = true;
+	var derase = true;
 
-    for(let i in args) {
-    	if (foundRepo) {
-    		if (__opackCentral.indexOf(args[i]) < 0) __opackCentral.unshift(args[i]);
-    		foundRepo = false;
-    	}
+	for(let i in args) {
+		if (foundRepo) {
+			if (__opackCentral.indexOf(args[i]) < 0) __opackCentral.unshift(args[i]);
+			foundRepo = false;
+		}
 
-    	if (foundArg) {
-    		arg = args[i];
-    		foundArg = false;
-    	}
+		if (foundArg) {
+			arg = args[i];
+			foundArg = false;
+		}
 
 		if (foundCred) {
 			var cred = args[i];
@@ -1398,34 +1384,35 @@ function update(args) {
 			foundCred = false;
 		}
 
-    	if (args[i] == "-arg") foundArg = true;
-    	if (args[i] == "-force") force = true;
-    	if (args[i] == "-repo") foundRepo = true;
-    	if (args[i] == "-all") all = true;
-		if (args[i] == "-erase") erase = true;
+    if (args[i] == "-arg") foundArg = true;
+    if (args[i] == "-force") force = true;
+    if (args[i] == "-repo") foundRepo = true;
+    if (args[i] == "-all") all = true;
+		if (args[i] == "-noerase") ferase = false;
 		if (args[i] == "-cred") foundCred = true;
+		if (args[i] == "-erasefolder") derase = false;
 	}
 	var packag = getPackage(args[0]);
 
-    if (all) {
-    	var ops = [];
+	if (all) {
+		var ops = [];
 
-    	if (force) ops.push("-force");
-    	if (erase) ops.push("-erase");
+		if (force) ops.push("-force");
+		if (ferase) ops.push("-noerase");
 
-    	var packages = getOPackLocalDB();
-    	for(let i in packages) {
-    		if (packages[i].name.toUpperCase() == 'OPENAF') continue;
-    		var pack = [];
-    		pack.push(packages[i].name);
-    		pack = pack.concat(ops);
-    		update(pack);
-    	}
+		var packages = getOPackLocalDB();
+		for(let i in packages) {
+			if (packages[i].name.toUpperCase() == 'OPENAF') continue;
+			var pack = [];
+			pack.push(packages[i].name);
+			pack = pack.concat(ops);
+			update(pack);
+		}
 
-    	return;
-    }
+		return;
+	}
 
-	if (!isUndefined(packag) &&
+	if (!isUnDef(packag) &&
 		(typeof packag.name == 'undefined' ||
 		 packag.__filelocation == 'local'))
 		//packag = getOPackRemoteDB()[packag.name];
@@ -1452,12 +1439,12 @@ function update(args) {
 		return;
 	}
 
-	if (erase) erase(args);
+	if (ferase) erase(args, derase);
 	install(args);
 }
 
 // ERASE
-function erase(args) {
+function erase(args, dontRemoveDir) {
 	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
 		logErr("Can't delete OpenAF. Please delete manually or using another package manager (e.g. RPM)");
 		return;
@@ -1528,7 +1515,7 @@ function erase(args) {
 					rmdir(list.files[i].filepath);
 				}
 			}
-			rmdir(args[0]);
+			if (!dontRemoveDir) rmdir(args[0]);
 			log("Package " + packag.name + " erased." + repeat(biggestMessage, " "));
 			removeLocalDB(packag, args[0]);
 			break;
@@ -1751,25 +1738,25 @@ for(let i in verbs) {
 
 		verb = i;
 
-        switch(verb) {
-        case 'info': __opack_info(params); break;
-        case 'install': install(params); break;
-        case 'erase': erase(params); break;
-        case 'list': __opack_list(params); break;
-        case 'genpack': genpack(params); break;
-        case 'pack': pack(params); break;
-        case 'add2db': add(params); break;
-        case 'remove2db': remove(params); break;
-        case 'add2remotedb': addCentral(params); break;
+    switch(verb) {
+		case 'info': __opack_info(params); break;
+		case 'install': install(params); break;
+		case 'erase': erase(params); break;
+		case 'list': __opack_list(params); break;
+		case 'genpack': genpack(params); break;
+		case 'pack': pack(params); break;
+		case 'add2db': add(params); break;
+		case 'remove2db': remove(params); break;
+		case 'add2remotedb': addCentral(params); break;
 		case 'remove2remotedb': removeCentral(params); break;
 		case 'script': __opack_script(params); break;
 		case 'daemon': __opack_script(params, true); break;
 		case 'ojob'  : __opack_script(params, false, true); break;
-        case 'search': __opack_search(params); break;
-        case 'update': update(params); break;
+		case 'search': __opack_search(params); break;
+		case 'update': update(params); break;
 		case 'exec': __opack_exec(params); break;
 		case 'help': showhelp = 1; showHelp(); break;
-        }
+    }
 
 		showhelp = 0;
 	}
