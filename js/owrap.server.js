@@ -1614,13 +1614,13 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	replyFile: function(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray) {
-		if (isUndefined(notFoundFunction)) {
+		if (isUnDef(notFoundFunction)) {
 			notFoundFunction = function() {
 				return aHTTPd.reply("Not found!", ow.server.httpd.mimes.TXT, ow.server.httpd.codes.NOTFOUND);
 			}
 		}
 		try {
-			var baseFilePath = aBaseFilePath;
+			var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
 			var furi = String((new java.io.File(new java.io.File(baseFilePath),
 				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath()).replace(/\\/g, "/");
 			
@@ -1634,7 +1634,7 @@ OpenWrap.server.prototype.httpd = {
 			if (furi.match(new RegExp("^" + baseFilePath)))
 				return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi));
 			else
-			    return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI);
+			  return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI);
 		} catch(e) { 
 			return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e);
 		}
@@ -1668,7 +1668,7 @@ OpenWrap.server.prototype.httpd = {
 			}
 		}
 		try {
-			var baseFilePath = aBaseFilePath;
+			var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
 			var furi = String((new java.io.File(new java.io.File(baseFilePath),
 				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath()).replace(/\\/g, "/");
 			
