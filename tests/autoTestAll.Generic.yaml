@@ -28,6 +28,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testLogs;
 
+   - name: OpenAF::IsFunctions
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testIsFunctions;
+
    - name: OpenAF::Test SHA1
      from: OpenAF::Init
      to  : oJob Test
@@ -165,6 +170,7 @@ todo:
    - OpenAF::Prints
    - OpenAF::SPrints
    - OpenAF::Logs
+   - OpenAF::IsFunctions
    - OpenAF::Test SHA1
    - OpenAF::Test SHA256
    - OpenAF::Test SHA512

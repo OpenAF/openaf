@@ -504,4 +504,18 @@
         ow.test.assert(isDef(r2[0].b), false, "Problem with mapArray selectors (1) limited");
         ow.test.assert(isDef(r2[0].a), true, "Problem with mapArray selectors (2) limited");
     };
+
+    exports.testIsFunctions = function() {
+        ow.test.assert(isArray([1, 2, 3]), true, "Failed to identify an array.");
+        ow.test.assert(isBinaryArray([1, 2, 3]), true, "Failed to identify a binary array.");
+        ow.test.assert(isBinaryArray([32, 32, 32]), false, "Failed to negatively identify a binary array.");
+        ow.test.assert(isBoolean(true), true, "Failed to identify a boolean value.");
+        ow.test.assert(isDate(new Date()), true, "Failed to identify a date.");
+        ow.test.assert(isFunction(isFunction), true, "Failed to identify a function.");
+        ow.test.assert(isJavaObject(new java.lang.String()), true, "Failed to identify a java object.");
+        ow.test.assert(isMap({}), true, "Failed to identify a map.");
+        ow.test.assert(isNumber(123), true, "Failed to identify a number.");
+        ow.test.assert(isObject({}), true, "Failed to identify an object.");
+        ow.test.assert(isString("hello"), true, "Failed to identify a string.");
+    };
 })();
