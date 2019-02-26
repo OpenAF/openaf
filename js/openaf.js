@@ -1432,7 +1432,7 @@ var __loadedJars = [];
  */
 function loadExternalJars(aPath, dontCheck) {
 	if (!io.fileExists(aPath) || io.fileInfo(aPath).isFile) throw "Folder not found.";
-	$path(io.listFiles(aPath).files, "reverse(sort_by([?ends_with(filename, '.jar') == `true`], @to_string(filename)))").forEach((v) => {
+	$from(io.listFiles(aPath).files).ends("filename", '.jar').sort("-filename").select((v) => {
 		var libfile = v.filename;
 		if (!dontCheck && __loadedJars.indexOf(libfile) < 0) {
 			af.externalAddClasspath("file:///" + v.canonicalPath);
