@@ -1435,7 +1435,7 @@ function loadExternalJars(aPath, dontCheck) {
 	$from(io.listFiles(aPath).files).ends("filename", '.jar').sort("-filename").select((v) => {
 		var libfile = v.filename;
 		if (!dontCheck && __loadedJars.indexOf(libfile) < 0) {
-			af.externalAddClasspath("file:///" + v.canonicalPath);
+			af.externalAddClasspath(new java.io.File(v.canonicalPath).toURI().toURL(), true );
 			__loadedJars.push(libfile);
 		}
     });
@@ -1543,8 +1543,18 @@ function plugin(aPlugin) {
 			
 			if (__loadedPlugins[pluginLoaded]) return;
 			// Because ZIP is used in getOPackPath
-			if (aPlugin != "ZIP" && isDef(getOPackPath("plugin-" + aPlugin))) loadExternalJars(getOPackPath("plugin-" + aPlugin));
-			af.plugin("openaf.plugins." + aPlugin);
+			if (aPlugin != "ZIP" && isDef(getOPackPath("plugin-" + aPlugin))) {
+				af.externalPlugin(
+					$from(io.listFilenames(getOPackPath("plugin-" + aPlugin)))
+					.ends(".jar")
+					.select((f) => {
+						return (new java.io.File(f)).toURI().toURL();
+					}),
+					"openaf.plugins." + aPlugin
+				);
+			} else {
+				af.plugin("openaf.plugins." + aPlugin);
+			}
 			__loadedPlugins[pluginLoaded] = true;
 
 			return;
@@ -1556,8 +1566,18 @@ function plugin(aPlugin) {
 	if (__loadedPlugins[pluginLoaded]) return;
 	try {
 		// Because ZIP is used in getOPackPath
-		if (aPlugin != "ZIP" && isDef(getOPackPath("plugin-" + aPlugin))) loadExternalJars(getOPackPath("plugin-" + aPlugin));
-		af.plugin(aPlugin);
+		if (aPlugin != "ZIP" && isDef(getOPackPath("plugin-" + aPlugin))) {
+			af.externalPlugin(
+				$from(io.listFilenames(getOPackPath("plugin-" + aPlugin)))
+				.ends(".jar")
+				.select((f) => {
+					return (new java.io.File(f)).toURI().toURL();
+				}),
+				aPlugin
+			);
+		} else {
+			af.plugin(aPlugin);
+		}
 		__loadedPlugins[pluginLoaded] = true;
 	} catch(e) {
 		if (String(e).indexOf("java.lang.ClassNotFoundException: SMB") >= 0) {
