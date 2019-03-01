@@ -52,12 +52,12 @@ OpenWrap.oJob = function() {
 
 /**
  * <odoc>
- * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId)</key>
+ * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, consts)</key>
  * Loads a set of aJobsList, corresponding aTodoList and a list of aoJobList.
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
+OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, consts) {
 	if (isUnDef(jobs)) jobs = [];
 	if (isUnDef(todo)) todo = [];
 	if (isDef(ojob)) this.__ojob = merge(this.__ojob, ojob);
@@ -73,6 +73,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId) {
 			}
 		}
 	}
+
+	if (isDef(consts)) args = merge(args, { consts: consts });
 	
 	for(var i in jobs) {
 		if (isUnDef(jobs[i].from) && isDef(jobs[i].earlier)) jobs[i].from = jobs[i].earlier;
@@ -391,7 +393,7 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob) {
 		if (isSubJob && isDef(s.ojob)) {
 			s.ojob.__subjob = true;
 		}
-		this.load(s.jobs, s.todo, s.ojob, args, aId);
+		this.load(s.jobs, s.todo, s.ojob, args, aId, s.consts);
 	}
 }
 
