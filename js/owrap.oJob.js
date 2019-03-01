@@ -236,13 +236,13 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 }
 
 OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
-	var res = { include: [], jobs: [], todo: [], ojob: {} };
+	var res = { include: [], jobs: [], todo: [], ojob: {}, consts: {} };
 	
 	if (isDef(aJSONa.include) && aJSONa.include != null) 
 		res.include = aJSONa.include.concat(isDef(aJSONb.include) ? aJSONb.include : []);
 	else
 		res.include = isDef(aJSONb.include) ? aJSONb.include : [];
-	
+
 	loadLodash();
 	res.include = _.uniq(res.include);
 
@@ -260,6 +260,11 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 		res.ojob = merge(aJSONa.ojob, aJSONb.ojob);
 	else
 		res.ojob = isDef(aJSONb.ojob) ? aJSONb.ojob : {};
+
+	if (isDef(aJSONa.consts)) 
+		res.consts = merge(aJSONa.consts, aJSONb.consts);
+	else
+		res.consts = isDef(aJSONb.consts) ? aJSONb.consts : {};		
 	
 	return res;
 }
@@ -777,7 +782,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
 
-	    	var s = ow.server.checkIn(this.__ojob.unique.pidFile, function(aPid) {
+	    	var s = ow.server.checkIn(eval(this.__ojob.unique.pidFile), function(aPid) {
 	    		if (parent.__ojob.unique.killPrevious || isDef(args.stop) || isDef(args.restart) || isDef(args.forcestop)) {
 	    			if (isDef(args.forcestop) || !pidKill(ow.server.getPid(aPid), false)) {
 	    				pidKill(ow.server.getPid(aPid), true);
