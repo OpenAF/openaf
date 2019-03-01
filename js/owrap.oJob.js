@@ -74,7 +74,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, consts) {
 		}
 	}
 
-	if (isDef(consts)) args = merge(args, { consts: consts });
+	if (isDef(consts)) args = merge(args, { consts: consts }); else args.consts = {};
 	
 	for(var i in jobs) {
 		if (isUnDef(jobs[i].from) && isDef(jobs[i].earlier)) jobs[i].from = jobs[i].earlier;
