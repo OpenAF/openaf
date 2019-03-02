@@ -1554,7 +1554,7 @@ OpenWrap.server.prototype.httpd = {
 		aMapOfRoutes["/fonts/roboto/Roboto-Medium.eot"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.eot", true), ow.server.httpd.mimes.EOT, ow.server.httpd.codes.OK) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Medium.ttf"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.ttf", true), ow.server.httpd.mimes.TTF, ow.server.httpd.codes.OK) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Medium.woff"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.woff", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK) };
-	    aMapOfRoutes["/fonts/roboto/Roboto-Medium.woff2"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.woff2", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK) };
+	  aMapOfRoutes["/fonts/roboto/Roboto-Medium.woff2"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.woff2", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Regular.eot"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Regular.eot", true), ow.server.httpd.mimes.EOT, ow.server.httpd.codes.OK) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Regular.ttf"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Regular.ttf", true), ow.server.httpd.mimes.TTF, ow.server.httpd.codes.OK) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Regular.woff"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Regular.woff", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK) };
@@ -1563,6 +1563,10 @@ OpenWrap.server.prototype.httpd = {
 		aMapOfRoutes["/fonts/roboto/Roboto-Thin.ttf"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Thin.ttf", true), ow.server.httpd.mimes.TTF, ow.server.httpd.codes.OK) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Thin.woff"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Thin.woff", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Thin.woff2"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Thin.woff2", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK) };
+		aMapOfRoutes["/fonts/openaf.ico"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/openaf.ico", true), ow.server.httpd.mimes.ICO, ow.server.httpd.codes.OK) };
+		aMapOfRoutes["/fonts/openaf_large.png"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/openaf_large.png", true), ow.server.httpd.mimes.PNG, ow.server.httpd.codes.OK) };
+		aMapOfRoutes["/fonts/openaf_medium.png"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/openaf_medium.png", true), ow.server.httpd.mimes.PNG, ow.server.httpd.codes.OK) };
+		aMapOfRoutes["/fonts/openaf_small.png"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/openaf_small.png", true), ow.server.httpd.mimes.PNG, ow.server.httpd.codes.OK) };
 		return aMapOfRoutes;
 	},
 	
@@ -1674,6 +1678,7 @@ OpenWrap.server.prototype.httpd = {
 			
 			if (isUnDef(documentRootArray)) documentRootArray = [ "index.md" ];
 
+			// TODO:if io.fileExists is false to directories
 			if (io.fileExists(furi) && io.fileInfo(furi).isDirectory) {
 				for(var i in documentRootArray) {
 					furi = String((new java.io.File(new java.io.File(baseFilePath),
@@ -1823,7 +1828,8 @@ OpenWrap.server.prototype.httpd = {
 		"WOFF": "application/x-font-woff",
 		"SVG": "image/svg+xml",
 		"EOT": "application/vnd.ms-fontobject",
-		"BIN": "application/octet-stream"
+		"BIN": "application/octet-stream",
+		"ICO": "image/x-icon"
 	}
 }
 
