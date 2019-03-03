@@ -335,6 +335,23 @@ public class GIT extends ScriptableObject {
 		
 		return AFCmdBase.jse.newArray(AFCmdBase.jse.getGlobalscope(), records.toArray());
 	}
+
+	/**
+	 * <odoc>
+	 * <key>GIT.branch() : String</key>
+	 * Returns the current branch for the repository.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object branch() throws Exception {
+		String branch = "";
+
+		if (git != null) {
+			branch = git.status().getRepository().getBranch();
+		}
+
+		return branch;
+	}
 	
 	@JSFunction
 	public Object remoteBranchList(String anURL) throws Exception {
