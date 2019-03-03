@@ -1419,7 +1419,7 @@ function update(args) {
 		packag = getOPackRemoteDB()[$from(Object.keys(getOPackRemoteDB())).equals(args[0]).select()[0]];
 
 	// Verify version
-	if (!isUndefined(packag) &&
+	if (!isUnDef(packag) &&
 		(typeof packag.name !== 'undefined')) {
 	    if (checkVersion(packag, force)) {
 	    	if ((typeof packag.__filelocation !== 'undefined') &&
@@ -1439,7 +1439,7 @@ function update(args) {
 		return;
 	}
 
-	if (ferase) erase(args, derase);
+	if (ferase) erase(clone(args), derase);
 	install(args);
 }
 
