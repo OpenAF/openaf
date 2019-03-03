@@ -377,13 +377,14 @@ public class HTTPServer extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTPd.replyOKText(data) : Object</key>
+	 * <key>HTTPd.replyOKText(data, aMapOfHeaders) : Object</key>
 	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return a text mimetype with the provided data and a HTTP code of OK.
+	 * It will return a text mimetype with the provided data and a HTTP code of OK. Also you can provide the map
+	 * of extra HTTP headers.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object replyOKText(String data) {
+	public Object replyOKText(String data, Object headers) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
@@ -391,19 +392,21 @@ public class HTTPServer extends ScriptableObject {
 		no.put("status", no, 200);
 		no.put("mimetype", no, Codes.MIME_PLAINTEXT);
 		no.put("data", no, data);
+		no.put("header", no, headers);
 		
 		return no;
 	}
 	
 	/**
 	 * <odoc>
-	 * <key>HTTPd.replyOKXML(data) : Object</key>
+	 * <key>HTTPd.replyOKXML(data, aMapOfHeaders) : Object</key>
 	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return a XML mimetype with the provided data (in string format) and a HTTP code of OK.
+	 * It will return a XML mimetype with the provided data (in string format) and a HTTP code of OK. Also you can provide the map
+	 * of extra HTTP headers.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object replyOKXML(String data) {
+	public Object replyOKXML(String data, Object headers) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
@@ -411,19 +414,21 @@ public class HTTPServer extends ScriptableObject {
 		no.put("status", no, 200);
 		no.put("mimetype", no, "text/xml");
 		no.put("data", no, data);
+		no.put("header", no, headers);
 		
 		return no;
 	}
 	
 	/**
 	 * <odoc>
-	 * <key>HTTPd.replyOKHTML(data) : Object</key>
+	 * <key>HTTPd.replyOKHTML(data, aMapOfHeaders) : Object</key>
 	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return a HTML mimetype with the provided data (in string format) and a HTTP code of OK.
+	 * It will return a HTML mimetype with the provided data (in string format) and a HTTP code of OK. Also you can provide the map
+	 * of extra HTTP headers.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object replyOKHTML(String data) {
+	public Object replyOKHTML(String data, Object headers) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
@@ -431,19 +436,21 @@ public class HTTPServer extends ScriptableObject {
 		no.put("status",  no, 200);
 		no.put("mimetype", no, Codes.MIME_HTML);
 		no.put("data", no, data);
+		no.put("header", no, headers);
 		
 		return no;
 	}
 
 	/**
 	 * <odoc>
-	 * <key>HTTPd.replyOKJSON(data) : Object</key>
+	 * <key>HTTPd.replyOKJSON(data, aMapOfHeaders) : Object</key>
 	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return a JSON mimetype with the provided data (in string format) and a HTTP code of OK.
+	 * It will return a JSON mimetype with the provided data (in string format) and a HTTP code of OK. Also you can provide the map
+	 * of extra HTTP headers.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object replyOKJSON(String data) {
+	public Object replyOKJSON(String data, Object headers) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
@@ -451,19 +458,21 @@ public class HTTPServer extends ScriptableObject {
 		no.put("status", no, 200);
 		no.put("mimetype", no, Codes.MIME_JSON);
 		no.put("data", no, data);
-		
+		no.put("header", no, headers);
+
 		return no;
 	}
 	
 	/**
 	 * <odoc>
-	 * <key>HTTPd.replyOKBin(data) : Object</key>
+	 * <key>HTTPd.replyOKBin(data, aMapOfHeaders) : Object</key>
 	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return application/octet-stream mimetype with the provided data (as an array of bytes) and a HTTP code of OK. 
+	 * It will return application/octet-stream mimetype with the provided data (as an array of bytes) and a HTTP code of OK.  Also you can provide the map
+	 * of extra HTTP headers.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object replyOKBin(String data) {
+	public Object replyOKBin(String data, Object headers) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
@@ -471,7 +480,8 @@ public class HTTPServer extends ScriptableObject {
 		no.put("status", no, 200);
 		no.put("mimetype", no, Codes.MIME_DEFAULT_BINARY);
 		no.put("data", no, data);
-		
+		no.put("header", no, headers);
+
 		return no;
 	}
 	
