@@ -2,6 +2,7 @@
  * jLinq - 3.0.1
  * Hugo Bonacci - hugoware.com
  * http://creativecommons.org/licenses/by/3.0/
+ * Changes by Nuno Aguiar
  */
 
 var jLinq;
@@ -839,6 +840,52 @@ var jl;
                 
                 //return the final set of records
                 return results;
+            },
+
+            //grabs a range and format for records (Nuno Aguiar)
+            pselect:function(collection, action, start, end) {
+
+                //grab the records if there is a range
+                start = start == null ? 0 : start;
+                end = end == null ? collection.length : end;
+                
+                //slice the records
+                var results = collection.slice(start, end);
+                
+                //check if this is a mapping method
+                if (jLinq.util.isType(jLinq.type.object, action)) {
+                    var map = action;
+                    action = function(rec) {
+                        
+                        //map existing values or defaults
+                        // TODO: tests do not cover this method!
+                        var create = {};
+                        for (var item in map) {
+                            if (!map.hasOwnProperty(item)) continue;
+                            create[item] = rec[item]
+                                ? rec[item]
+                                : map[item];
+                        }
+                        
+                        //return the created record
+                        return create;
+                    
+                    };
+                };
+                
+                //if there is a selection method, use it
+                if (jLinq.util.isType(jLinq.type.method, action)) {
+                    results = parallel4Array(results, function(record) {
+                        return action.apply(record, [record]);
+                    });
+                    /*for (var i = 0; i < results.length; i++) {
+                        var record = results[i];
+                        results[i] = action.apply(record, [record]);
+                    }*/
+                }
+                
+                //return the final set of records
+                return results;
             }
             
         }
@@ -1123,6 +1170,15 @@ var jl;
                     other:function() { return this.records; }
                 });
             }},
+
+        { name:"pselect", type:framework.command.select,
+            method:function(selection) {
+                return this.when(selection, {
+                    method:function() { return jLinq.util.pselect(this.records, selection); },
+                    object:function() { return jLinq.util.pselect(this.records, selection); },
+                    other:function() { return this.records; }
+                });
+            }},
             
         //selects all of the distinct values for a field
         { name:"distinct", type:framework.command.select,
@@ -1320,7 +1376,8 @@ var jl;
             
             //uses the action to select items from a collection
             select:framework.util.select,
-            
+            pselect:framework.util.pselect,
+
             //grabs records for a specific range
             skipTake:framework.util.skipTake
             

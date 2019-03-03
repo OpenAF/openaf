@@ -48,7 +48,7 @@
 			"description": "JLinq",
 			"path": ["js/jlinq.js"],
 			"version": "3.0.1",
-			"changes": false,
+			"changes": true,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/cc_by_nc_sa.txt",
 			"deps": []

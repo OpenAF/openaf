@@ -163,6 +163,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testMapArray; 
 
+   - name: OpenAF::PSelect
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPSelect;
+
 todo:
    # Generic Tests
    # -------------
@@ -197,4 +202,4 @@ todo:
    - OpenAF::Get Path
    - OpenAF::Set Path
    - OpenAF::Map Array
-  
+   - OpenAF::PSelect

@@ -55,6 +55,16 @@
         ow.test.assert(bcrypt(test, res), true, "Problem with BCrypt with 12 rounds.");
     };
 
+    exports.testPSelect = function() {
+        var arr = io.listFiles(getOpenAFPath()).files;
+
+        ow.test.assert(
+            $from(arr).select((r) => { return 1; }),
+            $from(arr).pselect((r) => { return 1; }),
+            "Problem with $from.pselect()."
+        );
+    };
+
     exports.testMerge = function() {
         var a = { a: 1, b: 2};
         var b = { b: 3, c: 1};

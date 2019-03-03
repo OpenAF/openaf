@@ -1686,9 +1686,9 @@ function listFilesRecursive(aPath) {
 	if (isUnDef(files)) return [];
 	ret = files.concat(ret);
 
-	for(i in files) {
-		if (files[i].isDirectory) {
-			ret = ret.concat(listFilesRecursive(files[i].filepath));
+	for(var ii in files) {
+		if (files[ii].isDirectory) {
+			ret = ret.concat(listFilesRecursive(files[ii].filepath));
 		}
 	}
 
