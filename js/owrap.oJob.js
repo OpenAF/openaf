@@ -782,7 +782,13 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
 
-	    	var s = ow.server.checkIn(eval(this.__ojob.unique.pidFile), function(aPid) {
+			var pfile;
+			try {
+				pfile = eval(this.__ojob.unique.pidFile);
+			} catch(e) {
+				pfile = this.__ojob.unique.pidFile; 
+			}
+	    	var s = ow.server.checkIn(pfile, function(aPid) {
 	    		if (parent.__ojob.unique.killPrevious || isDef(args.stop) || isDef(args.restart) || isDef(args.forcestop)) {
 	    			if (isDef(args.forcestop) || !pidKill(ow.server.getPid(aPid), false)) {
 	    				pidKill(ow.server.getPid(aPid), true);
