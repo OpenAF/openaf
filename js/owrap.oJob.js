@@ -22,6 +22,8 @@ OpenWrap.oJob = function() {
 	this.__id = sha256(this.__host + this.__ip);
 	this.__threads = {};
 	this.__promises = [];
+	this.init = void 0;
+
 	ow.loadServer(); 
 	this.__sch = new ow.server.scheduler();
 	this.__ojob = { recordLog: true, logArgs: false, numThreads: undefined, logToConsole: true };
@@ -52,12 +54,12 @@ OpenWrap.oJob = function() {
 
 /**
  * <odoc>
- * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, consts)</key>
+ * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, init)</key>
  * Loads a set of aJobsList, corresponding aTodoList and a list of aoJobList.
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, consts) {
+OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	if (isUnDef(jobs)) jobs = [];
 	if (isUnDef(todo)) todo = [];
 	if (isDef(ojob)) this.__ojob = merge(this.__ojob, ojob);
@@ -74,7 +76,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, consts) {
 		}
 	}
 
-	if (isDef(consts)) args = merge(args, { consts: consts }); else args.consts = {};
+	if (isDef(init)) this.init = init;
 	
 	for(var i in jobs) {
 		if (isUnDef(jobs[i].from) && isDef(jobs[i].earlier)) jobs[i].from = jobs[i].earlier;
@@ -236,7 +238,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 }
 
 OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
-	var res = { include: [], jobs: [], todo: [], ojob: {}, consts: {} };
+	var res = { include: [], jobs: [], todo: [], ojob: {}, init: {} };
 	
 	if (isDef(aJSONa.include) && aJSONa.include != null) 
 		res.include = aJSONa.include.concat(isDef(aJSONb.include) ? aJSONb.include : []);
@@ -261,10 +263,10 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	else
 		res.ojob = isDef(aJSONb.ojob) ? aJSONb.ojob : {};
 
-	if (isDef(aJSONa.consts)) 
-		res.consts = merge(aJSONa.consts, aJSONb.consts);
+	if (isDef(aJSONa.init)) 
+		res.init = merge(aJSONa.init, aJSONb.init);
 	else
-		res.consts = isDef(aJSONb.consts) ? aJSONb.consts : {};		
+		res.init = isDef(aJSONb.init) ? aJSONb.init : {};		
 	
 	return res;
 }
@@ -398,7 +400,7 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob) {
 		if (isSubJob && isDef(s.ojob)) {
 			s.ojob.__subjob = true;
 		}
-		this.load(s.jobs, s.todo, s.ojob, args, aId, s.consts);
+		this.load(s.jobs, s.todo, s.ojob, args, aId, s.init);
 	}
 }
 
@@ -769,6 +771,9 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
  */
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, this.__expr, aId) : this.__expr;
+
+	if (isDef(this.init)) args = merge(args, { init: this.init });
+
 	var parent = this;
 
 	if (this.__ojob != {}) {
