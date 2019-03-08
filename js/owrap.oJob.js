@@ -68,7 +68,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 
 	for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
-			var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).first();
+			//var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).first();
+			var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
 			if (isDef(j)) {
 				if (isUnDef(j.deps)) j.deps = [];
 				j.deps.push((isObject(todo[i-1]) ? todo[i-1].name : todo[i-1]));
@@ -80,7 +81,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	
 	// Calculate dependencies
 	var mdeps = {};
-	var depsScore = function(v) {
+	function depsScore(v) {
+		if (isString(v)) v = $path(jobs, "[?name==`" + v + "`] | @[0]");
 		var s = v.name;
 		if (isDef(mdeps[s])) {
 			mdeps[s] += 1;
@@ -88,10 +90,12 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 			var depsScore2 = (vvv) => { 
 				if (isString(vvv)) {
 					if (vvv === v.name) logWarn("Suspicious recursive relation in job " + v.name);
-					mdeps[vvv] += 1; 
+					mdeps[vvv] += mdeps[s];
+					depsScore(vvv);
 				} else {
 					if (vvv.name === v.name) logWarn("Suspicious recursive relation in job " + v.name);
-					mdeps[vvv.name] += 1;
+					mdeps[vvv.name] += mdeps[s];
+					depsScore(vvv.name);
 				}
 			};
 
@@ -597,7 +601,8 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.success = true;
 		existing.count++;
 		try { 
-			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
+			//var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
+			var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
 			execJob.endTime = now();
 			existing.totalTime += execJob.endTime - execJob.startTime;
 			existing.avgTime = existing.totalTime / existing.count;
@@ -609,7 +614,8 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.error   = true;
 		existing.count++;
 		try {
-			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
+			//var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
+			var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
 			if (isDef(anException.javaException)) {
 				var ar = anException.javaException.getStackTrace();
 				execJob.error = [ String(anException.javaException) ];
@@ -888,7 +894,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 	if (this.__ojob.sequential) {
 		var job = void 0;
-		var listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", this.getID() + altId).select();
+		//var listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", this.getID() + altId).select();
+		var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
@@ -910,7 +917,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 					"ojobId": todo.ojobId,
 					"todoId": todo.todoId
 				});
-				listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", this.getID() + altId).select();
+				//listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", this.getID() + altId).select();
+				listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
 			}
 		}
 	} else {
@@ -920,10 +928,11 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 			var shouldStop = false;
 			while(!shouldStop) {
 				try {
-					var parentOJob = $from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID() + altId);
+					//var parentOJob = $from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID() + altId);
+					var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
 					var pjobs = [];
-					for (var ipoj = 0; ipoj < parentOJob.count(); ipoj++) {
-						var todo = parent.getTodoCh().get(parentOJob.at(ipoj));
+					for (var ipoj = 0; ipoj < parentOJob.length; ipoj++) {
+						var todo = parent.getTodoCh().get(parentOJob[ipoj]);
 						job = parent.getJobsCh().get({ "name": todo.name });
 						var argss = args;
 						if (isDef(todo.args)) {
@@ -947,7 +956,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 					}
 					if (!shouldStop && 
 						!(isDef(parent.__ojob) && isDef(parent.__ojob.daemon) && parent.__ojob.daemon == true) &&
-		                parentOJob.none()
+		                parentOJob.length <= 0
 		               ) {
 		               	  shouldStop = true;
 		               	  try {
