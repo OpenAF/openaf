@@ -78,10 +78,44 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 
 	if (isDef(init)) this.init = init;
 	
-	for(var i in jobs) {
-		if (isUnDef(jobs[i].from) && isDef(jobs[i].earlier)) jobs[i].from = jobs[i].earlier;
-		if (isUnDef(jobs[i].to)   && isDef(jobs[i].then))    jobs[i].to   = jobs[i].then;
-		this.addJob(this.getJobsCh(), jobs[i].name, jobs[i].deps, jobs[i].type, jobs[i].typeArgs, jobs[i].args, jobs[i].exec, jobs[i].from, jobs[i].to, jobs[i].help);
+	// Calculate dependencies
+	var mdeps = {};
+	var depsScore = function(v) {
+		var s = v.name;
+		if (isDef(mdeps[s])) {
+			mdeps[s] += 1;
+			
+			var depsScore2 = (vvv) => { 
+				if (isString(vvv)) {
+					if (vvv === v.name) logWarn("Suspicious recursive relation in job " + v.name);
+					mdeps[vvv] += 1; 
+				} else {
+					if (vvv.name === v.name) logWarn("Suspicious recursive relation in job " + v.name);
+					mdeps[vvv.name] += 1;
+				}
+			};
+
+			if (isObject(v) && !isString(v)) {
+				if (isDef(v.from))    (isString(v.from) ? depsScore2(v.from) : v.from.forEach(depsScore2));
+				if (isDef(v.earlier)) (isString(v.earlier) ? depsScore2(v.earlier) : v.earlier.forEach(depsScore2));
+				if (isDef(v.to))      (isString(v.to) ? depsScore2(v.to) : v.to.forEach(depsScore2));
+				if (isDef(v.then))    (isString(v.then) ? depsScore2(v.then) : v.then.forEach(depsScore2));
+				if (isDef(v.deps))    (isString(v.deps) ? depsScore2(v.deps) : v.deps.forEach(depsScore2));
+			}
+		}
+	};
+
+	jobs.forEach((v) => { mdeps[v.name] = 0; });
+	jobs.forEach(depsScore);
+
+	var sjobs = jobs.sort((a, b) => {
+		return mdeps[b.name] - mdeps[a.name];
+	});
+
+	for(var i in sjobs) {
+		if (isUnDef(sjobs[i].from) && isDef(sjobs[i].earlier)) sjobs[i].from = sjobs[i].earlier;
+		if (isUnDef(sjobs[i].to)   && isDef(sjobs[i].then))    sjobs[i].to   = sjobs[i].then;
+		this.addJob(this.getJobsCh(), sjobs[i].name, sjobs[i].deps, sjobs[i].type, sjobs[i].typeArgs, sjobs[i].args, sjobs[i].exec, sjobs[i].from, sjobs[i].to, sjobs[i].help);
 	}
 	this.addTodos(todo, args, aId);
 
