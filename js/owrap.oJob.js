@@ -1276,7 +1276,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		for(let jfi in jobFrom) {
 			var f = aJobsCh.get({ "name": jobFrom[jfi] });
 			if (isDef(f)) {
-				j.type = _$(j.type).isString().default(f.type);
+				//j.type = _$(j.type).isString().default(f.type);
 				j.typeArgs = (isDef(j.typeArgs) ? merge(j.typeArgs, f.typeArgs) : f.typeArgs);
 				j.args = (isDef(j.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(f.args));
 				j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
@@ -1307,7 +1307,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, aName, jobDeps, jobType, jobT
 		for(let jfi in jobTo) {
 			var f = aJobsCh.get({ "name": jobTo[jfi] });
 			if (isDef(f)) {
-				j.type = (isDef(f.type) ? f.type : j.type);
+				//j.type = (isDef(f.type) ? f.type : j.type);
 				j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
 				j.args = (isDef(f.args) ? this.__processArgs(j.args, f.args) : this.__processArgs(j.args));
 				j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
