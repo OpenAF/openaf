@@ -37,7 +37,34 @@ OpenWrap.obj.prototype.fromDBRS2Obj = function (aDBRS, doDates) {
 	}
 
 	return res;
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.fromDBRS(aDB, aSQL, anArrayOfBinds, aFunction, anErrorFunction)</key>
+ * Given a connected aDB the query aSQL will be executed (using the anArrayOfBinds) and the corresponding result set will be iterated. For each row the aFunction will be 
+ * called with the result of ow.obj.fromDBRS2Obj with doDates = true. If the function returns false the result set iteration will be immediatelly stopped. Any exception 
+ * thrown by aFunction will be handled by anErrorFunction (by default throws the exception).
+ * </odoc>
+ */
+OpenWrap.obj.prototype.fromDBRS = function(aDB, aSQL, aBinds, aFunction, aErrorFunction) {
+	_$(aSQL).isString("The SQL statement needs to be a string.").$_("Please provide a SQL statement.");
+	_$(aFunction).isFunction().$_("Please provide a function.");
+	aErrorFunction = _$(aErrorFunction).isFunction().default(function(e) {
+		throw e;
+	});
+
+	var rs = aDB.qsRS(aSQL, aBinds), cont = true;
+	while(rs.next() && cont) {
+		try {
+			var res = aFunction(ow.obj.fromDBRS2Obj(rs, true));
+			if (isDef(res) && res == false) cont = false;
+		} catch(e) {
+			aErrorFunction(e);
+		}
+	}
+	rs.close();
+};
 
 /**
  * <odoc>
