@@ -1449,7 +1449,6 @@ OpenWrap.obj.prototype.setFTPProxy = function(aHost, aPort, anArrayNonProxyHosts
  */
 OpenWrap.obj.prototype.setSOCKSProxy = function(aHost, aPort, aUser, aPass) {
 	_$(aHost).isString("The host needs to be a string.");
-	_$(anArrayNonProxyHosts).isArray("Array of non proxy hosts needs to be an array.");
 	_$(aUser).isString();
 	_$(aPass).isString();
 
