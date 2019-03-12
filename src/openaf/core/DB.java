@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,7 +32,10 @@ import openaf.SimpleLog;
  *
  */
 public class DB {
-	protected final String ORACLE_DRIVER = "oracle.jdbc.OracleDriver";
+	static protected final String ORACLE_DRIVER = "oracle.jdbc.OracleDriver";
+	static protected final String POSTGRESQL_DRIVER = "org.postgresql.Driver";
+	static protected final String H2_DRIVER = "org.h2.Driver";
+	static public HashMap<String, String> drivers = new HashMap<String, String>();
 	protected final Long LIMIT_RESULTS = 100000000L;
 	protected Connection con;
 	protected Server h2Server;
@@ -39,6 +43,12 @@ public class DB {
 	protected boolean convertDates = false;
 	public String url;
 	
+	static {
+		drivers.put("jdbc:oracle:", ORACLE_DRIVER);
+		drivers.put("jdbc:postgresql:", POSTGRESQL_DRIVER);
+		drivers.put("jdbc:h2:", H2_DRIVER);
+	}
+
 	/**
 	 * <odoc>
 	 * <key>DB.db(aDriver, aURL, aLogin, aPassword)</key>
@@ -52,7 +62,12 @@ public class DB {
 		if (pass == null || pass.equals("undefined")) {
 			if (url != null) {
 				// Ok, use it as if it was another constructor
-				connect(ORACLE_DRIVER, driver, url, login);
+				for(String prefix : drivers.keySet()) {
+					if (driver.startsWith(prefix)) connect(drivers.get(prefix), driver, url, login);
+				}
+				if (url.startsWith("jdbc:oracle"))     connect(ORACLE_DRIVER, driver, url, login);
+				if (url.startsWith("jdbc:postgresql")) connect(POSTGRESQL_DRIVER, driver, url, login);
+				if (url.startsWith("jdbc:h2"))         connect(H2_DRIVER, driver, url, login);
 			}
 		} else {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "New DB with driver='" + driver + "'|url='" + url + "'|login='"+login+"'|pass='"+pass+"'", null);
