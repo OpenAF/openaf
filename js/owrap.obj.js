@@ -1374,12 +1374,107 @@ OpenWrap.obj.prototype.diff = function(aOrig, aFinal, optionsMap) {
 	}
 };
 
+/**
+ * <odoc>
+ * <key>ow.obj.setHTTPProxy(aHost, aPort, anArrayNonProxyHosts)</key>
+ * Sets the current java HTTP proxy to aHost, aPort and optional sets anArrayNonProxyHosts (see more in https://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html).
+ * If no values are provided all http proxy settings, if any, are cleared out.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.setHTTPProxy = function(aHost, aPort, anArrayNonProxyHosts) {
+	_$(aHost).isString("The host needs to be a string.");
+	_$(anArrayNonProxyHosts).isArray("Array of non proxy hosts needs to be an array.");
+
+	if (isUnDef(aHost) && isUnDef(aPort)) {
+		java.lang.System.clearProperty("http.proxyHost");
+		java.lang.System.clearProperty("http.proxyPort");
+		java.lang.System.clearProperty("http.nonProxyHosts");
+	} else {
+		java.lang.System.setProperty("http.proxyHost", String(aHost));
+		java.lang.System.setProperty("http.proxyPort", String(aPort));
+		if (isDef(anArrayNonProxyHosts)) java.lang.System.setProperty("http.nonProxyHosts", anArrayNonProxyHosts.join("|"));
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.setHTTPSProxy(aHost, aPort, anArrayNonProxyHosts)</key>
+ * Sets the current java HTTPS proxy to aHost, aPort and optional sets anArrayNonProxyHosts (see more in https://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html).
+ * If no values are provided all https proxy settings, if any, are cleared out.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.setHTTPSProxy = function(aHost, aPort, anArrayNonProxyHosts) {
+	_$(aHost).isString("The host needs to be a string.");
+	_$(anArrayNonProxyHosts).isArray("Array of non proxy hosts needs to be an array.");
+
+	if (isUnDef(aHost) && isUnDef(aPort)) {
+		java.lang.System.clearProperty("https.proxyHost");
+		java.lang.System.clearProperty("https.proxyPort");
+		java.lang.System.clearProperty("http.nonProxyHosts");
+	} else {
+		java.lang.System.setProperty("https.proxyHost", String(aHost));
+		java.lang.System.setProperty("https.proxyPort", String(aPort));
+		if (isDef(anArrayNonProxyHosts)) java.lang.System.setProperty("http.nonProxyHosts", anArrayNonProxyHosts.join("|"));
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.setFTPProxy(aHost, aPort, anArrayNonProxyHosts)</key>
+ * Sets the current java FTP proxy to aHost, aPort and optional sets anArrayNonProxyHosts (see more in https://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html).
+ * If no values are provided all ftp proxy settings, if any, are cleared out.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.setFTPProxy = function(aHost, aPort, anArrayNonProxyHosts) {
+	_$(aHost).isString("The host needs to be a string.");
+	_$(anArrayNonProxyHosts).isArray("Array of non proxy hosts needs to be an array.");
+
+	if (isUnDef(aHost) && isUnDef(aPort)) {
+		java.lang.System.clearProperty("ftp.proxyHost");
+		java.lang.System.clearProperty("ftp.proxyPort");
+		java.lang.System.clearProperty("ftp.nonProxyHosts");
+	} else {
+		java.lang.System.setProperty("ftp.proxyHost", String(aHost));
+		java.lang.System.setProperty("ftp.proxyPort", String(aPort));
+		if (isDef(anArrayNonProxyHosts)) java.lang.System.setProperty("ftp.nonProxyHosts", anArrayNonProxyHosts.join("|"));
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.setSOCKSProxy(aHost, aPort, aUser, aPass)</key>
+ * Sets the current java SOCKS proxy to aHost, aPort and optional sets aUser and aPass (see more in https://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html).
+ * If no values are provided all scoks proxy settings, if any, are cleared out.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.setSOCKSProxy = function(aHost, aPort, aUser, aPass) {
+	_$(aHost).isString("The host needs to be a string.");
+	_$(anArrayNonProxyHosts).isArray("Array of non proxy hosts needs to be an array.");
+	_$(aUser).isString();
+	_$(aPass).isString();
+
+	if (isUnDef(aHost) && isUnDef(aPort)) {
+		java.lang.System.clearProperty("socksProxyHost");
+		java.lang.System.clearProperty("socksProxyPort");
+		java.lang.System.clearProperty("java.net.socks.username");
+		java.lang.System.clearProperty("java.net.socks.password");
+	} else {
+		java.lang.System.setProperty("socksProxyHost", String(aHost));
+		java.lang.System.setProperty("socksProxyPort", String(aPort));
+		if (isDef(aUser) && isDef(aPass)) {
+			java.lang.System.setProperty("java.net.socks.username", aUser);
+			java.lang.System.setProperty("java.net.socks.password", aPass);
+		}
+	}	
+};
+
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	this.__lps = {};
 	this.__config = {};
 	this.__throwExceptions = true;
 	this.__r = void 0;
 	this.__rb = void 0; 
+	this.__usv = true;
 	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
 	if (isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
@@ -1439,6 +1534,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	if (isDef(this.__l) && !(this.__forceBasic)) {
 		var getKey;
 		this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+		if (this.__usv) this.__h = this.__h.useSystemProperties();
 		for(var key in this.__lps) {
 			if (aUrl.startsWith(key)) getKey = key;
 		}
@@ -1453,6 +1549,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	} else {
 		if (isUnDef(this.__h)) {
 			this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+			if (this.__usv) this.__h = this.__h.useSystemProperties();
 			this.__h = this.__handleConfig(this.__h);
 			this.__h = this.__h.build();
 		}
