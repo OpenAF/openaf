@@ -104,7 +104,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 				if (isDef(v.earlier)) (isString(v.earlier) ? depsScore2(v.earlier) : v.earlier.forEach(depsScore2));
 				if (isDef(v.to))      (isString(v.to) ? depsScore2(v.to) : v.to.forEach(depsScore2));
 				if (isDef(v.then))    (isString(v.then) ? depsScore2(v.then) : v.then.forEach(depsScore2));
-				if (isDef(v.deps))    (isString(v.deps) ? depsScore2(v.deps) : v.deps.forEach(depsScore2));
+				if (isDef(v.deps))    (isString(v.deps) ? 1 : v.deps.forEach(depsScore2));
 			}
 		}
 	};
