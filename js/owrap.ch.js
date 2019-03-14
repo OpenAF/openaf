@@ -507,7 +507,6 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(ow.ch.__types.buffer.__f[aName])) ow.ch.__types.buffer.__f[aName](true);
 	
 			if (isDef(ow.ch.__types.buffer.__bn[aName])) delete ow.ch.__types.buffer.__bn[aName];
-			if (isDef(ow.ch.__types.buffer.__bt[aName])) delete ow.ch.__types.buffer.__bt[aName];
 			if (isDef(ow.ch.__types.buffer.__bf[aName])) delete ow.ch.__types.buffer.__bf[aName];
 			if (isDef(ow.ch.__types.buffer.__bc[aName])) delete ow.ch.__types.buffer.__bc[aName];
 			if (isDef(ow.ch.__types.buffer.__bt[aName])) $ch(ow.ch.__types.buffer.__bt[aName]).destroy();
@@ -2014,6 +2013,13 @@ OpenWrap.ch.prototype.utils = {
 			}
 		}
 		this.flushBuffer(aName);
+		if (isDef(aName)) {
+			$ch(aName).destroy();
+		} else {
+			for(var c in ow.ch.__types.buffer.__s) {
+				$ch(c).destroy();
+			}
+		}
 	},	
 	/**
 	 * <odoc>
