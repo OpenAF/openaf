@@ -1982,13 +1982,51 @@ OpenWrap.ch.prototype.utils = {
 	},
 	/**
 	 * <odoc>
+	 * <key>ow.ch.utils.flushBuffer(aName)</key>
+	 * Tries to flush a channel buffer with aName (if not provided assumes all buffer type channels).
+	 * </odoc>
+	 */
+	flushBuffer: function(aName) {
+		if (isDef(aName)) {
+			ow.ch.__types.buffer.__f[aName](true); 
+			$ch(ow.ch.__types.buffer.__bt[aName]).waitForJobs(ow.ch.__types.buffer.__t[aName]);
+			$ch(ow.ch.__types.buffer.__bc[aName]).waitForJobs(ow.ch.__types.buffer.__t[aName]);
+		} else {
+			for(var c in ow.ch.__types.buffer.__f) {
+				ow.ch.__types.buffer.__f[c](true); 
+				$ch(ow.ch.__types.buffer.__bt[c]).waitForJobs(ow.ch.__types.buffer.__t[c]);
+				$ch(ow.ch.__types.buffer.__bc[c]).waitForJobs(ow.ch.__types.buffer.__t[c]);
+			}
+		}
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.closeBuffer(aName)</key>
+	 * Tries to close and flush a channel buffer with aName (if not provided assumes all buffer type channels).
+	 * </odoc>
+	 */
+	closeBuffer: function(aName) {
+		if (isDef(aName)) {
+			if (isDef(ow.ch.__types.buffer.__s[aName])) ow.ch.__types.buffer.__s[aName].stop();
+		} else {
+			for(var c in ow.ch.__types.buffer.__s) {
+				if (isDef(ow.ch.__types.buffer.__s[c])) ow.ch.__types.buffer.__s[c].stop();
+			}
+		}
+		this.flushBuffer(aName);
+	},	
+	/**
+	 * <odoc>
 	 * <key>ow.ch.utils.getBufferSubscriber(aSourceCh, indexes, byNumber, byTimeInMs, aBufferCh, aTmpBufferCh, aFilterFunc, aBufferFunc) : Function</key>
 	 * Returns a channel subscriber function that will buffer set, setall and unset operations from aSourceCh channel to aBufferCh (by
 	 * default a dummy channel to be subscribed, if not defined the name will be aSourceCh + "::buffer"). As a temporary buffer channel
 	 * aTmpBufferCh will be used (if not defined the name will be aSourceCh + "::__bufferStorage"). The aBufferCh will be configured with
 	 * the provided indexes, byNumber (number of times to trigger the buffer) and byTimeInMs (amount of time in ms to trigger the buffer).
 	 * Additionally you can specify aFilterFunc (with arguments channel, operation, key(s) and value(s)) that will only buffer if returns false
-	 * and aBufferFunc that will trigger the buffer flush if it returns true. 
+	 * and aBufferFunc that will trigger the buffer flush if it returns true.\
+	 * \
+	 * NOTE: do call ow.ch.utils.closeBuffer(aSourceCh) when it's no longer needed.\
+	 * \
 	 * </odoc>
 	 */
 	getBufferSubscriber: function(aSourceCh, idxs, byNumber, byTime, aBufferCh, aTmpBufferCh, aFilterFunc, aBufferFunc) {
