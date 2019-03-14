@@ -490,12 +490,12 @@ OpenWrap.ch.prototype.__types = {
 			if (addShut) {
 				addOnOpenAFShutdown(function() {
 					for(var c in ow.ch.__types.buffer.__s) {
-						if (isDef(ow.ch.__types.buffer.__s)) ow.ch.__types.buffer.__s.stop();
+						if (isDef(ow.ch.__types.buffer.__s[c])) ow.ch.__types.buffer.__s[c].stop();
 					}
 					for(var c in ow.ch.__types.buffer.__f) {
 						ow.ch.__types.buffer.__f[c](true); 
-						$ch(ow.ch.__types.buffer.__bt[aName]).waitForJobs(ow.ch.__types.buffer.__t[aName]);
-						$ch(ow.ch.__types.buffer.__bc[aName]).waitForJobs(ow.ch.__types.buffer.__t[aName]);
+						$ch(ow.ch.__types.buffer.__bt[c]).waitForJobs(ow.ch.__types.buffer.__t[c]);
+						$ch(ow.ch.__types.buffer.__bc[c]).waitForJobs(ow.ch.__types.buffer.__t[c]);
 					}
 				});
 			}
@@ -1375,15 +1375,17 @@ OpenWrap.ch.prototype.getVersion = function(aName) {
  */
 OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	aTimeout = _$(aTimeout).isNumber("aTimeout should be a number").default(-1);
-	var shouldContinue = false, tini = now();
+	var shouldContinue = 0, tini = now();
 	do {
+		shouldContinue = 0;
 		for(let ii in this.jobs[aName]) {
 			if (this.jobs[aName][ii].state == this.jobs[aName][ii].states.NEW) {
-				shouldContinue = true;
 				$doWait(this.jobs[aName][ii], (aTimeout >= 0 ? aTimeout : void 0));
+			} else {
+				shouldContinue++;
 			}
 		}
-	} while(shouldContinue && (now() - tini) < aTimeout);		
+	} while(shouldContinue >= Object.keys(this.jobs[aName]).length && (now() - tini) < aTimeout);		
 	return this;
 },
 	
@@ -2031,61 +2033,71 @@ OpenWrap.ch.prototype.utils = {
 	 * Returns a proxy function to be use with a proxy channel. The aStatsCh where to store the channel access statistics.
 	 * </odoc>
 	 */
-	getStatsProxyFunction: function(aStatsCh) {
+	getStatsProxyFunction: function (aStatsCh) {
 		aStatsCh = _$(aStatsCh).isString().$_("Please provide a statistics channel.");
 
-		return function(m) {
+		return function (m) {
 			var r = $ch(aStatsCh).get(m.name);
 			if (isUnDef(r)) r = {};
 			if (isUnDef(r.name)) r.name = m.name;
-			if (isUnDef(r[m.op])) r[m.op] = { count: 0 };
-			
+			if (isUnDef(r[m.op])) r[m.op] = {
+				count: 0
+			};
+
 			r[m.op].count++;
 
-			switch(m.op) {
-			case "size"         : break;
-			case "forEach"      : break;
-			case "getAll"       : 
-				var rr = $ch(m.name).getAll(m.full);
-				if (isUnDef(r[m.op].countValues)) 
-					r[m.op].countValues = rr.length; 
-				else 
-					r[m.op].countValues += rr.length;
-				$ch(aStatsCh).set(m.name, r);
-				return rr;
-			case "getKeys"      : 
-				var rr = $ch(m.name).getKeys(m.full);
-				if (isUnDef(r[m.op].countValues)) 
-					r[m.op].countValues = rr.length; 
-				else 
-					r[m.op].countValues += rr.length;
-				$ch(aStatsCh).set(m.name, r);
-				return rr;
-			case "getSortedKeys": 
-				var rr = $ch(m.name).getSortedKeys(m.full);
-				if (isUnDef(r[m.op].countValues)) 
-					r[m.op].countValues = rr.length; 
-				else 
-					r[m.op].countValues += rr.length;
-				$ch(aStatsCh).set(m.name, r);
-				return rr;
-			case "getSet"       : break;
-			case "set"          : break;
-			case "setAll"       : 
-				if (isUnDef(r[m.op].countValues)) 
-					r[m.op].countValues = m.v.length; 
-				else 
-					r[m.op].countValues += m.v.length;
-				break;
-			case "get"          : break;
-			case "pop"          : break;
-			case "shift"        : break;
-			case "unset"        : break;
+			switch (m.op) {
+				case "size":
+					break;
+				case "forEach":
+					break;
+				case "getAll":
+					var rr = $ch(m.name).getAll(m.full);
+					if (isUnDef(r[m.op].countValues))
+						r[m.op].countValues = rr.length;
+					else
+						r[m.op].countValues += rr.length;
+					$ch(aStatsCh).set(m.name, r);
+					return rr;
+				case "getKeys":
+					var rr = $ch(m.name).getKeys(m.full);
+					if (isUnDef(r[m.op].countValues))
+						r[m.op].countValues = rr.length;
+					else
+						r[m.op].countValues += rr.length;
+					$ch(aStatsCh).set(m.name, r);
+					return rr;
+				case "getSortedKeys":
+					var rr = $ch(m.name).getSortedKeys(m.full);
+					if (isUnDef(r[m.op].countValues))
+						r[m.op].countValues = rr.length;
+					else
+						r[m.op].countValues += rr.length;
+					$ch(aStatsCh).set(m.name, r);
+					return rr;
+				case "getSet":
+					break;
+				case "set":
+					break;
+				case "setAll":
+					if (isUnDef(r[m.op].countValues))
+						r[m.op].countValues = m.v.length;
+					else
+						r[m.op].countValues += m.v.length;
+					break;
+				case "get":
+					break;
+				case "pop":
+					break;
+				case "shift":
+					break;
+				case "unset":
+					break;
 			}
 
 			$ch(aStatsCh).set(m.name, r);
 		};
-    },
+	},
     /**
      * <odoc>
      * <key>ow.ch.utils.getMirrorSubscriber(aTargetCh, aFunc) : Function</key>
