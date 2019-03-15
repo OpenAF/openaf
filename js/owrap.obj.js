@@ -1507,7 +1507,7 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	}
 };
 
-OpenWrap.obj.prototype.http.head = function(aUrl, aIn, aRequestMap, isBytes, aTimeout) {
+OpenWrap.obj.prototype.http.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
 	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout);
 	return this.responseHeaders();
 };

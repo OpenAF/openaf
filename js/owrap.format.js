@@ -275,7 +275,7 @@ OpenWrap.format.prototype.string = {
 	 * \
 	 * </odoc>
 	 */
-	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator, aSpace) {
+	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator, aSpace, aHead) {
 		if (isUnDef(aIndicator)) aIndicator = "#";
 		if (isUnDef(aSpace))     aSpace = " ";
 		if (isUnDef(aSize))      aSize = 5;
@@ -286,16 +286,29 @@ OpenWrap.format.prototype.string = {
 		var aPos = (aOrigPos > aMax) ? aMax : aOrigPos;
 		aPos = (aOrigPos < aMin) ? aMin : aPos;
 
-		var res = 
-		  ( (aMin < 0) ?
-			  repeat(aSize + ((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), aSpace) + 
-			  repeat(-((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) 
-			: "" ) +  
-		  ( (aMax > 0) ?
-			repeat(((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) + 
-			repeat(aSize - ((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aSpace)
-			: ""
-		  );
+		var res, rpos = Math.round(aPos * aSize / aScale);
+		if (isDef(aHead) && isString(aHead)) {
+		  res = 
+				( (aMin < 0) ?
+					repeat(aSize + (rpos < 0 ? rpos : 0), aSpace) + 
+					repeat(-(rpos - aHead.length) < 0 ? (rpos - aHead.length) : 0, aIndicator) + aHead 
+				: "" ) +  
+				( (aMax > 0) ?
+				repeat((rpos - aHead.length) > 0 ? (rpos - aHead.length) : 0, aIndicator) + aHead +
+				repeat(aSize - (rpos > 0 ? rpos : 0), aSpace) 
+				: "");
+		} else {
+		  res = 
+				( (aMin < 0) ?
+					repeat(aSize + ((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), aSpace) + 
+					repeat(-((Math.round(aPos * aSize / aScale)) < 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) 
+				: "" ) +  
+				( (aMax > 0) ?
+				repeat(((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) + 
+				repeat(aSize - ((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aSpace)
+				: ""
+				);
+		}
 	
 		return res;
 	},
@@ -1210,7 +1223,7 @@ OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, ti
  * \
  * Example:\
  * \
- * ow.format.fileProgressReport(() => {\
+ * ow.format.percProgressReport(() => {\
  *    ioStreamCopy(io.writeFileStream("target.file"), io.readFileStream("source.file"));\
  * }, (percFunc) => {\
  * 	  var perc = percFunc(io.fileInfo("target.file").size, io.fileInfo("source.file").size);\
@@ -1222,9 +1235,63 @@ OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, ti
 OpenWrap.format.prototype.percProgressReport = function(aMainFunc, aProgressFunc, timeout) {
 	this.progressReport(aMainFunc, () => {
 		aProgressFunc((t, o) => {
-			return Math.floor((t * 100) / o);
+			if (isArray(t) && isArray(o)) {
+				var res = [];
+				for(var ii in t) {
+					res.push(Math.floor((t[ii] * 100) / o[ii]));
+				}
+			} else {
+				return Math.floor((t * 100) / o);
+			}
 		});
 	}, timeout);
+};
+
+OpenWrap.format.prototype.percProgressBarReport = function(aMainFunc, aProgressFunc, aFinalMessage, timeout) {
+	var w = (isDef(__con)) ? __con.getTerminal().getWidth() : 80;
+	w -= __logFormat.indent.length + __logFormat.dateFormat.length + __logFormat.separator.length + " INFO ".length + __logFormat.separator.length;
+
+	if (isUnDef(__conAnsi)) __initializeCon();
+	var ansis = __conAnsi && (java.lang.System.console() != null);
+	var jansi = JavaImporter(Packages.org.fusesource.jansi);
+	var multiline = 0;
+
+	ow.format.percProgressReport(aMainFunc, (percFunc) => {
+		aProgressFunc((t, o, m) => {
+			var perc = percFunc(t, o);
+			if (isArray(perc)) {
+				if (ansis) {
+					var mmm = "\n";
+					for(var ii in perc) {
+						mmm += m[ii] + " " + ansiColor(__colorFormat.string, "[" + ow.format.string.progress(perc, 100, 0, w - 10 - m.length, "=", "-", ">") + "] (" + perc + "%)") + "\n";
+					}
+					mmm += jansi.Ansi.ansi().cursorUp(perc.length + 1);
+					if ((perc.length + 1) > multiline) multiline = perc.length + 1;
+					lognl(mmm);
+				} else {
+					for(var ii in perc) {
+						log(m[ii] + " (" + perc[ii] + "%)", { async: false });
+					}
+				}
+			} else {
+				if (ansis)
+					lognl(m + " " + ansiColor(__colorFormat.string, "[" + ow.format.string.progress(perc, 100, 0, w - 10 - m.length, "=", "-", ">") + "] (" + perc + "%)") + "\r", { async: false });
+				else
+					log(m + " (" + perc + "%)", { async: false });
+			}
+		});
+	});
+	
+  if (multiline <= 0) {
+		log(aFinalMessage + repeat(w - aFinalMessage.length, ' '));
+	} else {
+		var mmm = "";
+		for(var ii = 0; ii < multiline; ii++) {
+			mmm += repeat(w, ' ');
+		}
+		mmm += aFinalMessage + repeat(w - aFinalMessage.length, ' ');
+		log(mmm);
+	}
 };
 
 /**
@@ -1237,7 +1304,7 @@ OpenWrap.format.prototype.percProgressReport = function(aMainFunc, aProgressFunc
 OpenWrap.format.prototype.elapsedTime = function(aStartTime, aEndTime, aFormat) {
     var mi = aEndTime - aStartTime;
     return ow.format.elapsedTime4ms(mi, aFormat);
-}
+};
 
 
 OpenWrap.format.prototype.xls = {
