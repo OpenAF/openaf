@@ -1210,7 +1210,7 @@ OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, ti
  * \
  * Example:\
  * \
- * ow.format.fileProgreeReport(() => {\
+ * ow.format.fileProgressReport(() => {\
  *    ioStreamCopy(io.writeFileStream("target.file"), io.readFileStream("source.file"));\
  * }, (percFunc) => {\
  * 	  var perc = percFunc(io.fileInfo("target.file").size, io.fileInfo("source.file").size);\

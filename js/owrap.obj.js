@@ -1507,6 +1507,11 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	}
 };
 
+OpenWrap.obj.prototype.http.head = function(aUrl, aIn, aRequestMap, isBytes, aTimeout) {
+	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout);
+	return this.responseHeaders();
+};
+
 OpenWrap.obj.prototype.http.prototype.setThrowExceptions = function(should) {
 	this.__throwExceptions = should;
 };
