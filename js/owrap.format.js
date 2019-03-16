@@ -291,10 +291,12 @@ OpenWrap.format.prototype.string = {
 		  res = 
 				( (aMin < 0) ?
 					repeat(aSize + (rpos < 0 ? rpos : 0), aSpace) + 
-					repeat(-(rpos - aHead.length) < 0 ? (rpos - aHead.length) : 0, aIndicator) + aHead 
+					repeat(-(rpos - aHead.length) < 0 ? (rpos - aHead.length) : 0, aIndicator) + 
+					(-(rpos - aHead.length) < 0 ? aHead : "") 
 				: "" ) +  
 				( (aMax > 0) ?
-				repeat((rpos - aHead.length) > 0 ? (rpos - aHead.length) : 0, aIndicator) + aHead +
+				repeat((rpos - aHead.length) > 0 ? (rpos - aHead.length) : 0, aIndicator) + 
+				((rpos - aHead.length) > 0 ? aHead : "") +
 				repeat(aSize - (rpos > 0 ? rpos : 0), aSpace) 
 				: "");
 		} else {
@@ -1240,6 +1242,7 @@ OpenWrap.format.prototype.percProgressReport = function(aMainFunc, aProgressFunc
 				for(var ii in t) {
 					res.push(Math.floor((t[ii] * 100) / o[ii]));
 				}
+				return res;
 			} else {
 				return Math.floor((t * 100) / o);
 			}
@@ -1248,8 +1251,9 @@ OpenWrap.format.prototype.percProgressReport = function(aMainFunc, aProgressFunc
 };
 
 OpenWrap.format.prototype.percProgressBarReport = function(aMainFunc, aProgressFunc, aFinalMessage, timeout) {
-	var w = (isDef(__con)) ? __con.getTerminal().getWidth() : 80;
-	w -= __logFormat.indent.length + __logFormat.dateFormat.length + __logFormat.separator.length + " INFO ".length + __logFormat.separator.length;
+	var wo = (isDef(__con)) ? Number(__con.getTerminal().getWidth()) : 80;
+	var ws = __logFormat.indent.length + __logFormat.dateFormat.length + __logFormat.separator.length + " INFO ".length + __logFormat.separator.length;
+	var w = wo - ws;
 
 	if (isUnDef(__conAnsi)) __initializeCon();
 	var ansis = __conAnsi && (java.lang.System.console() != null);
@@ -1261,36 +1265,49 @@ OpenWrap.format.prototype.percProgressBarReport = function(aMainFunc, aProgressF
 			var perc = percFunc(t, o);
 			if (isArray(perc)) {
 				if (ansis) {
+					ansiStart();
 					var mmm = "\n";
 					for(var ii in perc) {
-						mmm += m[ii] + " " + ansiColor(__colorFormat.string, "[" + ow.format.string.progress(perc, 100, 0, w - 10 - m.length, "=", "-", ">") + "] (" + perc + "%)") + "\n";
+						if (isDef(perc[ii]) && isNumber(perc[ii])) 
+						  mmm += m[ii] + " " + ansiColor(__colorFormat.string, "[" + ow.format.string.progress(perc[ii], 100, 0, wo - 12 - m[ii].length, "=", "-", ">") + "] (" + ow.format.string.leftPad(String(perc[ii]), 3, ' ') + "%)") + "\n";
 					}
 					mmm += jansi.Ansi.ansi().cursorUp(perc.length + 1);
-					if ((perc.length + 1) > multiline) multiline = perc.length + 1;
+					if ((perc.length) > multiline) multiline = perc.length;
 					lognl(mmm);
+					ansiStop();
 				} else {
 					for(var ii in perc) {
-						log(m[ii] + " (" + perc[ii] + "%)", { async: false });
+						if (isDef(perc[ii]))
+						  log(m[ii] + " (" + ow.format.string.leftPad(String(perc[ii]), 3, ' ') + "%)", { async: false });
 					}
 				}
 			} else {
-				if (ansis)
-					lognl(m + " " + ansiColor(__colorFormat.string, "[" + ow.format.string.progress(perc, 100, 0, w - 10 - m.length, "=", "-", ">") + "] (" + perc + "%)") + "\r", { async: false });
-				else
-					log(m + " (" + perc + "%)", { async: false });
+				if (ansis) {
+					ansiStart();
+					lognl(m + " " + ansiColor(__colorFormat.string, "[" + ow.format.string.progress(perc, 100, 0, w - 12 - m[ii].length, "=", "-", ">") + "] (" + ow.format.string.leftPad(String(perc), 3, ' ') + "%)") + "\r", { async: false });
+					ansiStop();
+				} else {
+					log(m + " (" + ow.format.string.leftPad(String(perc), 3, ' ') + "%)", { async: false });
+				}
 			}
 		});
 	});
 	
   if (multiline <= 0) {
-		log(aFinalMessage + repeat(w - aFinalMessage.length, ' '));
+		log(aFinalMessage + repeat(w - aFinalMessage.length, ' '), { async: false });
 	} else {
+		ansiStart();
+		print(jansi.Ansi.ansi().cursorUp(1));
+		log(aFinalMessage + repeat(w - aFinalMessage.length, ' '), { async: false });
+
 		var mmm = "";
 		for(var ii = 0; ii < multiline; ii++) {
-			mmm += repeat(w, ' ');
+			mmm += repeat(wo, ' ') + "";
 		}
-		mmm += aFinalMessage + repeat(w - aFinalMessage.length, ' ');
-		log(mmm);
+		print(mmm);
+		print(jansi.Ansi.ansi().cursorUp(multiline + 2));
+		
+		ansiStop();
 	}
 };
 
