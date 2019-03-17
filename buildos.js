@@ -112,9 +112,9 @@ var os = java.lang.System.getProperty("os.name") + "";
 var PATHSEPARATOR = (os.match(/Windows/)) ? ";" : ":";
 
 var dateFormat = new java.text.SimpleDateFormat("yyyyMMdd");
-var release = dateFormat.format(new java.util.Date());
+var release = (isDef(params.withVersion)) ? params.withVersion : dateFormat.format(new java.util.Date());
 
-log("Building relase " + release);
+log("Building release " + release);
 var classpath = buildClasspath();
 
 log("Changing AFCmdOS for release = " + release);
