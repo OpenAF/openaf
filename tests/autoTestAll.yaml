@@ -37,6 +37,13 @@ jobs:
        tprint("Tests FAILED: {{fail}}/{{count}}", args.results);
        if (args.results.fail > 0) printErr("There are failed tests");
 
+       // Write a simple json result file
+       io.writeFile("autoTestAll.results.json", {
+         pass: args.results.pass,
+         fail: args.results.fail,
+         count: args.results.count
+       })
+
    - name: JUnit results
      to  : oJob Generate JUnit XML
      deps:
