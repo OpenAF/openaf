@@ -831,14 +831,16 @@ OpenWrap.obj.prototype.pool = {
 			
 			/**
 			 * <odoc>
-			 * <key>ow.obj.pool.setFactoryAF(anURL, aTimeout)</key>
+			 * <key>ow.obj.pool.setFactoryAF(anURL, aTimeout, aConnectionTimeout)</key>
 			 * Setups: a factory function to create an AF object using anURL and tries to send a Ping operation; a close
 			 * function to close the AF object connection; a keep alive function that sends a Ping operation.
 			 * </odoc>
 			 */
-			setFactoryAF: function(anURL, timeout) {
+			setFactoryAF: function(anURL, timeout, ctimeout) {
+				ctimeout = _$(ctimeout).isNumber().default(timeout);
+
 				this.setFactory(
-					function() { var a = new AF(anURL, timeout); a.exec("Ping", {}); return a; },
+					function() { var a = new AF(anURL, timeout, ctimeout); a.exec("Ping", {}); return a; },
 					function(a) { a.close(); },
 					function(a) { a.exec("Ping", {} )}
 				);
@@ -914,9 +916,9 @@ OpenWrap.obj.prototype.pool = {
 	},
 	
 	/**
-	 * <odoc><key>ow.obj.pool.AF(anURL, aTimeout)</key>Creates a pool setting with ow.obj.pool.setFactoryAF.</odoc>
+	 * <odoc><key>ow.obj.pool.AF(anURL, aTimeout, aConnectionTimeout)</key>Creates a pool setting with ow.obj.pool.setFactoryAF.</odoc>
 	 */
-	AF: function(anURL, aTimeout) { var p = this.create(); p.setFactoryAF(anURL, aTimeout); return p; },
+	AF: function(anURL, aTimeout, aConnectionTimeout) { var p = this.create(); p.setFactoryAF(anURL, aTimeout, aConnectionTimeout); return p; },
 	/**
 	 * <odoc><key>ow.obj.pool.RAIDDB(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver)</key>Creates a pool setting with ow.obj.pool.setFactoryRAIDDB.</odoc>
 	 */
