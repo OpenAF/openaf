@@ -254,6 +254,25 @@ public class Threads extends ScriptableObject {
 		}	
 	}
 
+	@JSFunction
+	public void initFixedThreadPool(int nThreads) {
+		if (executor == null) {
+			// Get number of cores if undefined
+			if (nThreads < 1) {
+				nThreads = this.getNumberOfCores();
+			}
+
+			executor = Executors.newFixedThreadPool(nThreads);
+		}	
+	}
+
+	@JSFunction
+	public void initSingleThreadPool() {
+		if (executor == null) {
+			executor = Executors.newSingleThreadExecutor();
+		}
+	}
+
 	/**
 	 * <odoc>
 	 * <key>Threads.addScheduleThread(aFunction, aDelay) : String</key>
@@ -282,6 +301,24 @@ public class Threads extends ScriptableObject {
 	@JSFunction
 	public String addCachedThread(NativeFunction aFunction) {
 		if (executor == null) initCachedThreadPool();
+
+		UUID uuid = UUID.randomUUID();
+		executor.execute((Runnable) new ScriptFunction(uuid, aFunction));
+		return uuid.toString();	
+	}
+
+	@JSFunction
+	public String addFixedThread(NativeFunction aFunction) throws Exception {
+		if (executor == null) throw new Exception("Please use initFixedThreadPool first.");
+
+		UUID uuid = UUID.randomUUID();
+		executor.execute((Runnable) new ScriptFunction(uuid, aFunction));
+		return uuid.toString();	
+	}
+
+	@JSFunction
+	public String addSingleThread(NativeFunction aFunction) {
+		if (executor == null) initSingleThreadPool();
 
 		UUID uuid = UUID.randomUUID();
 		executor.execute((Runnable) new ScriptFunction(uuid, aFunction));

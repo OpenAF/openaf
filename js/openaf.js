@@ -3942,12 +3942,12 @@ function newJavaArray(aJavaClass, aSize) {
  * </odoc>
  */
 function threadBox(aFunction, aTimeout, aStopFunction) {
-    if (isUnDef(aStopFunction)) aStopFunction = (aR) => { return aR; };
+    if (isUnDef(aStopFunction)) aStopFunction = (aR) => { if (!aR) sleep(25); return aR; };
 
 	var done = false;
-	var exc = undefined;
+	var exc = void 0;
 
-	var t = __getThreadPool().submit(new java.lang.Runnable({		
+	/*var t = __getThreadPool().submit(new java.lang.Runnable({		
     	run: () => {
 	        try {
 	            aFunction();
@@ -3960,7 +3960,22 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
 	        
 	        return done;
         }
-    }));
+	}));*/
+	plugin("Threads");
+	var t = new Threads();
+	t.addSingleThread(function(uuid) {
+		try {
+			aFunction(uuid);
+		} catch(e) {
+			exc = e;
+			throw e;
+		} finally {
+			done = true;
+		}
+		
+		return done;
+	});
+	t.startNoWait();
 
     var res = false;
     if (isDef(aTimeout)) {
@@ -3975,11 +3990,38 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
     }
     
     //if (!t.isDone() && !t.isCancelled()) {
-    	t.cancel(true);
+    t.stop(true);
     //}
 
-    if (isDef(exc)) throw exc;
+	if (isDef(exc)) throw exc;
+	
+	return (done ? true : (res == true ? "stop" : "timeout"));
 }
+
+var $tb = function(aFunction) {
+	var tb = function(afu) {
+		_timeout  = void 0;
+		_stopfunc = void 0;
+		_func     = afu;
+	};
+
+	tb.prototype.timeout = function(aTimeout) {
+		this._timeout = aTimeout;
+		return this;
+	};
+
+	tb.prototype.stopWhen = function(aStopFunction) {
+		this._stopfunc = aStopFunction;
+		return this;
+	};
+
+	tb.prototype.exec = function(aFunc) {
+		if (isDef(aFunc) && isFunction(aFunc)) this._func = aFunc;
+		return threadBox(this._func, this._timeout, this._stopfunc);
+	};
+
+	return new tb(aFunction);
+};
  
 /**
  * <odoc>
@@ -3991,9 +4033,9 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
  */
 function threadBoxCtrlC() {
 	if (isUnDef(__conStatus)) __initializeCon();
-	var console = __con;
+	var c = new Console();
     if (__conAnsi) {
-        if (console.readCharNB() == 3) return true; else return false;
+        if (c.readCharNB() == 3) return true; else return false;
     } else {
         return false;
     }

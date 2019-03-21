@@ -168,6 +168,44 @@
             throw "Something wrong with compressing and uncompressing objects.";        
     };
 
+    exports.testTB = function() {
+        var state = 0;
+
+        $tb()
+        .timeout(100)
+        .exec(() => {
+            state = 1;
+            sleep(200);
+            state = 2;
+        });
+
+        ow.test.assert(state, 1, "Problem with threadBox timeout (1).");
+
+        state = 0;
+        $tb()
+        .timeout(250)
+        .exec(() => {
+            state = 1;
+            sleep(200);
+            state = 2;
+        });
+
+        ow.test.assert(state, 2, "Problem with threadBox timeout (2).");
+
+        state = 0;
+        $tb()
+        .stopWhen((v) => {
+            if (state > 0) return true;
+        })
+        .exec(() => {
+            state = 1;
+            sleep(100);
+            state = 2;
+        });
+
+        ow.test.assert(state, 1, "Problem with stopWhen.");
+    };
+
     exports.testDo = function() {
         var success = false;
         $doWait($do((s, f) => {
