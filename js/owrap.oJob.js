@@ -1012,7 +1012,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 	aId = altId;
 
 	// Check dep
-	var canContinue = true;
+	var canContinue = true, timeoutDeps = false;
 	var depInfo = {};
 	if (isDef(aJob.deps)) {		
 		for(var j in aJob.deps) {
@@ -1043,10 +1043,23 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 				}
 			}
 		}
+
+		var dlog = this.getLogCh().get({ "ojobId": this.getID() + altId, "name": aJob.name });
+		if (isDef(dlog) && isUnDef(dlog.firstDepsCheck)) dlog.firstDepsCheck = now(); 
+		if (!canContinue && isDef(parent.__ojob.depsTimeout) && isNumber(parent.__ojob.depsTimeout)) {
+			if (isDef(dlog) && (now() - dlog.firstDepsCheck) > parent.__ojob.depsTimeout) {
+				logErr(aJob.name + " | Timeout waiting for dependencies.");
+				return true; 
+			}
+		}
 	}
 
 	function _run(aExec, args, job, id) {		
 		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; " + aExec);
+		var stopWhen, timeout, tb = false, tbres;
+		if (isDef(aJob.typeArgs.timeout))  { tb = true; timeout = aJob.typeArgs.timeout; }
+		if (isDef(aJob.typeArgs.stopWhen)) { tb = true; stopWhen = new Function(aJob.typeArgs.stopWhen); }
+
 		if (isDef(args.__oJobRepeat)) { 
 			var errors = [];
 			var single = false;
@@ -1055,7 +1068,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			if (!single) {
 				parallel4Array(args.__oJobRepeat, function(aValue) {
 					try {
-						f(aValue, job, id, depInfo);
+						(tb 
+						 ? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(aValue, job, id, depInfo); })
+						 : f(aValue, job, id, depInfo));
 					} catch(e) {
 						errors.push(stringify({ args: aValue, exception: e}));
 					} finally {
@@ -1065,7 +1080,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			} else {
 				for(var aVi in args.__oJobRepeat) {
 					try {
-						f(args.__oJobRepeat[aVi], job, id, depInfo);
+						(tb 
+						 ? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(args.__oJobRepeat[aVi], job, id, depInfo); })
+						 : f(args.__oJobRepeat[aVi], job, id, depInfo));
 					} catch(e) {
 						errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
 					}
@@ -1076,7 +1093,13 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 				throw errors.join(", ");
 			}
 		} else {
-			f(args, job, id, depInfo);
+			(tb 
+			 ? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(args, job, id, depInfo); })
+			 : f(args, job, id, depInfo));
+		}
+
+		if (tb === true && tbres == "timeout") {
+			throw "Job exceeded timeout of " + aJob.typeArgs.timeout + "ms";
 		}
 	}
 	
