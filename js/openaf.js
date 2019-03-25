@@ -4302,7 +4302,7 @@ CSV.prototype.fromArray2File = function(anArray, aFile, withHeadersOrStreamForma
 
 	if (isDef(withHeadersOrStreamFormat)) {
 		if (isArray(withHeadersOrStreamFormat)) {
-			csv.setStreamFormat({ withHeaders: withHeaders });
+			csv.setStreamFormat({ withHeaders: withHeadersOrStreamFormat });
 		} else {
 			csv.setStreamFormat(withHeadersOrStreamFormat);
 		}
@@ -4335,7 +4335,7 @@ CSV.prototype.fromFile2Array = function(aFile, withHeadersOrStreamFormat) {
 
 	if (isDef(withHeadersOrStreamFormat)) {
 		if (isArray(withHeadersOrStreamFormat)) {
-			csv.setStreamFormat({ withHeaders: withHeaders });
+			csv.setStreamFormat({ withHeaders: withHeadersOrStreamFormat });
 		} else {
 			csv.setStreamFormat(withHeadersOrStreamFormat);
 		}
