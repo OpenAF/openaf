@@ -199,11 +199,10 @@ function ojob_draw() {
 function ojob_jobhelp() {
 	var file = ojob__getFile();
 	
-	var ks = Object.keys(params);
-	var job = "";
-	if (ks.length >= 1) {
-		job = ks[0];
-		delete params[job];
+	//var ks = Object.keys(params);
+	var job = String(__expr).replace(/.+-jobhelp +/i, ""); 
+	if (job != "") {
+		params = [];
 	} else {
 		printErr("Didn't recognize the job to try to obtain help from.\n");
 		ojob_showHelp();
