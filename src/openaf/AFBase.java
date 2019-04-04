@@ -344,17 +344,22 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap) : String/Map</key>
+	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc) : String/Map</key>
 	 * Tries to execute commandArguments (either a String or an array of strings) in the operating system. Optionally
 	 * aStdIn can be provided, aTimeout can be defined for the execution and if shouldInheritIO is true the stdout, stderr and stdin
 	 * will be inherit from OpenAF. If shouldInheritIO is not defined or false it will return the stdout of the command execution.
 	 * It's possible also to provide a different working aDirectory.
 	 * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly. In alternative 
 	 * if returnMap = true a map will be returned with stdout, stderr and exitcode.
+	 * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an input stream and a error stream. If defined the stdout and stderr won't
+	 * be available for the returnMap if true. Example:\
+	 * \
+	 * sh("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });\
+	 * \
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj) throws IOException, InterruptedException {
+	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback) throws IOException, InterruptedException {
 		ProcessBuilder pb = null;
 		if (s instanceof NativeArray) {
 			ArrayList<String> al = new ArrayList<String>();
@@ -397,17 +402,32 @@ public class AFBase extends ScriptableObject {
 			iserr = p.getErrorStream();
 		}
 
+		if (is != null && iserr != null && callback != null && callback instanceof Function) {
+			Context cx = (Context) AFCmdBase.jse.enterContext();
+			try {
+				((Function) callback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { is, iserr });
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+
 		String lines = new String(); 
 		String linesErr = new String();
 
 		int exit = -1; 
 		try {
 			if (timeout == null || timeout instanceof org.mozilla.javascript.Undefined) {
-				if (is != null   ) lines = IOUtils.toString(is, (Charset) null);
-				if (iserr != null) linesErr = IOUtils.toString(iserr, (Charset) null);
-				exit = p.waitFor(); 
-				if (is != null   ) is.close();
-				if (iserr != null) iserr.close();
+				try {
+					if (is != null   ) lines = IOUtils.toString(is, (Charset) null);
+					if (iserr != null) linesErr = IOUtils.toString(iserr, (Charset) null);
+				} catch(Exception e) { }
+				exit = p.waitFor();
+				try { 
+					if (is != null   ) is.close();
+					if (iserr != null) iserr.close();
+				} catch(Exception e) { }
 			} else {
 				Thread t = new Thread() {
 					public void run() {
@@ -433,12 +453,16 @@ public class AFBase extends ScriptableObject {
 						t.interrupt();
 						Thread.currentThread().interrupt();
 					} finally {
-						if (is != null    && !p.isAlive()) lines = IOUtils.toString(is, (Charset) null);
-						if (iserr != null && !p.isAlive()) linesErr = IOUtils.toString(iserr, (Charset) null);
+						try {
+							if (is != null    && !p.isAlive()) lines = IOUtils.toString(is, (Charset) null);
+							if (iserr != null && !p.isAlive()) linesErr = IOUtils.toString(iserr, (Charset) null);
+						} catch(Exception e) { }
 						p.destroy();
 						p.destroyForcibly();
-						if (is != null   ) is.close();
-						if (iserr != null) iserr.close();
+						try {
+							if (is != null   ) is.close();
+							if (iserr != null) iserr.close();
+						} catch(Exception e) { }
 					}
 					if (!p.isAlive()) exit = p.exitValue();
 				} else {

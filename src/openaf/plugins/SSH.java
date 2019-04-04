@@ -18,6 +18,7 @@ import java.util.Vector;
 
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
@@ -121,35 +122,45 @@ public class SSH extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.exec(aCommand, aStdIn, shouldOutputAlso, pty, outputMap) : Object</key>
+	 * <key>SSH.exec(aCommand, aStdIn, shouldOutputAlso, pty, outputMap, callbackFunc) : Object</key>
 	 * Executes a command over the SSH connection. You can optionally provide the input and indicate that it shouldOutputAlso 
 	 * (boolean) to stdout and if you want to allocate a pty (boolean). The stderr will be stored in __stderr and also output 
 	 * if shouldOutputAlso = true. If outputMap instead of the stdout string a map with stdout, stderr and exitcode will be returned.
+	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an input stream and a error stream. If defined the stdout and stderr won't
+	 * be available for the outputMap if true. Example:\
+	 * \
+	 * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });\
+	 * \
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object exec(String command, String input, boolean shouldOutputAlso, boolean pty, boolean returnMap) throws JSchException, IOException {
-		return executeSSH(command, input, shouldOutputAlso, pty, returnMap);
+	public Object exec(String command, String input, boolean shouldOutputAlso, boolean pty, boolean returnMap, Object callbackFunc) throws JSchException, IOException {
+		return executeSSH(command, input, shouldOutputAlso, pty, returnMap, callbackFunc);
 	}
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.execSudo(aCommandWithSudo, aUser, aStdIn, shouldOutputAlso, pty, outputMap) : Object</key>
+	 * <key>SSH.execSudo(aCommandWithSudo, aUser, aStdIn, shouldOutputAlso, pty, outputMap, callbackFunc) : Object</key>
 	 * Executes a command over the SSH connection using sudo to aUser. You can optionally provide the input and indicate that
 	 * it shouldOutputAlso (boolean) to stdout and if you want to allocate a pty (boolean). The stderr will be stored in 
 	 * __stderr and also output if shouldOutputAlso = true. If outputMap instead of the stdout string a map with stdout, stderr and exitcode will be returned.
+	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an input stream and a error stream. If defined the stdout and stderr won't
+	 * be available for the outputMap if true. Example:\
+	 * \
+	 * ssh.execSudo("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });\
+	 * \
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object execSudo(String command, Object user, String input, boolean shouldOutputAlso, boolean pty, boolean returnMap) throws JSchException, IOException {
+	public Object execSudo(String command, Object user, String input, boolean shouldOutputAlso, boolean pty, boolean returnMap, Object callbackFunc) throws JSchException, IOException {
 		String u = "";
 		if (user != null && user instanceof Undefined) {
 			u = AFCmdBase.afc.dIP((String) user);
 		}
 		if (this.identity == null)
-			return executeSSH("echo " + AFCmdBase.afc.dIP(password) + " | sudo -i -u " + user + " -S /bin/sh -c '" + command + "'", input, shouldOutputAlso, pty, returnMap);
+			return executeSSH("echo " + AFCmdBase.afc.dIP(password) + " | sudo -i -u " + user + " -S /bin/sh -c '" + command + "'", input, shouldOutputAlso, pty, returnMap, callbackFunc);
 		else
-			return executeSSH("sudo -i -u " + user + " -S /bin/sh -c '" + command + "'", input, shouldOutputAlso, pty, returnMap);
+			return executeSSH("sudo -i -u " + user + " -S /bin/sh -c '" + command + "'", input, shouldOutputAlso, pty, returnMap, callbackFunc);
 	}
 	
 	public static class SUserInfo implements UserInfo, UIKeyboardInteractive {
@@ -637,7 +648,7 @@ public class SSH extends ScriptableObject {
 		return no;
 	}
 	
-	protected Object executeSSH(String command, String input, boolean outputStdout, boolean pty, boolean returnMap) throws JSchException, IOException {
+	protected Object executeSSH(String command, String input, boolean outputStdout, boolean pty, boolean returnMap, Object callbackFunc) throws JSchException, IOException {
 		Channel channel = null;
 		String output = null;
 		String outputErr = "";
@@ -657,29 +668,40 @@ public class SSH extends ScriptableObject {
 				stdin.write(input.getBytes());
 				stdin.close();
 			}
-				
-			BufferedReader br = new BufferedReader(new InputStreamReader(ce.getInputStream()));
-			BufferedReader bre = new BufferedReader(new InputStreamReader(ce.getErrStream()));
 			
 			if (channel.isConnected()) {
 				StringBuilder sb = new StringBuilder();
 				
-				for(String line = br.readLine(); line != null; line = br.readLine()) {
-                    sb.append(line);
-                    sb.append("\n");
-                    if (outputStdout) System.out.println(line);
+				Context cx;
+				if (callbackFunc != null && callbackFunc instanceof Function) {
+					cx = (Context) AFCmdBase.jse.enterContext();
+					try {
+						((Function) callbackFunc).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { ce.getInputStream(), ce.getErrStream() });
+					} finally {
+						if (callbackFunc != null) AFCmdBase.jse.exitContext();
+					}
+				} else {
+					BufferedReader br = new BufferedReader(new InputStreamReader(ce.getInputStream()));
+					BufferedReader bre = new BufferedReader(new InputStreamReader(ce.getErrStream()));
+					
+					for(String line = br.readLine(); line != null; line = br.readLine()) {
+						sb.append(line);
+						sb.append("\n");
+						if (outputStdout) System.out.println(line);
+					}
+					
+					output = sb.toString();
+					sb = new StringBuilder();
+					
+					for(String line = bre.readLine(); line != null; line = bre.readLine()) {
+						sb.append(line);
+						sb.append("\n");
+						if (outputStdout) System.err.println(line);
+					}
+					
+					outputErr = sb.toString();
+					br.close();
 				}
-				
-				output = sb.toString();
-				sb = new StringBuilder();
-				
-				for(String line = bre.readLine(); line != null; line = bre.readLine()) {
-                    sb.append(line);
-                    sb.append("\n");
-                    if (outputStdout) System.err.println(line);
-				}
-				
-				outputErr = sb.toString();
 			}
 			
 			if (returnMap) {
@@ -697,8 +719,6 @@ public class SSH extends ScriptableObject {
 
 				res = output;
 			}
-
-			br.close();
 			//channel.disconnect();
 		}
 		
