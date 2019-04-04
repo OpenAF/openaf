@@ -129,7 +129,7 @@ public class SSH extends ScriptableObject {
 	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an input stream and a error stream. If defined the stdout and stderr won't
 	 * be available for the outputMap if true. Example:\
 	 * \
-	 * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });\
+	 * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });\
 	 * \
 	 * </odoc>
 	 */
