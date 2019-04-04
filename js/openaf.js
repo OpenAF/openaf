@@ -3506,17 +3506,19 @@ function checkLatestVersion() {
  * provide a different working aDirectory.
  * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly.
  * In alternative if returnMap = true a map will be returned with stdout, stderr and exitcode.
+ * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an input 
+ * stream and a error stream. If defined the stdout and stderr won't be available for the returnMap if true.
  * </odoc>
  */
-function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap) {
+function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc) {
 	if (typeof commandArguments == "string") {
 		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
-			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap);
+			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc);
 		} else {
-			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap);
+			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc);
 		}
 	} else {
-		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap);
+		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc);
 	}
 }
 
@@ -3625,7 +3627,7 @@ function ioStreamWriteBytes(aStream, aArrayBytes, aBufferSize, useNIO) {
  */
 function ioStreamRead(aStream, aFunction, aBufferSize, useNIO, encoding) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
-	encoding = _$(encoding).isString().default("UTF-8");
+	encoding = _$(encoding).isString().default(io.getDefaultEncoding());
 	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
 
 	if (useNIO) {
