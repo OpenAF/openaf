@@ -3506,8 +3506,8 @@ function checkLatestVersion() {
  * provide a different working aDirectory.
  * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly.
  * In alternative if returnMap = true a map will be returned with stdout, stderr and exitcode.
- * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an input 
- * stream and a error stream. If defined the stdout and stderr won't be available for the returnMap if true.
+ * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output 
+ * stream, a error stream and an input stream (see help af.sh for an example). If defined the stdout and stderr won't be available for the returnMap if true.
  * </odoc>
  */
 function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc) {

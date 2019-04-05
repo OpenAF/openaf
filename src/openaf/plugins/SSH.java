@@ -126,10 +126,10 @@ public class SSH extends ScriptableObject {
 	 * Executes a command over the SSH connection. You can optionally provide the input and indicate that it shouldOutputAlso 
 	 * (boolean) to stdout and if you want to allocate a pty (boolean). The stderr will be stored in __stderr and also output 
 	 * if shouldOutputAlso = true. If outputMap instead of the stdout string a map with stdout, stderr and exitcode will be returned.
-	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an input stream and a error stream. If defined the stdout and stderr won't
+	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
 	 * be available for the outputMap if true. Example:\
 	 * \
-	 * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });\
+	 * ssh.exec("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });\
 	 * \
 	 * </odoc>
 	 */
@@ -144,7 +144,7 @@ public class SSH extends ScriptableObject {
 	 * Executes a command over the SSH connection using sudo to aUser. You can optionally provide the input and indicate that
 	 * it shouldOutputAlso (boolean) to stdout and if you want to allocate a pty (boolean). The stderr will be stored in 
 	 * __stderr and also output if shouldOutputAlso = true. If outputMap instead of the stdout string a map with stdout, stderr and exitcode will be returned.
-	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an input stream and a error stream. If defined the stdout and stderr won't
+	 * A callbackFunc can be provided, if shouldOutputAlso is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
 	 * be available for the outputMap if true. Example:\
 	 * \
 	 * ssh.execSudo("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }) });\
@@ -676,7 +676,7 @@ public class SSH extends ScriptableObject {
 				if (callbackFunc != null && callbackFunc instanceof Function) {
 					cx = (Context) AFCmdBase.jse.enterContext();
 					try {
-						((Function) callbackFunc).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { ce.getInputStream(), ce.getErrStream() });
+						((Function) callbackFunc).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { ce.getInputStream(), ce.getErrStream(), ce.getOutputStream() });
 					} finally {
 						if (callbackFunc != null) AFCmdBase.jse.exitContext();
 					}

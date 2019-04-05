@@ -351,10 +351,10 @@ public class AFBase extends ScriptableObject {
 	 * It's possible also to provide a different working aDirectory.
 	 * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly. In alternative 
 	 * if returnMap = true a map will be returned with stdout, stderr and exitcode.
-	 * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an input stream and a error stream. If defined the stdout and stderr won't
+	 * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
 	 * be available for the returnMap if true. Example:\
 	 * \
-	 * sh("someCommand", void 0, void 0, false, void 0, false, function(o, e) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });\
+	 * sh("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });\
 	 * \
 	 * </odoc>
 	 */
@@ -405,7 +405,7 @@ public class AFBase extends ScriptableObject {
 		if (is != null && iserr != null && callback != null && callback instanceof Function) {
 			Context cx = (Context) AFCmdBase.jse.enterContext();
 			try {
-				((Function) callback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { is, iserr });
+				((Function) callback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { is, iserr, p.getOutputStream() });
 			} catch(Exception e) {
 				e.printStackTrace();
 			} finally {
