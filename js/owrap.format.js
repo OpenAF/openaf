@@ -420,6 +420,44 @@ OpenWrap.format.prototype.string = {
 	
 /**
  * <odoc>
+ * <key>ow.format.streamSHLog(aFunction) : Function</key>
+ * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will call aFunction for each line
+ * and used the returned string with log and logErr.
+ * </odoc>
+ */
+OpenWrap.format.prototype.streamSHLog = function(aFunc) {
+	if (isUnDef(aFunc)) aFunc = (f) => { return f; };
+	return function(o, e) {
+		$doWait(
+			$doAll([
+				$do(() => { ioStreamReadLines(o, (f) => { log(aFunc(String(f)), {async: true}) }, void 0, false); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { logErr(aFunc(String(f)), {async:true}) }, void 0, false); })
+			])
+		);
+	};
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.streamSH(aFunction) : Function</key>
+ * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will call aFunction for each line
+ * and used the returned string with print and printErr.
+ * </odoc>
+ */
+OpenWrap.format.prototype.streamSH = function(aFunc) {
+	if (isUnDef(aFunc)) aFunc = (f) => { return f; };
+	return function(o, e) {
+		$doWait(
+			$doAll([
+				$do(() => { ioStreamReadLines(o, (f) => { print(aFunc(String(f))) }, void 0, false); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { printErr(aFunc(String(f))) }, void 0, false); })
+			])
+		);
+	};
+};
+
+/**
+ * <odoc>
  * <key>ow.format.addNumberSeparator(aNumber, aSeparator) : String</key>
  * Returns a formatted number with decimal separators (default is comma but you can provide a custom
  * aSeparator).\
