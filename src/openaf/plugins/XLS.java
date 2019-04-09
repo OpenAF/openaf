@@ -6,14 +6,20 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
+
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.poifs.crypt.EncryptionInfo;
+import org.apache.poi.poifs.crypt.Encryptor;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -168,7 +174,6 @@ public class XLS extends ScriptableObject {
 					wbook = WorkbookFactory.create(new File((String) arg), password);
 				}
 			} catch(Exception e) {
-				e.printStackTrace(); // Temporary since it shouldn't happen any more
 				wbook = new XSSFWorkbook((String) arg);
 			}
 		}
@@ -463,12 +468,26 @@ public class XLS extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void writeFile(String file) throws IOException {
+	public void writeFile(String file) throws IOException, GeneralSecurityException, InvalidFormatException {
 		FileOutputStream fileout = new FileOutputStream(file);
 		wbook.write(fileout);
 		fileout.flush();
 		fileout.close();
-		
+
+		/*if (password != null) {
+			POIFSFileSystem fs = new POIFSFileSystem();
+			EncryptionInfo ei = new EncryptionInfo(org.apache.poi.poifs.crypt.EncryptionMode.agile);
+			Encryptor enc = ei.getEncryptor();
+			enc.confirmPassword(password);
+			OPCPackage opc = OPCPackage.open(new File(file), org.apache.poi.openxml4j.opc.PackageAccess.READ_WRITE);
+    		OutputStream os = enc.getDataStream(fs);
+    		opc.save(os);
+	
+			FileOutputStream fos = new FileOutputStream(file);
+			fs.writeFilesystem(fos);
+			fos.close();
+		}*/
+
 		//wbook = new XSSFWorkbook(new FileInputStream(file));
 	}
 	
