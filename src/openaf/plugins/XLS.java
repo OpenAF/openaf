@@ -2,6 +2,7 @@ package openaf.plugins;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -143,8 +144,8 @@ public class XLS extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>XLS.XLS(aObject) : XLS</key>
-	 * Creates a new instance. You can optionally provide a filename to load or use as a template and/or an
+	 * <key>XLS.XLS(aObject, aPassword, readOnly) : XLS</key>
+	 * Creates a new instance. You can optionally provide a filename to load (with aPassword if defined) or use as a template (readOnly = true) and/or an
 	 * array of bytes (aObject). Example:\
 	 * \
 	 * var xls = new XLS("c:/test.xlsx");\
@@ -154,15 +155,20 @@ public class XLS extends ScriptableObject {
 	 * @throws EncryptedDocumentException 
 	 */
 	@JSConstructor
-	public void newXLS(Object arg) throws IOException, EncryptedDocumentException, InvalidFormatException {
+	public void newXLS(Object arg, String password, boolean readOnly) throws IOException, EncryptedDocumentException, InvalidFormatException {
 		wbook = null;
 		
 		if (arg instanceof String) {
 			// It's a filename	
 			try {
-				POIFSFileSystem poifs = new POIFSFileSystem(new FileInputStream((String) arg));
-				wbook = WorkbookFactory.create(poifs);
+				//POIFSFileSystem poifs = new POIFSFileSystem(new File((String) arg), readOnly);
+				if (readOnly) {
+					wbook = WorkbookFactory.create(new FileInputStream(new File((String) arg)), password);
+				} else {
+					wbook = WorkbookFactory.create(new File((String) arg), password);
+				}
 			} catch(Exception e) {
+				e.printStackTrace(); // Temporary since it shouldn't happen any more
 				wbook = new XSSFWorkbook((String) arg);
 			}
 		}
