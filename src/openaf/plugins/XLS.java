@@ -2,17 +2,24 @@ package openaf.plugins;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
+
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.poifs.crypt.EncryptionInfo;
+import org.apache.poi.poifs.crypt.Encryptor;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -143,8 +150,8 @@ public class XLS extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>XLS.XLS(aObject) : XLS</key>
-	 * Creates a new instance. You can optionally provide a filename to load or use as a template and/or an
+	 * <key>XLS.XLS(aObject, aPassword, readOnly) : XLS</key>
+	 * Creates a new instance. You can optionally provide a filename to load (with aPassword if defined) or use as a template (readOnly = true) and/or an
 	 * array of bytes (aObject). Example:\
 	 * \
 	 * var xls = new XLS("c:/test.xlsx");\
@@ -154,14 +161,18 @@ public class XLS extends ScriptableObject {
 	 * @throws EncryptedDocumentException 
 	 */
 	@JSConstructor
-	public void newXLS(Object arg) throws IOException, EncryptedDocumentException, InvalidFormatException {
+	public void newXLS(Object arg, String password, boolean readOnly) throws IOException, EncryptedDocumentException, InvalidFormatException {
 		wbook = null;
 		
 		if (arg instanceof String) {
 			// It's a filename	
 			try {
-				POIFSFileSystem poifs = new POIFSFileSystem(new FileInputStream((String) arg));
-				wbook = WorkbookFactory.create(poifs);
+				//POIFSFileSystem poifs = new POIFSFileSystem(new File((String) arg), readOnly);
+				if (readOnly) {
+					wbook = WorkbookFactory.create(new FileInputStream(new File((String) arg)), password);
+				} else {
+					wbook = WorkbookFactory.create(new File((String) arg), password);
+				}
 			} catch(Exception e) {
 				wbook = new XSSFWorkbook((String) arg);
 			}
@@ -457,12 +468,26 @@ public class XLS extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void writeFile(String file) throws IOException {
+	public void writeFile(String file) throws IOException, GeneralSecurityException, InvalidFormatException {
 		FileOutputStream fileout = new FileOutputStream(file);
 		wbook.write(fileout);
 		fileout.flush();
 		fileout.close();
-		
+
+		/*if (password != null) {
+			POIFSFileSystem fs = new POIFSFileSystem();
+			EncryptionInfo ei = new EncryptionInfo(org.apache.poi.poifs.crypt.EncryptionMode.agile);
+			Encryptor enc = ei.getEncryptor();
+			enc.confirmPassword(password);
+			OPCPackage opc = OPCPackage.open(new File(file), org.apache.poi.openxml4j.opc.PackageAccess.READ_WRITE);
+    		OutputStream os = enc.getDataStream(fs);
+    		opc.save(os);
+	
+			FileOutputStream fos = new FileOutputStream(file);
+			fs.writeFilesystem(fos);
+			fos.close();
+		}*/
+
 		//wbook = new XSSFWorkbook(new FileInputStream(file));
 	}
 	
