@@ -458,6 +458,25 @@ OpenWrap.format.prototype.streamSH = function(aFunc) {
 
 /**
  * <odoc>
+ * <key>ow.format.streamSHPrefix(aPrefix) : Function</key>
+ * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will prefix each line with aPrefix
+ * and used the returned string with print and printErr.
+ * </odoc>
+ */
+OpenWrap.format.prototype.streamSHPrefix = function(aPrefix) {
+	if (isUnDef(aPrefix)) aPrefix = "";
+	return function(o, e) {
+		$doWait(
+			$doAll([
+				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); printnl(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ")); print(String(f)); ansiStop(); }, void 0, false); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErrnl(ansiColor("RED", "[" + aPrefix + "] ")); printErr(String(f)); ansiStop(); }, void 0, false); })
+			])
+		);
+	};
+};
+
+/**
+ * <odoc>
  * <key>ow.format.addNumberSeparator(aNumber, aSeparator) : String</key>
  * Returns a formatted number with decimal separators (default is comma but you can provide a custom
  * aSeparator).\
