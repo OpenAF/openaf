@@ -1761,6 +1761,41 @@ OpenWrap.obj.prototype.rest = {
 			er.response = jsonParse(er.response);
 		return er;
 	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.getContentLength(aBaseURI, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : Number</key>
+	 * Tries to get the content lenght for the given aBaseURI. Optionally you can provide aLogin, aPassword and/or aTimeout for the HTTP request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
+	 * </odoc>
+	 */
+	getContentLength: function(aURL, _l, _p, _t, aRequestMap, __h) {
+		var h = (isDef(__h)) ? __h : this.connectionFactory();
+
+		if (isUnDef(_l) && isUnDef(_p)) {
+			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
+			if (u.getUserInfo() != null) {
+				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
+				_p = String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8"));
+			}
+		}
+		
+ 		if (isDef(_l) && isDef(_p)) {
+			h.login(_l, _p, false, aURL);
+		} 
+ 		
+ 		if (isDef(_l) && isFunction(_l)) {
+ 			_l(h);
+		}
+		 
+		try {
+			h.exec(aURL, "HEAD", void 0, aRequestMap, void 0, _t);
+			return Number(h.responseHeaders()["Content-Length"]) || Number(h.responseHeaders()["content-length"]);
+		} catch(e) {
+		   e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
+		   throw e;
+		}
+	},
 	
 	/**
 	 * <odoc>
