@@ -3498,7 +3498,7 @@ function checkLatestVersion() {
 
 /**
  * <odoc>
- * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap) : String</key>
+ * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc) : String</key>
  * Tries to execute commandArguments (either a String or an array of strings) in the operating system as a shortcut for 
  * AF.sh except that it will run them through the OS shell. Optionally aStdIn can be provided, aTimeout can be defined 
  * for the execution and if shouldInheritIO is true the stdout, stderr and stdin will be inherit from OpenAF. If 
