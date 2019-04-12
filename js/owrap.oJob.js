@@ -24,19 +24,42 @@ OpenWrap.oJob = function() {
 	this.__promises = [];
 	this.init = void 0;
 
-	ow.loadServer(); 
-	this.__sch = new ow.server.scheduler();
-	this.__ojob = { recordLog: true, logArgs: false, numThreads: undefined, logToConsole: true };
+	var parent = this;
+	this.__promises.push($do(() => {
+		ow.loadServer(); 
+		parent.__sch = new ow.server.scheduler();
+	}));
+	this.__promises.push($do(() => {
+		ow.loadFormat();
+	}));
+	this.__promises.push($do(() => {
+		parent.getTodoCh().create(0, "simple");
+		parent.getJobsCh().create(0, "simple");
+		parent.getLogCh().create(0, "simple");
+		parent.getMainCh().create(0, "simple");
+
+		parent.getMainCh().set(
+			{ "uuid": parent.__id },
+			{
+				"uuid": parent.__id,
+				"host": parent.__host,
+				"ip"  : parent.__ip,
+				"tags": []
+			}
+		);
+	}));
+
+	//this.__sch = new ow.server.scheduler();
+	this.__ojob = { recordLog: true, logArgs: false, numThreads: void 0, logToConsole: true };
 	this.__expr = processExpr(" ");
 	if (isDef(this.__expr[""])) delete this.__expr[""];
-	this.__logLimit = 10;
+	this.__logLimit = 3;
 
-	plugin("Threads");
-	ow.loadFormat();
+	//plugin("Threads");  // already loaded with $do
 
-	this.getTodoCh().create(0, "simple");
+	/*this.getTodoCh().create(0, "simple");
 	this.getJobsCh().create(0, "simple");
-	this.getLogCh().create();
+	this.getLogCh().create(0, "simple");
 	this.getMainCh().create(0, "simple");
 
 	this.getMainCh().set(
@@ -47,7 +70,9 @@ OpenWrap.oJob = function() {
 			"ip"  : this.__ip,
 			"tags": []
 		}
-	);
+	);*/
+
+	$doWait($doAll(this.__promises));
 
 	return ow.oJob;
 };
@@ -260,11 +285,16 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 	var res = aJSON;
 
 	if (isDef(res.include) && isArray(res.include)) {
-		loadLodash();
-		res.include = _.uniq(res.include);
+		var loaded = {};
 		for (var i in res.include) {
-			if (res.include[i].match(/\.js$/i)) load(res.include[i]);
-			if (res.include[i].match(/\.ya?ml$/i)) res = this.__merge(this.__loadFile(res.include[i]), res);
+			if (isUnDef(loaded[res.include[i]])) {
+				loaded[res.include[i]] = 1;
+				if (res.include[i].match(/\.ya?ml$/i)) {
+					res = this.__merge(this.__loadFile(res.include[i]), res);
+				} else {
+					if (res.include[i].match(/\.js$/i)) load(res.include[i]);
+				}
+			}
 		}
 	}
 	
@@ -341,11 +371,10 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	}
 	
 	if (isDef(aFile)) {		
-		if (aFile.match(/\.js(on)?$/i)) {
-			res = this.__merge(_load(io.readFile), res);
-		}
 		if (aFile.match(/\.ya?ml$/i)) {
 			res = this.__merge(_load(io.readFileYAML), res);
+		} else if (aFile.match(/\.js(on)?$/i)) {
+			res = this.__merge(_load(io.readFile), res);
 		}
 	}
 
@@ -451,7 +480,6 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob) {
  */
 OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob) {
 	this.loadFile(aFile, args, aId, isSubJob);
-
 	this.start(args, true, aId);
 }
 

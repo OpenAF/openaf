@@ -245,7 +245,11 @@ function ojob_runFile() {
 	if (ojob_shouldRun) {
 		var file = ojob__getFile();
 
-		__expr = $from(params).select(function(r) { var rr={}; var kk = Object.keys(r)[0]; return kk+"="+r[kk]; }).join(" ");
+		//__expr = $from(params).select(function(r) { var rr={}; var kk = Object.keys(r)[0]; return kk+"="+r[kk]; }).join(" ");
+		__expr = "";
+		for(var ii in params) {
+			__expr += ii + "=" + params[ii] + " ";
+		}
 		
 		if (isDef(file)) {
 			oJobRunFile(file, ojob_args);
