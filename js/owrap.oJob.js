@@ -91,9 +91,9 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 
 	if (isUnDef(aId) && isDef(this.__ojob.id)) aId = this.__ojob.id;
 
+	// Check todos
 	for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
-			//var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).first();
 			var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
 			if (isDef(j)) {
 				if (isUnDef(j.deps)) j.deps = [];
@@ -141,13 +141,17 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 		return mdeps[b.name] - mdeps[a.name];
 	});
 
+	// Add jobs
 	for(var i in sjobs) {
 		if (isUnDef(sjobs[i].from) && isDef(sjobs[i].earlier)) sjobs[i].from = sjobs[i].earlier;
 		if (isUnDef(sjobs[i].to)   && isDef(sjobs[i].then))    sjobs[i].to   = sjobs[i].then;
 		this.addJob(this.getJobsCh(), sjobs[i].name, sjobs[i].deps, sjobs[i].type, sjobs[i].typeArgs, sjobs[i].args, sjobs[i].exec, sjobs[i].from, sjobs[i].to, sjobs[i].help);
 	}
+
+	// Add todos
 	this.addTodos(todo, args, aId);
 
+	// Check ojob settings
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
 	if (isDef(ojob.logLimit)) this.__logLimit = ojob.logLimit;

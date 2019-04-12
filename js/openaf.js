@@ -1355,7 +1355,7 @@ function getOPackLocalDB() {
 
 	// Verify fileDB
 	try {
-		if (!io.fileInfo(fileDB).permissions.match(/r/)) {
+		if (!io.fileInfo(fileDB).permissions.match(/r/) && io.fileInfo(fileDB).permissions != "") {
 			exc = fileDB + " is not acessible. Please check permissions (" + io.fileInfo(fileDB).permissions + ").";
 		}
 	} catch(e) {
