@@ -6,33 +6,40 @@
  * job todo register and oJob::oJob for oJob instances registry.
  * </odoc>
  */
-OpenWrap.oJob = function() { 
+OpenWrap.oJob = function(isNonLocal) { 
 	//startLog();
+	this.__promises = [];
+	var parent = this;
 
 	this.__host = "local";
 	this.__ip = "127.0.0.1";
 
-	try {
-		this.__host = String(java.net.InetAddress.getLocalHost().getHostName());
-		this.__ip = String(java.net.InetAddress.getLocalHost().getHostAddress());
-	} catch(e) {
-		logErr(e);
-	}
+	//this.__promises.push($do(() => {
+		if (isNonLocal) {
+			try {
+				parent.__host = String(java.net.InetAddress.getLocalHost().getHostName());
+				parent.__ip = String(java.net.InetAddress.getLocalHost().getHostAddress());
+			} catch(e) {
+				//logWarn(e);
+			}
+		}
 
-	this.__id = sha256(this.__host + this.__ip);
+		parent.__id = sha256(this.__host + this.__ip);
+	//}));
+
 	this.__threads = {};
-	this.__promises = [];
 	this.init = void 0;
+	this.__conWidth = 80;
 
-	var parent = this;
-	this.__promises.push($do(() => {
+	//this.__promises.push($do(() => {
 		ow.loadServer(); 
 		parent.__sch = new ow.server.scheduler();
-	}));
-	this.__promises.push($do(() => {
+	//}));
+	//this.__promises.push($do(() => {
 		ow.loadFormat();
-	}));
-	this.__promises.push($do(() => {
+		plugin("Threads");
+	//}));
+	//this.__promises.push($do(() => {
 		parent.getTodoCh().create(0, "simple");
 		parent.getJobsCh().create(0, "simple");
 		parent.getLogCh().create(0, "simple");
@@ -47,7 +54,7 @@ OpenWrap.oJob = function() {
 				"tags": []
 			}
 		);
-	}));
+	//}));
 
 	//this.__sch = new ow.server.scheduler();
 	this.__ojob = { recordLog: true, logArgs: false, numThreads: void 0, logToConsole: true };
@@ -55,24 +62,7 @@ OpenWrap.oJob = function() {
 	if (isDef(this.__expr[""])) delete this.__expr[""];
 	this.__logLimit = 3;
 
-	//plugin("Threads");  // already loaded with $do
-
-	/*this.getTodoCh().create(0, "simple");
-	this.getJobsCh().create(0, "simple");
-	this.getLogCh().create(0, "simple");
-	this.getMainCh().create(0, "simple");
-
-	this.getMainCh().set(
-		{ "uuid": this.__id },
-		{
-			"uuid": this.__id,
-			"host": this.__host,
-			"ip"  : this.__ip,
-			"tags": []
-		}
-	);*/
-
-	$doWait($doAll(this.__promises));
+	//$doWait($doAll(this.__promises));
 
 	return ow.oJob;
 };
@@ -155,6 +145,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
 	if (isDef(ojob.logLimit)) this.__logLimit = ojob.logLimit;
+	if (isDef(ojob.conAnsi)) { __conAnsi = ojob.conAnsi; __conStatus = Boolean(__conAnsi); }
+	if (isDef(ojob.conWidth)) this.__conWidth = ojob.conWidth;
 	this.__ojob.async = _$(ojob.async).isBoolean().default(false);
 
 	this.__ojob.tags = _$(ojob.tags).isArray("The ojob.tags needs to be an array.").default([]);
@@ -627,13 +619,12 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.log.push({
 			id: currentJobExecId,
 			startTime: now()
-		})
+		});
 		break;
 	case "success" :
 		existing.success = true;
 		existing.count++;
 		try { 
-			//var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
 			var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
 			execJob.endTime = now();
 			existing.totalTime += execJob.endTime - execJob.startTime;
@@ -646,7 +637,6 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.error   = true;
 		existing.count++;
 		try {
-			//var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
 			var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
 			if (isDef(anException.javaException)) {
 				var ar = anException.javaException.getStackTrace();
@@ -667,7 +657,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 	case "depsfail":
 		existing.deps    = false;
 		break;
-	default: existing = undefined;
+	default: existing = void 0;
 	}
 
 	if (isDef(existing)) {
@@ -684,7 +674,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			var ansis = __conAnsi && (java.lang.System.console() != null);
 			try {
 				var s = "", ss = "", sn = "";
-				var w = (isDef(__con)) ? __con.getTerminal().getWidth() : 80;
+				var w = (isDef(__con)) ? __con.getTerminal().getWidth() : this.__conWidth;
 				var jansi = JavaImporter(Packages.org.fusesource.jansi);
 				
 				if (this.__ojob.logToConsole && ansis) {
@@ -693,8 +683,8 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					ss = repeat(w, '=');
 					sn = "";
 				} else {
-					s  = repeat(80, '-');
-					ss = repeat(80, '=');
+					s  = repeat(this.__conWidth, '-');
+					ss = repeat(this.__conWidth, '=');
 					sn = "\n";
 				}
 
@@ -728,19 +718,19 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					if (existing.start && (!existing.error && !existing.success)) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "STARTED" + sep + __d;
-						if (this.__ojob.logToConsole) { sync(() => { printnl(_g(aa) + _c(">> ") + _b(__m) + " " + _c(s.substr(0, s.length - __m.length - 2 - 2) + sn)); }); }
+						if (this.__ojob.logToConsole) { sync(() => { printnl(_g(aa) + _c(">> ") + _b(__m) + " " + _c(s.substr(0, s.length - __m.length - 2 - 2) + sn)); }, this); }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
 					}
 					if (existing.start && existing.error) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "Ended in ERROR" + sep + __d;
-						if (this.__ojob.logToConsole) { sync(() => { printErr("\n" + _e("!! ") + _g(aa) + _b(__m) + " " + _e(ss.substr(0, ss.length - __m.length - 2 - 2) + sn) + af.toYAML(existing.log) + "\n" + _e(ss)); }); }
+						if (this.__ojob.logToConsole) { sync(() => { printErr("\n" + _e("!! ") + _g(aa) + _b(__m) + " " + _e(ss.substr(0, ss.length - __m.length - 2 - 2) + sn) + af.toYAML(existing.log) + "\n" + _e(ss)); }, this); }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m + "\n" + stringify(existing.log) });
 					}
 					if (existing.start && existing.success) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m = msg + "Ended with SUCCESS" + sep + __d;
-						if (this.__ojob.logToConsole) { sync(() => { printnl("\n" + _g(aa) + _c("<< ") + _b(__m) + " " + _c(ss.substr(0, ss.length - __m.length - 2 - 2) + sn)); }); }
+						if (this.__ojob.logToConsole) { sync(() => { printnl("\n" + _g(aa) + _c("<< ") + _b(__m) + " " + _c(ss.substr(0, ss.length - __m.length - 2 - 2) + sn)); }, this); }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m });
 					}
 				}
@@ -926,15 +916,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 	if (this.__ojob.sequential) {
 		var job = void 0;
-		//var listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", this.getID() + altId).select();
 		var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
 			var argss = args;
-			if (isDef(todo.args)) {
-				argss = this.__processArgs(args, todo.args, aId);
-			}
+			if (isDef(todo.args)) argss = this.__processArgs(args, todo.args, aId);
 			if (isDef(job)) {
 				var res = this.runJob(job, argss, aId, true);
 				if (res == true) {
@@ -949,7 +936,6 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 					"ojobId": todo.ojobId,
 					"todoId": todo.todoId
 				});
-				//listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", this.getID() + altId).select();
 				listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
 			}
 		}
@@ -1164,6 +1150,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			} catch(e) {
 				this.__addLog("error", aJob.name, uuid, args, e, aId);
 			}
+			
 			return true;
 			break;
 		case "jobs":

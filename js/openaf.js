@@ -390,6 +390,7 @@ function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;
 
 	if (isUnDef(__con)) {
+		__con = "";
 		plugin("Console");
 		try {
 			__con = (new Console()).getConsoleReader();
@@ -402,6 +403,7 @@ function __initializeCon() {
 			return false;
 		}
 	} else {
+		while(__con == "") sleep(25);
 		__conStatus = true;
 		__conAnsi = true;
 		return true;
