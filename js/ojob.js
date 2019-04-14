@@ -1,6 +1,7 @@
 var params = processExpr(" ");
 var ojob_shouldRun = true;
 var ojob_args = {};
+var nocolor = false;
 
 if (Object.keys(params).length == 1 && Object.keys(params)[0] == "") ojob_showHelp();
 
@@ -33,6 +34,10 @@ if (isDef(params["-todo"]) && params["-todo"] == "") {
 if (isDef(params["-deps"]) && params["-deps"] == "") {
 	delete params["-deps"];
 	ojob_draw();
+}
+
+if (isDef(params["-nocolor"]) && params["-nocolor"] == "") {
+	nocolor = true;
 }
 
 if (isDef(params["-jobhelp"]) && params["-jobhelp"] == "") {
@@ -252,7 +257,7 @@ function ojob_runFile() {
 		}
 		
 		if (isDef(file)) {
-			oJobRunFile(file, ojob_args);
+			oJobRunFile(file, ojob_args, void 0, (nocolor) ? { conAnsi: false } : void 0);
 		}
 	}
 }

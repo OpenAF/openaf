@@ -381,7 +381,7 @@ public class IO extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>io.writeFileString(aFilename, aJSONobject, anEncoding, shouldAppend)</key>
+	 * <key>io.writeFileString(aFilename, aString, anEncoding, shouldAppend)</key>
 	 * Writes a string into the given filename, optionally with the provided encoding and/or determine
 	 * if it shouldAppend to an existing file.
 	 * </odoc>

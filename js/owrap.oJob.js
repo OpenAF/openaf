@@ -29,7 +29,7 @@ OpenWrap.oJob = function(isNonLocal) {
 
 	this.__threads = {};
 	this.init = void 0;
-	this.__conWidth = 80;
+	this.__conWidth = 100;
 
 	//this.__promises.push($do(() => {
 		ow.loadServer(); 
@@ -457,25 +457,26 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
  * \
  * </odoc>
  */
-OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob) {
+OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
 	var s = this.__loadFile(aFile);
 	if (isDef(s)) {
 		if (isSubJob && isDef(s.ojob)) {
 			s.ojob.__subjob = true;
 		}
-		this.load(s.jobs, s.todo, s.ojob, args, aId, s.init);
+		if (isUnDef(aOptionsMap) || !isMap(aOptionsMap)) aOptionsMap = {};
+		this.load(s.jobs, s.todo, merge(aOptionsMap, s.ojob), args, aId, s.init);
 	}
 }
 
 /**
  * <odoc>
- * <key>ow.oJob.runFile(aFile, args, aId, isSubJob)</key>
+ * <key>ow.oJob.runFile(aFile, args, aId, isSubJob, aOptionsMap)</key>
  * Loads aFile configuration and executes the oJob defined with the provided args.
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob) {
-	this.loadFile(aFile, args, aId, isSubJob);
+OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
+	this.loadFile(aFile, args, aId, isSubJob, aOptionsMap);
 	this.start(args, true, aId);
 }
 

@@ -4096,13 +4096,13 @@ function deleteFromArray(anArray, anIndex) {
 
 /**
  * <odoc>
- * <key>oJobRunFile(aFile, args, aId)</key>
+ * <key>oJobRunFile(aFile, args, aId, aOptionsMap)</key>
  * Runs a oJob aFile with the provided args (arguments).
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-function oJobRunFile(aYAMLFile, args, aId) {
-	ow.loadOJob().runFile(aYAMLFile, args, aId);
+function oJobRunFile(aYAMLFile, args, aId, aOptionsMap) {
+	ow.loadOJob().runFile(aYAMLFile, args, aId, void 0, aOptionsMap);
 }
 
 /**
