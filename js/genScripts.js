@@ -85,7 +85,7 @@ function generateWinConsolePSBat() {
   var s;
 
   s = "@echo off\n\n";
-  s = s + "powershell -ExecutionPolicy Unrestricted -command \"&{ [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(1252); $pshost = get-host; $console = $pshost.UI.RawUI; $console.WindowTitle = 'OpenAF-console'; $console.ForegroundColor = 'black'; $console.BackgroundColor = 'white'; $newsize = $console.buffersize; $newsize.width = 120; $newsize.height = 3000; $console.buffersize = $newsize; $newsize = $console.windowsize; $newsize.width = 120; $newsize.height = 55; $console.windowsize = $newsize; Clear-Host; $JAVA_HOME = '" + javaHome + "'; $OPENAF_DIR = '" + classPath + "'; $cmd = '&\\\"' + $JAVA_HOME + '\\bin\\java\\\" " + javaargs + " -D\\\"java.system.class.loader=openaf.OAFdCL\\\" -jar \"' + $OPENAF_DIR + '\" --console'; iex $cmd; }\"";
+  s = s + "powershell -ExecutionPolicy Unrestricted -command \"&{ [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(1252); $pshost = get-host; $console = $pshost.UI.RawUI; $console.WindowTitle = 'OpenAF-console'; $console.ForegroundColor = 'black'; $console.BackgroundColor = 'white'; $newsize = $console.windowsize; $newsize.width = 120; $newsize.height = 55; $console.windowsize = $newsize; $newsize = $console.buffersize; $newsize.width = 120; $newsize.height = 3000; $console.buffersize = $newsize; Clear-Host; $JAVA_HOME = '" + javaHome + "'; $OPENAF_DIR = '" + classPath + "'; $cmd = '&\\\"' + $JAVA_HOME + '\\bin\\java\\\" " + javaargs + " -D\\\"java.system.class.loader=openaf.OAFdCL\\\" -jar \"' + $OPENAF_DIR + '\" --console'; iex $cmd; }\"";
   return s;
 }
 
