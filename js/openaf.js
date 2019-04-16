@@ -4222,6 +4222,32 @@ AF.prototype.fromYAML = function(aYAML) { loadJSYAML(); if (__correctYAML) aYAML
  * </odoc>
  */
 AF.prototype.encryptText = function() { plugin("Console"); print("Encrypted text: " + af.encrypt((new Console()).readLinePrompt("Enter text: ", "*"))); };
+
+/**
+ * <odoc>
+ * <key>AF.protectSystemExit(shouldProtect, aMessage)</key>
+ * Protects the current execution against a exit instruction if shouldProtect = true (otherwise it will unprotect). If protected
+ * a security exception with aMessage (string) followed by the exit status will be thrown or the result of calling function aMessage
+ * with the exit status as a parameter.
+ * </odoc>
+ */
+AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
+	if(shouldProtect) {
+		var fn;
+		if (isDef(aMessage) && isString(aMessage)) {
+			fn = function(status) { return aMessage + status; };
+		} else {
+			if (isDef(aMessage) && isFunction(aMessage)) {
+				fn = aMessage;
+			} else {
+				fn = function(status) { return "Ignoring exit with status: " + status; }; 
+			}
+		}
+		java.lang.System.setSecurityManager(new JavaAdapter(java.lang.SecurityManager, { checkExit: (status) => { throw fn(status); }, checkPermission: (perm) => { }}));
+	} else {
+		java.lang.System.setSecurityManager(new JavaAdapter(java.lang.SecurityManager, { checkExit: (status) => { }, checkPermission: (perm) => { }}));
+	}
+};
 /**
  * <odoc>
  * <key>IO.readFileYAML(aYAMLFile) : Object</key>
