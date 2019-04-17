@@ -5072,6 +5072,10 @@ function __setUserAgent(aNewAgent) {
 	__setUserAgent();
 }
 
+// Set __pm
+var __pm = __pmIn;
+__pmOut = __pm;
+
 // ---------------
 // Profile support
 
