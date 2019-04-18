@@ -1370,6 +1370,68 @@ OpenWrap.format.prototype.percProgressBarReport = function(aMainFunc, aProgressF
 
 /**
  * <odoc>
+ * <key>ow.format.printWithFooter(aMessage, aFooter)</key>
+ * Prints aMessage (if defined) with a aTemplate (template compiled function or string).
+ * </odoc>
+ */
+OpenWrap.format.prototype.printWithFooter = function(aMessage, aFooter) {
+	ansiStart();
+
+	var jansi = JavaImporter(Packages.org.fusesource.jansi);
+	aFooter = _$(aFooter).isString().default("");
+
+	ow.loadFormat();
+
+	var isWin = ow.format.isWindows();
+
+	var o = (isWin) ? 1 : 0;
+	if (isDef(aMessage)) {
+		print(jansi.Ansi.ansi().eraseLine() + aMessage);
+		if (!isWin) o++;
+	}
+	print(aFooter + jansi.Ansi.ansi().cursorUp(o));
+
+	ansiStop();
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace)</key>
+ * Prints aMessage (if defined) with a aTemplate (template compiled function or string) as a footer for percentage 
+ * progress information with the percentage value aPerc, for a given optional aSize (defaults to 50), an optional 
+ * aUnixBlock or aWindowsBlock (depending on the current operating system) and aSpace. Example:\
+ * \
+ *    ow.loadTemplate();\
+ *    var fn = ow.template.execCompiled(ow.template.compile("({{percFormat}}%) progress: |{{progress}}|"));
+ *    ow.format.printWithProgressFooter("processing xyz...", fn, aPerc);
+ *    ow.format.printWithFooter("Done.", "");
+ * </odoc>
+ */
+OpenWrap.format.prototype.printWithProgressFooter = function(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace) {
+	ow.loadFormat(); ow.loadTemplate();
+
+	aSize         = _$(aSize).isNumber().default(50);
+	//aUnixBlock    = _$(aUnixBlock).isString().default(String.fromCharCode(9608));
+	//aWindowsBlock = _$(aWindowsBlock).isString().default(String.fromCharCode(219));
+	aUnixBlock    = _$(aUnixBlock).isString().default("/");
+	aWindowsBlock = _$(aWindowsBlock).isString().default("/");
+	aSpace        = _$(aSpace).isString().default("-");
+	aPerc         = _$(aPerc).isNumber().default(0);
+
+	var isWin = ow.format.isWindows(), aBlock;
+	if (isWin) aBlock = aWindowsBlock; else aBlock = aUnixBlock;
+
+	if (isString(aTemplate)) aTemplate = ow.template.execCompiled(ow.template.compile(aTemplate));
+
+	ow.format.printWithFooter(aMessage, aTemplate({
+		percentage: aPerc,
+		percFormat: ow.format.string.leftPad(String(aPerc), 3, ' '),
+		progress  : ow.format.string.progress(aPerc, 100, 0, aSize, aBlock, aSpace)
+	}));
+};
+
+/**
+ * <odoc>
  * <key>ow.format.elapsedTime(aStartTime, aEndTime, aFormat) : String</key>
  * Shortcut for ow.format.elapsedTime4ms calculating the absolute difference, in ms, between
  * aStartTime and aEndTime.
