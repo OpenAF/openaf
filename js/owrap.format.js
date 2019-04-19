@@ -1374,24 +1374,60 @@ OpenWrap.format.prototype.percProgressBarReport = function(aMainFunc, aProgressF
  * Prints aMessage (if defined) with a aTemplate (template compiled function or string).
  * </odoc>
  */
-OpenWrap.format.prototype.printWithFooter = function(aMessage, aFooter) {
+OpenWrap.format.prototype.printWithFooter = function(aMessage, aFooter, withFunc) {
 	ansiStart();
 
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	aFooter = _$(aFooter).isString().default("");
 
 	ow.loadFormat();
-
+ 
 	var isWin = ow.format.isWindows();
 
 	var o = (isWin) ? 1 : 0;
 	if (isDef(aMessage)) {
-		print(jansi.Ansi.ansi().eraseLine() + aMessage);
+		if (isUnDef(withFunc)) 
+			if (__conAnsi && (java.lang.System.console() != null)) print(jansi.Ansi.ansi().eraseLine() + aMessage); else print(aMessage);
+		else
+			if (__conAnsi && (java.lang.System.console() != null)) withFunc(jansi.Ansi.ansi().eraseLine() + aMessage); else withFunc(aMessage);
 		if (!isWin) o++;
 	}
-	print(aFooter + jansi.Ansi.ansi().cursorUp(o));
+	if (__conAnsi && (java.lang.System.console() != null) print(aFooter + jansi.Ansi.ansi().cursorUp(o));
 
 	ansiStop();
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.logWithFooter(aMessage, aFooter)</key>
+ * Equivalent to ow.format.printWithFooter (see help ow.format.printWithFooter) using the log function.
+ * </odoc>
+ */
+OpenWrap.format.prototype.logWithFooter = function(aMessage, aFooter) {
+	var slog = (l) => { log(l, { async: false }) };
+	this.printWithFooter(aMessage, aFooter, slog);
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.logErrWithFooter(aMessage, aFooter)</key>
+ * Equivalent to ow.format.printWithFooter (see help ow.format.printWithFooter) using the logErr function.
+ * </odoc>
+ */
+OpenWrap.format.prototype.logErrWithFooter = function(aMessage, aFooter) {
+	var slog = (l) => { logErr(l, { async: false })};
+	this.printWithFooter(aMessage, aFooter, slog);
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.logWarnWithFooter(aMessage, aFooter)</key>
+ * Equivalent to ow.format.printWithFooter (see help ow.format.printWithFooter) using the logWarn function.
+ * </odoc>
+ */
+OpenWrap.format.prototype.logWarnWithFooter = function(aMessage, aFooter) {
+	var slog = (l) => { logWarn(l, { async: false })};
+	this.printWithFooter(aMessage, aFooter, slog);
 };
 
 /**
@@ -1407,7 +1443,7 @@ OpenWrap.format.prototype.printWithFooter = function(aMessage, aFooter) {
  *    ow.format.printWithFooter("Done.", "");
  * </odoc>
  */
-OpenWrap.format.prototype.printWithProgressFooter = function(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace) {
+OpenWrap.format.prototype.printWithProgressFooter = function(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, withFunc) {
 	ow.loadFormat(); ow.loadTemplate();
 
 	aSize         = _$(aSize).isNumber().default(50);
@@ -1417,17 +1453,56 @@ OpenWrap.format.prototype.printWithProgressFooter = function(aMessage, aTemplate
 	aWindowsBlock = _$(aWindowsBlock).isString().default("/");
 	aSpace        = _$(aSpace).isString().default("-");
 	aPerc         = _$(aPerc).isNumber().default(0);
+	
+	if (isUnDef(aTemplate)) aTemplate = "{{percFormat}}% " + ansiColor("BOLD,BLACK", "{{{progress}}}");
 
 	var isWin = ow.format.isWindows(), aBlock;
 	if (isWin) aBlock = aWindowsBlock; else aBlock = aUnixBlock;
 
 	if (isString(aTemplate)) aTemplate = ow.template.execCompiled(ow.template.compile(aTemplate));
-
-	ow.format.printWithFooter(aMessage, aTemplate({
+	var data = {
 		percentage: aPerc,
 		percFormat: ow.format.string.leftPad(String(aPerc), 3, ' '),
 		progress  : ow.format.string.progress(aPerc, 100, 0, aSize, aBlock, aSpace)
-	}));
+	};
+
+	if (isDef(withFunc))
+		withFunc(aMessage, aTemplate(data));
+	else
+		ow.format.printWithFooter(aMessage, aTemplate(data));
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.logWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace)</key>
+ * Equivalent to ow.format.printWithProgressFooter (see help ow.format.printWithProgressFooter) using the log function.
+ * </odoc>
+ */
+OpenWrap.format.prototype.logWithProgressFooter = function(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace) {
+	var slog = (m, f) => { this.logWithFooter(m, f); };
+	this.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, slog);
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.logErrWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace)</key>
+ * Equivalent to ow.format.printWithProgressFooter (see help ow.format.printWithProgressFooter) using the logErr function.
+ * </odoc>
+ */
+OpenWrap.format.prototype.logErrWithProgressFooter = function(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace) {
+	var slog = (m, f) => { this.logErrWithFooter(m, f); };
+	this.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, slog);
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.logWarnWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace)</key>
+ * Equivalent to ow.format.printWithProgressFooter (see help ow.format.printWithProgressFooter) using the logWarn function.
+ * </odoc>
+ */
+OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace) {
+	var slog = (m, f) => { this.logWarnWithFooter(m, f); };
+	this.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, slog);
 };
 
 /**
