@@ -4026,6 +4026,39 @@ var $tb = function(aFunction) {
 
 	return new tb(aFunction);
 };
+
+var $rest = function() {
+	ow.loadObj();
+	var _rest = function(aOptions) {
+		this.options = _$(aOptions).isMap().default({
+			timeout: 1000
+		});
+	};
+
+	_rest.prototype.get = function(aBaseURI) {
+		return ow.obj.rest.jsonGet(aBaseURI, {}, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.httpClient);
+	};
+	_rest.prototype.post = function(aBaseURI, aDataRowMap) {
+		return ow.obj.rest.jsonCreate(aBaseURI, {}, aDataRowMap, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.urlEncode, this.options.httpClient);
+	};
+	_rest.prototype.put = function(aBaseURI, aDataRowMap) {
+		return ow.obj.rest.jsonSet(aBaseURI, {}, aDataRowMap, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.urlEncode, this.options.httpClient);
+	};
+	_rest.prototype.delete = function(aBaseURI) {
+		ow.obj.rest.jsonRemove(aBaseURI, {}, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.httpClient);
+	};
+	_rest.prototype.patch = function(aBaseURI, aDataRowMap) {
+		return ow.obj.rest.jsonPatch(aBaseURI, {}, aDataRowMap, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.urlEncode, this.options.httpClient);
+	};
+	_rest.prototype.query = function(aMap) {
+		return ow.obj.rest.writeQuery(aMap);
+	};
+	_rest.prototype.index = function(aMap) {
+		return ow.obj.rest.writeIndexes(aMap);
+	};
+
+	return new _rest();
+};
  
 /**
  * <odoc>
