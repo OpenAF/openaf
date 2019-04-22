@@ -4546,6 +4546,7 @@ CSV.prototype.fromFile2Array = function(aFile, withHeadersOrStreamFormat) {
  * \
  * - expose(aLocalPortOrServer, aPath, aLogin, aPassword)\
  * - peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount)\
+ * - unpeer(aRemoteURL)\
  * - createRemote(aURL, aTimeout, aLogin, aPass)
  * </odoc>
  */
@@ -4578,6 +4579,7 @@ $channels = function(a) {
 		
 		expose       : function(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) { return ow.ch.server.expose(a, aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc, noCheck); },
 		peer         : function(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount) { return ow.ch.server.peer(a, aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount); },
+		unpeer       : function(aRemoteURL) { return ow.ch.server.unpeer(a, aRemoteURL); },
 		
 		createRemote : function(aURL, aTimeout, aLogin, aPassword) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));

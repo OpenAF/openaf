@@ -7,6 +7,7 @@ OpenWrap.ch = function() {
 };
 
 OpenWrap.ch.prototype.subscribers = {};
+OpenWrap.ch.prototype.peers = {};
 OpenWrap.ch.prototype.jobs = {};
 OpenWrap.ch.prototype.vers = {}; 
 OpenWrap.ch.prototype.channels = {};
@@ -1449,6 +1450,7 @@ OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 		this.__types[type].create(aName, shouldCompress, options);
 
 		this.subscribers[aName] = {};
+		this.peers[aName] = {};
 		this.jobs[aName] = {};
 		this.channels[aName] = type;
 		this.vers[aName] = nowUTC();
@@ -1533,6 +1535,7 @@ OpenWrap.ch.prototype.destroy = function(aName) {
 		
 		delete this.channels[aName];
 		delete this.subscribers[aName];
+		delete this.peers[aName];
 		delete this.jobs[aName];
 		delete this.vers[aName];
 	}
@@ -1635,7 +1638,12 @@ OpenWrap.ch.prototype.subscribe = function(aName, aFunction, onlyFromNow, anId) 
 OpenWrap.ch.prototype.unsubscribe = function(aName, aId) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 
-	delete this.subscribers[aName][aId];
+	var parent = this;
+	delete parent.subscribers[aName][aId];
+	Object.keys(parent.peers[aName]).forEach((v) => {
+		if (parent.peers[aName][v].indexOf(aId) >= 0) 
+			parent.peers[aName][v] = deleteFromArray(parent.peers[aName][v], parent.peers[aName][v].indexOf(aId));
+	});
 	return this;
 };
 
@@ -1649,6 +1657,7 @@ OpenWrap.ch.prototype.unsubscribeAll = function(aName) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 	
 	this.subscribers[aName] = {};
+	this.peers[aName] = {};
 	return this;
 };
 	
@@ -2962,11 +2971,39 @@ OpenWrap.ch.prototype.server = {
 			var fn = ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid);
 			var hkfn = ow.ch.comms.getRetrySubscriberFunc(fn, aMaxTime, aMaxCount, uuid);
 			fn(aName, "reset");
-			res.push(ow.ch.subscribe(aName, hkfn));
-			res.push(ow.ch.subscribe(aName, fn));
+
+			var sfn = ow.ch.subscribe(aName, fn);
+			var shkfn = ow.ch.subscribe(aName, hkfn);
+
+			res.push(sfn);
+			res.push(shkfn);
+
+			if (isUnDef(ow.ch.peers[aName])) ow.ch.peers[aName] = {};
+			if (isUnDef(ow.ch.peers[aName][aRemoteURLArray[i]])) ow.ch.peers[aName][aRemoteURLArray[i]] = [];
+
+			ow.ch.peers[aName][aRemoteURLArray[i]].push(sfn);
+			ow.ch.peers[aName][aRemoteURLArray[i]].push(shkfn);
 		}
 	
 		return res;
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.ch.server.unpeer(aName, aRemoteURL)</key>
+	 * Remove all subscribers related with aRemoteURL from the aName channel effectively "unpeering" it from the aRemoteURL.
+	 * </oodc>
+     */
+	unpeer: function(aName, aURL) {
+		var toDelete = [];
+
+		for(var ii in ow.ch.peers[aName][aURL]) {
+			toDelete.push(ow.ch.peers[aName][aURL][ii]);
+		}
+
+		toDelete.forEach((v) => {
+			$ch(aName).unsubscribe(v);
+		});
 	},
 
 	/**
