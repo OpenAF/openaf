@@ -1496,8 +1496,12 @@ OpenWrap.obj.prototype.setSOCKSProxy = function(aHost, aPort, aUser, aPass) {
 	}	
 };
 
+OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
+	this.__httpTimeout = aTimeout;
+};
+
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
-	this.__lps = {};
+	this.__lps = {}; 
 	this.__config = {};
 	this.__throwExceptions = true;
 	this.__r = void 0;
@@ -1589,6 +1593,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	}
 
 	// Set timeout
+	if (isDef(ow.obj.__httpTimeout) && isUnDef(aTimeout)) aTimeout = ow.obj.__httpTimeout;
 	if (isDef(aTimeout)) {
 		var rc = new Packages.org.apache.http.client.config.RequestConfig.custom();
 		rc.setConnectionRequestTimeout(aTimeout);
@@ -1951,6 +1956,59 @@ OpenWrap.obj.prototype.rest = {
 	jsonSet: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
 		return jsonParse(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response);
 	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.patch(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP) : String</key>
+	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP PATCH method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
+	 * </odoc>
+	 */
+	patch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
+		//plugin("HTTP");
+		//var h = new HTTP();
+		var h = (isDef(__h)) ? __h : this.connectionFactory();
+
+		if (isUnDef(_l) && isUnDef(_p)) {
+			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
+			if (u.getUserInfo() != null) {
+				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
+				_p = String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8"));
+			}
+		}
+		
+		if (isDef(_l) && isDef(_p)) {
+			h.login(_l, _p, false, aURL);
+		} 
+		
+ 		if (isDef(_l) && isFunction(_l)) {
+ 			_l(h);
+ 		}
+		
+		var rmap = (urlEncode) ?
+		           merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
+				   merge({"Content-Type":"application/json"} , aRequestMap);
+		
+		try {
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, undefined, _t);
+		} catch(e) {
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
+			throw e;
+		}
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.jsonPatch(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP) : Map</key>
+	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP PATCH method).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
+	 * </odoc>
+	 */
+	jsonPatch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
+		return jsonParse(this.patch(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response);
+	},	
 	
 	/**
 	 * <odoc>
