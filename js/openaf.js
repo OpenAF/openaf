@@ -3951,20 +3951,6 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
 	var done = false;
 	var exc = void 0;
 
-	/*var t = __getThreadPool().submit(new java.lang.Runnable({		
-    	run: () => {
-	        try {
-	            aFunction();
-	        } catch(e) {
-	            exc = e;
-	            throw e;
-	        } finally {
-	            done = true;
-	        }
-	        
-	        return done;
-        }
-	}));*/
 	plugin("Threads");
 	var t = new Threads();
 	t.addSingleThread(function(uuid) {
@@ -3993,9 +3979,7 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
         }
     }
     
-    //if (!t.isDone() && !t.isCancelled()) {
     t.stop(true);
-    //}
 
 	if (isDef(exc)) throw exc;
 	
@@ -4004,9 +3988,9 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
 
 var $tb = function(aFunction) {
 	var tb = function(afu) {
-		_timeout  = void 0;
-		_stopfunc = void 0;
-		_func     = afu;
+		this._timeout  = void 0;
+		this._stopfunc = void 0;
+		this._func     = afu;
 	};
 
 	tb.prototype.timeout = function(aTimeout) {
@@ -4027,28 +4011,135 @@ var $tb = function(aFunction) {
 	return new tb(aFunction);
 };
 
-var $rest = function() {
+var __openaf_rest = { urls: {}, stats: false };
+var $rest = function(ops) {
 	ow.loadObj();
 	var _rest = function(aOptions) {
-		this.options = _$(aOptions).isMap().default({
-			timeout: 1000
-		});
+		this.options = _$(aOptions).isMap().default({ });
+		this.options.default = _$(this.options.default).isMap().default({});
+		this.options.throwExceptions = _$(this.options.throwExceptions).isBoolean().default(false);
+		this.options.collectAllStats = _$(this.options.collectAllStats).isBoolean().default(__openaf_rest.stats);
 	};
 
-	_rest.prototype.get = function(aBaseURI) {
-		return ow.obj.rest.jsonGet(aBaseURI, {}, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.httpClient);
+    _rest.prototype.__check = function(aBaseURI) {
+		// try URL based
+		if (isDef(__openaf_rest.urls[aBaseURI])) {
+			if (isDef(__openaf_rest.urls[aBaseURI]) && __openaf_rest.urls[aBaseURI].off) return false;
+		} 
+
+		if (Object.keys(__openaf_rest.urls).length > 0) {
+			// try host based
+			var url = java.net.URL(aBaseURI);
+			var host = String(url.getHost() + ":" + url.getPort());
+			
+			if (isDef(__openaf_rest.urls[host]) && __openaf_rest.urls[host].off) return false;
+		} else {
+			return true;
+		}
+
+		return true;
 	};
-	_rest.prototype.post = function(aBaseURI, aDataRowMap) {
-		return ow.obj.rest.jsonCreate(aBaseURI, {}, aDataRowMap, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.urlEncode, this.options.httpClient);
+    _rest.prototype.__stats = function(aBaseURI, isFail) {
+		if (this.options.collectAllStats) {
+			if (isUnDef(__openaf_rest.urls[aBaseURI])) __openaf_rest.urls[aBaseURI] = {};
+			__openaf_rest.urls[aBaseURI].c = (isDef(__openaf_rest.urls[aBaseURI].c) ? __openaf_rest.urls[aBaseURI].c++ : 1);
+			if (isFail) __openaf_rest.urls[aBaseURI].f = (isDef(__openaf_rest.urls[aBaseURI].f) ? __openaf_rest.urls[aBaseURI].f++ : 1);
+
+			if (Object.keys(__openaf_rest.urls).length > 0) {
+				// try host based
+				var url = java.net.URL(aBaseURI);
+				var host = String(url.getHost() + ":" + url.getPort());
+
+				if (isUnDef(__openaf_rest.urls[host])) __openaf_rest.urls[host] = {};
+				__openaf_rest.urls[host].c = (isDef(__openaf_rest.urls[host].c) ? __openaf_rest.urls[host].c++ : 1);
+				if (isFail) __openaf_rest.urls[host].f = (isDef(__openaf_rest.urls[host].f) ? __openaf_rest.urls[host].f++ : 1);
+			}
+		}
 	};
-	_rest.prototype.put = function(aBaseURI, aDataRowMap) {
-		return ow.obj.rest.jsonSet(aBaseURI, {}, aDataRowMap, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.urlEncode, this.options.httpClient);
+	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap) {
+		var res, parent = this;
+		aIdxMap = _$(aIdxMap).isMap().default({});
+		if (this.__check(aBaseURI)) {
+			try {
+				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
+					var _r = $tb(() => {
+						res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);	
+					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
+					if (_r !== true) {
+						this.__stats(aBaseURI, true);
+						if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
+					} else {
+						this.__stats(aBaseURI, false);
+					}
+				} else {
+					res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);
+					this.__stats(aBaseURI, false);
+				}
+			} catch(e) {
+				this.__stats(aBaseURI, true);
+				if (this.options.throwExceptions) {
+					throw e;
+				} else {
+					res = merge({ error: ow.obj.rest.exceptionParse(e) }, this.options.default);
+				}
+			}
+		} else {
+			if (parent.options.throwExceptions) 
+				throw "Access to " + aBaseURI + " is currently internally disabled."; 
+			else 
+				res = this.options.default;
+		}
+		return res;
 	};
-	_rest.prototype.delete = function(aBaseURI) {
-		ow.obj.rest.jsonRemove(aBaseURI, {}, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.httpClient);
+	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap) {
+		var res, parent = this;
+		aIdxMap = _$(aIdxMap).isMap().default({});
+		if (this.__check(aBaseURI)) {
+			try {
+				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
+					var _r = $tb(() => {
+						res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
+					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
+					if (_r !== true) {
+						this.__stats(aBaseURI, true);
+						if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
+					} else {
+						this.__stats(aBaseURI, false);
+					}
+				} else {
+					res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
+					this.__stats(aBaseURI, false);
+				}
+			} catch(e) {
+				this.__stats(aBaseURI, true);
+				if (this.options.throwExceptions) {
+					throw e;
+				} else {
+					res = merge({ error: ow.obj.rest.exceptionParse(e) }, this.options.default);
+				}
+			}
+		} else {
+			if (parent.options.throwExceptions) 
+				throw "Access to " + aBaseURI + " is currently internally disabled."; 
+			else 
+				res = this.options.default;
+		}			
+		return res;
 	};
-	_rest.prototype.patch = function(aBaseURI, aDataRowMap) {
-		return ow.obj.rest.jsonPatch(aBaseURI, {}, aDataRowMap, this.options.login, this.options.pass, this.options.timeout, this.options.requestHeaders, this.options.urlEncode, this.options.httpClient);
+	_rest.prototype.get = function(aBaseURI, aIdxMap) {
+		return this.__f1(ow.obj.rest, "jsonGet", aBaseURI, aIdxMap);
+	};
+	_rest.prototype.post = function(aBaseURI, aDataRowMap, aIdxMap) {
+		return this.__f2(ow.obj.rest, "jsonCreate", aBaseURI, aDataRowMap, aIdxMap);
+	};
+	_rest.prototype.put = function(aBaseURI, aDataRowMap, aIdxMap) {
+		return this.__f2(ow.obj.rest, "jsonSet", aBaseURI, aDataRowMap, aIdxMap);
+	};
+	_rest.prototype.delete = function(aBaseURI, aIdxMap) {
+		return this.__f1(ow.obj.rest, "jsonRemove", aBaseUIR, aIdxMap);
+	};
+	_rest.prototype.patch = function(aBaseURI, aDataRowMap, aIdxMap) {
+		return this.__f2(ow.obj.rest, "jsonPatch", aBaseURI, aDataRowMap, aIdxMap);
 	};
 	_rest.prototype.query = function(aMap) {
 		return ow.obj.rest.writeQuery(aMap);
@@ -4057,7 +4148,7 @@ var $rest = function() {
 		return ow.obj.rest.writeIndexes(aMap);
 	};
 
-	return new _rest();
+	return new _rest(ops);
 };
  
 /**
