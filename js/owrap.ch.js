@@ -813,13 +813,16 @@ OpenWrap.ch.prototype.__types = {
 		__channels: {},
 		create       : function(aName, shouldCompress, options) {
 			ow.loadObj();
+			if (isUnDef(options)) options = {};
+			if (isUnDef(options.throwExceptions)) options.throwExceptions = true;
 			this.__channels[aName] = options;
 		},
 		destroy      : function(aName) {
 			delete this.__channels[aName];
 		},
 		size         : function(aName) {
-			return this.getKeys(aName).length;
+			var r = this.getKeys(aName);
+			if (isDef(r)) return r.length;
 		},
 		forEach      : function(aName, aFunction) {
 			var aKs = this.getKeys(aName);
@@ -828,25 +831,81 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getAll      : function(aName, full) {
-			return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "a" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			//return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "a" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).get(this.__channels[aName].url + $rest().index({ o: "a" })).r;
 		},
 		getKeys      : function(aName, full) {
-			return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "k" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			//return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "k" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).get(this.__channels[aName].url + $rest().index({ o: "k" })).r;
 		},
 		getSortedKeys: function(aName, full) {
-			return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "s" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;				
+			//return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "s" }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;		
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).get(this.__channels[aName].url + $rest().index({ o: "s" })).r;		
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
-			return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "es", "m": aMatch, "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			//return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "es", "m": aMatch, "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).put(this.__channels[aName].url + $rest().index({ o: "es", m: aMatch, k: aK, t: aTimestamp }), aV).r;	
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
-			return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			//return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, aV, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).put(this.__channels[aName].url + $rest().index({ o: "e", k: aK, t: aTimestamp }), aV).r;				
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
-			return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "a", "k": aKs, "t": aTimestamp }, aVs, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;		
+			//return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "a", "k": aKs, "t": aTimestamp }, aVs, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;		
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).put(this.__channels[aName].url + $rest().index({ o: "a", k: aKs, t: aTimestamp }), aVs).r;		
 		},
 		get          : function(aName, aK) {
-			return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "e", "k": aK }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			//return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "e", "k": aK }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).get(this.__channels[aName].url + $rest().index({ o: "e", k: aK })).r;	
 		},
 		pop          : function(aName) {
 			var aKs = this.getSortedKeys(aName);
@@ -860,7 +919,15 @@ OpenWrap.ch.prototype.__types = {
 			return aK;
 		},
 		unset        : function(aName, aK, aTimestamp) {
-			return ow.obj.rest.jsonRemove(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout);
+			//return ow.obj.rest.jsonRemove(this.__channels[aName].url, { "o": "e", "k": aK, "t": aTimestamp }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout);
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).delete(this.__channels[aName].url + $rest().index({ o: "e", k: aK, t: aTimestamp })).r;
 		}
 	},
 	/**
@@ -904,14 +971,20 @@ OpenWrap.ch.prototype.__types = {
 			url += "/_count";
 			var parent = this;
 			
-			var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
+			/*var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
 				if (isDef(parent.__channels[aName].user))
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-			});
+			});*/
+			var res = $rest({
+				login: function(h) { 
+					if (isDef(parent.__channels[aName].user))
+						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				}
+			}).get(url);
 			if (isDef(res) && isDef(res.count)) {
-				return res.count
+				return res.count;
 			} else {
-				return undefined
+				return void 0;
 			}
 		},
 		forEach      : function(aName, aFunction) {
@@ -928,10 +1001,16 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(full) && isObject(full)) { ops = full; } 
 				
 			var parent = this;
-			var res = ow.obj.rest.jsonCreate(url, {}, ops, function(h) { 
+			/*var res = ow.obj.rest.jsonCreate(url, {}, ops, function(h) { 
 				if (isDef(parent.__channels[aName].user))
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-			});
+			});*/
+			var res = $rest({
+				login: function(h) { 
+					if (isDef(parent.__channels[aName].user))
+						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				}
+			}).post(url, ops);
 			if (isDef(res) && isDef(res.hits) && isDef(res.hits.hits)) {
 				return $stream(res.hits.hits).map(function(r) {
 					r._source._id = r._id;
@@ -949,10 +1028,16 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(full) && isObject(full)) { ops = full; } 
 				
 			var parent = this;
-			var res = ow.obj.rest.jsonCreate(url, {}, merge(ops, { _source: false }), function(h) { 
+			/*var res = ow.obj.rest.jsonCreate(url, {}, merge(ops, { _source: false }), function(h) { 
 				if (isDef(parent.__channels[aName].user))
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-			});
+			});*/
+			var res = $rest({
+				login: function(h) { 
+					if (isDef(parent.__channels[aName].user))
+						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				}
+			}).post(url, merge(ops, { _source: false }));
 			if (isDef(res) && isDef(res.hits) & isDef(res.hits.hits)) {
 				return $stream(res.hits.hits).map("_id").toArray();
 			} else {
@@ -976,10 +1061,16 @@ OpenWrap.ch.prototype.__types = {
 			}
 				
 			var parent = this;
-			var res = ow.obj.rest.jsonSet(url, {}, aV, function(h) { 
+			/*var res = ow.obj.rest.jsonSet(url, {}, aV, function(h) { 
 				if (isDef(parent.__channels[aName].user))
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-			});
+			});*/
+			var res = $rest({
+				login: function(h) { 
+					if (isDef(parent.__channels[aName].user))
+						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				}
+			}).put(url, aV);
 			return res;		
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
@@ -1023,11 +1114,17 @@ OpenWrap.ch.prototype.__types = {
 			}
 				
 			var parent = this;
-			var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
+			/*var res = ow.obj.rest.jsonGet(url, {}, function(h) { 
 				if (isDef(parent.__channels[aName].user))
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-			});
-			
+			});*/
+			var res = $rest({
+				login: function(h) { 
+					if (isDef(parent.__channels[aName].user))
+						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				}
+			}).get(url);
+
 			if (isDef(res) && res.found) {
 				return res._source;
 			} else {
@@ -1056,10 +1153,16 @@ OpenWrap.ch.prototype.__types = {
 			}
 				
 			var parent = this;
-			var res = ow.obj.rest.jsonRemove(url, {}, function(h) { 
+			/*var res = ow.obj.rest.jsonRemove(url, {}, function(h) { 
 				if (isDef(parent.__channels[aName].user))
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-			});
+			});*/
+			var res = $rest({
+				login: function(h) { 
+					if (isDef(parent.__channels[aName].user))
+						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				}
+			}).delete(url);
 			return res;	
 		}
 	},
@@ -2571,7 +2674,12 @@ OpenWrap.ch.prototype.comms = {
 						
 						sync(function() { ow.ch.comms.__counter[na] = 0; }, ow.ch.comms.__counter[na]);
 						sync(function() {
-							ow.obj.rest.set(aURL, { "o": "r", "k": Object.keys(ow.ch.getKeys(na)[0]), "t": t }, ow.ch.getAll(na), aL, aP, aT);
+							//ow.obj.rest.set(aURL, { "o": "r", "k": Object.keys(ow.ch.getKeys(na)[0]), "t": t }, ow.ch.getAll(na), aL, aP, aT);
+							$rest({
+								login: aL,
+								pass: aP,
+								connectionTimeout: aT
+							}).put(aURL, ow.ch.getAll(na), { "o": "r", "k": Object.keys(ow.ch.getKeys(na)[0]), "t": t });
 						}, aURL);
 					}
 				}
@@ -2589,7 +2697,12 @@ OpenWrap.ch.prototype.comms = {
 					}, ow.ch.comms.__counter[na]);
 					var res;
 					sync(function() {
-						res = ow.obj.rest.jsonSet(aURL, { "o": "a", "k": k, "t": t }, v, aL, aP, aT); 
+						//res = ow.obj.rest.jsonSet(aURL, { "o": "a", "k": k, "t": t }, v, aL, aP, aT); 
+						res = $rest({
+							login: aL,
+							pass: aP,
+							connectionTimeout: aT
+						}).put(aURL, v, { "o": "a", "k": k, "t": t });
 						shouldReset(res);
 					}, aURL);
 					break;
@@ -2597,7 +2710,12 @@ OpenWrap.ch.prototype.comms = {
 					sync(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
 					var res;
 					sync(function() {
-						res = ow.obj.rest.jsonSet(aURL, { "o": "e", "k": ak, "t": t }, av, aL, aP, aT);
+						//res = ow.obj.rest.jsonSet(aURL, { "o": "e", "k": ak, "t": t }, av, aL, aP, aT);
+						res = $rest({
+							login: aL,
+							pass: aP,
+							connectionTimeout: aT
+						}).put(aURL, av, { "o": "e", "k": ak, "t": t });
 						shouldReset(res);
 					}, aURL);
 					break;
@@ -2605,7 +2723,12 @@ OpenWrap.ch.prototype.comms = {
 					sync(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
 					var res;
 					sync(function() {
-						res = ow.obj.rest.jsonRemove(aURL, { "o": "e", "k": ak, "t": t }, aL, aP, aT); 
+						//res = ow.obj.rest.jsonRemove(aURL, { "o": "e", "k": ak, "t": t }, aL, aP, aT); 
+						res = $rest({
+							login: aL,
+							pass: aP,
+							connectionTimeout: aT
+						}).delete(aURL, { "o": "e", "k": ak, "t": t });
 						shouldReset(res);
 					}, aURL);
 					break;				
@@ -2613,8 +2736,18 @@ OpenWrap.ch.prototype.comms = {
 					var res, resk;
 				    sync(function() {
 						//res = ow.obj.rest.jsonGet(aURL, { "o": "e", "k": ak }, aL, aP, aT);
-						res = ow.obj.rest.jsonGet(aURL, { "o": "a" }, aL, aP, aT);
-						resk = ow.obj.rest.jsonGet(aURL, { "o": "k" }, aL, aP, aT);
+						//res = ow.obj.rest.jsonGet(aURL, { "o": "a" }, aL, aP, aT);
+						res = $rest({
+							login: aL,
+							pass: aP,
+							connectionTimeout: aT
+						}).get(aURL, { "o": "a" });
+						//resk = ow.obj.rest.jsonGet(aURL, { "o": "k" }, aL, aP, aT);
+						resk = $rest({
+							login: aL,
+							pass: aP,
+							connectionTimeout: aT
+						}).get(aURL, { "o": "k" });
 						shouldReset(res);
 					}, aURL);
 					if (res.r.length > 0) $do(() => { $ch(na).setAll(Object.keys(resk.r[0]), res.r); });
