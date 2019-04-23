@@ -168,6 +168,29 @@
             throw "Something wrong with compressing and uncompressing objects.";        
     };
 
+    exports.testRest = function() {
+        var res = $rest({ 
+            timeout: 1,
+            default: { no: "way" }
+        }).get("https://dns.google.com/resolve?" + $rest().query({ type: "a", name: "openaf.io" }));
+
+        ow.test.assert(res, { no: "way" }, "Problem with rest timeout.");
+
+        res = $rest({ 
+            timeout: 2500,
+            default: { no: "way" }
+        }).get("https://dns.google.com/resolve?" + $rest().query({ type: "a", name: "openaf.io" }));
+
+        ow.test.assert(isDef(res.status), true, "Problem with rest call.");
+
+        res = $rest({
+            throwExceptions: false,
+            default: { found: "n/a" }
+        }).put("https://openaf.impossible.domain.local", { mission: "impossible" });
+
+        ow.test.assert(res.found, "n/a", "Problem with throwExceptions.");
+    };
+
     exports.testTB = function() {
         var state = 0;
 

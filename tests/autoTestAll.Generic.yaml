@@ -168,6 +168,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testPSelect;
 
+   - name: OpenAF::Thread box
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTB;
+
+   - name: OpenAF::Test Rest
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRest;
+
 todo:
    # Generic Tests
    # -------------
@@ -203,3 +213,5 @@ todo:
    - OpenAF::Set Path
    - OpenAF::Map Array
    - OpenAF::PSelect
+   - OpenAF::Thread box
+   - OpenAF::Test Rest

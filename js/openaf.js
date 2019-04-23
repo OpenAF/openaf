@@ -4192,7 +4192,7 @@ var $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.delete = function(aBaseURI, aIdxMap) {
-		return this.__f1(ow.obj.rest, "jsonRemove", aBaseUIR, aIdxMap);
+		return this.__f1(ow.obj.rest, "jsonRemove", aBaseURI, aIdxMap);
 	};
 	/**
 	 * <odoc>

@@ -2992,7 +2992,7 @@ OpenWrap.ch.prototype.server = {
 	 * <odoc>
 	 * <key>ow.ch.server.unpeer(aName, aRemoteURL)</key>
 	 * Remove all subscribers related with aRemoteURL from the aName channel effectively "unpeering" it from the aRemoteURL.
-	 * </oodc>
+	 * </odoc>
      */
 	unpeer: function(aName, aURL) {
 		var toDelete = [];
