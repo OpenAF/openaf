@@ -181,7 +181,7 @@
             default: { no: "way" }
         }).get("https://dns.google.com/resolve?" + $rest().query({ type: "a", name: "openaf.io" }));
 
-        ow.test.assert(isDef(res.status), true, "Problem with rest call.");
+        ow.test.assert(isDef(res.Status), true, "Problem with rest call.");
 
         res = $rest({
             throwExceptions: false,
