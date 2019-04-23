@@ -3986,6 +3986,18 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
 	return (done ? true : (res == true ? "stop" : "timeout"));
 }
 
+/**
+ * <odoc>
+ * <key>$tb(aFunction) : Result</key>
+ * Shorcut for a "thread-box" to execute aFunction. The "thread" will timeout with the provided execution timeout (in ms)
+ * or stop whenever the stopWhen function returns true (called continuously or after each timeout). Examples:\
+ * \
+ *    $tb().timeout(5000).exec(aFunc);  // Executes aFunc to a maximum of 5 seconds. Afterwards the aFunc is stopped.\
+ *    $tb(aFunc).timeout(5000).exec();  // Sames as previous, aFunc can be provided before or on exec.\
+ *    $tb().timeout(500).stopWhen(aStopFunc).exec(); // Stops when aStopFunc is true called every 500 ms.\
+ * 
+ * </odoc>
+ */
 var $tb = function(aFunction) {
 	var tb = function(afu) {
 		this._timeout  = void 0;
@@ -4029,10 +4041,12 @@ var $rest = function(ops) {
 
 		if (Object.keys(__openaf_rest.urls).length > 0) {
 			// try host based
-			var url = java.net.URL(aBaseURI);
-			var host = String(url.getHost() + ":" + url.getPort());
-			
-			if (isDef(__openaf_rest.urls[host]) && __openaf_rest.urls[host].off) return false;
+			try {
+				var url = java.net.URL(aBaseURI);
+				var host = String(url.getHost() + ":" + url.getPort());
+				
+				if (isDef(__openaf_rest.urls[host]) && __openaf_rest.urls[host].off) return false;
+			} catch(e) { }
 		} else {
 			return true;
 		}
@@ -4047,103 +4061,167 @@ var $rest = function(ops) {
 
 			if (Object.keys(__openaf_rest.urls).length > 0) {
 				// try host based
-				var url = java.net.URL(aBaseURI);
-				var host = String(url.getHost() + ":" + url.getPort());
+				try {
+					var url = java.net.URL(aBaseURI);
+					var host = String(url.getHost() + ":" + url.getPort());
 
-				if (isUnDef(__openaf_rest.urls[host])) __openaf_rest.urls[host] = {};
-				__openaf_rest.urls[host].c = (isDef(__openaf_rest.urls[host].c) ? __openaf_rest.urls[host].c++ : 1);
-				if (isFail) __openaf_rest.urls[host].f = (isDef(__openaf_rest.urls[host].f) ? __openaf_rest.urls[host].f++ : 1);
+					if (isUnDef(__openaf_rest.urls[host])) __openaf_rest.urls[host] = {};
+					__openaf_rest.urls[host].c = (isDef(__openaf_rest.urls[host].c) ? __openaf_rest.urls[host].c++ : 1);
+					if (isFail) __openaf_rest.urls[host].f = (isDef(__openaf_rest.urls[host].f) ? __openaf_rest.urls[host].f++ : 1);
+				} catch(e) { }
 			}
 		}
 	};
 	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
-		if (this.__check(aBaseURI)) {
+		if (parent.__check(aBaseURI)) {
 			try {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
 						res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);	
 					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
 					if (_r !== true) {
-						this.__stats(aBaseURI, true);
+						parent.__stats(aBaseURI, true);
 						if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
 					} else {
-						this.__stats(aBaseURI, false);
+						parent.__stats(aBaseURI, false);
 					}
 				} else {
 					res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);
-					this.__stats(aBaseURI, false);
+					parent.__stats(aBaseURI, false);
 				}
 			} catch(e) {
-				this.__stats(aBaseURI, true);
-				if (this.options.throwExceptions) {
+				parent.__stats(aBaseURI, true);
+				if (parent.options.throwExceptions) {
 					throw e;
 				} else {
-					res = merge({ error: ow.obj.rest.exceptionParse(e) }, this.options.default);
+					res = merge({ error: ow.obj.rest.exceptionParse(e) }, parent.options.default);
 				}
 			}
 		} else {
 			if (parent.options.throwExceptions) 
 				throw "Access to " + aBaseURI + " is currently internally disabled."; 
 			else 
-				res = this.options.default;
+				res = parent.options.default;
 		}
 		return res;
 	};
 	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
-		if (this.__check(aBaseURI)) {
+		if (parent.__check(aBaseURI)) {
 			try {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
 						res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
 					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
 					if (_r !== true) {
-						this.__stats(aBaseURI, true);
+						parent.__stats(aBaseURI, true);
 						if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
 					} else {
-						this.__stats(aBaseURI, false);
+						parent.__stats(aBaseURI, false);
 					}
 				} else {
 					res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
-					this.__stats(aBaseURI, false);
+					parent.__stats(aBaseURI, false);
 				}
 			} catch(e) {
-				this.__stats(aBaseURI, true);
-				if (this.options.throwExceptions) {
+				parent.__stats(aBaseURI, true);
+				if (parent.options.throwExceptions) {
 					throw e;
 				} else {
-					res = merge({ error: ow.obj.rest.exceptionParse(e) }, this.options.default);
+					res = merge({ error: ow.obj.rest.exceptionParse(e) }, parent.options.default);
 				}
 			}
 		} else {
 			if (parent.options.throwExceptions) 
 				throw "Access to " + aBaseURI + " is currently internally disabled."; 
 			else 
-				res = this.options.default;
+				res = parent.options.default;
 		}			
 		return res;
 	};
+	/**
+	 * <odoc>
+	 * <key>$rest(aOptions).get(aBaseURI, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions: login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * </odoc>
+	 */
 	_rest.prototype.get = function(aBaseURI, aIdxMap) {
 		return this.__f1(ow.obj.rest, "jsonGet", aBaseURI, aIdxMap);
 	};
+	/**
+	 * <odoc>
+	 * <key>$rest(aOptions).post(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions: login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * </odoc>
+	 */
 	_rest.prototype.post = function(aBaseURI, aDataRowMap, aIdxMap) {
 		return this.__f2(ow.obj.rest, "jsonCreate", aBaseURI, aDataRowMap, aIdxMap);
 	};
+	/**
+	 * <odoc>
+	 * <key>$rest(aOptions).put(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions: login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * </odoc>
+	 */
 	_rest.prototype.put = function(aBaseURI, aDataRowMap, aIdxMap) {
 		return this.__f2(ow.obj.rest, "jsonSet", aBaseURI, aDataRowMap, aIdxMap);
 	};
+	/**
+	 * <odoc>
+	 * <key>$rest(aOptions).delete(aBaseURI, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions: login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * </odoc>
+	 */
 	_rest.prototype.delete = function(aBaseURI, aIdxMap) {
 		return this.__f1(ow.obj.rest, "jsonRemove", aBaseUIR, aIdxMap);
 	};
+	/**
+	 * <odoc>
+	 * <key>$rest(aOptions).patch(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions: login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * </odoc>
+	 */
 	_rest.prototype.patch = function(aBaseURI, aDataRowMap, aIdxMap) {
 		return this.__f2(ow.obj.rest, "jsonPatch", aBaseURI, aDataRowMap, aIdxMap);
 	};
+	/**
+	 * <odoc>
+	 * <key>$rest().query(aMap) : String</key>
+	 * Shortcut for ow.obj.rest.writeQuery (see help ow.obj.rest.writeQuery).
+	 * </odoc>
+	 */
 	_rest.prototype.query = function(aMap) {
 		return ow.obj.rest.writeQuery(aMap);
 	};
+	/**
+	 * <odoc>
+	 * <key>$rest().index(aMap) : String</key>
+	 * Shortcut for ow.obj.rest.writeIndexes (see help ow.obj.rest.writeIndexes).
+	 * </odoc>
+	 */	
 	_rest.prototype.index = function(aMap) {
 		return ow.obj.rest.writeIndexes(aMap);
 	};
