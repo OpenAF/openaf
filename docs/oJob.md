@@ -68,7 +68,14 @@ Each job definition has the following possible entries:
 
 ## Job types
 
-The most used type of job is "simple" that doesn't have any typeArgs available but there are others:
+The most used type of job is "simple". All job types, including "simple" have the following typeArgs:
+
+| typeArgs entry | Type | Mandatory? | Description |
+|----------------|------|------------|-------------|
+| timeout | _number_ | _no_ | _The time interval, in milliseconds, for the entire job execution or between stopWhen function executions. If no stopWhen function is provided and the timeout time is exceeded the job will fail indicating that it exceed the timeout. _ |
+| stopWhen | _string_ | _no_ | _Function string that will be evaluated continuously or every timeout time interval. If the function returns true the current job execution will be terminated._ |
+
+Then for other types there are specific typeArgs available:
 
 ### periodic
 
@@ -278,10 +285,14 @@ This is where you set specific settings on how the ojob should run. Here is a li
 | logToConsole | _boolean_ | _If false ojob logging won't be output to the console (defaults to true)._ |
 | logLimit | _number_ | _The number of internal execution logs per job that should be kept (default to 100)._ |
 | logJobs | _boolean_ | _If false no job start, end or error will be logged. (default to true)._ |
-| unique | _map_ | _Map to ensure that only one instance of ojob runs. The map can define pidFile (defaults to ojob.pid) and killPrevious (defaults to false)._ |
+| unique | _map_ | _Map to ensure that only one instance of ojob runs. The map can define a pidFile (defaults to ojob.pid and will be evaluated as code) and killPrevious (defaults to false)._ |
 | sequential | _boolean_ | _If true each todo entry will be executed only when the previous has ended it's execution. Otherwise it will try to execute in parallel._ |
 | daemon | _boolean_ | _If true the ojob will behave like a daemon. It will only exit if the process is killed or if executed with the arguments stop, forcestop or restart._ | 
 | numThreads | _number_ | _Force the maximum number of threads to use. If not defined it will try to automatically assess an ideal number of threads to use._ |
+| async | _boolean_ | _Runs all jobs asynchronously (defaults to false)_ | 
+| depsTimeout | _number_ | _If defined establishes a maximum time interval, in ms, that each job will wait for the corresponding job dependencies to be fullfilled. If the time is exceeded the corresponding job will fail._ |
+| conAnsi | _boolean_ | _Advanced option to turn off ansi characters use._ |
+| conWidth | _number_ | _Advanced option to override screen size detection._ |
 
 **Note**: Use _sequential = true_ and _numThreads = 1_ for a total sequential execution. Keep in mind that if _numThreads_ is not defined or greater than 1 multiple job executions can still occur despite _sequential = true_ (for example when the job args is an array). The sequential parameter will just ensure that jobs listed in the todo list are executed in the order of the todo list instead of being launched all in parallel.
 
@@ -299,6 +310,10 @@ This is actually a map to define the channel use in the ojob:
 | permissions | _string_ | _General permissions for anonymous access (r = read, w = write). Defaults to "r"._ |
 | list | _array_ | _If expose = true specifies which channels should be exposed (default is all)._ |
 | auth | _array_ | _Array of maps to provide http authentication when accessing channels. Each map should have a login, a pass and permissions._ |
+
+# init
+
+For organization proposes if a init entry is used all mapped values will be available during oJob execution in _args.init_ map entry.
 
 # oJob command-line
 
@@ -323,4 +338,5 @@ You can also use the following extra options:
 | -jobs | List all the jobs available including the ones defined in includes. |
 | -todo | List the final todo list after processing all includes and the current file. | 
 | -deps | Tries to provide a human readable representation of the dependencies between all jobs in includes and on the current file. |
-| -jobhelp | Display any available help information for a job. Can include extra help of jobs defined in "from" an "to" |
+| -jobhelp | Display any available help information for a job. Can include extra help of jobs defined in "from" an "to". Example: "ojob example.yaml -jobhelp oJob sh" |
+| -nocolor | Removes all processing to determine screen size and use ansi colors. |
