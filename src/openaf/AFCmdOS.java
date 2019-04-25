@@ -36,6 +36,7 @@ import openaf.SimpleLog.logtype;
  * 
  */
 public class AFCmdOS extends AFCmdBase {
+
 	final public static String argHelp = "Usage: openaf [options]\n\n"
 			+ "Options:\n" 
 			+ "   -e (input)         - provide input directly instead of using stdin\n"
@@ -79,10 +80,6 @@ public class AFCmdOS extends AFCmdBase {
 	public static enum outputtype { OUTPUT_JSON };
 	public static enum inputtype { INPUT_EXPR, INPUT_JSON, INPUT_SCRIPT, INPUT_AUTO };
 
-	
-	//public static org.mozilla.javascript.Context cx;
-	//public static ScriptableObject globalscope;
-	//public static JSEngine jse;
 	public static ZipFile zip;
 	
 	protected inputtype INPUT_TYPE = inputtype.INPUT_AUTO;
@@ -505,9 +502,6 @@ public class AFCmdOS extends AFCmdBase {
 		
 		if (((!pipe) && (!filescript) && (!processScript) && (!injectcode) && (!injectclass))) {
 			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-				/*injectscript = true;
-				injectscriptfile = "/js/openafgui.js";
-				filescript = true;*/
 				injectclass = true;
 				injectclassfile = "openafgui_js";
 				filescript = false;
@@ -528,30 +522,32 @@ public class AFCmdOS extends AFCmdBase {
 			    	com.google.gson.JsonObject pm = null;
 			    	ZipFile tmpZip = null;
 			    	
-			    	// Determine if it's opack/zip
-			    	DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(scriptfile.replaceFirst("::[^:]+$", ""))));
-			    	int test = dis.readInt();
-			    	dis.close();
-			    	if (test == 0x504b0304) {
-			    		isZip = true;
-				    	try {
-				    		tmpZip = new ZipFile(scriptfile.replaceFirst("::[^:]+$",  ""));
-				    		isOpack = tmpZip.getEntry(OPACK) != null;
-				    		zip = tmpZip;
-				    	} catch(Exception e) {}
-				    
-				    	if (isOpack) {
-				    		if (scriptfile.indexOf("::") <= 0) {
-					    		pm = new Gson().fromJson(IOUtils.toString(zip.getInputStream(zip.getEntry(OPACK)), (Charset) null), JsonObject.class);
-					    		try {
-					    			pm.get("main");
-					    		} catch(Exception e) { 
-					    			isZip = false; 
-					    		}
-				    		} 
-				    	}
-			    	}
-   	
+					// Determine if it's opack/zip
+					if (!scriptfile.endsWith(".js")) {
+						DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(scriptfile.replaceFirst("::[^:]+$", ""))));
+						int test = dis.readInt();
+						dis.close();
+						if (test == 0x504b0304) {
+							isZip = true;
+							try {
+								tmpZip = new ZipFile(scriptfile.replaceFirst("::[^:]+$",  ""));
+								isOpack = tmpZip.getEntry(OPACK) != null;
+								zip = tmpZip;
+							} catch(Exception e) {}
+						
+							if (isOpack) {
+								if (scriptfile.indexOf("::") <= 0) {
+									pm = new Gson().fromJson(IOUtils.toString(zip.getInputStream(zip.getEntry(OPACK)), (Charset) null), JsonObject.class);
+									try {
+										pm.get("main");
+									} catch(Exception e) { 
+										isZip = false; 
+									}
+								} 
+							}
+						}
+					}
+			    	
 			    	// Read normal script or opack/zip
 			    	if (isZip) {
 			    		if (scriptfile.indexOf("::") <= 0 && isOpack) {
@@ -579,8 +575,10 @@ public class AFCmdOS extends AFCmdBase {
 			}
 			
 			if (script != null) {
-				script = script.replaceAll("^#.*", "//");
-				script = script.replaceFirst(PREFIX_SCRIPT, "");
+				if (script.startsWith("#") || script.startsWith(PREFIX_SCRIPT)) {
+					script = script.replaceAll("^#.*", "//");
+					script = script.replaceFirst(PREFIX_SCRIPT, "");
+				}
 				
 				if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().daemon();";
 				if (injectcode) script += code;
@@ -633,9 +631,7 @@ public class AFCmdOS extends AFCmdBase {
 				
 				// Add this object
 				Scriptable afScript = null;
-				//if  (!ScriptableObject.hasProperty((Scriptable) jse.getGlobalscope(), "AF")) {
-					afScript = (Scriptable) jse.newObject((Scriptable) jse.getGlobalscope(), "AF");
-				//}
+				afScript = (Scriptable) jse.newObject((Scriptable) jse.getGlobalscope(), "AF");
 				
 				if (!ScriptableObject.hasProperty((Scriptable) jse.getGlobalscope(), "af"))
 					((IdScriptableObject) jse.getGlobalscope()).put("af", (Scriptable) jse.getGlobalscope(), afScript);
@@ -694,11 +690,11 @@ public class AFCmdOS extends AFCmdBase {
 	 */
 	public static void main(String[] args) {
 		// Java version check
-		String version = System.getProperty("java.version");
+		/*String version = System.getProperty("java.version");
 		if (version.startsWith("1.7") && version.lastIndexOf('_') > 0 &&
 			Integer.valueOf(version.substring(version.lastIndexOf('_') +1)) < 32) {
 			System.err.println("Warning: You are using java " + version + ". Please consider upgrading to >= 1.7.0_32.");
-		}
+		}*/
 
 		AFCmdOS afc = new AFCmdOS();
 		AFCmdBase.args = args;

@@ -1278,11 +1278,11 @@ function getOpenAFPath() {
 //OPACK functions
 //------------------------------------------
 
-var PACKAGEJSON  = ".package.json";
-var PACKAGEYAML  = ".package.yaml";
-var PACKAGESJSON = "packages.json";
-var PACKAGESJSON_DB = ".opack.db";
-var OPACKCENTRALJSON = "packages.json";
+const PACKAGEJSON  = ".package.json";
+const PACKAGEYAML  = ".package.yaml";
+const PACKAGESJSON = "packages.json";
+const PACKAGESJSON_DB = ".opack.db";
+const OPACKCENTRALJSON = "packages.json";
 
 var __opackParams;
 /**
@@ -1607,7 +1607,7 @@ function isUndefined(aObject) {
  * </odoc>
  */
 function isDefined(aObject) {
-	return (!isUndefined(aObject));
+	return (!isUnDef(aObject));
 }
 
 /**
@@ -2159,7 +2159,7 @@ $stream = function(a) {
 	
 	if (isUnDef(a)) return Stream;
 	return Stream(a);
-}
+};
 
 //Parallel processing
 var __cpucores;
@@ -2575,7 +2575,7 @@ const isArray = Array.isArray;
  * Returns true if aObj is a map, false otherwise.
  * </odoc>
  */
-const isMap = (a) => { return (Object.prototype.toString.call(a) == "[object Object]"); }
+const isMap = (a) => { return (Object.prototype.toString.call(a) == "[object Object]"); };
 
 /**
  * <odoc>
@@ -2586,7 +2586,7 @@ const isMap = (a) => { return (Object.prototype.toString.call(a) == "[object Obj
 function isObject(obj) {
     var type = typeof obj;
     return type === 'function' || type === 'object' && !!obj;
-};
+}
 
 /**
  * <odoc>
@@ -2596,7 +2596,7 @@ function isObject(obj) {
  */
 function isFunction(obj) {
     return typeof obj == 'function' || false;
-};
+}
 
 /**
  * <odoc>
@@ -2963,13 +2963,13 @@ function require(aScript, force) {
 // OpenWrap
 //
 
-var OpenWrap;
-if (isUnDef(OpenWrap))
-	OpenWrap = function() {}
+const OpenWrap = function() {}
+//if (isUnDef(OpenWrap))
+//	OpenWrap = function() {}
 
-var ow;
-if (isUnDef(ow))
-	ow = new OpenWrap();
+const ow = new OpenWrap();
+//if (isUnDef(ow))
+//	ow = new OpenWrap();
 
 /**
  * <odoc>
@@ -3998,7 +3998,7 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
  * 
  * </odoc>
  */
-var $tb = function(aFunction) {
+const $tb = function(aFunction) {
 	var tb = function(afu) {
 		this._timeout  = void 0;
 		this._stopfunc = void 0;
@@ -4024,7 +4024,7 @@ var $tb = function(aFunction) {
 };
 
 var __openaf_rest = { urls: {}, stats: false };
-var $rest = function(ops) {
+const $rest = function(ops) {
 	ow.loadObj();
 	var _rest = function(aOptions) {
 		this.options = _$(aOptions).isMap().default({ });
@@ -4252,7 +4252,7 @@ if (isUnDef(alert)) alert = function(msg) {
 	printErr(String(msg));
 };
 
-__timeout = {};
+var __timeout = {};
 function setTimeout(aFunction, aPeriod) {
 	sleep(aPeriod);
 	var args = [];
@@ -4388,7 +4388,7 @@ function loadJSYAML() {
 
 loadCompiledLib("openafsigil_js");
 
-var __correctYAML = true;
+var __correctYAML = false;
 
 /**
  * <odoc>
@@ -4763,7 +4763,7 @@ function __getThreadPool() {
  * method as previously described.
  * </odoc>
  */
-var oPromise = function(aFunction, aRejFunction) {
+const oPromise = function(aFunction, aRejFunction) {
 	this.states = {
 		NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
 	};
@@ -5020,7 +5020,7 @@ oPromise.prototype.__exec = function() {
 
 };
 
-var javaRegExp = (text) => {
+const javaRegExp = (text) => {
     var s = java.lang.String(text);
     var calcMods = (mods) => {
         if (isUnDef(mods)) return 0;
@@ -5183,7 +5183,7 @@ var javaRegExp = (text) => {
  * method as previously described before.
  * </odoc>
  */
-var $do = function(aFunction, aRejFunction) {
+const $do = function(aFunction, aRejFunction) {
     return new oPromise(aFunction, aRejFunction);
 };
 
@@ -5194,7 +5194,7 @@ var $do = function(aFunction, aRejFunction) {
  * fails/rejects the returned oPromise will also be rejected/fail.
  * </odoc>
  */
-var $doAll = function(anArray) {
+const $doAll = function(anArray) {
     return new oPromise().all(anArray);
 };
 
@@ -5205,7 +5205,7 @@ var $doAll = function(anArray) {
  * fails/rejects the returned oPromise will also be rejected/fail.
  * </odoc>
  */
-var $doFirst = function(anArray) {
+const $doFirst = function(anArray) {
     return new oPromise().race(anArray);
 };
 
@@ -5216,7 +5216,7 @@ var $doFirst = function(anArray) {
  * Returns aPromise.
  * </odoc>
  */
-var $doWait = function(aPromise, aWaitTimeout) {
+const $doWait = function(aPromise, aWaitTimeout) {
 	if (isDef(aWaitTimeout)) {
 		var init = now();
 		while(aPromise.state != aPromise.states.FULFILLED && 
@@ -5289,15 +5289,19 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 (function() {
 	var prof = "";
 	try {
-		prof = io.readFileString(java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE);
-		af.compile(prof);
+		var fprof = java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE;
+		if (io.fileExists(fprof)) {
+			prof = io.readFileString(fprof);
+			af.compile(prof);
+		}
 	} catch(e) {
 		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
 	}
 	
 	prof ="";
 	try {
-		prof = io.readFileString(getOpenAFJar() + "::" + OPENAFPROFILE);
+		var fprof = getOpenAFJar() + "::" + OPENAFPROFILE;
+		prof = io.readFileString(fprof);
 		af.compile(prof);
 	} catch(e) {
 		if (!e.message.match(/java\.io\.FileNotFoundException/) &&

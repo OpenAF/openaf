@@ -7,7 +7,7 @@ var requirements = {
   "javaversion": [ "^1.7" ]
 };
 var extraArgsForJava9 = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
-var extraArgsForJava10 = "-Xshare:off";
+var extraArgsForJava10 = " ";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
