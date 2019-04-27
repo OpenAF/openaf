@@ -8,6 +8,7 @@ OpenWrap.ch = function() {
 
 OpenWrap.ch.prototype.subscribers = {};
 OpenWrap.ch.prototype.peers = {};
+OpenWrap.ch.prototype.expose = {};
 OpenWrap.ch.prototype.jobs = {};
 OpenWrap.ch.prototype.vers = {}; 
 OpenWrap.ch.prototype.channels = {};
@@ -777,7 +778,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
 			ow.loadObj();
-			for(let i in aVs) {
+			for(var i in aVs) {
 				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
 			}
 		},
@@ -1268,7 +1269,7 @@ OpenWrap.ch.prototype.__types = {
 		forEach      : function(aName, aFunction, x) {
 			var aKs = this.getKeys(aName, x);
 
-			for(let i in aKs) {
+			for(var i in aKs) {
 				aFunction(aKs[i], this.get(aName, aKs[i], x));
 			}
 		},
@@ -1276,7 +1277,7 @@ OpenWrap.ch.prototype.__types = {
 			var res = [];
 			var map = this.__s[aName].openMap(this.__m[aName](full));
 
-			for(let i = 0; i < this.size(aName); i++) {
+			for(var i = 0; i < this.size(aName); i++) {
 				res.push(jsonParse(map.getKey(i)));
 			}
 
@@ -1370,7 +1371,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		forEach      : function(aName, aFunction) {
 			var keys = this.getKeys(aName);
-			for(let o in keys) {
+			for(var o in keys) {
 				aFunction(keys[o], this.get(aName, keys[o]));
 			}
 		},
@@ -1451,6 +1452,7 @@ OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 
 		this.subscribers[aName] = {};
 		this.peers[aName] = {};
+		this.expose[aName] = [];
 		this.jobs[aName] = {};
 		this.channels[aName] = type;
 		this.vers[aName] = nowUTC();
@@ -1482,7 +1484,7 @@ OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	var shouldContinue = 0, tini = now();
 	do {
 		shouldContinue = 0;
-		for(let ii in this.jobs[aName]) {
+		for(var ii in this.jobs[aName]) {
 			if (this.jobs[aName][ii].state == this.jobs[aName][ii].states.NEW) {
 				$doWait(this.jobs[aName][ii], (aTimeout >= 0 ? aTimeout : void 0));
 			} else {
@@ -1536,6 +1538,7 @@ OpenWrap.ch.prototype.destroy = function(aName) {
 		delete this.channels[aName];
 		delete this.subscribers[aName];
 		delete this.peers[aName];
+		delete this.expose[aName];
 		delete this.jobs[aName];
 		delete this.vers[aName];
 	}
@@ -2890,6 +2893,21 @@ OpenWrap.ch.prototype.server = {
 	 * </odoc>
 	 */
 	expose: function(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) {
+		if (isUnDef(aPath)) aPath = "/" + aName;
+
+		if (isDef(ow.ch.expose[aName])) {
+			var res = $from(ow.ch.expose[aName])
+			.equals("path", aPath)
+			.select((r) => {
+				if (isDef(r.hs) && r.hs.isAlive()) {
+					return r.uuid;
+				} else {
+					return null;
+				}
+			});
+			if (res[0] != null) return res[0];
+		};
+
 		var hs;
 		var uuid = genUUID();
 		ow.loadServer();
@@ -2910,8 +2928,6 @@ OpenWrap.ch.prototype.server = {
 		} else {
 			hs = aLocalPortORServer;
 		}
-
-		if (isUnDef(aPath)) aPath = "/" + aName;
 
 		var routes = {};
 		if (isDef(aAuthFunc)) {
@@ -2941,6 +2957,11 @@ OpenWrap.ch.prototype.server = {
 		if (isUnDef(droute)) droute = function (r) { return hs.reply("not found", ow.server.httpd.mimes.TXT, ow.server.httpd.codes.NOTFOUND) };
 		
 		ow.server.httpd.route(hs, ow.server.httpd.mapWithExistingRoutes(hs, routes), droute);
+		ow.ch.expose[aName].push({
+			uuid: uuid,
+			hs: hs,
+			path: aPath
+		});
 
 		return uuid;
 	},
@@ -2967,22 +2988,26 @@ OpenWrap.ch.prototype.server = {
 		if (!(isArray(aRemoteURLArray))) aRemoteURLArray = [ aRemoteURLArray ];
 		
 		ow.loadObj();
-		for(let i in aRemoteURLArray) {
-			var fn = ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid);
-			var hkfn = ow.ch.comms.getRetrySubscriberFunc(fn, aMaxTime, aMaxCount, uuid);
-			fn(aName, "reset");
-
-			var sfn = ow.ch.subscribe(aName, fn);
-			var shkfn = ow.ch.subscribe(aName, hkfn);
-
-			res.push(sfn);
-			res.push(shkfn);
-
-			if (isUnDef(ow.ch.peers[aName])) ow.ch.peers[aName] = {};
-			if (isUnDef(ow.ch.peers[aName][aRemoteURLArray[i]])) ow.ch.peers[aName][aRemoteURLArray[i]] = [];
-
-			ow.ch.peers[aName][aRemoteURLArray[i]].push(sfn);
-			ow.ch.peers[aName][aRemoteURLArray[i]].push(shkfn);
+		for(var i in aRemoteURLArray) {
+			if (isDef(ow.ch.peers[aName][aRemoteURLArray[i]])) {
+				res = res.concat(ow.ch.peers[aName][aRemoteURLArray[i]]);
+			} else {
+				var fn = ow.ch.comms.getSubscribeFunc(aRemoteURLArray[i], uuid);
+				var hkfn = ow.ch.comms.getRetrySubscriberFunc(fn, aMaxTime, aMaxCount, uuid);
+				fn(aName, "reset");
+	
+				var sfn = ow.ch.subscribe(aName, fn);
+				var shkfn = ow.ch.subscribe(aName, hkfn);
+	
+				res.push(sfn);
+				res.push(shkfn);
+	
+				if (isUnDef(ow.ch.peers[aName])) ow.ch.peers[aName] = {};
+				if (isUnDef(ow.ch.peers[aName][aRemoteURLArray[i]])) ow.ch.peers[aName][aRemoteURLArray[i]] = [];
+	
+				ow.ch.peers[aName][aRemoteURLArray[i]].push(sfn);
+				ow.ch.peers[aName][aRemoteURLArray[i]].push(shkfn);
+			}
 		}
 	
 		return res;

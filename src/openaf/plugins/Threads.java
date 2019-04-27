@@ -254,6 +254,13 @@ public class Threads extends ScriptableObject {
 		}	
 	}
 
+	/**
+	 * <odoc>
+	 * <key>Threads.initFixedThreadPool(numberOfThreads)</key>
+	 * Uses a thread pool situable for fixed threads where you can specify the numberOfThreads to use (by defauly the number of cores).
+	 * Note: it ignores any previous thread added using addThread; It won't work if any of the other start* or init* methods has been used.
+	 * </odoc>
+	 */
 	@JSFunction
 	public void initFixedThreadPool(int nThreads) {
 		if (executor == null) {
@@ -266,6 +273,13 @@ public class Threads extends ScriptableObject {
 		}	
 	}
 
+	/**
+	 * <odoc>
+	 * <key>Threads.initSingleThreadPool(numberOfThreads)</key>
+	 * Uses a thread pool situable for single threads where you can specify the numberOfThreads to use (by defauly the number of cores).
+	 * Note: it ignores any previous thread added using addThread; It won't work if any of the other start* or init* methods has been used.
+	 * </odoc>
+	 */
 	@JSFunction
 	public void initSingleThreadPool() {
 		if (executor == null) {
@@ -307,6 +321,14 @@ public class Threads extends ScriptableObject {
 		return uuid.toString();	
 	}
 
+	/**
+	 * <odoc>
+	 * <key>Threads.addFixedThread(aFunction) : String</key>
+	 * Adds to the fixed thread pool aFunction to be executed. Returns an UUID associated with the thread. The aFunction will receive
+	 * the corresponding UUID as the first parameter. Note: it calls initFixedThreadPool if it wasn't previously and it won't work if any of the other
+	 * start* of init* methods has been used previously.
+	 * </odoc>
+	 */
 	@JSFunction
 	public String addFixedThread(NativeFunction aFunction) throws Exception {
 		if (executor == null) throw new Exception("Please use initFixedThreadPool first.");
@@ -316,6 +338,14 @@ public class Threads extends ScriptableObject {
 		return uuid.toString();	
 	}
 
+	/**
+	 * <odoc>
+	 * <key>Threads.addSingleThread(aFunction) : String</key>
+	 * Adds to the single thread pool aFunction to be executed. Returns an UUID associated with the thread. The aFunction will receive
+	 * the corresponding UUID as the first parameter. Note: it calls initSingleThreadPool if it wasn't previously and it won't work if any of the other
+	 * start* of init* methods has been used previously.
+	 * </odoc>
+	 */
 	@JSFunction
 	public String addSingleThread(NativeFunction aFunction) {
 		if (executor == null) initSingleThreadPool();

@@ -250,6 +250,11 @@ public class HTTPServer extends ScriptableObject {
 		httpd.stop();
 	}
 
+	@JSFunction
+	public boolean isAlive() {
+		return httpd.isAlive();
+	}
+
 	/**
 	 * <odoc>
 	 * <key>HTTPd.addEcho(aURI)</key>

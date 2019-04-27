@@ -55,7 +55,7 @@ public class RhinoEngine implements JSEngine {
 		// Initialize Rhino
 		cx = org.mozilla.javascript.Context.enter();
 		cx.setOptimizationLevel(compLevel);
-		cx.setLanguageVersion(Context.VERSION_1_8); 
+		cx.setLanguageVersion(Context.VERSION_ES6); 
 		globalscope = cx.initStandardObjects();
 		ready = true;
 	}
