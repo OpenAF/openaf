@@ -253,7 +253,13 @@ try {
 
 			if (doIt) {
 				log("-> Compiling " + file.filename);
-				var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+				var output;
+				if (file.filename == "openaf.js") {
+					output = ""; io.cp(OPENAF_BUILD_HOME + "/js/" + file.filename, OPENAF_BUILD_HOME + "/jsmin/" + file.filename);
+				} else {
+					output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+				}
+				
 				log("<- Compiled  " + file.filename);
 				destjssha.files.push({
 					file: file.filename,
@@ -285,7 +291,7 @@ try {
 		}
 	}
 	return i;
-} catch(e) { }
+} catch(e) { logErr(stringify(e)); }
 return true;
 });
 
