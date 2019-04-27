@@ -1392,7 +1392,7 @@ OpenWrap.format.prototype.printWithFooter = function(aMessage, aFooter, withFunc
 			if (__conAnsi && (java.lang.System.console() != null)) withFunc(jansi.Ansi.ansi().eraseLine() + aMessage); else withFunc(aMessage);
 		if (!isWin) o++;
 	}
-	if (__conAnsi && (java.lang.System.console() != null) print(aFooter + jansi.Ansi.ansi().cursorUp(o));
+	if (__conAnsi && (java.lang.System.console() != null)) print(aFooter + jansi.Ansi.ansi().cursorUp(o));
 
 	ansiStop();
 };
