@@ -99,7 +99,7 @@ jobs:
      type         : periodic
      typeArgs     :
         waitForFinish: false
-        cron         : */5 * * * * *
+        cron         : "*/5 * * * * *"
      exec         : >
         print(new Date());
 

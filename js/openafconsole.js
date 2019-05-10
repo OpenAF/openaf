@@ -1,7 +1,6 @@
 
 plugin("Console");
 
-var __ansiflag = true;
 var __pinflag = false;
 var __pinprefix = "";
 var CONSOLESEPARATOR = "-- ";
@@ -288,7 +287,7 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 				if (timeCommand) __timeResult = now() - __start;
 				if (res.results.length > 0) {
 					if (!descSQL) {
-						outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly, con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag);
+						outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly, __ansiflag && con.isAnsiSupported());
 					} /* else {
 						outputres = Object.keys(res.results[0]).join("\n");
 					}*/
@@ -573,7 +572,7 @@ function __outputConsole(anOutput, colorify) {
 }
 
 function __outputConsoleNoEnd(anOutput, colorify) {
-	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
+	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		if (colorCommand && colorify) 
 			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
@@ -586,7 +585,7 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 }
 
 function __outputConsoleEnd(anOutput, colorify) {
-	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
+	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		if (colorCommand && colorify) 
 		   print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
@@ -603,7 +602,7 @@ function __outputConsoleComments(anOutputComment) {
 }
 
 function __outputConsoleCommentsNoEnd(anOutputComment) {
-	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
+	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
 		jansi.AnsiConsole.systemUninstall();
@@ -613,7 +612,7 @@ function __outputConsoleCommentsNoEnd(anOutputComment) {
 }
 
 function __outputConsoleCommentsEnd(anOutputComment) {
-	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
+	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
 		jansi.AnsiConsole.systemUninstall();
@@ -623,7 +622,7 @@ function __outputConsoleCommentsEnd(anOutputComment) {
 }
 
 function __outputConsoleError(anError) {
-	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
+	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
 		jansi.AnsiConsole.systemUninstall();
@@ -633,7 +632,7 @@ function __outputConsoleError(anError) {
 }
 
 function __clear() {
-	if(con.getConsoleReader().getTerminal().isAnsiSupported() && __ansiflag) {
+	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		printnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
 		jansi.AnsiConsole.systemUninstall();
@@ -954,6 +953,7 @@ function __pauseString(aString) {
 // MAIN
 // ---------------------
 var con = new Console();
+var __ansiflag = con.isAnsiSupported();
 var jansi = JavaImporter(Packages.org.fusesource.jansi);
 var cmd = "";
 var timeCommand = false; var start; var end;

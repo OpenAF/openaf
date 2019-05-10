@@ -142,4 +142,22 @@ public class Console extends ScriptableObject {
 		return cr;
 	}
 
+	/**
+	 * <odoc>
+	 * <key>Console.isAnsiSupported() : boolean</key>
+	 * Determines if the console is able to support ansi (returns true) or not (returns false).
+	 * </odoc>
+	 */
+	@JSFunction
+	public boolean isAnsiSupported() {
+		try {
+			if (getConsoleReader() != null)
+				return getConsoleReader().getTerminal().isAnsiSupported();
+			else
+				return false;
+		} catch(Exception e) {
+			return false;
+		}
+	}
+
 }
