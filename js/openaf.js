@@ -393,9 +393,10 @@ function __initializeCon() {
 		__con = "";
 		plugin("Console");
 		try {
-			__con = (new Console()).getConsoleReader();
+			var ___c = new Console();
+			__con = (___c).getConsoleReader();
 			__conStatus = true;
-			__conAnsi = __con.getTerminal().isAnsiSupported();
+			__conAnsi = (___c).isAnsiSupported();
 			return true;
 		} catch(e) {
 			__conStatus = false;
