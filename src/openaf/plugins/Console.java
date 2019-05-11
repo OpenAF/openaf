@@ -41,7 +41,11 @@ public class Console extends ScriptableObject {
 	 */
 	@JSConstructor
 	public void newConsole() throws IOException {
-		cr = new ConsoleReader();
+		try {
+			cr = new ConsoleReader();
+		} catch(Exception e) {
+			cr = null;
+		}
 	}
 	
 	/** 
