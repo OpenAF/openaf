@@ -4145,8 +4145,8 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest(aOptions).get(aBaseURI, aIdxMap) : Map</key>
-	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions: login (function or string),
+	 * <key>$rest.get(aBaseURI, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
@@ -4158,8 +4158,8 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest(aOptions).post(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
-	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions: login (function or string),
+	 * <key>$rest.post(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
@@ -4171,8 +4171,8 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest(aOptions).put(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
-	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions: login (function or string),
+	 * <key>$rest.put(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
@@ -4184,8 +4184,8 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest(aOptions).delete(aBaseURI, aIdxMap) : Map</key>
-	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions: login (function or string),
+	 * <key>$rest.delete(aBaseURI, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
@@ -4197,8 +4197,8 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest(aOptions).patch(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
-	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions: login (function or string),
+	 * <key>$rest.patch(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
+	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
@@ -4210,7 +4210,7 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest().query(aMap) : String</key>
+	 * <key>$rest.query(aMap) : String</key>
 	 * Shortcut for ow.obj.rest.writeQuery (see help ow.obj.rest.writeQuery).
 	 * </odoc>
 	 */
@@ -4219,7 +4219,7 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest().index(aMap) : String</key>
+	 * <key>$rest.index(aMap) : String</key>
 	 * Shortcut for ow.obj.rest.writeIndexes (see help ow.obj.rest.writeIndexes).
 	 * </odoc>
 	 */	
