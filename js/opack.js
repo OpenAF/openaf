@@ -629,8 +629,9 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 
 // Find OpenAF she-bang
 function getOpenAFSB() {
-  var os = java.lang.System.getProperty("os.name") + "";
-  var currentClassPath = java.lang.management.ManagementFactory.getRuntimeMXBean().getClassPath() + "";
+	var os = String(java.lang.System.getProperty("os.name"));
+	var currentClassPath = ow.format.getClasspath();
+  //var currentClassPath = java.lang.management.ManagementFactory.getRuntimeMXBean().getClassPath() + "";
 
   var openafsb;
   if (os.match(/Windows/)) {
@@ -654,16 +655,14 @@ function getOpenAFSB() {
 }
 
 // Find OpenAF jar
-function getOpenAFJar() {
-  	var currentClassPath = java.lang.management.ManagementFactory.getRuntimeMXBean().getClassPath() + "";
-
-  	return currentClassPath;
-}
+/*function getOpenAFJar() {
+  return String(ow.format.getClasspath());
+}*/
 
 // Find OpenAF
 function getOpenAF() {
-  var os = java.lang.System.getProperty("os.name") + "";
-  var currentClassPath = java.lang.management.ManagementFactory.getRuntimeMXBean().getClassPath() + "";
+	var os = ow.format.getOS();
+  var currentClassPath = ow.format.getClasspath();
 
   var openaf;
   if (os.match(/Windows/)) {
