@@ -740,15 +740,16 @@ OpenWrap.format.prototype.toWedoDate = function(aStringDate, aFormat) {
  * <odoc>
  * <key>ow.format.getActualTime(useAlternative) : Date</key>
  * Retrieves the current actual time from NIST (through https). The current actual time will be returned in a Date.
- * If useAlternative = true it will use now.httpbin.org (through http)
+ * If useAlternative = true it will use worldclockapi.com (through http)
  * </odoc>
  */
 OpenWrap.format.prototype.getActualTime = function(useAlternative) {
 	plugin("HTTP");
 
 	if (useAlternative) {
-		var h = ow.loadObj();
-		return new Date(ow.obj.rest.jsonGet("http://now.httpbin.org").now.epoch * 1000);
+		//var h = ow.loadObj();
+		//return new Date(ow.obj.rest.jsonGet("http://now.httpbin.org").now.epoch * 1000);
+		return new Date((1000 * ($rest().get("http://worldclockapi.com/api/json/utc/now").currentFileTime / 10000000 - 11644473600)));
 	} else {
 		plugin("XML");
 		return new Date((new XML((new HTTP("https://nist.time.gov/actualtime.cgi")).response())).get("@time")/1000);
