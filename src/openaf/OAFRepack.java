@@ -1,5 +1,6 @@
 package openaf;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -15,6 +16,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+
+import jodd.util.ClassLoaderUtil;
 
 /**
  * 
@@ -61,6 +64,33 @@ public class OAFRepack {
         }
     }
 
+    public static String javaHome() {
+        String home = System.getProperty("java.home");
+		if (home == null) {
+			return null;
+		}
+		int i = home.lastIndexOf('\\');
+		int j = home.lastIndexOf('/');
+		if (j > i) {
+			i = j;
+        }
+
+		return home.substring(0, i);
+    }
+    
+    public static File findToolsJar() {
+		String javaHome = javaHome();
+		if (javaHome == null) {
+			return null;
+		}
+		String tools = new File(javaHome).getAbsolutePath() + File.separatorChar + "lib" + File.separatorChar + "tools.jar";
+		File toolsFile = new File(tools);
+		if (toolsFile.exists()) {
+			return toolsFile;
+        }
+		return null;
+    }
+    
     public static void repack(String aOrigFile, String aDestFile, String mainClass) {
 
         // TODO: Accept list to exclude
@@ -101,7 +131,14 @@ public class OAFRepack {
                                 + Math.round((zosSize * 100) / zisSize) + "%)");
 
                         if (ze.getName().toLowerCase().endsWith(".jar")) {
-                            ZipInputStream szis = new ZipInputStream(zipFile.getInputStream(ze));
+                            ZipInputStream szis;
+                            if (ze.getName().toLowerCase().endsWith("tools-attach.jar") &&
+                                findToolsJar() != null) {
+                                szis = new ZipInputStream(new FileInputStream(findToolsJar()));
+                            } else {
+                                szis = new ZipInputStream(zipFile.getInputStream(ze));
+                            }
+                            
                             ZipEntry sze;
 
                             while ((sze = szis.getNextEntry()) != null) {

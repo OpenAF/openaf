@@ -160,14 +160,21 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 		if (toExclude.indexOf(el.name) >= 0) {
 			log("Excluding " + el.name);
 			continue;
-		} 
+		}  
 		
 		if(el.name.match(/\.jar$/)) {
 			var zipTemp = new ZIP();
-			if (!el.outside) 
-				zipTemp.load(zip.getFile(el.name));
-			else
-				zipTemp.loadFile(el.outsideName);
+
+			if (el.name.match(/tools-attach.jar$/) &&
+			    Packages.jodd.util.ClassLoaderUtil.findToolsJar() != null) {
+				zipTemp.loadFile(String(Packages.jodd.util.ClassLoaderUtil.findToolsJar()));
+			} else {
+				if (!el.outside) 
+					zipTemp.load(zip.getFile(el.name));
+				else
+					zipTemp.loadFile(el.outsideName);
+			}
+			
 			var listTemp = zipTemp.list();
 							
 			for (let ii in listTemp) {
