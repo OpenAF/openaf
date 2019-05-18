@@ -298,6 +298,8 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 		throw("ojob and todo entries need to be defined as arrays.");
 	}
 
+	if (isUnDef(res.ojob)) res.ojob = {};
+
 	return res;
 }
 
@@ -915,6 +917,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 		}, this.__ojob.checkStall.everySeconds * 1000);
 	}
 
+	var shouldStop = false;
 	if (this.__ojob.sequential) {
 		var job = void 0;
 		var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
@@ -941,13 +944,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 			}
 		}
 	} else {
-		t.addThread(function() {
+		t.addSingleThread(function() {
+		//t.addThread(function() {
 			// Check all jobs in the todo queue
 			var job = void 0; 
-			var shouldStop = false;
 			while(!shouldStop) {
 				try {
-					//var parentOJob = $from(parent.getTodoCh().getKeys()).equals("ojobId", parent.getID() + altId);
 					var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
 					var pjobs = [];
 					for (var ipoj = 0; ipoj < parentOJob.length; ipoj++) {
@@ -984,9 +986,9 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 					} 
 				} catch(e) { logErr(e); if (isDef(e.javaException)) e.javaException.printStackTrace(); }
 				if (isDef(parent.__ojob) && parent.__ojob.daemon == true) 
-					sleep((isDef(parent.__ojob.timeInterval) ? parent.__ojob.timeInterval : 100));
+					sleep((isDef(parent.__ojob.timeInterval) ? parent.__ojob.timeInterval : 50));
 				else
-					sleep(100);
+					sleep(50);
 			}
 		});
 	}
@@ -998,7 +1000,9 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 	if (!(this.__ojob.sequential)) {
 		try {
-			t.waitForThreads(250);
+			while(shouldStop == false) {
+				t.waitForThreads(50);
+			}
 			t.stop();
 		} catch(e) {}
 	}
