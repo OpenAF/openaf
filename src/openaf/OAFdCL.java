@@ -5,8 +5,13 @@
  */
 package openaf;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+
+import java.io.File;
+import java.io.IOException;
+
 public class OAFdCL extends URLClassLoader {
     protected static OAFdCL oafdcl = null;
 
@@ -21,6 +26,10 @@ public class OAFdCL extends URLClassLoader {
     public OAFdCL(ClassLoader classLoader) {
         super(new URL[] {}, classLoader);
         if (oafdcl == null) oafdcl = this;
+    }
+
+    public void appendToClassPathForInstrumentation(String path) throws MalformedURLException {
+        super.addURL( (new File(path)).toURI().toURL() );
     }
 
     @Override
