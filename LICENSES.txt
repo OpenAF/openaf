@@ -35,7 +35,7 @@ License               :
 
 The MIT License (MIT)
 
-Copyright © 2013 BunKat
+Copyright Â© 2013 BunKat
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -85,7 +85,7 @@ SOFTWARE.
 
 -----------------------
 Third-party name      : FuseJS
-Version               : 3.3.0
+Version               : 3.4.4
 Changed from original : No
 Location in openaf.jar: js/fusejs.js
 License               : 
@@ -1522,6 +1522,46 @@ License               :
    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
    OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
    OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+   &#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;
+   &#x3D;&#x3D;  NOTICE file for use with the Apache License, Version 2.0,          &#x3D;&#x3D;
+   &#x3D;&#x3D;  in this case for the Trend Locality Sensitive Hash distribution.   &#x3D;&#x3D;
+   &#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;&#x3D;
+
+   Trend Locality Sensitive Hash (TLSH)
+   Copyright 2010-2014 Trend Micro
+
+   This product includes software developed at
+   Trend Micro (http://www.trendmicro.com/)
+
+   Refer to the following publications for more information:
+   
+     Jonathan Oliver, Chun Cheng and Yanggui Chen,
+     &quot;TLSH - A Locality Sensitive Hash&quot;
+     4th Cybercrime and Trustworthy Computing Workshop, Sydney, November 2013
+     https://github.com/trendmicro/tlsh/blob/master/TLSH_CTC_final.pdf
+    
+     Jonathan Oliver, Scott Forman and Chun Cheng,
+     &quot;Using Randomization to Attack Similarity Digests&quot;
+     Applications and Techniques in Information Security. Springer Berlin Heidelberg, 2014. 199-210.
+     https://github.com/trendmicro/tlsh/blob/master/Attacking_LSH_and_Sim_Dig.pdf
+
+     Jonathan Oliver and Jayson Pryde
+     http://blog.trendmicro.com/trendlabs-security-intelligence/smart-whitelisting-using-locality-sensitive-hashing/
+
+
+
+
+
+
+
+
+    
+   SHA1 of first 242 lines of LICENSE - so that we can append NOTICE.txt to LICENSE
+   $ head -n 242 LICENSE | openssl dgst -sha1
+   (stdin)&#x3D; 11e8757af16132dd60979eacd73a525a40ff31f0
+
 
 -----------------------
 Third-party name      : H2

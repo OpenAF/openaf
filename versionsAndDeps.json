@@ -29,7 +29,7 @@
 		{
 			"description": "FuseJS",
 			"path": ["js/fusejs.js"],
-			"version": "3.3.0",
+			"version": "3.4.4",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/krisk/Fuse/master/LICENSE",
