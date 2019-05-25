@@ -5243,6 +5243,272 @@ const $doWait = function(aPromise, aWaitTimeout) {
 	return aPromise;
 }
 
+const $sh = function(aString) {
+    var __sh = function(aCmd, aIn) {
+        this.q = [];
+        this.wd = void 0;
+        this.fcb = void 0;
+        this.t = void 0;
+        if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
+    };
+
+    __sh.prototype.sh = function(aCmd, aIn) {
+        if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
+        return this;
+    };
+
+    __sh.prototype.pwd = function(aPwd) {
+        this.wd = aPwd;
+        return this;
+    };
+
+    __sh.prototype.cb = function(aCallback) {
+        this.fcb = () => { return aCallback; };
+        return this;
+    };
+
+    __sh.prototype.timeout = function(aTimeout) {
+        this.t = aTimeout;
+        return this;
+    };
+
+    __sh.prototype.mkdir = function(aDir) {
+        io.mkdir(aDir);
+        return this;
+    };
+
+    __sh.prototype.mv = function(aSource, aTarget) {
+        io.mv(aSource, aTarget);
+        return this;
+    };
+
+    __sh.prototype.cp = function(aSource, aTarget) {
+        io.cp(aSource, aTarget);
+        return this;
+    };
+
+    __sh.prototype.rename = function(aSource, aTarget) {
+        io.rename(aSource, aTarget);
+        return this;
+    };
+
+    __sh.prototype.rm = function(aFilePath) {
+        io.rm(aFilePath);
+        return this;
+    };
+
+    __sh.prototype.get = function() {
+        var res = [];
+        for(var ii in this.q) {
+            if (isDef(this.q[ii].cmd)) {
+                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
+                res.push(_res);
+                if (isDef(this.fe)) {
+                    var rfe = this.fe(_res);
+                    if (isDef(rfe) && rfe == false) {
+                        return res;
+                    }
+                }
+            }
+        }
+
+        return res;
+    };
+
+    __sh.prototype.exec = function() {
+        var res = [];
+        for(var ii in this.q) {
+            if (isDef(this.q[ii].cmd)) {
+                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
+                res.push(_res);
+                if (isDef(this.fe)) {
+                    var rfe = this.fe(_res);
+                    if (isDef(rfe) && rfe == false) {
+                        return res;
+                    }
+                }
+            }
+        }
+
+        return res;
+    };
+
+    __sh.prototype.exit = function(aFunc) {
+        this.fe = aFunc;
+        return this;
+    };
+
+    return new __sh(aString);
+};
+
+const $ssh = function(aMap) {
+    var __ssh = function(aMap) {
+        this.q = [];
+        this.fcb = void 0;
+        this.t = void 0;
+        this.ppty = void 0;
+
+        plugin("SSH");
+		aMap = _$(aMap).$_("Please provide a ssh map or an URL");
+		this.map = aMap;
+        this.ssh = this.__connect(aMap);
+    };
+
+	__ssh.prototype.__getssh = function() {
+		if (isUnDef(this.ssh)) this.ssh = this.__connect(this.map);
+		return this.ssh;
+	};
+
+	__ssh.prototype.__getsftp = function() {
+		if (isUnDef(this.sftp)) this.sftp = this.__connect(this.map);
+		return this.sftp;
+	};
+
+	__ssh.prototype.__connect = function(aMap) {
+		var s;
+
+		if (isMap(aMap)) {
+            aMap.port = _$(aMap.port).isNumber().default(22);
+            aMap.compress = _$(aMap.compress).isBoolean().default(false);
+            if (isDef(aMap.url)) aMap.host = aMap.url;
+        }
+        if (!isObject(aMap)) {
+            s = new SSH((isString(aMap) ? aMap : aMap.host), aMap.port, aMap.login, aMap.pass, aMap.id, aMap.compress, aMap.timeout);
+        } else {
+            s = aMap;
+		}
+		return s;
+	};
+
+    __ssh.prototype.sh = function(aCmd, aIn) {
+        if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
+        return this;
+    };
+
+    __ssh.prototype.pwd = function(aPwd) {
+        this.__getsftp.cd(aPwd);
+        return this;
+    };
+
+    __ssh.prototype.timeout = function(aTimeout) {
+        this.t = aTimeout;
+        return this;
+    };
+
+    __ssh.prototype.cb = function(aCallback) {
+        this.fcb = () => { return aCallback; };
+        return this;
+    };
+
+    __ssh.prototype.mkdir = function(aDir) {
+        this.__getsftp().mkdir(aDir);
+        return this;
+    };
+
+    __ssh.prototype.get = function(aSource, aTarget) {
+        this.__getsftp().sftpGet(aSource, aTarget);
+        return this;
+    };
+
+    __ssh.prototype.put = function(aSource, aTarget) {
+        this.__getsftp().sftpPut(aSource, aTarget);
+        return this;
+    };
+
+    __ssh.prototype.rename = function(aSource, aTarget) {
+        this.__getsftp().rename(aSource, aTarget);
+        return this;
+    };
+
+    __ssh.prototype.rm = function(aFilePath) {
+        this.__getsftp().rm(aFilePath);
+        return this;
+    };
+
+    __ssh.prototype.rmdir = function(aFilePath) {
+        this.__getsftp().rmdir(aFilePath);
+        return this;
+    };
+
+    __ssh.prototype.pty = function(aFlag) {
+        this.ppty = aFlag;
+        return this;
+    };
+
+    __ssh.prototype.close = function() {
+		if (isDef(this.ssh)) this.ssh.close();
+		if (isDef(this.sftp)) this.sftp.close();
+        return this;
+    };
+
+    __ssh.prototype.tunnelLocal = function(aLocalPort, aRemoteHost, aRemotePort) {
+        this.__getssh().tunnelLocal(aLocalPort, aRemoteHost, aRemotePort);
+        return this;
+    };
+
+    __ssh.prototype.tunnelLocalBind = function(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort) {
+        this.__getssh().tunnelLocalBind(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort);
+        return this;
+    };
+
+    __ssh.prototype.tunnelRemote = function(aRemotePort, aLocalAddress, aLocalPort) {
+        this.__getssh().tunnelRemote(aRemotePort, aLocalAddress, aLocalPort);
+        return this;
+    };
+
+    __ssh.prototype.tunnelRemoteBind = function(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort) {
+        this.__getssh().tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort);
+        return this;
+    };
+
+    __ssh.prototype.get = function() {
+        var res = [];
+        if (isDef(this.t)) this.__getssh().setTimeout(this.t);
+        for(var ii in this.q) {
+            if (isDef(this.q[ii].cmd)) {
+                var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, false, this.ppty, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
+                res.push(_res);
+                if (isDef(this.fe)) {
+                    var rfe = this.fe(_res);
+                    if (isDef(rfe) && rfe == false) {
+                        return res;
+                    }
+                }
+            }
+        }
+
+        this.close();
+        return res;
+    };
+
+    __ssh.prototype.exec = function() {
+        var res = [];
+        if (isDef(this.t)) this.__getssh().setTimeout(this.t);
+        for(var ii in this.q) {
+            if (isDef(this.q[ii].cmd)) {
+                var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, true, this.ppty, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
+                res.push(_res);
+                if (isDef(this.fe)) {
+                    var rfe = this.fe(_res);
+                    if (isDef(rfe) && rfe == false) {
+                        return res;
+                    }
+                }
+            }
+        }
+
+        this.close();
+        return res;
+    };
+
+    __ssh.prototype.exit = function(aFunc) {
+        this.fe = aFunc;
+        return this;
+    };
+
+    return new __ssh(aMap);
+};
+
 var __OpenAFUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)";
 function __setUserAgent(aNewAgent) {
 	__OpenAFUserAgent = _$(aNewAgent).isString().default(__OpenAFUserAgent);
