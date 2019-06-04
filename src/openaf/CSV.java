@@ -159,7 +159,7 @@ public class CSV extends ScriptableObject {
 	@JSFunction
 	/**
 	 * <odoc>
-	 * <key>CSV.fromStream(aStream, aFunction)</key>
+	 * <key>CSV.toStream(aStream, aFunction)</key>
 	 * Tries to write a CSV to aStream calling aFunction and expecting it to return a map with the fields previously set with CSV.setStreamFormat and
 	 * corresponding values for each line (each call will represent a line). The fields
 	 * need to be specificed in withHeaders map property in CSV.setStreamFormat. The aFunction will be called continuosly until a different output from a map is
