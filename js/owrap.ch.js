@@ -329,16 +329,23 @@ OpenWrap.ch.prototype.__types = {
 			return this.__cacheCh[aName].size();
 		},
 		forEach      : function(aName, aFunction, x) { 
-			var aKs = this.getKeys(aName);
+			var aKs = this.getKeys(aName, false);
 			for(var i in aKs) {
 				aFunction(aKs[i], this.get(aName, aKs[i], x));
 			}			
 		},
 		getKeys      : function(aName, full) { 
-			return this.__cacheCh[aName].getKeys(full);
+			if (full) {
+				return this.__cacheCh[aName].getKeys(full);
+			} else {
+				return $from(this.__cacheCh[aName].getKeys(full)).select((r) => {
+					delete r.____t;
+					return r;
+				});
+			}
 		},
 		getSortedKeys: function(aName, full) { 
-			return this.getKeys(aName, full).sort();
+			return $from(this.getKeys(aName, full)).sort("____t").select();
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  { 
 			var res;
@@ -349,30 +356,42 @@ OpenWrap.ch.prototype.__types = {
 			return undefined;
 		},
 		set          : function(aName, aK, aV, aTimestamp, x) { 
-			this.__cacheCh[aName].set(aK, this.__cacheFunc[aName](aK), aTimestamp, x);
+			aTimestamp = _$(aTimestamp).default(now());
+			this.__cacheCh[aName].set(merge(aK, { ____t: aTimestamp }), this.__cacheFunc[aName](aK), aTimestamp, x);
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) { 
 			var avvs = [];
 			for (var i in aKs) {
+				aKs[i] = merge(aKs[i], { ____t: now() });
 				avvs[i] = this.__cacheFunc[aName](aK);
 			}
 			this.__cacheCh[aName].setAll(aKs, avvs, aTimestamp);
 		},
+		getAll       : function(aName, full) {
+			var res = [];
+			this.__cacheCh[aName].forEach(function(aKey, aValue) {
+				sync(function() { res.push(aValue); }, res);
+			}, full);
+			return res;
+		},
 		get          : function(aName, aK) { 
 			var aVv = {};
-			var ee = $stream(this.getKeys(aName, true)).filter({ "k": aK }).toArray()[0];
+			var ee = $stream(this.getKeys(aName, true)).filter(aK).toArray()[0];
 			if (isDef(ee)) {
-				if (ee.t > (now() - this.__cacheTTL[aName])) {
-					aVv = this.__cacheCh[aName].get(aK);
+				if (ee.____t > (now() - this.__cacheTTL[aName])) {
+					aVv = this.__cacheCh[aName].get(ee);
 				} else {
 					var aVv = this.__cacheFunc[aName](aK);
-					this.__cacheCh[aName].set(aK, aVv);			
-					aVv = this.__cacheCh[aName].get(aK);
+					this.__cacheCh[aName].unset(ee);
+					var eK = merge(aK, { ____t: now() });
+					this.__cacheCh[aName].set(eK, aVv);
+					aVv = this.__cacheCh[aName].get(eK);
 				}
 			} else {
 				var aVv = this.__cacheFunc[aName](aK);
-				this.__cacheCh[aName].set(aK, aVv);
-				aVv = this.__cacheCh[aName].get(aK);
+				var eK = merge(aK, { ____t: now() });
+				this.__cacheCh[aName].set(eK, aVv);
+				aVv = this.__cacheCh[aName].get(eK);
 			}
 			return aVv;
 		},
@@ -388,7 +407,8 @@ OpenWrap.ch.prototype.__types = {
 			return aK;	
 		},
 		unset        : function(aName, aK, aTimestamp) { 
-			this.__cacheCh[aName].unset(aK);
+			var eK = $stream(this.getKeys(aName, true)).filter(aK).toArray()[0];
+			if (isDef(eK)) this.__cacheCh[aName].unset(eK);
 		}	
 	},	
 	// Buffer implementation

@@ -71,6 +71,17 @@ jobs:
      args:
        chType: simple
 
+   # Cache
+   # -----
+   - name: Channels::Test channel (cache)
+     to  :
+       - Channels::Creating a channel
+       - Channels::Setting data into a channel
+       - Channels::Destroy a channel 
+       - Channels::Test housekeeping
+     args:
+       chType: cache
+
    # Mvs
    # ---
    - name: Channels::Test channel (mvs)
@@ -105,6 +116,9 @@ todo:
 
    # Mvs
    - Channels::Test channel (mvs)
+
+   # Cache
+   - Channels::Test channel (cache)
 
    # Ignite
    #- name: Channels::Creating a channel

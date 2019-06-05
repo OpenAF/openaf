@@ -29,7 +29,15 @@
     };
 
     exports.testCreateChannel = function() {
-        $ch(this.chType).create(true, this.chType);
+        var ops;
+        if (this.chType == "cache") {
+            ops = {
+                func: (aK) => {
+                    return aK;
+                }
+            };
+        }
+        $ch(this.chType).create(true, this.chType, ops);
         $ch(this.chType).size();
     };
 
