@@ -310,7 +310,7 @@ OpenWrap.ch.prototype.__types = {
 		__cacheCh  : {},
 		__cacheTTL : {},
 		create       : function(aName, shouldCompress, options) { 
-			this.__cacheFunc[aName] = (isDef(options.func) ? options.func : function() { return {}; });
+			this.__cacheFunc[aName] = (isDef(options.func) ? function(k) { var res = options.func(k); return (isObject(res) ? res : { result: res }); } : function() { return {}; });
 			this.__cacheTTL[aName] = (isDef(options.ttl) ? options.ttl : 5000);
 			if (isUnDef(options.ch)) {
 				$ch(aName + "::__cache").create();

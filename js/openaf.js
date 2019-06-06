@@ -4230,6 +4230,89 @@ const $rest = function(ops) {
 	return new _rest(ops);
 };
  
+const $cache = function(aName) {
+    var __c = function(aN) {
+        aN = _$(aN).default("cache");
+        this.name = aN;
+        this.func = void 0;
+        this.attl = void 0;
+        this.ach  = void 0;
+    };
+
+    __c.prototype.fn     = function(aFunc) { this.func  = aFunc; return this; };
+    __c.prototype.ttl    = function(attl)  { this.attl  = attl;  return this; };
+	__c.prototype.ch     = function(aCh)   { this.ach   = aCh;   return this; };
+	/**
+	 * <odoc>
+	 * <key>$cache.inFile(aFile) : Object</key>
+	 * Creates a mvs channel to hold the cache data in aFile. Note: don't use $cache.ch if you use this option.
+	 * </odoc>
+	 */
+    __c.prototype.inFile = function(aFile) {
+        $ch(this.name + "::filecache").create(1, "mvs", {
+            file: aFile,
+            compact: true,
+            map: this.name
+        });
+        this.ach = $ch(this.name + "::filecache");
+        return this;
+    };
+    __c.prototype.create = function() {
+        _$(this.func).isFunction().$_("Please provide a function (fn).");
+
+        $ch(this.name).create(1, "cache", {
+            func: this.func,
+            ttl: this.attl,
+            ch: this.ach
+        });
+
+        return this;
+	};
+	/**
+	 * <odoc>
+	 * <key>$cache.get(aKey) : Object</key>
+	 * Shortcut to use a cache channel. Returns an object that can be used like this:\
+	 * \
+	 * $cache("numbers")\
+	 * .ttl(30000)\
+	 * .fn((aKey) => { ... return result; })\
+	 * .create()\
+	 * \
+	 * $cache("numbers").get(myKey);\
+	 * \
+	 * $cache("numbers").destroy();\
+	 * \
+	 * </odoc>
+	 */
+    __c.prototype.get    = function(aK) {
+        if ($ch().list().indexOf(this.name) < 0) {
+            this.create();
+        }
+
+        return $ch(this.name).get(aK);
+    };
+    __c.prototype.destroy = function() {
+        $ch(this.name).destroy();
+    };
+    __c.prototype.unset  = function(aK) {
+        $ch(this.name).unset(aK);
+        return this;
+    };
+    __c.prototype.size   = function() {
+        return $ch(this.name).size();
+    };
+    __c.prototype.set    = function(aK, aV) {
+        $ch(this.name).set(aK, aV);
+        return this;
+    };
+    __c.prototype.setAll = function(aK, aV) {
+        $ch(this.name).setAll(aK, aV);
+        return this;
+    };
+
+    return new __c(aName);
+};
+
 /**
  * <odoc>
  * <key>threadBoxCtrlC() : Boolean</key>
