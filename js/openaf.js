@@ -2641,6 +2641,16 @@ function isBoolean(obj) {
 
 /**
  * <odoc>
+ * <key>isNull(aObj) : boolean</key>
+ * Returns true if aObj is null, false otherwise
+ * </odoc>
+ */
+function isNull(obj) {
+	return obj == null || false;
+}
+
+/**
+ * <odoc>
  * <key>isJavaObject(aObj) : boolean</key>
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
@@ -2658,6 +2668,21 @@ function isJavaObject(obj) {
  */
 function isByteArray(obj) {
 	return (isDef(obj.getClass) && obj.getClass().getName() == "byte[]");
+}
+
+function descType(aObj) {
+	if (isUnDef(aObj)) return "undefined";
+	if (isNull(aObj)) return "null";
+	if (isBoolean(aObj)) return "boolean";
+	if (isNumber(aObj)) return "number";
+	if (isString(aObj)) return "string";
+	if (isFunction(aObj)) return "function";
+	if (isByteArray(aObj)) return "bytearray";
+	if (isArray(aObj)) return "array";
+	if (isJavaObject(aObj)) return "java";
+	if (isDate(aObj)) return "date";
+	if (isMap(aObj)) return "map";
+	if (isObject(aObj)) return "object";
 }
 
 /**
