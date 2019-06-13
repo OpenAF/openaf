@@ -208,11 +208,11 @@ public class OAFRepack {
         if (unix) {
             command.add("/bin/sh");
             command.add("-c");
-            command.add("mv '" + jarFile + ".tmp' '" + jarFile + "' > /dev/null && " + cmd + ""); 
+            command.add("sleep 1 && mv '" + jarFile + ".tmp' '" + jarFile + "' > /dev/null && " + cmd + ""); 
         } else {
             command.add("cmd");
             command.add("/c");
-            command.add("move \"" + jarFile + ".tmp\" \"" + jarFile + "\" >NUL && " + cmd + ""); 
+            command.add("timeout /t 1 > null && move \"" + jarFile + ".tmp\" \"" + jarFile + "\" >NUL && " + cmd + ""); 
         }
 
         ProcessBuilder builder = new ProcessBuilder(command);
