@@ -588,5 +588,18 @@
         ow.test.assert(isNumber(123), true, "Failed to identify a number.");
         ow.test.assert(isObject({}), true, "Failed to identify an object.");
         ow.test.assert(isString("hello"), true, "Failed to identify a string.");
+        ow.test.assert(isNull(null), true, "Failed to identify a null.");
+    };
+
+    exports.testDescType = function() {
+        ow.test.assert(descType([1,2,3]), "array", "(descType) Failed to identify an array.");
+        ow.test.assert(descType(true), "boolean", "(descType) Failed to identify a boolean value.");
+        ow.test.assert(descType(new Date()), "date", "(descType) Failed to identify a date.");
+        ow.test.assert(descType(isFunction), "function", "(descType) Failed to identify a function.");
+        ow.test.assert(descType(new java.lang.String()), "java", "(descType) Failed to identify a java object.");
+        ow.test.assert(descType({}), "map", "(descType) Failed to identify a map.");
+        ow.test.assert(descType(123), "number", "(descType) Failed to identify a number.");
+        ow.test.assert(descType("hello"), "string", "(descType) Failed to identify a string.");
+        ow.test.assert(descType(null), "null", "(descType) Failed to identify a null.");        
     };
 })();

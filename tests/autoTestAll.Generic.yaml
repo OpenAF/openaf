@@ -33,6 +33,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testIsFunctions;
 
+   - name: OpenAF::DescType
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDescType;
+
    - name: OpenAF::Test SHA1
      from: OpenAF::Init
      to  : oJob Test
@@ -186,6 +191,7 @@ todo:
    - OpenAF::SPrints
    - OpenAF::Logs
    - OpenAF::IsFunctions
+   - OpenAF::DescType
    - OpenAF::Test SHA1
    - OpenAF::Test SHA256
    - OpenAF::Test SHA512
