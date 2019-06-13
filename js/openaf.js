@@ -2003,6 +2003,34 @@ function merge(aObjectA, aObjectB) {
 
 /**
  * <odoc>
+ * <key>stopOpenAFAndRun(aCommandLineArray, addCommand)</key>
+ * Terminates the current OpenAF execution while trying to execute the commands on the aCommandLineArray.
+ * Optionally you can use addCommand boolean flag (true) to allow for shell like commands on the current operating system.
+ * To restart OpenAF please use the restartOpenAF function.
+ * </odoc>
+ */
+function stopOpenAFAndRun(aCommandLineArray, addCommand) {
+	_$(aCommandLineArray).isArray().$_("Please provide a command line array.");
+	addCommand = _$(addCommand).isBoolean().default(false);
+
+	if (addCommand) {
+		var unix = ( java.lang.System.getProperty("os.name").indexOf("Windows") < 0);
+		if (unix) {
+			aCommandLineArray.unshift("/c");
+			aCommandLineArray.unshift("cmd");	
+		} else {
+			aCommandLineArray.unshift("-c");
+			aCommandLineArray.unshift("/bin/sh");	
+		}
+	}
+	var builder = new java.lang.ProcessBuilder(aCommandLineArray);
+	builder.inheritIO();
+	builder.start();
+	java.lang.System.exit(0);
+}
+
+/**
+ * <odoc>
  * <key>restartOpenAF(aCommandLineArray, preCommandLineArray)</key>
  * Terminates the current OpenAF execution and tries to start a new with the same command
  * line, if aCommandLineArray is not provided. If aCommandLineArray is provided each array
