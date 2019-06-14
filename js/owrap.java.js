@@ -119,6 +119,33 @@ OpenWrap.java.prototype.maven.prototype.getFileVersion = function(artifactId, aF
     ioStreamCopy(wstream, rstream);
 };
 
+OpenWrap.java.prototype.maven.prototype.getDependencies = function(artifactId, aVersion, aOutputDir, aScope) {
+    var aURI = this._translateArtifact(artifactId);
+    var version = (isUnDef(aVersion) ? this.getLatestVersion(aURI) : aVersion);
+    var filename = artifactId.substring(artifactId.lastIndexOf(".") + 1) + "-" + version + ".pom";
+    var scope = _$(aScope).isString().default("");
+
+    var h = $rest().get(this._getURL() + "/" + aURI + "/" + version + "/" + filename).replace(/(.*\n)*.*<project( [^>]+)>/, "<project>");
+    plugin("XML");
+    var x = (new XML(String(h))).toNativeXML();
+
+    var info = [];
+    for(var ii = 0; ii < x.dependencies.dependency.length(); ii++) {
+        if (x.dependencies.dependency[ii].scope.toString() == scope) {
+            info.push({
+                groupId: x.dependencies.dependency[ii].groupId.toString(),
+                artifactId: x.dependencies.dependency[ii].artifactId.toString(),
+                version: x.dependencies.dependency[ii].version.toString(),
+                scope: x.dependencies.dependency[ii].scope.toString()
+            });
+        }
+    }
+
+    // ".replace(/\${([^}]*)}/g, "{{$1}}")
+
+    return info;
+};
+
 /**
  * <odoc>
  * <key>ow.java.maven.processMavenFile(aFolder, shouldDeleteOld, aLogFunc)</key>
