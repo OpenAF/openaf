@@ -79,10 +79,12 @@ OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isCl
 	initI();
 };
 
-OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, colorMap) {
-	if (isUnDef(colorMap)) colorMap = {};
-	if (isUnDef(colorMap.lines)) colorMap.title = "bold";
-	if (isUnDef(colorMap.values)) colorMap.values = "CYAN";
+OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMap) {
+    if (isUnDef(colorMap)) colorMap = {};
+    if (isUnDef(colorMap.lines)) colorMap.title = "bold";
+    if (isUnDef(colorMap.values)) colorMap.values = "CYAN";
+
+    // replace(\033\[[0-9;]*m/g, "")
 	
     __initializeCon();
     var matrix = [], matrixrule = [], maxX = 0, maxY = 0;
@@ -99,11 +101,9 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, colorMap) {
                     var origX = x;
 
                     if (isUnDef(matrix[x])) matrix[x] = [];
-					matrix[x][igY] = key;
-					//matrix[x][igY] = ansiColor(colorMap.title, key);
+					if (!useAnsi) matrix[x][igY] = key; else matrix[x][igY] = ansiColor(colorMap.title, key);
                     if (!isMap(value) && !isArray(value)) {
-						matrix[x][igY + 1] = value;
-						//matrix[x][igY + 1] = ansiColor(colorMap.values, value);
+					if (!useAnsi) matrix[x][igY + 1] = String(value); else matrix[x][igY + 1] = ansiColor(colorMap.values, String(value));
                         x++;
                     } else {
                         x = x + _r(value, x, igY + 1);
@@ -117,11 +117,9 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, colorMap) {
 
                     var origX = x;
                     if (isUnDef(matrix[x])) matrix[x] = [];
-					matrix[x][igY] = ii;
-					//matrix[x][igY] = ansiColor(colorMap.title, ii);
+					if (!useAnsi) matrix[x][igY] = ii; else matrix[x][igY] = ansiColor(colorMap.title, ii);
                     if (!isMap(o) && !isArray(o)) {
-						matrix[x][igY + 1] = o;
-						//matrix[x][igY + 1] = ansiColor(colorMap.values, o);;
+					if (!useAnsi) matrix[x][igY + 1] = String(o); else matrix[x][igY + 1] = ansiColor(colorMap.values, String(o));
                         x++;
                     } else {
                         x = x + _r(o, x, igY + 1);
