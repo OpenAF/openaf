@@ -78,3 +78,95 @@ OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isCl
 
 	initI();
 };
+
+OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, colorMap) {
+	if (isUnDef(colorMap)) colorMap = {};
+	if (isUnDef(colorMap.lines)) colorMap.title = "bold";
+	if (isUnDef(colorMap.values)) colorMap.values = "CYAN";
+	
+    __initializeCon();
+    var matrix = [], matrixrule = [], maxX = 0, maxY = 0;
+
+    var _r = (aValue, igX, igY) => {
+        if (isMap(aValue) || isArray(aValue)) {
+            igX = _$(igX).isNumber().default(0);
+            igY = _$(igY).isNumber().default(0);
+
+            var x = igX, y = igY;
+            if (isMap(aValue)) {
+                for(var key in aValue) {
+                    var value = aValue[key];
+                    var origX = x;
+
+                    if (isUnDef(matrix[x])) matrix[x] = [];
+					matrix[x][igY] = key;
+					//matrix[x][igY] = ansiColor(colorMap.title, key);
+                    if (!isMap(value) && !isArray(value)) {
+						matrix[x][igY + 1] = value;
+						//matrix[x][igY + 1] = ansiColor(colorMap.values, value);
+                        x++;
+                    } else {
+                        x = x + _r(value, x, igY + 1);
+                    }
+                }
+                matrixrule.push(x);
+            }
+            if (isArray(aValue)) {
+                for(var ii in aValue) {
+                    var o = aValue[ii];
+
+                    var origX = x;
+                    if (isUnDef(matrix[x])) matrix[x] = [];
+					matrix[x][igY] = ii;
+					//matrix[x][igY] = ansiColor(colorMap.title, ii);
+                    if (!isMap(o) && !isArray(o)) {
+						matrix[x][igY + 1] = o;
+						//matrix[x][igY + 1] = ansiColor(colorMap.values, o);;
+                        x++;
+                    } else {
+                        x = x + _r(o, x, igY + 1);
+                    }
+                }
+                matrixrule.push(x);
+                x++;
+            }
+
+            return x - igX;
+        }
+
+        return 0;
+    };
+
+    _r(aValue);
+    maxX = matrix.length;
+    for(var x in matrix) {
+        if (maxY < matrix[x].length) maxY = matrix[x].length;
+    }
+
+    var out = new Packages.de.vandermeer.asciitable.v2.V2_AsciiTable();
+    out.addRule();
+    for(var x = 0; x < maxX; x++) {
+        if (matrixrule.indexOf(x) >= 0) out.addRule();
+        if (isUnDef(matrix[x])) matrix[x] = [];
+        for (var y = 0; y < maxY; y++) {            
+            if (isUnDef(matrix[x][y])) {
+                matrix[x][y] = "";
+            }
+        }
+        out.addRow.apply(out, matrix[x]);
+    }
+    out.addRule();
+
+    aTheme = _$(aTheme).default(Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get());
+    aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 1);
+    var rt = new Packages.de.vandermeer.asciitable.v2.render.V2_AsciiTableRenderer();
+    rt.setTheme(aTheme);
+    rt.setWidth(new Packages.de.vandermeer.asciitable.v2.render.WidthLongestWordMaxCol(aWidth));
+    var o = String(rt.render(out));
+    if (o.indexOf("\n") > aWidth) {
+        rt.setWidth(new Packages.de.vandermeer.asciitable.v2.render.WidthLongestWordMaxCol(aWidth - (o.indexOf("\n")- aWidth)));
+        o = String(rt.render(out));
+    }
+
+    return o;
+};

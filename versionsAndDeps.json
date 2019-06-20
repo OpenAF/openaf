@@ -325,6 +325,18 @@
 			"type": ["javascript"],
 			"license": "https://raw.githubusercontent.com/isagalaev/highlight.js/master/LICENSE",
 			"deps": []
+		},
+		{
+			"description": "ASCIITable",
+			"path": [
+				"lib/asciitable-j7-1.0.1.jar",
+				"lib/asciilist-j7-1.0.0.jar"
+			],
+			"version": "1.0.1",
+			"changes": false,
+			"type": [ "java" ],
+			"license": "https://raw.githubusercontent.com/vdmeer/asciitable/master/LICENSE",
+			"deps": []
 		}
 	],
 	"plugins": [{
