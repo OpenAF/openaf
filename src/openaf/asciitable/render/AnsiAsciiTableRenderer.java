@@ -36,6 +36,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 
 	/** Width of the table. */
 	V2_Width width;
+	String[][] colorMap;
 
 	/** List of rows processed and ready to b rendered. */
 	List<ProcessedRow> rows;
@@ -51,7 +52,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 	 * </ul>
 	 */
 	public AnsiAsciiTableRenderer(){
-		this.paddingChar = ' ';
+		this.paddingChar = ' '; 
 		this.theme = V2_E_TableThemes.PLAIN_7BIT.get();
 		this.width = null;
 		this.rows = new LinkedList<>();
@@ -72,6 +73,11 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 			this.width = width;
 		}
 		return this;
+	}
+
+	public RenderedTable render(V2_AsciiTable table, String[][] colorMap) {
+		this.colorMap = colorMap;
+		return this.render(table);
 	}
 
 	@Override
@@ -160,7 +166,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 		char[] alignment = ((ContentRow)row.getOriginalRow()).getAlignment();
 		int[] padding = ((ContentRow)row.getOriginalRow()).getPadding();
 
-		for(int i=0; i<columns.length; i++){
+		for (int i=0; i<columns.length; i++) {
 			rt = this.theme.getContent();
 			if(i!=0){
 				ret.appendNewLine();
@@ -222,12 +228,32 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 							//add the current column width
 							width += cols[k];
 							//add row with proper alignment
-							this.appendWithAlignment(alignment[k], ret, columns[i][k], width, this.paddingChar, padding[k], (i==(columns.length)));
+							String clr, t;
+							int nw;
+							if (this.colorMap != null) {
+								clr = this.colorMap[i][k];
+								t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
+								nw = width + (t.length() - columns[i][k].length());
+							} else {
+								t = columns[i][k];
+								nw = width;
+							}
+							this.appendWithAlignment(alignment[k], ret, t, nw, this.paddingChar, padding[k], (i==(columns.length)));
 							span = 0;
 						}
 					}
 					else{
-						this.appendWithAlignment(alignment[k], ret, columns[i][k], cols[k], this.paddingChar, padding[k], (i==(columns.length-1)));
+						String clr, t;
+						int nw;
+						if (this.colorMap != null) {
+							clr = this.colorMap[i][k];
+							t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
+							nw = cols[k] + (t.length() - columns[i][k].length());
+						} else {
+							t = columns[i][k];
+							nw = cols[k];
+						}
+						this.appendWithAlignment(alignment[k], ret, t, nw, this.paddingChar, padding[k], (i==(columns.length-1)));
 					}
 				}
 			}

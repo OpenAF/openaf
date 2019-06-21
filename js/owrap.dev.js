@@ -87,7 +87,7 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
     // replace(\033\[[0-9;]*m/g, "")
 	
     __initializeCon();
-    var matrix = [], matrixrule = [], maxX = 0, maxY = 0;
+    var matrix = [], matrixrule = [], maxX = 0, maxY = 0, cM = [];
 
     var _r = (aValue, igX, igY) => {
         if (isMap(aValue) || isArray(aValue)) {
@@ -101,9 +101,17 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
                     var origX = x;
 
                     if (isUnDef(matrix[x])) matrix[x] = [];
-					if (!useAnsi) matrix[x][igY] = key; else matrix[x][igY] = ansiColor(colorMap.title, key);
+                    matrix[x][igY] = key; 
+                    if (useAnsi) {
+                        if (isUnDef(cM[x])) cM[x] = [];
+                        cM[x][igY] = colorMap.title;
+                    }
                     if (!isMap(value) && !isArray(value)) {
-					if (!useAnsi) matrix[x][igY + 1] = String(value); else matrix[x][igY + 1] = ansiColor(colorMap.values, String(value));
+                        matrix[x][igY + 1] = String(value);
+                        if (useAnsi) {
+                            if (isUnDef(cM[x])) cM[x] = [];
+                            cM[x][igY + 1] = colorMap.values;
+                        }
                         x++;
                     } else {
                         x = x + _r(value, x, igY + 1);
@@ -117,9 +125,18 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
 
                     var origX = x;
                     if (isUnDef(matrix[x])) matrix[x] = [];
-					if (!useAnsi) matrix[x][igY] = ii; else matrix[x][igY] = ansiColor(colorMap.title, ii);
+                    matrix[x][igY] = ii; 
+                    if (useAnsi) {
+                        if (isUnDef(cM[x])) cM[x] = [];
+                        cM[x][igY] = colorMap.title;
+                    }
+
                     if (!isMap(o) && !isArray(o)) {
-					if (!useAnsi) matrix[x][igY + 1] = String(o); else matrix[x][igY + 1] = ansiColor(colorMap.values, String(o));
+                        matrix[x][igY + 1] = String(o); 
+                        if (useAnsi) {
+                            if (isUnDef(cM[x])) cM[x] = [];
+                            cm[x][igY + 1] = colorMap.values;
+                        }
                         x++;
                     } else {
                         x = x + _r(o, x, igY + 1);
@@ -160,7 +177,11 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
     var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
     rt.setTheme(aTheme);
     rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
-    var o = String(rt.render(out));
+    var o;
+    if (useAnsi) 
+        o = String(rt.render(out, cM));
+    else
+        o = String(rt.render(out));
     if (o.indexOf("\n") > aWidth) {
         rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth - (o.indexOf("\n")- aWidth)));
         o = String(rt.render(out));
