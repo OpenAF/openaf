@@ -157,12 +157,12 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
 
     aTheme = _$(aTheme).default(Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get());
     aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 1);
-    var rt = new Packages.de.vandermeer.asciitable.v2.render.V2_AsciiTableRenderer();
+    var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
     rt.setTheme(aTheme);
-    rt.setWidth(new Packages.de.vandermeer.asciitable.v2.render.WidthLongestWordMaxCol(aWidth));
+    rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
     var o = String(rt.render(out));
     if (o.indexOf("\n") > aWidth) {
-        rt.setWidth(new Packages.de.vandermeer.asciitable.v2.render.WidthLongestWordMaxCol(aWidth - (o.indexOf("\n")- aWidth)));
+        rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth - (o.indexOf("\n")- aWidth)));
         o = String(rt.render(out));
     }
 
