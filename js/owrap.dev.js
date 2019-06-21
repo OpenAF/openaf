@@ -82,7 +82,7 @@ OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isCl
 OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMap) {
     if (isUnDef(colorMap)) colorMap = {};
     if (isUnDef(colorMap.lines)) colorMap.title = "bold";
-    if (isUnDef(colorMap.values)) colorMap.values = "CYAN";
+    if (isUnDef(colorMap.values)) colorMap.values = "cyan";
 
     // replace(\033\[[0-9;]*m/g, "")
 	
@@ -117,13 +117,23 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
                         x = x + _r(value, x, igY + 1);
                     }
                 }
+                if (Object.keys(aValue).length == 0) {
+                    matrix[x][igY] = "";
+                    matrix[x][igY + 1] = "";
+                    if (useAnsi) {
+                        if (isUnDef(cM[x])) cM[x] = [];
+                        cM[x][igY] = colorMap.title;
+                        cM[x][igY + 1] = colorMap.values;
+                    }
+                }
                 matrixrule.push(x);
             }
             if (isArray(aValue)) {
+                var origX = x;
                 for(var ii in aValue) {
                     var o = aValue[ii];
 
-                    var origX = x;
+                    origX = x;
                     if (isUnDef(matrix[x])) matrix[x] = [];
                     matrix[x][igY] = ii; 
                     if (useAnsi) {
@@ -135,11 +145,20 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
                         matrix[x][igY + 1] = String(o); 
                         if (useAnsi) {
                             if (isUnDef(cM[x])) cM[x] = [];
-                            cm[x][igY + 1] = colorMap.values;
+                            cM[x][igY + 1] = colorMap.values;
                         }
                         x++;
                     } else {
                         x = x + _r(o, x, igY + 1);
+                    }
+                }
+                if (aValue.length == 0) {
+                    matrix[x][igY] = "";
+                    matrix[x][igY + 1] = "";
+                    if (useAnsi) {
+                        if (isUnDef(cM[x])) cM[x] = [];
+                        cM[x][igY] = colorMap.title;
+                        cM[x][igY + 1] = colorMap.values;
                     }
                 }
                 matrixrule.push(x);

@@ -230,7 +230,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 							//add row with proper alignment
 							String clr, t;
 							int nw;
-							if (this.colorMap != null) {
+							if (this.colorMap != null && i < this.colorMap.length && k < this.colorMap[i].length) {
 								clr = this.colorMap[i][k];
 								t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
 								nw = width + (t.length() - columns[i][k].length());
@@ -245,7 +245,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 					else{
 						String clr, t;
 						int nw;
-						if (this.colorMap != null) {
+						if (this.colorMap != null && i < this.colorMap.length && k < this.colorMap[i].length) {
 							clr = this.colorMap[i][k];
 							t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
 							nw = cols[k] + (t.length() - columns[i][k].length());
