@@ -89,6 +89,13 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
     __initializeCon();
     var matrix = [], matrixrule = [], maxX = 0, maxY = 0, cM = [];
 
+    var _getColor = (aValue) => {
+       if (isNumber(aValue)) return __colorFormat.number;
+       if (isString(aValue)) return __colorFormat.string;
+       if (isBoolean(aValue)) return __colorFormat.boolean;
+       return __colorFormat.default;
+    }
+
     var _r = (aValue, igX, igY) => {
         if (isMap(aValue) || isArray(aValue)) {
             igX = _$(igX).isNumber().default(0);
@@ -96,6 +103,7 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
 
             var x = igX, y = igY;
             if (isMap(aValue)) {
+		var doRule = true;
                 for(var key in aValue) {
                     var value = aValue[key];
                     var origX = x;
@@ -104,17 +112,18 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
                     matrix[x][igY] = key; 
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
-                        cM[x][igY] = colorMap.title;
+                        cM[x][igY] = __colorFormat.key;
                     }
                     if (!isMap(value) && !isArray(value)) {
                         matrix[x][igY + 1] = String(value);
                         if (useAnsi) {
                             if (isUnDef(cM[x])) cM[x] = [];
-                            cM[x][igY + 1] = colorMap.values;
+                            cM[x][igY + 1] = _getColor(value);
                         }
                         x++;
                     } else {
-                        x = x + _r(value, x, igY + 1);
+                        x = x + _r(value, x, igY + 1) - 1;
+			//matrixrule.push(x); doRule = false;
                     }
                 }
                 if (Object.keys(aValue).length == 0) {
@@ -122,11 +131,11 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
                     matrix[x][igY + 1] = "";
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
-                        cM[x][igY] = colorMap.title;
-                        cM[x][igY + 1] = colorMap.values;
+                        cM[x][igY] = __colorFormat.key;
+                        cM[x][igY + 1] = _getColor(void 0);
                     }
                 }
-                matrixrule.push(x);
+                if (doRule) matrixrule.push(x);
             }
             if (isArray(aValue)) {
                 var origX = x;
@@ -135,17 +144,17 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
 
                     origX = x;
                     if (isUnDef(matrix[x])) matrix[x] = [];
-                    matrix[x][igY] = ii; 
+                    matrix[x][igY] = "(" + ii + ")"; 
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
-                        cM[x][igY] = colorMap.title;
+                        cM[x][igY] = __colorFormat.key;
                     }
 
                     if (!isMap(o) && !isArray(o)) {
                         matrix[x][igY + 1] = String(o); 
                         if (useAnsi) {
                             if (isUnDef(cM[x])) cM[x] = [];
-                            cM[x][igY + 1] = colorMap.values;
+                            cM[x][igY + 1] = _getColor(o);
                         }
                         x++;
                     } else {
@@ -153,13 +162,15 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
                     }
                 }
                 if (aValue.length == 0) {
-                    matrix[x][igY] = "";
-                    matrix[x][igY + 1] = "";
+		    if (isUnDef(matrix[x])) matrix[x] = [];
+                    matrix[x][igY] = "()";
+                    matrix[x][igY + 1] = "-";
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
-                        cM[x][igY] = colorMap.title;
-                        cM[x][igY + 1] = colorMap.values;
+                        cM[x][igY] = __colorFormat.key;
+                        cM[x][igY + 1] = _getColor(void 0); 
                     }
+		    x++;
                 }
                 matrixrule.push(x);
                 x++;
@@ -177,19 +188,30 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
         if (maxY < matrix[x].length) maxY = matrix[x].length;
     }
 
+
+    var cM2EmptyLine = () => { cM2[cm2Line] = []; for(var y = 0; y < maxY; y++) { cM2[cm2Line][y] = "" }; cm2Line++; };
+    var cM2 = [], cm2Line = 0; 
     var out = new Packages.de.vandermeer.asciitable.v2.V2_AsciiTable();
-    out.addRule();
+    out.addRule(); cM2EmptyLine();
     for(var x = 0; x < maxX; x++) {
-        if (matrixrule.indexOf(x) >= 0) out.addRule();
+        if (matrixrule.indexOf(x) >= 0) { out.addRule(); cM2EmptyLine(); } 
         if (isUnDef(matrix[x])) matrix[x] = [];
+	if (isUnDef(cM2[cm2Line])) cM2[cm2Line] = [];
         for (var y = 0; y < maxY; y++) {            
             if (isUnDef(matrix[x][y])) {
                 matrix[x][y] = "";
-            }
+		cM2[cm2Line][y] = "";
+            } else {
+	        cM2[cm2Line][y] = cM[x][y];
+	    }
         }
+	cm2Line++;
         out.addRow.apply(out, matrix[x]);
     }
-    out.addRule();
+    out.addRule(); cM2EmptyLine(); 
+    global.__matrix = matrix;
+    global.__matrixrule = matrixrule;
+    global.__cm = cM2;
 
     aTheme = _$(aTheme).default(Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get());
     aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 1);
@@ -198,7 +220,7 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
     rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
     var o;
     if (useAnsi) 
-        o = String(rt.render(out, cM));
+        o = String(rt.render(out, cM2));
     else
         o = String(rt.render(out));
     if (o.indexOf("\n") > aWidth) {
@@ -207,4 +229,10 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
     }
 
     return o;
+};
+
+OpenWrap.dev.prototype.view = function(aObj) {
+    ansiStart(); 
+    print(ow.dev.table(aObj, void 0, void 0, true)); 
+    ansiStop();
 };

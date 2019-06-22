@@ -130,7 +130,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 		for(int i=0; i<this.rows.size(); i++){
 			V2_Row original = this.rows.get(i).getOriginalRow();
 			if(original instanceof ContentRow){
-				ret.add(this.renderContentRow(this.rows.get(i), cols));
+				ret.add(this.renderContentRow(this.rows.get(i), cols, i));
 			}
 			else if(original instanceof RuleRow){
 				if(i==0){
@@ -157,7 +157,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 	 * @param cols columns calculated by {@link V2_Width}
 	 * @return a string builder with the rendered strings (if lines are wrapped) of the rendered row
 	 */
-	protected final StrBuilder renderContentRow(ProcessedRow row, int[] cols){
+	protected final StrBuilder renderContentRow(ProcessedRow row, int[] cols, int rowi) {
 		StrBuilder ret = new StrBuilder(100);
 
 		V2_RowTheme rt = null;
@@ -230,8 +230,8 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 							//add row with proper alignment
 							String clr, t;
 							int nw;
-							if (this.colorMap != null && i < this.colorMap.length && k < this.colorMap[i].length) {
-								clr = this.colorMap[i][k];
+							if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && this.colorMap[rowi][k] != "") {
+								clr = this.colorMap[rowi][k];
 								t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
 								nw = width + (t.length() - columns[i][k].length());
 							} else {
@@ -245,8 +245,8 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 					else{
 						String clr, t;
 						int nw;
-						if (this.colorMap != null && i < this.colorMap.length && k < this.colorMap[i].length) {
-							clr = this.colorMap[i][k];
+						if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && this.colorMap[rowi][k] != "") {
+							clr = this.colorMap[rowi][k];
 							t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
 							nw = cols[k] + (t.length() - columns[i][k].length());
 						} else {
