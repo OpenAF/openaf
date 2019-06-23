@@ -79,15 +79,11 @@ OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isCl
 	initI();
 };
 
-OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMap) {
-    if (isUnDef(colorMap)) colorMap = {};
-    if (isUnDef(colorMap.lines)) colorMap.title = "bold";
-    if (isUnDef(colorMap.values)) colorMap.values = "cyan";
-
+OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi) {
     // replace(\033\[[0-9;]*m/g, "")
 	
     __initializeCon();
-    var matrix = [], matrixrule = [], maxX = 0, maxY = 0, cM = [];
+    var matrix = [], matrixrule = [], maxX = 0, maxY = 0, cM = [], al = [];
 
     var _getColor = (aValue) => {
        if (isNumber(aValue)) return __colorFormat.number;
@@ -103,39 +99,47 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
 
             var x = igX, y = igY;
             if (isMap(aValue)) {
-		var doRule = true;
+		var origX = x;
                 for(var key in aValue) {
+			
                     var value = aValue[key];
-                    var origX = x;
 
+		    origX = x;
                     if (isUnDef(matrix[x])) matrix[x] = [];
-                    matrix[x][igY] = key; 
+                    matrix[x][igY] = key + ":"; 
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
+			if (isUnDef(al[x])) al[x] = [];
                         cM[x][igY] = __colorFormat.key;
+			al[x][igY] = "r";
                     }
                     if (!isMap(value) && !isArray(value)) {
                         matrix[x][igY + 1] = String(value);
+			al[x][igY + 1] = "l";
                         if (useAnsi) {
                             if (isUnDef(cM[x])) cM[x] = [];
                             cM[x][igY + 1] = _getColor(value);
                         }
                         x++;
                     } else {
+			if (x != 0 && matrixrule.indexOf(x-1) < 0) matrixrule.push(x);
                         x = x + _r(value, x, igY + 1) - 1;
-			//matrixrule.push(x); doRule = false;
                     }
                 }
                 if (Object.keys(aValue).length == 0) {
-                    matrix[x][igY] = "";
-                    matrix[x][igY + 1] = "";
+                    matrix[x][igY] = "{}";
+		    al[x][igY] = "c";
+                    matrix[x][igY + 1] = "-";
+		    al[x][igY + 1] = "l";
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
                         cM[x][igY] = __colorFormat.key;
                         cM[x][igY + 1] = _getColor(void 0);
                     }
+		    x++;
                 }
-                if (doRule) matrixrule.push(x);
+                matrixrule.push(x);
+	        x++;
             }
             if (isArray(aValue)) {
                 var origX = x;
@@ -144,7 +148,9 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
 
                     origX = x;
                     if (isUnDef(matrix[x])) matrix[x] = [];
-                    matrix[x][igY] = "(" + ii + ")"; 
+		    if (isUnDef(al[x])) al[x] = [];
+                    matrix[x][igY] = "[" + ii + "]"; 
+		    al[x][igY] = "r";
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
                         cM[x][igY] = __colorFormat.key;
@@ -152,19 +158,22 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
 
                     if (!isMap(o) && !isArray(o)) {
                         matrix[x][igY + 1] = String(o); 
+			al[x][igY + 1] = "l";
                         if (useAnsi) {
                             if (isUnDef(cM[x])) cM[x] = [];
                             cM[x][igY + 1] = _getColor(o);
                         }
                         x++;
                     } else {
-                        x = x + _r(o, x, igY + 1);
+			if (x != 0 && matrixrule.indexOf(x-1) < 0) matrixrule.push(x)
+                        x = x + _r(o, x, igY + 1) - 1;
                     }
                 }
                 if (aValue.length == 0) {
-		    if (isUnDef(matrix[x])) matrix[x] = [];
-                    matrix[x][igY] = "()";
+                    matrix[x][igY] = "[]";
+		    al[x][igY] = "c";
                     matrix[x][igY + 1] = "-";
+		    al[x][igY + 1] = "l";
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
                         cM[x][igY] = __colorFormat.key;
@@ -196,17 +205,19 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi, colorMa
     for(var x = 0; x < maxX; x++) {
         if (matrixrule.indexOf(x) >= 0) { out.addRule(); cM2EmptyLine(); } 
         if (isUnDef(matrix[x])) matrix[x] = [];
+	if (isUnDef(al[x])) al[x] = [];
 	if (isUnDef(cM2[cm2Line])) cM2[cm2Line] = [];
         for (var y = 0; y < maxY; y++) {            
             if (isUnDef(matrix[x][y])) {
                 matrix[x][y] = "";
+		al[x][y] = "l";
 		cM2[cm2Line][y] = "";
             } else {
 	        cM2[cm2Line][y] = cM[x][y];
 	    }
         }
 	cm2Line++;
-        out.addRow.apply(out, matrix[x]);
+        out.addRow.apply(out, matrix[x]).setAlignment(al[x]);
     }
     out.addRule(); cM2EmptyLine(); 
     global.__matrix = matrix;
