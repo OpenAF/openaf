@@ -107,11 +107,11 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi) {
 		    origX = x;
                     if (isUnDef(matrix[x])) matrix[x] = [];
                     matrix[x][igY] = key + ":"; 
+		    if (isUnDef(al[x])) al[x] = [];
+		    al[x][igY] = "r";
                     if (useAnsi) {
                         if (isUnDef(cM[x])) cM[x] = [];
-			if (isUnDef(al[x])) al[x] = [];
                         cM[x][igY] = __colorFormat.key;
-			al[x][igY] = "r";
                     }
                     if (!isMap(value) && !isArray(value)) {
                         matrix[x][igY + 1] = String(value);
@@ -127,6 +127,8 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi) {
                     }
                 }
                 if (Object.keys(aValue).length == 0) {
+		    if (isUnDef(matrix[x])) matrix[x] = [];
+		    if (isUnDef(al[x])) al[x] = [];
                     matrix[x][igY] = "{}";
 		    al[x][igY] = "c";
                     matrix[x][igY + 1] = "-";
@@ -170,6 +172,8 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi) {
                     }
                 }
                 if (aValue.length == 0) {
+		    if (isUnDef(matrix[x])) matrix[x] = [];
+		    if (isUnDef(al[x])) al[x] = [];
                     matrix[x][igY] = "[]";
 		    al[x][igY] = "c";
                     matrix[x][igY + 1] = "-";
@@ -197,7 +201,6 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi) {
         if (maxY < matrix[x].length) maxY = matrix[x].length;
     }
 
-
     var cM2EmptyLine = () => { cM2[cm2Line] = []; for(var y = 0; y < maxY; y++) { cM2[cm2Line][y] = "" }; cm2Line++; };
     var cM2 = [], cm2Line = 0; 
     var out = new Packages.de.vandermeer.asciitable.v2.V2_AsciiTable();
@@ -206,19 +209,20 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi) {
         if (matrixrule.indexOf(x) >= 0) { out.addRule(); cM2EmptyLine(); } 
         if (isUnDef(matrix[x])) matrix[x] = [];
 	if (isUnDef(al[x])) al[x] = [];
-	if (isUnDef(cM2[cm2Line])) cM2[cm2Line] = [];
+	if (useAnsi && isUnDef(cM2[cm2Line])) cM2[cm2Line] = [];
         for (var y = 0; y < maxY; y++) {            
             if (isUnDef(matrix[x][y])) {
                 matrix[x][y] = "";
 		al[x][y] = "l";
-		cM2[cm2Line][y] = "";
+		if (useAnsi) cM2[cm2Line][y] = "";
             } else {
-	        cM2[cm2Line][y] = cM[x][y];
+	        if (useAnsi) cM2[cm2Line][y] = cM[x][y];
 	    }
         }
 	cm2Line++;
         out.addRow.apply(out, matrix[x]).setAlignment(al[x]);
     }
+
     out.addRule(); cM2EmptyLine(); 
     global.__matrix = matrix;
     global.__matrixrule = matrixrule;
@@ -234,10 +238,10 @@ OpenWrap.dev.prototype.table = function(aValue, aWidth, aTheme, useAnsi) {
         o = String(rt.render(out, cM2));
     else
         o = String(rt.render(out));
-    if (o.indexOf("\n") > aWidth) {
+    /*if (o.indexOf("\n") > aWidth) {
         rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth - (o.indexOf("\n")- aWidth)));
         o = String(rt.render(out));
-    }
+    }*/
 
     return o;
 };
