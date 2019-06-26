@@ -385,6 +385,200 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorM
 	return output;
 }
 
+function printMap(aValue, aWidth, aTheme, useAnsi) {
+	__initializeCon();
+	var matrix = [], matrixrule = [], maxX = 0,	maxY = 0, cM = [], al = [];
+
+	var _getColor = (aValue) => {
+		if (isNumber(aValue)) return __colorFormat.number;
+		if (isString(aValue)) return __colorFormat.string;
+		if (isBoolean(aValue)) return __colorFormat.boolean;
+		return __colorFormat.default;
+	};
+
+	var _r = (aValue, igX, igY) => {
+		if (isMap(aValue) || isArray(aValue)) {
+			igX = _$(igX).isNumber().default(0);
+			igY = _$(igY).isNumber().default(0);
+
+			var x = igX, y = igY;
+			if (isMap(aValue)) {
+				var origX = x;
+				for (var key in aValue) {
+					var value = aValue[key];
+
+					origX = x;
+					if (isUnDef(matrix[x])) matrix[x] = [];
+
+					matrix[x][igY] = key + ":";
+					if (isUnDef(al[x])) al[x] = [];
+
+					al[x][igY] = "r";
+					if (useAnsi) {
+						if (isUnDef(cM[x])) cM[x] = [];
+						cM[x][igY] = __colorFormat.key;
+					}
+
+					if (!isMap(value) && !isArray(value)) {
+						matrix[x][igY + 1] = String(value);
+						al[x][igY + 1] = "l";
+						if (useAnsi) {
+							if (isUnDef(cM[x])) cM[x] = [];
+							cM[x][igY + 1] = _getColor(value);
+						}
+						x++;
+					} else {
+						if (x != 0 && matrixrule.indexOf(x - 1) < 0) matrixrule.push(x);
+						x = x + _r(value, x, igY + 1) - 1;
+					}
+				}
+
+				if (Object.keys(aValue).length == 0) {
+					if (isUnDef(matrix[x])) matrix[x] = [];
+					if (isUnDef(al[x])) al[x] = [];
+
+					matrix[x][igY] = "{}";
+					al[x][igY] = "c";
+
+					matrix[x][igY + 1] = "-";
+					al[x][igY + 1] = "l";
+
+					if (useAnsi) {
+						if (isUnDef(cM[x])) cM[x] = [];
+						cM[x][igY] = __colorFormat.key;
+						cM[x][igY + 1] = _getColor(void 0);
+					}
+					x++;
+				}
+				matrixrule.push(x);
+				x++;
+			}
+
+			if (isArray(aValue)) {
+				var origX = x;
+				for (var ii in aValue) {
+					var o = aValue[ii];
+
+					origX = x;
+					if (isUnDef(matrix[x])) matrix[x] = [];
+					if (isUnDef(al[x])) al[x] = [];
+					matrix[x][igY] = "[" + ii + "]";
+					al[x][igY] = "r";
+					if (useAnsi) {
+						if (isUnDef(cM[x])) cM[x] = [];
+						cM[x][igY] = __colorFormat.key;
+					}
+
+					if (!isMap(o) && !isArray(o)) {
+						matrix[x][igY + 1] = String(o);
+						al[x][igY + 1] = "l";
+						if (useAnsi) {
+							if (isUnDef(cM[x])) cM[x] = [];
+							cM[x][igY + 1] = _getColor(o);
+						}
+						x++;
+					} else {
+						if (x != 0 && matrixrule.indexOf(x - 1) < 0) matrixrule.push(x)
+						x = x + _r(o, x, igY + 1) - 1;
+					}
+				}
+				if (aValue.length == 0) {
+					if (isUnDef(matrix[x])) matrix[x] = [];
+					if (isUnDef(al[x])) al[x] = [];
+					matrix[x][igY] = "[]";
+					al[x][igY] = "c";
+					matrix[x][igY + 1] = "-";
+					al[x][igY + 1] = "l";
+					if (useAnsi) {
+						if (isUnDef(cM[x])) cM[x] = [];
+						cM[x][igY] = __colorFormat.key;
+						cM[x][igY + 1] = _getColor(void 0);
+					}
+					x++;
+				}
+				matrixrule.push(x);
+				x++;
+			}
+
+			return x - igX;
+		}
+
+		return 0;
+	};
+
+	_r(aValue);
+	maxX = matrix.length;
+	for (var x in matrix) {
+		if (maxY < matrix[x].length) maxY = matrix[x].length;
+	}
+
+	var cM2EmptyLine = () => {
+		cM2[cm2Line] = [];
+		for (var y = 0; y < maxY; y++) {
+			cM2[cm2Line][y] = "";
+		}
+		cm2Line++;
+	};
+	var cM2 = [], cm2Line = 0;
+	var out = new Packages.de.vandermeer.asciitable.v2.V2_AsciiTable();
+	out.addRule();
+	cM2EmptyLine();
+	for (var x = 0; x < maxX; x++) {
+		if (matrixrule.indexOf(x) >= 0) {
+			out.addRule();
+			cM2EmptyLine();
+		}
+		if (isUnDef(matrix[x])) matrix[x] = [];
+		if (isUnDef(al[x])) al[x] = [];
+		if (useAnsi && isUnDef(cM2[cm2Line])) cM2[cm2Line] = [];
+		for (var y = 0; y < maxY; y++) {
+			if (isUnDef(matrix[x][y])) {
+				matrix[x][y] = "";
+				al[x][y] = "l";
+				if (useAnsi) cM2[cm2Line][y] = "";
+			} else {
+				if (useAnsi) cM2[cm2Line][y] = cM[x][y];
+			}
+		}
+		cm2Line++;
+		out.addRow.apply(out, matrix[x]).setAlignment(al[x]);
+	}
+
+	out.addRule();
+	cM2EmptyLine();
+	global.__matrix = matrix;
+	global.__matrixrule = matrixrule;
+	global.__cm = cM2;
+
+	if (isUnDef(aTheme)) {
+		if (io.getDefaultEncoding() == "UTF-8") {
+			aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
+		} else {
+			aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get();
+		}
+	}
+
+	if (isString(aTheme)) {
+		switch(aTheme) {
+		case "utf"  : aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get(); break;
+		case "plain": aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get(); break;
+		default     : aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get(); break;
+		}
+	}
+	
+	aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 1);
+	var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
+	rt.setTheme(aTheme);
+	rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
+	var o;
+	if (useAnsi)
+		o = String(rt.render(out, cM2));
+	else
+		o = String(rt.render(out));
+
+	return o;
+}
+
 var __con, __conStatus, __conAnsi;
 function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;

@@ -6,7 +6,7 @@ var __pinprefix = "";
 var CONSOLESEPARATOR = "-- ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|sql|esql|dsql|pin";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|view|sql|esql|dsql|pin";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "af.encryptText();",
@@ -538,7 +538,8 @@ function __help(aTerm) {
 		__outputConsoleComments("esql     Executes the SQL statement, over a db connection (example 'esql db update...')");
 		__outputConsoleComments("diff     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
 		__outputConsoleComments("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
-		__outputConsoleComments("table    Tries to show the command result as an ascii table.");
+		__outputConsoleComments("table    Tries to show the command result array as an ascii table.");
+		__outputConsoleComments("view     Tries to show the command result object as an ascii table.");
 		__outputConsoleComments("clear    Tries to clear the screen.");
 		__outputConsoleComments("purge    Purge all the command history");
 		__outputConsoleComments("[others] Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
@@ -691,6 +692,27 @@ function __table(aCmd) {
 	return false;
 }
 
+function __view(aCmd) {
+	var __res;
+	if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
+	
+	if (isObject(__res) && Object.keys(__res).length > 0) {
+		var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
+		if (pauseCommand) {
+			var __lines = (prefix + printMap(__res, con.getConsoleReader().getTerminal().getWidth(), void 0, colorCommand)).split(/\n/);
+			sprint(__lines);
+			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
+		} else {
+			__outputConsole(prefix + printMap(__res, con.getConsoleReader().getTerminal().getWidth(), void 0, colorCommand));
+		}
+		return true;
+	} else {
+		__outputConsoleError("Not a map/array object or empty array/object.");
+		return true;
+	}
+	return false;
+}
+
 function __processCmdLine(aCommand, returnOnly) {
 	var internalCommand = false;
 	aCommand = aCommand.replace(/^ *([^ ].*)/, "$1");
@@ -742,7 +764,10 @@ function __processCmdLine(aCommand, returnOnly) {
 			}
 			if (aCommand.match(/^table(?: +|$)/)) {
 				internalCommand = __table(aCommand.replace(/^table */, ""));
-			}			
+			}		
+			if (aCommand.match(/^view(?: +|$)/)) {
+				internalCommand = __view(aCommand.replace(/^view */, ""));
+			}						
 			if (aCommand.match(/^beautify(?: +|$)/)) {
 				internalCommand = true;
 				__beautify(aCommand.replace(/^beautify */, ""));
