@@ -700,7 +700,6 @@ function __view(aCmd) {
 		var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
 		if (pauseCommand) {
 			var __lines = (prefix + printMap(__res, con.getConsoleReader().getTerminal().getWidth(), void 0, colorCommand)).split(/\n/);
-			sprint(__lines);
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
 			__outputConsole(prefix + printMap(__res, con.getConsoleReader().getTerminal().getWidth(), void 0, colorCommand));
