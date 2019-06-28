@@ -5509,6 +5509,15 @@ const javaRegExp = (text) => {
  * </odoc>
  */
 const includeOPack = function(aOPackName, aMinVersion) {
+	_$(aOPackName).isString("The opack name needs to be a string").$_("Please provide an opack name.");
+	if (isDef(aMinVersion) && !(isNumber(aMinVersion) || isString(aMinVersion))) throw "Please provide a number or string version.";
+
+	if (aOPackName.toLowerCase() == "openaf") {
+		if (isDef(aMinVersion)) {
+			if (getVersion() < aMinVersion) throw("The OpenAF version is " + getVersion() + ". It needs to be updated to " + aMinVersion);
+		}
+		return true;
+	}
 	if (isUnDef(getOPackPath(aOPackName))) {
         oPack("install " + aOPackName);
         if (isUnDef(getOPackPath(aOPackName))) throw "Couldn't install opack '" + aOPackName + "'.";

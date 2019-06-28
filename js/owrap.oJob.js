@@ -158,6 +158,13 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 		this.getMainCh().set({ "uuid": this.__id }, oj);
 	}
 
+	if (isDef(this.__ojob.opacks) && isArray(this.__ojob.opacks)) {
+		for(var ii in this.__ojob.opacks) {
+			if (isString(this.__ojob.opacks[ii])) includeOPack(this.__ojob.opacks[ii]);
+			if (isMap(this.__ojob.opacks[ii])) includeOPack(Object.keys(this.__ojob.opacks[ii])[0], this.__ojob.opacks[ii][Object.keys(this.__ojob.opacks[ii])[0]]);
+		}
+	}
+
 	this.__ojob.checkStall = _$(ojob.checkStall).isMap().default(void 0);
 	if (isDef(this.__ojob_checkStall)) {
 		this.__ojob.checkStall.everySeconds = _$(this.__ojob.checkStall.everySeconds).isNumber("Check stall needs to be a number in seconds.").default(60);
