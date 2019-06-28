@@ -5503,6 +5503,29 @@ const javaRegExp = (text) => {
 
 /**
  * <odoc>
+ * <key>includeOPack(aOPackName, aMinVersion)</key>
+ * Ensures that aOPackName is installed. Optionally you can provide a minimal opack version. If the opack is not installed,
+ * can't be installed or cannot be updated to a version bigger or equal to aMinVersion an exception will be thrown.
+ * </odoc>
+ */
+const includeOPack = function(aOPackName, aMinVersion) {
+	if (isUnDef(getOPackPath(aOPackName))) {
+        oPack("install " + aOPackName);
+        if (isUnDef(getOPackPath(aOPackName))) throw "Couldn't install opack '" + aOPackName + "'.";
+    }
+    if (isDef(aMinVersion)) {
+        var version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
+        if (version < aMinVersion) {
+            oPack("update " + aOPackName);
+            version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
+            if (version < aMinVersion) throw "Couldn't update opack " + aOPackName + " from version " + version + "to >=" + aMinVersion;
+        }
+    }    
+    return true;
+};
+
+/**
+ * <odoc>
  * <key>$do(aFunction, aRejFunction) : oPromise</key>
  * Instantiates and returns a oPromise. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
  * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
