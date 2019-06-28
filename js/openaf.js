@@ -4647,7 +4647,7 @@ function oJobRunFile(aYAMLFile, args, aId, aOptionsMap) {
  */
 function oJobRun(aJson, args, aId) {
 	var s = ow.loadOJob().loadJSON(aJson);
-	ow.oJob.load(s.jobs, s.todo, s.ojob, args, aId);
+	ow.oJob.load(s.jobs, s.todo, s.ojob, args, aId, s.init);
 	ow.oJob.start(args, true, aId);
 }
 
