@@ -4784,7 +4784,6 @@ AF.prototype.fromXML2Obj = function (xml, ignored) {
 			var json = af.fromXML2Obj(child, ignored);
 			var value = r[name];
 			if (isDef(value)) {
-				print(name);
 				if (isString(value)) {
 					r[name] = [value]
 					r[name].push(json);
@@ -4830,17 +4829,15 @@ AF.prototype.fromXML2Obj = function (xml, ignored) {
 AF.prototype.fromObj2XML = function (obj) {
 	var xml = '';
 	for (var prop in obj) {
-		xml += "<" + prop + ">";
 		if (obj[prop] instanceof Array) {
 			for (var array in obj[prop]) {
-				xml += af.fromObj2XML(new Object(obj[prop][array]));
+				xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop][array])) + "</" + prop + ">";
 			}
 		} else if (typeof obj[prop] == "object") {
-			xml += af.fromObj2XML(new Object(obj[prop]));
+			xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop])) + "</" + prop + ">";
 		} else {
-			xml += obj[prop];
+			xml += "<" + prop + ">" + obj[prop] + "</" + prop + ">";
 		}
-		xml += "</" + prop + ">";
 	}
 	xml = xml.replace(/<\/?[0-9]{1,}>/g, '');
 	return xml;
