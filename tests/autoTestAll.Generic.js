@@ -507,6 +507,35 @@
         ow.test.assert(af.fromYAML("a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n"), r, "Problem converting from yaml.");
     };
 
+    exports.testXML2And4Obj = function() {
+        var orig = { 
+            something: { 
+                a: "abc123", 
+                b: [ 
+                    { 
+                        item: { 
+                            x: "123", 
+                            y: "-123" 
+                        }
+                    }, 
+                    { 
+                        item: { 
+                            x: "2" 
+                        }
+                    }, { 
+                        item: { 
+                            x: "3" 
+                        }
+                    }
+                ], 
+                c: "1" 
+            }
+        };
+
+        var dest = af.fromXML2Obj(af.fromObj2XML(orig));
+        ow.test.assert(dest, orig, "Problem with conversion between javascript and XML.");
+    };
+
     exports.testGetPath = function() {
         ow.loadObj();
 
