@@ -4748,6 +4748,101 @@ AF.prototype.toYAML = function(aJson) { loadJSYAML(); return jsyaml.dump(aJson);
  * </odoc>
  */
 AF.prototype.fromYAML = function(aYAML) { loadJSYAML(); if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); return jsyaml.load(aYAML); };
+
+/**
+ * <odoc>
+ * <key>af.fromXML2Obj(xml, ignored) : Object</key>
+ * Tries to convert a XML object into a javascript object. Tag attributes will be ignored unless the corresponding tag name is included
+ * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
+ * </odoc>
+ */
+AF.prototype.fromXML2Obj = function (xml, ignored) {
+	ignored = _$(ignored).isArray().default(void 0);
+	if (typeof xml != "xml") {
+		if (isString(xml)) {
+			xml = xml.replace(/^<\?xml[^?]*\?>/, "");
+			xml = new XMLList("<xml>" + xml + "</xml>");
+		} else {
+			throw "Please provide a string or a XML object.";
+		}
+	}
+
+	var r, children = xml.children(), attributes = xml.attributes(), length = children.length();
+	if (length == 0) {
+		r = xml.toString();
+	} else if (length == 1) {
+		var text = xml.text().toString();
+		if (text) {
+			r = text;
+		}
+	}
+	if (r == void 0) {
+		r = {};
+		for (var ichild in children) {
+			var child = children[ichild];
+			var name = child.localName();
+			var json = af.fromXML2Obj(child, ignored);
+			var value = r[name];
+			if (isDef(value)) {
+				if (isString(value)) {
+					r[name] = [value]
+					r[name].push(json);
+				} else {
+					if (!isArray(value)) {
+						value = [ value ];
+						r[name] = value;
+					}
+					value.push(json);
+				}
+			} else {
+				r[name] = json;
+			}
+		}
+	}
+	if (attributes.length()) {
+		var a = {}, c = 0;
+		for (var iattribute in attributes) {
+			var attribute = attributes[iattribute];
+			var name = attribute.localName();
+			if (ignored && ignored.indexOf(name) == -1) {
+				a["_" + name] = attribute.toString();
+				c++;
+			}
+		}
+		if (c) {
+			if (r) a._ = r;
+			return a;
+		}
+	}
+
+	return r;
+};
+
+/**
+ * <odoc>
+ * <key>af.fromObj2XML(aMap) : String</key>
+ * Tries to convert aMap into a similiar XML strucuture returned as string.
+ * Note that no validation of XML strucuture is performed. 
+ * Tips: ensure each map is under a map key.
+ * </odoc>
+ */
+AF.prototype.fromObj2XML = function (obj) {
+	var xml = '';
+	for (var prop in obj) {
+		if (obj[prop] instanceof Array) {
+			for (var array in obj[prop]) {
+				xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop][array])) + "</" + prop + ">";
+			}
+		} else if (typeof obj[prop] == "object") {
+			xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop])) + "</" + prop + ">";
+		} else {
+			xml += "<" + prop + ">" + obj[prop] + "</" + prop + ">";
+		}
+	}
+	xml = xml.replace(/<\/?[0-9]{1,}>/g, '');
+	return xml;
+};
+
 /**
  * <odoc>
  * <key>AF.encryptText()</key>

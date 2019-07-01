@@ -985,6 +985,26 @@ OpenWrap.format.prototype.getClasspath = function() {
 
 /**
  * <odoc>
+ * <key>ow.format.getHostName() : String</key>
+ * Returns the current hostname.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getHostName = function() {
+	return String(java.net.InetAddress.getLocalHost().getHostName());
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.getHostAddress() : String</key>
+ * Returns the current host ip address.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getHostAddress = function() {
+	return String(java.net.InetAddress.getLocalHost().getHostAddress());
+};
+
+/**
+ * <odoc>
  * <key>ow.format.testPort(aAddress, aPort, aCustomTimeout) : boolean</key>
  * Tries to connect to aPort (e.g. 1234) on aAddress (e.g. 1.2.3.4). If the connection is successfull it will disconnect
  * and return true, otherwise it will return false. If aCustomTimeout (in ms) is defined, it will use that value as the timeout
