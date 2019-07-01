@@ -41,7 +41,7 @@ public class OAFEngine extends AbstractScriptEngine implements ScriptEngine, Aut
             if (afcmd == null) {
                 if (AFCmdBase.afc == null) {
                     afcmd = new AFCmdOS();
-                    try { ((AFCmdOS)afcmd).execute(new JsonObject(), "", true, new StringBuilder(""), false); } catch(Exception e) { }
+                    try { ((AFCmdOS)afcmd).execute(new JsonObject(), "", true, new StringBuilder("global.__engineScript = true;"), false); } catch(Exception e) { }
                 } else {
                     afcmd = (AFCmdOS) AFCmdBase.afc;
                 }

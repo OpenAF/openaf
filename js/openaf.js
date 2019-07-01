@@ -583,7 +583,7 @@ var __con, __conStatus, __conAnsi;
 function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;
 
-	if (isUnDef(__con)) {
+	if (isUnDef(__con) && isUnDef(global.__engineScript)) {
 		__con = "";
 		plugin("Console");
 		try {
