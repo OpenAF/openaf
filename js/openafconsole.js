@@ -979,6 +979,7 @@ function __pauseString(aString) {
 var con = new Console();
 var __ansiflag = con.isAnsiSupported();
 var jansi = JavaImporter(Packages.org.fusesource.jansi);
+var __ansiflag = (jansi != null && isDef(jansi)) ? con.isAnsiSupported() : false;
 var cmd = "";
 var timeCommand = false; var start; var end;
 var outputCommand = true;

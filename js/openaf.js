@@ -583,6 +583,15 @@ var __con, __conStatus, __conAnsi;
 function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;
 
+	try {
+		af.getClass("jline.console.ConsoleReader");
+	} catch(e) {
+		while(__con == "") sleep(25);
+		__conStatus = true;
+		__conAnsi = true;
+		return true;
+	}
+	
 	if (isUnDef(__con) && isUnDef(global.__engineScript)) {
 		__con = "";
 		plugin("Console");
