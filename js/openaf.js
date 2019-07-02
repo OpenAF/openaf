@@ -4486,6 +4486,47 @@ const $rest = function(ops) {
 	return new _rest(ops);
 };
  
+/**
+ * <odoc>
+ * <key>$openaf(aScript, aPMIn, aOpenAF) : Object</key>
+ * Tries to start an external process running openaf (if aOpenAF is provided, as a string or array, it will be used as the command to invoke openaf) to execute
+ * aScript setting the __pm variable to aPMIn. Upon execution end the __pm contents will be returned by the function;
+ * </odoc>
+ */
+const $openaf = function(aScript, aPMIn, aOpenAF) {
+	var javaPath = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
+
+	if (isUnDef(aOpenAF)) {
+		if (isDef(__forcedOpenAFJar)) 
+			aOpenAF = [ javaPath, "-jar", __forcedOpenAFJar ]; 
+		else
+			aOpenAF = [ javaPath, "-jar", getOpenAFJar() ];
+	} else {
+		if (isString(aOpenAF)) {
+			if (aOpenAF.indexOf("-jar") < 0 && aOpenAF.indexOf("java") < 0) {
+				// Needs java prefixed
+				aOpenAF = javaPath + " -jar " + aOpenAF;
+			}
+		} else if (isArray(aOpenAF)) {
+			// it's okay
+		} else {
+			throw "Please provide a string or array for the aOpenAF parameter.";
+		}
+	}
+	aOpenAF = _$(aOpenAF).default([java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java", "-jar", getOpenAFJar()]);
+	aPMIn   = _$(aPMIn).isObject().default({});
+	var cmd;
+	if (isArray(aOpenAF)) {
+		cmd = aOpenAF;
+		cmd.push("-p");
+		cmd.push("-i");
+		cmd.push("script");
+	} else {
+		cmd = aOpenAF + " -p -i script";
+	}
+	return jsonParse(sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, void 0, "") + "); load('" + aScript + "'); print(stringify(__pm, void 0, ''));"));
+};
+
 const $cache = function(aName) {
     var __c = function(aN) {
         aN = _$(aN).default("cache");
