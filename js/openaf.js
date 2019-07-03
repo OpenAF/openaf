@@ -4524,7 +4524,11 @@ const $openaf = function(aScript, aPMIn, aOpenAF) {
 	} else {
 		cmd = aOpenAF + " -p -i script";
 	}
-	return jsonParse(sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, void 0, "") + "); load('" + aScript + "'); print(stringify(__pm, void 0, ''));"));
+
+	var separator = "-=?OpEnAf?=-";
+	var res = sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, void 0, "") + "); load('" + aScript + "'); print('" + separator + "' + stringify(__pm, void 0, ''));");
+	res = res.substr(res.indexOf(separator) + separator.length, res.length);
+	return jsonParse(res);
 };
 
 const $cache = function(aName) {
