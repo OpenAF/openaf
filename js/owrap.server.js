@@ -1355,7 +1355,184 @@ OpenWrap.server.prototype.locks.prototype.whenUnLocked = function (aLockName, aF
 
 	return false;
 };
-  
+
+//-----------------------------------------------------------------------------------------------------
+// SIMPLE MASTER LIST
+//-----------------------------------------------------------------------------------------------------
+
+/**
+ * <odoc>
+ * <key>ow.server.masters(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) : Object</key>
+ * Creates a new instance of a simple master nodes management code. Each master node should create it's own instante providing aHost address
+ * on which it can be contacted, a corresponding aPort, a nodeTimeout in ms (defaults to 30000), a aNumberOfTries to contact a master node (defaults to 3),
+ * a aTryTimeout in ms waiting for a reply from another master node (defaults to 500ms), a custom master list implementation options and a custom map of functions
+ * implementing a master list retrieval. If no aListImplemnetation is provided it defaults to an internal file based implementation that expects
+ * the following options: LOCKTIMEOUT, how much a lock should be honored in ms (e.g. more that 60000ms and it's wierd that the lock it's still there and no other
+ * master node has been found); MASTERFILE, the filepath to the master file; MASTERFILELOCK, the filepath to the master file lock file.\
+ * \
+ * To provide another custom aListImplementation it should contain the following methods:\
+ * \
+ *   - mastersLock()         - locking the access to the master nodes list\
+ *   - mastersUnLock()       - unlocking the access to the master nodes list\
+ *   - mastersGetList()      - returns the current master nodes list\
+ *   - mastersPutList(aList) - sets a new master nodes list (an array with maps containing host, port and date (last contact date))\
+ * \
+ * </odoc>
+ */
+OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) {
+	ow.loadFormat();
+
+	this.options = {};
+	if (isUnDef(aImplOptions) || !isMap(aImplOptions)) {
+		this.options = {
+			LOCKTIMEOUT   : 60000,
+			MASTERFILE    : "master.json",
+			MASTERFILELOCK: "master.json.lock"
+		};
+	}
+	
+	if (isUnDef(aListImplementation) || !isObject(aListImplementation)) {
+		this.impl = {
+			mastersLock: () => {
+				try {
+					var alock = io.readFile(this.options.MASTERFILELOCK);
+					if (now() - alock.lock > this.options.LOCKTIMEOUT) {
+						io.writeFile(this.options.MASTERFILELOCK, { lock: now() });
+						return true;
+					} else {
+						return false;
+					}
+				} catch(e) {
+					if (String(e).indexOf("FileNotFoundException") > 0) {
+						io.writeFile(this.options.MASTERFILELOCK, { lock: now() });
+						return true;
+					} else {
+						throw e;
+					}
+				}
+			},
+			mastersUnLock: () => {
+				io.rm(this.options.MASTERFILELOCK);
+			},
+			mastersGetList: () => {
+				if (!io.fileExists(this.options.MASTERFILE)) io.writeFile(this.options.MASTERFILE, { rojobs: [] });
+				return io.readFile(this.options.MASTERFILE);
+			},
+			mastersPutList: (aList) => {
+				io.writeFile(this.options.MASTERFILE, aList);
+			}
+		};
+	} else {
+		this.impl = aListImplementation;
+	}
+
+	this.HOST              = _$(aHost).isString("aHost not string").default("127.0.0.1");
+	this.PORT              = _$(aPort).isNumber().default(80);   
+	this.TRIES             = _$(aNumberOfTries).isNumber().default(3);
+	this.TRYTIMEOUT        = _$(aTryTimeout).isNumber().default(500);
+	this.NODETIMEOUT       = _$(nodeTimeout).isNumber().default(30000);
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.masters.sendToOthers(aData, aSendToOtherFn) : Object</key>
+ * Tries to send to another master node aData using aSendToOtherFn that receives, as parameter, a aData and a Map with HOST and PORT of another
+ * master node to try. In case of failure the function should throw an exception in case of success the function should return an object
+ * that will be returned. If no result can be obtained an object with result: 0 will be returned.
+ * </odoc>
+ */
+OpenWrap.server.prototype.masters.prototype.sendToOthers = function(data, aSendFn) {
+	var masterList = this.impl.mastersGetList();
+	var tryList = masterList.rojobs;
+	var res = { result: 0 };
+
+	for(var ii in tryList) {
+		if (tryList[ii].host + tryList[ii].port != this.HOST + this.PORT) {
+			try { 
+				res = aSendFn(aData, tryList[ii]); 
+				return res; 
+			} catch(e) {
+			}
+		}
+	}
+	
+	return res;
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.masters.verify()</key>
+ * Verifies if all master nodes ports are reachable and updates the master file. If a master node is not reachable it will try
+ * to a specific number of times after timing out on a specific timeout (see default values in help ow.server.masters).
+ * </odoc>
+ */
+OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHost) {
+	var numTries = this.TRIES, triesTimeout = this.TRYTIMEOUT;
+	while(this.impl.mastersLock() && numTries > 0) {
+		numTries--;
+		sleep(triesTimeout);
+	}
+	if (numTries > 0) {
+		var masterList = this.impl.mastersGetList();
+		if (isDef(addNewHost) && 
+			$path(masterList.rojobs, 
+				"[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) masterList.rojobs.push(addNewHost);
+
+		for(var ii in masterList.rojobs) {
+			if (isDef(delHost) && delHost.host == masterList.rojobs[ii].host && delHost.port == masterList.rojobs[ii].port) {
+				masterList.rojobs = deleteFromArray(masterList.rojobs, ii);
+			} else {
+				var res = ow.format.testPort(masterList.rojobs[ii].host, masterList.rojobs[ii].port, 100); 
+				if (res) {
+					masterList.rojobs[ii].date = now();
+				} else {
+					if (now() - masterList.rojobs[ii].date > this.NODETIMEOUT) {
+						logWarn("Can't contact " + masterList.rojobs[ii].host + ":" + masterList.rojobs[ii].port + "!");
+						masterList.rojobs[ii].dead = true;
+					}
+				}
+			}
+		}
+		this.impl.mastersPutList(masterList);
+		this.impl.mastersUnLock();
+		return true;
+	} else {
+		return false;
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.masters.checkIn()</key>
+ * Checks in the current master node.
+ * </odoc>
+ */
+OpenWrap.server.prototype.masters.prototype.checkIn = function() {
+	var me = {
+		host: this.HOST,
+		port: this.PORT,
+		date: now()
+	};
+
+	var res = this.verify(me);
+	if (!res) throw "Can't register on master file.";
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.masters.checkOut()</key>
+ * Checks out the current master node.
+ * </odoc>
+ */
+OpenWrap.server.prototype.masters.prototype.checkOut = function() {
+	var me = {
+		host: this.HOST,
+		port: this.PORT
+	};
+
+	var res = this.verify(void 0, me);
+	if (!res) throw("Can't unregister from master file");
+};
 
 //-----------------------------------------------------------------------------------------------------
 // HTTP SERVER
