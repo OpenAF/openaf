@@ -1382,15 +1382,15 @@ OpenWrap.server.prototype.locks.prototype.whenUnLocked = function (aLockName, aF
 OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) {
 	ow.loadFormat();
 
-	this.options = {};
-	if (isUnDef(aImplOptions) || !isMap(aImplOptions)) {
-		this.options = {
-			LOCKTIMEOUT   : 60000,
-			MASTERFILE    : "master.json",
-			MASTERFILELOCK: "master.json.lock"
-		};
-	}
-	
+	this.options = {
+		LOCKTIMEOUT   : 60000,
+		MASTERFILE    : "master.json",
+		MASTERFILELOCK: "master.json.lock"
+	};
+	if (isDef(aImplOptions) && isMap(aImplOptions)) {
+		this.options = merge(this.options, aImplOptions);
+	} 
+
 	if (isUnDef(aListImplementation) || !isObject(aListImplementation)) {
 		this.impl = {
 			mastersLock: () => {
