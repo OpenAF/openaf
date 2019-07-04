@@ -1441,13 +1441,13 @@ OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberO
  * that will be returned. If no result can be obtained an object with result: 0 will be returned.
  * </odoc>
  */
-OpenWrap.server.prototype.masters.prototype.sendToOthers = function(data, aSendFn) {
+OpenWrap.server.prototype.masters.prototype.sendToOthers = function(aData, aSendFn) {
 	var masterList = this.impl.mastersGetList();
 	var tryList = masterList.rojobs;
 	var res = { result: 0 };
 
 	for(var ii in tryList) {
-		if (tryList[ii].host + tryList[ii].port != this.HOST + this.PORT) {
+		if ((tryList[ii].host + tryList[ii].port) != (this.HOST + this.PORT)) {
 			try { 
 				res = aSendFn(aData, tryList[ii]); 
 				return res; 
