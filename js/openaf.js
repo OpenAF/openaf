@@ -566,7 +566,7 @@ function printMap(aValue, aWidth, aTheme, useAnsi) {
 		}
 	}
 	
-	aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 1);
+	aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 2);
 	var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
 	rt.setTheme(aTheme);
 	rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
