@@ -673,7 +673,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 	}
 
 	if (isDef(existing)) {
-		if (this.__ojob.logToConsole || this.__ojob.logToFile) {
+		if (this.__ojob.logToConsole || this.__ojob.logToFile || isDef(getChLog())) {
 			var aa = "";
 			if (isDef(args) && this.__ojob.logArgs) {
 				var temp = clone(args);
