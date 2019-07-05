@@ -227,7 +227,7 @@ public class OAFRepack {
 
             String cmd = "java -jar openaf.jar -h";
             if (args.length > 1) cmd = args[1];
-            repackAndReplace(args[0], cmd);
+            repackAndReplace(args[0], cmd.replaceAll("--force", ""));
         }
     }
 }
