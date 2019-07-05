@@ -557,7 +557,7 @@
     };       
 
     exports.testSearchKeyAndValues = function() {
-        var a = { abc: 123, m: { xpto: 2, arr: [ { bbb: 1 }, { bbb: 2}]}};
+        var a = { abc: 123, m: { xpto: 2, arr: [ { bbb: 1 }, { bbb: 2}]}, o: "oi"};
 
         ow.test.assert(searchKeys(a, "xpto"), { ".m.xpto": 2 }, "Problem with searching a simple key.");
         ow.test.assert(searchKeys(a, "bbb"), {
@@ -567,6 +567,12 @@
 
         ow.test.assert(searchValues(a, "123"), { ".abc": 123 }, "Problem with searching a simple value.");
         ow.test.assert(searchValues(a, "2"), { ".abc": 123, ".m.xpto": 2, ".m.arr[1].bbb": 2 }, "Problem with searching multiple values.");
+
+        searchKeys(a, "xpto", void 0, (k, v, p) => { ow.obj.setPath(a, p + "." + k, "AI!"); });
+        ow.test.assert(a.m.xpto, "AI!", "Problem with function on searchKeys.");
+
+        searchValues(a, "oi", void 0, (k, v, p) => { ow.obj.setPath(a, p + "." + k, 456); });
+        ow.test.assert(a.o, 456, "Problem with function on searchValues.");
     };
 
     exports.testNDJSON = function() {
