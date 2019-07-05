@@ -3605,18 +3605,20 @@ function traverse(aObject, aFunction, aParent) {
 
 /**
  * <odoc>
- * <key>searchKeys(aObject, aSearchKey, useCase) : Map</key>
+ * <key>searchKeys(aObject, aSearchKey, useCase, actFunc) : Map</key>
  * Traverses aObject looking for key matches, ignoring case if useCase is true, of the regular expression aSearchKey.
- * Each element founf is added to the returned Map. The element key will represent the path from aObject to it.
+ * Each element founf is added to the returned Map. The element key will represent the path from aObject to it. Tip: The actFunc 
+ * can use ow.obj.setPath to replace a value: "(key, value, path) => { ow.obj.setPath(aObject, path + '.' + key, replaceValue); }"
  * </odoc>
  */
-function searchKeys(aObject, aSearchKey, useCase) {
+function searchKeys(aObject, aSearchKey, useCase, actFunc) {
 	var res = {};
 	var usecase = useCase ? "" : "i";
 	
 	traverse(aObject, function(key, value, path) {
 		if (key.match(new RegExp(aSearchKey, usecase))) {
 			res[path + ((isNaN(Number(key))) ? "." + key : "[\"" + key + "\"]")] = (typeof value == 'object') ? clone(value) : value;
+			if (isDef(actFunc) && isFunction(actFunc)) actFunc(key, value, path);
 		}
 	});
 	return res;
@@ -3624,18 +3626,21 @@ function searchKeys(aObject, aSearchKey, useCase) {
 
 /**
  * <odoc>
- * <key>searchValues(aObject, aSearchValue, useCase) : Map</key>
+ * <key>searchValues(aObject, aSearchValue, useCase, actFunc) : Map</key>
  * Traverse aObject looking for value matches, ignoring case if useCase is true, of the regular expression aSearchKey. 
- * Each value found is added to the returned Map linked to the path representation of where it was found.
+ * Each value found is added to the returned Map linked to the path representation of where it was found. Optionally
+ * you can provide an actFunc that receives the key, value and path. Tip: The actFunc can use ow.obj.setPath to 
+ * replace a value: "(key, value, path) => { ow.obj.setPath(aObject, path + '.' + key, replaceValue); }"
  * </odoc>
  */
-function searchValues(aObject, aSearchValue, useCase) {
+function searchValues(aObject, aSearchValue, useCase, actFunc) {
 	var res = {};
 	var usecase = useCase ? "" : "i";
 	
 	traverse(aObject, function(key, value, path) {
-		if ((value+"").match(new RegExp(aSearchValue, usecase))) {
+		if (String(value).match(new RegExp(aSearchValue, usecase))) {
 			res[path + ((isNaN(Number(key))) ? "." + key : "[\"" + key + "\"]")] = (typeof value == 'object') ? clone(value) : value;
+			if (isDef(actFunc) && isFunction(actFunc)) actFunc(key, value, path);
 		}
 	});
 	return res;
