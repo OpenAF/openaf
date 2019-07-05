@@ -51,27 +51,27 @@ public class DB {
 
 	/**
 	 * <odoc>
-	 * <key>DB.db(aDriver, aURL, aLogin, aPassword)</key>
+	 * <key>DB.db(aDriver, aURL, aLogin, aPassword, aTimeout)</key>
 	 * Creates a new instance of the object DB providing java class aDriver (e.g. oracle.jdbc.OracleDriver)
 	 * that must be included on OpenAF's classpath, a JDBC aURL, aLogin and aPassword. If the aDriver is 
-	 * null or undefined the Oracle driver will be used. 
+	 * null or undefined the Oracle driver will be used. Optionally you can provide aTimeout in ms.
 	 * </odoc>
 	 */
-	public void newDB(String driver, String url, String login, String pass) throws Exception {
+	public void newDB(String driver, String url, String login, String pass, String timeout) throws Exception {
 		// Are we in the wrong constructor?
-		if (pass == null || pass.equals("undefined")) {
+		if (driver.startsWith("jdbc:")) {
 			if (url != null) {
 				// Ok, use it as if it was another constructor
 				for(String prefix : drivers.keySet()) {
-					if (driver.startsWith(prefix)) connect(drivers.get(prefix), driver, url, login);
+					if (driver.startsWith(prefix)) connect(drivers.get(prefix), driver, url, login, pass);
 				}
-				if (url.startsWith("jdbc:oracle"))     connect(ORACLE_DRIVER, driver, url, login);
-				if (url.startsWith("jdbc:postgresql")) connect(POSTGRESQL_DRIVER, driver, url, login);
-				if (url.startsWith("jdbc:h2"))         connect(H2_DRIVER, driver, url, login);
+				if (url.startsWith("jdbc:oracle"))     connect(ORACLE_DRIVER, driver, url, login, pass);
+				if (url.startsWith("jdbc:postgresql")) connect(POSTGRESQL_DRIVER, driver, url, login, pass);
+				if (url.startsWith("jdbc:h2"))         connect(H2_DRIVER, driver, url, login, pass);
 			}
 		} else {
-			SimpleLog.log(SimpleLog.logtype.DEBUG, "New DB with driver='" + driver + "'|url='" + url + "'|login='"+login+"'|pass='"+pass+"'", null);
-			connect(driver, url, login, pass);
+			SimpleLog.log(SimpleLog.logtype.DEBUG, "New DB with driver='" + driver + "'|url='" + url + "'|login='"+login+"'|pass='"+pass+"'|timeout='"+timeout+"'", null);
+			connect(driver, url, login, pass, timeout);
 		}
 	}
 
@@ -718,7 +718,7 @@ public class DB {
 		}
 	}
 	
-	protected void connect(String driver, String url, String login, String pass) throws Exception {
+	protected void connect(String driver, String url, String login, String pass, String timeout) throws Exception {
 		try {
 			Class.forName(driver);
 			this.url = url;
@@ -727,6 +727,14 @@ public class DB {
 			
 			props.setProperty("user", AFCmdBase.afc.dIP(login));
 			props.setProperty("password", AFCmdBase.afc.dIP(pass));
+			try {
+				if (timeout != null && Integer.valueOf(timeout) > 0) {
+					props.setProperty("connectTimeout", timeout);
+				}
+			} catch(java.lang.NumberFormatException e) {
+				// ignore
+			};
+			
 			
 			con = DriverManager.getConnection(url, props);
 			con.setAutoCommit(false);

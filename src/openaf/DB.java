@@ -25,9 +25,9 @@ public class DB extends ScriptableObject {
 	}
 	
 	@JSConstructor
-	public void newDB(String driver, String url, String login, String pass) throws Exception {
+	public void newDB(String driver, String url, String login, String pass, String timeout) throws Exception {
 		coreDB = new openaf.core.DB();
-		coreDB.newDB(driver, url, login, pass);
+		coreDB.newDB(driver, url, login, pass, timeout);
 	}
 
 	@JSFunction
