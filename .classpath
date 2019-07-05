@@ -2,7 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="lib/antlr-runtime-3.4.jar"/>
-	<classpathentry kind="lib" path="lib/cache-api-1.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-cli-1.4.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.11.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections4-4.2.jar"/>
@@ -17,8 +16,6 @@
 	<classpathentry kind="lib" path="lib/gson-2.8.5.jar"/>
 	<classpathentry kind="lib" path="lib/httpclient-4.5.6.jar"/>
 	<classpathentry kind="lib" path="lib/httpcore-4.4.10.jar"/>
-	<classpathentry kind="lib" path="lib/ignite-core-2.7.0.jar"/>
-	<classpathentry kind="lib" path="lib/ignite-shmem-1.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/jackson-core-2.9.7.jar"/>
 	<classpathentry kind="lib" path="lib/jansi-1.17.1.jar"/>
 	<classpathentry kind="lib" path="lib/javax.mail.jar"/>

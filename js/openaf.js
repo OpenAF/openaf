@@ -1789,6 +1789,9 @@ function plugin(aPlugin) {
 		if (String(e).indexOf("java.lang.ClassNotFoundException: SMB") >= 0) {
 			throw("The SMB plugin is no longer included. Please install the SMB oPack (\"opack install plugin-SMB\").");
 		}
+		if (String(e).indexOf("java.lang.ClassNotFoundException: Ignite") >= 0) {
+			throw("The Ignite plugin is no longer included. Please install the Ignite oPack (\"opack install plugin-Ignite\").");
+		}
 	}
 }
 

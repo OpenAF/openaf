@@ -343,7 +343,7 @@ try {
 		"git": OPENAF_BUILD_HOME + "/src/openaf/plugins/GIT.java",
 		//"smb": OPENAF_BUILD_HOME + "/src/openaf/plugins/SMB.java",
 		"zip": OPENAF_BUILD_HOME + "/src/openaf/plugins/ZIP.java",
-		"ignite": OPENAF_BUILD_HOME + "/src/openaf/plugins/Ignite.java",
+		//"ignite": OPENAF_BUILD_HOME + "/src/openaf/plugins/Ignite.java",
 		"bsdiff": OPENAF_BUILD_HOME + "/src/openaf/plugins/BSDiff.java",
 		"scope": OPENAF_BUILD_HOME + "/js/openaf.js",
 		"scopesigil": OPENAF_BUILD_HOME + "/js/openafsigil.js",
