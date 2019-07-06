@@ -1370,7 +1370,7 @@ function sha512(obj) {
  * function. Optionally if toHex = true the output will be converted to hexadecimal lower case.
  * </odoc>
  */
-function hmacSHA256(data, key, toHex) {
+function hmacSHA256(data, key, toHex, alg) {
 	var alg = "HmacSHA256";
 	if (isString(key)) key = (new java.lang.String(key)).getBytes("UTF-8");
 	var mac = javax.crypto.Mac.getInstance(alg);
@@ -1378,10 +1378,21 @@ function hmacSHA256(data, key, toHex) {
 	var res = mac.doFinal(new java.lang.String(data).getBytes("UTF-8"));
 	if (toHex) {
 		ow.loadFormat();
-		ow.format.string.toHex(res).toLowerCase();
+		res = ow.format.string.toHex(res, "").toLowerCase();
 	}
 	return res;
- }
+}
+
+/**
+ * <odoc>
+ * <key>hmacSHA512(data, key, toHex) : ArrayOfBytes</key>
+ * Given data and a key will calculate the hash-based message authentication code (HMAC) using the SHA512 hash
+ * function. Optionally if toHex = true the output will be converted to hexadecimal lower case.
+ * </odoc>
+ */
+function hmacSHA512(data, key, toHex) {
+	return hmacSHA256(data, key, toHex, "HmacSHA512");
+}
 
 /**
  * <odoc>
