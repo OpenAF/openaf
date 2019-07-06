@@ -231,6 +231,30 @@ public class HTTP extends ScriptableObject {
 	public Object get(String url, Object in, NativeObject request, boolean bytes, int timeout, boolean stream) throws IOException {
 		return exec(url, "GET", in, request, bytes, timeout, stream);
 	}
+
+	/**
+	 * <odoc>
+	 * <key>HTTP.getBytes(aUrl, aIn, aRequestMap, aTimeout)</key>
+	 * Builds a HTTP request returning bytes for the aURL with a GET sending
+	 * aIn body request (or "") and optionally sending aRequestMap headers and providing an optional custom HTTP aTimeout. 
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object getBytes(String url, Object in, NativeObject request, int timeout) throws IOException {
+		return exec(url, "GET", in, request, true, timeout, false);
+	}
+
+	/**
+	 * <odoc>
+	 * <key>HTTP.getStream(aUrl, aIn, aRequestMap, aTimeout)</key>
+	 * Builds a HTTP request, returning a JavaStream, for the aURL with a GET sending
+	 * aIn body request (or "") and optionally sending aRequestMap headers and optionally providing a custom HTTP aTimeout. 
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object getStream(String url, Object in, NativeObject request, int timeout) throws IOException {
+		return exec(url, "GET", in, request, false, timeout, true);
+	}
 	
 	/**
 	 * <odoc>

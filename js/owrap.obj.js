@@ -1648,6 +1648,14 @@ OpenWrap.obj.prototype.http.prototype.get = function(aUrl, aIn, aRequestMap, isB
 	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream);
 };
 
+OpenWrap.obj.prototype.http.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, true, aTimeout, false);
+};
+
+OpenWrap.obj.prototype.http.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true);
+};
+
 OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	return this.exec(aUrl, "POST", aIn, aRequestMap, isBytes, aTimeout, returnStream);
 };
