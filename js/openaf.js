@@ -1365,6 +1365,26 @@ function sha512(obj) {
 
 /**
  * <odoc>
+ * <key>hmacSHA256(data, key, toHex) : ArrayOfBytes</key>
+ * Given data and a key will calculate the hash-based message authentication code (HMAC) using the SHA256 hash
+ * function. Optionally if toHex = true the output will be converted to hexadecimal lower case.
+ * </odoc>
+ */
+function hmacSHA256(data, key, toHex) {
+	var alg = "HmacSHA256";
+	if (isString(key)) key = (new java.lang.String(key)).getBytes("UTF-8");
+	var mac = javax.crypto.Mac.getInstance(alg);
+	mac.init(new javax.crypto.spec.SecretKeySpec(key, alg));
+	var res = mac.doFinal(new java.lang.String(data).getBytes("UTF-8"));
+	if (toHex) {
+		ow.loadFormat();
+		ow.format.string.toHex(res).toLowerCase();
+	}
+	return res;
+ }
+
+/**
+ * <odoc>
  * <key>bcrypt(aText, aVerifyHash, hashingRounds) : String/boolean</key>
  * If aText is provided it will return the resulting string of applying the bcrypt hash to aText. Optionally the bcrypt hashingRounds (between 4 and 
  * 31, default 10) can be provided (note: the more rounds, the more slower and secure).
