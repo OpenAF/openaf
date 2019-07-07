@@ -4378,10 +4378,10 @@ const $rest = function(ops) {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
 						if (isDef(parent.options.preAction)) { 
-							var res = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+							var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
 							var args;
-							if (isDef(res) && res != null) 
-								args = $m2a(fdef, res);
+							if (isDef(rres) && rres != null) 
+								args = $m2a(fdef, rres);
 							else
 								args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
 							res = aFn[aSubFn].apply(aFn, args);
@@ -4397,10 +4397,10 @@ const $rest = function(ops) {
 					}
 				} else {
 					if (isDef(parent.options.preAction)) { 
-						var res = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+						var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
 						var args;
-						if (isDef(res) && res != null) 
-							args = $m2a(fdef, res);
+						if (isDef(rres) && rres != null) 
+							args = $m2a(fdef, rres);
 						else
 							args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
 						res = aFn[aSubFn].apply(aFn, args);
@@ -4434,10 +4434,10 @@ const $rest = function(ops) {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
 						if (isDef(parent.options.preAction)) { 
-							var res = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+							var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
 							var args;
-							if (isDef(res) && res != null) 
-								args = $m2a(fdef, res);
+							if (isDef(rres) && rres != null) 
+								args = $m2a(fdef, rres);
 							else
 								args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
 							res = aFn[aSubFn].apply(aFn, args);
@@ -4453,10 +4453,10 @@ const $rest = function(ops) {
 					}
 				} else {
 					if (isDef(parent.options.preAction)) { 
-						var res = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+						var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
 						var args;
-						if (isDef(res) && res != null) 
-							args = $m2a(fdef, res);
+						if (isDef(rres) && rres != null) 
+							args = $m2a(fdef, rres);
 						else
 							args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
 						res = aFn[aSubFn].apply(aFn, args);
