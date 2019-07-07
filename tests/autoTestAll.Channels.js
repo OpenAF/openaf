@@ -128,7 +128,7 @@
         while($ch(this.chType + "HK").size() > 3) {
             sleep(1000);
         }
-        $ch(this.chType + "HK").waitForJobs(30000);
+        $ch(this.chType + "HK").waitForJobs(15000);
         ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values in time.");
 
         for(var i = 10; i < 20; i++) {
@@ -138,7 +138,7 @@
         while($ch(this.chType + "HK").size() > 3) {
             sleep(1000);
         }
-        $ch(this.chType + "HK").waitForJobs(30000);
+        $ch(this.chType + "HK").waitForJobs(15000);
         ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values after setting.");
         $ch(this.chType + "HK").destroy();
     };

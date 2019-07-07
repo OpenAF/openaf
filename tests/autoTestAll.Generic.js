@@ -189,6 +189,16 @@
         }).put("https://openaf.impossible.domain.local", { mission: "impossible" });
 
         ow.test.assert(res.found, "n/a", "Problem with throwExceptions.");
+
+        res = $rest({
+            preAction: (m) => {
+                m.reqHeaders = {
+                    openaf: "true"
+                };
+                return m;
+            }
+        }).get("https://httpbin.org/get");
+        ow.test.assert(res.headers.Openaf, "true", "Problem with preAction.");
     };
 
     exports.testTB = function() {
@@ -548,7 +558,7 @@
         var res = $fnM2A(ow.obj.rest.jsonGet, ow.obj.rest, fnargs, { aBaseURI: "https://httpbin.org/get" });
         ow.test.assert(res.url, "https://httpbin.org/get", "Problem with $fnM2A.");
 
-        res = $fnM(ow.obj.rest.jsonGet, { aBaseURI: "https://httpbin.org/get" });
+        res = $fnM("ow.obj.rest.jsonGet", { aBaseURI: "https://httpbin.org/get" });
         ow.test.assert(res.url, "https://httpbin.org/get", "Problem with $fnM.");
     };
 
