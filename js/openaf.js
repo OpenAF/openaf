@@ -5258,7 +5258,7 @@ const $fnM = (aFnName, aMap) => {
 	var [ , aInst, aFn ] = aFnName.match(/(.+)\.([^.]+)/);
 
 	var objType = Object.prototype.toString.call(Object.getPrototypeOf(eval(aInst))).replace(/\[object (.+)\]/, "$1");
-	var fnArgs = $fnDef4Help(objType + "." + aFn);
+	var fnArgs = $fnDef4Help((objType == "Object" ? aInst : objType) + "." + aFn);
 
 	if (isUnDef(fnArgs)) {
 		fnArgs = eval(aFnName + ".toString().split(/\n/)[1].replace(/function .+\((.+)\).*/, '$1').split(/,/)");

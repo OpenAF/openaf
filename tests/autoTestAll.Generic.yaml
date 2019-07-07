@@ -133,6 +133,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testXML2And4Obj;
 
+   - name: OpenAF::Map22Array
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMap22Array;     
+
    - name: OpenAF::Search Key and Values
      from: OpenAF::Init
      to  : oJob Test
@@ -218,6 +223,7 @@ todo:
    - OpenAF::YAML
    - OpenAF::NDJSON
    - OpenAF::XML2And4Obj
+   - OpenAF::Map22Array
    - OpenAF::Search Key and Values
    - OpenAF::Two factor authentication
    - OpenAF::Java RegExp

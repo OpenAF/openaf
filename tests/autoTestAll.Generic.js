@@ -536,6 +536,22 @@
         ow.test.assert(dest, orig, "Problem with conversion between javascript and XML.");
     };
 
+    exports.testMap22Array = function() {
+        ow.test.assert($m2a(['a', 'b', 'c'], { a: 1, b: 2, c: 3}), [1, 2, 3], "Problem with $m2a.");
+        ow.test.assert($a2m(['a', 'b', 'c'], [1, 2, 3]), { a: 1, b: 2, c: 3 }, "Problem with $a2m.");
+        ow.test.assert(stringify(sortMapKeys({c:1, a:2, b:3 }), void 0, ""), "{\"a\":2,\"b\":3,\"c\":1}", "Problem with sortMapKeys.");
+
+        ow.loadObj();
+        var fnargs = $fnDef4Help("ow.obj.rest.jsonGet");
+        ow.test.assert(fnargs, ["aBaseURI","aIndexMap","aLoginOrFunction","aPassword","aTimeout","aRequestMap","aHTTP"], "Problem with getting arguments from help using $fnDef4Help.");
+
+        var res = $fnM2A(ow.obj.rest.jsonGet, ow.obj.rest, fnargs, { aBaseURI: "https://httpbin.org/get" });
+        ow.test.assert(res.url, "https://httpbin.org/get", "Problem with $fnM2A.");
+
+        res = $fnM(ow.obj.rest.jsonGet, { aBaseURI: "https://httpbin.org/get" });
+        ow.test.assert(res.url, "https://httpbin.org/get", "Problem with $fnM.");
+    };
+
     exports.testGetPath = function() {
         ow.loadObj();
 
