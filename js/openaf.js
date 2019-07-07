@@ -4327,6 +4327,7 @@ const $rest = function(ops) {
 		this.options.default = _$(this.options.default).isMap().default({});
 		this.options.throwExceptions = _$(this.options.throwExceptions).isBoolean().default(false);
 		this.options.collectAllStats = _$(this.options.collectAllStats).isBoolean().default(__openaf_rest.stats);
+		this.options.preAction = _$(this.options.preAction).isFunction().default(void 0);
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -4371,11 +4372,22 @@ const $rest = function(ops) {
 	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
+		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient" ];
 		if (parent.__check(aBaseURI)) {
 			try {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
-						res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);	
+						if (isDef(parent.options.preAction)) { 
+							var res = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+							var args;
+							if (isDef(res) && res != null) 
+								args = $m2a(fdef, res);
+							else
+								args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
+							res = aFn[aSubFn].apply(aFn, args);
+						} else {
+							res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);
+						}		
 					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
 					if (_r !== true) {
 						parent.__stats(aBaseURI, true);
@@ -4384,7 +4396,17 @@ const $rest = function(ops) {
 						parent.__stats(aBaseURI, false);
 					}
 				} else {
-					res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);
+					if (isDef(parent.options.preAction)) { 
+						var res = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+						var args;
+						if (isDef(res) && res != null) 
+							args = $m2a(fdef, res);
+						else
+							args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
+						res = aFn[aSubFn].apply(aFn, args);
+					} else {
+						res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);
+					}
 					parent.__stats(aBaseURI, false);
 				}
 			} catch(e) {
@@ -4406,11 +4428,22 @@ const $rest = function(ops) {
 	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
+		var fdef = [ "aBaseURL", "aIdxMap", "aDataRowMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient" ];
 		if (parent.__check(aBaseURI)) {
 			try {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
-						res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
+						if (isDef(parent.options.preAction)) { 
+							var res = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+							var args;
+							if (isDef(res) && res != null) 
+								args = $m2a(fdef, res);
+							else
+								args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
+							res = aFn[aSubFn].apply(aFn, args);
+						} else {
+							res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
+						}
 					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
 					if (_r !== true) {
 						parent.__stats(aBaseURI, true);
@@ -4419,7 +4452,17 @@ const $rest = function(ops) {
 						parent.__stats(aBaseURI, false);
 					}
 				} else {
-					res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
+					if (isDef(parent.options.preAction)) { 
+						var res = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+						var args;
+						if (isDef(res) && res != null) 
+							args = $m2a(fdef, res);
+						else
+							args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
+						res = aFn[aSubFn].apply(aFn, args);
+					} else {
+						res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
+					}
 					parent.__stats(aBaseURI, false);
 				}
 			} catch(e) {
@@ -4445,7 +4488,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
 	_rest.prototype.get = function(aBaseURI, aIdxMap) {
@@ -4458,7 +4502,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
 	_rest.prototype.post = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -4471,7 +4516,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
 	_rest.prototype.put = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -4484,7 +4530,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
 	_rest.prototype.delete = function(aBaseURI, aIdxMap) {
@@ -4497,7 +4544,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry) and collectAllStats (boolean with default false to store per uri or host:port statitics).
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
 	_rest.prototype.patch = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -5105,6 +5153,124 @@ CSV.prototype.fromFile2Array = function(aFile, withHeadersOrStreamFormat) {
 	return res;
 };
 
+
+/**
+ * <odoc>
+ * <key>$fnDef4Help(aFnName) : Array</key>
+ * Tries to retrieve an array of function argument names for the provided search string aFnName.
+ * </odoc>
+ */
+const $fnDef4Help = (aFnName) => {
+	var res = searchHelp(aFnName);
+
+	if (isDef(res) && isArray(res) && res.length > 0) {
+		return res[0].fullkey.replace(/ +/g, "").replace(/.+\((.*)\) *:*.*/, "$1").split(/,/);
+	}
+	return []; 
+};
+
+/**
+ * <odoc>
+ * <key>$m2a(aDef, aMap) : Array</key>
+ * Tries to convert aMap into an array using the aDef array of keys for the values order in the output array. Example:\
+ * \
+ * $m2a(['c', 'b', 'a'], { a: 1, b: 2, c: 3 })    // [ 3, 2, 1 ]\
+ * \
+ * </odoc>
+ */
+const $m2a = (aDef, aMap) => {
+	aDef = _$(aDef).isArray().default([]);
+	aMap = _$(aMap).isMap().default({});
+
+	var args = [], c = 0;
+	for (var ii in aDef) {
+		if (isDef(aMap[aDef[ii]])) args[c] = aMap[aDef[ii]];
+		c++;
+	}
+	return args;
+}
+
+/**
+ * <odoc>
+ * <key>sortMapKeys(aMap) : Map</key>
+ * Tries to sort the first level map keys returning the rewritten map.
+ * </odoc>
+ */
+const sortMapKeys = (aMap) => {
+	aMap = _$(aMap).isMap().default({});
+	return $a2m(Object.keys(aMap).sort(), $m2a(Object.keys(aMap).sort(), aMap))
+}
+
+/**
+ * <odoc>
+ * <key>$a2m(aDef, aArray) : Array</key>
+ * Tries to convert aArray into a map using the aDef array of keys for the map keys' value assignment in the output map. Example:\
+ * \
+ * $a2m(['a', 'b', 'c'], [1, 2, 3])    // { a: 1, b: 2, c: 3 }\
+ * \
+ * </odoc>
+ */
+const $a2m = (aDef, aArray) => {
+	aDef = _$(aDef).isArray().default([]);
+	aArray = _$(aArray).isArray().default([]);
+
+	var args = {};
+	for (var ii in aDef) {
+		args[aDef[ii]] = aArray[ii];
+	}
+	return args;
+}
+
+/**
+ * <odoc>
+ * <key>$fnM2A(aFn, aInstance, aDefinitionArray, aMap) : Object</key>
+ * Tries to execute aFn, with aInstance if it's a function of an instance, using aMap of arguments that translate to aFn list of
+ * arguments. Returns whatever the function executed returns. Example:\
+ * \
+ * plugin("HTTP");\
+ * var h = new HTTP();\
+ * $fnM2A(h.get, h, $fnDef4Help("HTTP.get"), { aUrl: "https://openaf.io/build", isBytes: false, returnStream: false });\
+ * \
+ * </odoc>
+ */
+const $fnM2A = (aFn, aInst, aDef, aMap) => {
+	_$(aFn).isFunction().$_("Please provide a function.");
+	aInst = _$(aInst).isObject().default(null);
+
+	return aFn.apply(aInst, $m2a(aDef, aMap));
+}
+
+/**
+ * <odoc>
+ * <key>$fnM(aFnName, aMap) : Object</key>
+ * Calls aFnName function trying to determine the name of the arguments from OpenAF's help or accessible source code (throws an exception
+ * if it can't determine the arguments) and then builds the arguments used to call aFnName using the values of keys in aMap. Example:\
+ * \
+ * plugin("HTTP"); var h = new HTTP();\
+ * $fnM("h.get", { aUrl: "https://openaf.io/release" });\
+ * \
+ * </odoc>
+ */
+const $fnM = (aFnName, aMap) => {
+	_$(aFnName).isString().$_("Please provide a function name string.");
+	aMap = _$(aMap).isMap().default({});
+
+	var [ , aInst, aFn ] = aFnName.match(/(.+)\.([^.]+)/);
+
+	var objType = Object.prototype.toString.call(Object.getPrototypeOf(eval(aInst))).replace(/\[object (.+)\]/, "$1");
+	var fnArgs = $fnDef4Help(objType + "." + aFn);
+
+	if (isUnDef(fnArgs)) {
+		fnArgs = eval(aFnName + ".toString().split(/\n/)[1].replace(/function .+\((.+)\).*/, '$1').split(/,/)");
+		if (isDef(fnArgs) && isArray(fnArgs) && fnsArgs[0].match(/^ +/)) throw "can't determine arguments";
+	}
+
+	if (isDef(fnArgs) && isArray(fnArgs)) {
+		return $fnM2A(eval(aFnName), eval(aInst), fnArgs, aMap);
+	} else {
+		throw "can not determine arguments.";
+	}
+}
 
 /**
  * <odoc>
