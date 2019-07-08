@@ -2275,7 +2275,7 @@ function stopOpenAFAndRun(aCommandLineArray, addCommand) {
  * preCommandLineArray can be used to provide java arguments if defined.
  * </odoc>
  */
-function restartOpenAF(aCommandLineArray, preLineArray) {
+function restartOpenAF(aCommandLineArray, preLineArray, noStop) {
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
 	var currentJar = getOpenAFJar();
 	
@@ -2311,7 +2311,22 @@ function restartOpenAF(aCommandLineArray, preLineArray) {
 	var builder = new java.lang.ProcessBuilder(command);
 	builder.inheritIO();
 	builder.start();
-	java.lang.System.exit(0);
+	if (!noStop) java.lang.System.exit(0);
+}
+
+/**
+ * <odoc>
+ * <key>forkOpenAF(aCommandLineArray, preCommandLineArray) : Promise</key>
+ * Starts another OpenAF with the same command line, if aCommandLineArray is not provided. 
+ * If aCommandLineArray is provided each array element will be use sequentially to build
+ * the command line to start a new OpenAF instance. preCommandLineArray can be used to 
+ * provide java arguments if defined.
+ * </odoc>
+ */
+function forkOpenAF(aCommandLineArray, preLineArray) {
+	return $do(() => {
+		restartOpenAF(aCommandLineArray, preLineArray, true);
+	});
 }
 
 /**
@@ -4575,12 +4590,12 @@ const $rest = function(ops) {
  
 /**
  * <odoc>
- * <key>$openaf(aScript, aPMIn, aOpenAF) : Object</key>
+ * <key>$openaf(aScript, aPMIn, aOpenAF, extraJavaParamsArray) : Object</key>
  * Tries to start an external process running openaf (if aOpenAF is provided, as a string or array, it will be used as the command to invoke openaf) to execute
- * aScript setting the __pm variable to aPMIn. Upon execution end the __pm contents will be returned by the function;
+ * aScript setting the __pm variable to aPMIn. Upon execution end the __pm contents will be returned by the function.
  * </odoc>
  */
-const $openaf = function(aScript, aPMIn, aOpenAF) {
+const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	var javaPath = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
 
 	if (isUnDef(aOpenAF)) {
