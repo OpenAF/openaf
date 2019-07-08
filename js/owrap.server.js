@@ -1444,7 +1444,7 @@ OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberO
 OpenWrap.server.prototype.masters.prototype.sendToOthers = function(aData, aSendFn) {
 	var masterList = this.impl.mastersGetList();
 	var tryList = masterList.rojobs;
-	var res = { result: 0 };
+	var res = void 0;
 
 	for(var ii in tryList) {
 		if ((tryList[ii].host + tryList[ii].port) != (this.HOST + this.PORT)) {
