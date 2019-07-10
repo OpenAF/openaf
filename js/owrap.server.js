@@ -1485,7 +1485,9 @@ OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHos
 				"[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) masterList.rojobs.push(addNewHost);
 
 		for(var ii in masterList.rojobs) {
-			if (isDef(delHost) && delHost.host == masterList.rojobs[ii].host && delHost.port == masterList.rojobs[ii].port) {
+			if ((isDef(delHost) && 
+				(delHost.host == masterList.rojobs[ii].host && delHost.port == masterList.rojobs[ii].port)) || 
+				 masterList.rojobs[ii].dead) {
 				masterList.rojobs = deleteFromArray(masterList.rojobs, ii);
 			} else {
 				var res = ow.format.testPort(masterList.rojobs[ii].host, masterList.rojobs[ii].port, 100); 
