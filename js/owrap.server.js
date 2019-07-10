@@ -1474,6 +1474,12 @@ OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHos
 	}
 	if (numTries > 0) {
 		var masterList = this.impl.mastersGetList();
+		addNewHost = {
+			host: this.HOST,
+			port: this.PORT,
+			date: now()
+		};
+		
 		if (isDef(addNewHost) && 
 			$path(masterList.rojobs, 
 				"[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) masterList.rojobs.push(addNewHost);
