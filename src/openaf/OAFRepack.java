@@ -212,7 +212,7 @@ public class OAFRepack {
         } else {
             command.add("cmd");
             command.add("/c");
-            command.add("timeout /t 1 > null && move \"" + jarFile + ".tmp\" \"" + jarFile + "\" >NUL && " + cmd + ""); 
+            command.add("timeout /t 1 > NUL && move \"" + jarFile + ".tmp\" \"" + jarFile + "\" >NUL && " + cmd + ""); 
         }
 
         ProcessBuilder builder = new ProcessBuilder(command);
