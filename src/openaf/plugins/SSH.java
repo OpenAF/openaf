@@ -35,6 +35,9 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.ChannelSftp.LsEntry;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.ProxyHTTP;
+import com.jcraft.jsch.ProxySOCKS4;
+import com.jcraft.jsch.ProxySOCKS5;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 import com.jcraft.jsch.SftpStatVFS;
@@ -57,6 +60,7 @@ public class SSH extends ScriptableObject {
 	protected Session session;
 	protected String identity = null;
 	protected boolean compression = false;
+	public boolean strictHostKeyChecking = true;
 	protected JSch jsch;
 	protected int timeout = -1;
 	protected Channel sftpChannel;
@@ -77,7 +81,7 @@ public class SSH extends ScriptableObject {
 	 * @throws Exception
 	 */
 	@JSConstructor
-	public void newSSH(String host, int port, String login, String pass, Object identityFile, boolean compression, int timeout) throws Exception {
+	public void newSSH(String host, int port, String login, String pass, Object identityFile, boolean compression, int timeout, boolean noStrictHostKeyChecking) throws Exception {
 		if (host.toLowerCase().startsWith(("ssh:"))) {
 			URI uri = new URI(host);
 
@@ -116,6 +120,8 @@ public class SSH extends ScriptableObject {
 			this.compression = compression;
 			if (timeout > 0) setTimeout(timeout);
 		}
+
+		this.strictHostKeyChecking = !noStrictHostKeyChecking;
 	
 		connectSSH();
 	}
@@ -229,7 +235,7 @@ public class SSH extends ScriptableObject {
 		if (SimpleLog.getCurrentLogLevel() == logtype.DEBUG) 
 			JSch.setLogger(new SSHLogger());
 		
-     	JSch jsch = new JSch(); 
+     	this.jsch = new JSch(); 
      	
      	if (this.identity != null && this.identity.length() > 0) {
      		jsch.addIdentity(this.identity);
@@ -244,7 +250,11 @@ public class SSH extends ScriptableObject {
      		session.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
      		session.setConfig("compression_level", "9");
      	}
-     	
+		 
+		if (!this.strictHostKeyChecking) {
+			session.setConfig("StrictHostKeyChecking", "no");
+		}
+
      	session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
 	    
 		session.connect();

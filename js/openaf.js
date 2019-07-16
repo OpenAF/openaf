@@ -5983,51 +5983,111 @@ const $sh = function(aString) {
         if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).sh(aCmd, aIn) : $sh</key>
+	 * When executing aCmd (with .exec) sets additional aCmds (with the optional corresponding aIn) to use.
+	 * </odoc>
+	 */
     __sh.prototype.sh = function(aCmd, aIn) {
         if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).pwd(aPwd) : $sh</key>
+	 * When executing aCmd (with .exec) use aPwd as the current working directory.
+	 * </odoc>
+	 */
     __sh.prototype.pwd = function(aPwd) {
         this.wd = aPwd;
         return this;
     };
 
-    __sh.prototype.cb = function(aCallback) {
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).cb(aCallbackFunc) : $sh</key>
+	 * When executing aCmd (with .exec) use aCallbackFunc function.
+	 * </odoc>
+	 */
+	_sh.prototype.cb = function(aCallback) {
         this.fcb = () => { return aCallback; };
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).timeout(aTimeout) : $sh</key>
+	 * When executing aCmd (with .exec) uses aTimeout.
+	 * </odoc>
+	 */
     __sh.prototype.timeout = function(aTimeout) {
         this.t = aTimeout;
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).mkdir(aDir) : $sh</key>
+	 * Immediately creates aDir before executing aCmd (with .exec).
+	 * </odoc>
+	 */
     __sh.prototype.mkdir = function(aDir) {
         io.mkdir(aDir);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).mv(aSource, aTarget) : $sh</key>
+	 * Immediately moves aSource to aTarget before executing aCmd (with .exec).
+	 * </odoc>
+	 */
     __sh.prototype.mv = function(aSource, aTarget) {
         io.mv(aSource, aTarget);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).cp(aSource, aTarget) : $sh</key>
+	 * Immediately copies aSource to aTarget before executing aCmd (with .exec).
+	 * </odoc>
+	 */
     __sh.prototype.cp = function(aSource, aTarget) {
         io.cp(aSource, aTarget);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).rename(aSource, aTarget) : $sh</key>
+	 * Immediately renames aSource to aTarget before executing aCmd (with .exec).
+	 * </odoc>
+	 */
     __sh.prototype.rename = function(aSource, aTarget) {
         io.rename(aSource, aTarget);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).rm(aFilePath) : $sh</key>
+	 * Immediately removes aFilePath before executing aCmd (with .exec).
+	 * </odoc>
+	 */
     __sh.prototype.rm = function(aFilePath) {
         io.rm(aFilePath);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).get() : String</key>
+	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh).
+	 * </odoc>
+	 */
     __sh.prototype.get = function() {
         var res = [];
         for(var ii in this.q) {
@@ -6046,6 +6106,12 @@ const $sh = function(aString) {
         return res;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).exec() : String</key>
+	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh).
+	 * </odoc>
+	 */
     __sh.prototype.exec = function() {
         var res = [];
         for(var ii in this.q) {
@@ -6064,6 +6130,12 @@ const $sh = function(aString) {
         return res;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$sh(aCmd).exit(aFunc) : $sh</key>
+	 * Sets aFunc function to execute after the execution of aCmd (with .exec).
+	 * </odoc>
+	 */
     __sh.prototype.exit = function(aFunc) {
         this.fe = aFunc;
         return this;
@@ -6103,7 +6175,7 @@ const $ssh = function(aMap) {
             aMap.compress = _$(aMap.compress).isBoolean().default(false);
             if (isDef(aMap.url)) aMap.host = aMap.url;
         }
-        if (!isObject(aMap)) {
+        if (!(aMap instanceof SSH)) {
             s = new SSH((isString(aMap) ? aMap : aMap.host), aMap.port, aMap.login, aMap.pass, aMap.id, aMap.compress, aMap.timeout);
         } else {
             s = aMap;
@@ -6111,87 +6183,190 @@ const $ssh = function(aMap) {
 		return s;
 	};
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).sh(aCmd, aIn) : $ssh</key>
+	 * Sets aCmd to be executed with an optional aIn (stdin) on the remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.sh = function(aCmd, aIn) {
         if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).pwd(aPwd) : $ssh</key>
+	 * Sets aPwd directory for getting and sending files to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.pwd = function(aPwd) {
         this.__getsftp.cd(aPwd);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).timeout(aTimeout) : $ssh</key>
+	 * Sets aTimeout in ms for the ssh/sftp connection to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.timeout = function(aTimeout) {
         this.t = aTimeout;
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).cb(aCallback) : $ssh</key>
+	 * Sets aCallback function to execute during the execution of commands on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.cb = function(aCallback) {
         this.fcb = () => { return aCallback; };
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).mkdir(aDirectory) : $ssh</key>
+	 * Creates aDirectory via SFTP on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.mkdir = function(aDir) {
         this.__getsftp().mkdir(aDir);
         return this;
     };
 
-    __ssh.prototype.get = function(aSource, aTarget) {
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).getFile(aSource, aTarget) : $ssh</key>
+	 * Gets aSource filepath and stores it locally on aTarget from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
+    __ssh.prototype.getFile = function(aSource, aTarget) {
         this.__getsftp().sftpGet(aSource, aTarget);
         return this;
     };
 
-    __ssh.prototype.put = function(aSource, aTarget) {
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).putFile(aSource, aTarget) : $ssh</key>
+	 * Puts aSource local filepath and stores it remotely in aTarget on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
+    __ssh.prototype.putFile = function(aSource, aTarget) {
         this.__getsftp().sftpPut(aSource, aTarget);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).rename(aSource, aTarget) : $ssh</key>
+	 * Renames aSource filepath to aTarget filepath on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.rename = function(aSource, aTarget) {
         this.__getsftp().rename(aSource, aTarget);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).rm(aFilePath) : $ssh</key>
+	 * Remove aFilePath from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.rm = function(aFilePath) {
         this.__getsftp().rm(aFilePath);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).rmdir(aFilePath) : $ssh</key>
+	 * Removes a directory from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.rmdir = function(aFilePath) {
         this.__getsftp().rmdir(aFilePath);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).pty(aFlag) : $ssh</key>
+	 * Sets the flag to use or not a pty term allocation on the ssh conneciton to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.pty = function(aFlag) {
         this.ppty = aFlag;
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).close() : $ssh</key>
+	 * Closes a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.close = function() {
 		if (isDef(this.ssh)) this.ssh.close();
 		if (isDef(this.sftp)) this.sftp.close();
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).tunnelLocal(aLocalPort, aRemoteHost, aRemotePort) : $ssh</key>
+	 * Creates a local tunnel mapping aLocalPort to aRemoteHost:aRemotePort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.tunnelLocal = function(aLocalPort, aRemoteHost, aRemotePort) {
         this.__getssh().tunnelLocal(aLocalPort, aRemoteHost, aRemotePort);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).tunnelLocalBind(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort) : $ssh</key>
+	 * Creates a local tunnel mapping aLocalInterface:aLocalPort to aRemoteHost:aRemotePort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.tunnelLocalBind = function(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort) {
         this.__getssh().tunnelLocalBind(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).tunnelRemote(aRemotePort, aLocalAddress aLocalPort) : $ssh</key>
+	 * Creates a remote tunnel mapping aRemotePort to aLocalAddress:aLocalPort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.tunnelRemote = function(aRemotePort, aLocalAddress, aLocalPort) {
         this.__getssh().tunnelRemote(aRemotePort, aLocalAddress, aLocalPort);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress aLocalPort) : $ssh</key>
+	 * Creates a remote tunnel mapping aRemoteInterface:aRemotePort to aLocalAddress:aLocalPort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.tunnelRemoteBind = function(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort) {
         this.__getssh().tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort);
         return this;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).get() : Array</key>
+	 * Executes a list of commands previously set on a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * IO is not inherit.
+	 * </odoc>
+	 */
     __ssh.prototype.get = function() {
         var res = [];
         if (isDef(this.t)) this.__getssh().setTimeout(this.t);
@@ -6212,6 +6387,13 @@ const $ssh = function(aMap) {
         return res;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).exec() : Array</key>
+	 * Executes a list of commands previously set on a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * IO is inherit.
+	 * </odoc>
+	 */
     __ssh.prototype.exec = function() {
         var res = [];
         if (isDef(this.t)) this.__getssh().setTimeout(this.t);
@@ -6232,6 +6414,12 @@ const $ssh = function(aMap) {
         return res;
     };
 
+	/**
+	 * <odoc>
+	 * <key>$ssh(aMap).exit(aFunc) : $ssh</key>
+	 * Sets a callback aFunc to execute upon a command execution s a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * </odoc>
+	 */
     __ssh.prototype.exit = function(aFunc) {
         this.fe = aFunc;
         return this;
