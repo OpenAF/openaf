@@ -385,6 +385,13 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorM
 	return output;
 }
 
+/**
+ * <odoc>
+ * <key>printMap(aMap, aWidth, aTheme, useAnsi) : String</key>
+ * Returns a ASCII map representation of aMap optionally with a give aWidth, aTheme and/or useAnsi boolean. aTheme can be "utf" or "plain" depending on the
+ * terminal capabilities.
+ * </odoc>
+ */
 function printMap(aValue, aWidth, aTheme, useAnsi) {
 	__initializeCon();
 	var matrix = [], matrixrule = [], maxX = 0,	maxY = 0, cM = [], al = [];
@@ -5985,7 +5992,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).sh(aCmd, aIn) : $sh</key>
+	 * <key>$sh.sh(aCmd, aIn) : $sh</key>
 	 * When executing aCmd (with .exec) sets additional aCmds (with the optional corresponding aIn) to use.
 	 * </odoc>
 	 */
@@ -5996,7 +6003,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).pwd(aPwd) : $sh</key>
+	 * <key>$sh.pwd(aPwd) : $sh</key>
 	 * When executing aCmd (with .exec) use aPwd as the current working directory.
 	 * </odoc>
 	 */
@@ -6007,7 +6014,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).cb(aCallbackFunc) : $sh</key>
+	 * <key>$sh.cb(aCallbackFunc) : $sh</key>
 	 * When executing aCmd (with .exec) use aCallbackFunc function.
 	 * </odoc>
 	 */
@@ -6018,7 +6025,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).timeout(aTimeout) : $sh</key>
+	 * <key>$sh.timeout(aTimeout) : $sh</key>
 	 * When executing aCmd (with .exec) uses aTimeout.
 	 * </odoc>
 	 */
@@ -6029,7 +6036,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).mkdir(aDir) : $sh</key>
+	 * <key>$sh.mkdir(aDir) : $sh</key>
 	 * Immediately creates aDir before executing aCmd (with .exec).
 	 * </odoc>
 	 */
@@ -6040,7 +6047,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).mv(aSource, aTarget) : $sh</key>
+	 * <key>$sh.mv(aSource, aTarget) : $sh</key>
 	 * Immediately moves aSource to aTarget before executing aCmd (with .exec).
 	 * </odoc>
 	 */
@@ -6051,7 +6058,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).cp(aSource, aTarget) : $sh</key>
+	 * <key>$sh.cp(aSource, aTarget) : $sh</key>
 	 * Immediately copies aSource to aTarget before executing aCmd (with .exec).
 	 * </odoc>
 	 */
@@ -6062,7 +6069,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).rename(aSource, aTarget) : $sh</key>
+	 * <key>$sh.rename(aSource, aTarget) : $sh</key>
 	 * Immediately renames aSource to aTarget before executing aCmd (with .exec).
 	 * </odoc>
 	 */
@@ -6073,7 +6080,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).rm(aFilePath) : $sh</key>
+	 * <key>$sh.rm(aFilePath) : $sh</key>
 	 * Immediately removes aFilePath before executing aCmd (with .exec).
 	 * </odoc>
 	 */
@@ -6084,7 +6091,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).get() : String</key>
+	 * <key>$sh.get() : String</key>
 	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh).
 	 * </odoc>
 	 */
@@ -6108,7 +6115,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).exec() : String</key>
+	 * <key>$sh.exec() : String</key>
 	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh).
 	 * </odoc>
 	 */
@@ -6132,7 +6139,7 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh(aCmd).exit(aFunc) : $sh</key>
+	 * <key>$sh.exit(aFunc) : $sh</key>
 	 * Sets aFunc function to execute after the execution of aCmd (with .exec).
 	 * </odoc>
 	 */
@@ -6185,7 +6192,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).sh(aCmd, aIn) : $ssh</key>
+	 * <key>$ssh.sh(aCmd, aIn) : $ssh</key>
 	 * Sets aCmd to be executed with an optional aIn (stdin) on the remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6196,7 +6203,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).pwd(aPwd) : $ssh</key>
+	 * <key>$ssh.pwd(aPwd) : $ssh</key>
 	 * Sets aPwd directory for getting and sending files to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6207,7 +6214,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).timeout(aTimeout) : $ssh</key>
+	 * <key>$ssh.timeout(aTimeout) : $ssh</key>
 	 * Sets aTimeout in ms for the ssh/sftp connection to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6218,7 +6225,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).cb(aCallback) : $ssh</key>
+	 * <key>$ssh.cb(aCallback) : $ssh</key>
 	 * Sets aCallback function to execute during the execution of commands on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6229,7 +6236,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).mkdir(aDirectory) : $ssh</key>
+	 * <key>$ssh.mkdir(aDirectory) : $ssh</key>
 	 * Creates aDirectory via SFTP on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6240,7 +6247,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).getFile(aSource, aTarget) : $ssh</key>
+	 * <key>$ssh.getFile(aSource, aTarget) : $ssh</key>
 	 * Gets aSource filepath and stores it locally on aTarget from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6251,7 +6258,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).putFile(aSource, aTarget) : $ssh</key>
+	 * <key>$ssh.putFile(aSource, aTarget) : $ssh</key>
 	 * Puts aSource local filepath and stores it remotely in aTarget on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6262,7 +6269,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).rename(aSource, aTarget) : $ssh</key>
+	 * <key>$ssh.rename(aSource, aTarget) : $ssh</key>
 	 * Renames aSource filepath to aTarget filepath on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6273,7 +6280,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).rm(aFilePath) : $ssh</key>
+	 * <key>$ssh.rm(aFilePath) : $ssh</key>
 	 * Remove aFilePath from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6284,7 +6291,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).rmdir(aFilePath) : $ssh</key>
+	 * <key>$ssh.rmdir(aFilePath) : $ssh</key>
 	 * Removes a directory from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6295,7 +6302,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).pty(aFlag) : $ssh</key>
+	 * <key>$ssh.pty(aFlag) : $ssh</key>
 	 * Sets the flag to use or not a pty term allocation on the ssh conneciton to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6306,7 +6313,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).close() : $ssh</key>
+	 * <key>$ssh.close() : $ssh</key>
 	 * Closes a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6318,7 +6325,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).tunnelLocal(aLocalPort, aRemoteHost, aRemotePort) : $ssh</key>
+	 * <key>$ssh.tunnelLocal(aLocalPort, aRemoteHost, aRemotePort) : $ssh</key>
 	 * Creates a local tunnel mapping aLocalPort to aRemoteHost:aRemotePort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6329,7 +6336,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).tunnelLocalBind(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort) : $ssh</key>
+	 * <key>$ssh.tunnelLocalBind(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort) : $ssh</key>
 	 * Creates a local tunnel mapping aLocalInterface:aLocalPort to aRemoteHost:aRemotePort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6340,7 +6347,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).tunnelRemote(aRemotePort, aLocalAddress aLocalPort) : $ssh</key>
+	 * <key>$ssh.tunnelRemote(aRemotePort, aLocalAddress aLocalPort) : $ssh</key>
 	 * Creates a remote tunnel mapping aRemotePort to aLocalAddress:aLocalPort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6351,7 +6358,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress aLocalPort) : $ssh</key>
+	 * <key>$ssh.tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress aLocalPort) : $ssh</key>
 	 * Creates a remote tunnel mapping aRemoteInterface:aRemotePort to aLocalAddress:aLocalPort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
@@ -6362,7 +6369,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).get() : Array</key>
+	 * <key>$ssh.get() : Array</key>
 	 * Executes a list of commands previously set on a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * IO is not inherit.
 	 * </odoc>
@@ -6389,7 +6396,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).exec() : Array</key>
+	 * <key>$ssh.exec() : Array</key>
 	 * Executes a list of commands previously set on a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * IO is inherit.
 	 * </odoc>
@@ -6416,7 +6423,7 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh(aMap).exit(aFunc) : $ssh</key>
+	 * <key>$ssh.exit(aFunc) : $ssh</key>
 	 * Sets a callback aFunc to execute upon a command execution s a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
