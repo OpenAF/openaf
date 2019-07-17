@@ -6011,7 +6011,7 @@ const $sh = function(aString) {
 	 * When executing aCmd (with .exec) use aCallbackFunc function.
 	 * </odoc>
 	 */
-	_sh.prototype.cb = function(aCallback) {
+	__sh.prototype.cb = function(aCallback) {
         this.fcb = () => { return aCallback; };
         return this;
     };
