@@ -87,6 +87,12 @@ OpenWrap.ch.prototype.__types = {
 		setAll: function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			this.__channels[aName].setAll(anArrayOfKeys, anArrayOfMapData, aTimestamp);
 		},
+		unsetAll: function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
+			var parent = this;
+			anArrayOfKeys.forEach((aK) => {
+				parent.unset(aName, aK);
+			});
+		},
 		get: function(aName, aKey) {
 			return this.__channels[aName].get(aKey);
 		},
@@ -219,6 +225,11 @@ OpenWrap.ch.prototype.__types = {
 				this.set(aName, ow.loadObj().filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
 			}
 		},
+		unsetAll: function(aName, aKs, aVs, aTimestamp) { 
+			for(var i in aVs) {
+				this.unset(aName, ow.loadObj().filterKeys(aKs, aVs[i]), aTimestamp);
+			}
+		},		
 		get: function(aName, aK, x) {
 			var res;
 			try {
@@ -287,6 +298,10 @@ OpenWrap.ch.prototype.__types = {
 			// Not implemented;
 			return undefined;
 		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) { 
+			// Not implemented;
+			return undefined;
+		},		
 		get          : function(aName, aK, x) { 
 			return this.set(aName, aK, {}, undefined, x);
 		},
@@ -367,6 +382,14 @@ OpenWrap.ch.prototype.__types = {
 			}
 			this.__cacheCh[aName].setAll(aKs, avvs, aTimestamp);
 		},
+		unsetAll       : function(aName, aKs, aVs, aTimestamp) { 
+			var avvs = [];
+			for (var i in aKs) {
+				aKs[i] = merge(aKs[i], { ____t: now() });
+				avvs[i] = this.__cacheFunc[aName](aK);
+			}
+			this.__cacheCh[aName].unsetAll(aKs, avvs, aTimestamp);
+		},		
 		getAll       : function(aName, full) {
 			var res = [];
 			this.__cacheCh[aName].forEach(function(aKey, aValue) {
@@ -488,7 +511,8 @@ OpenWrap.ch.prototype.__types = {
 							var ar = $ch(parent.__bt[aName]).getAll();
 							if (ar.length > 0) {
 								$ch(parent.__bc[aName]).setAll(parent.__bi[aName], ar);
-								for(var ii in ak) { $ch(parent.__bt[aName]).unset(ak[ii]); }
+								//for(var ii in ak) { $ch(parent.__bt[aName]).unset(ak[ii]); }
+								$ch(parent.__bt[aName]).unsetAll(Object.keys(ak[0]), ak);
 							}
 						} else {
 							$ch(parent.__bt[aName]).forEach((k, v) => {
@@ -566,6 +590,10 @@ OpenWrap.ch.prototype.__types = {
 			$ch(this.__bt[aName]).setAll(anArrayOfKeys, anArrayOfMapData, aTimestamp);
 			this.__f[aName]();
 		},
+		unsetAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
+			$ch(this.__bt[aName]).unsetAll(anArrayOfKeys, anArrayOfMapData, aTimestamp);
+			this.__f[aName]();
+		},		
 		get          : function(aName, aKey) {
 			var res = $ch(this.__bt[aName]).get(aKey);
 			if (isUnDef(res)) res = $ch(this.__bc[aName]).get(aKey);
@@ -626,6 +654,9 @@ OpenWrap.ch.prototype.__types = {
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
 			return {};		
 		},
+		unsetAll       : function(aName, aKs, aVs, aTimestamp) {
+			return {};		
+		},		
 		get          : function(aName, aK) {
 			return {};
 		},
@@ -710,6 +741,13 @@ OpenWrap.ch.prototype.__types = {
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
 			return $ch(this.__channels[aName].chTarget).setAll(m.k, m.v, m.timestamp);
 		},
+		unsetAll       : function(aName, aKs, aVs, aTimestamp) {
+			var m = {
+				op: "unsetAll", name: this.__channels[aName].chTarget, k: aKs, v: aVs, timestamp: aTimestamp
+			};
+			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
+			return $ch(this.__channels[aName].chTarget).unsetAll(m.k, m.timestamp);
+		},		
 		get          : function(aName, aK) {
 			var m = { op: "get", name: this.__channels[aName].chTarget, k: aK };
 			var r = this.__channels[aName].proxyFunc(m); if (isDef(r)) return r;
@@ -802,6 +840,12 @@ OpenWrap.ch.prototype.__types = {
 				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
 			}
 		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj();
+			for(var i in aVs) {
+				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},		
 		get          : function(aName, aK) {
 			var id = stringify(aK, void 0, "");
 			var res = this.__channels[aName][id];
@@ -918,6 +962,17 @@ OpenWrap.ch.prototype.__types = {
 				stopWhen: this.__channels[aName].stopWhen
 			}).put(this.__channels[aName].url + $rest().index({ o: "a", k: aKs, t: aTimestamp }), aVs).r;		
 		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			//return ow.obj.rest.jsonSet(this.__channels[aName].url, { "o": "ua", "k": aKs, "t": aTimestamp }, aVs, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;		
+			return $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen
+			}).put(this.__channels[aName].url + $rest().index({ o: "ua", k: aKs, t: aTimestamp }), aVs).r;		
+		},		
 		get          : function(aName, aK) {
 			//return ow.obj.rest.jsonGet(this.__channels[aName].url, { "o": "e", "k": aK }, this.__channels[aName].login, this.__channels[aName].password, this.__channels[aName].timeout).r;
 			return $rest({
@@ -1125,6 +1180,36 @@ OpenWrap.ch.prototype.__types = {
 				}
 			}
 		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			var url = this.__channels[aName].url;
+			url += "/_bulk";
+			var ops = "";
+			
+			if (isDef(aVs) && isArray(aVs) && aVs.length <= 0) return;
+
+			for(var ii in aVs) {
+				if (aVs[ii] != null && isDef(aVs[ii][this.__channels[aName].idKey])) {
+					ops += stringify({ delete: {
+						_index: this.__channels[aName].fnIndex(aKs[ii]), 
+						_type : this.__channels[aName].idKey,
+						_id   : aVs[ii][this.__channels[aName].idKey] 
+					}}, void 0, "") + "\n" + 
+					stringify(aVs[ii], void 0, "") + "\n";
+				}
+			}
+			
+			if (ops.length > 0) {
+				var h = new ow.obj.http();
+				if (isDef(this.__channels[aName].user))
+					h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
+				try {
+					return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
+				} catch(e) {
+					e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
+					throw e;
+				}
+			}
+		},		
 		get          : function(aName, aK) {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			url += "/" + this.__channels[aName].idKey;
@@ -1331,6 +1416,17 @@ OpenWrap.ch.prototype.__types = {
 			this.__s[aName].sync();
 			this.__s[aName].commit();
 		},
+		unsetAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
+			ow.loadObj();
+			for(var iii in anArrayOfMapData) {
+				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
+				//var av = anArrayOfMapData[iii];
+				var map = this.__s[aName].openMap(this.__m[aName](ak));
+				map.remove(stringify(ak, void 0, this.__o[aName].stry));
+			}
+			this.__s[aName].sync();
+			this.__s[aName].commit();
+		},
 		get          : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
@@ -1433,6 +1529,11 @@ OpenWrap.ch.prototype.__types = {
 				this.set(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
 			}
 		},
+		unsetAll     : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
+			for(var i in anArrayOfMapData) {
+				this.unset(aName, ow.loadObj().filterKeys(anArrayOfKeys, anArrayOfMapData[i]), anArrayOfMapData[i], aTimestamp);
+			}
+		},		
 		get          : function(aName, aKey) {
 			var ch = this.__ig.getIgnite().getCache(aName);
 			return af.fromJavaMap(ch.get(af.toJavaMap(aKey)));
@@ -1605,8 +1706,8 @@ OpenWrap.ch.prototype.__errorHandle = function(id, e) {
  * <odoc>
  * <key>ow.ch.subscribe(aName, aFunction, onlyFromNowm, anId) : String</key>
  * Adds a callback function to the channel aName. The callback function will receive, as arguments:
- * the channel name, the operation, a key or an array of keys (for operation = setall), a value or an array 
- * of values (for operation = setall) and the ow.ch object. Returns the subscriber id.
+ * the channel name, the operation, a key or an array of keys (for operation = setall/unsetall), a value or an array 
+ * of values (for operation = setall/unsetall) and the ow.ch object. Returns the subscriber id.
  * Optionally you can specify that existing
  * elements won't trigger operation = set callback calls and/or a custom subscriber anId.\
  * \
@@ -1614,6 +1715,7 @@ OpenWrap.ch.prototype.__errorHandle = function(id, e) {
  *    - set\
  *    - setall\
  *    - unset\
+ *    - unsetall\
  * \
  * </odoc>
  */
@@ -1882,6 +1984,63 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 	return res;
 };
 	
+/**
+ * <odoc>
+ * <key>ow.ch.unsetAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp)</key>
+ * Given anArrayOfKeys composed of strings identifying the key fields from the anArrayOfMapData provided
+ * will try to delete all values on the channel identified by aName. Optionally you can provide aTimestamp 
+ * (if the provided aTimestamp is smaller than getVersion
+ * the value will not be set)
+ * </odoc>
+ */
+OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, aUUID, x) {
+	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
+	if (isUnDef(aTimestamp)) {
+		aTimestamp = nowUTC();
+		if (this.getVersion(aName) > aTimestamp) return this;
+	}
+
+	var parent = this;
+	var res;
+	
+	if (isUnDef(parent.__types[parent.channels[aName]].unsetAll)) return void 0;
+
+	sync(function() {
+		res = parent.__types[parent.channels[aName]].unsetAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
+		parent.vers[aName] = nowUTC();
+	}, this.channels[aName]);
+
+	if (Object.keys(this.subscribers[aName]).length > 0) {
+		for(var _i in this.subscribers[aName]) {
+			if (isUnDef(parent.jobs[aName][_i])) {
+				var f = (ii) => {
+					return () => {				
+						parent.subscribers[aName][ii](aName, "unsetall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+					ow.ch.__errorHandle({ 
+						chName: aName,
+						op: "unset",
+						key: aKey
+					}, e);
+				});
+			} else {				
+				var f = (ii) => {
+					return () => {
+						parent.subscribers[aName][ii](aName, "unsetall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						return ii;
+					};
+				};
+				parent.jobs[aName][_i].then(f(_i));
+			}
+		}		
+	}
+
+	return res;
+};
+
 /**
  * <odoc>
  * <key>ow.ch.get(aName, aKey) : ow.ch</key>
@@ -2159,7 +2318,7 @@ OpenWrap.ch.prototype.utils = {
 	/**
 	 * <odoc>
 	 * <key>ow.ch.utils.getBufferSubscriber(aSourceCh, indexes, byNumber, byTimeInMs, aBufferCh, aTmpBufferCh, aFilterFunc, aBufferFunc) : Function</key>
-	 * Returns a channel subscriber function that will buffer set, setall and unset operations from aSourceCh channel to aBufferCh (by
+	 * Returns a channel subscriber function that will buffer set, setall, unsetall and unset operations from aSourceCh channel to aBufferCh (by
 	 * default a dummy channel to be subscribed, if not defined the name will be aSourceCh + "::buffer"). As a temporary buffer channel
 	 * aTmpBufferCh will be used (if not defined the name will be aSourceCh + "::__bufferStorage"). The aBufferCh will be configured with
 	 * the provided indexes, byNumber (number of times to trigger the buffer) and byTimeInMs (amount of time in ms to trigger the buffer).
@@ -2198,6 +2357,11 @@ OpenWrap.ch.prototype.utils = {
 					aV = merge(aV,  { ___bufferT: nowNano() }); 
 					$ch(aTmpBufferCh).setAll(aK, aV); 
 					break;
+				case "unsetall": 
+					aK.push("___bufferT"); 
+					aV = merge(aV,  { ___bufferT: nowNano() }); 
+					$ch(aTmpBufferCh).unsetAll(aK, aV); 
+					break;					
 				case "unset" : 
 					aK = merge(aK, { ___bufferT: nowNano() }); 
 					$ch(aTmpBufferCh).unset(aK);      
@@ -2264,6 +2428,12 @@ OpenWrap.ch.prototype.utils = {
 					else
 						r[m.op].countValues += m.v.length;
 					break;
+				case "unsetAll":
+					if (isUnDef(r[m.op].countValues))
+						r[m.op].countValues = m.v.length;
+					else
+						r[m.op].countValues -= m.v.length;
+					break;					
 				case "get":
 					break;
 				case "pop":
@@ -2300,6 +2470,13 @@ OpenWrap.ch.prototype.utils = {
 					if(aFunc(aV[v])) sV.push(aV[v]);
 				}
 				$ch(aTargetCh).setAll(aK, sV);
+				break;
+			case "unsetall":
+				var sV = [];
+				for (var v in aV) {
+					if(aFunc(aV[v])) sV.push(aV[v]);
+				}
+				$ch(aTargetCh).unsetAll(aK, sV);
 				break;
 			case "unset": 
 				if (aFunc(aK)) $ch(aTargetCh).unset(aK);
@@ -2738,6 +2915,24 @@ OpenWrap.ch.prototype.comms = {
 						shouldReset(res);
 					}, aURL);
 					break;
+				case "unsetall": 
+					sync(function() { 
+						if (ow.ch.comms.__counter[na] != 0)
+							ow.ch.comms.__counter[na]++;
+						else
+							ow.ch.comms.__counter[na] = 1;
+					}, ow.ch.comms.__counter[na]);
+					var res;
+					sync(function() {
+						//res = ow.obj.rest.jsonSet(aURL, { "o": "ua", "k": k, "t": t }, v, aL, aP, aT); 
+						res = $rest({
+							login: aL,
+							pass: aP,
+							connectionTimeout: aT
+						}).put(aURL, v, { "o": "ua", "k": k, "t": t });
+						shouldReset(res);
+					}, aURL);
+					break;					
 				case "set"   : 
 					sync(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
 					var res;
@@ -3059,7 +3254,7 @@ OpenWrap.ch.prototype.server = {
 	 * Depending on aRequest.channelPermission some operations may not execute:\
 	 * \
 	 * - "r" - allows channel get/getAll operations\
-	 * - "w" - allows channel set/setAll/getSet/unset operations\
+	 * - "w" - allows channel set/setAll/getSet/unset/unsetAll operations\
 	 * \
 	 * Example:\
 	 * \
@@ -3096,6 +3291,14 @@ OpenWrap.ch.prototype.server = {
 						return { "c": cc, "r": rt };
 					} 
 					break;
+				case "ua":
+					//if (k.t < $ch(aName).getVersion()) return undefined;
+					if (isArray(k.k) && isArray(v)) {
+						sync(function() { cc = --ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+						var rt = $ch(aName).unsetAll(k.k, v, k.t, aaUUID, aRequest);
+						return { "c": cc, "r": rt };
+					} 
+					break;					
 				case "r":
 					if (isArray(k.k) && isArray(v)) {
 						var keysToInclude = [];

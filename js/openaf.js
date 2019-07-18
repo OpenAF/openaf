@@ -5313,6 +5313,7 @@ const $fnM = (aFnName, aMap) => {
  * - getSortedKeys(fullInfo)\
  * - set(aKey, aValue, aForcedTimestamp)\
  * - setAll(keysArray, valuesArray, aForcedTimestamp)\
+ * - unsetAll(keysArray, valuesArray, aForcedTimestamp)\
  * - get(aKey)\
  * - getSet(aMatch, aKey, aValue, aForcedTimestamp)\
  * - unset(aKey, aForcedTimestamp)\
@@ -5351,6 +5352,7 @@ $channels = function(a) {
 		getSortedKeys: function(full, x) { return ow.ch.getSortedKeys(a, full, x); },
 		set          : function(aKey, aValue, aTs, aU, x) { return ow.ch.set(a, aKey, aValue, aTs, aU, x); },
 		setAll       : function(aKeys, aValues, aTs, aU, x) { return ow.ch.setAll(a, aKeys, aValues, aTs, aU, x); },
+		unsetAll     : function(aKeys, aValues, aTs, aU, x) { return ow.ch.unsetAll(a, aKeys, aValues, aTs, aU, x); },
 		get          : function(aKey, x) { return ow.ch.get(a, aKey, x); },
 		getSet       : function(aMatch, aKey, aValue, aForcedTimestamp, aU, x) { return ow.ch.getSet(a, aMatch, aKey, aValue, aForcedTimestamp, aU, x); },
 		unset        : function(aKey, aTs, aU, x) { ow.ch.unset(a, aKey, aTs, aU, x); return $channels(a); },
