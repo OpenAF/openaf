@@ -90,7 +90,7 @@ var defaultPage = {
     },
     "served": {
         "text": "OpenAF (version " + getVersion() + ")",
-        "link": "http://172.25.1.32/OpenAF"
+        "link": "https://openaf.io"
     },
     "navbar": [
         { "text": "openaf-Console", "link": "/exec/openaf-console" },
