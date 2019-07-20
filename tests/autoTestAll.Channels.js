@@ -47,6 +47,16 @@
         ow.test.assert(l.length, $ch(this.chType).size(), "Channel didn't store all values.");
     };
 
+    exports.testUnsettingData = function() {
+        var l1 = listFilesRecursive(".");
+        var l2 = listFilesRecursive("..");
+        $ch(this.chType).setAll(["filepath"], l1);
+        $ch(this.chType).setAll(["filepath"], l2);
+        ow.test.assert(Number(l1.length) + Number(l2.length), $ch(this.chType).size(), "Channel didn't store all values for unset test.");
+        $ch(this.chType).unsetAll(["filepath"], l2);
+        ow.test.assert(Number(l1.length), $ch(this.chType).size(), "Channel didn't unset all values correclty.");
+    };
+
     exports.testDestroyChannel = function() {
         $ch(this.chType).destroy();
     };

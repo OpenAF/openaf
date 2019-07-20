@@ -89,8 +89,8 @@ OpenWrap.ch.prototype.__types = {
 		},
 		unsetAll: function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			var parent = this;
-			anArrayOfKeys.forEach((aK) => {
-				parent.unset(aName, aK);
+			anArrayOfMapData.forEach((aV) => {
+				parent.unset(aName, ow.loadObj().filterKeys(anArrayOfKeys, aV));
 			});
 		},
 		get: function(aName, aKey) {
@@ -378,7 +378,7 @@ OpenWrap.ch.prototype.__types = {
 			var avvs = [];
 			for (var i in aKs) {
 				aKs[i] = merge(aKs[i], { ____t: now() });
-				avvs[i] = this.__cacheFunc[aName](aK);
+				avvs[i] = this.__cacheFunc[aName](aKs[i]);
 			}
 			this.__cacheCh[aName].setAll(aKs, avvs, aTimestamp);
 		},
@@ -386,7 +386,7 @@ OpenWrap.ch.prototype.__types = {
 			var avvs = [];
 			for (var i in aKs) {
 				aKs[i] = merge(aKs[i], { ____t: now() });
-				avvs[i] = this.__cacheFunc[aName](aK);
+				avvs[i] = this.__cacheFunc[aName](aKs[i]);
 			}
 			this.__cacheCh[aName].unsetAll(aKs, avvs, aTimestamp);
 		},		
@@ -1552,6 +1552,126 @@ OpenWrap.ch.prototype.__types = {
 		unset        : function(aName, aKey) {
 			var ch = this.__ig.getIgnite().getCache(aName);
 			ch.remove(af.toJavaMap(aKey));
+		}
+	},
+	// Simple implementation
+	//
+	etcd: {
+		__channels: {},
+		__escape: (s) => {
+			return encodeURIComponent(stringify(s, void 0, "")).replace(/%2F/g, "%25--%3B");
+		},
+		__unescape: (s) => {
+			return jsonParse(s.replace(/\%--\;/g, "/"));
+		},
+		create       : function(aName, shouldCompress, options) {
+			this.__channels[aName] = {};
+			options = _$(options).isMap().default({});
+			_$(options.url).isString().$_("A string etcd daemon url is mandatory.");
+			options.folder = _$(options.folder).isString().default("");
+			options.folder = (options.folder != "" ? options.folder.replace(/^\/*/, "/").replace(/\/+$/, "").replace(/\/+/g, "/") : "");
+
+			this.__channels[aName] = options;
+		},
+		destroy      : function(aName) {
+			delete this.__channels[aName];
+		},
+		size         : function(aName) {
+			var res = $rest().get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
+				return $from(res.node.nodes).notEquals("dir", true).count();
+			} else {
+				return 0;
+			}
+		},
+		forEach      : function(aName, aFunction) {
+			var res = $rest().get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			var parent = this;
+			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
+				res.node.nodes.forEach((a) => {
+					if (isUnDef(a.dir)) {
+						aFunction(parent.__unescape(a.key), jsonParse(a.value));
+					}
+				});
+				return mapArray(res.node.nodes, ["key"]);
+			} else {
+				return void 0;
+			}
+		},
+		getAll      : function(aName, full) {
+			var res = $rest().get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
+				return $from(res.node.nodes).notEquals("dir", true).select((r) => { return jsonParse(r.value); });
+			} else {
+				return [];
+			}
+		},
+		getKeys      : function(aName, full) {
+			var res = $rest().get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			var parent = this;
+			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
+				return $from(res.node.nodes).notEquals("dir", true).select((r) => { return parent.__unescape(r.key.replace(/^\//, "")); });
+			} else {
+				return [];
+			}
+		},
+		getSortedKeys: function(aName, full) {
+			var res = $rest().get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			var parent = this;
+			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
+				return $from(res.node.nodes).notEquals("dir", true).sort("modifiedIndex").select((r) => { return parent.__unescape(r.key.replace(/^\//, "")); });
+			} else {
+				return [];
+			}
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			/*var res;
+			res = this.get(aName, aK);
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp);
+			}
+			return void 0;*/
+			throw "Not implemented yet";
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var res = $rest({ urlEncode:true  }).put(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK), { value: stringify(aV, void 0, "") });
+			if (isDef(res) && isDef(res.node) && isDef(res.node.value)) {
+				return jsonParse(res.node.value);
+			} else {
+				return void 0;
+			}
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj();
+			for(var i in aVs) {
+				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj();
+			for(var i in aVs) {
+				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},		
+		get          : function(aName, aK) {
+			var res = $rest().get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK));
+			if (isDef(res) && isDef(res.node)) 
+				return jsonParse(res.node.value);
+			else
+				return void 0;
+		},
+		pop          : function(aName) {
+			var elems = this.getSortedKeys(aName);
+			var elem = elems[elems.length - 1];
+			return elem;
+		},
+		shift        : function(aName) {
+			var elems = this.getSortedKeys(aName);
+			var elem = elems[0];
+			return elem;
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			$rest().delete(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK));
 		}
 	}
 };
