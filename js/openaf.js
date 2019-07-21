@@ -5436,6 +5436,7 @@ $channels = function(a) {
  * \
  * - expose(aLocalPortOrServer, aPath, aAuthFunc, aUnAuthFunc)\
  * - peer(aLocalPortOrServer, aPath, aRemoteURL, aAuthFunc, aUnAuthFunc)\
+ * - unpeer(aRemoteURL)\
  * - createRemote(aURL, aTimeout)
  * </odoc>
  */
