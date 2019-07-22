@@ -3309,6 +3309,7 @@ OpenWrap.ch.prototype.server = {
 	 * </odoc>
 	 */
 	expose: function(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc, noCheck) {
+		if (isUnDef(aLocalPortORServer)) return void 0;
 		if (isUnDef(aPath)) aPath = "/" + aName;
 
 		if (isDef(ow.ch.expose[aName])) {
@@ -3393,7 +3394,7 @@ OpenWrap.ch.prototype.server = {
 	 * \
 	 * Example:\
 	 * \
-	 * ow.ch.server.peer("__log", 8090, [ "http://server1.local:8090/log", "https://l:p@server2.local:8090/log" ]);\
+	 * ow.ch.server.peer("__log", 8090, "/log", [ "http://server1.local:8090/log", "https://l:p@server2.local:8090/log" ]);\
 	 * \
 	 * </odoc>
 	 */

@@ -1382,55 +1382,63 @@ OpenWrap.server.prototype.locks.prototype.whenUnLocked = function (aLockName, aF
 OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) {
 	ow.loadFormat();
 
-	this.options = {
-		LOCKTIMEOUT   : 60000,
-		MASTERFILE    : "master.json",
-		MASTERFILELOCK: "master.json.lock"
-	};
+	this.HOST              = _$(aHost).isString("aHost not string").default("127.0.0.1");
+	this.PORT              = _$(aPort).isNumber().default(80);   
+	this.TRIES             = _$(aNumberOfTries).isNumber().default(3);
+	this.TRYTIMEOUT        = _$(aTryTimeout).isNumber().default(500);
+	this.NODETIMEOUT       = _$(nodeTimeout).isNumber().default(30000);
+
+	if (isUnDef(aListImplementation)) {
+		this.options = {
+			LOCKTIMEOUT   : 60000,
+			MASTERFILE    : "master.json",
+			MASTERFILELOCK: "master.json.lock"
+		};
+	} else {
+		this.options = {
+			HOST: this.HOST,
+			PORT: this.PORT
+		};
+	}
+
 	if (isDef(aImplOptions) && isMap(aImplOptions)) {
 		this.options = merge(this.options, aImplOptions);
 	} 
 
 	if (isUnDef(aListImplementation) || !isObject(aListImplementation)) {
 		this.impl = {
-			mastersLock: () => {
+			mastersLock: (aOptions) => {
 				try {
-					var alock = io.readFile(this.options.MASTERFILELOCK);
-					if (now() - alock.lock > this.options.LOCKTIMEOUT) {
-						io.writeFile(this.options.MASTERFILELOCK, { lock: now() });
+					var alock = io.readFile(aOptions.MASTERFILELOCK);
+					if (now() - alock.lock > aOptions.LOCKTIMEOUT) {
+						io.writeFile(aOptions.MASTERFILELOCK, { lock: now() });
 						return true;
 					} else {
 						return false;
 					}
 				} catch(e) {
 					if (String(e).indexOf("FileNotFoundException") > 0) {
-						io.writeFile(this.options.MASTERFILELOCK, { lock: now() });
+						io.writeFile(aOptions.MASTERFILELOCK, { lock: now() });
 						return true;
 					} else {
 						throw e;
 					}
 				}
 			},
-			mastersUnLock: () => {
-				io.rm(this.options.MASTERFILELOCK);
+			mastersUnLock: (aOptions) => {
+				io.rm(aOptions.MASTERFILELOCK);
 			},
-			mastersGetList: () => {
-				if (!io.fileExists(this.options.MASTERFILE)) io.writeFile(this.options.MASTERFILE, { rojobs: [] });
-				return io.readFile(this.options.MASTERFILE);
+			mastersGetList: (aOptions) => {
+				if (!io.fileExists(aOptions.MASTERFILE)) io.writeFile(aOptions.MASTERFILE, { masters: [] });
+				return io.readFile(aOptions.MASTERFILE);
 			},
-			mastersPutList: (aList) => {
-				io.writeFile(this.options.MASTERFILE, aList);
+			mastersPutList: (aOptions, aList) => {
+				io.writeFile(aOptions.MASTERFILE, aList);
 			}
 		};
 	} else {
 		this.impl = aListImplementation;
 	}
-
-	this.HOST              = _$(aHost).isString("aHost not string").default("127.0.0.1");
-	this.PORT              = _$(aPort).isNumber().default(80);   
-	this.TRIES             = _$(aNumberOfTries).isNumber().default(3);
-	this.TRYTIMEOUT        = _$(aTryTimeout).isNumber().default(500);
-	this.NODETIMEOUT       = _$(nodeTimeout).isNumber().default(30000);
 };
 
 /**
@@ -1442,8 +1450,8 @@ OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberO
  * </odoc>
  */
 OpenWrap.server.prototype.masters.prototype.sendToOthers = function(aData, aSendFn) {
-	var masterList = this.impl.mastersGetList();
-	var tryList = masterList.rojobs;
+	var masterList = this.impl.mastersGetList(this.options);
+	var tryList = masterList.masters;
 	var res = void 0;
 
 	for(var ii in tryList) {
@@ -1468,12 +1476,12 @@ OpenWrap.server.prototype.masters.prototype.sendToOthers = function(aData, aSend
  */
 OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHost) {
 	var numTries = this.TRIES, triesTimeout = this.TRYTIMEOUT;
-	while(this.impl.mastersLock() && numTries > 0) {
+	while(this.impl.mastersLock(this.options) && numTries > 0) {
 		numTries--;
 		sleep(triesTimeout);
 	}
 	if (numTries > 0) {
-		var masterList = this.impl.mastersGetList();
+		var masterList = this.impl.mastersGetList(this.options);
 		addNewHost = {
 			host: this.HOST,
 			port: this.PORT,
@@ -1481,28 +1489,28 @@ OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHos
 		};
 		
 		if (isDef(addNewHost) && 
-			$path(masterList.rojobs, 
-				"[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) masterList.rojobs.push(addNewHost);
+			$path(masterList.masters, 
+				"[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) masterList.masters.push(addNewHost);
 
-		for(var ii in masterList.rojobs) {
+		for(var ii in masterList.masters) {
 			if ((isDef(delHost) && 
-				(delHost.host == masterList.rojobs[ii].host && delHost.port == masterList.rojobs[ii].port)) || 
-				 masterList.rojobs[ii].dead) {
-				masterList.rojobs = deleteFromArray(masterList.rojobs, ii);
+				(delHost.host == masterList.masters[ii].host && delHost.port == masterList.masters[ii].port)) || 
+				 masterList.masters[ii].dead) {
+				masterList.masters = deleteFromArray(masterList.masters, ii);
 			} else {
-				var res = ow.format.testPort(masterList.rojobs[ii].host, masterList.rojobs[ii].port, 100); 
+				var res = ow.format.testPort(masterList.masters[ii].host, masterList.masters[ii].port, 100); 
 				if (res) {
-					masterList.rojobs[ii].date = now();
+					masterList.masters[ii].date = now();
 				} else {
-					if (now() - masterList.rojobs[ii].date > this.NODETIMEOUT) {
-						logWarn("Can't contact " + masterList.rojobs[ii].host + ":" + masterList.rojobs[ii].port + "!");
-						masterList.rojobs[ii].dead = true;
+					if (now() - masterList.masters[ii].date > this.NODETIMEOUT) {
+						logWarn("Can't contact " + masterList.masters[ii].host + ":" + masterList.masters[ii].port + "!");
+						masterList.masters[ii].dead = true;
 					}
 				}
 			}
 		}
-		this.impl.mastersPutList(masterList);
-		this.impl.mastersUnLock();
+		this.impl.mastersPutList(this.options, masterList);
+		this.impl.mastersUnLock(this.options);
 		return true;
 	} else {
 		return false;
@@ -1523,7 +1531,7 @@ OpenWrap.server.prototype.masters.prototype.checkIn = function() {
 	};
 
 	var res = this.verify(me);
-	if (!res) throw "Can't register on master file.";
+	if (!res) throw "Can't register on masters.";
 };
 
 /**
@@ -1539,7 +1547,96 @@ OpenWrap.server.prototype.masters.prototype.checkOut = function() {
 	};
 
 	var res = this.verify(void 0, me);
-	if (!res) throw("Can't unregister from master file");
+	if (!res) throw("Can't unregister from masters.");
+};
+
+OpenWrap.server.prototype.mastersChsPeersImpl = {
+	__check: (aOptions) => {
+		ow.loadServer();
+
+		aOptions.name = _$(aOptions.name).isString().$_("Please provide a name for the ow.server.masters chsPeerImpl.");
+		aOptions.protocol = _$(aOptions.protocol).isString().default("http");
+		aOptions.path = _$(aOptions.path).isString().default("/__m");
+		if (isUnDef(aOptions.serverOrPort)) aOptions.serverOrPort = ow.server.httpd.start(aOptions.PORT, aOptions.HOST);
+		aOptions.authFunc = _$(aOptions.authFunc).default(void 0);
+		aOptions.unAuthFunc = _$(aOptions.unAuthFunc).default(void 0);
+		aOptions.maxTime = _$(aOptions.maxTime).default(void 0);
+		aOptions.maxCount = _$(aOptions.maxCount).default(void 0);
+		aOptions.chs = _$(aOptions.chs).isArray().default([]);
+
+		if (isUnDef(aOptions.ch)) aOptions.ch = "__masters::" + aOptions.name;
+		if ($ch().list().indexOf(aOptions.ch) < 0) {
+			$ch(aOptions.ch).create(1, "simple");
+			$ch(aOptions.ch).expose(aOptions.serverOrPort, aOptions.path, aOptions.authFunc, aOptions.unAuthFunc);
+			var parent = this;
+			$ch(aOptions.ch).subscribe((aCh, aOp, aK, aV) => {
+				try{
+				var add = (m) => {
+					if (m.host == aOptions.host && m.port == aOptions.port) return;
+					var url = aOptions.protocol + "://" + m.host + ":" + m.port + aOptions.path;
+					$ch(aOptions.ch).peer(aOptions.serverOrPort, aOptions.path, url, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
+					for(let ii in aOptions.chs) {
+						var achs = aOptions.chs[ii];
+						if (isString(achs)) {
+							achs = {
+								name: achs
+							};
+						}
+						if (isMap(achs) && isDef(achs.name)) {
+							achs.path = _$(achs.path).isString().default("/" + achs.name);
+							var turl = aOptions.protocol + "://" + m.host + ":" + m.port + achs.path;
+							$ch(achs.name).peer(aOptions.serverOrPort, achs.path, turl, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
+						}
+					}
+				};
+
+				var del = (m) => {
+					var url = aOptions.protocol + "://" + m.host + ":" + m.port + parent.path;
+					$ch(aOptions.ch).unpeer(url);
+					for(let ii in aOptions.chs) {
+						var achs = aOptions.chs[ii];
+						if (isString(achs)) {
+							achs = {
+								name: achs
+							};
+						}
+						if (isMap(achs) && isDef(achs.name)) {
+							achs.path = _$(achs.path).isString().default("/" + achs.name);
+							var turl = aOptions.protocol + "://" + m.host + ":" + m.port + achs.path;
+							$ch(achs.name).unpeer(turl);
+						}
+					}
+				};
+
+				switch(aOp) {
+				case "set"     : add(aK); break;
+				case "setall"  : aK.forEach((k) => { add(k); }); break;
+				case "unset"   : del(aK); break;
+				case "unsetall": aK.forEach((k) => { del(k); }); break;
+				}
+				} catch(e){sprintErr(e);} 
+			});
+		}
+	},
+	mastersLock: (aOptions) => { },
+	mastersUnLock: (aOptions) => { },
+	mastersGetList: (aOptions) => {
+		ow.server.mastersChsPeersImpl.__check(aOptions);
+
+		var res = $ch(aOptions.ch).getAll();
+		return { masters: res };
+	},
+	mastersPutList: (aOptions, aList) => {
+		ow.server.mastersChsPeersImpl.__check(aOptions);
+		var res = $ch(aOptions.ch).getKeys();
+		for(let ii in res) {
+			var it = res[ii];
+			if ($from(aList.masters).equals("host", it.host).equals("port", it.port).none()) {
+				$ch(aOptions.ch).unset({ host: it.host, port: it.port });
+			}
+		}
+		$ch(aOptions.ch).setAll(["host", "port"], aList.masters);
+	}
 };
 
 //-----------------------------------------------------------------------------------------------------
