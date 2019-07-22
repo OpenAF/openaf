@@ -4,7 +4,7 @@
 
 OpenWrap.server = function() {
 	return ow.server;
-}
+};
 
 /**
  * <odoc>
@@ -1550,6 +1550,29 @@ OpenWrap.server.prototype.masters.prototype.checkOut = function() {
 	if (!res) throw("Can't unregister from masters.");
 };
 
+/**
+ * <odoc>
+ * <key>ow.server.mastersChsPeersImpl</key>
+ * This ow.servers.master implementation will cluster one or more master servers keeping the masters connection details on
+ * a master channel (defaults to __masters::[name of cluster]). It's meant to be provided to ow.server.master like this:\
+ * \
+ * var mts = new ow.server.masters("1.2.3.4", 1234, void 0, void 0, void 0, { name: "testCluster" }, ow.server.mastersChsPeersImpl)\
+ * \
+ * There are several implementation options:\
+ * \
+ *    name         (String, mandatory)  The clusters name.\
+ *    serverOrPort (Number or HTTPd)    Port or http server object where the master node channels will be available.\
+ *    protocol     (String)             The transport protocol use to reach other masters (defaults to http).\
+ *    path         (String)             The path where other master nodes channel is reachable (defaults to '/__m').\
+ *    authFunc     (Function)           Optional authentication function (see mor in ow.ch.server.peer).\
+ *    unAuthFunc   (Function)           Optional failed authentication function (see more in ow.ch.server.peer).\
+ *    maxTime      (Number)             Optional retry max time (see more in ow.ch.server.peer).\
+ *    maxCount     (Number)             Optional max count of retries (see more in ow.ch.server.peer).\
+ *    ch           (String)             The masters local channel (defaults to "__masters::[name of cluster]").\
+ *    chs          (Array)              Array of names of channels or maps with each channel name and path. These channels will be automatically peered and unpeered with other master nodes. The path, if not provided, defaults to "/[name of channel]".\
+ * \
+ * </odoc>
+ */
 OpenWrap.server.prototype.mastersChsPeersImpl = {
 	__check: (aOptions) => {
 		ow.loadServer();
