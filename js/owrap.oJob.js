@@ -316,7 +316,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 								if (!isArray(cluster.discovery)) {
 									cluster.discovery = [ cluster.discovery ];
 								}
-								$ch("__masters::" + cluster.name).setAll(["host", "port"], cluster.discovery);
+								$ch("__masters::" + cluster.name).setAll(["h", "p"], $path(cluster.discovery, "[].{ h: host, p: port, a: false }"));
 							}
 						}
 					}

@@ -1485,7 +1485,8 @@ OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHos
 		addNewHost = {
 			host: this.HOST,
 			port: this.PORT,
-			date: now()
+			date: now(),
+			dead: false
 		};
 		
 		if (isDef(addNewHost) && 
@@ -1501,6 +1502,7 @@ OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHos
 				var res = ow.format.testPort(masterList.masters[ii].host, masterList.masters[ii].port, 100); 
 				if (res) {
 					masterList.masters[ii].date = now();
+					masterList.masters[ii].dead = false;
 				} else {
 					if (now() - masterList.masters[ii].date > this.NODETIMEOUT) {
 						logWarn("Can't contact " + masterList.masters[ii].host + ":" + masterList.masters[ii].port + "!");
@@ -1596,8 +1598,8 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 			$ch(aOptions.ch).subscribe((aCh, aOp, aK, aV) => {
 				try{
 				var add = (m) => {
-					if (m.host == aOptions.host && m.port == aOptions.port) return;
-					var url = aOptions.protocol + "://" + m.host + ":" + m.port + aOptions.path;
+					if (m.h == aOptions.host && m.p == aOptions.port) return;
+					var url = aOptions.protocol + "://" + m.h + ":" + m.p + aOptions.path;
 					$ch(aOptions.ch).peer(aOptions.serverOrPort, aOptions.path, url, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
 					for(let ii in aOptions.chs) {
 						var achs = aOptions.chs[ii];
@@ -1608,14 +1610,14 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 						}
 						if (isMap(achs) && isDef(achs.name)) {
 							achs.path = _$(achs.path).isString().default("/" + achs.name);
-							var turl = aOptions.protocol + "://" + m.host + ":" + m.port + achs.path;
+							var turl = aOptions.protocol + "://" + m.h + ":" + m.p + achs.path;
 							$ch(achs.name).peer(aOptions.serverOrPort, achs.path, turl, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
 						}
 					}
 				};
 
 				var del = (m) => {
-					var url = aOptions.protocol + "://" + m.host + ":" + m.port + parent.path;
+					var url = aOptions.protocol + "://" + m.h + ":" + m.p + parent.path;
 					$ch(aOptions.ch).unpeer(url);
 					for(let ii in aOptions.chs) {
 						var achs = aOptions.chs[ii];
@@ -1626,7 +1628,7 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 						}
 						if (isMap(achs) && isDef(achs.name)) {
 							achs.path = _$(achs.path).isString().default("/" + achs.name);
-							var turl = aOptions.protocol + "://" + m.host + ":" + m.port + achs.path;
+							var turl = aOptions.protocol + "://" + m.h + ":" + m.p + achs.path;
 							$ch(achs.name).unpeer(turl);
 						}
 					}
@@ -1648,18 +1650,18 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 		ow.server.mastersChsPeersImpl.__check(aOptions);
 
 		var res = $ch(aOptions.ch).getAll();
-		return { masters: res };
+		return { masters: $path(res, "[].{ host: h, port: p, date: d, dead: a }") };
 	},
 	mastersPutList: (aOptions, aList) => {
 		ow.server.mastersChsPeersImpl.__check(aOptions);
 		var res = $ch(aOptions.ch).getKeys();
 		for(let ii in res) {
 			var it = res[ii];
-			if ($from(aList.masters).equals("host", it.host).equals("port", it.port).none()) {
-				$ch(aOptions.ch).unset({ host: it.host, port: it.port });
+			if ($from(aList.masters).equals("host", it.h).equals("port", it.p).none()) {
+				$ch(aOptions.ch).unset({ h: it.h, p: it.p });
 			}
 		}
-		$ch(aOptions.ch).setAll(["host", "port"], aList.masters);
+		$ch(aOptions.ch).setAll(["h", "p"], $path(aList.masters, "[].{ h: host, p: port, d: date, a: dead }"));
 	}
 };
 
