@@ -1576,6 +1576,7 @@ OpenWrap.server.prototype.masters.prototype.checkOut = function() {
 OpenWrap.server.prototype.mastersChsPeersImpl = {
 	__check: (aOptions) => {
 		ow.loadServer();
+		ow.loadObj();
 
 		aOptions.name = _$(aOptions.name).isString().$_("Please provide a name for the ow.server.masters chsPeerImpl.");
 		aOptions.protocol = _$(aOptions.protocol).isString().default("http");
@@ -1633,9 +1634,9 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 
 				switch(aOp) {
 				case "set"     : add(aK); break;
-				case "setall"  : aK.forEach((k) => { add(k); }); break;
+				case "setall"  : aV.forEach((v) => { add(ow.obj.filterKeys(aK, v)); }); break;
 				case "unset"   : del(aK); break;
-				case "unsetall": aK.forEach((k) => { del(k); }); break;
+				case "unsetall": aV.forEach((v) => { del(ow.obj.filterKeys(aK, v)); }); break;
 				}
 				} catch(e){sprintErr(e);} 
 			});

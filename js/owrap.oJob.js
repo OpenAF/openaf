@@ -11,7 +11,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__promises = [];
 	var parent = this;
 
-	this.__host = "local";
+	this.__host = "localhost";
 	this.__ip = "127.0.0.1";
 
 	//this.__promises.push($do(() => {
@@ -61,6 +61,12 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__expr = processExpr(" ");
 	if (isDef(this.__expr[""])) delete this.__expr[""];
 	this.__logLimit = 3;
+
+	this.periodicFuncs = [];
+	this.__periodicFunc = () => {
+		this.periodicFuncs.forEach((f) => f());
+		return false;
+	};
 
 	//$doWait($doAll(this.__promises));
 
@@ -199,7 +205,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 				}
 			}
 		}
-		if (this.__ojob.channels.expose || isDef(this.__ojob.channels.peers)) {
+		if (this.__ojob.channels.expose || isDef(this.__ojob.channels.peers) || isDef(this.__ojob.channels.clusters)) {
 			if (isDef(this.__ojob.channels.port)) {
 
 				if (isUnDef(this.__hs)) {
@@ -273,11 +279,52 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 							}
 						}
 					}
+
+					if (isDef(this.__ojob.channels.clusters)) {
+						if (!(isArray(this.__ojob.channels.clusters))) {
+							this.__ojob.channels.clusters = [ this.__ojob.channels.clusters ];
+						}
+						if (isUnDef(this.__mst)) this.__mst = []; 
+						if (isUnDef(this.__mstTime)) this.__mstTime = [];
+					
+						for(let ii in this.__ojob.channels.clusters) {
+							var cluster = this.__ojob.channels.clusters[ii];
+
+							_$(cluster.name).isString().$_("Each channel cluster must have a name.");
+							cluster.checkPeriod = _$(cluster.checkPeriod).isNumber().default(2500);
+							cluster.host = _$(cluster.host).isString().default(this.__host);
+							cluster.port = _$(cluster.port).isNumber().default(this.__ojob.channels.port);
+
+							var mst = new ow.server.masters(cluster.host, cluster.port, cluster.nodeTimeout, cluster.numberOfTries, cluster.tryTimeout, {
+								name        : cluster.name,
+								serverOrPort: this.__hs,
+								chs         : this.__ojob.channels.list
+							}, ow.server.mastersChsPeersImpl);
+							mst.checkIn();
+
+							this.periodicFuncs.push(() => { 
+								if (now() - this.__mstTime[cluster.name] > cluster.checkPeriod) {
+									mst.verify(); 
+									this.__mstTime[cluster.name] = now();
+								}
+							});
+							addOnOpenAFShutdown(() => { mst.checkOut(); });
+							this.__mst.push(mst);
+							this.__mstTime[cluster.name] = now();
+
+							if (isDef(cluster.discovery)) {
+								if (!isArray(cluster.discovery)) {
+									cluster.discovery = [ cluster.discovery ];
+								}
+								$ch("__masters::" + cluster.name).setAll(["host", "port"], cluster.discovery);
+							}
+						}
+					}
 				}
 			}
 		}
 	}
-}
+};
 
 /**
  * <odoc>
@@ -994,10 +1041,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 		               	  } catch(e) {}
 					} 
 				} catch(e) { logErr(e); if (isDef(e.javaException)) e.javaException.printStackTrace(); }
-				if (isDef(parent.__ojob) && parent.__ojob.daemon == true) 
+				if (isDef(parent.__ojob) && parent.__ojob.daemon == true) {
 					sleep((isDef(parent.__ojob.timeInterval) ? parent.__ojob.timeInterval : 50));
-				else
+					parent.__periodicFunc();
+				} else {
 					sleep(50);
+				}
 			}
 		});
 	}
@@ -1005,7 +1054,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	if (!(this.__ojob.sequential)) t.start();
 
 	if (this.__ojob != {} && this.__ojob.daemon == true && this.__ojob.sequential == true)
-		ow.server.daemon();
+		ow.server.daemon(void 0, this.__periodicFunc);
 
 	if (!(this.__ojob.sequential)) {
 		try {
