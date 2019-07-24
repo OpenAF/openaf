@@ -1357,29 +1357,29 @@ OpenWrap.server.prototype.locks.prototype.whenUnLocked = function (aLockName, aF
 };
 
 //-----------------------------------------------------------------------------------------------------
-// SIMPLE MASTER LIST
+// SIMPLE CLUSTER LIST
 //-----------------------------------------------------------------------------------------------------
 
 /**
  * <odoc>
- * <key>ow.server.masters(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) : Object</key>
- * Creates a new instance of a simple master nodes management code. Each master node should create it's own instante providing aHost address
- * on which it can be contacted, a corresponding aPort, a nodeTimeout in ms (defaults to 30000), a aNumberOfTries to contact a master node (defaults to 3),
- * a aTryTimeout in ms waiting for a reply from another master node (defaults to 500ms), a custom master list implementation options and a custom map of functions
- * implementing a master list retrieval. If no aListImplemnetation is provided it defaults to an internal file based implementation that expects
+ * <key>ow.server.cluster(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) : Object</key>
+ * Creates a new instance of a simple cluster nodes management code. Each cluster node should create it's own instante providing aHost address
+ * on which it can be contacted, a corresponding aPort, a nodeTimeout in ms (defaults to 30000), a aNumberOfTries to contact a cluster node (defaults to 3),
+ * a aTryTimeout in ms waiting for a reply from another cluster node (defaults to 500ms), a custom cluster list implementation options and a custom map of functions
+ * implementing a cluster list retrieval. If no aListImplemnetation is provided it defaults to an internal file based implementation that expects
  * the following options: LOCKTIMEOUT, how much a lock should be honored in ms (e.g. more that 60000ms and it's wierd that the lock it's still there and no other
- * master node has been found); MASTERFILE, the filepath to the master file; MASTERFILELOCK, the filepath to the master file lock file.\
+ * cluster node has been found); CLUSTERFILE, the filepath to the cluster file; CLUSTERFILELOCK, the filepath to the cluster file lock file.\
  * \
  * To provide another custom aListImplementation it should contain the following methods:\
  * \
- *   - mastersLock()         - locking the access to the master nodes list\
- *   - mastersUnLock()       - unlocking the access to the master nodes list\
- *   - mastersGetList()      - returns the current master nodes list\
- *   - mastersPutList(aList) - sets a new master nodes list (an array with maps containing host, port and date (last contact date))\
+ *   - clusterLock()         - locking the access to the cluster nodes list\
+ *   - clusterUnLock()       - unlocking the access to the cluster nodes list\
+ *   - clusterGetList()      - returns the current cluster nodes list\
+ *   - clusterPutList(aList) - sets a new cluster nodes list (an array with maps containing host, port and date (last contact date))\
  * \
  * </odoc>
  */
-OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) {
+OpenWrap.server.prototype.cluster = function(aHost, aPort, nodeTimeout, aNumberOfTries, aTryTimeout, aImplOptions, aListImplementation) {
 	ow.loadFormat();
 
 	this.HOST              = _$(aHost).isString("aHost not string").default("127.0.0.1");
@@ -1390,9 +1390,9 @@ OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberO
 
 	if (isUnDef(aListImplementation)) {
 		this.options = {
-			LOCKTIMEOUT   : 60000,
-			MASTERFILE    : "master.json",
-			MASTERFILELOCK: "master.json.lock"
+			LOCKTIMEOUT    : 60000,
+			CLUSTERFILE    : "cluster.json",
+			CLUSTERFILELOCK: "cluster.json.lock"
 		};
 	} else {
 		this.options = {
@@ -1407,33 +1407,33 @@ OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberO
 
 	if (isUnDef(aListImplementation) || !isObject(aListImplementation)) {
 		this.impl = {
-			mastersLock: (aOptions) => {
+			clusterLock: (aOptions) => {
 				try {
-					var alock = io.readFile(aOptions.MASTERFILELOCK);
+					var alock = io.readFile(aOptions.CLUSTERFILELOCK);
 					if (now() - alock.lock > aOptions.LOCKTIMEOUT) {
-						io.writeFile(aOptions.MASTERFILELOCK, { lock: now() });
+						io.writeFile(aOptions.CLUSTERFILELOCK, { lock: now() });
 						return true;
 					} else {
 						return false;
 					}
 				} catch(e) {
 					if (String(e).indexOf("FileNotFoundException") > 0) {
-						io.writeFile(aOptions.MASTERFILELOCK, { lock: now() });
+						io.writeFile(aOptions.CLUSTERFILELOCK, { lock: now() });
 						return true;
 					} else {
 						throw e;
 					}
 				}
 			},
-			mastersUnLock: (aOptions) => {
-				io.rm(aOptions.MASTERFILELOCK);
+			clusterUnLock: (aOptions) => {
+				io.rm(aOptions.CLUSTERFILELOCK);
 			},
-			mastersGetList: (aOptions) => {
-				if (!io.fileExists(aOptions.MASTERFILE)) io.writeFile(aOptions.MASTERFILE, { masters: [] });
-				return io.readFile(aOptions.MASTERFILE);
+			clusterGetList: (aOptions) => {
+				if (!io.fileExists(aOptions.CLUSTERFILE)) io.writeFile(aOptions.CLUSTERFILE, { cluster: [] });
+				return io.readFile(aOptions.CLUSTERFILE);
 			},
-			mastersPutList: (aOptions, aList) => {
-				io.writeFile(aOptions.MASTERFILE, aList);
+			clusterPutList: (aOptions, aList) => {
+				io.writeFile(aOptions.CLUSTERFILE, aList);
 			}
 		};
 	} else {
@@ -1443,15 +1443,15 @@ OpenWrap.server.prototype.masters = function(aHost, aPort, nodeTimeout, aNumberO
 
 /**
  * <odoc>
- * <key>ow.server.masters.sendToOthers(aData, aSendToOtherFn) : Object</key>
- * Tries to send to another master node aData using aSendToOtherFn that receives, as parameter, a aData and a Map with HOST and PORT of another
- * master node to try. In case of failure the function should throw an exception in case of success the function should return an object
+ * <key>ow.server.cluster.sendToOthers(aData, aSendToOtherFn) : Object</key>
+ * Tries to send to another cluster node aData using aSendToOtherFn that receives, as parameter, a aData and a Map with HOST and PORT of another
+ * cluster node to try. In case of failure the function should throw an exception in case of success the function should return an object
  * that will be returned. If no result can be obtained an object with result: 0 will be returned.
  * </odoc>
  */
-OpenWrap.server.prototype.masters.prototype.sendToOthers = function(aData, aSendFn) {
-	var masterList = this.impl.mastersGetList(this.options);
-	var tryList = masterList.masters;
+OpenWrap.server.prototype.cluster.prototype.sendToOthers = function(aData, aSendFn) {
+	var clusterList = this.impl.clusterGetList(this.options);
+	var tryList = clusterList.cluster;
 	var res = void 0;
 
 	for(var ii in tryList) {
@@ -1469,48 +1469,103 @@ OpenWrap.server.prototype.masters.prototype.sendToOthers = function(aData, aSend
 
 /**
  * <odoc>
- * <key>ow.server.masters.verify()</key>
- * Verifies if all master nodes ports are reachable and updates the master file. If a master node is not reachable it will try
- * to a specific number of times after timing out on a specific timeout (see default values in help ow.server.masters).
+ * <key>ow.server.cluster.any(aFunction, includeMe) : Object</key>
+ * Tries to execute aFunction providing a map with one of the cluster list host + port. If the aFunction throws an exception another
+ * cluster will be used. If no cluster could be used an exception is thrown. Optionally includeMe = true enables executing on the current
+ * cluster node itself. If succcessfully returns whatever the aFunction returns.
  * </odoc>
  */
-OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHost) {
+OpenWrap.server.prototype.cluster.prototype.any = function(aFunction, includeMe) {
+	var clusterList = this.impl.clusterGetList(this.options);
+	var tryList = $from($from(clusterList.cluster).select((r) => { 
+		r.date = Number(r.date) + (isDef(r.load) ? Math.floor(Math.random() * 30000) : r.load);
+		return r; 
+	})).sort("date").select();
+	var res = void 0;
+
+	for(var ii in tryList) {
+		if (includeMe || (tryList[ii].host + tryList[ii].port) != (this.HOST + this.PORT)) {
+			try { 
+				res = aFunction(tryList[ii]); 
+				return res; 
+			} catch(e) {
+			}
+		}
+	}
+	
+	throw "Couldn't execute.";
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.cluster.all(aFunction, includeMe) : Object</key>
+ * Tries to execute aFunction providing a map with all of the cluster list host + port. If the aFunction throws an exception another
+ * cluster will be used. If no cluster could be used an exception is thrown. Optionally includeMe = true enables executing on the current
+ * cluster node itself. If succcessfully returns whatever the aFunction returns.
+ * </odoc>
+ */
+OpenWrap.server.prototype.cluster.prototype.all = function(aFunction, includeMe) {
+	var clusterList = this.impl.clusterGetList(this.options);
+	var res = void 0, lO = [];
+
+	for(let ii in clusterList) {
+		if (includeMe || (clusterList[ii].host + clusterList[ii].port) != (this.HOST + this.PORT)) {
+			lO.push($do(() => {
+				return aFunction(clusterList[ii]);
+			}));
+		}
+	}
+
+	return lO;
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.cluster.verify(addNewHostMap, delHostMap, customLoad)</key>
+ * Verifies if all cluster nodes ports are reachable and updates the cluster file. If a cluster node is not reachable it will try
+ * to a specific number of times after timing out on a specific timeout (see default values in help ow.server.cluster).
+ * </odoc>
+ */
+OpenWrap.server.prototype.cluster.prototype.verify = function(addNewHost, delHost, customLoad) {
 	var numTries = this.TRIES, triesTimeout = this.TRYTIMEOUT;
-	while(this.impl.mastersLock(this.options) && numTries > 0) {
+	while(this.impl.clusterLock(this.options) && numTries > 0) {
 		numTries--;
 		sleep(triesTimeout);
 	}
 	if (numTries > 0) {
-		var masterList = this.impl.mastersGetList(this.options);
+		var clusterList = this.impl.clusterGetList(this.options);
 		addNewHost = {
 			host: this.HOST,
 			port: this.PORT,
-			date: now()
+			date: now(),
+			dead: false
 		};
 		
 		if (isDef(addNewHost) && 
-			$path(masterList.masters, 
-				"[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) masterList.masters.push(addNewHost);
+			$path(clusterList.cluster, 
+				"[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) clusterList.cluster.push(addNewHost);
 
-		for(var ii in masterList.masters) {
+		for(var ii in clusterList.cluster) {
 			if ((isDef(delHost) && 
-				(delHost.host == masterList.masters[ii].host && delHost.port == masterList.masters[ii].port)) || 
-				 masterList.masters[ii].dead) {
-				masterList.masters = deleteFromArray(masterList.masters, ii);
+				(delHost.host == clusterList.cluster[ii].host && delHost.port == clusterList.cluster[ii].port)) || 
+				 clusterList.cluster[ii].dead) {
+				clusterList.cluster = deleteFromArray(clusterList.cluster, ii);
 			} else {
-				var res = ow.format.testPort(masterList.masters[ii].host, masterList.masters[ii].port, 100); 
+				var res = ow.format.testPort(clusterList.cluster[ii].host, clusterList.cluster[ii].port, 100); 
 				if (res) {
-					masterList.masters[ii].date = now();
+					clusterList.cluster[ii].date = now();
+					clusterList.cluster[ii].load = (isDef(customLoad) ? customLoad : Math.floor(getCPULoad(true) * 10000));
+					clusterList.cluster[ii].dead = false;
 				} else {
-					if (now() - masterList.masters[ii].date > this.NODETIMEOUT) {
-						logWarn("Can't contact " + masterList.masters[ii].host + ":" + masterList.masters[ii].port + "!");
-						masterList.masters[ii].dead = true;
+					if (now() - clusterList.cluster[ii].date > this.NODETIMEOUT) {
+						logWarn("Can't contact " + clusterList.cluster[ii].host + ":" + clusterList.cluster[ii].port + "!");
+						clusterList.cluster[ii].dead = true;
 					}
 				}
 			}
 		}
-		this.impl.mastersPutList(this.options, masterList);
-		this.impl.mastersUnLock(this.options);
+		this.impl.clusterPutList(this.options, clusterList);
+		this.impl.clusterUnLock(this.options);
 		return true;
 	} else {
 		return false;
@@ -1519,11 +1574,11 @@ OpenWrap.server.prototype.masters.prototype.verify = function(addNewHost, delHos
 
 /**
  * <odoc>
- * <key>ow.server.masters.checkIn()</key>
- * Checks in the current master node.
+ * <key>ow.server.cluster.checkIn()</key>
+ * Checks in the current cluster node.
  * </odoc>
  */
-OpenWrap.server.prototype.masters.prototype.checkIn = function() {
+OpenWrap.server.prototype.cluster.prototype.checkIn = function() {
 	var me = {
 		host: this.HOST,
 		port: this.PORT,
@@ -1531,54 +1586,54 @@ OpenWrap.server.prototype.masters.prototype.checkIn = function() {
 	};
 
 	var res = this.verify(me);
-	if (!res) throw "Can't register on masters.";
+	if (!res) throw "Can't register on cluster.";
 };
 
 /**
  * <odoc>
- * <key>ow.server.masters.checkOut()</key>
- * Checks out the current master node.
+ * <key>ow.server.cluster.checkOut()</key>
+ * Checks out the current cluster node.
  * </odoc>
  */
-OpenWrap.server.prototype.masters.prototype.checkOut = function() {
+OpenWrap.server.prototype.cluster.prototype.checkOut = function() {
 	var me = {
 		host: this.HOST,
 		port: this.PORT
 	};
 
 	var res = this.verify(void 0, me);
-	if (!res) throw("Can't unregister from masters.");
+	if (!res) throw("Can't unregister from cluster.");
 };
 
 /**
  * <odoc>
- * <key>ow.server.mastersChsPeersImpl</key>
- * This ow.servers.master implementation will cluster one or more master servers keeping the masters connection details on
- * a master channel (defaults to __masters::[name of cluster]). It's meant to be provided to ow.server.master like this:\
+ * <key>ow.server.clusterChsPeersImpl</key>
+ * This ow.servers.cluster implementation will cluster one or more cluster servers keeping the cluster connection details on
+ * a cluster channel (defaults to __cluster::[name of cluster]). It's meant to be provided to ow.server.cluster like this:\
  * \
- * var mts = new ow.server.masters("1.2.3.4", 1234, void 0, void 0, void 0, { name: "testCluster" }, ow.server.mastersChsPeersImpl)\
+ * var mts = new ow.server.cluster("1.2.3.4", 1234, void 0, void 0, void 0, { name: "testCluster" }, ow.server.clusterChsPeersImpl)\
  * \
  * There are several implementation options:\
  * \
  *    name         (String, mandatory)  The clusters name.\
- *    serverOrPort (Number or HTTPd)    Port or http server object where the master node channels will be available.\
- *    protocol     (String)             The transport protocol use to reach other masters (defaults to http).\
- *    path         (String)             The path where other master nodes channel is reachable (defaults to '/__m').\
+ *    serverOrPort (Number or HTTPd)    Port or http server object where the cluster node channels will be available.\
+ *    protocol     (String)             The transport protocol use to reach other cluster (defaults to http).\
+ *    path         (String)             The path where other cluster nodes channel is reachable (defaults to '/__m').\
  *    authFunc     (Function)           Optional authentication function (see mor in ow.ch.server.peer).\
  *    unAuthFunc   (Function)           Optional failed authentication function (see more in ow.ch.server.peer).\
  *    maxTime      (Number)             Optional retry max time (see more in ow.ch.server.peer).\
  *    maxCount     (Number)             Optional max count of retries (see more in ow.ch.server.peer).\
- *    ch           (String)             The masters local channel (defaults to "__masters::[name of cluster]").\
- *    chs          (Array)              Array of names of channels or maps with each channel name and path. These channels will be automatically peered and unpeered with other master nodes. The path, if not provided, defaults to "/[name of channel]".\
+ *    ch           (String)             The cluster local channel (defaults to "__cluster::[name of cluster]").\
+ *    chs          (Array)              Array of names of channels or maps with each channel name and path. These channels will be automatically peered and unpeered with other cluster nodes. The path, if not provided, defaults to "/[name of channel]".\
  * \
  * </odoc>
  */
-OpenWrap.server.prototype.mastersChsPeersImpl = {
+OpenWrap.server.prototype.clusterChsPeersImpl = {
 	__check: (aOptions) => {
 		ow.loadServer();
 		ow.loadObj();
 
-		aOptions.name = _$(aOptions.name).isString().$_("Please provide a name for the ow.server.masters chsPeerImpl.");
+		aOptions.name = _$(aOptions.name).isString().$_("Please provide a name for the ow.server.cluster chsPeerImpl.");
 		aOptions.protocol = _$(aOptions.protocol).isString().default("http");
 		aOptions.path = _$(aOptions.path).isString().default("/__m");
 		if (isUnDef(aOptions.serverOrPort)) aOptions.serverOrPort = ow.server.httpd.start(aOptions.PORT, aOptions.HOST);
@@ -1588,7 +1643,7 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 		aOptions.maxCount = _$(aOptions.maxCount).default(void 0);
 		aOptions.chs = _$(aOptions.chs).isArray().default([]);
 
-		if (isUnDef(aOptions.ch)) aOptions.ch = "__masters::" + aOptions.name;
+		if (isUnDef(aOptions.ch)) aOptions.ch = "__cluster::" + aOptions.name;
 		if ($ch().list().indexOf(aOptions.ch) < 0) {
 			$ch(aOptions.ch).create(1, "simple");
 			$ch(aOptions.ch).expose(aOptions.serverOrPort, aOptions.path, aOptions.authFunc, aOptions.unAuthFunc);
@@ -1596,8 +1651,8 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 			$ch(aOptions.ch).subscribe((aCh, aOp, aK, aV) => {
 				try{
 				var add = (m) => {
-					if (m.host == aOptions.host && m.port == aOptions.port) return;
-					var url = aOptions.protocol + "://" + m.host + ":" + m.port + aOptions.path;
+					if (m.h == aOptions.host && m.p == aOptions.port) return;
+					var url = aOptions.protocol + "://" + m.h + ":" + m.p + aOptions.path;
 					$ch(aOptions.ch).peer(aOptions.serverOrPort, aOptions.path, url, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
 					for(let ii in aOptions.chs) {
 						var achs = aOptions.chs[ii];
@@ -1608,14 +1663,14 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 						}
 						if (isMap(achs) && isDef(achs.name)) {
 							achs.path = _$(achs.path).isString().default("/" + achs.name);
-							var turl = aOptions.protocol + "://" + m.host + ":" + m.port + achs.path;
+							var turl = aOptions.protocol + "://" + m.h + ":" + m.p + achs.path;
 							$ch(achs.name).peer(aOptions.serverOrPort, achs.path, turl, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
 						}
 					}
 				};
 
 				var del = (m) => {
-					var url = aOptions.protocol + "://" + m.host + ":" + m.port + parent.path;
+					var url = aOptions.protocol + "://" + m.h + ":" + m.p + parent.path;
 					$ch(aOptions.ch).unpeer(url);
 					for(let ii in aOptions.chs) {
 						var achs = aOptions.chs[ii];
@@ -1626,7 +1681,7 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 						}
 						if (isMap(achs) && isDef(achs.name)) {
 							achs.path = _$(achs.path).isString().default("/" + achs.name);
-							var turl = aOptions.protocol + "://" + m.host + ":" + m.port + achs.path;
+							var turl = aOptions.protocol + "://" + m.h + ":" + m.p + achs.path;
 							$ch(achs.name).unpeer(turl);
 						}
 					}
@@ -1642,24 +1697,24 @@ OpenWrap.server.prototype.mastersChsPeersImpl = {
 			});
 		}
 	},
-	mastersLock: (aOptions) => { },
-	mastersUnLock: (aOptions) => { },
-	mastersGetList: (aOptions) => {
-		ow.server.mastersChsPeersImpl.__check(aOptions);
+	clusterLock: (aOptions) => { },
+	clusterUnLock: (aOptions) => { },
+	clusterGetList: (aOptions) => {
+		ow.server.clusterChsPeersImpl.__check(aOptions);
 
 		var res = $ch(aOptions.ch).getAll();
-		return { masters: res };
+		return { cluster: $path(res, "[].{ host: h, port: p, date: d, dead: a, load: l }") };
 	},
-	mastersPutList: (aOptions, aList) => {
-		ow.server.mastersChsPeersImpl.__check(aOptions);
+	clusterPutList: (aOptions, aList) => {
+		ow.server.clusterChsPeersImpl.__check(aOptions);
 		var res = $ch(aOptions.ch).getKeys();
 		for(let ii in res) {
 			var it = res[ii];
-			if ($from(aList.masters).equals("host", it.host).equals("port", it.port).none()) {
-				$ch(aOptions.ch).unset({ host: it.host, port: it.port });
+			if ($from(aList.cluster).equals("host", it.h).equals("port", it.p).none()) {
+				$ch(aOptions.ch).unset({ h: it.h, p: it.p });
 			}
 		}
-		$ch(aOptions.ch).setAll(["host", "port"], aList.masters);
+		$ch(aOptions.ch).setAll(["h", "p"], $path(aList.cluster, "[].{ h: host, p: port, d: date, a: dead, l: load }"));
 	}
 };
 
