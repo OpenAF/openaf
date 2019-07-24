@@ -874,12 +874,12 @@ OpenWrap.obj.prototype.pool = {
 			
 			/**
 			 * <odoc>
-			 * <key>ow.obj.pool.setFactoryDB(aDriver, aURL, aLogin, aPassword)</key>
+			 * <key>ow.obj.pool.setFactoryDB(aDriver, aURL, aLogin, aPassword, aKeepAliveFunction, aTimeoutInMs)</key>
 			 * Setups: a factory function to create an DB object using aDriver, aURL, aLogin and aPassword;
 			 * a close function to close the DB object connection; a keep alive function that tries to execute a select from dual.
 			 * </odoc>
 			 */
-			setFactoryDB: function(aDriver, aURL, aLogin, aPassword, aKeepAlive) {
+			setFactoryDB: function(aDriver, aURL, aLogin, aPassword, aKeepAlive, aTimeout) {
 				if (isUnDef(aKeepAlive)) {
 					aKeepAlive = function(a) {
 						if (a.getConnect().getMetaData().getDatabaseProductName().toLowerCase() == "postgresql") {
@@ -891,7 +891,7 @@ OpenWrap.obj.prototype.pool = {
 				}
 				
 				this.setFactory(
-					function() { var db = new DB(aDriver, aURL, aLogin, aPassword); return db; },
+					function() { var db = new DB(aDriver, aURL, aLogin, aPassword, aTimeout); return db; },
 					function(a) { a.close(); },
 					aKeepAlive
 				);
@@ -924,9 +924,9 @@ OpenWrap.obj.prototype.pool = {
 	 */
 	RAIDDB: function(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver) { var p = this.create(); p.setFactoryRAIDDB(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver); return p; },
 	/**
-	 * <odoc><key>ow.obj.pool.DB(aDriver, aURL, aLogin, aPassword)</key>Creates a pool setting with ow.obj.pool.setFactoryDB.</odoc>
+	 * <odoc><key>ow.obj.pool.DB(aDriver, aURL, aLogin, aPassword, aKeepAliveFunction, aTimeout)</key>Creates a pool setting with ow.obj.pool.setFactoryDB.</odoc>
 	 */
-	DB: function(aDriver, aURL, aLogin, aPassword) { var p = this.create(); p.setFactoryDB(aDriver, aURL, aLogin, aPassword); return p; },
+	DB: function(aDriver, aURL, aLogin, aPassword, aKeepAliveFunction, aTimeout) { var p = this.create(); p.setFactoryDB(aDriver, aURL, aLogin, aPassword, aKeepAliveFunction, aTimeout); return p; },
 	/**
 	 * <odoc><key>ow.obj.pool.SSH(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression)</key>Creates a pool setting with ow.obj.pool.setFactorySSH.</odoc>
 	 */
