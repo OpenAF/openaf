@@ -284,7 +284,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 						if (!(isArray(this.__ojob.channels.clusters))) {
 							this.__ojob.channels.clusters = [ this.__ojob.channels.clusters ];
 						}
-						if (isUnDef(this.__mst)) this.__mst = []; 
+						if (isUnDef(global.oJobClusters)) global.oJobClusters = {}; 
 						if (isUnDef(this.__mstTime)) this.__mstTime = [];
 					
 						for(let ii in this.__ojob.channels.clusters) {
@@ -295,28 +295,27 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 							cluster.host = _$(cluster.host).isString().default(this.__host);
 							cluster.port = _$(cluster.port).isNumber().default(this.__ojob.channels.port);
 
-							var mst = new ow.server.masters(cluster.host, cluster.port, cluster.nodeTimeout, cluster.numberOfTries, cluster.tryTimeout, {
+							global.oJobClusters[cluster.name] = new ow.server.cluster(cluster.host, cluster.port, cluster.nodeTimeout, cluster.numberOfTries, cluster.tryTimeout, {
 								name        : cluster.name,
 								serverOrPort: this.__hs,
 								chs         : this.__ojob.channels.list
-							}, ow.server.mastersChsPeersImpl);
-							mst.checkIn();
+							}, ow.server.clusterChsPeersImpl);
+							global.oJobClusters[cluster.name].checkIn();
 
 							this.periodicFuncs.push(() => { 
 								if (now() - this.__mstTime[cluster.name] > cluster.checkPeriod) {
-									mst.verify(); 
+									global.oJobClusters[cluster.name].verify(); 
 									this.__mstTime[cluster.name] = now();
 								}
 							});
-							addOnOpenAFShutdown(() => { mst.checkOut(); });
-							this.__mst.push(mst);
+							addOnOpenAFShutdown(() => { global.oJobClusters[cluster.name].checkOut(); });
 							this.__mstTime[cluster.name] = now();
 
 							if (isDef(cluster.discovery)) {
 								if (!isArray(cluster.discovery)) {
 									cluster.discovery = [ cluster.discovery ];
 								}
-								$ch("__masters::" + cluster.name).setAll(["h", "p"], $path(cluster.discovery, "[].{ h: host, p: port, a: false }"));
+								$ch("__cluster::" + cluster.name).setAll(["h", "p"], $path(cluster.discovery, "[].{ h: host, p: port, a: false }"));
 							}
 						}
 					}
