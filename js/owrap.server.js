@@ -1534,16 +1534,15 @@ OpenWrap.server.prototype.cluster.prototype.verify = function(addNewHost, delHos
 	}
 	if (numTries > 0) {
 		var clusterList = this.impl.clusterGetList(this.options);
-		addNewHost = {
+		if (isUnDef(addNewHost)) addNewHost = {
 			host: this.HOST,
 			port: this.PORT,
 			date: now(),
 			dead: false
 		};
 		
-		if (isDef(addNewHost) && 
-			$path(clusterList.cluster, 
-				"[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) clusterList.cluster.push(addNewHost);
+		if ($path(clusterList.cluster, 
+			      "[?host==`" + addNewHost.host + "`] | [?port==`" + addNewHost.port + "`] | length([])") == 0) clusterList.cluster.push(addNewHost);
 
 		for(var ii in clusterList.cluster) {
 			if ((isDef(delHost) && 
@@ -1598,7 +1597,9 @@ OpenWrap.server.prototype.cluster.prototype.checkIn = function() {
 OpenWrap.server.prototype.cluster.prototype.checkOut = function() {
 	var me = {
 		host: this.HOST,
-		port: this.PORT
+		port: this.PORT,
+		date: now(),
+		dead: false		
 	};
 
 	var res = this.verify(void 0, me);
