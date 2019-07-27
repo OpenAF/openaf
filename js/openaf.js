@@ -485,7 +485,7 @@ function printMap(aValue, aWidth, aTheme, useAnsi) {
 						}
 						x++;
 					} else {
-						if (x != 0 && matrixrule.indexOf(x - 1) < 0) matrixrule.push(x)
+						if (x != 0 && matrixrule.indexOf(x - 1) < 0) matrixrule.push(x);
 						x = x + _r(o, x, igY + 1) - 1;
 					}
 				}
