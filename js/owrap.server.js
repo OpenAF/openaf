@@ -1196,7 +1196,7 @@ OpenWrap.server.prototype.scheduler = function () {
  * using a __openAFLocks:global ignite channel. Optional you can also provide an already created channel aCh.
  * </odoc>
  */
-OpenWrap.server.prototype.locks = function (justInternal, aCh) {
+OpenWrap.server.prototype.locks = function(justInternal, aCh) {
 	this.timeout = 500;
 	this.retries = 5;
 
@@ -1218,7 +1218,7 @@ OpenWrap.server.prototype.locks = function (justInternal, aCh) {
  * Sets the default wait time (in ms) for each try (see ow.server.locks.setRetries) checking if a lock is free. Defaults to 500 ms.
  * </odoc>
  */
-OpenWrap.server.prototype.locks.prototype.setTryTimeout = function (aTimeout) {
+OpenWrap.server.prototype.locks.prototype.setTryTimeout = function(aTimeout) {
 	this.timeout = aTimeout;
 	return this;
 };
@@ -1229,7 +1229,7 @@ OpenWrap.server.prototype.locks.prototype.setTryTimeout = function (aTimeout) {
  * Sets the number of tries for checking if a lock is free waiting a specific time on each (see ow.server.locks.setRetries). Defaults to 5.
  * </odoc>
  */
-OpenWrap.server.prototype.locks.prototype.setRetries = function (aNumber) {
+OpenWrap.server.prototype.locks.prototype.setRetries = function(aNumber) {
 	this.retries = aNumber;
 	return this;
 };
@@ -1240,7 +1240,7 @@ OpenWrap.server.prototype.locks.prototype.setRetries = function (aNumber) {
  * Determines if aLockName is locked (true) or not (false).
  * </odoc>
  */
-OpenWrap.server.prototype.locks.prototype.isLocked = function (aLockName) {
+OpenWrap.server.prototype.locks.prototype.isLocked = function(aLockName) {
 	var r = false;
 	try {
 		r = $ch(this.name).get({
@@ -1253,6 +1253,12 @@ OpenWrap.server.prototype.locks.prototype.isLocked = function (aLockName) {
 				lock: aLockName,
 				value: false
 			});
+			r = $ch(this.name).get({
+				lock: aLockName
+			});
+		}
+		if (r.value == true && isDef(r.timeout) && (nowUTC() >= r.timeout)) {
+			this.unlock(aLockName);
 			r = $ch(this.name).get({
 				lock: aLockName
 			});
@@ -1274,12 +1280,13 @@ OpenWrap.server.prototype.locks.prototype.isLocked = function (aLockName) {
 
 /**
  * <odoc>
- * <key>ow.server.locks.lock(aLockName, aTryTimeout, aNumRetries) : boolean</key>
+ * <key>ow.server.locks.lock(aLockName, aTryTimeout, aNumRetries, aLockTimeout) : boolean</key>
  * Locks the lock aLockName optionally using a specific aTryTimeout and aNumRetries instead of the defaults ones (see
- * ow.server.locks.setTryTimeout and ow.server.locks.setRetries). If successfull in locking returns true, otherwiser returns false.
+ * ow.server.locks.setTryTimeout and ow.server.locks.setRetries). A aLockTimeout can optionally be provided after which the
+ * lock will expire. If successfull in locking returns true, otherwiser returns false.
  * </odoc>
  */
-OpenWrap.server.prototype.locks.prototype.lock = function (aLockName, aTryTimeout, aNumRetries) {
+OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout, aNumRetries, aTimeout) {
 	var c = _$(aNumRetries).isNumber().default(this.retries);
 	aTryTimeout = _$(aTryTimeout).isNumber().default(this.timeout);
 	var lock = true;
@@ -1288,6 +1295,7 @@ OpenWrap.server.prototype.locks.prototype.lock = function (aLockName, aTryTimeou
 	do {
 		var res = this.isLocked(aLockName);
 		if (res.value == false) lock = false;
+		if (isDef(res.timeout) && (nowUTC() >= res.timeout)) lock = false;
 		else sleep(aTryTimeout);
 		if (c > 0) c--;
 	} while ((c > 0 || c < 0) && lock);
@@ -1299,6 +1307,7 @@ OpenWrap.server.prototype.locks.prototype.lock = function (aLockName, aTryTimeou
 			lock: aLockName
 		}, {
 			lock: aLockName,
+			timeout: nowUTC() + aTimeout,
 			value: true
 		});
 	}
@@ -1308,12 +1317,33 @@ OpenWrap.server.prototype.locks.prototype.lock = function (aLockName, aTryTimeou
 
 /**
  * <odoc>
+ * <key>ow.server.locks.extendTimeout(aLockName, aTryTimeout) : Objet</key>
+ * Tries to extend the lock timeout (or adds a timeout if doesn't exist) with aTryTimeout for aLockName.
+ * </odoc>
+ */
+OpenWrap.server.prototype.locks.prototype.extendTimeout = function(aLockName, aTimeout) {
+	$ch(this.name).getSet({
+		value: true
+	}, {
+		lock: aLockName
+	}, {
+		lock: aLockName,
+		value: true,
+		timeout: nowUTC() + aTimeout
+	});
+
+	return $ch(this.name).get({
+		lock: aLockName
+	});
+};
+
+/**
+ * <odoc>
  * <key>ow.server.locks.unlock(aLockName)</key>
  * Tries to unlock aLockName.
  * </odoc>
  */
 OpenWrap.server.prototype.locks.prototype.unlock = function (aLockName) {
-	this.isLocked(aLockName);
 	$ch(this.name).getSet({
 		value: true
 	}, {
@@ -1322,7 +1352,10 @@ OpenWrap.server.prototype.locks.prototype.unlock = function (aLockName) {
 		lock: aLockName,
 		value: false
 	});
-	return this;
+	
+	return $ch(this.name).get({
+		lock: aLockName
+	});
 };
 
 /**
@@ -1642,11 +1675,13 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 		aOptions.unAuthFunc = _$(aOptions.unAuthFunc).default(void 0);
 		aOptions.maxTime = _$(aOptions.maxTime).default(void 0);
 		aOptions.maxCount = _$(aOptions.maxCount).default(void 0);
+		aOptions.chLock = _$(aOptions.chLock).default("__cluster::" + aOptions.name + "::locks");
 		aOptions.chs = _$(aOptions.chs).isArray().default([]);
 
 		if (isUnDef(aOptions.ch)) aOptions.ch = "__cluster::" + aOptions.name;
 		if ($ch().list().indexOf(aOptions.ch) < 0) {
 			$ch(aOptions.ch).create(1, "simple");
+			//this.locks = new ow.
 			$ch(aOptions.ch).expose(aOptions.serverOrPort, aOptions.path, aOptions.authFunc, aOptions.unAuthFunc);
 			var parent = this;
 			$ch(aOptions.ch).subscribe((aCh, aOp, aK, aV) => {
@@ -2203,4 +2238,3 @@ OpenWrap.server.prototype.httpd = {
 		"ICO": "image/x-icon"
 	}
 }
-
