@@ -4350,6 +4350,7 @@ const $rest = function(ops) {
 		this.options.throwExceptions = _$(this.options.throwExceptions).isBoolean().default(false);
 		this.options.collectAllStats = _$(this.options.collectAllStats).isBoolean().default(__openaf_rest.stats);
 		this.options.preAction = _$(this.options.preAction).isFunction().default(void 0);
+		this.options.uriQuery = _$(this.options.uriQuery).isBoolean().default(false);
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -4394,6 +4395,10 @@ const $rest = function(ops) {
 	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
+		if (parent.options.uriQuery) {
+			aBaseURI += "?" + $rest().query(aIdxMap);
+			aIdxMap = {};
+		}
 		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient" ];
 		if (parent.__check(aBaseURI)) {
 			try {
@@ -4450,6 +4455,10 @@ const $rest = function(ops) {
 	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
+		if (parent.options.uriQuery) {
+			aBaseURI += "?" + $rest().query(aIdxMap);
+			aIdxMap = {};
+		}
 		var fdef = [ "aBaseURL", "aIdxMap", "aDataRowMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient" ];
 		if (parent.__check(aBaseURI)) {
 			try {
@@ -4507,7 +4516,7 @@ const $rest = function(ops) {
 	 * <odoc>
 	 * <key>$rest.get(aBaseURI, aIdxMap) : Map</key>
 	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions ($rest(aOptions).): login (function or string),
-	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
@@ -4521,7 +4530,7 @@ const $rest = function(ops) {
 	 * <odoc>
 	 * <key>$rest.post(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
 	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions ($rest(aOptions).): login (function or string),
-	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
@@ -4535,7 +4544,7 @@ const $rest = function(ops) {
 	 * <odoc>
 	 * <key>$rest.put(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
 	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions ($rest(aOptions).): login (function or string),
-	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
@@ -4549,7 +4558,7 @@ const $rest = function(ops) {
 	 * <odoc>
 	 * <key>$rest.delete(aBaseURI, aIdxMap) : Map</key>
 	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions ($rest(aOptions).): login (function or string),
-	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
@@ -4563,7 +4572,7 @@ const $rest = function(ops) {
 	 * <odoc>
 	 * <key>$rest.patch(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
 	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions ($rest(aOptions).): login (function or string),
-	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), httpClient (ow.obj.http object),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
