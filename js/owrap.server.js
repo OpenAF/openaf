@@ -1196,18 +1196,31 @@ OpenWrap.server.prototype.scheduler = function () {
  * using a __openAFLocks:global ignite channel. Optional you can also provide an already created channel aCh.
  * </odoc>
  */
-OpenWrap.server.prototype.locks = function(justInternal, aCh) {
+OpenWrap.server.prototype.locks = function(justInternal, aCh, aOptions) {
 	this.timeout = 500;
 	this.retries = 5;
+	this.options = aOptions;
+	this.type = "";
 
-	justInternal = _$(justInternal).isBoolean().default(true);
+	justInternal = _$(justInternal).default(true);
 	this.name = _$(aCh).isString().default("__openAFLocks::" + (justInternal ? "local" : "global"));
+
+	if (isString(justInternal) && justInternal == "cluster") {
+		aOptions = _$(aOptions).isMap().default({});
+		_$(aOptions.cluster).$_("Please provide a cluster impl object.");
+		_$(aOptions.clusterOptions).$_("Please provide a cluster options object.");
+		this.type = "cluster";
+	}
 
 	if (isUnDef(aCh)) {
 		if (justInternal) {
 			$ch(this.name).create(1, "simple");
 		} else {
-			$ch(this.name).create(1, "ignite");
+			if (isString(justInternal) && justInternal == "cluster") {
+				$ch(this.name).create(1, "simple");
+			} else {
+				$ch(this.name).create(1, "ignite");
+			}
 		}
 	}
 };
@@ -1293,10 +1306,24 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
 	var r;
 
 	do {
-		var res = this.isLocked(aLockName);
-		if (res.value == false) lock = false;
-		if (isDef(res.timeout) && (nowUTC() >= res.timeout)) lock = false;
-		else sleep(aTryTimeout);
+		if (this.type == "cluster") {
+			var rrr = this.options.cluster.clusterCanLock(this.options.clusterOptions, aLockName);
+			if (rrr) {
+				var res = this.isLocked(aLockName);
+				if (res.value == false) lock = false;
+				if (isDef(res.timeout) && (nowUTC() >= res.timeout)) 
+					lock = false;
+				else 
+					sleep(aTryTimeout);
+			}
+		} else {
+			var res = this.isLocked(aLockName);
+			if (res.value == false) lock = false;
+			if (isDef(res.timeout) && (nowUTC() >= res.timeout)) 
+				lock = false;
+			else 
+				sleep(aTryTimeout);
+		}
 		if (c > 0) c--;
 	} while ((c > 0 || c < 0) && lock);
 
@@ -1344,6 +1371,8 @@ OpenWrap.server.prototype.locks.prototype.extendTimeout = function(aLockName, aT
  * </odoc>
  */
 OpenWrap.server.prototype.locks.prototype.unlock = function (aLockName) {
+	if (this.type == "cluster" && !this.options.cluster.clusterCanUnLock(this.options.clusterOptions, aLockName)) return void 0;
+
 	$ch(this.name).getSet({
 		value: true
 	}, {
@@ -1552,6 +1581,26 @@ OpenWrap.server.prototype.cluster.prototype.all = function(aFunction, includeMe)
 	return lO;
 };
 
+OpenWrap.server.prototype.cluster.prototype.sendMsg = function(aHost, aMessage) {
+	return this.impl.clusterSendMsg(this.options, aHost, aMessage);
+};
+
+OpenWrap.server.prototype.cluster.prototype.setMsgHandler = function(aTypeOfMessage, aHandlerFunction) {
+	return this.impl.clusterSetMsgHandler(this.options, aTypeOfMessage, aHandlerFunction);
+};
+
+OpenWrap.server.prototype.cluster.prototype.canLock = function(aLockName) {
+	return this.impl.clusterCanLock(this.options, aLockName);
+};
+
+OpenWrap.server.prototype.cluster.prototype.canUnlock = function(aLockName) {
+	return this.impl.clusterCanUnLock(this.options, aLockName);
+};
+
+OpenWrap.server.prototype.cluster.prototype.locks = function() {
+	return this.impl.clusterLocks(this.options);
+};
+
 /**
  * <odoc>
  * <key>ow.server.cluster.verify(addNewHostMap, delHostMap, customLoad)</key>
@@ -1663,25 +1712,268 @@ OpenWrap.server.prototype.cluster.prototype.checkOut = function() {
  * </odoc>
  */
 OpenWrap.server.prototype.clusterChsPeersImpl = {
+	clusterLocks: (aOps) => {
+		return aOps.locks;
+	},
+	clusterCanLock: (aOps, aLockName) => {
+		_$(aLockName).isString().$_("Please provide a lock name.");
+		var canLock = false, allVotesIn = false;
+
+		ow.server.clusterChsPeersImpl.__check(aOps);
+		var uuid = $ch(aOps.quorum).subscribe((aCh, aOp, aK, aV) => {
+			if (aOp == "set") aV = [ aV ];
+			if (aOp == "set" || aOp == "setall") {
+				for(var ii in aV) {
+					if (!allVotesIn && aV[ii].n == aLockName) {
+						var clusterSize = $ch(aOps.ch).size();
+						var qitem = $ch(aCh).get({ t: "locks", n: aLockName });
+						if (qitem.qNk.length > 0) {
+							canLock = false; allVotesIn = true; // veto
+						} else {
+							if (qitem.qOk.length >= Math.floor(((clusterSize / 2) + 1))) {
+								canLock = true; allVotesIn = true;
+							}
+						}
+					}
+				}
+			} 
+		});
+		$ch(aOps.quorum).set({
+			t: "locks", n: aLockName
+		}, {
+			t: "locks", n: aLockName, qOk: [], qNk: []
+		});
+		ow.server.clusterChsPeersImpl.clusterSendMsg(aOps, "all", {
+			t: "l",
+			n: aLockName,
+			b: aOps.HOST + ":" + aOps.PORT
+		});
+		var timeout = now() + 2500;
+		while(timeout > now() && !allVotesIn) {
+			sleep(150);
+		}
+		$ch(aOps.quorum).unsubscribe(uuid);
+		$ch(aOps.quorum).unset({
+			t: "locks", n: aLockName
+		});
+		return canLock;
+	},
+	clusterCanUnLock: (aOps, aLockName) => {
+		_$(aLockName).isString().$_("Please provide a lock name.");
+		var canUnLock = false, allVotesIn = false;
+		
+		ow.server.clusterChsPeersImpl.__check(aOps);
+		var uuid = $ch(aOps.quorum).subscribe((aCh, aOp, aK, aV) => {
+			if (aOp == "set") aV = [ aV ];
+			if (aOp == "set" || aOp == "setall") {
+				for(var ii in aV) {
+					if (!allVotesIn && aV[ii].n == aLockName) {
+						var clusterSize = $ch(aOps.ch).size();
+						var qitem = $ch(aCh).get({ t: "unlocks", n: aLockName });
+						if (qitem.qNk.length > 0) {
+							canUnLock = false; allVotesIn = true; // veto
+						} else {
+							if (qitem.qOk.length >= Math.floor(((clusterSize / 2) + 1))) {
+								canUnLock = true; allVotesIn = true;
+							}
+						}
+					}
+				}
+			} 
+		});
+		$ch(aOps.quorum).set({
+			t: "unlocks", n: aLockName
+		}, {
+			t: "unlocks", n: aLockName, qOk: [], qNk: []
+		});
+		ow.server.clusterChsPeersImpl.clusterSendMsg(aOps, "all", {
+			t: "u",
+			n: aLockName,
+			b: aOps.HOST + ":" + aOps.PORT
+		});
+		var timeout = now() + 1500;
+		while(timeout > now() && !allVotesIn) {
+			sleep(150);
+		}
+		$ch(aOps.quorum).unsubscribe(uuid);
+		$ch(aOps.quorum).unset({
+			t: "unlocks", n: aLockName
+		});
+		return canUnLock;
+	},
+	clusterSetMsgHandler: (aOptions, aTypeOfMessage, aHandlerFunction) => {
+		_$(aTypeOfMessage).isString().$_("Please provide a type of message.");
+		_$(aHandlerFunction).isFunction().$_("Please provide a handler function.");
+
+		ow.server.clusterChsPeersImpl.__check(aOptions);
+
+		aOptions.opsMsgs[aTypeOfMessage] = aHandlerFunction;
+	},
+	clusterSendMsg: (aOptions, aTo, aMessage) => {
+		ow.server.clusterChsPeersImpl.__check(aOptions);
+
+		var id = nowNano();
+		var receptors = [];
+
+		if (aTo == "all") {
+			receptors = $path($ch(aOptions.ch).getAll(), "[].{ host: h, port: p }");
+		} else {
+			var [aHost, aPort] = aTo.split(/:/);
+			receptors.push({
+				host: aHost,
+				port: aPort
+			});
+		}
+
+		receptors.forEach((v) => {
+			var isLocal = (aOptions.HOST == v.host && aOptions.PORT == v.port);
+			var url = aOptions.protocol + "://" + v.host + ":" + v.port + aOptions.path + "_msgs";
+			var ch = (isLocal) ? aOptions.chMsgs : aOptions.chMsgs + "::" + v.host + ":" + v.port;
+
+			if (!isLocal) $ch(ch).createRemote(url);
+			$ch(ch).set({
+				i: id,
+				f: aOptions.HOST + ":" + aOptions.PORT,
+				t: v.host + ":" + v.port
+			}, {
+				i: id,
+				f: aOptions.HOST + ":" + aOptions.PORT,
+				t: v.host + ":" + v.port,
+				m: aMessage	
+			});
+			if (!isLocal) $ch(ch).destroy();
+		});
+	},
 	__check: (aOptions) => {
-		ow.loadServer();
-		ow.loadObj();
+		if (isUnDef(aOptions.init) || !aOptions.init) {
+			aOptions.init = true;
+			ow.loadServer();
+			ow.loadObj();
 
-		aOptions.name = _$(aOptions.name).isString().$_("Please provide a name for the ow.server.cluster chsPeerImpl.");
-		aOptions.protocol = _$(aOptions.protocol).isString().default("http");
-		aOptions.path = _$(aOptions.path).isString().default("/__m");
-		if (isUnDef(aOptions.serverOrPort)) aOptions.serverOrPort = ow.server.httpd.start(aOptions.PORT, aOptions.HOST);
-		aOptions.authFunc = _$(aOptions.authFunc).default(void 0);
-		aOptions.unAuthFunc = _$(aOptions.unAuthFunc).default(void 0);
-		aOptions.maxTime = _$(aOptions.maxTime).default(void 0);
-		aOptions.maxCount = _$(aOptions.maxCount).default(void 0);
-		aOptions.chLock = _$(aOptions.chLock).default("__cluster::" + aOptions.name + "::locks");
-		aOptions.chs = _$(aOptions.chs).isArray().default([]);
+			aOptions.name = _$(aOptions.name).isString().$_("Please provide a name for the ow.server.cluster chsPeerImpl.");
+			aOptions.protocol = _$(aOptions.protocol).isString().default("http");
+			aOptions.path = _$(aOptions.path).isString().default("/__m");
+			if (isUnDef(aOptions.serverOrPort)) aOptions.serverOrPort = ow.server.httpd.start(aOptions.PORT, aOptions.HOST);
+			aOptions.authFunc = _$(aOptions.authFunc).default(void 0);
+			aOptions.unAuthFunc = _$(aOptions.unAuthFunc).default(void 0);
+			aOptions.maxTime = _$(aOptions.maxTime).default(void 0);
+			aOptions.maxCount = _$(aOptions.maxCount).default(void 0);
+			aOptions.chLock = _$(aOptions.chLock).default("__cluster::" + aOptions.name + "::locks");
+			aOptions.chMsgs = _$(aOptions.chMsgs).default("__cluster::" + aOptions.name + "::msgs");
+			aOptions.quorum = _$(aOptions.chQuorum).default("__cluster::" + aOptions.name + "::quorum");
+			aOptions.chs = _$(aOptions.chs).isArray().default([]);
+			aOptions.opsMsgs = _$(aOptions.opsMsgs).default({});
+	
+			aOptions.chs.push({
+				name: aOptions.chMsgs,
+				peer: false,
+				path: aOptions.path + "_msgs"
+			});
 
-		if (isUnDef(aOptions.ch)) aOptions.ch = "__cluster::" + aOptions.name;
+			//aOptions.chs.push(aOptions.chLock);
+			$ch(aOptions.chMsgs).create(1, "dummy");
+			$ch(aOptions.chLock).create(1, "simple");
+			$ch(aOptions.quorum).create(1, "simple");
+
+			aOptions.locks = new ow.server.locks("cluster", aOptions.chLock, { cluster: ow.server.clusterChsPeersImpl, clusterOptions: aOptions });
+			if (isUnDef(aOptions.ch)) aOptions.ch = "__cluster::" + aOptions.name;
+
+			aOptions.opsMsgs.l = (aOps, v) => {
+				// lock 
+				var tt = (aOps.locks.isLocked(v.m.n).value ? "dl" : "cl");
+
+				ow.server.clusterChsPeersImpl.clusterSendMsg(aOps, v.m.b, {
+					t: tt,
+					n: v.m.n
+				});
+			};
+
+			aOptions.opsMsgs.u = (aOps, v) => {
+				// unlock 
+				//var tt = (aOps.locks.isLocked(v.m.n).value ? "cu" : "du");
+				var tt = "cu";
+
+				ow.server.clusterChsPeersImpl.clusterSendMsg(aOps, v.m.b, {
+					t: tt,
+					n: v.m.n
+				});
+			};
+
+			aOptions.opsMsgs.cl = (aOps, v) => {
+				var current = $ch(aOps.quorum).get({ t: "locks", n: v.m.n });
+				current.qOk.push(v.f);
+				$ch(aOps.quorum).set({ 
+					t: "locks", 
+					n: v.m.n 
+				}, { 
+					t: "locks", 
+					n: v.m.n,
+					qOk: current.qOk,
+					qNk: current.qNk
+				});
+			};
+			aOptions.opsMsgs.dl = (aOps, v) => {
+				var current = $ch(aOps.quorum).get({ t: "locks", n: v.m.n });
+				current.qNk.push(v.f);
+				$ch(aOps.quorum).set({ 
+					t: "locks", 
+					n: v.m.n 
+				}, { 
+					t: "locks", 
+					n: v.m.n,
+					qOk: current.qOk,
+					qNk: current.qNk
+				});
+			};
+
+			aOptions.opsMsgs.cu = (aOps, v) => {
+				// confirm unlock
+				var current = $ch(aOps.quorum).get({ t: "unlocks", n: v.m.n });
+				current.qOk.push(v.f);
+				$ch(aOps.quorum).set({ 
+					t: "unlocks", 
+					n: v.m.n 
+				}, { 
+					t: "unlocks", 
+					n: v.m.n,
+					qOk: current.qOk,
+					qNk: current.qNk
+				});
+			};
+
+			aOptions.opsMsgs.du = (aOps, v) => {
+				var current = $ch(aOps.quorum).get({ t: "unlocks", n: v.m.n });
+				current.qNk.push(v.f);
+				$ch(aOps.quorum).set({ 
+					t: "unlocks", 
+					n: v.m.n 
+				}, { 
+					t: "unlocks", 
+					n: v.m.n,
+					qOk: current.qOk,
+					qNk: current.qNk
+				});
+			};
+
+			$ch(aOptions.chMsgs).subscribe((aCh, aOp, aK, aV) => {
+				if (aOp == "set") aV = [ aV ];
+				if (aOp == "setAll" || aOp == "set") {
+					for(var vi in aV) {
+						var v = aV[vi];
+						if (isDef(v.t) && isDef(v.i) && isDef(v.f) && isDef(v.m)) {
+							if ((v.t == "all" && v.f != aOptions.HOST + ":" + aOptions.PORT) || 
+							     v.t == aOptions.HOST + ":" + aOptions.PORT) {
+								aOptions.opsMsgs[v.m.t](aOptions, v);
+							}
+						}
+					}
+				}
+			});
+		}
+		
 		if ($ch().list().indexOf(aOptions.ch) < 0) {
 			$ch(aOptions.ch).create(1, "simple");
-			//this.locks = new ow.
+
 			$ch(aOptions.ch).expose(aOptions.serverOrPort, aOptions.path, aOptions.authFunc, aOptions.unAuthFunc);
 			var parent = this;
 			$ch(aOptions.ch).subscribe((aCh, aOp, aK, aV) => {
@@ -1690,17 +1982,23 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 					if (m.h == aOptions.host && m.p == aOptions.port) return;
 					var url = aOptions.protocol + "://" + m.h + ":" + m.p + aOptions.path;
 					$ch(aOptions.ch).peer(aOptions.serverOrPort, aOptions.path, url, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
+					
 					for(let ii in aOptions.chs) {
 						var achs = aOptions.chs[ii];
 						if (isString(achs)) {
 							achs = {
-								name: achs
+								name: achs,
+								peer: true
 							};
 						}
 						if (isMap(achs) && isDef(achs.name)) {
 							achs.path = _$(achs.path).isString().default("/" + achs.name);
 							var turl = aOptions.protocol + "://" + m.h + ":" + m.p + achs.path;
-							$ch(achs.name).peer(aOptions.serverOrPort, achs.path, turl, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
+							if (isDef(achs.peer) && achs.peer) {
+								$ch(achs.name).peer(aOptions.serverOrPort, achs.path, turl, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
+							} else {
+								$ch(achs.name).expose(aOptions.serverOrPort, achs.path, aOptions.authFunc, aOptions.unAuthFunc);
+							}
 						}
 					}
 				};
