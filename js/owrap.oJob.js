@@ -31,6 +31,16 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.init = void 0;
 	this.__conWidth = 100;
 
+	this.shutdownFuncs = [];
+
+	addOnOpenAFShutdown(function() {
+		var fn = parent.shutdownFuncs.pop();
+		while(isDef(fn) && isFunction(fn)) {
+			fn();
+			fn = parent.shutdownFuncs.pop();
+		}
+	});
+
 	//this.__promises.push($do(() => {
 		ow.loadServer(); 
 		parent.__sch = new ow.server.scheduler();
@@ -545,7 +555,21 @@ OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob, aOptionsM
  */
 OpenWrap.oJob.prototype.previewFile = function(aFile) {
 	return this.__loadFile(aFile);
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.oJob.runAllShutdownJobs()</key>
+ * Tries to run all the shutdown type jobs accumulated until now.
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.runAllShutdownJobs = function() {
+	var fn = this.shutdownFuncs.pop();
+	while(isDef(fn) && isFunction(fn)) {
+		fn();
+		fn = this.shutdownFuncs.pop();
+	}
+};
 
 /**
  * <odoc>
@@ -1011,15 +1035,13 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 						var todo = parent.getTodoCh().get(parentOJob[ipoj]);
 						job = parent.getJobsCh().get({ "name": todo.name });
 						var argss = args;
-						if (isDef(todo.args)) {
-							argss = parent.__processArgs(args, todo.args, aId);					
-						}
+						if (isDef(todo.args)) argss = parent.__processArgs(args, todo.args, aId);
 						if (isDef(job)) {
 							var res = parent.runJob(job, argss, aId, !(parent.__ojob.async));
 							if (res == true) {
 								parent.getTodoCh().unset({ 
 									"ojobId": todo.ojobId,
-								    "todoId": todo.todoId
+									"todoId": todo.todoId
 								}, todo);
 							}
 						} else {
@@ -1261,7 +1283,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			}
 			break;
 		case "shutdown":
-			addOnOpenAFShutdown(function() {
+			//addOnOpenAFShutdown(function() {
+			this.shutdownFuncs.push(function() {
 				try {
 					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
 					args.execid = uuid;
