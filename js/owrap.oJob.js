@@ -71,11 +71,12 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__expr = processExpr(" ");
 	if (isDef(this.__expr[""])) delete this.__expr[""];
 	this.__logLimit = 3;
+	this.oJobShouldStop = false;
 
 	this.periodicFuncs = [];
 	this.__periodicFunc = () => {
 		this.periodicFuncs.forEach((f) => f());
-		return false;
+		return this.oJobShouldStop;
 	};
 
 	//$doWait($doAll(this.__promises));
@@ -847,7 +848,9 @@ OpenWrap.oJob.prototype.stop = function() {
 		}
 	}
 	this.__sch.stop();
+	this.__sch = new ow.server.scheduler();
 	this.mt.stop();
+	this.oJobShouldStop = true;
 	//stopLog();
 };
 
@@ -916,6 +919,7 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, this.__expr, aId) : this.__expr;
 
+	this.oJobShouldStop = false;
 	if (isDef(this.init)) args = merge(args, { init: this.init });
 
 	var parent = this;
