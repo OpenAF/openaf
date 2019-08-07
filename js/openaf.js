@@ -6103,11 +6103,12 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh.get() : String</key>
+	 * <key>$sh.get(aIdx) : Object</key>
 	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh).
+	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
-    __sh.prototype.get = function() {
+    __sh.prototype.get = function(aIdx) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
@@ -6116,19 +6117,20 @@ const $sh = function(aString) {
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
                     if (isDef(rfe) && rfe == false) {
-                        return res;
+                        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
                     }
                 }
             }
         }
 
-        return res;
+        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
     };
 
 	/**
 	 * <odoc>
-	 * <key>$sh.exec() : String</key>
+	 * <key>$sh.exec(aIdx) : Object</key>
 	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh).
+	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
     __sh.prototype.exec = function() {
@@ -6140,13 +6142,13 @@ const $sh = function(aString) {
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
                     if (isDef(rfe) && rfe == false) {
-                        return res;
+                        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
                     }
                 }
             }
         }
 
-        return res;
+        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
     };
 
 	/**
@@ -6381,12 +6383,12 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh.get() : Array</key>
+	 * <key>$ssh.get(aIdx) : Object</key>
 	 * Executes a list of commands previously set on a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
-	 * IO is not inherit.
+	 * IO is not inherit. If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
-    __ssh.prototype.get = function() {
+    __ssh.prototype.get = function(aIdx) {
         var res = [];
         if (isDef(this.t)) this.__getssh().setTimeout(this.t);
         for(var ii in this.q) {
@@ -6396,24 +6398,24 @@ const $ssh = function(aMap) {
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
                     if (isDef(rfe) && rfe == false) {
-                        return res;
+                        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
                     }
                 }
             }
         }
 
         this.close();
-        return res;
+        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
     };
 
 	/**
 	 * <odoc>
-	 * <key>$ssh.exec() : Array</key>
+	 * <key>$ssh.exec(aIdx) : Array</key>
 	 * Executes a list of commands previously set on a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
-	 * IO is inherit.
+	 * IO is inherit. If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
-    __ssh.prototype.exec = function() {
+    __ssh.prototype.exec = function(aIdx) {
         var res = [];
         if (isDef(this.t)) this.__getssh().setTimeout(this.t);
         for(var ii in this.q) {
@@ -6423,14 +6425,14 @@ const $ssh = function(aMap) {
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
                     if (isDef(rfe) && rfe == false) {
-                        return res;
+                        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
                     }
                 }
             }
         }
 
         this.close();
-        return res;
+        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
     };
 
 	/**
