@@ -932,6 +932,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 		if (isDef(this.__ojob.id) && isUnDef(aId)) aId = this.__ojob.id;
 
+		if (isDef(this.__ojob.catch) && !(isString(this.__ojob.catch))) this.__ojob.catch = void 0;
+
 	    if (isDef(this.__ojob.unique) && !this.__ojob.__subjob) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
@@ -1163,6 +1165,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 
 	function _run(aExec, args, job, id) {		
 		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; " + aExec);
+		var fe;
+		if (isDef(parent.__ojob.catch)) fe = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
 		var stopWhen, timeout, tb = false, tbres;
 		if (isDef(aJob.typeArgs.timeout))  { tb = true; timeout = aJob.typeArgs.timeout; }
 		if (isDef(aJob.typeArgs.stopWhen)) { tb = true; stopWhen = new Function(aJob.typeArgs.stopWhen); }
@@ -1179,7 +1183,13 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 						 ? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(aValue, job, id, depInfo); })
 						 : f(aValue, job, id, depInfo));
 					} catch(e) {
-						errors.push(stringify({ args: aValue, exception: e}));
+						if (isDef(fe)) {
+							if (!fe(aValue, job, id, depInfo, e)) {
+								errors.push(stringify({ args: aValue, exception: e}));
+							}
+						} else {
+							errors.push(stringify({ args: aValue, exception: e}));
+						}
 					} finally {
 						return true;
 					}
@@ -1191,6 +1201,11 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 						 ? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(args.__oJobRepeat[aVi], job, id, depInfo); })
 						 : f(args.__oJobRepeat[aVi], job, id, depInfo));
 					} catch(e) {
+						if (isDef(fe)) {
+							if (!fe(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
+								errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+							}
+						}
 						errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
 					}
 				}
@@ -1200,9 +1215,15 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 				throw errors.join(", ");
 			}
 		} else {
-			(tb 
-			 ? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(args, job, id, depInfo); })
-			 : f(args, job, id, depInfo));
+			try {
+				(tb 
+				? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(args, job, id, depInfo); })
+				: f(args, job, id, depInfo));
+			} catch(e) {
+				if (isUnDef(fe) || fe(args, job, id, depInfo, e)) {
+					throw e;
+				}
+			}
 		}
 
 		if (tb === true && tbres == "timeout") {
