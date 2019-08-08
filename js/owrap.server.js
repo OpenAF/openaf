@@ -1434,10 +1434,15 @@ OpenWrap.server.prototype.locks.prototype.whenUnLocked = function (aLockName, aF
  * \
  * To provide another custom aListImplementation it should contain the following methods:\
  * \
- *   - clusterLock()         - locking the access to the cluster nodes list\
- *   - clusterUnLock()       - unlocking the access to the cluster nodes list\
- *   - clusterGetList()      - returns the current cluster nodes list\
- *   - clusterPutList(aList) - sets a new cluster nodes list (an array with maps containing host, port and date (last contact date))\
+ *   - clusterLock()                  - locking the access to the cluster nodes list\
+ *   - clusterUnLock()                - unlocking the access to the cluster nodes list\
+ *   - clusterGetList()               - returns the current cluster nodes list\
+ *   - clusterPutList(aList)          - sets a new cluster nodes list (an array with maps containing host, port and date (last contact date))\
+ *   - clusterSendMsg(aHost, aMsg)    - sends aMsg to a specific aHost or all (is aHost = "all")\
+ *   - clusterSetMsgHandler(aT, aHFn) - sets aHFn function (receives (implementationOptionsMap, aMsg) ) to handle any messages that contain { t: aT }\
+ *   - clusterCanLock(aLockName)      - asks all nodes if aLockName can be locked on cluster.locks\
+ *   - clusterCanUnLock(aLockName)    - asks all nodes if aLockName can be unlocked on cluster.locks\
+ *   - clusterLocks()                 - returns the current cluster node locks implementation (ow.server.locks)\
  * \
  * </odoc>
  */
@@ -1581,24 +1586,71 @@ OpenWrap.server.prototype.cluster.prototype.all = function(aFunction, includeMe)
 	return lO;
 };
 
+/**
+ * <odoc>
+ * <key>ow.server.cluster.sendMsg(aHostMap, aMessageMap)</key>
+ * Sends aMessageMap to a specific aHostMap (map composed of a host and a port) or to all cluster nodes if aHostMap = "all".
+ * The aMessageMap should contain a "t" key for message topic. The topics "l", "u", "cl", "dl", "cu" and "du" are reserved
+ * for cluster lock management.
+ * </odoc>
+ */
 OpenWrap.server.prototype.cluster.prototype.sendMsg = function(aHost, aMessage) {
 	return this.impl.clusterSendMsg(this.options, aHost, aMessage);
 };
 
+/**
+ * <odoc>
+ * <key>ow.server.cluster.setMsgHandler(aMessageTopic, aHandlerFunction)</key>
+ * Sets aHandlerFunction to be called whenever the current node receives a message with aMessageTopic. The aHandlerFunction 
+ * receives the implementation options and the message.
+ * </odoc>
+ */
 OpenWrap.server.prototype.cluster.prototype.setMsgHandler = function(aTypeOfMessage, aHandlerFunction) {
 	return this.impl.clusterSetMsgHandler(this.options, aTypeOfMessage, aHandlerFunction);
 };
 
+/**
+ * <odoc>
+ * <key>ow.server.cluster.canLock(aLockName) : boolean</key>
+ * Sends messages to all other cluster nodes to reach quorum if can lock aLockName or not. Returns true if yes.
+ * </odoc>
+ */
 OpenWrap.server.prototype.cluster.prototype.canLock = function(aLockName) {
 	return this.impl.clusterCanLock(this.options, aLockName);
 };
 
+/**
+ * <odoc>
+ * <key>ow.server.cluster.canUnLock(aLockName) : boolean</key>
+ * Sends messages to all other cluster nodes to reach quorum if can unlock aLockName or not. Returns true if yes.
+ * </odoc>
+ */
 OpenWrap.server.prototype.cluster.prototype.canUnlock = function(aLockName) {
 	return this.impl.clusterCanUnLock(this.options, aLockName);
 };
 
+/**
+ * <odoc>
+ * <key>ow.server.cluster.locks() : owServerLocks</key>
+ * Returns the current cluster node ow.server.locks instance.
+ * </odoc>
+ */
 OpenWrap.server.prototype.cluster.prototype.locks = function() {
 	return this.impl.clusterLocks(this.options);
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.cluster.whenUnLocked(aLockName, aFn, aTryTimeout, aNumRetries) : boolean</key>
+ * A wrapper for ow.server.locks.lock that will try to lock aLockName after check in the cluster if it can be locked, execute the
+ * provide function and then unlock it even in case an exception is raised. Returns if the lock was successfull (true) or not (false).
+ * </odoc>
+ */
+OpenWrap.server.prototype.cluster.prototype.whenUnLocked = function(aLockName, aFn, aTryTimeout, aNumRetries) {
+	if (this.impl.clusterCanLock(this.options, aLockName)) {
+		return this.impl.clusterLocks(this.options).whenUnLocked(aLockName, aFn, aTryTimeout, aNumRetries);
+	}
+	return false;
 };
 
 /**
