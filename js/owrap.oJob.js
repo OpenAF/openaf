@@ -841,7 +841,8 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  */
 OpenWrap.oJob.prototype.stop = function() {
 	$doWait($doAll(this.__promises));
-	this.getLogCh().waitForJobs(250);
+	//this.getLogCh().waitForJobs(250);
+	this.getLogCh().waitForJobs();
 	for(var i in this.__threads) {
 		for(var j in this.__threads[i]) {
 			this.__threads[i][j].stop(true);
