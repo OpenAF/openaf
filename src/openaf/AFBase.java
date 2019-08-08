@@ -51,6 +51,7 @@ import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
+import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 import org.mozilla.javascript.commonjs.module.Require;
 import org.mozilla.javascript.commonjs.module.RequireBuilder;
@@ -81,6 +82,18 @@ public class AFBase extends ScriptableObject {
 	 */
 	private static final long serialVersionUID = 1L;
 	private static final String K = "openappframework";
+
+	public AFBase() {
+		super();
+	};
+
+	@JSConstructor
+	public AFBase(Object o) throws Exception {
+		super();
+		if (o != null && !(o instanceof Undefined)) {
+			System.out.println("WARNING: You might be trying to use OpenAF without the OpenCli opack or your OpenCli opack doesn't the current OpenAF version.");
+		}
+	}
 
 	@JSFunction
 	public static Object fromJson(String in) throws Exception {
