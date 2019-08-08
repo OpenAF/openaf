@@ -665,6 +665,17 @@ public class IO extends ScriptableObject {
 
 	/**
 	 * <odoc>
+	 * <key>io.getCanonicalPath(aPath) : String</key>
+	 * Returns the canonical path for the provided aPath either if the file/folder exists or not.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static String getCanonicalPath(String aPath) throws IOException {
+		return (new File(aPath)).getCanonicalFile().toString();
+	}
+
+	/**
+	 * <odoc>
 	 * <key>io.mkdir(aNewDirectory) : boolean</key>
 	 * Tries to create aNewDirectory. Returns true if successfull, false otherwise.
 	 * </odoc>
