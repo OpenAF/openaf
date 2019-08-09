@@ -845,15 +845,24 @@ function templify(aTemplateString, someData) {
 
 /**
  * <odoc>
- * <key>sleep(millis)</key>
+ * <key>sleep(millis, shouldCheck)</key>
  * Shortcut for af.sleep function. Will pause execution for a given period of time expressed in milliseconds.
+ * If shouldCheck is true it will enforce checking if the time has really passed or not.
  * </odoc>
  */
-function sleep(millis, alternative) {
+function sleep(millis, shouldCheck, alternative) {
+	var ini = now();
 	if (alternative) {
 		af.sleep(millis);
 	} else {
 		java.util.concurrent.TimeUnit.MILLISECONDS.sleep(millis);			
+	}
+	if (shouldCheck) {
+		// Something went wrong.
+		while((now() - ini) < millis) {
+			if ((millis - (now() - ini)) > 0) 
+				java.util.concurrent.TimeUnit.MILLISECONDS.sleep(millis - (now() - ini));
+		}
 	}
 }
 
