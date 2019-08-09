@@ -37,6 +37,7 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.util.FileUtils;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.NativeJavaArray;
 import org.mozilla.javascript.Scriptable;
@@ -46,6 +47,7 @@ import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
 import openaf.AFCmdBase;
+import openaf.JSEngine;
 import openaf.SimpleLog;
 import openaf.SimpleLog.logtype;
 
@@ -290,12 +292,13 @@ public class ZIP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void streamPutFile(String aFilePath, String name, Object data) throws IOException {
+	public void streamPutFile(String aFilePath, String name, Object data, boolean useTempFile) throws IOException {
 		Path path = Paths.get(aFilePath);
 		URI uri = URI.create("jar:" + path.toUri());
 		Map<String, String> env = new HashMap<>();
 		env.put("create", "true");
-		
+		if (useTempFile) env.put("useTempFile", "true");
+
 		try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
 			SimpleLog.log(logtype.DEBUG, "put file with data of type " + data.getClass().getName(), null);
 			Path nf = fs.getPath(name);
@@ -318,28 +321,46 @@ public class ZIP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>ZIP.streamPutFileStream(aFilePath, aName, aJavaInputStream)</key>
+	 * <key>ZIP.streamPutFileStream(aFilePath, aName, aJavaInputStream, useTempFile)</key>
 	 * Sets a aName file on the aFilePath ZIP provided with the aJavaInputStream provided. All missing directories
-	 * will be created.
+	 * will be created. Optionally you can specify if a temp file should be used instead of memory (useTempFile = true). 
+	 * Additionally, for performance, you can provide an array of maps (composed of "n" name of file and "s" javaInputStream) instead of 
+	 * aJavaInputStream (aName will be ignored in this case).
 	 * </odoc>
 	 */
 	@JSFunction
-	public void streamPutFileStream(String aFilePath, String name, Object data) throws IOException {
+	public void streamPutFileStream(String aFilePath, String name, Object data, boolean useTempFile) throws IOException {
 		Path path = Paths.get(aFilePath);
 		URI uri = URI.create("jar:" + path.toUri());
 		Map<String, String> env = new HashMap<>();
 		env.put("create", "true");
+		if (useTempFile) env.put("useTempFile", "true");
 		
 		try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
 			SimpleLog.log(logtype.DEBUG, "put file with data of type " + data.getClass().getName(), null);
-			
-			Path nf = fs.getPath(name);
-			if (nf.getParent() != null && !Files.exists(nf.getParent())) Files.createDirectories(nf.getParent());
 		
-			if (data instanceof InputStream)
-				Files.copy((InputStream) data, nf, new CopyOption[]{ StandardCopyOption.REPLACE_EXISTING });
-			else
-				Files.write(nf, (byte[]) data);
+			if (data instanceof NativeArray) {
+				NativeArray ldata = (NativeArray) data;
+				for(Object obj : ldata) {
+					if (obj instanceof NativeObject) {
+						NativeObject m = (NativeObject) obj;
+						if (m.has("s", ldata) && m.has("n", ldata)) {
+							Path nf = fs.getPath((String) m.get("n"));
+							if (nf.getParent() != null && !Files.exists(nf.getParent())) Files.createDirectories(nf.getParent());
+
+							Files.copy((InputStream) m.get("s"), nf, new CopyOption[]{ StandardCopyOption.REPLACE_EXISTING });
+						}
+					}
+				}
+			} else {
+				Path nf = fs.getPath(name);
+				if (nf.getParent() != null && !Files.exists(nf.getParent())) Files.createDirectories(nf.getParent());
+
+				if (data instanceof InputStream)
+					Files.copy((InputStream) data, nf, new CopyOption[]{ StandardCopyOption.REPLACE_EXISTING });
+				else
+					Files.write(nf, (byte[]) data);
+			}
 		} 
 	}
 	
@@ -350,11 +371,12 @@ public class ZIP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void streamRemoveFile(String aFilePath, String name) throws IOException {
+	public void streamRemoveFile(String aFilePath, String name, boolean useTempFile) throws IOException {
 		Path path = Paths.get(aFilePath);
 		URI uri = URI.create("jar:" + path.toUri());
 		Map<String, String> env = new HashMap<>();
 		env.put("create", "true");
+		if (useTempFile) env.put("useTempFile", "true");
 		
 		try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {			
 			Path nf = fs.getPath(name);
@@ -486,9 +508,9 @@ public class ZIP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>ZIP.list() : Map</key>
+	 * <key>ZIP.list(aFilePath) : Map</key>
 	 * Will list all files and folders of the loaded ZIP contents into a Map with name, size, compressedSize, comment,
-	 * crc and time.
+	 * crc and time. Optionally you can provide a zip aFilePath instead of using the current in-memory zip.
 	 * </odoc>
 	 * @throws IOException 
 	 */
