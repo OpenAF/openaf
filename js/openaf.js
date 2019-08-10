@@ -4870,17 +4870,17 @@ function oJobRunJobAsync(aJob, args, aId) {
 
 /**
  * <odoc>
- * <key>getEnvVar(anEnvironmentVariable) : String</key>
+ * <key>getEnv(anEnvironmentVariable) : String</key>
  * Returns the current value of the operating system anEnvironmentVariable.
  * </odoc>
  */
 function getEnv(anEnvironmentVariable) {
-	return java.lang.System.getenv().get(anEnvironmentVariable); 
+	return String(java.lang.System.getenv().get(anEnvironmentVariable)); 
 }
 
 /**
  * <odoc>
- * <key>getEnvVars() : Map</key>
+ * <key>getEnvs() : Map</key>
  * Returns a map of key and values with the operating system environment variables.
  * </odoc>
  */
