@@ -4401,28 +4401,28 @@ const $rest = function(ops) {
 			}
 		}
 	};
-	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap) {
+	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap, retBytes) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
 		if (parent.options.uriQuery) {
 			aBaseURI += "?" + $rest().query(aIdxMap);
 			aIdxMap = {};
 		}
-		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient" ];
+		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes" ];
 		if (parent.__check(aBaseURI)) {
 			try {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
 						if (isDef(parent.options.preAction)) { 
-							var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+							var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ]));
 							var args;
 							if (isDef(rres) && rres != null) 
 								args = $m2a(fdef, rres);
 							else
-								args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
+								args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
 							res = aFn[aSubFn].apply(aFn, args);
 						} else {
-							res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);
+							res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient, retBytes);
 						}		
 					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
 					if (_r !== true) {
@@ -4433,15 +4433,15 @@ const $rest = function(ops) {
 					}
 				} else {
 					if (isDef(parent.options.preAction)) { 
-						var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+						var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ]));
 						var args;
 						if (isDef(rres) && rres != null) 
 							args = $m2a(fdef, rres);
 						else
-							args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
+							args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
 						res = aFn[aSubFn].apply(aFn, args);
 					} else {
-						res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient);
+						res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient, retBytes);
 					}
 					parent.__stats(aBaseURI, false);
 				}
@@ -4461,28 +4461,28 @@ const $rest = function(ops) {
 		}
 		return res;
 	};
-	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap) {
+	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap, retBytes) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
 		if (parent.options.uriQuery) {
 			aBaseURI += "?" + $rest().query(aIdxMap);
 			aIdxMap = {};
 		}
-		var fdef = [ "aBaseURL", "aIdxMap", "aDataRowMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient" ];
+		var fdef = [ "aBaseURL", "aIdxMap", "aDataRowMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes" ];
 		if (parent.__check(aBaseURI)) {
 			try {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
 						if (isDef(parent.options.preAction)) { 
-							var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+							var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ]));
 							var args;
 							if (isDef(rres) && rres != null) 
 								args = $m2a(fdef, rres);
 							else
-								args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
+								args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
 							res = aFn[aSubFn].apply(aFn, args);
 						} else {
-							res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
+							res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes);
 						}
 					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
 					if (_r !== true) {
@@ -4493,15 +4493,15 @@ const $rest = function(ops) {
 					}
 				} else {
 					if (isDef(parent.options.preAction)) { 
-						var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ]));
+						var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ]));
 						var args;
 						if (isDef(rres) && rres != null) 
 							args = $m2a(fdef, rres);
 						else
-							args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient ];
+							args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
 						res = aFn[aSubFn].apply(aFn, args);
 					} else {
-						res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient);
+						res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes);
 					}
 					parent.__stats(aBaseURI, false);
 				}
@@ -4537,6 +4537,35 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
+	 * <key>$rest.getStream(aBaseURI, aIdxMap) : JavaStream</key>
+	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * </odoc>
+	 */
+	_rest.prototype.getStream = function(aBaseURI, aIdxMap) {
+		return this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true);
+	};
+		/**
+	 * <odoc>
+	 * <key>$rest.getStream2File(aFilePath, aBaseURI, aIdxMap)</key>
+	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient).
+	 * The byte output will be saved into aFilePath.
+	 * </odoc>
+	 */
+	_rest.prototype.getStream2File = function(aFilePath, aBaseURI, aIdxMap) {
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true));
+	};
+	/**
+	 * <odoc>
 	 * <key>$rest.post(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
 	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
@@ -4551,6 +4580,35 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
+	 * <key>$rest.postStream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
+	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * </odoc>
+	 */	
+	_rest.prototype.postStream = function(aBaseURI, aDataRowMap, aIdxMap) {
+		return this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true);
+	};
+	/**
+	 * <odoc>
+	 * <key>$rest.postStream2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
+	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient).
+	 * The byte output will be saved into aFilePath.
+	 * </odoc>
+	 */	
+	_rest.prototype.postStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true));
+	};	
+	/**
+	 * <odoc>
 	 * <key>$rest.put(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
 	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
@@ -4562,6 +4620,35 @@ const $rest = function(ops) {
 	 */
 	_rest.prototype.put = function(aBaseURI, aDataRowMap, aIdxMap) {
 		return this.__f2(ow.obj.rest, "jsonSet", aBaseURI, aDataRowMap, aIdxMap);
+	};
+	/**
+	 * <odoc>
+	 * <key>$rest.putStream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
+	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * </odoc>
+	 */
+	_rest.prototype.putStream = function(aBaseURI, aDataRowMap, aIdxMap) {
+		return this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true);
+	};
+	/**
+	 * <odoc>
+	 * <key>$rest.putStream2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
+	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * The byte output will be saved into aFilePath.
+	 * </odoc>
+	 */
+	_rest.prototype.putStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true));
 	};
 	/**
 	 * <odoc>
@@ -4579,6 +4666,35 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
+	 * <key>$rest.deleteStream(aBaseURI, aIdxMap) : JavaStream</key>
+	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * </odoc>
+	 */
+	_rest.prototype.deleteStream = function(aBaseURI, aIdxMap) {
+		return this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true);
+	};
+	/**
+	 * <odoc>
+	 * <key>$rest.deleteStream2Fie(aFilePath, aBaseURI, aIdxMap)</key>
+	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * The byte output will be saved into aFilePath.
+	 * </odoc>
+	 */
+	_rest.prototype.deleteStream2File = function(aFilePath, aBaseURI, aIdxMap) {
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true));
+	};
+	/**
+	 * <odoc>
 	 * <key>$rest.patch(aBaseURI, aDataRowMap, aIdxMap) : Map</key>
 	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
@@ -4590,6 +4706,35 @@ const $rest = function(ops) {
 	 */
 	_rest.prototype.patch = function(aBaseURI, aDataRowMap, aIdxMap) {
 		return this.__f2(ow.obj.rest, "jsonPatch", aBaseURI, aDataRowMap, aIdxMap);
+	};
+	/**
+	 * <odoc>
+	 * <key>$rest.patchStream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
+	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * </odoc>
+	 */
+	_rest.prototype.patchStream = function(aBaseURI, aDataRowMap, aIdxMap) {
+		return this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true);
+	};
+	/**
+	 * <odoc>
+	 * <key>$rest.patchStream2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
+	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * The byte output will be saved into aFilePath.
+	 * </odoc>
+	 */
+	_rest.prototype.patchStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true));
 	};
 	/**
 	 * <odoc>
@@ -6133,7 +6278,30 @@ const $sh = function(aString) {
         }
 
         if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
-    };
+	};
+	
+	/**
+	 * <odoc>
+	 * <key>$sh.getJson(aIdx) : Object</key>
+	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh) trying to parse it as json.
+	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
+	 * </odoc>
+	 */
+	__sh.prototype.getJson = function(aIdx) {
+		var res = this.get(aIdx);
+
+		if (isArray(res)) {
+			for(let ii in res) {
+				res[ii].stdout = jsonParse(res[ii].stdout);
+				res[ii].stderr = jsonParse(res[ii].stderr);
+			}
+		} else {
+			res.stdout = jsonParse(res.stdout);
+			res.stderr = jsonParse(res.stderr);
+		}
+
+		return res;
+	};
 
 	/**
 	 * <odoc>
@@ -6415,7 +6583,31 @@ const $ssh = function(aMap) {
 
         this.close();
         if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
-    };
+	};
+	
+	/**
+	 * <odoc>
+	 * <key>$ssh.getJson(aIdx) : Object</key>
+	 * Executes a list of commands previously set on a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * IO is not inherit. If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
+	 * The stdout and stderr will be pre-parsed from json to objects.
+	 * </odoc>
+	 */
+	__ssh.prototype.getJson = function(aIdx) {
+		var res = this.get(aIdx);
+
+		if (isArray(res)) {
+			for(let ii in res) {
+				res[ii].stdout = jsonParse(res[ii].stdout);
+				res[ii].stderr = jsonParse(res[ii].stderr);
+			}
+		} else {
+			res.stdout = jsonParse(res.stdout);
+			res.stderr = jsonParse(res.stderr);
+		}
+
+		return res;
+	};
 
 	/**
 	 * <odoc>

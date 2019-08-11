@@ -1779,7 +1779,7 @@ OpenWrap.obj.prototype.rest = {
 	 * <odoc>
 	 * <key>ow.obj.rest.getContentLength(aBaseURI, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : Number</key>
 	 * Tries to get the content lenght for the given aBaseURI. Optionally you can provide aLogin, aPassword and/or aTimeout for the HTTP request or use a function (aLoginOrFunction)
-	 * that receives the HTTP object.
+	 * that receives the HTTP object. 
 	 * </odoc>
 	 */
 	getContentLength: function(aURL, _l, _p, _t, aRequestMap, __h) {
@@ -1812,13 +1812,13 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.get(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : String</key>
+	 * <key>ow.obj.rest.get(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP, retBytes) : String</key>
 	 * Tries to obtain aIndexMap from the REST aBaseURI service returning as a string (uses the HTTP GET method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
-	 * that receives the HTTP object.
+	 * that receives the HTTP object. Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	get: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h) { 
+	get: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes) { 
 		//plugin("HTTP");
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
@@ -1840,7 +1840,7 @@ OpenWrap.obj.prototype.rest = {
  		}
  		
  		try {
- 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", undefined, aRequestMap, undefined, _t);
+ 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", undefined, aRequestMap, retBytes, _t, retBytes);
  		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 			throw e;
@@ -1849,25 +1849,26 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonGet(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : Map</key>
+	 * <key>ow.obj.rest.jsonGet(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP, retBytes) : Map</key>
 	 * Tries to obtain aIndexMap from the REST aBaseURI service returning as a map (uses the HTTP GET method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
-	 * that receives the HTTP object. 
+	 * that receives the HTTP object. Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	jsonGet: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h) {
-		return jsonParse(this.get(aURL, aIdx, _l, _p, _t, aRequestMap, __h).response);
+	jsonGet: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes) {
+		return jsonParse(this.get(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes).response);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.create(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP) : String</key>
+	 * <key>ow.obj.rest.create(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP, retBytes) : String</key>
 	 * Tries to create a new aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP POST method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
+	 * Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
+	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
 		//plugin("HTTP");
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
@@ -1893,7 +1894,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json"} , aRequestMap);
 
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -1902,25 +1903,27 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonCreate(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP) : Map</key>
+	 * <key>ow.obj.rest.jsonCreate(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP, retBytes) : Map</key>
 	 * Tries to create a new aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP POST method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object.  If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
+	 * Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	jsonCreate: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
-		return jsonParse(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response);
+	jsonCreate: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
+		return jsonParse(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, retBytes);
 	},
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.set(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP) : String</key>
+	 * <key>ow.obj.rest.set(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP, retBytes) : String</key>
 	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP PUT method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
+	 * Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
+	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
 		//plugin("HTTP");
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
@@ -1946,7 +1949,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json"} , aRequestMap);
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -1955,25 +1958,27 @@ OpenWrap.obj.prototype.rest = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonSet(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP) : Map</key>
+	 * <key>ow.obj.rest.jsonSet(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP, retBytes) : Map</key>
 	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP PUT method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
+	 * Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	jsonSet: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
-		return jsonParse(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response);
+	jsonSet: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
+		return jsonParse(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, retBytes);
 	},
 
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.patch(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP) : String</key>
+	 * <key>ow.obj.rest.patch(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP, retBytes) : String</key>
 	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP PATCH method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
+	 * Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	patch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
+	patch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
 		//plugin("HTTP");
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
@@ -1999,7 +2004,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json"} , aRequestMap);
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, undefined, ''), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2008,25 +2013,26 @@ OpenWrap.obj.prototype.rest = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonPatch(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP) : Map</key>
+	 * <key>ow.obj.rest.jsonPatch(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP, retBytes) : Map</key>
 	 * Tries to set aDataRowMap entry, identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP PATCH method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object. If urlEncode=true the aDataRowMap will be converted into x-www-form-urlencoded instead of JSON.
+	 * Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	jsonPatch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h) {
-		return jsonParse(this.patch(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response);
+	jsonPatch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
+		return jsonParse(this.patch(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, retBytes);
 	},	
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.remove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : String</key>
+	 * <key>ow.obj.rest.remove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP, retBytes) : String</key>
 	 * Tries to remove aIndexMap entry from the REST aBaseURI service returning the reply as a string (uses the HTTP DELETE method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
-	 * that receives the HTTP object.
+	 * that receives the HTTP object. Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h) {
+	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes) {
 		//plugin("HTTP");
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
@@ -2048,7 +2054,7 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", undefined, aRequestMap, undefined, _t);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", undefined, aRequestMap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2057,14 +2063,14 @@ OpenWrap.obj.prototype.rest = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.obj.rest.jsonRemove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : Map</key>
+	 * <key>ow.obj.rest.jsonRemove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP, retBytes) : Map</key>
 	 * Tries to remove aIndexMap entry from the REST aBaseURI service returning the reply as a map (uses the HTTP DELETE method).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
-	 * that receives the HTTP object.
+	 * that receives the HTTP object. Optionally if retBytes = true returns a java stream.
 	 * </odoc>
 	 */
-	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h) {
-		return jsonParse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap, __h).response);
+	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes) {
+		return jsonParse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap, __h).response, retBytes);
 	},
 	
 	/**
