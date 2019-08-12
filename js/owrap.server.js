@@ -1647,10 +1647,7 @@ OpenWrap.server.prototype.cluster.prototype.locks = function() {
  * </odoc>
  */
 OpenWrap.server.prototype.cluster.prototype.whenUnLocked = function(aLockName, aFn, aTryTimeout, aNumRetries) {
-	if (this.impl.clusterCanLock(this.options, aLockName)) {
-		return this.impl.clusterLocks(this.options).whenUnLocked(aLockName, aFn, aTryTimeout, aNumRetries);
-	}
-	return false;
+	return this.impl.clusterLocks(this.options).whenUnLocked(aLockName, aFn, aTryTimeout, aNumRetries);
 };
 
 /**
@@ -1800,7 +1797,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			n: aLockName,
 			b: aOps.HOST + ":" + aOps.PORT
 		});
-		var timeout = now() + 2500;
+		var timeout = now() + aOps.quorumTimeout;
 		while(timeout > now() && !allVotesIn) {
 			sleep(150);
 		}
@@ -1843,7 +1840,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			n: aLockName,
 			b: aOps.HOST + ":" + aOps.PORT
 		});
-		var timeout = now() + 1500;
+		var timeout = now() + aOps.quorumTimeout;
 		while(timeout > now() && !allVotesIn) {
 			sleep(150);
 		}
@@ -1877,24 +1874,32 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			});
 		}
 
+		var rPros = [];
 		receptors.forEach((v) => {
-			var isLocal = (aOptions.HOST == v.host && aOptions.PORT == v.port);
-			var url = aOptions.protocol + "://" + v.host + ":" + v.port + aOptions.path + "_msgs";
-			var ch = (isLocal) ? aOptions.chMsgs : aOptions.chMsgs + "::" + v.host + ":" + v.port;
+			var vclo = clone(v);
+			rPros = $do(() => {
+				var isLocal = (aOptions.HOST == vclo.host && aOptions.PORT == vclo.port);
+				var url = aOptions.protocol + "://" + vclo.host + ":" + vclo.port + aOptions.path + "_msgs";
+				var ch = (isLocal) ? aOptions.chMsgs : aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port;
+				var existed = false;
 
-			if (!isLocal) $ch(ch).createRemote(url);
-			$ch(ch).set({
-				i: id,
-				f: aOptions.HOST + ":" + aOptions.PORT,
-				t: v.host + ":" + v.port
-			}, {
-				i: id,
-				f: aOptions.HOST + ":" + aOptions.PORT,
-				t: v.host + ":" + v.port,
-				m: aMessage	
+				if (!isLocal) { $ch(ch).createRemote(url); existed = true; }
+				$ch(ch).set({
+					i: id,
+					f: aOptions.HOST + ":" + aOptions.PORT,
+					t: vclo.host + ":" + vclo.port
+				}, {
+					i: id,
+					f: aOptions.HOST + ":" + aOptions.PORT,
+					t: vclo.host + ":" + vclo.port,
+					m: aMessage	
+				});
+				if (!isLocal && !existed) $ch(ch).destroy();
+			}).catch((e) => {
+				print("ERROR: " + aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port + " | " + stringify(e, void 0, ""));
 			});
-			if (!isLocal) $ch(ch).destroy();
 		});
+		$doWait($doAll(rPros));
 	},
 	__check: (aOptions) => {
 		if (isUnDef(aOptions.init) || !aOptions.init) {
@@ -1915,6 +1920,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			aOptions.quorum = _$(aOptions.chQuorum).default("__cluster::" + aOptions.name + "::quorum");
 			aOptions.chs = _$(aOptions.chs).isArray().default([]);
 			aOptions.opsMsgs = _$(aOptions.opsMsgs).default({});
+			aOptions.quorumTimeout = _$(aOptions.quorumTimeout).default(5000);
 	
 			aOptions.chs.push({
 				name: aOptions.chMsgs,
@@ -2010,6 +2016,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			$ch(aOptions.chMsgs).subscribe((aCh, aOp, aK, aV) => {
 				if (aOp == "set") aV = [ aV ];
 				if (aOp == "setAll" || aOp == "set") {
+					print("MESSAGE: " + stringify(aV, void 0, ""));
 					for(var vi in aV) {
 						var v = aV[vi];
 						if (isDef(v.t) && isDef(v.i) && isDef(v.f) && isDef(v.m)) {
@@ -2301,7 +2308,7 @@ OpenWrap.server.prototype.httpd = {
 		aMapOfRoutes["/fonts/roboto/Roboto-Medium.eot"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.eot", true), ow.server.httpd.mimes.EOT, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Medium.ttf"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.ttf", true), ow.server.httpd.mimes.TTF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Medium.woff"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.woff", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
-	  aMapOfRoutes["/fonts/roboto/Roboto-Medium.woff2"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.woff2", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
+        aMapOfRoutes["/fonts/roboto/Roboto-Medium.woff2"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Medium.woff2", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Regular.eot"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Regular.eot", true), ow.server.httpd.mimes.EOT, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Regular.ttf"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Regular.ttf", true), ow.server.httpd.mimes.TTF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/roboto/Roboto-Regular.woff"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/roboto/Roboto-Regular.woff", true), ow.server.httpd.mimes.WOFF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
