@@ -3520,7 +3520,7 @@ function searchHelp(aTerm, aPath, aId) {
 			"text": contents.t
 		} ];
 	} else {
-		keys = keys.sort(function(a, b) { return (a.key > b.key) ? 1 : -1; });
+		keys = keys.sort(function(a, b) { return (a.key.toLowerCase() > b.key.toLowerCase()) ? 1 : -1; });
 	}
 	return keys;
 }
