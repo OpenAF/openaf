@@ -2016,7 +2016,6 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			$ch(aOptions.chMsgs).subscribe((aCh, aOp, aK, aV) => {
 				if (aOp == "set") aV = [ aV ];
 				if (aOp == "setAll" || aOp == "set") {
-					print("MESSAGE: " + stringify(aV, void 0, ""));
 					for(var vi in aV) {
 						var v = aV[vi];
 						if (isDef(v.t) && isDef(v.i) && isDef(v.f) && isDef(v.m)) {
