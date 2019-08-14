@@ -848,9 +848,13 @@ OpenWrap.oJob.prototype.stop = function() {
 			this.__threads[i][j].stop(true);
 		}
 	}
-	this.__sch.stop();
-	this.__sch = new ow.server.scheduler();
-	this.mt.stop();
+	if (isDef(this.__sch)) {
+		this.__sch.stop();
+		this.__sch = new ow.server.scheduler();
+	}
+	if (isDef(this.mt)) {
+		this.mt.stop();
+	}
 	this.oJobShouldStop = true;
 	//stopLog();
 };
