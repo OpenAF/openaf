@@ -648,7 +648,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 	this.initialize(aIniAuth, aKey, aCustomFunction);
 	return this;
 };
-
+ 
 //-----------------------------------------------------------------------------------------------------
 // LDAP Check
 //-----------------------------------------------------------------------------------------------------
@@ -1299,7 +1299,7 @@ OpenWrap.server.prototype.locks.prototype.isLocked = function(aLockName) {
  * lock will expire. If successfull in locking returns true, otherwiser returns false.
  * </odoc>
  */
-OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout, aNumRetries, aTimeout) {
+OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout, aNumRetries, aTimeout, extra) {
 	var c = _$(aNumRetries).isNumber().default(this.retries);
 	aTryTimeout = _$(aTryTimeout).isNumber().default(this.timeout);
 	var lock = true;
@@ -1307,6 +1307,7 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
 
 	do {
 		if (this.type == "cluster") {
+			extra = _$(extra).default(this.options.clusterOptions.HOST + ":" + this.options.clusterOptions.PORT);
 			var rrr = this.options.cluster.clusterCanLock(this.options.clusterOptions, aLockName);
 			if (rrr) {
 				var res = this.isLocked(aLockName);
@@ -1335,7 +1336,8 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
 		}, {
 			lock: aLockName,
 			timeout: nowUTC() + aTimeout,
-			value: true
+			value: true,
+			extra: extra
 		});
 	}
 
@@ -1349,6 +1351,9 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
  * </odoc>
  */
 OpenWrap.server.prototype.locks.prototype.extendTimeout = function(aLockName, aTimeout) {
+	var current = $ch(this.name).get({
+		lock: aLockName
+	});
 	$ch(this.name).getSet({
 		value: true
 	}, {
@@ -1356,7 +1361,8 @@ OpenWrap.server.prototype.locks.prototype.extendTimeout = function(aLockName, aT
 	}, {
 		lock: aLockName,
 		value: true,
-		timeout: nowUTC() + aTimeout
+		timeout: nowUTC() + aTimeout,
+		extra: current.extra
 	});
 
 	return $ch(this.name).get({
@@ -1896,7 +1902,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 				});
 				if (!isLocal && !existed) $ch(ch).destroy();
 			}).catch((e) => {
-				print("ERROR: " + aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port + " | " + stringify(e, void 0, ""));
+				printErr("ERROR clusterSendMsg: " + aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port + " | " + stringify(e, void 0, ""));
 			});
 		});
 		$doWait($doAll(rPros));
@@ -1938,7 +1944,13 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 
 			aOptions.opsMsgs.l = (aOps, v) => {
 				// lock 
-				var tt = (aOps.locks.isLocked(v.m.n).value ? "dl" : "cl");
+				//var tt = (aOps.locks.isLocked(v.m.n).value ? "dl" : "cl");
+				var tt;
+				if (v.m.b == (aOps.HOST + ":" + aOps.PORT)) {
+					tt = "cl";
+				} else {
+					tt = (!aOps.locks.isLocked(v.m.n).value && aOps.locks.lock(v.m.n) ? "cl" : "dl");
+				}
 
 				ow.server.clusterChsPeersImpl.clusterSendMsg(aOps, v.m.b, {
 					t: tt,
@@ -1949,7 +1961,12 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			aOptions.opsMsgs.u = (aOps, v) => {
 				// unlock 
 				//var tt = (aOps.locks.isLocked(v.m.n).value ? "cu" : "du");
-				var tt = "cu";
+				var tt;
+				if (v.m.b == (aOps.HOST + ":" + aOps.PORT)) {
+					tt = "cu";
+				} else {
+					tt = (aOps.locks.unlock(v.m.n) ? "cu" : "du");
+				} 
 
 				ow.server.clusterChsPeersImpl.clusterSendMsg(aOps, v.m.b, {
 					t: tt,
