@@ -135,8 +135,7 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 				}
 			}
 			if (iMax >= 0 && iMaxVal > 9) {
-				int tmp = iMaxVal - (iPeMaxVal < (colSum - (this.max - ret.length)) ? iPeMaxVal
-						: (colSum - (this.max - ret.length)));
+				int tmp = (iPeMaxVal > (ret[iMax] - (colSum - (this.max - ret.length))) ? iPeMaxVal : (ret[iMax] - (colSum - (this.max - ret.length))));
 				ret[iMax] = (tmp > 9) ? tmp : 10;
 			} else {
 				return ret;
