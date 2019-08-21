@@ -458,6 +458,7 @@ OpenWrap.ch.prototype.__types = {
 			options.bufferTmpCh     = _$(options.bufferTmpCh).isString("bufferTmpCh must be a string").default(aName + "::__bufferStorage");
 			options.bufferIdxs      = _$(options.bufferIdxs).isArray("bufferIdxs must be an array").default([]);
 			options.timeout         = _$(options.timeout).isNumber("timeout is a number (ms)").default(1500);
+			options.errorFn         = _$(options.errorFn).isFunction().default(void 0);
 			_$(options.bufferCh).isString("bufferCh must be a string").$_("Please provide a bufferCh");
 	
 			var addShut = false;
@@ -479,6 +480,7 @@ OpenWrap.ch.prototype.__types = {
 			this.__bt[aName] = options.bufferTmpCh;
 			this.__bi[aName] = options.bufferIdxs;
 			this.__t[aName]  = options.timeout;
+			this.__efn[aName] = options.errorFn;
 
 			if (options.bufferByTime < 0 && options.bufferByNumber < 0) throw "Needs to be buffered by time and/or number.";
 	
@@ -516,8 +518,12 @@ OpenWrap.ch.prototype.__types = {
 							}
 						} else {
 							$ch(parent.__bt[aName]).forEach((k, v) => {
-								$ch(parent.__bc[aName]).set(k, v); 
-								$ch(parent.__bt[aName]).unset(k);
+								try {
+									$ch(parent.__bc[aName]).set(k, v); 
+									$ch(parent.__bt[aName]).unset(k);
+								} catch(e) { 
+									if (isDef(parent.__efn[aName])) parent.__efn[aName](e);
+								}
 							});
 						}
 					} finally {
@@ -560,6 +566,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(ow.ch.__types.buffer.__bi[aName])) delete ow.ch.__types.buffer.__bi[aName];
 			if (isDef(ow.ch.__types.buffer.__f[aName])) delete ow.ch.__types.buffer.__f[aName];
 			if (isDef(ow.ch.__types.buffer.__s[aName])) delete ow.ch.__types.buffer.__s[aName];
+			if (isDef(ow.ch.__types.buffer.__efn[aName])) delete ow.ch.__types.buffer.__efn[aName];
 			if (isDef(ow.ch.__types.buffer.__lcks[aName])) delete ow.ch.__types.buffer.__lcks[aName];
 		},
 		size         : function(aName) {
@@ -904,7 +911,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).get(this.__channels[aName].url + $rest().index({ o: "a" })).r;
 		},
 		getKeys      : function(aName, full) {
@@ -915,7 +923,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).get(this.__channels[aName].url + $rest().index({ o: "k" })).r;
 		},
 		getSortedKeys: function(aName, full) {
@@ -926,7 +935,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).get(this.__channels[aName].url + $rest().index({ o: "s" })).r;		
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
@@ -937,7 +947,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).put(this.__channels[aName].url + $rest().index({ o: "es", m: aMatch, k: aK, t: aTimestamp }), aV).r;	
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
@@ -948,7 +959,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).put(this.__channels[aName].url + $rest().index({ o: "e", k: aK, t: aTimestamp }), aV).r;				
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
@@ -959,7 +971,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).put(this.__channels[aName].url + $rest().index({ o: "a", k: aKs, t: aTimestamp }), aVs).r;		
 		},
 		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
@@ -970,7 +983,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).put(this.__channels[aName].url + $rest().index({ o: "ua", k: aKs, t: aTimestamp }), aVs).r;		
 		},		
 		get          : function(aName, aK) {
@@ -981,7 +995,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).get(this.__channels[aName].url + $rest().index({ o: "e", k: aK })).r;	
 		},
 		pop          : function(aName) {
@@ -1003,7 +1018,8 @@ OpenWrap.ch.prototype.__types = {
 				connectionTimeout: this.__channels[aName].timeout,
 				default: this.__channels[aName].default,
 				timeout: this.__channels[aName].timeout,
-				stopWhen: this.__channels[aName].stopWhen
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions
 			}).delete(this.__channels[aName].url + $rest().index({ o: "e", k: aK, t: aTimestamp })).r;
 		}
 	},
@@ -1929,18 +1945,29 @@ OpenWrap.ch.prototype.forEach = function(aName, aFunction, x) {
 OpenWrap.ch.prototype.getAll = function(aName, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";	
 
-	var res = [];
+	var res = [], error;
 	var parent = this;
 	
 	if (isDef(this.__types[this.channels[aName]].getAll)) {
 		sync(function() {
-			res = res.concat(parent.__types[parent.channels[aName]].getAll(aName, x));
+			try {
+				res = res.concat(parent.__types[parent.channels[aName]].getAll(aName, x));
+			} catch(e) {
+				error = e;
+			}
 		}, x);
 	} else {
 		this.forEach(aName, function(aKey, aValue) {
-			sync(function() { res.push(aValue); }, res);
+			sync(function() { 
+				try {
+					res.push(aValue); 
+				} catch(e) {
+					error = e;
+				}
+			}, res);
 		}, x);
 	}
+	if (isDef(error)) throw error;
 
 	return res;
 };
@@ -1996,12 +2023,17 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 	if (typeof aValue != "object") av = { "key": aKey, "value": aValue };
  
 	var parent = this;
-	var res;
+	var res, error;
 
 	sync(function() {
-		res = parent.__types[parent.channels[aName]].set(aName, ak, av, aTimestamp, x); 
-		parent.vers[aName] = nowUTC();
+		try {
+			res = parent.__types[parent.channels[aName]].set(aName, ak, av, aTimestamp, x); 
+			parent.vers[aName] = nowUTC();
+		} catch(e) {
+			error = e;
+		}
 	}, this.channels[aName]);
+	if (isDef(error)) throw error;
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
 		for(var _i in this.subscribers[aName]) {
@@ -2066,12 +2098,17 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 	}
 
 	var parent = this;
-	var res;
+	var res, error;
 	
 	sync(function() {
-		res = parent.__types[parent.channels[aName]].setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
-		parent.vers[aName] = nowUTC();
+		try {
+			res = parent.__types[parent.channels[aName]].setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
+			parent.vers[aName] = nowUTC();
+		} catch(e) {
+			error = e;
+		}
 	}, this.channels[aName]);
+	if (isDef(error)) throw error;
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
 		for(var _i in this.subscribers[aName]) {
@@ -2121,14 +2158,19 @@ OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData
 	}
 
 	var parent = this;
-	var res;
+	var res, error;
 	
 	if (isUnDef(parent.__types[parent.channels[aName]].unsetAll)) return void 0;
 
 	sync(function() {
-		res = parent.__types[parent.channels[aName]].unsetAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
-		parent.vers[aName] = nowUTC();
+		try {
+			res = parent.__types[parent.channels[aName]].unsetAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
+			parent.vers[aName] = nowUTC();
+		} catch(e) {
+			error = e;
+		}
 	}, this.channels[aName]);
+	if (isDef(error)) throw error;
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
 		for(var _i in this.subscribers[aName]) {
@@ -2172,11 +2214,17 @@ OpenWrap.ch.prototype.get = function(aName, aKey, x) {
 
 	if (typeof aKey != "object") aKey = { "key": aKey };
 
-	var res;
+	var res, error;
 	var parent = this;
 	sync(function() {
-		res = parent.__types[parent.channels[aName]].get(aName, aKey, x);
+		try {
+			res = parent.__types[parent.channels[aName]].get(aName, aKey, x);
+		} catch(e) {
+			error = e;
+		}
 	}, this.channels[aName]);
+	if (isDef(error)) throw error;
+
 	if (isDef(res) && Object.keys(res) == [ "value" ])
 		return res.value;
 	else
@@ -2214,12 +2262,17 @@ OpenWrap.ch.prototype.pop = function(aName) {
 OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp, aUUID, x) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 	
-	var res, out;
+	var res, out, error;
 	var parent = this;
 	sync(function() {
-		res = parent.__types[parent.channels[aName]].getSet(aName, aMatch, aKey, aValue, aTimestamp, x); 
-		parent.vers[aName] = nowUTC();
+		try {
+			res = parent.__types[parent.channels[aName]].getSet(aName, aMatch, aKey, aValue, aTimestamp, x); 
+			parent.vers[aName] = nowUTC();
+		} catch(e) {
+			error = e;
+		}
 	}, this.channels[aName]);
+	if (isDef(error)) throw error;
 	
 	if (Object.keys(this.subscribers[aName]).length > 0) {
 		for(var _i in this.subscribers[aName]) {
@@ -2293,11 +2346,16 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	var ak = aKey;
 	if (typeof aKey != "object") ak = { "key": aKey };
 
-	var parent = this, res;
+	var parent = this, res, error;
 	sync(function() {	
-		res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
-		parent.vers[aName] = nowUTC();
+		try {
+			res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
+			parent.vers[aName] = nowUTC();
+		} catch(e) {
+			error = e;
+		}
 	}, this.channels[aName]);
+	if (isDef(error)) throw error;
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
 		for(var _i in this.subscribers[aName]) {
