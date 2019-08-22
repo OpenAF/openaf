@@ -692,10 +692,10 @@ function __table(aCmd) {
 	return false;
 }
 
-function __view(aCmd) {
-	if (aCmd.match(/^off$|^0$/i)) { viewCommand = false; return; }
-	if (aCmd.match(/^on$|^1$/i)) { viewCommand = true; return; }
-	if (aCmd == "") {
+function __view(aCmd, fromCommand) {
+	if (aCmd.match(/^off$|^0$/i) && fromCommand) { viewCommand = false; return; }
+	if (aCmd.match(/^on$|^1$/i) && fromCommand) { viewCommand = true; return; }
+	if (aCmd == "" && fromCommand) {
 		if (viewCommand) {
 			__outputConsoleComments("View is active.");
 		} else {
@@ -777,7 +777,7 @@ function __processCmdLine(aCommand, returnOnly) {
 			}		
 			if (aCommand.match(/^view(?: +|$)/)) {
 				internalCommand = true;
-				__view(aCommand.replace(/^view */, ""));
+				__view(aCommand.replace(/^view */, ""), true);
 			}						
 			if (aCommand.match(/^beautify(?: +|$)/)) {
 				internalCommand = true;
@@ -1078,7 +1078,7 @@ if (__expr.length > 0) cmd = __expr;
 
 while(cmd != "exit") {
 	if (viewCommand) {
-		__view(cmd);
+		__view(cmd, false);
 	} else {
 		__showResultProcessCmdLine(__processCmdLine(cmd), cmd);
 	}
