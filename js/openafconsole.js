@@ -244,10 +244,10 @@ function __scope(aRegExpRestriction, retList) {
 }
 
 function __sql(aParams, executeSQL, descSQL, returnOnly) {
-	var params = aParams.match(/^([^ ]+) +(.*)/, "")
+	var params = aParams.match(/^([^ ]+) +(.*)/, "");
 
 	var _db;
-	if (isUndefined(params[1])) {
+	if (isUnDef(params[1])) {
 		__outputConsoleError("Needs to be a DB object followed by a SQL statement");
 		return;
 	}
@@ -341,9 +341,9 @@ var __timeResult;
  * @param  {number} aResult If not defined toogles the timing of commands, otherwise prints the result in ms
  */
 function __time(aResult, aFlag) {
-	if (isUndefined(aResult)) {
-		if (isDefined(aFlag) && aFlag.match(/off|0/i)) timeCommand = false;
-		if (isDefined(aFlag) && aFlag.match(/on|1/i)) timeCommand = true;
+	if (isUnDef(aResult)) {
+		if (isDef(aFlag) && aFlag.match(/off|0/i)) timeCommand = false;
+		if (isDef(aFlag) && aFlag.match(/on|1/i)) timeCommand = true;
 		if (aFlag == "") {
 			if (timeCommand) {
 				timeCommand = false;
@@ -467,7 +467,7 @@ function __watch(aLineOfCommands) {
 					out = e.message;
 				}
 
-				if (isDefined(out))
+				if (isDef(out))
 					if (beautifyCommand) out = String(stringify(out)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
 
 				__clear();
@@ -693,23 +693,34 @@ function __table(aCmd) {
 }
 
 function __view(aCmd) {
-	var __res;
-	if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
-	
-	if (isObject(__res) && Object.keys(__res).length > 0) {
-		var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
-		if (pauseCommand) {
-			var __lines = (prefix + printMap(__res, void 0, void 0, colorCommand)).split(/\n/);
-			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
+	if (aCmd.match(/^off$|^0$/i)) { viewCommand = false; return; }
+	if (aCmd.match(/^on$|^1$/i)) { viewCommand = true; return; }
+	if (aCmd == "") {
+		if (viewCommand) {
+			__outputConsoleComments("View is active.");
 		} else {
-			__outputConsole(prefix + printMap(__res, void 0, void 0, colorCommand));
+			__outputConsoleComments("View is not active.");
 		}
-		return true;
 	} else {
-		__outputConsoleError("Not a map/array object or empty array/object.");
-		return true;
+		var __res;
+		if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
+		
+		if (isObject(__res) && Object.keys(__res).length > 0) {
+			var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
+			if (pauseCommand) {
+				var __lines = (prefix + printMap(__res, void 0, void 0, colorCommand)).split(/\n/);
+				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
+			} else {
+				__outputConsole(prefix + printMap(__res, void 0, void 0, colorCommand));
+			}
+			return true;
+		} else {
+			//__outputConsoleError("Not a map/array object or empty array/object.");
+			__showResultProcessCmdLine(__res, aCmd);
+			return true;
+		}
+		return false;
 	}
-	return false;
 }
 
 function __processCmdLine(aCommand, returnOnly) {
@@ -717,9 +728,9 @@ function __processCmdLine(aCommand, returnOnly) {
 	aCommand = aCommand.replace(/^ *([^ ].*)/, "$1");
 	try {
 		if (aCommand != "exit") {
-			if (!isUndefined(__alias[aCommand.replace(/^([^ ]+).*/, "$1")])) {
+			if (!isUnDef(__alias[aCommand.replace(/^([^ ]+).*/, "$1")])) {
 				__aliasparam = aCommand.replace(/^[^ ]+ */, "");
-				if(isUndefined(__aliasparam)) __aliasparam = "";
+				if(isUnDef(__aliasparam)) __aliasparam = "";
 				aCommand = __alias[aCommand.replace(/^([^ ]+).*/, "$1")];
 			}
 			if (aCommand.match(/^alias(?: +|$)/)) {
@@ -765,7 +776,8 @@ function __processCmdLine(aCommand, returnOnly) {
 				internalCommand = __table(aCommand.replace(/^table */, ""));
 			}		
 			if (aCommand.match(/^view(?: +|$)/)) {
-				internalCommand = __view(aCommand.replace(/^view */, ""));
+				internalCommand = true;
+				__view(aCommand.replace(/^view */, ""));
 			}						
 			if (aCommand.match(/^beautify(?: +|$)/)) {
 				internalCommand = true;
@@ -987,6 +999,7 @@ var beautifyCommand = true;
 var colorCommand = true;
 var pauseCommand = false;
 var watchCommand = false;
+var viewCommand = false;
 var watchLine = "";
 
 // Tweak a little
@@ -1064,7 +1077,11 @@ initThread.startNoWait();
 if (__expr.length > 0) cmd = __expr;
 
 while(cmd != "exit") {
-	__showResultProcessCmdLine(__processCmdLine(cmd), cmd);
+	if (viewCommand) {
+		__view(cmd);
+	} else {
+		__showResultProcessCmdLine(__processCmdLine(cmd), cmd);
+	}
 
 	if (__message != "") {
 		__outputConsoleComments(__message);
@@ -1074,7 +1091,7 @@ while(cmd != "exit") {
 		var watchresult;
 		try {
 			watchresult = __processCmdLine(watchLine, true);
-			if (isUndefined(watchresult)) watchresult = "";
+			if (isUnDef(watchresult)) watchresult = "";
 			if (beautifyCommand) watchresult = String(stringify(watchresult)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
 		} catch(e) { watchresult = "ERROR: " + e.message; watchCommand = false; }
 		cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ");
@@ -1091,7 +1108,7 @@ while(cmd != "exit") {
 		}
 	}
 	
-	if(isDefined(jLineFileHistory)) jLineFileHistory.flush();
+	if(isDef(jLineFileHistory)) jLineFileHistory.flush();
 }
 
 exit(0);
