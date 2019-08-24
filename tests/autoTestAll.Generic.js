@@ -553,7 +553,7 @@
 
         ow.loadObj();
         var fnargs = $fnDef4Help("ow.obj.rest.jsonGet");
-        ow.test.assert(fnargs, ["aBaseURI","aIndexMap","aLoginOrFunction","aPassword","aTimeout","aRequestMap","aHTTP"], "Problem with getting arguments from help using $fnDef4Help.");
+        ow.test.assert(fnargs, ["aBaseURI","aIndexMap","aLoginOrFunction","aPassword","aTimeout","aRequestMap","aHTTP", "retBytes"], "Problem with getting arguments from help using $fnDef4Help.");
 
         var res = $fnM2A(ow.obj.rest.jsonGet, ow.obj.rest, fnargs, { aBaseURI: "https://httpbin.org/get" });
         ow.test.assert(res.url, "https://httpbin.org/get", "Problem with $fnM2A.");

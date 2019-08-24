@@ -4401,7 +4401,7 @@ const $rest = function(ops) {
 			}
 		}
 	};
-	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap, retBytes) {
+	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap, retBytes, aVerb) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
 		if (parent.options.uriQuery) {
@@ -4414,7 +4414,7 @@ const $rest = function(ops) {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
 						if (isDef(parent.options.preAction)) { 
-							var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ]));
+							var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
 							var args;
 							if (isDef(rres) && rres != null) 
 								args = $m2a(fdef, rres);
@@ -4433,7 +4433,7 @@ const $rest = function(ops) {
 					}
 				} else {
 					if (isDef(parent.options.preAction)) { 
-						var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ]));
+						var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
 						var args;
 						if (isDef(rres) && rres != null) 
 							args = $m2a(fdef, rres);
@@ -4461,7 +4461,7 @@ const $rest = function(ops) {
 		}
 		return res;
 	};
-	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap, retBytes) {
+	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap, retBytes, aVerb) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
 		if (parent.options.uriQuery) {
@@ -4474,7 +4474,7 @@ const $rest = function(ops) {
 				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 					var _r = $tb(() => {
 						if (isDef(parent.options.preAction)) { 
-							var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ]));
+							var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
 							var args;
 							if (isDef(rres) && rres != null) 
 								args = $m2a(fdef, rres);
@@ -4493,7 +4493,7 @@ const $rest = function(ops) {
 					}
 				} else {
 					if (isDef(parent.options.preAction)) { 
-						var rres = parent.options.preAction($a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ]));
+						var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
 						var args;
 						if (isDef(rres) && rres != null) 
 							args = $m2a(fdef, rres);
@@ -4533,7 +4533,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.get = function(aBaseURI, aIdxMap) {
-		return this.__f1(ow.obj.rest, "jsonGet", aBaseURI, aIdxMap);
+		return this.__f1(ow.obj.rest, "jsonGet", aBaseURI, aIdxMap, void 0, "get");
 	};
 	/**
 	 * <odoc>
@@ -4547,7 +4547,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.getStream = function(aBaseURI, aIdxMap) {
-		return this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true);
+		return this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true, "get");
 	};
 		/**
 	 * <odoc>
@@ -4562,7 +4562,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.getStream2File = function(aFilePath, aBaseURI, aIdxMap) {
-		ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true));
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true, "get"));
 	};
 	/**
 	 * <odoc>
@@ -4576,7 +4576,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.post = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "jsonCreate", aBaseURI, aDataRowMap, aIdxMap);
+		return this.__f2(ow.obj.rest, "jsonCreate", aBaseURI, aDataRowMap, aIdxMap, void 0, "post");
 	};
 	/**
 	 * <odoc>
@@ -4590,7 +4590,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */	
 	_rest.prototype.postStream = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true);
+		return this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true, "post");
 	};
 	/**
 	 * <odoc>
@@ -4605,7 +4605,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */	
 	_rest.prototype.postStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
-		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true));
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true, "post"));
 	};	
 	/**
 	 * <odoc>
@@ -4619,7 +4619,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.put = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "jsonSet", aBaseURI, aDataRowMap, aIdxMap);
+		return this.__f2(ow.obj.rest, "jsonSet", aBaseURI, aDataRowMap, aIdxMap, void 0, "put");
 	};
 	/**
 	 * <odoc>
@@ -4633,7 +4633,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.putStream = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true);
+		return this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true, "put");
 	};
 	/**
 	 * <odoc>
@@ -4648,7 +4648,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.putStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
-		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true));
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true, "put"));
 	};
 	/**
 	 * <odoc>
@@ -4662,7 +4662,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.delete = function(aBaseURI, aIdxMap) {
-		return this.__f1(ow.obj.rest, "jsonRemove", aBaseURI, aIdxMap);
+		return this.__f1(ow.obj.rest, "jsonRemove", aBaseURI, aIdxMap, void 0, "delete");
 	};
 	/**
 	 * <odoc>
@@ -4676,7 +4676,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.deleteStream = function(aBaseURI, aIdxMap) {
-		return this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true);
+		return this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true, "delete");
 	};
 	/**
 	 * <odoc>
@@ -4691,7 +4691,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.deleteStream2File = function(aFilePath, aBaseURI, aIdxMap) {
-		ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true));
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true, "delete"));
 	};
 	/**
 	 * <odoc>
@@ -4705,7 +4705,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.patch = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "jsonPatch", aBaseURI, aDataRowMap, aIdxMap);
+		return this.__f2(ow.obj.rest, "jsonPatch", aBaseURI, aDataRowMap, aIdxMap, void 0, "patch");
 	};
 	/**
 	 * <odoc>
@@ -4719,7 +4719,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.patchStream = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true);
+		return this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true, "patch");
 	};
 	/**
 	 * <odoc>
@@ -4734,7 +4734,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.patchStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
-		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true));
+		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true, "patch"));
 	};
 	/**
 	 * <odoc>
