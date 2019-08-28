@@ -3672,7 +3672,7 @@ function traverse(aObject, aFunction, aParent) {
  * <odoc>
  * <key>searchKeys(aObject, aSearchKey, useCase, actFunc) : Map</key>
  * Traverses aObject looking for key matches, ignoring case if useCase is true, of the regular expression aSearchKey.
- * Each element founf is added to the returned Map. The element key will represent the path from aObject to it. Tip: The actFunc 
+ * Each element found is added to the returned Map. The element key will represent the path from aObject to it. Tip: The actFunc 
  * can use ow.obj.setPath to replace a value: "(key, value, path) => { ow.obj.setPath(aObject, path + '.' + key, replaceValue); }"
  * </odoc>
  */
