@@ -18,6 +18,11 @@
         ow.test.assert(ow.format.round(123.456, 2), "123.46", "Problem with round");    
     };
 
+    exports.testActualTime = function() {
+        ow.test.assert(isDate(ow.format.getActualTime()), true, "Problem with default actual time.");
+        ow.test.assert(isDate(ow.format.getActualTime(true)), true, "Problem with alternative actual time.");
+    };
+
     exports.testTimeAgo = function() {
         ow.test.assert(ow.format.timeago(new Date()), "Just now", "Problem with time ago");
         ow.test.assert(ow.format.timeago(String(new Date())), "Just now", "Problem with time ago (with string param)");

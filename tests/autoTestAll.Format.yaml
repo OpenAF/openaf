@@ -82,6 +82,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testCron;  
 
+   - name: Format::Actual Time
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testActualTime;
+
    - name: Format::Conversions
      from: Format::Init
      to  : oJob Test

@@ -701,25 +701,32 @@ function __view(aCmd, fromCommand) {
 		} else {
 			__outputConsoleComments("View is not active.");
 		}
+		return true;
 	} else {
 		var __res;
-		if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
-		
-		if (isObject(__res) && Object.keys(__res).length > 0) {
-			var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
-			if (pauseCommand) {
-				var __lines = (prefix + printMap(__res, void 0, void 0, colorCommand)).split(/\n/);
-				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
+		try {
+			if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
+			
+			if (isObject(__res) && Object.keys(__res).length > 0) {
+				var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
+				if (pauseCommand) {
+					var __lines = (prefix + printMap(__res, void 0, void 0, colorCommand)).split(/\n/);
+					while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
+				} else {
+					__outputConsole(prefix + printMap(__res, void 0, void 0, colorCommand));
+				}
+				return true;
 			} else {
-				__outputConsole(prefix + printMap(__res, void 0, void 0, colorCommand));
+				//__outputConsoleError("Not a map/array object or empty array/object.");
+				__showResultProcessCmdLine(__res, aCmd);
+				return true;
 			}
-			return true;
-		} else {
-			//__outputConsoleError("Not a map/array object or empty array/object.");
+		} catch(e) {
 			__showResultProcessCmdLine(__res, aCmd);
 			return true;
 		}
-		return false;
+
+		//return false;
 	}
 }
 
