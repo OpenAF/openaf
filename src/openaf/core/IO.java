@@ -739,4 +739,17 @@ public class IO extends ScriptableObject {
 	public void cp(String orig, String dest) throws IOException {
 		Files.copy((new File(orig)).toPath(), (new File(dest)).toPath(), new CopyOption[] { StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES });
 	}
+
+	/**
+	 * <odoc>
+	 * <key>io.createTempFile(aPrefix, aSuffix) : String</key>
+	 * Creates a temporary with the provided aPrefix and aSuffix that will be deleted upon execution exit. The absolute path for it is returned.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String createTempFile(String prefix, String suffix) throws IOException {
+		File f = File.createTempFile(prefix, suffix);
+		f.deleteOnExit();
+		return f.getAbsolutePath();
+	}
 }
