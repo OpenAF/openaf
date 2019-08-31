@@ -392,7 +392,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorM
  * terminal capabilities.
  * </odoc>
  */
-function printMap(aValue, aWidth, aTheme, useAnsi) {
+function printMap(aValueR, aWidth, aTheme, useAnsi) {
 	__initializeCon();
 	var matrix = [], matrixrule = [], maxX = 0,	maxY = 0, cM = [], al = [];
 
@@ -440,7 +440,7 @@ function printMap(aValue, aWidth, aTheme, useAnsi) {
 					}
 				}
 
-				if (Object.keys(aValue).length == 0) {
+				if (isObject(aValue) && Object.keys(aValue).length == 0) {
 					if (isUnDef(matrix[x])) matrix[x] = [];
 					if (isUnDef(al[x])) al[x] = [];
 
@@ -513,7 +513,8 @@ function printMap(aValue, aWidth, aTheme, useAnsi) {
 		return 0;
 	};
 
-	_r(aValue);
+	_r(aValueR);
+
 	maxX = matrix.length;
 	for (var x in matrix) {
 		if (maxY < matrix[x].length) maxY = matrix[x].length;

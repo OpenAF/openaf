@@ -459,20 +459,30 @@ function __watch(aLineOfCommands) {
 
 			plugin("Threads");
 			var t = new Threads();
+			//var oldcolorCommand = colorCommand;
+			//colorCommand = false;
 			t.addThread(function() {
-				var out = "";
-				try {
-					out = __processCmdLine(watchcmd, true);
-				} catch (e) {
-					out = e.message;
+				if (viewCommand) {
+					try {
+					__view(watchcmd, false, true);
+					__outputConsoleCommentsEnd("Press 'q' to quit. (refreshed at " + new Date() + ")");
+					} catch(e) { sprintErr(e); }
+				} else {
+					var out = "";
+					try {
+						out = __processCmdLine(watchcmd, true);
+					} catch (e) {
+						out = e.message;
+					}
+	
+					if (isDef(out))
+						if (beautifyCommand) out = String(stringify(out)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
+	
+					__clear();
+					__outputConsole(out);
+					__outputConsoleCommentsEnd("Press 'q' to quit. (refreshed at " + new Date() + ")");
 				}
-
-				if (isDef(out))
-					if (beautifyCommand) out = String(stringify(out)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
-
-				__clear();
-				__outputConsole(out);
-				__outputConsoleCommentsEnd("Press 'q' to quit. (refreshed at " + new Date() + ")");
+				return 1;
 			});
 
 			try {
@@ -490,6 +500,7 @@ function __watch(aLineOfCommands) {
 				printErr(e.message);
 				t.stop(true);
 			}
+			//colorCommand = oldcolorCommand;
 		} else {
 			watchLine = aLineOfCommands;
 			watchCommand = true;
@@ -692,7 +703,7 @@ function __table(aCmd) {
 	return false;
 }
 
-function __view(aCmd, fromCommand) {
+function __view(aCmd, fromCommand, shouldClear) {
 	if (aCmd.match(/^off$|^0$/i) && fromCommand) { viewCommand = false; return; }
 	if (aCmd.match(/^on$|^1$/i) && fromCommand) { viewCommand = true; return; }
 	if (aCmd == "" && fromCommand) {
@@ -706,22 +717,24 @@ function __view(aCmd, fromCommand) {
 		var __res;
 		try {
 			if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
-			
-			if (isObject(__res) && Object.keys(__res).length > 0) {
-				var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
-				if (pauseCommand) {
-					var __lines = (prefix + printMap(__res, void 0, void 0, colorCommand)).split(/\n/);
-					while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
-				} else {
-					__outputConsole(prefix + printMap(__res, void 0, void 0, colorCommand));
-				}
-				return true;
-			} else {
-				//__outputConsoleError("Not a map/array object or empty array/object.");
-				__showResultProcessCmdLine(__res, aCmd);
-				return true;
-			}
 		} catch(e) {
+			if (shouldClear) __clear();
+			__showResultProcessCmdLine(__processCmdLine(aCmd, true), aCmd);
+			return true;
+		}	
+			
+		if (shouldClear) __clear();
+		if (isObject(__res) && Object.keys(__res).length > 0) {
+			var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
+			if (pauseCommand) {
+				var __lines = (prefix + printMap(__res, void 0, void 0, colorCommand)).split(/\n/);
+				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
+			} else {
+				__outputConsole(prefix + printMap(__res, void 0, void 0, colorCommand));
+			}
+			return true;
+		} else {
+			//__outputConsoleError("Not a map/array object or empty array/object.");
 			__showResultProcessCmdLine(__res, aCmd);
 			return true;
 		}
