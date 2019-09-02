@@ -200,7 +200,13 @@ public class SNMP extends ScriptableObject {
 	}
 	
 	public ResponseEvent getOIDs(OID oids[]) throws IOException {
-		PDU pdu = new PDU();
+		PDU pdu;
+		
+		if (this.version == 3)
+			pdu = new ScopedPDU();
+		else
+			pdu = new PDU();
+			
 		for(OID oid : oids) {
 			pdu.add(new VariableBinding(oid));
 		}
