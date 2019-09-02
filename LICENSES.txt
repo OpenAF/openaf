@@ -740,7 +740,7 @@ THE SOFTWARE.
 
 -----------------------
 Third-party name      : jQuery minified
-Version               : 3.3.1
+Version               : 3.4.1
 Changed from original : No
 Location in openaf.jar: js/jquery.js
 License               : 
@@ -1840,9 +1840,9 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -----------------------
 Third-party name      : JAnsi
-Version               : 1.17.1
+Version               : 1.18
 Changed from original : No
-Location in openaf.jar: lib/jansi-1.17.1.jar
+Location in openaf.jar: lib/jansi-1.18.jar
 License               : 
 
 

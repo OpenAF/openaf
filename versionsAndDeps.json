@@ -156,8 +156,8 @@
 		},
 		{
 			"description": "JAnsi",
-			"path": ["lib/jansi-1.17.1.jar"],
-			"version": "1.17.1",
+			"path": ["lib/jansi-1.18.jar"],
+			"version": "1.18",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/fusesource/jansi/master/license.txt",
