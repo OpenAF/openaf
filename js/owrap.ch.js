@@ -13,6 +13,7 @@ OpenWrap.ch.prototype.jobs = {};
 OpenWrap.ch.prototype.vers = {}; 
 OpenWrap.ch.prototype.channels = {};
 OpenWrap.ch.prototype.type = {};
+OpenWrap.ch.prototype.lock = {};
 
 OpenWrap.ch.prototype.__types = {
 	// Obj BIG channel implementation
@@ -1728,6 +1729,7 @@ OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 		this.jobs[aName] = {};
 		this.channels[aName] = type;
 		this.vers[aName] = nowUTC();
+		this.lock[aName] = new java.util.concurrent.locks.ReentrantLock();
 	}
 	return this;
 };
@@ -1963,23 +1965,30 @@ OpenWrap.ch.prototype.getAll = function(aName, x) {
 	var res = [], error;
 	var parent = this;
 	
-	if (isDef(this.__types[this.channels[aName]].getAll)) {
-		sync(function() {
+	if (isDef(this.__types[this.channels[aName]].getAll)) { 
+		this.lock[aName].lock();
+		//sync(function() {
 			try {
 				res = res.concat(parent.__types[parent.channels[aName]].getAll(aName, x));
 			} catch(e) {
 				error = e;
+			} finally {
+				this.lock[aName].unlock();
 			}
-		}, x);
+		//}, x);
 	} else {
 		this.forEach(aName, function(aKey, aValue) {
-			sync(function() { 
+ 
+			this.lock[aName].lock();
+			//sync(function() { 
 				try {
 					res.push(aValue); 
 				} catch(e) {
 					error = e;
+				} finally {
+					this.lock[aName].unlock();
 				}
-			}, res);
+			//}, res);
 		}, x);
 	}
 	if (isDef(error)) throw error;
@@ -2038,16 +2047,18 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 	if (typeof aValue != "object") av = { "key": aKey, "value": aValue };
  
 	var parent = this;
-	var res, error;
-
-	sync(function() {
+	var res, error; 
+	this.lock[aName].lock();
+	//sync(function() {
 		try {
 			res = parent.__types[parent.channels[aName]].set(aName, ak, av, aTimestamp, x); 
 			parent.vers[aName] = nowUTC();
 		} catch(e) {
 			error = e;
+		} finally {
+			this.lock[aName].unlock();
 		}
-	}, this.channels[aName]);
+	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
@@ -2114,15 +2125,18 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 
 	var parent = this;
 	var res, error;
-	
-	sync(function() {
+ 
+	this.lock[aName].lock();
+	//sync(function() {
 		try {
 			res = parent.__types[parent.channels[aName]].setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
 			parent.vers[aName] = nowUTC();
 		} catch(e) {
 			error = e;
+		} finally {
+			this.lock[aName].unlock();
 		}
-	}, this.channels[aName]);
+	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
@@ -2175,16 +2189,18 @@ OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData
 	var parent = this;
 	var res, error;
 	
-	if (isUnDef(parent.__types[parent.channels[aName]].unsetAll)) return void 0;
-
-	sync(function() {
+	if (isUnDef(parent.__types[parent.channels[aName]].unsetAll)) return void 0; 
+	this.lock[aName].lock();
+	//sync(function() {
 		try {
 			res = parent.__types[parent.channels[aName]].unsetAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
 			parent.vers[aName] = nowUTC();
 		} catch(e) {
 			error = e;
+		} finally {
+			this.lock[aName].unlock();
 		}
-	}, this.channels[aName]);
+	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
@@ -2230,14 +2246,17 @@ OpenWrap.ch.prototype.get = function(aName, aKey, x) {
 	if (typeof aKey != "object") aKey = { "key": aKey };
 
 	var res, error;
-	var parent = this;
-	sync(function() {
+	var parent = this 
+	this.lock[aName].lock();
+	//sync(function() {
 		try {
 			res = parent.__types[parent.channels[aName]].get(aName, aKey, x);
 		} catch(e) {
 			error = e;
+		} finally {
+			this.lock[aName].unlock();
 		}
-	}, this.channels[aName]);
+	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 
 	if (isDef(res) && Object.keys(res) == [ "value" ])
@@ -2278,15 +2297,18 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 	
 	var res, out, error;
-	var parent = this;
-	sync(function() {
+	var parent = this 
+	this.lock[aName].lock();
+	//sync(function() {
 		try {
 			res = parent.__types[parent.channels[aName]].getSet(aName, aMatch, aKey, aValue, aTimestamp, x); 
 			parent.vers[aName] = nowUTC();
 		} catch(e) {
 			error = e;
+		} finally {
+			this.lock[aName].unlock();
 		}
-	}, this.channels[aName]);
+	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 	
 	if (Object.keys(this.subscribers[aName]).length > 0) {
@@ -2361,15 +2383,18 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	var ak = aKey;
 	if (typeof aKey != "object") ak = { "key": aKey };
 
-	var parent = this, res, error;
-	sync(function() {	
+	var parent = this, res, error; 
+	this.lock[aName].lock();
+	//sync(function() {	
 		try {
 			res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
 			parent.vers[aName] = nowUTC();
 		} catch(e) {
 			error = e;
+		} finally {
+			this.lock[aName].unlock();
 		}
-	}, this.channels[aName]);
+	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 
 	if (Object.keys(this.subscribers[aName]).length > 0) {
