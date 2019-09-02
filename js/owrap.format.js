@@ -1840,6 +1840,37 @@ OpenWrap.format.prototype.cron = {
 		if (isDef(cr.schedules[0].d)) isMatch = isMatch && (cr.schedules[0].d.indexOf(Number(ct[i])+1) > -1);
 
 		return isMatch;
-	}
+	},
 
+	/**
+	 * <odoc>
+	 * <key>ow.format.cron.howManyAgo(aCron, lastUpdate, aLimit) : Map</key>
+	 * Given aCron expression and a date/unix time of a lastUpdate will return a map with a boolean isDelayed, number of 
+	 * ms delayedAtLeast, if delayed howManyAgo executions missed and the corresponding missed executions dates in missedTimes.
+	 * When calculating the missed times there is aLimit (defaults to 100).
+	 * </odoc>
+	 */
+	howManyAgo: function(aCron, lastUpdate, aLimit) {
+		aLimit = _$(aLimit).isNumber().default(100);
+		if (isDate(lastUpdate)) lastUpdate.getTime();
+	
+		var isDelayed = true;
+	
+		var c = 0, ar = [];
+		do {
+			c++;
+			ar = ow.format.cron.prevScheduled(aCron, c);
+			if (!isArray(ar)) ar = [ar];
+		} while(ar.length > 0 && ar[ar.length - 1].getTime() > lastUpdate && c < aLimit);
+	
+		if (ar[0].getTime() <= lastUpdate) isDelayed = false;
+	
+		return {
+			isDelayed: isDelayed,
+			howManyAgo: (isDelayed) ? c : 0,
+			missedTimes: (isDelayed) ? ar : [],
+			limit: aLimit,
+			delayedAtLeast: (isDelayed) ? lastUpdate - ar[ar.length - 1].getTime() : 0
+		};
+	}
 }

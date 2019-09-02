@@ -89,6 +89,11 @@
         ow.test.assert(ow.format.string.lsHash(s1, s1) <= 200, true, "Problem with identical sentences on LSH hashing.");
     };
     
+    exports.testCronHowManyAgo = function() {
+        ow.test.assert(ow.format.cron.howManyAgo("*/5 * * * *", nowUTC() - 1000*60*60).isDelayed, true, "Problem with delayed date.");
+        ow.test.assert(ow.format.cron.howManyAgo("*/5 * * * *", nowUTC() + 1000*60*60).isDelayed, false, "Problem with non delayed date.");
+    };
+
     exports.testUnixDateConversions = function() {
         var d = new Date();
         ow.test.assert(ow.format.fromUnixDate(ow.format.toUnixDate(d)).getTime(), Math.round(d.getTime()/1000) * 1000, "Problem with from/to unix date conversion.");

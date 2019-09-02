@@ -115,7 +115,14 @@ jobs:
      to  : oJob Test
      deps: 
        - Format::Load Format
-     exec: args.func = args.tests.testLDAPDateConversions;      
+     exec: args.func = args.tests.testLDAPDateConversions;
+
+   - name: Format::Cron How Many Ago
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testCronHowManyAgo;      
 
 todo:
    # Format tests
@@ -136,3 +143,4 @@ todo:
    - Format::Cron
    - Format::Conversions
    - Format::LSH
+   - Format::Cron How Many Ago
