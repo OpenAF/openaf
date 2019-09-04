@@ -472,6 +472,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isUnDef(this.__t))  this.__t = {};
 			if (isUnDef(this.__lcks))  this.__lcks = {};
 			if (isUnDef(this.__s))  this.__s = {};
+			if (isUnDef(this.__efn)) this.__efn = {};
 			if (isUnDef(this.__f)) { this.__f = {}; addShut = true; }
 			
 			this.__bn[aName] = options.bufferByNumber;
