@@ -262,6 +262,7 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 		var outputres = "";
 		var res;
 		var __start;
+		__timeResult = void 0;
 		
 		if (timeCommand) __start = now();
 		if (!executeSQL) {
@@ -732,6 +733,7 @@ function __view(aCmd, fromCommand, shouldClear) {
 			} else {
 				__outputConsole(prefix + printMap(__res, void 0, void 0, colorCommand));
 			}
+			if (isDef(__timeResult) && timeCommand) __time(__timeResult);
 			return true;
 		} else {
 			//__outputConsoleError("Not a map/array object or empty array/object.");
@@ -902,7 +904,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 		}	
 	} 
 	
-	if (timeCommand && !__cmd.match(/^time(?: +|$)/)) __time(__timeResult);
+	if (isDef(__timeResult) && timeCommand && !__cmd.match(/^time(?: +|$)/)) __time(__timeResult);
 }
 
 function __checkVersion() {
