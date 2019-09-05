@@ -410,7 +410,14 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 
 			var x = igX, y = igY;
 			if (isMap(aValue)) {
-				var origX = x;
+				var origX = x, aValue2 = {};
+				for (var key in aValue) {
+					if (isFunction(aValue[key])) 
+						delete aValue[key];
+					else
+						aValue2[key] = aValue[key];
+				}
+				aValue = aValue2;
 				for (var key in aValue) {
 					var value = aValue[key];
 
