@@ -916,19 +916,19 @@ OpenWrap.obj.prototype.pool = {
 	},
 	
 	/**
-	 * <odoc><key>ow.obj.pool.AF(anURL, aTimeout, aConnectionTimeout)</key>Creates a pool setting with ow.obj.pool.setFactoryAF.</odoc>
+	 * <odoc><key>ow.obj.pool.AF(url, timeout, conTimeout)</key>Creates a pool setting with ow.obj.pool.setFactoryAF.</odoc>
 	 */
 	AF: function(anURL, aTimeout, aConnectionTimeout) { var p = this.create(); p.setFactoryAF(anURL, aTimeout, aConnectionTimeout); return p; },
 	/**
-	 * <odoc><key>ow.obj.pool.RAIDDB(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver)</key>Creates a pool setting with ow.obj.pool.setFactoryRAIDDB.</odoc>
+	 * <odoc><key>ow.obj.pool.RAIDDB(aAF, con, keepAlive, url, pass, useCIR, driver)</key>Creates a pool setting with ow.obj.pool.setFactoryRAIDDB.</odoc>
 	 */
 	RAIDDB: function(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver) { var p = this.create(); p.setFactoryRAIDDB(anAF, aConn, aKeepAlive, aURL, aPassword, useCIR, aDriver); return p; },
 	/**
-	 * <odoc><key>ow.obj.pool.DB(aDriver, aURL, aLogin, aPassword, aKeepAliveFunction, aTimeout)</key>Creates a pool setting with ow.obj.pool.setFactoryDB.</odoc>
+	 * <odoc><key>ow.obj.pool.DB(driver, url, login, pass, keepAliveFn, timeout)</key>Creates a pool setting with ow.obj.pool.setFactoryDB.</odoc>
 	 */
 	DB: function(aDriver, aURL, aLogin, aPassword, aKeepAliveFunction, aTimeout) { var p = this.create(); p.setFactoryDB(aDriver, aURL, aLogin, aPassword, aKeepAliveFunction, aTimeout); return p; },
 	/**
-	 * <odoc><key>ow.obj.pool.SSH(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression)</key>Creates a pool setting with ow.obj.pool.setFactorySSH.</odoc>
+	 * <odoc><key>ow.obj.pool.SSH(host, port, login, pass, idkey, withCompression)</key>Creates a pool setting with ow.obj.pool.setFactorySSH.</odoc>
 	 */
 	SSH: function(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression) { var p = this.create(); p.setFactorySSH(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression); return p; }
 }
