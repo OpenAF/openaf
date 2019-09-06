@@ -1603,6 +1603,8 @@ OpenWrap.ch.prototype.__types = {
 			_$(options.url).isString().$_("A string etcd daemon url is mandatory.");
 			options.folder = _$(options.folder).isString().default("");
 			options.folder = (options.folder != "" ? options.folder.replace(/^\/*/, "/").replace(/\/+$/, "").replace(/\/+/g, "/") : "");
+			options.throwExceptions = _$(options.throwExceptions).default(true);
+			options.default = _$(options.default).default(void 0);
 
 			this.__channels[aName] = options;
 		},
@@ -1610,7 +1612,7 @@ OpenWrap.ch.prototype.__types = {
 			delete this.__channels[aName];
 		},
 		size         : function(aName) {
-			var res = $rest({ preAction: this.__channels[aName].preAction }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			var res = $rest({ preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
 			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
 				return $from(res.node.nodes).notEquals("dir", true).count();
 			} else {
@@ -1618,7 +1620,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		forEach      : function(aName, aFunction) {
-			var res = $rest({ preAction: this.__channels[aName].preAction }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			var res = $rest({ preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
 			var parent = this;
 			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
 				res.node.nodes.forEach((a) => {
@@ -1632,7 +1634,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getAll      : function(aName, full) {
-			var res = $rest({ preAction: this.__channels[aName].preAction }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			var res = $rest({ preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
 			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
 				return $from(res.node.nodes).notEquals("dir", true).select((r) => { return jsonParse(r.value); });
 			} else {
@@ -1640,7 +1642,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getKeys      : function(aName, full) {
-			var res = $rest({ preAction: this.__channels[aName].preAction }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			var res = $rest({ preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
 			var parent = this;
 			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
 				return $from(res.node.nodes).notEquals("dir", true).select((r) => { return parent.__unescape(r.key.replace(new RegExp("^/*" + parent.__channels[aName].folder + "/"), "")); });
@@ -1649,7 +1651,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		getSortedKeys: function(aName, full) {
-			var res = $rest({ preAction: this.__channels[aName].preAction }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
+			var res = $rest({ preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder);
 			var parent = this;
 			if (isDef(res) && isUnDef(res.error) && isDef(res.node) && isDef(res.node.nodes)) {
 				return $from(res.node.nodes).notEquals("dir", true).sort("modifiedIndex").select((r) => { return parent.__unescape(r.key.replace(new RegExp("^/*" + parent.__channels[aName].folder + "/"), "")); });
@@ -1667,7 +1669,7 @@ OpenWrap.ch.prototype.__types = {
 			throw "Not implemented yet";
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
-			var res = $rest({ urlEncode:true, preAction: this.__channels[aName].preAction }).put(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK), { value: stringify(aV, void 0, "") });
+			var res = $rest({ urlEncode:true, preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).put(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK), { value: stringify(aV, void 0, "") });
 			if (isDef(res) && isDef(res.node) && isDef(res.node.value)) {
 				return jsonParse(res.node.value);
 			} else {
@@ -1687,7 +1689,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},		
 		get          : function(aName, aK) {
-			var res = $rest({ preAction: this.__channels[aName].preAction }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK));
+			var res = $rest({ preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).get(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK));
 			if (isDef(res) && isDef(res.node)) 
 				return jsonParse(res.node.value);
 			else
@@ -1704,7 +1706,7 @@ OpenWrap.ch.prototype.__types = {
 			return elem;
 		},
 		unset        : function(aName, aK, aTimestamp) {
-			$rest({ preAction: this.__channels[aName].preAction }).delete(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK));
+			$rest({ preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).delete(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK));
 		}
 	}
 };
