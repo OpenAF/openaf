@@ -6475,7 +6475,19 @@ const $ssh = function(aMap) {
     __ssh.prototype.rename = function(aSource, aTarget) {
         this.__getsftp().rename(aSource, aTarget);
         return this;
-    };
+	};
+	
+		/**
+	 * <odoc>
+	 * <key>$ssh.listFiles(aRemotePath) : Array</key>
+	 * Returns an array of maps with the listing of aRemotePath provided.
+	 * </odoc>
+	 */
+	__ssh.prototype.listFiles = function(aPath) {
+		var lst = this.__getsftp().listFiles(aPath);
+		this.close();
+		return (isDef(lst) ? lst.files : []);
+	};
 
 	/**
 	 * <odoc>
