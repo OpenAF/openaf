@@ -1023,7 +1023,55 @@ OpenWrap.format.prototype.testPort = function(aAddress, aPort, aCustomTimeout) {
     } catch(e) {
         return false;
     }
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.testPortLatency(aHost, aPort, aCustomTimeout) : Number</key>
+ * Test establishing a TCP socket connection with aHost on aPort. Optionally aCustomTimeout can be provided.
+ * The test will be timed and the time in ms will be returned. If returned a time < 0 then an error occurred or the 
+ * host:port couldn't be reached.
+ * </odoc>
+ */
+OpenWrap.format.prototype.testPortLatency = function(aHost, aPort, aCustomTimeout) {
+	var sock  = new java.net.Socket();
+	var iaddr = new java.net.InetSocketAddress(aHost, aPort);
+
+	var ini = now(), latency = -1;
+	try {
+		sock.connect(iaddr, aCustomTimeout);
+		latency = now() - ini;
+	} catch(e) {
+		latency = -1;
+	} finally {
+		sock.close();
+	}
+
+	return latency;
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.testURLLatency(aURL, aCustomTimeout) : Number</key>
+ * Test sending a HTTP(s) GET to aURL. Optionally aCustomTimeout can be provided. The test will be timed and the time in ms
+ * will be returned. If returned a time < 0 then an error occurred or the host:port couldn't be reached.
+ * </odoc>
+ */
+OpenWrap.format.prototype.testURLLatency = function(aURL, aCustomTimeout) {
+	ow.loadObj();
+
+	var hc = new ow.obj.http();
+	hc.setThrowExceptions(true);
+	var ini = now(), latency = -1;
+	try {
+		hc.get(aURL, void 0, void 0, false, aCustomTimeout);
+		latency = now() - ini;
+	} catch(e) {
+		latency = -1;
+	}
+
+	return latency;
+};
 
 /**
  * <odoc>
