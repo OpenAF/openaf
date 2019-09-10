@@ -1350,14 +1350,28 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			}
 			break;
 		case "periodic":
-			var f = function() {
+			var f = function(__uuid, isRetry) {
 				uuid = parent.__addLog("start", aJob.name, void 0, args, void 0, aId);
+				if (isDef(aJob.typeArgs.cronCheck)) parent.__touchCronCheck(aJob.typeArgs.cronCheck.ch, aJob.name, "start");
 				args.execid = uuid;
 				try {
 					_run(aJob.exec, args, aJob, aId);
 					parent.__addLog("success", aJob.name, uuid, args, void 0, aId);
+					if (isDef(aJob.typeArgs.cronCheck)) parent.__touchCronCheck(aJob.typeArgs.cronCheck.ch, aJob.name, "success");
 				} catch(e) {
 					parent.__addLog("error", aJob.name, uuid, args, e, aId);
+					if (isDef(aJob.typeArgs.cronCheck)) {
+						var rets = parent.__touchCronCheck(aJob.typeArgs.cronCheck.ch, aJob.name, "error", isRetry);
+						if (isDef(aJob.typeArgs.cronCheck.retryWait)) {
+							if (rets < aJob.typeArgs.cronCheck.retries) {
+								sleep(aJob.typeArgs.cronCheck.retryWait, true);
+								logWarn("Retrying job in error: '" + aJob.name + "'...");
+								f(__uuid, true);
+							} else {
+								logWarn("Achieved the maximum number of retries for job '" + aJob.name + "'.");
+							}
+						}
+					}
 				}
 
 				return true;
@@ -1386,6 +1400,30 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 						ow.loadServer(); 
 						parent.__sch = new ow.server.scheduler();
 					}*/
+
+					aJob.typeArgs.cronCheck = this.__processTypeArg(aJob.typeArgs.cronCheck);
+					if (isDef(aJob.typeArgs.cronCheck) && isMap(aJob.typeArgs.cronCheck) && (isDef(aJob.typeArgs.cronCheck.active) && aJob.typeArgs.cronCheck.active)) {
+						aJob.typeArgs.cronCheck.ch = _$(aJob.typeArgs.cronCheck.ch).isString().default("oJob::cron");
+						aJob.typeArgs.cronCheck.retries = _$(aJob.typeArgs.cronCheck.retries).isNumber().default(5);
+						aJob.typeArgs.cronCheck.cron = _$(aJob.typeArgs.cronCheck.cron).isString().default(aJob.typeArgs.cron);
+						$ch(aJob.typeArgs.cronCheck.ch).create(); // to change
+						var item = $ch(aJob.typeArgs.cronCheck.ch).get({ name: aJob.name });
+						if (isUnDef(item)) {
+							$ch(aJob.typeArgs.cronCheck.ch).set({ name: aJob.name }, {
+								name: aJob.name,
+								last: 0,
+								status: "success",
+								retries: 0
+							});
+							item = $ch(aJob.typeArgs.cronCheck.ch).get({ name: aJob.name });
+						}
+
+						var res = ow.format.cron.howManyAgo(aJob.typeArgs.cron, item.last);
+						if (res.isDelayed && (item.status != "start" || !aJob.typeArgs.waitForFinish) || item.status == "error") {
+							f(void 0, false);
+						}
+					}
+
 					if (isUnDef(parent.__schList)) {
 						parent.__schList = {};
 					}
@@ -1407,6 +1445,32 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 
 	return true;
 };
+
+OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRetry) {
+	var item = $ch(aCh).get({ name: aJobName });
+	if (isDef(item)) {
+		switch(aStatus) {
+		case "success"     : 
+			item.last = nowUTC();
+			item.retries = 0;
+			item.status = "success";
+			break;
+		case "error"  : 
+			item.last = nowUTC();
+			item.status = "error";
+			if (!isRetry) item.retries = 1;
+			break;
+		case "start": 
+			if (item.status == "error") {
+				item.retries++;
+			}
+			item.status = "start";
+		}
+		$ch(aCh).set({ name: aJobName }, item);
+		return item.retries;
+	}
+	return -1;
+}
 
 /**
  * <odoc>
@@ -1489,7 +1553,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
 /**
  * <odoc>
- * <key>ow.oJob.addTodo(aOJobID, aJobsCh, aTodoCh, aJobName, aJogArgs, aJobType, aJobTypeArgs)</key>
+ * <key>ow.oJob.addTodo(aOJobID, aJobsCh, aTodoCh, aJobName, aJobArgs, aJobType, aJobTypeArgs)</key>
  * Provided aOJobID (a oJob instance), aJobsCh (a jobs channel), aTodoCh (a todo channel), aJobArgs (job arguments).
  * Optionally you can force the aJobType and aJobTypeArgs.
  * </odoc>

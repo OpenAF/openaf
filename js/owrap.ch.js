@@ -1421,6 +1421,16 @@ OpenWrap.ch.prototype.__types = {
 
 			return res;
 		},
+		getAll      : function(aName, full) {
+			var res = [];
+			var map = this.__s[aName].openMap(this.__m[aName](full));
+
+			for(var i = 0; i < this.size(aName); i++) {
+				res.push(jsonParse(map.get(map.getKey(i))));
+			}
+
+			return res;
+		},
 		getSortedKeys: function(aName, full) {
 			return this.getKeys(aName, full);
 		},
@@ -1463,7 +1473,8 @@ OpenWrap.ch.prototype.__types = {
 		get          : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
-			return jsonParse(map.get(stringify(aKey, void 0, this.__o[aName].stry)));
+			var r = map.get(stringify(aKey, void 0, this.__o[aName].stry));
+			if (r == null || isUnDef(r)) return void 0; else return jsonParse(r);
 		},
 		pop          : function(aName) {
 			var map = this.__s[aName].openMap(this.__m[aName]());
