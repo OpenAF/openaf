@@ -258,8 +258,8 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 		return;
 	}
 
+	var outputres = "";
 	try {
-		var outputres = "";
 		var res;
 		var __start;
 		__timeResult = void 0;
@@ -720,7 +720,7 @@ function __view(aCmd, fromCommand, shouldClear) {
 			if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
 		} catch(e) {
 			if (shouldClear) __clear();
-			__showResultProcessCmdLine(__processCmdLine(aCmd, true), aCmd);
+			__showResultProcessCmdLine(__processCmdLine(aCmd), aCmd);
 			return true;
 		}	
 			
@@ -884,7 +884,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 		if (pauseCommand) {
 			var __pres = 0;
 			var lines = [];
-			if (beautifyCommand) {
+			if (beautifyCommand && !__cmd.trim().startsWith("sql") && !__cmd.trim().startsWith("esql") && !__cmd.trim().startsWith("dsql")) {
 				if (colorCommand && isObject(__res)) 
 					__lines = String(colorify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 				else
@@ -894,7 +894,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			}
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
-			if (beautifyCommand) {
+			if (beautifyCommand && !__cmd.trim().startsWith("sql") && !__cmd.trim().startsWith("esql") && !__cmd.trim().startsWith("dsql")) {
 				if (colorCommand && isObject(__res))
 					__outputConsole(String(colorify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"), true);
 				else

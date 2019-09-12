@@ -1029,7 +1029,7 @@ OpenWrap.format.prototype.testPort = function(aAddress, aPort, aCustomTimeout) {
  * <odoc>
  * <key>ow.format.testPortLatency(aHost, aPort, aCustomTimeout) : Number</key>
  * Test establishing a TCP socket connection with aHost on aPort. Optionally aCustomTimeout can be provided.
- * The test will be timed and the time in ms will be returned. If returned a time < 0 then an error occurred or the 
+ * The test will be timed and the time in ms will be returned. If returned a time &lt; 0 then an error occurred or the 
  * host:port couldn't be reached.
  * </odoc>
  */
