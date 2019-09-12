@@ -1054,7 +1054,7 @@ OpenWrap.format.prototype.testPortLatency = function(aHost, aPort, aCustomTimeou
  * <odoc>
  * <key>ow.format.testURLLatency(aURL, aCustomTimeout) : Number</key>
  * Test sending a HTTP(s) GET to aURL. Optionally aCustomTimeout can be provided. The test will be timed and the time in ms
- * will be returned. If returned a time < 0 then an error occurred or the host:port couldn't be reached.
+ * will be returned. If returned a time &lt; 0 then an error occurred or the host:port couldn't be reached.
  * </odoc>
  */
 OpenWrap.format.prototype.testURLLatency = function(aURL, aCustomTimeout) {
