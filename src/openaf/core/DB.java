@@ -7,6 +7,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,6 +24,7 @@ import org.mozilla.javascript.Scriptable;
 
 import openaf.AFCmdBase;
 import openaf.JSEngine;
+import openaf.OAFdCL;
 import openaf.SimpleLog;
 
 /**
@@ -720,7 +722,10 @@ public class DB {
 	
 	protected void connect(String driver, String url, String login, String pass, String timeout) throws Exception {
 		try {
-			Class.forName(driver);
+			if (OAFdCL.oafdcl != null) 
+				Class.forName(driver, true, OAFdCL.oafdcl);
+			else 
+				Class.forName(driver);
 			this.url = url;
 			
 			Properties props = new Properties();
@@ -735,8 +740,16 @@ public class DB {
 				// ignore
 			};
 			
+			try {
+				con = DriverManager.getConnection(url, props);
+			} catch(SQLException e) {
+				if (e.getMessage().contains("No suitable driver found")) {
+					Driver pdriver = (Driver) Class.forName(driver, true, OAFdCL.oafdcl).getDeclaredConstructor().newInstance();
+					DriverManager.registerDriver(new openaf.DBProxy(pdriver));
+					con = DriverManager.getConnection(url, props);
+				}
+			}
 			
-			con = DriverManager.getConnection(url, props);
 			con.setAutoCommit(false);
 
 		} catch (ClassNotFoundException | SQLException e) {

@@ -10,10 +10,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 import java.io.File;
-import java.io.IOException;
 
 public class OAFdCL extends URLClassLoader {
-    protected static OAFdCL oafdcl = null;
+    public static OAFdCL oafdcl = null;
 
     public static OAFdCL getInstance(ClassLoader classLoader) {
         if (oafdcl == null) {
