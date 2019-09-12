@@ -258,7 +258,7 @@
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/malensek/jbsdiff/master/LICENSE.txt",
 			"deps": [
-				"lib/commons-compress-1.18.jar"
+				"lib/commons-compress-1.19.jar"
 			]
 		},
 		{
@@ -463,7 +463,7 @@
 				"lib/commons-io-2.6.jar",
 				"lib/commons-collections4-4.2.jar",
 				"lib/commons-logging-1.2.jar",
-				"lib/commons-codec-1.11.jar"
+				"lib/commons-codec-1.13.jar"
 			],
 			"deps": [
 				"lib/xmlbeans-3.0.1.jar",
@@ -487,7 +487,7 @@
 			"removable": false,
 			"hardDeps": [
 				"lib/commons-io-2.6.jar",
-				"lib/commons-compress-1.18.jar"
+				"lib/commons-compress-1.19.jar"
 			],
 			"deps": []
 		},
@@ -496,7 +496,7 @@
 			"removable": true,
 			"hardDeps": [
 				"lib/jbsdiff-1.0.jar",
-				"lib/commons-compress-1.18.jar"
+				"lib/commons-compress-1.19.jar"
 			]
 		}
 	]
