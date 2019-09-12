@@ -356,7 +356,7 @@
 			"removable": true,
 			"deps": [
 				"lib/org-eclipse-jgit-4.10.0.jar",
-				"lib/jsch-0.1.54.jar",
+				"lib/jsch-0.1.55.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -386,7 +386,7 @@
 			"name": "HTTPServer",
 			"removable": true,
 			"deps": [
-				"lib/nwu-0.3.1.jar"
+				"lib/nwu-0.3.2.jar"
 			]
 		},
 		{
@@ -411,7 +411,7 @@
 			]
 		},
 		{
-			"name": " SNMPServer",
+			"name": "SNMPServer",
 			"removable": true,
 			"deps": [
 				"lib/snmp4j-2.7.0.jar",
@@ -461,17 +461,17 @@
 			"removable": true,
 			"hardDeps": [
 				"lib/commons-io-2.6.jar",
-				"lib/commons-collections4-4.1.jar",
+				"lib/commons-collections4-4.2.jar",
 				"lib/commons-logging-1.2.jar",
 				"lib/commons-codec-1.11.jar"
 			],
 			"deps": [
-				"lib/xmlbeans-2.6.0.jar",
-				"lib/poi-3.17.jar",
-				"lib/poi-excelant-3.17.jar",
-				"lib/poi-ooxml-3.17.jar",
-				"lib/poi-ooxml-schemas-3.17.jar",
-				"lib/poi-scratchpad-3.17.jar"
+				"lib/xmlbeans-3.0.1.jar",
+				"lib/poi-4.0.0.jar",
+				"lib/poi-excelant-4.0.0.jar",
+				"lib/poi-ooxml-4.0.0.jar",
+				"lib/poi-ooxml-schemas-4.0.0.jar",
+				"lib/poi-scratchpad-4.0.0.jar"
 			]
 		},
 		{

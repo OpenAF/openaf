@@ -43,7 +43,7 @@ function getModulesToExclude() {
 
 	toExclude = _.uniq(toExclude);
 	for(var i in toExclude) {
-		if (toExclude[i].match(/^lib\//)) {
+		if (isDef(toExclude[i]) && toExclude[i].match(/^lib\//)) {
 			toExclude[i] = toExclude[i].replace(/^lib\//, "");
 		}
 	}

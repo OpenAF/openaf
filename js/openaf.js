@@ -6318,7 +6318,7 @@ const $sh = function(aString) {
 	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
-    __sh.prototype.exec = function() {
+    __sh.prototype.exec = function(aIdx) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
