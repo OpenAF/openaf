@@ -393,6 +393,8 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorM
  * </odoc>
  */
 function printMap(aValueR, aWidth, aTheme, useAnsi) {
+	if (!isMap(aValueR) && !isArray(aValueR)) throw "Not a map or array.";
+
 	__initializeCon();
 	var matrix = [], matrixrule = [], maxX = 0,	maxY = 0, cM = [], al = [];
 

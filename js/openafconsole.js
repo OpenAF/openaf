@@ -718,6 +718,7 @@ function __view(aCmd, fromCommand, shouldClear) {
 		var __res;
 		try {
 			if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
+			if (!isMap(__res) && !isArray(_res)) throw "not a map or array";
 		} catch(e) {
 			if (shouldClear) __clear();
 			__showResultProcessCmdLine(__processCmdLine(aCmd), aCmd);
