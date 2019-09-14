@@ -261,3 +261,230 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId,
     var aURI = this._translateArtifact(artifactId);
     return this.removeOldVersionsSpecific(artifactId, aFilenameTemplate, this.getLatestVersion(aURI), aOutputDir, aFunction);
 };
+
+OpenWrap.java.prototype.cipher = function() {};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.encrypt(aString, aPublicKey) : ArrayBytes</key>
+ * Given aPublicKey (from ow.java.cipher.readKey4File or genKeyPair) tries to RSA encrypt aString returning
+ * the encrypted ArrayBytes.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.encrypt = function(plainText, publicKey) {
+   _$(plainText).$_("Please provide a string to encrypt.");
+   _$(publicKey).$_("Please provide a public key.");
+
+   var cipher = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING");
+   cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, publicKey);
+   var cipherText = cipher.doFinal(af.fromString2Bytes(plainText));
+   return cipherText;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.encryptStream(outputStream, aPublicKey) : Stream</key>
+ * Given aPublicKey (from ow.java.cipher.readKey4File or genKeyPair) tries to RSA encrypt outputStream returning
+ * an encrypted stream.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.encryptStream = function(oStream, publicKey) {
+   _$(oStream).$_("Please provide an output stream to encrypt.");
+   _$(publicKey).$_("Please provide a public key.");
+   var cipher = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING");
+   cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, publicKey);
+   return new javax.crypto.CipherOutputStream(oStream, cipher);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.encrypt2Text(aString, aPublicKey) : String</key>
+ * Given aPublicKey (from ow.java.cipher.readKey4File or genKeyPair) tries to RSA encrypt aString to a base64 string
+ * returning the encrypted string.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.encrypt2Text = function(plainText, publicKey) {
+   _$(plainText).$_("Please provide a string to encrypt.");
+   _$(publicKey).$_("Please provide a public key.");
+   return af.fromBytes2String(af.toBase64Bytes(this.encrypt(plainText, publicKey)));
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.decrypt4Text(aString, privateKey) : String</key>
+ * Given aPrivateKey (from ow.java.cipher.readKey4File or genKeyPair) tries to RSA decrypt a base64 encrypted string
+ * returning the decrypted string.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.decrypt4Text = function(cipherText, privateKey) {
+   _$(cipherText).$_("Please provide a string to decrypt.");
+   _$(privateKey).$_("Please provide a private key.");
+   return this.decrypt(af.fromBase64(af.fromString2Bytes(cipherText)), privateKey);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.saveKey2File(aFilename, aKey, isPrivate)</key>
+ * Given a public or private aKey (from ow.java.cipher.readKey4File or genKeyPair) tries to save it to aFilename. If
+ * the aKey is private isPrivate must be true, if public is must be false.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.saveKey2File = function(filename, key, isPrivate) {
+   _$(filename).isString().$_("Please provide a filename.");
+   _$(key).$_("Please provide the key to save.");
+   _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
+
+   var keyFactory = java.security.KeyFactory.getInstance("RSA");
+   var spec;
+   if (isPrivate) {
+      spec = keyFactory.getKeySpec(key, af.getClass("java.security.spec.RSAPrivateKeySpec"));
+   } else {
+      spec = keyFactory.getKeySpec(key, af.getClass("java.security.spec.RSAPublicKeySpec"));
+   }
+   var modulus = spec.getModulus();
+   var exponent = (isPrivate ? spec.getPrivateExponent() : spec.getPublicExponent() );
+   var ostream = new java.io.ObjectOutputStream(new java.io.BufferedOutputStream(new Packages.org.apache.commons.codec.binary.Base64OutputStream(new java.io.FileOutputStream(filename))));
+   try {
+      ostream.writeObject(modulus);
+      ostream.writeObject(exponent);
+   } catch(e) {
+      sprintErr(e);
+   } finally {
+      ostream.close();
+   }
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.readKey4File(aFilename, isPrivate) : Key</key>
+ * Given a key file previously saved with ow.java.cipher.saveKey2File returns the Key object to use with other functions.
+ * If the aKey is private isPrivate must be true, if public is must be false.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.readKey4File = function(filename, isPrivate) {
+   _$(filename).isString().$_("Please provide a filename.");
+   _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
+
+   var istream = new java.io.FileInputStream(filename);
+   var oistream = new java.io.ObjectInputStream(new java.io.BufferedInputStream(new Packages.org.apache.commons.codec.binary.Base64InputStream(istream)));
+   var key;
+   try {
+      var modulus = oistream.readObject();
+      var exponent = oistream.readObject();
+      var keyFactory = java.security.KeyFactory.getInstance("RSA");
+      if (!isPrivate) {
+         key = keyFactory.generatePublic(new java.security.spec.RSAPublicKeySpec(modulus, exponent));
+      } else {
+         key = keyFactory.generatePrivate(new java.security.spec.RSAPrivateKeySpec(modulus, exponent));
+      }
+   } catch(e) {
+      sprintErr(e);
+   } finally {
+      oistream.close();
+   }
+   return key;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.key2encode(aKey) : String</key>
+ * Given aKey (from ow.java.cipher.readKey4File or genKeyPair) returns the base 64 corresponding encoded string.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.key2encode = function(key) {
+   _$(key).$_("Please provide a key to encode.");
+
+   return java.util.Base64.getEncoder().encodeToString(key.getEncoded()).toString();
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.msg2encode(anEncryptedMessage) : String</key>
+ * Given anEncryptedMessage returns the base 64 encoded string.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.msg2encode = function(msg) {
+   _$(msg).$_("Please provide a message to encode.");
+   return java.util.Base64.getEncoder().encodeToString(msg);
+};
+  
+/**
+ * <odoc>
+ * <key>ow.java.cipher.decode2msg(aEncodedMessage) : String</key>
+ * Given aEncodedMessage base 64 string returns the original message.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.decode2msg = function(msg) {
+   _$(msg).$_("Please provide a message to decode.");
+   return java.util.Base64.getDecoder().decode(af.fromString2Bytes(msg));
+};
+  
+/**
+ * <odoc>
+ * <key>ow.java.cipher.decode2Key(aKey, isPrivate) : Key</key>
+ * Given an encoded base 64 key (with ow.java.cipher.key2encode) returns the corresponding Key object.
+ * If the aKey is private isPrivate must be true, if public is must be false.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.decode2key = function(key, isPrivate) {
+   _$(key).$_("Please provide a key to decode.");
+   _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
+
+   var k = java.util.Base64.getDecoder().decode(af.fromString2Bytes(key));
+   var keySpec = new java.security.spec.X509EncodedKeySpec(k);
+   var keyFactory = java.security.KeyFactory.getInstance("RSA");
+   if (isPrivate) {
+      return keyFactory.generatePrivate(keySpec);
+   } else {
+      return keyFactory.generatePublic(keySpec);
+   }
+};
+   
+/**
+ * <odoc>
+ * <key>ow.java.cipher.decrypt(aEncryptedMessage, aPrivateKey) : ArrayBytes</key>
+ * Given a previously encrypted message will return the corresponding decrypted message using aPrivateKey.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.decrypt = function(cipherText, privateKey) {
+   _$(cipherText).$_("Please provide an encrypted message to decrypt.");
+   _$(privateKey).$_("Please provide a private key.");
+
+   var cipher = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING");
+   cipher.init(javax.crypto.Cipher.DECRYPT_MODE, privateKey);
+   var decryptedText = cipher.doFinal(cipherText);
+   return af.fromBytes2String(decryptedText);
+};
+
+// af.fromInputStream2String(t.decryptStream(af.fromBytes2InputStream(t.encrypt("ola", pub)), priv))
+/**
+ * <odoc>
+ * <key>ow.java.cipher.decryptStream(aInputStream, aPrivateKey) : Stream</key>
+ * Given a previously encrypted aInputStream will return the corresponding decrypted stream using aPrivateKey.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.decryptStream = function(iStream, privateKey) {
+   _$(cipherText).$_("Please provide an encrypted stream to decrypt.");
+   _$(privateKey).$_("Please provide a private key.");  
+   var cipher = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING");
+   cipher.init(javax.crypto.Cipher.DECRYPT_MODE, privateKey);
+   return new javax.crypto.CipherInputStream(iStream, cipher);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.genKeyPair(aKeySize) : Map</key>
+ * Given aKeySize (e.g. 1024, 2048, 3072, 4096, 7680 and 15360) will return a map with publicKey and privateKey.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.genKeyPair = function(size) {
+   size = _$(size).defaut(4096);
+   var keyPairGen = java.security.KeyPairGenerator.getInstance("RSA");
+   keyPairGen.initialize(size);
+
+   var keyPair = keyPairGen.generateKeyPair();
+   return {
+      publicKey: keyPair.getPublic(),
+      privateKey: keyPair.getPrivate()
+   };
+};
