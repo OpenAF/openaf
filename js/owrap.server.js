@@ -797,7 +797,7 @@ OpenWrap.server.prototype.rest = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams) : RequestReply</key>
+	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn) : RequestReply</key>
 	 * Provides a REST compliant HTTPServer request replier given a aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc
 	 * and aRemoveFunc. Each function will receive a map with the provided indexes and data from the request plus the request itself. Optionally you can 
 	 * specify with returnWithParams = true that each function will not return just the data map but a composed map with: data (the actual
@@ -813,9 +813,11 @@ OpenWrap.server.prototype.rest = {
 	 *    )}}, function(req) { return hs.replyOKText("nothing here"); });\
 	 * ow.server.daemon();\
 	 * \ 
+	 * Optionally you can also provide anAuditFn that will be called on every request with the arguments request and reply maps.\
+	 * \
 	 * </odoc>
 	 */
-	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams) {
+	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn) {
 		var idxs = ow.server.rest.parseIndexes(aBaseURI, aReq);
 		var res = {};
 		res.headers = {};
@@ -890,6 +892,7 @@ OpenWrap.server.prototype.rest = {
 			break;
 		}
 
+		if (isDef(anAuditFn) && isFunction(anAuditFn)) $do(() => { anAuditFn(aReq, res); });
 		return res;
 	},
 	
