@@ -771,7 +771,8 @@ function stringify(aobj, replacer, space) {
  * </odoc> 
  */
 var __colorFormat = {
-	key: "BOLD,BLACK",
+	//key: "BOLD,BLACK",
+	key: "INTENSITY_BOLD",
 	number: "GREEN",
 	string: "CYAN",
 	boolean: "RED",

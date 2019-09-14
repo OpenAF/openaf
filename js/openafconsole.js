@@ -718,7 +718,6 @@ function __view(aCmd, fromCommand, shouldClear) {
 		var __res;
 		try {
 			if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
-			if (!isMap(__res) && !isArray(_res)) throw "not a map or array";
 		} catch(e) {
 			if (shouldClear) __clear();
 			__showResultProcessCmdLine(__processCmdLine(aCmd), aCmd);
@@ -726,7 +725,7 @@ function __view(aCmd, fromCommand, shouldClear) {
 		}	
 			
 		if (shouldClear) __clear();
-		if (isObject(__res) && Object.keys(__res).length > 0) {
+		if ((isMap(__res) || isArray(__res)) && Object.keys(__res).length > 0) {
 			var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
 			if (pauseCommand) {
 				var __lines = (prefix + printMap(__res, void 0, void 0, colorCommand)).split(/\n/);
