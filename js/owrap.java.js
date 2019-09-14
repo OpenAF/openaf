@@ -271,7 +271,7 @@ OpenWrap.java.prototype.cipher = function() {};
  * the encrypted ArrayBytes.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.encrypt = function(plainText, publicKey) {
+OpenWrap.java.prototype.cipher.prototype.encrypt = function(plainText, publicKey) {
    _$(plainText).$_("Please provide a string to encrypt.");
    _$(publicKey).$_("Please provide a public key.");
 
@@ -288,8 +288,8 @@ OpenWrap.java.prototype.cipher.encrypt = function(plainText, publicKey) {
  * an encrypted stream.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.encryptStream = function(oStream, publicKey) {
-   _$(oStream).$_("Please provide an output stream to encrypt.");
+OpenWrap.java.prototype.cipher.prototype.encryptStream = function(oStream, publicKey) {
+   if (oStream != null) throw "Please provide an output stream to encrypt.";
    _$(publicKey).$_("Please provide a public key.");
    var cipher = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING");
    cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, publicKey);
@@ -303,7 +303,7 @@ OpenWrap.java.prototype.cipher.encryptStream = function(oStream, publicKey) {
  * returning the encrypted string.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.encrypt2Text = function(plainText, publicKey) {
+OpenWrap.java.prototype.cipher.prototype.encrypt2Text = function(plainText, publicKey) {
    _$(plainText).$_("Please provide a string to encrypt.");
    _$(publicKey).$_("Please provide a public key.");
    return af.fromBytes2String(af.toBase64Bytes(this.encrypt(plainText, publicKey)));
@@ -316,7 +316,7 @@ OpenWrap.java.prototype.cipher.encrypt2Text = function(plainText, publicKey) {
  * returning the decrypted string.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.decrypt4Text = function(cipherText, privateKey) {
+OpenWrap.java.prototype.cipher.prototype.decrypt4Text = function(cipherText, privateKey) {
    _$(cipherText).$_("Please provide a string to decrypt.");
    _$(privateKey).$_("Please provide a private key.");
    return this.decrypt(af.fromBase64(af.fromString2Bytes(cipherText)), privateKey);
@@ -329,7 +329,7 @@ OpenWrap.java.prototype.cipher.decrypt4Text = function(cipherText, privateKey) {
  * the aKey is private isPrivate must be true, if public is must be false.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.saveKey2File = function(filename, key, isPrivate) {
+OpenWrap.java.prototype.cipher.prototype.saveKey2File = function(filename, key, isPrivate) {
    _$(filename).isString().$_("Please provide a filename.");
    _$(key).$_("Please provide the key to save.");
    _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
@@ -361,7 +361,7 @@ OpenWrap.java.prototype.cipher.saveKey2File = function(filename, key, isPrivate)
  * If the aKey is private isPrivate must be true, if public is must be false.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.readKey4File = function(filename, isPrivate) {
+OpenWrap.java.prototype.cipher.prototype.readKey4File = function(filename, isPrivate) {
    _$(filename).isString().$_("Please provide a filename.");
    _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
 
@@ -391,10 +391,10 @@ OpenWrap.java.prototype.cipher.readKey4File = function(filename, isPrivate) {
  * Given aKey (from ow.java.cipher.readKey4File or genKeyPair) returns the base 64 corresponding encoded string.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.key2encode = function(key) {
+OpenWrap.java.prototype.cipher.prototype.key2encode = function(key) {
    _$(key).$_("Please provide a key to encode.");
 
-   return java.util.Base64.getEncoder().encodeToString(key.getEncoded()).toString();
+   return String(java.util.Base64.getEncoder().encodeToString(key.getEncoded()).toString());
 };
 
 /**
@@ -403,9 +403,9 @@ OpenWrap.java.prototype.cipher.key2encode = function(key) {
  * Given anEncryptedMessage returns the base 64 encoded string.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.msg2encode = function(msg) {
+OpenWrap.java.prototype.cipher.prototype.msg2encode = function(msg) {
    _$(msg).$_("Please provide a message to encode.");
-   return java.util.Base64.getEncoder().encodeToString(msg);
+   return String(java.util.Base64.getEncoder().encodeToString(msg));
 };
   
 /**
@@ -414,7 +414,7 @@ OpenWrap.java.prototype.cipher.msg2encode = function(msg) {
  * Given aEncodedMessage base 64 string returns the original message.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.decode2msg = function(msg) {
+OpenWrap.java.prototype.cipher.prototype.decode2msg = function(msg) {
    _$(msg).$_("Please provide a message to decode.");
    return java.util.Base64.getDecoder().decode(af.fromString2Bytes(msg));
 };
@@ -426,16 +426,18 @@ OpenWrap.java.prototype.cipher.decode2msg = function(msg) {
  * If the aKey is private isPrivate must be true, if public is must be false.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.decode2key = function(key, isPrivate) {
+OpenWrap.java.prototype.cipher.prototype.decode2key = function(key, isPrivate) {
    _$(key).$_("Please provide a key to decode.");
    _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
 
    var k = java.util.Base64.getDecoder().decode(af.fromString2Bytes(key));
-   var keySpec = new java.security.spec.X509EncodedKeySpec(k);
    var keyFactory = java.security.KeyFactory.getInstance("RSA");
+   var keySpec;
    if (isPrivate) {
+      keySpec = new java.security.spec.PKCS8EncodedKeySpec(k);
       return keyFactory.generatePrivate(keySpec);
    } else {
+      keySpec = new java.security.spec.X509EncodedKeySpec(k);
       return keyFactory.generatePublic(keySpec);
    }
 };
@@ -446,7 +448,7 @@ OpenWrap.java.prototype.cipher.decode2key = function(key, isPrivate) {
  * Given a previously encrypted message will return the corresponding decrypted message using aPrivateKey.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.decrypt = function(cipherText, privateKey) {
+OpenWrap.java.prototype.cipher.prototype.decrypt = function(cipherText, privateKey) {
    _$(cipherText).$_("Please provide an encrypted message to decrypt.");
    _$(privateKey).$_("Please provide a private key.");
 
@@ -463,8 +465,8 @@ OpenWrap.java.prototype.cipher.decrypt = function(cipherText, privateKey) {
  * Given a previously encrypted aInputStream will return the corresponding decrypted stream using aPrivateKey.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.decryptStream = function(iStream, privateKey) {
-   _$(cipherText).$_("Please provide an encrypted stream to decrypt.");
+OpenWrap.java.prototype.cipher.prototype.decryptStream = function(iStream, privateKey) {
+   if (iStream == null) throw "Please provide an encrypted stream to decrypt.";
    _$(privateKey).$_("Please provide a private key.");  
    var cipher = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING");
    cipher.init(javax.crypto.Cipher.DECRYPT_MODE, privateKey);
@@ -474,11 +476,11 @@ OpenWrap.java.prototype.cipher.decryptStream = function(iStream, privateKey) {
 /**
  * <odoc>
  * <key>ow.java.cipher.genKeyPair(aKeySize) : Map</key>
- * Given aKeySize (e.g. 1024, 2048, 3072, 4096, 7680 and 15360) will return a map with publicKey and privateKey.
+ * Given aKeySize (e.g. 2048, 3072, 4096, 7680 and 15360) will return a map with publicKey and privateKey.
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.genKeyPair = function(size) {
-   size = _$(size).defaut(4096);
+OpenWrap.java.prototype.cipher.prototype.genKeyPair = function(size) {
+   size = _$(size).default(2048);
    var keyPairGen = java.security.KeyPairGenerator.getInstance("RSA");
    keyPairGen.initialize(size);
 

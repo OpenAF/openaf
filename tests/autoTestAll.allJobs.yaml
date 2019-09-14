@@ -5,6 +5,7 @@ include:
    - autoTestAll.IO.yaml
    - autoTestAll.DB.yaml   
    - autoTestAll.HTTP.yaml
+   - autoTestAll.Java.yaml
    - autoTestAll.Format.yaml
    - autoTestAll.Channels.yaml
    - autoTestAll.Template.yaml

@@ -1,0 +1,21 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # Java tests
+   # --------------
+   - name: Java::Init
+     exec: |
+       args.tests = require("autoTestAll.Java.js");
+       ow.loadJava();
+
+   - name: Java::Java Cipher
+     from: Java::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testCipher;
+
+todo:
+   # Java tests
+   # ------------
+   - Java::Init
+   - Java::Java Cipher
