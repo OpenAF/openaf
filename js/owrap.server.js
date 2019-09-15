@@ -1553,7 +1553,7 @@ OpenWrap.server.prototype.cluster.prototype.sendToOthers = function(aData, aSend
  */
 OpenWrap.server.prototype.cluster.prototype.any = function(aFunction, includeMe) {
 	var clusterList = this.impl.clusterGetList(this.options);
-	var tryList = $from($from(clusterList.cluster).select((r) => { 
+	var tryList = $from(clusterList.cluster.map((r) => { 
 		r.date = Number(r.date) + (isDef(r.load) ? Math.floor(Math.random() * 30000) : r.load);
 		return r; 
 	})).sort("date").select();

@@ -175,7 +175,7 @@ function ojob_draw() {
 	
 	ansiStart();
 	print(ansiColor("bold,underline", "\nDependencies:"));
-	$from(oj.todo).select(function(v) {
+	oj.todo.map(function(v) {
 		var nn = (isDef(v.name) ? v.name : v);
 		printnl("[" + ansiColor("bold", nn) + "]");
 		var deps = getDeps(nn);
@@ -183,7 +183,7 @@ function ojob_draw() {
 	});
 	
 	print(ansiColor("bold,underline", "\nPaths:"));
-	$from(oj.todo).select(function(v) {
+	oj.todo.map(function(v) {
 		var nn = (isDef(v.name) ? v.name : v);
 		var paths = getPaths(nn);
 		var msg = "";

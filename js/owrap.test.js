@@ -351,14 +351,14 @@ OpenWrap.test.prototype.toJUnitXML = function(testSuitesId, testSuitesName) {
 	// Assigning values from channel
 	this.getChannel().forEach(function(k, v) {
 		var testSuite = {
-			"id"        : (isDefined(v.suite)) ? v.suite : v.test,
-			"name"      : (isDefined(v.suite)) ? v.suite : v.test,
+			"id"        : (isDef(v.suite)) ? v.suite : v.test,
+			"name"      : (isDef(v.suite)) ? v.suite : v.test,
 			"tests"     : v.hits,
 			"pass"      : v.pass,
 			"fail"      : v.fail,
 			"start"     : $from(v.executions).min("start").start,
 			"time"      : $from(v.executions).sum("elapsedTime"),
-			"testSuite" : $from(v.executions).select(function(ex) {
+			"testSuite" : v.executions.map(function(ex) {
 				if (ex.status == 'FAIL') {
 					xmlInfo.fails++;
 				}
