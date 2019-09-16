@@ -91,7 +91,7 @@ public class AFCmdOS extends AFCmdBase {
 	protected String injectclassfile = "";
 	protected long numberOfIncludedLines = 0;
 	
-	protected boolean __noSLF4JErrorOnly = true;
+	protected boolean __noSLF4JErrorOnly = false;
 
 	protected boolean silentMode = true;
 	protected boolean silenceRepack = false;
