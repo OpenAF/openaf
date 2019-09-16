@@ -979,7 +979,11 @@ public class AFBase extends ScriptableObject {
 		if (arrayOfBytes instanceof String) {
 			return Base64.encodeBase64(((String) arrayOfBytes).getBytes());
 		} else {
-			return Base64.encodeBase64((byte[]) arrayOfBytes);
+			if (arrayOfBytes instanceof NativeJavaArray) {
+				return Base64.encodeBase64((byte[]) ((NativeJavaArray) arrayOfBytes).unwrap());
+			} else {
+				return Base64.encodeBase64((byte[]) arrayOfBytes);
+			}
 		}
 	}
 	
