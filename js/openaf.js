@@ -4823,9 +4823,9 @@ const $cache = function(aName) {
         this.ach  = void 0;
     };
 
-    __c.prototype.fn     = function(aFunc) { this.func  = aFunc; return this; };
-    __c.prototype.ttl    = function(attl)  { this.attl  = attl;  return this; };
-	__c.prototype.ch     = function(aCh)   { this.ach   = aCh;   return this; };
+    __c.prototype.fn     = function(aFunc) { this.func  = aFunc;    return this; };
+    __c.prototype.ttl    = function(attl)  { this.attl  = attl;     return this; };
+	__c.prototype.ch     = function(aCh)   { this.ach   = aCh;      return this; };
 	/**
 	 * <odoc>
 	 * <key>$cache.inFile(aFile) : Object</key>
@@ -4838,7 +4838,7 @@ const $cache = function(aName) {
             compact: true,
             map: this.name
         });
-        this.ach = $ch(this.name + "::filecache");
+        this.ach = this.name + "::filecache";
         return this;
     };
     __c.prototype.create = function() {
@@ -4876,7 +4876,13 @@ const $cache = function(aName) {
         return $ch(this.name).get(aK);
     };
     __c.prototype.destroy = function() {
-        $ch(this.name).destroy();
+		if (isDef(this.ach)) {
+			if (isString(this.ach)) 
+				$ch(this.ach).destroy();
+			else
+				this.ach.destroy();
+		}
+		$ch(this.name).destroy();
     };
     __c.prototype.unset  = function(aK) {
         $ch(this.name).unset(aK);
@@ -4892,7 +4898,13 @@ const $cache = function(aName) {
     __c.prototype.setAll = function(aK, aV) {
         $ch(this.name).setAll(aK, aV);
         return this;
-    };
+	};
+	__c.prototype.getAll = function() {
+		return $ch(this.name).getAll();
+	};
+	__c.prototype.getKeys = function() {
+		return $ch(this.name).getKeys();
+	}
 
     return new __c(aName);
 };

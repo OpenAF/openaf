@@ -65,6 +65,55 @@
         );
     };
 
+    exports.testCache = function() {
+        $cache("cache")
+        .fn((k) => {
+            return merge(k, { "_T": nowUTC() });
+        })
+        .ttl(250)
+        .create();
+
+        var ini = $cache("cache").get({ a: 1 });
+        ow.test.assert($cache("cache").get({ a: 1 })._T, ini._T, "Problem with immediate cache.");
+        sleep(300, true);
+        ow.test.assert($cache("cache").get({ a : 1})._T != ini._T, true, "Problem with cache timeout.");
+
+        $cache("cache").destroy();
+
+        // Create
+        $cache("cache")
+        .fn((k) => {
+            return k;
+        })
+        .ttl(50)
+        .inFile("autoTestAll.Cache.db")
+        .create();
+
+        // get some results in cache
+        $cache("cache").get({ a: 1 });
+        $cache("cache").get({ a: 2 });
+        $cache("cache").get({ a: 3 });
+
+        // let go
+        $cache("cache").inFile("autoTestAll.Cache.db").destroy();
+
+        io.rm("autoTestAll.Cache.db");
+        // create again unsing file
+        $cache("cache")
+        .fn((k) => {
+            return k;
+        })
+        .ttl(50)
+        .inFile("autoTestAll.Cache.db")
+        .create();
+
+        // Check values
+        ow.test.assert($cache("cache").get({ a: 2 }), { a: 2 }, "Problem storing cache.");
+
+        $cache("cache").inFile("autoTestAll.Cache.db").destroy();
+        io.rm("autoTestAll.Cache.db");
+    };
+
     exports.testMerge = function() {
         var a = { a: 1, b: 2};
         var b = { b: 3, c: 1};

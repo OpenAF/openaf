@@ -332,7 +332,7 @@ OpenWrap.ch.prototype.__types = {
 				$ch(aName + "::__cache").create();
 				this.__cacheCh[aName] = $ch(aName + "::__cache");
 			} else {
-				this.__cacheCh[aName] = options.ch;
+				this.__cacheCh[aName] = (isString(options.ch) ? $ch(options.ch) : options.ch);
 			}
 		},
 		destroy      : function(aName) { 
@@ -400,7 +400,8 @@ OpenWrap.ch.prototype.__types = {
 		},
 		get          : function(aName, aK) { 
 			var aVv = {};
-			var ee = $stream(this.getKeys(aName, true)).filter(aK).toArray()[0];
+			var parent = this;
+			var ee = $stream(parent.getKeys(aName, true)).filter(aK).toArray()[0];
 			if (isDef(ee)) {
 				if (ee.____t > (now() - this.__cacheTTL[aName])) {
 					aVv = this.__cacheCh[aName].get(ee);

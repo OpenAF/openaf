@@ -188,6 +188,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testTB;
 
+   - name: OpenAF::Cache
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testCache;
+
    - name: OpenAF::Test Rest
      from: OpenAF::Init
      to  : oJob Test
@@ -221,6 +226,7 @@ todo:
    - OpenAF::Crypt
    - OpenAF::Encrypt/Decrypt
    - OpenAF::YAML
+   - OpenAF::Cache
    - OpenAF::NDJSON
    - OpenAF::XML2And4Obj
    - OpenAF::Map22Array
