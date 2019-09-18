@@ -490,3 +490,45 @@ OpenWrap.java.prototype.cipher.prototype.genKeyPair = function(size) {
       privateKey: keyPair.getPrivate()
    };
 };
+
+/**
+ * <odoc>
+ * <key>ow.java.getMemory(shouldFormat) : Map</key>
+ * Returns a map with the current java runtime max, total, used and free heap memory. If shouldFormat = true ow.format.toBytesAbbreviation will be used.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getMemory = function(shouldFormat) {
+	var vals = {
+		m: Number(java.lang.Runtime.getRuntime().maxMemory()),
+        t: Number(java.lang.Runtime.getRuntime().totalMemory()),
+        f: Number(java.lang.Runtime.getRuntime().freeMemory())
+	};
+	vals.u = vals.t - vals.f;
+
+	if (shouldFormat) {
+        ow.loadFormat();
+		return {
+			max: ow.format.toBytesAbbreviation(vals.m),
+			total: ow.format.toBytesAbbreviation(vals.t),
+			used: ow.format.toBytesAbbreviation(vals.u),
+			free: ow.format.toBytesAbbreviation(vals.f)
+		};
+	} else {
+		return {
+			max: vals.m,
+			total: vals.t,
+			used: vals.u,
+			free: vals.f
+		};
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.gc()</key>
+ * Executes the Java runtime gargabe collector.
+ * </odoc>
+ */
+OpenWrap.java.prototype.gc = function() {
+    return java.lang.Runtime.getRuntime().gc();
+};
