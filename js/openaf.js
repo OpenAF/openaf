@@ -92,6 +92,7 @@ function getSerialize (fn, decycle) {
 //UTILS
 //-----
 
+__bfprintFlag = true;
 /**
  * <odoc>
  * <key>print(aStr)</key>
@@ -99,13 +100,26 @@ function getSerialize (fn, decycle) {
  * </odoc>
  */
 function print(str) {
-	af.p(str);
+	if (__bfprintFlag) {
+		af.p(str);
+	} else {
+		bfprint(str);
+	}
 }
 
 var __bfprint = {};
+var __bfprintCodePage = io.getDefaultEncoding();
 function bfprintnl(str, codePage) {
-	if (isUnDef(codePage)) codePage = io.getDefaultEncoding();
+	if (isUnDef(codePage)) codePage = __bfprintCodePage;
 	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), 512);
+
+	__bfprint[codePage].write(str);
+	__bfprint[codePage].flush();
+}
+
+function bfprintErrnl(str, codePage) {
+	if (isUnDef(codePage)) codePage = __bfprintCodePage;
+	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), 512);
 
 	__bfprint[codePage].write(str);
 	__bfprint[codePage].flush();
@@ -113,6 +127,10 @@ function bfprintnl(str, codePage) {
 
 function bfprint(str, codePage) {
 	bfprintnl(str + "\n", codePage);
+}
+
+function bfprintErr(str, codePage) {
+	bfprintErrnl(str + "\n", codePage);
 }
 
 /**
@@ -144,7 +162,11 @@ function cprint(str, delim) { ansiStart(); print(colorify(str)); ansiStop(); }
  * </odoc>
  */
 function printnl(str) {
-	af.pnl(str);
+	if (__bfprintFlag) {
+		bfprintnl(str);
+	} else {
+		af.pnl(str);
+	}
 }
 
 /**
@@ -211,7 +233,11 @@ function tprint(aTemplateString, someData) {
  * </odoc>
  */
 function printErr(str) {
-	af.e(str);
+	if (__bfprintFlag) {
+		bfprintErr(str);
+	} else {
+		af.e(str);
+	}
 }
 
 /**
@@ -243,7 +269,11 @@ function cprintErr(str) { ansiStart(); printErr(colorify(str)); ansiStop(); }
  * </odoc>
  */
 function printErrnl(str) {
-	af.enl(str);
+	if (__bfprintFlag) {
+		bfprintErrnl(str);
+	} else {
+		af.enl(str);
+	}
 }
 
 /**
