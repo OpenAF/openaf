@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -91,58 +92,60 @@ public class AFBase extends ScriptableObject {
 	public AFBase(Object o) throws Exception {
 		super();
 		if (o != null && !(o instanceof Undefined)) {
-			System.out.println("WARNING: You might be trying to use OpenAF without the OpenCli opack or your OpenCli opack doesn't the current OpenAF version.");
+			System.out.println(
+					"WARNING: You might be trying to use OpenAF without the OpenCli opack or your OpenCli opack doesn't the current OpenAF version.");
 		}
 	}
 
 	@JSFunction
 	public static Object fromJson(String in) throws Exception {
 		return jsonParse(in);
-    }		
+	}
 
 	/**
-	 * <odoc>
-	 * <key>af.restartOpenAF(aCommandLineArray)</key>
-	 * Terminates the current OpenAF execution and tries to start a new with the same command
-	 * line, if aCommandLineArray is not provided. If aCommandLineArray is provided each array
-	 * element will be use sequentially to build the command line to start a new OpenAF instance. 
-	 * </odoc>
+	 * <odoc> <key>af.restartOpenAF(aCommandLineArray)</key> Terminates the current
+	 * OpenAF execution and tries to start a new with the same command line, if
+	 * aCommandLineArray is not provided. If aCommandLineArray is provided each
+	 * array element will be use sequentially to build the command line to start a
+	 * new OpenAF instance. </odoc>
 	 */
 	@JSFunction
 	public static void restartOpenAF(Object args) throws IOException {
-		String javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
+		String javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin"
+				+ java.io.File.separator + "java";
 		File currentJar;
 		try {
-			currentJar = new File(Class.forName("openaf.AFCmdBase").getProtectionDomain().getCodeSource().getLocation().toURI());
-		} catch(Exception e) {
+			currentJar = new File(
+					Class.forName("openaf.AFCmdBase").getProtectionDomain().getCodeSource().getLocation().toURI());
+		} catch (Exception e) {
 			currentJar = new File(java.lang.System.getProperties().getProperty("java.class.path"));
 		}
-		
+
 		/* is it a jar file? */
-		if(!currentJar.getName().endsWith(".jar"))
+		if (!currentJar.getName().endsWith(".jar"))
 			return;
-	
+
 		/* Build command: java -jar application.jar */
 		ArrayList<String> command = new ArrayList<String>();
 		command.add(javaBin);
 		command.add("-jar");
 		command.add(currentJar.getPath());
-		
+
 		if (args instanceof NativeArray) {
 			ArrayList<String> al = new ArrayList<String>();
-			for(Object o : ((NativeArray) args).toArray()) {
-				al.add(o.toString());	
+			for (Object o : ((NativeArray) args).toArray()) {
+				al.add(o.toString());
 			}
-		
-			for(String c : al) {
+
+			for (String c : al) {
 				command.add(c);
 			}
 		} else {
-			for(String c : AFCmdBase.args) {
+			for (String c : AFCmdBase.args) {
 				command.add(c);
 			}
 		}
-	
+
 		ProcessBuilder builder = new ProcessBuilder(command);
 		builder.inheritIO();
 		builder.start();
@@ -160,7 +163,7 @@ public class AFBase extends ScriptableObject {
 
 		return url;
 	}
-	
+
 	/**
 	 * 
 	 * @param out
@@ -170,83 +173,84 @@ public class AFBase extends ScriptableObject {
 	public static Object jsonParse(String out) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Object ret;
-		
+
 		if (!(out != null && out.length() > 0)) {
 			ret = AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
 		} else {
 			ret = NativeJSON.parse(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), out, new Callable() {
 				@Override
-				public Object call(Context cx, Scriptable scope,
-						Scriptable thisObj, Object[] args) {
+				public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
 					return args[1];
-				} 
+				}
 			});
 		}
 		AFCmdBase.jse.exitContext();
 		return ret;
 	}
-	
+
 	@JSFunction
 	public static Object toJavaMap(Object json) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
-		
+
 		if (json instanceof NativeObject) {
-			Type type = new TypeToken<Map<String, Object>>(){}.getType();
-			
-			Map<String, String> m = (new Gson()).fromJson((String) NativeJSON.stringify(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), json, null, "  "), type);
+			Type type = new TypeToken<Map<String, Object>>() {
+			}.getType();
+
+			Map<String, String> m = (new Gson()).fromJson(
+					(String) NativeJSON.stringify(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), json, null, "  "),
+					type);
 			return m;
 		}
-		
+
 		AFCmdBase.jse.exitContext();
 		return null;
 	}
-	
+
 	@JSFunction
 	public static Object fromJavaMap(Object m) {
-		Type type = new TypeToken<Map<String, Object>>(){}.getType();
-		if (m instanceof NativeJavaObject) m = ((NativeJavaObject) m).unwrap();
-		
+		Type type = new TypeToken<Map<String, Object>>() {
+		}.getType();
+		if (m instanceof NativeJavaObject)
+			m = ((NativeJavaObject) m).unwrap();
+
 		Object res = m;
 		try {
 			res = jsonParse((new Gson()).toJson(m, type));
-		} catch (Exception e) {} 
+		} catch (Exception e) {
+		}
 		return res;
 	}
 
 	/**
-	 * <odoc>
-	 * <key>af.js2s(aObject) : String</key>
-	 * Tries to convert an object into a beautified string representation.
-	 * </odoc>
+	 * <odoc> <key>af.js2s(aObject) : String</key> Tries to convert an object into a
+	 * beautified string representation. </odoc>
 	 */
 	@JSFunction
 	public String js2s(Object no) {
 		AFCmdBase.jse.defineSerialize();
-		
-		if (no instanceof Undefined) return "undefined";
- 		if (no instanceof NativeJavaObject) 
+
+		if (no instanceof Undefined)
+			return "undefined";
+		if (no instanceof NativeJavaObject)
 			no = ((NativeJavaObject) no).unwrap().toString();
- 		if (no instanceof XMLObject) {
- 			no = fromXML(no);
- 		}
- 		
- 		Context cx = (Context) AFCmdBase.jse.enterContext();
- 		Object stringify;
- 		synchronized(AFCmdBase.jse.getGlobalscope()) {
-	 		stringify = AFCmdBase.jse.stringify(no, cx.evaluateString(
-							(Scriptable) AFCmdBase.jse.getGlobalscope(), "getSerialize()", "", 1, null), 2);
- 		}
- 		AFCmdBase.jse.exitContext();
-		
+		if (no instanceof XMLObject) {
+			no = fromXML(no);
+		}
+
+		Context cx = (Context) AFCmdBase.jse.enterContext();
+		Object stringify;
+		synchronized (AFCmdBase.jse.getGlobalscope()) {
+			stringify = AFCmdBase.jse.stringify(no,
+					cx.evaluateString((Scriptable) AFCmdBase.jse.getGlobalscope(), "getSerialize()", "", 1, null), 2);
+		}
+		AFCmdBase.jse.exitContext();
+
 		return stringify.toString();
 	}
-	
 
 	/**
-	 * <odoc>
-	 * <key>af.p(aString)</key>
-	 * Outputs to stdout aString ending with a newline.
-	 * </odoc>
+	 * <odoc> <key>af.p(aString)</key> Outputs to stdout aString ending with a
+	 * newline. </odoc>
 	 */
 	@JSFunction
 	public void p(String p) {
@@ -254,65 +258,79 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
-	 * <key>af.pnl(aString)</key>
-	 * Outputs to stdout aString without a newline on the end.
-	 * </odoc>
+	 * <odoc> <key>af.pnl(aString)</key> Outputs to stdout aString without a newline
+	 * on the end. </odoc>
 	 */
 	@JSFunction
 	public void pnl(String p) {
 		System.out.print(p);
 	}
-	
+
 	/**
-	 * <odoc>
-	 * <key>af.e(aString)</key>
-	 * Outputs to stderr aString ending with a newline.
-	 * </odoc>
+	 * <odoc> <key>af.e(aString)</key> Outputs to stderr aString ending with a
+	 * newline. </odoc>
 	 */
 	@JSFunction
 	public void e(String p) {
 		System.err.println(p);
 	}
-	
+
 	/**
-	 * <odoc>
-	 * <key>af.enl(aString)</key>
-	 * Outputs to stderr aString without a newline on the end.
-	 * </odoc>
+	 * <odoc> <key>af.enl(aString)</key> Outputs to stderr aString without a newline
+	 * on the end. </odoc>
 	 */
 	@JSFunction
 	public void enl(String p) {
 		System.err.print(p);
 	}
-	
-	
+
 	/**
 	 * <odoc>
-	 * <key>af.fromBytes2String(anArrayOfBytes) : aString</key>
-	 * Converts anArrayOfBytes into a string.
+	 * <key>af.fromBytes2String(anArrayOfBytes, anEncoding) : aString</key> 
+	 * Converts anArrayOfBytes into a string, optionally with the provided anEncoding.
 	 * </odoc>
+	 * 
+	 * @throws UnsupportedEncodingException
 	 */
 	@JSFunction
-	public String fromBytes2String(Object bytes) {
+	public String fromBytes2String(Object bytes, Object encoding) throws UnsupportedEncodingException {
 		byte[] conv;
 		if (bytes instanceof NativeJavaArray) {
 			conv = (byte[]) ((NativeJavaArray) bytes).unwrap();
 		} else {
 			conv = (byte[]) bytes;
 		}
-		return new String(conv);
+		if (encoding != null && !(encoding instanceof Undefined)) {
+			return new String(conv, (String) encoding);	
+		} else {
+			return new String(conv);
+		}
 	}
-	
+
 	/**
-	 * <odoc>
-	 * <key>af.fromString2Bytes(aString) : anArrayOfBytes</key>
-	 * Converts aString into anArrayOfBytes.
+	 * <odoc> 
+	 * <key>af.fromString2Bytes(aString, anEncoding) : anArrayOfBytes</key>
+	 * Converts aString into anArrayOfBytes, optionally with the provided anEncoding.
 	 * </odoc>
+	 * 
+	 * @throws UnsupportedEncodingException
 	 */
 	@JSFunction
-	public Object fromString2Bytes(String s) {
-		return s.getBytes();
+	public Object fromString2Bytes(String s, Object encoding) throws UnsupportedEncodingException {
+		if (encoding != null && !(encoding instanceof Undefined)) {
+			return s.getBytes((String) encoding);
+		} else {
+			return s.getBytes();
+		}
+	}
+
+	@JSFunction
+	public Object toEncoding(String s, String encoding, Object fromEncoding) throws UnsupportedEncodingException {
+		if (fromEncoding != null && !(fromEncoding instanceof Undefined)) {
+			return new String(s.getBytes((String) fromEncoding), encoding);
+		} else {
+			return new String(s.getBytes(), encoding);
+		}
 	}
 	
 	/**
@@ -1272,15 +1290,19 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>af.fromInputStream2String(aStream) : String</key>
+	 * <key>af.fromInputStream2String(aStream, anEncoding) : String</key>
 	 * Tries to convert an input aStream into a String.
 	 * </odoc>
 	 */
 	@JSFunction
-	public String fromInputStream2String(Object aStream) throws IOException {
+	public String fromInputStream2String(Object aStream, Object encoding) throws IOException {
 		if (aStream instanceof NativeJavaObject) aStream = ((NativeJavaObject) aStream).unwrap();
 		if (aStream instanceof InputStream) {
-			return IOUtils.toString((InputStream) aStream, System.getProperty("file.encoding"));
+			if (encoding != null && !(encoding instanceof Undefined)) {
+				return IOUtils.toString((InputStream) aStream, (String) encoding);
+			} else {
+				return IOUtils.toString((InputStream) aStream, System.getProperty("file.encoding"));
+			}
 		}
 
 		return null;
@@ -1322,15 +1344,21 @@ public class AFBase extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>af.fromString2OutputStream(aString) : Stream</key>
+	 * <key>af.fromString2OutputStream(aString, encoding) : Stream</key>
 	 * Converts aString into a ByteArrayOutputStream. After using this stream you can, for example, use
 	 * .toString and toByteArray methods from the resulting stream.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object fromString2OutputStream(String str) throws IOException {
+	public Object fromString2OutputStream(String str, Object encoding) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		if (str != null) baos.write(str.getBytes());
+		if (str != null) {
+			if (encoding != null && !(encoding instanceof Undefined)) {
+				baos.write(str.getBytes((String) encoding));
+			} else {
+				baos.write(str.getBytes());
+			}
+		}
 		return baos;
 	}
 
@@ -1351,17 +1379,24 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
-	 * <key>af.fromString2InputStream(aString) : Stream</key>
-	 * Converts aString into a ByteArrayInputStream.
-	 * </odoc>
+	 * <odoc> <key>af.fromString2InputStream(aString, anEncoding) : Stream</key>
+	 * Converts aString into a ByteArrayInputStream. </odoc>
+	 * 
+	 * @throws UnsupportedEncodingException
 	 */
 	@JSFunction
-	public Object fromString2InputStream(String str) {
-		if (str != null)
-			return fromBytes2InputStream(str.getBytes());
-		else
-			return fromBytes2InputStream((new String().getBytes()));
+	public Object fromString2InputStream(String str, Object encoding) throws UnsupportedEncodingException {
+		if (encoding != null && !(encoding instanceof Undefined)) {
+			if (str != null)
+				return fromBytes2InputStream(str.getBytes((String) encoding));
+			else
+				return fromBytes2InputStream((new String().getBytes()));	
+		} else {
+			if (str != null)
+				return fromBytes2InputStream(str.getBytes());
+			else
+				return fromBytes2InputStream((new String().getBytes()));	
+		}
 	}
 
 	/**
