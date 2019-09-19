@@ -1823,7 +1823,7 @@ OpenWrap.obj.prototype.rest = {
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
 		
-		if (isUndefined(_l) && isUndefined(_p)) {
+		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
 			if (u.getUserInfo() != null) {
 				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
@@ -1831,7 +1831,7 @@ OpenWrap.obj.prototype.rest = {
 			}
 		}
 		
- 		if (isDefined(_l) && isDefined(_p)) {
+ 		if (isDef(_l) && isDef(_p)) {
 			h.login(_l, _p, false, aURL);
 		} 
  		
@@ -1911,7 +1911,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonCreate: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
-		return jsonParse(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, retBytes);
+		return jsonParse(af.toEncoding(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, "cp1252"));
 	},
 	
 	/**
@@ -1966,7 +1966,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonSet: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
-		return jsonParse(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, retBytes);
+		return jsonParse(af.toEncoding(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, "cp1252"));
 	},
 
 	/**
@@ -2021,7 +2021,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonPatch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
-		return jsonParse(this.patch(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, retBytes);
+		return jsonParse(af.toEncoding(this.patch(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, "cp1252"));
 	},	
 	
 	/**
@@ -2070,7 +2070,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes) {
-		return jsonParse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap, __h).response, retBytes);
+		return jsonParse(af.toEncoding(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap, __h).response, "cp1252"));
 	},
 	
 	/**

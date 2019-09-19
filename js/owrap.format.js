@@ -907,9 +907,8 @@ OpenWrap.format.prototype.escapeString = function(str, except) {
  * </odoc>
  */
 OpenWrap.format.prototype.getPublicIP = function() {
-	plugin("HTTP");
-	return JSON.parse((new HTTP("http://ifconfig.co/json")).response());
-}
+	return $rest().get("https://ifconfig.co/json");
+};
 
 /**
  * <odoc>
