@@ -590,12 +590,12 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 		jansi.AnsiConsole.systemInstall();
 		if (colorCommand && colorify) {
 			if (isDef(__codepage) && isString(__codepage)) 
-				printnl(af.toEncoding(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET), "cp1252", __codepage));
+				printnl(af.toEncoding(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET), void 0, __codepage));
 			else
 				printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		} else {
 			if (isDef(__codepage) && isString(__codepage))
-				printnl(af.toEncoding(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET), "cp1252", __codepage));
+				printnl(af.toEncoding(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET), void 0, __codepage));
 			else
 				printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		}
@@ -606,7 +606,7 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 }
 
 function __outputConsoleEnd(anOutput, colorify) {
-	if (isDef(__codepage) && isString(__codepage)) anOutput = af.toEncoding(anOutput, "cp1252", __codepage);
+	if (isDef(__codepage) && isString(__codepage)) anOutput = af.toEncoding(anOutput, void 0, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		if (colorCommand && colorify) 
@@ -624,7 +624,7 @@ function __outputConsoleComments(anOutputComment) {
 }
 
 function __outputConsoleCommentsNoEnd(anOutputComment) {
-	if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, "cp1252", __codepage);
+	if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, void 0, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
@@ -635,7 +635,7 @@ function __outputConsoleCommentsNoEnd(anOutputComment) {
 }
 
 function __outputConsoleCommentsEnd(anOutputComment) {
-	if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, "cp1252", __codepage);
+	if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, void 0, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
@@ -646,7 +646,7 @@ function __outputConsoleCommentsEnd(anOutputComment) {
 }
 
 function __outputConsoleError(anError) {
-	if (isDef(__codepage) && isString(__codepage)) anError = af.toEncoding(anError, "cp1252", __codepage);
+	if (isDef(__codepage) && isString(__codepage)) anError = af.toEncoding(anError, void 0, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
@@ -1098,7 +1098,8 @@ initThread.addThread(function(uuid) {
 
 	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
 		try {
-			var res = $sh("chcp").get(0).stdout.replace(/.+ (\d+)\r\n/, "$1");
+			//var res = $sh("chcp").get(0).stdout.replace(/.+ (\d+)\r\n/, "$1");
+			var res = con.getConsoleReader().getTerminal().getOutputEncoding();
 			if (isDef(res)) {
 				__codepage = String(res);
 			}

@@ -102,6 +102,19 @@ function print(str) {
 	af.p(str);
 }
 
+var __bfprint = {};
+function bfprintnl(str, codePage) {
+	if (isUnDef(codePage)) codePage = io.getDefaultEncoding();
+	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), 512);
+
+	__bfprint[codePage].write(str);
+	__bfprint[codePage].flush();
+}
+
+function bfprint(str, codePage) {
+	bfprintnl(str + "\n", codePage);
+}
+
 /**
  * <odoc>
  * <key>sprint(aStr)</key>
@@ -5082,6 +5095,44 @@ AF.prototype.fromJavaArray = function(aJavaArray) {
         ar.push(aJavaArray[el]);
     }
     return ar;
+};
+/**
+ * <odoc>
+ * <key>AF.printStackTrace(aFunction) : Object</key>
+ * Executes aFunction but if it throws an exception and the exception is a Java exception
+ * it will print the exception's stack trace.
+ * </odoc>
+ */
+AF.prototype.printStackTrace = function(aFn) {
+	try {
+		return aFn();
+	} catch(e) {
+		if (isDef(e.javaException)) 
+			e.javaException.printStackTrace();
+		else
+			throw e;
+	}
+};
+/**
+ * <odoc>
+ * <key>AF.getEncoding(anArrayOfBytesORString) : String</key>
+ * Given anArrayOfBytesORString will try to detect which encode is used and returns a string with the identified charset encoding.
+ * </odoc>
+ */
+AF.prototype.getEncoding = function(aBytesOrString) {
+	var res; 
+
+	if (isString(aBytesOrString)) aBytesOrString = af.fromString2Bytes(aBytesOrString);
+
+	var detector = new Packages.org.mozilla.universalchardet.UniversalDetector(null);
+	for(var ii = 0; ii < aBytesOrString.length && !detector.isDone(); ii = ii + 1024) { 
+		detector.handleData(aBytesOrString, ii, ((aBytesOrString.length - ii) >= 1024 ? 1024 : (aBytesOrString.length - 1024)));
+	}
+	detector.dataEnd();
+	res = detector.getDetectedCharset();
+	detector.reset();
+
+	return res;
 };
 /**
  * <odoc>

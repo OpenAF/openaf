@@ -324,12 +324,27 @@ public class AFBase extends ScriptableObject {
 		}
 	}
 
+	/**
+	 * <odoc>
+	 * <key>af.toEncoding(aString, aTargetEncoding, aSourceEncoding) : String</key>
+	 * Converts aString to aTargetEncoding optionally providing aSourceEncoding. If aTargetEncoding
+	 * is not provided it will default to the current java encoding.
+	 * </odoc>
+	 */
 	@JSFunction
-	public Object toEncoding(String s, String encoding, Object fromEncoding) throws UnsupportedEncodingException {
+	public Object toEncoding(String s, Object encoding, Object fromEncoding) throws UnsupportedEncodingException {
 		if (fromEncoding != null && !(fromEncoding instanceof Undefined)) {
-			return new String(s.getBytes((String) fromEncoding), encoding);
+			if (encoding != null && !(encoding instanceof Undefined)) {
+				return new String(s.getBytes((String) fromEncoding), (String) encoding);
+			} else {
+				return new String(s.getBytes((String) fromEncoding));
+			}
 		} else {
-			return new String(s.getBytes(), encoding);
+			if (encoding != null && !(encoding instanceof Undefined)) {
+				return new String(s.getBytes(), (String) encoding);
+			} else {
+				return new String(s.getBytes());
+			}
 		}
 	}
 	
