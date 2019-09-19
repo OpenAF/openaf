@@ -1,6 +1,7 @@
 
 plugin("Console");
 
+var __codepage;
 var __pinflag = false;
 var __pinprefix = "";
 var CONSOLESEPARATOR = "-- ";
@@ -587,10 +588,17 @@ function __outputConsole(anOutput, colorify) {
 function __outputConsoleNoEnd(anOutput, colorify) {
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
-		if (colorCommand && colorify) 
-			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
-		else
-			printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		if (colorCommand && colorify) {
+			if (isDef(__codepage) && isString(__codepage)) 
+				printnl(af.toEncoding(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET), "cp1252", __codepage));
+			else
+				printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		} else {
+			if (isDef(__codepage) && isString(__codepage))
+				printnl(af.toEncoding(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET), "cp1252", __codepage));
+			else
+				printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		}
 		jansi.AnsiConsole.systemUninstall();
 	} else {
 		printnl(anOutput);
@@ -598,6 +606,7 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 }
 
 function __outputConsoleEnd(anOutput, colorify) {
+	if (isDef(__codepage) && isString(__codepage)) anOutput = af.toEncoding(anOutput, "cp1252", __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		if (colorCommand && colorify) 
@@ -615,6 +624,7 @@ function __outputConsoleComments(anOutputComment) {
 }
 
 function __outputConsoleCommentsNoEnd(anOutputComment) {
+	if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, "cp1252", __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
@@ -625,6 +635,7 @@ function __outputConsoleCommentsNoEnd(anOutputComment) {
 }
 
 function __outputConsoleCommentsEnd(anOutputComment) {
+	if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, "cp1252", __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
@@ -635,6 +646,7 @@ function __outputConsoleCommentsEnd(anOutputComment) {
 }
 
 function __outputConsoleError(anError) {
+	if (isDef(__codepage) && isString(__codepage)) anError = af.toEncoding(anError, "cp1252", __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		jansi.AnsiConsole.systemInstall();
 		printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
@@ -728,10 +740,10 @@ function __view(aCmd, fromCommand, shouldClear) {
 		if ((isMap(__res) || isArray(__res)) && Object.keys(__res).length > 0) {
 			var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
 			if (pauseCommand) {
-				var __lines = (prefix + printMap(__res, void 0, void 0, colorCommand)).split(/\n/);
+				var __lines = (prefix + printMap(__res, void 0, (isDef(__codepage) ? "utf" : void 0), colorCommand)).split(/\n/);
 				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 			} else {
-				__outputConsole(prefix + printMap(__res, void 0, void 0, colorCommand));
+				__outputConsole(prefix + printMap(__res, void 0, (isDef(__codepage) ? "utf" : void 0), colorCommand));
 			}
 			if (isDef(__timeResult) && timeCommand) __time(__timeResult);
 			return true;
@@ -1021,7 +1033,7 @@ var beautifyCommand = true;
 var colorCommand = true;
 var pauseCommand = false;
 var watchCommand = false;
-var viewCommand = false;
+var viewCommand = true;
 var watchLine = "";
 
 // Tweak a little
@@ -1083,6 +1095,15 @@ initThread.addThread(function(uuid) {
 		})
 	);
 	con.getConsoleReader().getCompletionHandler().setPrintSpaceAfterFullCompletion(false);
+
+	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+		try {
+			var res = $sh("chcp").get(0).stdout.replace(/.+ (\d+)\r\n/, "$1");
+			if (isDef(res)) {
+				__codepage = String(res);
+			}
+		} catch(e) { }
+	}
 
 	// Read profile
 	try {
