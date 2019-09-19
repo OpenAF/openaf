@@ -92,7 +92,7 @@ function getSerialize (fn, decycle) {
 //UTILS
 //-----
 
-__bfprintFlag = true;
+__bfprintFlag = false;
 /**
  * <odoc>
  * <key>print(aStr)</key>
@@ -101,9 +101,9 @@ __bfprintFlag = true;
  */
 function print(str) {
 	if (__bfprintFlag) {
-		af.p(str);
-	} else {
 		bfprint(str);
+	} else {
+		af.p(str);
 	}
 }
 
