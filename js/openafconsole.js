@@ -429,11 +429,17 @@ function __diff(aString) {
 function __color(aFlag) {
 	if (aFlag.match(/off|0/i)) colorCommand = false;
 	if (aFlag.match(/on|1/i)) colorCommand = true;
-	if (aFlag == "")
-		if (colorCommand)
-		colorCommand = false;
-		else
-		colorCommand = true;
+	if (aFlag == "") {
+		if (colorCommand) {
+			colorCommand = false;
+			__previousAnsiFlag = __ansiflag;
+			__ansiflag = false;
+		} else {
+			__ansiflag = true;
+			__previousAnsiFlag = __ansiflag;
+			colorCommand = true;
+		}
+	}
 
 	if (colorCommand)
 		__outputConsoleComments("Color output of commands is enabled.");
@@ -1035,6 +1041,7 @@ var pauseCommand = false;
 var watchCommand = false;
 var viewCommand = true;
 var watchLine = "";
+var __previousAnsiFlag = __ansiflag;
 
 // Tweak a little
 con.getConsoleReader().setHistoryEnabled(true);
