@@ -250,6 +250,14 @@
         ow.test.assert(res.headers.Openaf, "true", "Problem with preAction.");
     };
 
+    exports.testRest2Stream = function() {
+        // TODO: 
+    };
+
+    exports.testRest2File = function() {
+        // TODO: 
+    };
+
     exports.testTB = function() {
         var state = 0;
 

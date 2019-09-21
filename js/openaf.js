@@ -4591,7 +4591,7 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.getStream(aBaseURI, aIdxMap) : JavaStream</key>
+	 * <key>$rest.get2Stream(aBaseURI, aIdxMap) : JavaStream</key>
 	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4600,12 +4600,12 @@ const $rest = function(ops) {
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
-	_rest.prototype.getStream = function(aBaseURI, aIdxMap) {
+	_rest.prototype.get2Stream = function(aBaseURI, aIdxMap) {
 		return this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true, "get");
 	};
 		/**
 	 * <odoc>
-	 * <key>$rest.getStream2File(aFilePath, aBaseURI, aIdxMap)</key>
+	 * <key>$rest.get2File(aFilePath, aBaseURI, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4615,7 +4615,7 @@ const $rest = function(ops) {
 	 * The byte output will be saved into aFilePath.
 	 * </odoc>
 	 */
-	_rest.prototype.getStream2File = function(aFilePath, aBaseURI, aIdxMap) {
+	_rest.prototype.get2File = function(aFilePath, aBaseURI, aIdxMap) {
 		ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true, "get"));
 	};
 	/**
@@ -4634,7 +4634,7 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.postStream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
+	 * <key>$rest.post2Stream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
 	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4643,12 +4643,12 @@ const $rest = function(ops) {
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */	
-	_rest.prototype.postStream = function(aBaseURI, aDataRowMap, aIdxMap) {
+	_rest.prototype.post2Stream = function(aBaseURI, aDataRowMap, aIdxMap) {
 		return this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true, "post");
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.postStream2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
+	 * <key>$rest.post2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4658,7 +4658,7 @@ const $rest = function(ops) {
 	 * The byte output will be saved into aFilePath.
 	 * </odoc>
 	 */	
-	_rest.prototype.postStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+	_rest.prototype.post2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
 		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true, "post"));
 	};	
 	/**
@@ -4677,7 +4677,7 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.putStream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
+	 * <key>$rest.put2Stream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
 	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4686,12 +4686,12 @@ const $rest = function(ops) {
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
-	_rest.prototype.putStream = function(aBaseURI, aDataRowMap, aIdxMap) {
+	_rest.prototype.put2Stream = function(aBaseURI, aDataRowMap, aIdxMap) {
 		return this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true, "put");
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.putStream2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
+	 * <key>$rest.put2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4701,7 +4701,7 @@ const $rest = function(ops) {
 	 * The byte output will be saved into aFilePath.
 	 * </odoc>
 	 */
-	_rest.prototype.putStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+	_rest.prototype.put2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
 		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true, "put"));
 	};
 	/**
@@ -4720,7 +4720,7 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.deleteStream(aBaseURI, aIdxMap) : JavaStream</key>
+	 * <key>$rest.delete2Stream(aBaseURI, aIdxMap) : JavaStream</key>
 	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4729,12 +4729,12 @@ const $rest = function(ops) {
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
-	_rest.prototype.deleteStream = function(aBaseURI, aIdxMap) {
+	_rest.prototype.delete2Stream = function(aBaseURI, aIdxMap) {
 		return this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true, "delete");
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.deleteStream2Fie(aFilePath, aBaseURI, aIdxMap)</key>
+	 * <key>$rest.delete2File(aFilePath, aBaseURI, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4744,7 +4744,7 @@ const $rest = function(ops) {
 	 * The byte output will be saved into aFilePath.
 	 * </odoc>
 	 */
-	_rest.prototype.deleteStream2File = function(aFilePath, aBaseURI, aIdxMap) {
+	_rest.prototype.delete2File = function(aFilePath, aBaseURI, aIdxMap) {
 		ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true, "delete"));
 	};
 	/**
@@ -4763,7 +4763,7 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.patchStream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
+	 * <key>$rest.patch2Stream(aBaseURI, aDataRowMap, aIdxMap) : JavaStream</key>
 	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4772,12 +4772,12 @@ const $rest = function(ops) {
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
 	 * </odoc>
 	 */
-	_rest.prototype.patchStream = function(aBaseURI, aDataRowMap, aIdxMap) {
+	_rest.prototype.patch2Stream = function(aBaseURI, aDataRowMap, aIdxMap) {
 		return this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true, "patch");
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.patchStream2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
+	 * <key>$rest.patch2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
@@ -4787,7 +4787,7 @@ const $rest = function(ops) {
 	 * The byte output will be saved into aFilePath.
 	 * </odoc>
 	 */
-	_rest.prototype.patchStream2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+	_rest.prototype.patch2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
 		ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true, "patch"));
 	};
 	/**
@@ -4860,15 +4860,17 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 const $cache = function(aName) {
     var __c = function(aN) {
         aN = _$(aN).default("cache");
-        this.name = aN;
-        this.func = void 0;
-        this.attl = void 0;
-        this.ach  = void 0;
+        this.name  = aN;
+        this.func  = void 0;
+        this.attl  = void 0;
+		this.ach   = void 0;
+		this.msize = void 0;
     };
 
-    __c.prototype.fn     = function(aFunc) { this.func  = aFunc;    return this; };
-    __c.prototype.ttl    = function(attl)  { this.attl  = attl;     return this; };
-	__c.prototype.ch     = function(aCh)   { this.ach   = aCh;      return this; };
+    __c.prototype.fn        = function(aFunc) { this.func   = aFunc;    return this; };
+    __c.prototype.ttl       = function(attl)  { this.attl   = attl;     return this; };
+	__c.prototype.ch        = function(aCh)   { this.ach    = aCh;      return this; };
+	__c.prototype.maxSize   = function(asize) { this.msize  = asize;    return this; };
 	/**
 	 * <odoc>
 	 * <key>$cache.inFile(aFile) : Object</key>
@@ -4890,7 +4892,8 @@ const $cache = function(aName) {
         $ch(this.name).create(1, "cache", {
             func: this.func,
             ttl: this.attl,
-            ch: this.ach
+			ch: this.ach,
+			size: this.msize
         });
 
         return this;
