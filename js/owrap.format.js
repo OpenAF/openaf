@@ -1027,12 +1027,13 @@ OpenWrap.format.prototype.testPort = function(aAddress, aPort, aCustomTimeout) {
 /**
  * <odoc>
  * <key>ow.format.testPortLatency(aHost, aPort, aCustomTimeout) : Number</key>
- * Test establishing a TCP socket connection with aHost on aPort. Optionally aCustomTimeout can be provided.
- * The test will be timed and the time in ms will be returned. If returned a time &lt; 0 then an error occurred or the 
+ * Test establishing a TCP socket connection with aHost on aPort. Optionally aCustomTimeout can be provided (defaults to
+ * 60000 ms). The test will be timed and the time in ms will be returned. If returned a time &lt; 0 then an error occurred or the 
  * host:port couldn't be reached.
  * </odoc>
  */
 OpenWrap.format.prototype.testPortLatency = function(aHost, aPort, aCustomTimeout) {
+	aCustomTimeout = _$(aCustomTimeout).isNumber().default(60000);
 	var sock  = new java.net.Socket();
 	var iaddr = new java.net.InetSocketAddress(aHost, aPort);
 
