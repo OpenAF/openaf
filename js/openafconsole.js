@@ -743,7 +743,7 @@ function __view(aCmd, fromCommand, shouldClear) {
 		}	
 			
 		if (shouldClear) __clear();
-		if ((isMap(__res) || isArray(__res)) && Object.keys(__res).length > 0) {
+		if (outputCommand && (isMap(__res) || isArray(__res)) && Object.keys(__res).length > 0) {
 			var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
 			if (pauseCommand) {
 				var __lines = (prefix + printMap(__res, void 0, (isDef(__codepage) ? "utf" : void 0), colorCommand)).split(/\n/);
@@ -898,7 +898,7 @@ function __processCmdLine(aCommand, returnOnly) {
 }
 
 function __showResultProcessCmdLine(__res, __cmd) {
-	if(isDef(__res)) {
+	if(outputCommand && isDef(__res)) {
 		if (pauseCommand) {
 			var __pres = 0;
 			var lines = [];

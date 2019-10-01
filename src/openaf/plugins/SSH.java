@@ -73,7 +73,7 @@ public class SSH extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>SSH.SSH(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression, aTimeout) : SSH</key>
+	 * <key>SSH.SSH(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression, aTimeout, noStrictHostKeyChecking) : SSH</key>
 	 * Creates an instance of a SSH client (and connects) given a host, port, login username, password and, 
 	 * optionally a identity file path and the indication of use of compression. Alternatively you can provide 
 	 * just a simple url where aHost = ssh://user:pass@host:port/identificationKey?timeout=1234&amp;compression=true.
@@ -238,7 +238,7 @@ public class SSH extends ScriptableObject {
      	this.jsch = new JSch(); 
      	
      	if (this.identity != null && this.identity.length() > 0) {
-     		jsch.addIdentity(this.identity);
+			jsch.addIdentity(this.identity);
      	}
      	
 	    session = jsch.getSession(login, host, port);
@@ -260,6 +260,11 @@ public class SSH extends ScriptableObject {
 		session.connect();
 		execChannel = null;
 		sftpChannel = null;
+	}
+
+	@JSFunction
+	public Object getJsch() {
+		return this.jsch;
 	}
 	
 	/**

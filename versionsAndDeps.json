@@ -83,7 +83,7 @@
 		{
 			"description": "Lodash",
 			"path": ["js/lodash.js"],
-			"version": "4.17.11",
+			"version": "4.17.15",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/lodash/lodash/master/LICENSE",
