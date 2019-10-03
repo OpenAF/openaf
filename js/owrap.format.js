@@ -1345,6 +1345,70 @@ OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, ti
 
 /**
  * <odoc>
+ * <key>ow.format.printWithWaiting(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme)</key>
+ * Executes aMainFunc while priting aPrefixMsg with a waiting aTheme (defaults to a sequence of chars with a rotating bar).
+ * When aMainFunc ends it will replace the priting with aCompleteMsg or aErrorMsg in case an exception is thrown.
+ * Optionally you can provide a different aWaitSpeed while cycling between the aTheme sequence of chars increasing/decreasing
+ * the "animation" effect.
+ * </odoc>
+ */
+OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme, pnlfn) {
+	_$(aMainFunc, "Main function").isFunction().$_();
+
+	aWaitSpeed   = _$(aWaitSpeed, "aWaitSpeed").isNumber().default(150);
+	aPrefixMsg   = _$(aPrefixMsg, "aPrefixMsg").isString().default("");
+	aCompleteMsg = _$(aCompleteMsg, "aCompleteMsg").isString().default(" ");
+	aErrorMsg    = _$(aErrorMsg, "aErrorMsg").isString().default("!");
+	aTheme       = _$(aTheme, "aTheme").isString().default("-\\|/");
+	pnlfn        = _$(pnlfn).default(printnl);
+
+	var e, p = $do(() => {
+		aMainFunc();
+	}).catch((ee) => {
+		e = ee;
+	});
+
+	$tb(() => {
+		var ii = 0;
+		while(isUnDef(e) && p.state <= 0) {
+			if (ii >= aTheme.length) ii = 0;
+			pnlfn(aPrefixMsg + aTheme[ii] + "\r");
+			ii++;
+			sleep(aWaitSpeed, true);
+		}
+	})
+	.stopWhen(() => {
+		$doWait(p);
+		return true;
+	})
+	.exec();
+
+	if (isDef(e)) {
+		var c = (aPrefixMsg.length + 1) - aErrorMsg.length;
+		pnlfn(aErrorMsg + repeat((c >= 0 ? c : 0), " ") + "\n");
+		throw e;
+	} else {
+		var c = (aPrefixMsg.length + 1) - aCompleteMsg.length;
+		pnlfn(aCompleteMsg + repeat((c >= 0 ? c : 0), " ") + "\n");
+		return true;
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.logWithWaiting(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme)</key>
+ * Executes aMainFunc while log aPrefixMsg with a waiting aTheme (defaults to a sequence of chars with a rotating bar).
+ * When aMainFunc ends it will replace the log with aCompleteMsg or aErrorMsg in case an exception is thrown.
+ * Optionally you can provide a different aWaitSpeed while cycling between the aTheme sequence of chars increasing/decreasing
+ * the "animation" effect.
+ * </odoc>
+ */
+OpenWrap.format.prototype.logWithWaiting = function(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme) {
+	return ow.format.printWithWaiting(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme, lognl);
+};
+
+/**
+ * <odoc>
  * <key>ow.format.percProgressReport(aMainFunc, aProgressFunc, aTimeout)</key>
  * Percentage progress report help function over a function on aMainFunc calling aProgressFunc in parallel
  * with a percentage function parameter (receiving target and source numbers). You can also provide an alternative
