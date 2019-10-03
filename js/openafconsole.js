@@ -735,11 +735,13 @@ function __view(aCmd, fromCommand, shouldClear) {
 	} else {
 		var __res;
 		try {
-			if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
+			//if (aCmd.trim().indexOf("{") < 0) __res = __processCmdLine(aCmd, true); else __res = eval("(" + aCmd + ")");
+			__res = __processCmdLine(aCmd, true);
 		} catch(e) {
 			if (shouldClear) __clear();
-			__showResultProcessCmdLine(__processCmdLine(aCmd), aCmd);
-			return true;
+			//if (isUnDef(__res)) __res = __processCmdLine(aCmd); 
+			__showResultProcessCmdLine(__res, aCmd);
+			throw e;
 		}	
 			
 		if (shouldClear) __clear();
