@@ -3020,6 +3020,20 @@ function isByteArray(obj) {
 	return (isDef(obj.getClass) && obj.getClass().getName() == "byte[]");
 }
 
+/**
+ * <odoc>
+ * <key>isUUID(aObj) : boolean</key>
+ * Returns true if aObj is an UUID.
+ * </odoc>
+ */
+function isUUID(obj) {
+	if (isString(obj) && obj.match(/^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$/)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 function descType(aObj) {
 	if (isUnDef(aObj)) return "undefined";
 	if (isNull(aObj)) return "null";
@@ -4375,7 +4389,7 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
  * \
  *    $tb().timeout(5000).exec(aFunc);  // Executes aFunc to a maximum of 5 seconds. Afterwards the aFunc is stopped.\
  *    $tb(aFunc).timeout(5000).exec();  // Sames as previous, aFunc can be provided before or on exec.\
- *    $tb().timeout(500).stopWhen(aStopFunc).exec(); // Stops when aStopFunc is true called every 500 ms.\
+ *    $tb().timeout(500).stopWhen(aStopFunc).exec(); // Stops when aStopFunc is true.\
  * 
  * </odoc>
  */

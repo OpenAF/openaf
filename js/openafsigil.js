@@ -73,7 +73,8 @@ const $$ = function(aObj) {
         isString: () => { return typeof aObj == 'string' || false; },
         isNumber: () => { return !isNaN(parseFloat(aObj)) && isFinite(aObj); },
         isDate: () => { return (null != aObj) && !isNaN(aObj) && ("undefined" !== typeof aObj.getDate); },
-        isRegExp: () => { return (aObj instanceof RegExp); }
+        isRegExp: () => { return (aObj instanceof RegExp); },
+        isUUID: () => { return (aObj.match(/^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$/) ? true : false); }
 	};
 	return _r;
 };
@@ -88,7 +89,7 @@ const _$ = function(aValue, aPrefixMessage) {
         // Defaults
         /**
          * <odoc>
-         * <key>_$(aObject)</key>
+         * <key>_$(aObject, anErrorMessagePrefix)</key>
          * Shortcut to facilitate argument pre-validation and promote defensive programming.\
          * \
          * .default(aNewObject) : aObject\
@@ -102,7 +103,7 @@ const _$ = function(aValue, aPrefixMessage) {
             if (!defined) return aVal; else return aValue;
         },
         $_ : (aMessage) => {
-			if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "not available";
+			if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "not defined";
 			if (!defined) throw aMessage;
 			return aValue;
 		},
@@ -168,7 +169,11 @@ const _$ = function(aValue, aPrefixMessage) {
             if (defined && (aValue == null)) throw aMessage;
             return __r;
         },
-
+        isUUID: (aMessage) => {
+            if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not an UUID";
+            if (defined && (!$$(aValue).isString() || aValue.match(/^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$/))) throw aMessage;
+            return __r;
+        },
 		// Generic validations
         check: (aFunction, aMessage) => {
 			if (!$$(aFunction).isFunction() && !$$(aFunction).isString()) throw "please provide a function to check";
