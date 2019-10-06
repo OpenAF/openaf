@@ -289,7 +289,7 @@ OpenWrap.java.prototype.cipher.prototype.encrypt = function(plainText, publicKey
  * </odoc>
  */
 OpenWrap.java.prototype.cipher.prototype.encryptStream = function(oStream, publicKey) {
-   if (oStream != null) throw "Please provide an output stream to encrypt.";
+   if (oStream == null) throw "Please provide an output stream to encrypt.";
    _$(publicKey).$_("Please provide a public key.");
    var cipher = javax.crypto.Cipher.getInstance("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING");
    cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, publicKey);
