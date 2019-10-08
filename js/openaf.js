@@ -4881,9 +4881,33 @@ const $cache = function(aName) {
 		this.msize = void 0;
     };
 
-    __c.prototype.fn        = function(aFunc) { this.func   = aFunc;    return this; };
-    __c.prototype.ttl       = function(attl)  { this.attl   = attl;     return this; };
+	/**
+	 * <odoc>
+	 * <key>$cache.fn(aFunction) : Object</key>
+	 * Defines the aFunction use to get aKey. The returned object will be cached.
+	 * </odoc>
+	 */
+	__c.prototype.fn        = function(aFunc) { this.func   = aFunc;    return this; };
+	/**
+	 * <odoc>
+	 * <key>$cache.ttl(aTTL) : Object</key>
+	 * Defines the time-to-live (aTTL) to consider a cached result as valid.
+	 * </odoc>
+	 */
+	__c.prototype.ttl       = function(attl)  { this.attl   = attl;     return this; };
+	/**
+	 * <odoc>
+	 * <key>$cache.ch(aChannelName) : Object</key>
+	 * Uses a pre-existing channel (e.g. aChannelName) as the cache channel.
+	 * </odoc>
+	 */
 	__c.prototype.ch        = function(aCh)   { this.ach    = aCh;      return this; };
+	/**
+	 * <odoc>
+	 * <key>$cache.maxSize(aSize) : Object</key>
+	 * Establishes the max number of entries cached at any given point in time.
+	 * </odoc>
+	 */
 	__c.prototype.maxSize   = function(asize) { this.msize  = asize;    return this; };
 	/**
 	 * <odoc>
