@@ -53,11 +53,15 @@ Currently there are several different implementations built-in (on the included 
 * MVS
 * Simple (default from 20181210)
 * Buffer
+* Proxy
+* Etcd
 * Dummy (for testing)
 
 And some available through oPacks:
 
-* Mongo
+* Mongo (mongo opack)
+* Etcd3 (etcd3 opack, via GRPC)
+* DynamoDB (aws opack)
 
 The default implementation, until version 20181210, Big uses the OpenWrap Big Objects functionality (from the OpenWrap Object library). You don't need to know how this functionality works internally. For the sake of simplicity let's assume it's like an internal JavaScript Array of a Map with a Key and Value.
 
@@ -378,13 +382,67 @@ To create one just:
 });
 ````
 
+### Proxy
+
+This implementation allows to intersect channel request to another target channel. It can be useful to collect channel usage statistics using *ow.ch.utils.getStatsProxyFunction*.
+
+To create a proxy just:
+
+````javascript
+> $ch("proxy").create(1, "proxy", {
+    chTarget  : "targetCh".
+    proxyFunc : function(aMap) { 
+        // Function that receives a map (by reference that can be changed)
+        // with: op (operation), name (target channel), function (where 
+        // applicable), full (where applicable), match (the match of getSet),
+        // k (the key(s)), v (the value(s)) and timestamp. If this function 
+        // returns something no operation will be executed on the chTarget 
+        // and the value returned by the function will be the value returned 
+        // by this channel.
+    }
+});
+````
+
+### Etcd
+
+This OpenAF channel implementation interacts with a [Etcd](https://etcd.io) cluster through HTTP/HTTPs. You can use the Etcd3 oPack to interact via GRPC.
+
+To create an etcd channel just:
+
+````javascript
+> $ch("etcd").create(1, "etcd", {
+    url: "http://my.etcd.cluster:2379",
+    folder: "myFolder",
+    throwExceptions: false,
+    default: { result: 0 }
+});
+````
+
+The options used are:
+
+| Option | Mandatory | Type | Description |
+|--------|-----------|------|-------------|
+| url | Yes | String | The URL to connect to the Etcd cluster |
+| folder | No | String | The key prefix to use. |
+| throwExceptions | No | Boolean | If true, whenever there is an error (e.g. communication error, etc...) an exception will be thrown. |
+| default | No | Map | If throwExceptions is false what should be returned on a get function in case of error. | 
+
 ### Dummy
 
 In this implementation all functionality will simple return without executing anything. It's mainly use for testing proposes.
 
-### Mongo (through oPack)
+### Mongo (through the Mongo oPack)
 
 Please check the Mongo oPack documentation (tbc).
+
+### Etcd3 (through the Etcd3 oPack)
+
+This implementation differs from the "etcd" implementation since it will communicate via GRPC instead of HTTP.
+Please check the Etcd3 oPack documentation (tbc).
+
+### Dynamo (through the AWS oPack)
+
+This implementation uses the AWS API directly to interact with AWS's Dynamo DB.
 
 ### Exposing channels externally
 

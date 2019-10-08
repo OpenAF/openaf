@@ -44,11 +44,11 @@ openaf --update
 
 ## Documentation
 
+* [How to](How-to)
 * [All functions, objects, plugins and libraries](documentation)
 * [oJob](oJob)
 * [OpenAF Channels](OpenAF-Channels)
 * [OpenAF oPromises](OpenAF-oPromise)
-* [How to](How-to)
 * [Code tips & tricks](Tips-&-tricks)
 
 ## Building
@@ -67,3 +67,7 @@ ojob autoTestAll.yaml
 ````
 
 But you can use a previous stable openaf build if the ow.test and ojob functionality could be broken by your changes.
+
+## Links
+
+* https://openafs.blogspot.com - OpenAF code snippets and functionality explained

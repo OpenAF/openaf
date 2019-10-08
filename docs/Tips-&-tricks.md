@@ -17,6 +17,10 @@ function doStuffWithFiles(aFile) {
 
 ## OpenAF-console
 
+### [Increasing the history size for openaf-console](https://openafs.blogspot.com/2019/08/increasing-history-size-for-openaf.html)
+
+
+
 ### Quick shell and shell commands from openaf-console
 
 Just create an alias like this in Windows:
