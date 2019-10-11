@@ -119,31 +119,61 @@ OpenWrap.java.prototype.maven.prototype.getFileVersion = function(artifactId, aF
     ioStreamCopy(wstream, rstream);
 };
 
-OpenWrap.java.prototype.maven.prototype.getDependencies = function(artifactId, aVersion, aOutputDir, aScope) {
+OpenWrap.java.prototype.maven.prototype.getDependencies = function(artifactId, aVersion, aOutputDir, aScope, aList, props) {
     var aURI = this._translateArtifact(artifactId);
     var version = (isUnDef(aVersion) ? this.getLatestVersion(aURI) : aVersion);
     var filename = artifactId.substring(artifactId.lastIndexOf(".") + 1) + "-" + version + ".pom";
     var scope = _$(aScope).isString().default("");
+    aList = _$(aList).isArray().default([]);
+    props = _$(props).isMap().default({});
 
-    var h = $rest().get(this._getURL() + "/" + aURI + "/" + version + "/" + filename).replace(/(.*\n)*.*<project( [^>]+)>/, "<project>");
-    plugin("XML");
-    var x = (new XML(String(h))).toNativeXML();
+    var info = [], x;
+    try {
+        var h = $rest({ throwExceptions: false }).get(this._getURL() + "/" + aURI + "/" + version + "/" + filename);
+        if (isDef(h.error) && h.error.responseCode == 404) return info;
 
-    var info = [];
-    for(var ii = 0; ii < x.dependencies.dependency.length(); ii++) {
-        if (x.dependencies.dependency[ii].scope.toString() == scope) {
-            info.push({
-                groupId: x.dependencies.dependency[ii].groupId.toString(),
-                artifactId: x.dependencies.dependency[ii].artifactId.toString(),
-                version: x.dependencies.dependency[ii].version.toString(),
-                scope: x.dependencies.dependency[ii].scope.toString()
-            });
+        h = h.replace(/(.*\n)*.*<project( [^>]+)>/, "<project>");
+        x = af.fromXML2Obj(h);
+    
+        if (isDef(x.project.dependencies) && isDef(x.project.dependencies.dependency)) {
+            for(var ii = 0; ii < x.project.dependencies.dependency.length; ii++) {
+                if (isUnDef(x.project.dependencies.dependency[ii].scope) || (x.project.dependencies.dependency[ii].scope == scope)) {
+                    if (isUnDef(x.project.dependencies.dependency[ii].optional) || !x.project.dependencies.dependency[ii].optional) {
+                        if (isDef(x.project.properties)) props = merge(props, x.project.properties);
+
+                        var pversion = void 0;
+                        if (isDef(x.project.dependencies.dependency[ii].version)) {
+                            var pversion = String(x.project.dependencies.dependency[ii].version);
+                            if (pversion == "${project.version}") pversion = String(x.project.parent.version);
+                            if (isDef(pversion) && pversion.startsWith("${")) pversion = String(props[pversion.replace(/^\${(.+)}$/, "$1")]);
+                            var pgroupId = String(x.project.dependencies.dependency[ii].groupId);
+                            if (pgroupId == "${project.groupId}") pgroupId = String(x.project.parent.groupId);
+                        }
+
+                        if (isDef(pgroupId)) {
+                            info.push({
+                                groupId: pgroupId,
+                                artifactId: String(x.project.dependencies.dependency[ii].artifactId),
+                                version: pversion,
+                                scope: String(x.project.dependencies.dependency[ii].scope)
+                            });
+                            
+                            if (info.indexOf(pgroupId + "." + x.project.dependencies.dependency[ii].artifactId) < 0) {
+                                var rinfo = this.getDependencies(pgroupId + "." + x.project.dependencies.dependency[ii].artifactId, pversion, void 0, aScope, aList, props);
+                                aList.push(pgroupId + "." + x.project.dependencies.dependency[ii].artifactId);
+                                info = info.concat(rinfo);
+                            }
+                        }
+                    }
+                }
+            }
         }
+    
+        return info;
+    } catch(e) {
+        if (String(e).indexOf("FileNotFoundException") < 0) throw e; 
+        return info;
     }
-
-    // ".replace(/\${([^}]*)}/g, "{{$1}}")
-
-    return info;
 };
 
 /**
