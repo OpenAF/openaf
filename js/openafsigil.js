@@ -72,6 +72,7 @@ const $$ = function(aObj) {
         isFunction: () => { return typeof aObj == 'function' || false; },
         isString: () => { return typeof aObj == 'string' || false; },
         isNumber: () => { return !isNaN(parseFloat(aObj)) && isFinite(aObj); },
+        isTNumber: () => { return typeof aObj == 'number' || false; },
         isDate: () => { return (null != aObj) && !isNaN(aObj) && ("undefined" !== typeof aObj.getDate); },
         isRegExp: () => { return (aObj instanceof RegExp); },
         isUUID: () => { return (aObj.match(/^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$/) ? true : false); }
@@ -103,7 +104,7 @@ const _$ = function(aValue, aPrefixMessage) {
             if (!defined) return aVal; else return aValue;
         },
         $_ : (aMessage) => {
-			if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "not defined";
+			if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "not defined or assigned";
 			if (!defined) throw aMessage;
 			return aValue;
 		},
@@ -112,6 +113,11 @@ const _$ = function(aValue, aPrefixMessage) {
         isNumber: (aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not a number";
             if (defined && !$$(aValue).isNumber()) throw aMessage;
+            return __r;
+        },
+        isTNumber: (aMessage) => {
+            if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not a number type";
+            if (defined && !$$(aValue).isTNumber()) throw aMessage;
             return __r;
         },
         isString: (aMessage) => {
@@ -219,11 +225,11 @@ const _$ = function(aValue, aPrefixMessage) {
 		// Numeric validations
         between: (aValA, aValB, aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not between " + aValA + " and " + aValB;
-            if (defined && (aValue < aValB && aValue > aValA)) throw aMessage;
+            if (defined && (aValue >= aValB || aValue <= aValA)) throw aMessage;
         },
         betweenEquals: (aValA, aValB, aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not between " + aValA + " and " + aValB;
-            if (defined && (aValue <= aValB && aValue >= aValA)) throw aMessage;
+            if (defined && (aValue > aValB || aValue < aValA)) throw aMessage;
         },        
         less: (aVal, aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is less than " + aVal;

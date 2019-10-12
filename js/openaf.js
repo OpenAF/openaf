@@ -2962,11 +2962,21 @@ function isString(obj) {
 /**
  * <odoc>
  * <key>isNumber(aObj) : boolean</key>
- * Returns true if aObj is a number, false otherwise
+ * Returns true if aObj can be a number, false otherwise
  * </odoc>
  */
 function isNumber(obj) {
 	return !isNaN(parseFloat(obj)) && isFinite(obj);
+}
+
+/**
+ * <odoc>
+ * <key>isTNumber(aObj) : boolean</key>
+ * Returns true if aObj is of type number, false otherwise
+ * </odoc>
+ */
+function isTNumber(obj) {
+	return typeof obj === "number";
 }
 
 /**

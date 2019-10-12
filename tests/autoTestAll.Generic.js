@@ -720,4 +720,79 @@
         ow.test.assert(descType("hello"), "string", "(descType) Failed to identify a string.");
         ow.test.assert(descType(null), "null", "(descType) Failed to identify a null.");        
     };
+
+    exports.testSigil = function() {
+        var res;
+
+        try { res = false; var aaabbb; _$(aaabbb).$_(); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with mandatory.");
+        try { res = false; var aaabbb; res = _$(aaabbb).default(true); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with default.");
+
+        try { res = false; _$("123").isTNumber(); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with isTNumber (1).");
+
+        try { res = false; _$(123).isTNumber(); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with isTNumber (2).");
+
+        try { res = false; _$("a").Number(); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with Number (1).");
+
+        try { res = false; _$(123).Number(); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with Number (2).");
+
+        try { res = false; _$(123).isString(); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with isString (1).");
+
+        try { res = false; _$("123").isString(); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with isString (2).");
+
+        try { res = false; _$(3).between(1, 3); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with between (1).");
+
+        try { res = false; _$(2).between(1, 3); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with between (2).");
+
+        try { res = false; _$(3).betweenEquals(1, 3); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with betweenEquals (1).");
+
+        try { res = false; _$(4).betweenEquals(1, 3); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with betweenEquals (2).");
+
+        try { res = false; _$(3).oneOf([1, 2, 3]); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with oneOf (1).");
+
+        try { res = false; _$(4).oneOf([1, 2, 3]); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with oneOf (2).");
+
+        try { res = false; _$([1, 2]).anyOf([1, 2, 3]); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with anyOf (1).");
+
+        try { res = false; _$([1, 4]).anyOf([1, 2, 3]); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with anyOf (2).");
+
+        try { res = false; _$([1, 2]).isArray(); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with isArray (1).");
+
+        try { res = false; _$(4).isArray(); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with isArray (2).");
+
+        try { res = false; _$(genUUID()).isUUID(); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with isUUID (1).");
+
+        try { res = false; _$("1" + genUUID()).isUUID(); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with isUUID (2).");
+
+        try { res = false; _$(4).expr("{{v}} > 0 && {{v}} < 5 && {{v}} != 3"); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with expr (1).");
+
+        try { res = false; _$(3).expr("{{v}} > 0 && {{v}} < 5 && {{v}} != 3"); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with expr (2).");
+
+        try { res = false; _$(4).check(v => { return v - 4 == 0; }); } catch(e) { res = true; }
+        ow.test.assert(res, false, "Problem with check (1).");
+
+        try { res = false; _$(3).check(v => { return v - 4 == 0; }); } catch(e) { res = true; }
+        ow.test.assert(res, true, "Problem with check (2).");
+    };
 })();
