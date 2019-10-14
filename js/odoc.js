@@ -217,8 +217,8 @@ ODocs.prototype.load = function(aID) {
 	var zip;
 	if (this.aFilename.match(/\.(jar|db|zip)$/)) {
 		var zipContainer = new ZIP();
-		zipContainer.loadFile(this.aFilename);
-		zip = new ZIP(zipContainer.getFile(".odoc.db"));
+		//zipContainer.loadFile(this.aFilename);
+		zip = new ZIP(zipContainer.streamGetFile(this.aFilename, ".odoc.db"));
 	} else {
 		zip = new ZIP();
 		zip.loadFile(this.aFilename + "/.odoc.db");
@@ -242,7 +242,7 @@ ODocs.prototype.load = function(aID) {
 	}
 
 	zip.close();
-}
+};
 
 ODocs.prototype.search = function(aTerm, anArrayOfIds) {
 	var ids = (isUnDef(anArrayOfIds)) ? Object.keys(this.aodocskeys) : anArrayOfIds;
