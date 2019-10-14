@@ -349,6 +349,9 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 	var output = "";
 	var colorMap = { lines: "bold", value: "CYAN" };
 
+	ow.loadFormat();
+	if (isUnDef(aTheme) && !ow.format.isWindows()) aTheme = "utf";
+
 	var hLine = "-", vLine = "|", hvJoin = "+";
 	if (aTheme == "utf") {
 		hLine = "─";
