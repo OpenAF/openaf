@@ -337,20 +337,31 @@ function tprintErr(aTemplateString, someData) {
 
 /**
  * <odoc>
- * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorMap) : String</key>
+ * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
  * Optionally you can specify aWidthLimit and useAnsi.
- * If you want to include a count of rows just use displayCount = true. If useAnsy = true you can provide a colorMap with colors
- * for lines (default bold) and values (default CYAN).
+ * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf" or "plain")
  * </odoc>
  */
-function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorMap) {
+function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme) {
 	var count = 0;
 	var maxsize = {};
 	var output = "";
-	if (isUnDef(colorMap)) colorMap = {};
-	if (isUnDef(colorMap.lines)) colorMap.lines = "bold";
-	if (isUnDef(colorMap.values)) colorMap.values = "CYAN";
+	var colorMap = { lines: "bold", value: "CYAN" };
+
+	var hLine = "-", vLine = "|", hvJoin = "+";
+	if (aTheme == "utf") {
+		hLine = "─";
+		vLine = "│";
+		hvJoin = "┼";
+	}
+
+	var _getColor = (aValue) => {
+		if (isNumber(aValue)) return __colorFormat.number;
+		if (isString(aValue)) return __colorFormat.string;
+		if (isBoolean(aValue)) return __colorFormat.boolean;
+		return __colorFormat.default;
+	};
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
 	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
@@ -381,7 +392,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorM
 					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
 				} else {
 					output += repeat(Math.floor((maxsize[String(col)] - String(col).length)/2), ' ') + (useAnsi ? ansiColor(colorMap.lines, String(col)) : String(col)) + repeat(Math.round((maxsize[String(col)] - String(col).length) / 2), ' ');
-					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, "|") : "|");
+					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 				}
 				colNum++;
 			});
@@ -394,15 +405,15 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorM
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
 				} else {
-					output += (useAnsi ? ansiColor(colorMap.lines, repeat(maxsize[String(col)], '-')) : repeat(maxsize[String(col)], '-'));
-					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, "+") : "+");
+					output += (useAnsi ? ansiColor(colorMap.lines, repeat(maxsize[String(col)], hLine)) : repeat(maxsize[String(col)], hLine));
+					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, hvJoin) : hvJoin);
 				}
 				colNum++;
 			});
 			output += "\n";
 		};
 
-		//output += (useAnsi ? ansiColor(colorMap.lines, "|") : "|"); 
+		//output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine); 
 		lineSize = 1; outOfWidth = false; colNum = 0;
 		cols.forEach(function(col) {
 			if (outOfWidth) return;
@@ -411,8 +422,8 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, colorM
 				output += "..."; outOfWidth = true;
 			} else {	
 				var value = String(row[String(col)]).replace(/\n/g, " ");
-				output += (useAnsi ? ansiColor(colorMap.values, value) : value) + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ');
-				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, "|") : "|");
+				output += (useAnsi ? ansiColor(_getColor(row[String(col)]), value) : value) + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ');
+				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 			}
 			colNum++;
 		});
