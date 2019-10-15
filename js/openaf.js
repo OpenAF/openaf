@@ -347,7 +347,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 	var count = 0;
 	var maxsize = {};
 	var output = "";
-	var colorMap = { lines: "bold", value: "CYAN" };
+	var colorMap = { lines: "RESET", value: "CYAN" };
 
 	ow.loadFormat();
 	if (isUnDef(aTheme) && !ow.format.isWindows()) aTheme = "utf";
