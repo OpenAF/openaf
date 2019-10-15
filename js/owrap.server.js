@@ -1273,7 +1273,7 @@ OpenWrap.server.prototype.locks.prototype.isLocked = function(aLockName) {
 				lock: aLockName
 			});
 		}
-		if (r.value == true && isDef(r.timeout) && (nowUTC() >= r.timeout)) {
+		if (r.value == true && isDef(r.timeout) && !isNull(r.timeout) && (nowUTC() >= r.timeout)) {
 			this.unlock(aLockName);
 			r = $ch(this.name).get({
 				lock: aLockName
@@ -1315,7 +1315,7 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
 			if (rrr) {
 				var res = this.isLocked(aLockName);
 				if (res.value == false) lock = false;
-				if (isDef(res.timeout) && (nowUTC() >= res.timeout)) 
+				if (isDef(res.timeout) && !isNull(res.timeout) && (nowUTC() >= res.timeout)) 
 					lock = false;
 				else 
 					sleep(aTryTimeout);
@@ -1323,7 +1323,7 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
 		} else {
 			var res = this.isLocked(aLockName);
 			if (res.value == false) lock = false;
-			if (isDef(res.timeout) && (nowUTC() >= res.timeout)) 
+			if (isDef(res.timeout) && !isNull(res.timeout) && (nowUTC() >= res.timeout)) 
 				lock = false;
 			else 
 				sleep(aTryTimeout);
