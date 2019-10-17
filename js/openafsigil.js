@@ -73,6 +73,8 @@ const $$ = function(aObj) {
         isString: () => { return typeof aObj == 'string' || false; },
         isNumber: () => { return !isNaN(parseFloat(aObj)) && isFinite(aObj); },
         isTNumber: () => { return typeof aObj == 'number' || false; },
+        isBoolean: () => { return typeof aObj == 'boolean' || false; },
+        isNull: () => { return null == aObj || false; },
         isDate: () => { return (null != aObj) && !isNaN(aObj) && ("undefined" !== typeof aObj.getDate); },
         isRegExp: () => { return (aObj instanceof RegExp); },
         isUUID: () => { return (aObj.match(/^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$/) ? true : false); }
