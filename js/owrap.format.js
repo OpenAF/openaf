@@ -2,12 +2,50 @@
 // Author: Nuno Aguiar
 // Format
 // (parts from assemble.io)
-
+ 
 OpenWrap.format = function() {
 	return ow.format;
 }
 
 OpenWrap.format.prototype.string = {
+	// from: https://dmitripavlutin.com/what-every-javascript-developer-should-know-about-unicode/
+	/** 
+	 * <odoc>
+	 * <key>ow.format.string.unicode(aCodeNumber) : String</key>
+	 * Given a unicode aCodeNumber (8 or 16 bits) will convert to the necessary sequence of 8 bit.
+	 * For example: ow.format.string.unicode(0x1F37A)
+	 * </odoc>
+	 **/
+        unicode: code => {
+	    var str = "";
+	    if (code > 0xFFFF) {
+	       var pair = ow.format.string.getSurrogatePair(code);
+	       str += String.fromCharCode(pair[0]) + String.fromCharCode(pair[1]); 
+	    } else {
+	       str += String.fromCharCode(code);
+	    }
+	    return str;
+        },
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.getSurrogatePair(astralCodePoint) : Array</key>
+	 * Returns an array of two 8 bit codes given an unicode astralCodePoint of 16 bits
+	 * </odoc>
+	 **/
+	getSurrogatePair: astralCodePoint => {
+	    let highSurrogate = Math.floor((astralCodePoint - 0x10000) / 0x400) + 0xD800;
+	    let lowSurrogate = (astralCodePoint - 0x10000) % 0x400 + 0xDC00;
+	    return [highSurrogate, lowSurrogate];
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.getAstralCodePoint(aHighSurrogate, aLowSurrogate) : Number</key>
+	 * Given a 8-bit aHighSurrogate code and a 8-bit aLowSurogate code returns a 16-bit unicode code
+	 * </odoc>
+	 **/
+	getAstralCodePoint: (highSurrogate, lowSurrogate) => {
+	    return (highSurrogate - 0xD800) * 0x400 + lowSurrogate - 0xDC00 + 0x10000;
+	},
 	/**
 	 * <odoc>
 	 * <key>ow.format.string.wordWrap(aString, maxWidth, newLineSeparator) : String</key>
