@@ -2014,13 +2014,14 @@ OpenWrap.format.prototype.cron = {
 		} while(ar.length > 0 && ar[ar.length - 1].getTime() > lastUpdate && c < aLimit);
 	
 		if (ar[0].getTime() <= lastUpdate) isDelayed = false;
+		if (ar[ar.length - 1].getTime() < lastUpdate) { ar.pop(); c--; }
 	
 		return {
 			isDelayed: isDelayed,
 			howManyAgo: (isDelayed) ? c : 0,
 			missedTimes: (isDelayed) ? ar : [],
 			limit: aLimit,
-			delayedAtLeast: (isDelayed) ? lastUpdate - ar[ar.length - 1].getTime() : 0
+			delayedAtLeast: (isDelayed) ? ar[ar.length - 1].getTime() - lastUpdate : 0
 		};
 	}
 }
