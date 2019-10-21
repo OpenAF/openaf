@@ -1361,6 +1361,58 @@ function tlogWarn(msg, someData, formatOptions) {
 
 /**
  * <odoc>
+ * <key>isJavaException(aObject) : boolean</key>
+ * Determines if aObject is a java exception object or a javascript exception with an embeeded java exception.
+ * </odoc>
+ */
+function isJavaException(aObj) {
+	if (isObject(aObj)) {
+		if (isJavaObject(aObj)) {
+			return aObj instanceof java.lang.Exception;
+		}
+		if (isDef(aObj.javaException) && isJavaObject(aObj.javaException)) {
+			return aObj.javaException instanceof java.lang.Exception;
+		}
+	}
+	return false;
+}
+
+/**
+ * <odoc>
+ * <key>getJavaStackTrace(anException) : Array</key>
+ * Given a javascript anException, if it's a wrapped or directly a java exception it will try to obtain the corresponding stack
+ * trace information in the form of an array.
+ * </odoc>
+ */
+function getJavaStackTrace(anException) {
+	if (isJavaException(anException)) {
+		var ar = [], res = [];
+		if (isDef(anException.javaException))
+			ar = af.fromJavaArray(anException.javaException.getStackTrace());
+		else
+			ar = af.fromJavaArray(anException.getStackTrace());
+
+		ar.forEach(r => {
+			res.push({
+				moduleName: r.getModuleName(),
+				moduleVersion: r.getModuleVersion(),
+				qclassLoaderName: r.getClassLoaderName(),
+				className: r.getClassName(),
+				methodName: r.getMethodName(),
+				lineNumber: r.getLineNumber(),
+				fileName: r.getFileName(),
+				nativeMethod: r.isNativeMethod()
+			});
+		});
+
+		return res;
+	} else {
+		return void 0;
+	}
+}
+
+/**
+ * <odoc>
  * <key>repeat(nTimes, aStr) : String</key>
  * Will build a string composed of aStr repeated nTimes.
  * </odoc>
