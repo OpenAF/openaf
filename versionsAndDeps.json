@@ -264,8 +264,8 @@
 		},
 		{
 			"description": "GoogleAuthenticator",
-			"path": ["lib/googleauth-1.2.0.jar"],
-			"version": "1.2",
+			"path": ["lib/googleauth-1.4.0.jar"],
+			"version": "1.4",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/wstrange/GoogleAuth/master/LICENSE",
