@@ -614,8 +614,9 @@ public class IO extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>io.writeFileStream(aFilename) : JavaStream</key>
-	 * Creates and returns a JavaStream to write to aFilename. For example:\
+	 * <key>io.writeFileStream(aFilename, shouldAppend) : JavaStream</key>
+	 * Creates and returns a JavaStream to write to aFilename. If shouldAppend = true the stream will 
+	 * append to the existing file. For example:\
 	 * \
 	 * var stream = io.writeFileStream("afile.txt");\
 	 * ioStreamWrite(stream, "Hello "); // you can also use ioStreamWriteBytes \
@@ -625,8 +626,8 @@ public class IO extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public static Object writeFileStream(String filename) throws IOException {
-		return FileUtils.openOutputStream(new File(filename));
+	public static Object writeFileStream(String filename, boolean append) throws IOException {
+		return FileUtils.openOutputStream(new File(filename), append);
 	}
 
 	/**

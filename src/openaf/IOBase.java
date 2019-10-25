@@ -148,7 +148,7 @@ public class IOBase extends openaf.core.IO {
 	}
 	
 	@JSFunction
-	public static Object writeFileStream(String filename) throws IOException {
-		return openaf.core.IO.writeFileStream(filename);
+	public static Object writeFileStream(String filename, boolean shouldAppend) throws IOException {
+		return openaf.core.IO.writeFileStream(filename, shouldAppend);
 	}
 }
