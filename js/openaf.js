@@ -4504,6 +4504,7 @@ const $rest = function(ops) {
 		this.options.collectAllStats = _$(this.options.collectAllStats).isBoolean().default(__openaf_rest.stats);
 		this.options.preAction = _$(this.options.preAction).isFunction().default(void 0);
 		this.options.uriQuery = _$(this.options.uriQuery).isBoolean().default(false);
+		this.options.downloadResume = _$(this.options.downloadResume).isBoolean().default(false);
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -4695,18 +4696,18 @@ const $rest = function(ops) {
 	};
 		/**
 	 * <odoc>
-	 * <key>$rest.get2File(aFilePath, aBaseURI, aIdxMap, downloadResume)</key>
+	 * <key>$rest.get2File(aFilePath, aBaseURI, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonGet (see help ow.obj.rest.jsonGet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient).
-	 * The byte output will be saved into aFilePath. Optional downloadResume = true will resume download of a file if it exists.
+	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */
-	_rest.prototype.get2File = function(aFilePath, aBaseURI, aIdxMap, downloadResume) {
-		if (downloadResume && io.fileExists(aFilePath)) {
+	_rest.prototype.get2File = function(aFilePath, aBaseURI, aIdxMap) {
+		if (this.options.downloadResume && io.fileExists(aFilePath)) {
 			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
 			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true, "get"));
@@ -4744,18 +4745,18 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.post2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap, downloadResume)</key>
+	 * <key>$rest.post2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonCreate (see help ow.obj.rest.jsonCreate) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient).
-	 * The byte output will be saved into aFilePath. Optional downloadResume = true will resume download of a file if it exists.
+	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */	
-	_rest.prototype.post2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap, downloadResume) {
-		if (downloadResume && io.fileExists(aFilePath)) {
+	_rest.prototype.post2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+		if (this.options.downloadResume && io.fileExists(aFilePath)) {
 			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
 			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true, "post"));
@@ -4793,18 +4794,18 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.put2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap, downloadResume)</key>
+	 * <key>$rest.put2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonSet (see help ow.obj.rest.jsonSet) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
-	 * The byte output will be saved into aFilePath. Optional downloadResume = true will resume download of a file if it exists.
+	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */
-	_rest.prototype.put2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap, downloadResume) {
-		if (downloadResume && io.fileExists(aFilePath)) {
+	_rest.prototype.put2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+		if (this.options.downloadResume && io.fileExists(aFilePath)) {
 			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
 			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true, "put"));
@@ -4842,18 +4843,18 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.delete2File(aFilePath, aBaseURI, aIdxMap, downloadResume)</key>
+	 * <key>$rest.delete2File(aFilePath, aBaseURI, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonRemove (see help ow.obj.rest.jsonRemove) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
-	 * The byte output will be saved into aFilePath. Optional downloadResume = true will resume download of a file if it exists.
+	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */
-	_rest.prototype.delete2File = function(aFilePath, aBaseURI, aIdxMap, downloadResume) {
-		if (downloadResume && io.fileExists(aFilePath)) {
+	_rest.prototype.delete2File = function(aFilePath, aBaseURI, aIdxMap) {
+		if (this.options.downloadResume && io.fileExists(aFilePath)) {
 			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
 			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true, "delete"));
@@ -4891,18 +4892,18 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
-	 * <key>$rest.patch2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap, downloadResume)</key>
+	 * <key>$rest.patch2File(aFilePath, aBaseURI, aDataRowMap, aIdxMap)</key>
 	 * Shortcut for ow.obj.rest.jsonPatch (see help ow.obj.rest.jsonPatch) using aOptions ($rest(aOptions).): login (function or string),
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
 	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
 	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
-	 * The byte output will be saved into aFilePath. Optional downloadResume = true will resume download of a file if it exists.
+	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */
-	_rest.prototype.patch2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap, downloadResume) {
-		if (downloadResume && io.fileExists(aFilePath)) {
+	_rest.prototype.patch2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
+		if (this.options.downloadResume && io.fileExists(aFilePath)) {
 			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
 			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true, "patch"));
