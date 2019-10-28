@@ -1766,6 +1766,7 @@ OpenWrap.server.prototype.cluster.prototype.checkOut = function() {
  *    maxCount     (Number)             Optional max count of retries (see more in ow.ch.server.peer).\
  *    ch           (String)             The cluster local channel (defaults to "__cluster::[name of cluster]").\
  *    chs          (Array)              Array of names of channels or maps with each channel name and path. These channels will be automatically peered and unpeered with other cluster nodes. The path, if not provided, defaults to "/[name of channel]".\
+ *    chErrs       (String)             The cluster local errors channel (default is none).\
  * \
  * </odoc>
  */
@@ -1883,7 +1884,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			});
 		}
 
-		var rPros = [];
+		var rPros = [], errs = {};
 		receptors.forEach((v) => {
 			var vclo = clone(v);
 			rPros = $do(() => {
@@ -1892,6 +1893,9 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 				var ch = (isLocal) ? aOptions.chMsgs : aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port;
 				var existed = false;
 
+				errs[aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port] = {
+					sent: false
+				};
 				if (!isLocal) { $ch(ch).createRemote(url); existed = true; }
 				$ch(ch).set({
 					i: id,
@@ -1904,11 +1908,26 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 					m: aMessage	
 				});
 				if (!isLocal && !existed) $ch(ch).destroy();
+				errs[aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port] = {
+					sent: true
+				};
 			}).catch((e) => {
-				printErr("ERROR clusterSendMsg: " + aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port + " | " + stringify(e, void 0, ""));
+				errs[aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port] = {
+					sent: false,
+					error: e
+				};
+				if (isDef(aOptions.chErrs)) {
+					$ch(aOptions.chErrs).set({
+						h: vclo.host,
+						p: vclo.port,
+						e: e
+					});
+				}
+				//printErr("ERROR clusterSendMsg: " + aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port + " | " + stringify(e, void 0, ""));
 			});
 		});
 		$doWait($doAll(rPros));
+		return errs;
 	},
 	__check: (aOptions) => {
 		if (isUnDef(aOptions.init) || !aOptions.init) {
