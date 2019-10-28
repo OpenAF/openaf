@@ -1296,11 +1296,41 @@ public class AFBase extends ScriptableObject {
 	 * <key>af.crypt(aKey, aSalt) : String</key>
 	 * Tries to mimic crypt(3) password encryption using the org.apache.commons.codec.digest.Crypt.crypt function. Please
 	 * check https://commons.apache.org/proper/commons-codec/apidocs/org/apache/commons/codec/digest/Crypt.html for more.
+	 * Use af.randomCryptSalt() to generate a random salt if necessary.
 	 * </odoc>
 	 */
 	@JSFunction
-	public String crypt(String key, String salt) {
-		return org.apache.commons.codec.digest.Crypt.crypt(key, salt);
+	public String crypt(String key, Object salt) {
+		if (salt instanceof Undefined) salt = null;
+		return org.apache.commons.codec.digest.Crypt.crypt(key, (String) salt);
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.randomCryptSalt() : String</key>
+	 * Generates a random valid, 2 char long, crypt salt to be used with af.crypt.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String randomCryptSalt() {
+		String possibleValues = ".ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+		byte[] bts = java.security.SecureRandom.getSeed(2);
+		StringBuilder res = new StringBuilder();
+		res.append(possibleValues.charAt((bts[0] + 128) % possibleValues.length()));
+		res.append(possibleValues.charAt((bts[1] + 128) % possibleValues.length()));
+
+		return res.toString();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.secureRandom() : Double</key>
+	 * Returns a java security SecureRandom double value.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Double secureRandom() {
+		return (new java.security.SecureRandom()).nextDouble();
 	}
 	
 	/**
