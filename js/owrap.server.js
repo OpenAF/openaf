@@ -1391,9 +1391,11 @@ OpenWrap.server.prototype.locks.prototype.unlock = function (aLockName) {
 		value: false
 	});
 	
-	return $ch(this.name).get({
+	var res = $ch(this.name).get({
 		lock: aLockName
 	});
+
+	if (isDef(res)) return res; else return true;
 };
 
 /**
@@ -1971,7 +1973,8 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 				if (v.m.b == (aOps.HOST + ":" + aOps.PORT)) {
 					tt = "cl";
 				} else {
-					tt = (!aOps.locks.isLocked(v.m.n).value && aOps.locks.lock(v.m.n) ? "cl" : "dl");
+					//tt = (!aOps.locks.isLocked(v.m.n).value && aOps.locks.lock(v.m.n) ? "cl" : "dl");
+					tt = (!aOps.locks.isLocked(v.m.n).value ? "cl" : "dl");
 				}
 
 				ow.server.clusterChsPeersImpl.clusterSendMsg(aOps, v.m.b, {
@@ -1987,7 +1990,8 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 				if (v.m.b == (aOps.HOST + ":" + aOps.PORT)) {
 					tt = "cu";
 				} else {
-					tt = (aOps.locks.unlock(v.m.n) ? "cu" : "du");
+					//tt = (aOps.locks.unlock(v.m.n) ? "cu" : "du");
+					tt = (aOps.locks.isLocked(v.m.n) ? "cu" : "du");
 				} 
 
 				ow.server.clusterChsPeersImpl.clusterSendMsg(aOps, v.m.b, {
