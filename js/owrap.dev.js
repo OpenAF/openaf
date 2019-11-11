@@ -78,3 +78,107 @@ OpenWrap.dev.prototype.loadIgnite = function(aGridName, aIgnite, secretKey, isCl
 
 	initI();
 };
+
+OpenWrap.dev.prototype.doh = function(aString, aType, aProvider) {
+    aType = _$(aType, "type").default("a");
+    var aNumType;
+
+    if (isUnDef(global.__doh)) global.__doh = {};
+    if (Object.keys(global.__doh).length > 5) {
+        $do(() => {
+            Object.keys(global.__doh).forEach(v => {
+                if (nowUTC() > global.__doh[v].t) delete global.__doh[v];
+            });
+        });
+    }
+
+    if (isNumber(aType)) 
+        aNumType = aType;
+    else
+        switch(aType) {
+        case "a"    : aNumType = 1; break;
+        case "cname": aNumType = 5; break;
+        case "aaaa" : aNumType = 28; break;
+        default: aNumType = 1;
+        }
+
+    var resolve = (aAddr, aResType, aProv) => {
+        if (isUnDef(aProv)) aProv = "cloudfare";
+        if (isString(aProv)) {
+            switch(aProv) {
+            case "google": 
+                aProv = (a, t, nt) => {
+                    var res = $rest({ uriQuery: true })
+                            .get("https://8.8.8.8/resolve", { name: a, type: t });
+                    if (isDef(res) && isArray(res.Answer) && res.Answer.length > 0) 
+                        return $path(res, "sort_by(Answer, &TTL)[?type==`" + nt + "`]"); 
+                    else 
+                        return void 0;
+                };
+                break;
+            default:
+            case "cloudfare": 
+                aProv = (a, t, nt) => {
+                    var res = $rest({ uriQuery: true, requestHeaders: { accept: "application/dns-json"  } })
+                              .get("https://1.1.1.1/dns-query", { name: a, type: t });
+                    if (isDef(res) && isArray(res.Answer) && res.Answer.length > 0) 
+                        return $path(res, "sort_by(Answer, &TTL)[?type==`" + nt + "`]"); 
+                    else 
+                        return void 0;
+                };
+                break;
+            }
+            aProvider = aProv;
+        }
+        _$(aProvider, "provider").isFunction();
+        return aProvider(aAddr, aResType, aNumType);
+    };
+
+    var select = (aAddr, aResType, aProvider) => {
+        var res, ttl;
+
+        if (isDef(global.__doh[aAddr + "|" + aResType])) {
+            if (global.__doh[aAddr + "|" + aResType].t > nowUTC()) {
+                return global.__doh[aAddr + "|" + aResType].s;
+            }
+        }
+
+        var ar = resolve(aAddr, aResType, aProvider);
+        if (isDef(ar) && isArray(ar)) {
+            var rres = ar[Math.floor(Math.random() * ar.length)];
+            res = rres.data;
+            ttl = rres.TTL;
+        } else {
+            ttl = -1;
+            res = aAddr;
+        }
+
+        global.__doh[aAddr + "|" + aResType] = {
+            s: res,
+            t: nowUTC() + ttl
+        };
+        return res;
+    };
+
+    if (isJavaObject(aString) && aString instanceof java.net.URL) {
+        var res = select(aString.getHost(), aType, aProvider);
+        if (isDef(res) && isArray(res)) {
+            return java.net.URL(aString.toString().replace(aString.getHost(), res));
+        }
+        return aString;
+    }
+    if (isString(aString)) {
+        if (aString.indexOf("://") > 0) {
+            var url = java.net.URL(aString);
+            var res = select(url.getHost(), aType, aProvider);
+            if (isDef(res) && isString(res)) {
+                aString = aString.replace(url.getHost(), res);
+                return aString;
+            }
+            return aString;
+        } else {
+            var res = select(aString, aType, aProvider);
+            return res;
+        }
+    }
+};
