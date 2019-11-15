@@ -120,60 +120,63 @@ OpenWrap.java.prototype.maven.prototype.getFileVersion = function(artifactId, aF
 };
 
 OpenWrap.java.prototype.maven.prototype.getDependencies = function(artifactId, aVersion, aOutputDir, aScope, aList, props) {
+    loadLodash();
+    ow.loadObj();
+
     var aURI = this._translateArtifact(artifactId);
     var version = (isUnDef(aVersion) ? this.getLatestVersion(aURI) : aVersion);
     var filename = artifactId.substring(artifactId.lastIndexOf(".") + 1) + "-" + version + ".pom";
     var scope = _$(aScope).isString().default("");
-    aList = _$(aList).isArray().default([]);
+    aList = _$(aList).default(new ow.obj.syncArray());
     props = _$(props).isMap().default({});
 
-    var info = [], x;
+    var info = new ow.obj.syncArray(), x;
     try {
         var h = $rest({ throwExceptions: false }).get(this._getURL() + "/" + aURI + "/" + version + "/" + filename);
-        if (isDef(h.error) && h.error.responseCode == 404) return info;
+        if (isDef(h.error) && h.error.responseCode == 404) return _.uniqBy(info.toArray(), v => { return v.groupId + "." + v.artifactId; });;
 
         h = h.replace(/(.*\n)*.*<project( [^>]+)>/, "<project>");
         x = af.fromXML2Obj(h);
     
         if (isDef(x.project.dependencies) && isDef(x.project.dependencies.dependency)) {
-            for(var ii = 0; ii < x.project.dependencies.dependency.length; ii++) {
-                if (isUnDef(x.project.dependencies.dependency[ii].scope) || (x.project.dependencies.dependency[ii].scope == scope)) {
-                    if (isUnDef(x.project.dependencies.dependency[ii].optional) || !x.project.dependencies.dependency[ii].optional) {
+            //for(var ii = 0; ii < x.project.dependencies.dependency.length; ii++) {
+            parallel4Array(x.project.dependencies.dependency, v => {
+                if (isUnDef(v.scope) || (v.scope == scope)) {
+                    if (isUnDef(v.optional) || !v.optional) {
                         if (isDef(x.project.properties)) props = merge(props, x.project.properties);
 
                         var pversion = void 0;
-                        if (isDef(x.project.dependencies.dependency[ii].version)) {
-                            var pversion = String(x.project.dependencies.dependency[ii].version);
+                        if (isDef(v.version)) {
+                            var pversion = String(v.version);
                             if (pversion == "${project.version}") pversion = String(x.project.parent.version);
                             if (isDef(pversion) && pversion.startsWith("${")) pversion = String(props[pversion.replace(/^\${(.+)}$/, "$1")]);
-                            var pgroupId = String(x.project.dependencies.dependency[ii].groupId);
+                            var pgroupId = String(v.groupId);
                             if (pgroupId == "${project.groupId}") pgroupId = String(x.project.parent.groupId);
                         }
 
                         if (isDef(pgroupId)) {
-                            info.push({
+                            info.add({
                                 groupId: pgroupId,
-                                artifactId: String(x.project.dependencies.dependency[ii].artifactId),
-                                version: pversion,
-                                scope: String(x.project.dependencies.dependency[ii].scope)
+                                artifactId: String(v.artifactId),
+                                version: (isDef(pversion) ? pversion : void 0),
+                                scope: (isDef(v.scope) ? String(v.scope) : void 0)
                             });
                             
-                            if (info.indexOf(pgroupId + "." + x.project.dependencies.dependency[ii].artifactId) < 0) {
-                                var rinfo = this.getDependencies(pgroupId + "." + x.project.dependencies.dependency[ii].artifactId, pversion, void 0, aScope, aList, props);
-                                aList.push(pgroupId + "." + x.project.dependencies.dependency[ii].artifactId);
-                                info = info.concat(rinfo);
+                            if (aList.indexOf(pgroupId + "." + v.artifactId) < 0) {
+                                var rinfo = this.getDependencies(pgroupId + "." + v.artifactId, pversion, void 0, aScope, aList, props);
+                                aList.add(pgroupId + "." + v.artifactId);
+                                info.addAll(rinfo);
                             }
                         }
                     }
                 }
-            }
+            });
         }
-    
-        return info;
     } catch(e) {
         if (String(e).indexOf("FileNotFoundException") < 0) throw e; 
-        return info;
     }
+
+    return _.uniqBy(info.toArray(), v => { return v.groupId + "." + v.artifactId; });
 };
 
 /**
