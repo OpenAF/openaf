@@ -42,6 +42,11 @@ jobs:
      from: Obj::Init
      to  : oJob Test
      exec: args.func = args.tests.testObjPool;
+    
+   - name: Obj::Thread-safe array
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSyncArray;
 
    - name: Obj::Object fuzzy search
      from: Obj::Init
@@ -60,3 +65,4 @@ todo:
    - Obj::Object to array conversion
    - Obj::Object pool
    - Obj::Object fuzzy search
+   - Obj::Thread-safe array   

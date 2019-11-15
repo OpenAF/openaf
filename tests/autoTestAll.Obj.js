@@ -156,6 +156,22 @@
         ow.test.assert(res[1], 2, "Problem with middle map element on array to ordered object with function");
     };    
 
+    exports.testSyncArray = function() {
+        ow.loadObj();
+
+        var ar = new ow.obj.syncArray([3,2,1]);
+        ow.test.assert(Number(ar.get(1)), Number(2), "Problem with syncArray.get.");
+        ow.test.assert(ar.length(), 3, "Problem with syncArray length.");
+
+        ar.add(4);
+        ow.test.assert(ar.indexOf(2), 1, "Problem with syncArray indexOf.");
+        ar.remove(1);
+        ow.test.assert(ar.indexOf(2), -1, "Problem with syncArray indexOf or remove.");
+        ar.set(1, 2);
+        ow.test.assert(ar.indexOf(2), 1, "Problem with syncArray set.");
+        ow.test.assert(Number(ar.toArray()[2]), Number(4), "Problem with syncArray toArray.");
+    };
+
     exports.testObjPool = function() {
         ow.loadObj();
 

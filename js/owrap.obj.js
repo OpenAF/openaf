@@ -2366,3 +2366,120 @@ OpenWrap.obj.prototype.setPath = function(aObj, aPath, aValue) {
     prev[prevK] = aValue;
     return orig;
 };
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray(anArray) : ow.obj.syncArray</key>
+ * Creates an instance of a thread-safe array/list. Optionally it can be initialized with anArray.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray = function(aArray) {
+	var ja; 
+	if (isDef(aArray) && isArray(aArray)) 
+		ja = new java.util.ArrayList(aArray);
+	else
+		ja = new java.util.ArrayList();
+		
+	this.arr = java.util.Collections.synchronizedList(ja);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.getJavaObject() : Object</key>
+ * Returns the internal java object.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.getJavaObject = function() {
+	return this.arr;
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.add(aObject) : boolean</key>
+ * Adds aObject to the internal array/list.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.add = function(aObject) {
+	return this.arr.add(aObject);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.addAll(anArray)</key>
+ * Concatenates anArray with the internal array/list.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.addAll = function(anArray) {
+	_$(anArray, "array").isArray().$_();
+	return this.arr.addAll(new java.util.ArrayList(anArray));
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.toArray() : Array</key>
+ * Returns the internal array/list as a javascript array.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.toArray = function() {
+	return af.fromJavaArray(this.arr.toArray());
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.length() : Number</key>
+ * Returns the current size of the internal array/list.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.length = function() {
+	return this.arr.size();
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.get(aIndex) : Object</key>
+ * Returns the object on the internal array/list on position aIndex.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.get = function(aIdx) {
+	return this.arr.get(aIdx);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.remove(aIndex) : boolean</key>
+ * Removes the element at aIndex from the internal array/list.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.remove = function(aIdx) {
+	return this.arr.remove(aIdx);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.set(aIndex, aObject) : Object</key>
+ * Sets aObject overwriting the previous value at aIndex on the internal array/list.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.set = function(aIdx, aObject) {
+	return this.arr.set(aIdx, aObject);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.clear()</key>
+ * Clears the internal array/list.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.clear = function() {
+	this.arr.clear();
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.indexOf(aObject) : Number</key>
+ * Returns the position of aObject in the internal array/list.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.indexOf = function(aObject) {
+	return this.arr.indexOf(aObject);
+};
