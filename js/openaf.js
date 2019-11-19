@@ -3577,6 +3577,11 @@ function loadDiff() {
 	if (res) pods.declare("JsDiff", loadDiff());
 }
 
+function loadAjv() {
+	var res = loadCompiledLib("ajv_js");
+	if (res) pods.declare("Ajv", loadAjv());
+}
+
 /**
  * <odoc>
  * <key>loadLodash()</key>
@@ -6919,6 +6924,8 @@ function __setUserAgent(aNewAgent) {
 	__OpenAFUserAgent = _$(aNewAgent).isString().default(__OpenAFUserAgent);
 	java.lang.System.setProperty("http.agent", __OpenAFUserAgent);
 }
+
+var console = { log: log, warn: logWarn, error: logErr };
 
 // Startup
 // -------

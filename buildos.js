@@ -236,7 +236,7 @@ try {
 			file.filename !== 'stream.js' &&
 			file.filename !== 'js-yaml.js' &&
 			file.filename !== 'highlight.js' &&
-			file.filename !== 'avsc.js' &&
+			file.filename !== 'ajv.js' &&
 			file.filename !== 'fusejs.js' &&
 			file.filename !== 'handlebars.js' &&
 			file.filename !== 'jquery.js') {
