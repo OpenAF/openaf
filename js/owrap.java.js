@@ -565,3 +565,75 @@ OpenWrap.java.prototype.getMemory = function(shouldFormat) {
 OpenWrap.java.prototype.gc = function() {
     return java.lang.Runtime.getRuntime().gc();
 };
+
+/**
+ * <odoc>
+ * <key>ow.java.setIgnoreSSLDomains(aList, aPassword)</key>
+ * Replaces the current Java SSL socket factory with a version with a custom trust manager that will "ignore" verification
+ * of SSL certificates whose domains are part of aList. Optionally aPassword for the key store can be forced.
+ * WARNING: this should only be used in advanced setups where you know what are doing since it DISABLES IMPORTANT SECURITY
+ * FEATURES.
+ * </odoc>
+ */
+OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
+    _$(aList, "list").isArray().$_();
+
+    if (!isNull(java.lang.System.getProperty("javax.net.ssl.trustStorePassword")))
+        aPassword = String(java.lang.System.getProperty("javax.net.ssl.trustStorePassword"));
+
+    aPassword = _$(aPassword, "password").isString().default("changeit");
+
+    ow.loadFormat();
+    var javaHome = ow.format.getJavaHome(), file;
+
+    if (isNull(java.lang.System.getProperty("javax.net.ssl.trustStore"))) {
+        file = "jssecacerts";
+        if (!io.fileExists(file)) {
+            var sep = String.fromCharCode(java.io.File.separatorChar);
+            var dir = String(javaHome + sep + "lib" + sep + "security");
+            file = dir + "/jssecacerts";
+            if (!io.fileExists(file)) file = dir + "/cacerts";
+        }
+    } else {
+        file = String(java.lang.System.getProperty("javax.net.ssl.trustStore"));
+    }
+
+    var tmf = javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+    var ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+    ks.load(new java.io.FileInputStream(new java.io.File(file)), (new java.lang.String("changeit")).toCharArray());
+    tmf.init(ks);
+    var tmf0 = tmf.getTrustManagers()[0];
+    var ctx = javax.net.ssl.SSLContext.getInstance("SSL");
+
+    ctx.init(null, [new JavaAdapter(javax.net.ssl.X509TrustManager, {
+        __noError: false,
+        checkClientTrusted: function(certs, authType) {
+          //print("check client trusted");
+          tmf0.checkClientTrusted(certs, authType);
+        },
+        checkServerTrusted: function(certs, authType) {
+          //print("check server trusted");
+          //print(certs[0].getSubjectDN().getCommonName());
+          for(var ii = 0; ii < aList.length; ii++) {
+              if (String(certs[0].getSubjectDN().getCommonName()).endsWith(aList[ii])) {
+                  this.__noError = true;
+              } else {
+                  this.__noError = false;
+              }
+          }
+
+          try {
+             tmf0.checkServerTrusted(certs, authType);
+          } catch(e) {
+             if (!this.__noError) throw e;
+          }
+        },
+        getAcceptedIssuers: function() {
+          //print("accept issuer");
+          return tmf0.getAcceptedIssuers();
+        }
+      })], new java.security.SecureRandom());
+      
+    javax.net.ssl.SSLContext.setDefault(ctx);
+    javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(ctx.getSocketFactory());
+};
