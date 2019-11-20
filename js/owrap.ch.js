@@ -220,6 +220,7 @@ OpenWrap.ch.prototype.__types = {
 				this.__db[aName].rollback();
 				throw e;
 			}
+			return aK;
 		},
 		setAll: function(aName, aKs, aVs, aTimestamp) { 
 			for(var i in aVs) {
@@ -401,6 +402,7 @@ OpenWrap.ch.prototype.__types = {
 			this.__refresh(aName, 1);
 			if (this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) 
 				this.__cache[aName].Ch.set(merge(aK, { ____t: aTimestamp }), this.__cache[aName].Func(aK), aTimestamp, x);
+			return aK;
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) { 
 			var avvs = [];
@@ -628,6 +630,7 @@ OpenWrap.ch.prototype.__types = {
 		set          : function(aName, ak, av, aTimestamp) {
 			$ch(this.__bt[aName]).set(ak, av, aTimestamp);
 			this.__f[aName]();
+			return ak;
 		},
 		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			$ch(this.__bt[aName]).setAll(anArrayOfKeys, anArrayOfMapData, aTimestamp);
@@ -875,7 +878,7 @@ OpenWrap.ch.prototype.__types = {
 				old.v = aV;
 				old.t = aTimestamp;
 			}
-			return id;
+			return aK;
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
 			ow.loadObj();
@@ -1481,6 +1484,7 @@ OpenWrap.ch.prototype.__types = {
 
 			map.put(stringify(ak, void 0, this.__o[aName].stry), stringify(av, void 0, this.__o[aName].stry));
 			this.__s[aName].commit();
+			return ak;
 		},
 		setAll       : function(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp) {
 			ow.loadObj();
