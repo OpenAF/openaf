@@ -77,7 +77,18 @@ const $$ = function(aObj) {
         isNull: () => { return null == aObj || false; },
         isDate: () => { return (null != aObj) && !isNaN(aObj) && ("undefined" !== typeof aObj.getDate); },
         isRegExp: () => { return (aObj instanceof RegExp); },
-        isUUID: () => { return (aObj.match(/^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$/) ? true : false); }
+        isUUID: () => { return (aObj.match(/^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$/) ? true : false); },
+        isSchema: (aSchema, aOptions) => {
+            if (typeof Ajv == 'undefined') {
+                if (typeof loadAjv != 'undefined')
+                    loadAjv();
+                else
+                    throw "Ajv library not loaded.";
+            }
+
+            ow.loadObj();
+            return ow.obj.schemaValidate(aSchema, aObj, aOptions);
+        }
 	};
 	return _r;
 };
@@ -180,6 +191,23 @@ const _$ = function(aValue, aPrefixMessage) {
         isUUID: (aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not an UUID";
             if (defined && (!$$(aValue).isString() || aValue.match(/^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b$/))) throw aMessage;
+            return __r;
+        },
+        isSchema: (aSchema, aMessage, aOptions) => {
+            if (typeof Ajv == 'undefined') {
+                if (typeof loadAjv != 'undefined')
+                    loadAjv();
+                else
+                    throw "Ajv library not loaded.";
+            }
+
+            ow.loadObj(); 
+            try { 
+                ow.obj.schemaValidate(aSchema, aValue, aOptions);
+            } catch(e) { 
+                if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + " " + String(e);
+                throw aMessage;
+            }
             return __r;
         },
 		// Generic validations

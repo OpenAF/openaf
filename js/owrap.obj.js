@@ -2483,3 +2483,92 @@ OpenWrap.obj.prototype.syncArray.prototype.clear = function() {
 OpenWrap.obj.prototype.syncArray.prototype.indexOf = function(aObject) {
 	return this.arr.indexOf(aObject);
 };
+
+/**
+ * <odoc>
+ * <key>ow.obj.schemaInit(aOptions)</key>
+ * Internally initializes the Ajv library. That initialization will use the options refered in 
+ * https://github.com/epoberezkin/ajv#options.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaInit = function(aOptions) {
+	if (isUnDef(global.__ajv)) {
+		aOptions = _$(aOptions).isMap().default({
+			$data: true,
+			$comment: true,
+			useDefaults: true //,
+			//coerceTypes: true
+		});
+		loadAjv();
+		global.__ajv = new Ajv(aOptions);
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.schemaCompile(aSchema) : Function</key>
+ * Given a JSON aSchema returns a specific function to validate data over the provided aSchema.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaCompile = function(aSchema) {
+	ow.obj.schemaInit();
+	return global.__ajv.compile(aSchema);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.schemaAdd(aKey, aSchema)</key>
+ * Adds a JSON aSchema internally referring as aKey.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaAdd = function(aKey, aSchema) {
+	ow.obj.schemaInit();
+	global.__ajv.addSchema(aSchema, aKey);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.schemaRemove(aKey)</key>
+ * Removes a previsouly added JSON schema identified as aKey.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaRemove = function(aKey) {
+	ow.obj.schemaInit();
+	global.__ajv.removeSchema(aKey);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.schemaCheck(aSchema) : Boolean</key>
+ * Returns true/false if aSchema is a valid or not.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaCheck = function(aSchema) {
+	ow.obj.schemaInit();
+	return global.__ajv.validateSchema(aSchema);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.schemaValidate(aSchema, aData, aErrorOptions) : boolean</key>
+ * Using a JSON aSchema ill try to validate the provided aData. Optionally error options can be provided.
+ * (check more in https://github.com/epoberezkin/ajv)
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) {
+	aErrorOptions = _$(aErrorOptions).isMap().default({ dataVar: "args" });
+	ow.obj.schemaInit();
+
+	var val;
+	if (isString(aSchema)) {
+		val = global.__ajv.getSchema(aSchema);
+	} else {
+		val = ow.obj.schemaCompile(aSchema);
+	}
+
+	if (val(aData)) {
+		return true;
+	} else {
+		throw global.__ajv.errorsText(val.errors, aErrorOptions);
+	}
+};
