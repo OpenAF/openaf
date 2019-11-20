@@ -202,6 +202,7 @@ OpenWrap.ch.prototype.__types = {
 					this.set(aName, aK, aV, aTimestamp);
 				}
 				this.__db[aName].commit();
+				return res;
 			} catch(e) {
 				this.__db[aName].rollback();
 				throw e;
@@ -625,7 +626,7 @@ OpenWrap.ch.prototype.__types = {
 			return $ch(this.__bc[aName]).getAll(full).concat($ch(this.__bt[aName]).getAll(full));
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
-			$ch(this.__bc[aName]).getSet(aMatch, aK, aV, aTimestamp);		
+			return $ch(this.__bc[aName]).getSet(aMatch, aK, aV, aTimestamp);		
 		},
 		set          : function(aName, ak, av, aTimestamp) {
 			$ch(this.__bt[aName]).set(ak, av, aTimestamp);
@@ -1596,6 +1597,7 @@ OpenWrap.ch.prototype.__types = {
 				} else {
 					tx.rollback();
 				}
+				return res;
 			} catch(e) {
 				tx.rollback();
 				throw e;
