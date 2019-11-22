@@ -831,7 +831,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		forEach      : function(aName, aFunction) {
 			Object.keys(this.__channels[aName]).forEach((element) => {
-				aFunction(this.__channels[aName][element].k, this.__channels[aName][element].v);
+				try { aFunction(this.__channels[aName][element].k, this.__channels[aName][element].v) } catch(e) {};
 			});
 		},
 		getAll      : function(aName, full) {
@@ -844,14 +844,14 @@ OpenWrap.ch.prototype.__types = {
 		getKeys      : function(aName, full) {
 			var res = [];
 			Object.keys(this.__channels[aName]).forEach((element) => {
-				res.push(this.__channels[aName][element].k);
+				try { res.push(this.__channels[aName][element].k) } catch(e) {};
 			});
 			return res;
 		},
 		getSortedKeys: function(aName, full) {
 			var res = [];
 			Object.keys(this.__channels[aName]).forEach((element) => {
-				res.push({ k: this.__channels[aName][element].k, t: this.__channels[aName][element].t });
+				try { res.push({ k: this.__channels[aName][element].k, t: this.__channels[aName][element].t }); } catch(e) {};
 			});
 			/*return $from(res).sort("t").select((r) => {
 				return r.k;

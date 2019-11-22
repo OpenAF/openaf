@@ -6,6 +6,82 @@ OpenWrap.dev = function() {
 	return ow.dev;
 };
 
+// var q = new ow.dev.queue("test", {type:"queue"})
+// var o = () => { try { var ar = [], res; do { res = q.receive(void 0, 50); if(isDef(res)) ar.push(res) } while(isDef(res)); return ar }catch(e) { sprintErr(e);} }
+// for(var oo = 1; oo <= 500; oo++) {  q.send({ x: oo, y: -oo }) }
+// var a1 = [], a2 = [], a3= []; $doWait($doAll([ $do(()=> { a1=o() }), $do(() => { a2 = o() }), $do(()=>{a3=o();}) ])); a1.length + a2.length + a3.length
+
+OpenWrap.dev.prototype.queue = function(aName, aStamp) {
+    this.name = "queue::" + aName;
+    this.stamp = _$(aStamp).isMap().default({});
+
+    $ch(this.name).create();
+};
+
+OpenWrap.dev.prototype.queue.prototype.__find = function(aVisibilityTime) {
+    var keys = $ch(this.name).getKeys();
+    for(var ii = 0; ii < keys.length; ii++) {
+        var val = clone($ch(this.name).get(keys[ii]));
+        if (isDef(val)) {
+            if (val.status == "r") {
+                if (isDef(val.timeout) && val.timeout < now()) {
+                    continue;
+                } else {
+                    $ch(this.name).unset(keys[ii]);
+                }
+            }
+            if (val.status == "s") {
+                val.status = "r";
+                if (isDef(aVisibilityTime)) val.timeout = now() + aVisibilityTime;
+                var res = $ch(this.name).getSet({
+                    id: val.id,
+                    status: "s"
+                }, keys[ii],
+                val);
+    
+                this.val = val;
+                if (isDef(res)) return res;
+            }
+        }
+    }
+};
+
+OpenWrap.dev.prototype.queue.prototype.send = function(aObject, aId) {
+    var id = _$(aId).default(nowNano());
+    $ch(this.name).set(merge({
+        id: id
+    }, this.stamp), merge({
+        id: id,
+        status: "s",
+        obj: aObject
+    }, this.stamp));
+};
+
+OpenWrap.dev.prototype.queue.prototype.receive = function(aVisibilityTime, aWaitTime) {
+    aWaitTime = _$(aWaitTime).isNumber().default(2500);
+    var limit = now() + aWaitTime;
+    do {
+        var r = this.__find(aVisibilityTime);
+        if (isDef(r)) {
+            return {
+                idx: r,
+                obj: this.val.obj
+            };
+        }
+        sleep(50, true);
+    } while(now() < limit);
+};
+
+OpenWrap.dev.prototype.queue.prototype.delete = function(aId) {
+    $ch(this.name).unset(merge({
+        id: aId
+    }, this.stamp));
+};
+
+OpenWrap.dev.prototype.queue.prototype.purge = function(aId) {
+
+};
+
 OpenWrap.dev.prototype.loadPoolDB = function() {
 	ow.loadCh();
 	ow.loadObj();
