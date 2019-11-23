@@ -272,4 +272,60 @@
         ow.server.httpd.stop(hs1);
         ow.server.httpd.stop(hs2);
     };
+
+    exports.testQueue = function() {
+        ow.loadServer();
+        var q = new ow.server.queue({ t: "q" }, "test");
+
+        // Consumer function
+        var o = () => { 
+            try { 
+                var ar = [], res; 
+                do { 
+                    res = q.receive(void 0, 50); 
+                    if(isDef(res)) ar.push(res);
+                } while(isDef(res)); 
+                return ar;
+            } catch(e) { 
+                sprintErr(e);
+            } 
+        };
+
+        // Producing dummy entries
+        for(var oo = 1; oo <= 500; oo++) {  q.send({ x: oo, y: -oo }); }
+
+        ow.test.assert($ch("queue::test").size(), 500, "Problem adding entries to queue.");
+
+        // Executing 4 queue consumers in parallel
+        var a1 = [], a2 = [], a3= [], a4=[]; 
+        $doWait($doAll([ 
+            $do(() => { a1 = o(); }), 
+            $do(() => { a2 = o(); }), 
+            $do(() => { a3 = o(); }), 
+            $do(() => { a4 = o(); }) 
+        ])); 
+        
+        ow.test.assert(a1.length + a2.length + a3.length + a4.length, 500, "Problem with parallel queue consumers");
+
+        // Producing dummy entries
+        for(var oo = 1; oo <= 500; oo++) {  q.send({ x: oo, y: -oo }); }
+        $ch("queue::test").set({ x: 1 }, { x: 1 });
+        
+        ow.test.assert($ch("queue::test").size(), 501, "Problem adding non-queue element to internal queue channel");
+        q.purge();
+        ow.test.assert($ch("queue::test").size(), 1, "Problem with queue purge.");
+        $ch("queue::test").unset({ x: 1 });
+
+        // Producing dummy entries
+        for(var oo = 1; oo <= 500; oo++) {  q.send({ x: oo, y: -oo }); }
+
+        var res1 = q.receive(500);
+        ow.test.assert($ch("queue::test").size(), 500, "Problem with queue receiver with visibility timeout.");
+        sleep(501, true);
+        var res2 = q.receive();
+        q.delete(res2.idx);
+        ow.test.assert($ch("queue::test").size(), 499, "Problem with queue visibility timeout returning objects to the queue.");
+
+        $ch("queue::test").destroy();
+    };
 })();

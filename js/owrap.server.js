@@ -1429,6 +1429,134 @@ OpenWrap.server.prototype.locks.prototype.whenUnLocked = function (aLockName, aF
 	return false;
 };
 
+//-------------
+// SIMPLE QUEUE
+//-------------
+
+/**
+ * <odoc>
+ * <key>ow.server.queue(aStamp, aName, aChName)</key>
+ * Creates an instance to handle a queue on a channel named "queue::[aName]" or using aChName. The queue entries 
+ * will be identified on the channel with aStamp map (defaults to {}) ignoring all other entries.
+ * aStamp allows the use of generic channels with other non-queue entries.
+ * </odoc>
+ */
+OpenWrap.server.prototype.queue = function(aStamp, aName, aChName) {
+    this.name = _$(aChName).isString().default("queue::" + aName);
+    this.stamp = _$(aStamp).isMap().default({});
+
+    $ch(this.name).create();
+};
+
+OpenWrap.server.prototype.queue.prototype.__find = function(aVisibilityTime) {
+    var keys = $ch(this.name).getKeys();
+    for(var ii = 0; ii < keys.length; ii++) {
+        if (!($stream([keys[ii]]).anyMatch(this.stamp))) continue;
+
+        var val = clone($ch(this.name).get(keys[ii]));
+        if (isDef(val)) {
+            if (val.status == "r") {
+                if (isDef(val.timeout) && val.timeout >= nowUTC()) {
+                    continue;
+                } else {
+					if (isDef(val.timeout)) {
+						// Returning a previously timeout entry
+						delete val.timeout;
+						var res = $ch(this.name).getSet({
+							id: val.id,
+							status: "r"
+						}, keys[ii],
+						val);
+						if (isDef(res)) return res;
+					} else {
+						$ch(this.name).unset(keys[ii]);
+					}
+                }
+            }
+            if (val.status == "s") {
+                val.status = "r";
+                if (isDef(aVisibilityTime)) val.timeout = nowUTC() + aVisibilityTime;
+                var res = $ch(this.name).getSet({
+                    id: val.id,
+                    status: "s"
+                }, keys[ii],
+                val);
+    
+                this.val = val;
+                if (isDef(res)) return res;
+            }
+        }
+    }
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.queue.send(aObject, aId)</key>
+ * Sends aObject (map) to the queue. A specific unique aId can be optionally provided.
+ * </odoc>
+ */
+OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId) {
+    var id = _$(aId).default(nowNano());
+    $ch(this.name).set(merge({
+        id: id
+    }, this.stamp), merge({
+        id: id,
+        status: "s",
+        obj: aObject
+    }, this.stamp));
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.queue.receive(aVisibilityTime, aWaitTime) : Map</key>
+ * Tries to return an object from the queue within a map composed of two entries: idx (the unique index on the queue)
+ * and obj (the object/map queued). If aVisibilityTime is defined, the returned entry identified by idx will be returned
+ * to the queue if ow.server.queue.delete is not used within aVisibilityTime defined in ms. Optionally you can also provide
+ * aWaitTime for how much to wait for an entry to be available on the queue (defaults to 2,5 seconds). 
+ * </odoc>
+ */
+OpenWrap.server.prototype.queue.prototype.receive = function(aVisibilityTime, aWaitTime) {
+    aWaitTime = _$(aWaitTime).isNumber().default(2500);
+    var limit = now() + aWaitTime;
+    do {
+        var r = this.__find(aVisibilityTime);
+        if (isDef(r)) {
+            return {
+                idx: r.id,
+                obj: this.val.obj
+            };
+        }
+        sleep(50, true);
+    } while(now() < limit);
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.queue.delete(aId)</key>
+ * Tries to delete a queue unique entry identified by aId.
+ * </odoc>
+ */
+OpenWrap.server.prototype.queue.prototype.delete = function(aId) {
+    $ch(this.name).unset(merge({
+        id: aId
+    }, this.stamp));
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.queue.purge()</key>
+ * Tries to delete all queue entries.
+ * </odoc>
+ */
+OpenWrap.server.prototype.queue.prototype.purge = function() {
+    var keys = $ch(this.name).getKeys();
+    var ar = [];
+    for(var ii = 0; ii < keys.length; ii++) {
+        if (($stream([keys[ii]]).anyMatch(this.stamp))) ar.push(keys[ii]);
+    }
+    if (ar.length > 0) $ch(this.name).unsetAll(Object.keys(ar[0]), ar);
+};
+
 //-----------------------------------------------------------------------------------------------------
 // SIMPLE CLUSTER LIST
 //-----------------------------------------------------------------------------------------------------

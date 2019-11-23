@@ -43,6 +43,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAuthApp;
 
+   - name: Server::Queue
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testQueue;
+
 todo:
    # Server tests
    # ------------
@@ -54,3 +59,4 @@ todo:
    - Server::Locks
    - Server::Auth
    - Server::AuthApp
+   - Server::Queue
