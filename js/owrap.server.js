@@ -1491,8 +1491,9 @@ OpenWrap.server.prototype.queue.prototype.__find = function(aVisibilityTime) {
 
 /**
  * <odoc>
- * <key>ow.server.queue.send(aObject, aId)</key>
- * Sends aObject (map) to the queue. A specific unique aId can be optionally provided.
+ * <key>ow.server.queue.send(aObject, aId) : Object</key>
+ * Sends aObject (map) to the queue. A specific unique aId can be optionally provided. The unique aId
+ * will be returned.
  * </odoc>
  */
 OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId) {
@@ -1503,20 +1504,23 @@ OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId) {
         id: id,
         status: "s",
         obj: aObject
-    }, this.stamp));
+	}, this.stamp));
+	return id;
 };
 
 /**
  * <odoc>
- * <key>ow.server.queue.receive(aVisibilityTime, aWaitTime) : Map</key>
+ * <key>ow.server.queue.receive(aVisibilityTime, aWaitTime, aPoolTime) : Map</key>
  * Tries to return an object from the queue within a map composed of two entries: idx (the unique index on the queue)
  * and obj (the object/map queued). If aVisibilityTime is defined, the returned entry identified by idx will be returned
  * to the queue if ow.server.queue.delete is not used within aVisibilityTime defined in ms. Optionally you can also provide
- * aWaitTime for how much to wait for an entry to be available on the queue (defaults to 2,5 seconds). 
+ * aWaitTime for how much to wait for an entry to be available on the queue (defaults to 2,5 seconds) and aPoolTime (defaults to 50ms)
+ * of queue pooling interval.
  * </odoc>
  */
-OpenWrap.server.prototype.queue.prototype.receive = function(aVisibilityTime, aWaitTime) {
-    aWaitTime = _$(aWaitTime).isNumber().default(2500);
+OpenWrap.server.prototype.queue.prototype.receive = function(aVisibilityTime, aWaitTime, aPoolTime) {
+	aWaitTime = _$(aWaitTime).isNumber().default(2500);
+	aPoolTime = _$(aPoolTime).isNumber().default(50);
     var limit = now() + aWaitTime;
     do {
         var r = this.__find(aVisibilityTime);
@@ -1526,7 +1530,7 @@ OpenWrap.server.prototype.queue.prototype.receive = function(aVisibilityTime, aW
                 obj: this.val.obj
             };
         }
-        sleep(50, true);
+        sleep(aPoolTime, true);
     } while(now() < limit);
 };
 
