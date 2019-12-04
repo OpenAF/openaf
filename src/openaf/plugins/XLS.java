@@ -881,11 +881,13 @@ public class XLS extends ScriptableObject {
 
 		        		if (last > -1 && (cell.getColumnIndex() - last) > 1) {
 		        			for(int i = last + 1; i <= cell.getColumnIndex(); i++) {
-		        				record.put(keys.get(i), record, null);
+								if (keys.size() > i)
+		        					record.put(keys.get(i), record, null);
 		        			}
 		        		}
-		        		
-		        		record.put(keys.get(cell.getColumnIndex() - ignoreCol + 1), record, getCellValueRaw(cell, true, evaluateFormulas));
+						
+						if (keys.size() > (cell.getColumnIndex() - ignoreCol + 1))
+		        			record.put(keys.get(cell.getColumnIndex() - ignoreCol + 1), record, getCellValueRaw(cell, true, evaluateFormulas));
 		        		y++;
 		        		last = cell.getColumnIndex();
 		        	}
