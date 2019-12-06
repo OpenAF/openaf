@@ -114,7 +114,7 @@ public class IOBase extends openaf.core.IO {
 		Object res = openaf.core.IO.readFile(filename, encoding);
 	  
 		if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
-		return openaf.AFBase.jsonParse((String) res);
+		return openaf.AFBase.jsonParse((String) res, true);
 	}	
 
 	@JSFunction

@@ -598,7 +598,7 @@ public class AFCmdOS extends AFCmdBase {
 			
 			synchronized(this) {
 				Object opmIn;
-				opmIn = AFBase.jsonParse(pmIn.toString());
+				opmIn = AFBase.jsonParse(pmIn.toString(), false);
 				
 				Object noSLF4JErrorOnly = Context.javaToJS(__noSLF4JErrorOnly, (Scriptable) jse.getGlobalscope());
 				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__noSLF4JErrorOnly", noSLF4JErrorOnly);

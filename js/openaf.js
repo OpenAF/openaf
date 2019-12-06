@@ -880,10 +880,10 @@ function colorify(json) {
  * Shorcut for the native JSON.parse that returns an empty map if aString is not defined, empty or unparsable.
  * </odoc>
  */
-function jsonParse(astring) {
+function jsonParse(astring, alternative) {
 	if (isDef(astring) && String(astring).length > 0) {
 		try {
-			var a = JSON.parse(astring);
+			var a = JSON.parse(astring, alternative);
 			return a;
 		} catch(e) {
 			return astring;

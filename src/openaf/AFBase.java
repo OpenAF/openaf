@@ -63,6 +63,7 @@ import org.mozilla.javascript.tools.debugger.Main;
 import org.mozilla.javascript.xml.XMLObject;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
@@ -99,7 +100,7 @@ public class AFBase extends ScriptableObject {
 
 	@JSFunction
 	public static Object fromJson(String in) throws Exception {
-		return jsonParse(in);
+		return jsonParse(in, false);
 	}
 
 	/**
@@ -170,13 +171,16 @@ public class AFBase extends ScriptableObject {
 	 * @return
 	 */
 	@JSFunction
-	public static Object jsonParse(String out) {
+	public static Object jsonParse(String out, boolean alternative) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		Object ret;
 
 		if (!(out != null && out.length() > 0)) {
 			ret = AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
 		} else {
+			if (alternative) {
+				out = (new JsonParser()).parse(out).toString();
+			}
 			ret = NativeJSON.parse(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), out, new Callable() {
 				@Override
 				public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
@@ -215,7 +219,7 @@ public class AFBase extends ScriptableObject {
 
 		Object res = m;
 		try {
-			res = jsonParse((new Gson()).toJson(m, type));
+			res = jsonParse((new Gson()).toJson(m, type), false);
 		} catch (Exception e) {
 		}
 		return res;
