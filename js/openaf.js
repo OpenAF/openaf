@@ -883,7 +883,12 @@ function colorify(json) {
 function jsonParse(astring, alternative) {
 	if (isDef(astring) && String(astring).length > 0) {
 		try {
-			var a = JSON.parse(astring, alternative);
+			var a;
+			if (alternative) {
+				a = af.jsonParse(astring, alternative);
+			} else {
+				a = JSON.parse(astring);
+			}
 			return a;
 		} catch(e) {
 			return astring;
