@@ -1840,7 +1840,7 @@ OpenWrap.obj.prototype.rest = {
  		}
  		
  		try {
- 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", undefined, aRequestMap, retBytes, _t, retBytes);
+ 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", void 0, aRequestMap, retBytes, _t, retBytes);
  		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 			throw e;
@@ -1894,7 +1894,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8"), rmap, retBytes, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -1949,7 +1949,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8"), rmap, retBytes, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2004,7 +2004,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8"), rmap, retBytes, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2054,7 +2054,7 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", undefined, aRequestMap, retBytes, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", void 0, aRequestMap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
