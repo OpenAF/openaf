@@ -5747,6 +5747,7 @@ const $fnM = (aFnName, aMap) => {
  * - shift(aKey)\
  * - stopJobs()\
  * - waitForJobs(aTimeout)\
+ * - getName()\
  * \
  * Channel basic persistence:\
  * \
@@ -5765,6 +5766,7 @@ $channels = function(a) {
 	ow.loadCh();
 	
 	return {
+		getName      : function() { return a; },
 		create       : function(shouldCompress, type, opts) { ow.ch.create(a, shouldCompress, type, opts); return $channels(a); },
 		list         : function() { return ow.ch.list(); },
 		destroy      : function() { ow.ch.destroy(a); return $channels(a); },
@@ -5851,6 +5853,7 @@ $channels = function(a) {
  * - shift(aKey)\
  * - stopJobs()\
  * - waitForJobs(aTimeout)\
+ * - getName()\
  * \
  * Channel basic persistence:\
  * \
