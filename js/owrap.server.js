@@ -1308,31 +1308,8 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
 	var lock = true;
 	var r;
 
-	do {
-		if (this.type == "cluster") {
-			extra = _$(extra).default(this.options.clusterOptions.HOST + ":" + this.options.clusterOptions.PORT);
-			var rrr = this.options.cluster.clusterCanLock(this.options.clusterOptions, aLockName);
-			if (rrr) {
-				var res = this.isLocked(aLockName);
-				if (res.value == false) lock = false;
-				if (isDef(res.timeout) && !isNull(res.timeout) && (nowUTC() >= res.timeout)) 
-					lock = false;
-				else 
-					sleep(aTryTimeout);
-			}
-		} else {
-			var res = this.isLocked(aLockName);
-			if (res.value == false) lock = false;
-			if (isDef(res.timeout) && !isNull(res.timeout) && (nowUTC() >= res.timeout)) 
-				lock = false;
-			else 
-				sleep(aTryTimeout);
-		}
-		if (c > 0) c--;
-	} while ((c > 0 || c < 0) && lock);
-
-	if (!lock) {
-		$ch(this.name).getSet({
+	var fn = () => {
+		var res = $ch(this.name).getSet({
 			value: false
 		}, {
 			lock: aLockName
@@ -1342,7 +1319,45 @@ OpenWrap.server.prototype.locks.prototype.lock = function(aLockName, aTryTimeout
 			value: true,
 			extra: extra
 		});
-	}
+		if (isUnDef(res)) return false; else return true;
+	};
+
+	do {
+		if (this.type == "cluster") {
+			extra = _$(extra).default(this.options.clusterOptions.HOST + ":" + this.options.clusterOptions.PORT);
+			var rrr = this.options.cluster.clusterCanLock(this.options.clusterOptions, aLockName);
+			if (rrr) {
+				var res = this.isLocked(aLockName);
+				if (res.value == false) {
+					lock = !fn();
+				} else {
+					if (isDef(res.timeout)) {
+						if (!isNull(res.timeout) && nowUTC() >= res.timeout) 
+							c = 0; 
+						else
+							sleep(aTryTimeout, true);
+					}
+				}
+			}
+		} else {
+			var res = this.isLocked(aLockName);
+			if (res.value == false) {
+				lock = !fn();
+			} else {
+				if (isDef(res.timeout)) {
+					if (!isNull(res.timeout) && nowUTC() >= res.timeout) 
+						c = 0; 
+					else
+						sleep(aTryTimeout, true);
+				}
+			}
+		}
+		if (c > 0) c--;
+	} while ((c > 0 || c < 0) && lock);
+
+	/*if (!lock) {
+		lock = !fn();
+	}*/
 
 	return !lock;
 };
