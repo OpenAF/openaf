@@ -1489,16 +1489,20 @@ OpenWrap.server.prototype.queue.prototype.__find = function(aVisibilityTime) {
                 }
             }
             if (val.status == "s") {
-                val.status = "r";
-                if (isDef(aVisibilityTime)) val.timeout = nowUTC() + aVisibilityTime;
-                var res = $ch(this.name).getSet({
-                    id: val.id,
-                    status: "s"
-                }, keys[ii],
-                val);
-    
-                this.val = val;
-                if (isDef(res)) return res;
+				if (isDef(val.to) && val.to <= nowUTC()) {
+					$do(() => { $ch(this.name).unset(keys[ii]); });
+				} else {
+					val.status = "r";
+					if (isDef(aVisibilityTime)) val.timeout = nowUTC() + aVisibilityTime;
+					var res = $ch(this.name).getSet({
+						id: val.id,
+						status: "s"
+					}, keys[ii],
+					val);
+		
+					this.val = val;
+					if (isDef(res)) return res;
+				}
             }
         }
     }
@@ -1506,18 +1510,19 @@ OpenWrap.server.prototype.queue.prototype.__find = function(aVisibilityTime) {
 
 /**
  * <odoc>
- * <key>ow.server.queue.send(aObject, aId) : Object</key>
- * Sends aObject (map) to the queue. A specific unique aId can be optionally provided. The unique aId
- * will be returned.
+ * <key>ow.server.queue.send(aObject, aId, aTTL) : Object</key>
+ * Sends aObject (map) to the queue. Optionally a specific unique aId can be provided and/or aTTL (time to live) for the object in
+ * the queue in ms. The unique aId will be returned.
  * </odoc>
  */
-OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId) {
+OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId, aTTL) {
     var id = _$(aId).default(nowNano());
     $ch(this.name).set(merge({
         id: id
     }, this.stamp), merge({
         id: id,
-        status: "s",
+		status: "s",
+		to: (isDef(aTTL) ? nowUTC() + aTTL : void 0),
         obj: aObject
 	}, this.stamp));
 	return id;

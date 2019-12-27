@@ -326,6 +326,16 @@
         q.delete(res2.idx);
         ow.test.assert($ch("queue::test").size(), 499, "Problem with queue visibility timeout returning objects to the queue.");
 
+        q.purge();
+        q.send({ a: 1 });
+        q.send({ a: 2 }, void 0, 100);
+        q.send({ a: 3 });
+
+        sleep(205, true);
+        var res3;
+        for(var ii = 0; ii < 3; ii++) { res3 = q.receive(void 0, 500); }
+        ow.test.assert(res3, void 0, "Problem with queue TTL.");
+
         $ch("queue::test").destroy();
     };
 })();
