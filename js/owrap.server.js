@@ -1479,12 +1479,15 @@ OpenWrap.server.prototype.queue.prototype.__find = function(aVisibilityTime) {
 					if (isDef(val.timeout)) {
 						// Returning a previously timeout entry
 						delete val.timeout;
+						val.status = "s";
 						var res = $ch(this.name).getSet({
 							id: val.id,
 							status: "r"
 						}, keys[ii],
 						val);
-						if (isDef(res)) return res;
+						
+						if (isUnDef(res)) val = clone($ch(this.name).get(keys[ii]));
+						if (isUnDef(val)) continue; else val = clone(val);
 					} else {
 						$ch(this.name).unset(keys[ii]);
 					}
@@ -1501,13 +1504,39 @@ OpenWrap.server.prototype.queue.prototype.__find = function(aVisibilityTime) {
 						status: "s"
 					}, keys[ii],
 					val);
-		
+
 					this.val = val;
 					if (isDef(res)) return res;
 				}
             }
         }
     }
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.queue.increaseVisibility(aId, aVisibilityTime)</key>
+ * Tries to set the visibility of a queue aId to now + aVisibilityTime ms. Note: the queue aId should have been already
+ * received previously with a specific visibility time. 
+ * </odoc>
+ */
+OpenWrap.server.prototype.queue.prototype.increaseVisibility = function(aId, aVisibilityTime) {
+	_$(aId, "id").$_();
+	_$(aVisibilityTime, "visibilityTime").isNumber().$_();
+
+	var elem = $path($ch(this.name).getKeys(), "[?id==`" + aId + "`]");
+	if (isDef(elem)) {
+		if (isArray(elem) && elem.length > 0) elem = elem[0];
+
+		var val = $ch(this.name).get(elem);
+		if (isDef(val)) {
+			val.timeout = nowUTC() + aVisibilityTime;
+			$ch(this.name).getSet({
+				id: val.id,
+				status: "s"
+			}, elem, val);
+		}
+	}
 };
 
 /**

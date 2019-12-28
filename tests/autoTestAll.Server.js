@@ -294,7 +294,7 @@
         // Producing dummy entries
         for(var oo = 1; oo <= 500; oo++) {  q.send({ x: oo, y: -oo }); }
 
-        ow.test.assert($ch("queue::test").size(), 500, "Problem adding entries to queue.");
+        ow.test.assert(q.size(), 500, "Problem adding entries to queue.");
 
         // Executing 4 queue consumers in parallel
         var a1 = [], a2 = [], a3= [], a4=[]; 
@@ -311,20 +311,20 @@
         for(var oo = 1; oo <= 500; oo++) {  q.send({ x: oo, y: -oo }); }
         $ch("queue::test").set({ x: 1 }, { x: 1 });
         
-        ow.test.assert($ch("queue::test").size(), 501, "Problem adding non-queue element to internal queue channel");
+        ow.test.assert(q.size(), 501, "Problem adding non-queue element to internal queue channel");
         q.purge();
-        ow.test.assert($ch("queue::test").size(), 1, "Problem with queue purge.");
+        ow.test.assert(q.size(), 1, "Problem with queue purge.");
         $ch("queue::test").unset({ x: 1 });
 
         // Producing dummy entries
         for(var oo = 1; oo <= 500; oo++) {  q.send({ x: oo, y: -oo }); }
 
         var res1 = q.receive(500);
-        ow.test.assert($ch("queue::test").size(), 500, "Problem with queue receiver with visibility timeout.");
+        ow.test.assert(q.size(), 500, "Problem with queue receiver with visibility timeout.");
         sleep(501, true);
         var res2 = q.receive();
         q.delete(res2.idx);
-        ow.test.assert($ch("queue::test").size(), 499, "Problem with queue visibility timeout returning objects to the queue.");
+        ow.test.assert(q.size(), 499, "Problem with queue visibility timeout returning objects to the queue.");
 
         q.purge();
         q.send({ a: 1 });
@@ -335,6 +335,21 @@
         var res3;
         for(var ii = 0; ii < 3; ii++) { res3 = q.receive(void 0, 500); }
         ow.test.assert(res3, void 0, "Problem with queue TTL.");
+
+        q.purge();
+        q.send({ a: 1 });
+        q.send({ a: 2 });
+        q.send({ a: 3 });
+
+        ow.test.assert(q.receive(500).obj, { a: 1 }, "Problem with simple visibility timeout (1).");
+        var theObj = q.receive(500);
+        ow.test.assert(theObj.obj, { a: 2 }, "Problem with simple visibility timeout (2).");
+        q.increaseVisibility(theObj.idx, 1000);
+
+        sleep(500, true);
+
+        ow.test.assert(q.receive().obj, { a: 1 }, "Problem with simple visibility timeout (3).");
+        ow.test.assert(q.receive().obj, { a: 3 }, "Problem with increase visibility timeout.");
 
         $ch("queue::test").destroy();
     };
