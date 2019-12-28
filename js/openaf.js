@@ -4509,12 +4509,14 @@ const $rest = function(ops) {
 	ow.loadObj();
 	var _rest = function(aOptions) {
 		this.options = _$(aOptions).isMap().default({ });
-		this.options.default = _$(this.options.default).isMap().default({});
-		this.options.throwExceptions = _$(this.options.throwExceptions).isBoolean().default(false);
-		this.options.collectAllStats = _$(this.options.collectAllStats).isBoolean().default(__openaf_rest.stats);
-		this.options.preAction = _$(this.options.preAction).isFunction().default(void 0);
-		this.options.uriQuery = _$(this.options.uriQuery).isBoolean().default(false);
-		this.options.downloadResume = _$(this.options.downloadResume).isBoolean().default(false);
+		this.options.default = _$(this.options.default, "default").isMap().default({});
+		this.options.throwExceptions = _$(this.options.throwExceptions, "throwExceptions").isBoolean().default(false);
+		this.options.collectAllStats = _$(this.options.collectAllStats, "collectAllStats").isBoolean().default(__openaf_rest.stats);
+		this.options.preAction = _$(this.options.preAction, "preAction").isFunction().default(void 0);
+		this.options.uriQuery = _$(this.options.uriQuery, "uriQuery").isBoolean().default(false);
+		this.options.downloadResume = _$(this.options.downloadResume, "downloadResume").isBoolean().default(false);
+		this.options.retry = _$(this.options.retry, "retry").isNumber().default(0);
+		this.options.retryWait = _$(this.options.retryWait, "retryWait").isNumber().default(1500);
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -4565,9 +4567,31 @@ const $rest = function(ops) {
 		}
 		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes" ];
 		if (parent.__check(aBaseURI)) {
-			try {
-				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
-					var _r = $tb(() => {
+			var c = parent.options.retry, error;
+			do {
+				error = void 0;
+				try {
+					if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
+						var _r = $tb(() => {
+							if (isDef(parent.options.preAction)) { 
+								var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
+								var args;
+								if (isDef(rres) && rres != null) 
+									args = $m2a(fdef, rres);
+								else
+									args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
+								res = aFn[aSubFn].apply(aFn, args);
+							} else {
+								res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient, retBytes);
+							}		
+						}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
+						if (_r !== true) {
+							parent.__stats(aBaseURI, true);
+							if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
+						} else {
+							parent.__stats(aBaseURI, false);
+						}
+					} else {
 						if (isDef(parent.options.preAction)) { 
 							var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
 							var args;
@@ -4578,34 +4602,22 @@ const $rest = function(ops) {
 							res = aFn[aSubFn].apply(aFn, args);
 						} else {
 							res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient, retBytes);
-						}		
-					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
-					if (_r !== true) {
-						parent.__stats(aBaseURI, true);
-						if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
-					} else {
+						}
 						parent.__stats(aBaseURI, false);
 					}
-				} else {
-					if (isDef(parent.options.preAction)) { 
-						var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
-						var args;
-						if (isDef(rres) && rres != null) 
-							args = $m2a(fdef, rres);
-						else
-							args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
-						res = aFn[aSubFn].apply(aFn, args);
-					} else {
-						res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient, retBytes);
-					}
-					parent.__stats(aBaseURI, false);
+				} catch(e) {
+					parent.__stats(aBaseURI, true);
+					error = e;
+					c--;
+					if (c > 0) sleep(parent.options.retryWait, true);
 				}
-			} catch(e) {
-				parent.__stats(aBaseURI, true);
+			} while(isDef(error) && c > 0);
+
+			if (isDef(error)) {
 				if (parent.options.throwExceptions) {
-					throw e;
+					throw error;
 				} else {
-					res = merge({ error: ow.obj.rest.exceptionParse(e) }, parent.options.default);
+					res = merge({ error: ow.obj.rest.exceptionParse(error) }, parent.options.default);
 				}
 			}
 		} else {
@@ -4625,9 +4637,31 @@ const $rest = function(ops) {
 		}
 		var fdef = [ "aBaseURL", "aIdxMap", "aDataRowMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes" ];
 		if (parent.__check(aBaseURI)) {
-			try {
-				if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
-					var _r = $tb(() => {
+			var c = parent.options.retry, error;
+			do {
+				error = void 0;
+				try {
+					if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
+						var _r = $tb(() => {
+							if (isDef(parent.options.preAction)) { 
+								var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
+								var args;
+								if (isDef(rres) && rres != null) 
+									args = $m2a(fdef, rres);
+								else
+									args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
+								res = aFn[aSubFn].apply(aFn, args);
+							} else {
+								res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes);
+							}
+						}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
+						if (_r !== true) {
+							parent.__stats(aBaseURI, true);
+							if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
+						} else {
+							parent.__stats(aBaseURI, false);
+						}
+					} else {
 						if (isDef(parent.options.preAction)) { 
 							var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
 							var args;
@@ -4639,33 +4673,21 @@ const $rest = function(ops) {
 						} else {
 							res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes);
 						}
-					}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
-					if (_r !== true) {
-						parent.__stats(aBaseURI, true);
-						if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
-					} else {
 						parent.__stats(aBaseURI, false);
 					}
-				} else {
-					if (isDef(parent.options.preAction)) { 
-						var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
-						var args;
-						if (isDef(rres) && rres != null) 
-							args = $m2a(fdef, rres);
-						else
-							args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
-						res = aFn[aSubFn].apply(aFn, args);
-					} else {
-						res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes);
-					}
-					parent.__stats(aBaseURI, false);
+				} catch(e) {
+					parent.__stats(aBaseURI, true);
+					error = e;
+					c--;
+					if (c > 0) sleep(parent.options.retryWait, true);
 				}
-			} catch(e) {
-				parent.__stats(aBaseURI, true);
+			} while(isDef(error) && c > 0);
+			
+			if (isDef(error)) {
 				if (parent.options.throwExceptions) {
-					throw e;
+					throw error;
 				} else {
-					res = merge({ error: ow.obj.rest.exceptionParse(e) }, parent.options.default);
+					res = merge({ error: ow.obj.rest.exceptionParse(error) }, parent.options.default);
 				}
 			}
 		} else {
