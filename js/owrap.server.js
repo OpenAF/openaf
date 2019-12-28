@@ -1453,18 +1453,20 @@ OpenWrap.server.prototype.locks.prototype.whenUnLocked = function (aLockName, aF
  * <key>ow.server.queue(aStamp, aName, aChName)</key>
  * Creates an instance to handle a queue on a channel named "queue::[aName]" or using aChName. The queue entries 
  * will be identified on the channel with aStamp map (defaults to {}) ignoring all other entries.
- * aStamp allows the use of generic channels with other non-queue entries.
+ * aStamp allows the use of generic channels with other non-queue entries. aName will default to "queue" if not
+ * provided.
  * </odoc>
  */
 OpenWrap.server.prototype.queue = function(aStamp, aName, aChName) {
-    this.name = _$(aChName).isString().default("queue::" + aName);
+	aName = _$(aName).isString().default("queue");
+	this.name = _$(aChName).isString().default("queue::" + aName);
     this.stamp = _$(aStamp).isMap().default({});
 
-    $ch(this.name).create();
+	$ch(this.name).create();
 };
 
 OpenWrap.server.prototype.queue.prototype.__find = function(aVisibilityTime) {
-    var keys = $ch(this.name).getKeys();
+    var keys = $path($ch(this.name).getKeys(), "[] | sort_by(@, &id)");
     for(var ii = 0; ii < keys.length; ii++) {
         if (!($stream([keys[ii]]).anyMatch(this.stamp))) continue;
 
@@ -1510,15 +1512,18 @@ OpenWrap.server.prototype.queue.prototype.__find = function(aVisibilityTime) {
 
 /**
  * <odoc>
- * <key>ow.server.queue.send(aObject, aId, aTTL) : Object</key>
+ * <key>ow.server.queue.send(aObject, aId, aTTL, aPriority) : Object</key>
  * Sends aObject (map) to the queue. Optionally a specific unique aId can be provided and/or aTTL (time to live) for the object in
- * the queue in ms. The unique aId will be returned.
+ * the queue in ms. Optionally aPriority can be provided and will be prefixed to aId. The final unique aId will be returned and used
+ * as the sorting based for returning objects from the queue (the lowest first).
  * </odoc>
  */
-OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId, aTTL) {
-    var id = _$(aId).default(nowNano());
+OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId, aTTL, aPriority) {
+	aPriority = _$(aPriority).isNumber().default(1);
+	var id = Number(String(aPriority) + String(_$(aId).default(nowNano())));
+
     $ch(this.name).set(merge({
-        id: id
+		id: id
     }, this.stamp), merge({
         id: id,
 		status: "s",
@@ -1539,8 +1544,8 @@ OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId, aTTL) {
  * </odoc>
  */
 OpenWrap.server.prototype.queue.prototype.receive = function(aVisibilityTime, aWaitTime, aPoolTime) {
-	aWaitTime = _$(aWaitTime).isNumber().default(2500);
-	aPoolTime = _$(aPoolTime).isNumber().default(50);
+	aWaitTime = _$(aWaitTime, "waitTime").isNumber().default(2500);
+	aPoolTime = _$(aPoolTime, "poolTime").isNumber().default(50);
     var limit = now() + aWaitTime;
     do {
         var r = this.__find(aVisibilityTime);
@@ -1564,6 +1569,16 @@ OpenWrap.server.prototype.queue.prototype.delete = function(aId) {
     $ch(this.name).unset(merge({
         id: aId
     }, this.stamp));
+};
+
+/**
+ * <odoc>
+ * <key>ow.server.queue.size() : Number</key>
+ * Tries to return an estimative of the current queue size.
+ * </odoc>
+ */
+OpenWrap.server.prototype.queue.prototype.size = function() {
+	return $ch(this.name).size();
 };
 
 /**
