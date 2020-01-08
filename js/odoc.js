@@ -94,16 +94,12 @@ var ODocs = function(aPath, aODocs, anArrayURLs, offline) {
 	this.arrayurls = anArrayURLs;
 	this.aFilename = (isUnDef(aPath)) ? getOpenAFJar() : aPath;
 	try { 
-		print("ODOC I: Normal loading...");
 		this.load(); 
-		print("ODOC I: Normal loading success");
 		if(!this.offline) {
-			print("ODOC I: Web background load...");
 			this.backgroundLoadWeb(); 
 		}
 	} catch(e) { 
 		// Try another way
-		print("ODOC I: Web forced load...");
 		this.loadWeb();
 	}
 	if (isDef(aODocs)) this.addAll(aODocs);
@@ -296,16 +292,12 @@ ODocs.prototype.get = function(aID, aKey) {
         this.aodocskeys == {} || 
         isUnDef(this.aodocs[aID])) {
     	try {
-			print("ODOC: Normal loading...");
 			this.load(aID);
-			print("ODOC: Normal loading success");
 			if(!this.offline) {
-				print("ODOC: Web background load...");
 				this.backgroundLoadWeb(aID);
 			}
 		} catch(e) {
 			// Try another way
-			print("ODOC: Web forced load...");
 			this.loadWeb(aID);
 		}
     }
