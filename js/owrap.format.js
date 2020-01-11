@@ -1874,6 +1874,19 @@ OpenWrap.format.prototype.xls = {
 		case "thick": return bs.THICK; break;
 		case "thin": return bs.THIN; break;
 		}
+	},
+
+	setTable: function(aXLS, aSheet, aColumn, aRow, anArray, autoFilter) {
+		if (isArray(anArray) && anArray.length <= 0) return;
+
+		aXLS.setTable(aSheet, aColumn, aRow, anArray, ow.format.xls.getStyle(aXLS, { bold: true }));
+		for(var y = aXLS.toNumber(aColumn); y <= aXLS.toNumber(aColumn) + Object.keys(anArray[0]).length; y++) {
+			aXLS.autoSizeColumn(aSheet, aXLS.toName(y));
+		} 
+
+		if (autoFilter) {
+			ow.format.xls.autoFilter(aSheet, aColumn + String(aRow) + ":" + aXLS.toName(aXLS.toNumber(aColumn) + Object.keys(anArray[0]).length -1) + String(aRow + anArray.length -2));
+		}
 	}
 }
 
