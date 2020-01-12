@@ -1739,29 +1739,29 @@ OpenWrap.format.prototype.xls = {
 	getStyle: function(aXLS, aStyleMap) {
 		var rcs = aXLS.getCellStyler();
 		var rcf = aXLS.getNewFont();
-		if (isDefined(aStyleMap.bold)) rcf.setBold(aStyleMap.bold);
-		if (isDefined(aStyleMap.italic)) rcf.setItalic(aStyleMap.italic);
-		if (isDefined(aStyleMap.underline)) rcf.setUnderline(aStyleMap.underline);
-		if (isDefined(aStyleMap.strikeout)) rcf.setStrikeout(aStyleMap.strikeout);
-		if (isDefined(aStyleMap.fontPoints)) rcf.setFontHeightInPoints(aStyleMap.fontPoints);
-		if (isDefined(aStyleMap.fontName)) rcf.setFontName(aStyleMap.fontName);
-		if (isDefined(aStyleMap.fontColor)) rcf.setColor(this.getColor(aStyleMap.fontColor));
-		if (isDefined(aStyleMap.wrapText)) rcs.setWrapText(aStyleMap.wrapText);
-		if (isDefined(aStyleMap.shrinkToFit)) rcs.setShrinkToFit(aStyleMap.shrinkToFit);
-		if (isDefined(aStyleMap.backgroundColor)) rcs.setFillBackgroundColor(this.getColor(aStyleMap.backgroundColor));
-		if (isDefined(aStyleMap.foregroundColor)) rcs.setFillForegroundColor(this.getColor(aStyleMap.foregroundColor));
-		if (isDefined(aStyleMap.borderBottom)) rcs.setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
-		if (isDefined(aStyleMap.borderLeft)) rcs.setBorderLeft(this.getBorderStyle(aStyleMap.borderLeft));
-		if (isDefined(aStyleMap.borderRight)) rcs.setBorderRight(this.getBorderStyle(aStyleMap.borderRight));
-		if (isDefined(aStyleMap.borderTop)) rcs.setBorderTop(this.getBorderStyle(aStyleMap.borderTop));
-		if (isDefined(aStyleMap.borderBottom)) rcs.setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
-		if (isDefined(aStyleMap.borderLeftColor)) rcs.setLeftBorderColor(this.getColor(aStyleMap.borderLeftColor));
-		if (isDefined(aStyleMap.borderRightColor)) rcs.setRightBorderColor(this.getColor(aStyleMap.borderRightColor));
-		if (isDefined(aStyleMap.borderTopColor)) rcs.setTopBorderColor(this.getColor(aStyleMap.borderTopColor));
-		if (isDefined(aStyleMap.borderBottomColor)) rcs.setBottomBorderColor(this.getColor(aStyleMap.borderBottomColor));
-		if (isDefined(aStyleMap.rotation)) rcs.setRotation(aStyleMap.rotation);
-		if (isDefined(aStyleMap.indention)) rcs.setIndention(aStyleMap.indention);
-		if (isDefined(aStyleMap.valign)) {
+		if (isDef(aStyleMap.bold)) rcf.setBold(aStyleMap.bold);
+		if (isDef(aStyleMap.italic)) rcf.setItalic(aStyleMap.italic);
+		if (isDef(aStyleMap.underline)) rcf.setUnderline(aStyleMap.underline);
+		if (isDef(aStyleMap.strikeout)) rcf.setStrikeout(aStyleMap.strikeout);
+		if (isDef(aStyleMap.fontPoints)) rcf.setFontHeightInPoints(aStyleMap.fontPoints);
+		if (isDef(aStyleMap.fontName)) rcf.setFontName(aStyleMap.fontName);
+		if (isDef(aStyleMap.fontColor)) rcf.setColor(this.getColor(aStyleMap.fontColor));
+		if (isDef(aStyleMap.wrapText)) rcs.setWrapText(aStyleMap.wrapText);
+		if (isDef(aStyleMap.shrinkToFit)) rcs.setShrinkToFit(aStyleMap.shrinkToFit);
+		if (isDef(aStyleMap.backgroundColor)) rcs.setFillBackgroundColor(this.getColor(aStyleMap.backgroundColor));
+		if (isDef(aStyleMap.foregroundColor)) rcs.setFillForegroundColor(this.getColor(aStyleMap.foregroundColor));
+		if (isDef(aStyleMap.borderBottom)) rcs.setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
+		if (isDef(aStyleMap.borderLeft)) rcs.setBorderLeft(this.getBorderStyle(aStyleMap.borderLeft));
+		if (isDef(aStyleMap.borderRight)) rcs.setBorderRight(this.getBorderStyle(aStyleMap.borderRight));
+		if (isDef(aStyleMap.borderTop)) rcs.setBorderTop(this.getBorderStyle(aStyleMap.borderTop));
+		if (isDef(aStyleMap.borderBottom)) rcs.setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
+		if (isDef(aStyleMap.borderLeftColor)) rcs.setLeftBorderColor(this.getColor(aStyleMap.borderLeftColor));
+		if (isDef(aStyleMap.borderRightColor)) rcs.setRightBorderColor(this.getColor(aStyleMap.borderRightColor));
+		if (isDef(aStyleMap.borderTopColor)) rcs.setTopBorderColor(this.getColor(aStyleMap.borderTopColor));
+		if (isDef(aStyleMap.borderBottomColor)) rcs.setBottomBorderColor(this.getColor(aStyleMap.borderBottomColor));
+		if (isDef(aStyleMap.rotation)) rcs.setRotation(aStyleMap.rotation);
+		if (isDef(aStyleMap.indention)) rcs.setIndention(aStyleMap.indention);
+		if (isDef(aStyleMap.valign)) {
 			switch(aStyleMap.valign) {
 			case "top": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.TOP); break;
 			case "bottom": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.BOTTOM); break;
@@ -1853,7 +1853,7 @@ OpenWrap.format.prototype.xls = {
 		case "yellow": c = HSSFColor.YELLOW; break;
 		}
 		
-		if (isDefined(c)) return c.getIndex();
+		if (isDef(c)) return c.getIndex();
 	}, 
 	
 	getBorderStyle: function(aBorderStyle) {
@@ -1876,10 +1876,22 @@ OpenWrap.format.prototype.xls = {
 		}
 	},
 
-	setTable: function(aXLS, aSheet, aColumn, aRow, anArray, autoFilter) {
+	/**
+	 * <odoc>
+	 * <key>ow.format.xls.setTable(aXLS, aSheet, aColumn, aRow, anArray, shouldAutoFilter, headerStyle, linesStyle)</key>
+	 * Shortcut for xls.setTable that given aXLS object, a corresponding aSheet object will try to set the contents of 
+	 * anArray of maps starting in aColumn and aRow performing auto size for all columns. If shouldAutoFilter = true is will
+	 * also add an autofilter to all columns. It's possible also to customize the headerStyle and linesStyle.
+	 * </odoc>
+	 */
+	setTable: function(aXLS, aSheet, aColumn, aRow, anArray, autoFilter, headerStyle, linesStyle) {
 		if (isArray(anArray) && anArray.length <= 0) return;
 
-		aXLS.setTable(aSheet, aColumn, aRow, anArray, ow.format.xls.getStyle(aXLS, { bold: true }));
+		if (isUnDef(headerStyle)) ow.format.xls.getStyle(aXLS, { bold: true });
+		if (isMap(headerStyle)) headerStyle = ow.format.xls.getStyle(aXLS, headerStyle);
+		if (isMap(linesStyle)) linesStyle = ow.format.xls.getStyle(aXLS, linesStyle);
+
+		aXLS.setTable(aSheet, aColumn, aRow, anArray, headerStyle, linesStyle);
 		for(var y = aXLS.toNumber(aColumn); y <= aXLS.toNumber(aColumn) + Object.keys(anArray[0]).length; y++) {
 			aXLS.autoSizeColumn(aSheet, aXLS.toName(y));
 		} 
