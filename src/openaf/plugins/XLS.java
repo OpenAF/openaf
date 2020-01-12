@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -17,10 +17,6 @@ import java.util.Iterator;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.poifs.crypt.EncryptionInfo;
-import org.apache.poi.poifs.crypt.Encryptor;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
@@ -57,14 +53,15 @@ public class XLS extends ScriptableObject {
 	 * 
 	 */
 	private static final long serialVersionUID = -9058684071530344845L;
-	protected static String dataformat = "yyyy-d-m h:mm:ss";
+	protected static String dataformat = "yyyy-mm-dd hh:mm:ss";
+	protected static String longformat = "0";
 	protected Workbook wbook;
 	protected FormulaEvaluator evaluator;
-	
+
 	protected enum TableType {
 		HORIZONTAL, VERTICAL, CUSTOM;
 	}
-	
+
 	@Override
 	public String getClassName() {
 		return "XLS";
@@ -83,12 +80,12 @@ public class XLS extends ScriptableObject {
 	@JSFunction
 	public static int toNumber(String name) {
 		int number = 0;
-		for(int i = 0; i < name.length(); i++) {
+		for (int i = 0; i < name.length(); i++) {
 			number = number * 26 + (name.charAt(i) - ('A' - 1));
 		}
 		return number;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.toName(aNumber) : String</key>
@@ -100,15 +97,15 @@ public class XLS extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-    public static String toName(int number) {
-        StringBuilder sb = new StringBuilder();
-        while (number-- > 0) {
-            sb.append((char)('A' + (number % 26)));
-            number /= 26;
-        }
-        return sb.reverse().toString();
-    }
-	
+	public static String toName(int number) {
+		StringBuilder sb = new StringBuilder();
+		while (number-- > 0) {
+			sb.append((char) ('A' + (number % 26)));
+			number /= 26;
+		}
+		return sb.reverse().toString();
+	}
+
 	/**
 	 * 
 	 * @param sy
@@ -116,20 +113,20 @@ public class XLS extends ScriptableObject {
 	 */
 	protected static int translateObject(Object sy) {
 		int y;
-		
+
 		if (sy instanceof Integer) {
 			return ((Integer) sy).intValue();
-		} 
-		
+		}
+
 		if (sy instanceof Double) {
 			return ((Double) sy).intValue();
 		}
-		
+
 		y = toNumber((String) sy);
-		
+
 		return y;
 	}
-	
+
 	/**
 	 * 
 	 * @param type
@@ -144,10 +141,10 @@ public class XLS extends ScriptableObject {
 		if (c == CellType.FORMULA) return "FORMULA";
 		if (c == CellType.NUMERIC) if (HSSFDateUtil.isCellDateFormatted(cell)) return "DATE"; else return "NUMERIC";
 		if (c == CellType.STRING) return "STRING";
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.XLS(aObject, aPassword, readOnly) : XLS</key>
@@ -157,15 +154,15 @@ public class XLS extends ScriptableObject {
 	 * var xls = new XLS("c:/test.xlsx");\
 	 * \
 	 * </odoc>
-	 * @throws InvalidFormatException 
-	 * @throws EncryptedDocumentException 
+	 * @throws InvalidFormatException
+	 * @throws EncryptedDocumentException
 	 */
 	@JSConstructor
 	public void newXLS(Object arg, String password, boolean readOnly) throws IOException, EncryptedDocumentException, InvalidFormatException {
 		wbook = null;
-		
+
 		if (arg instanceof String) {
-			// It's a filename	
+			// It's a filename
 			try {
 				//POIFSFileSystem poifs = new POIFSFileSystem(new File((String) arg), readOnly);
 				if (readOnly) {
@@ -173,26 +170,26 @@ public class XLS extends ScriptableObject {
 				} else {
 					wbook = WorkbookFactory.create(new File((String) arg), password);
 				}
-			} catch(Exception e) {
+			} catch (Exception e) {
 				wbook = new XSSFWorkbook((String) arg);
 			}
 		}
-		
+
 		if (arg instanceof byte[]) {
 			try {
 				wbook = WorkbookFactory.create(new ByteArrayInputStream((byte[]) arg));
-			} catch(Exception e) {
+			} catch (Exception e) {
 				wbook = new XSSFWorkbook(new ByteArrayInputStream((byte[]) arg));
 			}
 		}
-		
+
 		if (wbook == null) {
 			wbook = new XSSFWorkbook();
 		}
-		
+
 		evaluator = wbook.getCreationHelper().createFormulaEvaluator();
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.getWorkbook() : Workbook</key>
@@ -203,7 +200,7 @@ public class XLS extends ScriptableObject {
 	public Workbook getWorkbook() {
 		return wbook;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.getSheet(aSheetRef) : Object</key>
@@ -221,19 +218,19 @@ public class XLS extends ScriptableObject {
 		Sheet sheet;
 		try {
 			sheet = wbook.getSheetAt(Integer.valueOf(at));
-		} catch(Exception e) {
+		} catch (Exception e) {
 			try {
 				sheet = wbook.getSheet(at);
-			} catch(Exception ee) {
+			} catch (Exception ee) {
 				sheet = wbook.createSheet(at);
 			}
 		}
-		
+
 		if (sheet == null) sheet = wbook.createSheet(at);
-		
+
 		return sheet;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.close()</key>
@@ -244,7 +241,7 @@ public class XLS extends ScriptableObject {
 	public void close() throws IOException {
 		wbook.close();
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.getCell(aSheet, aColumn, aRow, evaluateFormulas) : Object</key>
@@ -267,18 +264,18 @@ public class XLS extends ScriptableObject {
 	public Object getCell(Object sheet, Object sy, int x, boolean evaluateFormulas) {
 		int y = translateObject(sy);
 		Scriptable no = (Scriptable) AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
-		
-		Row row = ((Sheet) sheet).getRow(x-1);
+
+		Row row = ((Sheet) sheet).getRow(x - 1);
 		Cell cell = null;
 		if (row != null)
-			cell = row.getCell(y-1);
-		
+			cell = row.getCell(y - 1);
+
 		if (cell != null)
 			return getCellValue2JSON(no, cell, evaluateFormulas);
-		
+
 		return no;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.getCellValue(aSheet, aColumn, aRow, evaluateFormulas) : Object</key>
@@ -296,16 +293,16 @@ public class XLS extends ScriptableObject {
 	@JSFunction
 	public Object getCellValue(Object sheet, Object sy, int x, boolean evaluateFormulas) {
 		int y = translateObject(sy);
-		
-		Row row = ((Sheet) sheet).getRow(x-1);
-		Cell cell = row.getCell(y-1);
-		
+
+		Row row = ((Sheet) sheet).getRow(x - 1);
+		Cell cell = row.getCell(y - 1);
+
 		if (cell != null)
 			return getCellValueRaw(cell, evaluateFormulas, evaluateFormulas);
 		else
 			return "";
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.autoSizeColumn(aSheet, aColumn, useMergedCells)</key>
@@ -323,10 +320,10 @@ public class XLS extends ScriptableObject {
 	@JSFunction
 	public void autoSizeColumn(Object sheet, Object sy, boolean useMergedCells) {
 		int y = translateObject(sy);
-		
-		((Sheet) sheet).autoSizeColumn(y-1, useMergedCells);
+
+		((Sheet) sheet).autoSizeColumn(y - 1, useMergedCells);
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.setDataFormat(aNewDataFormat)</key>
@@ -337,7 +334,7 @@ public class XLS extends ScriptableObject {
 	public static void setDataFormat(String newdataformat) {
 		dataformat = newdataformat;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.getDataFormat() : String</key>
@@ -348,7 +345,7 @@ public class XLS extends ScriptableObject {
 	public static String getDataFormat() {
 		return dataformat;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.setColumnWidth(aSheet, aColumn, aWidth)</key>
@@ -358,10 +355,10 @@ public class XLS extends ScriptableObject {
 	@JSFunction
 	public void setColumnWidth(Object sheet, Object sy, int width) {
 		int y = translateObject(sy);
-		
-		((Sheet) sheet).setColumnWidth(y-1, width);
+
+		((Sheet) sheet).setColumnWidth(y - 1, width);
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.setRowHeight(aSheet, aRow, aHeight)</key>
@@ -373,7 +370,7 @@ public class XLS extends ScriptableObject {
 		Row xrow = ((Sheet) sheet).getRow(row);
 		if (xrow != null) xrow.setHeight((short) height);
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>XLS.setCell(aSheet, aColumn, aRow, aValue, aStyle)</key>
@@ -385,7 +382,7 @@ public class XLS extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void setCell(Object sheet, Object sy, int x, Object value, Object style) {
+	public void setCell(Object sheet, Object sy, int x, Object value, Object style)	throws UnsupportedEncodingException {
 		int y = translateObject(sy);
 		boolean isDate = false;
 		CellStyle cstyle = null;
@@ -408,9 +405,11 @@ public class XLS extends ScriptableObject {
 			if (value.toString().startsWith("=")) {
 				type = CellType.FORMULA;
 			}
+			if (value instanceof ConsString) value = ((ConsString) value).toString();
+			if (value instanceof String) value = new String(((String) value).getBytes(), "UTF-8");
 		}
 		
-		if (value instanceof Double) {
+		if (value instanceof Double || value instanceof Integer || value instanceof Float || value instanceof Long) {
 			type = CellType.NUMERIC;
 		}
 		
@@ -427,6 +426,7 @@ public class XLS extends ScriptableObject {
 		
 		if (value == null) {
 			type = CellType.BLANK;
+			value = "";
 		}
 		
 		if (cell == null) {
@@ -447,6 +447,16 @@ public class XLS extends ScriptableObject {
 		else if (type == CellType.FORMULA) cell.setCellFormula((value.toString()).replaceFirst("=", ""));
 		else if (type == CellType.NUMERIC) { 
 			if (value instanceof Integer) value = Double.valueOf((Integer) value);
+			if (value instanceof Float)   value = Double.valueOf((Float) value);
+			if (value instanceof Long) {
+				value = Double.valueOf((Long) value);
+				if (style == null) {
+					CellStyle cellStyle = wbook.createCellStyle();
+					CreationHelper createHelper = wbook.getCreationHelper();
+					cellStyle.setDataFormat(createHelper.createDataFormat().getFormat(longformat));
+					cell.setCellStyle(cellStyle);
+				}
+			}
 			cell.setCellValue((Double) value); 
 		}
 		else if (type == CellType.BOOLEAN) cell.setCellValue((Boolean) value); 
@@ -637,7 +647,7 @@ public class XLS extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void setTable(Object sheet, Object signoreY, int ignoreX, Object table, Object keyStyle, Object lineStyle) {
+	public void setTable(Object sheet, Object signoreY, int ignoreX, Object table, Object keyStyle, Object lineStyle) throws UnsupportedEncodingException {
 		if (table instanceof NativeArray) {
 			if (keyStyle != null && keyStyle instanceof Undefined) keyStyle = null;
 			if (lineStyle != null && lineStyle instanceof Undefined) lineStyle = null;
@@ -719,7 +729,7 @@ public class XLS extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public int setJSON(Object sheet, Object signoreY, int ignoreX, Object map, boolean format, Object cstyle) {
+	public int setJSON(Object sheet, Object signoreY, int ignoreX, Object map, boolean format, Object cstyle) throws UnsupportedEncodingException {
 		if (map instanceof NativeObject || map instanceof NativeArray) {
 			int ignoreY = 0;
 			int x = ignoreX;
