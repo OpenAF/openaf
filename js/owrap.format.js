@@ -1887,9 +1887,12 @@ OpenWrap.format.prototype.xls = {
 	setTable: function(aXLS, aSheet, aColumn, aRow, anArray, autoFilter, headerStyle, linesStyle) {
 		if (isArray(anArray) && anArray.length <= 0) return;
 
-		if (isUnDef(headerStyle)) ow.format.xls.getStyle(aXLS, { bold: true });
-		if (isMap(headerStyle)) headerStyle = ow.format.xls.getStyle(aXLS, headerStyle);
-		if (isMap(linesStyle)) linesStyle = ow.format.xls.getStyle(aXLS, linesStyle);
+		if (isUnDef(headerStyle)) {
+			headerStyle = ow.format.xls.getStyle(aXLS, { bold: true });
+		} else {
+			if (isMap(headerStyle)) headerStyle = ow.format.xls.getStyle(aXLS, headerStyle);
+		}
+		if (isDef(linesStyle) && isMap(linesStyle)) linesStyle = ow.format.xls.getStyle(aXLS, linesStyle);
 
 		aXLS.setTable(aSheet, aColumn, aRow, anArray, headerStyle, linesStyle);
 		for(var y = aXLS.toNumber(aColumn); y <= aXLS.toNumber(aColumn) + Object.keys(anArray[0]).length; y++) {
