@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import org.apache.poi.EncryptedDocumentException;
@@ -57,6 +58,9 @@ public class XLS extends ScriptableObject {
 	protected static String longformat = "0";
 	protected Workbook wbook;
 	protected FormulaEvaluator evaluator;
+	protected String encoding = null;
+	protected HashMap<Object, CellStyle> dataStyleCache = new HashMap<Object, CellStyle>();
+	protected HashMap<Object, CellStyle> longStyleCache = new HashMap<Object, CellStyle>();
 
 	protected enum TableType {
 		HORIZONTAL, VERTICAL, CUSTOM;
@@ -65,6 +69,29 @@ public class XLS extends ScriptableObject {
 	@Override
 	public String getClassName() {
 		return "XLS";
+	}
+
+	/**
+	 * <odoc>
+	 * <key>XLS.getEncoding() : String</key>
+	 * Retrieves the current encoding used internally to convert strings (null if no conversion is performed)
+	 * </odoc>
+	 */
+	@JSFunction
+	public String getEncoding() {
+		return this.encoding;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>XLS.setEncoding(anEncoding)</key>
+	 * Sets anEncoding (e.g. "UTF-8", "cp850", etc...) to be used internally to convert strings (set to null to disable
+	 * any conversion).
+	 * </odoc>
+	 */
+	@JSFunction
+	public void setEncoding(String enc) {
+		this.encoding = enc;
 	}
 
 	/**
@@ -386,6 +413,8 @@ public class XLS extends ScriptableObject {
 		int y = translateObject(sy);
 		boolean isDate = false;
 		CellStyle cstyle = null;
+		CellStyle datastyle = this.dataStyleCache.get(style);
+	    CellStyle longstyle = this.longStyleCache.get(style);
 		
 		Row row = ((Sheet) sheet).getRow(x-1);
 		
@@ -406,7 +435,7 @@ public class XLS extends ScriptableObject {
 				type = CellType.FORMULA;
 			}
 			if (value instanceof ConsString) value = ((ConsString) value).toString();
-			if (value instanceof String) value = new String(((String) value).getBytes(), "UTF-8");
+			if (encoding != null && value instanceof String) value = new String(((String) value).getBytes(), encoding);
 		}
 		
 		if (value instanceof Double || value instanceof Integer || value instanceof Float || value instanceof Long) {
@@ -433,13 +462,18 @@ public class XLS extends ScriptableObject {
 			cell = row.createCell(y-1, type);
 			
 			if (isDate) {
-				CellStyle cellStyle = wbook.createCellStyle();
-				if (style != null)
-					cellStyle.cloneStyleFrom(cstyle);
-				CreationHelper createHelper = wbook.getCreationHelper();
+				//CellStyle cellStyle = wbook.createCellStyle();
+				if (datastyle == null) {
+					datastyle = wbook.createCellStyle();
+					if (style != null)
+						datastyle.cloneStyleFrom(cstyle);
+					CreationHelper createHelper = wbook.getCreationHelper();
+					datastyle.setDataFormat(createHelper.createDataFormat().getFormat(dataformat));
+
+					this.dataStyleCache.put(style, datastyle);
+				}
 				
-				cellStyle.setDataFormat(createHelper.createDataFormat().getFormat(dataformat));
-				cell.setCellStyle(cellStyle);
+				cell.setCellStyle(datastyle);
 			}
 		}
 		
@@ -450,12 +484,16 @@ public class XLS extends ScriptableObject {
 			if (value instanceof Float)   value = Double.valueOf((Float) value);
 			if (value instanceof Long) {
 				value = Double.valueOf((Long) value);
-				if (style == null) {
-					CellStyle cellStyle = wbook.createCellStyle();
+				if (longstyle == null) {
+					longstyle = wbook.createCellStyle();
+					if (style != null)
+						longstyle.cloneStyleFrom(cstyle);
 					CreationHelper createHelper = wbook.getCreationHelper();
-					cellStyle.setDataFormat(createHelper.createDataFormat().getFormat(longformat));
-					cell.setCellStyle(cellStyle);
+					longstyle.setDataFormat(createHelper.createDataFormat().getFormat(longformat));
+
+					this.longStyleCache.put(style, longstyle);
 				}
+				cell.setCellStyle(longstyle);
 			}
 			cell.setCellValue((Double) value); 
 		}

@@ -1737,51 +1737,71 @@ OpenWrap.format.prototype.xls = {
 	 * </odoc>
 	 */
 	getStyle: function(aXLS, aStyleMap) {
-		var rcs = aXLS.getCellStyler();
-		var rcf = aXLS.getNewFont();
-		if (isDef(aStyleMap.bold)) rcf.setBold(aStyleMap.bold);
-		if (isDef(aStyleMap.italic)) rcf.setItalic(aStyleMap.italic);
-		if (isDef(aStyleMap.underline)) rcf.setUnderline(aStyleMap.underline);
-		if (isDef(aStyleMap.strikeout)) rcf.setStrikeout(aStyleMap.strikeout);
-		if (isDef(aStyleMap.fontPoints)) rcf.setFontHeightInPoints(aStyleMap.fontPoints);
-		if (isDef(aStyleMap.fontName)) rcf.setFontName(aStyleMap.fontName);
-		if (isDef(aStyleMap.fontColor)) rcf.setColor(this.getColor(aStyleMap.fontColor));
-		if (isDef(aStyleMap.wrapText)) rcs.setWrapText(aStyleMap.wrapText);
-		if (isDef(aStyleMap.shrinkToFit)) rcs.setShrinkToFit(aStyleMap.shrinkToFit);
-		if (isDef(aStyleMap.backgroundColor)) rcs.setFillBackgroundColor(this.getColor(aStyleMap.backgroundColor));
-		if (isDef(aStyleMap.foregroundColor)) rcs.setFillForegroundColor(this.getColor(aStyleMap.foregroundColor));
-		if (isDef(aStyleMap.borderBottom)) rcs.setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
-		if (isDef(aStyleMap.borderLeft)) rcs.setBorderLeft(this.getBorderStyle(aStyleMap.borderLeft));
-		if (isDef(aStyleMap.borderRight)) rcs.setBorderRight(this.getBorderStyle(aStyleMap.borderRight));
-		if (isDef(aStyleMap.borderTop)) rcs.setBorderTop(this.getBorderStyle(aStyleMap.borderTop));
-		if (isDef(aStyleMap.borderBottom)) rcs.setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
-		if (isDef(aStyleMap.borderLeftColor)) rcs.setLeftBorderColor(this.getColor(aStyleMap.borderLeftColor));
-		if (isDef(aStyleMap.borderRightColor)) rcs.setRightBorderColor(this.getColor(aStyleMap.borderRightColor));
-		if (isDef(aStyleMap.borderTopColor)) rcs.setTopBorderColor(this.getColor(aStyleMap.borderTopColor));
-		if (isDef(aStyleMap.borderBottomColor)) rcs.setBottomBorderColor(this.getColor(aStyleMap.borderBottomColor));
-		if (isDef(aStyleMap.rotation)) rcs.setRotation(aStyleMap.rotation);
-		if (isDef(aStyleMap.indention)) rcs.setIndention(aStyleMap.indention);
+		var rcs, rcf;
+
+		_$(aStyleMap, "style map").isMap().$_();
+
+		if (isUnDef(aXLS.__styleCache)) { aXLS.__styleCache = {}; }
+		var styleId = stringify(sortMapKeys(aStyleMap), void 0, "");
+		if (isJavaObject(aXLS.__styleCache[styleId])) return aXLS.__styleCache[styleId];
+
+		var fnRCS = () => {
+			if (!isJavaObject(rcs)) rcs = aXLS.getCellStyler();
+			return rcs;
+		};
+
+		var fnRCF = () => {
+			if (!isJavaObject(rcf)) rcf = aXLS.getNewFont();
+			return rcf;
+		};
+
+		if (isDef(aStyleMap.bold)) fnRCF().setBold(aStyleMap.bold);
+		if (isDef(aStyleMap.italic)) fnRCF().setItalic(aStyleMap.italic);
+		if (isDef(aStyleMap.underline)) fnRCF().setUnderline(aStyleMap.underline);
+		if (isDef(aStyleMap.strikeout)) fnRCF().setStrikeout(aStyleMap.strikeout);
+		if (isDef(aStyleMap.fontPoints)) fnRCF().setFontHeightInPoints(aStyleMap.fontPoints);
+		if (isDef(aStyleMap.fontName)) fnRCF().setFontName(aStyleMap.fontName);
+		if (isDef(aStyleMap.fontColor)) fnRCF().setColor(this.getColor(aStyleMap.fontColor));
+
+		if (isDef(aStyleMap.wrapText)) fnRCS().setWrapText(aStyleMap.wrapText);
+		if (isDef(aStyleMap.shrinkToFit)) fnRCS().setShrinkToFit(aStyleMap.shrinkToFit);
+		if (isDef(aStyleMap.backgroundColor)) fnRCS().setFillBackgroundColor(this.getColor(aStyleMap.backgroundColor));
+		if (isDef(aStyleMap.foregroundColor)) fnRCS().setFillForegroundColor(this.getColor(aStyleMap.foregroundColor));
+		if (isDef(aStyleMap.borderBottom)) fnRCS().setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
+		if (isDef(aStyleMap.borderLeft)) fnRCS().setBorderLeft(this.getBorderStyle(aStyleMap.borderLeft));
+		if (isDef(aStyleMap.borderRight)) fnRCS().setBorderRight(this.getBorderStyle(aStyleMap.borderRight));
+		if (isDef(aStyleMap.borderTop)) fnRCS().setBorderTop(this.getBorderStyle(aStyleMap.borderTop));
+		if (isDef(aStyleMap.borderBottom)) fnRCS().setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
+		if (isDef(aStyleMap.borderLeftColor)) fnRCS().setLeftBorderColor(this.getColor(aStyleMap.borderLeftColor));
+		if (isDef(aStyleMap.borderRightColor)) fnRCS().setRightBorderColor(this.getColor(aStyleMap.borderRightColor));
+		if (isDef(aStyleMap.borderTopColor)) fnRCS().setTopBorderColor(this.getColor(aStyleMap.borderTopColor));
+		if (isDef(aStyleMap.borderBottomColor)) fnRCS().setBottomBorderColor(this.getColor(aStyleMap.borderBottomColor));
+		if (isDef(aStyleMap.rotation)) fnRCS().setRotation(aStyleMap.rotation);
+		if (isDef(aStyleMap.indention)) fnRCS().setIndention(aStyleMap.indention);
+
 		if (isDef(aStyleMap.valign)) {
 			switch(aStyleMap.valign) {
-			case "top": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.TOP); break;
-			case "bottom": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.BOTTOM); break;
-			case "center": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.CENTER); break;
-			case "justify": rcs.setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.JUSTIFY); break;
+			case "top": fnRCS().setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.TOP); break;
+			case "bottom": fnRCS().setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.BOTTOM); break;
+			case "center": fnRCS().setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.CENTER); break;
+			case "justify": fnRCS().setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.JUSTIFY); break;
 			}
 		};
-		if (isDefined(aStyleMap.align)) {
+		if (isDef(aStyleMap.align)) {
 			switch(aStyleMap.align) {
-			case "center": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_CENTER); break;
-			case "centerSelection": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_CENTER_SELECTION); break;
-			case "fill": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_FILL); break;
-			case "general": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_GENERAL); break;
-			case "justify": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_JUSTIFY); break;
-			case "left": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_LEFT); break;
-			case "right": rcs.setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_RIGHT); break;
+			case "center": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_CENTER); break;
+			case "centerSelection": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_CENTER_SELECTION); break;
+			case "fill": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_FILL); break;
+			case "general": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_GENERAL); break;
+			case "justify": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_JUSTIFY); break;
+			case "left": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_LEFT); break;
+			case "right": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_RIGHT); break;
 			}
 		};
-		rcs.setFont(rcf);
-		return rcs;
+		if (isJavaObject(rcf)) fnRCS().setFont(rcf);
+
+		aXLS.__styleCache[styleId] = fnRCS();
+		return fnRCS();
 	},
 	
 	/**
