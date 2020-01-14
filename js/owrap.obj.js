@@ -2572,3 +2572,50 @@ OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) 
 		throw global.__ajv.errorsText(val.errors, aErrorOptions);
 	}
 };
+
+OpenWrap.obj.prototype.socket = {
+	/**
+	 * <odoc>
+	 * <key>ow.obj.socket.string2string(aHostAddress, aPort, aInputString) : String</key>
+	 * Tries to open a socket to aHostAddress on aPort sending aInputString. Will return the result, if any, as a string.
+	 * </odoc>
+	 */
+	string2string: function(aHostAddress, aPort, aInputString) {
+		var res;
+
+		var cs = new java.net.Socket(aHostAddress, aPort); 
+		var is = cs.getInputStream(); 
+		var os = cs.getOutputStream(); 
+
+		ioStreamWrite(os, aInputString); 
+		res = af.fromInputStream2String(is);
+
+		os.close();
+		is.close();
+		cs.close();
+
+		return res;
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.obj.socket.string2bytes(aHostAddress, aPort, aInputString) : Bytes</key>
+	 * Tries to open a socket to aHostAddress on aPort sending aInputString. Will return the result, if any, as an array of bytes.
+	 * </odoc>
+	 */
+	string2bytes: function(aHostAddress, aPort, aInputString) {
+		var res;
+
+		var cs = new java.net.Socket(aHostAddress, aPort); 
+		var is = cs.getInputStream(); 
+		var os = cs.getOutputStream(); 
+		
+		ioStreamWrite(os, aInputString); 
+		res = af.fromInputStream2Bytes(is);
+
+		os.close();
+		is.close();
+		cs.close();
+
+		return res;
+	}
+};
