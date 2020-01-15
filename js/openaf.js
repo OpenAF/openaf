@@ -4192,6 +4192,11 @@ function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
 		buf = buf.substring(buf.indexOf(aSeparator) + 1);
 		if (res == true) return;
 	}
+	if (buf.length > 0) {
+		var res = aFunction(buf);
+		buf = "";
+		if (res == true) return;
+	}
 }
 
 /**
