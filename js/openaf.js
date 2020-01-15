@@ -4174,28 +4174,30 @@ function ioStreamRead(aStream, aFunction, aBufferSize, useNIO, encoding) {
  */
 function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
-	var buf = "";
+	var buf = "", go = true;
 	if (isUnDef(aSeparator)) aSeparator = "\n";
 
 	ioStreamRead(aStream, function(buffer) {
-		var res;
-		buf += buffer;
-		while (buf.indexOf(aSeparator) >= 0) {
-			res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
-			buf = buf.substring(buf.indexOf(aSeparator) + 1);
-			if (res == true) { buf = ""; return; }
+		if (go) {
+			var res;
+			buf += buffer;
+			while (buf.indexOf(aSeparator) >= 0) {
+				res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
+				buf = buf.substring(buf.indexOf(aSeparator) + 1);
+				if (res == true) { buf = ""; go = false; return; }
+			}
+			return res;
 		}
-		return res;
 	}, void 0, useNIO);
-	while (buf.indexOf(aSeparator) >= 0) {
+	while (buf.indexOf(aSeparator) >= 0 && go) {
 		var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
 		buf = buf.substring(buf.indexOf(aSeparator) + 1);
-		if (res == true) { buf = ""; return; }
+		if (res == true) { buf = ""; go = false; return; }
 	}
-	if (buf.length > 0) {
+	if (buf.length > 0 && go) {
 		var res = aFunction(buf);
 		buf = "";
-		if (res == true) { buf = ""; return; }
+		if (res == true) { buf = ""; go = false; return; }
 	}
 }
 
