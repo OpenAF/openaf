@@ -1925,6 +1925,42 @@ OpenWrap.format.prototype.xls = {
 	}
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.getDoH(aAddr, aType, aProvider) : Array</key>
+ * Performs a DNS over HTTPs query with aAddr. Optionally you can provide the aType of record (defaults to 'a') and
+ * the DNS over HTTPs aProvider between 'google' and 'cloudflare'.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getDoH = function(aName, aType, aProvider) {
+	aProvider = _$(aProvider).default("cloudflare");
+ 
+	switch (aProvider) {
+	   case "google":
+		  var res = $rest({ uriQuery: true }).get("https://8.8.8.8/resolve", {
+			 name: aName,
+			 type: aType
+		  });
+		  if (isDef(res.Answer)) return res.Answer;
+		  else return void 0;
+	   case "cloudflare":
+		  var res = $rest({
+						requestHeaders: {
+							accept: "application/dns-json"
+						}, 
+						uriQuery: true
+					})
+					.get("https://1.1.1.1/dns-query", {
+						name: aName,
+						type: aType
+					});
+		  if (isDef(res.Answer)) return res.Answer;
+		  else return void 0;
+	   default:
+		  break;
+	}
+}
+
 loadLib(getOpenAFJar() + "::js/later.js");
 OpenWrap.format.prototype.cron = {
 	/**
