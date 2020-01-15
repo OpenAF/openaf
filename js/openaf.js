@@ -4183,19 +4183,19 @@ function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
 		while (buf.indexOf(aSeparator) >= 0) {
 			res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
 			buf = buf.substring(buf.indexOf(aSeparator) + 1);
-			if (res == true) return;
+			if (res == true) { buf = ""; return; }
 		}
 		return res;
 	}, void 0, useNIO);
 	while (buf.indexOf(aSeparator) >= 0) {
 		var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
 		buf = buf.substring(buf.indexOf(aSeparator) + 1);
-		if (res == true) return;
+		if (res == true) { buf = ""; return; }
 	}
 	if (buf.length > 0) {
 		var res = aFunction(buf);
 		buf = "";
-		if (res == true) return;
+		if (res == true) { buf = ""; return; }
 	}
 }
 
@@ -4304,15 +4304,14 @@ function utf8(aString) {
  * not and anEncoding can be provided.
  * </odoc>
  */
-function getFromZip(aZipFile, aResource, isBytes, encoding) {
+function getFromZip(aZipFile, aResource, isBy, encoding) {
 	plugin("ZIP");
 
 	if (isDef(aResource)) {
 		var zip = new ZIP();
 		zip.loadFile(aZipFile);
-		var ab = zip.getFile(aResource);
-		zip.close();
-		if (isBytes)
+		var ab = zip.streamGetFile(aZipFile, aResource);
+		if (isBy)
 			return ab;
 		else {
 			ab = af.fromBytes2String(ab);
