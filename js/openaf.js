@@ -5011,6 +5011,8 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 };
 
 const $cache = function(aName) {
+	if (isUnDef(global.__cache)) global.__cache = {};
+
     var __c = function(aN) {
         aN = _$(aN).default("cache");
         this.name  = aN;
@@ -5106,6 +5108,7 @@ const $cache = function(aName) {
 				this.ach.destroy();
 		}
 		$ch(this.name).destroy();
+		delete global.__cache[this.name];
     };
     __c.prototype.unset  = function(aK) {
         $ch(this.name).unset(aK);
@@ -5127,9 +5130,11 @@ const $cache = function(aName) {
 	};
 	__c.prototype.getKeys = function() {
 		return $ch(this.name).getKeys();
-	}
+	};
 
-    return new __c(aName);
+	if (isUnDef(global.__cache[aName])) global.__cache[aName] = new __c(aName);
+
+    return global.__cache[aName];
 };
 
 /**
