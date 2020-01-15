@@ -568,6 +568,133 @@ OpenWrap.java.prototype.gc = function() {
 
 /**
  * <odoc>
+ * <key>ow.java.getAddressType(aAddress) : Map</key>
+ * Given aAddress tries to return a map with the following flags: isValidAddress, hostname, ipv4, ipv6 and privateAddress
+ * </odoc>
+ */
+OpenWrap.java.prototype.getAddressType = function(aTxt) {
+    var res ={
+        isValidAddress: true,
+        hostname: true,
+        ipv4: false,
+        ipv6: false,
+        privateAddress: false
+    };
+ 
+    try {
+       if (aTxt.trim().match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)) {
+          res.ipv4 = true;
+          res.hostname = false;
+
+          var addr = java.net.InetAddress.getByName(aTxt);
+          if (addr.isSiteLocalAddress() || addr.isLoopbackAddress()) {
+             res.privateAddress = true;
+          }
+       }
+ 
+       if (aTxt.trim().match(/(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))/)) {
+          res.ipv6 = true;
+          res.hostname = false;
+
+          var addr = java.net.InetAddress.getByName(aTxt);
+          if (addr.isSiteLocalAddress() || addr.isLoopbackAddress()) {
+             res.privateAddress = true;
+          }
+       }
+    } catch (e) {
+       res.isValidAddress = false;
+       res.hostname = false;
+    }
+ 
+    return res;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.getHost2IP(aHost) : String</key>
+ * Tries to resolve aHost to an IP address using the default DNS.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getHost2IP = function(aName) {
+    return String(java.net.InetAddress.getByName(aName).getHostAddress());
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.getIP2Host(aIP) : String</key>
+ * Tries to reverse DNS aIP to a host address using the default DNS.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getIP2Host = function(aIP) {
+    return String(java.net.InetAddress.getByName(aIP).getCanonicalHostName());
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.getWhoIs(aQuery, aInitServer) : Map</key>
+ * Tries to perform a whois aQuery for a domain or an ip address. Optionally you can provide aInitServer (defaults to whois.iana.org)
+ * </odoc>
+ */
+OpenWrap.java.prototype.getWhoIs = function(aQuery, server) {
+    var ws = new Packages.org.apache.commons.net.whois.WhoisClient();
+    server = _$(server).isString().default("whois.iana.org");
+
+    ws.connect(server);
+    var res = ws.query(aQuery);
+    ws.disconnect();
+
+    var result = {},
+    prefix = "",
+    suffix = "";
+    end = false;
+
+    String(res).split(/\r?\n/).forEach(v => {
+        if (!v.match(/^\s*%/) && v.match(/^\s*[^:]+:\s+.+/)) {
+            var capture = true,
+            preend = false;
+            var ar = v.match(/^\s*([^\:]+)\:\s*(.+)$/);
+            var key = String(ar[1]),
+            value = String(ar[2]);
+
+            value = value.trim().replace(/\n+\s*$/, "");
+            key = key.trim();
+
+            if (key == "nserver" || key == "whois" || key == "status" || key == "created" || key == "changed" || key == "source") {
+                prefix = "";
+                suffix = "";
+            }
+            if (key == "domain") {
+                prefix = "domain ";
+                suffix = "";
+            }
+            if (key == "contact") {
+                prefix = value + " ";
+                suffix = "";
+                capture = false;
+            }
+            if (key == "remarks") capture = false;
+            if (key.indexOf(">>>") >= 0 && value.indexOf("<<<") >= 0) {
+                key = key.replace(/>>>\s*/, "");
+                value = value.replace(/\s*<<</, "");
+                preend = true;
+            }
+
+            if (capture && !end) {
+                if (isDef(result[prefix + key + suffix])) value = result[prefix + key + suffix] + "\n" + value;
+                    result[prefix + key + suffix] = value;
+            }
+
+            if (preend) end = true;
+        }
+    });
+
+    if (isDef(result.whois) && result.whois != server) result = ow.java.getWhoIs(aQuery, result.whois);
+
+    return result;
+};
+
+/**
+ * <odoc>
  * <key>ow.java.setIgnoreSSLDomains(aList, aPassword)</key>
  * Replaces the current Java SSL socket factory with a version with a custom trust manager that will "ignore" verification
  * of SSL certificates whose domains are part of aList. Optionally aPassword for the key store can be forced.
