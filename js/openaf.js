@@ -4299,18 +4299,24 @@ function utf8(aString) {
 
 /**
  * <odoc>
- * <key>getFromZip(aZipFile, aResource, inBytes, anEncoding) : anArrayOfBytes</key>
+ * <key>getFromZip(aZipFile, aResource, inBytes, anEncoding, notInMemory) : anArrayOfBytes</key>
  * Retrieves aResource, as anArrayOfBytes, from aZipFile. This resource can be inBytes = true or
- * not and anEncoding can be provided.
+ * not and anEncoding can be provided. If the resource to retrieve is big you can use notInMemory = true
+ * for a slower but less memory retrieval.
  * </odoc>
  */
-function getFromZip(aZipFile, aResource, isBy, encoding) {
+function getFromZip(aZipFile, aResource, isBy, encoding, notInMemory) {
 	plugin("ZIP");
 
 	if (isDef(aResource)) {
-		var zip = new ZIP();
-		zip.loadFile(aZipFile);
-		var ab = zip.streamGetFile(aZipFile, aResource);
+		var zip = new ZIP(), ab;
+		if (notInMemory) {
+			zip.loadFile(aZipFile);
+			ab = zip.getFile(aResource);
+			zip.close();
+		} else {
+			ab = zip.streamGetFile(aZipFile, aResource);
+		}
 		if (isBy)
 			return ab;
 		else {
