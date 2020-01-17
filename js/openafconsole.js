@@ -1031,6 +1031,7 @@ function __pauseString(aString) {
 // MAIN
 // ---------------------
 var con = new Console();
+if (__experimentalWin10ColorFlag) ansiStart();
 var __ansiflag = con.isAnsiSupported();
 var jansi = JavaImporter(Packages.org.fusesource.jansi);
 var __ansiflag = (jansi != null && isDef(jansi)) ? con.isAnsiSupported() : false;
