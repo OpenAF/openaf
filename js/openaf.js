@@ -718,6 +718,8 @@ function ansiColor(aAnsi, aString, force) {
 	}
 }
 
+var __experimentalWin10ColorFlag = false;
+var __experimentalWin10Color;
 /**
  * <odoc>
  * <key>ansiStart(force)</key>
@@ -725,13 +727,27 @@ function ansiColor(aAnsi, aString, force) {
  * </odoc>
  */
 function ansiStart(force) {
-	if (!__initializeCon()) return false;
-	var con = __con;
-	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
-	var jansi = JavaImporter(Packages.org.fusesource.jansi);
-	if (ansis) {
-		java.lang.System.out.flush(); java.lang.System.err.flush();
-		jansi.AnsiConsole.systemInstall();
+	if (__experimentalWin10ColorFlag) {
+		if (isUnDef(__experimentalWin10Color)) {
+			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
+			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
+			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
+			var mode = new com.sun.jna.ptr.IntByReference();
+			k32.GetConsoleMode(hout, mode);
+			__experimentalWin10Color = mode.getValue();
+			k32.SetConsoleMode(hout, 15);
+			k32.SetConsoleMode(herr, 15);
+			__experimentalWin10ColorFlag = true;
+		}
+	} else {
+		if (!__initializeCon()) return false;
+		var con = __con;
+		var ansis = force || (__conAnsi && (java.lang.System.console() != null));
+		var jansi = JavaImporter(Packages.org.fusesource.jansi);
+		if (ansis) {
+			java.lang.System.out.flush(); java.lang.System.err.flush();
+			jansi.AnsiConsole.systemInstall();
+		}
 	}
 }
 
@@ -742,13 +758,23 @@ function ansiStart(force) {
  * </odoc>
  */
 function ansiStop(force) {
-	if (!__initializeCon()) return false;
-	var con = __con;
-	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
-	var jansi = JavaImporter(Packages.org.fusesource.jansi);
-	if (ansis) {
-		jansi.AnsiConsole.systemUninstall();
-		java.lang.System.out.flush(); java.lang.System.err.flush();
+	if (__experimentalWin10ColorFlag) {
+		if (isUnDef(__experimentalWin10Color)) {
+			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
+			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
+			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
+			k32.SetConsoleMode(hout, __experimentalWin10ColorFlag);
+			k32.SetConsoleMode(herr, __experimentalWin10ColorFlag);
+		}
+	} else {
+		if (!__initializeCon()) return false;
+		var con = __con;
+		var ansis = force || (__conAnsi && (java.lang.System.console() != null));
+		var jansi = JavaImporter(Packages.org.fusesource.jansi);
+		if (ansis) {
+			jansi.AnsiConsole.systemUninstall();
+			java.lang.System.out.flush(); java.lang.System.err.flush();
+		}
 	}
 }
 

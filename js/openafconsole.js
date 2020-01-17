@@ -593,7 +593,7 @@ function __outputConsole(anOutput, colorify) {
 
 function __outputConsoleNoEnd(anOutput, colorify) {
 	if(__ansiflag && con.isAnsiSupported()) {
-		jansi.AnsiConsole.systemInstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemInstall();
 		if (colorCommand && colorify) {
 			//if (isDef(__codepage) && isString(__codepage)) 
 			//	printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
@@ -605,7 +605,7 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 			//else
 			printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		}
-		jansi.AnsiConsole.systemUninstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printnl(anOutput);
 	}
@@ -614,12 +614,12 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 function __outputConsoleEnd(anOutput, colorify) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutput = af.toEncoding(anOutput, void 0, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		jansi.AnsiConsole.systemInstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemInstall();
 		//if (colorCommand && colorify) 
 		//   print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		//else
 		print(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
-		jansi.AnsiConsole.systemUninstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutput);
 	}
@@ -632,9 +632,9 @@ function __outputConsoleComments(anOutputComment) {
 function __outputConsoleCommentsNoEnd(anOutputComment) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, void 0, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		jansi.AnsiConsole.systemInstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemInstall();
 		printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
-		jansi.AnsiConsole.systemUninstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printnl(anOutputComment);
 	}
@@ -643,9 +643,9 @@ function __outputConsoleCommentsNoEnd(anOutputComment) {
 function __outputConsoleCommentsEnd(anOutputComment) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, void 0, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		jansi.AnsiConsole.systemInstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemInstall();
 		print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
-		jansi.AnsiConsole.systemUninstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutputComment);
 	}
@@ -654,9 +654,9 @@ function __outputConsoleCommentsEnd(anOutputComment) {
 function __outputConsoleError(anError) {
 	//if (isDef(__codepage) && isString(__codepage)) anError = af.toEncoding(anError, void 0, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		jansi.AnsiConsole.systemInstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemInstall();
 		printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
-		jansi.AnsiConsole.systemUninstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printErr(CONSOLESEPARATOR + anError);
 	}
@@ -664,9 +664,9 @@ function __outputConsoleError(anError) {
 
 function __clear() {
 	if(__ansiflag && con.isAnsiSupported()) {
-		jansi.AnsiConsole.systemInstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemInstall();
 		printnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
-		jansi.AnsiConsole.systemUninstall();
+		if (!__experimentalWin10ColorFlag) jansi.AnsiConsole.systemUninstall();
 	}
 }
 
