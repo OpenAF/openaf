@@ -508,13 +508,15 @@ OpenWrap.java.prototype.cipher.prototype.decryptStream = function(iStream, priva
 
 /**
  * <odoc>
- * <key>ow.java.cipher.genKeyPair(aKeySize) : Map</key>
+ * <key>ow.java.cipher.genKeyPair(aKeySize, aAlg) : Map</key>
  * Given aKeySize (e.g. 2048, 3072, 4096, 7680 and 15360) will return a map with publicKey and privateKey.
+ * Optionally you can choose an anAlgorithm (defaults to RSA).
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.prototype.genKeyPair = function(size) {
+OpenWrap.java.prototype.cipher.prototype.genKeyPair = function(size, alg) {
+   alg  = _$(alg).default("RSA");
    size = _$(size).default(2048);
-   var keyPairGen = java.security.KeyPairGenerator.getInstance("RSA");
+   var keyPairGen = java.security.KeyPairGenerator.getInstance(alg);
    keyPairGen.initialize(size);
 
    var keyPair = keyPairGen.generateKeyPair();
@@ -522,6 +524,102 @@ OpenWrap.java.prototype.cipher.prototype.genKeyPair = function(size) {
       publicKey: keyPair.getPublic(),
       privateKey: keyPair.getPrivate()
    };
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.sign(aPrivateKey, aInputStream, inBytes) : Object</key>
+ * Tries to sign the contents from aInputStream using aPrivateKey. Return the signature in an array of bytes or, if inBytes = true,
+ * has a base 64 encoded string.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.sign = function(aPrivateKey, aInputStream, inBytes) {
+    var dsa = java.security.Signature.getInstance("SHA256With" + aPrivateKey.getAlgorithm()); 
+    dsa.initSign(aPrivateKey);
+    ioStreamReadBytes(aInputStream, function(buf) {
+        dsa.update(buf, 0, buf.length);
+    });
+    var res = dsa.sign();
+    if (inBytes) {
+        return res;
+    } else {
+        return this.msg2encode(res);
+    }
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.verify(signatureToVerify, aPublicKey, aInputStream, isBytes) : boolean</key>
+ * Given aInputStream and aPublicKey will verify if the signatureToVerify is valid. Optionally isBytes = true 
+ * the signatureToVerify is an array of bytes instead of base 64 encoded.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.verify = function(sigToVerify, aPublicKey, aInputStream, isBytes) {
+    if (!isBytes) {
+        sigToVerify = this.decode2msg(sigToVerify);
+    }
+    var sig = java.security.Signature.getInstance("SHA256With" + aPublicKey.getAlgorithm());
+    sig.initVerify(aPublicKey);
+    ioStreamReadBytes(aInputStream, function(buf) {
+        sig.update(buf, 0, buf.length);
+    });
+    return sig.verify(sigToVerify);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.genCert(aDn, aPublicKey, aPrivateKey, aValidity, aSigAlgName, aKeyStore, aPassword) : JavaSignature</key>
+ * Generates a certificate with aDn (defaults to "cn=openaf"), using aPublicKey and aPrivateKey, for aValidity date (defaults to a date 
+ * one year from now). Optionally you can specify aSigAlgName (defaults to SHA256withRSA), a file based aKeyStore and the corresponding
+ * aPassword (defaults to "changeit").
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivKey, aValidity, aSigAlgName, aKeyStore, aPassword) {
+    aDn = _$(aDn, "dn").regexp(/^cn\=/i).isString().default("cn=openaf");
+    aSigAlgName = _$(aSigAlgName, "signature alg name").isString().default("SHA256withRSA");
+    _$(aPubKey, "public key").$_();
+    _$(aPrivKey, "private key").$_();
+    aValidity = _$(aValidity, "validity").isDate().default(new Date(now() + (1000 * 60 * 60 * 24 * 365)));
+
+    var info = new Packages.sun.security.x509.X509CertInfo();
+
+    var from = new Date();
+    var to = new Date(aValidity);
+    
+    var interval = new Packages.sun.security.x509.CertificateValidity(from, to);
+    var serialNumber = new java.math.BigInteger(64, new java.security.SecureRandom());
+    
+    var owner = new Packages.sun.security.x509.X500Name(aDn);
+    var sigAlgId = new Packages.sun.security.x509.AlgorithmId(Packages.sun.security.x509.AlgorithmId.md5WithRSAEncryption_oid);
+
+    info.set(Packages.sun.security.x509.X509CertInfo.VALIDITY, interval);
+    info.set(Packages.sun.security.x509.X509CertInfo.SERIAL_NUMBER, new Packages.sun.security.x509.CertificateSerialNumber(serialNumber));
+    info.set(Packages.sun.security.x509.X509CertInfo.SUBJECT, owner);
+    info.set(Packages.sun.security.x509.X509CertInfo.ISSUER, owner);
+    info.set(Packages.sun.security.x509.X509CertInfo.KEY, new Packages.sun.security.x509.CertificateX509Key(aPubKey));
+    info.set(Packages.sun.security.x509.X509CertInfo.VERSION, new Packages.sun.security.x509.CertificateVersion(Packages.sun.security.x509.CertificateVersion.V3));
+    info.set(Packages.sun.security.x509.X509CertInfo.ALGORITHM_ID, new Packages.sun.security.x509.CertificateAlgorithmId(sigAlgId));
+
+    var certificate = new Packages.sun.security.x509.X509CertImpl(info);
+    certificate.sign(aPrivKey, aSigAlgName);
+
+    sigAlgId = certificate.get(Packages.sun.security.x509.X509CertImpl.SIG_ALG);
+    info.set(Packages.sun.security.x509.CertificateAlgorithmId.NAME + "." + Packages.sun.security.x509.CertificateAlgorithmId.ALGORITHM, sigAlgId);
+    certificate = new Packages.sun.security.x509.X509CertImpl(info);
+    certificate.sign(aPrivKey, aSigAlgName);
+
+    if (isDef(aKeyStore)) {
+        aPassword = _$(aPassword).isString().default("changeit");
+
+        var ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        ks.load(null, null);    
+        ks.setKeyEntry("main", aPrivKey, (new java.lang.String(aPassword)).toCharArray(), [ certificate ]);
+        var fos = io.writeFileStream(aKeyStore);
+        ks.store(fos, (new java.lang.String(aPassword)).toCharArray());
+        fos.close();
+    }
+
+    return certificate;
 };
 
 /**
