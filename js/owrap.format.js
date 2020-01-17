@@ -1961,6 +1961,16 @@ OpenWrap.format.prototype.getDoH = function(aName, aType, aProvider) {
 	}
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.getReverseDoH(aIP, aProvider) : Array</key>
+ * Tries to retrieve the reverse DNS of aIP using DNS over HTTPs. Optionally you can choose the aProvider between 'google' and 'cloudflare'.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getReverseDoH = function(aIP, aProvider) {
+	return this.getDoH(aIP + ".in-addr.arpa", "ptr");
+}
+
 loadLib(getOpenAFJar() + "::js/later.js");
 OpenWrap.format.prototype.cron = {
 	/**
