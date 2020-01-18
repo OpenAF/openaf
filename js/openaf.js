@@ -53,6 +53,8 @@ const __odoc = (isDef(__openaf.odoc)) ? __openaf.odoc : [
 //const __addToOpenAFjs = (isDef(__openaf.addToOpenAFjs)) ? __openaf.addToOpenAFjs : undefined;
 //const __addToOpenAFConsolejs = (isDef(__openaf.addToOpenAFConsolejs)) ? __openaf.addToOpenAFConsolejs : undefined;
 
+const __separator = String(java.lang.System.lineSeparator());
+
 /**
  * Get serialize version detecting circular references (internal use)
  *
@@ -126,11 +128,11 @@ function bfprintErrnl(str, codePage) {
 }
 
 function bfprint(str, codePage) {
-	bfprintnl(str + "\n", codePage);
+	bfprintnl(str + __separator, codePage);
 }
 
 function bfprintErr(str, codePage) {
-	bfprintErrnl(str + "\n", codePage);
+	bfprintErrnl(str + __separator, codePage);
 }
 
 /**
@@ -223,7 +225,7 @@ function tprintnl(aTemplateString, someData) {
  * </odoc>
  */
 function tprint(aTemplateString, someData) {
-	tprintnl(aTemplateString + "\n", someData);
+	tprintnl(aTemplateString + __separator, someData);
 }
 
 /**
@@ -332,7 +334,7 @@ function tprintErrnl(aTemplateString, someData) {
  * </odoc>
  */
 function tprintErr(aTemplateString, someData) {
-	tprintErrnl(aTemplateString + "\n", someData);
+	tprintErrnl(aTemplateString + __separator, someData);
 }
 
 /**
@@ -399,7 +401,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 				}
 				colNum++;
 			});
-			output += "\n";
+			output += __separator;
 			//output += (useAnsi ? ansiColor(colorMap.lines, "+") : "+"); 
 			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(function(col) {
@@ -413,7 +415,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 				}
 				colNum++;
 			});
-			output += "\n";
+			output += __separator;
 		};
 
 		//output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine); 
@@ -430,7 +432,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 			}
 			colNum++;
 		});
-		output += "\n";
+		output += __separator;
 		count++;
 	});
 
@@ -718,8 +720,7 @@ function ansiColor(aAnsi, aString, force) {
 	}
 }
 
-var __experimentalWin10ColorFlag = false;
-var __experimentalWin10Color;
+var __win10ColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 /**
  * <odoc>
  * <key>ansiStart(force)</key>
@@ -727,17 +728,19 @@ var __experimentalWin10Color;
  * </odoc>
  */
 function ansiStart(force) {
-	if (__experimentalWin10ColorFlag) {
-		if (isUnDef(__experimentalWin10Color)) {
+	if (__win10ColorFlag) {
+		var __win10Color;
+		if (isUnDef(__win10Color)) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
 			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
 			var mode = new com.sun.jna.ptr.IntByReference();
-			k32.GetConsoleMode(hout, mode);
-			__experimentalWin10Color = mode.getValue();
-			k32.SetConsoleMode(hout, 15);
-			k32.SetConsoleMode(herr, 15);
-			__experimentalWin10ColorFlag = true;
+			if (k32.GetConsoleMode(hout, mode)) {
+				__win10Color = mode.getValue();
+				k32.SetConsoleMode(hout, 7); //15
+				k32.SetConsoleMode(herr, 7); //
+				__win10ColorFlag = true;
+			}
 		}
 	} else {
 		if (!__initializeCon()) return false;
@@ -758,13 +761,14 @@ function ansiStart(force) {
  * </odoc>
  */
 function ansiStop(force) {
-	if (__experimentalWin10ColorFlag) {
-		if (isUnDef(__experimentalWin10Color)) {
+	if (__win10ColorFlag) {
+		var __win10Color;
+		if (isDef(__win10Color)) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
 			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
-			k32.SetConsoleMode(hout, __experimentalWin10ColorFlag);
-			k32.SetConsoleMode(herr, __experimentalWin10ColorFlag);
+			k32.SetConsoleMode(hout, __win10Color);
+			k32.SetConsoleMode(herr, __win10Color);
 		}
 	} else {
 		if (!__initializeCon()) return false;
@@ -3068,6 +3072,26 @@ function isNumber(obj) {
 
 /**
  * <odoc>
+ * <key>isInteger(aObj) : boolean</key>
+ * Returns true if aObj doesn't have a decimal component.
+ * </odoc>
+ */
+function isInteger(obj) {
+	return isNumber(obj) && Number.isSafeInteger(obj);
+}
+
+/**
+ * <odoc>
+ * <key>isDecimal(aObj) : boolean</key>
+ * Returns true if aObj has a decimal component.
+ * </odoc>
+ */
+function isDecimal(obj) {
+	return isNumber(obj) && !isInteger(obj);
+}
+
+/**
+ * <odoc>
  * <key>isTNumber(aObj) : boolean</key>
  * Returns true if aObj is of type number, false otherwise
  * </odoc>
@@ -4201,7 +4225,7 @@ function ioStreamRead(aStream, aFunction, aBufferSize, useNIO, encoding) {
 function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	var buf = "", go = true;
-	if (isUnDef(aSeparator)) aSeparator = "\n";
+	if (isUnDef(aSeparator)) aSeparator = __separator;
 
 	ioStreamRead(aStream, function(buffer) {
 		if (go) {
@@ -5552,7 +5576,7 @@ IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileStri
  * </odoc>
  */
 IO.prototype.writeLineNDJSON = function(aNDJSONFile, aObj, aEncode) {
-	io.writeFileString(aNDJSONFile, stringify(aObj, void 0, "")+"\n", aEncode, true);
+	io.writeFileString(aNDJSONFile, stringify(aObj, void 0, "")+__separator, aEncode, true);
 };
 
 /**

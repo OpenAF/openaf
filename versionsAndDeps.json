@@ -286,8 +286,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.9.7.jar"],
-			"version": "2.9.7",
+			"path": ["lib/jackson-core-2.10.1.jar"],
+			"version": "2.10.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/src/main/resources/META-INF/LICENSE",
