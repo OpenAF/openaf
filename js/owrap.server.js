@@ -2833,3 +2833,41 @@ OpenWrap.server.prototype.httpd = {
 		"ICO": "image/x-icon"
 	}
 }
+
+OpenWrap.server.prototype.jwt = {
+	getAlgorithm: (aAlgorithm, aArg1, aArg2) => {
+		aAlgorithm = _$(aAlgorithm, "algorithm").isString().default("HMAC256");
+		_$(aArg1, "first argument").$_();
+
+		if (aAlgorithm = "HS256") aAlgorithm = "HMAC256";
+
+		if (isDef(aArg2)) {
+			return com.auth0.jwt.algorithms.Algorithm[aAlgorithm](aArg1, aArg2);
+		} else {
+			return com.auth0.jwt.algorithms.Algorithm[aAlgorithm](aArg1);
+		}
+	},
+	verify: (aAlgorithm, aSecret1, aToken, aSecret2) => {
+		var al = ow.server.jwt.getAlgorithm(aAlgorithm, aSecret1, aSecret2);
+		var verifier = com.auth0.jwt.JWT.require(al).build();
+		var dt = verifier.verify(aToken);
+
+		var keys = dt.getClaims().keySet().toArray(), mkeys = {};
+		for(var ii in keys) {
+			var notFound = true;
+			if (notFound && dt.getClaims().get(keys[ii]).asBoolean() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asBoolean(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asInt() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asInt(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asDouble() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asDouble(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asLong() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asLong(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asString() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asString(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asDate() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asDate(); }
+		}
+		return mkeys;
+	},
+	sign: (aAlgorithm, aSecret1, aFnAddClaims, aSecret2) => {
+		var al = ow.server.jwt.getAlgorithm(aAlgorithm, aSecret1, aSecret2);
+		var jwt = com.auth0.jwt.JWT.create();
+		jwt = aFnAddClaims(jwt);
+		return jwt.sign(al);
+	}
+}
