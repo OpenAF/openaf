@@ -2835,6 +2835,13 @@ OpenWrap.server.prototype.httpd = {
 }
 
 OpenWrap.server.prototype.jwt = {
+    /**
+     * <odoc>
+	 * <key>ow.server.jwt.getAlgorithm(aAlgorithm, aArg1, aArg2) : JavaAlgorithm></key>
+	 * To be used with verify and/or sign. Selects the JWT algorithm (defaults to HS256/HMAC256) using aArg1 and, optionally,
+	 * also aArg2 if the algorithm requires two arguments (see more in https://github.com/auth0/java-jwt).
+	 * </odoc>
+     */
 	getAlgorithm: (aAlgorithm, aArg1, aArg2) => {
 		aAlgorithm = _$(aAlgorithm, "algorithm").isString().default("HMAC256");
 		_$(aArg1, "first argument").$_();
@@ -2847,7 +2854,17 @@ OpenWrap.server.prototype.jwt = {
 			return com.auth0.jwt.algorithms.Algorithm[aAlgorithm](aArg1);
 		}
 	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.jwt.verify(aAlgorithm, aArg1, aToken, aArg2) : Map</key>
+	 * Verifies the JWT provided with aToken using aAlgorithm with aArg1 and aArg2 (if needed). Returns the
+	 * converted json claims. If any verification fails it will throw a JavaException.
+	 * </odoc>
+	 */
 	verify: (aAlgorithm, aSecret1, aToken, aSecret2) => {
+		_$(aToken, "token").isString().$_();
+		
 		var al = ow.server.jwt.getAlgorithm(aAlgorithm, aSecret1, aSecret2);
 		var verifier = com.auth0.jwt.JWT.require(al).build();
 		var dt = verifier.verify(aToken);
@@ -2864,8 +2881,19 @@ OpenWrap.server.prototype.jwt = {
 		}
 		return mkeys;
 	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.jwt.sign(aAlgorithm, aArg1, aFnAddClaims, aArg2) : String</key>
+	 * Signs a JWT using aAlgorithm with aArg1 and, optionally, aArg2 and returns the corresponing signature. To
+	 * add specific claims use the aFnAddClaims function that receives (and returns if modified) a com.auth0.jwt.JWT object
+	 * as argument and returns the signned JWT.
+	 * </odoc>
+	 */
 	sign: (aAlgorithm, aSecret1, aFnAddClaims, aSecret2) => {
 		var al = ow.server.jwt.getAlgorithm(aAlgorithm, aSecret1, aSecret2);
+		aFnAddClaims = _$(aFnAddClaims, "function").isFunction().default((r) => { return r; });
+
 		var jwt = com.auth0.jwt.JWT.create();
 		jwt = aFnAddClaims(jwt);
 		return jwt.sign(al);
