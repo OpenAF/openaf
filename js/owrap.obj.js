@@ -1562,6 +1562,9 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	case "TRACE":
 		r = new Packages.org.apache.http.client.methods.HttpTrace(aUrl);
 		break;		
+	case "OPTIONS":
+		r = new Packages.org.apache.http.client.methods.HttpOptions(aUrl);
+		break;
 	default:
 		r = new Packages.org.apache.http.client.methods.HttpGet(aUrl);
 		break;
