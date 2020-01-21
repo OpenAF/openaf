@@ -1507,6 +1507,8 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	this.__r = void 0;
 	this.__rb = void 0; 
 	this.__usv = true;
+	this.__cookies = new Packages.org.apache.http.impl.client.BasicCookieStore();
+	this.__ctx = Packages.org.apache.http.client.protocol.HttpClientContext.create();
 	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
 	if (isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
@@ -1526,9 +1528,14 @@ OpenWrap.obj.prototype.http.prototype.setConfig = function(aMap) {
 	this.__config = aMap;
 };
 
+OpenWrap.obj.prototype.http.prototype.getCookieStore = function() {
+	return this.__cookies;
+};
+
 OpenWrap.obj.prototype.http.prototype.__handleConfig = function(aH) {
 	if (isDef(this.__config.disableCookie) && this.__config.disableCookie) aH = aH.disableCookieManagement();
 	if (isDef(this.__config.disableRedirectHandling) && this.__config.disableRedirectHandling) aH = aH.disableRedirectHandling();
+	aH = aH.setDefaultCookieStore(this.__cookies);
 	return aH;
 };
 
@@ -1618,7 +1625,8 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	}
 
 	this.outputObj = {};
-	this.__r = this.__h.execute(r);
+	this.__c = r;
+	this.__r = this.__h.execute(r, this.__ctx);
 	if (isBytes && !returnStream) {
 		this.outputObj =  {
 			responseCode: this.responseCode(),

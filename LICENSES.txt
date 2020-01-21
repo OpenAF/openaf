@@ -299,7 +299,7 @@ Changed from original : No
 Location in openaf.jar: js/handlebars.js
 License               : 
 
-Copyright (C) 2011-2017 by Yehuda Katz
+Copyright (C) 2011-2019 by Yehuda Katz
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -3125,9 +3125,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons HTTPComponents
-Version               : 4.5.6
+Version               : 4.5.10
 Changed from original : No
-Location in openaf.jar: lib/httpclient-4.5.6.jar, lib/httpcore-4.4.10.jar
+Location in openaf.jar: lib/httpclient-4.5.10.jar, lib/httpcore-4.4.12.jar
 License               : 
 
 Apache License
@@ -3972,9 +3972,9 @@ License               :
 
 -----------------------
 Third-party name      : Jackson Core
-Version               : 2.9.7
+Version               : 2.10.1
 Changed from original : No
-Location in openaf.jar: lib/jackson-core-2.9.7.jar
+Location in openaf.jar: lib/jackson-core-2.10.1.jar
 License               : 
 
 This copy of Jackson JSON processor streaming parser/generator is licensed under the
