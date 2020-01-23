@@ -1967,8 +1967,20 @@ OpenWrap.format.prototype.getDoH = function(aName, aType, aProvider) {
  * Tries to retrieve the reverse DNS of aIP using DNS over HTTPs. Optionally you can choose the aProvider between 'google' and 'cloudflare'.
  * </odoc>
  */
-OpenWrap.format.prototype.getReverseDoH = function(aIP, aProvider) {
-	return this.getDoH(aIP + ".in-addr.arpa", "ptr");
+OpenWrap.format.prototype.getReverseDoH = function(tIP, aProvider) {
+	var aIP = tIP, isV6 = false;
+	if (tIP.match(/:/)) {
+		ow.loadFormat();
+		isV6 = true;
+		var iip = java.net.InetAddress.getByName(tIP);
+		var ar = String(iip.getHostAddress()).split(/:/);
+		ar.map(r => { return ow.format.string.leftPad(r, 4); } ).join("").split("").reverse().join(".")
+	}
+	if (tIP.match(/\./)) {
+		aIP = String(tIP).split(/\./).reverse().join(".");
+	}
+
+	return this.getDoH(aIP + (isV6 ? ".ip6" : ".in-addr") + ".arpa", "ptr");
 }
 
 loadLib(getOpenAFJar() + "::js/later.js");
