@@ -665,6 +665,7 @@ function __initializeCon() {
 		while(__con == "") sleep(25);
 		__conStatus = true;
 		__conAnsi = true;
+		if (__conAnsi == true) __ansiColorFlag = true;
 		return true;
 	}
 	
@@ -676,6 +677,7 @@ function __initializeCon() {
 			__con = (___c).getConsoleReader();
 			__conStatus = true;
 			__conAnsi = (___c).isAnsiSupported();
+			if (__conAnsi == true) __ansiColorFlag = true;
 			return true;
 		} catch(e) {
 			__conStatus = false;
@@ -686,6 +688,7 @@ function __initializeCon() {
 		while(__con == "") sleep(25);
 		__conStatus = true;
 		__conAnsi = true;
+		if (__conAnsi == true) __ansiColorFlag = true;
 		return true;
 	}
 }
@@ -720,7 +723,7 @@ function ansiColor(aAnsi, aString, force) {
 	}
 }
 
-var __win10ColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
+var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 /**
  * <odoc>
  * <key>ansiStart(force)</key>
@@ -728,18 +731,18 @@ var __win10ColorFlag = String(java.lang.System.getProperty("os.name")).match(/Wi
  * </odoc>
  */
 function ansiStart(force) {
-	if (__win10ColorFlag) {
-		var __win10Color;
-		if (isUnDef(__win10Color)) {
+	if (__ansiColorFlag) {
+		var __ansiColorValue;
+		if (isUnDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
 			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
 			var mode = new com.sun.jna.ptr.IntByReference();
 			if (k32.GetConsoleMode(hout, mode)) {
-				__win10Color = mode.getValue();
+				__ansiColorValue = mode.getValue();
 				k32.SetConsoleMode(hout, 7); //15
 				k32.SetConsoleMode(herr, 7); //
-				__win10ColorFlag = true;
+				__ansiColorFlag = true;
 			}
 		}
 	} else {
@@ -761,14 +764,14 @@ function ansiStart(force) {
  * </odoc>
  */
 function ansiStop(force) {
-	if (__win10ColorFlag) {
-		var __win10Color;
-		if (isDef(__win10Color)) {
+	if (__ansiColorFlag) {
+		var __ansiColorValue;
+		if (isDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
 			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
-			k32.SetConsoleMode(hout, __win10Color);
-			k32.SetConsoleMode(herr, __win10Color);
+			k32.SetConsoleMode(hout, __ansiColorValue);
+			k32.SetConsoleMode(herr, __ansiColorValue);
 		}
 	} else {
 		if (!__initializeCon()) return false;
