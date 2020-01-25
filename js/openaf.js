@@ -724,6 +724,7 @@ function ansiColor(aAnsi, aString, force) {
 }
 
 var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
+var __ansiColorValue;
 /**
  * <odoc>
  * <key>ansiStart(force)</key>
@@ -732,7 +733,6 @@ var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Win
  */
 function ansiStart(force) {
 	if (__ansiColorFlag) {
-		var __ansiColorValue;
 		if (isUnDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
@@ -765,7 +765,6 @@ function ansiStart(force) {
  */
 function ansiStop(force) {
 	if (__ansiColorFlag) {
-		var __ansiColorValue;
 		if (isDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);

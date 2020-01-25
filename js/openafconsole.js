@@ -946,7 +946,7 @@ function __pauseArray(aText, aStart) {
 	var height = con.getConsoleReader().getTerminal().getHeight();
 	var lines = aText.length;
 
-	if (lines <= height) {
+	if (lines <= (height - 1)) {
 		__outputConsole(aText.join(__separator));
 		return -1;
 	}
@@ -958,7 +958,7 @@ function __pauseArray(aText, aStart) {
 
 	__outputConsole(aText.slice(aStart, (aStart + height) -1).join(__separator));
 
-	if ((aStart + height - 1) < (lines -2)) {
+	if ((aStart + height -1) < (lines )) {
 		__outputConsoleCommentsNoEnd(Math.floor(( ((aStart + height -1)*100) /(lines))) + "% (Press any key to continue or 'q' to quit)");
 		var c = con.readChar("") + "";
 		__outputConsoleCommentsNoEnd("\r" + repeat(con.getConsoleReader().getTerminal().getWidth(), ' ') + "\r");
@@ -981,7 +981,7 @@ function __pauseArray(aText, aStart) {
 					if(c.charCodeAt(0) == 52) {
 						c = con.readChar("") + "";
 						if (c.charCodeAt(0) == 126) {
-							return lines - height +1;
+							return lines - height - 1;
 						}
 					}
 					//pgup
@@ -991,14 +991,14 @@ function __pauseArray(aText, aStart) {
 							if (aStart - height -1 < 0)
 								return 0;
 							else
-								return aStart - height +1;
+								return aStart - height + 1;
 						}
 					}
 					//pgdw
 					if(c.charCodeAt(0) == 54) {
 						c = con.readChar("") + "";
 						if (c.charCodeAt(0) == 126) {
-							return aStart + height +1;
+							return aStart + height - 1;
 						}
 					}
 					// up
@@ -1014,7 +1014,7 @@ function __pauseArray(aText, aStart) {
 					}
 				}
 			}
-			return aStart + height +1;
+			return aStart + height - 1;
 		} else {
 			return -1;
 		}
