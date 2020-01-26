@@ -2357,8 +2357,7 @@ OpenWrap.server.prototype.httpd = {
 	__routes: {},
 	__defaultRoutes: {},
 	__preRoutes: {},
-	
-	
+
 	/**
 	 * <odoc>
 	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction) : Object</key>
@@ -2831,7 +2830,39 @@ OpenWrap.server.prototype.httpd = {
 		"EOT": "application/vnd.ms-fontobject",
 		"BIN": "application/octet-stream",
 		"ICO": "image/x-icon"
-	}
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.reply(aObject, aStatus, aMimeType, aHeadersMap) : Map</key>
+	 * Builds the map response for a HTTP server request using aObject (map, array, string or bytearray), aStatus (default to 200),
+	 * aMimeType (defaults to application/octet-stream if not recognized) and aHeadersMap.
+	 * </odoc>
+	 */
+	reply: function(aObj, status, mimetype, headers) {
+		headers = _$(headers).isMap().default(null);
+		status  = _$(status).isNumber().default(200);
+
+		if (isUnDef(mimetype)) {
+			if (isString(aObj)) mimetype = ow.server.httpd.mimes.TXT;
+			if (isMap(aObj)) mimetype = ow.server.httpd.mimes.JSON;
+			if (isArray(aObj)) mimetype = ow.server.httpd.mimes.JSON;
+			if (isByteArray(aObj)) mimetype = ow.server.httpd.mimes.BIN;
+
+			if (isUnDef(mimetype)) mimetype = ow.server.httpd.mimes.BIN;
+		}
+
+		if (isMap(aObj) || isArray(aObj)) {
+			data = stringify(aObj, void 0, "");
+		}
+
+		return {
+			status: status,
+			mimetype: mimetype,
+			data: data,
+			header: headers
+		};
+	},
 }
 
 OpenWrap.server.prototype.jwt = {
