@@ -6433,6 +6433,154 @@ const includeOPack = function(aOPackName, aMinVersion) {
 
 /**
  * <odoc>
+ * <key>$atomic(aInitValue, aType) : Object</key>
+ * Creates an atomic object of aType (defaults to long) to be get/set atomically on a multithreading script initialized with aInitValue.
+ * aType can be "int", "long" and "boolean". Each with different methods:\
+ * \
+ *    int.dec       - Decrement an integer\
+ *    int.inc       - Increment an integer\
+ *    int.get       - Get the current integer\
+ *    int.getSet(n) - Get and Set the current integer\
+ *    int.getAdd(n) - Get and Add to the current integer\
+ * \
+ *    long.dec       - Decrement an long\
+ *    long.inc       - Increment an long\
+ *    long.get       - Get the current long\
+ *    long.getSet(n) - Get and Set the current long\
+ *    long.getAdd(n) - Get and Add to the current long\
+ * \
+ *    boolean.get    - Get the current boolean\
+ *    boolean.set    - Set the current boolean\
+ *    boolean.getSet - Get and Set the current boolean\
+ * \
+ * </odoc>
+ */
+const $atomic = function(aInit, aType) {
+	aInit = _$(aInit).default(0);
+	aType = _$(aType).isString().oneOf([ "int", "long", "boolean" ]).default("long");
+
+	var _fNum = function(obj) { this.v = obj; };
+	_fNum.prototype.getObj = function()  { return this.v; };
+	_fNum.prototype.dec    = function()  { return this.v.decrementAndGet(); };
+	_fNum.prototype.inc    = function()  { return this.v.incrementAndGet(); };
+	_fNum.prototype.get    = function()  { return this.v.get(); };
+	_fNum.prototype.getSet = function(n) { return this.v.getAndSet(n); };
+	_fNum.prototype.getAdd = function(n) { return this.v.getAndAdd(n); };
+
+	var _fBol = function() { this.v = new java.util.concurrent.atomic.AtomicBoolean(aInit); };
+	_fBol.prototype.getObj = function()  { return this.v; };
+	_fBol.prototype.get    = function()  { return this.v.get(); };
+	_fBol.prototype.getSet = function(n) { return this.v.getAndSet(n); };
+	_fBol.prototype.set    = function(n) { return this.v.set(n); };
+
+	switch(aType) {
+	case "boolean": return new _fBol();
+	case "int"    : return new _fNum(new java.util.concurrent.atomic.AtomicInteger(aInit));
+	case "long"   : return new _fNum(new java.util.concurrent.atomic.AtomicLong(aInit));
+	}
+};
+
+/**
+ * <odoc>
+ * <key>$retry(aFunction, aNumOfTriesOrFunction) : Object</key>
+ * Tries to execute aFunction and return the corresponding returned result. If aNumOfTriesOrFunction is a number (defaults to 1)
+ * and aFunction throws an exception it will repeat aFunction until it doesn't throw an exception or for the number of aNumOfTriesOrFunc.
+ * If aNumOfTriesOrFunction is a functino it will be called whenever aFunction throws an exception with the corresponding exception
+ * as argument and it will retry until aNumOfTriesOrFunction returns false.
+ * </odoc>
+ */
+const $retry = function(aFunc, aNumTries) {
+    var aFn;
+    aNumTries = _$(aNumTries).default(1);
+
+    if (isNumber(aNumTries)) {
+        aFn = () => { aNumTries--; return (aNumTries > 0); };
+    }
+
+    if (isFunction(aNumTries)) {
+        aFn = aNumTries;
+    }
+
+    if (isUnDef(aFn)) throw "Can't determine how to retry.";
+
+    var error, res;
+
+    do {
+        try {
+            res = aFunc();
+            error = void 0;
+            return res;
+        } catch(e) {
+            error = e;
+        }
+    } while(aFn(error));
+
+    return error;
+};
+
+/**
+ * <odoc>
+ * <key>$await(aName) : Object</key>
+ * Wrapper around the Java wait/notify mechanism. For the provided name will returen an object with the following 
+ * functions wait (will block until a notify is invoked), notify (will notify and unblock all wait invocations) and
+ * destroy existing references to aName.
+ * </odoc>
+ */
+const $await = function(aName) {
+    if (isUnDef(global.__await)) global.__await = {};
+    if (isUnDef(global.__await[aName])) global.__await[aName] = new java.lang.Object();
+
+    var _f = function(n) { this.n = n; };
+    _f.prototype.wait = function() {
+        sync(() => {
+            global.__await[this.n].wait(); 
+        }, global.__await[this.n]);
+    };
+    _f.prototype.notify = function() {
+        sync(() => {
+            global.__await[this.n].notify();
+        }, global.__await[this.n]);
+    };
+    _f.prototype.destroy = function() {
+        delete global.__await[this.n];
+    };
+
+    return new _f(aName);
+};
+
+/**
+ * <odoc>
+ * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises)</key>
+ * Will call aAFunction with a function as argument that should be used to "send" values to aBFunction. aBFunction will be call asynchronously in individual
+ * $do up to the numberOfDoPromises limit.
+ * </odoc>
+ */
+const $doA2B = function(aAFn, aBFn, noc) {
+    var recs = $atomic();
+    var noc  = _$(noc).isNumber().default(getNumberOfCores());
+    var id   = md5(aAFn.toString() + aBFn.toString()) + nowNano();
+
+    function B(aObj) {
+        try {
+        var cc = recs.inc();
+        while(cc > noc) { $await(id).wait(); cc = recs.get(); }
+        $do(() => {
+            aBFn(aObj);
+            recs.dec();
+            $await(id).notify();
+        }).catch((e) => {
+            recs.dec();
+            $await(id).notify();
+        });
+        } catch(e) { sprintErr(e); }
+    }
+ 
+    aAFn(B);
+    $await(id).wait();
+};
+
+/**
+ * <odoc>
  * <key>$do(aFunction, aRejFunction) : oPromise</key>
  * Instantiates and returns a oPromise. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
  * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside

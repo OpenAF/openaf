@@ -101,7 +101,7 @@ OpenWrap.server.prototype.daemon = function(aTimePeriod, aPeriodicFunction) {
 	
 	while(!shouldStop) {
 		if (isDefined(aPeriodicFunction)) shouldStop = aPeriodicFunction();
-		if (!shouldStop) sleep(aTimePeriod);
+		if (!shouldStop) sleep(aTimePeriod, true);
 	}
 }
 
