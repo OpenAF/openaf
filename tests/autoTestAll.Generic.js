@@ -258,42 +258,135 @@
         // TODO: 
     };
 
-    exports.testTB = function() {
+    exports.testDoA2B = function() {
+        ow.loadObj();
+        var aa = $atomic(0), ab = $atomic(0);
+        $doA2B((fn) => {
+            var ii;
+            for(var ii = 0; ii < 150; ii++) {
+                fn(ii);
+                aa.inc();
+            }
+            print("aa " + aa.get());
+            print("ab " + ab.get());
+        }, v => {
+            ab.inc();
+            return true;
+        });
+        print("ab " + ab.get());
+        ow.test.assert(ab.get(), 150, "Problem with do A2B.");
+    };
+
+    exports.testAwait = function() {
         var state = 0;
+        $do(() => {
+            state = 1;
+            $await("testF").notify();
+            $await("test1").wait(2500);
+            state = 2;
+            $await("testF2").notify();
+        });
+
+        $await("testF").wait(2500);
+        ow.test.assert(state, 1, "Problem with await (1)");
+        sleep(150, true);
+        $await("test1").notify();
+        $await("testF2").wait(2500);
+        ow.test.assert(state, 2, "Problem with await (2)");
+    };
+
+    exports.testRetry = function() {
+        var c = 0;
+        $retry(() => {
+            c++;
+            throw "AI";
+        }, 3);
+
+        ow.test.assert(c, 3, "Problem with retry if all fail.");
+
+        c = 0;
+        $retry(() => {
+            c++;
+        }, 3);
+
+        ow.test.assert(c, 1, "Problem with retry if it's successfull.");
+
+        c = 0;
+        var shouldError = true;
+        $retry(() => {
+            c++;
+            if (shouldError) throw "AI";
+        }, (e) => {
+            if (String(e) == "AI") shouldError = false;
+            return true;
+        });
+
+        ow.test.assert(c, 2, "Problem with retry if it tries to use a function (1).");
+
+        c = 0;
+        shouldError = true;
+        $retry(() => {
+            c++;
+            if (shouldError) throw "AI";
+        }, (e) => {
+            if (String(e) == "AI") shouldError = false;
+            return false;
+        });
+
+        ow.test.assert(c, 1, "Problem with retry if it tries to use a function (2).");
+    };
+
+    exports.testTB = function() {
+        var __state = 0, err;
 
         $tb()
         .timeout(100)
         .exec(() => {
-            state = 1;
-            sleep(200);
-            state = 2;
+            try {
+                __state = 1;
+                sleep(200, true);
+                __state = 2;
+            } catch(e) {
+                err = e;
+            }
         });
 
-        ow.test.assert(state, 1, "Problem with threadBox timeout (1).");
+        if (isDef(err)) throw err;
+        ow.test.assert(__state, 1, "Problem with threadBox timeout (1).");
 
-        state = 0;
+        __state = 0;
         $tb()
         .timeout(250)
         .exec(() => {
-            state = 1;
-            sleep(200);
-            state = 2;
+            try {
+                __state = 1;
+                sleep(200, true);
+                __state = 2;
+            } catch(e) {
+                err = e;
+            }
         });
 
-        ow.test.assert(state, 2, "Problem with threadBox timeout (2).");
+        if (isDef(err)) throw err;
+        ow.test.assert(__state, 2, "Problem with threadBox timeout (2).");
 
-        state = 0;
+        __state = 0;
         $tb()
         .stopWhen((v) => {
-            if (state > 0) return true;
+            if (__state > 0) return true;
         })
         .exec(() => {
-            state = 1;
-            sleep(100);
-            state = 2;
+            try {
+                __state = 1;
+                sleep(100, true);
+                __state = 2;
+            } catch(e) {
+                err = e;
+            }
         });
 
-        ow.test.assert(state, 1, "Problem with stopWhen.");
+        if (isDef(err)) throw err;
+        ow.test.assert(__state, 1, "Problem with stopWhen.");
     };
 
     exports.testDo = function() {

@@ -6485,7 +6485,7 @@ const $atomic = function(aInit, aType) {
  * <key>$retry(aFunction, aNumOfTriesOrFunction) : Object</key>
  * Tries to execute aFunction and return the corresponding returned result. If aNumOfTriesOrFunction is a number (defaults to 1)
  * and aFunction throws an exception it will repeat aFunction until it doesn't throw an exception or for the number of aNumOfTriesOrFunc.
- * If aNumOfTriesOrFunction is a functino it will be called whenever aFunction throws an exception with the corresponding exception
+ * If aNumOfTriesOrFunction is a function it will be called whenever aFunction throws an exception with the corresponding exception
  * as argument and it will retry until aNumOfTriesOrFunction returns false.
  * </odoc>
  */
@@ -6531,9 +6531,12 @@ const $await = function(aName) {
     if (isUnDef(global.__await[aName])) global.__await[aName] = new java.lang.Object();
 
     var _f = function(n) { this.n = n; };
-    _f.prototype.wait = function() {
+    _f.prototype.wait = function(aTimeout) {
         sync(() => {
-            global.__await[this.n].wait(); 
+			if (isDef(aTimeout)) 
+				global.__await[this.n].wait(aTimeout); 
+			else
+				global.__await[this.n].wait();
         }, global.__await[this.n]);
     };
     _f.prototype.notify = function() {
@@ -6542,6 +6545,7 @@ const $await = function(aName) {
         }, global.__await[this.n]);
     };
     _f.prototype.destroy = function() {
+		this.notify();
         delete global.__await[this.n];
     };
 
@@ -6555,15 +6559,15 @@ const $await = function(aName) {
  * $do up to the numberOfDoPromises limit.
  * </odoc>
  */
-const $doA2B = function(aAFn, aBFn, noc) {
+const $doA2B = function(aAFn, aBFn, noc, defaultTimeout) {
     var recs = $atomic();
     var noc  = _$(noc).isNumber().default(getNumberOfCores());
-    var id   = md5(aAFn.toString() + aBFn.toString()) + nowNano();
+	var id   = md5(aAFn.toString() + aBFn.toString()) + (Math.random()*100000000000000000);
+	defaultTimeout = _$(defaultTimeout).isNumber().default(2500);
 
-    function B(aObj) {
-        try {
+    var B = function(aObj) {
         var cc = recs.inc();
-        while(cc > noc) { $await(id).wait(); cc = recs.get(); }
+        while(cc > noc) { $await(id).wait(defaultTimeout); cc = recs.get(); }
         $do(() => {
             aBFn(aObj);
             recs.dec();
@@ -6571,12 +6575,15 @@ const $doA2B = function(aAFn, aBFn, noc) {
         }).catch((e) => {
             recs.dec();
             $await(id).notify();
-        });
-        } catch(e) { sprintErr(e); }
+		});
+		$await(id).notify();
     }
  
-    aAFn(B);
-    $await(id).wait();
+	aAFn(B);
+	$await(id).notify();
+
+	do { $await(id).wait(defaultTimeout); } while(recs.get() > 0);
+	$await(id).destroy();
 };
 
 /**

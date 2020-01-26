@@ -193,6 +193,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testCache;
 
+   - name: OpenAF::Retry
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRetry;     
+
+   - name: OpenAF::Await
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAwait;    
+
    - name: OpenAF::Test Rest
      from: OpenAF::Init
      to  : oJob Test
@@ -227,6 +237,8 @@ todo:
    - OpenAF::Encrypt/Decrypt
    - OpenAF::YAML
    - OpenAF::Cache
+   - OpenAF::Retry
+   - OpenAF::Await
    - OpenAF::NDJSON
    - OpenAF::XML2And4Obj
    - OpenAF::Map22Array
