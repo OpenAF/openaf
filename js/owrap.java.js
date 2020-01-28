@@ -95,6 +95,50 @@ OpenWrap.java.prototype.maven.prototype.getLatestVersion = function(aURI) {
 
 /**
  * <odoc>
+ * <key>ow.java.maven.getLicenseByVersion(artifactId, aFilenameTemplate, aVersion, aOutputDir)</key>
+ * Given the artifactId (prefixed with the group id using ".") will try to update a LICENSES.txt on the provided aOutputDir based
+ * on aFilenameTemplate (where version will translate to the latest version).\
+ * \
+ * Example:\
+ *    getLicenseByVersion("com.google.code.gson.gson", "gson-{{version}}.jar", "1.2.3", ".")\
+ * \
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.getLicenseByVersion = function(artifactId, aFilenameTemplate, aVersion, aOutputDir) {
+    var aURI = this._translateArtifact(artifactId);
+    var version = _$(aVersion).default(this.getLatestVersion(aURI));
+    var filename = templify(aFilenameTemplate.replace(/\.jar$/, ".pom"), {
+        version: version
+    });
+    var ofilename = templify(aFilenameTemplate, {
+        version: version
+    });
+
+    var m = $rest().get(this._getURL() + "/" + aURI + "/" + version + "/" + filename);
+    var mo = af.fromXML2Obj(m);
+
+    io.mkdir(aOutputDir);
+    var lics = {};
+    if (io.fileExists(aOutputDir + "/LICENSES.txt")) {
+        lics = io.readFileYAML(aOutputDir + "/LICENSES.txt");
+    }
+    var licenseTxt = $rest().get(mo.project.licenses.license.url);
+
+    lics[ofilename] = {
+        name: mo.project.licenses.license.name,
+        url: mo.project.licenses.license.url,
+        version: version,
+        "changed from original": false,
+        comments: (isDef(mo.project.licenses.license.comments) && 
+                   isString(mo.project.licenses.license.comments) ? mo.project.licenses.license.comments : ""),
+
+        license: (isString(licenseTxt) ? licenseTxt.replace(/<[^\>]+\>/g, "").trim() : "")
+    };
+    io.writeFileYAML(aOutputDir + "/LICENSES.txt", lics);
+};
+
+/**
+ * <odoc>
  * <key>ow.java.maven.getFileVersion(artifactId, aFilenameTemplate, aVersion, aOutputDir)</key>
  * Given the artifactId (prefixed with the group id using ".") will try to download the specific version of the aFilenameTemplate (where
  * version will translate to the latest version) on the provided aOutputDir.\
@@ -225,10 +269,12 @@ OpenWrap.java.prototype.maven.prototype.processMavenFile = function(aDirectory, 
             if (hasVersion) {
                 aLogFunc("Downloading " + arts.id + " version " + version + " jar file...");
                 maven.getFileVersion(arts.group + "." + arts.id, filenameTemplate, version, outputDir);
+                try { maven.getLicenseByVersion(arts.group + "." + arts.id, filenameTemplate, version, outputDir); } catch(e) {}
                 if (deleteOld) maven.removeOldVersionsSpecific(arts.id, filenameTemplate, version, outputDir, testfunc);
             } else {
                 aLogFunc("Downloading latest " + arts.id + " jar file...");
                 maven.getFile(arts.group + "." + arts.id, filenameTemplate, outputDir);
+                try { maven.getLicenseByVersion(arts.group + "." + arts.id, filenameTemplate, void 0, outputDir); } catch(e) {}
                 if (deleteOld) maven.removeOldVersions(arts.id, filenameTemplate, outputDir, testfunc);
             }
         });
