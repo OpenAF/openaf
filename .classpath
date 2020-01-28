@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/antlr-runtime-3.4.jar"/>
 	<classpathentry kind="lib" path="lib/commons-cli-1.4.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.13.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections4-4.2.jar"/>
@@ -47,16 +46,10 @@
 	<classpathentry kind="lib" path="lib/poi-ooxml-4.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/poi-ooxml-schemas-4.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/poi-scratchpad-4.0.0.jar"/>
-	<classpathentry kind="lib" path="lib/sequence-library-1.0.3.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api.jar"/>
 	<classpathentry kind="lib" path="lib/snmp4j-2.7.0.jar"/>
 	<classpathentry kind="lib" path="lib/snmp4j-agent-2.6.3.jar"/>
-	<classpathentry kind="lib" path="lib/sqljet-1.1.11.jar"/>
-	<classpathentry kind="lib" path="lib/svnkit-1.9.1.jar"/>
-	<classpathentry kind="lib" path="lib/svnkit-cli-1.9.1.jar"/>
-	<classpathentry kind="lib" path="lib/svnkit-javahl16-1.9.1.jar"/>
 	<classpathentry kind="lib" path="lib/tools-attach.jar"/>
-	<classpathentry kind="lib" path="lib/trilead-ssh2-1.0.0-build221.jar"/>
 	<classpathentry kind="lib" path="lib/websocket-api-9.4.14.jar"/>
 	<classpathentry kind="lib" path="lib/websocket-client-9.4.14.jar"/>
 	<classpathentry kind="lib" path="lib/websocket-common-9.4.14.jar"/>

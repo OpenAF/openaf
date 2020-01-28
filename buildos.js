@@ -339,7 +339,7 @@ try {
 		"snmpd": OPENAF_BUILD_HOME + "/src/openaf/plugins/SNMPServer.java",
 		"xml": OPENAF_BUILD_HOME + "/src/openaf/plugins/XML.java",
 		"xls": OPENAF_BUILD_HOME + "/src/openaf/plugins/XLS.java",
-		"svn": OPENAF_BUILD_HOME + "/src/openaf/plugins/SVN.java",
+		//"svn": OPENAF_BUILD_HOME + "/src/openaf/plugins/SVN.java",
 		"git": OPENAF_BUILD_HOME + "/src/openaf/plugins/GIT.java",
 		//"smb": OPENAF_BUILD_HOME + "/src/openaf/plugins/SMB.java",
 		"zip": OPENAF_BUILD_HOME + "/src/openaf/plugins/ZIP.java",
@@ -371,6 +371,7 @@ log("Building dependencies");
 io.writeFileString(OPENAF_BUILD_HOME + "/dependencies.json", stringify(buildDeps()));
 
 log("Creating the openaf.jar in " + OPENAF_BUILD_HOME);
+io.rm(OPENAF_BUILD_HOME + "/openaf.jar");
 tempJar.generate2File(OPENAF_BUILD_HOME + "/openaf.jar", { compressionLevel: 9 }, true);
 tempJar.close();
 

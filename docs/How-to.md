@@ -75,9 +75,6 @@
 ## HTTPd
   * [Micro remote HTTP server file browser](https://openafs.blogspot.com/2019/07/micro-remote-http-file-browser.html)
 
-## SVN
-  * [Use SVN](https://openafs.blogspot.com/2019/08/using-openafs-svn-plugin.html)
-
 ## AWS
   * [Calling an AWS Lambda function](https://openafs.blogspot.com/2019/08/calling-aws-lambda-function.html)
 

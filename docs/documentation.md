@@ -22,7 +22,6 @@
 * [SNMP](snmp)
 * [SNMPd](snmpd)
 * [SSH](ssh)
-* [SVN](svn)
 * [Threads](threads)
 * [XLS](xls)
 * [XML](xml)

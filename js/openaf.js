@@ -1991,10 +1991,13 @@ function plugin(aPlugin) {
 		__loadedPlugins[pluginLoaded] = true;
 	} catch(e) {
 		if (String(e).indexOf("java.lang.ClassNotFoundException: SMB") >= 0) {
-			throw("The SMB plugin is no longer included. Please install the SMB oPack (\"opack install plugin-SMB\").");
+			throw("The SMB plugin is no longer included. Please install the SMB oPack (\"opack install plugin-smb\").");
 		}
 		if (String(e).indexOf("java.lang.ClassNotFoundException: Ignite") >= 0) {
-			throw("The Ignite plugin is no longer included. Please install the Ignite oPack (\"opack install plugin-Ignite\").");
+			throw("The Ignite plugin is no longer included. Please install the Ignite oPack (\"opack install plugin-ignite\").");
+		}
+		if (String(e).indexOf("java.lang.ClassNotFoundException: SVN") >= 0) {
+			throw("The SVN plugin is no longer included. Please install the SVN oPack (\"opack install plugin-svn\").");
 		}
 	}
 }
