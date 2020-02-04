@@ -8,6 +8,7 @@ var requirements = {
 };
 var extraArgsForJava9 = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
 var extraArgsForJava10 = " ";
+var extraArgsForJava12 = "-Xshare:off";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -171,6 +172,7 @@ log("Checking requirements");
 
 if (Number(javaVer) != null && Number(javaVer) > 8) javaargs += " " + extraArgsForJava9;  
 if (Number(javaVer) != null && Number(javaVer) > 9) javaargs += " " + extraArgsForJava10;
+if (Number(javaVer) != null && Number(javaVer) > 11) javaargs += " " + extraArgsForJava12;
 
 var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
