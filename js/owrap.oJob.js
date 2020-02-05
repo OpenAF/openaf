@@ -388,6 +388,19 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 }
 
 OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
+	function _uniq(aSource) {
+		var t;
+	
+		if (isDef(aSource) && isArray(aSource)) {
+			t = [];
+			for(var ii in aSource) {
+				if (t.indexOf(aSource[ii]) < 0) t.push(aSource[ii]);
+			}
+		} 
+	
+		return t;
+	}
+
 	var res = { include: [], jobs: [], todo: [], ojob: {}, init: {} };
 	
 	if (isDef(aJSONa.include) && aJSONa.include != null) 
@@ -395,8 +408,7 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	else
 		res.include = isDef(aJSONb.include) ? aJSONb.include : [];
 
-	loadLodash();
-	res.include = _.uniq(res.include);
+	res.include = _uniq(res.include);
 
 	if (isDef(aJSONa.jobs) && aJSONa.jobs != null) 
 		res.jobs = aJSONa.jobs.concat(isDef(aJSONb.jobs) ? aJSONb.jobs : []);
@@ -419,7 +431,7 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 		res.init = isDef(aJSONb.init) ? aJSONb.init : {};		
 	
 	return res;
-}
+};
 
 OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	var res = {};
@@ -881,13 +893,32 @@ OpenWrap.oJob.prototype.stop = function() {
 };
 
 OpenWrap.oJob.prototype.__mergeArgs = function(a, b) {
+	function _flatten(aSource) {
+		var t;
+	
+		if (isDef(aSource) && isArray(aSource)) {
+			t = [];
+			for(var ii in aSource) {
+				if (isArray(aSource[ii])) {
+					for(var jj in aSource[ii]) {
+						t.push(aSource[ii][jj]);
+					}
+				} else {
+					t.push(aSource[ii]);
+				}
+			}
+		}
+	
+		return t;
+	}
+
 	var arep = false, brep = false, r = void 0;
 	if (isObject(a) && isDef(a["__oJobRepeat"])) arep = true;
 	if (isObject(b) && isDef(b["__oJobRepeat"])) brep = true;
 
 	if (arep && !brep)  { a["__oJobRepeat"] = merge(a["__oJobRepeat"], b); r = a; }
 	if (!arep && brep)  { b["__oJobRepeat"] = merge(a, b["__oJobRepeat"]); r = b; }
-	if (arep && brep)   { loadLodash(); a["__oJobRepeat"] = _.flatten(merge(a["__oJobRepeat"], b["__oJobRepeat"])); r = a; }
+	if (arep && brep)   { a["__oJobRepeat"] = _flatten(merge(a["__oJobRepeat"], b["__oJobRepeat"])); r = a; }
 	if (!arep && !brep) { r = merge(a, b); }
 
 	return r;
