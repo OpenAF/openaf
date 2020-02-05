@@ -183,3 +183,149 @@ OpenWrap.dev.prototype.doh = function(aString, aType, aProvider) {
         }
     }
 };
+
+OpenWrap.dev.prototype.JSDebug = function(shouldTrack) {
+    this.shouldTrack = _$(shouldTrack, "shouldTrack").isBoolean().default(false);
+
+    if (this.shouldTrack) {
+        $ch("__debug").create();
+    }
+};
+
+OpenWrap.dev.prototype.JSDebug.prototype.setTestingWrap = function(aName, aObject, aMethod, aFn) {
+    ow.loadTest();
+    ow.test.reset();
+    ow.test.setOutput(false);
+    return this.setFn(aObject, aMethod, aFn, "return ow.test.test('" + aName + "', ()=>{", "})");
+};
+
+OpenWrap.dev.prototype.JSDebug.prototype.unSetFn = function(aMap) {
+    _$(aMap, "map").isMap().$_();
+
+    if (this.shouldTrack) {
+        _$(aMap.object, "map.object").$_();
+        _$(aMap.method, "map.method").$_();
+        aMap = $ch("__debug").get({
+            object: aMap.object,
+            method: aMap.method
+        });
+    }
+
+    if ($$(aMap.fn).isDef()) {
+        global[aMap.method] = eval(aMap.origFn);
+    } else {
+        Object.getPrototypeOf(eval(aMap.object))[aMap.method] = eval(aMap.origFn);
+    }
+
+    if (this.shouldTrack) {
+        $ch("__debug").unset({
+            object: aObject,
+            method: aMethod
+        });
+    }
+};
+
+OpenWrap.dev.prototype.JSDebug.prototype.unSetAll = function() {
+    if (this.shouldTrack) {
+        $ch("__debug").forEach((k, v) => {
+            this.unSetFn(v);
+        });
+    }
+};
+
+OpenWrap.dev.prototype.JSDebug.prototype.setAll = function(aObject, aPrefix, aSuffix, eachLineTmpl) {
+    _$(aObject, "object").$_();
+
+    var ks = Object.keys(Object.getPrototypeOf(eval(aObject)));
+    if (ks.length == 0) ks = Object.keys(eval(aObject));
+    for(var ii in ks) {
+        if (isFunction(eval(aObject)[ks[ii]])) 
+            this.setFn(aObject, ks[ii], aObject[ks[ii]], aPrefix, aSuffix, eachLineTmpl);
+        else {
+            this.setAll(aObject + "." + ks[ii], aPrefix, aSuffix, eachLineTmpl);
+        }
+    }
+};
+
+OpenWrap.dev.prototype.JSDebug.prototype.setTestingWrapAll = function(aObject) {
+    _$(aObject, "object").$_();
+
+    var ks = Object.keys(Object.getPrototypeOf(eval(aObject)));
+    if (ks.length == 0) ks = Object.keys(eval(aObject));
+    for(var ii in ks) {
+        if (isFunction(eval(aObject)[ks[ii]])) 
+            this.setTestingWrap(aObject + "." + ks[ii], aObject, ks[ii], eval(aObject)[ks[ii]]);
+        else {
+            this.setTestingWrapAll(aObject + "." + ks[ii]);
+        }
+    }
+};
+
+OpenWrap.dev.prototype.JSDebug.prototype.setFn = function(aObject, aMethod, aFn, aPrefix, aSuffix, eachLineTmpl) {
+    _$(aObject).isString().regexp(/\w+/).$_("need to provide a object name as a string");
+    _$(aMethod).isString().regexp(/\w+/).default(aObject);
+    _$(aFn).isFunction().default(void 0);
+    aPrefix = _$(aPrefix).isString().default("");
+    aSuffix = _$(aSuffix).isString().default("");
+    eachLineTmpl = _$(eachLineTmpl).isString().default("");
+
+    var oF = ($$(aFn).isDef()) ? aFn.toString() : Object.getPrototypeOf(eval(aObject))[aMethod].toString();
+    var lines = oF.split(/\n/);
+    var origFunction = oF;
+    var newFunction = "";
+    var midText = true;
+
+    for(var lineNumber in lines) {
+        if (lineNumber != 0 && lineNumber < (lines.length - 2)) {
+            newFunction += lines[lineNumber];
+            if (lineNumber == 1) {
+                newFunction += "\n" + aPrefix + "\n";
+                midText = false;
+            } else {
+                midText = true;
+            }
+            if (midText) {
+                newFunction += "\n";
+                if (isDef(eachLineTmpl)) {
+                    newFunction += templify(eachLineTmpl, {
+                        obj    : aObject,
+                        method : aMethod,
+                        lineNum: lineNumber
+                    }) ;
+                }
+            }
+
+            if (lineNumber == lines.length - 3) {
+                newFunction += aSuffix + "\n";
+                midText = false;
+            } else {
+                midText = true;
+            }
+        } else {
+            newFunction += lines[lineNumber];
+        }
+    }
+
+    if (aObject != aMethod) {
+        (eval(aObject))[aMethod] = eval(newFunction);
+    } else {
+        Object.getPrototypeOf(eval(aObject))[aMethod] = eval(newFunction);
+    }
+
+    var res = {
+        origFn: origFunction,
+        newFn : newFunction,
+        fn    : aFn,
+        method: aMethod,
+        object: aObject
+    };
+
+    if (this.shouldTrack) {
+        $ch("__debug").set({
+            object: aObject,
+            method: aMethod
+        }, res);
+    }
+
+    return res;
+};
