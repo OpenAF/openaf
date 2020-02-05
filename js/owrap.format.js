@@ -266,8 +266,9 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	lsHash: function(aStringA, aStringB, dontCareDiffSize) {
-		loadLib(getOpenAFJar() + "::js/tlsh.js");
-		if (isUndefined(aStringB)) {
+		//loadLib(getOpenAFJar() + "::js/tlsh.js");
+		loadCompiledLib("tlsh_js");
+		if (isUnDef(aStringB)) {
 			var t = new Tlsh();
 			t.update(aStringA);
 			t.finale();
@@ -290,7 +291,8 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	lsHashDiff: function(aHashA, aHashB, dontCareDiffSize) {
-		loadLib(getOpenAFJar() + "::js/tlsh.js");
+		//loadLib(getOpenAFJar() + "::js/tlsh.js");
+		loadCompiledLib("tlsh_js");
 		var tA = new Tlsh();
 		tA.fromTlshStr(aHashA);
 		var tB = new Tlsh();
@@ -1983,7 +1985,8 @@ OpenWrap.format.prototype.getReverseDoH = function(tIP, aProvider) {
 	return this.getDoH(aIP + (isV6 ? ".ip6" : ".in-addr") + ".arpa", "ptr");
 }
 
-loadLib(getOpenAFJar() + "::js/later.js");
+//loadLib(getOpenAFJar() + "::js/later.js");
+loadCompiledLib("later_js");
 OpenWrap.format.prototype.cron = {
 	/**
 	 * From http://github.com/bunkat/later
