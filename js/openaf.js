@@ -1937,32 +1937,48 @@ function load(aScript) {
 
 /**
  * <odoc>
- * <key>loadCompiled(aScript)</key>
+ * <key>loadCompiled(aScript, dontCompile) : boolean</key>
  * Tries to load an OpenAF script as a compiled class. If a compiled class file doesn't exist in the same path 
  * it will try to compile and load from the compiled code. If a compiled class file exists in the same path it
  * will recompile it if the modified date of the original aScript is newer than the class. 
+ * If the class was already loaded or can't be loaded it will return false. Returns true otherwise.
+ * Optionally you can force to not compile dontCompile=true.
  * </odoc>
  */
-function loadCompiled(aScript) {
-	if (io.fileExists(aScript)) {
+function loadCompiled(aScript, dontCompile) {
+    var res = false, cl, clFile, clFilepath;
+    if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
 		if (info.isFile) {
-            var path = info.canonicalPath.replace(new RegExp(info.filename + "$"), "");
+            var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename));
 			if (info.filename.endsWith(".js")) {
-				if (!(io.fileExists(path + "/" + info.filename.replace(/\./g, "_") + ".class")) ||
-				    info.lastModified > io.fileInfo(path + "/" + info.filename.replace(/\./g, "_") + ".class").lastModified) {
-					af.compileToClasses(info.filename.replace(/\./g, "_"), io.readFileString(info.canonicalPath), path);
+				cl = info.filename.replace(/\./g, "_");
+				clFile = cl + ".class";
+				clFilepath = path + clFile;
+				if (!(io.fileExists(clFilepath)) ||
+				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
+					if (!dontCompile) {
+						io.rm(clFilepath);
+						af.compileToClasses(cl, io.readFileString(info.canonicalPath), path);
+					}
 				}
-                aScript = path + info.filename.replace(/\./g, "_") + ".class";
+                aScript = clFile;
 			}
 			if (aScript.endsWith(".class")) {
-				af.runFromExternalClass(
-					aScript.replace(/^.+\/([^\/]+)\.class$/, "$1"), 
-					path
-				);
+                try {
+                    af.getClass(cl);
+                } catch(e) {
+                    if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
+                        af.runFromExternalClass(cl, path);
+						res = true;
+                    } else {
+                        throw e;
+                    }
+                }
 			}
 		}
 	}
+	return res;
 }
 
 /**
@@ -5412,8 +5428,8 @@ AF.prototype.runFromExternalClass = function(aClass, aPath) {
 		af.runFromClass(af.getClass(aClass).newInstance());
 	} catch(e) {
 		if (String(e).match(/ClassNotFoundException/)) {
-			af.externalAddClasspath((new java.io.File(aPath)).toURI().toURL());
-			af.runFromClass(af.getClass(aClass).newInstance());
+			var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
+			af.runFromClass(cl.newInstance());
 		}
 	}
 };
