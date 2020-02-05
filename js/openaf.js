@@ -1937,6 +1937,36 @@ function load(aScript) {
 
 /**
  * <odoc>
+ * <key>loadCompiled(aScript)</key>
+ * Tries to load an OpenAF script as a compiled class. If a compiled class file doesn't exist in the same path 
+ * it will try to compile and load from the compiled code. If a compiled class file exists in the same path it
+ * will recompile it if the modified date of the original aScript is newer than the class. 
+ * </odoc>
+ */
+function loadCompiled(aScript) {
+	if (io.fileExists(aScript)) {
+		var info = io.fileInfo(aScript);
+		if (info.isFile) {
+            var path = info.canonicalPath.replace(new RegExp(info.filename + "$"), "");
+			if (info.filename.endsWith(".js")) {
+				if (!(io.fileExists(path + "/" + info.filename.replace(/\./g, "_") + ".class")) ||
+				    info.lastModified > io.fileInfo(path + "/" + info.filename.replace(/\./g, "_") + ".class").lastModified) {
+					af.compileToClasses(info.filename.replace(/\./g, "_"), io.readFileString(info.canonicalPath), path);
+				}
+                aScript = path + info.filename.replace(/\./g, "_") + ".class";
+			}
+			if (aScript.endsWith(".class")) {
+				af.runFromExternalClass(
+					aScript.replace(/^.+\/([^\/]+)\.class$/, "$1"), 
+					path
+				);
+			}
+		}
+	}
+}
+
+/**
+ * <odoc>
  * <key>plugin(aPlugin)</key>
  * Provides a shortcut for the af.plugin function. It also provides a shortcut for plugins with
  * the java package "openaf.plugins" (e.g. af.plugin("openaf.plugins.HTTP") is the same
@@ -5365,6 +5395,28 @@ loadCompiledLib("openafsigil_js");
 
 var __correctYAML = false;
 
+/**
+ * <odoc>
+ * <key>af.runFromExternalClass(aClassName, aPath)</key>
+ * Tries to "execute" aClassName from a previously compiled OpenAF script, with af.compileToClasses, on aPath.\
+ * \
+ * Example:\
+ *    af.compileToClasses("MyClass", "var myOpen = 'AF Class'", ".");\
+ *    af.runFromExternalClass("MyClass", ".");\
+ *    myOpen; // AF Class\
+ * \
+ * </odoc>
+ */
+AF.prototype.runFromExternalClass = function(aClass, aPath) {
+	try {
+		af.runFromClass(af.getClass(aClass).newInstance());
+	} catch(e) {
+		if (String(e).match(/ClassNotFoundException/)) {
+			af.externalAddClasspath((new java.io.File(aPath)).toURI().toURL());
+			af.runFromClass(af.getClass(aClass).newInstance());
+		}
+	}
+};
 /**
  * <odoc>
  * <key>AF.fromJavaArray(aJavaArray) : Array</key>
