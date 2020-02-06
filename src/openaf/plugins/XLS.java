@@ -6,8 +6,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -59,6 +59,8 @@ public class XLS extends ScriptableObject {
 	protected Workbook wbook;
 	protected FormulaEvaluator evaluator;
 	protected String encoding = null;
+	protected File aFile = null;
+	protected Boolean read_only = false;
 	protected HashMap<Object, CellStyle> dataStyleCache = new HashMap<Object, CellStyle>();
 	protected HashMap<Object, CellStyle> longStyleCache = new HashMap<Object, CellStyle>();
 
@@ -192,10 +194,12 @@ public class XLS extends ScriptableObject {
 			// It's a filename
 			try {
 				//POIFSFileSystem poifs = new POIFSFileSystem(new File((String) arg), readOnly);
+				this.read_only = readOnly;
+				this.aFile = new File((String) arg);
 				if (readOnly) {
 					wbook = WorkbookFactory.create(new FileInputStream(new File((String) arg)), password);
 				} else {
-					wbook = WorkbookFactory.create(new File((String) arg), password);
+					wbook = WorkbookFactory.create(this.aFile, password);
 				}
 			} catch (Exception e) {
 				wbook = new XSSFWorkbook((String) arg);
@@ -507,21 +511,51 @@ public class XLS extends ScriptableObject {
 	}
 	
 	/**
-	 * <odoc>
+	 * <odoc> 
 	 * <key>XLS.writeFile(aFilename)</key>
-	 * Writes the memory excel instance into a file. Example:\
+	 * Writes the memory excel instance into a file. If undefined tries to write to the file passed on the constructor (if readonly is not set to true). Example:\
 	 * \
-	 * xls.writeFile("spreadsheet.xlsx");\
+	 *   xls.writeFile("spreadsheet.xlsx");\
 	 * \
 	 * </odoc>
 	 */
 	@JSFunction
-	public void writeFile(String file) throws IOException, GeneralSecurityException, InvalidFormatException {
-		FileOutputStream fileout = new FileOutputStream(file);
-		wbook.write(fileout);
-		fileout.flush();
-		fileout.close();
+	public void writeFile(Object file) throws Exception {
+		class NullOutputStream extends OutputStream {
+			@Override
+			public void write(int b) throws IOException {
+			}
+		}
 
+		if (!(file instanceof Undefined) && file != null) {
+			File target = new File((String) file);
+
+			System.out.println(this.aFile == null);
+			System.out.println(target.getCanonicalPath());
+			if (this.aFile != null) System.out.println(this.aFile.getCanonicalPath());
+
+			if (this.aFile != null && target.getCanonicalPath().equals(this.aFile.getCanonicalPath())) {
+				if (!this.read_only) {
+					NullOutputStream fileout = new NullOutputStream();
+					wbook.write(fileout);
+					fileout.flush();
+					fileout.close();
+				}
+			} else {
+				FileOutputStream fileout = new FileOutputStream((String) file);
+				wbook.write(fileout);
+				fileout.flush();
+				fileout.close();
+			}
+		} else {
+			if (!this.read_only) {
+				NullOutputStream fileout = new NullOutputStream();
+				wbook.write(fileout);
+				fileout.flush();
+				fileout.close();
+			}
+		}
+		
 		/*if (password != null) {
 			POIFSFileSystem fs = new POIFSFileSystem();
 			EncryptionInfo ei = new EncryptionInfo(org.apache.poi.poifs.crypt.EncryptionMode.agile);

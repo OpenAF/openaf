@@ -1871,7 +1871,7 @@ function load(aScript, loadPrecompiled) {
 	var error = "";
 	var fn = (aS, aLevel) => {
 		var res = false;
-		if (loadPrecompiled || __preCompileLevel >= aLevel) res = loadCompiled(aS);
+		if (aScript.indexOf("::") < 0 && (loadPrecompiled || __preCompileLevel >= aLevel)) res = loadCompiled(aS);
 		if (!res) {
 			try { 
 				af.load(aS);
