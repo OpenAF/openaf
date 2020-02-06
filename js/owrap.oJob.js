@@ -385,7 +385,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 	if (isUnDef(res.ojob)) res.ojob = {};
 
 	return res;
-}
+};
 
 OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	function _uniq(aSource) {
@@ -473,7 +473,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	}
 
 	return this.loadJSON(res);
-}
+};
 
 /**
  * <odoc>
@@ -564,7 +564,7 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptions
 		if (isUnDef(aOptionsMap) || !isMap(aOptionsMap)) aOptionsMap = {};
 		this.load(s.jobs, s.todo, merge(aOptionsMap, s.ojob), args, aId, s.init);
 	}
-}
+};
 
 /**
  * <odoc>
@@ -576,7 +576,7 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptions
 OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
 	this.loadFile(aFile, args, aId, isSubJob, aOptionsMap);
 	this.start(args, true, aId);
-}
+};
 
 /**
  * <odoc>
@@ -608,28 +608,28 @@ OpenWrap.oJob.prototype.runAllShutdownJobs = function() {
  * Gets the oJob::jobs channel
  * </odoc>
  */
-OpenWrap.oJob.prototype.getJobsCh = function() { return $ch("oJob::jobs"); }
+OpenWrap.oJob.prototype.getJobsCh = function() { return $ch("oJob::jobs"); };
 /**
  * <odoc>
  * <key>ow.oJob.getTodoCh() : Channel</key>
  * Gets the oJob::todo channel
  * </odoc>
  */
-OpenWrap.oJob.prototype.getTodoCh = function() { return $ch("oJob::todo"); }
+OpenWrap.oJob.prototype.getTodoCh = function() { return $ch("oJob::todo"); };
 /**
  * <odoc>
  * <key>ow.oJob.getLogCh() : Channel</key>
  * Gets the oJob::log channel
  * </odoc>
  */
-OpenWrap.oJob.prototype.getLogCh = function() { return $ch("oJob::log"); }
+OpenWrap.oJob.prototype.getLogCh = function() { return $ch("oJob::log"); };
 /**
  * <odoc>
  * <key>ow.oJob.getMainCh() : Channel</key>
  * Gets the oJob::oJob channel
  * </odoc>
  */
-OpenWrap.oJob.prototype.getMainCh = function() { return $ch("oJob::oJob"); }
+OpenWrap.oJob.prototype.getMainCh = function() { return $ch("oJob::oJob"); };
 
 /**
  * <odoc>
@@ -639,7 +639,7 @@ OpenWrap.oJob.prototype.getMainCh = function() { return $ch("oJob::oJob"); }
  */
 OpenWrap.oJob.prototype.getID = function() {
 	return this.__id;
-}
+};
 
 /**
  * <odoc>
@@ -650,7 +650,7 @@ OpenWrap.oJob.prototype.getID = function() {
 OpenWrap.oJob.prototype.setJob = function(aJobName, aJob) {
 	this.getJobsCh().set(aJobName, aJob);
 	return this;
-}
+};
 
 /**
  * <odoc>
@@ -661,7 +661,7 @@ OpenWrap.oJob.prototype.setJob = function(aJobName, aJob) {
 OpenWrap.oJob.prototype.removeJob = function(aJobName) {
 	this.getJobsCh().unset(aJobName);
 	return this;
-}
+};
 
 /**
  * <odoc>
@@ -684,7 +684,7 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 		}
 	}
 	return this;
-}
+};
 
 /**
  * <odoc>
@@ -864,7 +864,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 	}
 
 	return currentJobExecId;
-}
+};
 
 /**
  * <odoc>
@@ -964,7 +964,7 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 	argss.__id = aId;
 
 	return argss;
-}
+};
 
 /**
  * <odoc>
@@ -1162,7 +1162,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
  */
 OpenWrap.oJob.prototype.run = function(provideArgs, aId) {
 	this.start(provideArgs, true, aId);
-}
+};
 
 /**
  * <odoc>

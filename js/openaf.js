@@ -1852,6 +1852,14 @@ function loadExternalJars(aPath, dontCheck) {
 }
 
 /**
+ * 0 - no force pre-compilation
+ * 1 - pre-compilation of opacks
+ * 2 - pre-compilation of opacks and loadLibs
+ * 3 - pre-compilation of all scripts
+ */
+var __preCompileLevel = 2;
+
+/**
  * <odoc>
  * <key>load(aScript)</key>
  * Provides a shortcut for the af.load function (see more af.load). If the provided aScript is not found
@@ -1859,9 +1867,53 @@ function loadExternalJars(aPath, dontCheck) {
  * If it doesn't find the provided aScript it will throw an exception "Couldn't find aScript".
  * </odoc>
  */
-function load(aScript) {
+function load(aScript, loadPrecompiled) {
 	var error = "";
-	
+	var fn = (aS, aLevel) => {
+		var res = false;
+		if (loadPrecompiled || __preCompileLevel >= aLevel) res = loadCompiled(aS);
+		if (!res) {
+			try { 
+				af.load(aS);
+			} catch(e) {
+				if (e.message == "\"exports\" is not defined.") {
+					var exp = require(aS);
+					global[io.fileInfo(aS).filename.replace(/\.js$/, "")] = exp;
+					return aS;
+				} else {
+					throw e;
+				}
+			}
+		}
+		return aScript;
+	};
+
+	if (io.fileExists(aScript)) {
+		return fn(aScript, 3);
+	} else {
+		var paths = getOPackPaths();
+		paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
+
+		var error;
+		for(let i in paths) {
+			try {
+				paths[i] = paths[i].replace(/\\+/g, "/");
+				return fn(paths[i] + "/" + aScript, 1);
+			} catch(e) {
+				error = e;
+			}
+		}
+
+		if (typeof __loadedfrom !== 'undefined') {
+			return fn(__loadedfrom.replace(/[^\/]+$/, "") + aScript, 3);
+		}
+
+		if (isDef(error)) {
+			throw aScript + ": " + String(error);
+		}
+	}
+
+	/*
 	try {
 		try {
 			af.load(aScript);
@@ -1933,6 +1985,7 @@ function load(aScript) {
 		}
 	}
 	throw "Couldn't find " + aScript + "; " + error;
+	*/
 }
 
 /**
@@ -1950,14 +2003,15 @@ function loadCompiled(aScript, dontCompile) {
     if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
 		if (info.isFile) {
-            var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename));
+            var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename)) + ".openaf_precompiled/";
 			if (info.filename.endsWith(".js")) {
 				cl = info.filename.replace(/\./g, "_");
 				clFile = cl + ".class";
 				clFilepath = path + clFile;
-				if (!(io.fileExists(clFilepath)) ||
+				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
 				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
 					if (!dontCompile) {
+						io.mkdir(path);
 						io.rm(clFilepath);
 						af.compileToClasses(cl, io.readFileString(info.canonicalPath), path);
 					}
@@ -3245,7 +3299,7 @@ function loadLib(aLib, forceReload, aFunction) {
 	if (forceReload ||
 		isUnDef(__loadedLibs[aLib.toLowerCase()]) || 
 		__loadedLibs[aLib.toLowerCase()] == false) {
-		load(aLib);
+		load(aLib, (__preCompileLevel >= 2 ? true : false));
 		__loadedLibs[aLib.toLowerCase()] = true;
 		if (isDef(aFunction)) aFunction();
 		return true;
