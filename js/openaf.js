@@ -1990,15 +1990,15 @@ function load(aScript, loadPrecompiled) {
 
 /**
  * <odoc>
- * <key>loadCompiled(aScript, dontCompile) : boolean</key>
+ * <key>loadCompiled(aScript, dontCompile, dontLoad) : boolean</key>
  * Tries to load an OpenAF script as a compiled class. If a compiled class file doesn't exist in the same path 
  * it will try to compile and load from the compiled code. If a compiled class file exists in the same path it
  * will recompile it if the modified date of the original aScript is newer than the class. 
  * If the class was already loaded or can't be loaded it will return false. Returns true otherwise.
- * Optionally you can force to not compile dontCompile=true.
+ * Optionally you can force to not compile dontCompile=true or just to compile with dontLoad=true
  * </odoc>
  */
-function loadCompiled(aScript, dontCompile) {
+function loadCompiled(aScript, dontCompile, dontLoad) {
     var res = false, cl, clFile, clFilepath;
     if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
@@ -2018,7 +2018,7 @@ function loadCompiled(aScript, dontCompile) {
 				}
                 aScript = clFile;
 			}
-			if (aScript.endsWith(".class")) {
+			if (!dontLoad && aScript.endsWith(".class")) {
                 try {
                     af.getClass(cl);
                 } catch(e) {
