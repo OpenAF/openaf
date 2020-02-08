@@ -4321,13 +4321,13 @@ function ioStreamRead(aStream, aFunction, aBufferSize, useNIO, encoding) {
 
 /**
  * <odoc>
- * <key>ioStreamReadLines(aStream, aFunctionPerLine, aSeparator, useNIO)</key>
+ * <key>ioStreamReadLines(aStream, aFunctionPerLine, aSeparator, useNIO, anEncoding)</key>
  * Given aStream will read the entire buffer and call aFunctionPerLine(withALine) per each \n found.
  * Aditionally you can specify a different aSeparator for each line other than "\n". 
- * If aFunctionPerLine returns true the read operation stops.
+ * If aFunctionPerLine returns true the read operation stops. Optionally you can also provide anEncoding.
  * </odoc>
  */
-function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
+function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO, anEncoding) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	var buf = "", go = true;
 	if (isUnDef(aSeparator)) aSeparator = __separator;
@@ -4343,7 +4343,7 @@ function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO) {
 			}
 			return res;
 		}
-	}, void 0, useNIO);
+	}, void 0, useNIO, anEncoding);
 	while (buf.indexOf(aSeparator) >= 0 && go) {
 		var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
 		buf = buf.substring(buf.indexOf(aSeparator) + 1);
