@@ -622,6 +622,26 @@ OpenWrap.format.prototype.fromOctal = function(aString) {
 
 /**
  * <odoc>
+ * <key>ow.format.int2IP(aIPInt) : String</key>
+ * Converts the decimal IP address representation aIPInt into an IP address.
+ * </odoc>
+ */
+OpenWrap.format.prototype.int2IP = function(ipInt) {
+	return ( (ipInt>>>24) +'.' + (ipInt>>16 & 255) +'.' + (ipInt>>8 & 255) +'.' + (ipInt & 255) );
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.IP2Int(aIP) : String</key>
+ * Converts an IP address into it's decimal IP address representation.
+ * </odoc>
+ */
+OpenWrap.format.prototype.IP2int = function(ip) {
+ 	return ip.split('.').reduce(function(ipInt, octet) { return (ipInt<<8) + parseInt(octet, 10)}, 0) >>> 0;
+};
+
+/**
+ * <odoc>
  * <key>ow.format.toAbbreviation(aNumber, aDigits) : String</key>
  * Returns a number abbreviation to "k", "m", "b", "t". Will round number to 2 decimals if aDigits
  * doesn't provide a different decimal digits to round to.\
