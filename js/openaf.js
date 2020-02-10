@@ -6607,6 +6607,23 @@ const $atomic = function(aInit, aType) {
 
 /**
  * <odoc>
+ * <key>$throwIfUnDef(aFunc) : Function</key>
+ * Returns a function that tries to execute aFunc and throws and exception if the result if undefined otherwise returns the result. Usefull with $retry
+ * when waiting for a "defined" result.
+ * </odoc>
+ */
+const $throwIfUnDef = function(aFunc) {
+	return function() {
+		var r = aFunc();
+		if (isUnDef(r)) 
+		   throw "undefined";
+		else 
+		   return r;
+	}
+};
+
+/**
+ * <odoc>
  * <key>$retry(aFunction, aNumOfTriesOrFunction) : Object</key>
  * Tries to execute aFunction and return the corresponding returned result. If aNumOfTriesOrFunction is a number (defaults to 1)
  * and aFunction throws an exception it will repeat aFunction until it doesn't throw an exception or for the number of aNumOfTriesOrFunc.
