@@ -5,8 +5,9 @@
 OpenWrap.template = function() {
 	//loadHandlebars();
 	if (isUnDef(this.hb)) {
-		this.hb = getOpenAFJar() + "::js/handlebars.js";
-		require(this.hb);
+		//this.hb = getOpenAFJar() + "::js/handlebars.js";
+		//require(this.hb);
+		loadCompiledRequire("handlebars_js");
 		this.__helpers = {};
 		this.__partials = {};
 	}
@@ -14,7 +15,7 @@ OpenWrap.template = function() {
 };
 
 OpenWrap.template.prototype.__requireHB = function() {
-	var hb = require(this.hb);
+	var hb = loadCompiledRequire("handlebars_js");
 	this.__addHelpers(hb);
 	this.__addPartials(hb);
 	return hb;
@@ -464,7 +465,8 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
  * </odoc>
  */
 OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull) {
-	var showdown = require(getOpenAFJar() + "::js/showdown.js");
+	//var showdown = require(getOpenAFJar() + "::js/showdown.js");
+	var showdown = loadCompiledRequire("showdown_js");
 	showdown.setFlavor("github");
 	var converter = new showdown.Converter();
 

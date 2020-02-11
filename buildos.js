@@ -221,6 +221,7 @@ io.mkdir(OPENAF_BUILD_HOME + "/jslib");
 
 var zipJSlib = new ZIP();
 var validationForCompile = (filename) => { return (filename != "materialize.js" && filename != "handlebars.js" && filename != "jquery.js" && filename != "highlight.js"); };
+var validationForRequireCompile = (filename) => { return (filename == "handlebars.js" || filename == "showdown.js"); };
 
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {
@@ -270,17 +271,21 @@ try {
 			}
 
 			if (validationForCompile(file.filename))
-              af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
+			  af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
+			if (validationForRequireCompile(file.filename))
+			  af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
-				if (validationForCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));
+				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));
 			}, tempJar);
 		} else {
 			if (validationForCompile(file.filename))
 			  af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
+			if (validationForRequireCompile(file.filename))
+			  af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");			  
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
-				if (validationForCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));				
+				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));				
 			}, tempJar);
 		}
 	}

@@ -1988,6 +1988,47 @@ function load(aScript, loadPrecompiled) {
 	*/
 }
 
+function requireCompiled(aScript, dontCompile, dontLoad) {
+	var res = false, cl, clFile, clFilepath;
+	if (io.fileExists(aScript)) {
+		var info = io.fileInfo(aScript);
+		if (info.isFile) {
+			var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename)) + ".openaf_precompiled/";
+			if (info.filename.endsWith(".js")) {
+				cl = info.filename.replace(/\./g, "_");
+				clFile = cl + ".class";
+				clFilepath = path + clFile;
+				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
+				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
+					if (!dontCompile) {
+						io.mkdir(path);
+						io.rm(clFilepath);
+						af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + io.readFileString(info.canonicalPath) + "}", path);
+					}
+				}
+                aScript = clFile;
+			}
+			if (!dontLoad && aScript.endsWith(".class")) {
+                try {
+                    af.getClass(cl);
+                } catch(e) {
+                    if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
+						af.runFromExternalClass(cl, path);
+						var exp = {}, mod = { id: cl, uri: cl, exports: exp };
+
+						global["__" + cl].call({}, require, exp, mod);
+						exp = mod.exports || exp;
+					
+						return exp;
+                    } else {
+                        throw e;
+                    }
+                }
+			}
+		}
+	}
+}
+
 /**
  * <odoc>
  * <key>loadCompiled(aScript, dontCompile, dontLoad) : boolean</key>
@@ -3329,6 +3370,26 @@ function loadCompiledLib(aClass, forceReload, aFunction) {
 	return false;
 }
 
+function loadCompiledRequire(aClass, forceReload, aFunction) {
+	if (forceReload ||
+		isUnDef(__loadedLibs[aClass.toLowerCase()]) || 
+		__loadedLibs[aClass.toLowerCase()] == false) {		
+		af.runFromClass(af.getClass(aClass).newInstance());
+		var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+		global["__" + aClass].call({}, require, exp, mod);
+		exp = mod.exports || exp;
+		__loadedLibs[aClass.toLowerCase()] = true;
+		if (isDef(aFunction)) aFunction(exp);
+		return exp;
+	} else {
+		var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+		global["__" + aClass].call({}, require, exp, mod);
+		exp = mod.exports || exp;
+	
+		return exp;
+	}
+}
+
 /**
  * <odoc>
  * <key>sync(aFunction, anObject)</key>
@@ -3468,7 +3529,7 @@ Pod.require = function (req, callback) {
 	        var mod = this._m[id];
 	
 	        // If the module has no existing export,
-	        // Resolve dependencies and create module.
+	        // Resolve dependencies and create module. 
 	        if (!mod.e) {
 	            // If module is active within the working dependency path chain,
 	            // throw a circular reference error.
