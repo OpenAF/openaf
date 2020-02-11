@@ -4872,8 +4872,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.get = function(aBaseURI, aIdxMap) {
@@ -4886,8 +4886,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.get2Stream = function(aBaseURI, aIdxMap) {
@@ -4900,8 +4900,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient).
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */
@@ -4921,8 +4921,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.post = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -4935,8 +4935,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */	
 	_rest.prototype.post2Stream = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -4949,8 +4949,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient).
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */	
@@ -4970,8 +4970,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.put = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -4984,8 +4984,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.put2Stream = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -4998,8 +4998,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */
@@ -5019,8 +5019,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.delete = function(aBaseURI, aIdxMap) {
@@ -5033,8 +5033,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.delete2Stream = function(aBaseURI, aIdxMap) {
@@ -5047,8 +5047,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */
@@ -5068,8 +5068,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.patch = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -5082,8 +5082,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
 	 * </odoc>
 	 */
 	_rest.prototype.patch2Stream = function(aBaseURI, aDataRowMap, aIdxMap) {
@@ -5096,8 +5096,8 @@ const $rest = function(ops) {
 	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
 	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
 	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
-	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics) and preAction function that receives and
-	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, aDataRowMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms). 
 	 * The byte output will be saved into aFilePath. Optional $rest(aOptions.downloadResume = true) will resume download of a file if it exists.
 	 * </odoc>
 	 */
