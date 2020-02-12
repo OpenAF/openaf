@@ -530,8 +530,6 @@ public class XLS extends ScriptableObject {
 		if (!(file instanceof Undefined) && file != null) {
 			File target = new File((String) file);
 
-			System.out.println(this.aFile == null);
-			System.out.println(target.getCanonicalPath());
 			if (this.aFile != null) System.out.println(this.aFile.getCanonicalPath());
 
 			if (this.aFile != null && target.getCanonicalPath().equals(this.aFile.getCanonicalPath())) {
