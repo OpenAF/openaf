@@ -3,7 +3,8 @@
 
 OpenWrap.ai = function() {
     if (isUnDef(this.synaptic)) {
-        this.synaptic = require(getOpenAFJar() + "::js/synaptic.js");        
+        //this.synaptic = require(getOpenAFJar() + "::js/synaptic.js");        
+        this.synaptic = loadCompiledRequire("synaptic_js"); 
     }
     return ow.ai;
 }

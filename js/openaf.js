@@ -2016,10 +2016,10 @@ function requireCompiled(aScript, dontCompile, dontLoad) {
 						af.runFromExternalClass(cl, path);
 						var exp = {}, mod = { id: cl, uri: cl, exports: exp };
 
-						global["__" + cl].call({}, require, exp, mod);
-						exp = mod.exports || exp;
+						global["__" + cl].call({}, requireCompiled, exp, mod);
+						//exp = mod.exports || exp;
 					
-						return exp;
+						return mod.exports;
                     } else {
                         throw e;
                     }
@@ -3376,17 +3376,17 @@ function loadCompiledRequire(aClass, forceReload, aFunction) {
 		__loadedLibs[aClass.toLowerCase()] == false) {		
 		af.runFromClass(af.getClass(aClass).newInstance());
 		var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-		global["__" + aClass].call({}, require, exp, mod);
-		exp = mod.exports || exp;
+		global["__" + aClass](loadCompiledRequire, exp, mod);
+		//exp = mod.exports || exp;
 		__loadedLibs[aClass.toLowerCase()] = true;
-		if (isDef(aFunction)) aFunction(exp);
-		return exp;
+		if (isDef(aFunction)) aFunction(mod.exports);
+		return mod.exports;
 	} else {
 		var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-		global["__" + aClass].call({}, require, exp, mod);
-		exp = mod.exports || exp;
+		global["__" + aClass](loadCompiledRequire, exp, mod);
+		//exp = mod.exports || exp;
 	
-		return exp;
+		return mod.exports;
 	}
 }
 
@@ -3642,9 +3642,9 @@ function require(aScript, force) {
 
 	f.call({}, require, exports, module);
 
-	exports = module.exports || exports;
+	//exports = module.exports || exports;
 	
-	return exports;
+	return module.exports;
 }
 
 // OpenWrap
