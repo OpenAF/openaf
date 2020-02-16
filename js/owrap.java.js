@@ -343,6 +343,250 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId,
 
 /**
  * <odoc>
+ * <key>ow.java.IMAP(aServer, aUser, aPassword, isSSL, aPort, isReadOnly)</key>
+ * Creates an instance to access aServer, using aUser and aPassword through a optional aPort and optionally using isSSL = true to use SSL.
+ * If isReadOnly = true the folders will be open only as read-only.
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP = function(aServer, aUser, aPassword, isSSL, aPort, isReadOnly) {
+    this.server = _$(aServer, "server").isString().$_();
+    this.user   = _$(aUser, "user").isString().$_();
+    this.pass   = _$(aPassword, "password").isString().$_();
+    this.isSSL  = _$(isSSL, "isSSL").isBoolean().default(false);
+    this.port   = _$(aPort, "port").isNumber().default(void 0);
+    this.ro     = _$(isReadOnly, "isReadOnly").isBoolean().default(false);
+
+    var props = new java.util.Properties();
+    this.session = javax.mail.Session.getDefaultInstance(props, null);
+    if (this.isSSL) {
+        this.store = this.session.getStore("imaps");
+    } else {
+        this.store = this.session.getStore("imap");
+    }
+
+    if (isDef(this.port)) {
+        this.store.connect(this.server, this.port, Packages.openaf.AFCmdBase.afc.dIP(this.user), Packages.openaf.AFCmdBase.afc.dIP(this.pass));
+    } else {
+        this.store.connect(this.server, Packages.openaf.AFCmdBase.afc.dIP(this.user), Packages.openaf.AFCmdBase.afc.dIP(this.pass));
+    }
+
+    this.folders = {};
+};
+
+OpenWrap.java.prototype.IMAP.prototype.__getFolder = function(aFolder) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+
+    if (isDef(this.folders[aFolder])) {
+        return this.folders[aFolder];
+    } else {
+        this.folders[aFolder] = this.store.getFolder(aFolder);
+        if (this.ro) {
+            this.folders[aFolder].open(javax.mail.Folder.READ_ONLY);
+        } else {
+            this.folders[aFolder].open(javax.mail.Folder.READ_WRITE);
+        }
+        return this.folders[aFolder];
+    }
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.close(aFolder)</key>
+ * Tries to a close a previously aFolder (defaults to "Inbox") automatically open in other operations.
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.close = function(aFolder) {
+    var _c = (aF) => {
+        if (isDef(this.folders[aF])) this.folders[aF].close();
+    };
+
+    if (isDef(aFolder)) {
+        _c(aFolder);
+    } else {
+        for(var ii in this.folders) {
+            _c(ii);
+        }
+    }
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.getMessages(aFolder, aNumber) : Array</key>
+ * Tries to retrieve an array of maps of message metadata from aFolder (defaults to Inbox) up to aNumber (defaults to 5) of messages.
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.getMessages = function(aFolder, aNumber) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+    aNumber = _$(aNumber, "number").isNumber().default(5);
+
+    var res = [];
+    var end = Number(this.getMessageCount(aFolder));
+    var start = end - aNumber;
+
+    for(var ii = end -1; ii >= start; ii--) {
+        res.push(this.getMessage(aFolder, ii));
+    }
+    return res;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.getSortedMessages(aFolder, aType, aTerm, aNumber) : Array</key>
+ * For IMAP servers supporting the SORT operation will retrieve an array of maps of message metadata from aFolder (defaults to "Inbox") up to aNumber (defaults to 5)
+ * of messages. The list will be filtered by aTerm for aType (e.g. FROM (default), ARRIVAL, CC, DATE, REVERSE, SIZE, SUBJECT, TO).
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.getSortedMessages = function(aFolder, aType, aTerm, aNumber) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+    aNumber = _$(aNumber, "number").isNumber().default(5);
+    aType   = _$(aType, "type").isString().default("from");
+    aTerm   = _$(aTerm, "term").isString().default("");
+
+    switch(aType.toUpperCase()) {
+    case "FROM": 
+        aType = Packages.com.sun.mail.imap.SortTerm.FROM;
+        aTerm = new javax.mail.search.FromStringTerm(aTerm);
+        break;
+    case "ARRIVAL": aType = Packages.com.sun.mail.imap.SortTerm.ARRIVAL; break;
+    case "CC": 
+        aType = Packages.com.sun.mail.imap.SortTerm.CC; 
+        aTerm = new javax.mail.search.RecipientTerm(aTerm);
+        break;
+    case "DATE": aType = Packages.com.sun.mail.imap.SortTerm.DATE; break;
+    case "REVERSE": aType = Packages.com.sun.mail.imap.SortTerm.REVERSE; break;
+    case "SIZE": aType = Packages.com.sun.mail.imap.SortTerm.SIZE; break;
+    case "SUBJECT": 
+        aType = Packages.com.sun.mail.imap.SortTerm.SUBJECT; 
+        aTerm = new javax.mail.search.SubjectTerm(aTerm);
+        break;
+    case "TO": 
+        aType = Packages.com.sun.mail.imap.SortTerm.TO; 
+        aTerm = new javax.mail.search.RecipientTerm(aTerm);
+        break;
+    }
+
+    var fold = this.__getFolder(aFolder);
+    var msgs = fold.getSortedMessages([aType], aTerm);
+
+    var res = [], cc = 0;
+    for(var ii in msgs) {
+        res.push(this.__translateMsg(msgs[ii]));
+        if (cc > aNumber) break; else cc++;
+    }
+  
+    return res;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.getMessageCount(aFolder) : Number</key>
+ * Retrieves the current message count for aFolder.
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.getMessageCount = function(aFolder) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+
+    var fold = this.__getFolder(aFolder);
+    return fold.getMessageCount();
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.getNewMessageCount(aFolder) : Number</key>
+ * Retrieves the current new message count for aFolder.
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.getNewMessageCount = function(aFolder) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+
+    var fold = this.__getFolder(aFolder);
+    return fold.getNewMessageCount();
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.getMessageBodyPart(aFolder, aNum, aBodyPartId) : String</key>
+ * Retrieves the body part identified as aBodyPartId (starts in 0) from the message aNum on aFolder.
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.getMessageBodyPart = function(aFolder, aNum, aBodyPartId) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+
+    var fold = this.__getFolder(aFolder);
+    var res = fold.getMessage(aNum);
+    var res2 = res.getContent().getBodyPart(aBodyPartId);
+    if (res2 != null && isDef(res2)) {
+        var res3 = res2.getContent();
+        if (isJavaObject(res3) && res3 instanceof java.lang.String) {
+            res3 = String(res3);
+        } 
+        return res3;
+    }
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.getMessage(aFolder, aNum) : Map</key>
+ * Tries to retrieve a message metadata map based on aNum from aFolder.
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.getMessage = function(aFolder, aNum) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+
+    var fold = this.__getFolder(aFolder);
+    var res = fold.getMessage(aNum);
+
+    return this.__translateMsg(res);
+};
+
+OpenWrap.java.prototype.IMAP.prototype.__translateMsg = function(res) {
+    var msg = {};
+    if (isDef(res)) {
+        msg = {
+            num: res.getMessageNumber(),
+            from: af.fromJavaArray(res.getFrom()),
+            recipients: af.fromJavaArray(res.getAllRecipients()),
+            replyTo: af.fromJavaArray(res.getReplyTo()),
+            subject: String(res.getSubject()),
+            receivedDate: res.getReceivedDate(),
+            sentDate: res.getSentDate(),
+            encoding: res.getEncoding(),
+            size: res.getSizeLong(),
+            bodyParts: res.getContent().getCount(),
+            object: res
+        };
+    }
+    return msg;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.hasNewMessages(aFolder) : Boolean</key>
+ * Tries to determine how many new messagse there are in aFolder (defailt to Inbox)
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.hasNewMessages = function(aFolder) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+
+    var fold = this.__getFolder(aFolder);
+    return fold.hasNewMessages();
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.IMAP.getUnreadMessageCount(aFolder) : Boolean</key>
+ * Tries to determine if there are new unread messages in aFolder (defailt to Inbox)
+ * </odoc>
+ */
+OpenWrap.java.prototype.IMAP.prototype.getUnreadMessageCount = function(aFolder) {
+    aFolder = _$(aFolder, "folder").isString().default("Inbox");
+
+    var fold = this.__getFolder(aFolder);
+    return fold.getUnreadMessageCount();
+};
+
+/**
+ * <odoc>
  * <key>ow.java.cipher(anAlgorithm)</key>
  * Creates an ow.java.cipher to use anAlgorithm (defaults to RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING).
  * </odoc>
