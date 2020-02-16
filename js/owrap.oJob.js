@@ -104,7 +104,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
 			var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
-			if (isDef(j)) {
+			if (isDef(j) && !isNull(j)) {
 				if (isUnDef(j.deps)) j.deps = [];
 				j.deps.push((isObject(todo[i-1]) ? todo[i-1].name : todo[i-1]));
 			}
