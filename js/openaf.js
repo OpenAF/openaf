@@ -2182,6 +2182,8 @@ function isDef(aObject)   { return (!(typeof aObject == 'undefined')) ? true : f
  */
 function isUnDef(aObject) { return (typeof aObject == 'undefined') ? true : false; }
 
+if (isUnDef(Object.values)) Object.values = (m) => { return Object.keys(m).map(r => m[r]); };
+
 /**
  * <odoc>
  * <key>isBinaryArray(anArrayOfChars, confirmLimit, previousResult) : boolean</key>
