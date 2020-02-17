@@ -16,6 +16,10 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFStyle;
 import org.apache.poi.xwpf.usermodel.XWPFStyles;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
+import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
@@ -109,7 +113,20 @@ public class DOC extends ScriptableObject {
         }
 
         XWPFRun run = para.createRun();
-        run.setText(aString);
+        String ar[] = aString.split("\n");
+        int c = 0;
+        for(String _a : ar) {
+            run.setText(_a);
+            c++;
+            if (ar.length > c) run.addBreak();
+        }
+    }
+
+    @JSFunction
+    public void writeBreak() {
+        XWPFParagraph para = doc.createParagraph();
+        XWPFRun run = para.createRun();
+        run.addBreak();
     }
 
     @JSFunction
@@ -124,6 +141,104 @@ public class DOC extends ScriptableObject {
         HexBinaryAdapter adapter = new HexBinaryAdapter();
         byte[] bytes = adapter.unmarshal(hexString);
         return bytes;
+    }
+
+    /* @JSFunction
+    public int writeJSON(Object map, int iniY, int iniX) {
+        if (map instanceof NativeObject || map instanceof NativeArray) {
+            int x = iniX;
+            XWPFTable tab = this.doc.createTable();
+
+            if (map instanceof NativeObject) {
+                NativeObject na = (NativeObject) map;
+
+                XWPFTableRow headerRow = tab.getRow(0);
+                for(Object key : na.keySet()) {			
+                    Object value = na.get(key);
+                    
+                    int origX = x;
+                    if (x == iniX) {
+                        XWPFRun r = headerRow.getCell(iniX).addParagraph().createRun();
+                        r.setBold(true);
+                        r.setText(key.toString());
+                    }
+
+                    XWPFTableRow tableRow = tab.createRow();
+                    XWPFRun r = tableRow.addNewTableCell().addParagraph().createRun();
+                    r.setBold(true);
+                    r.setText(key.toString());
+                    
+                    //setCell iniy, x, key
+                    if (!(value instanceof NativeObject) && !(value instanceof NativeArray)) {
+                        //setCell iniy + 1, x value
+                        x++;
+                    } else {
+                        x = x + this.writeJSON(map, iniY + 1, x);
+                    }
+                } 
+            }
+
+            if (map instanceof NativeArray) {
+                NativeArray na = (NativeArray) map;
+
+                for(int i = 0; i < na.size(); i++) {
+                    Object o = na.get(i);
+
+                    int origX = x;
+                    // setCell iniY, x
+                    if (!(o instanceof NativeObject) && !(o instanceof NativeArray)) {
+                        //setCell y+1, x
+                        x++;
+                    } else {
+                        x = x + this.writeJSON(map, iniY + 1, x);
+                    }
+                }
+                x++;
+            }
+            return x - iniX;
+        }
+
+        return 0;
+    }*/
+
+    @JSFunction
+    public void writeTable(Object table) {
+        if (table instanceof NativeArray) {
+            NativeArray na = (NativeArray) table;
+            if (na.size() > 0) {
+                int numberColumns = 0;
+                XWPFTable tab = this.doc.createTable();
+                
+                for(int x = 0; x < (na.size()); x++) {
+                    NativeObject no = (NativeObject) na.get(x);
+                    numberColumns = no.keySet().size();
+
+                    // Header
+                    if (x == 0) {
+                        int i = 0;
+                        XWPFTableRow headerRow = tab.getRow(0);
+                        for(Object key : no.keySet()) {
+                            if (i == 0) {
+                                XWPFRun r = headerRow.getCell(i).addParagraph().createRun();
+                                r.setBold(true);
+                                r.setText(key.toString());   
+                            }
+                            else {
+                                XWPFRun r = headerRow.addNewTableCell().addParagraph().createRun();
+                                r.setBold(true);
+                                r.setText(key.toString());
+                            }
+                            i++;
+                        }
+                    }
+
+                    XWPFTableRow tableRow = tab.createRow();
+                    for(int y = 0; y < numberColumns; y++) {
+                        tableRow.getCell(y).setText(no.get(no.keySet().toArray()[y]).toString());
+                    }
+                }
+            }
+        }
     }
 
     @JSFunction
