@@ -258,7 +258,7 @@ public class DOC extends ScriptableObject {
     }
 
     @JSFunction
-    public void addNumbering(int level, int initialVal, boolean isBullet, NativeArray noArray) {
+    public void writeNumbering(int level, int initialVal, boolean isBullet, NativeArray noArray) {
         CTAbstractNum cTAbstractNum = CTAbstractNum.Factory.newInstance();
         cTAbstractNum.setAbstractNumId(BigInteger.valueOf(initialVal -1));
 
@@ -286,17 +286,6 @@ public class DOC extends ScriptableObject {
             run = paragraph.createRun();
             run.setText((String) no); 
         }
-    }
-
-    @JSFunction
-    public Object addListStyle(int level, int initialVal) {
-        CTAbstractNum cTAbstractNum = CTAbstractNum.Factory.newInstance();
-        cTAbstractNum.setAbstractNumId(BigInteger.valueOf(initialVal));
-        CTLvl cTLvl = cTAbstractNum.addNewLvl();
-        cTLvl.addNewNumFmt().setVal(STNumberFormat.BULLET);
-        cTLvl.addNewLvlText().setVal("•");
-
-        return cTLvl;
     }
 
     @JSFunction
