@@ -7,27 +7,34 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 
 import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
 
+import org.apache.poi.xwpf.usermodel.XWPFAbstractNum;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFNumbering;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFStyle;
 import org.apache.poi.xwpf.usermodel.XWPFStyles;
+import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTFonts;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTAbstractNum;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTColor;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDecimalNumber;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTHpsMeasure;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTLvl;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTOnOff;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTString;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTStyle;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STNumberFormat;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STStyleType;
 
 /**
@@ -88,7 +95,7 @@ public class DOC extends ScriptableObject {
     @JSFunction
     public void close() throws IOException {
         doc.close();
-        //((InputStream) istream).close();
+        // ((InputStream) istream).close();
     }
 
     @JSFunction
@@ -119,7 +126,7 @@ public class DOC extends ScriptableObject {
         out.close();
     }
 
-    //doc.getDocument().getProperties().getCoreProperties().getCreator()
+    // doc.getDocument().getProperties().getCoreProperties().getCreator()
     protected byte[] hexToBytes(String hexString) {
         HexBinaryAdapter adapter = new HexBinaryAdapter();
         byte[] bytes = adapter.unmarshal(hexString);
@@ -135,6 +142,48 @@ public class DOC extends ScriptableObject {
         this.addCustomHeadingStyle(styles, "Heading3", 3, 24, "1F4D78", "+Headings", false, false);
         this.addCustomHeadingStyle(styles, "Heading4", 4, 22, "2E74B5", "+Headings", true, false);
         this.addCustomHeadingStyle(styles, "Heading5", 5, 22, "2E74B5", "+Headings", false, false);
+    }
+
+    @JSFunction
+    public void addNumbering(int level, int initialVal, boolean isBullet, NativeArray noArray) {
+        CTAbstractNum cTAbstractNum = CTAbstractNum.Factory.newInstance();
+        cTAbstractNum.setAbstractNumId(BigInteger.valueOf(initialVal -1));
+
+        CTLvl cTLvl = cTAbstractNum.addNewLvl();
+        if (isBullet) {
+            cTLvl.addNewNumFmt().setVal(STNumberFormat.BULLET);
+            cTLvl.addNewLvlText().setVal("\u2022");
+        } else {
+            cTLvl.addNewNumFmt().setVal(STNumberFormat.DECIMAL);
+            cTLvl.addNewLvlText().setVal("%1.");
+            cTLvl.addNewStart().setVal(BigInteger.valueOf(initialVal));
+        }
+
+        XWPFAbstractNum abstractNum = new XWPFAbstractNum(cTAbstractNum);
+        XWPFNumbering numbering = this.doc.createNumbering();
+        BigInteger abstractNumID = numbering.addAbstractNum(abstractNum);
+        BigInteger numID = numbering.addNum(abstractNumID);
+
+        XWPFParagraph paragraph = null;
+        XWPFRun run = null;
+        for(Object no : noArray) {
+            paragraph = this.doc.createParagraph();
+            paragraph.setNumID(numID);
+            // para.getCTP().getPPr().getNumPr().addNewIlvl().setVal(BigInteger.valueOf(1));
+            run = paragraph.createRun();
+            run.setText((String) no); 
+        }
+    }
+
+    @JSFunction
+    public Object addListStyle(int level, int initialVal) {
+        CTAbstractNum cTAbstractNum = CTAbstractNum.Factory.newInstance();
+        cTAbstractNum.setAbstractNumId(BigInteger.valueOf(initialVal));
+        CTLvl cTLvl = cTAbstractNum.addNewLvl();
+        cTLvl.addNewNumFmt().setVal(STNumberFormat.BULLET);
+        cTLvl.addNewLvlText().setVal("•");
+
+        return cTLvl;
     }
 
     @JSFunction
