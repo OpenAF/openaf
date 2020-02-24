@@ -1871,7 +1871,26 @@ function load(aScript, loadPrecompiled) {
 	var error = "";
 	var fn = (aS, aLevel) => {
 		var res = false;
-		if (aScript.indexOf("::") < 0 && (loadPrecompiled || __preCompileLevel >= aLevel)) res = loadCompiled(aS);
+		if (aScript.indexOf("::") < 0 && (loadPrecompiled || __preCompileLevel >= aLevel)) {
+			try {
+				var cl = io.fileInfo(aS).filename.replace(/\.js$/, "_js");
+				res = loadCompiled(aS);
+				if (isDef(global["__" + cl]) && isFunction(global["__" + cl])) {
+					var exp = {}, mod = { id: cl, uri: cl, exports: exp };
+					global["__" + cl].call({}, load, exp, mod);
+					global[io.fileInfo(aS).filename.replace(/\.js$/, "")] = exp;
+					return aS;
+				}
+			} catch(e) {
+				if (e.message == "\"exports\" is not defined.") {
+					var exp = requireCompiled(aS);
+					global[io.fileInfo(aS).filename.replace(/\.js$/, "")] = exp;
+					return aS;
+				} else {
+					throw e;
+				}
+			}
+		}
 		if (!res) {
 			try { 
 				af.load(aS);
@@ -1988,6 +2007,13 @@ function load(aScript, loadPrecompiled) {
 	*/
 }
 
+/**
+ * <odoc>
+ * <key>requireCompiled(aScript, dontCompile, dontLoad) : Object</key>
+ * Loads aScript, through require, previously compile or it will be compiled if (dontCompile is not true).
+ * IF dontLoad = true the module exports won't be returned.
+ * </odoc>
+ */
 function requireCompiled(aScript, dontCompile, dontLoad) {
 	var res = false, cl, clFile, clFilepath;
 	if (io.fileExists(aScript)) {
@@ -2006,7 +2032,7 @@ function requireCompiled(aScript, dontCompile, dontLoad) {
 						af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + io.readFileString(info.canonicalPath) + "}", path);
 					}
 				}
-                aScript = clFile;
+                aScript = clFilepath;
 			}
 			if (!dontLoad && aScript.endsWith(".class")) {
                 try {
@@ -2057,7 +2083,7 @@ function loadCompiled(aScript, dontCompile, dontLoad) {
 						af.compileToClasses(cl, io.readFileString(info.canonicalPath), path);
 					}
 				}
-                aScript = clFile;
+                aScript = clFilepath;
 			}
 			if (!dontLoad && aScript.endsWith(".class")) {
                 try {
