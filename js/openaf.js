@@ -6923,13 +6923,26 @@ const $sh = function(aString) {
 	/**
 	 * <odoc>
 	 * <key>$sh.cb(aCallbackFunc) : $sh</key>
-	 * When executing aCmd (with .exec) use aCallbackFunc function.
+	 * When executing aCmd (with .get) use aCallbackFunc function.
 	 * </odoc>
 	 */
 	__sh.prototype.cb = function(aCallback) {
         this.fcb = () => { return aCallback; };
         return this;
     };
+
+	/**
+	 * <odoc>
+	 * <key>$sh.prefix(aPrefix) : $sh</key>
+	 * When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefix.
+	 * </odoc>
+	 */
+	__sh.prototype.prefix = function(aPrefix) {
+		ow.loadFormat();
+		aPrefix = _$(aPrefix, "prefix").isString().default("sh");
+		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix) };
+		return this;
+	};
 
 	/**
 	 * <odoc>
