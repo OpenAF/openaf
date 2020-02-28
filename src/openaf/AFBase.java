@@ -394,7 +394,7 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc) : String/Map</key>
+	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding) : String/Map</key>
 	 * Tries to execute commandArguments (either a String or an array of strings) in the operating system. Optionally
 	 * aStdIn can be provided, aTimeout can be defined for the execution and if shouldInheritIO is true the stdout, stderr and stdin
 	 * will be inherit from OpenAF. If shouldInheritIO is not defined or false it will return the stdout of the command execution.
@@ -409,8 +409,14 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback) throws IOException, InterruptedException {
+	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding) throws IOException, InterruptedException {
 		ProcessBuilder pb = null;
+		Charset Cencoding = null;
+
+		if (encoding instanceof String) {
+			Cencoding = Charset.forName((String) encoding);
+		}
+
 		if (s instanceof NativeArray) {
 			ArrayList<String> al = new ArrayList<String>();
 			for(Object o : ((NativeArray) s).toArray()) {
@@ -470,8 +476,8 @@ public class AFBase extends ScriptableObject {
 		try {
 			if (timeout == null || timeout instanceof org.mozilla.javascript.Undefined) {
 				try {
-					if (is != null   ) lines = IOUtils.toString(is, (Charset) null);
-					if (iserr != null) linesErr = IOUtils.toString(iserr, (Charset) null);
+					if (is != null   ) lines = IOUtils.toString(is, Cencoding);
+					if (iserr != null) linesErr = IOUtils.toString(iserr, Cencoding);
 				} catch(Exception e) { }
 				exit = p.waitFor();
 				try { 
@@ -504,8 +510,8 @@ public class AFBase extends ScriptableObject {
 						Thread.currentThread().interrupt();
 					} finally {
 						try {
-							if (is != null    && !p.isAlive()) lines = IOUtils.toString(is, (Charset) null);
-							if (iserr != null && !p.isAlive()) linesErr = IOUtils.toString(iserr, (Charset) null);
+							if (is != null    && !p.isAlive()) lines = IOUtils.toString(is, Cencoding);
+							if (iserr != null && !p.isAlive()) linesErr = IOUtils.toString(iserr, Cencoding);
 						} catch(Exception e) { }
 						p.destroy();
 						p.destroyForcibly();

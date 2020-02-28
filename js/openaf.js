@@ -4225,7 +4225,7 @@ function checkLatestVersion() {
 
 /**
  * <odoc>
- * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc) : String</key>
+ * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding) : String</key>
  * Tries to execute commandArguments (either a String or an array of strings) in the operating system as a shortcut for 
  * AF.sh except that it will run them through the OS shell. Optionally aStdIn can be provided, aTimeout can be defined 
  * for the execution and if shouldInheritIO is true the stdout, stderr and stdin will be inherit from OpenAF. If 
@@ -4237,15 +4237,15 @@ function checkLatestVersion() {
  * stream, a error stream and an input stream (see help af.sh for an example). If defined the stdout and stderr won't be available for the returnMap if true.
  * </odoc>
  */
-function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc) {
+function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding) {
 	if (typeof commandArguments == "string") {
 		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
-			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc);
+			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding);
 		} else {
-			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc);
+			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding);
 		}
 	} else {
-		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc);
+		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding);
 	}
 }
 
@@ -6894,9 +6894,22 @@ const $sh = function(aString) {
         this.q = [];
         this.wd = void 0;
         this.fcb = void 0;
-        this.t = void 0;
+		this.t = void 0;
+		ow.loadFormat();
+		if (ow.format.isWindows()) this.encoding = "cp850"; else this.encoding = void 0;
         if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
     };
+
+	/**
+	 * <odoc>
+	 * <key>$sh.useEncoding(aEncoding) : $sh</key>
+	 * Forces the aEncoding to be used.
+	 * </odoc>
+	 */
+	__sh.prototype.useEncoding = function(aEncoding) {
+		this.encoding = aEncoding;
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -6938,9 +6951,8 @@ const $sh = function(aString) {
 	 * </odoc>
 	 */
 	__sh.prototype.prefix = function(aPrefix) {
-		ow.loadFormat();
 		aPrefix = _$(aPrefix, "prefix").isString().default("sh");
-		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix) };
+		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding) };
 		return this;
 	};
 
@@ -7021,7 +7033,7 @@ const $sh = function(aString) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
+				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
@@ -7069,7 +7081,7 @@ const $sh = function(aString) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
+                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);

@@ -479,37 +479,48 @@ OpenWrap.format.prototype.streamSHLog = function(aFunc) {
 
 /**
  * <odoc>
- * <key>ow.format.streamSH(aFunction) : Function</key>
+ * <key>ow.format.streamSH(aFunction, anEncoding) : Function</key>
  * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will call aFunction for each line
  * and used the returned string with print and printErr.
  * </odoc>
  */
-OpenWrap.format.prototype.streamSH = function(aFunc) {
+OpenWrap.format.prototype.streamSH = function(aFunc, anEncoding) {
 	if (isUnDef(aFunc)) aFunc = (f) => { return f; };
-	return function(o, e) {
-		$doWait(
-			$doAll([
-				$do(() => { ioStreamReadLines(o, (f) => { print(aFunc(String(f))) }, void 0, false); }), 
-				$do(() => { ioStreamReadLines(e, (f) => { printErr(aFunc(String(f))) }, void 0, false); })
-			])
-		);
-	};
+	if (isUnDef(anEncoding)) {
+		return function(o, e) {
+			$doWait(
+				$doAll([
+					$do(() => { ioStreamReadLines(o, (f) => { print(aFunc(String(f))) }, void 0, false); }), 
+					$do(() => { ioStreamReadLines(e, (f) => { printErr(aFunc(String(f))) }, void 0, false); })
+				])
+			);
+		};
+	} else {
+		return function(o, e) {
+			$doWait(
+				$doAll([
+					$do(() => { ioStreamReadLines(o, (f) => { print(aFunc(af.toEncoding(String(f), anEncoding))) }, void 0, false); }), 
+					$do(() => { ioStreamReadLines(e, (f) => { printErr(aFunc(af.toEncoding(String(f), anEncoding))) }, void 0, false); })
+				])
+			);
+		};
+	}
 };
 
 /**
  * <odoc>
- * <key>ow.format.streamSHPrefix(aPrefix) : Function</key>
+ * <key>ow.format.streamSHPrefix(aPrefix, anEncoding) : Function</key>
  * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will prefix each line with aPrefix
  * and used the returned string with print and printErr.
  * </odoc>
  */
-OpenWrap.format.prototype.streamSHPrefix = function(aPrefix) {
+OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding) {
 	if (isUnDef(aPrefix)) aPrefix = "";
 	return function(o, e) {
 		$doWait(
 			$doAll([
-				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); printnl(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ")); print(String(f)); ansiStop(); }, void 0, false); }), 
-				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErrnl(ansiColor("RED", "[" + aPrefix + "] ")); printErr(String(f)); ansiStop(); }, void 0, false); })
+				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); print(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, void 0, false, void 0); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErr(ansiColor("RED", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, void 0, false, anEncoding); })
 			])
 		);
 	};
