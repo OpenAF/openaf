@@ -5468,7 +5468,23 @@ function deleteFromArray(anArray, anIndex) {
  * </odoc>
  */
 function oJobRunFile(aYAMLFile, args, aId, aOptionsMap) {
-	ow.loadOJob().runFile(aYAMLFile, args, aId, void 0, aOptionsMap);
+	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
+	oo.runFile(aYAMLFile, args, aId, void 0, aOptionsMap);
+}
+
+/**
+ * <odoc>
+ * <key>oJobRunFileAsync(aFile, args, aId, aOptionsMap) : oPromise</key>
+ * Runs a oJob aFile async with the provided args (arguments).
+ * Optionally you can provide aId to segment these specific jobs.
+ * Returns the corresponding promise.
+ * </odoc>
+ */
+function oJobRunFileAsync(aYAMLFile, args, aId, aOptionsMap) {
+	return $do(() => {
+		var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
+		return oo.runFile(aYAMLFile, args, aId, void 0, aOptionsMap);
+	});
 }
 
 /**
@@ -5479,9 +5495,10 @@ function oJobRunFile(aYAMLFile, args, aId, aOptionsMap) {
  * </odoc>
  */
 function oJobRun(aJson, args, aId) {
-	var s = ow.loadOJob().loadJSON(aJson);
-	ow.oJob.load(s.jobs, s.todo, s.ojob, args, aId, s.init);
-	ow.oJob.start(args, true, aId);
+	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
+	var s = oo.loadJSON(aJson);
+	oo.load(s.jobs, s.todo, s.ojob, args, aId, s.init);
+	oo.start(args, true, aId);
 }
 
 /**
@@ -5493,17 +5510,17 @@ function oJobRun(aJson, args, aId) {
  * </odoc>
  */
 function oJobRunJob(aJob, args, aId) {
-	ow.loadOJob();
+	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
 	if (isString(aJob)) {
 		if (isUnDef(aId)) aId = "";
-		var job = ow.oJob.getJobsCh().get({ name: aJob });
+		var job = oo.getJobsCh().get({ name: aJob });
 		if (isDef(job)) {
-			return ow.oJob.runJob(job, args, aId);
+			return oo.runJob(job, args, aId);
 		} else {
 			throw "Job '" + aJob + "' not found.";
 		}
 	} else {
-		return ow.oJob.runJob(aJob, args, aId);
+		return oo.runJob(aJob, args, aId);
 	}
 }
 

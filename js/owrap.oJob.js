@@ -83,7 +83,7 @@ OpenWrap.oJob = function(isNonLocal) {
 
 	//$doWait($doAll(this.__promises));
 
-	return ow.oJob;
+	return this;
 };
 
 /**
@@ -341,48 +341,52 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 	if (!isObject(aJSON)) return {};
 	var res = aJSON;
 
-	if (isDef(res.ojob.opacks) && isArray(res.ojob.opacks)) {
-		for(var ii in res.ojob.opacks) {
-			if (isString(res.ojob.opacks[ii])) includeOPack(res.ojob.opacks[ii]);
-			if (isMap(res.ojob.opacks[ii])) includeOPack(Object.keys(res.ojob.opacks[ii])[0], res.ojob.opacks[ii][Object.keys(res.ojob.opacks[ii])[0]]);
-		}
-	}
-
-	if (isDef(res.ojob.loadLibs) && isArray(res.ojob.loadLibs)) {
-		for(var ii in res.ojob.loadLibs) {
-			if (isString(res.ojob.loadLibs[ii])) {
-				loadLib(res.ojob.loadLibs[ii]);
+	if (isDef(res)) {
+		if (isDef(res.ojob)) {
+			if (isDef(res.ojob.opacks) && isArray(res.ojob.opacks)) {
+				for(var ii in res.ojob.opacks) {
+					if (isString(res.ojob.opacks[ii])) includeOPack(res.ojob.opacks[ii]);
+					if (isMap(res.ojob.opacks[ii])) includeOPack(Object.keys(res.ojob.opacks[ii])[0], res.ojob.opacks[ii][Object.keys(res.ojob.opacks[ii])[0]]);
+				}
 			}
-		}
-	}
-
-	if (isDef(res.ojob.loads) && isArray(res.ojob.loads)) {
-		for(var ii in res.ojob.loads) {
-			if (isString(res.ojob.loads[ii])) {
-				loadLib(res.ojob.loads[ii]);
+		
+			if (isDef(res.ojob.loadLibs) && isArray(res.ojob.loadLibs)) {
+				for(var ii in res.ojob.loadLibs) {
+					if (isString(res.ojob.loadLibs[ii])) {
+						loadLib(res.ojob.loadLibs[ii]);
+					}
+				}
 			}
-		}
-	}
-
-	if (isDef(res.include) && isArray(res.include)) {
-		var loaded = {};
-		for (var i in res.include) {
-			if (isUnDef(loaded[res.include[i]])) {
-				loaded[res.include[i]] = 1;
-				if (res.include[i].match(/\.ya?ml$/i)) {
-					res = this.__merge(this.__loadFile(res.include[i]), res);
-				} else {
-					if (res.include[i].match(/\.js$/i)) load(res.include[i]);
+		
+			if (isDef(res.ojob.loads) && isArray(res.ojob.loads)) {
+				for(var ii in res.ojob.loads) {
+					if (isString(res.ojob.loads[ii])) {
+						loadLib(res.ojob.loads[ii]);
+					}
 				}
 			}
 		}
-	}
-	
-	if (!(isArray(res.ojob)) && !(isArray(res.todo))) {
-		throw("ojob and todo entries need to be defined as arrays.");
-	}
 
-	if (isUnDef(res.ojob)) res.ojob = {};
+		if (isDef(res.include) && isArray(res.include)) {
+			var loaded = {};
+			for (var i in res.include) {
+				if (isUnDef(loaded[res.include[i]])) {
+					loaded[res.include[i]] = 1;
+					if (res.include[i].match(/\.ya?ml$/i)) {
+						res = this.__merge(this.__loadFile(res.include[i]), res);
+					} else {
+						if (res.include[i].match(/\.js$/i)) load(res.include[i]);
+					}
+				}
+			}
+		}
+		
+		if (!(isArray(res.ojob)) && !(isArray(res.todo))) {
+			throw("ojob and todo entries need to be defined as arrays.");
+		}
+	
+		if (isUnDef(res.ojob)) res.ojob = {};
+	}
 
 	return res;
 };
@@ -1144,10 +1148,10 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 					} 
 				} catch(e) { logErr(e); if (isDef(e.javaException)) e.javaException.printStackTrace(); }
 				if (isDef(parent.__ojob) && parent.__ojob.daemon == true) {
-					sleep((isDef(parent.__ojob.timeInterval) ? parent.__ojob.timeInterval : 50));
+					sleep((isDef(parent.__ojob.timeInterval) ? parent.__ojob.timeInterval : 50), true);
 					parent.__periodicFunc();
 				} else {
-					sleep(50);
+					sleep(50, true);
 				}
 			}
 		});
