@@ -1871,7 +1871,7 @@ function load(aScript, loadPrecompiled) {
 	var error = "";
 	var fn = (aS, aLevel) => {
 		var res = false;
-		if (aScript.indexOf("::") < 0 && (loadPrecompiled || __preCompileLevel >= aLevel)) {
+		if (aS.indexOf("::") < 0 && (loadPrecompiled || __preCompileLevel >= aLevel)) {
 			try {
 				var cl = io.fileInfo(aS).filename.replace(/\.js$/, "_js");
 				res = loadCompiled(aS);
@@ -1883,6 +1883,7 @@ function load(aScript, loadPrecompiled) {
 				}
 			} catch(e) {
 				if (e.message == "\"exports\" is not defined.") {
+					io.rm(io.fileInfo(aS).canonicalPath.substr(0, io.fileInfo(aS).canonicalPath.length - io.fileInfo(aS).filename.length) + ".openaf_precompiled");
 					var exp = requireCompiled(aS);
 					global[io.fileInfo(aS).filename.replace(/\.js$/, "")] = exp;
 					return aS;
@@ -1911,7 +1912,7 @@ function load(aScript, loadPrecompiled) {
 		return fn(aScript, 3);
 	} else {
 		var paths = getOPackPaths();
-		paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
+		paths["__default"] = String(java.lang.System.getProperty("java.class.path") + "::js");
 
 		var error;
 		for(let i in paths) {
