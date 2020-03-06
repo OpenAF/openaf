@@ -66,6 +66,7 @@ for(var i in homeServerURLs) {
 				log("Downloading it from " + updateURL(i, latestVersion) + ". This may take some seconds.");
 			}
 			var down = new HTTP(updateURL(i, latestVersion), "GET", "", {}, true, 5000);
+			var down2 = new HTTP(updateURL(i, latestVersion) + ".repacked", "GET", "", {}, true, 5000);
 			log("Processing download.");
 			//var zip = new ZIP();
 			//zip.load(down.responseBytes());
@@ -75,7 +76,7 @@ for(var i in homeServerURLs) {
 			log("Upgrading openaf.jar");
 			try {
 				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp2"), down.responseBytes());
-				$rest().get2File(classPath.replace(/openaf.jar/, "openaf.jar.tmp"), updateURL(i, latestVersion) + ".repacked");
+				io.writeFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp"), down2.responseBytes());
 				updated = true;
 			} catch(e) {
 				if(!e.message.match(/NoClassDefFoundError/)) {
