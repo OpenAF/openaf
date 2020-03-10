@@ -4,18 +4,20 @@
 
 OpenWrap.template = function() {
 	//loadHandlebars();
-	if (isUnDef(this.hb)) {
+	//if (isUnDef(ow.template.hb)) {
 		//this.hb = getOpenAFJar() + "::js/handlebars.js";
 		//require(this.hb);
-		loadCompiledRequire("handlebars_js");
-		this.__helpers = {};
-		this.__partials = {};
-	}
+		//loadCompiledRequire("handlebars_js");
+		//ow.template.__helpers = {};
+		//ow.template.__partials = {};
+	//}
 	return ow.template;
 };
 
 OpenWrap.template.prototype.__requireHB = function() {
 	var hb = loadCompiledRequire("handlebars_js");
+	ow.template.__helpers = {};
+	ow.template.__partials = {};
 	this.__addHelpers(hb);
 	this.__addPartials(hb);
 	return hb;
@@ -276,7 +278,7 @@ OpenWrap.template.prototype.getTemplate = function(aSource) {
  * </odoc>
  */
 OpenWrap.template.prototype.parse = function(aSource, someData) {
-	someData = (isUndefined(someData)) ? this : someData;
+	someData = (isUnDef(someData)) ? this : someData;
 	var res;
 	var e;
 	var parent = this;
@@ -296,7 +298,7 @@ OpenWrap.template.prototype.parse = function(aSource, someData) {
  * </odoc>
  */
 OpenWrap.template.prototype.parseHBS = function(aFilename, someData) {
-	someData = (isUndefined(someData)) ? this : someData;
+	someData = (isUnDef(someData)) ? this : someData;
 	var res;
 	var e;
 	var parent = this;
@@ -508,6 +510,41 @@ OpenWrap.template.prototype.addInLineCSS2HTML = function(aHTML, aCustomCSSMap) {
 	});
 
 	return aHTML;
+};
+
+OpenWrap.template.prototype.html = {
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.thinFontCSS(aSize) : String</key>
+	 * Returns a CSS string for a thin font with the provided aSize (in points).
+	 * </odoc>
+	 */
+	thinFontCSS: function(aSize) {
+		aSize = _$(aSize).isNumber().default(8);
+		return 'font-family: -apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Oxygen-Sans,Ubuntu,Cantarell,\'Helvetica Neue\',sans-serif; font-size: ' + aSize + 'pt; font-weight: 200; line-height: 110%;';
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.thinFontSpan(aTxt, aSize, aExtra) : String</key>
+	 * Returns a HTML span part to write aTxt with the provided aSize (in points).
+	 * Optionally aExtra css can be added.
+	 * </odoc>
+	 */
+	thinFontSpan: function(aTxt, aSize, aExtra) {
+		aExtra = _$(aExtra).isString().default("");
+		return '<span style="' + this.thinFontCSS(aSize) + aExtra + '">' + aTxt + '</span>';
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.thinFontDiv(aTxt, aSize, aExtra) : String</key>
+	 * Returns a HTML div part to write aTxt with the provided aSize (in points).
+	 * Optionally aExtra css can be added.
+	 * </odoc>
+	 */
+	thinFontDiv: function(aTxt, aSize, aExtra) {
+		aExtra = _$(aExtra).isString().default("");
+		return '<div style="' + this.thinFontCSS(aSize) + aExtra + '">' + aTxt + '</div>';
+	}
 };
 
 OpenWrap.template.prototype.Handlebars = function() {

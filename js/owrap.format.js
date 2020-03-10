@@ -16,7 +16,7 @@ OpenWrap.format.prototype.string = {
 	 * For example: ow.format.string.unicode(0x1F37A)
 	 * </odoc>
 	 **/
-        unicode: code => {
+    unicode: code => {
 	    var str = "";
 	    if (code > 0xFFFF) {
 	       var pair = ow.format.string.getSurrogatePair(code);
