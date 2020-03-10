@@ -16,8 +16,6 @@ OpenWrap.template = function() {
 
 OpenWrap.template.prototype.__requireHB = function() {
 	var hb = loadCompiledRequire("handlebars_js");
-	ow.template.__helpers = {};
-	ow.template.__partials = {};
 	this.__addHelpers(hb);
 	this.__addPartials(hb);
 	return hb;
@@ -32,6 +30,8 @@ OpenWrap.template.prototype.__requireHB = function() {
  * </odoc>
  */
 OpenWrap.template.prototype.addHelpers = function(aPrefix, aObject) {
+	this.__helpers = _$(this.__helpers).default({});
+
 	var m = Object.keys(aObject.constructor.prototype);
 	if (m.length < 1) m = (isDef(aObject.prototype)) ? Object.keys(aObject.prototype) : Object.keys(aObject);
 	m.forEach((aMethod) => {
@@ -45,6 +45,7 @@ OpenWrap.template.prototype.addHelpers = function(aPrefix, aObject) {
 };
 
 OpenWrap.template.prototype.__addHelpers = function(aHB) {
+	this.__helpers = _$(this.__helpers).default({});
 	for(var i in this.__helpers) {
 		aHB.registerHelper(i, this.__helpers[i]);
 	}
@@ -208,6 +209,9 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
  * </odoc>
  */
 OpenWrap.template.prototype.addHelper = function(aHelperName, aFunction) {
+	this.__helpers = _$(this.__helpers).default({});
+	if (isUnDef(this.hb)) this.__requireHB();
+
 	this.__helpers[aHelperName] = aFunction;
 	//require(this.hb).registerHelper(aHelperName, aFunction);
 }
@@ -219,6 +223,9 @@ OpenWrap.template.prototype.addHelper = function(aHelperName, aFunction) {
  * </odoc>
  */
 OpenWrap.template.prototype.delHelper = function(aHelperName) {
+	this.__helpers = _$(this.__helpers).default({});
+	if (isUnDef(this.hb)) this.__requireHB();
+	
 	delete this.__helpers[aHelperName];
 	//require(this.hb).unregisterHelper(aHelperName);
 };
@@ -230,11 +237,13 @@ OpenWrap.template.prototype.delHelper = function(aHelperName) {
  * </odoc>
  */
 OpenWrap.template.prototype.addPartial = function(aPartial, aSource) {
+	this.__partials = _$(this.__partials).default({});
 	this.__partials[aPartial] = aSource;
 	//require(this.hb).registerPartial(aPartial, aSource);
 };
 
 OpenWrap.template.prototype.__addPartials = function(aHB) {
+	this.__partials = _$(this.__partials).default({});
 	for(var i in this.__partials) {
 		aHB.registerPartial(i, this.__partials[i]);
 	}
@@ -309,7 +318,7 @@ OpenWrap.template.prototype.parseHBS = function(aFilename, someData) {
 	//}, ow.loadTemplate());
 	if (isDef(e)) throw e;
 	return res;
-}
+};
 
 /**
  * <odoc>
