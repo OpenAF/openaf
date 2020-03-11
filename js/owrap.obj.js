@@ -2589,6 +2589,47 @@ OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) 
 	}
 };
 
+/**
+ * <odoc>
+ * <key>ow.obj.schemaGenerator(aJson, aId) : Map</key>
+ * Given aJson object it tries to return a generated base json-schema (http://json-schema.org/understanding-json-schema/index.html)
+ * with an optional aId.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId) {
+    aId = _$(aId, "id").isString().default("https://example.com/schema.json");
+    var r = {
+        "$id": aId,
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "required": []
+    };
+
+    var fn = function(j) {
+        var ms = {};
+
+        if (isMap(j)) {
+            ms.type = "object";
+            var ks = Object.keys(j);
+            ms.properties = {};
+            for(var ii in ks) {
+                ms.properties[ks[ii]] = fn(j[ks[ii]]);
+            }
+        }
+        if (isArray(j)) {
+            ms.type = "array";
+            if (j.length > 0) ms.items = fn(j[0]);
+        }
+        if (isString(j)) ms.type = "string";
+        if (isBoolean(j)) ms.type = "boolean";
+        if (isNumber(j)) ms.type = "number";
+        if (isNull(j)) ms.type = "null";
+
+        return ms;
+    };
+
+    return merge(r, fn(aJson));
+}
+
 OpenWrap.obj.prototype.socket = {
 	/**
 	 * <odoc>
