@@ -54,6 +54,15 @@
 			"deps": []
 		},
 		{
+			"description": "ajv",
+			"path": ["js/ajv.js"],
+			"version": "6.12.0",
+			"changes": false,
+			"type": ["js"],
+			"license": "https://raw.githubusercontent.com/epoberezkin/ajv/master/LICENSE",
+			"deps": []
+		},
+		{
 			"description": "JMESPath",
 			"path": ["js/jmespath.js"],
 			"version": "0.15.0",
