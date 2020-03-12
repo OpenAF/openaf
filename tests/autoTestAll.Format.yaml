@@ -117,6 +117,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testLDAPDateConversions;
 
+   - name: Format::Escape/Unescape HTML4
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testHTML4;
+
    - name: Format::Cron How Many Ago
      from: Format::Init
      to  : oJob Test
@@ -144,3 +151,4 @@ todo:
    - Format::Conversions
    - Format::LSH
    - Format::Cron How Many Ago
+   - Format::Escape/Unescape HTML4

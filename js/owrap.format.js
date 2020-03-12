@@ -1187,6 +1187,26 @@ OpenWrap.format.prototype.escapeHTML = function(string) {
 
 /**
  * <odoc>
+ * <key>ow.format.escapeHTML4(aString) : String</key>
+ * Uses Apache Commons Lang escape HTML4 functionality to convert aString into HTML4 entities where needed.
+ * </odoc>
+ */
+OpenWrap.format.prototype.escapeHTML4 = function(string) {
+	return String(Packages.org.apache.commons.lang3.StringEscapeUtils.escapeHtml4(string));
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.unescapeHTML4(aString) : String</key>
+ * Uses Apache Commons Lang unescape HTML4 functionality to unconvert aString with HTML4 entities to the original string
+ * </odoc>
+ */
+OpenWrap.format.prototype.unescapeHTML4 = function(string) {
+	return String(Packages.org.apache.commons.lang3.StringEscapeUtils.unescapeHtml4(string));
+};
+
+/**
+ * <odoc>
  * <key>ow.format.transposeArrayLines(anLineArray) : Array</key>
  * Given anLineArray transposes into a new array of lines. 
  * </odoc>

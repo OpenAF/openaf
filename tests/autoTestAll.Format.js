@@ -78,6 +78,12 @@
         ow.test.assert(ow.format.fromBase36(ow.format.toBase36(12345)), 12345, "Problem with conversion to base36");
     };
 
+    exports.testHTML4 = function() {
+        var testString = "This is áàç test with ã ê";
+
+        ow.test.assert(ow.format.unescapeHTML4(ow.format.escapeHTML4(testString)), testString, "Problem with escape/unescape HTML4");
+    };
+
     exports.testLSH = function() {
         var s1 = repeat(50, "This is a sample text to test this functionality. ");
         var s2 = repeat(50, "USA means United States of America. ");
