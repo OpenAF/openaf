@@ -2618,17 +2618,23 @@ OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId) {
         if (isArray(j)) {
             ms.type = "array";
             if (j.length > 0) ms.items = fn(j[0]);
-        }
-        if (isString(j)) ms.type = "string";
-        if (isBoolean(j)) ms.type = "boolean";
-        if (isNumber(j)) ms.type = "number";
-        if (isNull(j)) ms.type = "null";
+		}
+		if (isDate(j) || (isString(j) && !isNaN(new Date(j)))) {
+			ms.type = "string";
+			ms.format = "date-time";
+		}
+		if (isUnDef(ms.type)) {
+			if (isString(j)) ms.type = "string";
+			if (isBoolean(j)) ms.type = "boolean";
+			if (isNumber(j)) ms.type = "number";
+			if (isNull(j)) ms.type = "null";
+		}
 
         return ms;
     };
 
-    return merge(r, fn(aJson));
-}
+	return merge(r, fn(aJson));
+};
 
 OpenWrap.obj.prototype.socket = {
 	/**
