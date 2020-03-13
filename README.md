@@ -62,6 +62,29 @@ You can use any of the following docker container images
 
 (see more in [openaf-dockers](https://github.com/OpenAF/openaf-dockers))
 
+# How to run a script
+
+## How to run a "Hello World" script
+
+| Step | Instruction | Sample |
+|:----:|-------------|--------|
+| 1 | Create a "hello.js" file | ````print("Hello World!");```` |
+| 2 | Execute on the same folder as the "hello.js" file | ````$ openaf -f hello.js```` |
+
+## How to run in-line code
+
+### Windows
+
+````sh
+PS > openaf -c "print('Hello World!');"
+````
+
+### Unix
+
+````sh
+$ openaf -c 'print("Hello World!");'
+````
+
 ## Automatic update
 
 ````bash
