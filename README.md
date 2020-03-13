@@ -1,4 +1,4 @@
-# OpenAF <a href="/"><img align="right" src="images/openaf_small.png"></a>
+# OpenAF
 
 ## Installing
 
@@ -9,10 +9,10 @@ On an empty folder:
 | OS | Command/Instructions |
 |----|----------------------|
 | **Windows** | Download and execute:<br/> https://openaf.io/win64/install.bat |
-| **Mac** | Execute on a Terminal:<br/> wget -O - https://openaf.io/mac64/install.sh \| sh |
-| **Unix x86** | Execute on a shell:<br/> wget -O - https://openaf.io/unix64/install.sh \| sh|
-| **Unix arm32** | Execute on a shell:<br/> wget -O - https://openaf.io/arm32/install.sh \| sh |
-| **Unix arm64** | Execute on a shell:<br/> wget -O - https://openaf.io/arm64/install.sh \| sh |
+| **Mac** | Execute on a Terminal:<br/>````wget -O - https://openaf.io/mac64/install.sh \| sh```` |
+| **Unix x86** | Execute on a shell:<br/>````wget -O - https://openaf.io/unix64/install.sh \| sh```` |
+| **Unix arm32** | Execute on a shell:<br/>````wget -O - https://openaf.io/arm32/install.sh \| sh```` |
+| **Unix arm64** | Execute on a shell:<br/>````wget -O - https://openaf.io/arm64/install.sh \| sh````|
 
 ### Docker container
 
