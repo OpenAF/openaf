@@ -22,7 +22,7 @@ Use the docker container:
 docker run -ti openaf/openaf
 ````
 
-([more details](#Docker\ containers))
+(see more in [openaf-dockers](https://github.com/OpenAF/openaf-dockers))
 
 ### Download JAR file
 
@@ -46,21 +46,6 @@ java -jar openaf.jar --install
 * Storage: around 160MB (for installing and updating, runtime can be 64MB)
 
 (storage requirements can be made lower if needed, _tbc_)
-
-### Docker containers
-
-You can use any of the following docker container images
-
-| Description | Docker Pull Command |
-|:----------- |:------------------- |
-| Main openaf **stable** build providing an already installed openaf in /openaf. Updated every day. | ````docker pull openaf/openaf:stable```` |
-| Based on the main openaf/openaf image has as entry point the openaf-console. | ````docker pull openaf/openaf-console```` |
-| Based on the main openaf/openaf image comes with the ojob-common opack pre-installed and running the /openaf/main.yaml ojob. You can customise by copying your main ojob yaml file to /openaf/main.yaml. | ````docker pull openaf/openaf-ojob```` |
-| Main openaf **nightly** build providing an already installed openaf in /openaf. Updated every day. | ````docker pull openaf/openaf:nightly```` |
-| Based on the main openaf/openaf:nightly image has as entry point the openaf-console. | ````docker pull openaf/openaf-console:nightly```` |
-| Based on the main openaf/openaf:nightly image comes with the ojob-common opack pre-installed and running the /openaf/main.yaml ojob. You can customise by copying your main ojob yaml file to /openaf/main.yaml. | ````docker pull openaf/openaf-ojob:nightly```` |
-
-(see more in [openaf-dockers](https://github.com/OpenAF/openaf-dockers))
 
 ## How to run a script
 
