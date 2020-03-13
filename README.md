@@ -62,34 +62,40 @@ You can use any of the following docker container images
 
 (see more in [openaf-dockers](https://github.com/OpenAF/openaf-dockers))
 
-# How to run a script
+## How to run a script
 
-## How to run a "Hello World" script
+### How to run a "Hello World" script
 
 | Step | Instruction | Sample |
 |:----:|-------------|--------|
 | 1 | Create a "hello.js" file | ````print("Hello World!");```` |
 | 2 | Execute on the same folder as the "hello.js" file | ````$ openaf -f hello.js```` |
 
-## How to run in-line code
+### How to run in-line code
 
-### Windows
+#### Windows
 
 ````sh
 PS > openaf -c "print('Hello World!');"
 ````
 
-### Unix
+#### Unix
 
 ````sh
 $ openaf -c 'print("Hello World!");'
 ````
 
-## Automatic update
+## Update and uninstall
+
+### Update
 
 ````bash
 openaf --update
 ````
+
+### Uninstall
+
+Just delete the original empty folder where you executed the install command.
 
 ## Documentation
 
@@ -116,10 +122,6 @@ ojob autoTestAll.yaml
 ````
 
 But you can use a previous stable openaf build if the ow.test and ojob functionality could be broken by your changes.
-
-## Uninstall
-
-Just delete the original empty folder where you executed the install command.
 
 ## Links
 
