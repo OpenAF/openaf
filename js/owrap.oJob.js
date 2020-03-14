@@ -1588,6 +1588,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 	var parent = this;
 	function procJob(aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, jobCatch) {
 		var j = [];
+		if (isString(jobDeps)) jobDeps = [ jobDeps ];
 		jobDeps = _$(jobDeps).isArray().default([]);
 		jobType = _$(jobType).isString().default("simple");
 		jobFunc = _$(jobFunc).default(function() {});
