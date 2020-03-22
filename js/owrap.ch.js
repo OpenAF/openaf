@@ -1200,16 +1200,12 @@ OpenWrap.ch.prototype.__types = {
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
-				url += "/" + aK[this.__channels[aName].idKey];
+				url += "/" + encodeURIComponent(aK[this.__channels[aName].idKey]);
 			} else {
-				if (isDef(aK.key)) url += "/" + aK.key;
+				if (isDef(aK.key)) url += "/" + encodeURIComponent(aK.key);
 			}
 				
 			var parent = this;
-			/*var res = ow.obj.rest.jsonSet(url, {}, aV, function(h) { 
-				if (isDef(parent.__channels[aName].user))
-					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-			});*/
 			var res = $rest({
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
@@ -1284,9 +1280,9 @@ OpenWrap.ch.prototype.__types = {
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
-				url += "/" + aK[this.__channels[aName].idKey];
+				url += "/" + encodeURIComponent(aK[this.__channels[aName].idKey]);
 			} else {
-				if (isDef(aK.key)) url += "/" + aK.key;
+				if (isDef(aK.key)) url += "/" + encodeURIComponent(aK.key);
 			}
 				
 			var parent = this;
@@ -1324,9 +1320,9 @@ OpenWrap.ch.prototype.__types = {
 			url += "/" + this.__channels[aName].idKey;
 			
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
-				url += "/" + aK[this.__channels[aName].idKey];
+				url += "/" + encodeURIComponent(aK[this.__channels[aName].idKey]);
 			} else {
-				if (isDef(aK.key)) url += "/" + aK.key;
+				if (isDef(aK.key)) url += "/" + encodeURIComponent(aK.key);
 			}
 				
 			var parent = this;
