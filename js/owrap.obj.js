@@ -100,13 +100,44 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 			for(var k in ookeys) {
 				values.push(aValue[ookeys[k]]);
 			}
-			return aDB.us("insert into " + aTableName + "(" + okeys + ") values (" + binds.join(",") + ")", values);
+			return aDB.us("insert into " + (caseSensitive ? "\"" + aTableName + "\"" : aTableName) + "(" + okeys + ") values (" + binds.join(",") + ")", values);
 		},
 		useParallel,
 		ctrl
 	);
 	return t.length;
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.fromObj2DBTableCreate(aTableName, aMap, aOverrideMap, enforceCase) : String</key>
+ * Returns a DB table create, for aTableName, from the provided aMap key entries. To override the default field type guessing a aOverrideMap can 
+ * be provided with field entries and the corresponding type as value. Optionally if enforceCase = true table name and fields names will be enforced case
+ * by using double quotes.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMap, aOverrideMap, enforceCase) {
+	aTableName = _$(aTableName, "table name").isString().$_();
+	aMap = _$(aMap, "map").isMap().$_();
+	aOverrideMap = _$(aOverrideMap, "override map").isMap().default({});
+	enforceCase = _$(enforceCase, "enforce case").isBoolean().default(false);
+ 
+	var m = [];
+	var keys = Object.keys(aMap);
+	for(var ii in keys) {
+	   var key = (enforceCase ? "\"" + keys[ii] + "\"" : keys[ii]);
+ 
+	   m.push({
+		  f: key,
+		  s: (isDef(aOverrideMap[key]) ? aOverrideMap[key] : (isNumber(aMap[key]) ? "NUMBER" : "VARCHAR"))
+	   });
+	}
+ 
+	return templify("CREATE TABLE {{{table}}} ({{{fields}}})", { 
+		table: (enforceCase ? "\""+ aTableName + "\"" : aTableName), 
+		fields: (m.map(r => r.f + " " + r.s).join(", ")) 
+	});
+};
 
 /**
  * <odoc>

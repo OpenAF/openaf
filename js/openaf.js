@@ -4006,7 +4006,7 @@ function createDBServer(aFile, aPort, aLogin, aPass) {
  */
 function createDB(aFile, aLogin, aPass) {
 	aFile = _$(aFile).isString().$_("Please provide a filename");
-	return new DB("org.h2.Driver", "jdbc:h2:" + aFile, aLogin, aPass);
+	return new DB("org.h2.Driver", "jdbc:h2:" + io.getCanonicalPath(aFile), aLogin, aPass);
 };
 
 /**
