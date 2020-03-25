@@ -226,6 +226,43 @@ if (!noopacks) {
   });
 }
 
+// Checking opack list
+log("Checking oPacks...");
+ow.loadObj(); 
+loadLodash(); 
+_.uniq(ow.obj.fromObj2Array(getOPackLocalDB(), "path").map(r => { 
+  return { name: r.name, path: r.path } 
+})).map(r => { 
+  if (r.name != "OpenAF" && !io.fileExists(r.path)) { 
+    oPack("remove4db " + r.name); 
+    oPack("add2db " + getOpenAFPath() + r.name);
+  } 
+});
+
+log("Removing old paths...");
+var o = getOPackLocalDB(); 
+var p = {}; 
+Object.keys(o).map(r => { 
+  if (r != "OpenAF" && (io.fileExists(r + "/" + PACKAGEYAML) || io.fileExists(r + "/" + PACKAGEJSON))) p[r] = o[r]; 
+}); 
+log("Rewriting local oPacks db...");
+plugin("ZIP"); 
+var zip = new ZIP(); 
+zip.streamPutFile(getOpenAFPath() + "/.opack.db", "packages.json", af.fromString2Bytes(stringify(p)));
+
+// Checking if reinstall script can be built
+var jh = ow.format.getJavaHome().replace(/\\/g, "/");
+if (jh.substring(0, jh.lastIndexOf("/")+1) == getOpenAFPath()) {
+  if (windows == 1) {
+    log("Generating reinstall.bat...");
+    io.writeFileString(curDir + "/reinstall.bat", "@echo off\n\n" +  jh.substring(jh.lastIndexOf("/")+1) + "\\bin\\java -jar openaf.jar --install\n");
+  } else {
+    log("Generating reinstall.sh...");
+    io.writeFileString(curDir + "/reinstall.sh", "#!" + shLocation + "\n\n" +  jh.substring(jh.lastIndexOf("/")+1) + "/bin/java -jar openaf.jar --install\n");
+    sh("chmod u+x " + curDir + "/reinstall.sh", "", null, false);
+  }
+}
+
 log("Done installing scripts");
 
 af.load(classPath + "::js/repack.js");
