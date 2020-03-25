@@ -139,6 +139,145 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].remove(ak);
 		}
 	},
+	db2: {
+		__options: {},
+		create: function(aName, shouldCompress, options) {
+			options = _$(options, "options").isMap().default({});
+
+			_$(options.db, "options.db").$_();
+			options.from = _$(options.from, "options.from").$_();
+			options.keys = _$(options.keys, "options.keys").isArray().default(void 0);
+
+			options.cs = _$(options.cs, "options.cs").isBoolean().default(false);
+			if (options.cs && options.from.trim().length > 0 && options.from.trim()[0] != "(") {
+				options.from = "\"" + options.from + "\"";
+			};
+
+			if (options.cs && isDef(options.keys)) {
+				options.keys = options.keys.map(k => "\"" + k + "\"");
+			}
+			
+			this.__options[aName] = options;
+		},
+		destroy: function(aName) { 
+			delete this.__options[aName];
+		},
+		size: function(aName) {
+			var options = this.__options[aName];
+			try {
+				var res = options.db.q("select count(1) as C from " + options.from);
+				return Number(res.results[0].C);
+			} catch(e) {
+				return String(e);
+			}
+		},
+		forEach: function(aName, aFunction, x) {
+			var i = this.getKeys(aName);
+			for(var j in i) {
+				aFunction(i[j], this.get(aName, i[j]));
+			}
+		},
+		getKeys: function(aName, full) { 
+			var options = this.__options[aName];
+			full = _$(full, "extra").isString().default(void 0);
+
+			var lst = (isDef(options.keys) ? options.keys.join(", ") : "*");
+
+			try {
+				var res = options.db.q("select " + lst + " from " + options.from + (isDef(full) ? " where " + full : ""));
+				return res.results;
+			} catch(e) {
+				return String(e);
+			}
+		},
+		getSortedKeys: function(aName, full) {
+			return this.getKeys(aName, full);
+		},
+		getSet: function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			/*var res;
+			try {
+				res = this.__db[aName].qs("select key from " + this.__table[aName] + " where key = ? for update", [stringify(aK)], true).results[0].KEY;
+				if (isDef(res) && ($stream([JSON.parse(res)]).anyMatch(aMatch)) ) {
+					this.set(aName, aK, aV, aTimestamp);
+				}
+				this.__db[aName].commit();
+				return res;
+			} catch(e) {
+				this.__db[aName].rollback();
+				throw e;
+			}*/
+		},
+		set: function(aName, aK, aV, aTimestamp, x) { 
+			/*var i = this.get(aName, aK);
+			try {
+				if (isDef(i)) {
+					this.__db[aName].us("update " + this.__table[aName] + " set value = ?, ts = ? where key = ?", [stringify(aV), aTimestamp, stringify(aK)], true);
+				} else {
+					this.__db[aName].us("insert into " + this.__table[aName] + " (key, ts, value) values (?, ?, ?)", [stringify(aK), aTimestamp, stringify(aV)], true);
+				}
+				this.__db[aName].commit();
+			} catch(e) {
+				this.__db[aName].rollback();
+				throw e;
+			}
+			return aK;*/
+		},
+		setAll: function(aName, aKs, aVs, aTimestamp) { 
+			for(var i in aVs) {
+				this.set(aName, ow.loadObj().filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},
+		unsetAll: function(aName, aKs, aVs, aTimestamp) { 
+			for(var i in aVs) {
+				this.unset(aName, ow.loadObj().filterKeys(aKs, aVs[i]), aTimestamp);
+			}
+		},		
+		get: function(aName, aK, x) {
+			var options = this.__options[aName];
+			var lst = (isDef(options.keys) ? options.keys.join(", ") : "*");
+			var w = "";
+			for(var ii in aK) {
+				w += " " + (options.cs ? "\"" + ii + "\"" : ii) + " = " + (isNumber(aK[ii]) ? aK[ii] : "'" + aK[ii] + "'");
+				w += ",";
+			}
+			//w = w.substr(0, )
+
+			var res;
+			try {
+				var res = options.db.q("select " + lst + " from " + options.from +  " where " + w);
+				if (isDef(res) && isArray(res) && res.length > 0) {
+					return res[0];
+				} else {
+					return void 0;
+				}
+			} catch(e) {
+				return String(e);
+			}
+
+			return res;
+		},
+		pop: function(aName) { 
+			var aKs = this.getSortedKeys(aName);
+			var aK = aKs[aKs.length - 1];
+			var aV = this.get(aName, aK);
+			return aK;		
+		},
+		shift: function(aName) {
+			var aK = this.getSortedKeys(aName)[0];
+			var aV = this.get(aName, aK);
+			return aK;
+		},
+		unset: function(aName, aK, aTimestamp) { 
+			var options = this.__options[aName];
+			try {
+				options.db.us("delete " + options.from + " where key = ?", [stringify(aK)], true);
+				options.db.commit();
+			} catch(e) {
+				options.db.rollback();
+				throw e;
+			}
+		}
+	},	
 	db: {
 		__db: {},
 		__table: {},
