@@ -2429,8 +2429,8 @@ OpenWrap.server.prototype.httpd = {
 	 * ow.loadServer();\
 	 * var hs = ow.server.httpd.start(17878);\
 	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 * 		"/myapp": function(req) {\
-	 * 			return hs.replyOKText("my stuff!!");\
+	 * 		"/myapp": function(req, aHs) {\
+	 * 			return aHs.replyOKText("my stuff!!");\
 	 * 		}\
 	 * }),\
 	 * function(req) {\
@@ -2457,15 +2457,15 @@ OpenWrap.server.prototype.httpd = {
 		
 		aHTTPd.add(aPath, function(req) {			
 			var uri = req.uri.replace(new RegExp("^" + aP), "");
-			if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req);
+			if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req, aHTTPd);
 			if (isFunction(parent.__routes[aPort][uri])) {
-				return parent.__routes[aPort][uri](req);
+				return parent.__routes[aPort][uri](req, aHTTPd);
 			} else {
 				var bp = ow.format.string.bestPrefix(uri, Object.keys(parent.__routes[aPort]));
 				if (isDef(bp))
-					return parent.__routes[aPort][bp](req);
+					return parent.__routes[aPort][bp](req, aHTTPd);
 				else
-					return parent.__defaultRoutes[aPort](req);
+					return parent.__defaultRoutes[aPort](req, aHTTPd);
 			}
 		});
 		
