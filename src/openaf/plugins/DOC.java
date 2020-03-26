@@ -280,11 +280,17 @@ public class DOC extends ScriptableObject {
         XWPFParagraph paragraph = null;
         XWPFRun run = null;
         for(Object no : noArray) {
-            paragraph = this.doc.createParagraph();
+            if (no instanceof XWPFParagraph) {
+                paragraph = (XWPFParagraph) no;
+            } else {
+                paragraph = this.doc.createParagraph();
+            }
             paragraph.setNumID(numID);
             // para.getCTP().getPPr().getNumPr().addNewIlvl().setVal(BigInteger.valueOf(1));
-            run = paragraph.createRun();
-            run.setText((String) no); 
+            if (no instanceof String) {
+                run = paragraph.createRun();
+                run.setText((String) no); 
+            } 
         }
     }
 
