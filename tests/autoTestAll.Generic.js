@@ -278,16 +278,18 @@
     };
 
     exports.testAwait = function() {
-        var state = 0;
+        var state = 0, err;
         $do(() => {
             state = 1;
             $await("testF").notify();
-            $await("test1").wait(2500);
+            $await("test1").wait(3500);
             state = 2;
             $await("testF2").notify();
+        }).catch(e => {
+            err = e;
         });
 
-        $await("testF").wait(2500);
+        $await("testF").wait(3500);
         ow.test.assert(state, 1, "Problem with await (1)");
         sleep(150, true);
         $await("test1").notify();

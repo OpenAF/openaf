@@ -40,7 +40,7 @@
         }, void 0, true);
         stream.close();
     
-        ow.test.assert(res, "Hello World! €áä", "Problem with read/writeFileStream or ioStreamRead/Write.");
+        ow.test.assert(af.toEncoding(res, "UTF-8"), "Hello World! €áä", "Problem with read/writeFileStream or ioStreamRead/Write.");
         io.rm(file);   
     };
 
