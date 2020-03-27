@@ -604,7 +604,7 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 			//if (isDef(__codepage) && isString(__codepage))
 			//printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET), void 0, __codepage);
 			//else
-			printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
+			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		}
 		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
@@ -619,7 +619,7 @@ function __outputConsoleEnd(anOutput, colorify) {
 		//if (colorCommand && colorify) 
 		//   print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		//else
-		print(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutput);
