@@ -240,7 +240,7 @@ OpenWrap.ch.prototype.__types = {
 				w += " " + (options.cs ? "\"" + ii + "\"" : ii) + " = " + (isNumber(aK[ii]) ? aK[ii] : "'" + aK[ii] + "'");
 				w += ",";
 			}
-			//w = w.substr(0, )
+			w = w.substr(0, w.length -1);
 
 			var res;
 			try {
