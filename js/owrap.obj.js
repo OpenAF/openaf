@@ -2622,17 +2622,19 @@ OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) 
 
 /**
  * <odoc>
- * <key>ow.obj.schemaGenerator(aJson, aId) : Map</key>
+ * <key>ow.obj.schemaGenerator(aJson, aId, aRequiredArray) : Map</key>
  * Given aJson object it tries to return a generated base json-schema (http://json-schema.org/understanding-json-schema/index.html)
  * with an optional aId.
  * </odoc>
  */
-OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId) {
-    aId = _$(aId, "id").isString().default("https://example.com/schema.json");
+OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired) {
+	aId       = _$(aId, "id").isString().default("https://example.com/schema.json");
+	aRequired = _$(aRequired, "required").isArray().default([]);
+
     var r = {
         "$id": aId,
         "$schema": "http://json-schema.org/draft-07/schema#",
-        "required": []
+        "required": aRequired
     };
 
     var fn = function(j) {
