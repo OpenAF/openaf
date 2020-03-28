@@ -139,6 +139,20 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].remove(ak);
 		}
 	},
+	// DB channel implementation
+	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.db</key>
+	 * This OpenAF implementation wraps access to a db table. The creation options are:\
+	 * \
+	 *    - db   (Database) The database object to access the database table.\
+	 *    - from (String)   The name of the database table or object (don't use double quotes).\
+	 *    - keys (Array)    An array of fields keys to use (don't use double quotes).\
+	 *    - cs   (Boolean)  Determines if the database is case sensitive for table and field names (defaults to false).\
+	 * \
+	 * </odoc>
+	 */
 	db: {
 		__options: {},
 		create: function(aName, shouldCompress, options) {
