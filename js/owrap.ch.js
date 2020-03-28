@@ -139,7 +139,199 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].remove(ak);
 		}
 	},
+	// DB channel implementation
+	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.db</key>
+	 * This OpenAF implementation wraps access to a db table. The creation options are:\
+	 * \
+	 *    - db   (Database) The database object to access the database table.\
+	 *    - from (String)   The name of the database table or object (don't use double quotes).\
+	 *    - keys (Array)    An array of fields keys to use (don't use double quotes).\
+	 *    - cs   (Boolean)  Determines if the database is case sensitive for table and field names (defaults to false).\
+	 * \
+	 * </odoc>
+	 */
 	db: {
+		__options: {},
+		create: function(aName, shouldCompress, options) {
+			options = _$(options, "options").isMap().default({});
+
+			_$(options.db, "options.db").$_();
+			options.from = _$(options.from, "options.from").$_();
+			options.keys = _$(options.keys, "options.keys").isArray().default(void 0);
+
+			options.cs = _$(options.cs, "options.cs").isBoolean().default(false);
+			if (options.cs && options.from.trim().length > 0 && options.from.trim()[0] != "(") {
+				options.from = "\"" + options.from + "\"";
+			};
+
+			if (options.cs && isDef(options.keys)) {
+				options.keys = options.keys.map(k => "\"" + k + "\"");
+			}
+			
+			this.__options[aName] = options;
+		},
+		destroy: function(aName) { 
+			delete this.__options[aName];
+		},
+		size: function(aName) {
+			var options = this.__options[aName];
+			try {
+				var res = options.db.q("select count(1) as C from " + options.from);
+				return Number(res.results[0].C);
+			} catch(e) {
+				return String(e);
+			}
+		},
+		forEach: function(aName, aFunction, x) {
+			var i = this.getKeys(aName);
+			for(var j in i) {
+				aFunction(i[j], this.get(aName, i[j]));
+			}
+		},
+		getKeys: function(aName, full) { 
+			var options = this.__options[aName];
+			full = _$(full, "extra").isString().default(void 0);
+
+			var lst = (isDef(options.keys) ? options.keys.join(", ") : "*");
+
+			try {
+				var res = options.db.q("select " + lst + " from " + options.from + (isDef(full) ? " where " + full : ""));
+				return res.results;
+			} catch(e) {
+				return String(e);
+			}
+		},
+		getSortedKeys: function(aName, full) {
+			return this.getKeys(aName, full);
+		},
+		getSet: function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			/*var res;
+			try {
+				res = this.__db[aName].qs("select key from " + this.__table[aName] + " where key = ? for update", [stringify(aK)], true).results[0].KEY;
+				if (isDef(res) && ($stream([JSON.parse(res)]).anyMatch(aMatch)) ) {
+					this.set(aName, aK, aV, aTimestamp);
+				}
+				this.__db[aName].commit();
+				return res;
+			} catch(e) {
+				this.__db[aName].rollback();
+				throw e;
+			}*/
+		},
+		set: function(aName, aK, aV, aTimestamp, x) { 
+			var options = this.__options[aName];
+
+			var i = this.get(aName, aK);
+			try {
+				var wset = [], wku = [], wv = [], wk = [];
+
+				if (isDef(i)) {
+					for(var ii in aV) {
+						wset.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+						wv.push(aV[ii]);
+					}
+					for(var ii in aK) {
+						if (isDef(options.keys) && options.keys.indexOf((options.cs ? "\"" + ii + "\"" : ii)) < 0) continue;
+						wku.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+						wv.push(aK[ii]);
+					}
+					options.db.us("update " + options.from + " set " + wset.join(", ") + " where " + wku.join(" AND "), wv, true);
+				} else {
+					for(var ii in aV) {
+						wk.push((options.cs ? "\"" + ii + "\"" : ii));
+						wv.push(aV[ii]);
+					}
+					options.db.us("insert into " + options.from + " (" + wk.join(", ") + ") values (" + wv.map(r => "?").join(", ") + ")", wv, true);
+				}
+				options.db.commit();
+			} catch(e) {
+				options.db.rollback();
+				throw e;
+			}
+			return aK;
+		},
+		setAll: function(aName, aKs, aVs, aTimestamp) { 
+			for(var i in aVs) {
+				this.set(aName, ow.loadObj().filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},
+		unsetAll: function(aName, aKs, aVs, aTimestamp) { 
+			for(var i in aVs) {
+				this.unset(aName, ow.loadObj().filterKeys(aKs, aVs[i]), aTimestamp);
+			}
+		},		
+		get: function(aName, aK, x) {
+			var options = this.__options[aName];
+			var lst = "*";
+			var w = [], wv = [];
+			for(var ii in aK) {
+				if (isDef(options.keys) && options.keys.indexOf((options.cs ? "\"" + ii + "\"" : ii)) < 0) continue;
+				w.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+				wv.push(aK[ii]);
+			}
+
+			var res;
+			try {
+				var res = options.db.qs("select " + lst + " from " + options.from +  " where " + w.join(" and "), wv, true);
+				if (isDef(res) && isArray(res.results) && res.results.length > 0) {
+					return res.results[0];
+				} else {
+					return void 0;
+				}
+			} catch(e) {
+				return String(e);
+			}
+		},
+		getAll: function(aName, full) {
+			var options = this.__options[aName];
+			var res = [], wv = [], wk = [], w = "";
+			if (isDef(full) && isMap(full)) {
+				for(var ii in full) {
+					wk.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+					wv.push(full[ii]);
+				}
+				w = " where " + wk.join(" and ");
+			}
+
+			try {
+				res = options.db.qs("select * from " + options.from + w, wv, true).results;
+			} catch(e) {
+				return String(e);
+			}
+			return res;
+		},		
+		pop: function(aName) { 
+			var aKs = this.getSortedKeys(aName);
+			var aK = aKs[aKs.length - 1];
+			return aK;		
+		},
+		shift: function(aName) {
+			var aK = this.getSortedKeys(aName)[0];
+			return aK;
+		},
+		unset: function(aName, aK, aTimestamp) { 
+			var options = this.__options[aName];
+
+			var w = [], wv = [];
+			for(var ii in aK) {
+				if (isDef(options.keys) && options.keys.indexOf((options.cs ? "\"" + ii + "\"" : ii)) < 0) continue;
+				w.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+				wv.push(aK[ii]);
+			}
+
+			try {
+				options.db.us("delete " + options.from + " where " + w.join(" and "), wv, true);
+				options.db.commit();
+			} catch(e) {
+				options.db.rollback();
+				throw e;
+			}
+		}
+	},	
+	dbOld: {
 		__db: {},
 		__table: {},
 		create: function(aName, shouldCompress, options) {
