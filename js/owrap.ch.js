@@ -139,7 +139,7 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].remove(ak);
 		}
 	},
-	db2: {
+	db: {
 		__options: {},
 		create: function(aName, shouldCompress, options) {
 			options = _$(options, "options").isMap().default({});
@@ -208,19 +208,36 @@ OpenWrap.ch.prototype.__types = {
 			}*/
 		},
 		set: function(aName, aK, aV, aTimestamp, x) { 
-			/*var i = this.get(aName, aK);
+			var options = this.__options[aName];
+
+			var i = this.get(aName, aK);
 			try {
+				var wset = [], wku = [], wv = [], wk = [];
+
 				if (isDef(i)) {
-					this.__db[aName].us("update " + this.__table[aName] + " set value = ?, ts = ? where key = ?", [stringify(aV), aTimestamp, stringify(aK)], true);
+					for(var ii in aV) {
+						wset.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+						wv.push(aV[ii]);
+					}
+					for(var ii in aK) {
+						if (isDef(options.keys) && options.keys.indexOf((options.cs ? "\"" + ii + "\"" : ii)) < 0) continue;
+						wku.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+						wv.push(aK[ii]);
+					}
+					options.db.us("update " + options.from + " set " + wset.join(", ") + " where " + wku.join(" AND "), wv, true);
 				} else {
-					this.__db[aName].us("insert into " + this.__table[aName] + " (key, ts, value) values (?, ?, ?)", [stringify(aK), aTimestamp, stringify(aV)], true);
+					for(var ii in aV) {
+						wk.push((options.cs ? "\"" + ii + "\"" : ii));
+						wv.push(aV[ii]);
+					}
+					options.db.us("insert into " + options.from + " (" + wk.join(", ") + ") values (" + wv.map(r => "?").join(", ") + ")", wv, true);
 				}
-				this.__db[aName].commit();
+				options.db.commit();
 			} catch(e) {
-				this.__db[aName].rollback();
+				options.db.rollback();
 				throw e;
 			}
-			return aK;*/
+			return aK;
 		},
 		setAll: function(aName, aKs, aVs, aTimestamp) { 
 			for(var i in aVs) {
@@ -234,43 +251,65 @@ OpenWrap.ch.prototype.__types = {
 		},		
 		get: function(aName, aK, x) {
 			var options = this.__options[aName];
-			var lst = (isDef(options.keys) ? options.keys.join(", ") : "*");
-			var w = "";
+			var lst = "*";
+			var w = [], wv = [];
 			for(var ii in aK) {
-				w += " " + (options.cs ? "\"" + ii + "\"" : ii) + " = " + (isNumber(aK[ii]) ? aK[ii] : "'" + aK[ii] + "'");
-				w += ",";
+				if (isDef(options.keys) && options.keys.indexOf((options.cs ? "\"" + ii + "\"" : ii)) < 0) continue;
+				w.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+				wv.push(aK[ii]);
 			}
-			w = w.substr(0, w.length -1);
 
 			var res;
 			try {
-				var res = options.db.q("select " + lst + " from " + options.from +  " where " + w);
-				if (isDef(res) && isArray(res) && res.length > 0) {
-					return res[0];
+				var res = options.db.qs("select " + lst + " from " + options.from +  " where " + w.join(" and "), wv, true);
+				if (isDef(res) && isArray(res.results) && res.results.length > 0) {
+					return res.results[0];
 				} else {
 					return void 0;
 				}
 			} catch(e) {
 				return String(e);
 			}
-
-			return res;
 		},
+		getAll: function(aName, full) {
+			var options = this.__options[aName];
+			var res = [], wv = [], wk = [], w = "";
+			if (isDef(full) && isMap(full)) {
+				for(var ii in full) {
+					wk.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+					wv.push(full[ii]);
+				}
+				w = " where " + wk.join(" and ");
+			}
+
+			try {
+				res = options.db.qs("select * from " + options.from + w, wv, true).results;
+			} catch(e) {
+				return String(e);
+			}
+			return res;
+		},		
 		pop: function(aName) { 
 			var aKs = this.getSortedKeys(aName);
 			var aK = aKs[aKs.length - 1];
-			var aV = this.get(aName, aK);
 			return aK;		
 		},
 		shift: function(aName) {
 			var aK = this.getSortedKeys(aName)[0];
-			var aV = this.get(aName, aK);
 			return aK;
 		},
 		unset: function(aName, aK, aTimestamp) { 
 			var options = this.__options[aName];
+
+			var w = [], wv = [];
+			for(var ii in aK) {
+				if (isDef(options.keys) && options.keys.indexOf((options.cs ? "\"" + ii + "\"" : ii)) < 0) continue;
+				w.push((options.cs ? "\"" + ii + "\"" : ii) + " = ?");
+				wv.push(aK[ii]);
+			}
+
 			try {
-				options.db.us("delete " + options.from + " where key = ?", [stringify(aK)], true);
+				options.db.us("delete " + options.from + " where " + w.join(" and "), wv, true);
 				options.db.commit();
 			} catch(e) {
 				options.db.rollback();
@@ -278,7 +317,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		}
 	},	
-	db: {
+	dbOld: {
 		__db: {},
 		__table: {},
 		create: function(aName, shouldCompress, options) {
