@@ -1623,7 +1623,7 @@ function processExpr(aSep, ignoreCase) {
 	var args = splitBySeparator(__expr, aSep);
 	var pairs = {};
 
-	for(argIdx in args) {
+	for(var argIdx in args) {
 		var arg = args[argIdx];
 
 		var pair = splitBySeparator(arg, "=");
