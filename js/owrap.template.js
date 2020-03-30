@@ -553,6 +553,25 @@ OpenWrap.template.prototype.html = {
 	thinFontDiv: function(aTxt, aSize, aExtra) {
 		aExtra = _$(aExtra).isString().default("");
 		return '<div style="' + this.thinFontCSS(aSize) + aExtra + '">' + aTxt + '</div>';
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.inlineImageTag(aImageFile, justPartial) : String</key>
+	 * Returns a base64 representation of aImageFile to include in markdown/html content. If justPartial = true then only the src 
+	 * part of the html img tag is returned.
+	 * </odoc>
+	 */
+	inlineImageTag: function(aImageFile, justPartial) {
+		_$(aImageFile, "aImageFile").isString().$_();
+		justPartial = _$(justPartial).isBoolean().default(false);
+
+		ow.loadServer();
+		var src = "data:" + ow.server.httpd.getMimeType(aImageFile) +";base64," + af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImageFile)));
+		if (justPartial) {
+			return src;			
+		} else {
+			return "<img src=\"" + src + "\">";
+		}
 	}
 };
 
