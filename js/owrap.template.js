@@ -572,6 +572,25 @@ OpenWrap.template.prototype.html = {
 	},
 	/**
 	 * <odoc>
+	 * <key>ow.template.html.inlineSrcURL(aURL, aPrefix, aSuffix) : String</key>
+	 * Returns a base64 representation of aURL to include in markdown/html content. If aPrefix and/or aSuffix is provided it will
+	 * be prefixed and suffixed to the output.
+	 * </odoc>
+	 */
+	inlineSrcURL: function(aURL, aPrefix, aSuffix) {
+		ow.loadObj();
+
+		var h = new ow.obj.http();
+		try {
+			var u = new java.net.URL(aURL);
+			var b = h.get(aURL, void 0, void 0, true);
+			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes)) + aSuffix;
+		} catch(e1) {
+			return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
+		}
+	},
+	/**
+	 * <odoc>
 	 * <key>ow.template.html.inlineImageTag(aImageFile, justPartial) : String</key>
 	 * Returns a base64 representation of aImageFile to include in markdown/html content. If justPartial = true then only the src 
 	 * part of the html img tag is returned.
@@ -579,6 +598,84 @@ OpenWrap.template.prototype.html = {
 	 */	
 	inlineImageTag: function(aImageFile, justPartial) {
 		return ow.template.html.inlineSrc(aImageFile, "<img src=\"", "\">");
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.genStaticVersion4MDFile(anOriginalMDFile) : String</key>
+	 * Tries to convert a markdown file into a single HTML embeeding css and image contents.
+	 * </odoc>
+	 */
+	genStaticVersion4MDFile: function(anOriginalMDFile) {
+		return ow.template.html.genStaticVersion4MD(io.readFileString(anOriginalMDFile));
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.genStaticVersion4MD(anOriginalMD) : String</key>
+	 * Tries to convert a markdown into a single HTML embeeding css and image contents.
+	 * </odoc>
+	 */
+	genStaticVersion4MD: function(anOriginalMD) {
+		return ow.template.html.genStaticVersion(ow.template.parseMD2HTML(anOriginalMD, true));
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.genStaticVersion(anOriginalHTML) : String</key>
+	 * Tries to convert anOriginalHTML with "src" based tags like img, script &amp; stylesheet link tags into a single HTML embeeding 
+	 * all content.
+	 * </odoc>
+	 */
+	genStaticVersion: function(anOriginalHTML) {
+		var srcs = anOriginalHTML.match(/ src=\".+?\"/g);
+
+		ow.loadObj();
+		var testURL = (aURL, withContents) => {
+			var h = new ow.obj.http();
+			try {
+				var u = new java.net.URL(aURL);
+				var b = h.get(aURL, void 0, void 0, true);
+				if (withContents)
+					return af.fromBytes2String(b.responseBytes);
+				else
+					return "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes));
+			} catch(e1) {
+				try {
+					if (withContents)
+						return io.readFileString(aURL);
+					else
+						return ow.template.html.inlineSrc(aURL).replace(/\; charset=utf-8\;/, "\;");
+				} catch(e2) {
+					try {
+						if (withContents)
+							return io.readFileString(getOpenAFJar() + "::" + aURL.replace(/^\//, ""));
+						else
+							return ow.template.html.inlineSrc(getOpenAFJar() + "::" + aURL.replace(/^\//, "")).replace(/\; charset=utf-8\;/, "\;");
+					} catch(e3) {
+						return aURL;
+					}
+				} 
+			}
+		};
+
+		// src=
+		var srcs_replaces = [];
+		for(var ii in srcs) {
+			srcs_replaces[srcs[ii]] = testURL(srcs[ii].match(/ src=\"(.+?)\"/)[1], false);
+		}
+		for(var ii in srcs_replaces) {
+			anOriginalHTML = anOriginalHTML.replace(ii, " src=\"" + srcs_replaces[ii] + "\"");
+		}
+
+		// link stylesheet
+		srcs = anOriginalHTML.match(/<link rel=\"stylesheet\" href=\".+?\">/g);
+		srcs_replaces = [];
+		for(var ii in srcs) {
+			srcs_replaces[srcs[ii]] = testURL(srcs[ii].match(/<link rel=\"stylesheet\" href=\"(.+?)\">/)[1], true);
+		}
+		for(var ii in srcs_replaces) {
+			anOriginalHTML = anOriginalHTML.replace(ii, "<style>" + srcs_replaces[ii] + "</style>");
+		}
+
+		return anOriginalHTML;
 	}
 };
 
