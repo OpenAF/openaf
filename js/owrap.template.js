@@ -479,6 +479,18 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull) {
 	//var showdown = require(getOpenAFJar() + "::js/showdown.js");
 	var showdown = loadCompiledRequire("showdown_js");
 	showdown.setFlavor("github");
+        showdown.setOption("customizedHeaderId", "true");
+        showdown.setOption("parseImgDimensions", "true");
+        showdown.setOption("simplifiedAutoLink", "true");
+        showdown.setOption("strikethrough", "true");
+        showdown.setOption("tables", "true");
+        showdown.setOption("tablesHeaderId", "true");
+        showdown.setOption("tasklists", "true");
+        showdown.setOption("backslashEscapesHTMLTags", "true");
+        showdown.setOption("emoji", "true");
+        showdown.setOption("underline", "true");
+	showdown.setOption("splitAdjacentBlockquotes", "true");
+        
 	var converter = new showdown.Converter();
 
 	if (isFull) {

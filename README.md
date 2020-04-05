@@ -74,7 +74,7 @@ $ openaf -c 'print("Hello World!");'
 
 ### Update
 
-````bash
+````sh
 openaf --update
 ````
 
@@ -94,7 +94,8 @@ Just delete the original empty folder where you executed the install command.
 ## Building
 
 After cloning the repository locally execute: 
-````bash 
+
+````
 ojob build.yaml
 ````
 
@@ -102,7 +103,7 @@ ojob build.yaml
 
 After building, on the tests sub-folder, the recommend way is to use the just openaf just built:
 
-````bash
+````
 ojob autoTestAll.yaml
 ````
 
