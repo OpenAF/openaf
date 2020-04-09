@@ -1,0 +1,13 @@
+jobs:
+  - name: t1
+    exec: |
+      print(1);
+
+  - name: t2
+    deps: t1
+    exec: |
+      print(2);
+    
+todo:
+  - t1
+  - t2
