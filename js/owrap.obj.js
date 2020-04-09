@@ -2627,17 +2627,26 @@ OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) 
  * with an optional aId.
  * </odoc>
  */
-OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired) {
+OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescriptionTmpl) {
 	aId       = _$(aId, "id").isString().default("https://example.com/schema.json");
 	aRequired = _$(aRequired, "required").isArray().default([]);
 
+	var aMap = {
+		id       : aId,
+		required : aRequired,
+		json     : aJson,
+		"_detail": false
+	};
+
     var r = {
         "$id": aId,
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "required": aRequired
+		"$schema": "http://json-schema.org/draft-07/schema#",
+		"description": (isDef(aDescriptionTmpl) ? templify(aDescriptionTmpl, aMap) : void 0),
+		"required": aRequired
     };
 
-    var fn = function(j) {
+	aMap["_detail"] = true;
+    var fn = function(j, ak) {
         var ms = {};
 
         if (isMap(j)) {
@@ -2645,7 +2654,7 @@ OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired) {
             var ks = Object.keys(j);
             ms.properties = {};
             for(var ii in ks) {
-                ms.properties[ks[ii]] = fn(j[ks[ii]]);
+                ms.properties[ks[ii]] = fn(j[ks[ii]], ks[ii]);
             }
         }
         if (isArray(j)) {
@@ -2661,6 +2670,11 @@ OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired) {
 			if (isBoolean(j)) ms.type = "boolean";
 			if (isNumber(j)) ms.type = "number";
 			if (isNull(j)) ms.type = "null";
+		}
+
+		if (isDef(aDescriptionTmpl)) {
+			aMap.key = (isDef(ak) ? ak : void 0);
+			ms.description = templify(aDescriptionTmpl, merge(ms, aMap));
 		}
 
         return ms;
