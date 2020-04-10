@@ -1,7 +1,0 @@
-todo:
-  - Bom
-
-jobs:
-  - name: Bom
-    exec: |
-      print("Bom")
