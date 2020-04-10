@@ -2622,9 +2622,10 @@ OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) 
 
 /**
  * <odoc>
- * <key>ow.obj.schemaGenerator(aJson, aId, aRequiredArray) : Map</key>
+ * <key>ow.obj.schemaGenerator(aJson, aId, aRequiredArray, aDescriptionTmpl) : Map</key>
  * Given aJson object it tries to return a generated base json-schema (http://json-schema.org/understanding-json-schema/index.html)
- * with an optional aId.
+ * with an optional aId and optional descriptions based on aDescriptionTmpl (template) with the variables id, required, json, _detail (boolean
+ * indicating whent the template is used for items), type, format and key.
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescriptionTmpl) {
