@@ -1731,6 +1731,7 @@ OpenWrap.ch.prototype.__types = {
 	 */
 	ignite: {
 		create       : function(aName, shouldCompress, options) {
+			if (isDef(getOPackPath("plugin-Ignite"))) loadExternalJars(getOPackPath("plugin-Ignite"));
 			plugin("Ignite");
 			if (isUnDef(options) || isUnDef(options.ignite)) this.__ig = new Ignite(); else this.__ig = options.ignite;
 			if (isDef(options) && isDef(options.persist)) {
@@ -2202,33 +2203,33 @@ OpenWrap.ch.prototype.forEach = function(aName, aFunction, x) {
  * </odoc>
  */
 OpenWrap.ch.prototype.getAll = function(aName, x) {
-	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";	
+	if (isUnDef(ow.ch.channels[aName])) throw "Channel " + aName + " doesn't exist.";	
 
 	var res = [], error;
 	var parent = this;
 	
-	if (isDef(this.__types[this.channels[aName]].getAll)) { 
-		this.lock[aName].lock();
+	if (isDef(ow.ch.__types[ow.ch.channels[aName]].getAll)) { 
+		ow.ch.lock[aName].lock();
 		//sync(function() {
 			try {
 				res = res.concat(parent.__types[parent.channels[aName]].getAll(aName, x));
 			} catch(e) {
 				error = e;
 			} finally {
-				this.lock[aName].unlock();
+				ow.ch.lock[aName].unlock();
 			}
 		//}, x);
 	} else {
-		this.forEach(aName, function(aKey, aValue) {
+		ow.ch.forEach(aName, function(aKey, aValue) {
  
-			this.lock[aName].lock();
+			ow.ch.lock[aName].lock();
 			//sync(function() { 
 				try {
 					res.push(aValue); 
 				} catch(e) {
 					error = e;
 				} finally {
-					this.lock[aName].unlock();
+					ow.ch.lock[aName].unlock();
 				}
 			//}, res);
 		}, x);
