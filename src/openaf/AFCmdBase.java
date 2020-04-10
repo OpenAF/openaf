@@ -15,7 +15,7 @@ import openaf.rhino.RhinoEngine;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20200116";
+	public static String VERSION = "20200322";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 	
