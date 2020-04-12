@@ -440,6 +440,9 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	var res = {};
 
+	var fnDown = url => $rest().get(url);
+	var fnDownYAML = url => af.fromYAML($rest().get(url));
+
 	function _load(aFn) {
 		var res = {};
 		try {
@@ -470,9 +473,17 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	
 	if (isDef(aFile)) {		
 		if (aFile.match(/\.ya?ml$/i)) {
-			res = this.__merge(_load(io.readFileYAML), res);
+			if (aFile.match(/^https?:\/\//)) {
+				res = this.__merge(_load(fnDownYAML), res);
+			} else {
+				res = this.__merge(_load(io.readFileYAML), res);
+			}
 		} else if (aFile.match(/\.js(on)?$/i)) {
-			res = this.__merge(_load(io.readFile), res);
+			if (aFile.match(/^https?:\/\//)) {
+				res = this.__merge(_load(fnDown), res);
+			} else {
+				res = this.__merge(_load(io.readFile), res);
+			}
 		}
 	}
 
