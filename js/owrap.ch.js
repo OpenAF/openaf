@@ -2074,13 +2074,13 @@ OpenWrap.ch.prototype.close = function(aName) {
  * </odoc>
  */
 OpenWrap.ch.prototype.size = function(aName) {
-	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-//	switch(this.channels[aName]) {
-//	case "ignite": { return this.__types.ignite.size(aName); break; }
-//	case "remote": { return this.__types.remote.size(aName); break; }
-//	default      : { return this.__types.big.size(aName); }
+	if (isUnDef(ow.ch.channels[aName])) throw "Channel " + aName + " doesn't exist.";
+//	switch(ow.ch.channels[aName]) {
+//	case "ignite": { return ow.ch.__types.ignite.size(aName); break; }
+//	case "remote": { return ow.ch.__types.remote.size(aName); break; }
+//	default      : { return ow.ch.__types.big.size(aName); }
 //	}
-	return this.__types[this.channels[aName]].size(aName);
+	return ow.ch.__types[ow.ch.channels[aName]].size(aName);
 };
 
 OpenWrap.ch.prototype.__errorHandle = function(id, e) {
@@ -2189,11 +2189,11 @@ OpenWrap.ch.prototype.unsubscribeAll = function(aName) {
  * </odoc>
  */
 OpenWrap.ch.prototype.forEach = function(aName, aFunction, x) {
-	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
+	if (isUnDef(ow.ch.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 
-	this.__types[this.channels[aName]].forEach(aName, aFunction, x);
+	ow.ch.__types[ow.ch.channels[aName]].forEach(aName, aFunction, x);
 
-	return this;
+	return ow.ch;
 };
 	
 /**
@@ -2247,9 +2247,9 @@ OpenWrap.ch.prototype.getAll = function(aName, x) {
  * </odoc>
  */
 OpenWrap.ch.prototype.getKeys = function(aName, full, x) {
-	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
+	if (isUnDef(ow.ch.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 	
-	return this.__types[this.channels[aName]].getKeys(aName, full, x);
+	return ow.ch.__types[ow.ch.channels[aName]].getKeys(aName, full, x);
 };
 	
 /**
@@ -2260,14 +2260,14 @@ OpenWrap.ch.prototype.getKeys = function(aName, full, x) {
  * </odoc>
  */
 OpenWrap.ch.prototype.getSortedKeys = function(aName, full, x) {
-	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
+	if (isUnDef(ow.ch.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 	
-//	switch(this.channels[aName]) {
-//	case "ignite": { return this.__types.ignite.getSortedKeys(aName, full); break; }
-//	case "remote": { return this.__types.remote.getSortedKeys(aName, full); break; }
-//	default      : { return this.__types.big.getSortedKeys(aName, full); }
+//	switch(ow.ch.channels[aName]) {
+//	case "ignite": { return ow.ch.__types.ignite.getSortedKeys(aName, full); break; }
+//	case "remote": { return ow.ch.__types.remote.getSortedKeys(aName, full); break; }
+//	default      : { return ow.ch.__types.big.getSortedKeys(aName, full); }
 //	}
-	return this.__types[this.channels[aName]].getSortedKeys(aName, full, x);
+	return ow.ch.__types[ow.ch.channels[aName]].getSortedKeys(aName, full, x);
 };
 	
 /**
