@@ -179,7 +179,7 @@ public class AFBase extends ScriptableObject {
 			ret = AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
 		} else {
 			if (alternative) {
-				out = (new JsonParser()).parse(out).toString();
+				out = JsonParser.parseString(out).toString();
 			}
 			ret = NativeJSON.parse(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), out, new Callable() {
 				@Override
