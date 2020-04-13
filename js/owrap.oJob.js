@@ -666,6 +666,15 @@ OpenWrap.oJob.prototype.setJob = function(aJobName, aJob) {
 	this.getJobsCh().set(aJobName, aJob);
 	return this;
 };
+/**
+ * <odoc>
+ * <key>oJob.getJob(aJobName) : Map</key>
+ * Retrieves the aJobName definition map so it can be changed and overwritten with "oJob.setJob(aJobName, aJobMap)".
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getJob = function(aJobName) {
+	return this.getJobsCh().get({ name: aJobName });
+};
 
 /**
  * <odoc>
