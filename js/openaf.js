@@ -5796,11 +5796,25 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
 IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFileString(aYAMLFile)); }
 /**
  * <odoc>
+ * <key>IO.readFileJSON(aJSONFile) : Object</key>
+ * Tries to read aJSONFile into a javascript object. 
+ * </odoc>
+ */
+IO.prototype.readFileJSON = function(aJSONFile) { return jsonParse(io.readFileString(aJSONFile)); }
+/**
+ * <odoc>
  * <key>IO.writeFileYAML(aYAMLFile, aObj)</key>
  * Tries to write a javascript aObj into a aYAMLFile.
  * </odoc>
  */
 IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileString(aYAMLFile, af.toYAML(aObj)); };
+/**
+ * <odoc>
+ * <key>IO.writeFileJSON(aJSONFile, aObj, aSpace)</key>
+ * Tries to write a javascript aObj into a aJSONFile with an optional aSpace.
+ * </odoc>
+ */
+IO.prototype.writeFileJSON = function(aJSONFile, aObj, aSpace) { return io.writeFileString(aJSONFile, stringify(aObj, void 0, aSpace)) };
 
 /**
  * <odoc>
