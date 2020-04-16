@@ -77,9 +77,9 @@ OpenWrap.obj.prototype.fromDBRS = function(aDB, aSQL, aBinds, aFunction, aErrorF
  * </odoc>
  */
 OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, useParallel, caseSensitive) {
-	if (isUndefined(useParallel)) useParallel = getNumberOfCores();
+	if (isUnDef(useParallel)) useParallel = getNumberOfCores();
 
-	if (isUndefined(anArray) || anArray.length < 1) return 0;
+	if (isUnDef(anArray) || anArray.length < 1) return 0;
 	if (useParallel < 1) useParallel = 1;
 
 	var okeys, ookeys = Object.keys(anArray[0]);
@@ -148,7 +148,7 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMap, aOverr
  * </odoc>
  */
 OpenWrap.obj.prototype.fromArray2OrderedObj = function(anArray) {
-	if (isUndefined(anArray) || anArray.length < 1) return {};
+	if (isUnDef(anArray) || anArray.length < 1) return {};
 	
 	var res = {};
 	for (var i in anArray) {
@@ -168,8 +168,8 @@ OpenWrap.obj.prototype.fromArray2OrderedObj = function(anArray) {
  * </odoc>
  */
 OpenWrap.obj.prototype.fromOrderedObj2Array = function(anObj, aKeySortFunction) {
-	if (isUndefined(anObj) || Object.keys(anObj).length < 1) return [];
-	if (isUndefined(aKeySortFunction)) aKeySortFunction = function(a, b) { 
+	if (isUnDef(anObj) || Object.keys(anObj).length < 1) return [];
+	if (isUnDef(aKeySortFunction)) aKeySortFunction = function(a, b) { 
 		return a - b;
 	}
 	
@@ -337,7 +337,7 @@ OpenWrap.obj.prototype.fuzzySearch = function(anArrayOfKeys, anArrayOfObjects, s
  * </odoc>
  */
 OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) {
-	if (isUndefined(useParallel)) useParallel = getNumberOfCores();
+	if (isUnDef(useParallel)) useParallel = getNumberOfCores();
 	if (useParallel < 1) useParallel = 1;
 
 	var ctrl = {};
@@ -642,7 +642,7 @@ OpenWrap.obj.prototype.pool = {
 				var parent = this;
 				if (aTime > 0) {
 					plugin("Threads");
-					if (isDefined(this.__keepaliveThread)) { this.__keepaliveThread.stop(true); }
+					if (isDef(this.__keepaliveThread)) { this.__keepaliveThread.stop(true); }
 					this.__keepaliveThread = new Threads();
 					this.__keepaliveThread.addThread(function() {
 						try {
@@ -1920,7 +1920,7 @@ OpenWrap.obj.prototype.rest = {
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
 
-		if (isUndefined(_l) && isUndefined(_p)) {
+		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
 			if (u.getUserInfo() != null) {
 				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
@@ -1928,7 +1928,7 @@ OpenWrap.obj.prototype.rest = {
 			}
 		}
 		
-		if (isDefined(_l) && isDefined(_p)) {
+		if (isDef(_l) && isDef(_p)) {
 			h.login(_l, _p, false, aURL);
 		} 
 		
@@ -1975,7 +1975,7 @@ OpenWrap.obj.prototype.rest = {
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
 
-		if (isUndefined(_l) && isUndefined(_p)) {
+		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
 			if (u.getUserInfo() != null) {
 				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
@@ -1983,7 +1983,7 @@ OpenWrap.obj.prototype.rest = {
 			}
 		}
 		
-		if (isDefined(_l) && isDefined(_p)) {
+		if (isDef(_l) && isDef(_p)) {
 			h.login(_l, _p, false, aURL);
 		} 
 		
@@ -2057,7 +2057,6 @@ OpenWrap.obj.prototype.rest = {
 			throw e;
 		}
 	},
-
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.jsonPatch(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, urlEncode, aHTTP, retBytes) : Map</key>
@@ -2070,7 +2069,6 @@ OpenWrap.obj.prototype.rest = {
 	jsonPatch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
 		return jsonParse(af.toEncoding(this.patch(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h).response, "cp1252"));
 	},	
-	
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.remove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP, retBytes) : String</key>
@@ -2084,7 +2082,7 @@ OpenWrap.obj.prototype.rest = {
 		//var h = new HTTP();
 		var h = (isDef(__h)) ? __h : this.connectionFactory();
 				
-		if (isUndefined(_l) && isUndefined(_p)) {
+		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
 			if (u.getUserInfo() != null) {
 				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
@@ -2092,7 +2090,7 @@ OpenWrap.obj.prototype.rest = {
 			}
 		}
 		
-		if (isDefined(_l) && isDefined(_p)) {
+		if (isDef(_l) && isDef(_p)) {
 			h.login(_l, _p, false, aURL);
 		} 
 		
@@ -2107,7 +2105,6 @@ OpenWrap.obj.prototype.rest = {
 			throw e;
 		}
 	},
-	
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.jsonRemove(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP, retBytes) : Map</key>
@@ -2119,7 +2116,43 @@ OpenWrap.obj.prototype.rest = {
 	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes) {
 		return jsonParse(af.toEncoding(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap, __h).response, "cp1252"));
 	},
-	
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.head(aBaseURI, aIndexMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, aHTTP) : Map</key>
+	 * Tries to get the header map with aIndexMap entry from the REST aBaseURI service returning the reply as a Map.
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
+	 * </odoc>
+	 */
+	head: function(aURL, aIdx, _l, _p, _t, aRequestMap, urlEncode, __h) {
+		var h = (isDef(__h)) ? __h : this.connectionFactory();
+				
+		if (isUnDef(_l) && isUnDef(_p)) {
+			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
+			if (u.getUserInfo() != null) {
+				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
+				_p = String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8"));
+			}
+		}
+		
+		if (isDef(_l) && isDef(_p)) {
+			h.login(_l, _p, false, aURL);
+		} 
+		
+ 		if (isDef(_l) && isFunction(_l)) {
+ 			_l(h);
+ 		}
+		
+		try {
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "HEAD", void 0, aRequestMap, void 0, _t, void 0);
+			res.contentType = "application/json";
+			res.response = h.responseHeaders();
+			return res;
+		} catch(e) {
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
+			throw e;
+		}
+	},
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.writeIndexes(aPropsMap) : String</key>
@@ -2227,7 +2260,7 @@ OpenWrap.obj.prototype.pmSchema = {
 				javaAL.set(i, ow.obj.pmSchema.__applySchemaToJavaArrayList(pmvalue, partSchema));
 				break;
 			case "ParameterMap": 
-				if (isUndefined(sortedKeys)) sortedKeys = ow.obj.pmSchema.sortMapKeys(Object.keys(partSchema));
+				if (isUnDef(sortedKeys)) sortedKeys = ow.obj.pmSchema.sortMapKeys(Object.keys(partSchema));
 				javaAL.set(i, ow.obj.pmSchema.__applySchemaToJavaParameterMap(pmvalue, 
 					partSchema[ow.format.string.closest(ow.obj.pmSchema.makeKey(pmvalue), sortedKeys)]));
 				break;
@@ -2278,11 +2311,11 @@ OpenWrap.obj.prototype.pmSchema = {
 			
 			switch(pmtype) {
 			case "ParameterMap":
-				if (isDefined(partSchema[pm]))
+				if (isDef(partSchema[pm]))
 					javaPM.setParameter(pm, ow.obj.pmSchema.__applySchemaToJavaParameterMap(javaPM.getParameter(pm), partSchema[pm]));
 				break;
 			case "ArrayList":
-				if (isDefined(partSchema[pm]))
+				if (isDef(partSchema[pm]))
 					javaPM.setArray(pm, ow.obj.pmSchema.__applySchemaToJavaArrayList(javaPM.getArray(pm), partSchema[pm]));
 				break;
 			default: 

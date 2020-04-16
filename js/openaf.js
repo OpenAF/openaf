@@ -5202,6 +5202,20 @@ const $rest = function(ops) {
 	};
 	/**
 	 * <odoc>
+	 * <key>$rest.head(aBaseURI, aIdxMap)</key>
+	 * Shortcut for ow.obj.rest.head (see help ow.obj.rest.head) using aOptions ($rest(aOptions).): login (function or string),
+	 *  pass (word), connectionTimeout (in ms), requestHeaders (map), urlEncode (boolean), uriQuery (boolean), httpClient (ow.obj.http object),
+	 * default (map to return when there is an exception), throwExceptions (boolean defaulting to false controlling between
+	 * throwing exceptions on different from 2xx http codes or connection issues or returning a map (merge with default if available) 
+	 * and an error entry), collectAllStats (boolean with default false to store per uri or host:port statitics), preAction function that receives and
+	 * returns a map with changes (aBaseURL, aIdxMap, login, pass, conTimeout, reqHeaders, urlEncode and httpClient), retry (number) and retryWait (time in ms).
+	 * </odoc>
+	 */
+	_rest.prototype.head = function(aBaseURI, aIdxMap) {
+		return this.__f1(ow.obj.rest, "head", aBaseURI, aIdxMap, void 0, "head");
+	};
+	/**
+	 * <odoc>
 	 * <key>$rest.query(aMap) : String</key>
 	 * Shortcut for ow.obj.rest.writeQuery (see help ow.obj.rest.writeQuery).
 	 * </odoc>
