@@ -187,19 +187,23 @@ var unixConsoleScript = generateUnixScript("--console \"$@\"");
 
 try {
   if (windows == 1) io.writeFileString(curDir + "\\openaf.bat", winBat);
+  if (windows == 1) io.writeFileString(curDir + "\\oaf.bat", winBat);
   if (windows == 1) io.writeFileString(curDir + "\\opack.bat", winPackBat);
   if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
+  if (windows == 1) io.writeFileString(curDir + "\\oafc.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console-ps.bat", winConsolePSBat);
   if (windows == 1) {
     io.writeFileBytes(curDir + "\\openaf.ico", io.readFileBytes(getOpenAFJar() + "::fonts/openaf.ico"));
     sh("powershell \"$sh=New-Object -COM WScript.Shell;$s=$sh.CreateShortcut('" + curDir + "\\OpenAF CONSOLE.lnk');$s.TargetPath='" + curDir + "\\openaf-console-ps.bat';$s.Description='OpenAF-console';$s.IconLocation='" + curDir + "\\openaf.ico';$s.WorkingDirectory='" + curDir + "';$s.save()\"", undefined, undefined, true);
   }
   io.writeFileString(curDir + "/openaf", unixScript);
+  io.writeFileString(curDir + "/oaf", unixScript);
   io.writeFileString(curDir + "/openaf-sb", unixSB);
   io.writeFileString(curDir + "/opack", unixPackScript);
   io.writeFileString(curDir + "/ojob", unixJobScript);
   io.writeFileString(curDir + "/openaf-console", unixConsoleScript);
+  io.writeFileString(curDir + "/oafc", unixConsoleScript);
 } catch (e) {
   logErr("Couldn't write file: " + e.message);
   java.lang.System.exit(0);
@@ -208,10 +212,12 @@ try {
 if (windows == 0) {
   try {
 	  sh("chmod u+x " + curDir + "/openaf", "", null, false);
+	  sh("chmod u+x " + curDir + "/oaf", "", null, false);
 	  sh("chmod u+x " + curDir + "/openaf-sb", "", null, false);
 	  sh("chmod u+x " + curDir + "/opack", "", null, false);
 	  sh("chmod u+x " + curDir + "/ojob", "", null, false);
 	  sh("chmod u+x " + curDir + "/openaf-console", "", null, false);
+	  sh("chmod u+x " + curDir + "/oafc", "", null, false);
   }	catch(e) {
 	  logErr("Couldn't change permissions: " + e.message);
   }
