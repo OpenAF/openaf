@@ -264,6 +264,23 @@ public class XLS extends ScriptableObject {
 
 	/**
 	 * <odoc>
+	 * <key>XLS.getSheetNames() : Array</key>
+	 * Returns the list of the current workbook sheet names.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object getSheetNames() {
+		ArrayList<String> list = new ArrayList<String>();
+
+		for(int o = 0; o < this.wbook.getNumberOfSheets(); o++) {
+			list.add(this.wbook.getSheetAt(o).getSheetName());
+		}
+
+		return AFCmdBase.jse.newArray(AFCmdBase.jse.getGlobalscope(), list.toArray());
+	}
+
+	/**
+	 * <odoc>
 	 * <key>XLS.close()</key>
 	 * Closes the current workbook.
 	 * </odoc>
