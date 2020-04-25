@@ -862,16 +862,17 @@ OpenWrap.obj.prototype.pool = {
 			
 			/**
 			 * <odoc>
-			 * <key>ow.obj.pool.setFactoryAF(anURL, aTimeout, aConnectionTimeout)</key>
+			 * <key>ow.obj.pool.setFactoryAF(anURL, aTimeout, aConnectionTimeout, dontUseTransaction)</key>
 			 * Setups: a factory function to create an AF object using anURL and tries to send a Ping operation; a close
 			 * function to close the AF object connection; a keep alive function that sends a Ping operation.
 			 * </odoc>
 			 */
-			setFactoryAF: function(anURL, timeout, ctimeout) {
+			setFactoryAF: function(anURL, timeout, ctimeout, dontUseTransaction) {
+				dontUseTransaction = _$(dontUseTransaction).default(false);
 				ctimeout = _$(ctimeout).isNumber().default(timeout);
 
 				this.setFactory(
-					function() { var a = new AF(anURL, timeout, ctimeout); a.exec("Ping", {}); return a; },
+					function() { var a = new AF(anURL, timeout, ctimeout, !dontUseTransaction); a.exec("Ping", {}); return a; },
 					function(a) { a.close(); },
 					function(a) { a.exec("Ping", {} )}
 				);
@@ -947,9 +948,9 @@ OpenWrap.obj.prototype.pool = {
 	},
 	
 	/**
-	 * <odoc><key>ow.obj.pool.AF(url, timeout, conTimeout)</key>Creates a pool setting with ow.obj.pool.setFactoryAF.</odoc>
+	 * <odoc><key>ow.obj.pool.AF(url, timeout, conTimeout, dontUseTransaction)</key>Creates a pool setting with ow.obj.pool.setFactoryAF.</odoc>
 	 */
-	AF: function(anURL, aTimeout, aConnectionTimeout) { var p = this.create(); p.setFactoryAF(anURL, aTimeout, aConnectionTimeout); return p; },
+	AF: function(anURL, aTimeout, aConnectionTimeout, dontUseTransaction) { var p = this.create(); p.setFactoryAF(anURL, aTimeout, aConnectionTimeout, dontUseTransaction); return p; },
 	/**
 	 * <odoc><key>ow.obj.pool.RAIDDB(aAF, con, keepAlive, url, pass, useCIR, driver)</key>Creates a pool setting with ow.obj.pool.setFactoryRAIDDB.</odoc>
 	 */
@@ -962,7 +963,7 @@ OpenWrap.obj.prototype.pool = {
 	 * <odoc><key>ow.obj.pool.SSH(host, port, login, pass, idkey, withCompression)</key>Creates a pool setting with ow.obj.pool.setFactorySSH.</odoc>
 	 */
 	SSH: function(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression) { var p = this.create(); p.setFactorySSH(aHost, aPort, aLogin, aPass, anIdentificationKey, withCompression); return p; }
-}
+};
 
 OpenWrap.obj.prototype.big = {
 	/**
