@@ -5814,7 +5814,7 @@ IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFile
  * Tries to read aJSONFile into a javascript object. 
  * </odoc>
  */
-IO.prototype.readFileJSON = function(aJSONFile) { return jsonParse(io.readFileString(aJSONFile)); }
+IO.prototype.readFileJSON = function(aJSONFile) { return jsonParse(io.readFileString(aJSONFile), true); }
 /**
  * <odoc>
  * <key>IO.writeFileYAML(aYAMLFile, aObj)</key>
