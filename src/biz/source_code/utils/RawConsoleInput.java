@@ -1,3 +1,5 @@
+// Changes by Nuno Aguiar
+
 // Copyright 2015 Christian d'Heureuse, Inventec Informatik AG, Zurich, Switzerland
 // www.source-code.biz, www.inventec.ch/chdh
 //
@@ -167,7 +169,7 @@ private static interface Msvcrt extends Library {
 
 private static class Kernel32Defs {
    static final int  STD_INPUT_HANDLE       = -10;
-   static final long INVALID_HANDLE_VALUE   = (Pointer.SIZE == 8) ? -1 : 0xFFFFFFFFL;
+   static final long INVALID_HANDLE_VALUE   = (Native.POINTER_SIZE == 8) ? -1 : 0xFFFFFFFFL;
    static final int  ENABLE_PROCESSED_INPUT = 0x0001;
    static final int  ENABLE_LINE_INPUT      = 0x0002;
    static final int  ENABLE_ECHO_INPUT      = 0x0004;
@@ -278,7 +280,7 @@ protected static class Termios extends Structure {         // termios.h
    public int      c_lflag;
    public byte     c_line;
    public byte[]   filler = new byte[64];                  // actual length is platform dependent
-   @Override protected List<?> getFieldOrder() {
+   @Override protected List<String> getFieldOrder() {
       return Arrays.asList("c_iflag", "c_oflag", "c_cflag", "c_lflag", "c_line", "filler"); }
    Termios() {}
    Termios (Termios t) {

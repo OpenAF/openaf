@@ -224,7 +224,7 @@
 		},
 		{
 			"description": "Apache Commons HTTPComponents",
-			"path": ["lib/httpclient-4.5.10.jar", "lib/httpcore-4.4.12.jar"],
+			"path": ["lib/httpclient-4.5.12.jar", "lib/httpcore-4.4.13.jar"],
 			"version": "4.5.10",
 			"changes": false,
 			"type": ["java"],
