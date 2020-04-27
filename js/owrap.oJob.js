@@ -32,6 +32,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__conWidth = 100;
 
 	this.shutdownFuncs = [];
+	this.authorizedDomains = (isDef(ow.oJob) && isDef(ow.oJob.authorizedDomains) ? ow.oJob.authorizedDomains : [ parent.__host, parent.__ip ]);
 
 	addOnOpenAFShutdown(function() {
 		var fn = parent.shutdownFuncs.pop();
@@ -440,8 +441,24 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	var res = {};
 
-	var fnDown = url => $rest().get(url);
-	var fnDownYAML = url => af.fromYAML($rest().get(url));
+	var fnDown = url => {
+		if (ow.oJob.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
+			return {
+				todo: [ "Unauthorized URL" ],
+				jobs: [ { name: "Unauthorized URL" } ]
+			};
+		else
+			return $rest().get(url);
+	}
+	var fnDownYAML = url => {
+		if (ow.oJob.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
+			return {
+				todo: [ "Unauthorized URL" ],
+				jobs: [ { name: "Unauthorized URL" } ]
+			};
+		else
+			return af.fromYAML($rest().get(url));
+	}
 
 	function _load(aFn) {
 		var res = {};
@@ -482,7 +499,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDown), res);
 			} else {
-				res = this.__merge(_load(io.readFile), res);
+				res = this.__merge(_load(io.readFileJSON), res);
 			}
 		}
 	}
