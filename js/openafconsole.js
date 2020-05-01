@@ -4,6 +4,7 @@ plugin("Console");
 var __codepage;
 var __pinflag = false;
 var __pinprefix = "";
+var __autoupdate = true;
 var CONSOLESEPARATOR = "-- ";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
@@ -929,13 +930,66 @@ function __showResultProcessCmdLine(__res, __cmd) {
 }
 
 function __checkVersion() {
+	function openAFAutoUpdate() {
+		function getVer(aURLs) {
+			var foundIt = false, res;
+			for (var ii = 0; ii < aURLs.length && !foundIt; ii++) {
+				try {
+					res = $rest({ throwExceptions: true })
+					.get(aURLs[ii]);
+					foundIt = true;
+				} catch(e) { }
+			}
+		
+			return res;
+		}
+		
+		function getFile(aURLs, aSource, aTarget) {
+			var foundIt = false, res;
+			for (var ii = 0; ii < aURLs.length && !foundIt; ii++) {
+				try {
+					res = $rest({ throwExceptions: true, downloadResume: true })
+					.get2File(aTarget, aURLs[ii] + "/" + aSource);
+					foundIt = true;
+				} catch(e) { }
+			}
+		
+			return res;
+		}
+		
+		var curVersion = getVersion();
+		//var remoteBuild = getVer(__openafBuild);
+		var remoteRelease = getVer(__openafRelease);
+		
+		if (curVersion < remoteRelease) {
+			io.cp(getOpenAFJar(), "openaf.jar.old");
+			io.cp(getOpenAFJar() + ".orig", "openaf.jar.old.orig");
+			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar.repacked", "openaf.jar.new");
+			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar", "openaf.jar.new.orig");
+			__message = "OpenAF will update to version " + remoteRelease + " on exit.";
+			addOnOpenAFShutdown(() => {
+				__outputConsoleComments("-- Please hold on, updating to OpenAF version: " + remoteRelease + "...");
+				io.writeFileBytes(getOpenAFJar() + ".orig", io.readFileBytes("openaf.jar.new.orig"));
+				io.rm("openaf.jar.new.orig");
+				io.writeFileBytes(getOpenAFJar(), io.readFileBytes("openaf.jar.new"));
+				io.rm("openaf.jar.new");
+				__outputConsoleComments("-- Previous OpenAF version " + curVersion + " available as openaf.jar.old and openaf.jar.old.orig.");
+				__outputConsoleComments("-- Move them to openaf.jar and openaf.jar.orig to revert, if needed.");
+			});
+		}
+	}
+
+
 	var t = new Threads();
 	t.addThread(function() {
 		var current = checkLatestVersion(); 
 		var myversion = getVersion();
 		if (current != -1) {
 			if (current > myversion)
-				__message = "There is a new OpenAF version available: " + current + ". Run 'openaf --update' to update.";
+				if (__autoupdate)
+					openAFAutoUpdate();
+				else
+					__message = "There is a new OpenAF version available: " + current + ". Run 'openaf --update' to update.";
 		}
 		t.stop(true);
 	});
