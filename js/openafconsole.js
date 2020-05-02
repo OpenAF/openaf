@@ -962,19 +962,19 @@ function __checkVersion() {
 		var remoteRelease = getVer(__openafRelease);
 		
 		if (curVersion < remoteRelease) {
-			io.cp(getOpenAFJar(), "openaf.jar.old");
-			io.cp(getOpenAFJar() + ".orig", "openaf.jar.old.orig");
-			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar.repacked", "openaf.jar.new");
-			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar", "openaf.jar.new.orig");
+			io.cp(getOpenAFJar(), getOpenAFPath() + "/openaf.jar.old");
+			io.cp(getOpenAFJar() + ".orig", getOpenAFPath() + "/openaf.jar.old.orig");
+			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar.repacked", getOpenAFPath() + "/openaf.jar.new");
+			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar", getOpenAFPath() + "/openaf.jar.new.orig");
 			__message = "OpenAF will update to version " + remoteRelease + " on exit.";
 			addOnOpenAFShutdown(() => {
-				__outputConsoleComments("-- Please hold on, updating to OpenAF version: " + remoteRelease + "...");
-				io.writeFileBytes(getOpenAFJar() + ".orig", io.readFileBytes("openaf.jar.new.orig"));
-				io.rm("openaf.jar.new.orig");
-				io.writeFileBytes(getOpenAFJar(), io.readFileBytes("openaf.jar.new"));
-				io.rm("openaf.jar.new");
-				__outputConsoleComments("-- Previous OpenAF version " + curVersion + " available as openaf.jar.old and openaf.jar.old.orig.");
-				__outputConsoleComments("-- Move them to openaf.jar and openaf.jar.orig to revert, if needed.");
+				__outputConsoleComments("Please hold on, updating to OpenAF version: " + remoteRelease + "...");
+				io.writeFileBytes(getOpenAFJar() + ".orig", io.readFileBytes(getOpenAFPath() + "/openaf.jar.new.orig"));
+				io.rm(getOpenAFPath() + "/openaf.jar.new.orig");
+				io.writeFileBytes(getOpenAFJar(), io.readFileBytes(getOpenAFPath() + "/openaf.jar.new"));
+				io.rm(getOpenAFPath() + "/openaf.jar.new");
+				__outputConsoleComments("... Done! The previous OpenAF version " + curVersion + " is now available as openaf.jar.old and openaf.jar.old.orig.");
+				__outputConsoleComments("Move them to openaf.jar and openaf.jar.orig to revert, if needed.");
 			});
 		}
 	}
