@@ -369,15 +369,17 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 		}
 
 		if (isDef(res.include) && isArray(res.include)) {
-			var loaded = {};
+			var _includeLoaded = {};
 			for (var i in res.include) {
-				if (isUnDef(loaded[res.include[i]])) {
-					loaded[res.include[i]] = 1;
-					if (res.include[i].match(/\.ya?ml$/i)) {
-						res = this.__merge(this.__loadFile(res.include[i]), res);
-					} else {
-						if (res.include[i].match(/\.js$/i)) load(res.include[i]);
-					}
+				if (isUnDef(_includeLoaded[res.include[i]])) {
+					_includeLoaded[res.include[i]] = 1;
+					//if (res.include[i].match(/\.ya?ml$/i)) {
+					var f = this.__loadFile(res.include[i]);
+					if (isUnDef(f)) throw "Problem loading include '" + res.include[i] + "'.";
+					res = this.__merge(f, res);
+					//} else {
+					//	if (res.include[i].match(/\.js$/i)) load(res.include[i]);
+					//}
 				}
 			}
 		}
@@ -408,6 +410,8 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 
 	var res = { include: [], jobs: [], todo: [], ojob: {}, init: {} };
 	
+	if (isUnDef(aJSONa)) return res;
+
 	if (isDef(aJSONa.include) && aJSONa.include != null) 
 		res.include = aJSONa.include.concat(isDef(aJSONb.include) ? aJSONb.include : []);
 	else
