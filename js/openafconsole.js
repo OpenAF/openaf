@@ -4,7 +4,7 @@ plugin("Console");
 var __codepage;
 var __pinflag = false;
 var __pinprefix = "";
-var __autoupdate = true;
+var __autoupdate = false;
 var CONSOLESEPARATOR = "-- ";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
@@ -931,24 +931,11 @@ function __showResultProcessCmdLine(__res, __cmd) {
 
 function __checkVersion() {
 	function openAFAutoUpdate() {
-		function getVer(aURLs) {
-			var foundIt = false, res;
-			for (var ii = 0; ii < aURLs.length && !foundIt; ii++) {
-				try {
-					res = $rest({ throwExceptions: true })
-					.get(aURLs[ii]);
-					foundIt = true;
-				} catch(e) { }
-			}
-		
-			return res;
-		}
-		
 		function getFile(aURLs, aSource, aTarget) {
 			var foundIt = false, res;
 			for (var ii = 0; ii < aURLs.length && !foundIt; ii++) {
 				try {
-					res = $rest({ throwExceptions: true, downloadResume: true })
+					res = $rest({ throwExceptions: true, downloadResume: false })
 					.get2File(aTarget, aURLs[ii] + "/" + aSource);
 					foundIt = true;
 				} catch(e) { }
@@ -959,7 +946,7 @@ function __checkVersion() {
 		
 		var curVersion = getVersion();
 		//var remoteBuild = getVer(__openafBuild);
-		var remoteRelease = getVer(__openafRelease);
+		var remoteRelease = checkLatestVersion();
 		
 		if (curVersion < remoteRelease) {
 			io.cp(getOpenAFJar(), getOpenAFPath() + "/openaf.jar.old");
