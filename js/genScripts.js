@@ -91,7 +91,7 @@ function generateWinConsolePSBat() {
   return s;
 }
 
-function generateUnixScript(options){
+function generateUnixScript(options, shouldSep) {
   var s;
 
   if (typeof shLocation === 'undefined') {
@@ -120,6 +120,11 @@ function generateUnixScript(options){
   s = s + "stty -icanon min 1 -echo 2>/dev/null\n";
   s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
+  if (shouldSep) {
+    s += "SCRIPT=$1\n";
+    s += "shift\n";
+    s += "ARGS=$@\n";
+  }
   s = s + "\n";
   s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
   s = s + "EXITCODE=$?\n";
@@ -180,7 +185,7 @@ var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
 var winConsolePSBat = generateWinConsolePSBat();
 var unixScript = generateUnixScript("\"$@\"");
-var unixSB = generateUnixScript("-s -i script -f \"$@\"");
+var unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
 var unixPackScript = generateUnixScript("--opack -e \"$*\"");
 var unixJobScript = generateUnixScript("--ojob -e \"$*\"");
 var unixConsoleScript = generateUnixScript("--console \"$@\"");
@@ -200,6 +205,7 @@ try {
   io.writeFileString(curDir + "/openaf", unixScript);
   io.writeFileString(curDir + "/oaf", unixScript);
   io.writeFileString(curDir + "/openaf-sb", unixSB);
+  io.writeFileString(curDir + "/oaf-sb", unixSB);
   io.writeFileString(curDir + "/opack", unixPackScript);
   io.writeFileString(curDir + "/ojob", unixJobScript);
   io.writeFileString(curDir + "/openaf-console", unixConsoleScript);
@@ -213,7 +219,8 @@ if (windows == 0) {
   try {
 	  sh("chmod u+x " + curDir + "/openaf", "", null, false);
 	  sh("chmod u+x " + curDir + "/oaf", "", null, false);
-	  sh("chmod u+x " + curDir + "/openaf-sb", "", null, false);
+    sh("chmod u+x " + curDir + "/openaf-sb", "", null, false);
+    sh("chmod u+x " + curDir + "/oaf-sb", "", null, false);
 	  sh("chmod u+x " + curDir + "/opack", "", null, false);
 	  sh("chmod u+x " + curDir + "/ojob", "", null, false);
 	  sh("chmod u+x " + curDir + "/openaf-console", "", null, false);

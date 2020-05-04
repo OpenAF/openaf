@@ -51,6 +51,7 @@ public class AFCmdOS extends AFCmdBase {
 			+ "   --repack           - repack OpenAF.jar for faster startup times\n"
 			+ "   --daemon           - executes a script/opack as a daemon\n"
 			+ "   --script           - executes a script/opack\n"
+			+ "   --sb               - generates or pre-appends openaf shebang to a js script\n"
 			+ "\n"
 			+ "   -h                 - show this help information\n"
 			+ "   -helpscript (term) - show help on a search term on scripting\n"
@@ -74,6 +75,7 @@ public class AFCmdOS extends AFCmdBase {
 	final protected static String OPTION_PIPE = "-p";
 	final protected static String OPTION_CODE = "-c";
 	final protected static String OPTION_SCRIPTFILE = "-f";
+	final protected static String OPTION_SB = "--sb";
 	final protected static String OPTION_INTERPRET = "--i";
 	final protected static String PREFIX_SCRIPT = "script:";
 	final protected static String OPACK = ".package.json";
@@ -253,6 +255,9 @@ public class AFCmdOS extends AFCmdBase {
 				case OPTION_SCRIPTFILE:
 					scriptfile = a;
 					continue;
+				case OPTION_SB:
+					exprInput = a;
+					continue;
 				case OPTION_DAEMON:
 					scriptfile = a;
 					continue;					
@@ -334,6 +339,15 @@ public class AFCmdOS extends AFCmdBase {
 				injectclass = true;
 				injectclassfile = "opack_js";
 				continue;
+			case OPTION_SB:
+				checkNext = true;
+                filescript = false;
+                silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				checkOption = OPTION_SB;
+				injectclass = true;
+                injectclassfile = "genSB_js";
+                continue;
             case OPTION_OJOB:
                 filescript = false;
                 silentMode = true;
