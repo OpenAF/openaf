@@ -2619,13 +2619,14 @@ OpenWrap.server.prototype.httpd = {
 			var furi = String((new java.io.File(new java.io.File(baseFilePath),
 				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath()).replace(/\\/g, "/");
 			
-			if (!(furi.match(new RegExp("^" + baseFilePath))))
+			if (furi.match(new RegExp("^" + baseFilePath + "$"))) {
 				for(var i in documentRootArray) {
 					furi = String((new java.io.File(new java.io.File(baseFilePath),
 						(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
 					if (furi.match(new RegExp("^" + baseFilePath))) break;
 				}
-			
+			}
+		
 			if (furi.match(new RegExp("^" + baseFilePath)))
 				return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), void 0, mapOfHeaders);
 			else
