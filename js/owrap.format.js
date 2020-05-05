@@ -1108,10 +1108,10 @@ OpenWrap.format.prototype.testPortLatency = function(aHost, aPort, aCustomTimeou
 	var sock  = new java.net.Socket();
 	var iaddr = new java.net.InetSocketAddress(aHost, aPort);
 
-	var ini = now(), latency = -1;
+	var ini = nowUTC(), latency = -1;
 	try {
 		sock.connect(iaddr, aCustomTimeout);
-		latency = now() - ini;
+		latency = nowUTC() - ini;
 	} catch(e) {
 		latency = -1;
 	} finally {
@@ -1133,10 +1133,10 @@ OpenWrap.format.prototype.testURLLatency = function(aURL, aCustomTimeout) {
 
 	var hc = new ow.obj.http();
 	hc.setThrowExceptions(true);
-	var ini = now(), latency = -1;
+	var ini = nowUTC(), latency = -1;
 	try {
 		hc.get(aURL, void 0, void 0, false, aCustomTimeout);
-		latency = now() - ini;
+		latency = nowUTC() - ini;
 	} catch(e) {
 		latency = -1;
 	}
@@ -2121,13 +2121,33 @@ OpenWrap.format.prototype.cron = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.format.cron.set2UTC()</key>
+	 * Sets the default system-wide cron expression evaluation to UTC (the default).
+	 * </odoc>
+	 */
+	set2UTC: function() {
+		later.date.UTC();
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.cron.set2LocalTime()</key>
+	 * Sets the default system-wide cron expression evaluation to the local time (default is UTC).
+	 * </odoc>
+	 */
+	set2LocalTime: function() {
+		later.date.localTime();
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.format.cron.isCronMatch(aDate, aCronExpression) : boolean</key>
 	 * Returns trues if the provided aDate is a match for the provided aCronExpression. Otherwise returns false.
 	 * </odoc>
 	 */
 	isCronMatch: function(aDate, aCronExpr) {
 		var d = aDate;
-		var ct = ow.format.fromDate(d, "s m H d M u").split(/ /);
+		var ct = ow.format.fromDate(d, "s m H d M u", (later.date.isUTC ? "UTC" : void 0)).split(/ /);
 		var cr = ow.format.cron.parse(aCronExpr);
 		if (cr.exceptions.length > 0) throw "Exceptions " + stringify(cr.exceptions);
 		var isMatch = true;
