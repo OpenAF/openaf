@@ -931,6 +931,19 @@ function __showResultProcessCmdLine(__res, __cmd) {
 
 function __checkVersion() {
 	function openAFAutoUpdate() {
+		function getVer(aURLs) {
+			var foundIt = false, res;
+			for (var ii = 0; ii < aURLs.length && !foundIt; ii++) {
+				try {
+					res = $rest({ throwExceptions: true })
+					.get(aURLs[ii]);
+					foundIt = true;
+				} catch(e) { }
+			}
+		
+			return res;
+		}
+
 		function getFile(aURLs, aSource, aTarget) {
 			var foundIt = false, res;
 			for (var ii = 0; ii < aURLs.length && !foundIt; ii++) {
@@ -946,7 +959,7 @@ function __checkVersion() {
 		
 		var curVersion = getVersion();
 		//var remoteBuild = getVer(__openafBuild);
-		var remoteRelease = checkLatestVersion();
+		var remoteRelease = getVer(__openafRelease);
 		
 		if (curVersion < remoteRelease) {
 			io.cp(getOpenAFJar(), getOpenAFPath() + "/openaf.jar.old");
