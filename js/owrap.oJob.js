@@ -1047,6 +1047,15 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	if (this.__ojob != {}) {
 		if (isDef(this.__ojob.argsFromEnvs) && this.__ojob.argsFromEnvs) args = this.__processArgs(getEnvs(), args, aId);
 
+		if (isDef(this.__ojob.cronInLocalTime)) {
+			ow.loadFormat();
+			if (this.__ojob.cronInLocalTime) {
+				ow.format.cron.set2LocalTime();
+			} else {
+				ow.format.cron.set2UTC();
+			}
+		}
+
 	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 100;
 
 		if (isDef(this.__ojob.id) && isUnDef(aId)) aId = this.__ojob.id;
