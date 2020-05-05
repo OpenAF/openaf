@@ -945,12 +945,91 @@ OpenWrap.format.prototype.fromWeDoDateToDate = function(aWedoDate) {
  * </odoc>
  */
 OpenWrap.format.prototype.isWedoDate = function(aWedoDate) {
-	if (isDefined(aWedoDate["__wedo__type__"]) &&
+	if (isDef(aWedoDate["__wedo__type__"]) &&
 		aWedoDate["__wedo__type__"] == "date")
 		return true;
 	else
 		return false;
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.isIPv4(aIP) : boolean</key>
+ * Tries to determine if aIP is a syntactic valid IPv4.
+ * </odoc>
+ */
+OpenWrap.format.prototype.isIPv4 = function(aIP) {
+	if (isString(aIP) && 
+	    aIP.match(/^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/)) {
+		return true;
+	} else {
+		return false;
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.isIPv6(aIP) : boolean</key>
+ * Tries to determine if aIP is a syntactic valid IPv6.
+ * </odoc>
+ */
+OpenWrap.format.prototype.isIPv6 = function(aIP) {
+	if (isString(aIP) && 
+	    aIP.match(/^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/)) {
+		return true;
+	} else {
+		return false;
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.isEmail(aEmail) : boolean</key>
+ * Tries to determine if aEmail seems a syntactic valid email.
+ * </odoc>
+ */
+OpenWrap.format.prototype.isEmail = function(aEmail) {
+	if (isString(aEmail) &&
+	   aEmail.match(/^[\w-_\.+]*[\w-_\.]\@([\w]+\.)+[\w]+[\w]$/)) {
+		return true;
+	} else {
+		return false;
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.isURL(aURL) : boolean</key>
+ * Tries to determine if aURL seems a syntactic valid URL.
+ * </odoc>
+ */
+OpenWrap.format.prototype.isURL = function(aURL) {
+	try {
+		if (isString(aURL) &&
+		(new java.net.URI(aURL)).isAbsolute()) {
+			return true;
+		} else {
+			return false;
+		}
+	} catch(e) {
+		return false;
+	}
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.isHost(aHost) : boolean</key>
+ * Tries to determine if aHost seems a syntactic valid host.
+ * </odoc>
+ */
+OpenWrap.format.prototype.isHost = function(aHost) {
+	if (isString(aHost) &&
+	    aHost.match(/^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/)) {
+		return true;
+	} else {
+		return false;
+	}
+};
 
 /**
  * <odoc>
