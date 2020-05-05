@@ -1145,7 +1145,7 @@ OpenWrap.server.prototype.scheduler = function () {
 
 					// Check if it's time to execute
 					// If wff = true it's not okay to execute if it's executing.
-					if (ow.format.cron.isCronMatch(new Date(), entry.expr, "UTC") && ((entry.wff && !entry.exec) || !entry.wff)) {
+					if (ow.format.cron.isCronMatch(new Date(), entry.expr) && ((entry.wff && !entry.exec) || !entry.wff)) {
 						parent.__t.addCachedThread(function () {
 							var res;
 							var si = String(i);
