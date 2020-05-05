@@ -2659,7 +2659,11 @@ OpenWrap.obj.prototype.schemaValidate = function(aSchema, aData, aErrorOptions) 
  * <key>ow.obj.schemaGenerator(aJson, aId, aRequiredArray, aDescriptionTmpl) : Map</key>
  * Given aJson object it tries to return a generated base json-schema (http://json-schema.org/understanding-json-schema/index.html)
  * with an optional aId and optional descriptions based on aDescriptionTmpl (template) with the variables id, required, json, _detail (boolean
- * indicating whent the template is used for items), type, format and key.
+ * indicating whent the template is used for items), type, format and key. Some special notation:\
+ *   - to indicate a regular expression just use a string starting and ending with a "/"\
+ *   - to indicate a numeric range just use a "[" (inclusive) or a "]" (exclusive) to describe a numeric range (e.g "[2, 4[" )\
+ *   - for enumeration use a "(" and a ")" on the beginning and end of a string representing an array of values (e.g. "([ 'red', 'blue', 'green' ])" )\
+ * \
  * </odoc>
  */
 OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescriptionTmpl) {
@@ -2680,6 +2684,8 @@ OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescri
 		"required": aRequired
     };
 
+	ow.loadFormat();
+
 	aMap["_detail"] = true;
     var fn = function(j, ak) {
         var ms = {};
@@ -2699,12 +2705,68 @@ OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescri
 		if (isDate(j) || (isString(j) && !isNaN(new Date(j)))) {
 			ms.type = "string";
 			ms.format = "date-time";
+			j = String(j);
+		}
+		if (isString(j) && ow.format.isURL(j)) {
+			ms.type = "string";
+			ms.format = "uri";
+			j = String(j);
+		}
+        if (isString(j) && ow.format.isEmail(j)) {
+			ms.type = "string";
+			ms.format = "email";
+			j = String(j);
+		}
+		if (isUnDef(ms.format) && ow.format.isIPv4(j)) {
+			ms.type = "string";
+			ms.format = "ipv4";
+			j = String(j);
+		}
+		if (isUnDef(ms.format) && ow.format.isIPv6(j)) {
+			ms.type = "string";
+			ms.format = "ipv6";
+			j = String(j);
 		}
 		if (isUnDef(ms.type)) {
 			if (isString(j)) ms.type = "string";
 			if (isBoolean(j)) ms.type = "boolean";
 			if (isNumber(j)) ms.type = "number";
 			if (isNull(j)) ms.type = "null";
+
+			if (ms.type == "string" && j.match(/^\/.+\/$/)) {
+				ms.pattern = j.replace(/^\/(.+)\//, "$1");
+			}
+
+			if (ms.type == "string" && j.match(/^[\[\]]\s*(\-?\s*[0-9]+)\s*,\s*(\-?\s*[0-9]+)\s*[\[\]]$/)) {
+				var elems = j.match(/^([\[\]])\s*(\-?\s*[0-9]+)\s*,\s*(\-?\s*[0-9]+)\s*([\[\]])$/);
+				if (elems[1] == "[") ms.minimum = elems[2];
+				if (elems[1] == "]") ms.exclusiveMinimum = elems[2];
+				if (elems[4] == "[") ms.exclusiveMaximum = elems[3];
+				if (elems[4] == "]") ms.maximum = elems[3];
+				ms.type = "number";
+			}
+
+			if (ms.type == "string" && j.match(/^[\[\]]\s*(\-?\s*[0-9]+)\s*/)) {
+				var elems = j.match(/^([\[\]])\s*(\-?\s*[0-9]+)\s*/);
+				if (elems[1] == "[") ms.minimum = elems[2];
+				if (elems[1] == "]") ms.exclusiveMinimum = elems[2];
+				ms.type = "number";
+			}
+			
+			if (ms.type == "string" && j.match(/\s*(\-?\s*[0-9]+)\s*[\[\]]$/)) {
+				var elems = j.match(/\s*(\-?\s*[0-9]+)\s*([\[\]])$/);
+				if (elems[4] == "[") ms.exclusiveMaximum = elems[3];
+				if (elems[4] == "]") ms.maximum = elems[3];
+				ms.type = "number";
+			}
+
+			if (ms.type == "string" && j.match(/^\s*\(\s*\[(\s*.+\s*)\]\s*\)\s*$/)) {
+				var oo = j.match(/^\s*\(\s*\[(\s*.+\s*)\]\s*\)\s*$/)[1].split(/\s*\,\s*/);
+				if (isBoolean(oo[0])) ms.type = "boolean";
+				if (isNumber(oo[0]))  ms.type = "number";
+				if (isNull(oo[0]))    ms.type = "null";
+				ms.enum = oo;
+			}
 		}
 
 		if (isDef(aDescriptionTmpl)) {
@@ -2716,6 +2778,108 @@ OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescri
     };
 
 	return merge(r, fn(aJson));
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.schemaSampleGenerator(aJsonSchema) : Map</key>
+ * Tries to generate a sample JSON map based on the provided aJsonSchema. There is no guarantee
+ * that the generated sample is valid.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.schemaSampleGenerator = function(aJsonSchema) {
+	_$(aJsonSchema, "jsonSchema").isMap().$_();
+
+	var fnE = j => {
+		j.type = "string";
+		return "([" + j.enum.join(", ") + "])";
+	};
+
+	var fn = j => {
+		var r;
+		if (isDef(j) && isDef(j.type)) {
+			switch(j.type) {
+			case "object":
+				var r = {};
+				var ks = Object.keys(j.properties);
+				for(var ii in ks) {
+					r[ks[ii]] = fn(j.properties[ks[ii]]);
+				}
+				break;
+			case "number":
+				if (isDef(j.enum)) {
+					r = fnE(j);
+				} else {
+					if (isDef(j.minimum) || isDef(j.exclusiveMinimum)) {
+						r = "";
+						if (isDef(j.minimum))          r = "[ " + j.minimum; 
+						if (isDef(j.exclusiveMinimum)) r = "] " + j.exclusiveMinimum;
+	
+						if (isDef(j.maximum) || isDef(j.exclusiveMaximum)) r += ", ";
+					}
+	
+					if (isDef(j.maximum) || isDef(j.exclusiveMaximum)) {
+						if (isUnDef(r)) r = "";
+						if (isDef(j.maximum)) 
+							r += j.maximum + " ]"; 
+						else
+							if (isDef(j.exclusiveMaximum)) 
+								r += j.exclusiveMaximum + " [";
+					}
+	
+					if (isUnDef(r)) r = 123;
+				}
+				break;
+			case "array" :
+				var v = fn(j.items);
+				r = [ v, v, v ];
+				break;
+			case "null"  :
+				if (isDef(j.enum)) {
+					r = fnE(j);
+				} else {
+					r = null;
+				}
+				break;
+			case "string":	
+			default      :	
+				if (isDef(j.enum)) {
+					r = fnE(j);
+				} else {
+					if (isDef(j.format) && j.format == "date-time") {
+						r = "1234-12-23T12:34:56.789Z";
+					}
+
+					if (isDef(j.format) && j.format == "email") {
+						r = "someone@some.where";
+					}
+
+					if (isDef(j.format) && j.format == "hostname") {
+						r = "ahost.some.where";
+					}
+
+					if (isDef(j.format) && j.format == "ipv4") {
+						r = "1.2.3.4";
+					}
+
+					if (isDef(j.format) && j.format == "ipv6") {
+						r = "1234:5678:90ab:cdef:1234:5678:90ab:cdef";
+					}
+
+					if (isDef(j.format) && j.format == "uri") {
+						r = "http://something.some.where/in/there";
+					}
+
+					if (isDef(j.pattern)) r = "/" + j.pattern + "/";
+					
+					if (isUnDef(r))	r = "abc123";		
+				}
+			}
+		}
+		return r;
+	};
+
+	return fn(aJsonSchema);
 };
 
 OpenWrap.obj.prototype.socket = {
