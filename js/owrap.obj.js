@@ -2834,6 +2834,9 @@ OpenWrap.obj.prototype.schemaSampleGenerator = function(aJsonSchema) {
 				var v = fn(j.items);
 				r = [ v, v, v ];
 				break;
+			case "boolean":
+				r = true;
+				break;
 			case "null"  :
 				if (isDef(j.enum)) {
 					r = fnE(j);
