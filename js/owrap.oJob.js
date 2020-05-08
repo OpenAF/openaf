@@ -157,7 +157,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	for(var i in sjobs) {
 		if (isUnDef(sjobs[i].from) && isDef(sjobs[i].earlier)) sjobs[i].from = sjobs[i].earlier;
 		if (isUnDef(sjobs[i].to)   && isDef(sjobs[i].then))    sjobs[i].to   = sjobs[i].then;
-		this.addJob(this.getJobsCh(), sjobs[i].name, sjobs[i].deps, sjobs[i].type, sjobs[i].typeArgs, sjobs[i].args, sjobs[i].exec, sjobs[i].from, sjobs[i].to, sjobs[i].help, sjobs[i].catch);
+		this.addJob(this.getJobsCh(), sjobs[i].name, sjobs[i].deps, sjobs[i].type, sjobs[i].typeArgs, sjobs[i].args, sjobs[i].exec, sjobs[i].from, sjobs[i].to, sjobs[i].help, sjobs[i].catch, sjobs[i].each);
 	}
 
 	// Add todos
@@ -1042,6 +1042,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	this.oJobShouldStop = false;
 	if (isDef(this.init)) args = merge(args, { init: this.init });
 
+	global = args;
 	var parent = this;
 
 	if (this.__ojob != {}) {
@@ -1292,7 +1293,21 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 	}
 
 	function _run(aExec, args, job, id) {		
-		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; " + aExec);
+		var f;
+		if (isDef(aJob.each) && isArray(aJob.each)) {
+			var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
+			fnDef += "var _oji = " + stringify(aJob.each, void 0, "") + "; ";
+			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
+			fnDef += "$doA2B(each => { " + aExec + " }, _r => { _oj.map(_aJob => { ";
+			fnDef += "  var fn = new Function(\"var args = arguments[0]; \" + _aJob.exec); ";
+			fnDef += "  $do(() => { fn( merge(_r, { init: args.init }) ); })";
+			fnDef += ".catch(new Function(\"var exception = arguments[0]; \" + _aJob.catch));";
+			fnDef += "}); }); ";
+
+			f = new Function(fnDef);
+		} else {
+			f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = void 0; " + aExec);
+		}
 		var fe, fint;
 		if (isDef(parent.__ojob.catch)) fe = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
 		if (isDef(aJob.catch)) fint = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + aJob.catch);
@@ -1626,23 +1641,25 @@ OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRe
 
 /**
  * <odoc>
- * <key>ow.oJob.addJob(aJobsCh, aName, jobDeps, jobType, aJobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, __jobCatch)</key>
+ * <key>ow.oJob.addJob(aJobsCh, aName, jobDeps, jobType, aJobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, jobCatch, jobEach)</key>
  * Provided aJobsCh (a jobs channel) adds a new job with the provided aName, an array of jobDeps (job dependencies),
  * a jobType (e.g. simple, periodic, shutdown), aJobTypeArgs (a map), jobArgs and a jobFunc (a job function). 
  * Optionally you can inherit the job definition from a jobFrom and/or jobTo name ("from" will execute first, "to" will execute after).
  * Also you can include jobHelp.
  * </odoc>
  */
-OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch) {
+OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch, _jobEach) {
 
 	var parent = this;
-	function procJob(aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, jobCatch) {
+	function procJob(aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, jobCatch, jobEach) {
 		var j = [];
 		if (isString(jobDeps)) jobDeps = [ jobDeps ];
+		if (isString(jobEach)) jobEach = [ jobEach ];
 		jobDeps = _$(jobDeps).isArray().default([]);
 		jobType = _$(jobType).isString().default("simple");
 		jobFunc = _$(jobFunc).default(function() {});
 		jobHelp = _$(jobHelp).isString().default("");
+		jobEach = _$(jobEach).isArray().default([]);
 		
 		var fstr = jobFunc.toString();
 		
@@ -1651,7 +1668,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			_$(jobFrom).isArray();
 
 			for(let jfi in jobFrom) {
-				var f = (isMap(jobFrom[jfi]) ? procJob(jobFrom[jfi].name, jobFrom[jfi].deps, jobFrom[jfi].type, jobFrom[jfi].typeArgs, jobFrom[jfi].args, jobFrom[jfi].exec, jobFrom[jfi].from, jobFrom[jfi].to, jobFrom[jfi].help) : aJobsCh.get({ "name": jobFrom[jfi] }));
+				var f = (isMap(jobFrom[jfi]) ? procJob(jobFrom[jfi].name, jobFrom[jfi].deps, jobFrom[jfi].type, jobFrom[jfi].typeArgs, jobFrom[jfi].args, jobFrom[jfi].exec, jobFrom[jfi].from, jobFrom[jfi].to, jobFrom[jfi].help, jobFrom[jfi].catch, jobFrom[jfi].each) : aJobsCh.get({ "name": jobFrom[jfi] }));
 				if (isDef(f)) {
 					//j.type = _$(j.type).isString().default(f.type);
 					j.typeArgs = (isDef(j.typeArgs) ? merge(j.typeArgs, f.typeArgs) : f.typeArgs);
@@ -1659,6 +1676,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
 					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + f.exec;
 					j.help = (isDef(j.help) ? j.help : "") + "\n" + f.help;
+					j.each = (isDef(j.each) && j.each != null ? j.each.concat(f.each) : f.each);
 				} else {
 					logWarn("Didn't found from/earlier job '" + jobFrom[jfi] + "' for job '" + aName + "'");
 				}
@@ -1675,7 +1693,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			"help": (isDef(j.help) ? j.help : "") + "\n" + jobHelp,
 			"catch": jobCatch,
 			"from": jobFrom,
-			"to"  : jobTo
+			"to"  : jobTo,
+			"each": (isDef(j.each) && j.each != null ? j.each.concat(jobEach) : jobEach),
 		};	
 
 		if (isDef(jobTo)) {
@@ -1683,7 +1702,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			_$(jobTo).isArray();
 
 			for(let jfi in jobTo) {
-				var f = (isMap(jobTo[jfi]) ? procJob(jobTo[jfi].name, jobTo[jfi].deps, jobTo[jfi].type, jobTo[jfi].typeArgs, jobTo[jfi].args, jobTo[jfi].exec, jobTo[jfi].from, jobTo[jfi].to, jobTo[jfi].help) : aJobsCh.get({ "name": jobTo[jfi] }));
+				var f = (isMap(jobTo[jfi]) ? procJob(jobTo[jfi].name, jobTo[jfi].deps, jobTo[jfi].type, jobTo[jfi].typeArgs, jobTo[jfi].args, jobTo[jfi].exec, jobTo[jfi].from, jobTo[jfi].to, jobTo[jfi].help, jobTo[jfi].catch, jobTo[jfi].each) : aJobsCh.get({ "name": jobTo[jfi] }));
 				if (isDef(f)) {
 					//j.type = (isDef(f.type) ? f.type : j.type);
 					j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
@@ -1691,6 +1710,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
 					j.exec = j.exec + "\n" + (isDef(f.exec) ? f.exec : "");
 					j.help = j.help + "\n" + (isDef(f.help) ? f.help : "");
+					j.each = j.each + "\n" + (isDef(f.each) ? f.each : "");
+					j.each = (isDef(f.each) && j.each != null ? j.each.concat(f.each) : j.each);
 				} else {
 					logWarn("Didn't found to/then job '" + jobTo[jfi] + "' for job '" + aName + "'");
 				}
@@ -1702,7 +1723,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
 	aJobsCh.set({
 		"name": _aName
-	}, procJob(_aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch));
+	}, procJob(_aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch, _jobEach));
 }
 
 /**
