@@ -1187,10 +1187,10 @@ OpenWrap.format.prototype.testPortLatency = function(aHost, aPort, aCustomTimeou
 	var sock  = new java.net.Socket();
 	var iaddr = new java.net.InetSocketAddress(aHost, aPort);
 
-	var ini = nowUTC(), latency = -1;
+	var ini = now(), latency = -1;
 	try {
 		sock.connect(iaddr, aCustomTimeout);
-		latency = nowUTC() - ini;
+		latency = now() - ini;
 	} catch(e) {
 		latency = -1;
 	} finally {
@@ -1212,10 +1212,10 @@ OpenWrap.format.prototype.testURLLatency = function(aURL, aCustomTimeout) {
 
 	var hc = new ow.obj.http();
 	hc.setThrowExceptions(true);
-	var ini = nowUTC(), latency = -1;
+	var ini = now(), latency = -1;
 	try {
 		hc.get(aURL, void 0, void 0, false, aCustomTimeout);
-		latency = nowUTC() - ini;
+		latency = now() - ini;
 	} catch(e) {
 		latency = -1;
 	}

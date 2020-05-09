@@ -1039,7 +1039,7 @@ OpenWrap.server.prototype.scheduler = function () {
 			func: aFunction,
 			wff: waitForFinish,
 			exec: false,
-			next: nowUTC() + ow.format.cron.timeUntilNext(aCronExpr)
+			next: now() + ow.format.cron.timeUntilNext(aCronExpr)
 		};
 
 		this.resetSchThread();
@@ -1061,7 +1061,7 @@ OpenWrap.server.prototype.scheduler = function () {
 			func: aFunction,
 			wff: waitForFinish,
 			exec: false,
-			next: nowUTC() + ow.format.cron.timeUntilNext(aCronExpr)
+			next: now() + ow.format.cron.timeUntilNext(aCronExpr)
 		};
 
 		this.resetSchThread();
@@ -1150,8 +1150,8 @@ OpenWrap.server.prototype.scheduler = function () {
 							var res;
 							var si = String(i);
 							try {
-								if (parent.__entries[si].next <= nowUTC()) {
-									parent.__entries[si].next = (new Date(ow.format.cron.nextScheduled(parent.__entries[si].expr, void 0, nowUTC()+1000))).getTime();
+								if (parent.__entries[si].next <= now()) {
+									parent.__entries[si].next = (new Date(ow.format.cron.nextScheduled(parent.__entries[si].expr, void 0, now()+1000))).getTime();
 									parent.__entries[si].exec = true;
 									res = parent.__entries[si].func(si);
 									while (ow.format.cron.timeUntilNext(parent.__entries[si].expr) < 0) {
@@ -1169,7 +1169,7 @@ OpenWrap.server.prototype.scheduler = function () {
 
 					// Determine the minimum waiting time
 					if (isUnDef(ts)) {
-						ts = ow.format.cron.timeUntilNext(entry.expr, void 0, nowUTC()+1000);
+						ts = ow.format.cron.timeUntilNext(entry.expr, void 0, now()+1000);
 					} else {
 						var c = ow.format.cron.timeUntilNext(entry.expr);
 						if (c < ts) ts = c;
@@ -1575,7 +1575,7 @@ OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId, aTTL, aP
 OpenWrap.server.prototype.queue.prototype.receive = function(aVisibilityTime, aWaitTime, aPoolTime) {
 	aWaitTime = _$(aWaitTime, "waitTime").isNumber().default(2500);
 	aPoolTime = _$(aPoolTime, "poolTime").isNumber().default(50);
-    var limit = nowUTC() + aWaitTime;
+    var limit = now() + aWaitTime;
     do {
         var r = this.__find(aVisibilityTime);
         if (isDef(r)) {
@@ -1585,7 +1585,7 @@ OpenWrap.server.prototype.queue.prototype.receive = function(aVisibilityTime, aW
             };
         }
         sleep(aPoolTime, true);
-    } while(nowUTC() < limit);
+    } while(now() < limit);
 };
 
 /**
@@ -1684,15 +1684,15 @@ OpenWrap.server.prototype.cluster = function(aHost, aPort, nodeTimeout, aNumberO
 			clusterLock: (aOptions) => {
 				try {
 					var alock = io.readFile(aOptions.CLUSTERFILELOCK);
-					if (nowUTC() - alock.lock > aOptions.LOCKTIMEOUT) {
-						io.writeFile(aOptions.CLUSTERFILELOCK, { lock: nowUTC() });
+					if (now() - alock.lock > aOptions.LOCKTIMEOUT) {
+						io.writeFile(aOptions.CLUSTERFILELOCK, { lock: now() });
 						return true;
 					} else {
 						return false;
 					}
 				} catch(e) {
 					if (String(e).indexOf("FileNotFoundException") > 0) {
-						io.writeFile(aOptions.CLUSTERFILELOCK, { lock: nowUTC() });
+						io.writeFile(aOptions.CLUSTERFILELOCK, { lock: now() });
 						return true;
 					} else {
 						throw e;
@@ -1875,7 +1875,7 @@ OpenWrap.server.prototype.cluster.prototype.verify = function(addNewHost, delHos
 		if (isUnDef(addNewHost)) addNewHost = {
 			host: this.HOST,
 			port: this.PORT,
-			date: nowUTC(),
+			date: now(),
 			dead: false
 		};
 		
@@ -1890,11 +1890,11 @@ OpenWrap.server.prototype.cluster.prototype.verify = function(addNewHost, delHos
 			} else {
 				var res = ow.format.testPort(clusterList.cluster[ii].host, clusterList.cluster[ii].port, 100); 
 				if (res) {
-					clusterList.cluster[ii].date = nowUTC();
+					clusterList.cluster[ii].date = now();
 					clusterList.cluster[ii].load = (isDef(customLoad) ? customLoad : Math.floor(getCPULoad(true) * 10000));
 					clusterList.cluster[ii].dead = false;
 				} else {
-					if (nowUTC() - clusterList.cluster[ii].date > this.NODETIMEOUT) {
+					if (now() - clusterList.cluster[ii].date > this.NODETIMEOUT) {
 						logWarn("Can't contact " + clusterList.cluster[ii].host + ":" + clusterList.cluster[ii].port + "!");
 						clusterList.cluster[ii].dead = true;
 					}
@@ -1919,7 +1919,7 @@ OpenWrap.server.prototype.cluster.prototype.checkIn = function() {
 	var me = {
 		host: this.HOST,
 		port: this.PORT,
-		date: nowUTC()
+		date: now()
 	};
 
 	var res = this.verify(me);
@@ -1936,7 +1936,7 @@ OpenWrap.server.prototype.cluster.prototype.checkOut = function() {
 	var me = {
 		host: this.HOST,
 		port: this.PORT,
-		date: nowUTC(),
+		date: now(),
 		dead: false		
 	};
 
@@ -2005,8 +2005,8 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			n: aLockName,
 			b: aOps.HOST + ":" + aOps.PORT
 		});
-		var timeout = nowUTC() + aOps.quorumTimeout;
-		while(timeout > nowUTC() && !allVotesIn) {
+		var timeout = now() + aOps.quorumTimeout;
+		while(timeout > now() && !allVotesIn) {
 			sleep(150);
 		}
 		$ch(aOps.quorum).unsubscribe(uuid);
@@ -2048,8 +2048,8 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			n: aLockName,
 			b: aOps.HOST + ":" + aOps.PORT
 		});
-		var timeout = nowUTC() + aOps.quorumTimeout;
-		while(timeout > nowUTC() && !allVotesIn) {
+		var timeout = now() + aOps.quorumTimeout;
+		while(timeout > now() && !allVotesIn) {
 			sleep(150);
 		}
 		$ch(aOps.quorum).unsubscribe(uuid);
