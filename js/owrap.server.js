@@ -2841,7 +2841,7 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	reply: function(aObj, status, mimetype, headers) {
-		headers = _$(headers).isMap().default(null);
+		headers = _$(headers).isMap().default(void 0);
 		status  = _$(status).isNumber().default(200);
 
 		if (isUnDef(mimetype)) {
@@ -2853,8 +2853,11 @@ OpenWrap.server.prototype.httpd = {
 			if (isUnDef(mimetype)) mimetype = ow.server.httpd.mimes.BIN;
 		}
 
+		var data;
 		if (isMap(aObj) || isArray(aObj)) {
 			data = stringify(aObj, void 0, "");
+		} else {
+			data = aObj;
 		}
 
 		return {

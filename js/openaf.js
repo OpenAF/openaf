@@ -945,7 +945,7 @@ function jsonParse(astring, alternative) {
  */
 function templify(aTemplateString, someData) {
 	someData = (isUnDef(someData)) ? this : someData;
-	return ow.loadTemplate().parse(aTemplateString, someData);
+	return String(ow.loadTemplate().parse(aTemplateString, someData));
 }
 
 /**
