@@ -1046,7 +1046,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	this.oJobShouldStop = false;
 	if (isDef(this.init)) args = merge(args, { init: this.init });
 
-	global = args;
+	global.args = args;
 	var parent = this;
 
 	if (this.__ojob != {}) {
