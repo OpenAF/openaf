@@ -609,7 +609,7 @@ OpenWrap.template.prototype.html = {
 	 * </odoc>
 	 */	
 	inlineImageTag: function(aImageFile, justPartial) {
-		return ow.template.html.inlineSrc(aImageFile, "<img src=\"", "\">");
+		return ow.template.html.inlineSrc(aImageFile, (justPartial ? "" : "<img src=\"", "\">"));
 	},
 	/**
 	 * <odoc>
