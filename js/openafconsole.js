@@ -5,6 +5,7 @@ var __codepage;
 var __pinflag = false;
 var __pinprefix = "";
 var __autoupdate = false;
+var __autoupdateResume = true;
 var CONSOLESEPARATOR = "-- ";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
@@ -948,7 +949,7 @@ function __checkVersion() {
 			var foundIt = false, res;
 			for (var ii = 0; ii < aURLs.length && !foundIt; ii++) {
 				try {
-					res = $rest({ throwExceptions: true, downloadResume: false })
+					res = $rest({ throwExceptions: true, downloadResume: __autoupdateResume })
 					.get2File(aTarget, aURLs[ii] + "/" + aSource);
 					foundIt = true;
 				} catch(e) { }
