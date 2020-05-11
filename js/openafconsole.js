@@ -974,7 +974,7 @@ function __checkVersion() {
 				io.writeFileBytes(getOpenAFJar(), io.readFileBytes(getOpenAFPath() + "/openaf.jar.new"));
 				io.rm(getOpenAFPath() + "/openaf.jar.new");
 				__outputConsoleComments("... Done! The previous OpenAF version " + curVersion + " is now available as openaf.jar.old and openaf.jar.old.orig.");
-				__outputConsoleComments("Move them to openaf.jar and openaf.jar.orig to revert, if needed.");
+				__outputConsoleComments("Move them to openaf.jar and openaf.jar.orig to revert, if needed. Add/Update '__autoupdate = false' in the ~/.openaf-console_profile file to disable auto-update.");
 			});
 		}
 	}
