@@ -1948,6 +1948,232 @@ OpenWrap.ch.prototype.__types = {
 		unset        : function(aName, aK, aTimestamp) {
 			$rest({ preAction: this.__channels[aName].preAction, throwExceptions: this.__channels[aName].throwExceptions, default: this.__channels[aName].default }).delete(this.__channels[aName].url + "/v2/keys" + this.__channels[aName].folder + "/" + this.__escape(aK));
 		}
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.all</key>
+	 * This channel type aggregates access to several channels. The creation options are:\
+	 * \
+	 *    - ch       (Array)    An array of names of channels to aggregate.\
+	 *    - fn       (Function) A function that will receive an operation and a key to return which channel name should be used (if no return or void all channels will be considered).\
+	 *    - errFn    (Function) A function to call with: the name of this channel, the exception, the target channel, the operation and the arguments whenever a error occurs accessing a channel.\
+	 *    - treatAll (Boolean)  If true size, setAll and unsetAll will be executed individually and fn called for each (default is false and size will take the first result)\
+	 * \
+	 * </odoc>
+	 */
+	all: {
+		__o: {},
+		__r: function(aName, aCh, op, args) {
+			try {
+				return $ch(aCh)[op].apply(this, args);
+			} catch(e) {
+				this.__o[aName].errFn(aName, e, aCh, op, args);
+			}
+		},
+		create       : function(aName, shouldCompress, options) {
+			options.ch = _$(options.chs, "chs").isArray().default([]);
+			options.errFn = _$(options.errFn, "errFn").isFunction().default(e => {
+				logErr(e);
+			});
+			options.fn = _$(options.fn, "fn").isFunction().default((aOp, k) => {
+				return void 0;
+			});
+			options.treatAll = _$(options.treatAll, "treatAll").isBoolean().default(false);
+			this.__o[aName] = options;
+		},
+		destroy      : function(aName) {
+			delete this.__o[aName];
+		},
+		size         : function(aName) {
+			var arr = [];
+			var _lst = this.__o[aName].fn("size", void 0);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+
+			if (this.__o[aName].treatAll) {
+				var res = $atomic(0);
+				
+				lst.map(c => {
+					arr.push($do( () => {
+						var _o = this.__r(aName, c, "size");
+						if (isDef(_o)) res.getAdd(_o);
+					}));
+				});
+		
+				$doWait($doAll(arr));
+				return res.get();
+			} else {
+				var res;
+
+				lst.map(c => {
+					arr.push($do( () => {
+						if (isUnDef(res)) {
+							var _o = this.__r(aName, c, "size");
+							if (isDef(_o)) res = _o;
+						}
+					}));
+				});
+		
+				$doWait($doAll(arr));
+				return res;
+			}
+
+		},		
+		get          : function(aName, aK) {
+			var arr = [], res = new ow.obj.syncArray();
+			var _lst = this.__o[aName].fn("get", aK);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			lst.map(c => {
+				arr.push($do( () => {
+					var _o = this.__r(aName, c, "get", [ aK ]);
+					if (isDef(_o)) res.add(_o);
+				}));
+			});
+	
+			$doWait($doFirst(arr));
+	
+			return (res.length() > 0 ? res.get(0) : void 0);
+		},
+		forEach      : function(aName, aFunction) {
+			var arr = [];
+			var _lst = this.__o[aName].fn("foreach", void 0);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			lst.map(c => {
+				arr.push($do( () => this.__r(aName, c, "forEach", [ aFunction ]) ));
+			});
+	
+			$doWait($doAll(arr));
+	
+			return this;
+		},
+		getAll       : function(aName, full) {
+			var arr = [], res = new ow.obj.syncArray();
+			var _lst = this.__o[aName].fn("getall", void 0);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			lst.map(c => {
+				arr.push($do( () => {
+					res.addAll( this.__r(aName, c, "getAll", [ full ]) );
+				}));
+			});
+	
+			$doWait($doAll(arr));
+	
+			return res.toArray();
+		},
+		getKeys      : function(aName, full) {
+			var arr = [], res = new ow.obj.syncArray();
+			var _lst = this.__o[aName].fn("getkeys", void 0);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			lst.map(c => {
+				arr.push($do( () => {
+					res.addAll( this.__r(aName, c, "getKeys", [ full ]) );
+				}));
+			});
+	
+			$doWait($doAll(arr));
+	
+			return res.toArray();
+		},
+		getSortedKeys: function(aName, full) {
+			var arr = [], res = new ow.obj.syncArray();
+			var _lst = this.__o[aName].fn("getsortedkeys", void 0);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			lst.map(c => {
+				arr.push($do( () => {
+					res.addAll( this.__r(aName, c, "getSortedKeys", [ full ]) );
+				}));
+			});
+	
+			$doWait($doAll(arr));
+	
+			return res.toArray();		
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var arr = [], res = new ow.obj.syncArray();
+			var _lst = this.__o[aName].fn("getset", aK);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			lst.map(c => {
+				arr.push($do( () => {
+					res.add( this.__r(aName, c, "getSet", [ aMatch, aK, aV, aTimestamp ]) );
+				}));
+			});
+	
+			$doWait($doAll(arr));
+	
+			return res.toArray();
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var arr = [], res = new ow.obj.syncArray();
+			var _lst = this.__o[aName].fn("set", aK);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			lst.map(c => {
+				arr.push($do( () => {
+					res.add( this.__r(aName, c, "set", [ aK, aV, aTimestamp ]) );
+				}));
+			});
+	
+			$doWait($doAll(arr));
+	
+			return res.toArray();
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			if (this.__o[aName].treatAll) {
+				aVs.map(v => this.set(aName, ow.obj.filterKeys(aKs, v), v));
+			} else {
+				var arr = [];
+				var _lst = this.__o[aName].fn("setall", aKs);
+				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+				lst.map(c => arr.push($do( () => this.__r(aName, c, "setAll", [ aKs, aVs, aTimestamp ]) )) );
+	
+				$doWait($doAll(arr));
+			}
+	
+			return void 0;
+		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			if (this.__o[aName].treatAll) {
+				aVs.map(v => this.unset(aName, ow.obj.filterKeys(aKs, v), v) );
+			} else {
+				var arr = [];
+				var _lst = this.__o[aName].fn("unsetall", aKs);
+				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+				lst.map(c => {
+					arr.push($do( () => {
+						res.add( this.__r(aName, c, "unsetAll", [ aKs, aVs, aTimestamp ]) );
+					}));
+				});
+		
+				$doWait($doAll(arr));
+			}
+			return void 0;
+		},
+		pop          : function(aName) {
+			var elems = this.getSortedKeys(aName);
+			var elem = elems[elems.length - 1];
+			var res = clone(this.get(aName, elem));
+			this.unset(aName, elem);
+			return elem;
+		},
+		shift        : function(aName) {
+			var elems = this.getSortedKeys(aName);
+			var elem = elems[0];
+			var res = clone(this.get(aName, elem));
+			this.unset(aName, elem);
+			return elem;
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var arr = [], res = new ow.obj.syncArray();
+			var _lst = this.__o[aName].fn("unset", aK);
+			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			lst.map(c => {
+				arr.push($do( () => {
+					res.add( this.__r(aName, c, "unset", [ aK, aTimestamp ]) );
+				}));
+			});
+	
+			$doWait($doAll(arr));
+	
+			return res.toArray();
+		}
 	}
 };
 	
