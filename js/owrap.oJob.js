@@ -36,7 +36,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	if (isDef(ead) && ead != "null") 
 		this.authorizedDomains = String(ead).split(",");
 	else
-		this.authorizedDomains = (isDef(ow.oJob) && isDef(ow.oJob.authorizedDomains) ? ow.oJob.authorizedDomains : [ parent.__host, parent.__ip ]);
+		this.authorizedDomains = (isDef(ow.oJob) && isDef(ow.oJob.authorizedDomains) ? ow.oJob.authorizedDomains : [ parent.__host, parent.__ip, "ojob.io" ]);
 
 	addOnOpenAFShutdown(function() {
 		var fn = parent.shutdownFuncs.pop();
@@ -497,6 +497,9 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	}
 	
 	if (isDef(aFile)) {		
+    		if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
+			aFile += "/index.yaml";
+                }
 		if (aFile.match(/\.ya?ml$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
