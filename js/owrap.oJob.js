@@ -101,7 +101,7 @@ OpenWrap.oJob = function(isNonLocal) {
 OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	if (isUnDef(jobs)) jobs = [];
 	if (isUnDef(todo)) todo = [];
-	if (isDef(ojob)) this.__ojob = merge(this.__ojob, ojob);
+	if (isDef(ojob) && isMap(ojob)) this.__ojob = merge(this.__ojob, ojob);
 
 	if (isUnDef(aId) && isDef(this.__ojob.id)) aId = this.__ojob.id;
 
@@ -1301,7 +1301,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 
 	function _run(aExec, args, job, id) {		
 		var f;
-		if (isDef(aJob.each) && isArray(aJob.each)) {
+		if (isDef(aJob.each) && isArray(aJob.each) && aJob.each.length > 0) {
 			var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
 			fnDef += "var _oji = " + stringify(aJob.each, void 0, "") + "; ";
 			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
