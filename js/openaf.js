@@ -159,6 +159,14 @@ function cprint(str, delim) { ansiStart(); print(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
+ * <key>yprint(aObj)</key>
+ * Prints aObj in YAML.
+ * </odoc>
+ */
+function yprint(str) { return print(af.toYAML(str)); }
+
+/**
+ * <odoc>
  * <key>printnl(aStr)</key>
  * Prints the aStr to the stdout (without adding a new line on the end) (example: printnl("hello world!"))
  * </odoc>
@@ -263,6 +271,14 @@ function bprintErr(str) { return printErr(beautifier(str)); }
  * </odoc>
  */
 function cprintErr(str) { ansiStart(); printErr(colorify(str)); ansiStop(); }
+
+/**
+ * <odoc>
+ * <key>yprintErr(aObj)</key>
+ * Prints aObj in YAML to stderr.
+ * </odoc>
+ */
+function yprintErr(str) { return printErr(af.toYAML(str)); }
 
 /**
  * <odoc>
