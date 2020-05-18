@@ -1764,4 +1764,46 @@ OpenWrap.oJob.prototype.addTodo = function(aOJobID, aJobsCh, aTodoCh, aJobName, 
 	return todoId;	
 }
 
+/**
+ * <ojob>
+ * <key>ow.oJob.output(aObj, args, aFunc)</key>
+ * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
+ * displaying values as "json", "yaml", "table", "map", "pm" (on the __pm variable) or "human". In "human" it will use the aFunc
+ * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
+ * </ojob>
+ */
+OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
+ 	args = _$(args).default({});
+        aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
+   		if (isArray(obj) || isMap(obj))
+			print(printMap(obj, void 0, void 0, true));
+		else
+			sprint(obj);
+        });
+
+        var format = (isDef(global.__format) ? global.__format : "human");
+
+	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase();
+	if (isDef(args.__format)) format = String(args.__format).toLowerCase();
+        
+        switch(format) {
+        case "json": 
+           sprint(aObj, "");
+           break;
+        case "yaml":
+           yprint(aObj);
+           break;
+        case "table":
+           print(printTable(aObj, void 0, void 0, true));
+ 	   break;
+ 	case "map":
+	   print(printMap(aObj, void 0, void 0, true));
+  	case "pm":
+ 	   __pm = merge(__pm, aObj);
+	   break;
+ 	default:
+	   aFunc(aObj);
+	} 
+}
+
 ow.oJob = new OpenWrap.oJob();
