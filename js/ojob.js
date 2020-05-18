@@ -205,13 +205,15 @@ function ojob_jobhelp() {
 	var file = ojob__getFile();
 	
 	//var ks = Object.keys(params);
-	var job = String(__expr).replace(/.+-jobhelp +/i, ""); 
+	var job = String(__expr).replace(/.+-jobhelp */i, ""); 
+        params = [];
 	if (job != "") {
 		params = [];
 	} else {
-		printErr("Didn't recognize the job to try to obtain help from.\n");
+		/*printErr("Didn't recognize the job to try to obtain help from.\n");
 		ojob_showHelp();
-		return undefined;
+		return undefined;*/
+		job = "help";
 	}
 	
 	if (isDef(file)) {
