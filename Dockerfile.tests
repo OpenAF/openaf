@@ -11,6 +11,7 @@ RUN mkdir /openaf
 COPY openaf.jar /openaf/openaf.jar
 COPY openaf.jar.orig /openaf/openaf.jar.orig
 COPY tests /openaf/tests
+COPY js /openaf/js
 
 RUN cd /openaf\
  && java -jar openaf.jar --install\

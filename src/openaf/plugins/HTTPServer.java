@@ -27,7 +27,8 @@ import openaf.SimpleLog.logtype;
 import openaf.plugins.HTTPd.JSResponse;
 
 import com.nwu.httpd.Codes;
-import com.nwu.httpd.HTTPd;
+import com.nwu.httpd.IHTTPd;
+import com.nwu.httpd.IWebSock;
 import com.nwu.httpd.NanoHTTPD.Response.IStatus;
 import com.nwu.httpd.responses.EchoResponse;
 import com.nwu.httpd.responses.FileResponse;
@@ -40,7 +41,7 @@ public class HTTPServer extends ScriptableObject {
 	 * 
 	 */
 	private static final long serialVersionUID = -8638106468713717782L;
-	protected HTTPd httpd;
+	protected IHTTPd httpd;
 	protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
 	protected String id;
 	protected int serverport;
@@ -162,7 +163,7 @@ public class HTTPServer extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction)</key>
+	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout)</key>
 	 * Creates a HTTP server instance on the provided port and optionally on the identified local interface.
 	 * If the port provided is 0 or negative a random port will be assigned. To determine what this port is 
 	 * you can use the function HTTPServer.getPort().
@@ -172,7 +173,7 @@ public class HTTPServer extends ScriptableObject {
 	 * by the HTTPServer. This function will receive 3 arguments. Example:\
 	 * \
 	 * plugin("HTTPServer");\
-	 * var s = new HTTPd(8091, undefined, undefined, undefined, function(aType, aMsg, anException) {\
+	 * var s = new HTTPd(8091, void 0, void 0, void 0, function(aType, aMsg, anException) {\
 	 *    if(aType.toString() != "DEBUG" &amp;&amp; anException.getMessage() != "Broken pipe")\
 	 *       logErr("Type: " + aType + " | Message: " + aMsg + anException.printStackTrace());\
 	 * });\
@@ -187,21 +188,47 @@ public class HTTPServer extends ScriptableObject {
 	 * \
 	 * keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks -storepass password -validity 360 -keysize 2048 -ext SAN=DNS:localhost,IP:127.0.0.1  -validity 9999\
 	 * \
-	 * And then add keystore.jks to the openaf.jar and have keyStorePath = "/keystore.jks".
+	 * And then add keystore.jks to the openaf.jar and have keyStorePath = "/keystore.jks".\
+	 * \
+	 * To support websockets you need to build IWebSock object and provide a timeout. For example:\
+	 * \
+	 * plugin("HTTPServer");\
+	 * var webSock = new Packages.com.nwu.httpd.IWebSock({\
+	 *    // onOpen callback\
+	 *    oOpen: _ws => { log("Connection open") },\
+	 *    // onClose callback\
+	 *    oClose: (_ws, aCode, aReason, wasInitByRemote) => { log("Connection close: " + String(aReason)) },\
+	 *    // onMessage callback\
+	 *    oMessage: (_ws, aMessage) => { _ws.send(aMessage.getTextPayload()); },\
+	 *    // onPong callback\
+	 *    oPong: (_ws, aPong) => { },\
+	 *    // onException callback\
+	 *    oException: (_ws, anException) => { logErr(String(anException)); }\
+	 * });\
+	 * var s = new HTTPd(8091, "127.0.0.1", void 0, void 0, void 0, webSock, 30000); // 30 seconds timeout\
+	 * s.addWS("/websocket");  // makes it available at ws://127.0.0.1:8091/websocket\
+	 * \
 	 * </odoc>
 	 */
 	@JSConstructor
-	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction) throws IOException {
+	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout) throws IOException {
 		if (port <= 0) {
 			port = findRandomOpenPortOnAllLocalInterfaces();
 		}
 		
 		serverport = port;
+		if (ws instanceof NativeJavaObject) ws = ((NativeJavaObject) ws).unwrap();
 		
 		if (host == null || host instanceof Undefined) {
-			httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), port);
+			if (ws == null || ws instanceof Undefined) 
+				httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), port);
+			else
+				httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), port, (IWebSock) ws, timeout);
 		} else {
-			httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), (String) host, port);
+			if (ws == null || ws instanceof Undefined)
+				httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), (String) host, port);
+			else
+				httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), (String) host, port, (IWebSock) ws, timeout);
 		}
 
 		if (keyStorePath != null && !keyStorePath.equals("undefined") &&
@@ -258,6 +285,11 @@ public class HTTPServer extends ScriptableObject {
 	@JSFunction
 	public boolean isAlive() {
 		return httpd.isAlive();
+	}
+
+	@JSFunction
+	public void addWS(String uri) {
+		httpd.addToWsAccept(uri);
 	}
 
 	/**
