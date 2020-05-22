@@ -16,6 +16,7 @@ var __alias = {
 	"encryptText": "af.encryptText();",
 	"sh": "sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/sh \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")+(!ow.format.isWindows()?\" && stty -icanon min 1 -echo 2>/dev/null\":\"\"),void 0,void 0,true);void 0;"
 };
+var __exitActions = [];
 
 var __aliasparam;
 var __message = "";
@@ -1222,5 +1223,9 @@ while(cmd != "exit") {
 	
 	if(isDef(jLineFileHistory)) jLineFileHistory.flush();
 }
+
+__exitActions.map(action => {
+	__processCmdLine(action);
+});
 
 exit(0);
