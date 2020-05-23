@@ -6847,9 +6847,9 @@ const $await = function(aName) {
 
 /**
  * <odoc>
- * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises)</key>
+ * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises, defaultTimeout)</key>
  * Will call aAFunction with a function as argument that should be used to "send" values to aBFunction. aBFunction will be call asynchronously in individual
- * $do up to the numberOfDoPromises limit.
+ * $do up to the numberOfDoPromises limit. The defaultTimeout it 2500ms.
  * </odoc>
  */
 const $doA2B = function(aAFn, aBFn, noc, defaultTimeout) {

@@ -1954,7 +1954,7 @@ OpenWrap.ch.prototype.__types = {
 	 * <key>ow.ch.types.all</key>
 	 * This channel type aggregates access to several channels. The creation options are:\
 	 * \
-	 *    - ch       (Array)    An array of names of channels to aggregate.\
+	 *    - chs      (Array)    An array of names of channels to aggregate.\
 	 *    - fn       (Function) A function that will receive an operation and a key to return which channel name should be used (if no return or void all channels will be considered).\
 	 *    - errFn    (Function) A function to call with: the name of this channel, the exception, the target channel, the operation and the arguments whenever a error occurs accessing a channel.\
 	 *    - treatAll (Boolean)  If true size, setAll and unsetAll will be executed individually and fn called for each (default is false and size will take the first result)\
