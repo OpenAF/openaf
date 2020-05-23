@@ -2360,24 +2360,53 @@ OpenWrap.server.prototype.httpd = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction) : Object</key>
+	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout) : Object</key>
 	 * Will prepare a HTTP server to be used returning a HTTPServer object. Optionally you can provide 
 	 * aPort where you want the HTTP server to run. Otherwise a free port will be assigned.
-	 * (available after ow.loadServer())
+	 * (available after ow.loadServer()).\
+	 * \
+	 * aWebSockets, if used, should be a map with the following functions:\
+	 * \
+	 *    onOpen(_ws)\
+	 *    onClose(_ws, aCode, aReason, hasInitByRemote)\
+	 *    onMessage(_ws, aMessage)\
+	 *    onPong(_ws, aPong)\
+	 *    onException(_ws, anException)\
+	 * \
 	 * </odoc>
 	 */
-	start: function(aPort, aHost, keyStorePath, password, errorFunction) {
+	start: function(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout) {
 		plugin("HTTPServer");
 		
 		if (isUnDef(aPort)) {
 			aPort = findRandomOpenPort();
 		}
 		
-		var hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction);
+		var hs;
+		if (isDef(aWebSockets) && isMap(aWebSockets)) 
+			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, new Packages.com.nwu.httpd.IWebSock({
+				oOpen     : onOpen,
+				oClose    : onClose,
+				oMessage  : onMessage,
+				oPong     : onPong,
+				oException: onException
+			}), aTimeout);
+		else
+			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction);
 		
 		this.resetRoutes(hs);
 
 		return hs;
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.setWebSocketRoute(aHTTPd, aURI)</key>
+	 * Using aHTTPd sets aURI to act as a websocket server.
+	 * </odoc>
+	 */
+	setWebSocketRoute: function(aHTTPd, aURI) {
+		aHTTPd.addWS(aURI);
 	},
 	
 	/**
