@@ -197,7 +197,7 @@ public class HTTPServer extends ScriptableObject {
 	 *    // onOpen callback\
 	 *    oOpen: _ws => { log("Connection open") },\
 	 *    // onClose callback\
-	 *    oClose: (_ws, aCode, aReason, wasInitByRemote) => { log("Connection close: " + String(aReason)) },\
+	 *    oClose: (_ws, aCode, aReason, hasInitByRemote) => { log("Connection close: " + String(aReason)) },\
 	 *    // onMessage callback\
 	 *    oMessage: (_ws, aMessage) => { _ws.send(aMessage.getTextPayload()); },\
 	 *    // onPong callback\
