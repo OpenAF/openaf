@@ -500,7 +500,12 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	
 	if (isDef(aFile)) {		
     	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
-			aFile += ".json";
+			var pp = (new java.net.URI(aFile)).getPath();
+			if (pp == "") {
+				aFile += "/";
+			} else {
+				if (!pp.endsWith("/")) aFile += ".json";
+			}
         }
 		if (aFile.match(/\.ya?ml$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
