@@ -464,8 +464,10 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 				todo: [ "Unauthorized URL" ],
 				jobs: [ { name: "Unauthorized URL" } ]
 			};
-		else
-			return af.fromYAML($rest().get(url));
+		else {
+			var _r = $rest().get(url);
+			if (isMap(_r)) return _r; else af.fromYAML(_r);
+		}
 	}
 
 	function _load(aFn) {
@@ -497,9 +499,9 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 	}
 	
 	if (isDef(aFile)) {		
-    		if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
-			aFile += "/index.yaml";
-                }
+    	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
+			aFile += ".json";
+        }
 		if (aFile.match(/\.ya?ml$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
@@ -512,6 +514,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 			} else {
 				res = this.__merge(_load(io.readFileJSON), res);
 			}
+		} else if (aFile.match(/^https?:\/\//)) {
+			res = this.__merge(_load(fnDown), res);
 		}
 	}
 
