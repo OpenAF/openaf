@@ -2385,11 +2385,11 @@ OpenWrap.server.prototype.httpd = {
 		var hs;
 		if (isDef(aWebSockets) && isMap(aWebSockets)) 
 			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, new Packages.com.nwu.httpd.IWebSock({
-				oOpen     : onOpen,
-				oClose    : onClose,
-				oMessage  : onMessage,
-				oPong     : onPong,
-				oException: onException
+				oOpen     : aWebSockets.onOpen,
+				oClose    : aWebSockets.onClose,
+				oMessage  : aWebSockets.onMessage,
+				oPong     : aWebSockets.onPong,
+				oException: aWebSockets.onException
 			}), aTimeout);
 		else
 			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction);
