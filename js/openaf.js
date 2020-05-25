@@ -1723,6 +1723,23 @@ function oPack(aCmd) {
 
 /**
  * <odoc>
+ * <key>oJob(aFile, args, aId, aOptionsMap)</key>
+ * Shortcut for oJobRunFile return the result on the variable __pm. Keep in mind that it doesn't support concurrency.
+ * </odoc>
+ */
+function oJob(aFile, args, aId, aOptionsMap) {
+	args = merge({ "__format": "pm" }, args);
+	if (isDef(__pm._list)) __pm._list = void 0;
+	if (isDef(__pm._map)) __pm._list = void 0;
+	if (isDef(__pm.result)) __pm.result = void 0;
+	oJobRunFile(aFile, args, aId, aOptionsMap);
+	if (isDef(__pm._list)) return __pm._list;
+	if (isDef(__pm._map)) return __pm._map;
+	return __pm.result;
+}
+
+/**
+ * <odoc>
  * <key>addOPackRemoteDB(aURL)</key>
  * Adds a path to an opack.db file to the current search path.
  * </odoc>
