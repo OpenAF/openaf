@@ -498,7 +498,13 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 		}
 	}
 	
-	if (isDef(aFile)) {		
+	if (isDef(aFile)) {
+		ow.oJob.authorizedDomains.map(d => {
+			if (aFile.startsWith(d) && !io.fileExists(aFile)) {
+				aFile = "https://" + aFile;
+			}
+		});
+
     	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
 			var pp = (new java.net.URI(aFile)).getPath();
 			if (pp == "") {

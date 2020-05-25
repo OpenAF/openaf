@@ -1126,7 +1126,7 @@ initThread.addThread(function(uuid) {
 	con.getConsoleReader().addCompleter(
 		new Packages.openaf.jline.OpenAFConsoleCompleter(function(buf, cursor, candidates) {
 			if (buf == null) return null;
-			var ret = 0;
+			var ret = -1;
 
 			if (buf.substr(0, cursor).match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/)) {
 				var tmpbuf = buf.substr(0, cursor).match(/(([a-zA-Z0-9_\[\]\(\)\"\']+\.)+)([a-zA-Z0-9_\[\]\(\)\"\']*)$/);
@@ -1160,7 +1160,7 @@ initThread.addThread(function(uuid) {
 				}
 			}
 
-			return Number(ret);
+			return candidates.isEmpty() ? - 1 : Number(ret);
 		})
 	);
 	con.getConsoleReader().getCompletionHandler().setPrintSpaceAfterFullCompletion(false);
