@@ -225,11 +225,14 @@ function ojob_jobhelp() {
 			if (isString(hh.help))
 				print(hh.help);
 			else {
-				print(hh.help.text);
+				print(hh.help.text + "\n");
 				if (isDef(hh.help.expects)) {
-					print("Expects:\n");
-					ow.loadObj();
-					print(printMap(ow.obj.fromArray2Obj(hh.help.expects, "name")));
+					print("Expects:");
+          				tprint("{{#each expects}}   {{name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help);
+				}
+				if (isDef(hh.help.returns)) {
+         				print("Returns:");
+          				tprint("{{#each returns}}   {{name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help);
 				}
 			}
 		} else {
