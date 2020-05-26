@@ -21,19 +21,13 @@ package com.nwu.httpd;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.logging.Logger;
 
-import com.nwu.httpd.NanoHTTPD.IHTTPSession;
-import com.nwu.httpd.NanoHTTPD.Method;
-import com.nwu.httpd.NanoHTTPD.Response;
-import com.nwu.httpd.NanoHTTPD.ResponseException;
+import javax.net.ssl.SSLServerSocketFactory;
+
 import com.nwu.log.Log;
 import com.nwu.log.Log.Type;
 
@@ -45,7 +39,6 @@ import com.nwu.log.Log.Type;
  */
 public class HTTPd extends NanoHTTPD implements IHTTPd {
 	protected int myTcpPort;
-	//protected final ServerSocket myServerSocket;
 	protected Thread myThread;
 	protected HTTPd httpd;
 	protected Log log;
@@ -56,7 +49,7 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 	protected HashMap<String, Long> URIhits = new HashMap<String, Long>();
 	protected HashMap<String, Map<String, String>> URIProps = new HashMap<String, Map<String, String>>();
 	protected ArrayList<String> gzipaccept = new ArrayList<String>();
-	
+
 	public String getDefaultResponse() {
 		return defaultResponse;
 	}
@@ -64,21 +57,20 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 	public void setDefaultResponse(String defaultResponse) {
 		httpd.defaultResponse = defaultResponse;
 	}
-		
+
 	/**
 	 * Creates the thread launching the httpd server on the corresponding port.
 	 * 
-	 * @param port
-	 *            The port to assign to this server thread.
-	 * @throws IOException
-	 *             Exception in case the server is unable to assigned to the
-	 *             corresponding port.
+	 * @param port The port to assign to this server thread.
+	 * @throws IOException Exception in case the server is unable to assigned to the
+	 *                     corresponding port.
 	 */
 	public HTTPd(Log aLog, int port) throws IOException {
 		super(port);
 		super.LOG = aLog.getLogLogger();
 		super.start();
-		if (aLog != null) this.log = aLog;
+		if (aLog != null)
+			this.log = aLog;
 		this.httpd = this;
 		myTcpPort = port;
 		log.log(Type.DEBUG, "ServerSocket created for TCP port: " + myTcpPort);
@@ -95,86 +87,88 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 		super(hostname, port);
 		super.LOG = aLog.getLogLogger();
 		super.start();
-		if (aLog != null) this.log = aLog;
+		if (aLog != null)
+			this.log = aLog;
 		this.httpd = this;
 		myTcpPort = port;
 		log.log(Type.DEBUG, "ServerSocket created for TCP hostname: " + hostname + "; port: " + myTcpPort);
 	}
-	
+
 	@Override
 	public Response serve(IHTTPSession session) {
-        Map<String, String> files = new HashMap<String, String>();
-        Method method = session.getMethod();
-        if (Method.PUT.equals(method) || Method.POST.equals(method)) {
-            try {
-                session.parseBody(files);
-            } catch (IOException ioe) {
-                return new Response(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, new ByteArrayInputStream(("SERVER INTERNAL ERROR: IOException: " + ioe.getMessage()).getBytes(StandardCharsets.UTF_8)), -1);
-            } catch (ResponseException re) {
-                return new Response(re.getStatus(), MIME_PLAINTEXT, new ByteArrayInputStream(re.getMessage().getBytes(StandardCharsets.UTF_8)), re.getMessage().length());
-            }
-        }
-        
-        Map<String, String> parms = session.getParms();
-        parms.put(super.QUERY_STRING_PARAMETER, session.getQueryParameterString());
-        Response res = com.nwu.httpd.HTTPSession.serve(this, log, session.getUri(), method, session.getHeaders(), parms, files, session.getOriginalURI());
-        try {
-        	session.getInputStream().skip(session.getInputStream().available());
+		Map<String, String> files = new HashMap<String, String>();
+		Method method = session.getMethod();
+		if (Method.PUT.equals(method) || Method.POST.equals(method)) {
+			try {
+				session.parseBody(files);
+			} catch (IOException ioe) {
+				return new Response(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, new ByteArrayInputStream(
+						("SERVER INTERNAL ERROR: IOException: " + ioe.getMessage()).getBytes(StandardCharsets.UTF_8)),
+						-1);
+			} catch (ResponseException re) {
+				return new Response(re.getStatus(), MIME_PLAINTEXT,
+						new ByteArrayInputStream(re.getMessage().getBytes(StandardCharsets.UTF_8)),
+						re.getMessage().length());
+			}
+		}
+
+		Map<String, String> parms = session.getParms();
+		parms.put(super.QUERY_STRING_PARAMETER, session.getQueryParameterString());
+		Response res = com.nwu.httpd.HTTPSession.serve(this, log, session.getUri(), method, session.getHeaders(), parms,
+				files, session.getOriginalURI());
+		try {
+			session.getInputStream().skip(session.getInputStream().available());
 		} catch (IOException e) {
 			log.log(Type.ERROR, "Error emptying buffer: " + e.getMessage());
 		}
-        return res;
-        //return serve(session.getUri(), method, session.getHeaders(), parms, files);
+		return res;
+		// return serve(session.getUri(), method, session.getHeaders(), parms, files);
 	}
-	
+
 	/**
-	 * Registers a response class to answer requests on a given URI for this
-	 * server thread.
+	 * Registers a response class to answer requests on a given URI for this server
+	 * thread.
 	 * 
 	 * (Note: will not add anything if the class provided isn't a subclass of
 	 * com.nwu.httpd.responses.Response class)
 	 * 
-	 * @param URI
-	 *            The URI to register.
-	 * @param aClass
-	 *            The response class (com.nwu.httpd.responses.Response) to
-	 *            register.
+	 * @param URI    The URI to register.
+	 * @param aClass The response class (com.nwu.httpd.responses.Response) to
+	 *               register.
 	 */
 	public void registerURIResponse(String URI, Class<?> aClass, Map<String, String> props) {
-		if (aClass != null
-				&& aClass.asSubclass(com.nwu.httpd.responses.Response.class) != null) {
+		if (aClass != null && aClass.asSubclass(com.nwu.httpd.responses.Response.class) != null) {
 			URIresponses.put(URI, aClass);
 			URIProps.put(URI, props);
-			URIhits.put(URI, new Long(0));
+			URIhits.put(URI, Long.valueOf(0));
 		}
 	}
 
 	File myFileDir;
 
 	/**
-	 * Return the current registered URI response objects. If none is found
-	 * it will return null.
+	 * Return the current registered URI response objects. If none is found it will
+	 * return null.
 	 * 
-	 * @return A HashMap where the key is the URI and the value the 
-	 * com.nwu.httpd.responses.Response class.
+	 * @return A HashMap where the key is the URI and the value the
+	 *         com.nwu.httpd.responses.Response class.
 	 */
 	public HashMap<String, Class> getURIresponses() {
 		return URIresponses;
 	}
-	
+
 	/**
-	 * Return the current registered URI properties. If none is found
-	 * it will return null.
+	 * Return the current registered URI properties. If none is found it will return
+	 * null.
 	 * 
-	 * @return A HashMap where the key is the URI and the value are 
-	 * Properties.
+	 * @return A HashMap where the key is the URI and the value are Properties.
 	 * 
 	 * @see java.util.Properties
 	 */
 	public HashMap<String, Map<String, String>> getURIproperties() {
 		return URIProps;
 	}
-	
+
 	/**
 	 * Returns a registered Response Class given an URI
 	 * 
@@ -183,15 +177,15 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 	 */
 	public Class<?> getURIresponse(String URI) {
 		URI.replaceFirst("/+", "/");
-		
+
 		if (getURIresponses().containsKey(URI)) {
 			URIhits.put(URI, URIhits.get(URI) + 1);
 			return getURIresponses().get(URI);
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Returns the properties for the given URI
 	 * 
@@ -199,15 +193,16 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 	 * @return The properties or null if not found
 	 */
 	public Map<String, String> getURIProps(String URI) {
-		if (URI.equals("")) URI = "/";
-		
-		if(getURIproperties().containsKey(URI)) {
+		if (URI.equals(""))
+			URI = "/";
+
+		if (getURIproperties().containsKey(URI)) {
 			return getURIproperties().get(URI);
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Return the current hit counters for each URI response object
 	 * 
@@ -225,7 +220,7 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 	public int getMyTcpPort() {
 		return myTcpPort;
 	}
-	
+
 	/**
 	 * Obtain the httpd log
 	 * 
@@ -234,15 +229,23 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 	public Log getLog() {
 		return log;
 	}
-	
+
 	public void addToGzipAccept(String mimetype) {
 		gzipaccept.add(mimetype.toLowerCase());
 	}
-	
+
 	@Override
 	public boolean useGzipWhenAccepted(Response r) {
-        return r.getMimeType() != null && (r.getMimeType().toLowerCase().contains("text/") ||
-        		 (gzipaccept.contains(r.getMimeType().toLowerCase())));
+		return r.getMimeType() != null && (r.getMimeType().toLowerCase().contains("text/")
+				|| (gzipaccept.contains(r.getMimeType().toLowerCase())));
+	}
+
+	@Override
+	public void makeSecure(SSLServerSocketFactory makeLocalSSLSocketFactory, String[] object) {
+		this.makeSecure(makeLocalSSLSocketFactory, object);
+	}
+
+	public void addToWsAccept(String uri) {
     }
 
 }

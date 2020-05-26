@@ -36,7 +36,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	if (isDef(ead) && ead != "null") 
 		this.authorizedDomains = String(ead).split(",");
 	else
-		this.authorizedDomains = (isDef(ow.oJob) && isDef(ow.oJob.authorizedDomains) ? ow.oJob.authorizedDomains : [ parent.__host, parent.__ip ]);
+		this.authorizedDomains = (isDef(ow.oJob) && isDef(ow.oJob.authorizedDomains) ? ow.oJob.authorizedDomains : [ parent.__host, parent.__ip, "ojob.io" ]);
 
 	addOnOpenAFShutdown(function() {
 		var fn = parent.shutdownFuncs.pop();
@@ -101,7 +101,7 @@ OpenWrap.oJob = function(isNonLocal) {
 OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	if (isUnDef(jobs)) jobs = [];
 	if (isUnDef(todo)) todo = [];
-	if (isDef(ojob)) this.__ojob = merge(this.__ojob, ojob);
+	if (isDef(ojob) && isMap(ojob)) this.__ojob = merge(this.__ojob, ojob);
 
 	if (isUnDef(aId) && isDef(this.__ojob.id)) aId = this.__ojob.id;
 
@@ -464,8 +464,10 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 				todo: [ "Unauthorized URL" ],
 				jobs: [ { name: "Unauthorized URL" } ]
 			};
-		else
-			return af.fromYAML($rest().get(url));
+		else {
+			var _r = $rest().get(url);
+			if (isMap(_r)) return _r; else af.fromYAML(_r);
+		}
 	}
 
 	function _load(aFn) {
@@ -496,7 +498,21 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 		}
 	}
 	
-	if (isDef(aFile)) {		
+	if (isDef(aFile)) {
+		ow.oJob.authorizedDomains.map(d => {
+			if (aFile.startsWith(d) && !io.fileExists(aFile)) {
+				aFile = "https://" + aFile;
+			}
+		});
+
+    	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
+			var pp = (new java.net.URI(aFile)).getPath();
+			if (pp == "") {
+				aFile += "/";
+			} else {
+				if (!pp.endsWith("/")) aFile += ".json";
+			}
+        }
 		if (aFile.match(/\.ya?ml$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
@@ -509,6 +525,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 			} else {
 				res = this.__merge(_load(io.readFileJSON), res);
 			}
+		} else if (aFile.match(/^https?:\/\//)) {
+			res = this.__merge(_load(fnDown), res);
 		}
 	}
 
@@ -1298,7 +1316,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 
 	function _run(aExec, args, job, id) {		
 		var f;
-		if (isDef(aJob.each) && isArray(aJob.each)) {
+		if (isDef(aJob.each) && isArray(aJob.each) && aJob.each.length > 0) {
 			var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
 			fnDef += "var _oji = " + stringify(aJob.each, void 0, "") + "; ";
 			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
@@ -1759,6 +1777,53 @@ OpenWrap.oJob.prototype.addTodo = function(aOJobID, aJobsCh, aTodoCh, aJobName, 
 	});
 
 	return todoId;	
+}
+
+/**
+ * <ojob>
+ * <key>ow.oJob.output(aObj, args, aFunc)</key>
+ * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
+ * displaying values as "json", "yaml", "table", "map", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
+ * </ojob>
+ */
+OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
+ 	args = _$(args).default({});
+        aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
+   		if (isArray(obj) || isMap(obj))
+			print(printMap(obj, void 0, void 0, true));
+		else
+			sprint(obj);
+        });
+
+        var format = (isDef(global.__format) ? global.__format : "human");
+
+	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase();
+	if (isDef(args.__format)) format = String(args.__format).toLowerCase();
+        
+        switch(format) {
+        case "json": 
+           sprint(aObj, "");
+           break;
+        case "yaml":
+           yprint(aObj);
+           break;
+        case "table":
+           print(printTable(aObj, void 0, void 0, true));
+           break;
+		case "map":
+		   print(printMap(aObj, void 0, void 0, true));
+		   break;
+		case "pm":
+			var _p;
+			if (isArray(aObj)) _p = { _list: aObj };
+			if (isMap(aObj))   _p = { _map : aObj };
+			if (isUnDef(_p))   _p = { result: aObj };
+		   __pm = merge(__pm, _p);
+	       break;
+ 	default:
+	   aFunc(aObj);
+	} 
 }
 
 ow.oJob = new OpenWrap.oJob();

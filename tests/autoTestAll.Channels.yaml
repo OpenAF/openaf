@@ -108,6 +108,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testMVSUtils; 
 
+   - name: Channels::Test channel (all)
+     from: Channels::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAll
+
 todo:
    # Channels tests
    # --------------
@@ -128,6 +133,8 @@ todo:
 
    # Cache
    - Channels::Test channel (cache)
+
+   - Channels::Test channel (all)
 
    # Ignite
    #- name: Channels::Creating a channel

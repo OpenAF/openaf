@@ -152,6 +152,33 @@
         ow.test.assert($ch(this.chType + "HK").size(), 3, "Housekeep subscriber didn't remove all values after setting.");
         $ch(this.chType + "HK").destroy();
     };
+ 
+    exports.testAll = function() {
+        $ch("allA").destroy();
+        $ch("allB").destroy();
+        $ch("allC").destroy();
+
+        $ch("allA").create();
+        $ch("allB").create();
+        var flag = false;
+        $ch("allC").create(1, "all", { chs: [ "allA", "allB" ], fn: (aOp, aK) => { 
+           if (flag) {
+             return ["allB"];
+           } else {
+             return ["allA", "allB"];
+           } 
+        }});
+
+        $ch("allC").setAll(["canonicalPath"], io.listFiles(".").files);
+
+        ow.test.assert($ch("allA").size(), $ch("allB").size(), "Problem 1 with all channel sync");
+        ow.test.assert($ch("allA").size(), $ch("allC").size(), "Problem 2 with all channel sync");
+    
+        flag = true; 
+        $ch("allC").set({ canonicalPath: "_mytest" }, { canonicalPath: "_mytest" });
+        ow.test.assert($ch("allA").size() < $ch("allB").size(), true, "Problem with all channel with function");
+        ow.test.assert($ch("allB").size(), $ch("allC").size(), "Problem with all channel sync with function");
+    };
 
     exports.setChType = function(aChType) {
         this.chType = aChType;

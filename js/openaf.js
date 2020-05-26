@@ -159,6 +159,14 @@ function cprint(str, delim) { ansiStart(); print(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
+ * <key>yprint(aObj)</key>
+ * Prints aObj in YAML.
+ * </odoc>
+ */
+function yprint(str) { return print(af.toYAML(str)); }
+
+/**
+ * <odoc>
  * <key>printnl(aStr)</key>
  * Prints the aStr to the stdout (without adding a new line on the end) (example: printnl("hello world!"))
  * </odoc>
@@ -263,6 +271,14 @@ function bprintErr(str) { return printErr(beautifier(str)); }
  * </odoc>
  */
 function cprintErr(str) { ansiStart(); printErr(colorify(str)); ansiStop(); }
+
+/**
+ * <odoc>
+ * <key>yprintErr(aObj)</key>
+ * Prints aObj in YAML to stderr.
+ * </odoc>
+ */
+function yprintErr(str) { return printErr(af.toYAML(str)); }
 
 /**
  * <odoc>
@@ -1703,6 +1719,23 @@ var __opackParams;
 function oPack(aCmd) { 
 	__opackParams = aCmd;
 	load(getOpenAFJar() + "::js/opack.js");
+}
+
+/**
+ * <odoc>
+ * <key>oJob(aFile, args, aId, aOptionsMap)</key>
+ * Shortcut for oJobRunFile return the result on the variable __pm. Keep in mind that it doesn't support concurrency.
+ * </odoc>
+ */
+function oJob(aFile, args, aId, aOptionsMap) {
+	args = merge({ "__format": "pm" }, args);
+	if (isDef(__pm._list)) __pm._list = void 0;
+	if (isDef(__pm._map)) __pm._list = void 0;
+	if (isDef(__pm.result)) __pm.result = void 0;
+	oJobRunFile(aFile, args, aId, aOptionsMap);
+	if (isDef(__pm._list)) return __pm._list;
+	if (isDef(__pm._map)) return __pm._map;
+	return __pm.result;
 }
 
 /**
@@ -6831,9 +6864,9 @@ const $await = function(aName) {
 
 /**
  * <odoc>
- * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises)</key>
+ * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises, defaultTimeout)</key>
  * Will call aAFunction with a function as argument that should be used to "send" values to aBFunction. aBFunction will be call asynchronously in individual
- * $do up to the numberOfDoPromises limit.
+ * $do up to the numberOfDoPromises limit. The defaultTimeout it 2500ms.
  * </odoc>
  */
 const $doA2B = function(aAFn, aBFn, noc, defaultTimeout) {

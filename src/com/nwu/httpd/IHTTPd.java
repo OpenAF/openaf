@@ -1,7 +1,10 @@
 package com.nwu.httpd;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.net.ssl.SSLServerSocketFactory;
 
 import com.nwu.httpd.NanoHTTPD.Response;
 import com.nwu.log.Log;
@@ -24,5 +27,10 @@ public interface IHTTPd {
 	public int getListeningPort();
 	
 	public void addToGzipAccept(String mimetype);
+	public void addToWsAccept(String uri);
 	public boolean useGzipWhenAccepted(Response r);
+	public void stop();
+	public void makeSecure(SSLServerSocketFactory makeLocalSSLSocketFactory, String[] object);
+	public void start() throws IOException;
+	public boolean isAlive();
 }

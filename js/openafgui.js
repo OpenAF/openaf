@@ -117,7 +117,11 @@ var defaultPage = {
 var paths = Object.keys(getOPackLocalDB());
 searchHelp("");
 for(var i in paths) {
-    searchHelp("", paths[i]);
+	try {
+		searchHelp("", paths[i]);
+	} catch(e) {
+		logWarn("Problem with oDoc for " + paths[i] + ": "+ String(e));
+	}
 }
 
 ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, {

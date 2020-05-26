@@ -124,7 +124,7 @@ public class WebSockets {
         org.eclipse.jetty.client.HttpClient hclient = null;
 
         if (anURL.toLowerCase().startsWith("wss")) {
-            org.eclipse.jetty.util.ssl.SslContextFactory ssl = new org.eclipse.jetty.util.ssl.SslContextFactory(
+            org.eclipse.jetty.util.ssl.SslContextFactory ssl = new org.eclipse.jetty.util.ssl.SslContextFactory.Client(
                     supportSelfSigned);
             if (supportSelfSigned) { ssl.setValidateCerts(false); ssl.setTrustAll(true); }
             hclient = new org.eclipse.jetty.client.HttpClient(ssl);
