@@ -228,7 +228,8 @@ function ojob_jobhelp() {
 				print(hh.help.text);
 				if (isDef(hh.help.expects)) {
 					print("Expects:\n");
-					print(printMap(hh.help.expects));
+					ow.loadObj();
+					print(printMap(ow.obj.fromArray2Obj(hh.help.expects, "name")));
 				}
 			}
 		} else {
