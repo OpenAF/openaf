@@ -220,7 +220,15 @@ function ojob_jobhelp() {
 			print(hh.name);
 			print(repeat(hh.name.length, '-'));
 			print("");
-			print(hh.help);
+			if (isString(hh.help))
+				print(hh.help);
+			else {
+				print(hh.help.text);
+				if (isDef(hh.help.expects)) {
+					print("Expects:\n");
+					print(printMap(hh.help.expects));
+				}
+			}
 		} else {
                    	printErr("Didn't find job help for '" + job + "'.");
                         return undefined;
