@@ -88,6 +88,18 @@ OpenWrap.oJob = function(isNonLocal) {
 
 	//$doWait($doAll(this.__promises));
 
+	this.__codepage = void 0;
+
+	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+		$do(() => {
+			if (isUnDef(__conAnsi)) __initializeCon();
+			var res = __con.getTerminal().getOutputEncoding();
+			if (isDef(res)) {
+				this.__codepage = String(res);
+			}
+		});
+	}
+
 	return this;
 };
 
@@ -456,7 +468,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 				jobs: [ { name: "Unauthorized URL" } ]
 			};
 		else
-			return $rest().get(url);
+			return $rest({throwExceptions: true}).get(url);
 	}
 	var fnDownYAML = url => {
 		if (ow.oJob.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
@@ -465,7 +477,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 				jobs: [ { name: "Unauthorized URL" } ]
 			};
 		else {
-			var _r = $rest().get(url);
+			var _r = $rest({ throwExceptions: true }).get(url);
 			if (isMap(_r)) return _r; else af.fromYAML(_r);
 		}
 	}
@@ -1789,41 +1801,54 @@ OpenWrap.oJob.prototype.addTodo = function(aOJobID, aJobsCh, aTodoCh, aJobName, 
  */
 OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	args = _$(args).default({});
-        aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
-   		if (isArray(obj) || isMap(obj))
-			print(printMap(obj, void 0, void 0, true));
-		else
-			sprint(obj);
-        });
+ 	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
+ 		if (isArray(obj) || isMap(obj))
+ 			print(printMap(obj, void 0, (isDef(this.__codepage) ? "utf" : void 0), __conAnsi));
+ 		else
+ 			sprint(obj);
+ 	});
 
-        var format = (isDef(global.__format) ? global.__format : "human");
+ 	var format = (isDef(global.__format) ? global.__format : "human");
 
-	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase();
-	if (isDef(args.__format)) format = String(args.__format).toLowerCase();
-        
-        switch(format) {
-        case "json": 
-           sprint(aObj, "");
-           break;
-        case "yaml":
-           yprint(aObj);
-           break;
-        case "table":
-           print(printTable(aObj, void 0, void 0, true));
-           break;
-		case "map":
-		   print(printMap(aObj, void 0, void 0, true));
-		   break;
-		case "pm":
-			var _p;
-			if (isArray(aObj)) _p = { _list: aObj };
-			if (isMap(aObj))   _p = { _map : aObj };
-			if (isUnDef(_p))   _p = { result: aObj };
-		   __pm = merge(__pm, _p);
-	       break;
- 	default:
-	   aFunc(aObj);
-	} 
+ 	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase();
+ 	if (isDef(args.__format)) format = String(args.__format).toLowerCase();
+
+ 	switch (format) {
+ 		case "json":
+ 			sprint(aObj, "");
+ 			break;
+ 		case "yaml":
+ 			yprint(aObj);
+ 			break;
+ 		case "table":
+ 			if (isArray(aObj)) print(printTable(aObj, void 0, void 0, __conAnsi, (isDef(this.__codepage) ? "utf" : void 0)));
+ 			break;
+ 		case "map":
+ 			print(printMap(aObj, void 0, (isDef(this.__codepage) ? "utf" : void 0), __conAnsi));
+ 			break;
+ 		case "pm":
+ 			var _p;
+ 			if (isArray(aObj)) _p = {
+ 				_list: aObj
+ 			};
+ 			if (isMap(aObj)) _p = {
+ 				_map: aObj
+ 			};
+ 			if (isUnDef(_p)) _p = {
+ 				result: aObj
+ 			};
+ 			__pm = merge(__pm, _p);
+ 			break;
+ 		case "csv":
+ 			if (isArray(aObj)) {
+ 				var csv = new CSV();
+ 				csv.toCsv(aObj);
+ 				print(csv.w());
+ 			}
+ 			break;
+ 		default:
+ 			aFunc(aObj);
+ 	}
 }
 
 ow.oJob = new OpenWrap.oJob();
