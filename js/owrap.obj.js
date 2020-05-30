@@ -2885,6 +2885,76 @@ OpenWrap.obj.prototype.schemaSampleGenerator = function(aJsonSchema) {
 	return fn(aJsonSchema);
 };
 
+/**
+ * <odoc>
+ * <key>ow.obj.oneOf(anArray, aWeightField) : Object</key>
+ * Chooses a random object from the provided anArray. If aWeightField is provided that field should be 
+ * present in each object of anArray and it will be used to "weight" the probability of that element being choosen randomly.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.oneOf = function(anArray, aWeightField) {
+    var max = anArray.length;
+    if (isDef(aWeightField)) {
+        var rWeight = ow.obj.randomRange(0, $path(anArray, "sum([]." + aWeightField + ")"));
+        for(var ii in anArray) {
+            rWeight = rWeight - anArray[ii][aWeightField];
+            if (rWeight <= 0) return anArray[ii];
+        }
+    } else {
+        return anArray[ow.obj.randomRange(0, max-1)];
+    }
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.oneOfFn(anArrayFn, aWeightField) : Object</key>
+ * Equivalent to ow.obj.oneOf but each object is expected to have a field "fn" which should be a function. A random 
+ * object will be choosen and the corresponding function (fn) will be called. If aWeightField is provided that field should be 
+ * present in each object of anArray and it will be used to "weight" the probability of that element being choosen randomly.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.oneOfFn = function(anArrayFn, aWeightField) {
+    var o;
+    if (isDef(aWeightField)) {
+        o = this.oneOf(anArrayFn, aWeightField);
+    } else {
+        o = this.oneOf(anArrayFn);
+    }
+
+    if (isObject(o) && isFunction(o.fn)) return o.fn();
+    if (isFunction(o)) return o();
+
+    return void 0;
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.randomRange(min, max) : Number</key>
+ * Generates a random long number between min and max.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.randomRange = function(min, max) {
+    return Math.floor((Math.random() * (max+1-min)) + min);
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.randomDateRange(aFormat, aMin, aMax) : Date</key>
+ * Generates a random date between aMin date string and aMax date string which the corresponding format is determined
+ * by aFormat. For example:\
+ * \
+ * randomDateRange("yyyyMMdd hhmm", "19991231 2300", "20000101 0200");\
+ * \
+ * </odoc>
+ */
+OpenWrap.obj.prototype.randomDateRange = function(aFormat, aMin, aMax) {
+	ow.loadFormat();
+    return new Date(ow.obj.randomRange(
+        ow.format.toDate(aMin, aFormat).getTime(),
+        ow.format.toDate(aMax, aFormat).getTime()
+    ));
+};
+
 OpenWrap.obj.prototype.socket = {
 	/**
 	 * <odoc>
