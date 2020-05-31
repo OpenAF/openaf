@@ -1131,8 +1131,6 @@ function stopLog() {
 	$ch("__log").destroy();
 }
 
-var __clogErr = $atomic(), __clogWarn = $atomic();
-
 /**
  * <odoc>
  * <key>log(msg, formatOptions)</key>
@@ -6785,6 +6783,8 @@ const $atomic = function(aInit, aType) {
 	case "long"   : return new _fNum(new java.util.concurrent.atomic.AtomicLong(aInit));
 	}
 };
+
+var __clogErr = $atomic(), __clogWarn = $atomic();
 
 /**
  * <odoc>

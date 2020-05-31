@@ -31,8 +31,8 @@ OpenWrap.metrics.prototype.__m = {
         path   : getOpenAFPath(),
         init   : __oafInit,
         now    : now(),
-        logErr : __clogErr,
-        logWarn: __clogWarn
+        logErr : __clogErr.get(),
+        logWarn: __clogWarn.get()
     }),
     os: () => ({
         pid: getPid()
