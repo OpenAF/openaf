@@ -3,6 +3,7 @@
 
 const self = this;
 const global = self;
+const __oafInit = now();
 
 /**
  * <odoc>
@@ -1130,6 +1131,8 @@ function stopLog() {
 	$ch("__log").destroy();
 }
 
+var __clogErr = $atomic(), __clogWarn = $atomic();
+
 /**
  * <odoc>
  * <key>log(msg, formatOptions)</key>
@@ -1281,6 +1284,7 @@ function tlognl(msg, someData, formatOptions) {
  */
 function logErr(msg, formatOptions) {
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	__clogErr.inc();
 	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
 	if (__logStatus) {
 		var f = () => {
@@ -1340,6 +1344,7 @@ function logErr(msg, formatOptions) {
  */
 function logWarn(msg, formatOptions) {
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	__clogWarn.inc();
 	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
 	if (__logStatus) {
 		var f = () => {
@@ -3759,6 +3764,14 @@ OpenWrap.prototype.loadAI = function() { loadCompiledLib("owrap_ai_js"); ow.ai =
  */
 //OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
 OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+/**
+ * <odoc>
+ * <key>ow.loadMetrics()</key>
+ * Loads OpenWrap Metrics functionality. Basically functions to wrap access to server functionality.
+ * </odoc>
+ */
+//OpenWrap.prototype.loadMetrics = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+OpenWrap.prototype.loadMetrics = function() { loadCompiledLib("owrap_metrics_js"); ow.metrics = new OpenWrap.metrics(); pods.declare("ow.metrics", ow.metrics); return ow.metrics; }
 /**
  * <odoc>
  * <key>ow.loadTemplate()</key>
