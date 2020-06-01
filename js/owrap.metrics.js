@@ -22,18 +22,42 @@ OpenWrap.metrics.prototype.__m = {
         cores : getNumberOfCores(),
         _cores: __cpucores
     }),
-    oaf: () => ({
-        libs : __loadedLibs,
-        nlibs: Object.keys(__loadedLibs).length,
-        nscopes: af.getScopeIds().length,
-        preCompileLevel: __preCompileLevel,
-        version: getVersion(),
-        path   : getOpenAFPath(),
-        init   : __oafInit,
-        now    : now(),
-        logErr : __clogErr.get(),
-        logWarn: __clogWarn.get()
-    }),
+    oaf: () => {
+        var res = {
+            libs : __loadedLibs,
+            nlibs: Object.keys(__loadedLibs).length,
+            nscopes: af.getScopeIds().length,
+            preCompileLevel: __preCompileLevel,
+            version: getVersion(),
+            path   : getOpenAFPath(),
+            init   : __oafInit,
+            now    : now(),
+            logErr : __clogErr.get(),
+            logWarn: __clogWarn.get(),
+            fns    : ow.metrics.__fnMetrics
+        };
+        if (isDef(res.fns)) {
+            Object.keys(res.fns).map(r => {
+                res.fns[r].avg = res.fns[r].sum / (res.fns[r].err + res.fns[r].end);
+            });
+        }
+        return res;
+    },
+    ojob: () => {
+        var res = {};
+        if (isDef(ow.oJob)) {
+            res = ow.oJob.getLogCh().getAll().map(j => ({
+                name : j.name,
+                start: j.count,
+                //err  : $path(j.log, "[?not_null(error)] | length(@)"),
+                //end  : $path(j.log, "[?!not_null(error)] | length(@)"),
+                error: j.error,
+                sum  : j.totalTime,
+                avg  : j.avgTime
+            }) );
+        }
+        return res;
+    },
     os: () => ({
         pid: getPid()
     }),
@@ -96,8 +120,17 @@ OpenWrap.metrics.prototype.getAll = function() {
     return ow.metrics.getSome(Object.keys(ow.metrics.__m));
 };
 
+/**
+ * <odoc>
+ * <key>ow.metrics.startCollecting(aChName, aPeriod)</key>
+ * Starts collecting metrics on aChName (defaults to '__metrics') every aPeriod ms (defaults to 1000ms).
+ * </odoc>
+ */
 OpenWrap.metrics.prototype.startCollecting = function(aChName, aPeriod) {
     var createCh = isUnDef(aChName) || $ch().list().indexOf(aChName) < 0;
+
+    if (isUnDef(ow.metrics.__fnMetrics)) ow.metrics.__fnMetrics = {};
+
     aChName = _$(aChName).isString().default("__metrics");
     aPeriod = _$(aPeriod).isNumber().default(1000);
 
@@ -117,9 +150,16 @@ OpenWrap.metrics.prototype.startCollecting = function(aChName, aPeriod) {
                 $ch(ch).set(k, v);
             });
         }, aPeriod);
+        ow.metrics.__t.startNoWait();
     }
 };
 
+/**
+ * <odoc>
+ * <key>ow.metrics.stopCollecting(aChName)</key>
+ * Stops collecting metrics on aChName (defaults to '__metrics')
+ * </odoc>
+ */
 OpenWrap.metrics.prototype.stopCollecting = function(aChName) {
     aChName = _$(aChName).isString().default("__metrics");
     if (ow.metrics.__ch.indexOf(aChName) < 0) throw "Not collecting into " + aChName;
@@ -130,3 +170,74 @@ OpenWrap.metrics.prototype.stopCollecting = function(aChName) {
         ow.metrics.__t = void 0;
     }
 };
+
+/**
+ * <odoc>
+ * <key>ow.metrics.collectMetrics4Fn(aName, aFn)</key>
+ * Adds extra code to an existing aFn to collect functions metrics under the name aName. If the same aName and aFn
+ * has been already executed before it will throw an exception "Already collecting for the provided function."
+ * </odoc>
+ */
+OpenWrap.metrics.prototype.collectMetrics4Fn = function(aName, aFn) {
+    _$(aName, "name").isString().$_();
+    _$(aFn, "fn").isString().$_();
+
+    var aBody = eval(aFn).toString();
+    if (isUnDef(ow.metrics.__fnMetrics)) ow.metrics.__fnMetrics = {};
+    if (isDef(ow.metrics.__fnMetrics[aName])) throw "Already collecting for the provided function.";
+
+    aBody = aBody.split(/\n/);
+    var newBody = [];
+    ow.metrics.__fnMetrics[aName] = {
+        start: 0,
+        err  : 0,
+        end  : 0,
+        sum  : 0,
+        avg  : 0
+    };
+
+    for(var ii in aBody) {
+        if (ii == 2 || ii == aBody.length -2) {
+            if (ii == 2) {
+                newBody.push("ow.metrics.__fnMetrics[\"" + aName + "\"].start += 1; var __resMetricsProxyE, __resMetricsProxyR, __resMetricsProxyI = now(); try { __resMetricsProxyR = (function(){");
+            } else {
+                newBody.push("})(); ow.metrics.__fnMetrics[\"" + aName + "\"].end += 1; ow.metrics.__fnMetrics[\"" + aName + "\"].sum += (now() - __resMetricsProxyI); return __resMetricsProxyR; } catch(__fnMetricsProxyE) { ow.metrics.__fnMetrics[\"" + aName + "\"].err += 1; throw __fnMetricsProxyE; }");
+            }
+        }
+        newBody.push(aBody[ii]);
+    }
+    eval(aFn + " = " + newBody.join("\n"));
+};
+
+/**
+ * <odoc>
+ * <key>ow.metrics.collectMetrics(aName, aFunction) : Object</key>
+ * Executes aFunction while collectin functions metrics under the name aName. Returns whatever the function returns
+ * or throws any exception.
+ * </odoc>
+ */
+OpenWrap.metrics.prototype.collectMetrics = function(aName, aFunction) {
+    _$(aName, "name").isString().$_();
+    _$(aFunction).isFunction().$_();
+
+    if (isUnDef(ow.metrics.__fnMetrics)) ow.metrics.__fnMetrics = {};
+    if (isUnDef(ow.metrics.__fnMetrics[aName])) {
+        ow.metrics.__fnMetrics[aName] = {
+            start: 0,
+            err  : 0,
+            end  : 0,
+            sum  : 0
+        };
+    }
+
+    var __resMetricsProxyE, __resMetricsProxyR, __resMetricsProxyI = now(), res;
+    try {
+        ow.metrics.__fnMetrics[aName].start += 1;
+        __resMetricsProxyR = aFunction();
+        ow.metrics.__fnMetrics[aName].end += 1; 
+        return __resMetricsProxyR;
+    } catch(__resMetricsProxyE) {
+        ow.metrics.__fnMetrics[aName].err += 1; 
+        throw __resMetricsProxyE;
+    }
+}
