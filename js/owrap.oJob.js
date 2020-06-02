@@ -346,6 +346,22 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 			}
 		}
 	}
+
+	if (isDef(this.__ojob.metrics)) {
+		ow.loadMetrics();
+		if (isBoolean(this.__ojob.metrics)) {
+			ow.metrics.startCollecting();
+		} else {
+			if (isMap(this.__ojob.metrics)) {
+				if (isDef(this.__ojob.metrics.add) && isMap(this.__ojob.metrics.add)) {
+					Object.keys(this.__ojob.metrics.add).map(r => {
+						ow.metrics.add(r, new Function(this.__ojob.metrics.add[r]) );
+					});
+				}
+				ow.metrics.startCollecting(this.__ojob.metrics.chName, this.__ojob.metrics.period);
+			}
+		}
+	}
 };
 
 /**
@@ -971,6 +987,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  */
 OpenWrap.oJob.prototype.stop = function() {
 	$doWait($doAll(this.__promises));
+	ow.metrics.stopCollecting( isDef(this.__ojob.metrics) && isDef(this.__ojob.metrics.chName) ? this.__ojob.metrics.chName : void 0 );
 	//this.getLogCh().waitForJobs(250);
 	this.getLogCh().waitForJobs();
 	for(var i in this.__threads) {
