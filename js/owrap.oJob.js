@@ -987,7 +987,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  */
 OpenWrap.oJob.prototype.stop = function() {
 	$doWait($doAll(this.__promises));
-	ow.metrics.stopCollecting( isDef(this.__ojob.metrics) && isDef(this.__ojob.metrics.chName) ? this.__ojob.metrics.chName : void 0 );
+	if (isDef(ow.metrics)) ow.metrics.stopCollecting( isDef(this.__ojob.metrics) && isDef(this.__ojob.metrics.chName) ? this.__ojob.metrics.chName : void 0 );
 	//this.getLogCh().waitForJobs(250);
 	this.getLogCh().waitForJobs();
 	for(var i in this.__threads) {
