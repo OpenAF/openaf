@@ -122,11 +122,11 @@ OpenWrap.metrics.prototype.getAll = function() {
 
 /**
  * <odoc>
- * <key>ow.metrics.startCollecting(aChName, aPeriod)</key>
- * Starts collecting metrics on aChName (defaults to '__metrics') every aPeriod ms (defaults to 1000ms).
+ * <key>ow.metrics.startCollecting(aChName, aPeriod, some)</key>
+ * Starts collecting metrics on aChName (defaults to '__metrics') every aPeriod ms (defaults to 1000ms) optionally just some (array) metrics.
  * </odoc>
  */
-OpenWrap.metrics.prototype.startCollecting = function(aChName, aPeriod) {
+OpenWrap.metrics.prototype.startCollecting = function(aChName, aPeriod, aSome) {
     var createCh = isUnDef(aChName) || $ch().list().indexOf(aChName) < 0;
 
     if (isUnDef(ow.metrics.__fnMetrics)) ow.metrics.__fnMetrics = {};
@@ -144,7 +144,11 @@ OpenWrap.metrics.prototype.startCollecting = function(aChName, aPeriod) {
         ow.metrics.__t = new Threads();
         ow.metrics.__t.addScheduleThreadWithFixedDelay(function() {
             var k = { t: now() };
-            var v = merge(k, ow.metrics.getAll());
+            var v;
+            if(isArray(aSome))
+               v = merge(k, ow.metrics.getSome(aSome)); 
+            else
+	       v = merge(k, ow.metrics.getAll());
     
             ow.metrics.__ch.map(ch => {
                 $ch(ch).set(k, v);
