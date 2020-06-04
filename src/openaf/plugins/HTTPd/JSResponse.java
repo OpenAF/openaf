@@ -78,8 +78,8 @@ public class JSResponse extends Response {
 					Object ss = no.get("status");
 					if (ss instanceof IStatus) 
 						this.status = (IStatus) no.get("status");
-					else
-						this.status = HTTPServer.translateToNanoHTTPD((int) ss);
+					else 
+						this.status = HTTPServer.translateToNanoHTTPD(Double.valueOf(ss.toString()).intValue());
 				} else
 					this.status = Codes.HTTP_OK;
 				
