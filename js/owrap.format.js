@@ -455,6 +455,83 @@ OpenWrap.format.prototype.string = {
 				};
 			}
 		}
+	},
+	renderLines: function(anArrayElements, numberOfLines, currentWidth, aPattern, shouldReturn) {
+		var jansi = JavaImporter(Packages.org.fusesource.jansi);
+		aPattern = _$(aPattern, "pattern").isString().default(" ");
+	
+		var o = [], extra = []
+		for(var ii = 0; ii < numberOfLines; ii++) { o[ii] = repeat(currentWidth, aPattern); extra[ii] = 0 }
+		
+		var fn = (orig, x, y, str) => { 
+			var c = -1; 
+			str.split(/\r?\n/).map(r => { 
+				c++; 
+				if ( (x + c) < numberOfLines) {
+					var rm = r.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "");
+		
+					orig[x + c] = orig[x + c].substring(0, y + extra[x + c]) + 
+						   r + 
+						   orig[x + c].substring(y + rm.length + extra[x + c]); 
+			
+					extra[x + c] = extra[x + c]+ r.length - rm.length;
+				}
+			}); 
+	
+		};
+		
+		anArrayElements.map(elem => {
+			fn(o, elem.x, elem.y, elem.t);
+		});
+		
+		if (shouldReturn) {
+			return o.join("");
+		} else {
+			ansiStart(); print(o.join("")); printnl( jansi.Ansi.ansi().cursorUpLine(numberOfLines + 2) ); ansiStop();
+		}
+	},
+	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
+		plugin("Console");
+		var _con_ = new Console();
+		aY = _$(aY, "width").isNumber().default(Number(_con_.getConsoleReader().getTerminal().getWidth()));
+		aX = _$(aX, "height").isNumber().default(Number(Math.floor(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length))- 3);
+	
+		var elems = [], l = 0;
+		aElems.map(line => {
+			var c = 0;
+			line.map(col => {
+				col.obj  = _$(col.obj, "obj").default("");
+				if (isUnDef(col.type)) {
+					if (isMap(col.obj) || isArray(col.obj)) 
+						col.type = "map";
+					else
+						col.type = "human";
+				}
+				var p = "";
+		
+				switch(col.type) {
+				case "map": p = printMap(col.obj, (aY / line.length), "utf", true); break; 
+				case "table": p = printTable(col.obj, (aY / line.length), void 0, true, "utf"); break;
+				default: p = String(col.obj).split(/\r?\n/).map(r => r.substring(0, (aY / line.length))).join("\n");
+				}
+				
+				var pp = p.split(/\r?\n/), po = [];
+				if (pp.length > aX) {
+					for(var ii = 0; ii <= aX; ii++) {
+						po.push(pp[ii]);
+					}
+					po = po.join("\n");
+				} else {
+					po = p;
+				}
+				
+				elems.push({ x: l, y: (aY / line.length) * c, t: po });
+				c++;
+			});
+			l += aX + 1;
+		});
+	
+		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn);
 	}
 };
 	

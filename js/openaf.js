@@ -2347,13 +2347,13 @@ function beep() {
 
 /**
  * <odoc>
- * <key>watch(waitFor, aCommand, beautifyFlag)</key>
+ * <key>watch(waitFor, aCommand, beautifyFlag, noPrint)</key>
  * Executes javascript aCommand provided every waitFor periods of time (expressed in ms). The screen
  * will be cleared and the execution will repeat indefinitely until the 'q' key is pressed. 
  * Optionally a beautifyFlag can be provided to execute the beautifier function on the aCommand result.
  * </odoc>
  */
-function watch(waitFor, aCommand, beautifyFlag) {
+function watch(waitFor, aCommand, beautifyFlag, noPrint) {
 	var c = -2;
 
 	plugin("Threads");
@@ -2371,8 +2371,10 @@ function watch(waitFor, aCommand, beautifyFlag) {
 
 		if (beautifyFlag) out = beautifier(out);
 
-		cls();
-		print(out);
+		if (noPrint) {
+			cls();
+			print(out);
+		}
 		print("Press 'q' to quit. (refreshed at " + new Date() + ")");
 	});
 
