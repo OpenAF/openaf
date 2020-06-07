@@ -2358,10 +2358,11 @@ function watch(waitFor, aCommand, beautifyFlag, noPrint) {
 
 	plugin("Threads");
 	if (isUnDef(__conStatus)) __initializeCon();
-	var con = __con;
+	plugin("Console");
+	var con = new Console();
 	var t = new Threads();
 
-	t.addThread(function() {
+	t.addScheduleThreadAtFixedRate(function() {
 		var out = "";
 		try {
 			out = af.eval(aCommand);
@@ -2376,10 +2377,10 @@ function watch(waitFor, aCommand, beautifyFlag, noPrint) {
 			print(out);
 		}
 		print("Press 'q' to quit. (refreshed at " + new Date() + ")");
-	});
+	}, waitFor);
 
 	try {
-		t.startWithFixedRate(waitFor);
+		t.startNoWait();
 
 		while(c != 3 && c != 113) {
 			var tmpC = Number(con.readCharNB());

@@ -494,40 +494,55 @@ OpenWrap.format.prototype.string = {
 		plugin("Console");
 		var _con_ = new Console();
 		aY = _$(aY, "width").isNumber().default(Number(_con_.getConsoleReader().getTerminal().getWidth()));
-		aX = _$(aX, "height").isNumber().default(Number(Math.floor(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length))- 3);
+		aX = _$(aX, "height").isNumber().default(Number(Math.floor(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)));
 	
-		var elems = [], l = 0;
+		var elems = [], l = 0, ignore = [];
 		aElems.map(line => {
 			var c = 0;
+
 			line.map(col => {
-				col.obj  = _$(col.obj, "obj").default("");
-				if (isUnDef(col.type)) {
-					if (isMap(col.obj) || isArray(col.obj)) 
-						col.type = "map";
-					else
-						col.type = "human";
-				}
-				var p = "";
-		
-				switch(col.type) {
-				case "map": p = printMap(col.obj, (aY / line.length), "utf", true); break; 
-				case "table": p = printTable(col.obj, (aY / line.length), void 0, true, "utf"); break;
-				default: p = String(col.obj).split(/\r?\n/).map(r => r.substring(0, (aY / line.length))).join("\n");
-				}
-				
-				var pp = p.split(/\r?\n/), po = [];
-				if (pp.length > aX) {
-					for(var ii = 0; ii <= aX; ii++) {
-						po.push(pp[ii]);
+				if (ignore.indexOf("Y:" + c + "X:" + l) < 0) {
+					if (isUnDef(col)) col = "";
+					if (!isMap(col)) col = { obj: col };
+	
+					if (isUnDef(col.type)) {
+						if (isMap(col.obj) || isArray(col.obj)) 
+							col.type = "map";
+						else
+							col.type = "human";
 					}
-					po = po.join("\n");
-				} else {
-					po = p;
+
+					var xspan = _$(col.xspan, "xspan").isNumber().default(1);
+					var yspan = _$(col.yspan, "yspan").isNumber().default(1);
+					if (xspan > 1) for(var ii = c + 1; ii < c + xspan; ii++) { ignore.push("Y:" + ii + "X:" + l); }
+					if (yspan > 1) for(var ii = l + (aX + 1); ii < l + ((aX + 1) * yspan); ii += aX + 1) { ignore.push("Y:" + c + "X:" + ii); }
+					var p = "", cs = Math.floor((aY / line.length) * xspan);
+			
+					switch(col.type) {
+					case "map": p = printMap(col.obj, cs, "utf", true); break; 
+					case "table": p = printTable(col.obj, cs, void 0, true, "utf"); break;
+					default: p = String(col.obj).split(/\r?\n/).map(r => r.substring(0, cs)).join("\n");
+					}
+	
+					if (isDef(col.title)) {
+						p = ansiColor("BOLD", "> " + col.title + " " + repeat(cs - 4 - col.title.length, "─")) + "\n" + p;
+					}
+					
+					var pp = p.split(/\r?\n/), po = [];
+					if (pp.length > (aX * yspan)) {
+						for(var ii = 0; ii <= (aX * yspan); ii++) {
+							po.push(pp[ii]);
+						}
+						po = po.join("\n");
+					} else {
+						po = p;
+					}
+					
+					elems.push({ x: l, y: cs * c, t: po });
 				}
-				
-				elems.push({ x: l, y: (aY / line.length) * c, t: po });
 				c++;
 			});
+
 			l += aX + 1;
 		});
 	
