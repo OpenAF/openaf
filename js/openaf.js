@@ -2375,8 +2375,8 @@ function watch(waitFor, aCommand, beautifyFlag, noPrint) {
 		if (noPrint) {
 			cls();
 			print(out);
+		 	print("Press 'q' to quit. (refreshed at " + new Date() + ")");
 		}
-		print("Press 'q' to quit. (refreshed at " + new Date() + ")");
 	}, waitFor);
 
 	try {
