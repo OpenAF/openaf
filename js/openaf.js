@@ -5328,6 +5328,77 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	return jsonParse(res);
 };
 
+const $bottleneck = function(aName, aFn) {
+	if (isUnDef(global.__bottleneck)) global.__bottleneck = {};
+	var parent = this;
+
+	var __b = function(aN, aF) {
+		aN = _$(aN).default("bottleneck");
+		this.name = aN;
+		this.attw = -1;
+		this.aF = aF;
+		this.ance = __cpucores * __threadPoolFactor;
+		this.atomic = $atomic();
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$bottleneck.maxWait(aMs) : Object</key>
+	 * Creates a bottleneck holding the function execution for a max period of aMs.
+	 * </odoc>
+	 */
+	__b.prototype.maxWait = function(aTTW) { this.attw = aTTW; return this; };
+	/**
+	 * <odoc>
+	 * <key>$bottleneck.maxExec(aMaxNumber) : Object</key>
+	 * Creates a bottleneck to a maximum concurrent execution number of aMaxNumber.
+	 * </odoc>
+	 */	
+	__b.prototype.maxExec = function(aNCE) { this.ance = aNCE; return this; };
+
+    /**
+	 * <odoc>
+	 * <key>$bottleneck.exec(args) : Object</key>
+	 * Creates a bottleneck aName to execute aFunction with the provided args. Returns what the function returns:\
+	 * \
+	 * $bottleneck("myFunc", (a, b) => { ... return result; })\
+	 * .maxExec(3)\
+	 * .maxWait(5000)\
+	 * .exec(2, 4);\
+	 * \
+	 * $bottleneck("myFunc").exec(2, 2);\
+	 * \
+	 * </odoc>
+	 */
+	__b.prototype.exec = function(args) {
+		var timeout = false, init = now();
+		while (this.atomic.get() >= this.ance && !timeout) {
+			if (this.attw > 0) {
+				if ((now() - init) > this.attw) timeout = true;
+				
+				sleep(this.attw, true);
+			} 
+		}
+		this.atomic.inc();
+		var res;
+		try {
+			this.aF.apply(parent, arguments);
+			this.atomic.dec();
+		} catch(e) {
+			this.atomic.dec();
+			throw e;
+		}
+		return res;
+	};
+
+	if (isUnDef(global.__bottleneck[aName])) 
+		global.__bottleneck[aName] = new __b(aName, aFn);
+	else
+		global.__bottleneck[aName].aF = aFn;
+
+    return global.__bottleneck[aName];
+};
+
 const $cache = function(aName) {
 	if (isUnDef(global.__cache)) global.__cache = {};
 
