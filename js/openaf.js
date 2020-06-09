@@ -4853,7 +4853,14 @@ const $rest = function(ops) {
 				// try host based
 				try {
 					var url = java.net.URL(aBaseURI);
-					var host = String(url.getHost() + ":" + url.getPort());
+					var port = url.getPort();
+					if (port == -1) {
+						switch(String(url.getProtocol())) {
+						case "http" : port = 80;  break;
+						case "https": port = 443; break;
+						}
+					}
+					var host = String(url.getHost() + ":" + port);
 
 					if (isUnDef(__openaf_rest.urls[host])) __openaf_rest.urls[host] = {};
 					__openaf_rest.urls[host].c = (isDef(__openaf_rest.urls[host].c) ? __openaf_rest.urls[host].c++ : 1);

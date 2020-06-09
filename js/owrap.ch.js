@@ -517,8 +517,14 @@ OpenWrap.ch.prototype.__types = {
 	//
 	cache: {
 		__cache: {},
+		__cacheStats: {},
 		create       : function(aName, shouldCompress, options) { 
 			this.__cache[aName] = {};
+			this.__cacheStats[aName] = {
+				hits: 0,
+				miss: 0,
+				avg: 0
+			};
 			this.__cache[aName].Func = (isDef(options.func) ? function(k) { var res = options.func(k); return (isObject(res) ? res : { result: res }); } : function() { return {}; });
 			this.__cache[aName].TTL = (isDef(options.ttl) ? options.ttl : 5000);
 			this.__cache[aName].Size = (isDef(options.size) ? options.size : -1);
@@ -535,6 +541,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(this.__cache[aName].Ch)) delete this.__cache[aName].Ch;
 			if (isDef(this.__cache[aName].TTL)) delete this.__cache[aName].TTL;
 			if (isDef(this.__cache[aName].Size)) delete this.__cache[aName].Size;
+			if (isDef(this.__cacheStats[aName])) delete this.__cacheStats[aName];
 			$ch(aName + "::__cache").destroy();
 		},
 		__refresh    : function(aName, aRemoveNum) {
@@ -630,15 +637,22 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(ee)) {
 				if (ee.____t > (nowUTC() - this.__cache[aName].TTL)) {
 					aVv = this.__cache[aName].Ch.get(ee);
+					this.__cacheStats[aName].hits++;
 				} else {
+					var init = now();
 					var aVv = this.__cache[aName].Func(aK);
+					this.__cacheStats[aName].miss++;
+					this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (now() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
 					this.__cache[aName].Ch.unset(ee);
 					var eK = merge(aK, { ____t: nowUTC() });
 					this.__cache[aName].Ch.set(eK, aVv);
 					aVv = this.__cache[aName].Ch.get(eK);
 				}
 			} else {
+				var init = now();
 				var aVv = this.__cache[aName].Func(aK);
+				this.__cacheStats[aName].miss++;
+				this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (now() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
 				this.__refresh(aName, 1);
 				if (this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) {
 					var eK = merge(aK, { ____t: nowUTC() });

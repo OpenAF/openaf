@@ -34,6 +34,29 @@ OpenWrap.metrics.prototype.__m = {
             now    : now(),
             logErr : __clogErr.get(),
             logWarn: __clogWarn.get(),
+            cpuCores: __cpucores,
+            threadPoolFactor: __threadPoolFactor,
+            bottlenecks: (isDef(global.__bottleneck) ? Object.keys(global.__bottleneck).map(r => ({
+                name    : r,
+                running : global.__bottleneck[r].atomic.get(),
+                maxWait : global.__bottleneck[r].attw,
+                maxExecs: global.__bottleneck[r].ance
+            })) : "n/a"),
+            cache: (isDef(global.__cache) ? Object.keys(global.__cache).map(r => ({
+                name: r,
+                chName: global.__cache[r].name,
+                ttl : global.__cache[r].ttl,
+                maxSize: global.__cache[r].msize,
+                size: global.__cache[r].size(),
+                hits: ow.ch.__types.cache.__cacheStats[global.__cache[r].name].hits,
+                miss: ow.ch.__types.cache.__cacheStats[global.__cache[r].name].miss,
+                avgExecTime: ow.ch.__types.cache.__cacheStats[global.__cache[r].name].avg,
+            })) : "n/a"),
+            rest: (isDef(global.__openaf_rest) ? Object.keys(global.__openaf_rest.urls).map(r => ({
+                url: r,
+                hits: _$(global.__openaf_rest.urls[r].c).default(0),
+                miss: _$(global.__openaf_rest.urls[r].f).default(0)
+            })) : "n/a"),
             fns    : ow.metrics.__fnMetrics
         };
         if (isDef(res.fns)) {
