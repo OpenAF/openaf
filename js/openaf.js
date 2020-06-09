@@ -1630,16 +1630,16 @@ function splitBySeparator(aString, aSep) {
 
 /**
  * <odoc>
- * <key>processExpr(aSeparator, ignoreCase) : Map</key>
- * Will access the current contents of the OpenAF -e argument looking for pairs of key values in the form "a=5;b=1;c=xpto\\;"
+ * <key>processExpr(aSeparator, ignoreCase, aSource) : Map</key>
+ * Will access the current contents of the OpenAF -e argument (if a different aSource is not defined) looking for pairs of key values in the form "a=5;b=1;c=xpto\\;"
  * and will produce a Map with { "a": 5, "b": 1, "c": "xpto;" }. If no aSeparator is provided ';' will be assumed.
  * __pmIn values will be also included. If ignoreCase = true all keys will be lower cased.
  * </odoc>
  */
-function processExpr(aSep, ignoreCase) {
-	if (isUnDef(aSep)) aSep = ";";
-	//var args = __expr.replace(new RegExp(aSep, "g"), "\\" + aSep).replace(new RegExp("\\\\\\\\(?=" + aSep + ")", "g") , "").split("\\" + aSep + "");
-	var args = splitBySeparator(__expr, aSep);
+function processExpr(aSep, ignoreCase, aSource) {
+    aSource = _$(aSource, "aSource").isString().default(__expr);
+	aSep    = _$(aSep, "aSep").isString().default(";");
+	var args = splitBySeparator(aSource, aSep);
 	var pairs = {};
 
 	for(var argIdx in args) {
