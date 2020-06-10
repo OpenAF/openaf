@@ -1,4 +1,5 @@
-var fparam = __expr.match(/^([^ ]+) /)[1];
+var _fparam = __expr.match(/^([^ ]+) ?/);
+var fparam = (isArray(_fparam) && _fparam.length > 0) ? _fparam[1] : "";
 var params = processExpr(" ");
 var ojob_shouldRun = true;
 var ojob_args = {};
