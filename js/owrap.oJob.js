@@ -8,6 +8,8 @@
  */
 OpenWrap.oJob = function(isNonLocal) { 
 	//startLog();
+	if (isDef(ow.oJob)) return ow.oJob;
+
 	this.__promises = [];
 	var parent = this;
 
@@ -1304,6 +1306,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 	var canContinue = true, timeoutDeps = false;
 	var depInfo = {};
 	if (isDef(aJob.deps)) {		
+		if (!isArray(aJob.deps)) aJob.deps = [ aJob.deps ];
 		for(var j in aJob.deps) {
 			if (canContinue) {
 				try {
