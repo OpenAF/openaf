@@ -239,7 +239,7 @@ OpenWrap.metrics.prototype.collectMetrics4Fn = function(aName, aFn) {
 /**
  * <odoc>
  * <key>ow.metrics.collectMetrics(aName, aFunction) : Object</key>
- * Executes aFunction while collectin functions metrics under the name aName. Returns whatever the function returns
+ * Executes aFunction while collecting functions metrics under the name aName. Returns whatever the function returns
  * or throws any exception.
  * </odoc>
  */

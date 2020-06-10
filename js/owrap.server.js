@@ -1626,6 +1626,59 @@ OpenWrap.server.prototype.queue.prototype.purge = function() {
 };
 
 //-----------------------------------------------------------------------------------------------------
+// TELEMETRY
+//-----------------------------------------------------------------------------------------------------
+
+OpenWrap.server.prototype.telemetry = { 
+	/**
+	 * <odoc>
+	 * <key>ow.server.telemetry.passive(aHTTPdOrPort, aURI)</key>
+	 * Setup a HTTPd server on aHTTPdOrPort (defaults to 7777) on the aURI (defaults to /healthz) to 
+	 * serve ow.metrics.getAll. If the parameter "s" is present the value will be split by commas and used
+	 * for ow.metrics.getSome.
+	 * </odoc>
+	 */
+    passive: function(aHs, aURI) {
+		aHs  = _$(aHs, "server").default("7777");
+		aURI = _$(aURI, "uri").isString().default("/healthz");
+
+		if (isNumber(aHs)) aHs = ow.server.httpd.start(aHs);
+		ow.loadMetrics();
+
+		var r = {};
+		r[aURI] = (r, aH) => {
+			try {
+				if (isDef(r.params) && isDef(r.params.s)) {
+					return ow.server.httpd.reply(ow.metrics.getSome(r.params.s.split(",")));
+				} else {
+					return ow.server.httpd.reply(ow.metrics.getAll());
+				}
+			} catch(e) {
+				sprintErr(e);
+			}
+		};
+		ow.server.httpd.route(aHs, r);
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.server.telemetry.active(aSendFund, aPeriod)</key>
+	 * Setup recurrent execution of aSendFunc with the propose of sending ow.metrics for a provided aPeriod (defaults to 60000 ms). 
+	 * </odoc>
+	 */
+	active: function(aSendFunc, aPeriod) {
+		aPeriod = _$(aPeriod, "period").isNumber().default(60000);
+		_$(aSendFunc, "sendFunc").isFunction().$_();
+
+		plugin("Threads");
+		ow.loadMetrics();
+
+		var t = new Threads();
+		t.addScheduleThreadWithFixedDelay(aSendFunc, aPeriod);
+		t.startNoWait();
+	}
+};
+
+//-----------------------------------------------------------------------------------------------------
 // SIMPLE CLUSTER LIST
 //-----------------------------------------------------------------------------------------------------
 

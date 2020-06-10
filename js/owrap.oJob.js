@@ -1116,6 +1116,24 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 		if (isDef(this.__ojob.catch) && !(isString(this.__ojob.catch))) this.__ojob.catch = void 0;
 
+		if (isDef(this.__ojob.metrics)) {
+			ow.loadServer();
+			if (isBoolean(this.__ojob.metrics) && this.__ojob.metrics) ow.server.telemetry.passive();
+			if (isMap(this.__ojob.metrics)) {
+				if (isDef(this.__ojob.metrics.collect)) {
+					if (isBoolean(this.__ojob.metrics.collect) && this.__ojob.metrics.collect) ow.metrics.startCollecting();
+					if (isMap(this.__ojob.metrics.collect)) {
+						var ch = _$(this.__ojob.metrics.collect.ch, "ojob.metrics.collect.ch").isString().default(void 0);
+						var period = _$(this.__ojob.metrics.collect.period, "ojob.metrics.collect.period").isNumber().default(void 0);
+						var some = _$(this.__ojob.metrics.collect.some, "ojob.metrics.collect.some").isArray().default(void 0);
+
+						ow.metrics.startCollecting(ch, period, some);
+					}
+				}
+				ow.server.telemetry.passive(this.__ojob.metrics.port, this.__ojob.metrics.uri);
+			}
+		}
+
 	    if (isDef(this.__ojob.unique) && !this.__ojob.__subjob) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
