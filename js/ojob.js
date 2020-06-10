@@ -1,3 +1,4 @@
+var fparam = __expr.match(/^([^ ]+) /)[1];
 var params = processExpr(" ");
 var ojob_shouldRun = true;
 var ojob_args = {};
@@ -70,11 +71,14 @@ function ojob_showHelp() {
 }
 
 function ojob__getFile() {
-	var ks = Object.keys(params);
+	/*var ks = Object.keys(params);
 	if (ks.length >= 1) {
 		var f = ks[0];
 		delete params[f];
-		return f;
+		print(f);
+		return f; */
+	if (isDef(fparam)) {
+		return fparam;
 	} else {
 		printErr("Didn't recognize the aYamlFile.yaml\n");
 		ojob_showHelp();

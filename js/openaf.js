@@ -1647,17 +1647,17 @@ function processExpr(aSep, ignoreCase, aSource) {
 
 		var pair = splitBySeparator(arg, "=");
 		if (!ignoreCase)
-			pairs[pair[0]] = (isUnDef(pair[1]) ? "" : pair[1]);
+			pairs[String(pair[0])] = (isUnDef(pair[1]) ? "" : pair[1]);
 		else
-			pairs[pair[0].toLowerCase()] = (isUnDef(pair[1]) ? "" : pair[1]);
+			pairs[String(pair[0]).toLowerCase()] = (isUnDef(pair[1]) ? "" : pair[1]);
 	}
 
 	//load __pmIn to pairs
 	for (var attrname in __pmIn) { 
 		if (!ignoreCase)
-			pairs[attrname] = __pmIn[attrname];
+			pairs[String(attrname)] = __pmIn[attrname];
 		else 
-			pairs[attrname.toLowerCase()] = __pmIn[attrname];
+			pairs[String(attrname).toLowerCase()] = __pmIn[attrname];
 	}
 
 	return pairs;
