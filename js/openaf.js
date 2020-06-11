@@ -3904,7 +3904,7 @@ function loadHelp() {
 
 var __odocsurl;
 if (isUnDef(__odocsurl)) __odocsurl = __odoc;
-var __odocs;
+var __odocs, __odocsfiles = [];
 var __offlineHelp;
 if (isUnDef(__offlineHelp)) {
 	if (noHomeComms)
@@ -3938,25 +3938,31 @@ function setOfflineHelp(aBoolean) {
  */
 function searchHelp(aTerm, aPath, aId) {
 	loadHelp();
-	
-	if (isUnDef(aPath)) {
-		var res;
+
+	if (isUnDef(__odocs)) __odocs = new ODocs(void 0, void 0, __odocsurl, __offlineHelp);
+	if (isDef(aPath)) __odocs.loadFile(aPath);
+	var keys = __odocs.search(aTerm, aId);
+
+	if (keys.length != 1) {
+		var newloaded = false;
 		var paths = [ getOpenAFJar() ];
 		try {
 			paths = paths.concat(Object.keys(getOPackLocalDB()));
 		} catch(e) {
 		}
-		for(let i in paths) {
-			var path = paths[i];
-			if (!(path.match(/\.(jar|db|zip)/))) path = path + "/";
-			res = searchHelp(aTerm, path, aId);
-			if (res.length > 0) return res;
-		}
+		paths.map(path => {
+			if (!(path.match(/\.(jar|db|zip)/))) path += "/";
+			if (__odocsfiles.indexOf(path) < 0) {
+				__odocs.loadFile(path);
+				__odocsfiles.push(path);
+				newloaded = true;
+			}
+		});
+
+		// Try again now with the extra odocs loaded
+		if (newloaded) keys = __odocs.search(aTerm, aId);
 	}
 	
-	__odocs = new ODocs(aPath, undefined, __odocsurl, __offlineHelp);
-	
-	var keys = __odocs.search(aTerm, aId);
 	if (keys.length == 1) {
 		var contents = __odocs.get(keys[0].id, keys[0].key);
 		return [ {
