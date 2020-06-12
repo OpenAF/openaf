@@ -43,6 +43,7 @@
 
     exports.testSettingData = function() {
         var l = listFilesRecursive(".");
+        $ch(this.chType).unsetAll(["filepath"], $ch(this.chType).getKeys());
         $ch(this.chType).setAll(["filepath"], l);
         ow.test.assert(l.length, $ch(this.chType).size(), "Channel didn't store all values.");
     };
