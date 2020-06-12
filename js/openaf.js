@@ -3775,6 +3775,14 @@ OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js");
 OpenWrap.prototype.loadMetrics = function() { loadCompiledLib("owrap_metrics_js"); if (isUnDef(ow.metrics)) { ow.metrics = new OpenWrap.metrics(); pods.declare("ow.metrics", ow.metrics); }; return ow.metrics; };
 /**
  * <odoc>
+ * <key>ow.loadPython()</key>
+ * Loads OpenWrap Python functionality.
+ * </odoc>
+ */
+//OpenWrap.prototype.loadPython = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
+OpenWrap.prototype.loadPython = function() { loadCompiledLib("owrap_python_js"); if (isUnDef(ow.python)) { ow.python = new OpenWrap.python(); pods.declare("ow.python", ow.python); }; return ow.python; };
+/**
+ * <odoc>
  * <key>ow.loadTemplate()</key>
  * Loads OpenWrap template functionality. Basically functions to wrap access to Handlebars functionality.
  * </odoc>

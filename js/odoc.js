@@ -92,7 +92,7 @@ var ODocs = function(aPath, aODocs, anArrayURLs, offline) {
 	this.offline = offline;
 	this.keysfile = "__odockeys";
 	this.arrayurls = anArrayURLs;
-	//this.aFilename = (isUnDef(aPath)) ? getOpenAFJar() : aPath;
+	this.aFilename = (isUnDef(aPath)) ? getOpenAFJar() : aPath;
 	this.filesIds = {};
 	this.loadFile();
 	if (isDef(aODocs)) this.addAll(aODocs);
