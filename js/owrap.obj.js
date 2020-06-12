@@ -1085,11 +1085,11 @@ OpenWrap.obj.prototype.big = {
 					return aValue;
 				};
 
-				if (this.threshold > this.internalIndex.length) {
+				//if (this.threshold > this.internalIndex.length) {
 					anArray.forEach(fn);
-				} else {
-					parallel4Array(anArray, fn);
-				}
+				//} else {
+				//	parallel4Array(anArray, fn);
+				//}
 			},
 		
 			__genHash: function(aKeys) {
