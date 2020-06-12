@@ -1511,14 +1511,15 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 				aJob.typeArgs.file = this.__processTypeArg(aJob.typeArgs.file);
 				try {
 					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
-					if (isDef(args.__oJobRepeat)) {
-						args.execid = uuid;
-						args = this.__mergeArgs(args, aJob.args);
+					args.execid = uuid;
+					if (isUnDef(args.__oJobRepeat)) args = this.__mergeArgs(args, aJob.args);
 
+					/*if (isDef(args.__oJobRepeat)) {
 						var errors = [];
 						if (parent.__ojob.numThreads > 1 && !aJob.typeArgs.single) {
 							parallel4Array(args.__oJobRepeat, function(aV) {
 								try {
+									delete aV.__oJobExec;
 									parent.runFile(aJob.typeArgs.file, aV, aJob.typeArgs.file + md5(stringify(aV)), true);
 									return aV;
 								} catch(e1) {
@@ -1528,6 +1529,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 						} else {
 							for(var aVi in args.__oJobRepeat) {
 								try {
+									delete args.__oJobRepeat[aVi].__oJobExec;
+									print("---> " + stringify(args.__oJobRepeat[aVi]));
 									parent.runFile(aJob.typeArgs.file, args.__oJobRepeat[aVi], aJob.typeArgs.file + md5(stringify(args.__oJobRepeat[aVi])), true);
 									return args.__oJobRepeat[aVi];
 								} catch(e1) {
@@ -1537,10 +1540,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 						}
 						if (errors.length > 0) throw stringify(errors);
 						this.__addLog("success", aJob.name, uuid, args, undefined, aId);
-					} else {
+					} else {*/
 						parent.runFile(aJob.typeArgs.file, args, aJob.typeArgs.file, true);
 						this.__addLog("success", aJob.name, uuid, args, undefined, aId);
-					}
+					//}
 					return true;
 				} catch(e) {
 					this.__addLog("error", aJob.name, uuid, args, e, aId);
