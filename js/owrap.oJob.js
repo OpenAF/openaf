@@ -8,7 +8,7 @@
  */
 OpenWrap.oJob = function(isNonLocal) { 
 	//startLog();
-	if (isDef(ow.oJob)) return ow.oJob;
+	//if (isDef(ow.oJob)) return ow.oJob;
 
 	this.__promises = [];
 	var parent = this;
@@ -506,7 +506,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 			res = aFn(aFile);
 			return res;
 		} catch(e1) {
-			if (e1.message.match(/FileNotFoundException/)) {
+			if (isDef(e1.message) && e1.message.match(/FileNotFoundException/)) {
 				var paths = getOPackPaths();
 				
 				for(var i in paths) {
