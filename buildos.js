@@ -327,6 +327,8 @@ try {
 		"ow.ai": OPENAF_BUILD_HOME + "/js/owrap.ai.js",
 		"ow.ch": OPENAF_BUILD_HOME + "/js/owrap.ch.js",
 		"ow.oJob": OPENAF_BUILD_HOME + "/js/owrap.oJob.js",
+		"ow.metrics": OPENAF_BUILD_HOME + "/js/owrap.metrics.js",
+		"ow.python": OPENAF_BUILD_HOME + "/js/owrap.python.js",
 		"afbase": OPENAF_BUILD_HOME + "/src/openaf/AFBase.java",
 		"io": OPENAF_BUILD_HOME + "/src/openaf/IOBase.java",
 		"iocore": OPENAF_BUILD_HOME + "/src/openaf/core/IO.java",

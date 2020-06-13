@@ -866,7 +866,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.count++;
 		try {
 			var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
-			if (isDef(anException.javaException)) {
+			if (isDef(anException) && isDef(anException.javaException)) {
 				var ar = anException.javaException.getStackTrace();
 				execJob.error = [ String(anException.javaException) ];
 				for(var er in ar) { 
@@ -1268,7 +1268,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 						      parent.stop();              		  
 		               	  } catch(e) {}
 					} 
-				} catch(e) { logErr(e); if (isDef(e.javaException)) e.javaException.printStackTrace(); }
+				} catch(e) { logErr(e); if (isDef(e) && isDef(e.javaException)) e.javaException.printStackTrace(); }
 				if (isDef(parent.__ojob) && parent.__ojob.daemon == true) {
 					sleep((isDef(parent.__ojob.timeInterval) ? parent.__ojob.timeInterval : 50), true);
 					parent.__periodicFunc();
@@ -1726,6 +1726,20 @@ OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRe
 OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch, _jobEach) {
 
 	var parent = this;
+    function procLang(aExec, aJobTypeArgs) {
+		/*if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
+			switch(aJobTypeArgs.lang) {
+			case "python":
+				ow.loadFormat();
+				aExec += "ow.loadPython();";
+				aExec += "args = merge(ow.python.exec(\"" + aExec.replace(/\n/g, "\\n") + "\", { args: args, job: job, id: id, deps: deps }, [\"args\"], true).args, args);";
+				break;
+			default:
+			}
+		}*/
+		return aExec;
+	}
+
 	function procJob(aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, jobCatch, jobEach) {
 		var j = [];
 		if (isString(jobDeps)) jobDeps = [ jobDeps ];
@@ -1749,7 +1763,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.typeArgs = (isDef(j.typeArgs) ? merge(j.typeArgs, f.typeArgs) : f.typeArgs);
 					j.args = (isDef(j.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(f.args));
 					j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
-					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + f.exec;
+					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLang(f.exec, f.typeArgs);
 					j.help = (isDef(j.help) ? j.help : "") + "\n" + f.help;
 					j.each = (isDef(j.each) && j.each != null ? j.each.concat(f.each) : f.each);
 				} else {
@@ -1764,7 +1778,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			"typeArgs": (isDef(j.typeArgs) ? merge(j.typeArgs, jobTypeArgs) : jobTypeArgs),
 			"args": (isDef(j.args) ? parent.__processArgs(j.args, jobArgs) : parent.__processArgs(jobArgs)),
 			"deps": (isDef(j.deps) && j.deps != null ? j.deps.concat(jobDeps) : jobDeps),
-			"exec": (isDef(j.exec) ? j.exec : "") + "\n" + fstr,
+			"exec": (isDef(j.exec) ? j.exec : "") + "\n" + procLang(fstr, jobTypeArgs),
 			"help": (isDef(j.help) ? j.help : "") + "\n" + jobHelp,
 			"catch": jobCatch,
 			"from": jobFrom,
@@ -1783,7 +1797,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
 					j.args = (isDef(f.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(j.args));
 					j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
-					j.exec = j.exec + "\n" + (isDef(f.exec) ? f.exec : "");
+					j.exec = j.exec + "\n" + (isDef(f.exec) ? procLang(f.exec, f.typeArgs) : "");
 					j.help = j.help + "\n" + (isDef(f.help) ? f.help : "");
 					j.each = j.each + "\n" + (isDef(f.each) ? f.each : "");
 					j.each = (isDef(f.each) && j.each != null ? j.each.concat(f.each) : j.each);
