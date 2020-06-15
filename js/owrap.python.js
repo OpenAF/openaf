@@ -59,7 +59,7 @@ OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions
 	var res = af.sh("python -", code, void 0, void 0, void 0, true);
 	var rres = [];
 	if (res.stdout.indexOf(delim) >= 0) {
-		rres = res.stdout.split(new RegExp("^" + delim + "\n", "mg"));
+		rres = res.stdout.split(new RegExp("^" + delim + "\r?\n", "mg"));
 	}
 	if (isDef(rres[0]) && rres[0] != "") print(rres[0]);
 	if (isDef(res.stderr) && res.stderr != "") {
@@ -101,7 +101,7 @@ OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, thr
 	var res = af.sh("python -", code, void 0, void 0, void 0, true);
 	var rres = [];
 	if (res.stdout.indexOf(delim) >= 0) {
-		rres = res.stdout.split(new RegExp("^" + delim + "\n", "mg"));
+		rres = res.stdout.split(new RegExp("^" + delim + "\r?\n", "mg"));
 	}
 	if (isDef(rres[0]) && rres[0] != "") print(rres[0]);
 	if (isDef(res.stderr) && res.stderr != "") {
