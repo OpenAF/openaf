@@ -5426,7 +5426,7 @@ const $cache = function(aName) {
     var __c = function(aN) {
         aN = _$(aN).default("cache");
         this.name  = aN;
-        this.func  = void 0;
+        this.func  = k => k;
         this.attl  = void 0;
 		this.ach   = void 0;
 		this.msize = void 0;
@@ -5511,6 +5511,10 @@ const $cache = function(aName) {
         return $ch(this.name).get(aK);
     };
     __c.prototype.destroy = function() {
+		if ($ch().list().indexOf(this.name) < 0) {
+            this.create();
+		}
+		
 		if (isDef(this.ach)) {
 			if (isString(this.ach)) 
 				$ch(this.ach).destroy();
@@ -5521,24 +5525,44 @@ const $cache = function(aName) {
 		delete global.__cache[this.name];
     };
     __c.prototype.unset  = function(aK) {
+		if ($ch().list().indexOf(this.name) < 0) {
+            this.create();
+		}
+		
         $ch(this.name).unset(aK);
         return this;
     };
     __c.prototype.size   = function() {
-        return $ch(this.name).size();
+		if ($ch().list().indexOf(this.name) < 0) {
+            this.create();
+		}
+		
+		return $ch(this.name).size();
     };
     __c.prototype.set    = function(aK, aV) {
-        $ch(this.name).set(aK, aV);
+		if ($ch().list().indexOf(this.name) < 0) {
+            this.create();
+        }
+		$ch(this.name).set(aK, aV);
         return this;
     };
     __c.prototype.setAll = function(aK, aV) {
+		if ($ch().list().indexOf(this.name) < 0) {
+            this.create();
+        }
         $ch(this.name).setAll(aK, aV);
         return this;
 	};
 	__c.prototype.getAll = function() {
+		if ($ch().list().indexOf(this.name) < 0) {
+            this.create();
+        }
 		return $ch(this.name).getAll();
 	};
 	__c.prototype.getKeys = function() {
+		if ($ch().list().indexOf(this.name) < 0) {
+            this.create();
+        }
 		return $ch(this.name).getKeys();
 	};
 
