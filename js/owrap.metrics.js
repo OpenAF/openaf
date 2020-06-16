@@ -129,9 +129,14 @@ OpenWrap.metrics.prototype.add = function(aName, aFn) {
  * </odoc>
  */
 OpenWrap.metrics.prototype.getSome = function(aArray) {
-    var r = {};
+    var r = {}, errors = [];
     aArray.map(f => {
-        r[f] = ow.metrics.__m[f]();
+        try {
+            r[f] = ow.metrics.__m[f]();
+        } catch(e) {
+            r[f] = "error";
+            logErr(e);
+        }
     });
     return r;
 };
