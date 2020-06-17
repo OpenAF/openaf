@@ -242,7 +242,7 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 
 	@Override
 	public void makeSecure(SSLServerSocketFactory makeLocalSSLSocketFactory, String[] object) {
-		this.makeSecure(makeLocalSSLSocketFactory, object);
+		super.makeSecure(makeLocalSSLSocketFactory, object);
 	}
 
 	public void addToWsAccept(String uri) {
