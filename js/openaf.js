@@ -4260,6 +4260,21 @@ function showDebugger(shouldRedirect) {
 
 /**
  * <odoc>
+ * <key>openInBrowser(anURL) : Boolean</key>
+ * Tries to open anURL on the current OS desktop browser. Returns false if it's unable to open the OS desktop browser for some reason.
+ * </odoc>
+ */
+function openInBrowser(aURL) {
+	try { 
+		java.awt.Desktop.getDesktop().browse(new java.net.URI(aURL)); 
+		return true;
+	} catch(e) { 
+		return false;
+	}
+}
+
+/**
+ * <odoc>
  * <key>checkLatestVersion() : String</key>
  * Tries to determine what is the latest available version for OpenAF. Compare it with getVersion() to determine
  * if you need an update.
