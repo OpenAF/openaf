@@ -17,8 +17,8 @@ OpenWrap.metrics.prototype.__m = {
         return res;
     },
     cpu: () => ({
-        load1 : getCPULoad(),
-        load2 : getCPULoad(true),
+        load1 : java.lang.System.getProperty("os.name").indexOf("Windows") < 0 ? getCPULoad() : "n/a",
+        load2 : java.lang.System.getProperty("os.name").indexOf("Windows") < 0 ? getCPULoad(true) : "n/a",
         cores : getNumberOfCores(),
         _cores: __cpucores
     }),
@@ -32,13 +32,21 @@ OpenWrap.metrics.prototype.__m = {
             path   : getOpenAFPath(),
             java   : String(java.lang.System.getProperty("java.version")),
             javapath: String(java.lang.System.getProperty("java.home")),
-            os     : String(java.lang.System.getProperty("os.name")),
             init   : __oafInit,
             now    : now(),
             logErr : __clogErr.get(),
             logWarn: __clogWarn.get(),
             cpuCores: __cpucores,
             threadPoolFactor: __threadPoolFactor,
+            mainThreadPool: {
+                parallelism: __getThreadPool().getParallelism(),
+                size: __getThreadPool().getPoolSize(),
+                active: __getThreadPool().getActiveThreadCount(),
+                running: __getThreadPool().getRunningThreadCount(),
+                steals: __getThreadPool().getStealCount(),
+                tasks: __getThreadPool().getQueuedTaskCount(),
+                queued: __getThreadPool().getQueuedSubmissionCount()
+            },
             bottlenecks: (isDef(global.__bottleneck) ? Object.keys(global.__bottleneck).map(r => ({
                 name    : r,
                 running : global.__bottleneck[r].atomic.get(),
@@ -85,7 +93,10 @@ OpenWrap.metrics.prototype.__m = {
         return res;
     },
     os: () => ({
-        pid: getPid()
+        pid    : getPid(),
+        name   : String(java.lang.System.getProperty("os.name")),
+        host   : String(java.net.InetAddress.getLocalHost().getHostName()),
+        ip     : String(java.net.InetAddress.getLocalHost().getHostAddress())
     }),
     threads: () => {
         var res = {
