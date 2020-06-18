@@ -5391,6 +5391,15 @@ const $bottleneck = function(aName, aFn) {
 	 * </odoc>
 	 */	
 	__b.prototype.maxExec = function(aNCE) { this.ance = aNCE; return this; };
+    /**
+	 * <odoc>
+	 * <key>$bottleneck.destroy()</key>
+	 * Destroys any existing bottleneck definition.
+	 * </odoc>
+	 */
+	__b.prototype.destroy = function() {
+		delete global.__bottleneck[aName];
+	};
 
     /**
 	 * <odoc>
@@ -5418,7 +5427,7 @@ const $bottleneck = function(aName, aFn) {
 		this.atomic.inc();
 		var res;
 		try {
-			this.aF.apply(parent, arguments);
+			res = this.aF.apply(parent, arguments);
 			this.atomic.dec();
 		} catch(e) {
 			this.atomic.dec();
@@ -5429,8 +5438,9 @@ const $bottleneck = function(aName, aFn) {
 
 	if (isUnDef(global.__bottleneck[aName])) 
 		global.__bottleneck[aName] = new __b(aName, aFn);
-	else
-		global.__bottleneck[aName].aF = aFn;
+	else {
+		if (isDef(aFn)) global.__bottleneck[aName].aF = aFn;
+	}
 
     return global.__bottleneck[aName];
 };
