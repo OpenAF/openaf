@@ -1171,3 +1171,132 @@ OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
     javax.net.ssl.SSLContext.setDefault(ctx);
     javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(ctx.getSocketFactory());
 };
+
+OpenWrap.java.prototype.memComm = function(aFile, aSize) {
+    _$(aFile, "file").isString().$_();
+
+    this.file = aFile;
+    this.fsize = _$(aSize).isNumber().default(4096);
+    this.lck = void 0;
+
+    this.setup();
+};
+
+OpenWrap.java.prototype.memComm.prototype.setup = function() {
+    var f = new java.io.File(this.file);
+
+    this.channel = java.nio.channels.FileChannel.open(f.toPath(), java.nio.file.StandardOpenOption.READ, java.nio.file.StandardOpenOption.WRITE, java.nio.file.StandardOpenOption.CREATE);
+    
+    var b = this.channel.map(java.nio.channels.FileChannel.MapMode.READ_WRITE, 0, this.fsize);
+    this.charBuf = b.asCharBuffer();
+};
+
+OpenWrap.java.prototype.memComm.prototype.lock = function() {
+    this.lck = this.channel.lock();
+};
+
+OpenWrap.java.prototype.memComm.prototype.unlock = function() {
+    if (isDef(this.lck)) this.lck.release();
+    this.lck = void 0;
+}
+
+OpenWrap.java.prototype.memComm.prototype.send = function(aMsg) {
+    _$(aMsg, "msg").isString().$_();
+
+    if (isDef(this.lck)) {
+        if (!this.lck.isValid()) throw "Couldn't send, channel locked.";
+    }
+    this.charBuf.put((new java.lang.String(aMsg + "\u0000")).toCharArray());
+};
+
+OpenWrap.java.prototype.memComm.prototype.rewind = function() {
+    this.charBuf.rewind();
+};
+
+OpenWrap.java.prototype.memComm.prototype.close = function() {
+    this.channel.close();
+};
+
+OpenWrap.java.prototype.memComm.prototype.receive = function() {
+    var c, s = "";
+    do {
+        c = this.charBuf.get();
+        if (c != 0) s += String.fromCharCode(c);
+    } while(c != 0);
+
+    return s;
+};
+
+OpenWrap.java.prototype.jsonMemComm = function(aDir, aSize) {
+    aSize = _$(aSize, "size").isNumber().default(4096);
+    _$(aDir, "dir").isString().$_();
+
+    io.mkdir(aDir);
+    this.dir = aDir;
+    this.idx = new ow.java.memComm(this.dir + "/index.mem", aSize);
+};
+
+OpenWrap.java.prototype.jsonMemComm.prototype.destroy = function() {
+    this.idx.close();
+    io.rm(this.dir + "/index.mem");
+    io.rm(this.dir);
+};
+
+OpenWrap.java.prototype.jsonMemComm.prototype.send = function(aObj) {
+    _$(aObj, "obj").isObject().$_();
+    var t;
+    
+    this.idx.rewind();
+    this.idx.lock();
+    try {
+        var index = jsonParse(this.idx.receive(), true);
+
+        var s = stringify(aObj, void 0, "");
+        t = nowNano();
+        var n = t + ".mem";
+        index[t] = n;
+        var tmp = new ow.java.memComm(this.dir + "/" + n, s.length * 4);
+        tmp.send(s);
+    
+        this.idx.rewind();
+        this.idx.send(stringify(index, void 0, ""));
+        this.idx.unlock();
+    } catch(e) {
+        this.idx.unlock();
+        throw e;
+    }
+
+    return t;
+};
+
+OpenWrap.java.prototype.jsonMemComm.prototype.receive = function() {
+    var received = false; obj = [];
+    do {
+        try {
+            this.idx.lock();
+            this.idx.rewind();
+            var entries = jsonParse(this.idx.receive(), true);
+            Object.keys(entries).map(r => {
+                var tmp = new ow.java.memComm(this.dir + "/" + entries[r], io.fileInfo(this.dir + "/" + entries[r]).size);
+                obj.push({
+                    t: r,
+                    o: jsonParse(tmp.receive(), true)
+                });
+                received = true;
+                tmp.close();
+                io.rm(entries[r]);
+                delete entries[r];
+
+                this.idx.rewind();
+                this.idx.send(stringify(entries, void 0, ""));
+            });
+            this.idx.unlock();
+        } catch(e) {
+            this.idx.unlock();
+            throw e;
+        }
+        if (!received) sleep(150, true);
+    } while(!received);
+
+    return obj;
+};
