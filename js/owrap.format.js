@@ -456,6 +456,13 @@ OpenWrap.format.prototype.string = {
 			}
 		}
 	},
+        /**
+         * <odoc>
+         * <key>ow.format.string.renderLines(aMatrix, numberOfLines, aWidth, aBgPattern, shouldReturn) : String</key>
+         * Tries to render a string grid (if shouldReturn = true won't print it but jsut return it) for a specific aWidth for a numberOfLines
+         * with aBgPattern background pattern (defaults to " ") with aMatrix contents (divided by "\n"). 
+         * </odoc>
+         */
 	renderLines: function(anArrayElements, numberOfLines, currentWidth, aPattern, shouldReturn) {
 		var jansi = JavaImporter(Packages.org.fusesource.jansi);
 		aPattern = _$(aPattern, "pattern").isString().default(" ");
@@ -490,6 +497,14 @@ OpenWrap.format.prototype.string = {
 			ansiStart(); print(o.join("")); printnl( jansi.Ansi.ansi().cursorUpLine(numberOfLines + 2) ); ansiStop();
 		}
 	},
+        /**
+         * <odoc>
+         * <key>ow.format.string.grid(aMatrix, aX, aY, aBgPattern, shouldReturn) : String</key>
+         * Will generate a aX per aY grid to be displayed with aBgPattern (defaults to " "). Each grid cell with use the contents on aMatrix
+         * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in cell spacing, a type (either map, table or string) 
+         * and a title. If shouldReturn = true it will just return the string content instead of trying to print it.
+         + </odoc>
+         */
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
 		plugin("Console");
 		var _con_ = new Console();
