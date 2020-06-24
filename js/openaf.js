@@ -2741,19 +2741,21 @@ function compare(x, y) {
 
 /**
  * <odoc>
- * <key>arrayContains(anArray, aObj) : Number</key>
+ * <key>arrayContains(anArray, aObj, aPreFilter) : Number</key>
  * Tries to find aObj in anArray returning the position where it's first found or -1 if not found.
+ * Optionally aPreFilter function can prepare each object for comparing.
  * </odoc>
  */
-function arrayContains(anArray, aObj) {
+function arrayContains(anArray, aObj, aPreFilter) {
 	_$(anArray).isArray().$_();
 
 	var ii, found = false;
 	for(ii = 0; ii < anArray.length && !found; ii++) {
-		if (compare(aObj, anArray[ii])) found = true;
+		var o = (isFunction(aPreFilter)) ? aPreFilter(anArray[ii]) : anArray[ii];
+		if (compare(aObj, o)) found = true;
 	}
 
-	return (found ? ii : -1);
+	return (found ? ii-1 : -1);
 }
 
 /**
@@ -5487,7 +5489,7 @@ const $cache = function(aName) {
 	 * Defines the time-to-live (aTTL) to consider a cached result as valid.
 	 * </odoc>
 	 */
-	__c.prototype.ttl       = function(attl)  { this.attl   = attl;     return this; };
+	__c.prototype.ttl       = function(aTtl)  { this.attl   = aTtl;     return this; };
 	/**
 	 * <odoc>
 	 * <key>$cache.ch(aChannelName) : Object</key>

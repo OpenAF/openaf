@@ -552,12 +552,12 @@ OpenWrap.ch.prototype.__types = {
 				}
 				var parent = this;
 				$do(() => {
-					parent.getKeys(aName, true).forEach((v) => {
+					parent.getKeys(aName, true).map(v => {
 						try {
 							if (v.____t <= (nowUTC() - parent.__cache[aName].TTL)) 
 								parent.unset(aName, v);
 							else
-								if (parent.__cache[aName].__t > v.____t) parent.cache[aName].__t = v.____t;
+								if (parent.__cache[aName].__t > v.____t) parent.__cache[aName].__t = v.____t;
 						} catch(e) {
 							sprintErr(e);
 						}
@@ -633,33 +633,36 @@ OpenWrap.ch.prototype.__types = {
 		get          : function(aName, aK) { 
 			var aVv = {};
 			var ar = this.getKeys(aName, true);
-			var ee = arrayContains(ar, aK);
+			var ee = arrayContains(ar, aK, k => { 
+				var o = clone(k);
+				delete o.____t;
+				return o;
+			});
 			ee = (ee > -1 ? ar[ee] : void 0); 
-			//var ee = $stream(parent.getKeys(aName, false)).filter(aK).toArray()[0];
 			if (isDef(ee)) {
 				if (ee.____t > (nowUTC() - this.__cache[aName].TTL)) {
 					aVv = this.__cache[aName].Ch.get(ee);
 					this.__cacheStats[aName].hits++;
 				} else {
-					var init = now();
+					var init = nowUTC();
 					var aVv = this.__cache[aName].Func(aK);
 					this.__cacheStats[aName].miss++;
-					this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (now() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
+					this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (nowUTC() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
 					this.__cache[aName].Ch.unset(ee);
 					var eK = merge(aK, { ____t: nowUTC() });
 					this.__cache[aName].Ch.set(eK, aVv);
-					aVv = this.__cache[aName].Ch.get(eK);
+					//aVv = this.__cache[aName].Ch.get(eK);
 				}
 			} else {
-				var init = now();
+				var init = nowUTC();
 				var aVv = this.__cache[aName].Func(aK);
 				this.__cacheStats[aName].miss++;
-				this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (now() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
+				this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (nowUTC() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
 				this.__refresh(aName, 1);
 				if (this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) {
 					var eK = merge(aK, { ____t: nowUTC() });
 					this.__cache[aName].Ch.set(eK, aVv);
-					aVv = this.__cache[aName].Ch.get(eK);
+					//aVv = this.__cache[aName].Ch.get(eK);
 				}
 			}
 			return aVv;
