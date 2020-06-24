@@ -632,8 +632,10 @@ OpenWrap.ch.prototype.__types = {
 		},
 		get          : function(aName, aK) { 
 			var aVv = {};
-			var parent = this;
-			var ee = $stream(parent.getKeys(aName, true)).filter(aK).toArray()[0];
+			var ar = this.getKeys(aName, true);
+			var ee = arrayContains(ar, aK);
+			ee = (ee > -1 ? ar[ee] : void 0); 
+			//var ee = $stream(parent.getKeys(aName, false)).filter(aK).toArray()[0];
 			if (isDef(ee)) {
 				if (ee.____t > (nowUTC() - this.__cache[aName].TTL)) {
 					aVv = this.__cache[aName].Ch.get(ee);
@@ -674,7 +676,10 @@ OpenWrap.ch.prototype.__types = {
 			return aK;	
 		},
 		unset        : function(aName, aK, aTimestamp) { 
-			var eK = $stream(this.getKeys(aName, true)).filter(aK).toArray()[0];
+			//var eK = $stream(this.getKeys(aName, true)).filter(aK).toArray()[0];
+			var ar = this.getKeys(aName, true);
+			var eK = arrayContains(ar, aK);
+			eK = (eK > -1 ? ar[eK] : void 0); 
 			if (isDef(eK)) this.__cache[aName].Ch.unset(eK);
 		}	
 	},	

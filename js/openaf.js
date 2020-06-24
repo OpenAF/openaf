@@ -2741,6 +2741,23 @@ function compare(x, y) {
 
 /**
  * <odoc>
+ * <key>arrayContains(anArray, aObj) : Number</key>
+ * Tries to find aObj in anArray returning the position where it's first found or -1 if not found.
+ * </odoc>
+ */
+function arrayContains(anArray, aObj) {
+	_$(anArray).isArray().$_();
+
+	var ii, found = false;
+	for(ii = 0; ii < anArray.length && !found; ii++) {
+		if (compare(aObj, anArray[ii])) found = true;
+	}
+
+	return (found ? ii : -1);
+}
+
+/**
+ * <odoc>
  * <key>inherit(Child, Parent)</key>
  * Associates a Child object to a Parent simulating a inheritance relationship. This is done by
  * copying the Parent prototype to the Child prototype. This is similar to "Parent.call(this, arg1, arg2)"
@@ -5446,7 +5463,7 @@ const $bottleneck = function(aName, aFn) {
 };
 
 const $cache = function(aName) {
-	if (isUnDef(global.__cache)) global.__cache = {};
+	if (isUnDef(global.__$cache)) global.__$cache = {};
 
     var __c = function(aN) {
         aN = _$(aN).default("cache");
@@ -5503,12 +5520,16 @@ const $cache = function(aName) {
     __c.prototype.create = function() {
         _$(this.func).isFunction().$_("Please provide a function (fn).");
 
-        $ch(this.name).create(1, "cache", {
-            func: this.func,
-            ttl: this.attl,
-			ch: this.ach,
-			size: this.msize
-        });
+		sync(() => {
+			if ($ch().list().indexOf(this.name) < 0) {
+				$ch(this.name).create(1, "cache", {
+					func: this.func,
+					ttl: this.attl,
+					ch: this.ach,
+					size: this.msize
+				});
+			}
+		}, this.name);
 
         return this;
 	};
@@ -5547,7 +5568,7 @@ const $cache = function(aName) {
 				this.ach.destroy();
 		}
 		$ch(this.name).destroy();
-		delete global.__cache[this.name];
+		delete global.__$cache[this.name];
     };
     __c.prototype.unset  = function(aK) {
 		if ($ch().list().indexOf(this.name) < 0) {
@@ -5591,9 +5612,9 @@ const $cache = function(aName) {
 		return $ch(this.name).getKeys();
 	};
 
-	if (isUnDef(global.__cache[aName])) global.__cache[aName] = new __c(aName);
+	if (isUnDef(global.__$cache[aName])) global.__$cache[aName] = new __c(aName);
 
-    return global.__cache[aName];
+    return global.__$cache[aName];
 };
 
 /**
