@@ -53,15 +53,15 @@ OpenWrap.metrics.prototype.__m = {
                 maxWait : global.__bottleneck[r].attw,
                 maxExecs: global.__bottleneck[r].ance
             })) : "n/a"),
-            cache: (isDef(global.__cache) ? Object.keys(global.__cache).map(r => ({
+            cache: (isDef(global.__$cache) ? Object.keys(global.__$cache).map(r => ({
                 name: r,
-                chName: global.__cache[r].name,
-                ttl : global.__cache[r].ttl,
-                maxSize: global.__cache[r].msize,
-                size: global.__cache[r].size(),
-                hits: ow.ch.__types.cache.__cacheStats[global.__cache[r].name].hits,
-                miss: ow.ch.__types.cache.__cacheStats[global.__cache[r].name].miss,
-                avgExecTime: ow.ch.__types.cache.__cacheStats[global.__cache[r].name].avg,
+                chName: global.__$cache[r].name,
+                ttl : global.__$cache[r].attl,
+                maxSize: global.__$cache[r].msize,
+                size: global.__$cache[r].size(),
+                hits: ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].hits,
+                miss: ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].miss,
+                avgExecTime: ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].avg,
             })) : "n/a"),
             rest: (isDef(global.__openaf_rest) ? Object.keys(global.__openaf_rest.urls).map(r => ({
                 url: r,
