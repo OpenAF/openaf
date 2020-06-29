@@ -66,6 +66,10 @@
         ow.test.assert(ow.format.dateDiff.inWeeks(String(ow.format.toDate("201512310000", "yyyyMMddHHmm")), ow.format.toDate("201701010000", "yyyyMMddHHmm")), 52, "Problem with dateDiff.inWeeks");    
     };
 
+    exports.testHost = function() {
+        ow.test.assert(ow.format.testHost("127.0.0.1").reachable, true, "Problem with testing localhost.");
+    };
+
     exports.testCron = function() {
         ow.test.assert(ow.format.cron.isCronMatch(new Date(), "*/1 */1 * * * *"), true, "Problem with cron using seconds.");
         ow.test.assert(ow.format.cron.isCronMatch(new Date(), "*/1 * * * *"), true, "Problem with cron using minutes.");            

@@ -1262,6 +1262,27 @@ OpenWrap.format.prototype.getHostAddress = function() {
 
 /**
  * <odoc>
+ * <key>ow.format.testHost(aAddress, aTimeout) : Map</key>
+ * Uses the java implementation (e.g. usually ICMP ping) for testing reachability to an aAddress. It timeouts after aTimeout (defaults to
+ * 4000ms). Returns a map with the "time" spent trying to get an answer from aAddress and a boolean "reachable" with the result.
+ * </odoc>
+ */
+OpenWrap.format.prototype.testHost = function(aAddress, aTimeout) {
+	_$(aAddress, "address").isString().$_();
+	aTimeout = _$(aTimeout, "timeout").isNumber().default(4000);
+	
+	var init = now();
+	var res = (java.net.InetAddress.getByName(aAddress)).isReachable(aTimeout);
+	var lat = now() - init;
+	
+	return { 
+	  time: lat,
+	  reachable: res
+	};
+};
+
+/**
+ * <odoc>
  * <key>ow.format.testPort(aAddress, aPort, aCustomTimeout) : boolean</key>
  * Tries to connect to aPort (e.g. 1234) on aAddress (e.g. 1.2.3.4). If the connection is successfull it will disconnect
  * and return true, otherwise it will return false. If aCustomTimeout (in ms) is defined, it will use that value as the timeout

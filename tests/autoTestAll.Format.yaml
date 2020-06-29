@@ -101,8 +101,15 @@ jobs:
      to  : oJob Test
      deps: 
        - Format::Load Format
-     exec: args.func = args.tests.testLSH;      
+     exec: args.func = args.tests.testLSH;     
 
+   - name: Format::Host
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testHost;  
+      
    - name: Format::Unix date to/from
      from: Format::Init
      to  : oJob Test
@@ -150,5 +157,6 @@ todo:
    - Format::Cron
    - Format::Conversions
    - Format::LSH
+   - Format::Host
    - Format::Cron How Many Ago
    - Format::Escape/Unescape HTML4
