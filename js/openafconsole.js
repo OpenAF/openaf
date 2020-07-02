@@ -962,7 +962,7 @@ function __checkVersion() {
 		var curVersion = getVersion();
 		//var remoteBuild = getVer(__openafBuild);
 		var remoteRelease = getVer(__openafRelease);
-		
+
 		if (curVersion < remoteRelease) {
 			io.cp(getOpenAFJar(), getOpenAFPath() + "/openaf.jar.old");
 			io.cp(getOpenAFJar() + ".orig", getOpenAFPath() + "/openaf.jar.old.orig");
@@ -986,12 +986,21 @@ function __checkVersion() {
 	t.addThread(function() {
 		var current = checkLatestVersion(); 
 		var myversion = getVersion();
+		var anotherOne = false;
+
 		if (current != -1) {
-			if (current > myversion)
-				if (__autoupdate)
+			if (current > myversion) {
+				ow.loadServer();
+				ow.server.checkIn(getOpenAFPath() + "/openaf_update.pid", aPid => {
+					anotherOne = true;
+				}, () => {
+					anotherOne = true;
+				});
+				if (__autoupdate && !anotherOne)
 					openAFAutoUpdate();
 				else
 					__message = "There is a new OpenAF version available: " + current + ". Run 'openaf --update' to update.";
+			}
 		}
 		t.stop(true);
 	});
