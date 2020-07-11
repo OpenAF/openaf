@@ -1197,6 +1197,7 @@ initThread.addThread(function(uuid) {
 initThread.startNoWait();
 
 if (__expr.length > 0) cmd = __expr;
+cmd = cmd.trim();
 
 while(cmd != "exit") {
 	if (viewCommand) {
@@ -1216,9 +1217,9 @@ while(cmd != "exit") {
 			if (isUnDef(watchresult)) watchresult = "";
 			if (beautifyCommand) watchresult = String(stringify(watchresult)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
 		} catch(e) { watchresult = "ERROR: " + e.message; watchCommand = false; }
-		cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ");
+		cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ").trim();
 	} else {
-		cmd = con.readLinePrompt(__pinprefix + "> ");
+		cmd = con.readLinePrompt(__pinprefix + "> ").trim();
 	}
 	
 	if (cmd == "") {
