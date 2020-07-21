@@ -1479,7 +1479,12 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 		
 		args.objId = this.getID() + altId;	
 		args = this.__mergeArgs(args, this.__processArgs(aJob.args, void 0, void 0, true));
-		if (isUnDef(aJob.typeArgs)) aJob.typeArgs = {};
+		if (isUnDef(aJob.typeArgs)) {
+			aJob.typeArgs = {};
+		} else {
+			if (isDef(aJob.typeArgs.execJs))      aJob.exec = io.readFileString(aJob.typeArgs.execJs);
+			if (isDef(aJob.typeArgs.execRequire)) aJob.exec = "require('" + aJob.typeArgs.execRequire + "')['" + aJob.name + "'](args);";
+		}
 
 		switch(aJob.type) {
 		case "simple":
@@ -1514,36 +1519,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 					args.execid = uuid;
 					if (isUnDef(args.__oJobRepeat)) args = this.__mergeArgs(args, aJob.args);
 
-					/*if (isDef(args.__oJobRepeat)) {
-						var errors = [];
-						if (parent.__ojob.numThreads > 1 && !aJob.typeArgs.single) {
-							parallel4Array(args.__oJobRepeat, function(aV) {
-								try {
-									delete aV.__oJobExec;
-									parent.runFile(aJob.typeArgs.file, aV, aJob.typeArgs.file + md5(stringify(aV)), true);
-									return aV;
-								} catch(e1) {
-									errors.push({ k: aV, e: e1});
-								}
-							}, parent.__ojob.numThreads);
-						} else {
-							for(var aVi in args.__oJobRepeat) {
-								try {
-									delete args.__oJobRepeat[aVi].__oJobExec;
-									print("---> " + stringify(args.__oJobRepeat[aVi]));
-									parent.runFile(aJob.typeArgs.file, args.__oJobRepeat[aVi], aJob.typeArgs.file + md5(stringify(args.__oJobRepeat[aVi])), true);
-									return args.__oJobRepeat[aVi];
-								} catch(e1) {
-									errors.push({ k: args.__oJobRepeat[aVi], e: e1});
-								}								
-							}
-						}
-						if (errors.length > 0) throw stringify(errors);
-						this.__addLog("success", aJob.name, uuid, args, undefined, aId);
-					} else {*/
-						parent.runFile(aJob.typeArgs.file, args, aJob.typeArgs.file, true);
-						this.__addLog("success", aJob.name, uuid, args, undefined, aId);
-					//}
+					parent.runFile(aJob.typeArgs.file, args, aJob.typeArgs.file, true);
+					this.__addLog("success", aJob.name, uuid, args, undefined, aId);
+
 					return true;
 				} catch(e) {
 					this.__addLog("error", aJob.name, uuid, args, e, aId);
