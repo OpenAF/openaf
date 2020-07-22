@@ -2951,6 +2951,73 @@ OpenWrap.server.prototype.httpd = {
 	},
 }
 
+OpenWrap.server.prototype.socket = {
+	__servers: {},
+	__threads: {},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.socket.start(aPort, aFunction, aBackLog, aBindAddr)</key>
+	 * Starts a thread listening on aPort with aBackLog (defaults to a queue of 50 connections in waiting) on aBindAddr (defaults to "0.0.0.0").
+	 * Whenever a connection is established aFunction will be called with the corresponding java.net.Socket and a java.net.ServerSocket. Examples:\
+	 * \
+	 * ow.loadServer();\
+	 * ow.server.socket.start(12345, (clt, srv) => {\
+	 *    log("Connection from " + clt.getInetAddress().getHostAddress());
+	 *    ioStreamReadLines(clt.getInputStream(), stream => {\
+	 *       print(stream);\
+	 *       ioStreamWrite(clt.getOutputStream(), stream);\
+	 *       clt.getOutputStream().flush();\
+	 * 	     clt.shutdownInput();\
+	 *       clt.shutdownOutput();\
+	 *       return true;\
+	 *    });\
+	 *    log("closing...");\
+	 *    clt.close();\
+	 * });\
+	 * \
+	 * </odoc>
+	 */
+	start: (aPort, aFn, aBackLog, aBindAddr) => {
+		_$(aPort, "port").isNumber().$_();
+		_$(aFn, "function").isFunction().$_();
+
+		aBackLog = _$(aBackLog, "backlog").isNumber().default(50);
+		aBindAddr = _$(aBindAddr, "bindaddr").isString().default(null);
+		if (isDef(aBindAddr) && isString(aBindAddr) && !isNull(aBindAddr)) aBindAddr = java.net.InetAddress.getByName(aBindAddr);
+		var server = java.net.ServerSocket(aPort, aBackLog, aBindAddr);
+		
+		ow.server.socket.__servers[aPort] = server;
+
+		plugin("Threads");
+		var t = new Threads();
+		t.addSingleThread(function() {
+			while(isDef(ow.server.socket.__servers[aPort]) && !(ow.server.socket.__servers[aPort].isClosed())) {
+				var clt = server.accept();
+				aFn(clt, server);
+				clt.close();
+			}
+		});
+		t.startNoWait();
+		ow.server.socket.__threads[aPort] = t;
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.socket.stop(aPort)</key>
+	 * Stops a thread socket server on aPort previously started by ow.server.socket.start.
+	 * </odoc>
+	 */
+	stop: (aPort) => {
+		_$(aPort, "port").isNumber().$_();
+
+		ow.server.socket.__servers[aPort].close();
+		var res = ow.server.socket.__threads[aPort].stop(true);
+		delete ow.server.socket.__servers[aPort];
+		return res;
+	}
+}
+
 OpenWrap.server.prototype.jwt = {
     /**
      * <odoc>
