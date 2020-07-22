@@ -121,6 +121,7 @@ function generateUnixScript(options, shouldSep) {
   s = s + "stty -icanon min 1 -echo 2>/dev/null\n";
   s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
+  s = s + "export LANG=\"${LANG:-C.UTF-8}\"\n";
   if (shouldSep) {
     s += "SCRIPT=$1\n";
     s += "shift\n";
