@@ -1371,9 +1371,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			fnDef += "var _oji = " + stringify(aJob.each, void 0, "") + "; ";
 			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
 			fnDef += "$doA2B(each => { " + aExec + " }, _r => { _oj.map(_aJob => { ";
-			fnDef += "  var fn = new Function(\"var args = arguments[0]; \" + _aJob.exec); ";
-			fnDef += "  $do(() => { return fn( merge(_r, { init: args.init }) ); })";
-			fnDef += ".catch(new Function(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, void 0, \"\") + \"); \" + _aJob.catch));";
+			fnDef += "  try { var fn = new Function(\"var args = arguments[0]; \" + _aJob.exec); ";
+			fnDef += "  return fn( merge(_r, { init: args.init }) );";
+			fnDef += "} catch(ea2b) { (new Function(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, void 0, \"\") + \"); \" + _aJob.catch))(ea2b); }";
 			fnDef += "}); }); ";
 
 			f = new Function(fnDef);

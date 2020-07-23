@@ -7050,20 +7050,23 @@ const $await = function(aName) {
  * </odoc>
  */
 const $doA2B = function(aAFn, aBFn, noc, defaultTimeout) {
-    var recs = $atomic();
+    var recs = $atomic(), srecs = $atomic(), trecs = $atomic();
     var noc  = _$(noc).isNumber().default(getNumberOfCores());
 	var id   = md5(aAFn.toString() + aBFn.toString()) + (Math.random()*100000000000000000);
 	defaultTimeout = _$(defaultTimeout).isNumber().default(2500);
 
     var B = function(aObj) {
         var cc = recs.inc();
+        srecs.inc();
         while(cc > noc) { $await(id).wait(defaultTimeout); cc = recs.get(); }
         $do(() => {
             aBFn(aObj);
             recs.dec();
+            trecs.inc();
             $await(id).notify();
         }).catch((e) => {
             recs.dec();
+            trecs.inc();
             $await(id).notify();
 		});
 		$await(id).notify();
@@ -7072,7 +7075,7 @@ const $doA2B = function(aAFn, aBFn, noc, defaultTimeout) {
 	aAFn(B);
 	$await(id).notify();
 
-	do { $await(id).wait(defaultTimeout); } while(recs.get() > 0);
+	do { $await(id).wait(defaultTimeout); } while(recs.get() > 0 && srecs.get() != trecs.get());
 	$await(id).destroy();
 };
 
