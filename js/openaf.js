@@ -6014,28 +6014,28 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
 };
 /**
  * <odoc>
- * <key>IO.readFileYAML(aYAMLFile) : Object</key>
+ * <key>io.readFileYAML(aYAMLFile) : Object</key>
  * Tries to read aYAMLFile into a javascript object. 
  * </odoc>
  */
 IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFileString(aYAMLFile)); }
 /**
  * <odoc>
- * <key>IO.readFileJSON(aJSONFile) : Object</key>
+ * <key>io.readFileJSON(aJSONFile) : Object</key>
  * Tries to read aJSONFile into a javascript object. 
  * </odoc>
  */
 IO.prototype.readFileJSON = function(aJSONFile) { return jsonParse(io.readFileString(aJSONFile), true); }
 /**
  * <odoc>
- * <key>IO.writeFileYAML(aYAMLFile, aObj)</key>
+ * <key>io.writeFileYAML(aYAMLFile, aObj)</key>
  * Tries to write a javascript aObj into a aYAMLFile.
  * </odoc>
  */
 IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileString(aYAMLFile, af.toYAML(aObj)); };
 /**
  * <odoc>
- * <key>IO.writeFileJSON(aJSONFile, aObj, aSpace)</key>
+ * <key>io.writeFileJSON(aJSONFile, aObj, aSpace)</key>
  * Tries to write a javascript aObj into a aJSONFile with an optional aSpace.
  * </odoc>
  */
@@ -6043,7 +6043,7 @@ IO.prototype.writeFileJSON = function(aJSONFile, aObj, aSpace) { return io.write
 
 /**
  * <odoc>
- * <key>IO.writeLineNDJSON(aNDJSONFile, aObj, aEncode)</key>
+ * <key>io.writeLineNDJSON(aNDJSONFile, aObj, aEncode)</key>
  * Writes aObj into a single line on aNDJSONFile (newline delimited JSON). Optionally you can provide
  * an encoding.
  * </odoc>
@@ -6054,7 +6054,7 @@ IO.prototype.writeLineNDJSON = function(aNDJSONFile, aObj, aEncode) {
 
 /**
  * <odoc>
- * <key>IO.readLinesNDJSON(aNDJSONFile, aFuncCallback, aErrorCallback)</key>
+ * <key>io.readLinesNDJSON(aNDJSONFile, aFuncCallback, aErrorCallback)</key>
  * Opens aNDJSONFile (a newline delimited JSON) as a stream call aFuncCallback with each parse JSON. If
  * aFuncCallback returns true the cycle will be interrupted. For any parse error it calls the aErrorCallback 
  * with each exception.
@@ -6073,7 +6073,7 @@ IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallba
 
 /**
  * <odoc>
- * <key>IO.isBinaryFile(aFile, confirmLimit) : boolean</key>
+ * <key>io.isBinaryFile(aFile, confirmLimit) : boolean</key>
  * Tries to determine if the provided aFile is a binary or text file by checking the first 1024 chars (limit can be changed using
  * confirmLimit). Returns true if file is believed to be binary. Based on the function isBinaryArray.
  * </odoc>
@@ -6097,7 +6097,60 @@ IO.prototype.isBinaryFile = function(aFile, confirmLimit) {
 
 /**
  * <odoc>
- * <key>CSV.fromArray2File(anArray, aFile, withHeadersOrStreamFormat) : Number</key>
+ * <key>io.onDirEvent(aPath, aFn, aFnErr) : Promise</key>
+ * Given aPath of a directory will return a promise ($do) that, for every create, modify or delete event that happens on aPath it will call aFn with two parameters: kind and filename. 
+ * The 'kind' string can be one of four events: ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW (meaning events were lost or discarded). The 'filename' represents the filename affected.
+ * Optionally aFnErr function can be provided to handle any errors and, in case aPath no longer exists, aFnErr will be called with the string "ENTRY_NA". Example:\
+ * \
+ * var p = io.onDirEvent("myDir", (kind, filename) => {\
+ *    log("Event '" + kind + "' on '" + filename + "'");\
+ * }, e => {\
+ *    if (isString(e) &amp;&amp; e == "ENTRY_NA") logWarn("myDir no longer exists."); else logErr(e);\
+ * });\
+ * \
+ * $doWait(p);\
+ * \
+ * </odoc>
+ */
+IO.prototype.onDirEvent = function(aPath, aFn, aFnErr) {
+    _$(aPath, "path").isString().$_();
+    _$(aFn, "fn").isFunction().$_();
+
+    if(!io.fileExists(aPath)) throw "'" + aPath + "' doesn't exist.";
+    if(!io.fileInfo(aPath).isDirectory) throw "'" + aPath + "' is not a directory.";
+
+    aFnErr = _$(aFnErr, "fnErr").isFunction().default(e => { if (!(isString(e) && e == "ENTRY_NA")) printErr(e); });
+
+    return $do(() => {
+        var watcher = java.nio.file.FileSystems.getDefault().newWatchService();
+        var path = java.nio.file.Paths.get(aPath);
+        path.register(watcher, java.nio.file.StandardWatchEventKinds.ENTRY_CREATE, java.nio.file.StandardWatchEventKinds.ENTRY_DELETE, java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY);
+        
+        var goOn = true;
+        do {
+            var key = watcher.take();
+            if (!isNull(key)) {
+                var events = key.pollEvents();
+                for(var eventI in events.toArray()) {
+                    var event = events.toArray()[eventI];
+                    aFn(String(event.kind()), String(event.context()));
+                }
+                if (!key.reset()) goOn = false;
+            } else {
+                goOn = false;
+            }
+        } while(goOn);
+        
+        aFnErr("ENTRY_NA");
+    })
+    .catch((e) => {
+        aFnErr(e);
+    });
+};
+
+/**
+ * <odoc>
+ * <key>csv.fromArray2File(anArray, aFile, withHeadersOrStreamFormat) : Number</key>
  * Tries to wirte anArray to aFile. If withHeadersOrStreamFormat is provided, if an array it will 
  * be interpreted as the files of headers otherwise as the new streamFormat object to use.
  * </odoc>
@@ -6131,7 +6184,7 @@ CSV.prototype.fromArray2File = function(anArray, aFile, withHeadersOrStreamForma
 
 /**
  * <odoc>
- * <key>CSV.fromFile2Array(aFile, withHeadersOrStreamFormat) : Array</key>
+ * <key>csv.fromFile2Array(aFile, withHeadersOrStreamFormat) : Array</key>
  * Tries to read a CSV file and convert it into an array. If withHeadersOrStreamFormat is provided, if an array it will 
  * be interpreted as the files of headers otherwise as the new streamFormat object to use.
  * </odoc>
