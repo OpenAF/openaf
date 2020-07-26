@@ -31,13 +31,16 @@ global.CONSOLECTRLC     = false;
  *
  * @param  {[type]} aClass The class name (if not found it will search also "openaf.*")
  */
-function __desc(aClass, retList, noRecursive) {
+function __desc(aClass, retList, noRecursive, javaMethods) {
 	var methods = [];
 	var constructors = [];
 	var isJavascript = false;
 	var classObj;
 	var isScriptableObject = false;
 	var ret = [];
+	var aClassJava;
+
+	javaMethods = _$(javaMethods).default([]);
 
 	// No need for Packages reference
 	aClass = aClass.replace(/^Packages\./, "");
@@ -48,20 +51,21 @@ function __desc(aClass, retList, noRecursive) {
 		constructors = classObj.getConstructors();
 	} catch(e) {
 		try {
-			if (aClass.toLowerCase() == "io") aClass = "IOBase";
-			if (aClass.toLowerCase() == "af") aClass = "AFBase";
-			classObj = java.lang.Class.forName("openaf." + aClass);
+			aClassJava = aClass;
+			if (aClass.toLowerCase() == "io") aClassJava = "IOBase";
+			if (aClass.toLowerCase() == "af") aClassJava = "AFBase";
+			classObj = java.lang.Class.forName("openaf." + aClassJava);
 			methods = classObj.getMethods();
 			constructors = classObj.getConstructors();
 		} catch(e) {
 			try {
-				classObj = java.lang.Class.forName("openaf.plugins." + aClass);
+				classObj = java.lang.Class.forName("openaf.plugins." + aClassJava);
 				methods = classObj.getMethods();
 				constructors = classObj.getConstructors();
 			} catch(e) {
 				try {
-					if(Object.prototype.toString.call(af.eval(aClass)) === '[object JavaObject]') {
-						classObj = af.eval(aClass + ".getClass()");
+					if(Object.prototype.toString.call(af.eval(aClassJava)) === '[object JavaObject]') {
+						classObj = af.eval(aClassJava + ".getClass()");
 						methods = classObj.getMethods();
 						constructors = classObj.getConstructors();
 					} else {
@@ -98,33 +102,38 @@ function __desc(aClass, retList, noRecursive) {
 					(!isScriptableObject)
 				   ) {
 
-					if (retList)
-						ret.push(method.getName() + "");
-					else {
-						__outputConsoleCommentsNoEnd(CONSOLESEPARATOR + method.getName()); __outputConsoleCommentsNoEnd("(");
-					}
+					if (javaMethods.indexOf(String(method.getName())) < 0) {
+						if (retList)
+							ret.push(method.getName() + "");
+						else {
+							__outputConsoleCommentsNoEnd(CONSOLESEPARATOR + method.getName()); __outputConsoleCommentsNoEnd("(");
+						}
 
-					if (!retList) {
-						var types = method.getParameterTypes();
-						var first = true;
-						for(x in types) {
-							if(!first && x < types.length) {
-								__outputConsoleCommentsNoEnd(", ");
-							} else {
-								first = false;
+						javaMethods.push(String(method.getName()));
+
+						if (!retList) {
+							var types = method.getParameterTypes();
+							var first = true;
+							for(var x in types) {
+								if(!first && x < types.length) {
+									__outputConsoleCommentsNoEnd(", ");
+								} else {
+									first = false;
+								}
+								var type = types[x];
+
+								__outputConsoleNoEnd((type.getCanonicalName() +"").replace(/^.*\./, ""));
 							}
-							var type = types[x];
+							__outputConsoleCommentsNoEnd(")");
+							if (withRets) {
+								if (method.getReturnType().getCanonicalName() != 'void')
+									__outputConsoleNoEnd(" : " + (method.getReturnType().getCanonicalName() +"").replace(/^.*\./, ""));
+							}
 
-							__outputConsoleNoEnd((type.getCanonicalName() +"").replace(/^.*\./, ""));
+							__outputConsoleCommentsEnd("");
 						}
-						__outputConsoleCommentsNoEnd(")");
-						if (withRets) {
-							if (method.getReturnType().getCanonicalName() != 'void')
-								__outputConsoleNoEnd(" : " + (method.getReturnType().getCanonicalName() +"").replace(/^.*\./, ""));
-						}
-
-						__outputConsoleCommentsEnd("");
 					}
+
 				}
 			}
 		}
@@ -134,7 +143,7 @@ function __desc(aClass, retList, noRecursive) {
 	} 
 	//else {
 	
-        var methods = [];
+		var methods = [];
 
         if(aClass.match(/ *JSON */)) return ret;
 		try {
@@ -165,7 +174,7 @@ function __desc(aClass, retList, noRecursive) {
 							(objType == 'Object') &&
 							(!aClass.match(/\.constructor$/)) && 
 							 !noRecursive ) {
-							var tempret = __desc(aClass + ".constructor", retList, true);
+							var tempret = __desc(aClass + ".constructor", retList, true, javaMethods);
 							ret = ret.concat(tempret);
 							if (tempret.length < 1) {
 								var listScope = af.getScopeIds();
@@ -173,7 +182,7 @@ function __desc(aClass, retList, noRecursive) {
 									try {
 										if (eval(listScope[i] + " instanceof Object") && 
 										    eval(aClass + " instanceof " + listScope[i]))
-												ret = ret.concat(__desc(String(listScope[i]), retList, true));
+												ret = ret.concat(__desc(String(listScope[i]), retList, true, javaMethods));
 									} catch(e) {}
 								}
 							}
@@ -182,7 +191,7 @@ function __desc(aClass, retList, noRecursive) {
 				}
 				
 				if (!aClass.match(/\.constructor$/) && !noRecursive)
-					ret = ret.concat(__desc(af.eval(aClass + ".constructor.name"), retList, true));
+					ret = ret.concat(__desc(af.eval(aClass + ".constructor.name"), retList, true, javaMethods));
 				
 				return ret;
 			}
@@ -200,9 +209,9 @@ function __desc(aClass, retList, noRecursive) {
 			    return result;
 			}
 
-			for(i in methods) {
+			for(var i in methods) {
 				if (methods[i] !== 'constructor') { ret.push(methods[i]); }
-				if (!retList) {
+				if (!retList && javaMethods.indexOf(methods[i]) < 0) {
 					__outputConsoleCommentsNoEnd(CONSOLESEPARATOR + "FUNC: " + methods[i]); __outputConsoleCommentsNoEnd("(");
 				}
 				if (!retList) {
