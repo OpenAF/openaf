@@ -5,8 +5,87 @@
 OpenWrap.python = function() {
 	this.python = "python";
 	this.reset();
+	this.cServer = $atomic();
 
 	return ow.python;
+};
+
+OpenWrap.python.prototype.initCode = function() {
+	if (isDef(this.token)) {
+		var s = "# -*- coding: utf-8 -*-\n\n";
+		s += "import json\n";
+		s += "import socket\n\n";
+		s += "def _(e):\n";
+		s += "   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n";
+		s += "   s.connect(('127.0.0.1', " + this.port + "))\n";
+		s += "   sR = {'e':e,'t':'" + this.token + "'}\n";
+		s += "   s.sendall(json.dumps(sR) + '\\n')\n";
+		s += "   res = ''\n";
+		s += "   while True:\n";
+		s += "      data = s.recv(1024)\n";
+		s += "      if not data:\n";
+		s += "         break\n";
+		s += "      res += data\n";
+		s += "   s.close()\n";
+		s += "   return json.loads(res)\n\n";
+		s += "def _oaf(e):\n";
+		s += "   return _(e)\n\n";
+		return s;
+	} else {
+		return "# -*- coding: utf-8 -*-\n\n";
+	}
+};
+
+OpenWrap.python.prototype.startServer = function(aPort, aFn) {
+	ow.python.cServer.inc();
+	if (isDef(this.token)) {
+		return this.token;
+	} else {
+		this.token = md5(nowNano());
+		aFn = _$(aFn).isFunction().default((t, e) => { if (t == "error") printErr(e); });
+
+		ow.loadServer();
+		if (isUnDef(aPort)) aPort = findRandomOpenPort();
+		this.port = aPort;
+		this.server = ow.server.socket.start(aPort, (clt, srv) => { 
+			aFn("connect", clt.getInetAddress().getHostAddress()); 
+			ioStreamReadLines(clt.getInputStream(), stream => { 
+				try { 
+					var inR = jsonParse(stream), res = "";
+					if (isDef(inR) && isDef(inR.e) && isDef(inR.t) && inR.t == this.token) {
+						aFn("exec", inR);
+						res = stringify(af.eval(inR.e),void 0, "");
+					}
+					ioStreamWrite(clt.getOutputStream(), res);
+					clt.getOutputStream().flush();
+					clt.shutdownInput();
+					clt.shutdownOutput();
+					return true; 
+				} catch(e) { 
+					aFn("error", e);
+				} 
+			}, "\n", false); 
+			clt.close();
+		});
+
+		return this.token;
+	}
+};
+
+OpenWrap.python.prototype.stopServer = function(aPort, force) {
+	if (force || ow.python.cServer.get() > 0) {
+		ow.python.cServer.dec();
+		aPort = _$(aPort).isNumber().default(this.port);
+
+		ow.server.socket.stop(aPort);
+		delete this.server;
+		delete this.port;
+		delete this.token;
+		 
+		return true;
+	} else {
+		return false;
+	}
 };
 
 OpenWrap.python.prototype.reset = function() {
@@ -50,7 +129,7 @@ OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions
 	aInput = _$(aInput, "input").isMap().default({});
 	throwExceptions = _$(throwExceptions, "throwExceptions").isBoolean().default(false);
 
-	var code = "", delim = nowNano();
+	var code = this.initCode(), delim = nowNano();
 	code += "import json\n";
 	code += "__pm = json.loads('" + stringify(aInput, void 0, "" ).replace(/\'/g, "\\'").replace(/\\n/g, "\\\n") + "')\n";
 	code += aPythonCode;
@@ -85,11 +164,12 @@ OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions
  */
 OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, throwExceptions) {
 	_$(aPythonCode, "python code").isString().$_();
+
 	aInput = _$(aInput, "input").isMap().default({});
 	aOutputArray = _$(aOutputArray, "output").isArray().default([]);
 	throwExceptions = _$(throwExceptions, "throwExceptions").isBoolean().default(false);
 
-	var code = "", delim = nowNano();
+	var code = this.initCode(), delim = nowNano();
 	code += "import json\n";
 	Object.keys(aInput).map(k => {
 		if (isDef(aInput[k])) code += k + " = json.loads('" + stringify(aInput[k], void 0, "" ).replace(/\'/g, "\\'").replace(/\\n/g, "\\\n") + "')\n";
