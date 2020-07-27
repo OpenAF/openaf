@@ -1705,17 +1705,22 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
 	var parent = this;
     function procLang(aExec, aJobTypeArgs) {
-		/*if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
+		var res = aExec;
+
+		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
 			switch(aJobTypeArgs.lang) {
 			case "python":
-				ow.loadFormat();
-				aExec += "ow.loadPython();";
-				aExec += "args = merge(ow.python.exec(\"" + aExec.replace(/\n/g, "\\n") + "\", { args: args, job: job, id: id, deps: deps }, [\"args\"], true).args, args);";
+				if (!aExec.startsWith("ow.loadPython();")) {
+					res = "";
+					res += "ow.loadPython(); ow.python.startServer();";
+					res += "try { args = merge(args, ow.python.exec(" + stringify(aExec) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
+					res += "} catch(e) { throw e; } finally { ow.python.stopServer(); }";
+				}
 				break;
 			default:
 			}
-		}*/
-		return aExec;
+		}
+		return res;
 	}
 
 	function procJob(aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, jobCatch, jobEach) {
