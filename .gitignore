@@ -16,3 +16,4 @@ dependencies.json
 /lib/compiledJS.jar
 /dist
 /docs/odoc
+/target/*

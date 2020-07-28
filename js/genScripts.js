@@ -172,11 +172,11 @@ var windows = 0;
 var shLocation;
 
 try {
-  var os        = java.lang.System.getProperty("os.name") + "";
-  var curDir    = java.lang.System.getProperty("user.dir") + "";
+  var os        = String(java.lang.System.getProperty("os.name"));
+  var curDir    = String(java.lang.System.getProperty("user.dir"));;
   var javaVer   = String(java.lang.System.getProperty("java.version")).replace(/^1\./, "").replace(/(\d+).*/, "$1");
-  var javaHome  = java.lang.System.getProperty("java.home") + "";
-  var classPath = java.lang.System.getProperty("java.class.path") + "";
+  var javaHome  = String(java.lang.System.getProperty("java.home"));
+  var classPath = String(java.lang.System.getProperty("java.class.path"));
   
   classPath = (new java.io.File(classPath)).getAbsoluteFile();
 } catch (e) {
@@ -208,12 +208,17 @@ var winPackBat = generateWinPackBat();
 var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
 var winConsolePSBat = generateWinConsolePSBat();
-var unixScript = generateUnixScript("\"$@\"");
-var unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
-var unixPackScript = generateUnixScript("--opack -e \"$*\"");
-var unixJobScript = generateUnixScript("--ojob -e \"$*\"");
-var unixConsoleScript = generateUnixScript("--console \"$@\"");
-var unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
+
+var unixScript, unixSB, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
+
+if (windows == 0) {
+  unixScript = generateUnixScript("\"$@\"");
+  unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
+  unixPackScript = generateUnixScript("--opack -e \"$*\"");
+  unixJobScript = generateUnixScript("--ojob -e \"$*\"");
+  unixConsoleScript = generateUnixScript("--console \"$@\"");
+  unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
+}
 
 try {
   if (windows == 1) io.writeFileString(curDir + "\\openaf.bat", winBat);
