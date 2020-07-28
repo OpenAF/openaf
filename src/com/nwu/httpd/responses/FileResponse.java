@@ -31,6 +31,7 @@ import com.nwu.httpd.HTTPd;
 import com.nwu.httpd.IHTTPd;
 import com.nwu.httpd.Request;
 import com.nwu.log.Log.Type;
+import java.lang.String;
 
 public class FileResponse extends Response {
 	protected String fileLocation = ".";

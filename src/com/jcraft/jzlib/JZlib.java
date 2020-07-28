@@ -34,6 +34,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jzlib;
 
+import java.lang.String;
+
 final public class JZlib{
   private static final String version="1.1.0";
   public static String version(){return version;}

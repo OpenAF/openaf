@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.Authenticator;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.lang.String;
 
 import openaf.AFCmdBase;
 import org.mozilla.javascript.Undefined;

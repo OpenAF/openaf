@@ -8,6 +8,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 
 import com.nwu.httpd.NanoHTTPD.Response;
 import com.nwu.log.Log;
+import java.lang.String;
 
 public interface IHTTPd {
 	

@@ -2,6 +2,7 @@ package openaf;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.lang.String;
 
 /**
  * Generic JS Engine interface

@@ -19,6 +19,7 @@
 package com.nwu.log;
 
 import java.util.logging.Level;
+import java.lang.String;
 
 /**
  * General logging using log4j

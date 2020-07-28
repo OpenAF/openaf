@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.String;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;

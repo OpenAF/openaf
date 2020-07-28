@@ -7,6 +7,7 @@ import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
+import java.lang.String;
 
 import openaf.AFCmdBase;
 import jline.console.completer.Completer;

@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.String;
 import java.net.URI;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;

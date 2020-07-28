@@ -7,6 +7,7 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 import java.io.Reader;
+import java.lang.String;
 
 import javax.script.AbstractScriptEngine;
 import javax.script.Bindings;

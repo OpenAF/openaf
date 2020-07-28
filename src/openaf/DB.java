@@ -7,6 +7,7 @@ package openaf;
  */
 
 import java.io.IOException;
+import java.lang.String;
 import java.sql.SQLException;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.ScriptableObject;

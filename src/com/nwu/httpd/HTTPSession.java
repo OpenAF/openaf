@@ -24,6 +24,7 @@ import java.util.Map;
 import com.nwu.httpd.NanoHTTPD.Method;
 import com.nwu.log.Log;
 import com.nwu.log.Log.Type;
+import java.lang.String;
 
 /**
  * HTTPSession represents a httpd helper to serve requests.

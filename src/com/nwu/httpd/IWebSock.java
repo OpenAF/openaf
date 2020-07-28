@@ -19,6 +19,7 @@
 package com.nwu.httpd;
 
 import java.io.IOException;
+import java.lang.String;
 
 import com.nwu.httpd.NanoWSD.WebSocketFrame;
 import com.nwu.httpd.NanoWSD.WebSocketFrame.CloseCode;

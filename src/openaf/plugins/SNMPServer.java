@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.lang.String;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;

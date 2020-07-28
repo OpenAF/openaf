@@ -8,6 +8,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.Scriptable;
 import openaf.rhino.RhinoEngine;
+import java.lang.String;
 
 /**
  * 
@@ -15,7 +16,7 @@ import openaf.rhino.RhinoEngine;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20200322";
+	public static String VERSION = "20200728";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 	

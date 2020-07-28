@@ -15,6 +15,7 @@ package org.springframework.security.crypto.bcrypt;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.String;
 
 import java.security.SecureRandom;
 

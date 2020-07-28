@@ -20,6 +20,7 @@ package com.nwu.httpd;
 
 import java.util.Map;
 import java.util.Properties;
+import java.lang.String;
 
 import com.nwu.httpd.NanoHTTPD.Method;
 

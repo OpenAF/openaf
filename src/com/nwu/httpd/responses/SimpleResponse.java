@@ -25,6 +25,8 @@ import com.nwu.httpd.IHTTPd;
 import com.nwu.httpd.NanoHTTPD.Response.IStatus;
 import com.nwu.httpd.Request;
 
+import java.lang.String;
+
 public class SimpleResponse extends Response {
 
 	public SimpleResponse(IHTTPd httpd, IStatus status, String mimeType,
