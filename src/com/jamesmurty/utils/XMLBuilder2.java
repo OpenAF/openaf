@@ -41,6 +41,8 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import java.lang.String;
+
 /**
  * XML Builder is a utility that creates simple XML documents using relatively
  * sparse Java code. It is intended to allow for quick and painless creation of

@@ -1,5 +1,7 @@
 package org.json;
 
+import java.lang.String;
+
 /*
 Copyright (c) 2006 JSON.org
 

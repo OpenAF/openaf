@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.lang.String;
 
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.ScriptableObject;

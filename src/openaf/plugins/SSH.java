@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Vector;
+import java.lang.String;
 
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;

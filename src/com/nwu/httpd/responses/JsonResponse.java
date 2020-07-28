@@ -26,6 +26,7 @@ import org.json.JSONObject;
 import com.nwu.httpd.Codes;
 import com.nwu.httpd.IHTTPd;
 import com.nwu.httpd.Request;
+import java.lang.String;
 
 public class JsonResponse extends Response {
 	protected HashMap<OperationKey, JsonAnswer> answers4Key = new HashMap<OperationKey, JsonAnswer>();

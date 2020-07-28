@@ -35,6 +35,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jzlib;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.String;
 
 /**
  * @see "http://www.ietf.org/rfc/rfc1952.txt"

@@ -22,6 +22,8 @@ import org.xml.sax.SAXException;
 import openaf.AFCmdBase;
 import com.jamesmurty.utils.XMLBuilder2;
 
+import java.lang.String;
+
 /**
  * 
  * @author Nuno Aguiar

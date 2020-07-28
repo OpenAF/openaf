@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.lang.String;
 
 import javax.management.Attribute;
 import javax.management.AttributeNotFoundException;

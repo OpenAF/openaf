@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.lang.String;
 
 /**
  * A JSONArray is an ordered sequence of values. Its external text form is a

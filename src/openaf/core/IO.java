@@ -38,6 +38,7 @@ import openaf.AFCmdBase;
 import openaf.JSEngine;
 import openaf.SimpleLog;
 
+import java.lang.String;
 /**
  * Core IO plugin
  * 

@@ -30,6 +30,8 @@ import com.google.gson.JsonObject;
 
 import openaf.SimpleLog.logtype;
 
+import java.lang.String;
+
 /**
  * 
  * @author Nuno Aguiar

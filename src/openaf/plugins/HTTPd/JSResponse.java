@@ -3,6 +3,7 @@ package openaf.plugins.HTTPd;
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.lang.String;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;

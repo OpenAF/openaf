@@ -72,6 +72,8 @@ import openaf.JSEngine.JSList;
 import openaf.JSEngine.JSMap;
 import openaf.SimpleLog.logtype;
 
+import java.lang.String;
+
 /**
  * 
  * @author Nuno Aguiar

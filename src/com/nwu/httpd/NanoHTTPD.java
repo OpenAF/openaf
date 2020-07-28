@@ -98,6 +98,8 @@ import com.nwu.httpd.NanoHTTPD.Response.Status;
 
 import org.apache.commons.io.FileUtils;
 
+import java.lang.String;
+
 /**
  * A simple, tiny, nicely embeddable HTTP server in Java
  * <p/>

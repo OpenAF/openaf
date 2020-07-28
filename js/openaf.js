@@ -25,6 +25,7 @@ function getOpenAFJar() {
 }
 
 var noHomeComms = false;
+var __genScriptsUpdate = [];
 var __noSLF4JErrorOnly;
 //Set openaf variables
 var __openaf;

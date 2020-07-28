@@ -2,7 +2,7 @@ package openaf;
 
 import org.mozilla.javascript.ErrorReporter;
 import org.mozilla.javascript.EvaluatorException;
-
+import java.lang.String;
 /**
  * 
  * @author Nuno Aguiar

@@ -31,6 +31,8 @@ import javax.net.ssl.SSLServerSocketFactory;
 import com.nwu.log.Log;
 import com.nwu.log.Log.Type;
 
+import java.lang.String;
+
 /**
  * The HTTPd server. Creates a thread to run the httpd server.
  * 

@@ -51,6 +51,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
  
+import java.lang.String;
+
 /**
  * Base abstract class for all XML Builder implementations.
  * Most of the work is done here.

@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import java.lang.String;
+
 import com.nwu.httpd.NanoWSD.WebSocketFrame.CloseCode;
 import com.nwu.httpd.NanoWSD.WebSocketFrame.CloseFrame;
 import com.nwu.httpd.NanoWSD.WebSocketFrame.OpCode;

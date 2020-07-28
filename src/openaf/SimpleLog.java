@@ -2,6 +2,7 @@ package openaf;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.lang.String;
 
 /** 
  * Simple Log

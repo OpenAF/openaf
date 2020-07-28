@@ -1,6 +1,7 @@
 package openaf.plugins;
 
 import java.io.IOException;
+import java.lang.String;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;

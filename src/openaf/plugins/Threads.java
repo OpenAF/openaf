@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.lang.String;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;

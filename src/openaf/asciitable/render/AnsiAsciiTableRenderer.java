@@ -9,6 +9,7 @@ package openaf.asciitable.render;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.lang.String;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;

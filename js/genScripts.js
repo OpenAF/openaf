@@ -60,16 +60,32 @@ function generateWinPackBat() {
 }
 
 function generateWinJobBat() {
-	  var s;
+  var s;
 
-	  s = "@echo off\n\n";
-	  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
-	  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
-	  s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
-	  s = s + "\n";
-	  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --ojob -e \"%*\"";
-	  return s;
-	}
+  s = "@echo off\n\n";
+  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
+  s = s + "\n";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --ojob -e \"%*\"";
+  return s;
+}
+
+function generateWinUpdateBat() {
+  var s;
+  s = "@echo off\n\n";
+  s += "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
+  s += "set JAVA_HOME=\"" + javaHome + "\"\n";
+  s += "set OPENAF_DIR=\"" + classPath + "\"\n";
+  s += "\n";
+  s += "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --update\n";
+  if (isDef(__genScriptsUpdate) && isArray(__genScriptsUpdate)) {
+    __genScriptsUpdate.map(r => {
+      s += "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% " + r + "\n";
+    });
+  }
+  return s;
+}
 
 function generateWinConsoleBat() {
   var s;
@@ -92,7 +108,7 @@ function generateWinConsolePSBat() {
   return s;
 }
 
-function generateUnixScript(options, shouldSep) {
+function generateUnixScript(options, shouldSep, extraOptions) {
   var s;
 
   if (typeof shLocation === 'undefined') {
@@ -118,20 +134,25 @@ function generateUnixScript(options, shouldSep) {
   }
 
   s = "#!" + shLocation + "\n\n";
-  s = s + "stty -icanon min 1 -echo 2>/dev/null\n";
-  s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
-  s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
-  s = s + "export LANG=\"${LANG:-C.UTF-8}\"\n";
+  s += "stty -icanon min 1 -echo 2>/dev/null\n";
+  s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
+  s += "OPENAF_DIR=\"" + classPath + "\"\n";
+  s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
   if (shouldSep) {
     s += "SCRIPT=$1\n";
     s += "shift\n";
     s += "ARGS=$@\n";
   }
-  s = s + "\n";
-  s = s + "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
-  s = s + "EXITCODE=$?\n";
-  s = s + "stty icanon echo 2>/dev/null\n";
-  s = s + "exit $EXITCODE\n";
+  s += "\n";
+  s += "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
+  if (isDef(extraOptions) && isArray(extraOptions)) {
+    extraOptions.map(r => {
+      s += "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + r + "\n";
+    });
+  }
+  s += "EXITCODE=$?\n";
+  s += "stty icanon echo 2>/dev/null\n";
+  s += "exit $EXITCODE\n";
   return s;
 }
 
@@ -192,6 +213,7 @@ var unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
 var unixPackScript = generateUnixScript("--opack -e \"$*\"");
 var unixJobScript = generateUnixScript("--ojob -e \"$*\"");
 var unixConsoleScript = generateUnixScript("--console \"$@\"");
+var unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 
 try {
   if (windows == 1) io.writeFileString(curDir + "\\openaf.bat", winBat);
@@ -276,6 +298,17 @@ if (jh.substring(0, jh.lastIndexOf("/")+1) == getOpenAFPath()) {
     log("Generating reinstall.sh...");
     io.writeFileString(curDir + "/reinstall.sh", "#!" + shLocation + "\n\n" +  jh.substring(jh.lastIndexOf("/")+1) + "/bin/java -jar openaf.jar --install\n");
     sh("chmod u+x " + curDir + "/reinstall.sh", "", null, false);
+  }
+}
+
+if (!noHomeComms) {
+  if (windows == 1) {
+    log("Generating update.bat...");
+    io.writeFileString(curDir + "/update.bat", generateWinUpdateBat());
+  } else {
+    log("Generating update.sh...");
+    io.writeFileString(curDir + "/update.sh", unixUpdateScript);
+    $sh("chmod u+x " + curDir + "/update.sh").exec();
   }
 }
 
