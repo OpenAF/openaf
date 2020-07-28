@@ -19,15 +19,18 @@ OpenWrap.python.prototype.initCode = function() {
 		s += "   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n";
 		s += "   s.connect(('127.0.0.1', " + this.port + "))\n";
 		s += "   sR = {'e':e,'t':'" + this.token + "'}\n";
-		s += "   s.sendall(json.dumps(sR) + '\\n')\n";
+		s += "   s.sendall(bytearray(json.dumps(sR) + '\\n', 'utf-8'))\n";
 		s += "   res = ''\n";
 		s += "   while True:\n";
-		s += "      data = s.recv(1024)\n";
+		s += "      data = s.recv(1024).decode('utf-8')\n";
 		s += "      if not data:\n";
 		s += "         break\n";
 		s += "      res += data\n";
 		s += "   s.close()\n";
-		s += "   return json.loads(res)\n\n";
+		s += "   if res.startswith('__OAF__Exception'):\n";
+		s += "      raise Exception(res)\n";
+		s += "   else:\n";
+		s += "      return json.loads(res)\n\n";
 		s += "def _oaf(e):\n";
 		s += "   return _(e)\n\n";
 		return s;
@@ -54,7 +57,11 @@ OpenWrap.python.prototype.startServer = function(aPort, aFn) {
 					var inR = jsonParse(stream), res = "";
 					if (isDef(inR) && isDef(inR.e) && isDef(inR.t) && inR.t == this.token) {
 						aFn("exec", inR);
-						res = stringify(af.eval(inR.e),void 0, "");
+						try {
+							res = stringify(af.eval(inR.e),void 0, "");
+						} catch(ee) {
+							res = "__OAF__Exception: " + String(ee);
+						}
 					}
 					ioStreamWrite(clt.getOutputStream(), res);
 					clt.getOutputStream().flush();
