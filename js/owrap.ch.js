@@ -1448,6 +1448,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 			
 			if (ops.length > 0) {
+				ow.loadObj();
 				var h = new ow.obj.http();
 				if (isDef(this.__channels[aName].user))
 					h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
@@ -1478,6 +1479,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 			
 			if (ops.length > 0) {
+				ow.loadObj();
 				var h = new ow.obj.http();
 				if (isDef(this.__channels[aName].user))
 					h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
@@ -2041,6 +2043,7 @@ OpenWrap.ch.prototype.__types = {
 
 		},		
 		get          : function(aName, aK) {
+			ow.loadObj();
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("get", aK);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
@@ -2068,6 +2071,7 @@ OpenWrap.ch.prototype.__types = {
 			return this;
 		},
 		getAll       : function(aName, full) {
+			ow.loadObj();
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("getall", void 0);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
@@ -2082,6 +2086,7 @@ OpenWrap.ch.prototype.__types = {
 			return res.toArray();
 		},
 		getKeys      : function(aName, full) {
+			ow.loadObj();
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("getkeys", void 0);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
@@ -2110,6 +2115,7 @@ OpenWrap.ch.prototype.__types = {
 			return res.toArray();		
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			ow.loadObj();
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("getset", aK);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
@@ -2138,6 +2144,7 @@ OpenWrap.ch.prototype.__types = {
 			return res.toArray();
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj();
 			if (this.__o[aName].treatAll) {
 				aVs.map(v => this.set(aName, ow.obj.filterKeys(aKs, v), v));
 			} else {
@@ -2153,6 +2160,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
 			if (this.__o[aName].treatAll) {
+				ow.loadObj();
 				aVs.map(v => this.unset(aName, ow.obj.filterKeys(aKs, v), v) );
 			} else {
 				var arr = [];
@@ -2183,6 +2191,7 @@ OpenWrap.ch.prototype.__types = {
 			return elem;
 		},
 		unset        : function(aName, aK, aTimestamp) {
+			ow.loadObj();
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("unset", aK);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
@@ -2954,6 +2963,7 @@ OpenWrap.ch.prototype.utils = {
 			if (isUnDef(res) || isArray(res) || !isObject(res)) res = {};
 			if (useId) res["id"] = nowNano();
 
+			ow.loadObj();
 			$ch(named).set(ow.obj.filterKeys(withKeys, res), res);
 		};
 
