@@ -1568,7 +1568,7 @@ OpenWrap.ch.prototype.__types = {
 	 *    - map (String/Function) The map name (defaults to 'default'). If defined as a function it will receive the key as argument if possible (only for get/set/unset/setall)
 	 * for sharding proposes.\
 	 * \
-	 * The map will be created if it doesn't exist.\
+	 * The map will be created if it doesn't exist. Operations getKeys/getAll can be paginated with the extra map argument containing start and end\
 	 * </odoc>
 	 */
 	mvs: {
@@ -1663,9 +1663,15 @@ OpenWrap.ch.prototype.__types = {
 		},
 		getKeys      : function(aName, full) {
 			var res = [];
+			full = _$(full, "full").isMap().default({});
+
 			var map = this.__s[aName].openMap(this.__m[aName](full));
 
-			for(var i = 0; i < this.size(aName); i++) {
+			var start = _$(full.start, "full.start").isNumber().default(0);
+			var max = this.size(aName);
+			var limit = _$(full.end, "full.end").isNumber().default(max);
+
+			for(var i = start; i < limit && i < max; i++) {
 				res.push(jsonParse(map.getKey(i)));
 			}
 
@@ -1673,9 +1679,15 @@ OpenWrap.ch.prototype.__types = {
 		},
 		getAll      : function(aName, full) {
 			var res = [];
+			full = _$(full, "full").isMap().default({});
+
 			var map = this.__s[aName].openMap(this.__m[aName](full));
 
-			for(var i = 0; i < this.size(aName); i++) {
+			var start = _$(full.start, "full.start").isNumber().default(0);
+			var max = this.size(aName);
+			var limit = _$(full.end, "full.end").isNumber().default(max);
+
+			for(var i = start; i < limit && i < max; i++) {
 				res.push(jsonParse(map.get(map.getKey(i))));
 			}
 
