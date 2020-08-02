@@ -2789,6 +2789,36 @@ OpenWrap.server.prototype.httpd = {
 	
 	/**
 	 * <odoc>
+	 * <key>ow.server.httpd.replyFn(aFunctionName, aInstance, aRequest, aParams, dontRetError) : Map</key>
+	 * Provides a helper function to call aFunctionName over aInstance (default this) given a POST aRequest.
+	 * If aFunctionName doesn't have odoc help information available you will need to provide aParams map for the
+	 * expected aFunctionName arguments. If dontRetError = true any exception will be kept in the server and an empty
+	 * map will be returned.
+	 * </odoc>
+	 */
+	replyFn: function(aFunctionName, aInstance, aReq, aParams, dontRetError) {
+		_$(aReq, "request").isMap().$_();
+		dontRetError = _$(dontRetError, "dontRetError").isBoolean().default(false);
+		aInstance = _$(aInstance, "instance").default(this);
+
+		if (aReq.method == "POST") {
+			try {
+				aParams = _$(aParams, "params").isMap().default($fnDef4Help(aFunctionName));
+				return ow.server.httpd.reply($fnM2A(af.eval(aFunctionName), aInstance, aParams, jsonParse(aReq.files.postData)));
+			} catch(e) {
+				if (dontRetError) {
+					throw e;
+				} else {
+					return ow.server.httpd.reply({ __error: e });
+				}
+			}
+		}
+
+		return ow.server.httpd.reply({});
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.server.httpd.getMimeType(aFilename) : String</key>
 	 * Tries to determine the mime type of aFilename and returns it. If not determined it will default
 	 * to application/octet-stream.
