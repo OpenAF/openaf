@@ -1981,6 +1981,7 @@ OpenWrap.ch.prototype.__types = {
 	 *    - chs      (Array)    An array of names of channels to aggregate.\
 	 *    - fn       (Function) A function that will receive an operation and a key to return which channel name should be used (if no return or void all channels will be considered).\
 	 *    - errFn    (Function) A function to call with: the name of this channel, the exception, the target channel, the operation and the arguments whenever a error occurs accessing a channel.\
+	 *    - fnTrans  (Function) A function to translate the key (for example, to remove elements used only on fn).\
 	 *    - treatAll (Boolean)  If true size, setAll and unsetAll will be executed individually and fn called for each (default is false and size will take the first result)\
 	 * \
 	 * </odoc>
@@ -2001,6 +2002,9 @@ OpenWrap.ch.prototype.__types = {
 			});
 			options.fn = _$(options.fn, "fn").isFunction().default((aOp, k) => {
 				return void 0;
+			});
+			options.fnTrans = _$(options.fnTrans, "fnTrans").isFunction().default(k => {
+				return k;
 			});
 			options.treatAll = _$(options.treatAll, "treatAll").isBoolean().default(false);
 			this.__o[aName] = options;
@@ -2049,7 +2053,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			lst.map(c => {
 				arr.push($do( () => {
-					var _o = this.__r(aName, c, "get", [ aK ]);
+					var _o = this.__r(aName, c, "get", [ this.__o[aName].fnTrans(aK) ]);
 					if (isDef(_o)) res.add(_o);
 				}));
 			});
@@ -2121,7 +2125,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			lst.map(c => {
 				arr.push($do( () => {
-					res.add( this.__r(aName, c, "getSet", [ aMatch, aK, aV, aTimestamp ]) );
+					res.add( this.__r(aName, c, "getSet", [ aMatch, this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
 				}));
 			});
 	
@@ -2135,7 +2139,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			lst.map(c => {
 				arr.push($do( () => {
-					res.add( this.__r(aName, c, "set", [ aK, aV, aTimestamp ]) );
+					res.add( this.__r(aName, c, "set", [ this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
 				}));
 			});
 	
@@ -2151,7 +2155,8 @@ OpenWrap.ch.prototype.__types = {
 				var arr = [];
 				var _lst = this.__o[aName].fn("setall", aKs);
 				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
-				lst.map(c => arr.push($do( () => this.__r(aName, c, "setAll", [ aKs, aVs, aTimestamp ]) )) );
+				var naKs = aKs.map(this.__o[aName].fnTrans);
+				lst.map(c => arr.push($do( () => this.__r(aName, c, "setAll", [ naKs, aVs, aTimestamp ]) )) );
 	
 				$doWait($doAll(arr));
 			}
@@ -2166,9 +2171,10 @@ OpenWrap.ch.prototype.__types = {
 				var arr = [];
 				var _lst = this.__o[aName].fn("unsetall", aKs);
 				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+				var naKs = aKs.map(this.__o[aName].fnTrans);
 				lst.map(c => {
 					arr.push($do( () => {
-						res.add( this.__r(aName, c, "unsetAll", [ aKs, aVs, aTimestamp ]) );
+						res.add( this.__r(aName, c, "unsetAll", [ naKs, aVs, aTimestamp ]) );
 					}));
 				});
 		
@@ -2197,7 +2203,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			lst.map(c => {
 				arr.push($do( () => {
-					res.add( this.__r(aName, c, "unset", [ aK, aTimestamp ]) );
+					res.add( this.__r(aName, c, "unset", [ this.__o[aName].fnTrans(aK), aTimestamp ]) );
 				}));
 			});
 	
