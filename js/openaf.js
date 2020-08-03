@@ -5339,6 +5339,13 @@ const $rest = function(ops) {
 	return new _rest(ops);
 };
  
+const $py = function(aPythonCode, aInput, aOutputArray) {
+	ow.loadPython();
+	ow.python.startServer();
+	if (aPythonCode.indexOf("\n") < 0 && aPythonCode.endsWith(".py") && io.fileExists(aPythonCode)) aPythonCode = io.readFileString(aPythonCode);
+	return ow.python.exec(aPythonCode, aInput, aOutputArray);
+};
+
 /**
  * <odoc>
  * <key>$openaf(aScript, aPMIn, aOpenAF, extraJavaParamsArray) : Object</key>

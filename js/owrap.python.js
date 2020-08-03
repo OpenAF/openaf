@@ -30,7 +30,10 @@ OpenWrap.python.prototype.initCode = function() {
 		s += "   if res.startswith('__OAF__Exception'):\n";
 		s += "      raise Exception(res)\n";
 		s += "   else:\n";
-		s += "      return json.loads(res)\n\n";
+		s += "      try:\n"
+		s += "         return json.loads(res)\n";
+		s += "      except:\n";
+		s += "         return None\n\n";
 		s += "def _oaf(e):\n";
 		s += "   return _(e)\n\n";
 		return s;
@@ -97,10 +100,11 @@ OpenWrap.python.prototype.stopServer = function(aPort, force) {
 
 OpenWrap.python.prototype.reset = function() {
 	try {
-		var res = $sh(this.python + " --version").get(0).stderr;
-		this.version = (res.match(/ 2\./) ? 2 : 3);
+		var res = $sh(this.python + " --version").get(0);
+		this.version = (res.stderr.match(/ 2\./) ? 2 : (res.stdout.match(/ 3\./) ? 3 : -1) );
+		if (this.version < 0) throw res.stderr;
 	} catch(e) {
-		throw "Can't find or determine python version";
+		throw "Can't find or determine python version (" + e + ")";
 	}
 };
 
@@ -132,6 +136,8 @@ OpenWrap.python.prototype.getVersion = function() {
  * </odoc>
  */
 OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions) {
+	if (this.version < 0) throw "Appropriate Python version not found. Please setPython to a python version 2 or version 3 command-line interpreter.";
+
 	_$(aPythonCode, "python code").isString().$_();
 	aInput = _$(aInput, "input").isMap().default({});
 	throwExceptions = _$(throwExceptions, "throwExceptions").isBoolean().default(false);
@@ -170,6 +176,8 @@ OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions
  * </odoc>
  */
 OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, throwExceptions) {
+	if (this.version < 0) throw "Appropriate Python version not found. Please setPython to a python version 2 or version 3 command-line interpreter.";
+
 	_$(aPythonCode, "python code").isString().$_();
 
 	aInput = _$(aInput, "input").isMap().default({});
