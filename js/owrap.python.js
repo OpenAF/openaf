@@ -81,49 +81,57 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();
 		this.sport = aSendPort;
 		var s = "";
-		s += "import socketserver\n";
 		s += "import json\n";
 		s += "import sys\n";
 		s += "import os\n";
 		s += "\n";
 		s += "if sys.version_info[0] == 2:\n";
 		s += "  from StringIO import StringIO\n";
+		s += "  import SocketServer\n";
+		s += "  __h = SocketServer.BaseRequestHandler\n";
 		s += "else:\n";
 		s += "  from io import StringIO\n";
+		s += "  import socketserver\n";
+		s += "  __h = socketserver.BaseRequestHandler\n";
 		s += "\n";
-		s += "class oafHandler(socketserver.BaseRequestHandler):\n";
+		s += "class oafHandler(__h):\n";
 		s += "  def handle(self):\n";
 		s += "      res = ''\n";
 		s += "      self.request.settimeout(1500)\n";
 		s += "      while True:\n";
 		s += "          res += self.request.recv(1024).decode('utf-8')\n";
-		s += "          if str(res).endswith('}\\n'):\n";
+		s += "          if str(res).endswith('}\\n') or str(res) == '':\n";
 		s += "              break\n";
 		s += "      \n";
 		s += "      try:\n";
 		s += "          mm = json.loads(res)\n";
 		s += "      except:\n";
 		s += "          mm = {}\n";
-		s += "      if 'exit' in mm and mm['t'] == '" + this.token + "':\n";
+		s += "      if 'exit' in mm.keys() and mm['t'] == '" + this.token + "':\n";
 		s += "          os._exit(os.EX_OK)\n";
-		s += "      if 'e' in mm and mm['t'] == '" + this.token + "':\n";
+		s += "      if 'e' in mm.keys() and mm['t'] == '" + this.token + "':\n";
 		s += "          myStdOut = StringIO()\n";
 		s += "          myStdErr = StringIO()\n";
 		s += "          sys.stdout = myStdOut\n";
 		s += "          sys.stderr = myStdErr\n";
 		s += "          try:\n";
 		s += "              exec(mm['e'])\n";
-		s += "              del mm['e']\n";
 		s += "              mm['stdout'] = myStdOut.getvalue()\n";
 		s += "              mm['stderr'] = myStdErr.getvalue()\n";
 		s += "          except:\n";
 		s += "              mm['stderr'] = str(sys.exc_info())\n";
 		s += "\n";
-		s += "      self.request.sendall(json.dumps(mm))\n";
+		s += "      del mm['e']\n";		
+		s += "      del mm['t']\n";
+		s += "      self.request.sendall(json.dumps(mm).encode('utf-8'))\n";
 		s += "\n";
-		s += "server = socketserver.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
+		s += "if sys.version_info[0] == 2:\n";
+		s += "  server = SocketServer.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
+		s += "else:\n";
+		s += "  server = socketserver.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
 		s += "server.serve_forever()\n";
 
+		global.__sssss = String(s);
 		plugin("Threads");
 		var threads = new Threads();
 		threads.addSingleThread(function() { af.sh("python -", s, void 0, void 0, void 0, true); } );
@@ -268,7 +276,7 @@ OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, thr
 	}
 
 	var rres = [];
-	if (res.stdout.indexOf(delim) >= 0) {
+	if (isMap(res) && isDef(res.stdout) && res.stdout.indexOf(delim) >= 0) {
 		rres = res.stdout.split(new RegExp("^" + delim + "\r?\n", "mg"));
 	}
 	if (isDef(rres[0]) && rres[0] != "") print(rres[0]);
