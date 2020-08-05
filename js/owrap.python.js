@@ -114,10 +114,10 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		s += "          try:\n";
 		s += "              exec(mm['e'])\n";
 		s += "              del mm['e']\n";
-		s += "              mm['out'] = myStdOut.getvalue()\n";
-		s += "              mm['err'] = myStdErr.getvalue()\n";
+		s += "              mm['stdout'] = myStdOut.getvalue()\n";
+		s += "              mm['stderr'] = myStdErr.getvalue()\n";
 		s += "          except:\n";
-		s += "              mm['err'] = str(sys.exc_info())\n";
+		s += "              mm['stderr'] = str(sys.exc_info())\n";
 		s += "\n";
 		s += "      self.request.sendall(json.dumps(mm))\n";
 		s += "\n";
@@ -127,6 +127,9 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		plugin("Threads");
 		var threads = new Threads();
 		threads.addSingleThread(function() { af.sh("python -", s, void 0, void 0, void 0, true); } );
+		ow.loadFormat();
+		sleep(100, true);
+		ow.format.testPort("127.0.0.1", this.sport, 1500);
 	}
 
 	return this.token;
@@ -206,6 +209,7 @@ OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions
     if (shouldFork || isUnDef(this.sport)) {
 		res = af.sh(this.python + " -", code, void 0, void 0, void 0, true);
 	} else {
+		ow.loadObj();
 		code = code.replace("# -*- coding: utf-8 -*-\n", "#\n");
 
 		res = jsonParse(ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ e: code, t: this.token }, void 0, "")+"\n"));
@@ -257,6 +261,7 @@ OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, thr
     if (shouldFork || isUnDef(this.sport)) {
 		res = af.sh(this.python + " -", code, void 0, void 0, void 0, true);
 	} else {
+		ow.loadObj();
 		code = code.replace("# -*- coding: utf-8 -*-\n", "#\n");
 
 		res = jsonParse(ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ e: code, t: this.token }, void 0, "")+"\n"));
