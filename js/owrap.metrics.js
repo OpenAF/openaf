@@ -306,11 +306,12 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             // build label
             lbs = _$(lbs).default([]);
             keys.map(key => {
-                if (!isNumber(obj[key] && isDef(obj[key])) && !isArray(obj[key]) && !isMap(obj[key]) ) lbs.push(key + "=\"" + String(obj[key]) + "\"");
+                if (!isNumber(obj[key] && !isBoolean(obj[key]) && isDef(obj[key])) && !isArray(obj[key]) && !isMap(obj[key]) ) lbs.push(key + "=\"" + String(obj[key]) + "\"");
             });
             var lprefix = (lbs.length > 0 ? "{" + lbs.join(",") + "}" : "");
             keys.map(key => {
                 if (isDef(obj[key])) {
+                    if (isBoolean(obj[key])) ar.push(prefix + "_" + key + lprefix + " " + (obj[key] ? "1" : "0") + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
                     if (isNumber(obj[key])) ar.push(prefix + "_" + key + lprefix + " " + Number(obj[key]) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
                     if (isMap(obj[key])) ar = ar.concat(_map(obj[key], prefix + "_" + key, lbs));
                     if (isArray(obj[key])) ar = ar.concat(_arr(obj[key], prefix + "_" + key, lbs));
@@ -329,7 +330,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
                     tlbs.push("_id" + "=\"" + String(i) + "\"");
                     if (isMap(obj[i])) ar = ar.concat(_map(obj[i], prefix, tlbs));
                     if (isArray(obj[i])) ar = ar.concat(_arr(obj[i], prefix, tlbs));
-                    if (isNumber(obj[i])) ar = ar.concat(_sim[i], prefix, tlbs);
+                    if (isNumber(obj[i]) || isBoolean(obj[i])) ar = ar.concat(_sim[i], prefix, tlbs);
                 }
             }
         }
@@ -337,6 +338,9 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
     };
     var _sim = (obj, prefix) => { 
         var ar = [];
+        if (isBoolean(obj)) {
+            obj = (obj ? 1 : 0);
+        }
         if (isNumber(obj)) {
             ar.push(prefix + " " + Number(aObj) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
         }
