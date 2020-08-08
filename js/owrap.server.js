@@ -1632,15 +1632,18 @@ OpenWrap.server.prototype.queue.prototype.purge = function() {
 OpenWrap.server.prototype.telemetry = { 
 	/**
 	 * <odoc>
-	 * <key>ow.server.telemetry.passive(aHTTPdOrPort, aURI)</key>
+	 * <key>ow.server.telemetry.passive(aHTTPdOrPort, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp)</key>
 	 * Setup a HTTPd server on aHTTPdOrPort (defaults to 7777) on the aURI (defaults to /healthz) to 
 	 * serve ow.metrics.getAll. If the parameter "s" is present the value will be split by commas and used
 	 * for ow.metrics.getSome.
+	 * Optionally if useOpenMetrics = true the default of aURI becomes /metrics and the output becomes open metrics (prometheus) using openMetricsPrefix (defaults to "metrics") and
+	 * uses the openMetricsHelp where each key is a open metric entry associated with map with text (description text), help (help text) and type (metrics type).
 	 * </odoc>
 	 */
-    passive: function(aHs, aURI) {
+    passive: function(aHs, aURI, useOpenMetrics, openMetricsPrefix, openMetricsHelp) {
 		aHs  = _$(aHs, "server").default("7777");
-		aURI = _$(aURI, "uri").isString().default("/healthz");
+		useOpenMetrics = _$(useOpenMetrics, "useOpenMetrics").default(false);
+		aURI = _$(aURI, "uri").isString().default((useOpenMetrics ? "/metrics" : "/healthz"));
 
 		if (isNumber(aHs)) aHs = ow.server.httpd.start(aHs);
 		ow.loadMetrics();
@@ -1649,9 +1652,17 @@ OpenWrap.server.prototype.telemetry = {
 		r[aURI] = (r, aH) => {
 			try {
 				if (isDef(r.params) && isDef(r.params.s)) {
-					return ow.server.httpd.reply(ow.metrics.getSome(r.params.s.split(",")));
+					if (useOpenMetrics) {
+						return aHs.replyOKText(ow.metrics.fromObj2OpenMetrics(ow.metrics.getSome(r.params.s.split(",")), openMetricsPrefix, now(), openMetricsHelp));
+					} else {
+						return ow.server.httpd.reply(ow.metrics.getSome(r.params.s.split(",")));
+					}
 				} else {
-					return ow.server.httpd.reply(ow.metrics.getAll());
+					if (useOpenMetrics) {
+						return aHs.replyOKText(ow.metrics.fromObj2OpenMetrics(ow.metrics.getAll(), openMetricsPrefix, now(), openMetricsHelp));
+					} else {
+						return ow.server.httpd.reply(ow.metrics.getAll());
+					}
 				}
 			} catch(e) {
 				sprintErr(e);
