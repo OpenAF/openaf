@@ -286,4 +286,88 @@ OpenWrap.metrics.prototype.collectMetrics = function(aName, aFunction) {
         ow.metrics.__fnMetrics[aName].err += 1; 
         throw __resMetricsProxyE;
     }
-}
+};
+
+/**
+ * <odoc>
+ * <key>ow.metrics.fromObj2OpenMetrics(aObj, aPrefix, aTimestamp, aHelpMap) : String</key>
+ * Given aObj will return a string of open metric (prometheus) metric strings. Optionally you can provide a prefix (defaults to "metric") 
+ * and/or aTimestamp (that will be used for all aObj values).
+ * </odoc>
+ */
+OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap) {
+    var handled = false;
+    aPrefix = _$(aPrefix, "prefix").isString().default("metric");
+
+    var _map = (obj, prefix, lbs) => { 
+        var ar = [];
+        if (isMap(obj)) {
+            var keys = Object.keys(obj);
+            // build label
+            lbs = _$(lbs).default([]);
+            keys.map(key => {
+                if (!isNumber(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) lbs.push(key + "=\"" + obj[key] + "\"");
+            });
+            var lprefix = "{" + lbs.join(",") + "}";
+            keys.map(key => {
+                if (isNumber(obj[key])) ar.push(prefix + "_" + key + lprefix + " " + Number(obj[key]) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
+                if (isMap(obj[key])) ar = ar.concat(_map(obj[key], prefix + "_" + key, lbs));
+                if (isArray(obj[key])) ar = ar.concat(_arr(obj[key], prefix + "_" + key, lbs));
+            });
+        }
+        return ar;
+    };
+    var _arr = (obj, prefix, lbs) => { 
+        var ar = [];
+        if (isArray(obj)) {
+            lbs = _$(lbs).default([]);
+            for(var i in obj) {
+                var tlbs = clone(lbs);
+                tlbs.push("_id" + "=\"" + String(i) + "\"");
+                if (isMap(obj[i])) ar = ar.concat(_map(obj[i], prefix, tlbs));
+                if (isArray(obj[i])) ar = ar.concat(_arr(obj[i], prefix, tlbs));
+                if (isNumber(obj[i])) ar = ar.concat(_sim[i], prefix, tlbs);
+            }
+        }
+        return ar;
+    };
+    var _sim = (obj, prefix) => { 
+        var ar = [];
+        if (isNumber(obj)) {
+            ar.push(prefix + " " + Number(aObj) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
+        }
+        return ar;
+    };
+
+    var ar = [];
+    if (isMap(aObj)) {
+        handled = true;
+        ar = _map(aObj, aPrefix);
+    }
+
+    if (isArray(aObj)) {
+        handled = true;
+        ar = _arr(aObj, aPrefix);
+    }
+
+    if (!handled) {
+        ar = _sim(aObj, aPrefix);
+    }
+
+    if (isMap(aHelpMap)) {
+        var far = [];
+        ar.map(item => {
+            var it = item.match(/^(.+?)(\{| )/);
+            if (isDef(it[1]) && isDef(aHelpMap[it[1]])) {
+                var h = aHelpMap[it[1]];
+                if (isDef(h.text)) far.push("# " + h.text);
+                if (isDef(h.help)) far.push("# HELP " + it[1] + " " + h.help);
+                if (isDef(h.type)) far.push("# TYPE " + it[1] + " " + h.type);
+            }
+            far.push(item);
+        });
+        ar = far;
+    }
+
+    return ar.join("\n") + "\n";
+};
