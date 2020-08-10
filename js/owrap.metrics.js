@@ -305,18 +305,20 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             var keys = Object.keys(obj);
             // build label
             lbs = _$(lbs).default([]);
+            var origLbs = clone(lbs);
             keys.map(key => {
-                if (!isNumber(obj[key] && !isBoolean(obj[key]) && isDef(obj[key])) && !isArray(obj[key]) && !isMap(obj[key]) ) lbs.push(key + "=\"" + String(obj[key]) + "\"");
+                if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) lbs.push(key + "=\"" + String(obj[key]) + "\"");
             });
             var lprefix = (lbs.length > 0 ? "{" + lbs.join(",") + "}" : "");
             keys.map(key => {
                 if (isDef(obj[key])) {
                     if (isBoolean(obj[key])) ar.push(prefix + "_" + key + lprefix + " " + (obj[key] ? "1" : "0") + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
                     if (isNumber(obj[key])) ar.push(prefix + "_" + key + lprefix + " " + Number(obj[key]) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
-                    if (isMap(obj[key])) ar = ar.concat(_map(obj[key], prefix + "_" + key, lbs));
-                    if (isArray(obj[key])) ar = ar.concat(_arr(obj[key], prefix + "_" + key, lbs));
+                    if (isMap(obj[key])) ar = ar.concat(_map(obj[key], prefix + "_" + key, clone(lbs)));
+                    if (isArray(obj[key])) ar = ar.concat(_arr(obj[key], prefix + "_" + key, clone(lbs)));
                 }
             });
+            lbs = origLbs;
         }
         return ar;
     };
