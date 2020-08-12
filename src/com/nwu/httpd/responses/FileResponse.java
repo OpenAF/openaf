@@ -216,6 +216,7 @@ public class FileResponse extends Response {
 			r.addHeader("Content-length", "" + (f.length() - startFrom));
 			r.addHeader("Content-range", "" + startFrom + "-"
 					+ (f.length() - 1) + "/" + f.length());
+			fis.close();
 			return r;
 		} catch (IOException ioe) {
 			return new com.nwu.httpd.responses.SimpleResponse(httpd,
