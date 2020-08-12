@@ -339,18 +339,22 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public Object toEncoding(String s, Object encoding, Object fromEncoding) throws UnsupportedEncodingException {
-		if (fromEncoding != null && !(fromEncoding instanceof Undefined)) {
-			if (encoding != null && !(encoding instanceof Undefined)) {
-				return new String(s.getBytes((String) fromEncoding), (String) encoding);
+		if (s != null) {
+			if (fromEncoding != null && !(fromEncoding instanceof Undefined)) {
+				if (encoding != null && !(encoding instanceof Undefined)) {
+					return new String(s.getBytes((String) fromEncoding), (String) encoding);
+				} else {
+					return new String(s.getBytes((String) fromEncoding));
+				}
 			} else {
-				return new String(s.getBytes((String) fromEncoding));
+				if (encoding != null && !(encoding instanceof Undefined)) {
+					return new String(s.getBytes(), (String) encoding);
+				} else {
+					return new String(s.getBytes());
+				}
 			}
 		} else {
-			if (encoding != null && !(encoding instanceof Undefined)) {
-				return new String(s.getBytes(), (String) encoding);
-			} else {
-				return new String(s.getBytes());
-			}
+			return null;
 		}
 	}
 	
@@ -845,14 +849,16 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public void externalAddClasspath(String url) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, MalformedURLException {		
-		if (Thread.currentThread().getContextClassLoader() instanceof OAFdCL) {
-			OAFdCL dyna = OAFdCL.getInstance(Thread.currentThread().getContextClassLoader());
-			dyna.addURL(new URL(url));
-		} else {
-			ClassLoader sysloader = ClassLoader.getSystemClassLoader();
-			Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[] { URL.class });
-			method.setAccessible(true);
-			method.invoke(sysloader, new Object[]{ new URL(url) });
+		if (url != null) {
+			if (Thread.currentThread().getContextClassLoader() instanceof OAFdCL) {
+				OAFdCL dyna = OAFdCL.getInstance(Thread.currentThread().getContextClassLoader());
+				dyna.addURL(new URL(url));
+			} else {
+				ClassLoader sysloader = ClassLoader.getSystemClassLoader();
+				Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[] { URL.class });
+				method.setAccessible(true);
+				method.invoke(sysloader, new Object[]{ new URL(url) });
+			}
 		}
 	}
 	
@@ -869,6 +875,8 @@ public class AFBase extends ScriptableObject {
 	public void load(String js) throws Exception {
 		String includeScript = null;
 
+		if (js == null) throw new Exception("No filename provided.");
+		
 		// Provide a similar behavior to the require function
 		if (!js.matches(".+\\.[^\\.]+$")) {
 			js = js + ".js";
@@ -876,9 +884,18 @@ public class AFBase extends ScriptableObject {
 		
 		if (js.indexOf("::") > 0) {
 			ZipFile zip = new ZipFile(js.replaceFirst("::.+",  ""));
-			includeScript = IOUtils.toString(new InputStreamReader(zip.getInputStream(zip.getEntry(js.replaceFirst(".+::", "")))));
-			zip.close();
-			ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip", js.replaceFirst("::[^:]+$",  ""));
+			if (zip != null) {
+				try {
+					java.io.InputStreamReader isr = new InputStreamReader(zip.getInputStream(zip.getEntry(js.replaceFirst(".+::", ""))));
+					if (isr != null) {
+						includeScript = IOUtils.toString(isr);
+						isr.close();
+					}
+				} finally {
+					zip.close();
+				}
+				ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip", js.replaceFirst("::[^:]+$",  ""));
+			}
 		} else {
 			try {
 				if (AFCmdBase.zip != null &&
@@ -887,13 +904,19 @@ public class AFBase extends ScriptableObject {
 				} else {
 					if (ScriptableObject.getProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip") != Scriptable.NOT_FOUND) {
 						String zipfile = ScriptableObject.getProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip").toString();
+						ZipFile zip = null;
 						try {
-							ZipFile zip = new ZipFile(zipfile);
-							includeScript = IOUtils.toString(new InputStreamReader(zip.getInputStream(zip.getEntry(js))));
-							zip.close();
-							ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip", zipfile);
+							zip = new ZipFile(zipfile);
+							java.io.InputStreamReader isr = new InputStreamReader(zip.getInputStream(zip.getEntry(js)));
+							if (isr != null) {
+								includeScript = IOUtils.toString(isr);
+								ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip", zipfile);
+								isr.close();
+							}
 						} catch (Exception e) {		
 							SimpleLog.log(logtype.DEBUG, "Error trying to load from a recurring zip: " + zipfile + " for '" + js + "'", e);
+						} finally {
+							if (zip != null) zip.close();
 						}
 					}
 					
