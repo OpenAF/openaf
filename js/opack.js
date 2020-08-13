@@ -630,7 +630,7 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 // Find OpenAF she-bang
 function getOpenAFSB() {
 	var os = String(java.lang.System.getProperty("os.name"));
-	var currentClassPath = ow.format.getClasspath();
+	var currentClassPath = getOpenAFJar();
   //var currentClassPath = java.lang.management.ManagementFactory.getRuntimeMXBean().getClassPath() + "";
 
   var openafsb;
@@ -662,7 +662,7 @@ function getOpenAFSB() {
 // Find OpenAF
 function getOpenAF() {
 	var os = ow.format.getOS();
-  var currentClassPath = ow.format.getClasspath();
+  var currentClassPath = getOpenAFJar();
 
   var openaf;
   if (os.match(/Windows/)) {
@@ -1266,11 +1266,10 @@ function __opack_script(args, isDaemon, isJob) {
 
 	var DEFAULT_SH = "/bin/sh";
 	var javaHome  = java.lang.System.getProperty("java.home") + "";
-	var classPath = java.lang.System.getProperty("java.class.path") + "";
+	var classPath = getOpenAFJar();
 	var os        = java.lang.System.getProperty("os.name") + "";
 	var curDir    = java.lang.System.getProperty("user.dir") + "";
 	var windows   = (os.match(/Windows/)) ? 1 : 0;
-	classPath = (new java.io.File(classPath)).getAbsoluteFile();
 	var javaargs = "";
 	var params = splitBySeparator(__expr, " ");
 	for(var i in params) {

@@ -1691,15 +1691,26 @@ function getDistribution() {
  * Returns the filesystem path to the openaf.jar currently being used for the script execution.
  * </odoc>
  */
+var __OpenAFJar;
 function getOpenAFPath() {
 	if (isDef(__forcedOpenAFJar)) {
-		return String(new java.io.File(__forcedOpenAFJar).getParent());
+		__OpenAFJar = String(new java.io.File(__forcedOpenAFJar).getParent());
 	} else {
-		var classPath = new java.io.File(java.lang.System.getProperty("java.class.path")).getAbsolutePath() + "";
-		classPath = classPath.replace(/openaf\.jar$/, "").replace(/\\/g, "/");
-
-		return classPath.replace(/[/\\][^/\\]+$/, "");
+		if (isUnDef(__OpenAFJar)) {
+			var ar = String(java.lang.System.getProperty("java.class.path")).split(java.io.File.pathSeparator);
+			var res;
+			ar.map(f => {
+				if (f.match(/openaf\.jar$/)) {
+					res = String(java.io.File(f).getAbsolutePath());
+					res = res.replace(/openaf\.jar$/, "").replace(/\\/g, "/");
+					res = res.replace(/[/\\][^/\\]+$/, "");
+				}
+			});
+			__OpenAFJar = res;
+		}	
 	}
+
+	return __OpenAFJar;
 }
 
 //------------------------------------------
@@ -1949,7 +1960,7 @@ function load(aScript, loadPrecompiled) {
 		return fn(aScript, 3);
 	} else {
 		var paths = getOPackPaths();
-		paths["__default"] = String(java.lang.System.getProperty("java.class.path") + "::js");
+		paths["__default"] = getOpenAFJar() + "::js");
 
 		var error;
 		for(let i in paths) {

@@ -16,7 +16,7 @@ import java.lang.String;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20200728";
+	public static String VERSION = "20200813";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 	
@@ -89,9 +89,17 @@ public class AFCmdBase {
 	}
 	
 	public static String getJarFilePath(@SuppressWarnings("rawtypes") Class aclass) {
-		File f = new File(System.getProperty("java.class.path"));
-		//File dir = f.getAbsoluteFile().getParentFile();
-		String path = f.getAbsoluteFile().toString();
+		String cp = System.getProperty("java.class.path");
+		String[] cps = cp.split(java.io.File.pathSeparator);
+		String path = null;
+
+		for(String _cp : cps) {
+			if (_cp.endsWith("openaf.jar")) {
+				File f = new File(_cp);
+				path = f.getAbsoluteFile().toString();
+			}
+		}
+		
 		return path;
 	}
 	

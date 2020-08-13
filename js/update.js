@@ -36,7 +36,7 @@ log("Current version = " + currentVersion);
 
 try {
   var curDir    = java.lang.System.getProperty("user.dir") + "";
-  var classPath = java.lang.System.getProperty("java.class.path") + "";
+  var classPath = getOpenAFJar();
   var os        = String(java.lang.System.getProperty("os.name"));
 } catch (e) {
   logErr("Couldn't retrieve system properties: " + e.message);

@@ -173,12 +173,10 @@ var shLocation;
 
 try {
   var os        = String(java.lang.System.getProperty("os.name"));
-  var curDir    = String(java.lang.System.getProperty("user.dir"));;
+  var curDir    = String(java.lang.System.getProperty("user.dir"));
   var javaVer   = String(java.lang.System.getProperty("java.version")).replace(/^1\./, "").replace(/(\d+).*/, "$1");
   var javaHome  = String(java.lang.System.getProperty("java.home"));
-  var classPath = String(java.lang.System.getProperty("java.class.path"));
-  
-  classPath = (new java.io.File(classPath)).getAbsoluteFile();
+  var classPath = getOpenAFJar();
 } catch (e) {
   logErr("Couldn't retrieve system properties: " + e.message);
   java.lang.System.exit(0);
