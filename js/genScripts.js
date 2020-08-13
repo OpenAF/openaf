@@ -13,6 +13,9 @@ var extraArgsForJava12 = extraArgsForJava11 + "-Xshare:off";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
+var __genScriptsUpdate;
+if (isUnDef(__genScriptsUpdate)) __genScriptsUpdate = [];
+
 var javaargs = "";
 for(var i in __args) {
 	if (__args[i].match(/^args=/i)) javaargs = __args[i].replaceAll("^args=", "");
