@@ -198,7 +198,9 @@ public class XLS extends ScriptableObject {
 				this.read_only = readOnly;
 				this.aFile = new File((String) arg);
 				if (readOnly) {
-					wbook = WorkbookFactory.create(new FileInputStream(new File((String) arg)), password);
+					try ( FileInputStream fis = new FileInputStream(new File((String) arg)) ) {
+						wbook = WorkbookFactory.create(fis, password);
+					}
 				} else {
 					wbook = WorkbookFactory.create(this.aFile, password);
 				}
@@ -552,23 +554,26 @@ public class XLS extends ScriptableObject {
 
 			if (this.aFile != null && target.getCanonicalPath().equals(this.aFile.getCanonicalPath())) {
 				if (!this.read_only) {
-					NullOutputStream fileout = new NullOutputStream();
-					wbook.write(fileout);
-					fileout.flush();
-					fileout.close();
+					try ( NullOutputStream fileout = new NullOutputStream() ) {
+						wbook.write(fileout);
+						fileout.flush();
+						//fileout.close();
+					}
 				}
 			} else {
-				FileOutputStream fileout = new FileOutputStream((String) file);
-				wbook.write(fileout);
-				fileout.flush();
-				fileout.close();
+				try ( FileOutputStream fileout = new FileOutputStream((String) file) ) {
+					wbook.write(fileout);
+					fileout.flush();
+					//fileout.close();
+				}
 			}
 		} else {
 			if (!this.read_only) {
-				NullOutputStream fileout = new NullOutputStream();
-				wbook.write(fileout);
-				fileout.flush();
-				fileout.close();
+				try ( NullOutputStream fileout = new NullOutputStream() ) {
+					wbook.write(fileout);
+					fileout.flush();
+					//fileout.close();
+				}
 			}
 		}
 		

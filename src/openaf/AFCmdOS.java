@@ -175,6 +175,12 @@ public class AFCmdOS extends AFCmdBase {
 			execute(is, os, "");
 		} catch (Exception e) {
 			SimpleLog.log(logtype.ERROR, "Error generating OpenAF scripts: " + e.getMessage(), e);
+		} finally {
+			if (is != null) {
+				try { 
+					is.close(); 
+				} catch(Exception e) { }
+			}
 		}
 		
 		System.exit(0);
@@ -194,6 +200,12 @@ public class AFCmdOS extends AFCmdBase {
 			execute(is, os, "");
 		} catch (Exception e) {
 			SimpleLog.log(logtype.ERROR, "Error generating checking version: " + e.getMessage(), e);
+		} finally {
+			if (is != null) {
+				try { 
+					is.close(); 
+				} catch(Exception e) { }
+			}
 		}
 		System.exit(0);
 	}
@@ -212,6 +224,12 @@ public class AFCmdOS extends AFCmdBase {
 			execute(is, os, "");
 		} catch (Exception e) {
 			SimpleLog.log(logtype.ERROR, "Error generating updating version: " + e.getMessage(), e);
+		} finally {
+			if (is != null) {
+				try { 
+					is.close(); 
+				} catch(Exception e) { }
+			}
 		}
 		
 		System.exit(0);
@@ -232,6 +250,8 @@ public class AFCmdOS extends AFCmdBase {
 			execute(is, os, "");
 		} catch (Exception e) {
 			SimpleLog.log(logtype.ERROR, "Error obtaining script help: " + e.getMessage(), e);
+		} finally {
+			if (is != null) is.close();
 		}
 		
 		System.exit(0);		
@@ -538,7 +558,14 @@ public class AFCmdOS extends AFCmdBase {
 			
 			if (filescript) {				
 				if (injectscript) {
-					script = IOUtils.toString(getClass().getResourceAsStream(injectscriptfile), "UTF-8");
+					java.io.InputStream stream = getClass().getResourceAsStream(injectscriptfile);
+					if (stream != null) {
+						try {
+							script = IOUtils.toString(stream, "UTF-8");
+						} finally {
+							stream.close();
+						}
+					}
 				} else {		    	
 			    	boolean isZip = false;
 			    	boolean isOpack = false;
@@ -548,8 +575,15 @@ public class AFCmdOS extends AFCmdBase {
 					// Determine if it's opack/zip
 					if (!scriptfile.endsWith(".js")) {
 						DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(scriptfile.replaceFirst("::[^:]+$", ""))));
-						int test = dis.readInt();
-						dis.close();
+						int test = 0;
+						if (dis != null) {
+							try {
+								test = dis.readInt();
+							} finally {
+								dis.close();
+							}
+						}
+						
 						if (test == 0x504b0304) {
 							isZip = true;
 							try {

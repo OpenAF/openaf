@@ -80,17 +80,17 @@ public class CSV {
 			}
 
 			br.close();
-		} catch (IOException e) {
+		} /*catch (IOException e) {
 			//SimpleLog.log(SimpleLog.logtype.ERROR, "Error reading file: " + aFile + ": "+ e.getMessage(),e);
 			throw e;
-		} finally {
+		}*/ finally {
 			if (fr != null)
-				try {
+				//try {
 					fr.close();
-				} catch (IOException e) {
+				//} catch (IOException e) {
 					//SimpleLog.log(SimpleLog.logtype.ERROR, "Error closing file: " + aFile + ": "+ e.getMessage(),e);
-					throw e;
-				}
+				//	throw e;
+				//}
 		}
 	}
 
@@ -172,7 +172,7 @@ public class CSV {
 		clear();
 		long numberOfLines = -1;
 
-		try {	 
+		//try {	 
 			String line = br.readLine();
 			numberOfLines = 1;
 			if (line != null) readHeader(line);
@@ -183,10 +183,10 @@ public class CSV {
 			}
 
 			br.close();
-		} catch (IOException e) {
+		//} catch (IOException e) {
 			//SimpleLog.log(SimpleLog.logtype.ERROR, "Error reading string representation: " + e.getMessage(), e);
-			throw e;
-		} 
+		//	throw e;
+		//} 
 		return numberOfLines;
 	}
 
@@ -361,13 +361,13 @@ public class CSV {
 		pw.flush();
 		sw.flush();
 
-		try {
+		//try {
 			pw.close();
 			sw.close();
-		} catch (IOException e) {
+		//} catch (IOException e) {
 			//SimpleLog.log(SimpleLog.logtype.ERROR, "Error converting to string: " + e.getMessage(), e);
-			throw e;
-		}
+		//	throw e;
+		//}
 
 		return sw.toString().replaceFirst("[\r\n]$", "");
 	}
@@ -403,12 +403,12 @@ public class CSV {
 			throw e;
 		} finally {
 			if (fr != null)
-				try {
+				//try {
 					fr.close();
-				} catch (IOException e) {
+				//} catch (IOException e) {
 					//SimpleLog.log(SimpleLog.logtype.ERROR, "Error closing file: " + aFile + ": " + e.getMessage(), e);
-					throw e;
-				}
+				//	throw e;
+				//}
 		}
 		return numberOfLines;
 	}

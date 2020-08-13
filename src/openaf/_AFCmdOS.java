@@ -53,7 +53,7 @@ public class _AFCmdOS {
             }
             try {
                 OAFRepack.repackAndReplace(currentJar.getPath(), targs.substring(0, targs.length()));
-            } catch (IOException e) {
+            } catch (Exception e) {
                 SimpleLog.log(SimpleLog.logtype.ERROR, "Error with the repack: " + e.getMessage(), null);
                 SimpleLog.log(SimpleLog.logtype.DEBUG, "", e);
             }

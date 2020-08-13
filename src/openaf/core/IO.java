@@ -64,16 +64,25 @@ public class IO extends ScriptableObject {
 		FileInputStream fis = new FileInputStream(aFile);
 		UniversalDetector detector = new UniversalDetector(null);
 
-	    int nread;
-	    while ((nread = fis.read(buf)) > 0 && !detector.isDone()) {
-	      detector.handleData(buf, 0, nread);
-	    }
-	    detector.dataEnd();
-	    String encoding = detector.getDetectedCharset();
-	    detector.reset();
-	    fis.close();
-	    
-	    return encoding;
+		if (fis != null) {
+			String encoding = null;
+			try {
+				int nread;
+				while ((nread = fis.read(buf)) > 0 && !detector.isDone()) {
+				  detector.handleData(buf, 0, nread);
+				}
+				detector.dataEnd();
+				encoding = detector.getDetectedCharset();
+				detector.reset();
+				fis.close();
+			} finally {
+				fis.close();
+			}
+
+			return encoding;
+		}
+
+		return null;
 	}
 	
 	/**
@@ -291,8 +300,23 @@ public class IO extends ScriptableObject {
 			// Is inside zip
 			String[] fileComponents = filename.split("::");
 			ZipFile zf = new ZipFile(fileComponents[0]);
-			ZipEntry ze = zf.getEntry(fileComponents[1]);
-			return IOUtils.toByteArray(zf.getInputStream(ze));
+			byte[] res = null;
+			if (zf != null) {
+				try {
+					ZipEntry ze = zf.getEntry(fileComponents[1]);
+					java.io.InputStream is = zf.getInputStream(ze);
+					if (is != null) {
+						try {
+							res = IOUtils.toByteArray(is);
+						} finally {
+							is.close();
+						}
+					}
+				} finally {
+					zf.close();
+				}
+			}
+			return res;
 		} else {
 			return FileUtils.readFileToByteArray(new File(filename));
 		}
@@ -408,15 +432,15 @@ public class IO extends ScriptableObject {
 	 */
 	@JSFunction
 	public static void writeFileXML(String filename, Object xml, String encoding, boolean shouldAppend) throws IOException {
-		try {
+		//try {
 			if (encoding == null || encoding.equals("undefined")) encoding = "UTF-8";
 			String res = "";
 	 		if (xml != null) 
 	 			res = AFBase.fromXML(xml);
 	 		FileUtils.writeStringToFile(new File(filename), res, encoding, shouldAppend);
-		} catch (IOException e) {
-			throw e;
-		}
+		//} catch (IOException e) {
+		//	throw e;
+		//}
 	}	
 	
 	/**

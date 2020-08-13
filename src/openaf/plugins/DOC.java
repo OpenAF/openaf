@@ -113,18 +113,20 @@ public class DOC extends ScriptableObject {
 
     @JSFunction
     public void writeParagraph(String aString, String style) {
-        XWPFParagraph para = doc.createParagraph();
-        if (style != null && !style.equals("undefined")) {
-            para.setStyle(style);
-        }
-
-        XWPFRun run = para.createRun();
-        String ar[] = aString.split("\n");
-        int c = 0;
-        for(String _a : ar) {
-            run.setText(_a);
-            c++;
-            if (ar.length > c) run.addBreak();
+        if (aString != null && style != null) {
+            XWPFParagraph para = doc.createParagraph();
+            if (style != null && !style.equals("undefined")) {
+                para.setStyle(style);
+            }
+    
+            XWPFRun run = para.createRun();
+            String ar[] = aString.split("\n");
+            int c = 0;
+            for(String _a : ar) {
+                run.setText(_a);
+                c++;
+                if (ar.length > c) run.addBreak();
+            }
         }
     }
 
@@ -137,9 +139,10 @@ public class DOC extends ScriptableObject {
 
     @JSFunction
     public void writeFile(Object file) throws FileNotFoundException, IOException {
-        FileOutputStream out = new FileOutputStream((String) file);
-        doc.write(out);
-        out.close();
+        try ( FileOutputStream out = new FileOutputStream((String) file) ) {
+            doc.write(out);
+            //out.close();
+        }
     }
 
     // doc.getDocument().getProperties().getCoreProperties().getCreator()

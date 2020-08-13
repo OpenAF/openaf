@@ -483,9 +483,10 @@ public class SSH extends ScriptableObject {
 		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
 			//if (!channel.isConnected()) channel.connect();
-			
-			res = IOUtils.toByteArray(channel.get(remoteFile));
-			
+			try (InputStream is = channel.get(remoteFile)) {
+				res = IOUtils.toByteArray(is);
+			}
+
 			//channel.disconnect();
 		}
 		
@@ -519,15 +520,16 @@ public class SSH extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void put(String sourceFile, String remoteFile) throws JSchException, FileNotFoundException, SftpException {
+	public void put(String sourceFile, String remoteFile) throws JSchException, IOException, FileNotFoundException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		String res = null;
 		
 		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
 			//if (!channel.isConnected()) channel.connect();
-			
-			channel.put(new FileInputStream(sourceFile), remoteFile);
+			try ( InputStream is = new FileInputStream(sourceFile) ) {
+				channel.put(is, remoteFile);
+			}
 			
 			//channel.disconnect();
 		}
@@ -863,7 +865,9 @@ public class SSH extends ScriptableObject {
 		if (localFile != null && !localFile.equals("") && !localFile.endsWith("undefined")) {
 			ch.get(remoteFile, localFile);
 		} else {
-			return IOUtils.toBufferedInputStream(ch.get(remoteFile));
+			try ( InputStream is = ch.get(remoteFile) ) {
+				return IOUtils.toBufferedInputStream(is);
+			}
 		}
 		return remoteFile;
 	}
@@ -882,10 +886,13 @@ public class SSH extends ScriptableObject {
 		if (aSource instanceof String) {
 			ch.put((String) aSource, aRemoteFile);
 		} else {
-			if (aSource instanceof InputStream)
-				IOUtils.copyLarge((InputStream) aSource, ch.put(aRemoteFile));
-			else 
+			if (aSource instanceof InputStream) {
+				try ( OutputStream os = ch.put(aRemoteFile) ) {
+					IOUtils.copyLarge((InputStream) aSource, os);
+				}
+			} else {
 				throw new Exception("Expecting a string source file name or a Java Input stream as source");
+			}
 		}
 	}	
 	

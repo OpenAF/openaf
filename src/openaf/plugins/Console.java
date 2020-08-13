@@ -60,6 +60,8 @@ public class Console extends ScriptableObject {
 	@JSFunction
 	public String readLinePrompt(String prompt, String maskChar) throws IOException {
 		Character c;
+		if (prompt == null) prompt = "";
+
 		if (maskChar != null &&
 			!maskChar.equals("undefined") && 
 			maskChar.length() > 0) 

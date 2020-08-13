@@ -168,10 +168,13 @@ public class ZIP extends ScriptableObject {
 	 */
 	@JSFunction
 	public Object getFile(String name) throws IOException {
-		if (zipData.containsKey(name)) {
-			return zipData.get(name);
+		Object res = zipData.get(name);
+		if (res != null) {
+			return res;
 		} else {
-			return IOUtils.toByteArray(zipFile.getInputStream(zipEntries.get(name)));
+			try ( java.io.InputStream is = zipFile.getInputStream(zipEntries.get(name)) ) {
+				return IOUtils.toByteArray(is);
+			}
 		}
 	}
 	
@@ -260,27 +263,19 @@ public class ZIP extends ScriptableObject {
 	@JSFunction
 	public Object streamGetFileStream(String aFilePath, String name) throws Exception {
 		ZipEntry ne;
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(aFilePath));
 		
-		try {
+		try ( ZipInputStream zis = new ZipInputStream(new FileInputStream(aFilePath)) ) {
 			do {
 				ne = zis.getNextEntry();
 				if (ne.getName().equals(name)) {
-					ZipFile zipFile = new ZipFile(aFilePath);
-					InputStream res;
-					try {
-						res = zipFile.getInputStream(ne);
-						return res;
-					} catch(Exception e) {
-						throw e;
-					} 
+					try ( ZipFile zipFile = new ZipFile(aFilePath) ) {
+						try ( InputStream res = zipFile.getInputStream(ne) ) {
+							return res;
+						}
+					}
 				}
 			} while(ne != null);
-		} catch(Exception e) {
-			throw e;
-		} finally {
-			zis.close();
-		}
+		} 
 		
 		return null;
 	}
@@ -409,31 +404,37 @@ public class ZIP extends ScriptableObject {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ZipOutputStream zos = new ZipOutputStream(baos);
 		
-		if (options != null && options.equals("undefined") && !(options instanceof Undefined)) {
-			if (((NativeObject) options).containsKey("compressionLevel")) 
-				zos.setLevel(Integer.parseInt((String) ((NativeObject) options).get("compressionLevel")));
+		if (zos != null) {
+			try {
+				if (options != null && options.equals("undefined") && !(options instanceof Undefined)) {
+					String _r = (String) ((NativeObject) options).get("compressionLevel");
+					if (_r != null) zos.setLevel(Integer.parseInt(_r));
+				}
+					
+				SimpleLog.log(logtype.DEBUG, "number of entries " + zipEntries.size(), null);
+				for(Object ze : zipEntries.keySet()) {
+					SimpleLog.log(logtype.DEBUG, "generating " + zipEntries.get(ze).getName(), null);
+					
+					ZipEntry newZe = new ZipEntry(zipEntries.get(ze).getName());
+					zos.putNextEntry(newZe); 
+					if(zipData.containsKey(newZe.getName())) 
+						IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
+					else
+						if(!newZe.isDirectory()) 
+							IOUtils.copy(zipFile.getInputStream(newZe), zos);
+					
+					zos.closeEntry(); 
+				}
+			} finally {
+				zos.flush();
+				zos.finish();
+				zos.close();
+			}
 		}
-			
-		SimpleLog.log(logtype.DEBUG, "number of entries " + zipEntries.size(), null);
-		for(Object ze : zipEntries.keySet()) {
-			SimpleLog.log(logtype.DEBUG, "generating " + zipEntries.get(ze).getName(), null);
-			
-			ZipEntry newZe = new ZipEntry(zipEntries.get(ze).getName());
-			zos.putNextEntry(newZe); 
-			if(zipData.containsKey(newZe.getName())) 
-				IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
-			else
-				if(!newZe.isDirectory()) 
-					IOUtils.copy(zipFile.getInputStream(newZe), zos);
-			
-			zos.closeEntry(); 
-		}
-		
-		zos.flush();
-		zos.finish();
-		zos.close();
+
 		baos.flush();
 		baos.close();
+
 		SimpleLog.log(logtype.DEBUG, "generated " + baos.size(), null);
 		
 		if (!dontReload) load(baos.toByteArray());
@@ -454,29 +455,34 @@ public class ZIP extends ScriptableObject {
 		FileOutputStream baos = new FileOutputStream(aFile);
 		ZipOutputStream zos = new ZipOutputStream(baos);
 		
-		if (options != null && options.equals("undefined") && !(options instanceof Undefined)) {
-			if (((NativeObject) options).containsKey("compressionLevel")) 
-				zos.setLevel(Integer.parseInt((String) ((NativeObject) options).get("compressionLevel")));
+		if (zos != null) {
+			try {
+				if (options != null && options.equals("undefined") && !(options instanceof Undefined)) {
+					String _r = (String) ((NativeObject) options).get("compressionLevel");
+					if (_r != null) zos.setLevel(Integer.parseInt(_r));
+				}
+					
+				SimpleLog.log(logtype.DEBUG, "number of entries " + zipEntries.size(), null);
+				for(Object ze : zipEntries.keySet()) {
+					SimpleLog.log(logtype.DEBUG, "generating " + zipEntries.get(ze).getName(), null);
+					
+					ZipEntry newZe = new ZipEntry(zipEntries.get(ze).getName());
+					zos.putNextEntry(newZe); 
+					if(zipData.containsKey(newZe.getName())) 
+						IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
+					else
+						if(!newZe.isDirectory()) 
+							IOUtils.copy(zipFile.getInputStream(newZe), zos);
+					
+					zos.closeEntry(); 
+				}
+			} finally {
+				zos.flush();
+				zos.finish();
+				zos.close();
+			}
 		}
-			
-		SimpleLog.log(logtype.DEBUG, "number of entries " + zipEntries.size(), null);
-		for(Object ze : zipEntries.keySet()) {
-			SimpleLog.log(logtype.DEBUG, "generating " + zipEntries.get(ze).getName(), null);
-			
-			ZipEntry newZe = new ZipEntry(zipEntries.get(ze).getName());
-			zos.putNextEntry(newZe); 
-			if(zipData.containsKey(newZe.getName())) 
-				IOUtils.write(zipData.get(zipEntries.get(ze).getName()), zos);
-			else
-				if(!newZe.isDirectory()) 
-					IOUtils.copy(zipFile.getInputStream(newZe), zos);
-			
-			zos.closeEntry(); 
-		}
-		
-		zos.flush();
-		zos.finish();
-		zos.close();
+
 		baos.flush();
 		baos.close();
 

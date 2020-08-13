@@ -59,20 +59,27 @@ public class BSDiff extends ScriptableObject {
 	 */
 	@JSFunction
 	public void diff(String oldFile, String newFile, String patchFile) throws IOException, CompressorException, InvalidHeaderException {
-		FileInputStream oldin = new FileInputStream(new File(oldFile));
-		byte[] oldBytes = new byte[(int)(new File(oldFile)).length()];
-		oldin.read(oldBytes);
-		oldin.close();
+		byte[] oldBytes = null;
+		byte[] newBytes = null;
+
+		try ( FileInputStream oldin = new FileInputStream(new File(oldFile)) ) {
+			oldBytes = new byte[(int)(new File(oldFile)).length()];
+			oldin.read(oldBytes);
+			//oldin.close();
+		}
+
 		
-		FileInputStream newin = new FileInputStream(new File(newFile));
-		byte[] newBytes = new byte[(int)(new File(newFile)).length()];
-		newin.read(newBytes);
-		newin.close();
-		
-		FileOutputStream out = new FileOutputStream(patchFile);
-		DiffSettings settings = new DefaultDiffSettings(compression);
-		Diff.diff(oldBytes, newBytes, out, settings);
-		out.close();
+		try ( FileInputStream newin = new FileInputStream(new File(newFile)) ) {
+			newBytes = new byte[(int)(new File(newFile)).length()];
+			newin.read(newBytes);
+			//newin.close();
+		}
+
+		try ( FileOutputStream out = new FileOutputStream(patchFile) ) {
+			DiffSettings settings = new DefaultDiffSettings(compression);
+			Diff.diff(oldBytes, newBytes, out, settings);
+			//out.close();
+		}
 	}
 	
 	/**
@@ -136,18 +143,24 @@ public class BSDiff extends ScriptableObject {
 	 */
 	@JSFunction
 	public void patch(String oldFile, String newFile, String patchFile) throws CompressorException, InvalidHeaderException, IOException {	
-		FileInputStream oldin = new FileInputStream(new File(oldFile));
-		byte[] oldBytes = new byte[(int)(new File(oldFile)).length()];
-		oldin.read(oldBytes);
-		oldin.close();
+		byte[] oldBytes = null; 
+		byte[] newBytes = null;
+
+		try ( FileInputStream oldin = new FileInputStream(new File(oldFile)) ) {
+			oldBytes = new byte[(int)(new File(oldFile)).length()];
+			oldin.read(oldBytes);
+			//oldin.close();
+		}
 		
-		FileInputStream newin = new FileInputStream(new File(newFile));
-		byte[] newBytes = new byte[(int)(new File(newFile)).length()];
-		newin.read(newBytes);
-		newin.close();
-		
-		FileOutputStream out = new FileOutputStream(patchFile);
-		Patch.patch(oldBytes, newBytes, out);
-		out.close();
+		try ( FileInputStream newin = new FileInputStream(new File(newFile)) ) {
+			newBytes = new byte[(int)(new File(newFile)).length()];
+			newin.read(newBytes);
+			//newin.close();
+		};
+
+		try ( FileOutputStream out = new FileOutputStream(patchFile) ) {
+			Patch.patch(oldBytes, newBytes, out);
+			//out.close();
+		}
 	}
 }

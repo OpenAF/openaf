@@ -81,7 +81,7 @@ public class GIT extends ScriptableObject {
 	 */
 	@JSFunction
 	public void open(Object dir) throws IOException {
-		if (!(dir instanceof Undefined) && dir != "") {
+		if (!(dir instanceof Undefined) && !((String) dir).equals("")) {
 			git = Git.open(new File((String) dir));
 		}
 	}
@@ -94,7 +94,7 @@ public class GIT extends ScriptableObject {
 	 */
 	@JSFunction
 	public void init(Object dir) throws IllegalStateException, GitAPIException {
-		if (!(dir instanceof Undefined) && dir != "") {
+		if (!(dir instanceof Undefined) && !((String) dir).equals("")) {
 			git = Git.init().setDirectory(new File((String) dir)).call();
 		}
 	}
@@ -108,9 +108,9 @@ public class GIT extends ScriptableObject {
 	 */
 	@JSFunction
 	public void clone(Object aURL, Object dir, boolean cloneAll, Object branch, String aUser, String aPass) throws InvalidRemoteException, TransportException, GitAPIException {
-		if (!(dir instanceof Undefined) && dir != "" && !(aURL instanceof Undefined) && aURL != "") {
+		if (!(dir instanceof Undefined) && !((String) dir).equals("") && !(aURL instanceof Undefined) && !((String) aURL).equals("")) {
 			CloneCommand clone = ((CloneCommand) setCred(Git.cloneRepository())).setURI((String) aURL).setDirectory(new File((String) dir));
-			if (!(branch instanceof Undefined) && branch != "") {
+			if (!(branch instanceof Undefined) && !((String) branch).equals("")) {
 				clone = clone.setBranchesToClone(Collections.singleton((String) branch));
 				clone = clone.setBranch((String) branch);
 				clone = clone.setCloneAllBranches(cloneAll);
@@ -130,10 +130,10 @@ public class GIT extends ScriptableObject {
 	public Object checkout(Object aPath, Object aBranchName) throws Exception {
 		if (git != null) {
 			CheckoutCommand check = git.checkout();
-			if (!(aBranchName instanceof Undefined) && aBranchName != "")
+			if (!(aBranchName instanceof Undefined) && !((String) aBranchName).equals(""))
 				check = check.setName((String) aBranchName);
 			Ref checkout;
-			if (!(aPath instanceof Undefined) && aPath != "")
+			if (!(aPath instanceof Undefined) && !((String) aPath).equals(""))
 				checkout = check.addPath((String) aPath).call();
 			else
 				checkout = check.call();
@@ -179,7 +179,7 @@ public class GIT extends ScriptableObject {
 		
 		Status status;
 		if (git != null) {
-			if (!(aDirectory instanceof Undefined) && aDirectory != "") {
+			if (!(aDirectory instanceof Undefined) && !((String) aDirectory).equals("")) {
 				status = git.status().addPath((String) aDirectory).call();
 			} else {
 				status = git.status().call();
@@ -258,7 +258,7 @@ public class GIT extends ScriptableObject {
 	public void fetch(Object aRemote) throws Exception {
 		if (git != null) {
 			FetchCommand fetch = (FetchCommand) setCred(git.fetch());
-			if (!(aRemote instanceof Undefined) && aRemote != "") {
+			if (!(aRemote instanceof Undefined) && !((String) aRemote).equals("")) {
 				fetch = fetch.setRemote((String) aRemote);
 			}
 			fetch.call();
@@ -389,8 +389,8 @@ public class GIT extends ScriptableObject {
 	public Object commit(String aMessage, Object name, Object email) throws Exception {
 		if (git != null) {
 			CommitCommand commit = git.commit().setMessage(aMessage);
-			if (!(name instanceof Undefined) && name != "" &&
-				!(email instanceof Undefined) && email != "") {
+			if (!(name instanceof Undefined) && !((String) name).equals("") &&
+				!(email instanceof Undefined) && !((String) email).equals("")) {
 				commit = commit.setAuthor((String) name, (String) email);
 			}
 			RevCommit revcommit = commit.call();	

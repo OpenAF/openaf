@@ -144,7 +144,7 @@ public class HTTP extends ScriptableObject {
 						URL url = getRequestingURL();
 						String getKey = null;
 						for(String key : lps.keySet()) {
-							if (key != "default" && url.toString().startsWith(key)) getKey = key;
+							if (!((String) key).equals("default") && url.toString().startsWith(key)) getKey = key;
 						}
 						if (getKey == null) {
 							return new PasswordAuthentication (AFCmdBase.afc.dIP(lps.get("default").l), (AFCmdBase.afc.dIP(lps.get("default").p)).toCharArray());

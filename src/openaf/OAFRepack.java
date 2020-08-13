@@ -91,116 +91,172 @@ public class OAFRepack {
 		return null;
     }
     
-    public static void repack(String aOrigFile, String aDestFile, String mainClass) {
+    public static void repack(String aOrigFile, String aDestFile, String mainClass) throws Exception {
 
         // TODO: Accept list to exclude
         // TODO: Accept list to include
-
+        
+        ZipInputStream zis = null;
+        FileInputStream fis = null;
         try {
-            ZipInputStream zis = new ZipInputStream((new FileInputStream(aOrigFile)));
+            fis = new FileInputStream(aOrigFile);
+            if (fis == null) throw new Exception("Couldn't read input file " + aOrigFile);
+
+            zis = new ZipInputStream(fis);
+            if (zis == null) throw new Exception("Couldn't read zip input file " + aOrigFile);
+
             ArrayList<String> al = new ArrayList<String>();
 
             // Count entries
             long zisSize = 0;
             ZipEntry _ze = null;
 
-            do {
-                _ze = zis.getNextEntry();
-                zisSize++;
-            } while (_ze != null);
-            zis.close();
+            try {
+                do {
+                    _ze = zis.getNextEntry();
+                    zisSize++;
+                } while (_ze != null);
+            } finally {
+                zis.close();
+            }
 
             // Preparing input
             ZipFile zipFile = new ZipFile(aOrigFile);
-            ZipEntry ze = null;
+            FileInputStream fis2 = null;
+            ZipInputStream zis2 = null;
+            if (zipFile != null) {
+                try {
+                    ZipEntry ze = null;
 
-            // Preparing output
-            ZipOutputStream zos = new ZipOutputStream((new FileOutputStream(aDestFile)));
-            zos.setLevel(9);
+                    // Preparing output
+                    FileOutputStream fos = new FileOutputStream(aDestFile);
+                    if (fos == null) throw new Exception("Couldn't write output file " + aDestFile);
+                    ZipOutputStream zos = new ZipOutputStream(fos);
+                    if (zos == null) throw new Exception("Couldn't write output zip file " + aDestFile);
 
-            // Execute
-            zis = new ZipInputStream((new FileInputStream(aOrigFile)));
-            long zosSize = 0;
-
-            do {
-                ze = zis.getNextEntry();
-                zosSize++;
-                if (ze != null) {
-                    if (!(ze.getName().endsWith("/"))) {
-                        System.out.print("\rRepack progress " + zosSize + "/" + zisSize + " ("
-                                + Math.round((zosSize * 100) / zisSize) + "%)");
-
-                        if (ze.getName().toLowerCase().endsWith(".jar")) {
-                            ZipInputStream szis;
-                            if (ze.getName().toLowerCase().endsWith("tools-attach.jar") &&
-                                findToolsJar() != null) {
-                                szis = new ZipInputStream(new FileInputStream(findToolsJar()));
-                            } else {
-                                szis = new ZipInputStream(zipFile.getInputStream(ze));
-                            }
-                            
-                            ZipEntry sze;
-
-                            while ((sze = szis.getNextEntry()) != null) {
-                                if (!al.contains(sze.getName()) && !sze.getName().endsWith("MANIFEST.MF")
-                                        && !sze.getName().endsWith("ECLIPSE_.RSA")) {
-                                    ZipEntry newZe = new ZipEntry(sze.getName());
-                                    zos.putNextEntry(newZe);
-                                    al.add(newZe.getName());
-                                    if (!newZe.isDirectory()) {
-                                        copy(szis, zos);
+                    try {
+                        zos.setLevel(9);
+        
+                        // Execute
+                        fis2 = new FileInputStream(aOrigFile);
+                        if (fis2 == null) throw new Exception("Couldn't read internal file " + aOrigFile);
+                        zis2 = new ZipInputStream(fis2);
+                        if (zis2 == null) throw new Exception("Couldn't read zip internal file " + aOrigFile);
+                        long zosSize = 0;
+            
+                        try {
+                            do {
+                                ze = zis2.getNextEntry();
+                                zosSize++;
+                                if (ze != null) {
+                                    if (!(ze.getName().endsWith("/"))) {
+                                        System.out.print("\rRepack progress " + zosSize + "/" + zisSize + " ("
+                                                + Math.round((zosSize * 100) / zisSize) + "%)");
+                
+                                        if (ze.getName().toLowerCase().endsWith(".jar")) {
+                                            ZipInputStream szis = null;
+                                            InputStream sfis = null;
+                                            try {
+                                                if (ze.getName().toLowerCase().endsWith("tools-attach.jar") &&
+                                                    findToolsJar() != null) {
+                                                    sfis = new FileInputStream(findToolsJar());
+                                                    szis = new ZipInputStream(sfis);
+                                                } else {
+                                                    sfis = zipFile.getInputStream(ze);
+                                                    szis = new ZipInputStream(sfis);
+                                                }
+                                                
+                                                ZipEntry sze;
+                    
+                                                while ((sze = szis.getNextEntry()) != null) {
+                                                    if (!al.contains(sze.getName()) && !sze.getName().endsWith("MANIFEST.MF")
+                                                            && !sze.getName().endsWith("ECLIPSE_.RSA")) {
+                                                        ZipEntry newZe = new ZipEntry(sze.getName());
+                                                        zos.putNextEntry(newZe);
+                                                        al.add(newZe.getName());
+                                                        if (!newZe.isDirectory()) {
+                                                            copy(szis, zos);
+                                                        }
+                                                        zos.closeEntry();
+                                                    }
+                                                }
+                                            } finally {
+                                                if (szis != null) szis.close();
+                                                if (sfis != null) sfis.close();
+                                            }
+                                        } else {
+                                            if (!al.contains(ze.getName()) && !ze.getName().endsWith("MANIFEST.MF")
+                                                    && !ze.getName().endsWith("ECLIPSE_.RSA")) {
+                
+                                                ZipEntry newZe = new ZipEntry(ze.getName());
+                                                zos.putNextEntry(newZe);
+                                                al.add(newZe.getName());
+                                                if (!newZe.isDirectory()) {
+                                                    InputStream cIs = zipFile.getInputStream(ze);
+                                                    if (cIs != null) {
+                                                        try {
+                                                            copy(cIs, zos);
+                                                        } finally {
+                                                            cIs.close();
+                                                        }
+                                                    }
+                                                }
+                                                zos.closeEntry();
+                                            } else {
+                                                if (!al.contains(ze.getName()) && ze.getName().endsWith("MANIFEST.MF")) {
+                                                    ZipEntry newZe = new ZipEntry(ze.getName());
+                                                    zos.putNextEntry(newZe);
+                                                    InputStream cIs = zipFile.getInputStream(ze);
+                                                    if (cIs != null) {
+                                                        try {
+                                                            String manif = toString(cIs, "UTF-8");
+                                                            if ((manif.indexOf("jarinjarloader") >= 0 && manif.indexOf("eclipse") >= 0)) {
+                                                                manif = manif.replaceFirst(
+                                                                        "org\\.eclipse\\.jdt\\.internal\\.jarinjarloader\\.JarRsrcLoader",
+                                                                        mainClass);
+                                                            } else {
+                                                                manif = manif.replaceFirst("^Main-Class: .+$", "Main-Class: " + mainClass);
+                                                            }
+                                                            write(manif, zos, "UTF-8");
+                                                            zos.closeEntry();
+                                                        } finally {
+                                                            cIs.close();
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
-                                    zos.closeEntry();
                                 }
-                            }
-                            szis.close();
-                        } else {
-                            if (!al.contains(ze.getName()) && !ze.getName().endsWith("MANIFEST.MF")
-                                    && !ze.getName().endsWith("ECLIPSE_.RSA")) {
-
-                                ZipEntry newZe = new ZipEntry(ze.getName());
-                                zos.putNextEntry(newZe);
-                                al.add(newZe.getName());
-                                if (!newZe.isDirectory()) {
-                                    copy(zipFile.getInputStream(ze), zos);
-                                }
-                                zos.closeEntry();
-                            } else {
-                                if (!al.contains(ze.getName()) && ze.getName().endsWith("MANIFEST.MF")) {
-                                    ZipEntry newZe = new ZipEntry(ze.getName());
-                                    zos.putNextEntry(newZe);
-                                    String manif = toString(zipFile.getInputStream(ze), "UTF-8");
-                                    if ((manif.indexOf("jarinjarloader") >= 0 && manif.indexOf("eclipse") >= 0)) {
-                                        manif = manif.replaceFirst(
-                                                "org\\.eclipse\\.jdt\\.internal\\.jarinjarloader\\.JarRsrcLoader",
-                                                mainClass);
-                                    } else {
-                                        manif = manif.replaceFirst("^Main-Class: .+$", "Main-Class: " + mainClass);
-                                    }
-                                    write(manif, zos, "UTF-8");
-                                    zos.closeEntry();
-                                }
-                            }
+                            } while (ze != null);
+                            System.out.println(
+                                    "\rRepack progress " + zosSize + "/" + zisSize + " (" + Math.round((zosSize * 100) / zisSize) + "%)");
+    
+                        } finally {
+                            zis2.close();
+                            fis2.close();
                         }
+                    } finally {
+                        zos.flush();
+                        zos.finish();
+                        zos.close();
+                        fos.close();
                     }
+                } finally {
+                    // Closing
+                    zipFile.close();
                 }
-            } while (ze != null);
-            System.out.println(
-                    "\rRepack progress " + zosSize + "/" + zisSize + " (" + Math.round((zosSize * 100) / zisSize) + "%)");
-
-            // Closing
-            zipFile.close();
-            zis.close();
-            zos.flush();
-            zos.finish();
-            zos.close();
+            }
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+        } finally {
+            if (zis != null) zis.close();
+            if (fis != null) fis.close();
         }
     }
 
-    public static void repackAndReplace(String jarFile, String cmd) throws IOException {
+    public static void repackAndReplace(String jarFile, String cmd) throws Exception {
         repack(jarFile, jarFile + ".tmp", "openaf.AFCmdOS");
         
         ArrayList<String> command = new ArrayList<String>();
@@ -221,7 +277,7 @@ public class OAFRepack {
 		java.lang.System.exit(0);
     }
 
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws Exception {
         if (args.length >= 1) {
             System.out.println("Repacking " + args[0]);
 

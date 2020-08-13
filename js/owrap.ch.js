@@ -576,7 +576,7 @@ OpenWrap.ch.prototype.__types = {
 			}			
 		},
 		getKeys      : function(aName, full) { 
-			if (full) {
+			if (isDef(full)) {
 				return this.__cache[aName].Ch.getKeys(full);
 			} else {
 				return this.__cache[aName].Ch.getKeys(full).map(r => {
@@ -632,7 +632,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		get          : function(aName, aK) { 
 			var aVv = {};
-			var ar = this.getKeys(aName, true);
+			var ar = this.getKeys(aName, {});
 			var ee = arrayContains(ar, aK, k => { 
 				var o = clone(k);
 				delete o.____t;
@@ -680,7 +680,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		unset        : function(aName, aK, aTimestamp) { 
 			//var eK = $stream(this.getKeys(aName, true)).filter(aK).toArray()[0];
-			var ar = this.getKeys(aName, true);
+			var ar = this.getKeys(aName, {});
 			var eK = arrayContains(ar, aK);
 			eK = (eK > -1 ? ar[eK] : void 0); 
 			if (isDef(eK)) this.__cache[aName].Ch.unset(eK);
