@@ -1960,7 +1960,7 @@ function load(aScript, loadPrecompiled) {
 		return fn(aScript, 3);
 	} else {
 		var paths = getOPackPaths();
-		paths["__default"] = getOpenAFJar() + "::js");
+		paths["__default"] = getOpenAFJar() + "::js";
 
 		var error;
 		for(let i in paths) {
