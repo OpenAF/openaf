@@ -36,7 +36,6 @@ import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jgit.util.FileUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
@@ -48,7 +47,6 @@ import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
 import openaf.AFCmdBase;
-import openaf.JSEngine;
 import openaf.SimpleLog;
 import openaf.SimpleLog.logtype;
 
@@ -232,7 +230,8 @@ public class ZIP extends ScriptableObject {
 			do {
 				ne = zis.getNextEntry();
 				if (ne.getName().equals(name)) {
-					ZipFile zipFile = new ZipFile(aFilePath);
+					if (zipFile != null) zipFile.close();
+					zipFile = new ZipFile(aFilePath);
 					byte res[];
 					try {
 						res = IOUtils.toByteArray(zipFile.getInputStream(ne));
@@ -268,11 +267,9 @@ public class ZIP extends ScriptableObject {
 			do {
 				ne = zis.getNextEntry();
 				if (ne.getName().equals(name)) {
-					try ( ZipFile zipFile = new ZipFile(aFilePath) ) {
-						try ( InputStream res = zipFile.getInputStream(ne) ) {
-							return res;
-						}
-					}
+					if (zipFile != null) zipFile.close();
+					zipFile = new ZipFile(aFilePath);
+					return zipFile.getInputStream(ne);
 				}
 			} while(ne != null);
 		} 
@@ -452,11 +449,8 @@ public class ZIP extends ScriptableObject {
 	 */
 	@JSFunction
 	public void generate2File(String aFile, Object options, boolean dontReload) throws IOException {
-		FileOutputStream baos = new FileOutputStream(aFile);
-		ZipOutputStream zos = new ZipOutputStream(baos);
-		
-		if (zos != null) {
-			try {
+		try ( FileOutputStream baos = new FileOutputStream(aFile) ) {
+			try ( ZipOutputStream zos = new ZipOutputStream(baos) ) {
 				if (options != null && options.equals("undefined") && !(options instanceof Undefined)) {
 					String _r = (String) ((NativeObject) options).get("compressionLevel");
 					if (_r != null) zos.setLevel(Integer.parseInt(_r));
@@ -476,15 +470,13 @@ public class ZIP extends ScriptableObject {
 					
 					zos.closeEntry(); 
 				}
-			} finally {
+
 				zos.flush();
 				zos.finish();
-				zos.close();
 			}
-		}
 
-		baos.flush();
-		baos.close();
+			baos.flush();
+		}
 
 		if (!dontReload) load(org.apache.commons.io.FileUtils.readFileToByteArray(new File(aFile)));
 	}

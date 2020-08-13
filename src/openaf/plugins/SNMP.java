@@ -92,7 +92,9 @@ public class SNMP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSConstructor
-	public void newSNMP(String addr, String community, int tout, int ret, int version, Object security) throws IOException {
+	public void newSNMP(String addr, String community, int tout, int ret, int version, Object security) throws Exception {
+		if (addr == null) throw new Exception("No address was provided.");
+
 		address = addr;
 		if (tout <= 0) timeout = 1500; else timeout = tout; 
 		if (ret <= 0) retries = 2; else retries = ret; 

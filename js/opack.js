@@ -622,7 +622,7 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 
 	if (returnStream) {
 		return res;
-	} else {
+	} else {
 		return res.responseBytes;
 	}
 }
@@ -1136,6 +1136,7 @@ function install(args) {
 		case "local": {
 			log("Copying files");
 			biggestMessage = 0;
+			outputPath = outputPath.replace(/\/{2,}/g, "/");
 			//for(i in packag.files) {
 			parallel4Array(packag.files, function(apackfile) {
 				try {
@@ -1154,6 +1155,7 @@ function install(args) {
 		case "opacklocal": {
 			log("Copying files");
 			biggestMessage = 0;
+			outputPath = outputPath.replace(/\/{2,}/g, "/");
 			//for(i in packag.files) {
 			parallel4Array(packag.files, function(apackfile) {
 				mkdir(outputPath);
@@ -1164,6 +1166,7 @@ function install(args) {
 					if (!useunzip) {
 						var opack = new ZIP();
 						ioStreamCopy(io.writeFileStream(outputPath + "/" + apackfile), opack.streamGetFileStream(args[0], apackfile));
+						opack.close();
 					} else {
 						sh("unzip -o " + args[0] + " " + apackfile + " -d " + outputPath);
 						if (__exitcode != 0) {

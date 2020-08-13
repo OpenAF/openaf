@@ -231,7 +231,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 							//add row with proper alignment
 							String clr, t;
 							int nw;
-							if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && this.colorMap[rowi][k] != "") {
+							if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && !((String) this.colorMap[rowi][k]).equals("")) {
 								clr = this.colorMap[rowi][k];
 								t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
 								nw = width + (t.length() - columns[i][k].length());
@@ -246,7 +246,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 					else{
 						String clr, t;
 						int nw;
-						if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && this.colorMap[rowi][k] != "") {
+						if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && !((String) this.colorMap[rowi][k]).equals("")) {
 							clr = this.colorMap[rowi][k];
 							t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
 							nw = cols[k] + (t.length() - columns[i][k].length());

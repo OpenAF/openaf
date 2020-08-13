@@ -59,18 +59,20 @@ public class SimpleLog {
 	 * @param e The associated exception (can be null if none is available)
 	 */
 	public static void log(logtype level, String log, Exception e) {
-		switch(currentLogLevel) {
-		case DEBUG:
-			System.err.println(log);
-			if (e != null) e.printStackTrace();
-			break;
-		case ERROR:
-			if (level == logtype.INFO) System.err.println(log);
-			if (level == logtype.ERROR) System.err.println(log);
-			break;
-		case INFO:
-			if (level == logtype.INFO) System.err.println(log);
-			break;
+		if (log != null && level != null) {
+			switch(currentLogLevel) {
+			case DEBUG:
+				System.err.println(log);
+				if (e != null) e.printStackTrace();
+				break;
+			case ERROR:
+				if (level == logtype.INFO) System.err.println(log);
+				if (level == logtype.ERROR) System.err.println(log);
+				break;
+			case INFO:
+				if (level == logtype.INFO) System.err.println(log);
+				break;
+			}
 		}
 	}
 }
