@@ -1668,7 +1668,7 @@ OpenWrap.server.prototype.telemetry = {
 				sprintErr(e);
 			}
 		};
-		ow.server.httpd.route(aHs, r);
+		ow.server.httpd.route(aHs, ow.server.httpd.mapWithExistingRoutes(aHs, r));
 	},
 	/**
 	 * <odoc>
