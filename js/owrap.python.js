@@ -6,13 +6,14 @@ OpenWrap.python = function() {
 	this.python = "python";
 	this.reset();
 	this.cServer = $atomic();
+	this.running = false;
 
 	return ow.python;
 };
 
-OpenWrap.python.prototype.initCode = function() {
+OpenWrap.python.prototype.initCode = function(includeCoding) {
 	if (isDef(this.token)) {
-		var s = "# -*- coding: utf-8 -*-\n\n";
+		var s = (includeCoding ? "# -*- coding: utf-8 -*-\n\n" : "");
 		s += "import json\n";
 		s += "import socket\n\n";
 		s += "def _(e):\n";
@@ -80,7 +81,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		// Send
 		if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();
 		this.sport = aSendPort;
-		var s = "";
+		var s = "# -*- coding: utf-8 -*-\n";
 		s += "import json\n";
 		s += "import sys\n";
 		s += "import os\n";
@@ -125,6 +126,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		s += "      del mm['t']\n";
 		s += "      self.request.sendall(json.dumps(mm).encode('utf-8'))\n";
 		s += "\n";
+		s += ow.python.initCode(false) + "\n\n";
 		s += "if sys.version_info[0] == 2:\n";
 		s += "  server = SocketServer.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
 		s += "else:\n";
@@ -134,10 +136,17 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		global.__sssss = String(s);
 		plugin("Threads");
 		var threads = new Threads();
-		threads.addSingleThread(function() { af.sh("python -", s, void 0, void 0, void 0, true); } );
-		ow.loadFormat();
-		sleep(100, true);
+		ow.python.running = false;
+		threads.addSingleThread(function() { ow.python.running = true; af.sh("python -", s, void 0, void 0, void 0, true); } );
+		
+		ow.loadFormat(); var init = now();
+		do {
+			sleep(100, true);
+		} while(!ow.python.running && (now() - init) < 1500);
+		sleep(150, true);
 		ow.format.testPort("127.0.0.1", this.sport, 1500);
+
+		addOnOpenAFShutdown(() => { ow.python.stopServer(void 0, true); });
 	}
 
 	return this.token;
@@ -200,14 +209,14 @@ OpenWrap.python.prototype.getVersion = function() {
  * Tries to execute aPythonCode with the current interpreter providing the aInput map as a python variable __pm. Any changes to this python variable will be returned.
  * </odoc>
  */
-OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions) {
+OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions, shouldFork) {
 	if (this.version < 0) throw "Appropriate Python version not found. Please setPython to a python version 2 or version 3 command-line interpreter.";
 
 	_$(aPythonCode, "python code").isString().$_();
 	aInput = _$(aInput, "input").isMap().default({});
 	throwExceptions = _$(throwExceptions, "throwExceptions").isBoolean().default(false);
 
-	var code = this.initCode(), delim = nowNano();
+	var code = (shouldFork ? this.initCode(true) : ""), delim = nowNano();
 	code += "import json\n";
 	code += "__pm = json.loads('" + stringify(aInput, void 0, "" ).replace(/\'/g, "\\'").replace(/\\n/g, "\\\n") + "')\n";
 	code += aPythonCode;
@@ -257,7 +266,7 @@ OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, thr
 	aOutputArray = _$(aOutputArray, "output").isArray().default([]);
 	throwExceptions = _$(throwExceptions, "throwExceptions").isBoolean().default(false);
 
-	var code = this.initCode(), delim = nowNano();
+	var code = (shouldFork ? this.initCode(true) : ""), delim = nowNano();
 	code += "import json\n";
 	Object.keys(aInput).map(k => {
 		if (isDef(aInput[k])) code += k + " = json.loads('" + stringify(aInput[k], void 0, "" ).replace(/\'/g, "\\'").replace(/\\n/g, "\\\n") + "')\n";
