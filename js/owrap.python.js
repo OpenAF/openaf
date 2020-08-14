@@ -81,6 +81,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		// Send
 		if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();
 		this.sport = aSendPort;
+		this.pidfile = getOpenAFPath() + "/openaf_python.pid";
 		var s = "# -*- coding: utf-8 -*-\n";
 		s += "import json\n";
 		s += "import sys\n";
@@ -121,19 +122,23 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		s += "              mm['stderr'] = myStdErr.getvalue()\n";
 		s += "          except:\n";
 		s += "              mm['stderr'] = str(sys.exc_info())\n";
-		s += "\n";
-		s += "      del mm['e']\n";		
-		s += "      del mm['t']\n";
-		s += "      self.request.sendall(json.dumps(mm).encode('utf-8'))\n";
+		s += "      try:\n";
+		s += "        del mm['e']\n";		
+		s += "        del mm['t']\n";
+		s += "        self.request.sendall(json.dumps(mm).encode('utf-8'))\n";
+		s += "      except:\n";
+		s += "        pass\n";
 		s += "\n";
 		s += ow.python.initCode(false) + "\n\n";
+		s += "_oafF = open('" + this.pidfile + "', 'w')\n";
+		s += "_oafF.write(str(os.getpid()))\n";
+		s += "_oafF.close()\n";
 		s += "if sys.version_info[0] == 2:\n";
 		s += "  server = SocketServer.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
 		s += "else:\n";
 		s += "  server = socketserver.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
 		s += "server.serve_forever()\n";
 
-		global.__sssss = String(s);
 		plugin("Threads");
 		var threads = new Threads();
 		ow.python.running = false;
@@ -166,6 +171,9 @@ OpenWrap.python.prototype.stopServer = function(aPort, force) {
 		delete this.port;
 		delete this.token;
 		 
+		pidKill(io.readFileString(this.pidfile), true);
+		io.rm(this.pidfile);
+
 		return true;
 	} else {
 		return false;
