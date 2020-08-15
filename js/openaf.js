@@ -7452,6 +7452,13 @@ const $sh = function(aString) {
 };
 
 const $ssh = function(aMap) {
+	/**
+	 * <odoc>
+	 * <key>$ssh.ssh(aMap) : $ssh</key>
+	 * Builds an object to allow access through ssh. aMap should be a ssh string with the format: ssh://user:pass@host:port/identificationKey?timeout=1234&compression=true or
+	 * a map with the keys: host, port, login, pass, id, compress and timeout. See "help SSH.SSH" for more info.
+	 * </odoc>
+	 */
     var __ssh = function(aMap) {
         this.q = [];
         this.fcb = void 0;
