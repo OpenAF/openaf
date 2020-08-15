@@ -7124,12 +7124,12 @@ const $await = function(aName) {
 
 /**
  * <odoc>
- * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises, defaultTimeout)</key>
+ * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises, defaultTimeout, aErrorFunction)</key>
  * Will call aAFunction with a function as argument that should be used to "send" values to aBFunction. aBFunction will be call asynchronously in individual
- * $do up to the numberOfDoPromises limit. The defaultTimeout it 2500ms.
+ * $do up to the numberOfDoPromises limit. The defaultTimeout it 2500ms. If aErrorFunction is defined it will received any exceptions thrown from aBFunction with the corresponding map argument.
  * </odoc>
  */
-const $doA2B = function(aAFn, aBFn, noc, defaultTimeout) {
+const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction) {
     var recs = $atomic(), srecs = $atomic(), trecs = $atomic();
     var noc  = _$(noc).isNumber().default(getNumberOfCores());
 	var id   = md5(aAFn.toString() + aBFn.toString()) + (Math.random()*100000000000000000);
@@ -7147,7 +7147,8 @@ const $doA2B = function(aAFn, aBFn, noc, defaultTimeout) {
         }).catch((e) => {
             recs.dec();
             trecs.inc();
-            $await(id).notify();
+			$await(id).notify();
+			aErrorFunction(e, aObj);
 		});
 		$await(id).notify();
     }
