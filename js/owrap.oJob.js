@@ -1366,20 +1366,20 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 
 	function _run(aExec, args, job, id) {		
 		var f;
-		if (isDef(aJob.each) && isArray(aJob.each) && aJob.each.length > 0) {
+		/*if (isDef(aJob.each) && isArray(aJob.each) && aJob.each.length > 0) {
 			var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
 			fnDef += "var _oji = " + stringify(aJob.each, void 0, "") + "; ";
 			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
 			fnDef += "$doA2B(each => { " + aExec + " }, _r => { _oj.map(_aJob => { ";
-			fnDef += "  try { if (isDef(_aJob)) { var fn = new Function(\"var args = arguments[0]; \" + _aJob.exec); ";
+			fnDef += "  try { if (isDef(_aJob)) { var fn = new Function(\"var args = arguments[0]; var job = {name:'" + aJob.name + "'}; \" + _aJob.exec); ";
 			fnDef += "  return fn( merge(_r, { init: args.init }) ); } else { return void 0; }";
-			fnDef += "} catch(ea2b) { (new Function(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, void 0, \"\") + \"); \" + _aJob.catch))(ea2b); }";
-			fnDef += "}); }); ";
-
+			fnDef += "} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (new Function(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, void 0, \"\") + \"); \" + _aJob.catch))(ea2b); }";
+			fnDef += "}); }, void 0, void 0, " + (isUnDef(aJob.catch) ? "void 0" : "new Function(\"var args = arguments[1], job = {name:'" + aJob.name + "'}, exception = arguments[0]; " + aJob.catch.replace(/"/g, "\\\"") + "\")" ) + "); ";
+ 
 			f = new Function(fnDef);
-		} else {
+		} else {*/
 			f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = void 0; " + aExec);
-		}
+		//}
 		var fe, fint;
 		if (isDef(parent.__ojob.catch)) fe = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
 		if (isDef(aJob.catch)) fint = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + aJob.catch);
@@ -1704,7 +1704,7 @@ OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRe
 OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch, _jobEach) {
 
 	var parent = this;
-    function procLang(aExec, aJobTypeArgs) {
+    function procLang(aExec, aJobTypeArgs, aEach) {
 		var res = aExec;
 
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
@@ -1720,6 +1720,22 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			default:
 			}
 		}
+
+		if (isDef(aEach) && isArray(aEach) && aEach.length > 0) {
+			//var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
+			var fnDef = "";
+			fnDef += "var _oji = " + stringify(aEach, void 0, "") + "; ";
+			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
+			fnDef += "$doA2B(each => { " + res + " }, (_r, _n) => { _oj.map(_aJob => { ";
+			fnDef += "  var _canDo = true; if(isDef(_n) && _n != _aJob.name) _canDo = false;"
+			fnDef += "  try { if (isDef(_aJob) && _canDo) { var fn = new Function(\"var args = arguments[0]; var job = {name:'" + _aName + "'}; \" + _aJob.exec); ";
+			fnDef += "  return fn( merge(_r, { init: args.init }) ); } else { return void 0; }";
+			fnDef += "} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (new Function(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, void 0, \"\") + \"); \" + _aJob.catch))(ea2b); }";
+			fnDef += "}); }, void 0, void 0, " + (isUnDef(_jobCatch) ? "void 0" : "new Function(\"var args = arguments[1], job = {name:'" + _aName + "'}, exception = arguments[0]; " + _jobCatch.replace(/"/g, "\\\"") + "\")" ) + "); ";
+
+			res = fnDef;
+		}
+
 		return res;
 	}
 
@@ -1746,9 +1762,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.typeArgs = (isDef(j.typeArgs) ? merge(j.typeArgs, f.typeArgs) : f.typeArgs);
 					j.args = (isDef(j.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(f.args));
 					j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
-					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLang(f.exec, f.typeArgs);
-					j.help = (isDef(j.help) ? j.help : "") + "\n" + f.help;
 					j.each = (isDef(j.each) && j.each != null ? j.each.concat(f.each) : f.each);
+					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLang(f.exec, f.typeArgs, j.each);
+					j.help = (isDef(j.help) ? j.help : "") + "\n" + f.help;
 				} else {
 					logWarn("Didn't found from/earlier job '" + jobFrom[jfi] + "' for job '" + aName + "'");
 				}
@@ -1761,13 +1777,13 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			"typeArgs": (isDef(j.typeArgs) ? merge(j.typeArgs, jobTypeArgs) : jobTypeArgs),
 			"args": (isDef(j.args) ? parent.__processArgs(j.args, jobArgs) : parent.__processArgs(jobArgs)),
 			"deps": (isDef(j.deps) && j.deps != null ? j.deps.concat(jobDeps) : jobDeps),
-			"exec": (isDef(j.exec) ? j.exec : "") + "\n" + procLang(fstr, jobTypeArgs),
 			"help": (isDef(j.help) ? j.help : "") + "\n" + jobHelp,
 			"catch": jobCatch,
 			"from": jobFrom,
 			"to"  : jobTo,
 			"each": (isDef(j.each) && j.each != null ? j.each.concat(jobEach) : jobEach),
 		};	
+		j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLang(fstr, jobTypeArgs, j.each);
 
 		if (isDef(jobTo)) {
 			if (!isArray(jobTo)) jobTo = [ jobTo ];
@@ -1780,10 +1796,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
 					j.args = (isDef(f.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(j.args));
 					j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
-					j.exec = j.exec + "\n" + (isDef(f.exec) ? procLang(f.exec, f.typeArgs) : "");
-					j.help = j.help + "\n" + (isDef(f.help) ? f.help : "");
 					j.each = j.each + "\n" + (isDef(f.each) ? f.each : "");
 					j.each = (isDef(f.each) && j.each != null ? j.each.concat(f.each) : j.each);
+					j.exec = j.exec + "\n" + (isDef(f.exec) ? procLang(f.exec, f.typeArgs, j.each) : "");
+					j.help = j.help + "\n" + (isDef(f.help) ? f.help : "");
 				} else {
 					logWarn("Didn't found to/then job '" + jobTo[jfi] + "' for job '" + aName + "'");
 				}

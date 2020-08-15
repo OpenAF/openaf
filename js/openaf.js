@@ -7126,7 +7126,7 @@ const $await = function(aName) {
  * <odoc>
  * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises, defaultTimeout, aErrorFunction)</key>
  * Will call aAFunction with a function as argument that should be used to "send" values to aBFunction. aBFunction will be call asynchronously in individual
- * $do up to the numberOfDoPromises limit. The defaultTimeout it 2500ms. If aErrorFunction is defined it will received any exceptions thrown from aBFunction with the corresponding map argument.
+ * $do up to the numberOfDoPromises limit. The defaultTimeout it 2500ms. If aErrorFunction is defined it will received any exceptions thrown from aBFunction with the corresponding arguments array.
  * </odoc>
  */
 const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction) {
@@ -7140,7 +7140,8 @@ const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction) {
         srecs.inc();
         while(cc > noc) { $await(id).wait(defaultTimeout); cc = recs.get(); }
         $do(() => {
-            aBFn(aObj);
+			//aBFn(aObj);
+			aBFn.apply(this, arguments);
             recs.dec();
             trecs.inc();
             $await(id).notify();
@@ -7148,7 +7149,8 @@ const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction) {
             recs.dec();
             trecs.inc();
 			$await(id).notify();
-			aErrorFunction(e, aObj);
+			//aErrorFunction(e, aObj);
+			aErrorFunction(e, arguments);
 		});
 		$await(id).notify();
     }
@@ -7456,7 +7458,7 @@ const $ssh = function(aMap) {
 	/**
 	 * <odoc>
 	 * <key>$ssh.ssh(aMap) : $ssh</key>
-	 * Builds an object to allow access through ssh. aMap should be a ssh string with the format: ssh://user:pass@host:port/identificationKey?timeout=1234&compression=true or
+	 * Builds an object to allow access through ssh. aMap should be a ssh string with the format: ssh://user:pass@host:port/identificationKey?timeout=1234&amp;compression=true or
 	 * a map with the keys: host, port, login, pass, id, compress and timeout. See "help SSH.SSH" for more info.
 	 * </odoc>
 	 */
