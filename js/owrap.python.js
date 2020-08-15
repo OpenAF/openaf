@@ -76,7 +76,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 				} 
 			}, "\n", false); 
 			clt.close();
-		});
+		}, void 0, "127.0.0.1");
 
 		// Send
 		if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();

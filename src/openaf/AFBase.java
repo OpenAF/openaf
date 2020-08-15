@@ -400,7 +400,7 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding) : String/Map</key>
+	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding, dontWait) : String/Map</key>
 	 * Tries to execute commandArguments (either a String or an array of strings) in the operating system. Optionally
 	 * aStdIn can be provided, aTimeout can be defined for the execution and if shouldInheritIO is true the stdout, stderr and stdin
 	 * will be inherit from OpenAF. If shouldInheritIO is not defined or false it will return the stdout of the command execution.
@@ -415,7 +415,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding) throws IOException, InterruptedException {
+	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding, boolean dontWait) throws IOException, InterruptedException {
 		ProcessBuilder pb = null;
 		Charset Cencoding = null;
 
@@ -481,10 +481,12 @@ public class AFBase extends ScriptableObject {
 		int exit = -1; 
 		try {
 			if (timeout == null || timeout instanceof org.mozilla.javascript.Undefined) {
-				try {
-					if (is != null   ) lines = IOUtils.toString(is, Cencoding);
-					if (iserr != null) linesErr = IOUtils.toString(iserr, Cencoding);
-				} catch(Exception e) { }
+				if (!dontWait) {
+					try {
+						if (is != null   ) lines = IOUtils.toString(is, Cencoding);
+						if (iserr != null) linesErr = IOUtils.toString(iserr, Cencoding);
+					} catch(Exception e) { }
+				}
 				exit = p.waitFor();
 				try { 
 					if (is != null   ) is.close();
