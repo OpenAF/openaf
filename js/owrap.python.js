@@ -87,6 +87,9 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		s += "import sys\n";
 		s += "import os\n";
 		s += "\n";
+		s += "_newpid = os.fork()\n";
+		s += "if _newpid != 0:\n";
+		s += "  os._exit(os.EX_OK)\n";
 		s += "if sys.version_info[0] == 2:\n";
 		s += "  from StringIO import StringIO\n";
 		s += "  import SocketServer\n";
@@ -138,16 +141,14 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 		s += "else:\n";
 		s += "  server = socketserver.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
 		s += "server.serve_forever()\n";
+		s += "\n";
 
-		plugin("Threads");
-		var threads = new Threads();
-		ow.python.running = false;
-		threads.addSingleThread(function() { ow.python.running = true; af.sh("python -", s, void 0, void 0, void 0, true); } );
+		af.sh("python -", s, void 0, void 0, void 0, void 0, void 0, void 0, true);
 		
 		ow.loadFormat(); var init = now();
 		do {
 			sleep(100, true);
-		} while(!ow.python.running && (now() - init) < 1500);
+		} while((now() - init) < 1500);
 		sleep(150, true);
 		ow.format.testPort("127.0.0.1", this.sport, 1500);
 
@@ -166,12 +167,13 @@ OpenWrap.python.prototype.stopServer = function(aPort, force) {
 		ow.loadObj();
 
 		ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ exit: true, t: this.token }, void 0, "")+"\n");
+		pidKill(io.readFileString(this.pidfile), true);
+		//this.threads.stop(true);
 		delete this.sport;
 		delete this.server;
 		delete this.port;
 		delete this.token;
-		 
-		pidKill(io.readFileString(this.pidfile), true);
+		
 		io.rm(this.pidfile);
 
 		return true;

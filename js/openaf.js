@@ -5350,11 +5350,19 @@ const $rest = function(ops) {
 	return new _rest(ops);
 };
  
-const $py = function(aPythonCode, aInput, aOutputArray) {
+const $pyStart = function() {
 	ow.loadPython();
 	ow.python.startServer();
+};
+
+const $py = function(aPythonCode, aInput, aOutputArray) {
+	$pyStart();
 	if (aPythonCode.indexOf("\n") < 0 && aPythonCode.endsWith(".py") && io.fileExists(aPythonCode)) aPythonCode = io.readFileString(aPythonCode);
 	return ow.python.exec(aPythonCode, aInput, aOutputArray);
+};
+
+const $pyStop = function() {
+	ow.python.stopServer(void 0, true);
 };
 
 /**
