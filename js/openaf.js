@@ -4333,7 +4333,7 @@ function checkLatestVersion() {
 
 /**
  * <odoc>
- * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding) : String</key>
+ * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait) : String</key>
  * Tries to execute commandArguments (either a String or an array of strings) in the operating system as a shortcut for 
  * AF.sh except that it will run them through the OS shell. Optionally aStdIn can be provided, aTimeout can be defined 
  * for the execution and if shouldInheritIO is true the stdout, stderr and stdin will be inherit from OpenAF. If 
@@ -4345,15 +4345,15 @@ function checkLatestVersion() {
  * stream, a error stream and an input stream (see help af.sh for an example). If defined the stdout and stderr won't be available for the returnMap if true.
  * </odoc>
  */
-function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding) {
+function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait) {
 	if (typeof commandArguments == "string") {
 		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
-			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding);
+			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait);
 		} else {
-			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding);
+			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait);
 		}
 	} else {
-		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding);
+		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait);
 	}
 }
 
@@ -7240,6 +7240,7 @@ const $sh = function(aString) {
         this.wd = void 0;
         this.fcb = void 0;
 		this.t = void 0;
+		this.dw = void 0;
 		ow.loadFormat();
 		if (ow.format.isWindows()) this.encoding = "cp850"; else this.encoding = void 0;
         if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
@@ -7253,6 +7254,18 @@ const $sh = function(aString) {
 	 */
 	__sh.prototype.useEncoding = function(aEncoding) {
 		this.encoding = aEncoding;
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$sh.dontWait(aBooleanValue) : $sh</key>
+	 * If aBooleanValue = true the execution won't wait for output (default: false).
+	 * </odoc>
+	 */
+    __sh.prototype.dontWait = function(aFlag) {
+		_$(aFlag, "dontWait flag").isBoolean().$_();
+		this.dw = aFlag;
 		return this;
 	};
 
@@ -7378,7 +7391,7 @@ const $sh = function(aString) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding), this.q[ii]);
+				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding, this.dw), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
@@ -7426,7 +7439,7 @@ const $sh = function(aString) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding), this.q[ii]);
+                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding, this.dw), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
