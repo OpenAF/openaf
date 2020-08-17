@@ -144,7 +144,7 @@ OpenWrap.ch.prototype.__types = {
 	/**
 	 * <odoc>
 	 * <key>ow.ch.types.db</key>
-	 * This OpenAF implementation wraps access to a db table. The creation options are:\
+	 * This OpenAF channel implementation wraps access to a db table. The creation options are:\
 	 * \
 	 *    - db   (Database) The database object to access the database table.\
 	 *    - from (String)   The name of the database table or object (don't use double quotes).\
@@ -455,7 +455,13 @@ OpenWrap.ch.prototype.__types = {
 	},
 	// Operations channel implementation
 	// (run operations from a channel)
-	//
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.ops</key>
+	 * This OpenAF channel implementation encapsulates access based on functions. The creation options a map of
+	 * keys where each value is a function.
+	 * </odoc>
+	 */
 	ops: {
 		__ops : {},
 		create       : function(aName, shouldCompress, options) { 

@@ -61,6 +61,17 @@ OpenWrap.oJob = function(isNonLocal) {
 		parent.getJobsCh().create(0, "simple");
 		parent.getLogCh().create(0, "simple");
 		parent.getMainCh().create(0, "simple");
+		parent.getMetricsCh().create(0, "ops", {
+			"metrics": obj => {
+				ow.loadMetrics();
+				obj = _$(obj).isMap().default({});
+
+				if (isArray(obj.metrics)) 
+					return ow.metrics.getSome(obj.metrics);
+				else
+					return ow.metrics.getAll();
+			}
+		});
 
 		parent.getMainCh().set(
 			{ "uuid": parent.__id },
@@ -718,7 +729,13 @@ OpenWrap.oJob.prototype.getLogCh = function() { return $ch("oJob::log"); };
  * </odoc>
  */
 OpenWrap.oJob.prototype.getMainCh = function() { return $ch("oJob::oJob"); };
-
+/**
+ * <odoc>
+ * <key>ow.oJob.getMetricsCh() : Channel</key>
+ * Gets the oJob::metrics channel
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getMetricsCh = function() { return $ch("oJob::metrics"); };
 /**
  * <odoc>
  * <key>oJob.getID() : String</key>
