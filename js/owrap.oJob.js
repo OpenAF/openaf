@@ -1705,7 +1705,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
 	var parent = this;
     function procLang(aExec, aJobTypeArgs, aEach) {
-		var res = aExec;
+		var res = _$(aExec).default("");
 
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
 			switch(aJobTypeArgs.lang) {
@@ -1740,7 +1740,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 	}
 
 	function procJob(aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, jobCatch, jobEach) {
-		var j = [];
+		var j = {};
 		if (isString(jobDeps)) jobDeps = [ jobDeps ];
 		if (isString(jobEach)) jobEach = [ jobEach ];
 		jobDeps = _$(jobDeps).isArray().default([]);
@@ -1782,6 +1782,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			"from": jobFrom,
 			"to"  : jobTo,
 			"each": (isDef(j.each) && j.each != null ? j.each.concat(jobEach) : jobEach),
+			"exec": j.exec
 		};	
 		j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLang(fstr, jobTypeArgs, j.each);
 
