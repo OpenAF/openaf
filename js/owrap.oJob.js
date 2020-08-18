@@ -61,17 +61,6 @@ OpenWrap.oJob = function(isNonLocal) {
 		parent.getJobsCh().create(0, "simple");
 		parent.getLogCh().create(0, "simple");
 		parent.getMainCh().create(0, "simple");
-		parent.getMetricsCh().create(0, "ops", {
-			"metrics": obj => {
-				ow.loadMetrics();
-				obj = _$(obj).isMap().default({});
-
-				if (isArray(obj.metrics)) 
-					return ow.metrics.getSome(obj.metrics);
-				else
-					return ow.metrics.getAll();
-			}
-		});
 
 		parent.getMainCh().set(
 			{ "uuid": parent.__id },
@@ -731,13 +720,6 @@ OpenWrap.oJob.prototype.getLogCh = function() { return $ch("oJob::log"); };
 OpenWrap.oJob.prototype.getMainCh = function() { return $ch("oJob::oJob"); };
 /**
  * <odoc>
- * <key>ow.oJob.getMetricsCh() : Channel</key>
- * Gets the oJob::metrics channel
- * </odoc>
- */
-OpenWrap.oJob.prototype.getMetricsCh = function() { return $ch("oJob::metrics"); };
-/**
- * <odoc>
  * <key>oJob.getID() : String</key>
  * Returns this oJob instance ID. Useful to lookup logging in the oJob::log channel.
  * </odoc>
@@ -1135,7 +1117,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 
 		if (isDef(this.__ojob.metrics)) {
 			ow.loadServer();
-			if (isBoolean(this.__ojob.metrics) && this.__ojob.metrics) ow.server.telemetry.passive();
+			if (isBoolean(this.__ojob.metrics) && this.__ojob.metrics) ow.server.telemetry.passive(void 0, void 0, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp);
 			if (isMap(this.__ojob.metrics)) {
 				if (isDef(this.__ojob.metrics.collect)) {
 					if (isBoolean(this.__ojob.metrics.collect) && this.__ojob.metrics.collect) ow.metrics.startCollecting();
@@ -1147,7 +1129,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 						ow.metrics.startCollecting(ch, period, some);
 					}
 				}
-				ow.server.telemetry.passive(this.__ojob.metrics.port, this.__ojob.metrics.uri);
+				ow.server.telemetry.passive(this.__ojob.metrics.port, this.__ojob.metrics.uri, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp);
 			}
 		}
 
