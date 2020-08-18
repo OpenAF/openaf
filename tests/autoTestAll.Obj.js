@@ -272,4 +272,58 @@
         p.stop();
         ow.test.assert(closeOps.length, 2, "Objects in pool were not closed properly.");
     };
+
+    exports.testObjGen = function() {
+        var data = [
+            { n: "one", w: 1 },
+            { n: "two", w: 99 }
+        ];
+
+        var r1 = ow.obj.oneOf(data, "w");
+        var r2 = ow.obj.oneOf(data, "w");
+        var r3 = ow.obj.oneOf(data, "w");
+
+        var oneSum = 0, twoSum = 0;
+        if (r1.n == "one") oneSum++;
+        if (r2.n == "one") oneSum++;
+        if (r3.n == "one") oneSum++;
+        if (r1.n == "two") twoSum++;
+        if (r2.n == "two") twoSum++;
+        if (r3.n == "two") twoSum++;
+
+        ow.test.assert(twoSum > oneSum, true, "Problem with ow.obj.oneOf");
+    };
+
+    exports.testObjFnGen = function() {
+        var data = [
+            { fn: () => "one", w: 1 },
+            { fn: () => "two", w: 99 }
+        ];
+
+        var r1 = ow.obj.oneOfFn(data, "w");
+        var r2 = ow.obj.oneOfFn(data, "w");
+        var r3 = ow.obj.oneOfFn(data, "w");
+
+        var oneSum = 0, twoSum = 0;
+
+        if (r1 == "one") oneSum++;
+        if (r2 == "one") oneSum++;
+        if (r3 == "one") oneSum++;
+        if (r1 == "two") twoSum++;
+        if (r2 == "two") twoSum++;
+        if (r3 == "two") twoSum++;
+
+        ow.test.assert(twoSum > oneSum, true, "Problem with ow.obj.oneOfFn");
+    };
+
+    exports.testRandomRange = function() {
+        var r = ow.obj.randomRange(-5, 10);
+        ow.test.assert(r >= -5 && r <= 10, true, "Problem with ow.obj.randomRange");
+    };
+
+    exports.testRandomDateRange = function() {
+        var r = ow.obj.randomDateRange("yyyyMMdd", "20200101", "20201231");
+        ow.test.assert(r.getTime() >= ow.format.toDate("20200101", "yyyyMMdd").getTime(), true, "Problem with ow.obj.randomDateRange (1)");
+        ow.test.assert(r.getTime() <= ow.format.toDate("20201231", "yyyyMMdd").getTime(), true, "Problem with ow.obj.randomDateRange (2)");
+    };
 })();

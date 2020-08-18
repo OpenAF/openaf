@@ -1,0 +1,19 @@
+include:
+- oJobTest.yaml
+
+jobs:
+# oJob tests
+# --------------
+- name: oJob::Init
+  exec: |
+    args.tests = require("autoTestAll.oJob.js");
+
+- name: oJob::oJob
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJob;                   
+
+todo:
+# oJob tests
+# --------------
+- oJob::oJob

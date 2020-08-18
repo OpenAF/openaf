@@ -58,17 +58,29 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testFuzzySearch;
 
+   - name: Obj::Generat One of
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjGen;
+
+   - name: Obj::Generate One of Fn
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testObjFnGen;
+
 todo:
-   # Obj tests
-   # ------------
-   - Obj::Init
-   - Obj::Flatten
-   - Obj::REST Errors
-   - Obj::Get Path
-   - Obj::Set Path   
-   - Obj::Array to object conversion
-   - Obj::Object schema validation
-   - Obj::Object to array conversion
-   - Obj::Object pool
-   - Obj::Object fuzzy search
-   - Obj::Thread-safe array   
+# Obj tests
+# ------------
+- Obj::Init
+- Obj::Flatten
+- Obj::REST Errors
+- Obj::Get Path
+- Obj::Set Path   
+- Obj::Array to object conversion
+- Obj::Object schema validation
+- Obj::Object to array conversion
+- Obj::Object pool
+- Obj::Object fuzzy search
+- Obj::Thread-safe array   
+- Obj::Generate One of
+- Obj::Generate One of Fn
