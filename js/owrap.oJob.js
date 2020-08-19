@@ -32,6 +32,8 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__threads = {};
 	this.init = void 0;
 	this.__conWidth = 100;
+	this.python = false;
+	this.running = false;
 
 	this.shutdownFuncs = [];
 	var ead = getEnv("OJOB_AUTHORIZEDDOMAINS");
@@ -987,24 +989,32 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  * </odoc>
  */
 OpenWrap.oJob.prototype.stop = function() {
-	$doWait($doAll(this.__promises));
-	if (isDef(ow.metrics)) ow.metrics.stopCollecting( isDef(this.__ojob.metrics) && isDef(this.__ojob.metrics.chName) ? this.__ojob.metrics.chName : void 0 );
-	//this.getLogCh().waitForJobs(250);
-	this.getLogCh().waitForJobs();
-	for(var i in this.__threads) {
-		for(var j in this.__threads[i]) {
-			this.__threads[i][j].stop(true);
+	if (this.python) {
+		$pyStop();
+		this.python = false;
+	}
+
+	if (this.running) {
+		$doWait($doAll(this.__promises));
+		if (isDef(ow.metrics)) ow.metrics.stopCollecting( isDef(this.__ojob.metrics) && isDef(this.__ojob.metrics.chName) ? this.__ojob.metrics.chName : void 0 );
+		//this.getLogCh().waitForJobs(250);
+		this.getLogCh().waitForJobs();
+		for(var i in this.__threads) {
+			for(var j in this.__threads[i]) {
+				this.__threads[i][j].stop(true);
+			}
 		}
+		if (isDef(this.__sch)) {
+			this.__sch.stop();
+			this.__sch = new ow.server.scheduler();
+		}
+		if (isDef(this.mt)) {
+			this.mt.stop();
+		}
+		this.oJobShouldStop = true;
+		this.running = false;
+		//stopLog();
 	}
-	if (isDef(this.__sch)) {
-		this.__sch.stop();
-		this.__sch = new ow.server.scheduler();
-	}
-	if (isDef(this.mt)) {
-		this.mt.stop();
-	}
-	this.oJobShouldStop = true;
-	//stopLog();
 };
 
 OpenWrap.oJob.prototype.__mergeArgs = function(a, b) {
@@ -1091,6 +1101,7 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, this.__expr, aId) : this.__expr;
 
+	this.running = true;
 	this.oJobShouldStop = false;
 	if (isDef(this.init)) args = merge(args, { init: this.init });
 
@@ -1293,6 +1304,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	}
 
 	print("");
+	this.stop();
 };
 
 /**
@@ -1480,9 +1492,6 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 		args = this.__mergeArgs(args, this.__processArgs(aJob.args, void 0, void 0, true));
 		if (isUnDef(aJob.typeArgs)) {
 			aJob.typeArgs = {};
-		} else {
-			if (isDef(aJob.typeArgs.execJs))      aJob.exec = io.readFileString(aJob.typeArgs.execJs);
-			if (isDef(aJob.typeArgs.execRequire)) aJob.exec = "require('" + aJob.typeArgs.execRequire + "')['" + aJob.name + "'](args);";
 		}
 
 		switch(aJob.type) {
@@ -1706,14 +1715,29 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
     function procLang(aExec, aJobTypeArgs, aEach) {
 		var res = _$(aExec).default("");
 
+		aJobTypeArgs = _$(aJobTypeArgs).default({});
+		if (isDef(aJobTypeArgs.execJs))      {
+			aJobTypeArgs.lang = "oaf";
+			res = io.readFileString(aJobTypeArgs.execJs);
+		}
+		if (isDef(aJobTypeArgs.execRequire)) {
+			aJobTypeArgs.lang = "oaf";
+			res = "require('" + aJobTypeArgs.execRequire + "')['" + _aName + "'](args);";
+		}
+		if (isDef(aJobTypeArgs.execPy))      {
+			aJobTypeArgs.lang = "python";
+			res = io.readFileString(aJobTypeArgs.execPy);
+		}
+
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
 			switch(aJobTypeArgs.lang) {
 			case "python":
-				if (!aExec.startsWith("ow.loadPython();")) {
-					res = "";
-					res += "ow.loadPython(); ow.python.startServer();";
-					res += "try { args = merge(args, ow.python.exec(" + stringify(aExec) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
-					res += "} catch(e) { throw e; } finally { ow.python.stopServer(); }";
+				parent.python = true;
+				if (!res.startsWith("$pyStart();")) {
+					var orig = String(res);
+					res  = "$pyStart();";
+					res += "try { args = merge(args, $py(" + stringify(orig) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
+					res += "} catch(e) { throw e; $pyStop(); }";
 				}
 				break;
 			default:
