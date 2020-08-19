@@ -16,6 +16,8 @@ OpenWrap.python.prototype.initCode = function(includeCoding) {
 		var s = (includeCoding ? "# -*- coding: utf-8 -*-\n\n" : "");
 		s += "import json\n";
 		s += "import socket\n\n";
+		s += "def _d(obj):\n";
+		s += "   return json.dumps(obj)\n\n";
 		s += "def _(e):\n";
 		s += "   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n";
 		s += "   s.connect(('127.0.0.1', " + this.port + "))\n";
