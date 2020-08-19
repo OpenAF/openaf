@@ -58,7 +58,7 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testFuzzySearch;
 
-   - name: Obj::Generat One of
+   - name: Obj::Generate One of
      from: Obj::Init
      to  : oJob Test
      exec: args.func = args.tests.testObjGen;
