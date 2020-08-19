@@ -144,7 +144,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 			s += "server.serve_forever()\n";
 			s += "\n";
 	
-			af.sh("python -", s, void 0, void 0, void 0, void 0, void 0, void 0, true);
+			af.sh(this.python + " -", s, void 0, void 0, void 0, void 0, void 0, void 0, true);
 			
 			ow.loadFormat(); var init = now();
 			do {
