@@ -136,8 +136,8 @@
 		},
 		{
 			"description": "H2",
-			"path": ["lib/h2-1.4.197.jar"],
-			"version": "1.4.197",
+			"path": ["lib/h2-1.4.200.jar"],
+			"version": "1.4.200",
 			"changes": false,
 			"type": ["java"],
 			"license": "This software contains unmodified binary redistributions for H2 database engine (http://www.h2database.com/), which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License). An original copy of the license agreement can be found at: http://www.h2database.com/html/license.html",
@@ -179,8 +179,8 @@
 		},
 		{
 			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.6.jar"],
-			"version": "2.6",
+			"path": ["lib/commons-io-2.7.jar"],
+			"version": "2.7",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -188,8 +188,8 @@
 		},
 		{
 			"description": "Apache Commons CSV",
-			"path": ["lib/commons-csv-1.6.jar"],
-			"version": "1.6",
+			"path": ["lib/commons-csv-1.8.jar"],
+			"version": "1.8",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -197,8 +197,8 @@
 		},
 		{
 			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.8.1.jar"],
-			"version": "3.8.1",
+			"path": ["lib/commons-lang3-3.11.jar"],
+			"version": "3.11",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -215,8 +215,8 @@
 		},
 		{
 			"description": "Apache Commons Compress",
-			"path": ["lib/commons-compress-1.18.jar"],
-			"version": "1.18",
+			"path": ["lib/commons-compress-1.20.jar"],
+			"version": "1.20",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -225,25 +225,25 @@
 		{
 			"description": "Apache Commons HTTPComponents",
 			"path": ["lib/httpclient-4.5.12.jar", "lib/httpcore-4.4.13.jar"],
-			"version": "4.5.10",
+			"version": "4.5.12",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
 			"deps": []
 		},
 		{
-			"description": "Oracle JDBC 12g",
-			"path": ["lib/ojdbc7.jar"],
-			"version": "12",
+			"description": "Oracle JDBC 19",
+			"path": ["lib/ojdbc8-19.7.0.0.jar"],
+			"version": "19.7.0.0",
 			"changes": false,
 			"type": ["java"],
-			"license": "Check http://www.oracle.com/technetwork/licenses/distribution-license-152002.html",
+			"license": "Check https://www.oracle.com/webapps/maven/register/license.html",
 			"deps": []
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.2.5.jre7.jar"],
-			"version": "42.2.5",
+			"path": ["lib/postgresql-42.2.14.jar"],
+			"version": "42.2.14",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -268,7 +268,7 @@
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/malensek/jbsdiff/master/LICENSE.txt",
 			"deps": [
-				"lib/commons-compress-1.19.jar"
+				"lib/commons-compress-1.20.jar"
 			]
 		},
 		{
@@ -295,8 +295,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.10.1.jar"],
-			"version": "2.10.1",
+			"path": ["lib/jackson-core-2.11.2.jar"],
+			"version": "2.11.2",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/src/main/resources/META-INF/LICENSE",
@@ -355,7 +355,7 @@
 			"name": "Email",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-net-3.6.jar",
+				"lib/commons-net-3.7.jar",
 				"lib/commons-email-1.5.jar",
 				"lib/javax.mail.jar"
 			],
@@ -381,14 +381,14 @@
 			"name": "HTTP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.6.jar",
-				"lib/jetty-io-9.4.19.jar",
-				"lib/jetty-util-9.4.19.jar",
-				"lib/jetty-client-9.4.19.jar",
-				"lib/jetty-http-9.4.19.jar",
-				"lib/websocket-api-9.4.19.jar",
-				"lib/websocket-client-9.4.19.jar",
-				"lib/websocket-common-9.4.19.jar"
+				"lib/commons-io-2.7.jar",
+				"lib/jetty-io-9.4.31.jar",
+				"lib/jetty-util-9.4.31.jar",
+				"lib/jetty-client-9.4.31.jar",
+				"lib/jetty-http-9.4.31.jar",
+				"lib/websocket-api-9.4.31.jar",
+				"lib/websocket-client-9.4.31.jar",
+				"lib/websocket-common-9.4.31.jar"
 			],
 			"deps": []
 		},
@@ -409,7 +409,7 @@
 			"name": "SNMP",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-2.7.0.jar",
+				"lib/snmp4j-2.8.4.jar",
 				"lib/snmp4j-agent-2.6.3.jar"
 			]
 		},
@@ -425,7 +425,7 @@
 			"name": "SSH",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.6.jar"
+				"lib/commons-io-2.7.jar"
 			],
 			"deps": [
 				"lib/jsch-0.1.55.jar",
@@ -449,10 +449,10 @@
 			"name": "XLS",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.6.jar",
-				"lib/commons-collections4-4.2.jar",
+				"lib/commons-io-2.7.jar",
+				"lib/commons-collections4-4.4.jar",
 				"lib/commons-logging-1.2.jar",
-				"lib/commons-codec-1.13.jar"
+				"lib/commons-codec-1.14.jar"
 			],
 			"deps": [
 				"lib/xmlbeans-3.0.1.jar",
@@ -475,8 +475,8 @@
 			"name": "ZIP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.6.jar",
-				"lib/commons-compress-1.19.jar"
+				"lib/commons-io-2.7.jar",
+				"lib/commons-compress-1.20.jar"
 			],
 			"deps": []
 		},
@@ -485,7 +485,7 @@
 			"removable": true,
 			"hardDeps": [
 				"lib/jbsdiff-1.0.jar",
-				"lib/commons-compress-1.19.jar"
+				"lib/commons-compress-1.20.jar"
 			]
 		}
 	]

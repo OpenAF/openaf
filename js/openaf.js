@@ -4276,18 +4276,18 @@ function flatten(aObject, noKeyValSeparation) {
 }
 
 /**
- * <odoc>
+ * <!--odoc>
  * <key>showDebugger(shouldRedirect)</key>
  * Starts the a graphical Rhino debugger instance, typically from the openaf-console. The stdin, stdout and stderr
  * can be redirected to the debugger by having shouldRedirect = true. The Rhino context will be shared between the
  * debugger and the original script that invoked it (for example: openaf-console).
- * </odoc>
+ * </odoc-->
  */
-function showDebugger(shouldRedirect) {
+/*function showDebugger(shouldRedirect) {
 	print("Trying to create a debugger instance...");
 	af.showDebugger(shouldRedirect);
 	print("Please use File|Run to select the script you wish to debug.");
-}
+}*/
 
 /**
  * <odoc>

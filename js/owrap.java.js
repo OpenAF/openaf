@@ -1038,6 +1038,59 @@ OpenWrap.java.prototype.getIP2Host = function(aIP) {
 
 /**
  * <odoc>
+ * <key>ow.java.getJarVersion(aJarFile) : Array</key>
+ * Given aJarFile will return an array of JVM versions used in java classes contained.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getJarVersion = function(aJarFile) {
+    var vers = [];
+
+    plugin("ZIP");
+    var zip = new ZIP();
+
+    Object.keys( zip.list(aJarFile) ).map(r => {
+        var v = ow.java.getClassVersion(aJarFile + "::" + r);
+        if (vers.indexOf(v) < 0 && isDef(v)) {
+            vers.push(v);
+        }
+    });
+
+    return vers;
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.getClassVersion(aClassBytes) : String</key>
+ * Given the class array of bytes (aClassBytes), or a string from which the corresponding bytes will be read, tries to determine the minimum JVM version required to load the class.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getClassVersion = function(aClassBytes) {
+    var ver;
+
+    if (isString(aClassBytes)) aClassBytes = io.readFileBytes(aClassBytes);
+
+    switch(aClassBytes[7]) {
+    case 45: ver = "1.1"; break;
+    case 46: ver = "1.2"; break;
+    case 47: ver = "1.3"; break;
+    case 48: ver = "1.4"; break;
+    case 49: ver = "5"; break;
+    case 50: ver = "6"; break;
+    case 51: ver = "7"; break;
+    case 52: ver = "8"; break;
+    case 53: ver = "9"; break;
+    case 54: ver = "10"; break;
+    case 55: ver = "11"; break;
+    case 56: ver = "12"; break;
+    case 57: ver = "13"; break;
+    case 58: ver = "14"; break;
+    }
+
+    return ver;
+};
+
+/**
+ * <odoc>
  * <key>ow.java.getWhoIs(aQuery, aInitServer) : Map</key>
  * Tries to perform a whois aQuery for a domain or an ip address. Optionally you can provide aInitServer (defaults to whois.iana.org)
  * </odoc>
