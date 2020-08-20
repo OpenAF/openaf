@@ -1,5 +1,5 @@
 Third-party name      : Showdown
-Version               : 1.9.0
+Version               : 1.9.1
 Changed from original : No
 Location in openaf.jar: js/showdown.js
 License               : 
@@ -85,7 +85,7 @@ SOFTWARE.
 
 -----------------------
 Third-party name      : FuseJS
-Version               : 3.4.4
+Version               : 6.4.1
 Changed from original : No
 Location in openaf.jar: js/fusejs.js
 License               : 
@@ -294,7 +294,7 @@ License               :
 
 -----------------------
 Third-party name      : Handlebars
-Version               : 4.7.3
+Version               : 4.7.6
 Changed from original : No
 Location in openaf.jar: js/handlebars.js
 License               : 
@@ -690,7 +690,7 @@ Creative Commons Notice
 
 -----------------------
 Third-party name      : ajv
-Version               : 6.12.0
+Version               : 6.12.4
 Changed from original : No
 Location in openaf.jar: js/ajv.js
 License               : 
@@ -741,7 +741,7 @@ limitations under the License.
 
 -----------------------
 Third-party name      : js-yaml
-Version               : 3.13.1
+Version               : 3.14.0
 Changed from original : No
 Location in openaf.jar: js/js-yaml.js
 License               : 
@@ -770,7 +770,7 @@ THE SOFTWARE.
 
 -----------------------
 Third-party name      : jQuery minified
-Version               : 3.4.1
+Version               : 3.5.1
 Changed from original : No
 Location in openaf.jar: js/jquery.js
 License               : 
@@ -798,7 +798,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 -----------------------
 Third-party name      : Lodash
-Version               : 4.17.15
+Version               : 4.17.20
 Changed from original : No
 Location in openaf.jar: js/lodash.js
 License               : 
@@ -4072,7 +4072,7 @@ There are references to the equations in that paper commented through the source
 
 -----------------------
 Third-party name      : Highlight
-Version               : 9.13.1
+Version               : 10.1.2
 Changed from original : No
 Location in openaf.jar: js/highlight.js
 License               : 

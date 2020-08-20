@@ -2,7 +2,7 @@
 	"external": [{
 			"description": "Showdown",
 			"path": ["js/showdown.js"],
-			"version": "1.9.0",
+			"version": "1.9.1",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/showdownjs/showdown/master/LICENSE",
@@ -29,7 +29,7 @@
 		{
 			"description": "FuseJS",
 			"path": ["js/fusejs.js"],
-			"version": "3.4.4",
+			"version": "6.4.1",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/krisk/Fuse/master/LICENSE",
@@ -38,7 +38,7 @@
 		{
 			"description": "Handlebars",
 			"path": ["js/handlebars.js"],
-			"version": "4.7.3",
+			"version": "4.7.6",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/wycats/handlebars.js/master/LICENSE",
@@ -56,7 +56,7 @@
 		{
 			"description": "ajv",
 			"path": ["js/ajv.js"],
-			"version": "6.12.0",
+			"version": "6.12.4",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/epoberezkin/ajv/master/LICENSE",
@@ -74,7 +74,7 @@
 		{
 			"description": "js-yaml",
 			"path": ["js/js-yaml.js"],
-			"version": "3.13.1",
+			"version": "3.14.0",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/nodeca/js-yaml/master/LICENSE",
@@ -83,7 +83,7 @@
 		{
 			"description": "jQuery minified",
 			"path": ["js/jquery.js"],
-			"version": "3.4.1",
+			"version": "3.5.1",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/jquery/jquery/master/LICENSE.txt",
@@ -92,7 +92,7 @@
 		{
 			"description": "Lodash",
 			"path": ["js/lodash.js"],
-			"version": "4.17.15",
+			"version": "4.17.20",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/lodash/lodash/master/LICENSE",
@@ -318,7 +318,7 @@
 		{
 			"description": "Highlight",
 			"path": ["js/highlight.js"],
-			"version": "9.13.1",
+			"version": "10.1.2",
 			"changes": false,
 			"type": ["javascript"],
 			"license": "https://raw.githubusercontent.com/isagalaev/highlight.js/master/LICENSE",
