@@ -591,8 +591,95 @@ OpenWrap.java.prototype.IMAP.prototype.getUnreadMessageCount = function(aFolder)
  * Creates an ow.java.cipher to use anAlgorithm (defaults to RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING).
  * </odoc>
  */
-OpenWrap.java.prototype.cipher = function(anAlgorithm) {
+OpenWrap.java.prototype.cipher = function(anAlgorithm, anSymAlgorithm, anSymSize) {
     this.alg = _$(anAlgorithm).isString().default("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING");
+    this.aalg = _$(anSymAlgorithm).isString().default("AES");
+    this.aalgsize = _$(anSymSize).isNumber().default(128);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.symGenKey(aSize) : ArrayBytes</key>
+ * Returns a generated symmetric key with aSize (defaults to aSize)
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.symGenKey = function(aSize) {
+    aSize = _$(aSize).isNumber().default(this.aalgsize);
+    var generator = javax.crypto.KeyGenerator.getInstance(this.aalg);
+    generator.init(aSize);
+    return generator.generateKey().getEncoded();
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.symEncrypt(aMessage, aKey) : ArrayBytes</key>
+ * Returns a symmetric encrypted aMessage using a previously generated aKey (using ow.java.cipher.symGenKey).
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.symEncrypt = function(plainText, aKey) {
+    _$(plainText).$_();
+    _$(aKey).$_();
+
+    if (isString(plainText)) plainText = af.fromString2Bytes(plainText);
+    if (isString(aKey)) aKey = af.fromString2Bytes(aKey);
+
+    var sks = new javax.crypto.spec.SecretKeySpec(aKey, 0, aKey.length, this.aalg);
+    var cipher = javax.crypto.Cipher.getInstance(this.aalg);
+    cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, sks);
+    return cipher.doFinal(plainText);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.symDecrypt(anEncryptedMessage, aKey) : ArrayBytes</key>
+ * Returns the decrypted anEncryptedMessage using aKey (used to encrypt with symEncrypt)
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.symDecrypt = function(encryptedMsg, aKey) {
+    var sks = new javax.crypto.spec.SecretKeySpec(aKey, 0, aKey.length, this.aalg);
+    var cipher = javax.crypto.Cipher.getInstance(this.aalg);
+    cipher.init(javax.crypto.Cipher.DECRYPT_MODE, sks);
+    return cipher.doFinal(encryptedMsg);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.aSymEncrypt(aMessage, aPublicKey) : Map</key>
+ * Given aMessage and previously generated aPublicKey will encrypt aMessage with a random symmetric key,
+ * encrypt that symmetric key with aPublicKey and return a map with eSymKey (encrypted symmetric key) and eMessage (encrypted message)
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.aSymEncrypt = function(aMessage, aPublicKey) {
+    _$(aMessage).$_("Please provide a message to encrypt.");
+    _$(aPublicKey).$_("Please provide a public key.");
+
+    var k = this.symGenKey();
+    var msg = this.symEncrypt(aMessage, k);
+    var ck = this.encrypt(k, aPublicKey);
+    k = void 0;
+
+    return {
+        eSymKey : ck,
+        eMessage: msg
+    };
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.prototype.aSymDecrypt(eMessage, eSymKey, privateKey) : ArrayBytes</key>
+ * Given a previously encrypted eMessage with an encrypted symmetric key, will use the provided privateKey to decrypt
+ * eSymKey and use it to decrypt eMessage returning the corresponding decrypted contents.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.aSymDecrypt = function(eMessage, eSymKey, privateKey) {
+    _$(eMessage).$_("Please provide an encrypted message to decrypt.");
+    _$(eSymKey).$_("Please provide an encrypted sym key.");
+    _$(privateKey).$_("Please provide a private key.");
+
+    var dk = this.decrypt(eSymKey, privateKey, void 0, true);
+    var out = this.symDecrypt(eMessage, dk);
+    dk = void 0;
+    return out;
 };
 
 /**
@@ -608,7 +695,8 @@ OpenWrap.java.prototype.cipher.prototype.encrypt = function(plainText, publicKey
 
    var cipher = javax.crypto.Cipher.getInstance(this.alg);
    cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, publicKey);
-   var cipherText = cipher.doFinal(af.fromString2Bytes(plainText));
+   if (isString(plainText)) plainText = af.fromString2Bytes(plainText);
+   var cipherText = cipher.doFinal(plainText);
    return cipherText;
 };
 
@@ -786,7 +874,7 @@ OpenWrap.java.prototype.cipher.prototype.decode2key = function(key, isPrivate, a
  * Optionally a key anAlgorithm can be provided (defaults to RSA).
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.prototype.decrypt = function(cipherText, privateKey, anAlgorithm) {
+OpenWrap.java.prototype.cipher.prototype.decrypt = function(cipherText, privateKey, anAlgorithm, noConversion) {
    _$(cipherText).$_("Please provide an encrypted message to decrypt.");
    _$(privateKey).$_("Please provide a private key.");
    anAlgorithm = _$(anAlgorithm).isString().default(this.alg);
@@ -794,7 +882,7 @@ OpenWrap.java.prototype.cipher.prototype.decrypt = function(cipherText, privateK
    var cipher = javax.crypto.Cipher.getInstance(anAlgorithm);
    cipher.init(javax.crypto.Cipher.DECRYPT_MODE, privateKey);
    var decryptedText = cipher.doFinal(cipherText);
-   return af.fromBytes2String(decryptedText);
+   return (noConversion ? decryptedText : af.fromBytes2String(decryptedText));
 };
 
 // af.fromInputStream2String(t.decryptStream(af.fromBytes2InputStream(t.encrypt("ola", pub)), priv))
