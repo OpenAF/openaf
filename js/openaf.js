@@ -4333,27 +4333,27 @@ function checkLatestVersion() {
 
 /**
  * <odoc>
- * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait) : String</key>
+ * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap) : String</key>
  * Tries to execute commandArguments (either a String or an array of strings) in the operating system as a shortcut for 
  * AF.sh except that it will run them through the OS shell. Optionally aStdIn can be provided, aTimeout can be defined 
  * for the execution and if shouldInheritIO is true the stdout, stderr and stdin will be inherit from OpenAF. If 
  * shouldInheritIO is not defined or false it will return the stdout of the command execution. It's possible also to 
- * provide a different working aDirectory.
+ * provide a different working aDirectory. If envsMap (a map of strings) is defined the environment variables will be replaced by envsMap.
  * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly.
  * In alternative if returnMap = true a map will be returned with stdout, stderr and exitcode.
  * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output 
  * stream, a error stream and an input stream (see help af.sh for an example). If defined the stdout and stderr won't be available for the returnMap if true.
  * </odoc>
  */
-function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait) {
+function sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap) {
 	if (typeof commandArguments == "string") {
 		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
-			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait);
+			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap);
 		} else {
-			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait);
+			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap);
 		}
 	} else {
-		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait);
+		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap);
 	}
 }
 
@@ -7271,6 +7271,19 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
+	 * <key>$sh.envs(aMap, includeExisting) : $sh</key>
+	 * Uses aMap of strings as the environment variables map. If includeExisting = true it will include the current environment variables also.
+	 * </odoc>
+	 */
+	__sh.prototype.envs = function(aMap, includeExisting) {
+		aMap = _$(aMap, "envs map").isMap().default({});
+		if (includeExisting) aMap = merge(aMap, getEnvs());
+		this.envs = aMap;
+		return this;
+	};
+
+	/**
+	 * <odoc>
 	 * <key>$sh.sh(aCmd, aIn) : $sh</key>
 	 * When executing aCmd (with .exec) sets additional aCmds (with the optional corresponding aIn) to use.
 	 * </odoc>
@@ -7391,7 +7404,7 @@ const $sh = function(aString) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding, this.dw), this.q[ii]);
+				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding, this.dw, this.envs), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
@@ -7439,7 +7452,7 @@ const $sh = function(aString) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding, this.dw), this.q[ii]);
+                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding, this.dw, this.envs), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
