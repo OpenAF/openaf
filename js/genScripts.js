@@ -295,6 +295,7 @@ var zip = new ZIP();
 zip.streamPutFile(getOpenAFPath() + "/.opack.db", "packages.json", af.fromString2Bytes(stringify(p)));
 
 // Checking if reinstall script can be built
+ow.loadFormat();
 var jh = ow.format.getJavaHome().replace(/\\/g, "/");
 if (jh.substring(0, jh.lastIndexOf("/")+1) == getOpenAFPath()) {
   if (windows == 1) {
