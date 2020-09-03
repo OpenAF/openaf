@@ -1779,7 +1779,7 @@ function getOPackRemoteDB() {
 	var http;
 	var zip;
 
-	for(let i in __opackCentral) {
+	for(var i in __opackCentral) {
 		try {
 			http = new HTTP(__opackCentral[i], "GET", "", {}, true, 1500);
 			zip = new ZIP(http.responseBytes());
@@ -1963,7 +1963,7 @@ function load(aScript, loadPrecompiled) {
 		paths["__default"] = getOpenAFJar() + "::js";
 
 		var error;
-		for(let i in paths) {
+		for(var i in paths) {
 			try {
 				paths[i] = paths[i].replace(/\\+/g, "/");
 				return fn(paths[i] + "/" + aScript, 1);
@@ -2013,7 +2013,7 @@ function load(aScript, loadPrecompiled) {
 					var paths = getOPackPaths();
 					paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
 			
-					for(let i in paths) {
+					for(var i in paths) {
 						try {
 							paths[i] = paths[i].replace(/\\+/g, "/");
 							if (e0.message == "\"exports\" is not defined.") {
@@ -2625,11 +2625,11 @@ function clone(aObject) {
  */
 function merge(aObjectA, aObjectB) {
 	if (isObject(aObjectA) && isArray(aObjectB)) {
-		for(let i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA)); }
+		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA)); }
 		return aObjectB;
 	}
 	if (isObject(aObjectB) && isArray(aObjectA)) {
-		for(let i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB)); }
+		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB)); }
 		return aObjectA;
 	}
 	return extend(true, clone(aObjectA), aObjectB);
@@ -2684,7 +2684,7 @@ function restartOpenAF(aCommandLineArray, preLineArray, noStop) {
 	var command = new java.util.ArrayList();
 	command.add(javaBin);
 	if (isDef(preLineArray)) {
-		for(let c in preLineArray) {
+		for(var c in preLineArray) {
 			command.add(preLineArray[c]);
 		}
 	} else {
@@ -2696,11 +2696,11 @@ function restartOpenAF(aCommandLineArray, preLineArray, noStop) {
 	command.add("-jar");
 	command.add(currentJar);
 	if (isUnDef(aCommandLineArray)) {
-		for(let c in __args) {
+		for(var c in __args) {
 			command.add(__args[c]);
 		}
 	} else {
-		for(let c in aCommandLineArray) {
+		for(var c in aCommandLineArray) {
 			command.add(aCommandLineArray[c]);
 		}
 	}
@@ -3036,9 +3036,9 @@ function splitArray(anArray, numberOfParts) {
     if (isUnDef(numberOfParts)) numberOfParts = getNumberOfCores();
     
 	if (numberOfParts >= anArray.length) {
-		for(let i in anArray) { res.push([anArray[i]]); }
+		for(var i in anArray) { res.push([anArray[i]]); }
 	} else {
-	    for(let i = 0; i < numberOfParts; i++) {
+	    for(var i = 0; i < numberOfParts; i++) {
 	        var lower = Math.round(anArray.length/numberOfParts * i);
 	        var upper = Math.round(anArray.length/numberOfParts * (i+1));
 	        res.push(anArray.slice(lower, upper));
@@ -3090,7 +3090,7 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 	}
 	
 	var results = [];
-	for(let i = 0; i < numThreads; i++) {
+	for(var i = 0; i < numThreads; i++) {
 		var uuid = __threads.addThread(function(uuid) {
 			results.push(aFunction(uuid, __threads));
 			if (balance) __balance();
@@ -3161,9 +3161,9 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 	// Map it to threads
 	var myMap = [];
 	if (numThreads >= anArray.length) {
-		for(let i in anArray) { myMap.push([anArray[i]]); }
+		for(var i in anArray) { myMap.push([anArray[i]]); }
 	} else {
-		for(let i = 0; i < numThreads; i++) {
+		for(var i = 0; i < numThreads; i++) {
 			var lower = Math.round(anArray.length/numThreads * i);
 			var upper = Math.round(anArray.length/numThreads * (i+1));
 			myMap.push(anArray.slice(lower, upper));
@@ -3231,7 +3231,7 @@ function parallel4Array(anArray, aFunction, numberOfThreads, threads) {
 			return [ subres ].concat(p);
 		},
 		[],
-		function(arr) { var res = []; for(let i in arr) { res = res.concat(arr[i]); } return res; },
+		function(arr) { var res = []; for(var i in arr) { res = res.concat(arr[i]); } return res; },
 		numberOfThreads,
 		threads
 	);
@@ -3619,7 +3619,7 @@ Pod.require = function (req, callback) {
 	// Wrap a single dependency definition in an array.
 	req = single ? [req] : req.slice();
 	
-	for (let i = 0; i < req.length; i++) {
+	for (var i = 0; i < req.length; i++) {
 	    var id = req[i];
 	
 	    if (this._m.hasOwnProperty(id)) {
@@ -4147,7 +4147,7 @@ function traverse(aObject, aFunction, aParent) {
 	var keys = (isJavaObject(aObject)) ? [] : Object.keys(aObject);
 	var parent = isUnDef(aParent) ? "" : aParent;
 
-	for(let i in keys) {
+	for(var i in keys) {
 		if (isObject(aObject[keys[i]])) {
 			var newParent = parent + ((isNaN(Number(keys[i]))) ? 
 							"." + keys[i] : 
@@ -5673,7 +5673,7 @@ var __timeout = {};
 function setTimeout(aFunction, aPeriod) {
 	sleep(aPeriod);
 	var args = [];
-	for(let i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
+	for(var i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
 	aFunction.apply(this, args);
 }
 
@@ -5682,7 +5682,7 @@ function setInterval(aFunction, aPeriod) {
 	var t = new Threads();
 
 	var args = [];
-	for(let i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
+	for(var i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
 	var pf = aFunction;
     var parent = this;
 
@@ -6666,7 +6666,7 @@ oPromise.prototype.race = function(anArray) {
 		
 		try {
 			while(!shouldStop) {
-				for(let i in anArray) {
+				for(var i in anArray) {
 					if (anArray[i] != null) {
 						if (anArray[i] instanceof oPromise) {
 							if (!anArray[i].executing) {
@@ -7429,7 +7429,7 @@ const $sh = function(aString) {
 		var res = this.get(aIdx);
 
 		if (isArray(res)) {
-			for(let ii in res) {
+			for(var ii in res) {
 				res[ii].stdout = jsonParse(res[ii].stdout);
 				res[ii].stderr = jsonParse(res[ii].stderr);
 			}
@@ -7754,7 +7754,7 @@ const $ssh = function(aMap) {
 		var res = this.get(aIdx);
 
 		if (isArray(res)) {
-			for(let ii in res) {
+			for(var ii in res) {
 				res[ii].stdout = jsonParse(res[ii].stdout);
 				res[ii].stderr = jsonParse(res[ii].stderr);
 			}
@@ -7830,7 +7830,7 @@ var console = { log: log, warn: logWarn, error: logErr };
 
 	if (__noSLF4JErrorOnly) {
 		try {
-			let i = Packages.org.slf4j.LoggerFactory.getLogger(Packages.ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME).getLoggerContext().getLoggerList().iterator();
+			var i = Packages.org.slf4j.LoggerFactory.getLogger(Packages.ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME).getLoggerContext().getLoggerList().iterator();
 			while (i.hasNext()) {
 				Packages.org.slf4j.LoggerFactory.getLogger(i.next().getName()).setLevel(Packages.ch.qos.logback.classic.Level.ERROR);
 			}
