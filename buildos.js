@@ -32,15 +32,22 @@ var INTERNAL_LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LI
 var EXTERNAL_LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 
 function buildDeps() {
-	loadUnderscore();
-
 	// Check javascript dependencies
 	var l = io.listFilenames(OPENAF_BUILD_HOME + "/js");
 	var ss = {};
 
+	function u(anArr) {
+		var ar = [];
+		for(var ii in anArr) {
+			if (ar.indexOf(anArr[ii]) < 0) ar.push(anArr[ii]);
+		}
+
+		return ar;
+	}
+
 	for (var i in l) {
 		if (l[i].match(/\.js$/))
-			ss[l[i]] = _.uniq(io.readFileString(l[i]).match(/plugin\([^\)]+\)/g))
+			ss[l[i]] = u(io.readFileString(l[i]).match(/plugin\([^\)]+\)/g));
 	};
 
 	return ss;
