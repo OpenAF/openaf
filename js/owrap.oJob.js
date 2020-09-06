@@ -1712,6 +1712,21 @@ OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRe
 OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch, _jobEach) {
 
 	var parent = this;
+
+	function procLock(aExec, aJobTypeArgs) {
+		var res = _$(aExec).default("");
+		aJobTypeArgs = _$(aJobTypeArgs).default({});
+		aJobTypeArgs.lockCh = _$(aJobTypeArgs.lockCh).default("oJob::locks");
+
+		$ch("oJob::locks").create();
+
+		if (isString(aJobTypeArgs.lock)) {
+			res = "try { var __locks = new ow.server.locks(true, \"" + aJobTypeArgs.lockCh + "\"); if (__locks.lock(\"" + aJobTypeArgs.lock + "\")) {\n" + res + "\n__locks.unlock(\"" + aJobTypeArgs.lock + "\") } } catch(_lockE) { \n__locks.unlock(\"" + aJobTypeArgs.lock + "\");\nthrow _lockE; }"; 
+		}
+
+		return res;
+	}
+
     function procLang(aExec, aJobTypeArgs, aEach) {
 		var res = _$(aExec).default("");
 
@@ -1786,7 +1801,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.args = (isDef(j.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(f.args));
 					j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
 					j.each = (isDef(j.each) && j.each != null ? j.each.concat(f.each) : f.each);
-					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLang(f.exec, f.typeArgs, j.each);
+					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLock(procLang(f.exec, f.typeArgs, j.each), f.typeArgs);
 					j.help = (isDef(j.help) ? j.help : "") + "\n" + f.help;
 				} else {
 					logWarn("Didn't found from/earlier job '" + jobFrom[jfi] + "' for job '" + aName + "'");
@@ -1807,7 +1822,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			"each": (isDef(j.each) && j.each != null ? j.each.concat(jobEach) : jobEach),
 			"exec": j.exec
 		};	
-		j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLang(fstr, jobTypeArgs, j.each);
+		j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLock(procLang(fstr, jobTypeArgs, j.each), jobTypeArgs);
 
 		if (isDef(jobTo)) {
 			if (!isArray(jobTo)) jobTo = [ jobTo ];
@@ -1822,7 +1837,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
 					j.each = j.each + "\n" + (isDef(f.each) ? f.each : "");
 					j.each = (isDef(f.each) && j.each != null ? j.each.concat(f.each) : j.each);
-					j.exec = j.exec + "\n" + (isDef(f.exec) ? procLang(f.exec, f.typeArgs, j.each) : "");
+					j.exec = j.exec + "\n" + (isDef(f.exec) ? procLock(procLang(f.exec, f.typeArgs, j.each), jobTypeArgs) : "");
 					j.help = j.help + "\n" + (isDef(f.help) ? f.help : "");
 				} else {
 					logWarn("Didn't found to/then job '" + jobTo[jfi] + "' for job '" + aName + "'");
