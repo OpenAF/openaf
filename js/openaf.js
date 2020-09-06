@@ -3883,10 +3883,10 @@ function loadHandlebars() {
  * </odoc>
  */
 function loadUnderscore() {
-	var res = loadCompiledLib("lodash_js");
+	/*var res = loadCompiledLib("lodash_js");
 	if (res) pods.declare("Underscore", loadUnderscore());
-	if (res) pods.declare("Lodash", loadUnderscore());
-	//loadLib(getOpenAFJar() + "::js/lodash.js");
+	if (res) pods.declare("Lodash", loadUnderscore());*/
+	loadLib(getOpenAFJar() + "::js/lodash.js");
 }
 
 /**
