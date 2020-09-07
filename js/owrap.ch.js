@@ -1406,7 +1406,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(res) && isDef(res.hits) & isDef(res.hits.hits)) {
 				return $stream(res.hits.hits).map("_id").toArray();
 			} else {
-				return undefined
+				return void 0;
 			}	
 		},
 		getSortedKeys: function(aName, full) {
@@ -1432,7 +1432,7 @@ OpenWrap.ch.prototype.__types = {
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 				},
 				preAction: this.__channels[aName].preAction
-			}).put(url, aV);
+			}).post(url, aV);
 			return res;		
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
@@ -1456,10 +1456,16 @@ OpenWrap.ch.prototype.__types = {
 			if (ops.length > 0) {
 				ow.loadObj();
 				var h = new ow.obj.http();
-				if (isDef(this.__channels[aName].user))
-					h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
 				try {
-					return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
+					//return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
+					var parent = this;
+					return $rest({
+						login: function(h) { 
+							if (isDef(parent.__channels[aName].user))
+								h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+						},
+						preAction: this.__channels[aName].preAction
+					}).post(url, ops);
 				} catch(e) {
 					e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 					throw e;
