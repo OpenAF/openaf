@@ -400,11 +400,12 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding, dontWait) : String/Map</key>
+	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding, dontWait, envsMap) : String/Map</key>
 	 * Tries to execute commandArguments (either a String or an array of strings) in the operating system. Optionally
 	 * aStdIn can be provided, aTimeout can be defined for the execution and if shouldInheritIO is true the stdout, stderr and stdin
 	 * will be inherit from OpenAF. If shouldInheritIO is not defined or false it will return the stdout of the command execution.
 	 * It's possible also to provide a different working aDirectory.
+	 * If envsMap (a map of strings) is defined the environment variables will be replaced by envsMap.
 	 * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly. In alternative 
 	 * if returnMap = true a map will be returned with stdout, stderr and exitcode.
 	 * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
@@ -415,7 +416,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding, boolean dontWait) throws IOException, InterruptedException {
+	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding, boolean dontWait, Object envs) throws IOException, InterruptedException {
 		ProcessBuilder pb = null;
 		Charset Cencoding = null;
 
@@ -437,10 +438,16 @@ public class AFBase extends ScriptableObject {
 				pb = new ProcessBuilder(((String) s).split(" (?=([^\']*\'[^\']*\')*[^\']*$)"));
 			}
 		} 
-		
+
 		if (inheritIO) pb.inheritIO();
 		if (!(directory == null || directory instanceof org.mozilla.javascript.Undefined)) {
 			pb.directory(new File((String) directory));
+		}
+
+		if (envs != null && envs instanceof NativeObject) {
+			Map<String, String> env = pb.environment();
+			env.clear();
+			env.putAll(((NativeObject) envs));
 		}
 		
 		final Process p = pb.start();
