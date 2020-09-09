@@ -1,5 +1,5 @@
 Third-party name      : Showdown
-Version               : 1.9.0
+Version               : 1.9.1
 Changed from original : No
 Location in openaf.jar: js/showdown.js
 License               : 
@@ -85,7 +85,7 @@ SOFTWARE.
 
 -----------------------
 Third-party name      : FuseJS
-Version               : 3.4.4
+Version               : 6.4.1
 Changed from original : No
 Location in openaf.jar: js/fusejs.js
 License               : 
@@ -294,7 +294,7 @@ License               :
 
 -----------------------
 Third-party name      : Handlebars
-Version               : 4.7.3
+Version               : 4.7.6
 Changed from original : No
 Location in openaf.jar: js/handlebars.js
 License               : 
@@ -690,7 +690,7 @@ Creative Commons Notice
 
 -----------------------
 Third-party name      : ajv
-Version               : 6.12.0
+Version               : 6.12.4
 Changed from original : No
 Location in openaf.jar: js/ajv.js
 License               : 
@@ -741,7 +741,7 @@ limitations under the License.
 
 -----------------------
 Third-party name      : js-yaml
-Version               : 3.13.1
+Version               : 3.14.0
 Changed from original : No
 Location in openaf.jar: js/js-yaml.js
 License               : 
@@ -770,12 +770,12 @@ THE SOFTWARE.
 
 -----------------------
 Third-party name      : jQuery minified
-Version               : 3.4.1
+Version               : 3.5.1
 Changed from original : No
 Location in openaf.jar: js/jquery.js
 License               : 
 
-Copyright JS Foundation and other contributors, https://js.foundation/
+Copyright OpenJS Foundation and other contributors, https://openjsf.org/
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -798,7 +798,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 -----------------------
 Third-party name      : Lodash
-Version               : 4.17.15
+Version               : 4.17.20
 Changed from original : No
 Location in openaf.jar: js/lodash.js
 License               : 
@@ -1595,9 +1595,9 @@ License               :
 
 -----------------------
 Third-party name      : H2
-Version               : 1.4.197
+Version               : 1.4.200
 Changed from original : No
-Location in openaf.jar: lib/h2-1.4.197.jar
+Location in openaf.jar: lib/h2-1.4.200.jar
 License               : 
 
 This software contains unmodified binary redistributions for H2 database engine (http://www.h2database.com/), which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License). An original copy of the license agreement can be found at: http://www.h2database.com/html/license.html
@@ -2080,9 +2080,9 @@ License               :
 
 -----------------------
 Third-party name      : Apache Commons IO
-Version               : 2.6
+Version               : 2.7
 Changed from original : No
-Location in openaf.jar: lib/commons-io-2.6.jar
+Location in openaf.jar: lib/commons-io-2.7.jar
 License               : 
 
 Apache License
@@ -2295,9 +2295,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons CSV
-Version               : 1.6
+Version               : 1.8
 Changed from original : No
-Location in openaf.jar: lib/commons-csv-1.6.jar
+Location in openaf.jar: lib/commons-csv-1.8.jar
 License               : 
 
 Apache License
@@ -2510,9 +2510,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons Lang
-Version               : 3.8.1
+Version               : 3.11
 Changed from original : No
-Location in openaf.jar: lib/commons-lang3-3.8.1.jar
+Location in openaf.jar: lib/commons-lang3-3.11.jar
 License               : 
 
 Apache License
@@ -2940,9 +2940,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons Compress
-Version               : 1.18
+Version               : 1.20
 Changed from original : No
-Location in openaf.jar: lib/commons-compress-1.18.jar
+Location in openaf.jar: lib/commons-compress-1.20.jar
 License               : 
 
 Apache License
@@ -3155,9 +3155,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons HTTPComponents
-Version               : 4.5.10
+Version               : 4.5.12
 Changed from original : No
-Location in openaf.jar: lib/httpclient-4.5.10.jar, lib/httpcore-4.4.12.jar
+Location in openaf.jar: lib/httpclient-4.5.12.jar, lib/httpcore-4.4.13.jar
 License               : 
 
 Apache License
@@ -3369,18 +3369,18 @@ APPENDIX: How to apply the Apache License to your work
         permissions and limitations under the License.
 
 -----------------------
-Third-party name      : Oracle JDBC 12g
-Version               : 12
+Third-party name      : Oracle JDBC 19
+Version               : 19.7.0.0
 Changed from original : No
-Location in openaf.jar: lib/ojdbc7.jar
+Location in openaf.jar: lib/ojdbc8-19.7.0.0.jar
 License               : 
 
-Check http://www.oracle.com/technetwork/licenses/distribution-license-152002.html
+Check https://www.oracle.com/webapps/maven/register/license.html
 -----------------------
 Third-party name      : PostgreSQL JDBC
-Version               : 42.2.5
+Version               : 42.2.14
 Changed from original : No
-Location in openaf.jar: lib/postgresql-42.2.5.jre7.jar
+Location in openaf.jar: lib/postgresql-42.2.14.jar
 License               : 
 
 Check https://www.postgresql.org/about/licence/
@@ -4002,9 +4002,9 @@ License               :
 
 -----------------------
 Third-party name      : Jackson Core
-Version               : 2.10.1
+Version               : 2.11.2
 Changed from original : No
-Location in openaf.jar: lib/jackson-core-2.10.1.jar
+Location in openaf.jar: lib/jackson-core-2.11.2.jar
 License               : 
 
 This copy of Jackson JSON processor streaming parser/generator is licensed under the
@@ -4072,7 +4072,7 @@ There are references to the equations in that paper commented through the source
 
 -----------------------
 Third-party name      : Highlight
-Version               : 9.13.1
+Version               : 10.1.2
 Changed from original : No
 Location in openaf.jar: js/highlight.js
 License               : 
