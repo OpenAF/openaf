@@ -287,8 +287,8 @@ public class XLS extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>XLS.getCellNames() : Array</key>
-	 * Returns an array of workbook cell names each with the corresponding name, the corresponding refer formula,
-	 * the sheet to which it corresponds to and if it's a user-defined function.
+	 * Returns an array of workbook cell names each with the corresponding name, the corresponding refer formula
+	 * and if it's a user-defined function.
 	 * </odoc>
 	 */
 	@JSFunction
@@ -299,7 +299,6 @@ public class XLS extends ScriptableObject {
 		for(int o = 0; o < nlist.size(); o++) {
 			Scriptable nname = (Scriptable) AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
 			nname.put("name", nname, ((Name) nlist.get(o)).getNameName());
-			nname.put("sheet", nname, ((Name) nlist.get(o)).getSheetName());
 			nname.put("refers", nname, ((Name) nlist.get(o)).getRefersToFormula());
 			nname.put("isFunction", nname, ((Name) nlist.get(o)).isFunctionName());
 			nname.put("comment", nname, ((Name) nlist.get(o)).getComment());
@@ -322,15 +321,20 @@ public class XLS extends ScriptableObject {
 
 	/**
 	 * <odoc>>
-	 * <key>XLS.addCellName(aName, referFormula, aSheet, aComment)</key>
+	 * <key>XLS.setCellName(aName, referFormula, aSheet, aComment)</key>
 	 * Add aName as a workbook cell name refering to referFormula (for example "'mySheet'!$A$1").
 	 * Optionally you can apply it only to aSheet (String) and/or add aComment.
 	 * </odoc>
 	 */
 	@JSFunction
-	public void addCellName(String aName, String referFormula, Object sheet, Object comment) {
-		Name nn = this.wbook.createName();
-		nn.setNameName(aName);
+	public void setCellName(String aName, String referFormula, Object sheet, Object comment) {
+		Name nn = this.wbook.getName(aName);
+
+		if (nn == null) {
+			nn = this.wbook.createName();
+			nn.setNameName(aName);
+		}
+
 		nn.setRefersToFormula(referFormula);
 		if (comment instanceof String && comment != null) nn.setComment((String) comment);
 		if (sheet instanceof String && sheet != null) nn.setSheetIndex(this.wbook.getSheetIndex((String) sheet));
