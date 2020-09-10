@@ -3886,7 +3886,11 @@ function loadUnderscore() {
 	/*var res = loadCompiledLib("lodash_js");
 	if (res) pods.declare("Underscore", loadUnderscore());
 	if (res) pods.declare("Lodash", loadUnderscore());*/
-	loadLib(getOpenAFJar() + "::js/lodash.js");
+	try {
+		loadCompiledLib("lodash_js");
+	} catch(e) {
+		loadLib(getOpenAFJar() + "::js/lodash.js");
+	}
 }
 
 /**
