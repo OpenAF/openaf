@@ -90,9 +90,9 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 			s += "import sys\n";
 			s += "import os\n";
 			s += "\n";
-			s += "_newpid = os.fork()\n";
-			s += "if _newpid != 0:\n";
-			s += "  os._exit(os.EX_OK)\n";
+			//s += "_newpid = os.fork()\n";
+			//s += "if _newpid != 0:\n";
+			//s += "  os._exit(os.EX_OK)\n";
 			s += "if sys.version_info[0] == 2:\n";
 			s += "  from StringIO import StringIO\n";
 			s += "  import SocketServer\n";
@@ -146,8 +146,16 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 			s += "server.serve_forever()\n";
 			s += "\n";
 	
-			af.sh(this.python + " -", s, void 0, void 0, void 0, void 0, void 0, void 0, true);
-			
+			//af.sh(this.python + " -", s, void 0, void 0, void 0, void 0, void 0, void 0, true);
+			plugin("Threads");
+			this.__t = new Threads();
+			var parent = this;
+			this.__t.addSingleThread(function() {
+				$sh([parent.python, "-c", s]).dontWait(false).get(0);
+				return 1;
+			});
+			this.__t.startNoWait();
+
 			ow.loadFormat(); var init = now();
 			do {
 				sleep(100, true);
@@ -175,6 +183,7 @@ OpenWrap.python.prototype.stopServer = function(aPort, force) {
 
 			ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ exit: true, t: this.token }, void 0, "")+"\n");
 			pidKill(io.readFileString(this.pidfile), true);
+			this.__t.stop(true);
 			//this.threads.stop(true);
 			delete this.sport;
 			delete this.server;
@@ -245,7 +254,8 @@ OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions
 
 	var res;
     if (shouldFork || isUnDef(this.sport)) {
-		res = af.sh(this.python + " -", code, void 0, void 0, void 0, true);
+		//res = af.sh(this.python + " -", code, void 0, void 0, void 0, true);
+		res = $sh([this.python, "-c", code]).get(0);
 	} else {
 		ow.loadObj();
 		code = code.replace("# -*- coding: utf-8 -*-\n", "#\n");
@@ -297,7 +307,8 @@ OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, thr
 	var res;
 	code += "\nprint(\"" + delim + "\\n\" + json.dumps({ " + Object.keys(aOutputArray).map(k => "\"" + aOutputArray[k] + "\": " + aOutputArray[k]).join(", ") + " }, indent=0, separators=(',',':') ))\n";
     if (shouldFork || isUnDef(this.sport)) {
-		res = af.sh(this.python + " -", code, void 0, void 0, void 0, true);
+		//res = af.sh(this.python + " -", code, void 0, void 0, void 0, true);
+		res = $sh([this.python, "-c", code]).get(0);
 	} else {
 		ow.loadObj();
 		code = code.replace("# -*- coding: utf-8 -*-\n", "#\n");
