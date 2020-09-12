@@ -212,14 +212,14 @@ var winConsolePSBat = generateWinConsolePSBat();
 
 var unixScript, unixSB, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
 
-if (windows == 0) {
+//if (windows == 0) {
   unixScript = generateUnixScript("\"$@\"");
   unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
   unixPackScript = generateUnixScript("--opack -e \"$*\"");
   unixJobScript = generateUnixScript("--ojob -e \"$*\"");
   unixConsoleScript = generateUnixScript("--console \"$@\"");
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
-}
+//}
 
 try {
   if (windows == 1) io.writeFileString(curDir + "\\openaf.bat", winBat);
