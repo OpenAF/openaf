@@ -6,10 +6,10 @@
 var requirements = {
   "javaversion": [ "^1.7" ]
 };
-var extraArgsForJava9 = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+var extraArgsForJava9 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
 var extraArgsForJava10 = extraArgsForJava9 + " ";
-var extraArgsForJava11 = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
-var extraArgsForJava12 = extraArgsForJava11 + "-Xshare:off";
+var extraArgsForJava11 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+var extraArgsForJava12 = extraArgsForJava11 + " -Xshare:off";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -212,14 +212,14 @@ var winConsolePSBat = generateWinConsolePSBat();
 
 var unixScript, unixSB, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
 
-if (windows == 0) {
+//if (windows == 0) {
   unixScript = generateUnixScript("\"$@\"");
   unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
   unixPackScript = generateUnixScript("--opack -e \"$*\"");
   unixJobScript = generateUnixScript("--ojob -e \"$*\"");
   unixConsoleScript = generateUnixScript("--console \"$@\"");
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
-}
+//}
 
 try {
   if (windows == 1) io.writeFileString(curDir + "\\openaf.bat", winBat);

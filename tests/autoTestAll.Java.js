@@ -17,6 +17,19 @@
         ow.test.assert(cmsg, msg, "Problem with encode/decode key");
     };
 
+    exports.testASymCipher = function() {
+        var c = new ow.java.cipher();
+
+        var kp = c.genKeyPair();
+        var msg = "Hello World!";
+        
+        var mm = c.aSymEncrypt(msg, kp.publicKey);
+        
+        var dmsg = af.fromBytes2String(c.aSymDecrypt(mm.eMessage, mm.eSymKey, kp.privateKey));
+
+        ow.test.assert(dmsg, msg, "Problem with asym encrypt/decrypt");
+    };
+
     exports.testSignVerify = function() {
         var c = new ow.java.cipher();
 

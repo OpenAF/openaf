@@ -32,15 +32,22 @@ var INTERNAL_LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LI
 var EXTERNAL_LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 
 function buildDeps() {
-	loadUnderscore();
-
 	// Check javascript dependencies
 	var l = io.listFilenames(OPENAF_BUILD_HOME + "/js");
 	var ss = {};
 
+	function u(anArr) {
+		var ar = [];
+		for(var ii in anArr) {
+			if (ar.indexOf(anArr[ii]) < 0) ar.push(anArr[ii]);
+		}
+
+		return ar;
+	}
+
 	for (var i in l) {
 		if (l[i].match(/\.js$/))
-			ss[l[i]] = _.uniq(io.readFileString(l[i]).match(/plugin\([^\)]+\)/g))
+			ss[l[i]] = u(io.readFileString(l[i]).match(/plugin\([^\)]+\)/g));
 	};
 
 	return ss;
@@ -142,7 +149,7 @@ io.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", jsOpenAF);
 
 io.rm(OPENAF_BIN);
 io.mkdir(OPENAF_BIN);
-var cmd = JAVAC + " -cp " + classpath + " -source 1.7 -target 1.7 -Xlint:deprecation -d " + OPENAF_BIN + " " + buildSource();
+var cmd = JAVAC + " -cp " + classpath + " -source 1.8 -target 1.8 -Xlint:deprecation -d " + OPENAF_BIN + " " + buildSource();
 log("Compiling...");
 log(af.sh(cmd, "", undefined, true));
 if (__exitcode != 0) {
@@ -240,7 +247,8 @@ try {
 			file.filename !== 'ajv.js' &&
 			file.filename !== 'fusejs.js' &&
 			file.filename !== 'handlebars.js' &&
-			file.filename !== 'jquery.js') {
+			file.filename !== 'lodash.js' &&
+ 			file.filename !== 'jquery.js') {
 
 			var doIt = true;
 			var origF = $from(origjssha.files).equals("file", file.filename).select();
@@ -254,7 +262,7 @@ try {
 
 			if (doIt) {
 				log("-> Compiling " + file.filename);
-				var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out ECMASCRIPT5 --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+				var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT5" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
 				log("<- Compiled  " + file.filename);
 				destjssha.files.push({
 					file: file.filename,
@@ -270,19 +278,29 @@ try {
 				}
 			}
 
-			if (validationForCompile(file.filename))
-			  af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
-			if (validationForRequireCompile(file.filename))
-			  af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");
+			try {
+				log("Compiling from minimized " + file.filename + "...");
+			  if (validationForCompile(file.filename))
+			    af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
+			  if (validationForRequireCompile(file.filename))
+			    af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");
+			} catch(e) {
+				logErr("Error while compiling to java classes ('" + file.filename + "'): " + e);
+			}
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
 				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));
 			}, tempJar);
 		} else {
-			if (validationForCompile(file.filename))
-			  af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
-			if (validationForRequireCompile(file.filename))
-			  af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");			  
+			try {
+			  log("Compiling from source " + file.filename + "...");
+			  if (validationForCompile(file.filename))
+			    af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
+			  if (validationForRequireCompile(file.filename))
+			    af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");			 
+			} catch(e) {
+				logErr("Error while compiling to java classes ('" + file.filename + "'): " + e);
+			}   
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
 				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));				

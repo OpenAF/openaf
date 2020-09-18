@@ -59,7 +59,7 @@ import org.mozilla.javascript.commonjs.module.RequireBuilder;
 import org.mozilla.javascript.commonjs.module.provider.SoftCachingModuleScriptProvider;
 import org.mozilla.javascript.commonjs.module.provider.UrlModuleSourceProvider;
 import org.mozilla.javascript.optimizer.ClassCompiler;
-import org.mozilla.javascript.tools.debugger.Main;
+//import org.mozilla.javascript.tools.debugger.Main;
 import org.mozilla.javascript.xml.XMLObject;
 
 import com.google.gson.Gson;
@@ -1267,12 +1267,13 @@ public class AFBase extends ScriptableObject {
 	}
 
 	/**
-	 * <odoc>
+	 * <!--odoc>
 	 * <key>af.showDebugger(shouldRedirect)</key>
 	 * Shows the default Rhino debugger. If shouldRedirect is true then stdin, stdout and stderr will be 
 	 * redirected to the debugger's console.
-	 * </odoc>
+	 * </odoc-->
 	 */
+	/*
 	@JSFunction
 	public static void showDebugger(boolean shouldRedirect) throws IOException {
 		Context cx = (Context) AFCmdBase.jse.getNotSafeContext();
@@ -1307,7 +1308,7 @@ public class AFBase extends ScriptableObject {
 //		} catch(Exception e) {
 //			SimpleLog.log(logtype.ERROR, "Error trying to load: '" + aScript + "'", e);
 //		}
-	}
+	}*/
 	
 	/**
 	 * <odoc>

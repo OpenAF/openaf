@@ -3,6 +3,7 @@ package openaf.plugins;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.List;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,7 +11,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.Date; 
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
@@ -280,6 +282,62 @@ public class XLS extends ScriptableObject {
 		}
 
 		return AFCmdBase.jse.newArray(AFCmdBase.jse.getGlobalscope(), list.toArray());
+	}
+
+	/**
+	 * <odoc>
+	 * <key>XLS.getCellNames() : Array</key>
+	 * Returns an array of workbook cell names each with the corresponding name, the corresponding refer formula
+	 * and if it's a user-defined function.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object getCellNames() {
+		ArrayList<Scriptable> list = new ArrayList<Scriptable>();
+		List nlist = this.wbook.getAllNames();
+		
+		for(int o = 0; o < nlist.size(); o++) {
+			Scriptable nname = (Scriptable) AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
+			nname.put("name", nname, ((Name) nlist.get(o)).getNameName());
+			nname.put("refers", nname, ((Name) nlist.get(o)).getRefersToFormula());
+			nname.put("isFunction", nname, ((Name) nlist.get(o)).isFunctionName());
+			nname.put("comment", nname, ((Name) nlist.get(o)).getComment());
+			list.add(nname);
+		}
+
+		return AFCmdBase.jse.newArray(AFCmdBase.jse.getGlobalscope(), list.toArray());
+	}
+
+	/**
+	 * <odoc>
+	 * <key>XLS.removeCellName(aName)</key>
+	 * Tries to remove the workbook cell name aName.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void removeCellName(String aName) {
+		this.wbook.removeName(this.wbook.getName(aName));
+	}
+
+	/**
+	 * <odoc>>
+	 * <key>XLS.setCellName(aName, referFormula, aSheet, aComment)</key>
+	 * Add aName as a workbook cell name refering to referFormula (for example "'mySheet'!$A$1").
+	 * Optionally you can apply it only to aSheet (String) and/or add aComment.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void setCellName(String aName, String referFormula, Object sheet, Object comment) {
+		Name nn = this.wbook.getName(aName);
+
+		if (nn == null) {
+			nn = this.wbook.createName();
+			nn.setNameName(aName);
+		}
+
+		nn.setRefersToFormula(referFormula);
+		if (comment instanceof String && comment != null) nn.setComment((String) comment);
+		if (sheet instanceof String && sheet != null) nn.setSheetIndex(this.wbook.getSheetIndex((String) sheet));
 	}
 
 	/**

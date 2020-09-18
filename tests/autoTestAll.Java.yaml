@@ -14,8 +14,14 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testCipher;
 
+   - name: Java::Java ASym Cipher
+     from: Java::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testASymCipher;
+
 todo:
    # Java tests
    # ------------
    - Java::Init
    - Java::Java Cipher
+   - Java::Java ASym Cipher
