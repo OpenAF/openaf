@@ -446,24 +446,6 @@
 			"deps": []
 		},
 		{
-			"name": "XLS",
-			"removable": true,
-			"hardDeps": [
-				"lib/commons-io-2.7.jar",
-				"lib/commons-collections4-4.4.jar",
-				"lib/commons-logging-1.2.jar",
-				"lib/commons-codec-1.14.jar"
-			],
-			"deps": [
-				"lib/xmlbeans-3.0.1.jar",
-				"lib/poi-4.0.0.jar",
-				"lib/poi-excelant-4.0.0.jar",
-				"lib/poi-ooxml-4.0.0.jar",
-				"lib/poi-ooxml-schemas-4.0.0.jar",
-				"lib/poi-scratchpad-4.0.0.jar"
-			]
-		},
-		{
 			"name": "XML",
 			"removable": true,
 			"hardDeps": [],

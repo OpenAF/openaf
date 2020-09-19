@@ -363,7 +363,7 @@ try {
 		"snmp": OPENAF_BUILD_HOME + "/src/openaf/plugins/SNMP.java",
 		"snmpd": OPENAF_BUILD_HOME + "/src/openaf/plugins/SNMPServer.java",
 		"xml": OPENAF_BUILD_HOME + "/src/openaf/plugins/XML.java",
-		"xls": OPENAF_BUILD_HOME + "/src/openaf/plugins/XLS.java",
+		//"xls": OPENAF_BUILD_HOME + "/src/openaf/plugins/XLS.java",
 		//"svn": OPENAF_BUILD_HOME + "/src/openaf/plugins/SVN.java",
 		"git": OPENAF_BUILD_HOME + "/src/openaf/plugins/GIT.java",
 		//"smb": OPENAF_BUILD_HOME + "/src/openaf/plugins/SMB.java",
