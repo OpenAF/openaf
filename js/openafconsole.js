@@ -59,7 +59,21 @@ function __desc(aClass, retList, noRecursive, javaMethods) {
 			constructors = classObj.getConstructors();
 		} catch(e) {
 			try {
-				classObj = java.lang.Class.forName("openaf.plugins." + aClassJava);
+				try {
+					classObj = java.lang.Class.forName("openaf.plugins." + aClassJava);
+				} catch(e) {
+					var ar = [];
+					Object.values(getOPackPaths()).map(r => {
+						$from(io.listFilenames(r))
+						.ends(".jar")
+						.select(r2 => {
+							ar.push(new java.net.URL("file://" + r2));
+						});
+					});
+					var cl = new java.net.URLClassLoader(ar, java.lang.Thread.currentThread().getContextClassLoader());
+					classObj = java.lang.Class.forName("openaf.plugins." + aClassJava, true, cl);
+				}
+				
 				methods = classObj.getMethods();
 				constructors = classObj.getConstructors();
 			} catch(e) {

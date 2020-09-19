@@ -875,33 +875,6 @@ test("LSH::LSH hashing", function() {
 	ow.test.assert(ow.format.string.lsHash(s1, s1) <= 200, true, "Problem with identical sentences on LSH hashing.");
 });
 
-test("XLS Plugin::simple creation test with table", function() {
-	io.rm("autoTestAll.xlsx");
-	plugin("XLS");
-	var xls = new XLS();
-	var sheet = xls.getSheet("testSheet");
-
-	var arr = [];
-	arr.push({"First": "AA1", "Last": "AA2"});
-	arr.push({"First": "BB1", "Last": "BB2"});
-	arr.push({"First": "CC1", "Last": "CC2"});
-
-	xls.setTable(sheet, "B", 2, arr);
-	xls.writeFile("autoTestAll.xlsx");
-	xls.close();
-});
-
-test("XLS Plugin::simple loading test with table", function() {
-	plugin("XLS");
-	var xls = new XLS("autoTestAll.xlsx");
-	var sheet = xls.getSheet("testSheet");
-
-	var arr = xls.getTable(sheet, true, "B", "2");
-	xls.close();
-	ow.test.assert(arr.table[1].First, "BB1", "Problem 1 with getting cell value");
-	ow.test.assert(arr.table[2].Last, "CC2", "Problem 2 with getting cell value");
-});
-
 test("Channels::Dumping the contents of a channel", function() {
 	var c = dumpLog();
 	ow.test.assert(c.length > 0, true, "No contents on the channel.");

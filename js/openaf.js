@@ -2215,6 +2215,12 @@ function plugin(aPlugin) {
 		if (String(e).indexOf("java.lang.ClassNotFoundException: SVN") >= 0) {
 			throw("The SVN plugin is no longer included. Please install the SVN oPack (\"opack install plugin-svn\").");
 		}
+		if (String(e).indexOf("java.lang.ClassNotFoundException: XLS") >= 0) {
+			throw("The XLS plugin is no longer included. Please install the XLS oPack (\"opack install plugin-xls\").");
+		}
+		if (String(e).indexOf("java.lang.ClassNotFoundException: DOC") >= 0) {
+			throw("The DOC plugin is no longer included. Please install the XLS oPack (\"opack install plugin-xls\").");
+		}
 	}
 }
 
