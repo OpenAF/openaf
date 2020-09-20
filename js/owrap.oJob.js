@@ -430,6 +430,26 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 	return res;
 };
 
+OpenWrap.oJob.prototype.__toEnvs = function(aMap) {
+	var res = {};
+	traverse(aMap, (aK, aV, aP, aO) => {
+		if (!isMap(aV) && !isArray(aV)) {
+			if (isNumber(aK)) {
+				res[aP.substr(1, aP.length) + "_" + (Number(aK) +1) ] = String(aV);
+			} else {
+				var mts = aP.match(/\[(\d+)\]/);
+				if (mts) {
+				res[aP.replace(/^\./, "").replace(/\[(\d+)\]/g, (r) => { return "_" + (Number(r.substr(1, r.length -2)) +1); }) + "_" + aK] = String(aV);
+				} else {
+				res[(aP != "" ? aP.substr(1, aP.length) + "_" : "") + aK] = String(aV); 
+				}
+			}
+		}
+	});
+	
+	return res;
+};
+
 OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	function _uniq(aSource) {
 		var t;
@@ -1755,6 +1775,14 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					res += "} catch(e) { throw e; $pyStop(); }";
 				}
 				break;
+			case "shell":
+				if (!res.startsWith("$sh().envs(")) {
+					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
+					var orig = String(res);
+					res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/)) + ", " + stringify(orig) + ").get(0);\n";
+					res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+					res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; }";
+				}
 			default:
 			}
 		}
