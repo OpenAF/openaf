@@ -508,10 +508,10 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 };
 
 OpenWrap.oJob.prototype.__loadFile = function(aFile) {
-	var res = {};
+	var res = {}, parent = this;
 
 	var fnDown = url => {
-		if (ow.oJob.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
 			return {
 				todo: [ "Unauthorized URL" ],
 				jobs: [ { name: "Unauthorized URL" } ]
@@ -520,7 +520,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 			return $rest({throwExceptions: true}).get(url);
 	}
 	var fnDownYAML = url => {
-		if (ow.oJob.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
 			return {
 				todo: [ "Unauthorized URL" ],
 				jobs: [ { name: "Unauthorized URL" } ]
@@ -694,7 +694,7 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptions
  */
 OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
 	this.loadFile(aFile, args, aId, isSubJob, aOptionsMap);
-	this.start(args, true, aId);
+	this.start(args, true, aId, isSubJob);
 };
 
 /**
@@ -1122,12 +1122,12 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 
 /**
  * <odoc>
- * <key>oJob.start(args, shouldStop, aId) : oJob</key>
+ * <key>oJob.start(args, shouldStop, aId, isSubJob) : oJob</key>
  * Starts the todo list. Optionally you can provide arguments to be used by each job.
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
+OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob) {
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, this.__expr, aId) : this.__expr;
 
 	this.running = true;
@@ -1304,7 +1304,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 		               ) {
 		               	  shouldStop = true;
 		               	  try {
-						      parent.stop();              		  
+						      if (!isSubJob) parent.stop();              		  
 		               	  } catch(e) {}
 					} 
 				} catch(e) { logErr(e); if (isDef(e) && isDef(e.javaException)) e.javaException.printStackTrace(); }
@@ -1333,7 +1333,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId) {
 	}
 
 	print("");
-	this.stop();
+	if (!isSubJob) this.stop();
 };
 
 /**

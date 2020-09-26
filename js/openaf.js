@@ -5726,28 +5726,28 @@ function deleteFromArray(anArray, anIndex) {
 
 /**
  * <odoc>
- * <key>oJobRunFile(aFile, args, aId, aOptionsMap)</key>
+ * <key>oJobRunFile(aFile, args, aId, aOptionsMap, isSubJob)</key>
  * Runs a oJob aFile with the provided args (arguments).
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-function oJobRunFile(aYAMLFile, args, aId, aOptionsMap) {
+function oJobRunFile(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
 	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
-	oo.runFile(aYAMLFile, args, aId, void 0, aOptionsMap);
+	oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap);
 }
 
 /**
  * <odoc>
- * <key>oJobRunFileAsync(aFile, args, aId, aOptionsMap) : oPromise</key>
+ * <key>oJobRunFileAsync(aFile, args, aId, aOptionsMap, isSubJob) : oPromise</key>
  * Runs a oJob aFile async with the provided args (arguments).
  * Optionally you can provide aId to segment these specific jobs.
  * Returns the corresponding promise.
  * </odoc>
  */
-function oJobRunFileAsync(aYAMLFile, args, aId, aOptionsMap) {
+function oJobRunFileAsync(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
 	return $do(() => {
 		var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
-		return oo.runFile(aYAMLFile, args, aId, void 0, aOptionsMap);
+		return oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap);
 	});
 }
 
