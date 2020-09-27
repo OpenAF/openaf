@@ -379,11 +379,11 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 
 /**
  * <odoc>
- * <key>ow.oJob.loadJSON(aJSON) : Object</key>
+ * <key>ow.oJob.loadJSON(aJSON, dontLoadTodos) : Object</key>
  * Loads aJSON oJob configuration and returns the processed map (with all includes processed).
  * </odoc>
  */
-OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
+OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 	if (!isObject(aJSON)) return {};
 	var res = aJSON;
 
@@ -413,26 +413,38 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON) {
 			}
 		}
 
+		var _includeLoaded = {};
 		if (isDef(res.include) && isArray(res.include)) {
-			var _includeLoaded = {};
 			for (var i in res.include) {
 				if (isUnDef(_includeLoaded[res.include[i]])) {
 					_includeLoaded[res.include[i]] = 1;
-					//if (res.include[i].match(/\.ya?ml$/i)) {
 					var f = this.__loadFile(res.include[i]);
 					if (isUnDef(f)) throw "Problem loading include '" + res.include[i] + "'.";
 					res = this.__merge(f, res);
-					//} else {
-					//	if (res.include[i].match(/\.js$/i)) load(res.include[i]);
-					//}
+				}
+			}
+		}
+		if (isDef(res.jobsInclude) && isArray(res.jobsInclude)) {
+			for (var i in res.jobsInclude) {
+				if (isUnDef(_includeLoaded[res.jobsInclude[i]])) {
+					_includeLoaded[res.jobsInclude[i]] = 1;
+					var f = this.__loadFile(res.jobsInclude[i], true);
+					if (isUnDef(f)) throw "Problem loading job include '" + res.jobsInclude[i] + "'.";
+					res = this.__merge(f, res);
 				}
 			}
 		}
 		
-		if (!(isArray(res.ojob)) && !(isArray(res.todo))) {
-			throw("ojob and todo entries need to be defined as arrays.");
+
+		if (!dontLoadTodos && !(isArray(res.jobs)) && !(isArray(res.todo))) {
+			throw("jobs and todo entries need to be defined as arrays.");
 		}
-	
+
+		if (dontLoadTodos && !(isArray(res.jobs))) {
+			throw("jobs entries need to be defined as arrays.");
+		}
+
+		if (dontLoadTodos) delete res.todo;
 		if (isUnDef(res.ojob)) res.ojob = {};
 	}
 
@@ -484,6 +496,13 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 
 	res.include = _uniq(res.include);
 
+	if (isDef(aJSONa.jobsInclude) && aJSONa.jobsInclude != null) 
+		res.jobsInclude = aJSONa.jobsInclude.concat(isDef(aJSONb.jobsInclude) ? aJSONb.jobsInclude : []);
+	else
+		res.jobsInclude = isDef(aJSONb.jobsInclude) ? aJSONb.jobsInclude : [];
+
+	res.jobsInclude = _uniq(res.jobsInclude);
+
 	if (isDef(aJSONa.jobs) && aJSONa.jobs != null) 
 		res.jobs = aJSONa.jobs.concat(isDef(aJSONb.jobs) ? aJSONb.jobs : []);
 	else
@@ -507,7 +526,7 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	return res;
 };
 
-OpenWrap.oJob.prototype.__loadFile = function(aFile) {
+OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 	var res = {}, parent = this;
 
 	var fnDown = url => {
@@ -591,7 +610,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile) {
 		}
 	}
 
-	return this.loadJSON(res);
+	return this.loadJSON(res, removeTodos);
 };
 
 /**
