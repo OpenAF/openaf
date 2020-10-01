@@ -460,9 +460,9 @@ OpenWrap.oJob.prototype.__toEnvs = function(aMap) {
 			} else {
 				var mts = aP.match(/\[(\d+)\]/);
 				if (mts) {
-				res[aP.replace(/^\./, "").replace(/\[(\d+)\]/g, (r) => { return "_" + (Number(r.substr(1, r.length -2)) +1); }) + "_" + aK] = String(aV);
+					res[aP.replace(/^\./, "").replace(/\[(\d+)\]/g, (r) => { return "_" + (Number(r.substr(1, r.length -2)) +1); }) + "_" + aK] = String(aV);
 				} else {
-				res[(aP != "" ? aP.substr(1, aP.length) + "_" : "") + aK] = String(aV); 
+					res[(aP != "" ? aP.substr(1, aP.length) + "_" : "") + aK] = String(aV); 
 				}
 			}
 		}
@@ -1795,35 +1795,41 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
 			switch(aJobTypeArgs.lang) {
+			case "js":
+				break;
 			case "python":
 				parent.python = true;
 				if (!res.startsWith("$pyStart();")) {
 					var orig = String(res);
 					res  = "$pyStart();";
 					res += "try { args = merge(args, $py(" + stringify(orig) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
-					res += "} catch(e) { throw e; $pyStop(); }";
+					res += "} catch(e) { throw e; $pyStop(); };\n";
 				}
 				break;
 			case "shell":
-				if (!res.startsWith("$sh().envs(")) {
+				if (!res.startsWith("var __res = $sh().envs(")) {
 					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
 					var orig = String(res);
-					res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/)) + ", " + stringify(orig) + ").get(0);\n";
+					res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
 					res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
-					res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; }";
+					res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 				}
+				break;
 			default:
 				if (isString(aJobTypeArgs.lang) && isDef(parent.__langs[aJobTypeArgs.lang])) {
-					if (!res.startsWith("$sh().envs(")) {
-						var m = parent.__langs[aJobTypeArgs.lang];
-						if (isDef(m) && isDef(m.shell)) {
-							aJobTypeArgs.shell = m.shell;
-						}
+					var m = parent.__langs[aJobTypeArgs.lang];
+					if (isDef(m) && isDef(m.shell)) {
+						aJobTypeArgs.shell = m.shell;
+					}
+				}
+				if (isString(aJobTypeArgs.lang) && isString(aJobTypeArgs.shell)) {
+					if (!res.startsWith("var __res = $sh().envs(")) {
+
 						aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
 						var orig = String(res);
-						res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/)) + ", " + stringify(orig) + ").get(0);\n";
+						res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
 						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
-						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; }";
+						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 					}
 				}
 			}

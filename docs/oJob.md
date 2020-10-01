@@ -65,6 +65,7 @@ Each job definition has the following possible entries:
 | from  | _string/array_ | _no_ | _The name of a job (or ordered list) whose execution will be prefixed (like a document header) with the current job execution (e.g. if you want all job executions to execute another job initially)._ |
 | to    | _string/array_ | _no_ | _The name of a job (or ordered list) whose execution will be suffixed (like a document footer) with the current job execution (e.g. if you want all job executions to execute another job when they end)._ | 
 | help  | _string_ | _no_ | _A help text to be presented whenever you execute "ojob -jobhelp 'My job'"_ |
+| lang  | _string_ | _no_ | _The executing language for the "exec" entry. By default languages 'js' (default), 'python' and 'shell' can be used but custom languages can be added using the ojob.langs entry or the typeArgs.langs entry. For 'js' and 'python' job arguments will be available in the "args" variable for other shell based languages job arguments will be converted to environment variables._ |
 
 ## Job types
 
@@ -74,6 +75,7 @@ The most used type of job is "simple". All job types, including "simple" have th
 |----------------|------|------------|-------------|
 | timeout | _number_ | _no_ | _The time interval, in milliseconds, for the entire job execution or between stopWhen function executions. If no stopWhen function is provided and the timeout time is exceeded the job will fail indicating that it exceed the timeout. _ |
 | stopWhen | _string_ | _no_ | _Function string that will be evaluated continuously or every timeout time interval. If the function returns true the current job execution will be terminated._ |
+| langs | _map_ | _no_ | _Map with lang (language name) and shell (language shell command) to be used as the executing language for the "exec" entry. Job arguments will be available as environment variables._ |
 
 Then for other types there are specific typeArgs available:
 
@@ -293,6 +295,7 @@ This is where you set specific settings on how the ojob should run. Here is a li
 | depsTimeout | _number_ | _If defined establishes a maximum time interval, in ms, that each job will wait for the corresponding job dependencies to be fullfilled. If the time is exceeded the corresponding job will fail._ |
 | conAnsi | _boolean_ | _Advanced option to turn off ansi characters use._ |
 | conWidth | _number_ | _Advanced option to override screen size detection._ |
+| langs | _array_ | List of maps with two entries: lang (a name) and shell (the command to execute). If the job has the "lang" entry it will invoke the "shell" command to execute the "exec" entry. Job arguments will be passed as environment variables._ |
 
 **Note**: Use _sequential = true_ and _numThreads = 1_ for a total sequential execution. Keep in mind that if _numThreads_ is not defined or greater than 1 multiple job executions can still occur despite _sequential = true_ (for example when the job args is an array). The sequential parameter will just ensure that jobs listed in the todo list are executed in the order of the todo list instead of being launched all in parallel.
 
