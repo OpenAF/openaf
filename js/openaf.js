@@ -165,7 +165,7 @@ function cprint(str, delim) { ansiStart(); print(colorify(str)); ansiStop(); }
  * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document.
  * </odoc>
  */
-function yprint(m, multidoc) { return print(af.toYAML(str, multidoc)); }
+function yprint(str, multidoc) { return print(af.toYAML(str, multidoc)); }
 
 /**
  * <odoc>
