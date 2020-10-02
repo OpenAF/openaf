@@ -161,11 +161,11 @@ function cprint(str, delim) { ansiStart(); print(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
- * <key>yprint(aObj)</key>
- * Prints aObj in YAML.
+ * <key>yprint(aObj, multidoc)</key>
+ * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document.
  * </odoc>
  */
-function yprint(str) { return print(af.toYAML(str)); }
+function yprint(m, multidoc) { return print(af.toYAML(str, multidoc)); }
 
 /**
  * <odoc>
@@ -276,11 +276,11 @@ function cprintErr(str) { ansiStart(); printErr(colorify(str)); ansiStop(); }
 
 /**
  * <odoc>
- * <key>yprintErr(aObj)</key>
- * Prints aObj in YAML to stderr.
+ * <key>yprintErr(aObj, multidoc)</key>
+ * Prints aObj in YAML to stderr. If multiDoc = true and aJson is an array the output will be multi-document.
  * </odoc>
  */
-function yprintErr(str) { return printErr(af.toYAML(str)); }
+function yprintErr(str, multidoc) { return printErr(af.toYAML(str, multidoc)); }
 
 /**
  * <odoc>
@@ -5726,28 +5726,28 @@ function deleteFromArray(anArray, anIndex) {
 
 /**
  * <odoc>
- * <key>oJobRunFile(aFile, args, aId, aOptionsMap)</key>
+ * <key>oJobRunFile(aFile, args, aId, aOptionsMap, isSubJob)</key>
  * Runs a oJob aFile with the provided args (arguments).
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-function oJobRunFile(aYAMLFile, args, aId, aOptionsMap) {
+function oJobRunFile(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
 	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
-	oo.runFile(aYAMLFile, args, aId, void 0, aOptionsMap);
+	oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap);
 }
 
 /**
  * <odoc>
- * <key>oJobRunFileAsync(aFile, args, aId, aOptionsMap) : oPromise</key>
+ * <key>oJobRunFileAsync(aFile, args, aId, aOptionsMap, isSubJob) : oPromise</key>
  * Runs a oJob aFile async with the provided args (arguments).
  * Optionally you can provide aId to segment these specific jobs.
  * Returns the corresponding promise.
  * </odoc>
  */
-function oJobRunFileAsync(aYAMLFile, args, aId, aOptionsMap) {
+function oJobRunFileAsync(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
 	return $do(() => {
 		var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
-		return oo.runFile(aYAMLFile, args, aId, void 0, aOptionsMap);
+		return oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap);
 	});
 }
 
@@ -5910,18 +5910,34 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 };
 /**
  * <odoc>
- * <key>AF.toYAML(aJson) : String</key>
- * Tries to dump aJson into a YAML string.
+ * <key>AF.toYAML(aJson, multiDoc) : String</key>
+ * Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array the output will be multi-document.
  * </odoc>
  */
-AF.prototype.toYAML = function(aJson) { loadJSYAML(); return jsyaml.dump(aJson); }
+AF.prototype.toYAML = function(aJson, multiDoc) { 
+	loadJSYAML(); 
+	if (isArray(aJson) && multiDoc) {
+		return aJson.map(y => jsyaml.dump(y)).join("\n---\n\n");
+	} else {
+		return jsyaml.dump(aJson); 
+	}
+}
 /**
  * <odoc>
  * <key>AF.fromYAML(aYaml) : Object</key>
  * Tries to parse aYaml into a javascript map.
  * </odoc>
  */
-AF.prototype.fromYAML = function(aYAML) { loadJSYAML(); if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); return jsyaml.load(aYAML); };
+AF.prototype.fromYAML = function(aYAML) { 
+	loadJSYAML(); 
+	if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); 
+	var res = jsyaml.loadAll(aYAML); 
+	if (isArray(res) && res.length == 1) {
+		return res[0];
+	} else {
+		return res;
+	}
+};
 
 /**
  * <odoc>
@@ -6066,11 +6082,11 @@ IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFile
 IO.prototype.readFileJSON = function(aJSONFile) { return jsonParse(io.readFileString(aJSONFile), true); }
 /**
  * <odoc>
- * <key>io.writeFileYAML(aYAMLFile, aObj)</key>
- * Tries to write a javascript aObj into a aYAMLFile.
+ * <key>io.writeFileYAML(aYAMLFile, aObj, multidoc)</key>
+ * Tries to write a javascript aObj into a aYAMLFile. If multiDoc = true and aJson is an array the output will be multi-document.
  * </odoc>
  */
-IO.prototype.writeFileYAML = function(aYAMLFile, aObj) { return io.writeFileString(aYAMLFile, af.toYAML(aObj)); };
+IO.prototype.writeFileYAML = function(aYAMLFile, aObj, multidoc) { return io.writeFileString(aYAMLFile, af.toYAML(aObj, multidoc)); };
 /**
  * <odoc>
  * <key>io.writeFileJSON(aJSONFile, aObj, aSpace)</key>
