@@ -1,0 +1,32 @@
+include:
+   - oJobTest.yaml
+
+jobs:
+   # ZIP tests
+   # --------------
+   - name: Sec::Init
+     exec: |
+       args.tests = require("autoTestAll.Sec.js");
+
+   - name: Sec::Sec basic functionality
+     from: Sec::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGetSet;
+
+   - name: Sec::Sec function functionality
+     from: Sec::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGetSetFn;
+
+   - name: Sec::Sec object functionality
+     from: Sec::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGetSetObj;
+
+todo:
+   # ZIP tests
+   # ------------
+   - Sec::Init
+   - Sec::Sec basic functionality
+   - Sec::Sec function functionality
+   - Sec::Sec object functionality
