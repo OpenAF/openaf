@@ -1,9 +1,149 @@
 // OpenWrap v2
 // Author: Nuno Aguiar
-// Server
+// Sec
 
 OpenWrap.sec = function() {
 	return ow.sec;
+};
+
+/**
+ * <odoc>
+ * <key>ow.sec.openSBuckets(aRepo, aMainSecret)</key>
+ * Opens aRepo SBucket using aMainSecret. 
+ * </odoc>
+ */
+OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret) {
+   var rep   = _$(aRepo, "aRepo").isString().default("");
+   aRepo = rep;
+   var isWin = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
+
+   if (rep != "") rep = "-" + rep;
+   var f = java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".yml";
+
+   $ch("___openaf_sbuckets" + rep).create(1, "file", {
+      file          : f,
+      yaml          : true,
+      key           : "sbucket"
+   });
+
+   if (io.fileExists(f) && !isWin) {
+      $sh("chmod a-rwx " + f)
+      .sh("chmod u+rw " + f)
+      .exec();
+   }
+
+   if (isUnDef(ow.sec._sb)) ow.sec._sb = {};
+   ow.sec._sb[aRepo] = new ow.sec.SBucket("___openaf_sbuckets" + rep, aMainSecret, "default", aMainSecret);
+};
+
+const $sec = function(aMainSecret, aRepo) {
+   _$(aMainSecret, "aMainSecret").isString().$_();
+   var rep   = _$(aRepo, "aRepo").isString().default("");
+   aRepo = rep;
+
+   if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret);
+
+   return {
+      get: (aKey, aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].getSecret(aBucket, aLockSecret, aKey);
+      },
+      getObj: (aKey, aExtraArgs, aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].getNewObj(aBucket, aLockSecret, aKey, aExtraArgs);
+      },
+      getFn: (aKey, aExtraArgs, aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].getNewFn(aBucket, aLockSecret, aKey, aExtraArgs);
+      },
+      set: (aKey, aObj, aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].setSecret(aBucket, aLockSecret, aKey, aObj);
+      },
+      setObj: (aBucket, aLockSecret, aKey, aObj, aArgs) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].setNewObj(aBucket, aLockSecret, aKey, aObj, aArgs);
+      },
+      setFn: (aBucket, aLockSecret, aKey, aFn, aArgs) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].setNewFn(aBucket, aLockSecret, aKey, aFn, aArgs);
+      },
+      unset: (aKey, aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].unsetSecret(aBucket, aLockSecret, aKey);
+      },
+      getBucket: (aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].getBucket(aBucket, aLockSecret);
+      },
+      setBucket: (aBucketString, aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         return ow.sec._sb[aRepo].setBucket(aBucket, aLockSecret, aBucketString);
+      }
+   };
+};
+
+/**
+ * <odoc>
+ * <key>ow.sec.closeSBuckets(aRepo)</key>
+ * Close a previously open aRepo SBucket.
+ * </odoc>
+ */
+OpenWrap.sec.prototype.closeSBuckets = function(aRepo) {
+   var rep   = _$(aRepo, "aRepo").isString().default("");
+   aRepo = rep;
+   if (rep != "") rep = "-" + rep;
+
+   $ch("___openaf_sbuckets" + rep).destroy();
+   if (isDef(ow.sec._sb[aRepo])) ow.sec._sb[aRepo] = void 0;
+};
+
+/**
+ * <odoc>
+ * <key>ow.sec.purgeSBuckets(aRepo)</key>
+ * Purge aRepo SBucket.
+ * </odoc>
+ */
+OpenWrap.sec.prototype.purgeSBuckets = function(aRepo) {
+   this.closeSBuckets(aRepo);
+
+   var rep   = _$(aRepo, "aRepo").isString().default("");
+   aRepo = rep;
+   if (rep != "") rep = "-" + rep;
+
+   var f = java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".db";
+
+   io.rm(f);
+};
+
+/**
+ * <odoc>
+ * <key>ow.sec.purgeMainSBuckets()</key>
+ * Purge the default SBucket.
+ * </odoc>
+ */
+OpenWrap.sec.prototype.purgeMainSBuckets = function() {
+   this.purgeSBuckets();
+};
+
+/**
+ * <odoc>
+ * <key>ow.sec.openMainSBuckets(aMainSecret)</key>
+ * Open the default SBucket using aMainSecret.
+ * </odoc>
+ */
+OpenWrap.sec.prototype.openMainSBuckets = function(aMainSecret) {
+   this.openSBuckets(void 0, aMainSecret);
+};
+
+/**
+ * <odoc>
+ * <key>ow.sec.closeMainSBuckets()</key>
+ * Close the default SBucket.
+ * </odoc>
+ */
+OpenWrap.sec.prototype.closeMainSBuckets = function() {
+   this.closeSBuckets();
 };
 
 /**
@@ -21,7 +161,7 @@ OpenWrap.sec.prototype.SBucket = function(aCh, aMainSecret, sBucket, aLockSecret
  
     this.sbucket     = _$(sBucket, "sBucket").isString().default(void 0);
     this.aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(void 0);
- 
+
     if ($ch().list().indexOf(this.aCh) < 0) throw ("aCh not found");
 };
  
@@ -89,7 +229,7 @@ OpenWrap.sec.prototype.SBucket.prototype.getSSecret = function(aKey) {
 OpenWrap.sec.prototype.SBucket.prototype.getSecretAs = function(sBucket, aLockSecret, aEncryptKey, aKey) {
     sBucket     = _$(sBucket, "sBucket").isString().default(this.sbucket);
     aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
- 
+
     var kv = $ch(this.aCh).get({ sbucket: sBucket});
     if (isDef(kv) && isDef(kv.v)) {
        var sb = __sbucket__decrypt(kv.v, this.s, aLockSecret);
@@ -120,12 +260,25 @@ OpenWrap.sec.prototype.SBucket.prototype.getSSecretAs = function(aEncryptKey, aK
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.createBucket = function(sBucket, aLockSecret) {
-    var sb = _$(sBucket, "sbucket").isString().$_();
-    aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
+   var sb = _$(sBucket, "sbucket").isString().$_();
+   aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
  
-    var obj = { name: sBucket, keys: {} };
+   if (isDef($ch(this.aCh).get({ sbucket: sBucket }))) return;
+   var obj = { name: sBucket, keys: {} };
  
-    $ch(this.aCh).set({ sbucket: sBucket }, { sbucket: sBucket, v: __sbucket__encrypt(obj, this.s, aLockSecret) });
+   $ch(this.aCh).set({ sbucket: sBucket }, { sbucket: sBucket, v: __sbucket__encrypt(obj, this.s, aLockSecret) });
+};
+
+/**
+ * <odoc>
+ * <key>ow.sec.SBucket.destroyBucket(sBucket)</key>
+ * Destroys a sBucket.
+ * </odoc>
+ */
+OpenWrap.sec.prototype.SBucket.prototype.destroyBucket = function(sBucket) {
+   var sb = _$(sBucket, "sbucket").isString().$_();
+
+   $ch(this.aCh).unset({ sbucket: sBucket });
 };
  
 /**
@@ -263,8 +416,8 @@ OpenWrap.sec.prototype.SBucket.prototype.setSBucket = function(aBucketString) {
  */
 OpenWrap.sec.prototype.SBucket.prototype.setNewObj = function(sBucket, aLockSecret, aKey, aObject, args) {
     this.setSecret(sBucket, aLockSecret, aKey, {
-       obj : aObject,
-       args: args
+       _obj : aObject,
+       _args: args
     });
 };
  
@@ -280,30 +433,32 @@ OpenWrap.sec.prototype.SBucket.prototype.setSNewObj = function(aKey, aObject, ar
  
 /**
  * <odoc>
- * <key>ow.sec.SBucket.getNewObj(sBucket, aLockSecret, aKey)</key>
+ * <key>ow.sec.SBucket.getNewObj(sBucket, aLockSecret, aKey, defaultArgs)</key>
  * For the sBucket with aLockSecret create an object with the arguments in aKey.
  * </odoc>
  */
-OpenWrap.sec.prototype.SBucket.prototype.getNewObj = function(sBucket, aLockSecret, aKey) {
+OpenWrap.sec.prototype.SBucket.prototype.getNewObj = function(sBucket, aLockSecret, aKey, defaultArgs) {
     var v = this.getSecret(sBucket, aLockSecret, aKey);
+    defaultArgs = _$(defaultArgs, "defaultArgs").isMap().default({});
+
     var ar = [];
-    if (isMap(v.args)) {
+    if (isMap(v._args)) {
        var margs;
        try {
-          margs = $fnDef4Help(v.obj);
+          margs = $fnDef4Help(v._obj);
        } catch(e) {
-          margs = $fnDef4Help(v.obj + "." + v.obj);
+          margs = $fnDef4Help(v._obj + "." + v._obj);
        }
        margs.map(a => {
-          var vv = (isDef(v.args[a]) ? v.args[a] : void 0);
+          var vv = (isDef(v._args[a]) ? v._args[a] : defaultArgs[a]);
           if (vv == void 0) vv = "void 0";
           if (isString(vv)) vv = stringify(vv, void 0, "");
           ar.push(vv);
        });
     } else {
-       ar = v.args;
+       ar = v._args;
     }
-    return af.eval("new " + v.obj + "(" + ar.join(", ") + ")");
+    return af.eval("new " + v._obj + "(" + ar.join(", ") + ")");
 };
  
 /**
@@ -324,8 +479,8 @@ OpenWrap.sec.prototype.SBucket.prototype.getSNewObj = function(aKey) {
  */
 OpenWrap.sec.prototype.SBucket.prototype.setNewFn = function(sBucket, aLockSecret, aKey, aFn, args) {
     this.setSecret(sBucket, aLockSecret, aKey, {
-       fn  : aFn,
-       args: args
+       _fn  : aFn,
+       _args: args
     });
 };
  
@@ -341,26 +496,28 @@ OpenWrap.sec.prototype.SBucket.prototype.setSNewFn = function(aKey, aFn, args) {
  
 /**
  * <odoc>
- * <key>ow.sec.SBucket.getNewFn(sBucket, aLockSecret, aKey)</key>
+ * <key>ow.sec.SBucket.getNewFn(sBucket, aLockSecret, aKey, defaultArgs)</key>
  * For the sBucket with aLockSecret will invoke a function and set arguments using aKey.
  * </odoc>
  */
-OpenWrap.sec.prototype.SBucket.prototype.getNewFn = function(sBucket, aLockSecret, aKey) {
+OpenWrap.sec.prototype.SBucket.prototype.getNewFn = function(sBucket, aLockSecret, aKey, defaultArgs) {
     var v = this.getSecret(sBucket, aLockSecret, aKey);
+    defaultArgs = _$(defaultArgs, "defaultArgs").isMap().default({});
+
     var ar = [];
-    if (isMap(v.args)) {
+    if (isMap(v._args)) {
        var margs;
-       margs = $fnDef4Help(v.fn);
+       margs = $fnDef4Help(v._fn);
        margs.map(a => {
-          var vv = (isDef(v.args[a]) ? v.args[a] : void 0);
+          var vv = (isDef(v._args[a]) ? v._args[a] : defaultArgs[a]);
           if (vv == void 0) vv = "void 0";
           if (isString(vv)) vv = stringify(vv, void 0, "");
           ar.push(vv);
        });
     } else {
-       ar = v.args;
+       ar = v._args;
     }
-    return af.eval(v.fn + "(" + ar.join(", ") + ")");
+    return af.eval(v._fn + "(" + ar.join(", ") + ")");
 };
  
 /**
