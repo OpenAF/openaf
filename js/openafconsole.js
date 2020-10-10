@@ -10,7 +10,7 @@ var CONSOLESEPARATOR = "-- ";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|view|sql|esql|dsql|pin";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|view|sql|esql|dsql|pin|multi";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "af.encryptText();",
@@ -587,6 +587,7 @@ function __help(aTerm) {
 		__outputConsoleComments("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
 		__outputConsoleComments("table    Tries to show the command result array as an ascii table.");
 		__outputConsoleComments("view     Tries to show the command result object as an ascii table.");
+		__outputConsoleComments("multi    Turns on or off the entry of multiline expressions (default on)");
 		__outputConsoleComments("clear    Tries to clear the screen.");
 		__outputConsoleComments("purge    Purge all the command history");
 		__outputConsoleComments("[others] Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
@@ -750,6 +751,19 @@ function __table(aCmd) {
 	return false;
 }
 
+function __multi(aCmd) {
+	if (aCmd.match(/^off$|^0$/i)) { multiCommand = false; return; }
+	if (aCmd.match(/^on$|^1$/i)) { multiCommand = true; return; }
+	if (aCmd == "") {
+		if (multiCommand) {
+			__outputConsoleComments("Multi-line is active.");
+		} else {
+			__outputConsoleComments("Multi-line is not active.");
+		}
+		return true;
+	}
+}
+
 function __view(aCmd, fromCommand, shouldClear) {
 	if (aCmd.match(/^off$|^0$/i) && fromCommand) { viewCommand = false; return; }
 	if (aCmd.match(/^on$|^1$/i) && fromCommand) { viewCommand = true; return; }
@@ -848,7 +862,11 @@ function __processCmdLine(aCommand, returnOnly) {
 			if (aCommand.match(/^view(?: +|$)/)) {
 				internalCommand = true;
 				__view(aCommand.replace(/^view */, ""), true);
-			}						
+			}	
+			if (aCommand.match(/^multi(?: +|$)/)) {
+				internalCommand = true;
+				__multi(aCommand.replace(/^multi */, ""), true);
+			}							
 			if (aCommand.match(/^beautify(?: +|$)/)) {
 				internalCommand = true;
 				__beautify(aCommand.replace(/^beautify */, ""));
@@ -1133,6 +1151,7 @@ var colorCommand = true;
 var pauseCommand = true;
 var watchCommand = false;
 var viewCommand = true;
+var multiCommand = true;
 var watchLine = "";
 var __previousAnsiFlag = __ansiflag;
 
@@ -1241,9 +1260,30 @@ while(cmd != "exit") {
 			if (isUnDef(watchresult)) watchresult = "";
 			if (beautifyCommand) watchresult = String(stringify(watchresult)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
 		} catch(e) { watchresult = "ERROR: " + e.message; watchCommand = false; }
-		cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ").trim();
-	} else {
+		//cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ").trim();
+		print("[" + watchresult + " ]\n");
+	}
+	if (!multiCommand) {
 		cmd = con.readLinePrompt(__pinprefix + "> ").trim();
+	} else {
+		cmd = askN(t => {
+			if (t.length > 0) 
+				return __pinprefix + "| ";
+			else
+				return __pinprefix + "> ";
+		}, t => {
+			if (t.endsWith("\n\n") || RESERVEDWORDS.split("|").indexOf(t.trim().split(/ +/)[0]) >= 0) return true;
+			try {
+				new Function(t);
+				return true;
+			} catch(e) {
+				if (String(e).startsWith("SyntaxError:")) {
+					return false;
+				} else {
+					return true;
+				}
+			}
+		}, con).trim();
 	}
 	
 	if (cmd == "") {
