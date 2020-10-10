@@ -33,51 +33,137 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret) {
    }
 
    if (isUnDef(ow.sec._sb)) ow.sec._sb = {};
+   if (isUnDef(aMainSecret)) {
+      var ff = java.lang.System.getProperty("user.home") + "/.openaf-sec";
+      if (io.fileExists(ff)) {
+         aMainSecret = io.readFileString(ff);
+      } else {
+         aMainSecret = af.encrypt(sha512(genUUID()));
+         io.writeFileString(ff, aMainSecret);
+      }
+   }
    ow.sec._sb[aRepo] = new ow.sec.SBucket("___openaf_sbuckets" + rep, aMainSecret, "default", aMainSecret);
 };
 
-const $sec = function(aMainSecret, aRepo) {
-   _$(aMainSecret, "aMainSecret").isString().$_();
+/**
+ * <odoc>
+ * <key>$sec.$sec(aRepo, dBucket, dLockSecret, aMainSecret) : $sec</key>
+ * Shortcut for acessing ow.sec.SBuckets given aMainSecret and, optionally, aRepo. A default dBucket and the corresponding
+ * dLockSecret can be provided.
+ * </odoc>
+ */
+const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
+   dBucket     = _$(dBucket, "dBucket").isString().default(void 0);
+   dLockSecret = _$(dLockSecret, "dLockSecret").isString().default("aMainSecret");
    var rep   = _$(aRepo, "aRepo").isString().default("");
    aRepo = rep;
 
    if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret);
 
    return {
+      /**
+       * <odoc>
+       * <key>$sec.get(aKey, aBucket, aLockSecret) : Object</key>
+       * Retrieves the secret object/string for aKey. Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
       get: (aKey, aBucket, aLockSecret) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].getSecret(aBucket, aLockSecret, aKey);
       },
+      /**
+       * <odoc>
+       * <key>$sec.getObj(aKey, aExtraArgs, aBucket, aLockSecret) : Object</key>
+       * Creates a new instance of an object using the secret arguments for aKey with non-secret aExtraArgs map (arguments should have
+       * the same name as the constructor help parameters). Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
       getObj: (aKey, aExtraArgs, aBucket, aLockSecret) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].getNewObj(aBucket, aLockSecret, aKey, aExtraArgs);
       },
+      /**
+       * <odoc>
+       * <key>$sec.getFn(aKey, aExtraArgs, aBucket, aLockSecret) : Object</key>
+       * Invokes a function using the secret arguments for aKey with non-secret aExtraArgs map (arguments should have
+       * the same name as the function help parameters). Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
       getFn: (aKey, aExtraArgs, aBucket, aLockSecret) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].getNewFn(aBucket, aLockSecret, aKey, aExtraArgs);
       },
+      /**
+       * <odoc>
+       * <key>$sec.set(aKey, aObj, aBucket, aLockSecret) : Object</key>
+       * Sets the secret aObj map/string associating it with aKey. Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
       set: (aKey, aObj, aBucket, aLockSecret) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].setSecret(aBucket, aLockSecret, aKey, aObj);
       },
-      setObj: (aBucket, aLockSecret, aKey, aObj, aArgs) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+      /**
+       * <odoc>
+       * <key>$sec.setObj(aKey, aObj, aArgs, aBucket, aLockSecret) : Object</key>
+       * Sets secret aArgs (map with the arguments names on the aObj constructor help)) for constructing aObj (string).
+       * Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
+      setObj: (aKey, aObj, aArgs, aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].setNewObj(aBucket, aLockSecret, aKey, aObj, aArgs);
       },
-      setFn: (aBucket, aLockSecret, aKey, aFn, aArgs) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+      /**
+       * <odoc>
+       * <key>$sec.setFn(aKey, aFn, aArgs, aBucket, aLockSecret) : Object</key>
+       * Sets secret aArgs (map with the arguments names on the aFn help)) for calling aFn (string).
+       * Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
+      setFn: (aKey, aFn, aArgs, aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].setNewFn(aBucket, aLockSecret, aKey, aFn, aArgs);
       },
+      /**
+       * <odoc>
+       * <key>$sec.unset(aKey, aBucket, aLockSecret) : Object</key>
+       * Unsets aKey for a SBucket. Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
       unset: (aKey, aBucket, aLockSecret) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].unsetSecret(aBucket, aLockSecret, aKey);
       },
+      /**
+       * <odoc>
+       * <key>$sec.getBucket(aBucket, aLockSecret) : String</key>
+       * Retrieves a encrypted SBucket string to be transported to another SBucket repo. 
+       * Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
       getBucket: (aBucket, aLockSecret) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].getBucket(aBucket, aLockSecret);
       },
+      /**
+       * <odoc>
+       * <key>$sec.setBucket(aBucketString, aBucket, aLockSecret) : String</key>
+       * Sets an encrypted SBucket string transported from another SBucket repo (the aLockSecret should be equal)
+       * Optionally you can provide a specific aBucket and the corresponding aLockSecret.
+       * </odoc>
+       */
       setBucket: (aBucketString, aBucket, aLockSecret) => {
-         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(aMainSecret);
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].setBucket(aBucket, aLockSecret, aBucketString);
       }
    };
@@ -168,9 +254,9 @@ OpenWrap.sec.prototype.SBucket = function(aCh, aMainSecret, sBucket, aLockSecret
 const __sbucket__encrypt = function(aObj, aMainKey, aKey) {
     var mk; 
     try {
-       mk = af.decrypt(aKey, sha512(aMainKey).substr(0, 16));
+       mk = af.decrypt(Packages.openaf.AFCmdBase.afc.dIP(aKey), sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16));
     } catch(e) {
-       mk = aKey;
+       mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
     }
     var s = af.encrypt(stringify(isMap(aObj) ? sortMapKeys(aObj) : aObj, void 0, ""), sha512(mk).substr(0, 16));
     return af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(s)));
@@ -179,9 +265,9 @@ const __sbucket__encrypt = function(aObj, aMainKey, aKey) {
 const __sbucket__decrypt = function(aObj, aMainKey, aKey) {
     var mk; 
     try {
-       mk = af.decrypt(aKey, sha512(aMainKey).substr(0, 16));
+       mk = af.decrypt(Packages.openaf.AFCmdBase.afc.dIP(aKey), sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16));
     } catch(e) {
-       mk = aKey;
+       mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
     }
     var s = af.fromBytes2String(af.fromBase64(aObj));
     return jsonParse(af.decrypt(s, sha512(mk).substr(0, 16)));

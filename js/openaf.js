@@ -6395,6 +6395,11 @@ const $fnM = (aFnName, aMap) => {
 	}
 }
 
+var $sec = function() { 
+	ow.loadSec(); 
+	return $sec.apply(this, arguments);
+}
+
 /**
  * <odoc>
  * <key>$channels(aChannel)</key>
@@ -7517,7 +7522,7 @@ const $sh = function(aString) {
 const $ssh = function(aMap) {
 	/**
 	 * <odoc>
-	 * <key>$ssh.ssh(aMap) : $ssh</key>
+	 * <key>$ssh.$ssh(aMap) : $ssh</key>
 	 * Builds an object to allow access through ssh. aMap should be a ssh string with the format: ssh://user:pass@host:port/identificationKey?timeout=1234&amp;compression=true or
 	 * a map with the keys: host, port, login, pass, id, compress and timeout. See "help SSH.SSH" for more info.
 	 * </odoc>
