@@ -6400,6 +6400,32 @@ var $sec = function() {
 	return $sec.apply(this, arguments);
 }
 
+const ask = (aPrompt, aMask) => {
+        aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
+ 	plugin("Console");
+	return (new Console()).readLinePrompt(aPrompt, aMask);
+}
+
+const ask1 = (aPrompt, allowed) => {
+	plugin("Console");
+        if (isDef(aPrompt)) printnl(aPrompt);
+	return (new Console()).readChar(allowed);
+}
+
+const askN = (aPromptFn, aStopFn) => {
+        aStopFn = _$(aStopFn, "aStopFn").isFunction().default( text => {
+        	return text.match(/\n\n\n$/);
+        });
+        if (isString(aPromptFn)) aPromptFn = new Function("return " + aPromptFn);
+	plugin("Console");
+	var r = "";
+        do {
+ 	  var l = (new Console()).readLinePrompt(aPromptFn(r));
+          r += l + "\n";
+        } while(!aStopFn(r)); 
+	return r;
+}
+
 /**
  * <odoc>
  * <key>$channels(aChannel)</key>
