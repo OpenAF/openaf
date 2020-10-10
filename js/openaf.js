@@ -6400,29 +6400,51 @@ var $sec = function() {
 	return $sec.apply(this, arguments);
 }
 
-const ask = (aPrompt, aMask) => {
+/**
+ * <odoc>
+ * <key>ask(aPrompt, aMask) : String</key>
+ * Stops for user interaction prompting aPrompt waiting for an entire line of characters and, optionally, masking the user input with aMask (e.g. "*").
+ * Returns the user input.
+ * </odoc>
+ */
+const ask = (aPrompt, aMask, _con) => {
         aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
- 	plugin("Console");
-	return (new Console()).readLinePrompt(aPrompt, aMask);
+ 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
+	return _con.readLinePrompt(aPrompt, aMask);
 }
 
-const ask1 = (aPrompt, allowed) => {
-	plugin("Console");
-        if (isDef(aPrompt)) printnl(aPrompt);
-	return (new Console()).readChar(allowed);
+/**
+ * <odoc>
+ * <key>ask1(aPrompt, allowed) : String</key>
+ * Stops for user interaction prompting aPrompt waiting for a single character within the allowed string (a set of characters).
+ * Returns the user input.
+ * </odoc>
+ */
+const ask1 = (aPrompt, allowed, _con) => {
+	if (isDef(aPrompt)) printnl(aPrompt);
+	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
+	return _con.readChar(allowed);
 }
 
-const askN = (aPromptFn, aStopFn) => {
-        aStopFn = _$(aStopFn, "aStopFn").isFunction().default( text => {
-        	return text.match(/\n\n\n$/);
-        });
-        if (isString(aPromptFn)) aPromptFn = new Function("return " + aPromptFn);
-	plugin("Console");
+/**
+ * <odoc>
+ * <key>askN(aPromptFn, aStopFn) : String</key>
+ * Stops for a multi-line user interaction prompting, for each line, the result of calling aPromptFn that receives the current user input 
+ * (if a string is provided it will default to a function that returns that string). The interaction will stop when aStopFn function, that receives the current
+ * user input as an argument, returns true (if the function is not provided it will default to 3 new lines).
+ * </odoc>
+ */
+const askN = (aPromptFn, aStopFn, _con) => {
+	aStopFn = _$(aStopFn, "aStopFn").isFunction().default(text => {
+		return text.match(/\n\n\n$/);
+	});
+	if (isString(aPromptFn)) aPromptFn = new Function("return " + aPromptFn);
+	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	var r = "";
-        do {
- 	  var l = (new Console()).readLinePrompt(aPromptFn(r));
-          r += l + "\n";
-        } while(!aStopFn(r)); 
+	do {
+		var l = _con.readLinePrompt(aPromptFn(r));
+		r += l + "\n";
+	} while (!aStopFn(r));
 	return r;
 }
 
