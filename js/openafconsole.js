@@ -13,7 +13,7 @@ var CONSOLEPROFILE = ".openaf-console_profile";
 var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|view|sql|esql|dsql|pin|multi";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
-	"encryptText": "askEncrypt();",
+	"encryptText": "print(\"Encrypted text: \" + askEncrypt(\"Enter text: \"));",
 	"sh": "sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/sh \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")+(!ow.format.isWindows()?\" && stty -icanon min 1 -echo 2>/dev/null\":\"\"),void 0,void 0,true);void 0;",
     "ojob": "(()=>{var f = __aliasparam.split(\" \"); var o = processExpr(\" \", false, __aliasparam); delete o[f[0]]; oJobRunFile(f[0], o);})()"
 };
