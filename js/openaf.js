@@ -6408,9 +6408,20 @@ var $sec = function() {
  * </odoc>
  */
 const ask = (aPrompt, aMask, _con) => {
-        aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
+    aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
  	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	return _con.readLinePrompt(aPrompt, aMask);
+}
+
+/**
+ * <odoc>
+ * <key>askEncrypt(aPrompt) : String</key>
+ * Similar to ask but the return user input will be encrypted.
+ * </odoc>
+ */
+const askEncrypt = (aPrompt, _con) => {
+	aPrompt = _$(aPrompt).isString().default(": ");
+    return af.encrypt(ask(aPrompt, String.fromCharCode(7), _con));
 }
 
 /**
