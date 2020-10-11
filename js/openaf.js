@@ -6421,7 +6421,7 @@ const ask = (aPrompt, aMask, _con) => {
  */
 const askEncrypt = (aPrompt, _con) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
-    return af.encrypt(ask(aPrompt, String.fromCharCode(7), _con));
+    return af.encrypt(ask(aPrompt, String.fromCharCode(0), _con));
 }
 
 /**
