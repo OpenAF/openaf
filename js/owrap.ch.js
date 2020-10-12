@@ -1140,6 +1140,146 @@ OpenWrap.ch.prototype.__types = {
 			delete this.__channels[aName][id];
 		}
 	},	
+	// File implementation
+	/**
+	 * <odoc>
+	 * <key>ow.ch.types.file</key>
+	 * This OpenAF implementation implements a simple channel on a single JSON or YAML file. The creation options are:\
+	 * \
+	 *    - file      (String)  The filepath to the JSON or YAML file to use\
+	 *    - yaml      (Boolean) Use YAML instead of JSON (defaults to false)\
+	 *    - compact   (Boolean) If JSON and compact = true the JSON format will be compacted (defaults to false or shouldCompress option)\
+	 *    - multipart (Boolean) If YAML and multipart = true the YAML file will be multipart\
+	 *    - key       (String)  If a key contains "key" it will be replaced by the "key" value\
+	 *    - multipath (Boolean) Supports string keys with paths (e.g. ow.obj.setPath) (defaults to false)\
+	 * \
+	 * </odoc>
+	 */
+	//
+	file: {
+		__channels: {},
+		__r: (m) => {
+			var r = {};
+			if (!io.fileExists(m.file)) return r;
+
+			if (m.yaml) {
+				r = io.readFileYAML(m.file, m.multipart);
+			} else {
+				r = io.readFileJSON(m.file);
+			}
+
+			if (!isMap(r)) r = {};
+			return r;
+		},
+		__w: (m, o) => {
+			if (m.yaml) {
+				io.writeFileYAML(m.file, o, m.multipart);
+			} else {
+				io.writeFileJSON(m.file, o);
+			}
+		},
+		create       : function(aName, shouldCompress, options) {
+			ow.loadObj();
+			options = _$(options).isMap().default({});
+			this.__channels[aName] = {};
+			this.__channels[aName].compact   = _$(options.compact, "options.compact").isBoolean().default(shouldCompress);
+			this.__channels[aName].file      = _$(options.file, "options.file").isString().$_();
+			this.__channels[aName].yaml      = _$(options.yaml, "options.yaml").isBoolean().default(false);
+			this.__channels[aName].multipart = _$(options.multipart, "options.multipart").isBoolean().default(false);
+			this.__channels[aName].multipath = _$(options.multipath, "options.multipath").isBoolean().default(false);
+			this.__channels[aName].key       = _$(options.key, "options.key").isString().default(void 0);
+		},
+		destroy      : function(aName) {
+			delete this.__channels[aName];
+		},
+		size         : function(aName) {
+			return Object.keys(this.__r(this.__channels[aName])).length;
+		},
+		forEach      : function(aName, aFunction) {
+			var m = this.__r(this.__channels[aName]);
+			Object.keys(m).map(k => {
+				try { aFunction(k, m[k]) } catch(e) {};
+			});
+		},
+		getAll      : function(aName, full) {
+			var m = this.__r(this.__channels[aName]);
+			return Object.values(m);
+		},
+		getKeys      : function(aName, full) {
+			var m = this.__r(this.__channels[aName]);
+			return Object.keys(m);
+		},
+		getSortedKeys: function(aName, full) {
+			var m = this.__r(this.__channels[aName]);
+			var res = Object.keys(m); 
+			return res;	
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res;
+			res = this.get(aName, aK);
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp);
+			}
+			return void 0;
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var m = this.__r(this.__channels[aName]);
+			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
+			var id = isDef(aK.key)   ? aK.key   : stringify(aK, void 0, "");
+			if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+				ow.obj.setPath(m, id, isDef(aV.value) ? aV.value : aV);
+			} else {
+				m[id]  = isDef(aV.value) ? aV.value : aV;
+			}
+			this.__w(this.__channels[aName], m);
+			
+			return aK;
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj();
+			for(var i in aVs) {
+				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj();
+			for(var i in aVs) {
+				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
+			}
+		},		
+		get          : function(aName, aK) {
+			var m = this.__r(this.__channels[aName]);
+			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
+			var id = isDef(aK.key)   ? aK.key   : stringify(aK, void 0, "");
+			if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+				return ow.obj.getPath(m, id);
+			} else {
+				return m[id];
+			}
+		},
+		pop          : function(aName) {
+			var elems = this.getSortedKeys(aName);
+			var elem = elems[elems.length - 1];
+			return elem;
+		},
+		shift        : function(aName) {
+			var elems = this.getSortedKeys(aName); 
+			var elem = elems[0];
+			return elem;
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var m = this.__r(this.__channels[aName]);
+			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
+			var id = isDef(aK.key)   ? aK.key   : stringify(aK, void 0, "");
+			delete m[id];
+			if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+				ow.obj.setPath(m, id, void 0);
+			} else {
+				delete m[id];
+			}
+			this.__w(this.__channels[aName], m);
+		}
+	},	
 	// Remote channel implementation
 	//
 	remote: {

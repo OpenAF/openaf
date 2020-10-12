@@ -15,4 +15,5 @@ include:
 - autoTestAll.Obj.yaml   
 - autoTestAll.JMX.yaml
 - autoTestAll.ZIP.yaml
+- autoTestAll.Sec.yaml
 - autoTestAll.oJob.yaml

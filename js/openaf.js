@@ -3772,6 +3772,13 @@ const ow = new OpenWrap();
 OpenWrap.prototype.loadDev = function() { loadCompiledLib("owrap_dev_js"); if (isUnDef(ow.dev)) { ow.dev = new OpenWrap.dev(); pods.declare("ow.dev", ow.dev); }; return ow.dev; };
 /**
  * <odoc>
+ * <key>ow.loadSec()</key>
+ * Loads OpenWrap sec functionality. Basically functions for sec.
+ * </odoc>
+ */
+OpenWrap.prototype.loadSec = function() { loadCompiledLib("owrap_sec_js"); if (isUnDef(ow.sec)) { ow.sec = new OpenWrap.sec(); pods.declare("ow.sec", ow.sec); }; return ow.sec; };
+/**
+ * <odoc>
  * <key>ow.loadFormat()</key>
  * Loads OpenWrap format functionality. Basically functions to help with the formatting of strings, numbers, dates, etc...
  * </odoc>
@@ -6388,6 +6395,70 @@ const $fnM = (aFnName, aMap) => {
 	}
 }
 
+var $sec = function() { 
+	ow.loadSec(); 
+	return $sec.apply(this, arguments);
+}
+
+/**
+ * <odoc>
+ * <key>ask(aPrompt, aMask) : String</key>
+ * Stops for user interaction prompting aPrompt waiting for an entire line of characters and, optionally, masking the user input with aMask (e.g. "*").
+ * Returns the user input.
+ * </odoc>
+ */
+const ask = (aPrompt, aMask, _con) => {
+    aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
+ 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
+	return _con.readLinePrompt(aPrompt, aMask);
+}
+
+/**
+ * <odoc>
+ * <key>askEncrypt(aPrompt) : String</key>
+ * Similar to ask but the return user input will be encrypted.
+ * </odoc>
+ */
+const askEncrypt = (aPrompt, _con) => {
+	aPrompt = _$(aPrompt).isString().default(": ");
+    return af.encrypt(ask(aPrompt, String.fromCharCode(0), _con));
+}
+
+/**
+ * <odoc>
+ * <key>ask1(aPrompt, allowed) : String</key>
+ * Stops for user interaction prompting aPrompt waiting for a single character within the allowed string (a set of characters).
+ * Returns the user input.
+ * </odoc>
+ */
+const ask1 = (aPrompt, allowed, _con) => {
+	if (isDef(aPrompt)) printnl(aPrompt);
+	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
+	return _con.readChar(allowed);
+}
+
+/**
+ * <odoc>
+ * <key>askN(aPromptFn, aStopFn) : String</key>
+ * Stops for a multi-line user interaction prompting, for each line, the result of calling aPromptFn that receives the current user input 
+ * (if a string is provided it will default to a function that returns that string). The interaction will stop when aStopFn function, that receives the current
+ * user input as an argument, returns true (if the function is not provided it will default to 3 new lines).
+ * </odoc>
+ */
+const askN = (aPromptFn, aStopFn, _con) => {
+	aStopFn = _$(aStopFn, "aStopFn").isFunction().default(text => {
+		return text.match(/\n\n\n$/);
+	});
+	if (isString(aPromptFn)) aPromptFn = new Function("return " + aPromptFn);
+	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
+	var r = "";
+	do {
+		var l = _con.readLinePrompt(aPromptFn(r));
+		r += l + "\n";
+	} while (!aStopFn(r));
+	return r;
+}
+
 /**
  * <odoc>
  * <key>$channels(aChannel)</key>
@@ -7510,7 +7581,7 @@ const $sh = function(aString) {
 const $ssh = function(aMap) {
 	/**
 	 * <odoc>
-	 * <key>$ssh.ssh(aMap) : $ssh</key>
+	 * <key>$ssh.$ssh(aMap) : $ssh</key>
 	 * Builds an object to allow access through ssh. aMap should be a ssh string with the format: ssh://user:pass@host:port/identificationKey?timeout=1234&amp;compression=true or
 	 * a map with the keys: host, port, login, pass, id, compress and timeout. See "help SSH.SSH" for more info.
 	 * </odoc>

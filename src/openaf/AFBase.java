@@ -85,7 +85,7 @@ public class AFBase extends ScriptableObject {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private static final String K = "openappframework";
+	private static String K = "openappframework";
 
 	public AFBase() {
 		super();
@@ -103,6 +103,17 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public static Object fromJson(String in) throws Exception {
 		return jsonParse(in, false);
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.setK(aK)</key>
+	 * Sets the current 16 bytes encrypt/decrypt key.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static void setK(String k) {
+		AFBase.K = k;
 	}
 
 	/**
@@ -626,7 +637,7 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public static String encrypt(String aString, Object key) throws Exception {
-		if (key == null || key instanceof Undefined) key = "openappframework";
+		if (key == null || key instanceof Undefined) key = AFBase.K;
 		if (key instanceof String) key = ((String) key).getBytes();
 		if (((byte[]) key).length < 16) throw new Exception("Invalid key size. Key should be, at least, 16 bytes."); 
 
@@ -651,7 +662,7 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public static String decrypt(String aString, Object key) throws Exception {
-		if (key == null || key instanceof Undefined) key = "openappframework"; 
+		if (key == null || key instanceof Undefined) key = AFBase.K; 
 		if (key instanceof String) key = ((String) key).getBytes();
 		
 		if (((byte[]) key).length < 16) throw new Exception("Invalid key size. Key should be, at least, 16 bytes."); 
