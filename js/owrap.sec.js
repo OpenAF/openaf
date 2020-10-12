@@ -144,6 +144,33 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
       },
       /**
        * <odoc>
+       * <key>$sec.unsetBucket(aBucket)</key>
+       * Unsets aBucket from the current repo.
+       * </odoc>
+       */
+      unsetBucket: (aBucket) => {
+         return ow.sec._sb[aRepo].destroyBucket(aBucket);
+      },
+      /**
+       * <odoc>
+       * <key>$sec.unsetRepo()</key>
+       * Unsets the current repo.
+       * </odoc>
+       */
+      unsetRepo: () => {
+         return ow.sec.purgeSBuckets(aRepo);
+      },
+      /**
+       * <odoc>
+       * <key>$sec.close() : Object</key>
+       * Close the current repository.
+       * </odoc>
+       */
+      close: () => {
+         return ow.sec.closeSBuckets(aRepo);
+      },
+      /**
+       * <odoc>
        * <key>$sec.getBucket(aBucket, aLockSecret) : String</key>
        * Retrieves a encrypted SBucket string to be transported to another SBucket repo. 
        * Optionally you can provide a specific aBucket and the corresponding aLockSecret.
@@ -191,13 +218,13 @@ OpenWrap.sec.prototype.closeSBuckets = function(aRepo) {
  * </odoc>
  */
 OpenWrap.sec.prototype.purgeSBuckets = function(aRepo) {
-   this.closeSBuckets(aRepo);
+   try { this.closeSBuckets(aRepo); } catch(e) {}
 
    var rep   = _$(aRepo, "aRepo").isString().default("");
    aRepo = rep;
    if (rep != "") rep = "-" + rep;
 
-   var f = java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".db";
+   var f = java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".yml";
 
    io.rm(f);
 };
