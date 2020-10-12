@@ -55,6 +55,18 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret) {
 const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
    dBucket     = _$(dBucket, "dBucket").isString().default(void 0);
    dLockSecret = _$(dLockSecret, "dLockSecret").isString().default("aMainSecret");
+   var dKey;
+
+   try {
+      new java.net.URI(aRepo);
+      var o = __sbucket__uri(aRepo);
+      aRepo      = o.repo;
+      dBucket     = o.bucket;
+      dLockSecret = o.lockSecret;
+      aMainSecret = o.mainSecret;
+      dKey        = o.key;
+   } catch(e) {
+   }
    var rep   = _$(aRepo, "aRepo").isString().default("");
    aRepo = rep;
 
@@ -70,6 +82,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
       get: (aKey, aBucket, aLockSecret) => {
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
+         aKey        = _$(aKey, "aKey").isString().default(dKey);
          return ow.sec._sb[aRepo].getSecret(aBucket, aLockSecret, aKey);
       },
       /**
@@ -82,6 +95,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
       getObj: (aKey, aExtraArgs, aBucket, aLockSecret) => {
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
+         aKey        = _$(aKey, "aKey").isString().default(dKey);
          return ow.sec._sb[aRepo].getNewObj(aBucket, aLockSecret, aKey, aExtraArgs);
       },
       /**
@@ -94,6 +108,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
       getFn: (aKey, aExtraArgs, aBucket, aLockSecret) => {
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
+         aKey        = _$(aKey, "aKey").isString().default(dKey);
          return ow.sec._sb[aRepo].getNewFn(aBucket, aLockSecret, aKey, aExtraArgs);
       },
       /**
@@ -105,6 +120,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
       set: (aKey, aObj, aBucket, aLockSecret) => {
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
+         aKey        = _$(aKey, "aKey").isString().default(dKey);
          return ow.sec._sb[aRepo].setSecret(aBucket, aLockSecret, aKey, aObj);
       },
       /**
@@ -117,6 +133,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
       setObj: (aKey, aObj, aArgs, aBucket, aLockSecret) => {
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
+         aKey        = _$(aKey, "aKey").isString().default(dKey);
          return ow.sec._sb[aRepo].setNewObj(aBucket, aLockSecret, aKey, aObj, aArgs);
       },
       /**
@@ -129,6 +146,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
       setFn: (aKey, aFn, aArgs, aBucket, aLockSecret) => {
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
+         aKey        = _$(aKey, "aKey").isString().default(dKey);
          return ow.sec._sb[aRepo].setNewFn(aBucket, aLockSecret, aKey, aFn, aArgs);
       },
       /**
@@ -140,6 +158,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
       unset: (aKey, aBucket, aLockSecret) => {
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
+         aKey        = _$(aKey, "aKey").isString().default(dKey);
          return ow.sec._sb[aRepo].unsetSecret(aBucket, aLockSecret, aKey);
       },
       /**
@@ -298,6 +317,29 @@ const __sbucket__decrypt = function(aObj, aMainKey, aKey) {
     }
     var s = af.fromBytes2String(af.fromBase64(aObj));
     return jsonParse(af.decrypt(s, sha512(mk).substr(0, 16)));
+};
+
+const __sbucket__uri = function(aUri) {
+   _$(aUri, "aUri").isString().$_();
+
+   var uri = new java.net.URI(aUri);
+   if (uri.getScheme().equals("sbucket")) {
+       var ar = String(uri.getPath()).split("/");
+       ar.shift();
+       var dLockSecret, aMainSecret;
+       if (uri.getUserInfo() != null) {
+           [dLockSecret, aMainSecret] = String(uri.getUserInfo()).split(":");
+       }
+       return {
+           repo      : String(uri.getHost()) == "default" ? "" : String(uri.getHost()), 
+           bucket    : String(ar.shift()), 
+           lockSecret: dLockSecret, 
+           mainSecret: aMainSecret,
+           key       : ar.join("/")
+       };
+   };
+
+   return {};
 };
  
 /**
