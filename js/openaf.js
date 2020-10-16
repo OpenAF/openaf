@@ -735,7 +735,7 @@ function ansiColor(aAnsi, aString, force) {
 	
 	if (ansis) {
 		var res = jansi.Ansi.ansi().render("@|" + aAnsi.toLowerCase() + " " + aString + "|@");
-		return res; 
+		return String(res); 
 	} else {
 		return aString;
 	}

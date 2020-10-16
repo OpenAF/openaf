@@ -969,21 +969,21 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				}
 
 				var _c = function(m) { 
-					return ansis ? 
+					return String(ansis ? 
 							jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.GREEN).a(m).a(jansi.Ansi.Attribute.RESET) 
-							: m; 
+							: m); 
 				};
 				
 				var _g = function(m) { 
-					return ansis ? 
+					return String(ansis ? 
 							jansi.Ansi.ansi().boldOff().a(m).a(jansi.Ansi.Attribute.RESET) 
-							: m; 
+							: m); 
 				};
 
 				var _b = function(m) { 
-					return ansis ? 
+					return String(ansis ? 
 							jansi.Ansi.ansi().bold().a(m).a(jansi.Ansi.Attribute.RESET) 
-							: m; 
+							: m); 
 				};
 
 				var _e = function(m) { 
