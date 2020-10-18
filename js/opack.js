@@ -608,10 +608,8 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 	} catch(e) {
 		if (String(e).match(/code: 401/)) {
 			if (isUnDef(__remoteUser) || isUnDef(__remotePass)) {
-				plugin("Console");
-				var con = new Console();
-				__remoteUser = con.readLinePrompt("Enter authentication user: ");
-				__remotePass = con.readLinePrompt("Enter authentication password: ", "*");
+				__remoteUser = ask("Enter authentication user: ");
+				__remotePass = ask("Enter authentication password: ", String.fromCharCode(0));
 			}
 			__remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
 			res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
@@ -867,7 +865,8 @@ function __opack_info(args) {
 
 	if (packag.__filelocation.match(/local$/)) remote = false; else remote = true;
 
-	ansiStart();
+	var iinfo = {};
+	/*ansiStart();
 	print(ansiColor("bold", "INSTALLED IN: ") + args[0]);
 	print(ansiColor("bold", "NAME        : ") + packag.name);
 	print(ansiColor("bold", "VERSION     : ") + packag.version);
@@ -875,22 +874,38 @@ function __opack_info(args) {
 	print(ansiColor("bold", "AUTHOR      : ") + packag.author);
 	print(ansiColor("bold", "REPOSITORY  : ") + "[" + packag.repository.type + "] " + packag.repository.url);
 	print(ansiColor("bold", "DEPENDS ON  :"));
-	print("");
+	print("");*/
+	iinfo = {
+		"Installed in": args[0],
+		"Name"        : packag.name,
+		"Version"     : packag.version,
+		"Description" : packag.description,
+		"Author"      : packag.author,
+		"Repository"  : "[" + packag.repository.type + "] " + packag.repository.url,
+	};
+	print( printMap(iinfo) );
 
-	var depsResults;
+	var depsResults, ideps = [];
 	if(!remote) depsResults = verifyDeps(packag);
 
 	for(let i in packag.dependencies) {
 		var depend = packag.dependencies[i];
 
-		if (!remote)
-			print("\t" + i + ": " + depend + " [" + ((depsResults[i]) ? "OK" : "FAILED DEPENDENCY") + "]");
-		else
-			print("\t" + i + ": " + depend);
+		if (!remote) {
+			ideps.push({ package: i, status: ((depsResults[i]) ? "OK" : "FAILED DEPENDENCY") });
+			//print("\t" + i + ": " + depend + " [" + ((depsResults[i]) ? "OK" : "FAILED DEPENDENCY") + "]");
+		} else {
+			ideps.push({ package: i });
+			//print("\t" + i + ": " + depend);
+		}
 	}
-	var hashResults;
+
+	print(ansiColor("bold", "Depends on:") + "\n");
+	print( printTable(ideps) );
+
+	var hashResults, iFiles = [];
 	if(!remote) hashResults = verifyHashList(args[0], packag.filesHash);
-	print(ansiColor("bold", "FILES       :") + "\n");
+	//print(ansiColor("bold", "FILES       :") + "\n");
 	for(let i in packag.files) {
 		var file = packag.files[i];
 		var canGo = true;
@@ -907,13 +922,17 @@ function __opack_info(args) {
 					status = (hashResults[file]) ? "OK" : "CHANGED!";
 				}
 				
-				print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, "") + " [" + status + "]");
+				iFiles.push({ file: file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, ""), status: status });
+				//print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, "") + " [" + status + "]");
 			} else {
-				print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, ""));
+				iFiles.push({ file: file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, "") });
+				//print("\t" + file.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "").replace(/^\/*/, ""));
 			}
 		}
 	}
-	ansiStop();
+
+	ansiStart(); print( "\n" + ansiColor("bold", "Files:") + "\n"); ansiStop();
+	print( printTable(iFiles) );
 }
 
 // LIST
@@ -926,14 +945,26 @@ function __opack_list(args) {
 			sortIds[packages[i].name.toLowerCase()] = i;
 	}
 
-	var packsIds = Object.keys(sortIds).sort();
+	var usea = __conStatus || __initializeCon();
+
+	var packsIds = Object.keys(sortIds).sort(), ar = [];
 	for (let packageId in packsIds) {
 		packag = sortIds[packsIds[packageId]];
 		if (packag == 'OpenPackDB') continue;
-		ansiStart();
-		print(ansiColor("bold", "[" + packages[packag].name + "]") + " (version " + ansiColor("green", packages[packag].version) + "):" + " " + ansiColor("cyan", packag) + "");
-		ansiStop();
-    }
+		if (!usea) {
+			ansiStart();
+			print(ansiColor("bold", "[" + packages[packag].name + "]") + " (version " + ansiColor("green", packages[packag].version) + "):" + " " + ansiColor("cyan", packag.replace(new RegExp("^" + getOpenAFPath()), "(openaf)/")) + "");
+			ansiStop();
+		} else {
+			ar.push({
+				name   : packages[packag].name,
+				version: packages[packag].version,
+				path   : packag.replace(new RegExp("^" + getOpenAFPath()), "[openaf]/")
+			});
+		}
+	}
+	if (ar.length > 0) print( printTable(ar) );
+	
 }
 
 // Check version given package and force parameters
@@ -1739,25 +1770,25 @@ for(let i in verbs) {
 
 		verb = i;
 
-    switch(verb) {
-		case 'info': __opack_info(params); break;
-		case 'install': install(params); break;
-		case 'erase': erase(params); break;
-		case 'list': __opack_list(params); break;
-		case 'genpack': genpack(params); break;
-		case 'pack': pack(params); break;
-		case 'add2db': add(params); break;
-		case 'remove2db': remove(params); break;
-		case 'add2remotedb': addCentral(params); break;
-		case 'remove2remotedb': removeCentral(params); break;
-		case 'script': __opack_script(params); break;
-		case 'daemon': __opack_script(params, true); break;
-		case 'ojob'  : __opack_script(params, false, true); break;
-		case 'search': __opack_search(params); break;
-		case 'update': update(params); break;
-		case 'exec': __opack_exec(params); break;
-		case 'help': showhelp = 1; showHelp(); break;
-    }
+		switch(verb) {
+			case 'info'           : __opack_info(params); break;
+			case 'install'        : install(params); break;
+			case 'erase'          : erase(params); break;
+			case 'list'           : __opack_list(params); break;
+			case 'genpack'        : genpack(params); break;
+			case 'pack'           : pack(params); break;
+			case 'add2db'         : add(params); break;
+			case 'remove2db'      : remove(params); break;
+			case 'add2remotedb'   : addCentral(params); break;
+			case 'remove2remotedb': removeCentral(params); break;
+			case 'script'         : __opack_script(params); break;
+			case 'daemon'         : __opack_script(params, true); break;
+			case 'ojob'           : __opack_script(params, false, true); break;
+			case 'search'         : __opack_search(params); break;
+			case 'update'         : update(params); break;
+			case 'exec'           : __opack_exec(params); break;
+			case 'help'           : showhelp = 1; showHelp(); break;
+		}
 
 		showhelp = 0;
 	}
