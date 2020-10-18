@@ -370,7 +370,21 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 	var colorMap = { lines: "RESET", value: "CYAN" };
 
 	ow.loadFormat();
-	if (isUnDef(aTheme) && !ow.format.isWindows()) aTheme = "utf";
+	if (isUnDef(aTheme)) {
+		if (!ow.format.isWindows()) {
+			aTheme = "utf";
+			if (isUnDef(useAnsi) && __initializeCon()) {
+				useAnsi = __conAnsi;
+			}
+		} else {
+			if (__initializeCon()) {
+				if (isDef(__con.getConsoleReader().getTerminal().getOutputEncoding())) aTheme = "utf";
+				if (isUnDef(useAnsi)) {
+					useAnsi = __conAnsi;
+				}
+			}
+		}
+	}
 
 	var hLine = "-", vLine = "|", hvJoin = "+";
 	if (aTheme == "utf") {
@@ -472,6 +486,22 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 function printMap(aValueR, aWidth, aTheme, useAnsi) {
 	if (!isMap(aValueR) && !isArray(aValueR)) throw "Not a map or array.";
 
+	if (isUnDef(aTheme)) {
+		if (!ow.format.isWindows()) {
+			aTheme = "utf";
+			if (isUnDef(useAnsi) && __initializeCon()) {
+				useAnsi = __conAnsi;
+			}
+		} else {
+			if (__initializeCon()) {
+				if (isDef(__con.getConsoleReader().getTerminal().getOutputEncoding())) aTheme = "utf";
+				if (isUnDef(useAnsi)) {
+					useAnsi = __conAnsi;
+				}
+			}
+		}
+	}
+	
 	__initializeCon();
 	var matrix = [], matrixrule = [], maxX = 0,	maxY = 0, cM = [], al = [];
 
