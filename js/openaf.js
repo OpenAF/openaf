@@ -371,6 +371,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 
 	ow.loadFormat();
 	if (isUnDef(aTheme)) {
+        ow.loadFormat();
 		if (!ow.format.isWindows()) {
 			aTheme = "utf";
 			if (isUnDef(useAnsi) && __initializeCon()) {
@@ -487,6 +488,7 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 	if (!isMap(aValueR) && !isArray(aValueR)) throw "Not a map or array.";
 
 	if (isUnDef(aTheme)) {
+        ow.loadFormat();
 		if (!ow.format.isWindows()) {
 			aTheme = "utf";
 			if (isUnDef(useAnsi) && __initializeCon()) {
