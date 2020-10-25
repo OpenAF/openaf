@@ -64,8 +64,8 @@ function buildClasspath() {
 	}
 
 	for (var i in listfiles.files) {
-		if (!listfiles.files[i].filename.match("\.jar$")) continue;
-		if (listfiles.files[i].filename.match("af.jar") || listfiles.files[i].filename.match("af.jar")) continue;
+		if (!listfiles.files[i].filename.match(/\.jar$/)) continue;
+		if (listfiles.files[i].filename.match("af.jar")) continue;
 		log("Including " + listfiles.files[i].filename);
 		classpath += listfiles.files[i].filepath;
 		smallClassPath += " " + listfiles.files[i].filename + "";
@@ -89,7 +89,7 @@ function listFiles(aPath, aFilter, aExcludeFilter) {
 		if (listfiles.files[i].isDirectory) {
 			arrayFiles = arrayFiles.concat(listFiles(listfiles.files[i].filepath, aFilter, aExcludeFilter));
 		} else {
-			if (listfiles.files[i].filename.match(new RegExp(aFilter))) {
+			if (listfiles.files[i].filename.match(aFilter)) {
 				if (!(isDefined(aExcludeFilter) && (listfiles.files[i].filepath.replace(/\\/g, "/").match(new RegExp(aExcludeFilter)) != null)))
 					arrayFiles.push(listfiles.files[i].filepath);
 			}
@@ -105,7 +105,7 @@ function buildSource() {
 	log("Finding sources...");
 	var excludeFilter;
 	excludeFilter = "plugins/Wedo";
-	var arrayList = listFiles(OPENAF_SRC, ".+\.java$", excludeFilter);
+	var arrayList = listFiles(OPENAF_SRC, new RegExp(".+\.java$"), excludeFilter);
 	log("Found #" + arrayList.length + " java sources.");
 	sourcePath = arrayList.join(" ");
 
@@ -157,7 +157,7 @@ if (__exitcode != 0) {
 }
 
 var tempJar = new ZIP(io.readFileBytes(OPENAF_BUILD_HOME + "/jar-in-jar-loader.zip"));
-var binFiles = listFiles(OPENAF_BIN, "\.class$");
+var binFiles = listFiles(OPENAF_BIN, new RegExp("\.class$"));
 log("#" + binFiles.length + " binary files identified.");
 binFiles = binFiles.concat(classpath.split(PATHSEPARATOR));
 //var transformPathBin = (os.match(/Windows/)) ? OPENAF_BIN.replace(/\//g, "\\") : OPENAF_BIN;

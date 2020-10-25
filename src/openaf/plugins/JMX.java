@@ -314,7 +314,7 @@ public class JMX extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public static Object attach2Local(String id) throws AgentLoadException, AgentInitializationException, AttachNotSupportedException {
+	public static Object attach2Local(String id) throws IOException, AgentLoadException, AgentInitializationException, AttachNotSupportedException {
 		/*File toolsFile = ClassLoaderUtil.findToolsJar();
 		if (toolsFile == null) return null;
 		ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());*/
