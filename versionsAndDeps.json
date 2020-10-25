@@ -396,7 +396,7 @@
 			"name": "JMX",
 			"removable": true,
 			"deps": [
-				"lib/jodd-3.6.6.jar",
+				"lib/jodd-5.1.0.jar",
 				"lib/tools-attach.jar"
 			]
 		},
