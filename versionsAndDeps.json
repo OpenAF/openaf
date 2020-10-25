@@ -179,8 +179,8 @@
 		},
 		{
 			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.7.jar"],
-			"version": "2.7",
+			"path": ["lib/commons-io-2.8.0.jar"],
+			"version": "2.8.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -224,8 +224,8 @@
 		},
 		{
 			"description": "Apache Commons HTTPComponents",
-			"path": ["lib/httpclient-4.5.12.jar", "lib/httpcore-4.4.13.jar"],
-			"version": "4.5.12",
+			"path": ["lib/httpclient-4.5.13.jar", "lib/httpcore-4.4.13.jar"],
+			"version": "4.5.13",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -242,8 +242,8 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.2.14.jar"],
-			"version": "42.2.14",
+			"path": ["lib/postgresql-42.2.18.jar"],
+			"version": "42.2.18",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -273,8 +273,8 @@
 		},
 		{
 			"description": "GoogleAuthenticator",
-			"path": ["lib/googleauth-1.4.0.jar"],
-			"version": "1.4",
+			"path": ["lib/googleauth-1.5.0.jar"],
+			"version": "1.5",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/wstrange/GoogleAuth/master/LICENSE",
@@ -295,8 +295,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.11.2.jar"],
-			"version": "2.11.2",
+			"path": ["lib/jackson-core-2.11.3.jar"],
+			"version": "2.11.3",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/src/main/resources/META-INF/LICENSE",
@@ -355,7 +355,7 @@
 			"name": "Email",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-net-3.7.jar",
+				"lib/commons-net-3.7.2.jar",
 				"lib/commons-email-1.5.jar",
 				"lib/javax.mail.jar"
 			],
@@ -381,14 +381,14 @@
 			"name": "HTTP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.7.jar",
-				"lib/jetty-io-9.4.31.jar",
-				"lib/jetty-util-9.4.31.jar",
-				"lib/jetty-client-9.4.31.jar",
-				"lib/jetty-http-9.4.31.jar",
-				"lib/websocket-api-9.4.31.jar",
-				"lib/websocket-client-9.4.31.jar",
-				"lib/websocket-common-9.4.31.jar"
+				"lib/commons-io-2.8.0.jar",
+				"lib/jetty-io-9.4.33.jar",
+				"lib/jetty-util-9.4.33.jar",
+				"lib/jetty-client-9.4.33.jar",
+				"lib/jetty-http-9.4.33.jar",
+				"lib/websocket-api-9.4.33.jar",
+				"lib/websocket-client-9.4.33.jar",
+				"lib/websocket-common-9.4.33.jar"
 			],
 			"deps": []
 		},
@@ -425,7 +425,7 @@
 			"name": "SSH",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.7.jar"
+				"lib/commons-io-2.8.0.jar"
 			],
 			"deps": [
 				"lib/jsch-0.1.55.jar",
@@ -457,7 +457,7 @@
 			"name": "ZIP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.7.jar",
+				"lib/commons-io-2.8.0.jar",
 				"lib/commons-compress-1.20.jar"
 			],
 			"deps": []
