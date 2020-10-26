@@ -965,15 +965,16 @@ OpenWrap.java.prototype.cipher.prototype.verify = function(sigToVerify, aPublicK
 
 /**
  * <odoc>
- * <key>ow.java.cipher.genCert(aDn, aPublicKey, aPrivateKey, aValidity, aSigAlgName, aKeyStore, aPassword) : JavaSignature</key>
+ * <key>ow.java.cipher.genCert(aDn, aPublicKey, aPrivateKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType) : JavaSignature</key>
  * Generates a certificate with aDn (defaults to "cn=openaf"), using aPublicKey and aPrivateKey, for aValidity date (defaults to a date 
  * one year from now). Optionally you can specify aSigAlgName (defaults to SHA256withRSA), a file based aKeyStore and the corresponding
  * aPassword (defaults to "changeit").
  * </odoc>
  */
-OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivKey, aValidity, aSigAlgName, aKeyStore, aPassword) {
+OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType) {
     aDn = _$(aDn, "dn").regexp(/^cn\=/i).isString().default("cn=openaf");
     aSigAlgName = _$(aSigAlgName, "signature alg name").isString().default("SHA256withRSA");
+    aKeyStoreType = _$(aKeyStoreType, "key store type").isString().default(java.security.KeyStore.getDefaultType());
     _$(aPubKey, "public key").$_();
     _$(aPrivKey, "private key").$_();
     aValidity = _$(aValidity, "validity").isDate().default(new Date(now() + (1000 * 60 * 60 * 24 * 365)));
@@ -987,7 +988,7 @@ OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivK
     var serialNumber = new java.math.BigInteger(64, new java.security.SecureRandom());
     
     var owner = new Packages.sun.security.x509.X500Name(aDn);
-    var sigAlgId = new Packages.sun.security.x509.AlgorithmId(Packages.sun.security.x509.AlgorithmId.md5WithRSAEncryption_oid);
+    var sigAlgId = Packages.sun.security.x509.AlgorithmId.get(aSigAlgName);
 
     info.set(Packages.sun.security.x509.X509CertInfo.VALIDITY, interval);
     info.set(Packages.sun.security.x509.X509CertInfo.SERIAL_NUMBER, new Packages.sun.security.x509.CertificateSerialNumber(serialNumber));
@@ -1008,7 +1009,7 @@ OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivK
     if (isDef(aKeyStore)) {
         aPassword = _$(aPassword).isString().default("changeit");
 
-        var ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        var ks = java.security.KeyStore.getInstance(aKeyStoreType);
         ks.load(null, null);    
         ks.setKeyEntry("main", aPrivKey, (new java.lang.String(aPassword)).toCharArray(), [ certificate ]);
         var fos = io.writeFileStream(aKeyStore);
