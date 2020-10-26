@@ -286,9 +286,9 @@ public class JMX extends ScriptableObject {
 	 */
 	@JSFunction
 	public static Object getLocals() throws IOException {
-		/*File toolsFile = ClassLoaderUtil.findToolsJar();
+		File toolsFile = ClassLoaderUtil.findToolsJar();
 		if (toolsFile == null) return null;
-		ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());*/
+		ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
 	
 		List<VirtualMachineDescriptor> vms = VirtualMachine.list();
 		HashMap<String, Object> pmap = new HashMap<String, Object>();
@@ -315,9 +315,9 @@ public class JMX extends ScriptableObject {
 	 */
 	@JSFunction
 	public static Object attach2Local(String id) throws IOException, AgentLoadException, AgentInitializationException, AttachNotSupportedException {
-		/*File toolsFile = ClassLoaderUtil.findToolsJar();
+		File toolsFile = ClassLoaderUtil.findToolsJar();
 		if (toolsFile == null) return null;
-		ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());*/
+		ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
 		
 		HashMap<String, Object> local = new HashMap<String, Object>();
 	    VirtualMachine vm;
