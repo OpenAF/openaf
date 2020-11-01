@@ -379,7 +379,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 			}
 		} else {
 			if (__initializeCon()) {
-				if (isDef(__con.getConsoleReader().getTerminal().getOutputEncoding())) aTheme = "utf";
+				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = "utf";
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
 				}
@@ -496,7 +496,7 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 			}
 		} else {
 			if (__initializeCon()) {
-				if (isDef(__con.getConsoleReader().getTerminal().getOutputEncoding())) aTheme = "utf";
+				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = "utf";
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
 				}
