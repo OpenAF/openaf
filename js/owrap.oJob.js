@@ -455,12 +455,13 @@ OpenWrap.oJob.prototype.__toEnvs = function(aMap) {
 	var res = {};
 	traverse(aMap, (aK, aV, aP, aO) => {
 		if (!isMap(aV) && !isArray(aV)) {
+     			aP = aP.replace(/\./g, "_");
 			if (isNumber(aK)) {
 				res[aP.substr(1, aP.length) + "_" + (Number(aK) +1) ] = String(aV);
 			} else {
 				var mts = aP.match(/\[(\d+)\]/);
 				if (mts) {
-					res[aP.replace(/^\./, "").replace(/\[(\d+)\]/g, (r) => { return "_" + (Number(r.substr(1, r.length -2)) +1); }) + "_" + aK] = String(aV);
+					res[aP.replace(/^\_/, "").replace(/\[(\d+)\]/g, (r) => { return "_" + (Number(r.substr(1, r.length -2)) +1); }) + "_" + aK] = String(aV);
 				} else {
 					res[(aP != "" ? aP.substr(1, aP.length) + "_" : "") + aK] = String(aV); 
 				}
