@@ -118,6 +118,9 @@ try {
 $from(ow.obj.fromObj2Array(getOPackLocalDB(), "path")).notEmpty("scripts.prerepack").select(function(r) {
 	if (r.name == "OpenCli" && r.version != af.getVersion()) {
 		logWarn("Please update OpenCli to match the version " + af.getVersion());
+		if (io.fileExists(r.path + "/.url")) {
+			logWarn("by executing 'opack install " + eval( io.readFileYAML(r.path + "/.url").c ) + "'" );
+		}
 	} else {
 		log("Executing prepack actions from oPack '" + r.name + "'");
 		try {
