@@ -2012,80 +2012,48 @@ function load(aScript, loadPrecompiled) {
 			throw aScript + ": " + String(error);
 		}
 	}
+}
 
-	/*
-	try {
-		try {
-			af.load(aScript);
-		} catch(e) {
-			if (e.message == "\"exports\" is not defined.") {
-				var exp = require(aScript);
-				global[io.fileInfo(aScript).filename.replace(/\.js$/, "")] = exp;
-				return aScript;
-			} else {
-				throw e;
-			}
-		}
-		return aScript;
-	} catch(e0) {
-		if (e0.message.match(/FileNotFoundException/) || e0.message == "\"exports\" is not defined.") {
-			error = e0; var exp;
+/**
+ * <odoc>
+ * <key>loadPy(aPyScript, dontStop)</key>
+ * Provides a shortcut for the $py function (see more in $py). If the provided aPyScript is not found
+ * this function will try to search the python script on the installed opacks.
+ * If it doesn't find the provided aScript it will throw an exception "Couldn't find aPyScript".
+ * </odoc>
+ */
+function loadPy(aPyScript, dontStop) {
+	var error = "";
+
+	if (io.fileExists(aPyScript)) {
+		$pyStart();
+		var res = $py(aPyScript);
+		if (!dontStop) $pyStop();
+		return res;
+	} else {
+		var paths = getOPackPaths();
+
+		var error;
+		for(var i in paths) {
 			try {
-				if (e0.message == "\"exports\" is not defined.") {
-					exp = require(aScript + ".js");
-					global[io.fileInfo(aScript).filename.replace(/\.js$/, "")] = exp;
-					return aScript;
-				} else {
-					af.load(aScript + ".js");
-					return aScript;
+				paths[i] = paths[i].replace(/\\+/g, "/");
+				if (io.fileExists(paths[i] + "/" + aPyScript)) {
+					$pyStart();
+					var res = $py(paths[i] + "/" + aPyScript);
+					if (!dontStop) $pyStop();
+					return res;
 				}
 			} catch(e) {
-				if (e.message.match(/FileNotFoundException/) || e.message == "\"exports\" is not defined.") {
-					error = e;
-					var paths = getOPackPaths();
-					paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
-			
-					for(var i in paths) {
-						try {
-							paths[i] = paths[i].replace(/\\+/g, "/");
-							if (e0.message == "\"exports\" is not defined.") {
-								exp = require(paths[i] + "/" + aScript);
-								global[aScript.replace(/\.js$/, "")] = exp;
-								return aScript;
-							} else {
-								af.load(paths[i] + "/" + aScript);
-								return aScript;
-							}
-						} catch(e) {
-							if (e.message == "\"exports\" is not defined.") {
-								try {
-									exp = require(paths[i] + "/" + aScript);
-									global[aScript.replace(/\.js$/, "")] = exp;
-									return aScript;
-								} catch(e1) {
-									error = e1;
-								}
-							} else {
-								error = e;
-							}
-						}
-					}
-			
-					if (typeof __loadedfrom !== 'undefined') {
-						af.load(__loadedfrom.replace(/[^\/]+$/, "") + aScript);
-						return aScript;
-					}
-				} else {
-					throw e;
-				}
-				
+				error = e;
 			}
-		} else { 
-			throw e0;
+		}
+
+		if (isDef(error)) {
+			throw aPyScript + ": " + String(error);
+		} else {
+			throw aPyScript + ": " + "Couldn't find aPyScript.";
 		}
 	}
-	throw "Couldn't find " + aScript + "; " + error;
-	*/
 }
 
 /**
