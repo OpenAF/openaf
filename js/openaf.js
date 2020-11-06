@@ -5423,8 +5423,8 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	}
 
 	var separator = "-=?OpEnAf?=-";
-	var res = sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, void 0, "") + "); load('" + aScript + "'); print('" + separator + "' + stringify(__pm, void 0, ''));");
-	res = res.substr(res.indexOf(separator) + separator.length, res.length);
+	var res = $sh().sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, void 0, "") + "); load('" + aScript.replace(/\\/g, "/") + "'); print('" + separator + "' + stringify(__pm, void 0, ''));").get(0);
+	res = res.stdout.substr(res.stdout.indexOf(separator) + separator.length, res.stdout.length);
 	return jsonParse(res);
 };
 
