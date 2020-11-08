@@ -2016,18 +2016,20 @@ function load(aScript, loadPrecompiled) {
 
 /**
  * <odoc>
- * <key>loadPy(aPyScript, dontStop)</key>
+ * <key>loadPy(aPyScript, aInput, aOutputArray, dontStop) : Map</key>
  * Provides a shortcut for the $py function (see more in $py). If the provided aPyScript is not found
  * this function will try to search the python script on the installed opacks.
  * If it doesn't find the provided aScript it will throw an exception "Couldn't find aPyScript".
+ * If aInput map is defined each entry will be converted into python variables. If aOutputArray is
+ * defined the python variables string names in the array will be returned as a map.
  * </odoc>
  */
-function loadPy(aPyScript, dontStop) {
+function loadPy(aPyScript, aInput, aOutputArray, dontStop) {
 	var error = "";
 
 	if (io.fileExists(aPyScript)) {
 		$pyStart();
-		var res = $py(aPyScript);
+		var res = $py(aPyScript, aInput, aOutputArray);
 		if (!dontStop) $pyStop();
 		return res;
 	} else {
@@ -2039,7 +2041,7 @@ function loadPy(aPyScript, dontStop) {
 				paths[i] = paths[i].replace(/\\+/g, "/");
 				if (io.fileExists(paths[i] + "/" + aPyScript)) {
 					$pyStart();
-					var res = $py(paths[i] + "/" + aPyScript);
+					var res = $py(paths[i] + "/" + aPyScript, aInput, aOutputArray);
 					if (!dontStop) $pyStop();
 					return res;
 				}
@@ -5368,17 +5370,36 @@ const $rest = function(ops) {
 	return new _rest(ops);
 };
  
+/**
+ * <odoc>
+ * <key>$pyStart()</key>
+ * Start python process on the background. Should be stopped with $pyStop.
+ * </odoc>
+ */
 const $pyStart = function() {
 	ow.loadPython();
 	ow.python.startServer();
 };
 
+/**
+ * <odoc>
+ * <key>$py(aPythonCodeOrFile, aInput, aOutputArray) : Map</key>
+ * Executes aPythonCodeOrFile using a map aInput as variables in python and returns a map with python 
+ * variables in aOutputArray.
+ * </odoc>
+ */
 const $py = function(aPythonCode, aInput, aOutputArray) {
 	$pyStart();
 	if (aPythonCode.indexOf("\n") < 0 && aPythonCode.endsWith(".py") && io.fileExists(aPythonCode)) aPythonCode = io.readFileString(aPythonCode);
 	return ow.python.exec(aPythonCode, aInput, aOutputArray);
 };
 
+/**
+ * <odoc>
+ * <key>$pyStop()</key>
+ * Stops the background python process started by $pyStart.
+ * </odoc>
+ */
 const $pyStop = function() {
 	ow.python.stopServer(void 0, true);
 };
