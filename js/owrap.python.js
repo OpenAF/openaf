@@ -3,7 +3,8 @@
 // Python
 
 OpenWrap.python = function() {
-	this.python = "python";
+        var pen = getEnv("OAF_PYTHON");
+        if (isDef(pen) && pen != "null") this.python = pen; else this.python = "python";
 	this.reset(true);
 	this.cServer = $atomic();
 	this.running = false;

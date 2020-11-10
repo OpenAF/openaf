@@ -536,8 +536,13 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 				todo: [ "Unauthorized URL" ],
 				jobs: [ { name: "Unauthorized URL" } ]
 			};
-		else
-			return $rest({throwExceptions: true}).get(url);
+		else {
+			var res = $rest({throwExceptions: true}).get(url);
+ 			if (isString(res)) {
+				try { res = af.fromYAML(res); } catch(e) {}
+     			}
+			return res;
+    		}		
 	}
 	var fnDownYAML = url => {
 		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
@@ -591,7 +596,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 			if (pp == "") {
 				aFile += "/";
 			} else {
-				if (!pp.endsWith("/")) aFile += ".json";
+				if (!pp.endsWith("/") && aFile.indexOf("?") < 0) aFile += ".json";
 			}
         }
 		if (aFile.match(/\.ya?ml$/i)) {
@@ -1054,8 +1059,10 @@ OpenWrap.oJob.prototype.stop = function() {
 			}
 		}
 		if (isDef(this.__sch)) {
-			this.__sch.stop();
-			this.__sch = new ow.server.scheduler();
+			try {
+				this.__sch.stop();
+				this.__sch = new ow.server.scheduler();
+			} catch(e) {}
 		}
 		if (isDef(this.mt)) {
 			this.mt.stop();
@@ -1352,7 +1359,6 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		} catch(e) {}
 	}
 
-	print("");
 	if (!isSubJob) this.stop();
 };
 

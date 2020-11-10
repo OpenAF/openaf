@@ -2012,80 +2012,50 @@ function load(aScript, loadPrecompiled) {
 			throw aScript + ": " + String(error);
 		}
 	}
+}
 
-	/*
-	try {
-		try {
-			af.load(aScript);
-		} catch(e) {
-			if (e.message == "\"exports\" is not defined.") {
-				var exp = require(aScript);
-				global[io.fileInfo(aScript).filename.replace(/\.js$/, "")] = exp;
-				return aScript;
-			} else {
-				throw e;
-			}
-		}
-		return aScript;
-	} catch(e0) {
-		if (e0.message.match(/FileNotFoundException/) || e0.message == "\"exports\" is not defined.") {
-			error = e0; var exp;
+/**
+ * <odoc>
+ * <key>loadPy(aPyScript, aInput, aOutputArray, dontStop) : Map</key>
+ * Provides a shortcut for the $py function (see more in $py). If the provided aPyScript is not found
+ * this function will try to search the python script on the installed opacks.
+ * If it doesn't find the provided aScript it will throw an exception "Couldn't find aPyScript".
+ * If aInput map is defined each entry will be converted into python variables. If aOutputArray is
+ * defined the python variables string names in the array will be returned as a map.
+ * </odoc>
+ */
+function loadPy(aPyScript, aInput, aOutputArray, dontStop) {
+	var error = "";
+
+	if (io.fileExists(aPyScript)) {
+		$pyStart();
+		var res = $py(aPyScript, aInput, aOutputArray);
+		if (!dontStop) $pyStop();
+		return res;
+	} else {
+		var paths = getOPackPaths();
+
+		var error;
+		for(var i in paths) {
 			try {
-				if (e0.message == "\"exports\" is not defined.") {
-					exp = require(aScript + ".js");
-					global[io.fileInfo(aScript).filename.replace(/\.js$/, "")] = exp;
-					return aScript;
-				} else {
-					af.load(aScript + ".js");
-					return aScript;
+				paths[i] = paths[i].replace(/\\+/g, "/");
+				if (io.fileExists(paths[i] + "/" + aPyScript)) {
+					$pyStart();
+					var res = $py(paths[i] + "/" + aPyScript, aInput, aOutputArray);
+					if (!dontStop) $pyStop();
+					return res;
 				}
 			} catch(e) {
-				if (e.message.match(/FileNotFoundException/) || e.message == "\"exports\" is not defined.") {
-					error = e;
-					var paths = getOPackPaths();
-					paths["__default"] = java.lang.System.getProperty("java.class.path") + "::js";
-			
-					for(var i in paths) {
-						try {
-							paths[i] = paths[i].replace(/\\+/g, "/");
-							if (e0.message == "\"exports\" is not defined.") {
-								exp = require(paths[i] + "/" + aScript);
-								global[aScript.replace(/\.js$/, "")] = exp;
-								return aScript;
-							} else {
-								af.load(paths[i] + "/" + aScript);
-								return aScript;
-							}
-						} catch(e) {
-							if (e.message == "\"exports\" is not defined.") {
-								try {
-									exp = require(paths[i] + "/" + aScript);
-									global[aScript.replace(/\.js$/, "")] = exp;
-									return aScript;
-								} catch(e1) {
-									error = e1;
-								}
-							} else {
-								error = e;
-							}
-						}
-					}
-			
-					if (typeof __loadedfrom !== 'undefined') {
-						af.load(__loadedfrom.replace(/[^\/]+$/, "") + aScript);
-						return aScript;
-					}
-				} else {
-					throw e;
-				}
-				
+				error = e;
 			}
-		} else { 
-			throw e0;
+		}
+
+		if (isDef(error)) {
+			throw aPyScript + ": " + String(error);
+		} else {
+			throw aPyScript + ": " + "Couldn't find aPyScript.";
 		}
 	}
-	throw "Couldn't find " + aScript + "; " + error;
-	*/
 }
 
 /**
@@ -5400,17 +5370,36 @@ const $rest = function(ops) {
 	return new _rest(ops);
 };
  
+/**
+ * <odoc>
+ * <key>$pyStart()</key>
+ * Start python process on the background. Should be stopped with $pyStop.
+ * </odoc>
+ */
 const $pyStart = function() {
 	ow.loadPython();
 	ow.python.startServer();
 };
 
+/**
+ * <odoc>
+ * <key>$py(aPythonCodeOrFile, aInput, aOutputArray) : Map</key>
+ * Executes aPythonCodeOrFile using a map aInput as variables in python and returns a map with python 
+ * variables in aOutputArray.
+ * </odoc>
+ */
 const $py = function(aPythonCode, aInput, aOutputArray) {
 	$pyStart();
 	if (aPythonCode.indexOf("\n") < 0 && aPythonCode.endsWith(".py") && io.fileExists(aPythonCode)) aPythonCode = io.readFileString(aPythonCode);
 	return ow.python.exec(aPythonCode, aInput, aOutputArray);
 };
 
+/**
+ * <odoc>
+ * <key>$pyStop()</key>
+ * Stops the background python process started by $pyStart.
+ * </odoc>
+ */
 const $pyStop = function() {
 	ow.python.stopServer(void 0, true);
 };
@@ -5455,8 +5444,8 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	}
 
 	var separator = "-=?OpEnAf?=-";
-	var res = sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, void 0, "") + "); load('" + aScript + "'); print('" + separator + "' + stringify(__pm, void 0, ''));");
-	res = res.substr(res.indexOf(separator) + separator.length, res.length);
+	var res = $sh().sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, void 0, "") + "); load('" + aScript.replace(/\\/g, "/") + "'); print('" + separator + "' + stringify(__pm, void 0, ''));").get(0);
+	res = res.stdout.substr(res.stdout.indexOf(separator) + separator.length, res.stdout.length);
 	return jsonParse(res);
 };
 
