@@ -134,7 +134,22 @@ $from(ow.obj.fromObj2Array(getOPackLocalDB(), "path")).notEmpty("scripts.prerepa
 
 if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	var oldVersionFile = classPath.replace(/openaf.jar/, "openaf.jar.orig");
-	
+    
+    if (!noHomeComms) sync(() => {
+        if (!io.fileExists(oldVersionFile)) {
+            var dist = getDistribution() + "/";
+            if (dist == "stable/") dist = "";
+            
+            var url = "https://openaf.io/" + dist + "openaf-" + getVersion() + ".jar";
+            logWarn("Trying to download from '" + url + "'...");
+            $rest().get2File(oldVersionFile, url);
+
+            if (!(io.fileExists(oldVersionFile) && io.fileInfo(oldVersionFile).size > 0)) {
+                logErr("Couldn't download '" + url + "'");
+            }
+        }
+    });
+
 	if (!irj) {
 		log("Backup to " + oldVersionFile);
 		io.writeFileBytes(oldVersionFile, io.readFileBytes(classPath));
