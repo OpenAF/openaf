@@ -3889,6 +3889,11 @@ function loadHandlebars() {
 	if (res) pods.declare("Handlebars", loadHandlebars());
 }
 
+function loadNLinq() {
+	var res = loadCompiledLib("openafnlinq_js");
+	if (res) pods.declare("OpenAFNLinq", loadNLinq());
+}
+
 /**
  * <odoc>
  * <key>loadUnderscore()</key>
