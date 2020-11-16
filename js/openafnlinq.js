@@ -25,7 +25,7 @@ var nLinq = function(anObject) {
 
     // Auxiliary functions - verify the provided key
     var vKey = aKey => {
-        if ($$(aKey).isString() && aKey.replace(/^[^a-zA-Z_$]|[^\w$]/g, "") == aKey) {
+        if ($$(aKey).isString() && aKey.replace(/^[^a-zA-Z_$]|[^\w\[\]\.$]/g, "") == aKey) {
             return (useCase ? aKey.toLowerCase() : aKey);
         } else {
             if ($$(aKey).isDef()) throw "'" + aKey + "' is not valid key."; else return void 0;
@@ -198,12 +198,12 @@ var nLinq = function(anObject) {
             var min;
 
             code.select(r => {
-                var v = ($$(aKey).isDef() ? Number(r[aKey]) : Number(r));
+                var v = ($$(aKey).isDef() ? Number($$(r).get(aKey)) : Number(r));
                 if (v != null && $$(v).isNumber()) {
                     if ($$(min).isUnDef()) {
                         min = r;
                     } else {
-                        if ($$(aKey).isDef() && min[aKey] > v) min = r;
+                        if ($$(aKey).isDef() && $$(min).get(aKey) > v) min = r;
                         if ($$(aKey).isUnDef() && min > v) min = r;
                     }
                 }
@@ -216,12 +216,12 @@ var nLinq = function(anObject) {
             var max;
 
             code.select(r => {
-                var v = ($$(aKey).isDef() ? Number(r[aKey]) : Number(r));
+                var v = ($$(aKey).isDef() ? Number($$(r).get(aKey)) : Number(r));
                 if (v != null && $$(v).isNumber()) {
                     if ($$(max).isUnDef()) {
                         max = r;
                     } else {
-                        if ($$(aKey).isDef() && max[aKey] < v) max = r;
+                        if ($$(aKey).isDef() && $$(max).get(aKey) < v) max = r;
                         if ($$(aKey).isUnDef() && max < v) max = r;
                     }
                 }
@@ -234,7 +234,7 @@ var nLinq = function(anObject) {
             var sum = 0, c = 0;
 
             code.select(r => {
-                var v = ($$(aKey).isDef() ? Number(r[aKey]) : Number(r));
+                var v = ($$(aKey).isDef() ? Number($$(r).get(aKey)) : Number(r));
                 if (v != null && $$(v).isNumber()) {
                     c++;
                     sum += v;
@@ -248,7 +248,7 @@ var nLinq = function(anObject) {
             var sum = 0;
 
             code.select(r => {
-                var v = ($$(aKey).isDef() ? Number(r[aKey]) : Number(r));
+                var v = ($$(aKey).isDef() ? Number($$(r).get(aKey)) : Number(r));
                 if (v != null && $$(v).isNumber()) {
                     sum += v;
                 }
@@ -261,7 +261,7 @@ var nLinq = function(anObject) {
             var vals = [];
 
             code.select(r => {
-                var v = ($$(aKey).isDef() ? r[aKey] : r);
+                var v = ($$(aKey).isDef() ? $$(r).get(aKey) : r);
                 if (vals.indexOf(v) < 0) vals.push(v);
             });
 
@@ -272,7 +272,7 @@ var nLinq = function(anObject) {
             var vals = {};
 
             code.select(r => {
-                var v = ($$(aKey).isDef() ? r[aKey] : r);
+                var v = ($$(aKey).isDef() ? $$(r).get(aKey) : r);
                 if (Object.keys(vals).indexOf(v) < 0) {
                     vals[v] = [ r ];
                 } else {
@@ -311,7 +311,7 @@ var nLinq = function(anObject) {
             res = applyConditions(res);
 
             aKey   = vKey(aKey);
-            res = res.map(r => { r[aKey] = aValue; return r; });
+            res = res.map(r => { $$(r).set(aKey, aValue); return r; });
 
             return code;
         },
@@ -325,14 +325,20 @@ var nLinq = function(anObject) {
                 var rev = false;
                 if (k.startsWith("-")) {
                     rev = true;
-                    k.substr(1, k.length -1);
+                    k = k.substr(1, k.length -1);
                 }
 
                 if (ssort.length > 0) ssort += " || "; else ssort = "return ";
                 if (rev) {
-                    ssort += " b[\"" + k + "\"] - a[\"" + k + "\"] ";
+                    //if (k.indexOf(".") > 0 || k.indexOf("[") > 0)
+                    //    ssort += " $$(b).get(\"" + k + "\") - $$(a).get(\"" + k + "\") ";
+                    //else
+                        ssort += " b." + k + " - a." + k + " ";
                 } else {
-                    ssort += " a[\"" + k + "\"] - b[\"" + k + "\"] ";
+                    //if (k.indexOf(".") > 0 || k.indexOf("[") > 0)
+                    //    ssort += " $$(a).get(\"" + k + "\") - $$(b).get(\"" + k + "\") ";
+                    //else
+                        ssort += " a." + k + " - b." + k + " ";
                 }
             }
 
@@ -356,7 +362,7 @@ var nLinq = function(anObject) {
                     if ($$(aParam).isArray()) {
                         aNewParam = {};
                         aParam.map(r => {
-                            if ($$(r).isString()) aNewParam[r] = void 0;
+                            if ($$(r).isString()) $$(aNewParam).set(r, void 0);
                         });
                     }
                     // map parameter
@@ -365,10 +371,10 @@ var nLinq = function(anObject) {
                         return res.map(r => {
                             var nr = {};
                             keys.map(k => {
-                                if ($$(r[k]).isDef()) {
-                                    nr[k] = r[k];
+                                if ($$($$(r).get(k)).isDef()) {
+                                    $$(nr).set(k, $$(r).get(k));
                                 } else {
-                                    nr[k] = aParam[k];
+                                    $$(nr).set(k, $$(aParam).get(k));
                                 }
                             });
                             return nr;
