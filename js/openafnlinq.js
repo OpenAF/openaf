@@ -273,6 +273,7 @@ var nLinq = function(anObject) {
 
             code.select(r => {
                 var v = ($$(aKey).isDef() ? $$(r).get(aKey) : r);
+                if ($$(v).isBoolean()) v = String(v);
                 if (Object.keys(vals).indexOf(v) < 0) {
                     vals[v] = [ r ];
                 } else {
