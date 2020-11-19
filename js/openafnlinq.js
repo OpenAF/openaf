@@ -7,17 +7,22 @@ var nLinq = function(anObject) {
     }
 
     //_$(anObject).isArray().$_();
-    var res = anObject, where = "", useCase = false, useOr = false, useNot = false, alimit = 0;
+    var res = anObject, where = "", useCase = false, useOr = false, useNot = false, alimit = 0, askip = 0, negative = false;
 
     // Auxiliary functions
 
     // Auxiliary functions - apply query conditions
-    var applyConditions = aOrig => {
+    var applyConditions = (aOrig, aFunc) => {
         if ($$(aOrig).isFunction()) aOrig = aOrig();
         if (!$$(aOrig).isArray()) aOrig = [ aOrig ];
         if ($$(aOrig).isUnDef()) return void 0;
 
         if (where.length == 0) {
+            if (negative) return [];
+
+            if (askip != 0) {
+                aOrig = aOrig.slice(askip);
+            }
             if (alimit != 0) {
                 return aOrig.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0);
             } else {
@@ -26,11 +31,25 @@ var nLinq = function(anObject) {
         }
 
         where = where.replace(/\;/g, " ");
-        var f = new Function("r", "return (" + where + ")");
-        if (alimit != 0) {
-            res = aOrig.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0).filter(r => f(r));
+        var f;
+        if (isFunction(aFunc)) {
+            f = aFunc;
         } else {
-            res = aOrig.filter(r => f(r));
+            f = new Function("r", "return (" + where + ")");
+        }
+        if (askip != 0) {
+            res = aOrig.slice(askip);
+        }
+        if (alimit != 0) {
+            if (negative) 
+                res = aOrig.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0).filter(r => !f(r));
+            else 
+                res = aOrig.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0).filter(r => f(r));
+        } else {
+            if (negative)
+                res = aOrig.filter(r => !f(r));
+            else
+                res = aOrig.filter(r => f(r));
         }
         return res;
     };
@@ -107,7 +126,7 @@ var nLinq = function(anObject) {
         orNot        : () => { useOr = true; useNot = true; return code; },
 
         // WHEREs
-        where        : aTmpl => { applyWhereTmpl(aTmpl, false); return code; },
+        setWhere     : aTmpl => { applyWhereTmpl(aTmpl, false); return code; },
 
         // Main queries
         starts       : (aKey, aValue) => { if (useOr) { if (useNot) code.orNotStarts(aKey, aValue); else code.orStarts(aKey, aValue); } else { if (useNot) code.andNotStarts(aKey, aValue); else code.andStarts(aKey, aValue); } return code; },
@@ -304,10 +323,10 @@ var nLinq = function(anObject) {
             res = applyConditions(res);
             return res[Number(aParam)];
         },
-        all    : () => { res = applyConditions(res); return $$(res).isArray() ? res.length == anObject.length : void 0; },
+        all    : (aFallback) => { res = applyConditions(res); return $$(res).isArray() ? res.length == anObject.length : aFallback; },
         count  : () => { res = applyConditions(res); return res.length; },
-        first  : () => { res = applyConditions(res); return (res.length > 0 ? res[0] : void 0); },
-        last   : () => { res = applyConditions(res); return (res.length > 0 ? res[res.length-1] : void 0); },
+        first  : (aFallback) => { res = applyConditions(res); return (res.length > 0 ? res[0] : aFallback); },
+        last   : (aFallback) => { res = applyConditions(res); return (res.length > 0 ? res[res.length-1] : aFallback); },
         any    : () => { res = applyConditions(res); return (res.length > 0); },
         none   : () => { res = applyConditions(res); return (res.length == 0); },
         reverse: () => { res = applyConditions(res); return res.reverse(); },
@@ -362,6 +381,36 @@ var nLinq = function(anObject) {
 
             return code;
         },
+        assign: (aSource, aAlias, aPK, aFK, aFallback) => {
+            res = applyConditions(res);
+            res.map(r => {
+                r[aAlias] = nLinq(aSource).equals(aFK, $$(r).get(aPK)).first(aFallback);
+            });
+            return code;
+        },
+        join: (aSource, aAlias, aPK, aFK) => {
+            res = applyConditions(res);
+            res.map(r => {
+                r[aAlias] = nLinq(aSource).equals(aFK, $$(r).get(aPK)).select();
+            });
+            return code;
+        },
+        skip: aSkip => {
+            _$(aSkip).isNumber().$_();
+
+            askip = aSkip;
+            return code;
+        },
+        take: aNum => {
+            _$(aNum).isNumber().$_();
+
+            return code.limit(aNum);
+        },
+        skipTake: (aSkip, aTake) => {
+            _$(aSkip).isNumber().$_();
+            
+            return code.skip(aSkip).take(aTake);
+        },
 
         // Main selector
         select : aParam => {
@@ -399,14 +448,29 @@ var nLinq = function(anObject) {
                 }
             }
         },
+        define : aParam => {
+            res = code.select(aParam);
+            return code;
+        },
+        removed: aParam => {
+            negative = true;
+            res = code.select(aParam);
+            return code;
+        },
         stream : aParam => {
-            $$(aParam, "stream function").isFunction();
-            var r, c = (alimit > 0 ? alimit : 1);
+            var c = (alimit > 0 ? alimit : 1);
+            var fn = code.streamFn(aParam);
             do {
-                code.select(aParam);
-                res = anObject();
+                fn();
                 if (alimit > 0) c--;
-            } while ($$(res).isDef() && c > 0)
+            } while ($$(res).isDef() && c > 0);
+        },
+        streamFn : aParam => {
+            return () => {
+                var r = code.select(aParam);
+                res = (isFunction(anObject) ? anObject() : anObject);
+                return r;
+            };
         }
     };
 
