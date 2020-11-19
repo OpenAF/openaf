@@ -2798,7 +2798,7 @@ function inherit(Child, Parent) {
  * in the openaf-console: "desc $from([])".
  * </odoc>
  */
-$from = function(a) {
+$$from = function(a) {
 	loadCompiledLib("jlinq_js");
 
 	if(Object.prototype.toString.call(a) == '[object Array]') {
@@ -2811,6 +2811,11 @@ $from = function(a) {
 		}));
 		//throw "Only queries to arrays of objects.";
 	}
+};
+
+$from = function(a) {
+	loadCompiledLib("openafnlinq_js");
+	return _from(a);
 };
 
 /**
@@ -3887,11 +3892,6 @@ OpenWrap.prototype.loadJava = function() { loadCompiledLib("owrap_java_js"); if 
 function loadHandlebars() {
 	var res = loadCompiledLib("handlebars_js");
 	if (res) pods.declare("Handlebars", loadHandlebars());
-}
-
-function loadNLinq() {
-	var res = loadCompiledLib("openafnlinq_js");
-	if (res) pods.declare("OpenAFNLinq", loadNLinq());
 }
 
 /**
