@@ -11,6 +11,25 @@ var nLinq = function(anObject) {
 
     // Auxiliary functions
 
+    // Auxiliary functions - compare maps
+    var compareMap = (x, y) => {
+        'use strict';
+    
+        if (x === null || x === undefined || y === null || y === undefined) { return x === y; }
+        if (x.constructor !== y.constructor) { return false; }
+        if (x instanceof Function) { return x === y; }
+        if (x instanceof RegExp) { return x === y; }
+        if (x === y || x.valueOf() === y.valueOf()) { return true; }
+        if (Array.isArray(x) && x.length !== y.length) { return false; }
+        if (x instanceof Date) { return false; }
+        if (!(x instanceof Object)) { return false; }
+        if (!(y instanceof Object)) { return false; }
+    
+        var p = Object.keys(x);
+        return Object.keys(y).every(i => { return p.indexOf(i) !== -1; }) &&
+        p.every(i => { return compareMap(x[i], y[i]); });
+    };
+
     // Auxiliary functions - apply query conditions
     var applyConditions = (aOrig, aFunc) => {
         if ($$(aOrig).isFunction()) aOrig = aOrig();
@@ -35,7 +54,7 @@ var nLinq = function(anObject) {
         if (isFunction(aFunc)) {
             f = aFunc;
         } else {
-            f = new Function("r", "whereFn", "return (" + where + ")");
+            f = new Function("r", "whereFn", "return $$(r).isDef() ? (" + where + ") : void 0");
         }
         if (askip != 0) {
             res = aOrig.slice(askip);
