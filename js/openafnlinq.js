@@ -222,9 +222,9 @@ var nLinq = function(anObject) {
         empty        : (aKey, aValue) => { if (useOr) { if (useNot) code.orNotEmpty(aKey, aValue); else code.orEmpty(aKey, aValue); } else { if (useNot) code.andNotEmpty(aKey, aValue); else code.andEmpty(aKey, aValue); } return code; },
         match        : (aKey, aValue) => { if (useOr) { if (useNot) code.orNotMatch(aKey, aValue); else code.orMatch(aKey, aValue); } else { if (useNot) code.andNotMatch(aKey, aValue); else code.andMatch(aKey, aValue); } return code; },
         type         : (aKey, aValue) => { if (useOr) { if (useNot) code.orNotType(aKey, aValue); else code.orType(aKey, aValue); } else { if (useNot) code.andNotType(aKey, aValue); else code.andType(aKey, aValue); } return code; },
-        between      : (aKey, aV1, aV2) => { if (useOr) { if (useNot) code.orNotBetween(aKey, aValue); else code.orBetween(aKey, aValue); } else { if (useNot) code.andNotBetween(aKey, aValue); else code.andBetween(aKey, aValue); } return code; },
-        betweenEquals: (aKey, aV1, aV2) => { if (useOr) { if (useNot) code.orNotBetweenEquals(aKey, aValue); else code.orBetweenEquals(aKey, aValue); } else { if (useNot) code.andNotBetweenEquals(aKey, aValue); else code.andBetweenEquals(aKey, aValue); } return code; },
-        is           : (aKey) => { if (useOr) { if (useNot) code.orNotIs(aKey, aValue); else code.orIs(aKey, aValue); } else { if (useNot) code.andNotIs(aKey, aValue); else code.andIs(aKey, aValue); } return code; },
+        between      : (aKey, aV1, aV2) => { if (useOr) { if (useNot) code.orNotBetween(aKey, aV1, aV2); else code.orBetween(aKey, aV1, aV2); } else { if (useNot) code.andNotBetween(aKey, aV1, aV2); else code.andBetween(aKey, aV1, aV2); } return code; },
+        betweenEquals: (aKey, aV1, aV2) => { if (useOr) { if (useNot) code.orNotBetweenEquals(aKey, aV1, aV2); else code.orBetweenEquals(aKey, aV1, aV2); } else { if (useNot) code.andNotBetweenEquals(aKey, aV1, aV2); else code.andBetweenEquals(aKey, aV1, aV2); } return code; },
+        is           : (aKey) => { if (useOr) { if (useNot) code.orNotIs(aKey); else code.orIs(aKey); } else { if (useNot) code.andNotIs(aKey); else code.andIs(aKey); } return code; },
 
         // Queries with and
         andStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).startsWith({v})", false); return code; },
@@ -254,9 +254,9 @@ var nLinq = function(anObject) {
         notEmpty        : (aKey, aValue) => { if (useOr) code.orNotEmpty(aKey, aValue); else code.andNotEmpty(aKey, aValue); return code; },
         notMatch        : (aKey, aValue) => { if (useOr) code.orNotMatch(aKey, aValue); else code.andNotMatch(aKey, aValue); return code; },
         notType         : (aKey, aValue) => { if (useOr) code.orNotType(aKey, aValue); else code.andNotType(aKey, aValue); return code; },
-        notBetween      : (aKey, aV1, aV2) => { if (useOr) code.orNotBetween(aKey, aValue); else code.andNotBetween(aKey, aValue); return code; },
-        notBetweenEquals: (aKey, aV1, aV2) => { if (useOr) code.orNotBetweenEquals(aKey, aValue); else code.andNotBetweenEquals(aKey, aValue); return code; },
-        notIs           : (aKey) => { if (useOr) code.orNotIs(aKey, aValue); else code.andNotIs(aKey, aValue); return code; },
+        notBetween      : (aKey, aV1, aV2) => { if (useOr) code.orNotBetween(aKey, aV1, aV2); else code.andNotBetween(aKey, aV1, aV2); return code; },
+        notBetweenEquals: (aKey, aV1, aV2) => { if (useOr) code.orNotBetweenEquals(aKey, aV1, aV2); else code.andNotBetweenEquals(aKey, aV1, aV2); return code; },
+        notIs           : (aKey) => { if (useOr) code.orNotIs(aKey); else code.andNotIs(aKey); return code; },
 
         // Queries with and & not
         andNotStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}).startsWith({v}))", false); return code; },
