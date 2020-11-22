@@ -521,6 +521,18 @@ var nLinq = function(anObject) {
             askip = aSkip;
             return code;
         },
+        skipWhile: aSkipFn => {
+            _$(aSkipFn, "skip function").isFunction().$_();
+
+            code.notWhere(aSkipFn);
+            return code;
+        },
+        takeWhile: aTakeFn => {
+            _$(aTakeFn, "take function").isFunction().$_();
+
+            code.where(aTakeFn);
+            return code;
+        },
         take: aNum => {
             _$(aNum).isNumber().$_();
 
