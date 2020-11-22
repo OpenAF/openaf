@@ -2815,7 +2815,7 @@ $$from = function(a) {
 
 $from = function(a) {
 	loadCompiledLib("openafnlinq_js");
-	return _from(a);
+	return $from(a);
 };
 
 /**

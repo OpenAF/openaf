@@ -1,5 +1,6 @@
 /* Author: Nuno Aguiar */
 
+var nLinq_USE_CASE = false;
 var nLinq = function(anObject) {
     // Verify input
     if ($$(anObject).isMap()) {
@@ -10,7 +11,7 @@ var nLinq = function(anObject) {
     }
 
     //_$(anObject).isArray().$_();
-    var res = anObject, where = "", useCase = false, useOr = false, useNot = false, alimit = 0, askip = 0, negative = false, whereFn = [];
+    var res = anObject, where = "", useCase = nLinq_USE_CASE, useOr = false, useNot = false, alimit = 0, askip = 0, negative = false, whereFn = [];
 
     // Auxiliary functions
 
