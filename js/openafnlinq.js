@@ -3,7 +3,10 @@
 var nLinq = function(anObject) {
     // Verify input
     if ($$(anObject).isMap()) {
-        anObject = Object.values(anObject);
+        anObject = Object.keys(anObject).map(k => {
+            anObject[k]._key = k;
+            return anObject[k];
+        });
     }
 
     //_$(anObject).isArray().$_();
@@ -11,24 +14,30 @@ var nLinq = function(anObject) {
 
     // Auxiliary functions
 
-    // Auxiliary functions - compare maps
-    var compareMap = (x, y) => {
-        'use strict';
+    var aSortMap = function(aMap) {
+        if (!$$(aMap).isMap()) return aMap;
+
+        var rrr = {}, ks = Object.keys(aMap).sort();
+        ks.forEach(k => {
+            rrr[k] = ($$(aMap[k]).isMap() ? aSortMap(aMap[k]) : aMap[k]);
+        });
+        return rrr;
+    }
     
-        if (x === null || x === undefined || y === null || y === undefined) { return x === y; }
-        if (x.constructor !== y.constructor) { return false; }
-        if (x instanceof Function) { return x === y; }
-        if (x instanceof RegExp) { return x === y; }
-        if (x === y || x.valueOf() === y.valueOf()) { return true; }
-        if (Array.isArray(x) && x.length !== y.length) { return false; }
-        if (x instanceof Date) { return false; }
-        if (!(x instanceof Object)) { return false; }
-        if (!(y instanceof Object)) { return false; }
+    var aException = function(aArrayA, aArrayB) {
+        var cb = aArrayB.map(r => JSON.stringify(aSortMap(r), void 0, ""));
+        return aArrayA.filter(r => cb.indexOf(JSON.stringify(aSortMap(r), void 0, "")) < 0);
+    }
     
-        var p = Object.keys(x);
-        return Object.keys(y).every(i => { return p.indexOf(i) !== -1; }) &&
-        p.every(i => { return compareMap(x[i], y[i]); });
-    };
+    var aIntersection = function(aArrayA, aArrayB) {
+        var cb = aArrayB.map(r => JSON.stringify(aSortMap(r), void 0, ""));
+        return aArrayA.filter(r => cb.indexOf(JSON.stringify(aSortMap(r), void 0, "")) >= 0);
+    }
+    
+    var aUnion = function(aArrayA, aArrayB) {
+        var ca = aArrayA.map(r => JSON.stringify(aSortMap(r), void 0, ""));
+        return aArrayA.concat(aArrayB.filter(r => ca.indexOf(JSON.stringify(aSortMap(r), void 0, "")) < 0));
+    }
 
     // Auxiliary functions - apply query conditions
     var applyConditions = (aOrig, aFunc) => {
@@ -415,10 +424,34 @@ var nLinq = function(anObject) {
 
         // Applying to current result set
         each   : aFn => {
-            _$(aFn, "function").isFunction().$_();
+            _$(aFn, "each function").isFunction().$_();
 
             code.select(aFn);
 
+            return code;
+        },
+        intersect: (aA2) => {
+            _$(aA2, "intersect param").isArray().$_();
+
+            res = applyConditions(res);
+            res = aIntersection(res, aA2);
+
+            return code;
+        },
+        except: (aA2) => {
+            _$(aA2, "except param").isArray().$_();
+
+            res = applyConditions(res);
+            res = aException(res, aA2);
+            
+            return code;
+        },
+        union: (aA2) => {
+            _$(aA2, "union param").isArray().$_();
+
+            res = applyConditions(res);
+            res = aUnion(res, aA2);
+            
             return code;
         },
         attach : (aKey, aValue) => {
@@ -469,14 +502,14 @@ var nLinq = function(anObject) {
         },
         assign: (aSource, aAlias, aPK, aFK, aFallback) => {
             res = applyConditions(res);
-            res.map(r => {
+            res.forEach(r => {
                 r[aAlias] = nLinq(aSource).equals(aFK, $$(r).get(aPK)).first(aFallback);
             });
             return code;
         },
         join: (aSource, aAlias, aPK, aFK) => {
             res = applyConditions(res);
-            res.map(r => {
+            res.forEach(r => {
                 r[aAlias] = nLinq(aSource).equals(aFK, $$(r).get(aPK)).select();
             });
             return code;
@@ -512,7 +545,7 @@ var nLinq = function(anObject) {
                     // array parameter
                     if ($$(aParam).isArray()) {
                         var aNewParam = {};
-                        aParam.map(r => {
+                        aParam.forEach(r => {
                             if ($$(r).isString()) $$(aNewParam).set(r, void 0);
                         });
                     }
@@ -521,7 +554,7 @@ var nLinq = function(anObject) {
                         var keys = Object.keys(aParam);
                         return res.map(r => {
                             var nr = {};
-                            keys.map(k => {
+                            keys.forEach(k => {
                                 if ($$($$(r).get(k)).isDef()) {
                                     $$(nr).set(k, $$(r).get(k));
                                 } else {
@@ -576,4 +609,4 @@ var nLinq = function(anObject) {
     return code;
 };
 
-var _from = nLinq;
+var $from = nLinq;
