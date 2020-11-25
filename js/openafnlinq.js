@@ -66,19 +66,19 @@ var nLinq = function(anObject) {
         } else {
             f = new Function("r", "whereFn", "return $$(r).isDef() ? (" + where + ") : void 0");
         }
-        if (askip != 0) {
-            res = aOrig.slice(askip);
-        }
         if (alimit != 0) {
             if (negative) 
-                res = aOrig.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0).filter(r => !f(r, whereFn));
+                res = aOrig.filter(r => !f(r, whereFn)).slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0);
             else 
-                res = aOrig.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0).filter(r => f(r, whereFn));
+                res = aOrig.filter(r => f(r, whereFn)).slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0);
         } else {
             if (negative)
                 res = aOrig.filter(r => !f(r, whereFn));
             else
                 res = aOrig.filter(r => f(r, whereFn));
+        }
+        if (askip != 0) {
+            res = res.slice(askip);
         }
         return res;
     };
