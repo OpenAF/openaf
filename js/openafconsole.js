@@ -1035,6 +1035,7 @@ function __checkVersion() {
 				ow.loadServer();
 				ow.server.checkIn(getOpenAFPath() + "/openaf_update.pid", aPid => {
 					anotherOne = true;
+					return true;
 				}, () => {
 					anotherOne = true;
 				});
