@@ -66,19 +66,19 @@ var nLinq = function(anObject) {
         } else {
             f = new Function("r", "whereFn", "return $$(r).isDef() ? (" + where + ") : void 0");
         }
-        if (askip != 0) {
-            res = aOrig.slice(askip);
-        }
         if (alimit != 0) {
             if (negative) 
-                res = aOrig.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0).filter(r => !f(r, whereFn));
+                res = aOrig.filter(r => !f(r, whereFn)).slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0);
             else 
-                res = aOrig.slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0).filter(r => f(r, whereFn));
+                res = aOrig.filter(r => f(r, whereFn)).slice(alimit < 0 ? alimit : 0, alimit > 0 ? alimit : void 0);
         } else {
             if (negative)
                 res = aOrig.filter(r => !f(r, whereFn));
             else
                 res = aOrig.filter(r => f(r, whereFn));
+        }
+        if (askip != 0) {
+            res = res.slice(askip);
         }
         return res;
     };
@@ -609,7 +609,7 @@ var nLinq = function(anObject) {
 		    var fRes = [];
 		    parallel4Array(pres, ares => {
 		        try {
-		        var rr = _from(ares)._setState(code._getState()).select(aParam);
+		        var rr = nLinq(ares)._setState(code._getState()).select(aParam);
 		        return rr;
 		        } catch(e) { sprintErr(e);}
 		    }).map(rs => {
@@ -617,6 +617,7 @@ var nLinq = function(anObject) {
 		    });
 		    return fRes;
 		}
+		
     };
 
     return code;
