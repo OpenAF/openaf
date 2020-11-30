@@ -2792,13 +2792,13 @@ function inherit(Child, Parent) {
 
 /**
  * <odoc>
- * <key>$from : Array</key>
+ * <key>$$from : Array</key>
  * Shortcut for the JLinq library for easy query and access to arrays/objects. To see all the available options
  * please refer to http://hugoware.net/Projects/jlinq and the list of available functions by executing,
- * in the openaf-console: "desc $from([])".
+ * in the openaf-console: "desc $$from([])".
  * </odoc>
  */
-$from = function(a) {
+$$from = function(a) {
 	loadCompiledLib("jlinq_js");
 
 	if(Object.prototype.toString.call(a) == '[object Array]') {
@@ -2811,6 +2811,19 @@ $from = function(a) {
 		}));
 		//throw "Only queries to arrays of objects.";
 	}
+};
+
+/**
+ * <odoc>
+ * <key>$from : Array</key>
+ * Shortcut for the nLinq library for easy query and access to arrays/objects. To see all the available options
+ * please refer to https://github.com/nmaguiar/nLinq/blob/main/Reference.md and the list of available functions by executing,
+ * in the openaf-console: "desc $from([])".
+ * </odoc>
+ */
+$from = function(a) {
+	loadCompiledLib("openafnlinq_js");
+	return $from(a);
 };
 
 /**

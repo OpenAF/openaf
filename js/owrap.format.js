@@ -1951,6 +1951,15 @@ OpenWrap.format.prototype.elapsedTime = function(aStartTime, aEndTime, aFormat) 
 
 
 OpenWrap.format.prototype.xls = {
+	init: function() {
+		var paths = getOPackPaths();
+
+		if (isUnDef(paths["plugin-XLS"])) {
+			throw "Please install the plugin-XLS opack 'opack install plugin-XLS'.";
+		} else {
+			loadExternalJars(paths["plugin-XLS"]);
+		}
+	},
 	/**
 	 * <odoc>
 	 * <key>ow.format.xls.getStyle(aXLS, aStyleMap)</key>
@@ -2000,6 +2009,7 @@ OpenWrap.format.prototype.xls = {
 		var rcs, rcf;
 
 		_$(aStyleMap, "style map").isMap().$_();
+		ow.format.xls.init();
 
 		if (isUnDef(aXLS.__styleCache)) { aXLS.__styleCache = {}; }
 		var styleId = stringify(sortMapKeys(aStyleMap), void 0, "");
@@ -2080,6 +2090,8 @@ OpenWrap.format.prototype.xls = {
 	},
 	
 	getColor: function(aColorName) {
+		ow.format.xls.init();
+
 		var HSSFColor = Packages.org.apache.poi.ss.usermodel.IndexedColors;
 		var c;
 		switch(aColorName) {
@@ -2137,6 +2149,8 @@ OpenWrap.format.prototype.xls = {
 	}, 
 	
 	getBorderStyle: function(aBorderStyle) {
+		ow.format.xls.init();
+		
 		var bs = Packages.org.apache.poi.ss.usermodel.BorderStyle;
 		switch(aBorderStyle) {
 		case "dash_dot": return bs.DASH_DOT; break;
