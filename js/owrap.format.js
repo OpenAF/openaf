@@ -1957,7 +1957,7 @@ OpenWrap.format.prototype.xls = {
 		if (isUnDef(paths["plugin-XLS"])) {
 			throw "Please install the plugin-XLS opack 'opack install plugin-XLS'.";
 		} else {
-			loadExternalJars(paths["plugin-XLS"]);
+			//loadExternalJars(paths["plugin-XLS"]);
 		}
 	},
 	/**
