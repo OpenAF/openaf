@@ -41,7 +41,7 @@ public class Email extends ScriptableObject {
 	protected String server;
 	protected String sender = "openaf@openaf.io";
 	protected boolean secureProto;
-	protected String login;
+	protected String alogin;
 	protected String pass;
 	protected int port = -1;
 	protected MultiPartEmail email;
@@ -104,15 +104,26 @@ public class Email extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>Email.setCredentials(aLogin, aPassword, aProtocol)</key>
+	 * <key>Email.setCredentials(aLogin, aPassword)</key>
 	 * Sets the credentials to use when using a SMTP server which activates the use of a secure protocol (TLS/SSL) if available.
 	 * </odoc>
 	 */
 	@JSFunction
 	public Email setCredentials(String aLogin, String aPassword) {
-		this.login = AFCmdBase.afc.dIP(aLogin);
+		this.alogin = AFCmdBase.afc.dIP(aLogin);
 		this.pass = AFCmdBase.afc.dIP(aPassword);
 		return this;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Email.login(aLogin, aPassword)</key>
+	 * Sets the credentials to use when using a SMTP server which activates the use of a secure protocol (TLS/SSL) if available.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Email login(String aLogin, String aPassword) {
+		return this.setCredentials(aLogin, aPassword);
 	}
 	
 	/**
@@ -448,7 +459,7 @@ public class Email extends ScriptableObject {
 		email.setSslSmtpPort(String.valueOf(this.port));
 		email.setSmtpPort(this.port);
 		
-		if (this.login != null) email.setAuthenticator(new DefaultAuthenticator(this.login, this.pass));
+		if (this.alogin != null) email.setAuthenticator(new DefaultAuthenticator(this.alogin, this.pass));
 		String res;
 		
 		res = email.send();
