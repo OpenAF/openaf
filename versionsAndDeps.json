@@ -257,7 +257,8 @@
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/cddl.txt",
 			"deps": [
-				"lib/jakarta.activation.jar"
+				"lib/jakarta.activation.jar",
+				"lib/javax.activation-1.2.0.jar"
 			]
 		},
 		{
@@ -299,7 +300,7 @@
 			"version": "2.11.3",
 			"changes": false,
 			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/src/main/resources/META-INF/LICENSE",
+			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
 			"deps": [],
 			"maven": {
 				"id"  : "com.fasterxml.jackson.core.jackson-core",
