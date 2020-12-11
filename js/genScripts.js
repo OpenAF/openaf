@@ -18,7 +18,10 @@ if (isUnDef(__genScriptsUpdate)) __genScriptsUpdate = [];
 
 var javaargs = "";
 for(var i in __args) {
-	if (__args[i].match(/^args=/i)) javaargs = __args[i].replaceAll("^args=", "");
+	if (__args[i].match(/^args=/i)) {
+ 		javaargs = __args[i].replaceAll("^args=", "");
+		__expr = __expr.replace(String(__args[i]), "");
+  	}
 }
 if (javaargs != "") log("Java arguments to use = '" + javaargs + "'");
 
