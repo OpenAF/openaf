@@ -82,7 +82,12 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__logLimit = 3;
 	this.oJobShouldStop = false;
 
-	this.__langs = {};
+	this.__langs = {
+		"powershell": {
+			lang : "powershell",
+			shell: "powershell -" 
+		}
+	};
 
 	this.periodicFuncs = [];
 	this.__periodicFunc = () => {
@@ -830,9 +835,9 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 			todoList[i].args = this.__processArgs(todoList[i].args, aJobArgs, aId);
 
 		if (isObject(todoList[i])) {
-			this.addTodo(this.getID() + altId, this.getJobsCh(), this.getTodoCh(), todoList[i].name, todoList[i].args, todoList[i].type, todoList[i].typeArgs);
+			this.addTodo(this.getID() + (isDef(todoList[i].id) ? todoList[i].id : altId), this.getJobsCh(), this.getTodoCh(), todoList[i].name, todoList[i].args, todoList[i].type, todoList[i].typeArgs);
 		} else {
-			this.addTodo(this.getID() + altId, this.getJobsCh(), this.getTodoCh(), todoList[i], undefined, undefined, aJobArgs);
+			this.addTodo(this.getID() + (isDef(todoList[i].id) ? todoList[i].id : altId), this.getJobsCh(), this.getTodoCh(), todoList[i], void 0, void 0, aJobArgs);
 		}
 	}
 	return this;
@@ -1815,11 +1820,21 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				break;
 			case "shell":
 				if (!res.startsWith("var __res = $sh().envs(")) {
-					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
-					var orig = String(res);
-					res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
-					res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
-					res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
+						var ft = io.createTempFile("ojob_", ".bat");
+						var orig = String(res);
+						io.writeFileString(ft, orig);
+
+						res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(\"" + ft.replace(/\\/g, "/") + "\").sh(\"del " + ft + "\").get(0);\n";
+						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+					} else {
+						aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
+						var orig = String(res);
+						res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
+						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+					}
 				}
 				break;
 			default:
