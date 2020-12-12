@@ -153,7 +153,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	var mdeps = {};
 	function depsScore(v) {
 		//if (isString(v)) v = $path(jobs, "[?name==`" + v + "`] | @[0]");
-		if (isString(v)) v = $from(jobs).equals("name", v).get(0);
+		if (isString(v)) v = $from(jobs).equals("name", v).at(0);
 		if (v == null || isUnDef(v)) return;
 
 		var s = v.name; 
