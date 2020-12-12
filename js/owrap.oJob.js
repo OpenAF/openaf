@@ -138,7 +138,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	// Check todos
 	for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
-			var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
+			//var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
+			var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).at(0);
 			if (isDef(j) && !isNull(j)) {
 				if (isUnDef(j.deps)) j.deps = [];
 				j.deps.push((isObject(todo[i-1]) ? todo[i-1].name : todo[i-1]));
@@ -151,7 +152,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	// Calculate dependencies
 	var mdeps = {};
 	function depsScore(v) {
-		if (isString(v)) v = $path(jobs, "[?name==`" + v + "`] | @[0]");
+		//if (isString(v)) v = $path(jobs, "[?name==`" + v + "`] | @[0]");
+		if (isString(v)) v = $from(jobs).equals("name", v).get(0);
 		if (v == null || isUnDef(v)) return;
 
 		var s = v.name; 
@@ -356,7 +358,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 								if (!isArray(cluster.discovery)) {
 									cluster.discovery = [ cluster.discovery ];
 								}
-								$ch("__cluster::" + cluster.name).setAll(["h", "p"], $path(cluster.discovery, "[].{ h: host, p: port, a: false }"));
+								//$ch("__cluster::" + cluster.name).setAll(["h", "p"], $path(cluster.discovery, "[].{ h: host, p: port, a: false }"));
+								$ch("__cluster::" + cluster.name).setAll(["h", "p"], $from(cluster.discovery).select(r => ({ h: r.host, p: r.port, a: false })));
 							}
 						}
 					}
@@ -913,7 +916,8 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.success = true;
 		existing.count++;
 		try { 
-			var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
+			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
+			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
 			execJob.endTime = now();
 			existing.totalTime += execJob.endTime - execJob.startTime;
 			existing.avgTime = existing.totalTime / existing.count;
@@ -925,7 +929,8 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.error   = true;
 		existing.count++;
 		try {
-			var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
+			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
+			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0); 
 			if (isDef(anException) && isDef(anException.javaException)) {
 				var ar = anException.javaException.getStackTrace();
 				execJob.error = [ String(anException.javaException) ];
@@ -1277,7 +1282,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	var shouldStop = false;
 	if (this.__ojob.sequential) {
 		var job = void 0;
-		var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
+		//var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
+		var listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", (this.getID() + altId)).select();
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
@@ -1297,7 +1303,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 					"ojobId": todo.ojobId,
 					"todoId": todo.todoId
 				});
-				listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
+				//listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
+				listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", (this.getID() + altId)).select();
 			}
 		}
 	} else {
@@ -1307,7 +1314,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			var job = void 0; 
 			while(!shouldStop) {
 				try {
-					var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
+					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
+					var parentOJob = $from(parent.getTodoCh().getKeys()).equals("ojobId",  (parent.getID() + altId)).select();
 					var pjobs = [];
 					for (var ipoj = 0; ipoj < parentOJob.length; ipoj++) {
 						var todo = parent.getTodoCh().get(parentOJob[ipoj]);
