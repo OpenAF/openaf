@@ -533,6 +533,24 @@ OpenWrap.template.prototype.addInLineCSS2HTML = function(aHTML, aCustomCSSMap) {
 	return aHTML;
 };
 
+OpenWrap.template.prototype.md = {
+	/**
+	 * <odoc>
+	 * <key>ow.template.md.table(anArray) : String</key>
+	 * Converts anArray into a markdown table string.
+	 * </odoc>
+	 */
+	table: function(anArray) {
+		var md = "";
+		if (anArray.length > 0) {
+		  md += "| " + Object.keys(anArray[0]).join(" | ") + " |\n";
+		  md += "|-" + Object.keys(anArray[0]).map(r => repeat(r.length, "-")).join("-|-") + "-|\n";
+		  anArray.map(r => md += "| " + Object.values(r).join(" | ") + " |\n");
+		}
+		return md;
+	}
+};
+
 OpenWrap.template.prototype.html = {
 	/**
 	 * <odoc>
