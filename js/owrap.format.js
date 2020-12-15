@@ -2194,7 +2194,7 @@ OpenWrap.format.prototype.xls = {
 		} 
 
 		if (autoFilter) {
-			ow.format.xls.autoFilter(aSheet, aColumn + String(aRow) + ":" + aXLS.toName(aXLS.toNumber(aColumn) + Object.keys(anArray[0]).length -1) + String(aRow + anArray.length -2));
+			ow.format.xls.autoFilter(aXLS, aSheet, aColumn + String(aRow) + ":" + aXLS.toName(aXLS.toNumber(aColumn) + Object.keys(anArray[0]).length -1) + String(aRow + anArray.length));
 		}
 	}
 }
