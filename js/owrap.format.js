@@ -1957,7 +1957,7 @@ OpenWrap.format.prototype.xls = {
 		if (isUnDef(paths["plugin-XLS"])) {
 			throw "Please install the plugin-XLS opack 'opack install plugin-XLS'.";
 		} else {
-			loadExternalJars(paths["plugin-XLS"]);
+			//loadExternalJars(paths["plugin-XLS"]);
 		}
 	},
 	/**
@@ -2008,7 +2008,7 @@ OpenWrap.format.prototype.xls = {
 	getStyle: function(aXLS, aStyleMap) {
 		var rcs, rcf;
 
-		_$(aStyleMap, "style map").isMap().$_();
+		if (!isJavaObject(aStyleMap) && !isMap(aStyleMap)) throw "aStyleMap should be a map or a CellStyle object.";
 		ow.format.xls.init();
 
 		if (isUnDef(aXLS.__styleCache)) { aXLS.__styleCache = {}; }
@@ -2031,41 +2031,41 @@ OpenWrap.format.prototype.xls = {
 		if (isDef(aStyleMap.strikeout)) fnRCF().setStrikeout(aStyleMap.strikeout);
 		if (isDef(aStyleMap.fontPoints)) fnRCF().setFontHeightInPoints(aStyleMap.fontPoints);
 		if (isDef(aStyleMap.fontName)) fnRCF().setFontName(aStyleMap.fontName);
-		if (isDef(aStyleMap.fontColor)) fnRCF().setColor(this.getColor(aStyleMap.fontColor));
+		if (isDef(aStyleMap.fontColor)) fnRCF().setColor(this.getColor(aStyleMap.fontColor, aXLS));
 
 		if (isDef(aStyleMap.wrapText)) fnRCS().setWrapText(aStyleMap.wrapText);
 		if (isDef(aStyleMap.shrinkToFit)) fnRCS().setShrinkToFit(aStyleMap.shrinkToFit);
-		if (isDef(aStyleMap.backgroundColor)) fnRCS().setFillBackgroundColor(this.getColor(aStyleMap.backgroundColor));
-		if (isDef(aStyleMap.foregroundColor)) fnRCS().setFillForegroundColor(this.getColor(aStyleMap.foregroundColor));
-		if (isDef(aStyleMap.borderBottom)) fnRCS().setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
-		if (isDef(aStyleMap.borderLeft)) fnRCS().setBorderLeft(this.getBorderStyle(aStyleMap.borderLeft));
-		if (isDef(aStyleMap.borderRight)) fnRCS().setBorderRight(this.getBorderStyle(aStyleMap.borderRight));
-		if (isDef(aStyleMap.borderTop)) fnRCS().setBorderTop(this.getBorderStyle(aStyleMap.borderTop));
-		if (isDef(aStyleMap.borderBottom)) fnRCS().setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom));
-		if (isDef(aStyleMap.borderLeftColor)) fnRCS().setLeftBorderColor(this.getColor(aStyleMap.borderLeftColor));
-		if (isDef(aStyleMap.borderRightColor)) fnRCS().setRightBorderColor(this.getColor(aStyleMap.borderRightColor));
-		if (isDef(aStyleMap.borderTopColor)) fnRCS().setTopBorderColor(this.getColor(aStyleMap.borderTopColor));
-		if (isDef(aStyleMap.borderBottomColor)) fnRCS().setBottomBorderColor(this.getColor(aStyleMap.borderBottomColor));
+		if (isDef(aStyleMap.backgroundColor)) fnRCS().setFillBackgroundColor(this.getColor(aStyleMap.backgroundColor, aXLS));
+		if (isDef(aStyleMap.foregroundColor)) fnRCS().setFillForegroundColor(this.getColor(aStyleMap.foregroundColor, aXLS));
+		if (isDef(aStyleMap.borderBottom)) fnRCS().setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom, aXLS));
+		if (isDef(aStyleMap.borderLeft)) fnRCS().setBorderLeft(this.getBorderStyle(aStyleMap.borderLeft, aXLS));
+		if (isDef(aStyleMap.borderRight)) fnRCS().setBorderRight(this.getBorderStyle(aStyleMap.borderRight, aXLS));
+		if (isDef(aStyleMap.borderTop)) fnRCS().setBorderTop(this.getBorderStyle(aStyleMap.borderTop, aXLS));
+		if (isDef(aStyleMap.borderBottom)) fnRCS().setBorderBottom(this.getBorderStyle(aStyleMap.borderBottom, aXLS));
+		if (isDef(aStyleMap.borderLeftColor)) fnRCS().setLeftBorderColor(this.getColor(aStyleMap.borderLeftColor, aXLS));
+		if (isDef(aStyleMap.borderRightColor)) fnRCS().setRightBorderColor(this.getColor(aStyleMap.borderRightColor, aXLS));
+		if (isDef(aStyleMap.borderTopColor)) fnRCS().setTopBorderColor(this.getColor(aStyleMap.borderTopColor, aXLS));
+		if (isDef(aStyleMap.borderBottomColor)) fnRCS().setBottomBorderColor(this.getColor(aStyleMap.borderBottomColor, aXLS));
 		if (isDef(aStyleMap.rotation)) fnRCS().setRotation(aStyleMap.rotation);
 		if (isDef(aStyleMap.indention)) fnRCS().setIndention(aStyleMap.indention);
 
 		if (isDef(aStyleMap.valign)) {
 			switch(aStyleMap.valign) {
-			case "top": fnRCS().setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.TOP); break;
-			case "bottom": fnRCS().setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.BOTTOM); break;
-			case "center": fnRCS().setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.CENTER); break;
-			case "justify": fnRCS().setVerticalAlignment(Packages.org.apache.poi.ss.usermodel.VerticalAlignment.JUSTIFY); break;
+			case "top": fnRCS().setVerticalAlignment(aXLS.getClassVerticalAlignment("TOP")); break;
+			case "bottom": fnRCS().setVerticalAlignment(aXLS.getClassVerticalAlignment("BOTTOM")); break;
+			case "center": fnRCS().setVerticalAlignment(aXLS.getClassVerticalAlignment("CENTER")); break;
+			case "justify": fnRCS().setVerticalAlignment(aXLS.getClassVerticalAlignment("JUSTIFY")); break;
 			}
 		};
 		if (isDef(aStyleMap.align)) {
 			switch(aStyleMap.align) {
-			case "center": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_CENTER); break;
-			case "centerSelection": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_CENTER_SELECTION); break;
-			case "fill": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_FILL); break;
-			case "general": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_GENERAL); break;
-			case "justify": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_JUSTIFY); break;
-			case "left": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_LEFT); break;
-			case "right": fnRCS().setAlignment(Packages.org.apache.poi.ss.usermodel.HorizontalAlignment.ALIGN_RIGHT); break;
+			case "center": fnRCS().setAlignment(aXLS.getClassHorizontalAlignment("CENTER")); break;
+			case "centerSelection": fnRCS().setAlignment(aXLS.getClassHorizontalAlignment("CENTER_SELECTION")); break;
+			case "fill": fnRCS().setAlignment(aXLS.getClassHorizontalAlignment("FILL")); break;
+			case "general": fnRCS().setAlignment(aXLS.getClassHorizontalAlignment("GENERAL")); break;
+			case "justify": fnRCS().setAlignment(aXLS.getClassHorizontalAlignment("JUSTIFY")); break;
+			case "left": fnRCS().setAlignment(aXLS.getClassHorizontalAlignment("LEFT")); break;
+			case "right": fnRCS().setAlignment(aXLS.getClassHorizontalAlignment("RIGHT")); break;
 			}
 		};
 		if (isJavaObject(rcf)) fnRCS().setFont(rcf);
@@ -2076,8 +2076,8 @@ OpenWrap.format.prototype.xls = {
 	
 	/**
 	 * <odoc>
-	 * <key>ow.format.xls.autoFilter(aXLSSheet, aRange)</key>
-	 * Applies a auto filter on the provided aXLSSheet object (from XLS.getSheet) to aRange.\
+	 * <key>ow.format.xls.autoFilter(aXLS, aXLSSheet, aRange)</key>
+	 * Applies a auto filter on the provided aXLS and aXLSSheet object (from XLS.getSheet) to aRange.\
 	 * \
 	 * Example:\
 	 * \
@@ -2085,11 +2085,14 @@ OpenWrap.format.prototype.xls = {
 	 * \
 	 * </odoc>
 	 */
-	autoFilter: function(aXLSSheet, aRange) {
-		aXLSSheet.setAutoFilter(Packages.org.apache.poi.ss.util.CellRangeAddress.valueOf(aRange));
+	autoFilter: function(aXLS, aXLSSheet, aRange) {
+		aXLSSheet.setAutoFilter(aXLS.getCellRangeAddress(aRange));
 	},
 	
-	getColor: function(aColorName) {
+	getColor: function(aColorName, aXLS) {
+		return aXLS.getIndexedColors(aColorName);
+	},
+	/*
 		ow.format.xls.init();
 
 		var HSSFColor = Packages.org.apache.poi.ss.usermodel.IndexedColors;
@@ -2146,9 +2149,12 @@ OpenWrap.format.prototype.xls = {
 		}
 		
 		if (isDef(c)) return c.getIndex();
-	}, 
+	},*/ 
 	
-	getBorderStyle: function(aBorderStyle) {
+	getBorderStyle: function(aBorderStyle, aXLS) {
+		return aXLS.getBorderStyle(aBorderStyle);
+	},
+	/*
 		ow.format.xls.init();
 		
 		var bs = Packages.org.apache.poi.ss.usermodel.BorderStyle;
@@ -2168,7 +2174,7 @@ OpenWrap.format.prototype.xls = {
 		case "thick": return bs.THICK; break;
 		case "thin": return bs.THIN; break;
 		}
-	},
+	},*/
 
 	/**
 	 * <odoc>
@@ -2181,7 +2187,7 @@ OpenWrap.format.prototype.xls = {
 	setTable: function(aXLS, aSheet, aColumn, aRow, anArray, autoFilter, headerStyle, linesStyle) {
 		if (isArray(anArray) && anArray.length <= 0) return;
 
-		if (isUnDef(headerStyle)) {
+		if (!isJavaObject(headerStyle) && isUnDef(headerStyle)) {
 			headerStyle = ow.format.xls.getStyle(aXLS, { bold: true });
 		} else {
 			if (isMap(headerStyle)) headerStyle = ow.format.xls.getStyle(aXLS, headerStyle);

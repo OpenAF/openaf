@@ -5,7 +5,7 @@ var nLinq = function(anObject) {
     // Verify input
     if ($$(anObject).isMap()) {
         anObject = Object.keys(anObject).map(k => {
-            anObject[k]._key = k;
+            if ($$(anObject[k]).isMap()) anObject[k]._key = k;
             return anObject[k];
         });
     }
