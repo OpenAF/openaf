@@ -265,16 +265,18 @@ ODocs.prototype.search = function(aTerm, anArrayOfIds) {
 
 	for(var id in this.aodocskeys) {
 		if (ids.indexOf(id) >= 0) {
-			var temp = $from(this.aodocskeys[id]).equals(aTerm);
+			var temp = $from(this.aodocskeys[id]).useCase(false).equals(aTerm);
 			if (temp.any()) {
-				var tempCase = $from(this.aodocskeys[id]).useCase().equals(aTerm);
-				if (tempCase.count() == 1) 
-					return tempCase.select(function(r) { return { "id": id, "key": r};});
-				else
+				var tempCase = $from(this.aodocskeys[id]).useCase(true).equals(aTerm);
+				if (tempCase.count() == 1) {
+					var r =  tempCase.select(function(r) { return { "id": id, "key": r};});
+					return r;
+				} else {
 					return temp.select(function(r) { return {"id": id, "key": r};});
+				}
 				//return [{"id": id, "key": aTerm}];
 			} else {
-				var res = $from(this.aodocskeys[id]).contains(aTerm).select(function(r) { return {"id": id, "key": r};});
+				var res = $from(this.aodocskeys[id]).useCase(false).contains(aTerm).select(function(r) { return {"id": id, "key": r};});
 				resArray = resArray.concat(res);
 			}
 		}
