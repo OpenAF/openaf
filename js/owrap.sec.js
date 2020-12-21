@@ -75,6 +75,19 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
    return {
       /**
        * <odoc>
+       * <key>$sec.list(aBucket, aLockSecret) : Array</key>
+       * Returns a map with a list of all the sBuckets on the current repo. If a specifc sBucket and aLockSecret isn't provide
+       * the current sBucket will have an associated array with the list of corresponding keys.
+       * </odoc>
+       */
+      list: (aBucket, aLockSecret) => {
+         aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
+         aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
+
+         return ow.sec._sb[aRepo].getKeys(aBucket, aLockSecret);
+      },
+      /**
+       * <odoc>
        * <key>$sec.get(aKey, aBucket, aLockSecret) : Object</key>
        * Retrieves the secret object/string for aKey. Optionally you can provide a specific aBucket and the corresponding aLockSecret.
        * </odoc>
@@ -365,6 +378,35 @@ OpenWrap.sec.prototype.SBucket.prototype.getSecret = function(sBucket, aLockSecr
     }
 };
  
+/**
+ * <odoc>
+ * <key>ow.sec.SBucket.getKeys(sBucket, aLockSecret, aKey) : Map</key>
+ * Returns a map with a list of all the sBuckets on the current repo. If a specifc sBucket and aLockSecret isn't provide
+ * the current sBucket will have an associated array with the list of corresponding keys.
+ * </odoc>
+ */
+OpenWrap.sec.prototype.SBucket.prototype.getKeys = function(sBucket, aLockSecret) {
+   sBucket     = _$(sBucket, "sBucket").isString().default(this.sbucket);
+   aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
+
+   var sbs = $ch(this.aCh).getKeys();
+   var rres = {};
+   sbs.forEach(r => {
+      rres[r] = [];
+      if (r == sBucket) {
+         var kv = $ch(this.aCh).get({ sbucket: r });
+         if (isDef(kv) && isDef(kv.v)) {
+            var sb = __sbucket__decrypt(kv.v, this.s, aLockSecret);
+            if (isDef(sb.keys)) {
+               rres[r] = Object.keys(sb.keys);
+            }
+         }
+      }
+   });
+
+   return rres;
+};
+
 /**
  * <odoc>
  * <key>ow.sec.SBucket.getSSecret(aKey) : Map</key>
