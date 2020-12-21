@@ -2,7 +2,7 @@ const $$ = function(aObj) {
 	const _r = {
 		/**
 		 * <odoc>
-		 * <key>$$(aObject).get(aPath) : Object</key>
+		 * <key>$$.get(aPath) : Object</key>
 		 * Given aObject it will try to parse the aPath a retrive the corresponding object under that path. Example:\
 		 * \
 		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
@@ -32,7 +32,7 @@ const $$ = function(aObj) {
 		},
 		/**
 		 * <odoc>
-		 * <key>$$(aObject).set(aPath, aNewValue) : Object</key>
+		 * <key>$$.set(aPath, aNewValue) : Object</key>
 		 * Given aObject it will try to parse the aPath a set the corresponding object under that path to aNewValue. Example:\
 		 * \
 		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
