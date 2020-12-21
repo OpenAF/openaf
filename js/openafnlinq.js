@@ -86,7 +86,7 @@ var nLinq = function(anObject) {
     // Auxiliary functions - verify the provided key
     var vKey = (aKey) => {
         if ($$(aKey).isString() && aKey.replace(/^[^a-zA-Z_$]|[^\w\[\]\.$]/g, "") == aKey) {
-            return (useCase ? aKey.toLowerCase() : aKey);
+            return aKey;
         } else {
             if ($$(aKey).isDef()) throw "'" + aKey + "' is not a valid key."; else return void 0;
         }
@@ -95,8 +95,8 @@ var nLinq = function(anObject) {
     // Auxiliary functions - verify the provided value
     var vValue = aValue => {
         if (!($$(aValue).isNumber() || $$(aValue).isBoolean())) { 
+            if ($$(aValue).isString()) aValue = (!useCase ? aValue.toLowerCase() : aValue); 
             aValue = JSON.stringify(aValue, void 0, "");
-            aValue = (useCase ? aValue.toLowerCase() : aValue); 
         }
         return aValue;
     };
@@ -123,6 +123,7 @@ var nLinq = function(anObject) {
             }
         }
 
+        aTmpl = aTmpl.replace(/{ki}/g, ($$(aValue).isString() && !useCase ? ".toLowerCase()" : ""));
         if (isM) aTmpl = aTmpl.replace(/{k}/g, (!useDot ? "$$$$(r).get(" + JSON.stringify(aKey) + ")" : "r." + aKey)); else aTmpl = aTmpl.replace(/{k}/g, "r");
         if ($$(aValue2).isDef()) {
             aValue2 = vValue(aValue2);
@@ -237,19 +238,19 @@ var nLinq = function(anObject) {
         is           : (aKey) => { if (useOr) { if (useNot) code.orNotIs(aKey); else code.orIs(aKey); } else { if (useNot) code.andNotIs(aKey); else code.andIs(aKey); } return code; },
 
         // Queries with and
-        andStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).startsWith({v})", false); return code; },
-        andEnds         : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).endsWith({v})", false); return code; },
-        andEquals       : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} == {v}", false); return code; },
-        andGreater      : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} > {v}", false); return code; },
-        andLess         : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} < {v}", false); return code; },
-        andGreaterEquals: (aKey, aValue) => { applyWhere(aKey, aValue, "{k} >= {v}", false); return code; },
-        andLessEquals   : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} <= {v}", false); return code; },
-        andContains     : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).indexOf({v}) >= 0", false); return code; },
-        andEmpty        : (aKey, aValue) => { applyWhere(aKey, "", "($$({k}).isUnDef() || String({k}).length == 0)", false); return code; },
-        andMatch        : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).match({v})", false); return code; },
+        andStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.startsWith({v})", false); return code; },
+        andEnds         : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.endsWith({v})", false); return code; },
+        andEquals       : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} == {v}", false); return code; },
+        andGreater      : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} > {v}", false); return code; },
+        andLess         : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} < {v}", false); return code; },
+        andGreaterEquals: (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} >= {v}", false); return code; },
+        andLessEquals   : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} <= {v}", false); return code; },
+        andContains     : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.indexOf({v}) >= 0", false); return code; },
+        andEmpty        : (aKey, aValue) => { applyWhere(aKey, "", "($$({k}).isUnDef() || String({k}){ki}.length == 0)", false); return code; },
+        andMatch        : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.match({v})", false); return code; },
         andType         : (aKey, aValue) => { applyWhere(aKey, aValue, "typeof {k} == {v}", false); return code; },
-        andBetween      : (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k} > {v} && {k} < {v2})", false, true, aV2); return code; },
-        andBetweenEquals: (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k} >= {v} && {k} <= {v2})", false, true, aV2); return code; },
+        andBetween      : (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k}{ki} > {v} && {k}{ki} < {v2})", false, true, aV2); return code; },
+        andBetweenEquals: (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k}{ki} >= {v} && {k}{ki} <= {v2})", false, true, aV2); return code; },
         andIs           : (aKey) => { applyWhere(aKey, "", "{k} != null && {k}", false); return code; },
 
         // Queries with not
@@ -269,51 +270,51 @@ var nLinq = function(anObject) {
         notIs           : (aKey) => { if (useOr) code.orNotIs(aKey); else code.andNotIs(aKey); return code; },
 
         // Queries with and & not
-        andNotStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}).startsWith({v}))", false); return code; },
-        andNotEnds         : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}).endsWith({v}))", false); return code; },
-        andNotEquals       : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} != {v}", false); return code; },
-        andNotGreater      : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} <= {v}", false); return code; },
-        andNotLess         : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} >= {v}", false); return code; },
-        andNotGreaterEquals: (aKey, aValue) => { applyWhere(aKey, aValue, "{k} < {v}", false); return code; },
-        andNotLessEquals   : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} > {v}", false); return code; },
-        andNotContains     : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).indexOf({v}) < 0", false); return code; },
-        andNotEmpty        : (aKey, aValue) => { applyWhere(aKey, "", "($$({k}).isDef() && String({k}).length != 0)", false); return code; },
-        andNotMatch        : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}).match({v}))", false); return code; },
+        andNotStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}){ki}.startsWith({v}))", false); return code; },
+        andNotEnds         : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}){ki}.endsWith({v}))", false); return code; },
+        andNotEquals       : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} != {v}", false); return code; },
+        andNotGreater      : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} <= {v}", false); return code; },
+        andNotLess         : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} >= {v}", false); return code; },
+        andNotGreaterEquals: (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} < {v}", false); return code; },
+        andNotLessEquals   : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} > {v}", false); return code; },
+        andNotContains     : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.indexOf({v}) < 0", false); return code; },
+        andNotEmpty        : (aKey, aValue) => { applyWhere(aKey, "", "($$({k}).isDef() && String({k}){ki}.length != 0)", false); return code; },
+        andNotMatch        : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}){ki}.match({v}))", false); return code; },
         andNotType         : (aKey, aValue) => { applyWhere(aKey, aValue, "typeof {k} != {v}", false); return code; },
-        andNotBetween      : (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k} < {v} || {k} > {v2})", false, true, aV2); return code; },
-        andNotBetweenEquals: (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k} <= {v} || {k} >= {v2})", false, true, aV2); return code; },
+        andNotBetween      : (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k}{ki} < {v} || {k}{ki} > {v2})", false, true, aV2); return code; },
+        andNotBetweenEquals: (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k}{ki} <= {v} || {k}{ki} >= {v2})", false, true, aV2); return code; },
         andNotIs           : (aKey) => { applyWhere(aKey, "", "{k} == null || !({k})", false); return code; },
 
         // Queries with or
-        orStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).startsWith({v})", true); return code; },
-        orEnds         : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).endsWith({v})", true); return code; },
-        orEquals       : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} == {v}", true); return code; },
-        orGreater      : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} > {v}", true); return code; },
-        orLess         : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} < {v}", true); return code; },
-        orGreaterEquals: (aKey, aValue) => { applyWhere(aKey, aValue, "{k} >= {v}", true); return code; },
-        orLessEquals   : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} <= {v}", true); return code; },
-        orContains     : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).indexOf({v}) >= 0", true); return code; },
-        orEmpty        : (aKey, aValue) => { applyWhere(aKey, "", "($$({k}).isUnDef() || String({k}).length == 0)", true); return code; },
-        orMatch        : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).match({v})", true); return code; },
+        orStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.startsWith({v})", true); return code; },
+        orEnds         : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.endsWith({v})", true); return code; },
+        orEquals       : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} == {v}", true); return code; },
+        orGreater      : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} > {v}", true); return code; },
+        orLess         : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} < {v}", true); return code; },
+        orGreaterEquals: (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} >= {v}", true); return code; },
+        orLessEquals   : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} <= {v}", true); return code; },
+        orContains     : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.indexOf({v}) >= 0", true); return code; },
+        orEmpty        : (aKey, aValue) => { applyWhere(aKey, "", "($$({k}).isUnDef() || String({k}){ki}.length == 0)", true); return code; },
+        orMatch        : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.match({v})", true); return code; },
         orType         : (aKey, aValue) => { applyWhere(aKey, aValue, "typeof {k} == {v}", true); return code; },
-        orBetween      : (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k} > {v} && {k} < {v2})", true, aV2); return code; },
-        orBetweenEquals: (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k} >= {v} && {k} <= {v2})", true, aV2); return code; },
+        orBetween      : (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k}{ki} > {v} && {k}{ki} < {v2})", true, aV2); return code; },
+        orBetweenEquals: (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k}{ki} >= {v} && {k}{ki} <= {v2})", true, aV2); return code; },
         orIs           : (aKey) => { applyWhere(aKey, "", "{k} != null && {k}", true); return code; },
 
         // Queries with or and not
-        orNotStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}).startsWith({v}))", true); return code; },
-        orNotEnds         : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}).endsWith({v}))", true); return code; },
-        orNotEquals       : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} != {v}", true); return code; },
-        orNotGreater      : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} <= {v}", true); return code; },
-        orNotLess         : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} >= {v}", true); return code; },
-        orNotGreaterEquals: (aKey, aValue) => { applyWhere(aKey, aValue, "{k} < {v}", true); return code; },
-        orNotLessEquals   : (aKey, aValue) => { applyWhere(aKey, aValue, "{k} > {v}", true); return code; },
-        orNotContains     : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}).indexOf({v}) < 0", true); return code; },
-        orNotEmpty        : (aKey, aValue) => { applyWhere(aKey, "", "($$({k}).isDef() && String({k}).length != 0)", true); return code; },
-        orNotMatch        : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}).match({v}))", true); return code; },
+        orNotStarts       : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}){ki}.startsWith({v}))", true); return code; },
+        orNotEnds         : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}){ki}.endsWith({v}))", true); return code; },
+        orNotEquals       : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} != {v}", true); return code; },
+        orNotGreater      : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} <= {v}", true); return code; },
+        orNotLess         : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} >= {v}", true); return code; },
+        orNotGreaterEquals: (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} < {v}", true); return code; },
+        orNotLessEquals   : (aKey, aValue) => { applyWhere(aKey, aValue, "{k}{ki} > {v}", true); return code; },
+        orNotContains     : (aKey, aValue) => { applyWhere(aKey, aValue, "String({k}){ki}.indexOf({v}) < 0", true); return code; },
+        orNotEmpty        : (aKey, aValue) => { applyWhere(aKey, "", "($$({k}).isDef() && String({k}){ki}.length != 0)", true); return code; },
+        orNotMatch        : (aKey, aValue) => { applyWhere(aKey, aValue, "!(String({k}){ki}.match({v}))", true); return code; },
         orNotType         : (aKey, aValue) => { applyWhere(aKey, aValue, "typeof {k} != {v}", true); return code; },
-        orNotBetween      : (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k} < {v} || {k} > {v2})", false, true, aV2); return code; },
-        orNotBetweenEquals: (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k} <= {v} || {k} >= {v2})", false, true, aV2); return code; },
+        orNotBetween      : (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k}{ki} < {v} || {k}{ki} > {v2})", false, true, aV2); return code; },
+        orNotBetweenEquals: (aKey, aV1, aV2) => { applyWhere(aKey, aV1, "({k}{ki} <= {v} || {k}{ki} >= {v2})", false, true, aV2); return code; },
         orNotIs           : (aKey) => { applyWhere(aKey, "", "{k} == null || !({k})", true); return code; },
 
         // SELECTS
