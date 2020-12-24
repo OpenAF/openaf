@@ -2612,16 +2612,19 @@ OpenWrap.server.prototype.httpd = {
 		aMapOfRoutes["/js/handlebars.js"] = function() { return ow.server.httpd.replyHandlebars(aHTTPd); };
 		aMapOfRoutes["/js/stream.js"] = function() { return ow.server.httpd.replyStream(aHTTPd); };
 		aMapOfRoutes["/js/jlinq.js"] = function() { return ow.server.httpd.replyJLinq(aHTTPd); };
+		aMapOfRoutes["/js/openafnlinq.js"] = function() { return ow.server.httpd.replyNLinq(aHTTPd); };
 		aMapOfRoutes["/js/jmespath.js"] = function() { return ow.server.httpd.replyJMesPath(aHTTPd); };
 		aMapOfRoutes["/js/underscore.js"] = function() { return ow.server.httpd.replyUnderscore(aHTTPd); };
 		aMapOfRoutes["/js/lodash.js"] = function() { return ow.server.httpd.replyLoadash(aHTTPd); };
 		aMapOfRoutes["/js/openafsigil.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/openafsigil.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
+		aMapOfRoutes["/js/njsmap.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/njsmap.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/js/highlight.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/highlight.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/js/materialize.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/materialize.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/materialize.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/materialize.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/materialize-icon.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/materialize-icon.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/github-gist.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/github-gist.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/github-markdown.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/github-markdown.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
+		aMapOfRoutes["/css/nJSMap.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/nJSMap.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.eot"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.eot", true), ow.server.httpd.mimes.EOT, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.svg"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.svg", true), ow.server.httpd.mimes.SVG, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.ttf"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.ttf", true), ow.server.httpd.mimes.TTF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
@@ -2670,6 +2673,10 @@ OpenWrap.server.prototype.httpd = {
 		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/jlinq.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public);		
 	},
 
+	replyNLinq: function(aHTTPd) {
+		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/openafnlinq.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public);		
+	},
+
 	replyJMesPath: function(aHTTPd) {
 		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/jmespath.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public);		
 	},	
@@ -2690,14 +2697,8 @@ OpenWrap.server.prototype.httpd = {
 	 * documentRoot. Example:\
 	 * \
 	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 *    "/stuff/to/server": function(req) {\
-	 *       return ow.server.httpd.replyFile(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri);\
-	 *    }\
-	 * },\
-	 * function(req) {\
-	 *    return hs.replyOKText("nothing here...");\
-	 * }\
-	 * );\
+	 *    "/stuff/to/server": r => ow.server.httpd.replyFile(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri)\
+	 * }), r => hs.replyOKText("nothing here...") );\
 	 * \
 	 * </odoc>
 	 */
@@ -2736,11 +2737,11 @@ OpenWrap.server.prototype.httpd = {
 	 * aBaseURI. Optionally you can also provide a notFoundFunction and an array of file strings (documentRootArraY) to replace as
 	 * documentRoot. Example:\
 	 * \
-	 * ow.server.httpd.route((hs, ow.server.httpd.mapRoutesWithLibs(hs, {)\
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
 	 *    "/stuff/to/server": function(req) {\
 	 *       return ow.server.httpd.replyFileMD(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri);\
 	 *    }\
-	 * },\
+	 * }),\
 	 * function(req) {\
 	 *    return hs.replyOKText("nothing here...");\
 	 * }\
@@ -2786,6 +2787,27 @@ OpenWrap.server.prototype.httpd = {
 		} catch(e) { 
 			return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e);
 		}
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.replyJSMap(aHTTPd, aMapOrArray) : Map</key>
+	 * Provides a helper aHTTPd reply that will parse aMapOrArray into a HTML output. Example:\
+	 * \
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
+	 *    "/stuff/to/server": r => ow.server.httpd.replyJSMap(hs, getOPackPaths()\
+	 * }),\
+	 * r => hs.replyOKText("nothing here...")\
+	 * );\
+	 * \
+	 * </odoc>
+	 */
+	replyJSMap: function(aHTTPd, aMapOrArray) {
+		ow.loadTemplate();
+
+		var res = ow.template.html.parseMap(aMapOrArray, true);
+
+		return aHTTPd.replyOKHTML("<html><style>" + res.css + "</style><body>" + res.out + "</body></html>");
 	},
 
 	/**
