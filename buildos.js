@@ -63,7 +63,7 @@ function buildClasspath() {
 		java.lang.System.exit(0);
 	}
 
-	for (var i in listfiles.files) {
+	for (var i in $from( listfiles.files ).sort("filename").select() ) {
 		if (!listfiles.files[i].filename.match(/\.jar$/)) continue;
 		if (listfiles.files[i].filename.match("af.jar")) continue;
 		log("Including " + listfiles.files[i].filename);
