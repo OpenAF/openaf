@@ -1813,6 +1813,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			res = io.readFileString(aJobTypeArgs.execPy);
 		}
 
+		if (isDef(aJobTypeArgs.file)) {
+			res = io.readFileString(aJobTypeArgs.file);
+		}
+
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
 			switch(aJobTypeArgs.lang) {
 			case "js":
@@ -1851,15 +1855,22 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					if (isDef(m) && isDef(m.shell)) {
 						aJobTypeArgs.shell = m.shell;
 					}
+					if (isDef(m) && isDef(m.langFn)) {
+						aJobTypeArgs.langFn = m.langFn;
+					}
 				}
-				if (isString(aJobTypeArgs.lang) && isString(aJobTypeArgs.shell)) {
-					if (!res.startsWith("var __res = $sh().envs(")) {
+				if (isString(aJobTypeArgs.lang)) {
+					if (isString(aJobTypeArgs.shell)) {
+						if (!res.startsWith("var __res = $sh().envs(")) {
 
-						aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
-						var orig = String(res);
-						res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
-						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
-						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+							aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
+							var orig = String(res);
+							res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
+							res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+							res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+						}
+					} else if (isDef(aJobTypeArgs.langFn)) {
+						if (isString(aJobTypeArgs.langFn)) res = "var code = " + stringify(res) + ";\n" + aJobTypeArgs.langFn;
 					}
 				}
 			}
