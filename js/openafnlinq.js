@@ -491,12 +491,12 @@ var nLinq = function(anObject) {
                     //if (k.indexOf(".") > 0 || k.indexOf("[") > 0)
                     //    ssort += " $$(b).get(\"" + k + "\") - $$(a).get(\"" + k + "\") ";
                     //else
-                        ssort += " b." + k + " - a." + k + " ";
+                    ssort += " (a." + k + " > b." + k + " ? -1 : (a." + k + " < b." + k + " ? 1 : 0)) ";
                 } else {
                     //if (k.indexOf(".") > 0 || k.indexOf("[") > 0)
                     //    ssort += " $$(a).get(\"" + k + "\") - $$(b).get(\"" + k + "\") ";
                     //else
-                        ssort += " a." + k + " - b." + k + " ";
+                    ssort += " (a." + k + " > b." + k + " ? 1 : (a." + k + " < b." + k + " ? -1 : 0)) ";
                 }
             }
 
