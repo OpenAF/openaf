@@ -5,7 +5,7 @@ import org.fusesource.jansi.Ansi;
 
 public class JAnsiRender {
     static public String render(String aStr) {
-        String keys = null, values = null;
+        /*String keys = null, values = null;
         Ansi res = null;
 
         if (aStr != null) {
@@ -102,6 +102,8 @@ public class JAnsiRender {
             return res.a(values).reset().toString();
         } else {
             return null;
-        }
+        }*/
+
+        return null;
     }
 }

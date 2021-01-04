@@ -766,8 +766,8 @@ function ansiColor(aAnsi, aString, force) {
 	var res = "";
 	
 	if (ansis) {
-		//var res = jansi.Ansi.ansi().render("@|" + aAnsi.toLowerCase() + " " + aString + "|@");
-		var res = Packages.openaf.JAnsiRender.render(aAnsi.toLowerCase() + " " + aString);
+		var res = jansi.Ansi.ansi().render("@|" + aAnsi.toLowerCase() + " " + aString + "|@");
+		//var res = Packages.openaf.JAnsiRender.render(aAnsi.toLowerCase() + " " + aString);
 		return String(res); 
 	} else {
 		return aString;

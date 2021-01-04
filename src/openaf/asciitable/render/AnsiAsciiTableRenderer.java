@@ -233,8 +233,8 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 							int nw;
 							if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && !((String) this.colorMap[rowi][k]).equals("")) {
 								clr = this.colorMap[rowi][k];
-								//t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
-								t = openaf.JAnsiRender.render(clr.toLowerCase() + " " + columns[i][k]);
+								t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
+								//t = openaf.JAnsiRender.render(clr.toLowerCase() + " " + columns[i][k]);
 								nw = width + (t.length() - columns[i][k].length());
 							} else {
 								t = columns[i][k];
@@ -249,8 +249,8 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 						int nw;
 						if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && !((String) this.colorMap[rowi][k]).equals("")) {
 							clr = this.colorMap[rowi][k];
-							//t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
-							t = openaf.JAnsiRender.render(clr.toLowerCase() + " " + columns[i][k]);
+							t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
+							//t = openaf.JAnsiRender.render(clr.toLowerCase() + " " + columns[i][k]);
 							nw = cols[k] + (t.length() - columns[i][k].length());
 						} else {
 							t = columns[i][k];
