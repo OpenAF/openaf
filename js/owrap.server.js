@@ -797,7 +797,7 @@ OpenWrap.server.prototype.rest = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn) : RequestReply</key>
+	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn, returnHTML) : RequestReply</key>
 	 * Provides a REST compliant HTTPServer request replier given a aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc
 	 * and aRemoveFunc. Each function will receive a map with the provided indexes and data from the request plus the request itself. Optionally you can 
 	 * specify with returnWithParams = true that each function will not return just the data map but a composed map with: data (the actual
@@ -817,23 +817,36 @@ OpenWrap.server.prototype.rest = {
 	 * \
 	 * </odoc>
 	 */
-	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn) {
+	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn, returnHTML) {
+		returnHTML = _$(returnHTML, "returnHTML").isBoolean().default(false);
+
 		var idxs = ow.server.rest.parseIndexes(aBaseURI, aReq);
 		var res = {};
 		res.headers = {};
 		var params;
 
-		res.mimetype = ow.server.httpd.mimes.JSON;
+		if (returnHTML) ow.loadTemplate();
+		res.mimetype = (returnHTML ? ow.server.httpd.mimes.HTML : ow.server.httpd.mimes.JSON);
+
+		var fnD = r => {
+			if (returnHTML) {
+				var res = ow.template.html.parseMap(r, true);
+
+				return String("<html><style>" + res.css + "</style><body>" + res.out + "</body></html>");
+			} else {
+				return stringify(r, void 0, "");
+			}
+		};
 
 		switch(aReq.method) {
 		case "GET": 
 			if (returnWithParams) {
 				params = aGetFunc(idxs, aReq);
-				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.data))     res.data = fnD(params.data);
 				if (isDef(params.status))   res.status = params.status;
 				if (isDef(params.mimetype)) res.mimetype = params.mimetype;
 			} else {
-				res.data = stringify(aGetFunc(idxs, aReq), void 0, ""); 
+				res.data = fnD(aGetFunc(idxs, aReq)); 
 			}
 			break;
 		case "POST":
@@ -842,11 +855,11 @@ OpenWrap.server.prototype.rest = {
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { }
 				if (returnWithParams) {
 					params = aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq);
-					if (isDef(params.data))     res.data = stringify(params.data);
+					if (isDef(params.data))     res.data = fnD(params.data);
 					if (isDef(params.status))   res.status = params.status;
 					if (isDef(params.mimetype)) res.mimetype = params.mimetype;
 				} else { 
-					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq), void 0, "");
+					res.data = fnD(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq));
 				}
 			} else {
 				if (isDef(aReq.files.postData)) {
@@ -855,11 +868,11 @@ OpenWrap.server.prototype.rest = {
 					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"]), aReq);
 				}
 				if (returnWithParams) {
-					if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+					if (isDef(params.data))     res.data = fnD(params.data);
 					if (isDef(params.status))   res.status = params.status;
 					if (isDef(params.mimetype)) res.mimetype = params.mimetype;					
 				} else {
-					res.data = stringify(params, void 0, "");
+					res.data = fnD(params);
 				}
 			}
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
@@ -873,26 +886,27 @@ OpenWrap.server.prototype.rest = {
 				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData), aReq);
 			}
 			if (returnWithParams) {
-				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.data))     res.data = fnD(params.data);
 				if (isDef(params.status))   res.status = params.status;
 				if (isDef(params.mimetype)) res.mimetype = params.mimetype;	
 			} else {
-				res.data = stringify(params, void 0, "");
+				res.data = fnD(params);
 			}
 			break;
 		case "DELETE": 
 			params = aRemoveFunc(idxs, aReq); 
 			if (returnWithParams) {
-				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.data))     res.data = fnD(params.data);
 				if (isDef(params.status))   res.status = params.status;
 				if (isDef(params.mimetype)) res.mimetype = params.mimetype;	
 			} else {
-				res.data = stringify(params, void 0, "");
+				res.data = fnD(params);
 			}
 			break;
 		}
 
 		if (isDef(anAuditFn) && isFunction(anAuditFn)) $do(() => { anAuditFn(aReq, res); });
+
 		return res;
 	},
 	
