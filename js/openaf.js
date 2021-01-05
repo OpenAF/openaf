@@ -2632,16 +2632,43 @@ function clone(aObject) {
  * Merges a JavaScript object A with a JavaScript object B a returns the result as a new object.
  * </odoc>
  */
-function merge(aObjectA, aObjectB) {
+var __merge_alternative = false;
+function merge(aObjectA, aObjectB, alternative, deDup) {
 	if (isObject(aObjectA) && isArray(aObjectB)) {
-		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA)); }
+		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA), alternative, deDup); }
 		return aObjectB;
 	}
 	if (isObject(aObjectB) && isArray(aObjectA)) {
-		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB)); }
+		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB), alternative, deDup); }
 		return aObjectA;
 	}
-	return extend(true, clone(aObjectA), aObjectB);
+	if (__merge_alternative || alternative) {
+		var r = Object.assign({}, aObjectA);
+		if (isDef(aObjectB) && isMap(aObjectB)) {
+		  Object.keys(aObjectB).forEach(k => {
+			if (!isMap(aObjectB[k]) && !isArray(aObjectB[k])) {
+			  r[k] = aObjectB[k];
+			} else {
+			  if (isArray(aObjectB[k])) {
+				if (isUnDef(r[k])) r[k] = [];
+				
+				if (deDup) {
+				  r[k] = r[k].concat(aObjectB[k].filter(s => arrayContains(r[k], s) < 0));
+				} else {
+				  r[k] = r[k].concat(aObjectB[k]);
+				}
+			  } else if (isMap(aObjectB[k])) {
+				if (isUnDef(r[k])) r[k] = {};
+				r[k] = merge(r[k], aObjectB[k], alternative, deDup);
+			  }
+			}
+		  });
+		}
+	  
+		return r;
+	} else {
+		return extend(true, clone(aObjectA), aObjectB);
+	}
 }
 
 /**
