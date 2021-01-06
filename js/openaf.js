@@ -2632,7 +2632,7 @@ function clone(aObject) {
  * Merges a JavaScript object A with a JavaScript object B a returns the result as a new object.
  * </odoc>
  */
-var __merge_alternative = false;
+var __merge_alternative = true;
 function merge(aObjectA, aObjectB, alternative, deDup) {
 	if (isObject(aObjectA) && isArray(aObjectB)) {
 		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA), alternative, deDup); }
@@ -2669,6 +2669,22 @@ function merge(aObjectA, aObjectB, alternative, deDup) {
 	} else {
 		return extend(true, clone(aObjectA), aObjectB);
 	}
+}
+
+/**
+ * <odoc>
+ * <key>uniqArray(anArray) : Array</key>
+ * Returns anArray with no duplicates entries (including duplicate maps).
+ * </odoc>
+ */
+function uniqArray(anArray) {
+	if (!isArray(anArray)) return anArray;
+
+	var r = [];
+	anArray.forEach(s => {
+		if (arrayContains(r, s) < 0) r.push(s);
+	});
+	return r;
 }
 
 /**
@@ -4050,7 +4066,7 @@ function searchHelp(aTerm, aPath, aId) {
 			paths = paths.concat(Object.keys(getOPackLocalDB()));
 		} catch(e) {
 		}
-		paths.map(path => {
+		paths.forEach(path => {
 			if (!(path.match(/\.(jar|db|zip)/))) path += "/";
 			if (__odocsfiles.indexOf(path) < 0) {
 				__odocs.loadFile(path);
