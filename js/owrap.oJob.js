@@ -1831,7 +1831,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 				break;
 			case "shell":
-				if (!res.startsWith("var __res = $sh().envs(")) {
+				if (!res.indexOf("var __res = $sh().envs(") >= 0) {
 					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
 						var ft = io.createTempFile("ojob_", ".bat");
 						var orig = String(res);
@@ -1965,6 +1965,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 		}
 
+	 	j.lang = void 0;
 		return j;
 	}
 
