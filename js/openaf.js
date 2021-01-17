@@ -7983,6 +7983,41 @@ const $ssh = function(aMap) {
     return new __ssh(aMap);
 };
 
+/**
+ * <odoc>
+ * <key>$set(aKey, aValue)</key>
+ * Sets aValue with aKey so it can be retrieved with $get later.
+ * </odoc>
+ */
+const $set = function(aK, aV) {
+    _$(aK, "aK").isString().$_();
+    _$(aV, "aV").$_();
+
+    if ($ch().list().indexOf("oaf::global") < 0) {
+        $ch("oaf::global").create();
+    }
+
+    $ch("oaf::global").set({ k: aK }, { v: aV });
+}
+
+/**
+ * <odoc>
+ * <key>$get(aKey) : Object</key>
+ * Returns a value previously set with $set with aKey.
+ * </odoc>
+ */
+const $get = function(aK) {
+    _$(aK, "aK").isString().$_();
+
+    if ($ch().list().indexOf("oaf::global") < 0) {
+        $ch("oaf::global").create();
+    }
+
+    var res = $ch("oaf::global").get({ k: aK });
+    
+    if (isDef(res) && isDef(res.v)) return res.v; else return void 0;
+}
+
 var __OpenAFUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)";
 function __setUserAgent(aNewAgent) {
 	__OpenAFUserAgent = _$(aNewAgent).isString().default(__OpenAFUserAgent);
