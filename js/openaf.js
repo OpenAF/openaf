@@ -4090,7 +4090,7 @@ function searchHelp(aTerm, aPath, aId) {
 	} else {
 		keys = keys.sort(function(a, b) { return (a.key.toLowerCase() > b.key.toLowerCase()) ? 1 : -1; });
 	}
-	return keys;
+	return uniqArray(keys);
 }
 
 /**
