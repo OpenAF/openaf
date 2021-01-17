@@ -7997,7 +7997,7 @@ const $set = function(aK, aV) {
         $ch("oaf::global").create();
     }
 
-    $ch("oaf::global").set({ k: aK }, { v: aV });
+    $ch("oaf::global").set({ k: aK }, { k: aK, v: aV });
 }
 
 /**

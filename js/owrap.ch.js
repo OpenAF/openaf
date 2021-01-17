@@ -1175,7 +1175,7 @@ OpenWrap.ch.prototype.__types = {
 			if (m.yaml) {
 				io.writeFileYAML(m.file, o, m.multipart);
 			} else {
-				io.writeFileJSON(m.file, o);
+				io.writeFileJSON(m.file, o, m.compact ? "" : void 0);
 			}
 		},
 		create       : function(aName, shouldCompress, options) {
