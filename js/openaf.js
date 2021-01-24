@@ -1818,7 +1818,7 @@ function getOPackRemoteDB() {
 			zip = new ZIP(http.responseBytes());
 			if (isDef(http)) {
 				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON))));
-                        }
+            }
 			if (!isUnDef(zip)) zip.close();
 		} catch(e) {
 			// Continue to next

@@ -410,17 +410,17 @@ OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ig
  * </odoc>
  */
 OpenWrap.obj.prototype.fromObj2Array = function(aObj, aKey) {
+	_$(aObj, "aObj").isMap().$_();
+
 	var res = [];
-	for(var i in aObj) {
-		var item;
-		if (isDef(aKey)) {
-			var m = {};
-			m[aKey] = i;
-			item = merge(m, aObj[i]);
-		} else {
-			item = clone(aObj[i]);
+	if (isUnDef(aKey)) {
+		res = Object.values(aObj);
+	} else {
+		for(var i in aObj) {
+			var item = clone(aObj[i]);
+			item[aKey] = i;
+			res.push(item);
 		}
-		res.push(item);
 	}
 	return res;
 };

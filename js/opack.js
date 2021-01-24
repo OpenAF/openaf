@@ -330,30 +330,19 @@ function verifyDeps(packag) {
 	var packages = getOPackLocalDB();
 	var results = {};
 
-	/*if (!io.fileInfo(fileDB).permissions.match(/r/)) {
-		throw fileDB + " is not acessible. Please check permissions.";
-	}*/
-
-	/*try {
-		//var zip = new ZIP(io.readFileBytes(fileDB));
-		var zip = new ZIP();
-		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
-		//zip.close();
-	} catch(e) {
-		//logErr(e.message);
-	}*/
-
-	for(let dep in packag.dependencies) {
-		var version = packag.dependencies[dep];
-
-		var compareTo = findLocalDBByName(dep);
-		results[dep] = false;
-		if (!isUndefined(compareTo)) {
-			if (compareTo.version == version)                          							{ results[dep] = true; continue; }
-			if (version.match(/^\>\=/) && compareTo.version >= version.replace(/^\>\=/, ""))  	{ results[dep] = true; continue; }
-			if (version.match(/^\<\=/) && compareTo.version <= version.replace(/^\<\=/, ""))  	{ results[dep] = true; continue; }
-			if (version.match(/^\<(?=[^=])/) && compareTo.version < version.replace(/^\</, "")) { results[dep] = true; continue; }
-			if (version.match(/^\>(?=[^=])/) && compareTo.version > version.replace(/^\>/, "")) { results[dep] = true; continue; }
+	if (isMap(packag.dependencies)) {
+		for(let dep in packag.dependencies) {
+			var version = packag.dependencies[dep];
+	
+			var compareTo = findLocalDBByName(dep);
+			results[dep] = false;
+			if (!isUndefined(compareTo)) {
+				if (compareTo.version == version)                          							{ results[dep] = true; continue; }
+				if (version.match(/^\>\=/) && compareTo.version >= version.replace(/^\>\=/, ""))  	{ results[dep] = true; continue; }
+				if (version.match(/^\<\=/) && compareTo.version <= version.replace(/^\<\=/, ""))  	{ results[dep] = true; continue; }
+				if (version.match(/^\<(?=[^=])/) && compareTo.version < version.replace(/^\</, "")) { results[dep] = true; continue; }
+				if (version.match(/^\>(?=[^=])/) && compareTo.version > version.replace(/^\>/, "")) { results[dep] = true; continue; }
+			}
 		}
 	}
 
@@ -888,15 +877,15 @@ function __opack_info(args) {
 	var depsResults, ideps = [];
 	if(!remote) depsResults = verifyDeps(packag);
 
-	for(let i in packag.dependencies) {
-		var depend = packag.dependencies[i];
-
-		if (!remote) {
-			ideps.push({ package: i, status: ((depsResults[i]) ? "OK" : "FAILED DEPENDENCY") });
-			//print("\t" + i + ": " + depend + " [" + ((depsResults[i]) ? "OK" : "FAILED DEPENDENCY") + "]");
-		} else {
-			ideps.push({ package: i });
-			//print("\t" + i + ": " + depend);
+	if (isMap(packag.dependencies)) {
+		for(let i in packag.dependencies) {
+			var depend = packag.dependencies[i];
+	
+			if (!remote) {
+				ideps.push({ package: i, status: ((depsResults[i]) ? "OK" : "FAILED DEPENDENCY") });
+			} else {
+				ideps.push({ package: i });
+			}
 		}
 	}
 
@@ -1071,7 +1060,7 @@ function install(args) {
 
 	// Verify deps
 	var depsResults = verifyDeps(packag);
-	if (!force && !justCopy)
+	if (!force && !justCopy && isMap(packag.dependencies))
 		for(let i in packag.dependencies) {
 			var depend = packag.dependencies[i];
 
@@ -1261,7 +1250,7 @@ function __opack_exec(args) {
 		target = findLocalDBTargetByName(args[0]);
 	}
 
-	if (typeof packag.main !== 'undefined' && packag.main.length > 0)
+	if (isString(packag.main) && packag.main.length > 0)
 		af.load(target + "/" + packag.main);
 	else {
 		if (isDef(packag.mainJob) && packag.mainJob.length > 0) {
@@ -1358,7 +1347,7 @@ function __opack_script(args, isDaemon, isJob) {
 
 	loadLodash();
 	var scriptCommand = (isDaemon) ? "--daemon " : "--script ";
-	if (typeof packag.main !== 'undefined' && packag.main.length > 0 && !isJob) {
+	if (isString(packag.main) && packag.main.length > 0 && !isJob) {
 		if (windows) {
 			io.writeFileString(curDir + "/opack_" + _.camelCase(packag.name) + ".bat", generateWinScript(scriptCommand + target + "/" + packag.main + " -e \"%*\""));
 			log("Created script in " + curDir + "/opack_" + _.camelCase(packag.name) + ".bat");
@@ -1448,7 +1437,7 @@ function update(args) {
 		(typeof packag.name == 'undefined' ||
 		 packag.__filelocation == 'local'))
 		//packag = getOPackRemoteDB()[packag.name];
-		packag = getOPackRemoteDB()[$from(Object.keys(getOPackRemoteDB())).equals(args[0]).select()[0]];
+		packag = getOPackRemoteDB()[$from(Object.keys(getOPackRemoteDB())).equals(args[0]).at(0)];
 
 	// Verify version
 	if (!isUnDef(packag) &&
@@ -1512,11 +1501,11 @@ function erase(args, dontRemoveDir) {
 	}
 
 	// Find deps
-	if (typeof packag.dependencies !== 'undefined' &&
+	if (isMap(packag.dependencies) &&
 		!force) {
 		var packages = getLocalDB(true);
 		for(let pack in packages) {
-			if (isArray(packages[pack].dependencies) &&
+			if (isMap(packages[pack].dependencies) &&
 				typeof packages[pack].dependencies[packag.name] !== 'undefined') {
 				logErr("'" + packages[pack].name + "' depends on '" + packag.name + "'");
 				return;
@@ -1722,11 +1711,11 @@ function genpack(args) {
 	packageNew.repository          = (typeof packag.repository !== 'undefined')          ? packag.repository          : {"type": "http", "url": "URL to main repository"};
 	packageNew.description         = (typeof packag.description !== 'undefined')         ? packag.description         : "A nice description";
 	packageNew.name                = (typeof packag.name !== 'undefined')                ? packag.name                : "A_nice_name";
-	packageNew.main                = (typeof packag.main !== 'undefined')                ? packag.main                : "";
+	packageNew.main                = (isString(packag.main))                             ? packag.main                : "";
 	packageNew.mainJob             = (typeof packag.mainJob !== 'undefined')             ? packag.mainJob             : "";
 	packageNew.license             = (typeof packag.license !== 'undefined')             ? packag.license             : "The licence description";
 	packageNew.version             = (typeof packag.version !== 'undefined')             ? packag.version             : "20010101";
-	packageNew.dependencies        = (typeof packag.dependencies !== 'undefined')        ? packag.dependencies        : {"packa": ">=20100101", "packb": "<20120101" };
+	packageNew.dependencies        = (isMap(packag.dependencies))                        ? packag.dependencies        : {"packa": ">=20100101", "packb": "<20120101" };
 
 	if (isDef(packag.odoc) && isObject(packag.odoc)) {
 		for(let i in packag.odoc) {
