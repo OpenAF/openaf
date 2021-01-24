@@ -7661,7 +7661,7 @@ const $ssh = function(aMap) {
 	 * <odoc>
 	 * <key>$ssh.$ssh(aMap) : $ssh</key>
 	 * Builds an object to allow access through ssh. aMap should be a ssh string with the format: ssh://user:pass@host:port/identificationKey?timeout=1234&amp;compression=true or
-	 * a map with the keys: host, port, login, pass, id, compress and timeout. See "help SSH.SSH" for more info.
+	 * a map with the keys: host, port, login, pass, id/key, compress and timeout. See "help SSH.SSH" for more info.
 	 * </odoc>
 	 */
     var __ssh = function(aMap) {
@@ -7695,6 +7695,11 @@ const $ssh = function(aMap) {
             if (isDef(aMap.url)) aMap.host = aMap.url;
         }
         if (!(aMap instanceof SSH)) {
+			if (isString(aMap.key)) {
+				this.__f = io.createTempFile("__oaf_ssh_", ".oaf");
+				io.writeFileString(this.__f, aMap.key);
+				aMap.id = f;
+			}
             s = new SSH((isString(aMap) ? aMap : aMap.host), aMap.port, aMap.login, aMap.pass, aMap.id, aMap.compress, aMap.timeout);
         } else {
             s = aMap;
@@ -7827,13 +7832,24 @@ const $ssh = function(aMap) {
 	/**
 	 * <odoc>
 	 * <key>$ssh.pty(aFlag) : $ssh</key>
-	 * Sets the flag to use or not a pty term allocation on the ssh conneciton to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * Sets the flag to use or not a pty term allocation on the ssh connection to a remote host defined by aMap (host, port, login, pass, id, key, compress and timeout).
 	 * </odoc>
 	 */
     __ssh.prototype.pty = function(aFlag) {
         this.ppty = aFlag;
         return this;
     };
+
+	/**
+	 * <odoc<
+	 * <key>$ssh.key(aKeyString) : $ssh</key>
+	 * Sets the key aKeyString to be used in replacement to id.
+	 * </odoc>
+	 */
+	__ssh.prototype.key = function(aKey) {
+		this.key = aKey;
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -7844,6 +7860,7 @@ const $ssh = function(aMap) {
     __ssh.prototype.close = function() {
 		if (isDef(this.ssh)) this.ssh.close();
 		if (isDef(this.sftp)) this.sftp.close();
+		if (isDef(this.__f)) io.rm(this.__f);
         return this;
     };
 
