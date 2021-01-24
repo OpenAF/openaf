@@ -139,7 +139,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
 			//var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
-			var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).at(0);
+			var j = $from(jobs).useCase(true).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).at(0);
 			if (isDef(j) && !isNull(j)) {
 				if (isUnDef(j.deps)) j.deps = [];
 				j.deps.push((isObject(todo[i-1]) ? todo[i-1].name : todo[i-1]));
@@ -153,7 +153,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	var mdeps = {};
 	function depsScore(v) {
 		//if (isString(v)) v = $path(jobs, "[?name==`" + v + "`] | @[0]");
-		if (isString(v)) v = $from(jobs).equals("name", v).at(0);
+		if (isString(v)) v = $from(jobs).useCase(true).equals("name", v).at(0);
 		if (v == null || isUnDef(v)) return;
 
 		var s = v.name; 
@@ -271,7 +271,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 								r.channelPermission = "r";
 							else
 								r.channelPermission = parent.__ojob.channels.permissions;
-							var creds = $from(parent.__ojob.channels.auth).equals("login", u).at(0);
+							var creds = $from(parent.__ojob.channels.auth).useCase(true).equals("login", u).at(0);
 					
 							if (isDef(creds) && isDef(creds.pass) && p == creds.pass) {
 								if (isDef(creds.permissions)) r.channelPermission = creds.permissions;
@@ -917,7 +917,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.count++;
 		try { 
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
-			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
+			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0);
 			execJob.endTime = now();
 			existing.totalTime += execJob.endTime - execJob.startTime;
 			existing.avgTime = existing.totalTime / existing.count;
@@ -930,7 +930,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.count++;
 		try {
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
-			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0); 
+			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0); 
 			if (isDef(anException) && isDef(anException.javaException)) {
 				var ar = anException.javaException.getStackTrace();
 				execJob.error = [ String(anException.javaException) ];
@@ -1283,7 +1283,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	if (this.__ojob.sequential) {
 		var job = void 0;
 		//var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
-		var listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", (this.getID() + altId)).select();
+		var listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
@@ -1304,7 +1304,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 					"todoId": todo.todoId
 				});
 				//listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
-				listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", (this.getID() + altId)).select();
+				listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 			}
 		}
 	} else {
@@ -1315,7 +1315,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			while(!shouldStop) {
 				try {
 					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
-					var parentOJob = $from(parent.getTodoCh().getKeys()).equals("ojobId",  (parent.getID() + altId)).select();
+					var parentOJob = $from(parent.getTodoCh().getKeys()).useCase(true).equals("ojobId",  (parent.getID() + altId)).select();
 					var pjobs = [];
 					for (var ipoj = 0; ipoj < parentOJob.length; ipoj++) {
 						var todo = parent.getTodoCh().get(parentOJob[ipoj]);
