@@ -1394,8 +1394,9 @@ OpenWrap.oJob.prototype.run = function(provideArgs, aId) {
  * Optionally you can provide aId to segment this specific jobs.
  * </odoc>
  */
-OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
-	var parent = this;
+OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec) {
+	rExec = _$(rExec, "rExec").isBoolean().default(false);
+	var parent = this, resExec = true;
 	var altId = (isDef(aId) ? aId : "");
 	aId = altId;
 
@@ -1444,21 +1445,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 	}
 
 	function _run(aExec, args, job, id) {		
-		var f;
-		/*if (isDef(aJob.each) && isArray(aJob.each) && aJob.each.length > 0) {
-			var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
-			fnDef += "var _oji = " + stringify(aJob.each, void 0, "") + "; ";
-			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
-			fnDef += "$doA2B(each => { " + aExec + " }, _r => { _oj.map(_aJob => { ";
-			fnDef += "  try { if (isDef(_aJob)) { var fn = new Function(\"var args = arguments[0]; var job = {name:'" + aJob.name + "'}; \" + _aJob.exec); ";
-			fnDef += "  return fn( merge(_r, { init: args.init }) ); } else { return void 0; }";
-			fnDef += "} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (new Function(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, void 0, \"\") + \"); \" + _aJob.catch))(ea2b); }";
-			fnDef += "}); }, void 0, void 0, " + (isUnDef(aJob.catch) ? "void 0" : "new Function(\"var args = arguments[1], job = {name:'" + aJob.name + "'}, exception = arguments[0]; " + aJob.catch.replace(/"/g, "\\\"") + "\")" ) + "); ";
- 
-			f = new Function(fnDef);
-		} else {*/
-			f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = void 0; " + aExec);
-		//}
+		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = void 0; " + aExec + "; return args;");
 		var fe, fint;
 		if (isDef(parent.__ojob.catch)) fe = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
 		if (isDef(aJob.catch)) fint = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + aJob.catch);
@@ -1533,9 +1520,11 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			}
 		} else {
 			try {
-				(tb 
-				? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(args, job, id, depInfo); })
-				: f(args, job, id, depInfo));
+				if (tb) {
+					tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { resExec = f(args, job, id, depInfo); })
+				} else {
+					resExec = f(args, job, id, depInfo);
+				}
 			} catch(e) {
 				if (isUnDef(fint) && isUnDef(fe)) throw e;
 
@@ -1585,7 +1574,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 				this.__addLog("error", aJob.name, uuid, args, e, aId);
 			}
 			
-			return true;
+			//return true;
 			break;
 		case "jobs":
 			if (isDef(aJob.typeArgs.file)) {
@@ -1598,14 +1587,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 					parent.runFile(aJob.typeArgs.file, args, aJob.typeArgs.file, true);
 					this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 
-					return true;
+					//return true;
 				} catch(e) {
 					this.__addLog("error", aJob.name, uuid, args, e, aId);
-					return true;
+					//return true;
 				}
 			} else {
 				this.__addLog("error", aJob.name, uuid, args, "No typeArgs.file provided.", aId);
-				return true;
+				//return true;
 			}
 			break;
 		case "shutdown":
@@ -1739,7 +1728,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 		return false;
 	}
 
-	return true;
+	return rExec ? resExec : true;
 };
 
 OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRetry) {

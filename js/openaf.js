@@ -5852,25 +5852,36 @@ function oJobRun(aJson, args, aId) {
 
 /**
  * <odoc>
- * <key>oJobRunJob(aJob, args, aId) : boolean</key>
+ * <key>oJobRunJob(aJob, args, aId, waitForFinish) : boolean</key>
  * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
  * Optionally you can provide aId to segment this specific job. If aJob is a string it will try to retrieve the job
  * from the jobs channel. Returns true if the job executed or false otherwise (e.g. failed deps).
  * </odoc>
  */
-function oJobRunJob(aJob, args, aId) {
+function oJobRunJob(aJob, args, aId, rArgs) {
 	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
 	if (isString(aJob)) {
 		if (isUnDef(aId)) aId = "";
 		var job = oo.getJobsCh().get({ name: aJob });
 		if (isDef(job)) {
-			return oo.runJob(job, args, aId);
+			return oo.runJob(job, args, aId, rArgs, rArgs);
 		} else {
 			throw "Job '" + aJob + "' not found.";
 		}
 	} else {
 		return oo.runJob(aJob, args, aId);
 	}
+}
+
+/**
+ * <odoc>
+ * <key>$job(aJob, args, aId) : Object</key>
+ * Shortcut to oJobRunJob and ow.oJob.runJob to execute aJob with args and returned the changed arguments.
+ * Optionally aId can be also provided.
+ * </odoc>
+ */
+const $job = function(aJob, args, aId) {
+	return oJobRunJob(aJob, args, aId, true);
 }
 
 /**
@@ -8033,6 +8044,22 @@ const $get = function(aK) {
     var res = $ch("oaf::global").get({ k: aK });
     
     if (isDef(res) && isDef(res.v)) return res.v; else return void 0;
+}
+
+/**
+ * <odoc>
+ * <key>$unset(aKey)</key>
+ * Unset a previously set value with aKey.
+ * </odoc>
+ */
+const $unset = function(aK) {
+	_$(aK, "aK").isString().$_();
+
+    if ($ch().list().indexOf("oaf::global") < 0) {
+        $ch("oaf::global").create();
+    }
+
+    $ch("oaf::global").unset({ k: aK });
 }
 
 var __OpenAFUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)";
