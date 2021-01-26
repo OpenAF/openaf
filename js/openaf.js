@@ -7934,7 +7934,7 @@ const $ssh = function(aMap) {
                 var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, false, this.ppty, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
-                    var rfe = this.fe(_res);
+                    var rfe = this.fe(_res, this);
                     if (isDef(rfe) && rfe == false) {
                         if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
                     }
@@ -7985,7 +7985,7 @@ const $ssh = function(aMap) {
                 var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, true, this.ppty, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
-                    var rfe = this.fe(_res);
+                    var rfe = this.fe(_res, this);
                     if (isDef(rfe) && rfe == false) {
                         if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
                     }
