@@ -1546,7 +1546,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, void 0, aId, true) : {};
 		
 		args.objId = this.getID() + altId;	
-		args = this.__mergeArgs(args, this.__processArgs(aJob.args, void 0, void 0, true));
+		//args = this.__mergeArgs(args, this.__processArgs(aJob.args, void 0, void 0, true));
 		if (isUnDef(aJob.typeArgs)) {
 			aJob.typeArgs = {};
 		}
@@ -1807,6 +1807,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		}
 
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
+			if (aJobTypeArgs.lang == "winssh") {
+				aJobTypeArgs.lang = "ssh";
+				aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("powershell");
+			}
 			switch(aJobTypeArgs.lang) {
 			case "js":
 				break;
@@ -1824,19 +1828,17 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 				break;
 			case "ssh":
-				aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh");
-			case "winssh":
 				if (!res.indexOf("var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh)") >= 0) {
-					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("powershell");
+					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh");
 					var orig = String(res);
-					var ft = io.createTempFile("ojob_", ".ojob");
-					io.writeFileString(ft, orig);
+					res = "var ft = io.createTempFile('ojob_', '.ojob'); io.writeFileString(ft, " + stringify(orig) + ");\n";
 					if (aJobTypeArgs.noTemplate) {
-						res = "";
+						res += "";
 					} else {
-						res = "io.writeFileString(\"" + ft.replace(/\\/g, "/") + "\", templify(io.readFileString(\"" + ft.replace(/\\/g, "/") + "\"), args));\n";
+						ow.loadTemplate();
+						res += "io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
 					}
-					res += "var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh).putFile(" + stringify(ft) + ", __uuid).sh(" + stringify(aJobTypeArgs.shell) + " + ' ' + __uuid).exit((r, s)=>s.rm(__uuid)).get(0); io.rm(" + stringify(ft) + ");\n";
+					res += "var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh).putFile(ft, __uuid).sh(" + stringify(aJobTypeArgs.shell) + " + ' ' + __uuid).exit((r, s)=>s.rm(__uuid)).get(0); io.rm(ft);\n";
 					res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 					res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 				}
@@ -1844,16 +1846,14 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			case "shell":
 				if (!res.indexOf("var __res = $sh().envs(") >= 0) {
 					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
-						var ft = io.createTempFile("ojob_", ".bat");
 						var orig = String(res);
-						io.writeFileString(ft, orig);
-
+						res = "var ft = io.createTempFile('ojob_', '.bat'); io.writeFileString(ft, " + stringify(orig) + ");\n";
 						if (aJobTypeArgs.noTemplate) {
-							res = "";
+							res += "";
 						} else {
-							res = "io.writeFileString(\"" + ft.replace(/\\/g, "/") + "\", templify(io.readFileString(\"" + ft.replace(/\\/g, "/") + "\"), args));\n";
+							res += "io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
 						}
-						res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(\"" + ft.replace(/\\/g, "/") + "\").sh(\"del " + ft + "\").get(0);\n";
+						res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(ft.replace(/\\/g, '/')).sh('del ' + ft).get(0);\n";
 						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 					} else {
@@ -1989,7 +1989,6 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 		}
 
-	 	j.lang = void 0;
 		return j;
 	}
 

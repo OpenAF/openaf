@@ -5881,6 +5881,7 @@ function oJobRunJob(aJob, args, aId, rArgs) {
  * </odoc>
  */
 const $job = function(aJob, args, aId) {
+	if (isUnDef(aId)) aId = "|" + genUUID();
 	return oJobRunJob(aJob, args, aId, true);
 }
 
