@@ -1870,9 +1870,10 @@ OpenWrap.format.prototype.logWarnWithFooter = function(aMessage, aFooter) {
  * aUnixBlock or aWindowsBlock (depending on the current operating system) and aSpace. Example:\
  * \
  *    ow.loadTemplate();\
- *    var fn = ow.template.execCompiled(ow.template.compile("({{percFormat}}%) progress: |{{progress}}|"));
- *    ow.format.printWithProgressFooter("processing xyz...", fn, aPerc);
- *    ow.format.printWithFooter("Done.", "");
+ *    var fn = ow.template.execCompiled(ow.template.compile("({{percFormat}}%) progress: |{{progress}}|"));\
+ *    ow.format.printWithProgressFooter("processing xyz...", fn, aPerc);\
+ *    ow.format.printWithFooter("Done.", "");\
+ * 
  * </odoc>
  */
 OpenWrap.format.prototype.printWithProgressFooter = function(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, withFunc) {
