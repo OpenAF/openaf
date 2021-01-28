@@ -767,6 +767,7 @@ function ansiColor(aAnsi, aString, force) {
 	
 	if (ansis) {
 		var res = jansi.Ansi.ansi().render("@|" + aAnsi.toLowerCase() + " " + aString + "|@");
+		//var res = Packages.openaf.JAnsiRender.render(aAnsi.toLowerCase() + " " + aString);
 		return String(res); 
 	} else {
 		return aString;
@@ -1817,7 +1818,7 @@ function getOPackRemoteDB() {
 			zip = new ZIP(http.responseBytes());
 			if (isDef(http)) {
 				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON))));
-                        }
+            }
 			if (!isUnDef(zip)) zip.close();
 		} catch(e) {
 			// Continue to next
@@ -2631,16 +2632,59 @@ function clone(aObject) {
  * Merges a JavaScript object A with a JavaScript object B a returns the result as a new object.
  * </odoc>
  */
-function merge(aObjectA, aObjectB) {
+var __merge_alternative = true;
+function merge(aObjectA, aObjectB, alternative, deDup) {
 	if (isObject(aObjectA) && isArray(aObjectB)) {
-		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA)); }
+		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA), alternative, deDup); }
 		return aObjectB;
 	}
 	if (isObject(aObjectB) && isArray(aObjectA)) {
-		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB)); }
+		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB), alternative, deDup); }
 		return aObjectA;
 	}
-	return extend(true, clone(aObjectA), aObjectB);
+	if (__merge_alternative || alternative) {
+		var r = Object.assign({}, aObjectA);
+		if (isDef(aObjectB) && isMap(aObjectB)) {
+		  Object.keys(aObjectB).forEach(k => {
+			if (!isMap(aObjectB[k]) && !isArray(aObjectB[k])) {
+			  r[k] = aObjectB[k];
+			} else {
+			  if (isArray(aObjectB[k])) {
+				if (isUnDef(r[k])) r[k] = [];
+				
+				if (deDup) {
+				  r[k] = r[k].concat(aObjectB[k].filter(s => arrayContains(r[k], s) < 0));
+				} else {
+				  r[k] = r[k].concat(aObjectB[k]);
+				}
+			  } else if (isMap(aObjectB[k])) {
+				if (isUnDef(r[k])) r[k] = {};
+				r[k] = merge(r[k], aObjectB[k], alternative, deDup);
+			  }
+			}
+		  });
+		}
+	  
+		return r;
+	} else {
+		return extend(true, clone(aObjectA), aObjectB);
+	}
+}
+
+/**
+ * <odoc>
+ * <key>uniqArray(anArray) : Array</key>
+ * Returns anArray with no duplicates entries (including duplicate maps).
+ * </odoc>
+ */
+function uniqArray(anArray) {
+	if (!isArray(anArray)) return anArray;
+
+	var r = [];
+	anArray.forEach(s => {
+		if (arrayContains(r, s) < 0) r.push(s);
+	});
+	return r;
 }
 
 /**
@@ -4022,7 +4066,7 @@ function searchHelp(aTerm, aPath, aId) {
 			paths = paths.concat(Object.keys(getOPackLocalDB()));
 		} catch(e) {
 		}
-		paths.map(path => {
+		paths.forEach(path => {
 			if (!(path.match(/\.(jar|db|zip)/))) path += "/";
 			if (__odocsfiles.indexOf(path) < 0) {
 				__odocs.loadFile(path);
@@ -4046,7 +4090,7 @@ function searchHelp(aTerm, aPath, aId) {
 	} else {
 		keys = keys.sort(function(a, b) { return (a.key.toLowerCase() > b.key.toLowerCase()) ? 1 : -1; });
 	}
-	return keys;
+	return uniqArray(keys);
 }
 
 /**
@@ -5808,25 +5852,37 @@ function oJobRun(aJson, args, aId) {
 
 /**
  * <odoc>
- * <key>oJobRunJob(aJob, args, aId) : boolean</key>
+ * <key>oJobRunJob(aJob, args, aId, waitForFinish) : boolean</key>
  * Shortcut for ow.oJob.runJob. Please see help for ow.oJob.runJob.
  * Optionally you can provide aId to segment this specific job. If aJob is a string it will try to retrieve the job
  * from the jobs channel. Returns true if the job executed or false otherwise (e.g. failed deps).
  * </odoc>
  */
-function oJobRunJob(aJob, args, aId) {
+function oJobRunJob(aJob, args, aId, rArgs) {
 	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
 	if (isString(aJob)) {
 		if (isUnDef(aId)) aId = "";
 		var job = oo.getJobsCh().get({ name: aJob });
 		if (isDef(job)) {
-			return oo.runJob(job, args, aId);
+			return oo.runJob(job, args, aId, rArgs, rArgs);
 		} else {
 			throw "Job '" + aJob + "' not found.";
 		}
 	} else {
 		return oo.runJob(aJob, args, aId);
 	}
+}
+
+/**
+ * <odoc>
+ * <key>$job(aJob, args, aId) : Object</key>
+ * Shortcut to oJobRunJob and ow.oJob.runJob to execute aJob with args and returned the changed arguments.
+ * Optionally aId can be also provided.
+ * </odoc>
+ */
+const $job = function(aJob, args, aId) {
+	if (isUnDef(aId)) aId = "|" + genUUID();
+	return oJobRunJob(aJob, args, aId, true);
 }
 
 /**
@@ -7617,7 +7673,7 @@ const $ssh = function(aMap) {
 	 * <odoc>
 	 * <key>$ssh.$ssh(aMap) : $ssh</key>
 	 * Builds an object to allow access through ssh. aMap should be a ssh string with the format: ssh://user:pass@host:port/identificationKey?timeout=1234&amp;compression=true or
-	 * a map with the keys: host, port, login, pass, id, compress and timeout. See "help SSH.SSH" for more info.
+	 * a map with the keys: host, port, login, pass, id/key, compress and timeout. See "help SSH.SSH" for more info.
 	 * </odoc>
 	 */
     var __ssh = function(aMap) {
@@ -7651,6 +7707,11 @@ const $ssh = function(aMap) {
             if (isDef(aMap.url)) aMap.host = aMap.url;
         }
         if (!(aMap instanceof SSH)) {
+			if (isString(aMap.key)) {
+				this.__f = io.createTempFile("__oaf_ssh_", ".oaf");
+				io.writeFileString(this.__f, aMap.key);
+				aMap.id = this.__f;
+			}
             s = new SSH((isString(aMap) ? aMap : aMap.host), aMap.port, aMap.login, aMap.pass, aMap.id, aMap.compress, aMap.timeout);
         } else {
             s = aMap;
@@ -7783,13 +7844,24 @@ const $ssh = function(aMap) {
 	/**
 	 * <odoc>
 	 * <key>$ssh.pty(aFlag) : $ssh</key>
-	 * Sets the flag to use or not a pty term allocation on the ssh conneciton to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
+	 * Sets the flag to use or not a pty term allocation on the ssh connection to a remote host defined by aMap (host, port, login, pass, id, key, compress and timeout).
 	 * </odoc>
 	 */
     __ssh.prototype.pty = function(aFlag) {
         this.ppty = aFlag;
         return this;
     };
+
+	/**
+	 * <odoc<
+	 * <key>$ssh.key(aKeyString) : $ssh</key>
+	 * Sets the key aKeyString to be used in replacement to id.
+	 * </odoc>
+	 */
+	__ssh.prototype.key = function(aKey) {
+		this.key = aKey;
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -7800,6 +7872,7 @@ const $ssh = function(aMap) {
     __ssh.prototype.close = function() {
 		if (isDef(this.ssh)) this.ssh.close();
 		if (isDef(this.sftp)) this.sftp.close();
+		if (isDef(this.__f)) io.rm(this.__f);
         return this;
     };
 
@@ -7862,7 +7935,7 @@ const $ssh = function(aMap) {
                 var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, false, this.ppty, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
-                    var rfe = this.fe(_res);
+                    var rfe = this.fe(_res, this);
                     if (isDef(rfe) && rfe == false) {
                         if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
                     }
@@ -7913,7 +7986,7 @@ const $ssh = function(aMap) {
                 var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, true, this.ppty, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
-                    var rfe = this.fe(_res);
+                    var rfe = this.fe(_res, this);
                     if (isDef(rfe) && rfe == false) {
                         if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
                     }
@@ -7938,6 +8011,57 @@ const $ssh = function(aMap) {
 
     return new __ssh(aMap);
 };
+
+/**
+ * <odoc>
+ * <key>$set(aKey, aValue)</key>
+ * Sets aValue with aKey so it can be retrieved with $get later.
+ * </odoc>
+ */
+const $set = function(aK, aV) {
+    _$(aK, "aK").isString().$_();
+    _$(aV, "aV").$_();
+
+    if ($ch().list().indexOf("oaf::global") < 0) {
+        $ch("oaf::global").create();
+    }
+
+    $ch("oaf::global").set({ k: aK }, { k: aK, v: aV });
+}
+
+/**
+ * <odoc>
+ * <key>$get(aKey) : Object</key>
+ * Returns a value previously set with $set with aKey.
+ * </odoc>
+ */
+const $get = function(aK) {
+    _$(aK, "aK").isString().$_();
+
+    if ($ch().list().indexOf("oaf::global") < 0) {
+        $ch("oaf::global").create();
+    }
+
+    var res = $ch("oaf::global").get({ k: aK });
+    
+    if (isDef(res) && isDef(res.v)) return res.v; else return void 0;
+}
+
+/**
+ * <odoc>
+ * <key>$unset(aKey)</key>
+ * Unset a previously set value with aKey.
+ * </odoc>
+ */
+const $unset = function(aK) {
+	_$(aK, "aK").isString().$_();
+
+    if ($ch().list().indexOf("oaf::global") < 0) {
+        $ch("oaf::global").create();
+    }
+
+    $ch("oaf::global").unset({ k: aK });
+}
 
 var __OpenAFUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)";
 function __setUserAgent(aNewAgent) {

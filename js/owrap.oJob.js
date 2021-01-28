@@ -139,7 +139,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
 			//var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
-			var j = $from(jobs).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).at(0);
+			var j = $from(jobs).useCase(true).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).at(0);
 			if (isDef(j) && !isNull(j)) {
 				if (isUnDef(j.deps)) j.deps = [];
 				j.deps.push((isObject(todo[i-1]) ? todo[i-1].name : todo[i-1]));
@@ -153,7 +153,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	var mdeps = {};
 	function depsScore(v) {
 		//if (isString(v)) v = $path(jobs, "[?name==`" + v + "`] | @[0]");
-		if (isString(v)) v = $from(jobs).equals("name", v).at(0);
+		if (isString(v)) v = $from(jobs).useCase(true).equals("name", v).at(0);
 		if (v == null || isUnDef(v)) return;
 
 		var s = v.name; 
@@ -271,7 +271,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 								r.channelPermission = "r";
 							else
 								r.channelPermission = parent.__ojob.channels.permissions;
-							var creds = $from(parent.__ojob.channels.auth).equals("login", u).at(0);
+							var creds = $from(parent.__ojob.channels.auth).useCase(true).equals("login", u).at(0);
 					
 							if (isDef(creds) && isDef(creds.pass) && p == creds.pass) {
 								if (isDef(creds.permissions)) r.channelPermission = creds.permissions;
@@ -917,7 +917,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.count++;
 		try { 
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
-			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0);
+			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0);
 			execJob.endTime = now();
 			existing.totalTime += execJob.endTime - execJob.startTime;
 			existing.avgTime = existing.totalTime / existing.count;
@@ -930,7 +930,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.count++;
 		try {
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
-			var execJob = $from(existing.log).equals("id", currentJobExecId).at(0); 
+			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0); 
 			if (isDef(anException) && isDef(anException.javaException)) {
 				var ar = anException.javaException.getStackTrace();
 				execJob.error = [ String(anException.javaException) ];
@@ -1283,7 +1283,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	if (this.__ojob.sequential) {
 		var job = void 0;
 		//var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
-		var listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", (this.getID() + altId)).select();
+		var listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
@@ -1304,7 +1304,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 					"todoId": todo.todoId
 				});
 				//listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
-				listTodos = $from(this.getTodoCh().getSortedKeys()).equals("ojobId", (this.getID() + altId)).select();
+				listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 			}
 		}
 	} else {
@@ -1315,7 +1315,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			while(!shouldStop) {
 				try {
 					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
-					var parentOJob = $from(parent.getTodoCh().getKeys()).equals("ojobId",  (parent.getID() + altId)).select();
+					var parentOJob = $from(parent.getTodoCh().getKeys()).useCase(true).equals("ojobId",  (parent.getID() + altId)).select();
 					var pjobs = [];
 					for (var ipoj = 0; ipoj < parentOJob.length; ipoj++) {
 						var todo = parent.getTodoCh().get(parentOJob[ipoj]);
@@ -1394,8 +1394,9 @@ OpenWrap.oJob.prototype.run = function(provideArgs, aId) {
  * Optionally you can provide aId to segment this specific jobs.
  * </odoc>
  */
-OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
-	var parent = this;
+OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec) {
+	rExec = _$(rExec, "rExec").isBoolean().default(false);
+	var parent = this, resExec = true;
 	var altId = (isDef(aId) ? aId : "");
 	aId = altId;
 
@@ -1444,21 +1445,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 	}
 
 	function _run(aExec, args, job, id) {		
-		var f;
-		/*if (isDef(aJob.each) && isArray(aJob.each) && aJob.each.length > 0) {
-			var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
-			fnDef += "var _oji = " + stringify(aJob.each, void 0, "") + "; ";
-			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
-			fnDef += "$doA2B(each => { " + aExec + " }, _r => { _oj.map(_aJob => { ";
-			fnDef += "  try { if (isDef(_aJob)) { var fn = new Function(\"var args = arguments[0]; var job = {name:'" + aJob.name + "'}; \" + _aJob.exec); ";
-			fnDef += "  return fn( merge(_r, { init: args.init }) ); } else { return void 0; }";
-			fnDef += "} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (new Function(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, void 0, \"\") + \"); \" + _aJob.catch))(ea2b); }";
-			fnDef += "}); }, void 0, void 0, " + (isUnDef(aJob.catch) ? "void 0" : "new Function(\"var args = arguments[1], job = {name:'" + aJob.name + "'}, exception = arguments[0]; " + aJob.catch.replace(/"/g, "\\\"") + "\")" ) + "); ";
- 
-			f = new Function(fnDef);
-		} else {*/
-			f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = void 0; " + aExec);
-		//}
+		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = void 0; " + aExec + "; return args;");
 		var fe, fint;
 		if (isDef(parent.__ojob.catch)) fe = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
 		if (isDef(aJob.catch)) fint = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + aJob.catch);
@@ -1533,9 +1520,11 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 			}
 		} else {
 			try {
-				(tb 
-				? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(args, job, id, depInfo); })
-				: f(args, job, id, depInfo));
+				if (tb) {
+					tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { resExec = f(args, job, id, depInfo); })
+				} else {
+					resExec = f(args, job, id, depInfo);
+				}
 			} catch(e) {
 				if (isUnDef(fint) && isUnDef(fe)) throw e;
 
@@ -1557,7 +1546,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, void 0, aId, true) : {};
 		
 		args.objId = this.getID() + altId;	
-		args = this.__mergeArgs(args, this.__processArgs(aJob.args, void 0, void 0, true));
+		//args = this.__mergeArgs(args, this.__processArgs(aJob.args, void 0, void 0, true));
 		if (isUnDef(aJob.typeArgs)) {
 			aJob.typeArgs = {};
 		}
@@ -1585,7 +1574,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 				this.__addLog("error", aJob.name, uuid, args, e, aId);
 			}
 			
-			return true;
+			//return true;
 			break;
 		case "jobs":
 			if (isDef(aJob.typeArgs.file)) {
@@ -1598,14 +1587,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 					parent.runFile(aJob.typeArgs.file, args, aJob.typeArgs.file, true);
 					this.__addLog("success", aJob.name, uuid, args, undefined, aId);
 
-					return true;
+					//return true;
 				} catch(e) {
 					this.__addLog("error", aJob.name, uuid, args, e, aId);
-					return true;
+					//return true;
 				}
 			} else {
 				this.__addLog("error", aJob.name, uuid, args, "No typeArgs.file provided.", aId);
-				return true;
+				//return true;
 			}
 			break;
 		case "shutdown":
@@ -1739,7 +1728,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync) {
 		return false;
 	}
 
-	return true;
+	return rExec ? resExec : true;
 };
 
 OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRetry) {
@@ -1813,7 +1802,15 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			res = io.readFileString(aJobTypeArgs.execPy);
 		}
 
+		if (isDef(aJobTypeArgs.file)) {
+			res = io.readFileString(aJobTypeArgs.file);
+		}
+
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
+			if (aJobTypeArgs.lang == "winssh") {
+				aJobTypeArgs.lang = "ssh";
+				aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("powershell");
+			}
 			switch(aJobTypeArgs.lang) {
 			case "js":
 				break;
@@ -1822,24 +1819,51 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				if (!res.startsWith("$pyStart();")) {
 					var orig = String(res);
 					res  = "$pyStart();";
-					res += "try { args = merge(args, $py(" + stringify(orig) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
+					if (aJobTypeArgs.noTemplate) {
+						res += "try { args = merge(args, $py(" + stringify(orig) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
+					} else {
+						res += "try { args = merge(args, $py(templify(" + stringify(orig) + ", args) + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
+					}
 					res += "} catch(e) { throw e; $pyStop(); };\n";
 				}
 				break;
+			case "ssh":
+				if (!res.indexOf("var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh)") >= 0) {
+					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh");
+					var orig = String(res);
+					res = "var ft = io.createTempFile('ojob_', '.ojob'); io.writeFileString(ft, " + stringify(orig) + ");\n";
+					if (aJobTypeArgs.noTemplate) {
+						res += "";
+					} else {
+						ow.loadTemplate();
+						res += "io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
+					}
+					res += "var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh).putFile(ft, __uuid).sh(" + stringify(aJobTypeArgs.shell) + " + ' ' + __uuid).exit((r, s)=>s.rm(__uuid)).get(0); io.rm(ft);\n";
+					res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+					res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+				}
+				break;
 			case "shell":
-				if (!res.startsWith("var __res = $sh().envs(")) {
+				if (!res.indexOf("var __res = $sh().envs(") >= 0) {
 					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
-						var ft = io.createTempFile("ojob_", ".bat");
 						var orig = String(res);
-						io.writeFileString(ft, orig);
-
-						res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(\"" + ft.replace(/\\/g, "/") + "\").sh(\"del " + ft + "\").get(0);\n";
+						res = "var ft = io.createTempFile('ojob_', '.bat'); io.writeFileString(ft, " + stringify(orig) + ");\n";
+						if (aJobTypeArgs.noTemplate) {
+							res += "";
+						} else {
+							res += "io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
+						}
+						res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(ft.replace(/\\/g, '/')).sh('del ' + ft).get(0);\n";
 						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 					} else {
 						aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
 						var orig = String(res);
-						res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
+						if (aJobTypeArgs.noTemplate) {
+							res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
+						} else {
+							res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", templify(" + stringify(orig) + ", args)).get(0);\n";
+						}
 						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 					}
@@ -1851,15 +1875,26 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					if (isDef(m) && isDef(m.shell)) {
 						aJobTypeArgs.shell = m.shell;
 					}
+					if (isDef(m) && isDef(m.langFn)) {
+						aJobTypeArgs.langFn = m.langFn;
+					}
 				}
-				if (isString(aJobTypeArgs.lang) && isString(aJobTypeArgs.shell)) {
-					if (!res.startsWith("var __res = $sh().envs(")) {
+				if (isString(aJobTypeArgs.lang)) {
+					if (isString(aJobTypeArgs.shell)) {
+						if (!res.startsWith("var __res = $sh().envs(")) {
 
-						aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
-						var orig = String(res);
-						res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
-						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
-						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+							aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
+							var orig = String(res);
+							if (aJobTypeArgs.noTemplate) {
+								res = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
+							} else {
+								res = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", templify(" + stringify(orig) + ", args)).get(0);\n";
+							}
+							res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+							res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+						}
+					} else if (isDef(aJobTypeArgs.langFn)) {
+						if (isString(aJobTypeArgs.langFn)) res = "var code = " + stringify(res) + ";\n" + aJobTypeArgs.langFn;
 					}
 				}
 			}

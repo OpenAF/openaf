@@ -548,10 +548,50 @@ OpenWrap.template.prototype.md = {
 		  anArray.map(r => md += "| " + Object.values(r).join(" | ") + " |\n");
 		}
 		return md;
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.md.htmlArrayMap(anMapOrArray) : String</key>
+	 * Converts anMapOrArray into a div html suitable to be added to a markdown.
+	 * </odoc>
+	 */
+	htmlArrayMap: function(anMapOrArray) {
+		var md = "<div>";
+        md = ow.template.html.parseMap(anMapOrArray);
+		md += "</div>";
+
+		return md;
 	}
 };
 
 OpenWrap.template.prototype.html = {
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.parseMap(aMapOrArray, genParts) : Object</key>
+	 * Returns a string with a HTML representation of the aMapOrArray provided or, if genParts = true, a map with the style css and the out string necessary.
+	 * </odoc>
+	 */
+	parseMap: function(aMapOrArray, genParts) {
+		if (!isMap(aMapOrArray) && !isArray(aMapOrArray)) throw "aMapOrArray needs to be a map or an array.";
+		genParts = _$(genParts).isBoolean().default(false);
+
+		try {
+			loadCompiledLib("njsmap_js");
+		} catch(e) {
+			loadLib(getOpenAFJar() + "::js/njsmap.js");
+		}
+
+		var out = nJSMap(aMapOrArray);
+		if (genParts) {
+			var res = {};
+			res.css = io.readFileString(getOpenAFJar() + "::css/nJSMap.css");
+			res.out = out;
+			
+			return res;
+		} else {
+			return out;
+		}
+	},
 	/**
 	 * <odoc>
 	 * <key>ow.template.html.thinFontCSS(aSize) : String</key>

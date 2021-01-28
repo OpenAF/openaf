@@ -797,7 +797,7 @@ OpenWrap.server.prototype.rest = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn) : RequestReply</key>
+	 * <key>ow.server.rest.reply(aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn, returnHTML) : RequestReply</key>
 	 * Provides a REST compliant HTTPServer request replier given a aBaseURI, aRequest, aCreateFunc, aGetFunc, aSetFunc
 	 * and aRemoveFunc. Each function will receive a map with the provided indexes and data from the request plus the request itself. Optionally you can 
 	 * specify with returnWithParams = true that each function will not return just the data map but a composed map with: data (the actual
@@ -817,23 +817,36 @@ OpenWrap.server.prototype.rest = {
 	 * \
 	 * </odoc>
 	 */
-	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn) {
+	reply: function(aBaseURI, aReq, aCreateFunc, aGetFunc, aSetFunc, aRemoveFunc, returnWithParams, anAuditFn, returnHTML) {
+		returnHTML = _$(returnHTML, "returnHTML").isBoolean().default(false);
+
 		var idxs = ow.server.rest.parseIndexes(aBaseURI, aReq);
 		var res = {};
 		res.headers = {};
 		var params;
 
-		res.mimetype = ow.server.httpd.mimes.JSON;
+		if (returnHTML) ow.loadTemplate();
+		res.mimetype = (returnHTML ? ow.server.httpd.mimes.HTML : ow.server.httpd.mimes.JSON);
+
+		var fnD = r => {
+			if (returnHTML) {
+				var res = ow.template.html.parseMap(r, true);
+
+				return String("<html><style>" + res.css + "</style><body>" + res.out + "</body></html>");
+			} else {
+				return stringify(r, void 0, "");
+			}
+		};
 
 		switch(aReq.method) {
 		case "GET": 
 			if (returnWithParams) {
 				params = aGetFunc(idxs, aReq);
-				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.data))     res.data = fnD(params.data);
 				if (isDef(params.status))   res.status = params.status;
 				if (isDef(params.mimetype)) res.mimetype = params.mimetype;
 			} else {
-				res.data = stringify(aGetFunc(idxs, aReq), void 0, ""); 
+				res.data = fnD(aGetFunc(idxs, aReq)); 
 			}
 			break;
 		case "POST":
@@ -842,11 +855,11 @@ OpenWrap.server.prototype.rest = {
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { }
 				if (returnWithParams) {
 					params = aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq);
-					if (isDef(params.data))     res.data = stringify(params.data);
+					if (isDef(params.data))     res.data = fnD(params.data);
 					if (isDef(params.status))   res.status = params.status;
 					if (isDef(params.mimetype)) res.mimetype = params.mimetype;
 				} else { 
-					res.data = stringify(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq), void 0, "");
+					res.data = fnD(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq));
 				}
 			} else {
 				if (isDef(aReq.files.postData)) {
@@ -855,11 +868,11 @@ OpenWrap.server.prototype.rest = {
 					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"]), aReq);
 				}
 				if (returnWithParams) {
-					if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+					if (isDef(params.data))     res.data = fnD(params.data);
 					if (isDef(params.status))   res.status = params.status;
 					if (isDef(params.mimetype)) res.mimetype = params.mimetype;					
 				} else {
-					res.data = stringify(params, void 0, "");
+					res.data = fnD(params);
 				}
 			}
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
@@ -873,26 +886,27 @@ OpenWrap.server.prototype.rest = {
 				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData), aReq);
 			}
 			if (returnWithParams) {
-				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.data))     res.data = fnD(params.data);
 				if (isDef(params.status))   res.status = params.status;
 				if (isDef(params.mimetype)) res.mimetype = params.mimetype;	
 			} else {
-				res.data = stringify(params, void 0, "");
+				res.data = fnD(params);
 			}
 			break;
 		case "DELETE": 
 			params = aRemoveFunc(idxs, aReq); 
 			if (returnWithParams) {
-				if (isDef(params.data))     res.data = stringify(params.data, void 0, "");
+				if (isDef(params.data))     res.data = fnD(params.data);
 				if (isDef(params.status))   res.status = params.status;
 				if (isDef(params.mimetype)) res.mimetype = params.mimetype;	
 			} else {
-				res.data = stringify(params, void 0, "");
+				res.data = fnD(params);
 			}
 			break;
 		}
 
 		if (isDef(anAuditFn) && isFunction(anAuditFn)) $do(() => { anAuditFn(aReq, res); });
+
 		return res;
 	},
 	
@@ -2612,16 +2626,19 @@ OpenWrap.server.prototype.httpd = {
 		aMapOfRoutes["/js/handlebars.js"] = function() { return ow.server.httpd.replyHandlebars(aHTTPd); };
 		aMapOfRoutes["/js/stream.js"] = function() { return ow.server.httpd.replyStream(aHTTPd); };
 		aMapOfRoutes["/js/jlinq.js"] = function() { return ow.server.httpd.replyJLinq(aHTTPd); };
+		aMapOfRoutes["/js/openafnlinq.js"] = function() { return ow.server.httpd.replyNLinq(aHTTPd); };
 		aMapOfRoutes["/js/jmespath.js"] = function() { return ow.server.httpd.replyJMesPath(aHTTPd); };
 		aMapOfRoutes["/js/underscore.js"] = function() { return ow.server.httpd.replyUnderscore(aHTTPd); };
 		aMapOfRoutes["/js/lodash.js"] = function() { return ow.server.httpd.replyLoadash(aHTTPd); };
 		aMapOfRoutes["/js/openafsigil.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/openafsigil.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
+		aMapOfRoutes["/js/njsmap.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/njsmap.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/js/highlight.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/highlight.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/js/materialize.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/materialize.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/materialize.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/materialize.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/materialize-icon.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/materialize-icon.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/github-gist.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/github-gist.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/github-markdown.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/github-markdown.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
+		aMapOfRoutes["/css/nJSMap.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/nJSMap.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.eot"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.eot", true), ow.server.httpd.mimes.EOT, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.svg"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.svg", true), ow.server.httpd.mimes.SVG, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.ttf"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.ttf", true), ow.server.httpd.mimes.TTF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
@@ -2670,6 +2687,10 @@ OpenWrap.server.prototype.httpd = {
 		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/jlinq.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public);		
 	},
 
+	replyNLinq: function(aHTTPd) {
+		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/openafnlinq.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public);		
+	},
+
 	replyJMesPath: function(aHTTPd) {
 		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/jmespath.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public);		
 	},	
@@ -2690,14 +2711,8 @@ OpenWrap.server.prototype.httpd = {
 	 * documentRoot. Example:\
 	 * \
 	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
-	 *    "/stuff/to/server": function(req) {\
-	 *       return ow.server.httpd.replyFile(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri);\
-	 *    }\
-	 * },\
-	 * function(req) {\
-	 *    return hs.replyOKText("nothing here...");\
-	 * }\
-	 * );\
+	 *    "/stuff/to/server": r => ow.server.httpd.replyFile(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri)\
+	 * }), r => hs.replyOKText("nothing here...") );\
 	 * \
 	 * </odoc>
 	 */
@@ -2736,11 +2751,11 @@ OpenWrap.server.prototype.httpd = {
 	 * aBaseURI. Optionally you can also provide a notFoundFunction and an array of file strings (documentRootArraY) to replace as
 	 * documentRoot. Example:\
 	 * \
-	 * ow.server.httpd.route((hs, ow.server.httpd.mapRoutesWithLibs(hs, {)\
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
 	 *    "/stuff/to/server": function(req) {\
 	 *       return ow.server.httpd.replyFileMD(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri);\
 	 *    }\
-	 * },\
+	 * }),\
 	 * function(req) {\
 	 *    return hs.replyOKText("nothing here...");\
 	 * }\
@@ -2786,6 +2801,27 @@ OpenWrap.server.prototype.httpd = {
 		} catch(e) { 
 			return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e);
 		}
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.replyJSMap(aHTTPd, aMapOrArray) : Map</key>
+	 * Provides a helper aHTTPd reply that will parse aMapOrArray into a HTML output. Example:\
+	 * \
+	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
+	 *    "/stuff/to/server": r => ow.server.httpd.replyJSMap(hs, getOPackPaths()\
+	 * }),\
+	 * r => hs.replyOKText("nothing here...")\
+	 * );\
+	 * \
+	 * </odoc>
+	 */
+	replyJSMap: function(aHTTPd, aMapOrArray) {
+		ow.loadTemplate();
+
+		var res = ow.template.html.parseMap(aMapOrArray, true);
+
+		return aHTTPd.replyOKHTML("<html><style>" + res.css + "</style><body>" + res.out + "</body></html>");
 	},
 
 	/**

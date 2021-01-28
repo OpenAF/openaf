@@ -204,7 +204,7 @@ OpenWrap.obj.prototype.__getObj4Path = function(anObj, aPath) {
  * </odoc>
  */
 OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
-	if (!isArray(data)) throw "ow.obj.flatten: need an array of data.";
+	//if (!isArray(data)) throw "ow.obj.flatten: need an array of data.";
 	if (isUnDef(aSeparator)) aSeparator = "_";
 	if (isUnDef(aNADefault)) aNADefault = "";
 	loadLodash();
@@ -222,6 +222,7 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 	
 	function getFlatKeys(anArrayOfMaps) {
 		var keys = [];
+		if (isMap(anArrayOfMaps)) anArrayOfMaps = [ anArrayOfMaps ];
 		anArrayOfMaps.forEach((r) => {
 			traverse(r, (aK, aV, aP, aO) => {
 				if (!isObject(aV)) keys.push(getFlatUniqKey(aK, aP));
@@ -283,14 +284,22 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 		
 		if (res.length == 0) res = [ m ];
 
-		return _.flattenDeep(res);
+		return _.uniq(_.flattenDeep(res));
 	};
 
-	for(var i in data) {
-		resData = resData.concat(_trav(genFlatMap(keys), data[i]));
+	if (isArray(data)) {
+		for(var i in data) {
+			resData = resData.concat(_trav(genFlatMap(keys), data[i]));
+		}
+	
+		//return _.flattenDeep(resData);
+		return resData;
 	}
 
-	return _.flattenDeep(resData);
+	if (isMap(data)) {
+		var res = _trav(genFlatMap(keys), data);
+		if (res.lenght > 0) return res[0]; else return void 0;
+	}
 };
 
 /**
@@ -401,17 +410,17 @@ OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ig
  * </odoc>
  */
 OpenWrap.obj.prototype.fromObj2Array = function(aObj, aKey) {
+	_$(aObj, "aObj").isMap().$_();
+
 	var res = [];
-	for(var i in aObj) {
-		var item;
-		if (isDef(aKey)) {
-			var m = {};
-			m[aKey] = i;
-			item = merge(m, aObj[i]);
-		} else {
-			item = clone(aObj[i]);
+	if (isUnDef(aKey)) {
+		res = Object.values(aObj);
+	} else {
+		for(var i in aObj) {
+			var item = clone(aObj[i]);
+			item[aKey] = i;
+			res.push(item);
 		}
-		res.push(item);
 	}
 	return res;
 };

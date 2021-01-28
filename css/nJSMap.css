@@ -1,0 +1,40 @@
+/* Author: Nuno Aguiar */
+
+.njsmap_value {
+    color: #0000AA;
+    font-size: small;
+}
+.njsmap_valueNA {
+    color: #AAAAAA;
+    font-size: small;
+}
+.njsmap_table {
+    border: 1px solid lightgray;
+    border-spacing: 0;
+    line-height: 1;
+    box-sizing: border-box;
+    border-collapse: collapse;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    color: #000088;
+    margin-top: 5;
+    margin-left: 5;
+    margin-right: 5;
+    margin-bottom: 5;
+    font-size: 12px;
+}
+.njsmap_tablehead {
+    padding: 3px;
+    border: 1px solid lightgray;
+    font-size: small;
+    text-align: left;
+}        
+.njsmap_tablecell {
+    padding: 3px;
+    border: 1px solid lightgray;
+    color: #0000AA;
+    font-size: small;
+    text-align: left;       
+}
+.njsmap_tablecell tr:nth-child(even) {
+    background: rgb(250, 250, 250);
+}   
