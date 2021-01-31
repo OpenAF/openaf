@@ -2062,7 +2062,11 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			break;
  		case "map":
  			print(printMap(aObj, void 0, (isDef(this.__codepage) ? "utf" : void 0), __conAnsi));
- 			break;
+			break;
+		case "jsmap":
+			ow.loadTemplate();
+			var res = ow.template.html.parseMap(aObj, true);
+			return "<html><style>" + res.css + "</style><body>" + res.out + "</body></html>";
  		case "pm":
  			var _p;
  			if (isArray(aObj)) _p = {
