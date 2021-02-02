@@ -821,6 +821,52 @@ OpenWrap.format.prototype.toBytesAbbreviation = function (bytes, precision) {
 
 /**
  * <odoc>
+ * <key>ow.format.toSLON(aObj, cTheme) : String</key>
+ * Stringifies aObj into a Single Line Object Notation using a default scheme for human readability or a 
+ * custom cTheme map composed of:\
+ * \
+ *    startMap "("\
+ *    sepMap   ", "\
+ *    endMap   ")"\
+ *    sepKV    ": "\
+ *    startArr "["\
+ *    sepArr   " | "\
+ *    endArr   "]"\
+ *    strQuote "'"\
+ * \
+ * </odoc>
+ */
+OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
+	var dTheme = {
+	   startMap: "(",
+	   sepMap  : ", ",
+	   endMap  : ")",
+	   sepKV   : ": ",
+	   startArr: "[",
+	   sepArr  : " | ",
+	   endArr  : "]",
+	   strQuote: "'"
+	}
+  
+	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
+  
+	if (isMap(aObj)) {
+	   var pairs = [];
+	   Object.keys(aObj).forEach(r => {
+		  pairs.push(r + dTheme.sepKV + ow.format.toSLON(aObj[r])); 
+	   });
+	   return dTheme.startMap + pairs.join(dTheme.sepMap) + dTheme.endMap; 
+	}
+	if (isArray(aObj)) {
+	   return dTheme.startArr + aObj.map(r => {
+		  return ow.format.toSLON(r);
+	   }).join(dTheme.sepArr) + dTheme.endArr;
+	}
+	if (!isMap(aObj) && !isArray(aObj)) return isString(aObj) ? dTheme.strQuote + aObj + dTheme.strQuote : aObj;
+  }
+
+/**
+ * <odoc>
  * <key>ow.format.round(aNumber, aDigits) : String</key>
  * Will return aNumber rounded to 0 decimal digits or aDigits decimal digits.\
  * (available after ow.loadFormat())
