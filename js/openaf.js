@@ -5905,7 +5905,9 @@ function oJobRunJobAsync(aJob, args, aId) {
  * </odoc>
  */
 function getEnv(anEnvironmentVariable) {
-	return String(java.lang.System.getenv().get(anEnvironmentVariable)); 
+	var r = java.lang.System.getenv().get(anEnvironmentVariable);
+	if (isNull(r)) return void 0;
+	return String(r); 
 }
 
 /**
