@@ -77,6 +77,7 @@ public class SNMPServer extends ScriptableObject {
 	protected String address;
 	protected OctetString community;
 	protected SNMPAgent agent;
+	protected ArrayList<UsmUser> userlist = new ArrayList<UsmUser>();
 	public static Map<String, NativeFunction> callbacks = new ConcurrentHashMap<String, NativeFunction>();
 	
 	
@@ -281,6 +282,9 @@ public class SNMPServer extends ScriptableObject {
 					null);
 			usm.addUser(user.getSecurityName(), null, user);*/
 
+			for(UsmUser u : userlist) {
+				usm.addUser(u.getSecurityName(), usm.getLocalEngineID(), u);
+			}
 			this.usm = usm;
 		}
 
@@ -511,6 +515,26 @@ public class SNMPServer extends ScriptableObject {
 	@JSFunction
 	public Object getJavaSNMP() {
 		return snmp;
+	}
+
+	@JSFunction
+	public void addUser(String aUsername, String authProto, String authPass, String privProto, String privPass) {
+		OID oidAuthProto = null;
+		OID oidPrivProto = null;
+
+		switch(authProto.toLowerCase()) {
+		case "sha": oidAuthProto = org.snmp4j.security.AuthSHA.ID; break;
+		case "md5": oidAuthProto = org.snmp4j.security.AuthMD5.ID; break;
+		}
+
+		switch(privProto.toLowerCase()) {
+		case "des"   : oidPrivProto = org.snmp4j.security.PrivDES.ID; break;
+		case "aes128": oidPrivProto = org.snmp4j.security.PrivAES128.ID; break;
+		case "aes192": oidPrivProto = org.snmp4j.security.PrivAES192.ID; break;
+		case "aes256": oidPrivProto = org.snmp4j.security.PrivAES256.ID; break;
+		}
+
+		userlist.add(new UsmUser(new OctetString(aUsername), oidAuthProto, new OctetString(authPass), oidPrivProto, new OctetString(privPass)));
 	}
 
 	/**
