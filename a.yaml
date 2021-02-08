@@ -1,0 +1,29 @@
+todo:
+- Prepare TimeLive connection
+- Test
+
+ojob:
+  sequential: true
+  opacks    :
+    TimeLive:
+  loadLibs  :
+    - timelive.js
+
+jobs:
+# --------------
+- name    : Test
+  typeArgs:
+    lang: python
+  exec    : |
+    employees = _('global.tl.REFERENCE_getEmployees()');
+    for employee in employees:
+       if employee['EMailAddress'] == 'carlos.mmartins@mobileum.com':
+          for key, value in employee.items():
+             print(key + ": '" + str(value) + "'")
+
+# -------------------------------------
+- name    : Prepare TimeLive connection
+  exec    : |
+    log("connecting to timelive...");
+    global.tl = new TimeLive("https://mytimelive.mobileum.com/TimeLive", "nuno.aguiar@wedotechnologies.com", "D15D2811D157D4230AEB22E36588008B414DF4EC71C61F68CF26F28DAAE7965FF16547A058BEDAA62CEB3B7E6D3B5BF5");
+    log("connected");

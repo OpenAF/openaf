@@ -166,6 +166,8 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	}
 	
 	var list = zip.list(oldVersionFile);
+	print("list = " + stringify(list));
+	print("includeMore = " + stringify(includeMore));
 	list = merge(list, includeMore);
 
 	var c = 0;
