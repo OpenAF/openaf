@@ -285,7 +285,7 @@ public class SNMPServer extends ScriptableObject {
 			for(UsmUser u : userlist) {
 				usm.addUser(u.getSecurityName(), usm.getLocalEngineID(), u);
 			}
-			this.usm = usm;
+			if (userlist.size() > 0) this.usm = usm;
 		}
 
 		@Override
@@ -294,8 +294,14 @@ public class SNMPServer extends ScriptableObject {
 		 * @param vacm
 		 */
 		protected void addViews(VacmMIB vacm) {
+			//svacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv2c, new OctetString("cpublic"), new OctetString("v1v2group"),StorageType.nonVolatile);
+
 			vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv1,
-					new OctetString("cpublic"),
+					new OctetString("public"),
+					new OctetString("v1v2group"),
+					StorageType.nonVolatile);
+			vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv2c,
+					new OctetString("public"),
 					new OctetString("v1v2group"),
 					StorageType.nonVolatile);
 			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
@@ -305,10 +311,6 @@ public class SNMPServer extends ScriptableObject {
 			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
 					new OctetString("MD5DES"),
 					new OctetString("v3group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("TEST"),
-					new OctetString("v3test"),
 					StorageType.nonVolatile);
 			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
 					new OctetString("SHA"),
@@ -338,25 +340,16 @@ public class SNMPServer extends ScriptableObject {
 					new OctetString("MD5AES256"),
 					new OctetString("v3group"),
 					StorageType.nonVolatile);
-
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv2c, new OctetString("cpublic"), new OctetString("v1v2group"),StorageType.nonVolatile);
-			/*vacm.addAccess(new OctetString("v1v2group"), new OctetString("public"),
-					SecurityModel.SECURITY_MODEL_ANY, SecurityLevel.NOAUTH_NOPRIV,
-					MutableVACM.VACM_MATCH_EXACT, new OctetString("fullReadView"),
-					new OctetString("fullWriteView"), new OctetString(
-							"fullNotifyView"), StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("fullReadView"), new OID("1.3"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile)*/
 			
 			vacm.addAccess(new OctetString("v1v2group"), new OctetString("public"),
-					SecurityModel.SECURITY_MODEL_ANY,
-					SecurityLevel.NOAUTH_NOPRIV,
-					MutableVACM.VACM_MATCH_EXACT,
-					new OctetString("fullReadView"),
-					new OctetString("fullWriteView"),
-					new OctetString("fullNotifyView"),
-					StorageType.nonVolatile);
+				SecurityModel.SECURITY_MODEL_ANY, 
+				SecurityLevel.NOAUTH_NOPRIV,
+				MutableVACM.VACM_MATCH_EXACT, 
+				new OctetString("fullReadView"),
+				new OctetString("fullWriteView"), 
+				new OctetString("fullNotifyView"), 
+				StorageType.nonVolatile);
+			
 			vacm.addAccess(new OctetString("v3group"), new OctetString(),
 					SecurityModel.SECURITY_MODEL_USM,
 					SecurityLevel.AUTH_PRIV,
@@ -365,6 +358,7 @@ public class SNMPServer extends ScriptableObject {
 					new OctetString("fullWriteView"),
 					new OctetString("fullNotifyView"),
 					StorageType.nonVolatile);
+
 			vacm.addAccess(new OctetString("v3restricted"), new OctetString(),
 					SecurityModel.SECURITY_MODEL_USM,
 					SecurityLevel.NOAUTH_NOPRIV,
@@ -373,61 +367,34 @@ public class SNMPServer extends ScriptableObject {
 					new OctetString("restrictedWriteView"),
 					new OctetString("restrictedNotifyView"),
 					StorageType.nonVolatile);
-			vacm.addAccess(new OctetString("v3test"), new OctetString(),
-					SecurityModel.SECURITY_MODEL_USM,
-					SecurityLevel.AUTH_PRIV,
-					MutableVACM.VACM_MATCH_EXACT,
-					new OctetString("testReadView"),
-					new OctetString("testWriteView"),
-					new OctetString("testNotifyView"),
-					StorageType.nonVolatile);
-	
+
 			vacm.addViewTreeFamily(new OctetString("fullReadView"), new OID("1.3"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("fullWriteView"), new OID("1.3"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("fullNotifyView"), new OID("1.3"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-	
-			vacm.addViewTreeFamily(new OctetString("restrictedReadView"),
-					new OID("1.3.6.1.2"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("restrictedWriteView"),
-					new OID("1.3.6.1.2.1"),
-					new OctetString(),
-					VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("restrictedNotifyView"),
-					new OID("1.3.6.1.2"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("restrictedNotifyView"),
-					new OID("1.3.6.1.6.3.1"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-	
-			vacm.addViewTreeFamily(new OctetString("testReadView"),
-					new OID("1.3.6.1.2"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("testReadView"),
-					new OID("1.3.6.1.2.1.1"),
-					new OctetString(), VacmMIB.vacmViewExcluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("testWriteView"),
-					new OID("1.3.6.1.2.1"),
-					new OctetString(),
-					VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("testNotifyView"),
-					new OID("1.3.6.1.2"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-	
+ 					new OctetString(), VacmMIB.vacmViewIncluded,
+ 					StorageType.nonVolatile);
+ 			vacm.addViewTreeFamily(new OctetString("fullWriteView"), new OID("1.3"),
+ 					new OctetString(), VacmMIB.vacmViewIncluded,
+ 					StorageType.nonVolatile);
+ 			vacm.addViewTreeFamily(new OctetString("fullNotifyView"), new OID("1.3"),
+ 					new OctetString(), VacmMIB.vacmViewIncluded,
+ 					StorageType.nonVolatile);
+
+ 			vacm.addViewTreeFamily(new OctetString("restrictedReadView"),
+ 					new OID("1.3.6.1.2"),
+ 					new OctetString(), VacmMIB.vacmViewIncluded,
+ 					StorageType.nonVolatile);
+ 			vacm.addViewTreeFamily(new OctetString("restrictedWriteView"),
+ 					new OID("1.3.6.1.2.1"),
+ 					new OctetString(),
+ 					VacmMIB.vacmViewIncluded,
+ 					StorageType.nonVolatile);
+ 			vacm.addViewTreeFamily(new OctetString("restrictedNotifyView"),
+ 					new OID("1.3.6.1.2"),
+ 					new OctetString(), VacmMIB.vacmViewIncluded,
+ 					StorageType.nonVolatile);
+ 			vacm.addViewTreeFamily(new OctetString("restrictedNotifyView"),
+ 					new OID("1.3.6.1.6.3.1"),
+ 					new OctetString(), VacmMIB.vacmViewIncluded,
+ 					StorageType.nonVolatile);
 		}
 
 		@Override
