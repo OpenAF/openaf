@@ -1,7 +1,7 @@
 //OPENAF common functions
 //Author: Nuno Aguiar
 
-af.eval("const self = this; const global = self; const v0 = void 0; const __oafInit = now();");
+af.eval("const self = this; const global = self; const __ = void 0; const __oafInit = now();");
 
 /**
  * <odoc>
@@ -569,7 +569,7 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 					if (useAnsi) {
 						if (isUnDef(cM[x])) cM[x] = [];
 						cM[x][igY] = __colorFormat.key;
-						cM[x][igY + 1] = _getColor(void 0);
+						cM[x][igY + 1] = _getColor(__);
 					}
 					x++;
 				}
@@ -615,7 +615,7 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 					if (useAnsi) {
 						if (isUnDef(cM[x])) cM[x] = [];
 						cM[x][igY] = __colorFormat.key;
-						cM[x][igY + 1] = _getColor(void 0);
+						cM[x][igY + 1] = _getColor(__);
 					}
 					x++;
 				}
@@ -1775,9 +1775,9 @@ function oPack(aCmd) {
  */
 function oJob(aFile, args, aId, aOptionsMap) {
 	args = merge({ "__format": "pm" }, args);
-	if (isDef(__pm._list)) __pm._list = void 0;
-	if (isDef(__pm._map)) __pm._list = void 0;
-	if (isDef(__pm.result)) __pm.result = void 0;
+	if (isDef(__pm._list)) __pm._list = __;
+	if (isDef(__pm._map)) __pm._list = __;
+	if (isDef(__pm.result)) __pm.result = __;
 	oJobRunFile(aFile, args, aId, aOptionsMap);
 	if (isDef(__pm._list)) return __pm._list;
 	if (isDef(__pm._map)) return __pm._map;
@@ -3308,7 +3308,7 @@ function parallel4Array(anArray, aFunction, numberOfThreads, threads) {
  * </odoc>
  */
 function compress(anObject) {
-	return io.gzip(af.fromString2Bytes(stringify(anObject, void 0, "")));
+	return io.gzip(af.fromString2Bytes(stringify(anObject, __, "")));
 }
 
 /**
@@ -4053,7 +4053,7 @@ function setOfflineHelp(aBoolean) {
 function searchHelp(aTerm, aPath, aId) {
 	loadHelp();
 
-	if (isUnDef(__odocs)) __odocs = new ODocs(void 0, void 0, __odocsurl, __offlineHelp);
+	if (isUnDef(__odocs)) __odocs = new ODocs(__, __, __odocsurl, __offlineHelp);
 	if (isDef(aPath)) __odocs.loadFile(aPath);
 	var keys = __odocs.search(aTerm, aId);
 
@@ -4615,7 +4615,7 @@ function ioStreamReadLines(aStream, aFunction, aSeparator, useNIO, anEncoding) {
 			}
 			return res;
 		}
-	}, void 0, useNIO, anEncoding);
+	}, __, useNIO, anEncoding);
 	while (buf.indexOf(aSeparator) >= 0 && go) {
 		var res = aFunction(buf.substring(0, buf.indexOf(aSeparator)));
 		buf = buf.substring(buf.indexOf(aSeparator) + 1);
@@ -4869,7 +4869,7 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
     if (isUnDef(aStopFunction)) aStopFunction = (aR) => { if (!aR) sleep(25); return aR; };
 
 	var done = false;
-	var exc = void 0;
+	var exc = __;
 
 	plugin("Threads");
 	var t = new Threads();
@@ -4920,8 +4920,8 @@ function threadBox(aFunction, aTimeout, aStopFunction) {
  */
 const $tb = function(aFunction) {
 	var tb = function(afu) {
-		this._timeout  = void 0;
-		this._stopfunc = void 0;
+		this._timeout  = __;
+		this._stopfunc = __;
 		this._func     = afu;
 	};
 
@@ -4951,7 +4951,7 @@ const $rest = function(ops) {
 		this.options.default = _$(this.options.default, "default").isMap().default({});
 		this.options.throwExceptions = _$(this.options.throwExceptions, "throwExceptions").isBoolean().default(false);
 		this.options.collectAllStats = _$(this.options.collectAllStats, "collectAllStats").isBoolean().default(__openaf_rest.stats);
-		this.options.preAction = _$(this.options.preAction, "preAction").isFunction().default(void 0);
+		this.options.preAction = _$(this.options.preAction, "preAction").isFunction().default(__);
 		this.options.uriQuery = _$(this.options.uriQuery, "uriQuery").isBoolean().default(false);
 		this.options.downloadResume = _$(this.options.downloadResume, "downloadResume").isBoolean().default(false);
 		this.options.retry = _$(this.options.retry, "retry").isNumber().default(0);
@@ -5015,7 +5015,7 @@ const $rest = function(ops) {
 		if (parent.__check(aBaseURI)) {
 			var c = parent.options.retry, error;
 			do {
-				error = void 0;
+				error = __;
 				try {
 					if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 						var _r = $tb(() => {
@@ -5085,7 +5085,7 @@ const $rest = function(ops) {
 		if (parent.__check(aBaseURI)) {
 			var c = parent.options.retry, error;
 			do {
-				error = void 0;
+				error = __;
 				try {
 					if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
 						var _r = $tb(() => {
@@ -5156,7 +5156,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.get = function(aBaseURI, aIdxMap) {
-		return this.__f1(ow.obj.rest, "jsonGet", aBaseURI, aIdxMap, void 0, "get");
+		return this.__f1(ow.obj.rest, "jsonGet", aBaseURI, aIdxMap, __, "get");
 	};
 	/**
 	 * <odoc>
@@ -5205,7 +5205,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.post = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "jsonCreate", aBaseURI, aDataRowMap, aIdxMap, void 0, "post");
+		return this.__f2(ow.obj.rest, "jsonCreate", aBaseURI, aDataRowMap, aIdxMap, __, "post");
 	};
 	/**
 	 * <odoc>
@@ -5254,7 +5254,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.put = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "jsonSet", aBaseURI, aDataRowMap, aIdxMap, void 0, "put");
+		return this.__f2(ow.obj.rest, "jsonSet", aBaseURI, aDataRowMap, aIdxMap, __, "put");
 	};
 	/**
 	 * <odoc>
@@ -5303,7 +5303,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.delete = function(aBaseURI, aIdxMap) {
-		return this.__f1(ow.obj.rest, "jsonRemove", aBaseURI, aIdxMap, void 0, "delete");
+		return this.__f1(ow.obj.rest, "jsonRemove", aBaseURI, aIdxMap, __, "delete");
 	};
 	/**
 	 * <odoc>
@@ -5352,7 +5352,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.patch = function(aBaseURI, aDataRowMap, aIdxMap) {
-		return this.__f2(ow.obj.rest, "jsonPatch", aBaseURI, aDataRowMap, aIdxMap, void 0, "patch");
+		return this.__f2(ow.obj.rest, "jsonPatch", aBaseURI, aDataRowMap, aIdxMap, __, "patch");
 	};
 	/**
 	 * <odoc>
@@ -5401,7 +5401,7 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.head = function(aBaseURI, aIdxMap) {
-		return this.__f1(ow.obj.rest, "head", aBaseURI, aIdxMap, void 0, "head");
+		return this.__f1(ow.obj.rest, "head", aBaseURI, aIdxMap, __, "head");
 	};
 	/**
 	 * <odoc>
@@ -5456,7 +5456,7 @@ const $py = function(aPythonCode, aInput, aOutputArray) {
  * </odoc>
  */
 const $pyStop = function() {
-	ow.python.stopServer(void 0, true);
+	ow.python.stopServer(__, true);
 };
 
 /**
@@ -5499,7 +5499,7 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	}
 
 	var separator = "-=?OpEnAf?=-";
-	var res = $sh().sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, void 0, "") + "); load('" + aScript.replace(/\\/g, "/") + "'); print('" + separator + "' + stringify(__pm, void 0, ''));").get(0);
+	var res = $sh().sh(cmd, "__pm = jsonParse(" + stringify(aPMIn, __, "") + "); load('" + aScript.replace(/\\/g, "/") + "'); print('" + separator + "' + stringify(__pm, __, ''));").get(0);
 	res = res.stdout.substr(res.stdout.indexOf(separator) + separator.length, res.stdout.length);
 	return jsonParse(res);
 };
@@ -5592,9 +5592,9 @@ const $cache = function(aName) {
         aN = _$(aN).default("cache");
         this.name  = aN;
         this.func  = k => k;
-        this.attl  = void 0;
-		this.ach   = void 0;
-		this.msize = void 0;
+        this.attl  = __;
+		this.ach   = __;
+		this.msize = __;
     };
 
 	/**
@@ -5904,7 +5904,7 @@ function oJobRunJobAsync(aJob, args, aId) {
  */
 function getEnv(anEnvironmentVariable) {
 	var r = java.lang.System.getenv().get(anEnvironmentVariable);
-	if (isNull(r)) return void 0;
+	if (isNull(r)) return __;
 	return String(r); 
 }
 
@@ -6044,7 +6044,7 @@ AF.prototype.fromYAML = function(aYAML) {
  * </odoc>
  */
 AF.prototype.fromXML2Obj = function (xml, ignored) {
-	ignored = _$(ignored).isArray().default(void 0);
+	ignored = _$(ignored).isArray().default(__);
 	if (typeof xml != "xml") {
 		if (isString(xml)) {
 			xml = xml.replace(/^<\?xml[^?]*\?>/, "");
@@ -6063,7 +6063,7 @@ AF.prototype.fromXML2Obj = function (xml, ignored) {
 			r = text;
 		}
 	}
-	if (r == void 0) {
+	if (r == __) {
 		r = {};
 		for (var ichild in children) {
 			var child = children[ichild];
@@ -6190,7 +6190,7 @@ IO.prototype.writeFileYAML = function(aYAMLFile, aObj, multidoc) { return io.wri
  * Tries to write a javascript aObj into a aJSONFile with an optional aSpace.
  * </odoc>
  */
-IO.prototype.writeFileJSON = function(aJSONFile, aObj, aSpace) { return io.writeFileString(aJSONFile, stringify(aObj, void 0, aSpace)) };
+IO.prototype.writeFileJSON = function(aJSONFile, aObj, aSpace) { return io.writeFileString(aJSONFile, stringify(aObj, __, aSpace)) };
 
 /**
  * <odoc>
@@ -6200,7 +6200,7 @@ IO.prototype.writeFileJSON = function(aJSONFile, aObj, aSpace) { return io.write
  * </odoc>
  */
 IO.prototype.writeLineNDJSON = function(aNDJSONFile, aObj, aEncode) {
-	io.writeFileString(aNDJSONFile, stringify(aObj, void 0, "")+__separator, aEncode, true);
+	io.writeFileString(aNDJSONFile, stringify(aObj, __, "")+__separator, aEncode, true);
 };
 
 /**
@@ -6705,7 +6705,7 @@ var __threadPoolFactor = 1;
 
 function __resetThreadPool(poolFactor) {
 	__threadPoolFactor = poolFactor;
-	__threadPool = void 0;
+	__threadPool = __;
 	__getThreadPool();
 }
 
@@ -7266,7 +7266,7 @@ const $retry = function(aFunc, aNumTries) {
     do {
         try {
             res = aFunc();
-            error = void 0;
+            error = __;
             return res;
         } catch(e) {
             error = e;
@@ -7425,12 +7425,12 @@ const $doWait = function(aPromise, aWaitTimeout) {
 const $sh = function(aString) {
     var __sh = function(aCmd, aIn) {
         this.q = [];
-        this.wd = void 0;
-        this.fcb = void 0;
-		this.t = void 0;
-		this.dw = void 0;
+        this.wd = __;
+        this.fcb = __;
+		this.t = __;
+		this.dw = __;
 		ow.loadFormat();
-		if (ow.format.isWindows()) this.encoding = "cp850"; else this.encoding = void 0;
+		if (ow.format.isWindows()) this.encoding = "cp850"; else this.encoding = __;
         if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
     };
 
@@ -7592,7 +7592,7 @@ const $sh = function(aString) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding, this.dw, this.envs), this.q[ii]);
+				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
@@ -7640,7 +7640,7 @@ const $sh = function(aString) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : void 0), this.encoding, this.dw, this.envs), this.q[ii]);
+                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
@@ -7678,9 +7678,9 @@ const $ssh = function(aMap) {
 	 */
     var __ssh = function(aMap) {
         this.q = [];
-        this.fcb = void 0;
-        this.t = void 0;
-        this.ppty = void 0;
+        this.fcb = __;
+        this.t = __;
+        this.ppty = __;
 
         plugin("SSH");
 		aMap = _$(aMap).$_("Please provide a ssh map or an URL");
@@ -7932,7 +7932,7 @@ const $ssh = function(aMap) {
         if (isDef(this.t)) this.__getssh().setTimeout(this.t);
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-                var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, false, this.ppty, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
+                var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, false, this.ppty, true, (isDef(this.fcb) ? this.fcb() : __)), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res, this);
@@ -7983,7 +7983,7 @@ const $ssh = function(aMap) {
         if (isDef(this.t)) this.__getssh().setTimeout(this.t);
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
-                var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, true, this.ppty, true, (isDef(this.fcb) ? this.fcb() : void 0)), this.q[ii]);
+                var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, true, this.ppty, true, (isDef(this.fcb) ? this.fcb() : __)), this.q[ii]);
                 res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res, this);
@@ -8044,7 +8044,7 @@ const $get = function(aK) {
 
     var res = $ch("oaf::global").get({ k: aK });
     
-    if (isDef(res) && isDef(res.v)) return res.v; else return void 0;
+    if (isDef(res) && isDef(res.v)) return res.v; else return __;
 }
 
 /**

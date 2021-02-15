@@ -535,7 +535,7 @@ OpenWrap.format.prototype.string = {
 			
 					switch(col.type) {
 					case "map": p = printMap(col.obj, cs, "utf", true); break; 
-					case "table": p = printTable(col.obj, cs, void 0, true, "utf"); break;
+					case "table": p = printTable(col.obj, cs, __, true, "utf"); break;
 					default: p = String(col.obj).split(/\r?\n/).map(r => r.substring(0, cs)).join("\n");
 					}
 	
@@ -577,8 +577,8 @@ OpenWrap.format.prototype.streamSHLog = function(aFunc) {
 	return function(o, e) {
 		$doWait(
 			$doAll([
-				$do(() => { ioStreamReadLines(o, (f) => { log(aFunc(String(f)), {async: true}) }, void 0, false); }), 
-				$do(() => { ioStreamReadLines(e, (f) => { logErr(aFunc(String(f)), {async:true}) }, void 0, false); })
+				$do(() => { ioStreamReadLines(o, (f) => { log(aFunc(String(f)), {async: true}) }, __, false); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { logErr(aFunc(String(f)), {async:true}) }, __, false); })
 			])
 		);
 	};
@@ -597,8 +597,8 @@ OpenWrap.format.prototype.streamSH = function(aFunc, anEncoding) {
 		return function(o, e) {
 			$doWait(
 				$doAll([
-					$do(() => { ioStreamReadLines(o, (f) => { print(aFunc(String(f))) }, void 0, false); }), 
-					$do(() => { ioStreamReadLines(e, (f) => { printErr(aFunc(String(f))) }, void 0, false); })
+					$do(() => { ioStreamReadLines(o, (f) => { print(aFunc(String(f))) }, __, false); }), 
+					$do(() => { ioStreamReadLines(e, (f) => { printErr(aFunc(String(f))) }, __, false); })
 				])
 			);
 		};
@@ -606,8 +606,8 @@ OpenWrap.format.prototype.streamSH = function(aFunc, anEncoding) {
 		return function(o, e) {
 			$doWait(
 				$doAll([
-					$do(() => { ioStreamReadLines(o, (f) => { print(aFunc(af.toEncoding(String(f), anEncoding))) }, void 0, false); }), 
-					$do(() => { ioStreamReadLines(e, (f) => { printErr(aFunc(af.toEncoding(String(f), anEncoding))) }, void 0, false); })
+					$do(() => { ioStreamReadLines(o, (f) => { print(aFunc(af.toEncoding(String(f), anEncoding))) }, __, false); }), 
+					$do(() => { ioStreamReadLines(e, (f) => { printErr(aFunc(af.toEncoding(String(f), anEncoding))) }, __, false); })
 				])
 			);
 		};
@@ -626,8 +626,8 @@ OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding) {
 	return function(o, e) {
 		$doWait(
 			$doAll([
-				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); print(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, void 0, false, void 0); }), 
-				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErr(ansiColor("RED", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, void 0, false, anEncoding); })
+				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); print(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, __, false, __); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErr(ansiColor("RED", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, __, false, anEncoding); })
 			])
 		);
 	};
@@ -1388,7 +1388,7 @@ OpenWrap.format.prototype.testURLLatency = function(aURL, aCustomTimeout) {
 	hc.setThrowExceptions(true);
 	var ini = now(), latency = -1;
 	try {
-		hc.get(aURL, void 0, void 0, false, aCustomTimeout);
+		hc.get(aURL, __, __, false, aCustomTimeout);
 		latency = now() - ini;
 	} catch(e) {
 		latency = -1;
@@ -2059,7 +2059,7 @@ OpenWrap.format.prototype.xls = {
 		ow.format.xls.init();
 
 		if (isUnDef(aXLS.__styleCache)) { aXLS.__styleCache = {}; }
-		var styleId = stringify(sortMapKeys(aStyleMap), void 0, "");
+		var styleId = stringify(sortMapKeys(aStyleMap), __, "");
 		if (isJavaObject(aXLS.__styleCache[styleId])) return aXLS.__styleCache[styleId];
 
 		var fnRCS = () => {
@@ -2269,7 +2269,7 @@ OpenWrap.format.prototype.getDoH = function(aName, aType, aProvider) {
 			 type: aType
 		  });
 		  if (isDef(res.Answer)) return res.Answer;
-		  else return void 0;
+		  else return __;
 	   case "cloudflare":
 		  var res = $rest({
 						requestHeaders: {
@@ -2282,7 +2282,7 @@ OpenWrap.format.prototype.getDoH = function(aName, aType, aProvider) {
 						type: aType
 					});
 		  if (isDef(res.Answer)) return res.Answer;
-		  else return void 0;
+		  else return __;
 	   default:
 		  break;
 	}
@@ -2421,7 +2421,7 @@ OpenWrap.format.prototype.cron = {
 	 */
 	isCronMatch: function(aDate, aCronExpr) {
 		var d = aDate;
-		var ct = ow.format.fromDate(d, "s m H d M u", (later.date.isUTC ? "UTC" : void 0)).split(/ /);
+		var ct = ow.format.fromDate(d, "s m H d M u", (later.date.isUTC ? "UTC" : __)).split(/ /);
 		var cr = ow.format.cron.parse(aCronExpr);
 		if (cr.exceptions.length > 0) throw "Exceptions " + stringify(cr.exceptions);
 		var isMatch = true;

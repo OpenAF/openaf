@@ -298,7 +298,7 @@ OpenWrap.obj.prototype.flatten = function(data, aSeparator, aNADefault) {
 
 	if (isMap(data)) {
 		var res = _trav(genFlatMap(keys), data);
-		if (res.lenght > 0) return res[0]; else return void 0;
+		if (res.lenght > 0) return res[0]; else return __;
 	}
 };
 
@@ -691,13 +691,13 @@ OpenWrap.obj.prototype.pool = {
 			},
 			
 			__getUnused: function(shouldTest) {	
-				var obj = void 0;
+				var obj = __;
 				var i = 0, r = 0;
 				var parent = this;
 
 				sync(function() {
 					while(isUnDef(obj) && i < parent.__currentSize) {
-						var inUse = void 0;
+						var inUse = __;
 						inUse = parent.__pool[i].inUse;
 						if (inUse == false) {
 							var useit = !shouldTest;						
@@ -1148,11 +1148,11 @@ OpenWrap.obj.prototype.big = {
 						}
 					}
 				}
-				return void 0;
+				return __;
 			},
 		
 			getColsByID: function(anId) {
-				if (isUnDef(anId)) return void 0;
+				if (isUnDef(anId)) return __;
 				return uncompress(this.__getData()[anId]);
 			},
 		
@@ -1545,8 +1545,8 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	this.__lps = {}; 
 	this.__config = {};
 	this.__throwExceptions = true;
-	this.__r = void 0;
-	this.__rb = void 0; 
+	this.__r = __;
+	this.__rb = __; 
 	this.__usv = true;
 	options = _$(options).isMap(options).default({});
 	if (options.accessCookies) this.__cookies = new Packages.org.apache.http.impl.client.BasicCookieStore();
@@ -1859,7 +1859,7 @@ OpenWrap.obj.prototype.rest = {
 		}
 		 
 		try {
-			h.exec(aURL, "HEAD", void 0, aRequestMap, void 0, _t);
+			h.exec(aURL, "HEAD", __, aRequestMap, __, _t);
 			return Number(h.responseHeaders()["Content-Length"]) || Number(h.responseHeaders()["content-length"]);
 		} catch(e) {
 		   e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
@@ -1897,7 +1897,7 @@ OpenWrap.obj.prototype.rest = {
  		}
  		
  		try {
- 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", void 0, aRequestMap, retBytes, _t, retBytes);
+ 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", __, aRequestMap, retBytes, _t, retBytes);
  		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 			throw e;
@@ -1951,7 +1951,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2006,7 +2006,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2061,7 +2061,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, void 0, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2109,7 +2109,7 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", void 0, aRequestMap, retBytes, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", __, aRequestMap, retBytes, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2154,7 +2154,7 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "HEAD", void 0, aRequestMap, void 0, _t, void 0);
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "HEAD", __, aRequestMap, __, _t, __);
 			res.contentType = "application/json";
 			res.response = h.responseHeaders();
 			return res;
@@ -2689,7 +2689,7 @@ OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescri
     var r = {
         "$id": aId,
 		"$schema": "http://json-schema.org/draft-07/schema#",
-		"description": (isDef(aDescriptionTmpl) ? templify(aDescriptionTmpl, aMap) : void 0),
+		"description": (isDef(aDescriptionTmpl) ? templify(aDescriptionTmpl, aMap) : __),
 		"required": aRequired
     };
 
@@ -2779,7 +2779,7 @@ OpenWrap.obj.prototype.schemaGenerator = function(aJson, aId, aRequired, aDescri
 		}
 
 		if (isDef(aDescriptionTmpl)) {
-			aMap.key = (isDef(ak) ? ak : void 0);
+			aMap.key = (isDef(ak) ? ak : __);
 			ms.description = templify(aDescriptionTmpl, merge(ms, aMap));
 		}
 
@@ -2933,7 +2933,7 @@ OpenWrap.obj.prototype.oneOfFn = function(anArrayFn, aWeightField) {
     if (isObject(o) && isFunction(o.fn)) return o.fn();
     if (isFunction(o)) return o();
 
-    return void 0;
+    return __;
 };
 
 /**
