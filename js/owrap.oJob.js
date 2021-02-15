@@ -1816,9 +1816,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				break;
 			case "python":
 				parent.python = true;
-				if (!res.startsWith("$pyStart();")) {
+				if (!(res.indexOf("/* __oaf_ojob python */") >= 0)) {
 					var orig = String(res);
-					res  = "$pyStart();";
+					res  = "/* __oaf_ojob python */ $pyStart();";
 					if (aJobTypeArgs.noTemplate) {
 						res += "try { args = merge(args, $py(" + stringify(orig) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
 					} else {
@@ -1828,10 +1828,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 				break;
 			case "ssh":
-				if (!res.indexOf("var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh)") >= 0) {
+				if (!(res.indexOf("/* __oaf_ojob ssh */") >= 0)) {
 					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh");
 					var orig = String(res);
-					res = "var ft = io.createTempFile('ojob_', '.ojob'); io.writeFileString(ft, " + stringify(orig) + ");\n";
+					res = "/* __oaf_ojob ssh */ var ft = io.createTempFile('ojob_', '.ojob'); io.writeFileString(ft, " + stringify(orig) + ");\n";
 					if (aJobTypeArgs.noTemplate) {
 						res += "";
 					} else {
@@ -1844,10 +1844,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 				break;
 			case "shell":
-				if (!res.indexOf("var __res = $sh().envs(") >= 0) {
+				if (!(res.indexOf("/* __oaf_ojob shell */") >= 0)) {
 					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
 						var orig = String(res);
-						res = "var ft = io.createTempFile('ojob_', '.bat'); io.writeFileString(ft, " + stringify(orig) + ");\n";
+						res = "/* __oaf_ojob shell */ var ft = io.createTempFile('ojob_', '.bat'); io.writeFileString(ft, " + stringify(orig) + ");\n";
 						if (aJobTypeArgs.noTemplate) {
 							res += "";
 						} else {
@@ -1859,13 +1859,16 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					} else {
 						aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
 						var orig = String(res);
+                                                res = "/* __oaf_ojob shell */ ";
 						if (aJobTypeArgs.noTemplate) {
-							res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
+							res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
 						} else {
-							res  = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", templify(" + stringify(orig) + ", args)).get(0);\n";
+							res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", templify(" + stringify(orig) + ", args)).get(0);\n";
 						}
 						res += "if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
+
+                                                print(res);
 					}
 				}
 				break;
@@ -1881,10 +1884,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 				if (isString(aJobTypeArgs.lang)) {
 					if (isString(aJobTypeArgs.shell)) {
-						if (!res.startsWith("var __res = $sh().envs(")) {
-
+						if (!(res.indexOf("/* __oaf_ojob shell */") >= 0)) {
 							aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
 							var orig = String(res);
+                                                        res = "/* __oaf_ojob shell */ ";
 							if (aJobTypeArgs.noTemplate) {
 								res = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), void 0, "") + ", " + stringify(orig) + ").get(0);\n";
 							} else {

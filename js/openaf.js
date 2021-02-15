@@ -1,9 +1,7 @@
 //OPENAF common functions
 //Author: Nuno Aguiar
 
-const self = this;
-const global = self;
-const __oafInit = now();
+af.eval("const self = this; const global = self; const v0 = void 0; const __oafInit = now();");
 
 /**
  * <odoc>
@@ -1497,7 +1495,7 @@ function getJavaStackTrace(anException) {
 
 		return res;
 	} else {
-		return void 0;
+		return v0;
 	}
 }
 
