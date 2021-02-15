@@ -8101,12 +8101,17 @@ var console = { log: log, warn: logWarn, error: logErr };
 	__setUserAgent();
 }
 
+// Set network DNS TTL
+(function() {
+	java.security.Security.setProperty("networkaddress.cache.ttl", 60);
+})();
+
 // Set __pm
 var __pm = __pmIn;
 __pmOut = __pm;
 
-// ---------------
-// Profile support
+// -------------------------------------
+// Profile support (must be always last)
 
 var OPENAFPROFILE;
 if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
