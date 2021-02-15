@@ -213,7 +213,7 @@ OpenWrap.metrics.prototype.stopCollecting = function(aChName) {
     ow.metrics.__ch = deleteFromArray(ow.metrics.__ch, ow.metrics.__ch.indexOf(aChName));
     if (isDef(ow.metrics.__t) && ow.metrics.__ch.length <= 0) {
         ow.metrics.__t.stop(true);
-        ow.metrics.__t = void 0;
+        ow.metrics.__t = __;
     }
 };
 

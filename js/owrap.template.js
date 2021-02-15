@@ -69,7 +69,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 	ow.loadFormat();
 	ow.template.addHelper("debug", (s) => { sprint(s); });
 	ow.template.addHelper("stringify", (s) => { return stringify(s); });
-	ow.template.addHelper("stringifyInLine", (s) => { return stringify(s, void 0, ""); });
+	ow.template.addHelper("stringifyInLine", (s) => { return stringify(s, __, ""); });
 	ow.template.addHelper("toYAML", (s) => { return af.toYAML(s); });
 	ow.template.addHelper("env", (s) => { return String(java.lang.System.getenv().get(s)); });
 	ow.template.addHelper("escape", (s) => { return s.replace(/['"]/g, "\\$1"); });	
@@ -653,7 +653,7 @@ OpenWrap.template.prototype.html = {
 		var h = new ow.obj.http();
 		try {
 			var u = new java.net.URL(aURL);
-			var b = h.get(aURL, void 0, void 0, true);
+			var b = h.get(aURL, __, __, true);
 			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes)) + aSuffix;
 		} catch(e1) {
 			return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
@@ -702,7 +702,7 @@ OpenWrap.template.prototype.html = {
 			var h = new ow.obj.http();
 			try {
 				var u = new java.net.URL(aURL);
-				var b = h.get(aURL, void 0, void 0, true);
+				var b = h.get(aURL, __, __, true);
 				if (withContents)
 					return af.fromBytes2String(b.responseBytes);
 				else

@@ -14,7 +14,7 @@ var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "print(\"Encrypted text: \" + askEncrypt(\"Enter text: \"));",
-	"sh": "sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/sh \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")+(!ow.format.isWindows()?\" && stty -icanon min 1 -echo 2>/dev/null\":\"\"),void 0,void 0,true);void 0;",
+	"sh": "sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/sh \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")+(!ow.format.isWindows()?\" && stty -icanon min 1 -echo 2>/dev/null\":\"\"),__,__,true);__;",
     "ojob": "(()=>{var f = __aliasparam.split(\" \"); var o = processExpr(\" \", false, __aliasparam); delete o[f[0]]; oJobRunFile(f[0], o);})()"
 };
 var __exitActions = [];
@@ -291,7 +291,7 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 	try {
 		var res;
 		var __start;
-		__timeResult = void 0;
+		__timeResult = __;
 		
 		if (timeCommand) __start = now();
 		if (!executeSQL) {
@@ -317,7 +317,7 @@ function __sql(aParams, executeSQL, descSQL, returnOnly) {
 				if (timeCommand) __timeResult = now() - __start;
 				if (res.results.length > 0) {
 					if (!descSQL) {
-						outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly, __ansiflag && con.isAnsiSupported(), (isDef(__codepage) ? "utf" : void 0));
+						outputres = printTable(res.results, con.getConsoleReader().getTerminal().getWidth(), returnOnly, __ansiflag && con.isAnsiSupported(), (isDef(__codepage) ? "utf" : __));
 					} /* else {
 						outputres = Object.keys(res.results[0]).join("\n");
 					}*/
@@ -630,7 +630,7 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		} else {
 			//if (isDef(__codepage) && isString(__codepage))
-			//printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET), void 0, __codepage);
+			//printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET), __, __codepage);
 			//else
 			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		}
@@ -641,7 +641,7 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 }
 
 function __outputConsoleEnd(anOutput, colorify) {
-	//if (isDef(__codepage) && isString(__codepage)) anOutput = af.toEncoding(anOutput, void 0, __codepage);
+	//if (isDef(__codepage) && isString(__codepage)) anOutput = af.toEncoding(anOutput, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
 		//if (colorCommand && colorify) 
@@ -659,7 +659,7 @@ function __outputConsoleComments(anOutputComment) {
 }
 
 function __outputConsoleCommentsNoEnd(anOutputComment) {
-	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, void 0, __codepage);
+	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
 		printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
@@ -670,7 +670,7 @@ function __outputConsoleCommentsNoEnd(anOutputComment) {
 }
 
 function __outputConsoleCommentsEnd(anOutputComment) {
-	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, void 0, __codepage);
+	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
 		print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
@@ -681,7 +681,7 @@ function __outputConsoleCommentsEnd(anOutputComment) {
 }
 
 function __outputConsoleError(anError) {
-	//if (isDef(__codepage) && isString(__codepage)) anError = af.toEncoding(anError, void 0, __codepage);
+	//if (isDef(__codepage) && isString(__codepage)) anError = af.toEncoding(anError, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
 		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
 		printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
@@ -738,10 +738,10 @@ function __table(aCmd) {
 	if (isArray(__res) && __res.length > 0 && isObject(__res[0]) && isObject(__res[__res.length -1])) {
 		var __pres = 0;
 		if (pauseCommand) {
-			var __lines = printTable(__res, con.getConsoleReader().getTerminal().getWidth(), true, colorCommand, (isDef(__codepage) ? "utf" : void 0)).split(/\n/);
+			var __lines = printTable(__res, con.getConsoleReader().getTerminal().getWidth(), true, colorCommand, (isDef(__codepage) ? "utf" : __)).split(/\n/);
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
-			__outputConsole(printTable(__res, con.getConsoleReader().getTerminal().getWidth(), true, colorCommand, (isDef(__codepage) ? "utf" : void 0)));
+			__outputConsole(printTable(__res, con.getConsoleReader().getTerminal().getWidth(), true, colorCommand, (isDef(__codepage) ? "utf" : __)));
 		}
 		return true;
 	} else {
@@ -790,10 +790,10 @@ function __view(aCmd, fromCommand, shouldClear) {
 		if (outputCommand && (isMap(__res) || isArray(__res)) && Object.keys(__res).length > 0) {
 			var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
 			if (pauseCommand) {
-				var __lines = (prefix + printMap(__res, void 0, (isDef(__codepage) ? "utf" : void 0), colorCommand)).split(/\n/);
+				var __lines = (prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand)).split(/\n/);
 				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 			} else {
-				__outputConsole(prefix + printMap(__res, void 0, (isDef(__codepage) ? "utf" : void 0), colorCommand));
+				__outputConsole(prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand));
 			}
 			if (isDef(__timeResult) && timeCommand) __time(__timeResult);
 			return true;

@@ -100,7 +100,7 @@ var ODocs = function(aPath, aODocs, anArrayURLs, offline) {
 
 ODocs.prototype.loadFile = function(aPath) {
 	try { 
-		this.load(void 0, aPath); 
+		this.load(__, aPath); 
 		if(!this.offline && isUnDef(aPath)) {
 			this.backgroundLoadWeb(); 
 		}

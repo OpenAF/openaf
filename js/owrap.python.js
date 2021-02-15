@@ -65,7 +65,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 						if (isDef(inR) && isDef(inR.e) && isDef(inR.t) && inR.t == this.token) {
 							aFn("exec", inR);
 							try {
-								res = stringify(af.eval(inR.e),void 0, "");
+								res = stringify(af.eval(inR.e),__, "");
 							} catch(ee) {
 								res = "__OAF__Exception: " + String(ee);
 							}
@@ -80,7 +80,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 					} 
 				}, "\n", false); 
 				clt.close();
-			}, void 0, "127.0.0.1");
+			}, __, "127.0.0.1");
 	
 			// Send
 			if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();
@@ -147,7 +147,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 			s += "server.serve_forever()\n";
 			s += "\n";
 	
-			//af.sh(this.python + " -", s, void 0, void 0, void 0, void 0, void 0, void 0, true);
+			//af.sh(this.python + " -", s, __, __, __, __, __, __, true);
 			plugin("Threads");
 			this.__t = new Threads();
 			var parent = this;
@@ -164,7 +164,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 			sleep(150, true);
 			ow.format.testPort("127.0.0.1", this.sport, 1500);
 	
-			addOnOpenAFShutdown(() => { ow.python.stopServer(void 0, true); });
+			addOnOpenAFShutdown(() => { ow.python.stopServer(__, true); });
 		}
 	
 		return this.token;
@@ -182,7 +182,7 @@ OpenWrap.python.prototype.stopServer = function(aPort, force) {
 			ow.server.socket.stop(aPort);
 			ow.loadObj();
 
-			ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ exit: true, t: this.token }, void 0, "")+"\n");
+			ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ exit: true, t: this.token }, __, "")+"\n");
 			pidKill(io.readFileString(this.pidfile), true);
 			this.__t.stop(true);
 			//this.threads.stop(true);
@@ -249,19 +249,19 @@ OpenWrap.python.prototype.execPM = function(aPythonCode, aInput, throwExceptions
 
 	var code = (shouldFork ? this.initCode(true) : ""), delim = nowNano();
 	code += "import json\n";
-	code += "__pm = json.loads('" + stringify(aInput, void 0, "" ).replace(/\'/g, "\\'").replace(/\\n/g, "\\\n") + "')\n";
+	code += "__pm = json.loads('" + stringify(aInput, __, "" ).replace(/\'/g, "\\'").replace(/\\n/g, "\\\n") + "')\n";
 	code += aPythonCode;
 	code += "\nprint(\"" + delim + "\\n\" + json.dumps(__pm, indent=0, separators=(',',':') ))\n";
 
 	var res;
     if (shouldFork || isUnDef(this.sport)) {
-		//res = af.sh(this.python + " -", code, void 0, void 0, void 0, true);
+		//res = af.sh(this.python + " -", code, __, __, __, true);
 		res = $sh([this.python, "-c", code]).get(0);
 	} else {
 		ow.loadObj();
 		code = code.replace("# -*- coding: utf-8 -*-\n", "#\n");
 
-		res = jsonParse(ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ e: code, t: this.token }, void 0, "")+"\n"));
+		res = jsonParse(ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ e: code, t: this.token }, __, "")+"\n"));
 	}
 	var rres = [];
 	if (res.stdout.indexOf(delim) >= 0) {
@@ -301,20 +301,20 @@ OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, thr
 	var code = (shouldFork ? this.initCode(true) : ""), delim = nowNano();
 	code += "import json\n";
 	Object.keys(aInput).map(k => {
-		if (isDef(aInput[k])) code += k + " = json.loads('" + stringify(aInput[k], void 0, "" ).replace(/\'/g, "\\'").replace(/\\n/g, "\\\n") + "')\n";
+		if (isDef(aInput[k])) code += k + " = json.loads('" + stringify(aInput[k], __, "" ).replace(/\'/g, "\\'").replace(/\\n/g, "\\\n") + "')\n";
 	});
 	code += aPythonCode;
 
 	var res;
 	code += "\nprint(\"" + delim + "\\n\" + json.dumps({ " + Object.keys(aOutputArray).map(k => "\"" + aOutputArray[k] + "\": " + aOutputArray[k]).join(", ") + " }, indent=0, separators=(',',':') ))\n";
     if (shouldFork || isUnDef(this.sport)) {
-		//res = af.sh(this.python + " -", code, void 0, void 0, void 0, true);
+		//res = af.sh(this.python + " -", code, __, __, __, true);
 		res = $sh([this.python, "-c", code]).get(0);
 	} else {
 		ow.loadObj();
 		code = code.replace("# -*- coding: utf-8 -*-\n", "#\n");
 
-		res = jsonParse(ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ e: code, t: this.token }, void 0, "")+"\n"));
+		res = jsonParse(ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ e: code, t: this.token }, __, "")+"\n"));
 	}
 
 	var rres = [];

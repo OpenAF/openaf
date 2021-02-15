@@ -276,7 +276,7 @@ function ojob_runFile() {
 		//}
 		
 		if (isDef(file)) {
-			oJobRunFile(file, ojob_args, void 0, (nocolor) ? { conAnsi: false } : void 0);
+			oJobRunFile(file, ojob_args, __, (nocolor) ? { conAnsi: false } : __);
 		}
 	}
 }

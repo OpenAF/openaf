@@ -114,7 +114,7 @@ OpenWrap.dev.prototype.doh = function(aString, aType, aProvider) {
                     if (isDef(res) && isArray(res.Answer) && res.Answer.length > 0) 
                         return $path(res, "sort_by(Answer, &TTL)[?type==`" + nt + "`]"); 
                     else 
-                        return void 0;
+                        return __;
                 };
                 break;
             default:
@@ -125,7 +125,7 @@ OpenWrap.dev.prototype.doh = function(aString, aType, aProvider) {
                     if (isDef(res) && isArray(res.Answer) && res.Answer.length > 0) 
                         return $path(res, "sort_by(Answer, &TTL)[?type==`" + nt + "`]"); 
                     else 
-                        return void 0;
+                        return __;
                 };
                 break;
             }
@@ -264,7 +264,7 @@ OpenWrap.dev.prototype.JSDebug.prototype.setTestingWrapAll = function(aObject) {
 OpenWrap.dev.prototype.JSDebug.prototype.setFn = function(aObject, aMethod, aFn, aPrefix, aSuffix, eachLineTmpl) {
     _$(aObject).isString().regexp(/\w+/).$_("need to provide a object name as a string");
     _$(aMethod).isString().regexp(/\w+/).default(aObject);
-    _$(aFn).isFunction().default(void 0);
+    _$(aFn).isFunction().default(__);
     aPrefix = _$(aPrefix).isString().default("");
     aSuffix = _$(aSuffix).isString().default("");
     eachLineTmpl = _$(eachLineTmpl).isString().default("");
