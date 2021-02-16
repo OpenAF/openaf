@@ -3088,10 +3088,14 @@ OpenWrap.server.prototype.socket = {
 	stop: (aPort) => {
 		_$(aPort, "port").isNumber().$_();
 
-		ow.server.socket.__servers[aPort].close();
-		var res = ow.server.socket.__threads[aPort].stop(true);
-		delete ow.server.socket.__servers[aPort];
-		return res;
+		if (isDef(ow.server.socket.__servers[aPort])) {
+			ow.server.socket.__servers[aPort].close();
+			var res = ow.server.socket.__threads[aPort].stop(true);
+			delete ow.server.socket.__servers[aPort];
+			return res;
+		} else {
+			return __;
+		}
 	}
 }
 
