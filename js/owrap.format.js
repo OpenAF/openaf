@@ -862,6 +862,9 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 		  return ow.format.toSLON(r);
 	   }).join(dTheme.sepArr) + dTheme.endArr;
 	}
+	if (isDate(aObj)) {
+		return ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS');
+	}
 	if (!isMap(aObj) && !isArray(aObj)) return isString(aObj) ? dTheme.strQuote + aObj + dTheme.strQuote : aObj;
   }
 
