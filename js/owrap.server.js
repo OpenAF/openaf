@@ -834,7 +834,11 @@ OpenWrap.server.prototype.rest = {
 
 				return String("<html><style>" + res.css + "</style><body>" + res.out + "</body></html>");
 			} else {
-				return stringify(r, __, "");
+				if (isString(r)) {
+					return r;
+				} else {
+					return stringify(r, __, "");
+				}
 			}
 		};
 
