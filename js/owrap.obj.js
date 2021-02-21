@@ -1548,6 +1548,8 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	this.__r = __;
 	this.__rb = __; 
 	this.__usv = true;
+	this.__uf = __;
+	this.__ufn = "file";
 	options = _$(options).isMap(options).default({});
 	if (options.accessCookies) this.__cookies = new Packages.org.apache.http.impl.client.BasicCookieStore();
 	if (options.accessCtx) this.__ctx = Packages.org.apache.http.client.protocol.HttpClientContext.create();
@@ -1555,6 +1557,14 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	if (isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 	}
+};
+
+OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
+	this.__ufn = _$(aName, "aName").isString().default("file");
+	_$(aFile, "aFile").isString().$_();
+
+	this.__ufn = aName;
+	this.__uf = aFile;
 };
 
 OpenWrap.obj.prototype.http.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
@@ -1599,7 +1609,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		break;
 	case "HEAD":
 		r = new Packages.org.apache.http.client.methods.HttpHead(aUrl);
-		break;
+		break; 
 	case "PATCH":
 		r = new Packages.org.apache.http.client.methods.HttpPatch(aUrl);
 		canHaveIn = true;
@@ -1664,6 +1674,19 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 
 	if (isDef(aIn) && isString(aIn) && canHaveIn) {
 		r.setEntity(Packages.org.apache.http.entity.StringEntity(aIn));
+	} else {
+		if (isDef(this.__uf) && canHaveIn) {
+			//var fileBody = new Pacakges.org.apache.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.http.entity.ContentType.DEFAULT_BINARY);
+			var entityBuilder = Packages.org.apache.http.entity.mime.MultipartEntityBuilder.create();
+			entityBuilder.setMode(Packages.org.apache.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE);
+			if (isString(this.__uf)) {
+				entityBuilder.addBinaryBody(this.__ufn, new java.io.File(this.__uf));
+			} else {
+				entityBuilder.addBinaryBody(this.__ufn, this.__uf);
+			}
+			var mutiPartHttpEntity = entityBuilder.build();
+			r.setEntity(mutiPartHttpEntity);
+		}
 	}
 
 	this.outputObj = {};
@@ -1957,7 +1980,66 @@ OpenWrap.obj.prototype.rest = {
 			throw e;
 		}
 	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.upload(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP, retBytes, aMethod) : String</key>
+	 * Tries to upload a new aDataRowMap entry (composed of name and in (a filename, a stream or an array of bytes)), identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP POST method or aMethod).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
+	 * Optionally if retBytes = true returns a java stream.
+	 * </odoc>
+	 */
+	upload: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod) {
+		aMethod = _$(aMethod, "aMethod").isString().default("POST");
+		var h = (isDef(__h)) ? __h : this.connectionFactory();
+
+		if (isUnDef(_l) && isUnDef(_p)) {
+			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
+			if (u.getUserInfo() != null) {
+				_l = String(java.net.URLDecoder.decode(u.getUserInfo().substring(0, u.getUserInfo().indexOf(":")), "UTF-8"));
+				_p = String(java.net.URLDecoder.decode(u.getUserInfo().substring(u.getUserInfo().indexOf(":") + 1), "UTF-8"));
+			}
+		}
+		
+		if (isDef(_l) && isDef(_p)) {
+			h.login(_l, _p, false, aURL);
+		} 
+		
+ 		if (isDef(_l) && isFunction(_l)) {
+ 			_l(h);
+ 		}
+		
+		/*var rmap = (urlEncode) ?
+				   merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
+				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);*/
+
+		try {
+			_$(aDataRow, "aDataRow").isMap().$_();
+			_$(aDataRow.name, "aDataRow.name").isString().$_();
+			_$(aDataRow.in, "aDataRow.in").$_();
+
+			h.upload(aDataRow.name, aDataRow.in);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), aMethod, __, __, __, _t, retBytes);
+		} catch(e) {
+			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
+			throw e;
+		}
+	},
 	
+	/**
+	 * <odoc>
+	 * <key>ow.obj.rest.jsonUpload(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP, retBytes, aMethod) : String</key>
+	 * Tries to upload a new aDataRowMap entry (composed of name and in (a filename, a stream or an array of bytes)), identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP POST method or aMethod).
+	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
+	 * that receives the HTTP object.
+	 * Optionally if retBytes = true returns a java stream.
+	 * </odoc>
+	 */
+	jsonUpload: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod) {
+		return jsonParse(af.toEncoding(this.upload(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod).response, "cp1252"));
+	},
+
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.jsonCreate(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP, retBytes) : Map</key>

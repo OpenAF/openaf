@@ -258,6 +258,10 @@
         // TODO: 
     };
 
+    exports.testRestUpload = function() {
+        // TODO: 
+    };
+
     exports.testDoA2B = function() {
         ow.loadObj();
         var aa = $atomic(0), ab = $atomic(0);
