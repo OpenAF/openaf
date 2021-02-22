@@ -718,6 +718,19 @@
         ow.test.assert(res.url, "https://httpbin.org/get", "Problem with $fnM.");
     };
 
+    exports.testVoidShortcut = function() {
+        ow.test.assert(__, void 0, "Problem with shortcut __");
+    };
+
+    exports.testEnvs = function() {
+        var envsList = getEnvs();
+        var testEnv = Object.keys(envsList)[0];
+        var testVal = envsList[testEnv];
+
+        ow.test.assert(testVal, getEnv(testEnv), "Problem with getEnvs/getEnv.");
+        ow.test.assert(getEnv(genUUID()), __, "Problem with getEnv not defined.");
+    };
+
     exports.testGetPath = function() {
         ow.loadObj();
 

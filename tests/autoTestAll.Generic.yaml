@@ -208,6 +208,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testRest;
 
+   - name: OpenAF::Test Void shortcut
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testVoidShortcut;
+
+   - name: OpenAF::Test Envs
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testEnvs;
+
 todo:
    # Generic Tests
    # -------------
@@ -251,3 +261,5 @@ todo:
    - OpenAF::PSelect
    - OpenAF::Thread box
    - OpenAF::Test Rest
+   - OpenAF::Test Void shortcut
+   - OpenAF::Test Envs
