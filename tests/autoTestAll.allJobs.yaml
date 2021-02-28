@@ -17,3 +17,4 @@ include:
 - autoTestAll.ZIP.yaml
 - autoTestAll.Sec.yaml
 - autoTestAll.oJob.yaml
+- autoTestAll.SNMP.yaml

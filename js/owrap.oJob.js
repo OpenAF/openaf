@@ -1043,6 +1043,9 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		this.getLogCh().set({ "ojobId": this.__id + aId, "name": aJobName }, existing);
 	}
 
+	// Generic housekeeping
+	if (this.__ojob.logHistory > -1) while(this.getLogCh().size() > this.__ojob.logHistory) this.getLogCh().shift();
+
 	return currentJobExecId;
 };
 
@@ -1185,6 +1188,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 				ow.format.cron.set2UTC();
 			}
 		}
+
+		this.__ojob.logHistory = _$(this.__ojob.logHistory).isNumber().default(1000);
 
 	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 100;
 

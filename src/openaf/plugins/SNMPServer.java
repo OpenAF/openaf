@@ -34,30 +34,17 @@ import org.snmp4j.agent.mo.snmp.StorageType;
 import org.snmp4j.agent.mo.snmp.VacmMIB;
 import org.snmp4j.agent.security.MutableVACM;
 import org.snmp4j.mp.MPv3;
-import org.snmp4j.security.AuthHMAC192SHA256;
-import org.snmp4j.security.AuthMD5;
-import org.snmp4j.security.AuthSHA;
-import org.snmp4j.security.PrivAES128;
-import org.snmp4j.security.PrivAES192;
-import org.snmp4j.security.PrivAES256;
-import org.snmp4j.security.PrivDES;
-import org.snmp4j.security.SecurityModels;
-import org.snmp4j.security.SecurityProtocols;
 import org.snmp4j.security.SecurityLevel;
 import org.snmp4j.security.SecurityModel;
 import org.snmp4j.security.USM;
-import org.snmp4j.security.UsmUser;
 import org.snmp4j.smi.Address;
 import org.snmp4j.smi.GenericAddress;
 import org.snmp4j.smi.Integer32;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.SMIConstants;
-import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.smi.Variable;
 import org.snmp4j.transport.TransportMappings;
-import org.snmp4j.agent.mo.snmp.TransportDomains;
-import org.snmp4j.mp.MessageProcessingModel;
 import openaf.AFCmdBase;
 import openaf.SimpleLog;
 import openaf.SimpleLog.logtype;
@@ -77,7 +64,6 @@ public class SNMPServer extends ScriptableObject {
 	protected String address;
 	protected OctetString community;
 	protected SNMPAgent agent;
-	protected ArrayList<UsmUser> userlist = new ArrayList<UsmUser>();
 	public static Map<String, NativeFunction> callbacks = new ConcurrentHashMap<String, NativeFunction>();
 	
 	
@@ -160,132 +146,21 @@ public class SNMPServer extends ScriptableObject {
 		}
 
 		@Override
+		/**
+		 * 
+		 * @param tmib
+		 * @param nmib
+		 */
 		protected void addNotificationTargets(SnmpTargetMIB tmib,
 				SnmpNotificationMIB nmib) { 
-			tmib.addDefaultTDomains();
-
-			/*tmib.addTargetAddress(new OctetString("notificationV2c"),
-                TransportDomains.transportDomainUdpIpv4,
-                new OctetString(new UdpAddress("127.0.0.1/162").getValue()),
-                200, 1,
-                new OctetString("notify"),
-                new OctetString("v2c"),
-                StorageType.permanent);
-			tmib.addTargetAddress(new OctetString("notificationV3"),
-					TransportDomains.transportDomainUdpIpv4,
-					new OctetString(new UdpAddress("127.0.0.1/1162").getValue()),
-					200, 1,
-					new OctetString("notify"),
-					new OctetString("v3notify"),
-					StorageType.permanent);
-			tmib.addTargetParams(new OctetString("v2c"),
-					MessageProcessingModel.MPv2c,
-					SecurityModel.SECURITY_MODEL_SNMPv2c,
-					new OctetString("cpublic"),
-					SecurityLevel.AUTH_PRIV,
-					StorageType.permanent);
-			tmib.addTargetParams(new OctetString("v3notify"),
-					MessageProcessingModel.MPv3,
-					SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("v3notify"),
-					SecurityLevel.NOAUTH_NOPRIV,
-					StorageType.permanent);
-			nmib.addNotifyEntry(new OctetString("default"),
-					new OctetString("notify"),
-					SnmpNotificationMIB.SnmpNotifyTypeEnum.inform,
-					StorageType.permanent);*/
 		}
 
 		@Override
+		/**
+		 * 
+		 * @param usm
+		 */
 		protected void addUsmUser(USM usm) {
-			/*UsmUser user = new UsmUser(new OctetString("SHADES"),
-			AuthSHA.ID,
-			new OctetString("SHADESAuthPassword"),
-			PrivDES.ID,
-			new OctetString("SHADESPrivPassword"));
-
-		//    usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			usm.addUser(user.getSecurityName(), null, user);
-			user = new UsmUser(new OctetString("TEST"),
-					AuthSHA.ID,
-					new OctetString("maplesyrup"),
-					PrivDES.ID,
-					new OctetString("maplesyrup"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			user = new UsmUser(new OctetString("SHA"),
-					AuthSHA.ID,
-					new OctetString("SHAAuthPassword"),
-					null,
-					null);
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			user = new UsmUser(new OctetString("SHADES"),
-					AuthSHA.ID,
-					new OctetString("SHADESAuthPassword"),
-					PrivDES.ID,
-					new OctetString("SHADESPrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			user = new UsmUser(new OctetString("MD5DES"),
-					AuthMD5.ID,
-					new OctetString("MD5DESAuthPassword"),
-					PrivDES.ID,
-					new OctetString("MD5DESPrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			user = new UsmUser(new OctetString("SHAAES128"),
-					AuthSHA.ID,
-					new OctetString("SHAAES128AuthPassword"),
-					PrivAES128.ID,
-					new OctetString("SHAAES128PrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			user = new UsmUser(new OctetString("SHAAES192"),
-					AuthSHA.ID,
-					new OctetString("SHAAES192AuthPassword"),
-					PrivAES192.ID,
-					new OctetString("SHAAES192PrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			user = new UsmUser(new OctetString("SHAAES256"),
-					AuthSHA.ID,
-					new OctetString("SHAAES256AuthPassword"),
-					PrivAES256.ID,
-					new OctetString("SHAAES256PrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-
-			user = new UsmUser(new OctetString("MD5AES128"),
-					AuthMD5.ID,
-					new OctetString("MD5AES128AuthPassword"),
-					PrivAES128.ID,
-					new OctetString("MD5AES128PrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			user = new UsmUser(new OctetString("MD5AES192"),
-					AuthHMAC192SHA256.ID,
-					new OctetString("MD5AES192AuthPassword"),
-					PrivAES192.ID,
-					new OctetString("MD5AES192PrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			//==============================================================
-			user = new UsmUser(new OctetString("MD5AES256"),
-					AuthMD5.ID,
-					new OctetString("MD5AES256AuthPassword"),
-					PrivAES256.ID,
-					new OctetString("MD5AES256PrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-			user = new UsmUser(new OctetString("MD5AES256"),
-					AuthMD5.ID,
-					new OctetString("MD5AES256AuthPassword"),
-					PrivAES256.ID,
-					new OctetString("MD5AES256PrivPassword"));
-			usm.addUser(user.getSecurityName(), usm.getLocalEngineID(), user);
-
-			user = new UsmUser(new OctetString("v3notify"),
-					null,
-					null,
-					null,
-					null);
-			usm.addUser(user.getSecurityName(), null, user);*/
-
-			for(UsmUser u : userlist) {
-				usm.addUser(u.getSecurityName(), usm.getLocalEngineID(), u);
-			}
-			this.usm = usm;
 		}
 
 		@Override
@@ -294,145 +169,22 @@ public class SNMPServer extends ScriptableObject {
 		 * @param vacm
 		 */
 		protected void addViews(VacmMIB vacm) {
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv1,
-					new OctetString("cpublic"),
-					new OctetString("v1v2group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("SHADES"),
-					new OctetString("v3group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("MD5DES"),
-					new OctetString("v3group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("TEST"),
-					new OctetString("v3test"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("SHA"),
-					new OctetString("v3restricted"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("SHAAES128"),
-					new OctetString("v3group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("SHAAES192"),
-					new OctetString("v3group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("SHAAES256"),
-					new OctetString("v3group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("MD5AES128"),
-					new OctetString("v3group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("MD5AES192"),
-					new OctetString("v3group"),
-					StorageType.nonVolatile);
-			vacm.addGroup(SecurityModel.SECURITY_MODEL_USM,
-					new OctetString("MD5AES256"),
-					new OctetString("v3group"),
-					StorageType.nonVolatile);
-
 			vacm.addGroup(SecurityModel.SECURITY_MODEL_SNMPv2c, new OctetString("cpublic"), new OctetString("v1v2group"),StorageType.nonVolatile);
-			/*vacm.addAccess(new OctetString("v1v2group"), new OctetString("public"),
+			vacm.addAccess(new OctetString("v1v2group"), new OctetString("public"),
 					SecurityModel.SECURITY_MODEL_ANY, SecurityLevel.NOAUTH_NOPRIV,
 					MutableVACM.VACM_MATCH_EXACT, new OctetString("fullReadView"),
 					new OctetString("fullWriteView"), new OctetString(
 							"fullNotifyView"), StorageType.nonVolatile);
 			vacm.addViewTreeFamily(new OctetString("fullReadView"), new OID("1.3"),
 					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile)*/
-			
-			vacm.addAccess(new OctetString("v1v2group"), new OctetString("public"),
-					SecurityModel.SECURITY_MODEL_ANY,
-					SecurityLevel.NOAUTH_NOPRIV,
-					MutableVACM.VACM_MATCH_EXACT,
-					new OctetString("fullReadView"),
-					new OctetString("fullWriteView"),
-					new OctetString("fullNotifyView"),
 					StorageType.nonVolatile);
-			vacm.addAccess(new OctetString("v3group"), new OctetString(),
-					SecurityModel.SECURITY_MODEL_USM,
-					SecurityLevel.AUTH_PRIV,
-					MutableVACM.VACM_MATCH_EXACT,
-					new OctetString("fullReadView"),
-					new OctetString("fullWriteView"),
-					new OctetString("fullNotifyView"),
-					StorageType.nonVolatile);
-			vacm.addAccess(new OctetString("v3restricted"), new OctetString(),
-					SecurityModel.SECURITY_MODEL_USM,
-					SecurityLevel.NOAUTH_NOPRIV,
-					MutableVACM.VACM_MATCH_EXACT,
-					new OctetString("restrictedReadView"),
-					new OctetString("restrictedWriteView"),
-					new OctetString("restrictedNotifyView"),
-					StorageType.nonVolatile);
-			vacm.addAccess(new OctetString("v3test"), new OctetString(),
-					SecurityModel.SECURITY_MODEL_USM,
-					SecurityLevel.AUTH_PRIV,
-					MutableVACM.VACM_MATCH_EXACT,
-					new OctetString("testReadView"),
-					new OctetString("testWriteView"),
-					new OctetString("testNotifyView"),
-					StorageType.nonVolatile);
-	
-			vacm.addViewTreeFamily(new OctetString("fullReadView"), new OID("1.3"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("fullWriteView"), new OID("1.3"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("fullNotifyView"), new OID("1.3"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-	
-			vacm.addViewTreeFamily(new OctetString("restrictedReadView"),
-					new OID("1.3.6.1.2"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("restrictedWriteView"),
-					new OID("1.3.6.1.2.1"),
-					new OctetString(),
-					VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("restrictedNotifyView"),
-					new OID("1.3.6.1.2"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("restrictedNotifyView"),
-					new OID("1.3.6.1.6.3.1"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-	
-			vacm.addViewTreeFamily(new OctetString("testReadView"),
-					new OID("1.3.6.1.2"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("testReadView"),
-					new OID("1.3.6.1.2.1.1"),
-					new OctetString(), VacmMIB.vacmViewExcluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("testWriteView"),
-					new OID("1.3.6.1.2.1"),
-					new OctetString(),
-					VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-			vacm.addViewTreeFamily(new OctetString("testNotifyView"),
-					new OID("1.3.6.1.2"),
-					new OctetString(), VacmMIB.vacmViewIncluded,
-					StorageType.nonVolatile);
-	
 		}
 
 		@Override
+		/**
+		 * 
+		 */
 		protected void registerManagedObjects() {
-			//
 		}
 
 		public void registerManagedObjects(ManagedObject mo) throws DuplicateRegistrationException {
@@ -446,7 +198,8 @@ public class SNMPServer extends ScriptableObject {
 		
 		@Override
 		protected void unregisterManagedObjects() {
-			//
+			// TODO Auto-generated method stub
+			
 		}
 
 		protected void initTransportMappings() throws IOException {
@@ -507,36 +260,6 @@ public class SNMPServer extends ScriptableObject {
 			agent.setSysDescr(new OctetString("OpenAF SNMP server"));
 	}
 	
-	@JSFunction
-	public Object getJavaAgent() {
-		return agent;
-	}
-
-	@JSFunction
-	public Object getJavaSNMP() {
-		return snmp;
-	}
-
-	@JSFunction
-	public void addUser(String aUsername, String authProto, String authPass, String privProto, String privPass) {
-		OID oidAuthProto = null;
-		OID oidPrivProto = null;
-
-		switch(authProto.toLowerCase()) {
-		case "sha": oidAuthProto = org.snmp4j.security.AuthSHA.ID; break;
-		case "md5": oidAuthProto = org.snmp4j.security.AuthMD5.ID; break;
-		}
-
-		switch(privProto.toLowerCase()) {
-		case "des"   : oidPrivProto = org.snmp4j.security.PrivDES.ID; break;
-		case "aes128": oidPrivProto = org.snmp4j.security.PrivAES128.ID; break;
-		case "aes192": oidPrivProto = org.snmp4j.security.PrivAES192.ID; break;
-		case "aes256": oidPrivProto = org.snmp4j.security.PrivAES256.ID; break;
-		}
-
-		userlist.add(new UsmUser(new OctetString(aUsername), oidAuthProto, new OctetString(authPass), oidPrivProto, new OctetString(privPass)));
-	}
-
 	/**
 	 * <odoc>
 	 * <key>SNMPd.start(aCommunity)</key>
