@@ -789,7 +789,7 @@ public class AFBase extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			URLClassLoader loader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
+			URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
 			@SuppressWarnings("rawtypes")
 			Class cl = Class.forName(clName, true, loader);
 			
@@ -820,7 +820,7 @@ public class AFBase extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			URLClassLoader loader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
+			URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
 			Class<?> cl = Class.forName(clName, true, loader);
 			
 			return cl;
@@ -849,7 +849,7 @@ public class AFBase extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			URLClassLoader loader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
+			URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
 			
 			return loader;
 		} catch (MalformedURLException e) {
@@ -870,8 +870,8 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public void externalAddClasspath(String url) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, MalformedURLException {		
 		if (url != null) {
-			if (Thread.currentThread().getContextClassLoader() instanceof OAFdCL) {
-				OAFdCL dyna = OAFdCL.getInstance(Thread.currentThread().getContextClassLoader());
+			if (ClassLoader.getSystemClassLoader() instanceof OAFdCL) {
+				OAFdCL dyna = OAFdCL.getInstance(ClassLoader.getSystemClassLoader());
 				dyna.addURL(new URL(url));
 			} else {
 				ClassLoader sysloader = ClassLoader.getSystemClassLoader();

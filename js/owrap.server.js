@@ -337,7 +337,7 @@ OpenWrap.server.prototype.jmx = {
  * Example:\
  * \
  * ow.loadServer();\
- * $ch("a").createRemote("http://some.server:1234/a", void 0, (h) => {\
+ * $ch("a").createRemote("http://some.server:1234/a", __, (h) => {\
  *    h.login("user", ow.server.authAppGen("...", "...", "..."));\
  * });\
  * \
@@ -370,7 +370,7 @@ OpenWrap.server.prototype.authAppGen = function(anAppPassword, aUserPassword, a2
 	if (numRounds < 1) {
 		return "Z" + af.encrypt(sha512(aPass + String(af.get2FAToken(token))), appPass);
 	} else {
-		return "Z" + af.encrypt(bcrypt(sha512(aPass + String(af.get2FAToken(token))), void 0, numRounds), appPass);
+		return "Z" + af.encrypt(bcrypt(sha512(aPass + String(af.get2FAToken(token))), __, numRounds), appPass);
 	}
 };
 
@@ -484,7 +484,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 	 */
 	this.initialize = function(aIniAuth, aKey, aCustomFunc) {
 		if (isString(aIniAuth)) {
-			this.aListOfAuths = jsonParse(af.decrypt(aIniAuth, (isDef(aKey) ? aKey : void 0)));
+			this.aListOfAuths = jsonParse(af.decrypt(aIniAuth, (isDef(aKey) ? aKey : __)));
 		} else {
 			this.aListOfAuths = aIniAuth;
 		}
@@ -509,7 +509,7 @@ OpenWrap.server.prototype.auth = function(aIniAuth, aKey, aCustomFunction) {
 	 * </odoc>
 	 */
 	this.dumpEncrypt = function(aKey) {
-		return af.encrypt(stringify(this.aListOfAuths), (isDef(aKey) ? aKey : void 0));
+		return af.encrypt(stringify(this.aListOfAuths), (isDef(aKey) ? aKey : __));
 	};
 	
 	/**
@@ -834,7 +834,11 @@ OpenWrap.server.prototype.rest = {
 
 				return String("<html><style>" + res.css + "</style><body>" + res.out + "</body></html>");
 			} else {
-				return stringify(r, void 0, "");
+				if (isString(r)) {
+					return r;
+				} else {
+					return stringify(r, __, "");
+				}
 			}
 		};
 
@@ -1068,7 +1072,7 @@ OpenWrap.server.prototype.scheduler = function () {
 	 * </odoc>
 	 */
 	r.modifyEntry = function(aUUID, aCronExpr, aFunction, waitForFinish) {
-		if (isUnDef(this.__entries[aUUID])) return void 0;
+		if (isUnDef(this.__entries[aUUID])) return __;
 		
 		this.__entries[aUUID] = {
 			expr: aCronExpr,
@@ -1153,7 +1157,7 @@ OpenWrap.server.prototype.scheduler = function () {
 		this.__t.addCachedThread(function (uuid) {
 
 			do {
-				var ts = void 0;
+				var ts = __;
 				for (let i in parent.__entries) {
 					var entry = parent.__entries[i];
 
@@ -1165,7 +1169,7 @@ OpenWrap.server.prototype.scheduler = function () {
 							var si = String(i);
 							try {
 								if (parent.__entries[si].next <= now()) {
-									parent.__entries[si].next = (new Date(ow.format.cron.nextScheduled(parent.__entries[si].expr, void 0, now()+1000))).getTime();
+									parent.__entries[si].next = (new Date(ow.format.cron.nextScheduled(parent.__entries[si].expr, __, now()+1000))).getTime();
 									parent.__entries[si].exec = true;
 									res = parent.__entries[si].func(si);
 									while (ow.format.cron.timeUntilNext(parent.__entries[si].expr) < 0) {
@@ -1183,7 +1187,7 @@ OpenWrap.server.prototype.scheduler = function () {
 
 					// Determine the minimum waiting time
 					if (isUnDef(ts)) {
-						ts = ow.format.cron.timeUntilNext(entry.expr, void 0, now()+1000);
+						ts = ow.format.cron.timeUntilNext(entry.expr, __, now()+1000);
 					} else {
 						var c = ow.format.cron.timeUntilNext(entry.expr);
 						if (c < ts) ts = c;
@@ -1409,7 +1413,7 @@ OpenWrap.server.prototype.locks.prototype.extendTimeout = function(aLockName, aT
  * </odoc>
  */
 OpenWrap.server.prototype.locks.prototype.unlock = function (aLockName) {
-	if (this.type == "cluster" && !this.options.cluster.clusterCanUnLock(this.options.clusterOptions, aLockName)) return void 0;
+	if (this.type == "cluster" && !this.options.cluster.clusterCanUnLock(this.options.clusterOptions, aLockName)) return __;
 
 	$ch(this.name).getSet({
 		value: true
@@ -1570,7 +1574,7 @@ OpenWrap.server.prototype.queue.prototype.send = function(aObject, aId, aTTL, aP
     }, this.stamp), merge({
         id: id,
 		status: "s",
-		to: (isDef(aTTL) ? nowUTC() + aTTL : void 0),
+		to: (isDef(aTTL) ? nowUTC() + aTTL : __),
         obj: aObject
 	}, this.stamp));
 	return id;
@@ -1804,7 +1808,7 @@ OpenWrap.server.prototype.cluster = function(aHost, aPort, nodeTimeout, aNumberO
 OpenWrap.server.prototype.cluster.prototype.sendToOthers = function(aData, aSendFn) {
 	var clusterList = this.impl.clusterGetList(this.options);
 	var tryList = clusterList.cluster;
-	var res = void 0;
+	var res = __;
 
 	for(var ii in tryList) {
 		if ((tryList[ii].host + tryList[ii].port) != (this.HOST + this.PORT)) {
@@ -1833,7 +1837,7 @@ OpenWrap.server.prototype.cluster.prototype.any = function(aFunction, includeMe)
 		r.date = Number(r.date) + (isDef(r.load) ? Math.floor(Math.random() * 30000) : r.load);
 		return r; 
 	})).sort("date").select();
-	var res = void 0;
+	var res = __;
 
 	for(var ii in tryList) {
 		if (includeMe || (tryList[ii].host + tryList[ii].port) != (this.HOST + this.PORT)) {
@@ -1858,7 +1862,7 @@ OpenWrap.server.prototype.cluster.prototype.any = function(aFunction, includeMe)
  */
 OpenWrap.server.prototype.cluster.prototype.all = function(aFunction, includeMe) {
 	var clusterList = this.impl.clusterGetList(this.options);
-	var res = void 0, lO = [];
+	var res = __, lO = [];
 
 	for(let ii in clusterList) {
 		if (includeMe || (clusterList[ii].host + clusterList[ii].port) != (this.HOST + this.PORT)) {
@@ -2018,7 +2022,7 @@ OpenWrap.server.prototype.cluster.prototype.checkOut = function() {
 		dead: false		
 	};
 
-	var res = this.verify(void 0, me);
+	var res = this.verify(__, me);
 	if (!res) throw("Can't unregister from cluster.");
 };
 
@@ -2028,7 +2032,7 @@ OpenWrap.server.prototype.cluster.prototype.checkOut = function() {
  * This ow.servers.cluster implementation will cluster one or more cluster servers keeping the cluster connection details on
  * a cluster channel (defaults to __cluster::[name of cluster]). It's meant to be provided to ow.server.cluster like this:\
  * \
- * var mts = new ow.server.cluster("1.2.3.4", 1234, void 0, void 0, void 0, { name: "testCluster" }, ow.server.clusterChsPeersImpl)\
+ * var mts = new ow.server.cluster("1.2.3.4", 1234, __, __, __, { name: "testCluster" }, ow.server.clusterChsPeersImpl)\
  * \
  * There are several implementation options:\
  * \
@@ -2199,7 +2203,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 						e: e
 					});
 				}
-				//printErr("ERROR clusterSendMsg: " + aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port + " | " + stringify(e, void 0, ""));
+				//printErr("ERROR clusterSendMsg: " + aOptions.chMsgs + "::" + vclo.host + ":" + vclo.port + " | " + stringify(e, __, ""));
 			});
 		});
 		$doWait($doAll(rPros));
@@ -2215,10 +2219,10 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 			aOptions.protocol = _$(aOptions.protocol).isString().default("http");
 			aOptions.path = _$(aOptions.path).isString().default("/__m");
 			if (isUnDef(aOptions.serverOrPort)) aOptions.serverOrPort = ow.server.httpd.start(aOptions.PORT, aOptions.HOST);
-			aOptions.authFunc = _$(aOptions.authFunc).default(void 0);
-			aOptions.unAuthFunc = _$(aOptions.unAuthFunc).default(void 0);
-			aOptions.maxTime = _$(aOptions.maxTime).default(void 0);
-			aOptions.maxCount = _$(aOptions.maxCount).default(void 0);
+			aOptions.authFunc = _$(aOptions.authFunc).default(__);
+			aOptions.unAuthFunc = _$(aOptions.unAuthFunc).default(__);
+			aOptions.maxTime = _$(aOptions.maxTime).default(__);
+			aOptions.maxCount = _$(aOptions.maxCount).default(__);
 			aOptions.chLock = _$(aOptions.chLock).default("__cluster::" + aOptions.name + "::locks");
 			aOptions.chMsgs = _$(aOptions.chMsgs).default("__cluster::" + aOptions.name + "::msgs");
 			aOptions.quorum = _$(aOptions.chQuorum).default("__cluster::" + aOptions.name + "::quorum");
@@ -2736,7 +2740,7 @@ OpenWrap.server.prototype.httpd = {
 			}
 		
 			if (furi.match(new RegExp("^" + baseFilePath)))
-				return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), void 0, mapOfHeaders);
+				return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), __, mapOfHeaders);
 			else
 			  return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI);
 		} catch(e) { 
@@ -2793,7 +2797,7 @@ OpenWrap.server.prototype.httpd = {
 				if (furi.match(/\.md$/)) {
 					return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(io.readFileString(furi), 1));
 				} else {
-					return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), void 0, mapOfHeaders);
+					return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), __, mapOfHeaders);
 				}
 			} else {
 			    return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI);
@@ -3000,7 +3004,7 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	reply: function(aObj, status, mimetype, headers) {
-		headers = _$(headers).isMap().default(void 0);
+		headers = _$(headers).isMap().default(__);
 		status  = _$(status).isNumber().default(200);
 
 		if (isUnDef(mimetype)) {
@@ -3014,7 +3018,7 @@ OpenWrap.server.prototype.httpd = {
 
 		var data;
 		if (isMap(aObj) || isArray(aObj)) {
-			data = stringify(aObj, void 0, "");
+			data = stringify(aObj, __, "");
 		} else {
 			data = aObj;
 		}
@@ -3088,10 +3092,14 @@ OpenWrap.server.prototype.socket = {
 	stop: (aPort) => {
 		_$(aPort, "port").isNumber().$_();
 
-		ow.server.socket.__servers[aPort].close();
-		var res = ow.server.socket.__threads[aPort].stop(true);
-		delete ow.server.socket.__servers[aPort];
-		return res;
+		if (isDef(ow.server.socket.__servers[aPort])) {
+			ow.server.socket.__servers[aPort].close();
+			var res = ow.server.socket.__threads[aPort].stop(true);
+			delete ow.server.socket.__servers[aPort];
+			return res;
+		} else {
+			return __;
+		}
 	}
 }
 

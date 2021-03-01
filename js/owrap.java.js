@@ -155,7 +155,7 @@ OpenWrap.java.prototype.maven.prototype.getFileVersion = function(artifactId, aF
         version: version
     });
 
-    var h = new ow.obj.http(this._getURL() + "/" + aURI + "/" + version + "/" + filename, "GET", "", void 0, true, void 0, true);
+    var h = new ow.obj.http(this._getURL() + "/" + aURI + "/" + version + "/" + filename, "GET", "", __, true, __, true);
 
     io.mkdir(aOutputDir);
     var rstream = h.responseStream();
@@ -189,7 +189,7 @@ OpenWrap.java.prototype.maven.prototype.getDependencies = function(artifactId, a
                     if (isUnDef(v.optional) || !v.optional) {
                         if (isDef(x.project.properties)) props = merge(props, x.project.properties);
 
-                        var pversion = void 0;
+                        var pversion = __;
                         if (isDef(v.version)) {
                             var pversion = String(v.version);
                             if (pversion == "${project.version}") pversion = String(x.project.parent.version);
@@ -202,12 +202,12 @@ OpenWrap.java.prototype.maven.prototype.getDependencies = function(artifactId, a
                             info.add({
                                 groupId: pgroupId,
                                 artifactId: String(v.artifactId),
-                                version: (isDef(pversion) ? pversion : void 0),
-                                scope: (isDef(v.scope) ? String(v.scope) : void 0)
+                                version: (isDef(pversion) ? pversion : __),
+                                scope: (isDef(v.scope) ? String(v.scope) : __)
                             });
                             
                             if (aList.indexOf(pgroupId + "." + v.artifactId) < 0) {
-                                var rinfo = this.getDependencies(pgroupId + "." + v.artifactId, pversion, void 0, aScope, aList, props);
+                                var rinfo = this.getDependencies(pgroupId + "." + v.artifactId, pversion, __, aScope, aList, props);
                                 aList.add(pgroupId + "." + v.artifactId);
                                 info.addAll(rinfo);
                             }
@@ -274,7 +274,7 @@ OpenWrap.java.prototype.maven.prototype.processMavenFile = function(aDirectory, 
             } else {
                 aLogFunc("Downloading latest " + arts.id + " jar file...");
                 maven.getFile(arts.group + "." + arts.id, filenameTemplate, outputDir);
-                try { maven.getLicenseByVersion(arts.group + "." + arts.id, filenameTemplate, void 0, outputDir); } catch(e) {}
+                try { maven.getLicenseByVersion(arts.group + "." + arts.id, filenameTemplate, __, outputDir); } catch(e) {}
                 if (deleteOld) maven.removeOldVersions(arts.id, filenameTemplate, outputDir, testfunc);
             }
         });
@@ -353,7 +353,7 @@ OpenWrap.java.prototype.IMAP = function(aServer, aUser, aPassword, isSSL, aPort,
     this.user   = _$(aUser, "user").isString().$_();
     this.pass   = _$(aPassword, "password").isString().$_();
     this.isSSL  = _$(isSSL, "isSSL").isBoolean().default(false);
-    this.port   = _$(aPort, "port").isNumber().default(void 0);
+    this.port   = _$(aPort, "port").isNumber().default(__);
     this.ro     = _$(isReadOnly, "isReadOnly").isBoolean().default(false);
 
     var props = new java.util.Properties();
@@ -656,7 +656,7 @@ OpenWrap.java.prototype.cipher.prototype.aSymEncrypt = function(aMessage, aPubli
     var k = this.symGenKey();
     var msg = this.symEncrypt(aMessage, k);
     var ck = this.encrypt(k, aPublicKey);
-    k = void 0;
+    k = __;
 
     return {
         eSymKey : ck,
@@ -676,9 +676,9 @@ OpenWrap.java.prototype.cipher.prototype.aSymDecrypt = function(eMessage, eSymKe
     _$(eSymKey).$_("Please provide an encrypted sym key.");
     _$(privateKey).$_("Please provide a private key.");
 
-    var dk = this.decrypt(eSymKey, privateKey, void 0, true);
+    var dk = this.decrypt(eSymKey, privateKey, __, true);
     var out = this.symDecrypt(eMessage, dk);
-    dk = void 0;
+    dk = __;
     return out;
 };
 
@@ -1319,7 +1319,7 @@ OpenWrap.java.prototype.memComm = function(aFile, aSize) {
 
     this.file = aFile;
     this.fsize = _$(aSize).isNumber().default(4096);
-    this.lck = void 0;
+    this.lck = __;
 
     this.setup();
 };
@@ -1339,7 +1339,7 @@ OpenWrap.java.prototype.memComm.prototype.lock = function() {
 
 OpenWrap.java.prototype.memComm.prototype.unlock = function() {
     if (isDef(this.lck)) this.lck.release();
-    this.lck = void 0;
+    this.lck = __;
 }
 
 OpenWrap.java.prototype.memComm.prototype.send = function(aMsg) {
@@ -1393,7 +1393,7 @@ OpenWrap.java.prototype.jsonMemComm.prototype.send = function(aObj) {
     try {
         var index = jsonParse(this.idx.receive(), true);
 
-        var s = stringify(aObj, void 0, "");
+        var s = stringify(aObj, __, "");
         t = nowNano();
         var n = t + ".mem";
         index[t] = n;
@@ -1401,7 +1401,7 @@ OpenWrap.java.prototype.jsonMemComm.prototype.send = function(aObj) {
         tmp.send(s);
     
         this.idx.rewind();
-        this.idx.send(stringify(index, void 0, ""));
+        this.idx.send(stringify(index, __, ""));
         this.idx.unlock();
     } catch(e) {
         this.idx.unlock();
@@ -1430,7 +1430,7 @@ OpenWrap.java.prototype.jsonMemComm.prototype.receive = function() {
                 delete entries[r];
 
                 this.idx.rewind();
-                this.idx.send(stringify(entries, void 0, ""));
+                this.idx.send(stringify(entries, __, ""));
             });
             this.idx.unlock();
         } catch(e) {

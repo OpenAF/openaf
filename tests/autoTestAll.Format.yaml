@@ -138,6 +138,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testCronHowManyAgo;      
 
+   - name: Format::SLON
+     from: Format::Init
+     to  : oJob Test
+     deps:
+     - Format::Load Format
+     exec: args.func = args.tests.testSLON;
+
 todo:
    # Format tests
    # ------------
@@ -160,3 +167,4 @@ todo:
    - Format::Host
    - Format::Cron How Many Ago
    - Format::Escape/Unescape HTML4
+   - Format::SLON

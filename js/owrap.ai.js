@@ -849,13 +849,13 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
 OpenWrap.ai.prototype.decisionTree.C45 = function() {
     this.features = [];
     this.targets = [];
-    this.data = void 0;
-    this.target = void 0;
-    this.features = void 0;
-    this.featureTypes = void 0;
-    this.targets = void 0;
-    this.model = void 0;
-    this.error = void 0;
+    this.data = __;
+    this.target = __;
+    this.features = __;
+    this.featureTypes = __;
+    this.targets = __;
+    this.model = __;
+    this.error = __;
 };
   
 OpenWrap.ai.prototype.decisionTree.C45.prototype = {

@@ -53,7 +53,7 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret) {
  * </odoc>
  */
 const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
-   dBucket     = _$(dBucket, "dBucket").isString().default(void 0);
+   dBucket     = _$(dBucket, "dBucket").isString().default(__);
    dLockSecret = _$(dLockSecret, "dLockSecret").isString().default("aMainSecret");
    var dKey;
 
@@ -240,7 +240,7 @@ OpenWrap.sec.prototype.closeSBuckets = function(aRepo) {
    if (rep != "") rep = "-" + rep;
 
    $ch("___openaf_sbuckets" + rep).destroy();
-   if (isDef(ow.sec._sb[aRepo])) ow.sec._sb[aRepo] = void 0;
+   if (isDef(ow.sec._sb[aRepo])) ow.sec._sb[aRepo] = __;
 };
 
 /**
@@ -278,7 +278,7 @@ OpenWrap.sec.prototype.purgeMainSBuckets = function() {
  * </odoc>
  */
 OpenWrap.sec.prototype.openMainSBuckets = function(aMainSecret) {
-   this.openSBuckets(void 0, aMainSecret);
+   this.openSBuckets(__, aMainSecret);
 };
 
 /**
@@ -304,8 +304,8 @@ OpenWrap.sec.prototype.SBucket = function(aCh, aMainSecret, sBucket, aLockSecret
     this.aCh  = _$(aCh, "aCh").isString().$_();
     this.s    = _$(aMainSecret, "aMainSecret").isString().$_();
  
-    this.sbucket     = _$(sBucket, "sBucket").isString().default(void 0);
-    this.aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(void 0);
+    this.sbucket     = _$(sBucket, "sBucket").isString().default(__);
+    this.aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(__);
 
     if ($ch().list().indexOf(this.aCh) < 0) throw ("aCh not found");
 };
@@ -317,7 +317,7 @@ const __sbucket__encrypt = function(aObj, aMainKey, aKey) {
     } catch(e) {
        mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
     }
-    var s = af.encrypt(stringify(isMap(aObj) ? sortMapKeys(aObj) : aObj, void 0, ""), sha512(mk).substr(0, 16));
+    var s = af.encrypt(stringify(isMap(aObj) ? sortMapKeys(aObj) : aObj, __, ""), sha512(mk).substr(0, 16));
     return af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(s)));
 };
  
@@ -414,7 +414,7 @@ OpenWrap.sec.prototype.SBucket.prototype.getKeys = function(sBucket, aLockSecret
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.getSSecret = function(aKey) {
-    return this.getSecret(void 0, void 0, aKey);
+    return this.getSecret(__, __, aKey);
 };
  
 /**
@@ -447,7 +447,7 @@ OpenWrap.sec.prototype.SBucket.prototype.getSecretAs = function(sBucket, aLockSe
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.getSSecretAs = function(aEncryptKey, aKey) {
-    return this.getSecretAs(void 0, void 0, aEncryptKey, aKey);
+    return this.getSecretAs(__, __, aEncryptKey, aKey);
 };
  
 /**
@@ -510,7 +510,7 @@ OpenWrap.sec.prototype.SBucket.prototype.setSecret = function(sBucket, aLockSecr
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.setSSecret = function(aKey, aObj) {
-    return this.setSecret(void 0, void 0, aKey, aObj);
+    return this.setSecret(__, __, aKey, aObj);
 };
  
 /**
@@ -545,7 +545,7 @@ OpenWrap.sec.prototype.SBucket.prototype.unsetSecret = function(sBucket, aLockSe
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.unsetSSecret = function(aKey) {
-    return this.unsetSecret(void 0, void 0, aKey);
+    return this.unsetSecret(__, __, aKey);
 };
  
 /**
@@ -574,7 +574,7 @@ OpenWrap.sec.prototype.SBucket.prototype.getBucket = function(sBucket, aLockSecr
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.getSBucket = function() {
-    return this.getBucket(void 0, void 0);
+    return this.getBucket(__, __);
 };
  
 /**
@@ -602,7 +602,7 @@ OpenWrap.sec.prototype.SBucket.prototype.setBucket = function(sBucket, aLockSecr
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.setSBucket = function(aBucketString) {
-    return this.setBucket(void 0, void 0, aBucketString);
+    return this.setBucket(__, __, aBucketString);
 };
  
 /**
@@ -625,7 +625,7 @@ OpenWrap.sec.prototype.SBucket.prototype.setNewObj = function(sBucket, aLockSecr
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.setSNewObj = function(aKey, aObject, args) {
-    return this.setNewObj(void 0, void 0, aKey, aObject, args);
+    return this.setNewObj(__, __, aKey, aObject, args);
 };
  
 /**
@@ -648,10 +648,10 @@ OpenWrap.sec.prototype.SBucket.prototype.getNewObj = function(sBucket, aLockSecr
        }
        margs.map(a => {
           var vv = (isDef(v._args[a]) ? v._args[a] : defaultArgs[a]);
-          if (vv == void 0) {
-             ar.push("void 0");
+          if (vv == __) {
+             ar.push("__");
           } else {
-            if (isString(vv)) vv = stringify(vv, void 0, "");
+            if (isString(vv)) vv = stringify(vv, __, "");
             ar.push(vv);
           }
        });
@@ -668,7 +668,7 @@ OpenWrap.sec.prototype.SBucket.prototype.getNewObj = function(sBucket, aLockSecr
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.getSNewObj = function(aKey) {
-    return this.getNewObj(void 0, void 0, aKey);
+    return this.getNewObj(__, __, aKey);
 };
  
 /**
@@ -691,7 +691,7 @@ OpenWrap.sec.prototype.SBucket.prototype.setNewFn = function(sBucket, aLockSecre
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.setSNewFn = function(aKey, aFn, args) {
-    return this.setNewFn(void 0, void 0, aKey, aFn, args);
+    return this.setNewFn(__, __, aKey, aFn, args);
 };
  
 /**
@@ -710,8 +710,8 @@ OpenWrap.sec.prototype.SBucket.prototype.getNewFn = function(sBucket, aLockSecre
        margs = $fnDef4Help(v._fn);
        margs.map(a => {
           var vv = (isDef(v._args[a]) ? v._args[a] : defaultArgs[a]);
-          if (vv == void 0) vv = "void 0";
-          if (isString(vv)) vv = stringify(vv, void 0, "");
+          if (vv == __) vv = "__";
+          if (isString(vv)) vv = stringify(vv, __, "");
           ar.push(vv);
        });
     } else {
@@ -727,5 +727,5 @@ OpenWrap.sec.prototype.SBucket.prototype.getNewFn = function(sBucket, aLockSecre
  * </odoc>
  */
 OpenWrap.sec.prototype.SBucket.prototype.getSNewFn = function(aKey) {
-    return this.getNewFn(void 0, void 0, aKey);
+    return this.getNewFn(__, __, aKey);
 };
