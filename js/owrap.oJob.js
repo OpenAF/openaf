@@ -396,7 +396,17 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 	var res = aJSON;
 
 	if (isDef(res)) {
+		var _o2a = m => {
+			var res = [];
+			Object.keys(m).forEach(r => {
+				var _r = {};
+				_r[r] = m[r];
+				res.push(_r);
+			});
+			return res;
+		}
 		if (isDef(res.ojob)) {
+			if (isDef(res.ojob.opacks) && isMap(res.ojob.opacks)) res.ojob.opacks = _o2a(res.ojob.opacks);
 			if (isDef(res.ojob.opacks) && isArray(res.ojob.opacks)) {
 				for(var ii in res.ojob.opacks) {
 					if (isString(res.ojob.opacks[ii])) includeOPack(res.ojob.opacks[ii]);
