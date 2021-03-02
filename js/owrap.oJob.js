@@ -89,7 +89,8 @@ OpenWrap.oJob = function(isNonLocal) {
 		},
 		"go": {
 			lang: "go",
-			langFn: "var tmp = io.createTempFile('ojob_', '.go');\nio.writeFileString(tmp, code, 'UTF-8');var res = $sh().sh('go run ' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);"
+			shell: "go run ",
+			withFile: ".go"
 		},
 		"ruby": {
 			lang : "ruby",
@@ -1905,6 +1906,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 					if (isDef(m) && isDef(m.langFn)) {
 						aJobTypeArgs.langFn = m.langFn;
+					}
+					if (isDef(m) && isString(m.withFile) && isUnDef(aJobTypeArgs.langFn)) {
+						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, code, 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
+						aJobTypeArgs.shell = __;
 					}
 				}
 				if (isString(aJobTypeArgs.lang)) {
