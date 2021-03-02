@@ -86,6 +86,18 @@ OpenWrap.oJob = function(isNonLocal) {
 		"powershell": {
 			lang : "powershell",
 			shell: "powershell -" 
+		},
+		"go": {
+			lang: "go",
+			langFn: "var tmp = io.createTempFile('ojob_', '.go');\nio.writeFileString(tmp, code, 'UTF-8');var res = $sh().sh('go run ' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);"
+		},
+		"ruby": {
+			lang : "ruby",
+			shell: "ruby -"
+		},
+		"perl": {
+			lang: "perl",
+			shell: "perl"
 		}
 	};
 
