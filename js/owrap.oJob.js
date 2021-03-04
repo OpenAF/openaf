@@ -135,9 +135,11 @@ OpenWrap.oJob = function(isNonLocal) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
+	ojob = _$(ojob).isMap().default({});
+
 	if (isUnDef(jobs)) jobs = [];
 	if (isUnDef(todo)) todo = [];
-	if (isDef(ojob) && isMap(ojob)) this.__ojob = merge(this.__ojob, ojob);
+	this.__ojob = merge(this.__ojob, ojob);
 
 	if (isUnDef(aId) && isDef(this.__ojob.id)) aId = this.__ojob.id;
 
@@ -1067,7 +1069,19 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 	}
 
 	// Generic housekeeping
-	if (this.__ojob.logHistory > -1) while(this.getLogCh().size() > this.__ojob.logHistory) this.getLogCh().shift();
+	//if (this.__ojob.logHistory > -1) while(this.getLogCh().size() > this.__ojob.logHistory) this.getLogCh().shift();
+	if (this.__ojob.logHistory > -1 && this.getLogCh().size() > (this.__ojob.logHistory * this.getJobsCh().size())) {
+		$do(() => {
+			$ch("oJob::jobs").getKeys().forEach(j => {
+				var hkks = this.getLogCh().getKeys().filter(r => r.name == j.name);
+				var hklst = [];
+				while (hkks.length > this.__ojob.logHistory) {
+					hklst.push(hkks.shift());
+				}
+				this.getLogCh().unsetAll(["ojobId", "name"], hklst);
+			});
+		})
+	}
 
 	return currentJobExecId;
 };
@@ -1212,7 +1226,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			}
 		}
 
-		this.__ojob.logHistory = _$(this.__ojob.logHistory).isNumber().default(1000);
+		this.__ojob.logHistory = _$(this.__ojob.logHistory).isNumber().default(10);
 
 	    if (isUnDef(this.__ojob.timeInterval)) this.__ojob.timeInterval = 100;
 
@@ -1438,6 +1452,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 				try {
 					var dep = (isObject(aJob.deps[j]) ? aJob.deps[j].name :  aJob.deps[j]);
 					var depInf = this.getLogCh().get({ "ojobId": this.getID() + altId, "name": dep });
+					if (isUnDef(depInf)) depInf = this.getLogCh().get({ "ojobId": this.getID(), "name": dep });
 					depInfo[dep] = aJob.deps[j];
 
 					if (isDef(depInf) && depInf.success) {
