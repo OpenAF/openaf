@@ -150,6 +150,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 		});
 	}
 
+	this.__execRequire = _$(ojob.execRequire, "execRequire").isString().default(void 0);
+
 	// Check todos
 	for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
@@ -1836,9 +1838,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			aJobTypeArgs.lang = "oaf";
 			res = io.readFileString(aJobTypeArgs.execJs);
 		}
-		if (isDef(aJobTypeArgs.execRequire)) {
+		if (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire)) {
+			aJobTypeArgs.execRequire = _$(aJobTypeArgs.execRequire, "execRequire").isString().default(parent.__execRequire);
 			aJobTypeArgs.lang = "oaf";
-			res = "require('" + aJobTypeArgs.execRequire + "')['" + _aName + "'](args);";
+			res = "var __r = require('" + aJobTypeArgs.execRequire + "'); if (isDef(__r['" + _aName + "'])) __r['" + _aName + "'](args); else throw \"Code for '" + _aName + "' not found!\";";
 		}
 		if (isDef(aJobTypeArgs.execPy))      {
 			aJobTypeArgs.lang = "python";
