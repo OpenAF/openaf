@@ -3490,6 +3490,19 @@ function descType(aObj) {
 
 /**
  * <odoc>
+ * <key>toBoolean(aObj) : Boolean</key>
+ * Tries to convert aObj (String, Number or Boolean) into a boolean value
+ * </odoc>
+ */
+function toBoolean(aObj) {
+	if (isBoolean(aObj)) return aObj;
+	if (isNumber(aObj)) return Boolean(aObj);
+	if (isString(aObj)) return (aObj.trim().toLowerCase() == 'true');
+	return aObj;
+}
+
+/**
+ * <odoc>
  * <key>loadLib(aLib, forceReload, aFunction) : boolean</key>
  * Loads the corresponding javascript library and keeps track if it was already loaded or not (in __loadedLibs).
  * Optionally you can force reload and provide aFunction to execute after the successful loading.
