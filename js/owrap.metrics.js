@@ -298,7 +298,7 @@ OpenWrap.metrics.prototype.collectMetrics = function(aName, aFunction) {
 OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap) {
     var handled = false;
     aPrefix = _$(aPrefix, "prefix").isString().default("metric");
-    aPrefix = aPrefix.replace(/ /g, "_");
+    aPrefix = aPrefix.replace(/[^a-zA-Z0-9]/g, "_");
 
     var _map = (obj, prefix, lbs) => { 
         var ar = [];
@@ -313,7 +313,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             var lprefix = (lbs.length > 0 ? "{" + lbs.join(",") + "}" : "");
             keys.map(key => {
                 if (isDef(obj[key])) {
-                    var k = key.replace(/ /g, "_");
+                    var k = key.replace(/[^a-zA-Z0-9]/g, "_");
                     if (isBoolean(obj[key])) ar.push(prefix + "_" + k + lprefix + " " + (obj[key] ? "1" : "0") + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
                     if (isNumber(obj[key])) ar.push(prefix + "_" + k + lprefix + " " + Number(obj[key]) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
                     if (isMap(obj[key])) ar = ar.concat(_map(obj[key], prefix + "_" + k, clone(lbs)));
