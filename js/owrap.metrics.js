@@ -381,5 +381,5 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         ar = far;
     }
 
-    return ar.join("\n") + "\n" + String.fromCharCode(4);
+    return ar.join("\n") + "\n";
 };
