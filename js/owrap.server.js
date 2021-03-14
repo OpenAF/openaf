@@ -2835,7 +2835,7 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	replyRedirect: function(aHTTPd, newLocation, mapOfHeaders) {
-		return aHTTPd.reply("", "text/plain", 303, {"Location": newLocation}, mapOfHeaders);
+		return aHTTPd.reply("", "text/plain", 303, merge({"Location": newLocation}, mapOfHeaders));
 	},
 	
 	/**
