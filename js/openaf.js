@@ -1102,13 +1102,16 @@ function setLog(aMap) {
 
 /**
  * <odoc>
- * <key>startLog(externalLogging)</key>
+ * <key>startLog(externalLogging, hkItems)</key>
  * Starts collecting log messages logged with log* functions. See stopLog() and dumpLog().
- * You can also specify externalLogging, a custom channel subscribe function. 
+ * You can also specify externalLogging, a custom channel subscribe function and a different number
+ * of hkItems (housekeeping items) from the default 100 (if -1 it won't delete items).
  * </odoc>
  */
-function startLog(externalLogging) {
+function startLog(externalLogging, hkItems) {
+	hkItems = _$(hkItems, "hkItems").isNumber().default(100);
 	$ch("__log").create(true, "simple");
+	if (hkItems > -1) $ch("__log").subscribe(ow.ch.utils.getHousekeepSubscriber("__log", hkItems));
 	__logStatus = true;
 	global.__logQueue = [];
 	if (isDef(externalLogging) && isFunction(externalLogging)) {
