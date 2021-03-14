@@ -3166,5 +3166,29 @@ OpenWrap.server.prototype.jwt = {
 		var jwt = com.auth0.jwt.JWT.create();
 		jwt = aFnAddClaims(jwt);
 		return jwt.sign(al);
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.jwt.decode(aToken) : Map</key>
+	 * Tries to decode the JWT aToken provided.
+	 * </odoc>
+	 */
+	decode: aToken => {
+		_$(aToken, "token").isString().$_();
+
+		var dt = com.auth0.jwt.JWT.decode(aToken);
+
+		var keys = dt.getClaims().keySet().toArray(), mkeys = {};
+		for(var ii in keys) {
+			var notFound = true;
+			if (notFound && dt.getClaims().get(keys[ii]).asBoolean() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asBoolean(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asInt() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asInt(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asDouble() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asDouble(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asLong() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asLong(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asString() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asString(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asDate() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asDate(); }
+		}
+		return mkeys;
 	}
 }
