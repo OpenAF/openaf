@@ -14,6 +14,7 @@ OpenWrap.ch.prototype.vers = {};
 OpenWrap.ch.prototype.channels = {};
 OpenWrap.ch.prototype.type = {};
 OpenWrap.ch.prototype.lock = {};
+OpenWrap.ch.prototype.lock2 = {};
 
 OpenWrap.ch.prototype.__types = {
 	// Obj BIG channel implementation
@@ -1073,9 +1074,6 @@ OpenWrap.ch.prototype.__types = {
 			Object.keys(this.__channels[aName]).forEach((element) => {
 				try { res.push({ k: this.__channels[aName][element].k, t: this.__channels[aName][element].t }); } catch(e) {};
 			});
-			/*return $from(res).sort("t").select((r) => {
-				return r.k;
-			});*/
 			return $path(res, "sort_by([], &t)[*].k");		
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
@@ -2400,6 +2398,7 @@ OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 		this.channels[aName] = type;
 		this.vers[aName] = nowUTC();
 		this.lock[aName] = new java.util.concurrent.locks.ReentrantLock();
+		this.lock2[aName] = new java.util.concurrent.locks.ReentrantLock();
 	}
 	return this;
 };
@@ -2502,12 +2501,25 @@ OpenWrap.ch.prototype.close = function(aName) {
  */
 OpenWrap.ch.prototype.size = function(aName) {
 	if (isUnDef(ow.ch.channels[aName])) throw "Channel " + aName + " doesn't exist.";
-//	switch(ow.ch.channels[aName]) {
-//	case "ignite": { return ow.ch.__types.ignite.size(aName); break; }
-//	case "remote": { return ow.ch.__types.remote.size(aName); break; }
-//	default      : { return ow.ch.__types.big.size(aName); }
-//	}
-	return ow.ch.__types[ow.ch.channels[aName]].size(aName);
+	//	switch(ow.ch.channels[aName]) {
+	//	case "ignite": { return ow.ch.__types.ignite.size(aName); break; }
+	//	case "remote": { return ow.ch.__types.remote.size(aName); break; }
+	//	default      : { return ow.ch.__types.big.size(aName); }
+	//	}
+
+	var res, error;
+	this.lock[aName].lock();
+	//sync(function() {
+	try {
+		res = ow.ch.__types[ow.ch.channels[aName]].size(aName);
+	} catch(e) {
+		error = e;
+	} finally {
+		this.lock[aName].unlock();
+	}
+	//}, this.channels[aName]);
+	if (isDef(error)) throw error;
+	return res;
 };
 
 OpenWrap.ch.prototype.__errorHandle = function(id, e) {
@@ -2720,14 +2732,14 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 	var res, error; 
 	this.lock[aName].lock();
 	//sync(function() {
-		try {
-			res = parent.__types[parent.channels[aName]].set(aName, ak, av, aTimestamp, x); 
-			parent.vers[aName] = nowUTC();
-		} catch(e) {
-			error = e;
-		} finally {
-			this.lock[aName].unlock();
-		}
+	try {
+		res = parent.__types[parent.channels[aName]].set(aName, ak, av, aTimestamp, x); 
+		parent.vers[aName] = nowUTC();
+	} catch(e) {
+		error = e;
+	} finally {
+		this.lock[aName].unlock();
+	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 
@@ -2737,7 +2749,7 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 				var f = (ii) => {
 					return () => {		
 						try {		
-							parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+					        parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
 						} catch(e) {}
 						return ii;
 					};
@@ -2814,7 +2826,9 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 			if (isUnDef(parent.jobs[aName][_i])) {
 				var f = (ii) => {
 					return () => {				
-						parent.subscribers[aName][ii](aName, "setall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						try {
+						  parent.subscribers[aName][ii](aName, "setall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						} catch(e) {};
 						return ii;
 					};
 				};
@@ -2828,7 +2842,9 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 			} else {				
 				var f = (ii) => {
 					return () => {
-						parent.subscribers[aName][ii](aName, "setall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						try {
+						  parent.subscribers[aName][ii](aName, "setall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						} catch(e) {};
 						return ii;
 					};
 				};
@@ -2878,7 +2894,9 @@ OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData
 			if (isUnDef(parent.jobs[aName][_i])) {
 				var f = (ii) => {
 					return () => {				
-						parent.subscribers[aName][ii](aName, "unsetall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						try {
+						  parent.subscribers[aName][ii](aName, "unsetall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						} catch(e) {};
 						return ii;
 					};
 				};
@@ -2892,7 +2910,9 @@ OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData
 			} else {				
 				var f = (ii) => {
 					return () => {
-						parent.subscribers[aName][ii](aName, "unsetall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						try {
+						  parent.subscribers[aName][ii](aName, "unsetall", anArrayOfKeys, anArrayOfMapData, parent, aTimestamp, aUUID, x);
+						} catch(e) {};
 						return ii;
 					};
 				};
@@ -2919,13 +2939,13 @@ OpenWrap.ch.prototype.get = function(aName, aKey, x) {
 	var parent = this 
 	this.lock[aName].lock();
 	//sync(function() {
-		try {
-			res = parent.__types[parent.channels[aName]].get(aName, aKey, x);
-		} catch(e) {
-			error = e;
-		} finally {
-			this.lock[aName].unlock();
-		}
+	try {
+		res = parent.__types[parent.channels[aName]].get(aName, aKey, x);
+	} catch(e) {
+		error = e;
+	} finally {
+		this.lock[aName].unlock();
+	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 
@@ -2945,12 +2965,22 @@ OpenWrap.ch.prototype.get = function(aName, aKey, x) {
 OpenWrap.ch.prototype.pop = function(aName) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 
-	var res, out;
-	if (this.size(aName) > 0) {
-		res = this.__types[this.channels[aName]].pop(aName);
-		out = this.get(aName, res);
-		this.unset(aName, res);
+	var res, out, error;
+	this.lock2[aName].lock();
+	try {
+		if (this.size(aName) > 0) {
+			res = this.__types[this.channels[aName]].pop(aName);
+			out = this.get(aName, res);
+			this.unset(aName, res);
+		}
+	} catch(e) { 
+		error = e; 
+	} finally {
+		this.lock2[aName].unlock();
 	}
+
+	if (isDef(error)) throw error;
+        
 	return out;
 };
 
@@ -2970,14 +3000,14 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 	var parent = this 
 	this.lock[aName].lock();
 	//sync(function() {
-		try {
-			res = parent.__types[parent.channels[aName]].getSet(aName, aMatch, aKey, aValue, aTimestamp, x); 
-			parent.vers[aName] = nowUTC();
-		} catch(e) {
-			error = e;
-		} finally {
-			this.lock[aName].unlock();
-		}
+	try {
+		res = parent.__types[parent.channels[aName]].getSet(aName, aMatch, aKey, aValue, aTimestamp, x); 
+		parent.vers[aName] = nowUTC();
+	} catch(e) {
+		error = e;
+	} finally {
+		this.lock[aName].unlock();
+	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 	
@@ -2986,7 +3016,9 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 			if (isUnDef(parent.jobs[aName][_i])) {
 				var f = (ii) => {
 					return () => {				
-						parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						try {
+						  parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						} catch(e) {}
 						return ii;
 					};
 				};
@@ -3000,7 +3032,9 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 			} else {				
 				var f = (ii) => {
 					return () => {
-						parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						try {
+						  parent.subscribers[aName][ii](aName, "set", aKey, aValue, parent, aTimestamp, aUUID, x);
+						} catch(e) {}
 						return ii;
 					};
 				};
@@ -3022,17 +3056,27 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 OpenWrap.ch.prototype.shift = function(aName) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 
-	var res, out;
-	if (this.size(aName) > 0) {
-//		switch(this.channels[aName]) {
-//		case "ignite": { res = this.__types.ignite.shift(aName); break; }
-//		case "remote": { res = this.__types.remote.shift(aName); break; }
-//		default      : { res = this.__types.big.shift(aName); break; }
-//		}
-		res = this.__types[this.channels[aName]].shift(aName);
-		out = this.get(aName, res);
-		this.unset(aName, res);
+	var res, out, error;
+	this.lock2[aName].lock();
+	try {
+		if (this.size(aName) > 0) {
+	//		switch(this.channels[aName]) {
+	//		case "ignite": { res = this.__types.ignite.shift(aName); break; }
+	//		case "remote": { res = this.__types.remote.shift(aName); break; }
+	//		default      : { res = this.__types.big.shift(aName); break; }
+	//		}
+			res = this.__types[this.channels[aName]].shift(aName);
+			out = this.get(aName, res);
+			this.unset(aName, res);
+		}
+	} catch(e) { 
+		error = e;
+	} finally {
+		this.lock2[aName].unlock();
 	}
+
+	if (isDef(error)) throw e;
+
 	return out;
 };
 	
@@ -3056,14 +3100,14 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	var parent = this, res, error; 
 	this.lock[aName].lock();
 	//sync(function() {	
-		try {
-			res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
-			parent.vers[aName] = nowUTC();
-		} catch(e) {
-			error = e;
-		} finally {
-			this.lock[aName].unlock();
-		}
+	try {
+		res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
+		parent.vers[aName] = nowUTC();
+	} catch(e) {
+		error = e;
+	} finally {
+		this.lock[aName].unlock();
+	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
 
@@ -3072,7 +3116,9 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 			if (isUnDef(parent.jobs[aName][_i])) {
 				var f = (ii) => {
 					return () => {				
-						parent.subscribers[aName][ii](aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
+						try {
+							parent.subscribers[aName][ii](aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
+						} catch(e) {};
 						return ii;
 					};
 				};
@@ -3086,7 +3132,9 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 			} else {				
 				var f = (ii) => {
 					return () => {
-						parent.subscribers[aName][ii](aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
+						try {
+							parent.subscribers[aName][ii](aName, "unset", aKey, undefined, parent, aTimestamp, aUUID, x);
+						} catch(e) {}
 						return ii;
 					};
 				};
@@ -3365,21 +3413,21 @@ OpenWrap.ch.prototype.utils = {
 
 		// Indexing
 		var skis = {};
-		for(let ik in sks) {
+		for(var ik in sks) {
 			var sv = sks[ik];
 			var si = stringify(ow.obj.filterKeys(idxs, sv), __, "");
 			skis[si] = sv;
-		}
+		};
 		var tkis = {};
-		for(let ik in tks) {
+		for(var ik in tks) {
 			var tv = tks[ik];
 			var ti = stringify(ow.obj.filterKeys(idxs, tv), __, "");
 			tkis[ti] = tv;
-		}
+		};
 
 		// Compare values
 		var addToTarget = [], delFromTarget = [], addToSource = [], delFromSource = [];
-		for(let ik in skis) {
+		for(var ik in skis) {
 			if (isUnDef(tkis[ik])) {
 				if (syncFn(skis[ik], __)) {
 					logFn("adding " + ik + " to target.");
@@ -3399,8 +3447,8 @@ OpenWrap.ch.prototype.utils = {
 					}
 				}
 			}
-		}
-		for(let ik in tkis) {
+		};
+		for(var ik in tkis) {
 			if (isUnDef(skis[ik])) {
 				if (syncFn(__, tkis[ik])) {
 					logFn("deleting " + ik + " from target.");
@@ -3410,7 +3458,7 @@ OpenWrap.ch.prototype.utils = {
 					addToSource.push(tkis[ik]);
 				}
 			} 
-		}
+		};
 
 		if (addToTarget.length > 0)   $ch(target).setAll(idxs, addToTarget);
 		if (addToSource.length > 0)   $ch(source).setAll(idxs, addToSource);
@@ -3500,11 +3548,13 @@ OpenWrap.ch.prototype.utils = {
 	getHousekeepSubscriber: function(aTargetCh, numberOfKeys) {
 		if (isUnDef(numberOfKeys)) numberOfKeys = 100;
 		return function(aC, aO, aK, aV) {
-			sync(function() {
-				while ($ch(aTargetCh).size() > numberOfKeys) {
-					$ch(aTargetCh).shift();
+ 			try {
+				if ($ch(aTargetCh).size() > numberOfKeys) {
+					while ($ch(aTargetCh).size() > numberOfKeys) {
+						$ch(aTargetCh).shift();
+					}
 				}
-			}, this);
+ 			} catch(e) { sprintErr(e); }
 		};
 	},
 
@@ -3627,9 +3677,9 @@ OpenWrap.ch.prototype.utils = {
 	setLogToFile: function(aConfigMap) {
 		if (isUnDef(aConfigMap)) aConfigMap = {};
 
-		startLog(ow.ch.utils.getLogFilePerDate(aConfigMap.logFolder, aConfigMap.filenameTemplate, aConfigMap.fileDateFormat, aConfigMap.lineTemplate, aConfigMap.lineDateFormat));
+		startLog(ow.ch.utils.getLogFilePerDate(aConfigMap.logFolder, aConfigMap.filenameTemplate, aConfigMap.fileDateFormat, aConfigMap.lineTemplate, aConfigMap.lineDateFormat), aConfigMap.numberOfEntriesToKeep);
 		getChLog().subscribe(ow.ch.utils.getFileHousekeepSubscriber(aConfigMap.logFolder, aConfigMap.HKRegExPattern, aConfigMap.HKhowLongAgoInMinutes, aConfigMap.dontCompress, aConfigMap.backupFolder));
-		getChLog().subscribe(ow.ch.utils.getHousekeepSubscriber(getChLog(), aConfigMap.numberOfEntriesToKeep));
+		//getChLog().subscribe(ow.ch.utils.getHousekeepSubscriber(getChLog(), aConfigMap.numberOfEntriesToKeep));
 		if (aConfigMap.setLogOff) setLog( { off: true });
 	},
 
