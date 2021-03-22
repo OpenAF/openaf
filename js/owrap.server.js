@@ -788,7 +788,7 @@ OpenWrap.server.prototype.rest = {
 
 		r = {};
 		var l = splitBySeparator(s, "&");
-		for(let i in l) {
+		for(var i in l) {
 			var a = splitBySeparator(l[i], "=");
 			if (a.length == 2) r[decodeURIComponent(a[0])] = decodeURIComponent(a[1]);
 		}
@@ -1096,7 +1096,7 @@ OpenWrap.server.prototype.scheduler = function () {
 		var t;
 		var ref = new Date();
 
-		for (let i in this.__entries) {
+		for (var i in this.__entries) {
 			var c = new Date(ow.format.cron.nextScheduled(this.__entries[i].expr)) - ref;
 			if (isUnDef(t)) {
 				t = c;
@@ -1119,7 +1119,7 @@ OpenWrap.server.prototype.scheduler = function () {
 		var r = -1;
 		var ref = new Date();
 
-		for (let i in this.__entries) {
+		for (var i in this.__entries) {
 			var c = new Date(ow.format.cron.nextScheduled(this.__entries[i].expr)) - ref;
 			if (isUnDef(t)) {
 				t = c;
@@ -1158,7 +1158,7 @@ OpenWrap.server.prototype.scheduler = function () {
 
 			do {
 				var ts = __;
-				for (let i in parent.__entries) {
+				for (var i in parent.__entries) {
 					var entry = parent.__entries[i];
 
 					// Check if it's time to execute
@@ -1864,7 +1864,7 @@ OpenWrap.server.prototype.cluster.prototype.all = function(aFunction, includeMe)
 	var clusterList = this.impl.clusterGetList(this.options);
 	var res = __, lO = [];
 
-	for(let ii in clusterList) {
+	for(var ii in clusterList) {
 		if (includeMe || (clusterList[ii].host + clusterList[ii].port) != (this.HOST + this.PORT)) {
 			lO.push($do(() => {
 				return aFunction(clusterList[ii]);
@@ -2362,7 +2362,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 					var url = aOptions.protocol + "://" + m.h + ":" + m.p + aOptions.path;
 					$ch(aOptions.ch).peer(aOptions.serverOrPort, aOptions.path, url, aOptions.authFunc, aOptions.unAuthFunc, aOptions.maxTime, aOptions.maxCount);
 					
-					for(let ii in aOptions.chs) {
+					for(var ii in aOptions.chs) {
 						var achs = aOptions.chs[ii];
 						if (isString(achs)) {
 							achs = {
@@ -2385,7 +2385,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 				var del = (m) => {
 					var url = aOptions.protocol + "://" + m.h + ":" + m.p + parent.path;
 					$ch(aOptions.ch).unpeer(url);
-					for(let ii in aOptions.chs) {
+					for(var ii in aOptions.chs) {
 						var achs = aOptions.chs[ii];
 						if (isString(achs)) {
 							achs = {
@@ -2421,7 +2421,7 @@ OpenWrap.server.prototype.clusterChsPeersImpl = {
 	clusterPutList: (aOptions, aList) => {
 		ow.server.clusterChsPeersImpl.__check(aOptions);
 		var res = $ch(aOptions.ch).getKeys();
-		for(let ii in res) {
+		for(var ii in res) {
 			var it = res[ii];
 			if ($from(aList.cluster).equals("host", it.h).equals("port", it.p).none()) {
 				$ch(aOptions.ch).unset({ h: it.h, p: it.p });
@@ -2835,7 +2835,7 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	replyRedirect: function(aHTTPd, newLocation, mapOfHeaders) {
-		return aHTTPd.reply("", "text/plain", 303, {"Location": newLocation}, mapOfHeaders);
+		return aHTTPd.reply("", "text/plain", 303, merge({"Location": newLocation}, mapOfHeaders));
 	},
 	
 	/**
@@ -2884,6 +2884,147 @@ OpenWrap.server.prototype.httpd = {
 		}
 	},
 	
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.authOAuth(aMapOptions, aHTTPd, aRequest, aFnReply) : Map</key>
+	 * Provides OAuth 2.0 support by intersecting aRequest of aHTTPd to return aFnReply only on correctly authenticated. aMapOptions
+	 * provides the OAuth configurations to follow:\
+	 * \
+	 * aMapOptions:\
+	 * \
+	 *    realm             (optional)  An unique realm name (defaults to 'realm')\
+	 *    cookie            (optional)  The name of the cookie entry to use (defaults to 'OAF_AUTH_SESSION_ID')\
+	 *    baseURL           (mandatory) The web server base url (e.g. https://myserver:8090)\
+	 *    uriLogout         (optional)  The uri to use on the web server to logout (defaults to '/logout')\
+	 *    uriCallBack       (optional)  The uri to use on the web server to callback (defaults to '/cb'). You should configure oauth to allow redirection to base url + callback (e.g. https://myserver:8090/cb)\
+	 *    oauthAuthURL      (mandatory) The OAuth authorization_endpoint\
+	 *    oauthTokenURL     (mandatory) The OAuth token_endpoint\
+	 *    oauthLogoutURL    (mandatory) The OAuth end_session_endpoint\
+	 *    oauthCliendId     (mandatory) The OAuth configured client id\
+	 *    oauthClientSecret (mandatory) The OAuth configured client secret\ 
+	 * \
+	 * </odoc>
+	 */
+	authOAuth: function(aMapOptions, aHTTPd, aReq, aFnReply) {
+		aMapOptions                   = _$(aMapOptions, "aMapOptions").isMap().default({});
+		aMapOptions.realm             = _$(aMapOptions.realm, "aMapOptions.realm").isString().default("realm");
+		aMapOptions.cookie            = _$(aMapOptions.cookie, "aMapOptions.cookie").isString().default("OAF_AUTH_SESSION_ID");
+		aMapOptions.baseURL           = _$(aMapOptions.baseURL, "aMapOptions.baseURL").isString().$_();
+		aMapOptions.uriLogout         = _$(aMapOptions.uriLogout, "aMapOptions.uriLogout").isString().default("/logout");
+		aMapOptions.uriCallBack       = _$(aMapOptions.uriCallBack, "aMapOptions.uriCallBack").isString().default("/cb");
+		aMapOptions.oauthAuthURL      = _$(aMapOptions.oauthAuthURL, "aMapOptions.oauthAuthURL").isString().$_();
+		aMapOptions.oauthTokenURL     = _$(aMapOptions.oauthTokenURL, "aMapOptions.oauthTokenURL").isString().$_();
+		aMapOptions.oauthLogoutURL    = _$(aMapOptions.oauthLogoutURL, "aMapOptions.oauthLogoutURL").isString().$_();
+		aMapOptions.oauthClientId     = _$(aMapOptions.oauthClientId, "aMapOptions.oauthClientId").isString().$_();
+		aMapOptions.oauthClientSecret = _$(aMapOptions.oauthClientSecret, "aMapOptions.oauthClientSecret").isString().$_();
+
+		// Retrive session from cookie
+		var _getSession = function(aR) {
+			if (isMap(aR.header) && isDef(aR.header.cookie) && aR.header.cookie.indexOf(aMapOptions.cookie) >= 0) {
+				var cookies = splitBySeparator(aR.header.cookie, ";"), res;
+				cookies.forEach(cookie => {
+					var vals = splitBySeparator(cookie.trim(), "=");
+					if (vals[0] == aMapOptions.cookie) { res = vals[1]; }
+				});
+				return res;
+			}
+			return __;
+		}
+
+		// Set variables
+		var parent = this, aRealm = aMapOptions.realm;
+		if (isUnDef(parent.oauth_realms)) parent.oauth_realms = {};
+
+		var r = _$(parent.oauth_realms[aRealm]).default({});
+		parent.oauth_realms[aRealm] = _$(parent.oauth_realms[aRealm]).default({});
+		var shouldLogin = false, session = _getSession(aReq);
+
+		// Logout redirect endpoint
+		if (aReq.uri == aMapOptions.uriLogout) {
+			if (isDef(parent.oauth_realms[aRealm][session])) delete parent.oauth_realms[aRealm][session];
+			return ow.server.httpd.replyRedirect(aHTTPd, aMapOptions.oauthLogoutURL + "?redirect_uri=" + aMapOptions.baseURL + aMapOptions.uriCallBack, { 
+				"Set-Cookie": aMapOptions.cookie + "=" 
+			});
+		}
+
+		// Main handler (default)
+		// Determine if should login or reply aFnReply
+		if ((aReq.uri != aMapOptions.uriCallBack) && 
+				isDef(aReq.header) && isDef(aReq.header.cookie) && aReq.header.cookie.indexOf(aMapOptions.cookie) >= 0) {
+			if (isDef(session) && session.length > 0) {
+				if (isDef(parent.oauth_realms[aRealm][session])) {
+					if (isDef(parent.oauth_realms[aRealm][session].access_token)) {
+						if (isDef(parent.oauth_realms[aRealm][session].x)) {
+							if ((nowUTC() < parent.oauth_realms[aRealm][session].x)) {
+								return aFnReply(aReq);
+							} else {
+								// Should use refresh_token
+								var res = $rest({ urlEncode: true }).post(aMapOptions.oauthTokenURL, {
+									grant_type   : "refresh_token",
+									refresh_token: parent.oauth_realms[aRealm][session].refresh_token,
+									client_id    : aMapOptions.oauthClientId,
+									client_secret: aMapOptions.oauthClientSecret
+								});
+				
+								if (isUnDef(res.access_token)) {
+									shouldLogin = true;
+								} else {
+									var jwt = ow.server.jwt.decode(res.access_token);
+									parent.oauth_realms[aRealm][res.session_state] = merge(res, { x: (jwt.exp * 1000) });
+									return aFnReply(aReq);
+								}
+							}
+						} else {
+							return aFnReply(aReq);
+						}
+					} else {
+						return aFnReply(aReq);
+					}
+				} else {
+					shouldLogin = true;
+				}
+			} else {
+				shouldLogin = true;
+			}
+		} else {
+			shouldLogin = true;
+		}
+
+		// Callback redirect endpoint
+		// If no session exists yet but there is a state the oauth token is invoked
+		if (aReq.uri == aMapOptions.uriCallBack) {
+			//if (Object.keys(parent.oauth_realms[aRealm]).length == 0) parent.oauth_realms[aRealm] = "/";
+			if (isUnDef(parent.oauth_realms[aRealm][aReq.params.state])) return ow.server.httpd.replyRedirect(aHTTPd, "/", {});
+			if (isDef(aReq.params.state) && isDef(parent.oauth_realms[aRealm][aReq.params.state])) {
+				var target = parent.oauth_realms[aRealm][aReq.params.state];
+				var res = $rest({ urlEncode: true }).post(aMapOptions.oauthTokenURL, {
+					grant_type   : "authorization_code",
+					code         : aReq.params.code,
+					redirect_uri : target,
+					client_id    : aMapOptions.oauthClientId,
+					client_secret: aMapOptions.oauthClientSecret
+				});
+
+				delete parent.oauth_realms[aRealm][aReq.params.state];
+				var jwt = ow.server.jwt.decode(res.access_token);
+				parent.oauth_realms[aRealm][res.session_state] = merge(res, { x: (jwt.exp * 1000) });
+
+				return ow.server.httpd.replyRedirect(aHTTPd, target, { "Set-Cookie": aMapOptions.cookie  + "=" + res.session_state });
+			} else {
+				shouldLogin = true;
+			}
+		}
+
+		// Should login handler
+		// If not login yet calls oauth auth url
+		if (shouldLogin) {
+			var sId = "temp." + genUUID();
+			if (aReq.uri == aMapOptions.uriCallBack) aReq.uri = "/";
+			parent.oauth_realms[aRealm][sId] = aReq.uri;
+			return ow.server.httpd.replyRedirect(aHTTPd, aMapOptions.oauthAuthURL + "?response_type=code&client_id=" + aMapOptions.oauthClientId + "&scope=email&state=" + sId);
+		}
+	},
+
 	/**
 	 * <odoc>
 	 * <key>ow.server.httpd.authBasic(aRealm, aHTTPd, aReq, aAuthFunc, aReplyFunc, aUnAuthFunc) : Map</key>
@@ -3166,5 +3307,29 @@ OpenWrap.server.prototype.jwt = {
 		var jwt = com.auth0.jwt.JWT.create();
 		jwt = aFnAddClaims(jwt);
 		return jwt.sign(al);
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.jwt.decode(aToken) : Map</key>
+	 * Tries to decode the JWT aToken provided.
+	 * </odoc>
+	 */
+	decode: aToken => {
+		_$(aToken, "token").isString().$_();
+
+		var dt = com.auth0.jwt.JWT.decode(aToken);
+
+		var keys = dt.getClaims().keySet().toArray(), mkeys = {};
+		for(var ii in keys) {
+			var notFound = true;
+			if (notFound && dt.getClaims().get(keys[ii]).asBoolean() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asBoolean(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asInt() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asInt(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asDouble() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asDouble(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asLong() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asLong(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asString() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asString(); }
+			if (notFound && dt.getClaims().get(keys[ii]).asDate() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asDate(); }
+		}
+		return mkeys;
 	}
 }

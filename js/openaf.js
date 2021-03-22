@@ -1102,13 +1102,16 @@ function setLog(aMap) {
 
 /**
  * <odoc>
- * <key>startLog(externalLogging)</key>
+ * <key>startLog(externalLogging, hkItems)</key>
  * Starts collecting log messages logged with log* functions. See stopLog() and dumpLog().
- * You can also specify externalLogging, a custom channel subscribe function. 
+ * You can also specify externalLogging, a custom channel subscribe function and a different number
+ * of hkItems (housekeeping items) from the default 100 (if -1 it won't delete items).
  * </odoc>
  */
-function startLog(externalLogging) {
+function startLog(externalLogging, hkItems) {
+	hkItems = _$(hkItems, "hkItems").isNumber().default(100);
 	$ch("__log").create(true, "simple");
+	if (hkItems > -1 && isUnDef(__logFormat.hk)) __logFormat.hk = $ch("__log").subscribe(ow.ch.utils.getHousekeepSubscriber("__log", hkItems));
 	__logStatus = true;
 	global.__logQueue = [];
 	if (isDef(externalLogging) && isFunction(externalLogging)) {
@@ -3586,6 +3589,29 @@ function sync(aFunction, anObj) {
 	}, anObj)();
 	
 	if (foundException) throw exception;
+}
+
+/**
+ * <odoc>
+ * <key>syncFn(aFunction, anObject) : Object</key>
+ * Will ensure that aFunction is synchronized, in multi-threaded scripts (alternative to sync). Optionally you can provide
+ * anObject to synchronized upon. Returns the result of aFunction.
+ * </odoc>
+ */
+function syncFn(aFunction, anObj) {
+   var foundException = false, exception;
+
+   var r = new Packages.org.mozilla.javascript.Synchronizer(function() { 
+      try { 
+         return aFunction();
+      } catch(e) {
+         foundException = true;
+         exception = e;
+      }
+   }, anObj)();
+
+   if (foundException) throw exception;
+   return r;
 }
 
 
