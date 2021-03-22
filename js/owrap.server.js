@@ -2953,16 +2953,42 @@ OpenWrap.server.prototype.httpd = {
 				isDef(aReq.header) && isDef(aReq.header.cookie) && aReq.header.cookie.indexOf(aMapOptions.cookie) >= 0) {
 			if (isDef(session) && session.length > 0) {
 				if (isDef(parent.oauth_realms[aRealm][session])) {
-					return aFnReply(aReq);
+					if (isDef(parent.oauth_realms[aRealm][session].access_token)) {
+						if (isDef(parent.oauth_realms[aRealm][session].x)) {
+							if ((nowUTC() < parent.oauth_realms[aRealm][session].x)) {
+								return aFnReply(aReq);
+							} else {
+								// Should use refresh_token
+								var res = $rest({ urlEncode: true }).post(aMapOptions.oauthTokenURL, {
+									grant_type   : "refresh_token",
+									refresh_token: parent.oauth_realms[aRealm][session].refresh_token,
+									client_id    : aMapOptions.oauthClientId,
+									client_secret: aMapOptions.oauthClientSecret
+								});
+				
+								if (isUnDef(res.access_token)) {
+									shouldLogin = true;
+								} else {
+									var jwt = ow.server.jwt.decode(res.access_token);
+									parent.oauth_realms[aRealm][res.session_state] = merge(res, { x: (jwt.exp * 1000) });
+									return aFnReply(aReq);
+								}
+							}
+						} else {
+							return aFnReply(aReq);
+						}
+					} else {
+						return aFnReply(aReq);
+					}
 				} else {
 					shouldLogin = true;
 				}
 			} else {
 				shouldLogin = true;
 			}
-			} else {
+		} else {
 			shouldLogin = true;
-			}
+		}
 
 		// Callback redirect endpoint
 		// If no session exists yet but there is a state the oauth token is invoked
@@ -2980,7 +3006,8 @@ OpenWrap.server.prototype.httpd = {
 				});
 
 				delete parent.oauth_realms[aRealm][aReq.params.state];
-				parent.oauth_realms[aRealm][res.session_state] = res;
+				var jwt = ow.server.jwt.decode(res.access_token);
+				parent.oauth_realms[aRealm][res.session_state] = merge(res, { x: (jwt.exp * 1000) });
 
 				return ow.server.httpd.replyRedirect(aHTTPd, target, { "Set-Cookie": aMapOptions.cookie  + "=" + res.session_state });
 			} else {
@@ -2994,7 +3021,7 @@ OpenWrap.server.prototype.httpd = {
 			var sId = "temp." + genUUID();
 			if (aReq.uri == aMapOptions.uriCallBack) aReq.uri = "/";
 			parent.oauth_realms[aRealm][sId] = aReq.uri;
-			return ow.server.httpd.replyRedirect(aHTTPd, aMapOptions.oauthAuthURL + "?response_type=code&client_id=" + aMapOptions.oauthClientId + "&scope=roles&state=" + sId);
+			return ow.server.httpd.replyRedirect(aHTTPd, aMapOptions.oauthAuthURL + "?response_type=code&client_id=" + aMapOptions.oauthClientId + "&scope=email&state=" + sId);
 		}
 	},
 
