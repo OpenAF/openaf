@@ -5980,7 +5980,13 @@ function oJobRun(aJson, args, aId) {
  * </odoc>
  */
 function oJobRunJob(aJob, args, aId, rArgs) {
-	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
+	var oo;
+	if (isDef(aId)) {
+		oo = new OpenWrap.oJob();
+		if (isDef(ow.oJob)) oo.__ojob = clone(ow.oJob.__ojob);
+	} else {
+		oo = ow.loadOJob();
+	}
 	if (isString(aJob)) {
 		if (isUnDef(aId)) aId = "";
 		var job = oo.getJobsCh().get({ name: aJob });
