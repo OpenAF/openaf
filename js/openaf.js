@@ -5980,7 +5980,13 @@ function oJobRun(aJson, args, aId) {
  * </odoc>
  */
 function oJobRunJob(aJob, args, aId, rArgs) {
-	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
+	var oo;
+	if (isDef(aId)) {
+		oo = new OpenWrap.oJob();
+		if (isDef(ow.oJob)) oo.__ojob = clone(ow.oJob.__ojob);
+	} else {
+		oo = ow.loadOJob();
+	}
 	if (isString(aJob)) {
 		if (isUnDef(aId)) aId = "";
 		var job = oo.getJobsCh().get({ name: aJob });
@@ -6670,6 +6676,25 @@ const askN = (aPromptFn, aStopFn, _con) => {
 		r += l + "\n";
 	} while (!aStopFn(r));
 	return r;
+}
+
+/**
+ * <odoc>
+ * <key>askDef(aInit, aQuestion, isSecret, isVoidable) : String</key>
+ * If aInit is not defined will ask aQuestion (if isSecret = true it will askEncrypt) and return
+ * the value. If isVoidable = true and no answer is provided it will return undefined.
+ * </odoc>
+ */
+const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
+	aQuestion = _$(aQuestion, "aQuestion").isString().default("Question: ");
+	if (isUnDef(aInit)) {
+		var r;
+		if (isSecret) r = askEncrypt(aQuestion); else r = ask(aQuestion);
+		if (isVoidable && isString(r) && r.length == 0) r = __;
+		return r; 
+	} else {
+		return aInit;
+	}
 }
 
 /**
