@@ -6680,6 +6680,25 @@ const askN = (aPromptFn, aStopFn, _con) => {
 
 /**
  * <odoc>
+ * <key>askDef(aInit, aQuestion, isSecret, isVoidable) : String</key>
+ * If aInit is not defined will ask aQuestion (if isSecret = true it will askEncrypt) and return
+ * the value. If isVoidable = true and no answer is provided it will return undefined.
+ * </odoc>
+ */
+const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
+	aQuestion = _$(aQuestion, "aQuestion").isString().default("Question: ");
+	if (isUnDef(aInit)) {
+		var r;
+		if (isSecret) r = askEncrypt(aQuestion); else r = ask(aQuestion);
+		if (isVoidable && isString(r) && r.length == 0) r = __;
+		return r; 
+	} else {
+		return aInit;
+	}
+}
+
+/**
+ * <odoc>
  * <key>$channels(aChannel)</key>
  * Please check more details with the help from ow.ch. The available methods are:\
  * \
