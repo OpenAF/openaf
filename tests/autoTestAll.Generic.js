@@ -597,7 +597,7 @@
                 var sum = 0;
                 while(arr.length > 0) {
                     var val;
-                    sync(() => { val = arr.pop(); }, arr);
+                    syncFn(() => { val = arr.pop(); }, arr);
                     sum += (isDefined(val) ? val : 0);
                 }
                 log("Thread: " + uuid + "; " + sum);
