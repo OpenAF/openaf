@@ -193,7 +193,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>9.4.33.v20201020</version>
+      <version>11.0.2</version>
     </dependency>
     <dependency>
       <groupId>jline</groupId>
