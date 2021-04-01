@@ -821,6 +821,38 @@ OpenWrap.format.prototype.toBytesAbbreviation = function (bytes, precision) {
 
 /**
  * <odoc>
+ * <key>ow.format.fromBytesAbbreviation(aStr) : Number</key>
+ * Tries to reverse the ow.format.toBytesAbbreviation from aStr (string) back to the original value in bytes.\
+ * (available after ow.loadFormat())
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromBytesAbbreviation = function(aStr) {
+	ow.loadFormat();
+
+	_$(aStr, "aStr").isString().$_();
+
+	var sizes = ['BYTES', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+	aStr = aStr.trim();
+	var arr = aStr.split(/\s+/), unit, value;
+	if (arr.length >= 2) {
+		unit  = String(arr[arr.length - 1]);
+		value = Number(arr[arr.length - 2]);  
+	} else {
+		unit  = "";
+		value = parseFloat(aStr);
+	}
+	
+	var vfactor = 1;
+	for(var ii = 1; ii <= sizes.indexOf(unit.toUpperCase()); ii++) {
+		vfactor *= 1024;
+	}
+	
+	return Math.round(value * vfactor);
+}
+
+/**
+ * <odoc>
  * <key>ow.format.toSLON(aObj, cTheme) : String</key>
  * Stringifies aObj into a Single Line Object Notation using a default scheme for human readability or a 
  * custom cTheme map composed of:\
