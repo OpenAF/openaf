@@ -6614,10 +6614,11 @@ const $fnM = (aFnName, aMap) => {
 	}
 }
 
-var $sec = function() { 
-	ow.loadSec(); 
-	return $sec.apply(this, arguments);
-}
+// var $sec = function() { 
+// 	ow.loadSec(); 
+// 	return $sec.apply(this, arguments);
+// }
+ow.loadSec();
 
 /**
  * <odoc>
