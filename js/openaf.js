@@ -7914,6 +7914,19 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
+	 * <key>$ssh.prefix(aPrefix) : $ssh</key>
+	 * When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefix.
+	 * </odoc>
+	 */
+	__ssh.prototype.prefix = function(aPrefix) {
+		aPrefix = _$(aPrefix, "prefix").isString().default("sh");
+		ow.loadFormat();
+		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, "\n") };
+		return this;
+	};
+
+	/**
+	 * <odoc>
 	 * <key>$ssh.mkdir(aDirectory) : $ssh</key>
 	 * Creates aDirectory via SFTP on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>

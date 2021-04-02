@@ -616,18 +616,18 @@ OpenWrap.format.prototype.streamSH = function(aFunc, anEncoding) {
 
 /**
  * <odoc>
- * <key>ow.format.streamSHPrefix(aPrefix, anEncoding) : Function</key>
+ * <key>ow.format.streamSHPrefix(aPrefix, anEncoding, aSeperator) : Function</key>
  * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will prefix each line with aPrefix
  * and used the returned string with print and printErr.
  * </odoc>
  */
-OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding) {
+OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSeparator) {
 	if (isUnDef(aPrefix)) aPrefix = "";
 	return function(o, e) {
 		$doWait(
 			$doAll([
-				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); print(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, __, false, __); }), 
-				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErr(ansiColor("RED", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, __, false, anEncoding); })
+				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); print(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, aSeparator, false, __); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErr(ansiColor("RED", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, aSeparator, false, anEncoding); })
 			])
 		);
 	};
