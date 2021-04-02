@@ -1892,7 +1892,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 					var prefix = "";
 					if (isString(aJobTypeArgs.shellPrefix)) {
-						prefix = ".prefix(\"" + aJobTypeArgs.shellPrefix + "\")";
+						prefix = ".prefix(eval(\"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 					}
 					res += "var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh).putFile(ft, __uuid).sh(" + stringify(aJobTypeArgs.shell) + " + ' ' + __uuid)" + prefix + ".exit((r, s)=>s.rm(__uuid)).get(0); io.rm(ft);\n";
 					res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
@@ -1903,7 +1903,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				if (!(res.indexOf("/* __oaf_ojob shell */") >= 0)) {
 					var prefix = "";
 					if (isString(aJobTypeArgs.shellPrefix)) {
-						prefix = ".prefix(\"" + aJobTypeArgs.shellPrefix + "\")";
+						prefix = ".prefix(eval(\"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 					}
 					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
 						var orig = String(res);
@@ -1951,7 +1951,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 							var orig = String(res);
 							var prefix = "";
 							if (isString(aJobTypeArgs.shellPrefix)) {
-								prefix = ".prefix(\"" + aJobTypeArgs.shellPrefix + "\")";
+								prefix = ".prefix(eval(\"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 							}
                             res = "/* __oaf_ojob shell */ ";
 							if (aJobTypeArgs.noTemplate) {
