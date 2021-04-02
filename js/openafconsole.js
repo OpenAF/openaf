@@ -600,17 +600,19 @@ function __help(aTerm) {
 			h = searchHelp(aTerm);
 		}
 		
-		if (h.length == 1) {
-			__outputConsoleComments(h[0].fullkey);
-			__outputConsoleComments(repeat(h[0].fullkey.length, '-'));
-			__outputConsoleComments(h[0].text);
-		} else {
-			if (h.length > 1) {
-				for(let i in h) {
-					__outputConsoleComments(h[i].key);
-				}
+		if (isArray(h)) {
+			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
+				__outputConsoleComments(h[0].fullkey);
+				__outputConsoleComments(repeat(h[0].fullkey.length, '-'));
+				__outputConsoleComments(h[0].text);
 			} else {
-				__outputConsoleComments("Term '" + aTerm + "' not found.");
+				if (h.length > 1) {
+					for(let i in h) {
+						__outputConsoleComments(h[i].key);
+					}
+				} else {
+					__outputConsoleComments("Term '" + aTerm + "' not found.");
+				}
 			}
 		}
 	}

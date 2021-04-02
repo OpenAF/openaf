@@ -528,7 +528,7 @@ OpenWrap.obj.prototype.pool = {
 				var parent = this;
 				var isThereRoom = false;
 
-				sync(function() {
+				syncFn(function() {
 					if ((parent.__max > 0 && parent.__max <= (parent.__currentSize + 1)) && parent.__currentFree < 1) {
 						isThereRoom = false;
 					} else {
@@ -540,7 +540,7 @@ OpenWrap.obj.prototype.pool = {
 					if (this.__retry >= 1) {
 						for(var i = 0; i < this.__retry && isOk == false; i++) {
 							sleep(this.__timeout);
-							sync(function() {
+							syncFn(function() {
 								if (parent.__currentFree > 0 || (parent.__max > 0 && parent.__max > parent.__currentSize)) {
 									isOk = true;
 								}
@@ -580,7 +580,7 @@ OpenWrap.obj.prototype.pool = {
 				var parent = this;
 				var res = false;
 
-				sync(function() {
+				syncFn(function() {
 					if (parent.__checkLimits()) {
 						if (parent.__max < 1 || parent.__currentSize <= parent.__max) {
 							parent.__currentSize++;
@@ -695,7 +695,7 @@ OpenWrap.obj.prototype.pool = {
 				var i = 0, r = 0;
 				var parent = this;
 
-				sync(function() {
+				syncFn(function() {
 					while(isUnDef(obj) && i < parent.__currentSize) {
 						var inUse = __;
 						inUse = parent.__pool[i].inUse;
@@ -722,7 +722,7 @@ OpenWrap.obj.prototype.pool = {
 				if (i >= parent.__currentSize) {
 					var resCheckFree;
 					resCheckFree = parent.__checkFree();
-					sync(function() {
+					syncFn(function() {
 						if (resCheckFree && parent.__checkLimits()) {						
 							obj = parent.__createObj(true);
 						} 
@@ -819,7 +819,7 @@ OpenWrap.obj.prototype.pool = {
 			 */
 			checkIn: function(obj, badObj) {
 				var parent = this;
-				sync(function() {
+				syncFn(function() {
 					var i;
 					for(i = 0; i < parent.__currentSize && parent.__pool[i].obj != obj; i++) {}
 

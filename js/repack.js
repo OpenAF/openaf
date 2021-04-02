@@ -135,7 +135,7 @@ $from(ow.obj.fromObj2Array(getOPackLocalDB(), "path")).notEmpty("scripts.prerepa
 if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	var oldVersionFile = classPath.replace(/openaf.jar/, "openaf.jar.orig");
     
-    if (!noHomeComms) sync(() => {
+    if (!noHomeComms) syncFn(() => {
         if (!io.fileExists(oldVersionFile)) {
             var dist = getDistribution() + "/";
             if (dist == "stable/") dist = "";

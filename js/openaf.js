@@ -3146,12 +3146,12 @@ function parallel(aFunction, numThreads, aAggFunction, threads) {
 	function __balance() {
 		var l = getCPULoad();
 		if (l > numThreads) {
-			sync(function() { cooldown++; });
+			syncFn(function() { cooldown++; });
 			while (l > numThreads && __cooldown < numThreads) {
 				sleep((l - numThreads) * 2000);
 				l = getCPULoad();
 			}
-			sync(function() { cooldown--; });
+			syncFn(function() { cooldown--; });
 		}
 	}
 	
@@ -3207,12 +3207,12 @@ function parallelArray(anArray, aReduceFunction, initValues, aAggFunction, numTh
 	function __balance() {
 		var l = getCPULoad();
 		if (l > numThreads) {
-			sync(function() { cooldown++; });
+			syncFn(function() { cooldown++; });
 			while (l > numThreads && __cooldown < numThreads) {
 				sleep((l - numThreads) * 2000);
 				l = getCPULoad();
 			}
-			sync(function() { cooldown--; });
+			syncFn(function() { cooldown--; });
 		}
 	}
 	
@@ -5766,7 +5766,7 @@ const $cache = function(aName) {
     __c.prototype.create = function() {
         _$(this.func).isFunction().$_("Please provide a function (fn).");
 
-		sync(() => {
+		syncFn(() => {
 			if ($ch().list().indexOf(this.name) < 0) {
 				$ch(this.name).create(1, "cache", {
 					func: this.func,
@@ -6614,10 +6614,11 @@ const $fnM = (aFnName, aMap) => {
 	}
 }
 
-var $sec = function() { 
-	ow.loadSec(); 
-	return $sec.apply(this, arguments);
-}
+// var $sec = function() { 
+// 	ow.loadSec(); 
+// 	return $sec.apply(this, arguments);
+// }
+ow.loadSec();
 
 /**
  * <odoc>
@@ -7070,7 +7071,7 @@ oPromise.prototype.__exec = function() {
 			this.__f = __getThreadPool().submit(new java.lang.Runnable({
 				run: () => {
 					var ignore = false;
-					sync(() => { if (thisOP.executing) ignore = true; else thisOP.executing = true; }, thisOP.executing);
+					syncFn(() => { if (thisOP.executing) ignore = true; else thisOP.executing = true; }, thisOP.executing);
 					if (ignore) return;
 
 					while (thisOP.executors.size() > 0) {
@@ -7117,7 +7118,7 @@ oPromise.prototype.__exec = function() {
 						}
 					}
 
-					sync(() => { thisOP.executing = false; }, thisOP.executing);
+					syncFn(() => { thisOP.executing = false; }, thisOP.executing);
 
 					if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty()) {
 						thisOP.state = thisOP.states.FULFILLED;
@@ -7438,7 +7439,7 @@ const $await = function(aName) {
 
     var _f = function(n) { this.n = n; };
     _f.prototype.wait = function(aTimeout) {
-        sync(() => {
+        syncFn(() => {
 			if (isDef(aTimeout)) 
 				global.__await[this.n].wait(aTimeout); 
 			else
@@ -7446,7 +7447,7 @@ const $await = function(aName) {
         }, global.__await[this.n]);
     };
     _f.prototype.notify = function() {
-        sync(() => {
+        syncFn(() => {
             global.__await[this.n].notify();
         }, global.__await[this.n]);
     };
@@ -7910,6 +7911,19 @@ const $ssh = function(aMap) {
         this.fcb = () => { return aCallback; };
         return this;
     };
+
+	/**
+	 * <odoc>
+	 * <key>$ssh.prefix(aPrefix) : $ssh</key>
+	 * When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefix.
+	 * </odoc>
+	 */
+	__ssh.prototype.prefix = function(aPrefix) {
+		aPrefix = _$(aPrefix, "prefix").isString().default("sh");
+		ow.loadFormat();
+		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, "\n") };
+		return this;
+	};
 
 	/**
 	 * <odoc>

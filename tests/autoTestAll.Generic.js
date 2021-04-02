@@ -282,23 +282,32 @@
     };
 
     exports.testAwait = function() {
-        var state = 0, err;
-        $do(() => {
+        var state = 0, err1, err2;
+        var p1 = $do(() => {
+            $await("testF").wait(5000);
+            ow.test.assert(state, 1, "Problem with await (1)");
+            //sleep(150, true);
+            $await("test1").notify();
+            $await("testF2").wait(5000);
+            ow.test.assert(state, 2, "Problem with await (2)");
+        }).catch(e => {
+            err1 = e;
+        })
+        var p2 = $do(() => {
             state = 1;
+            while(p1 == 0 && !p1.executing) sleep(50, true);
             $await("testF").notify();
-            $await("test1").wait(3500);
+            $await("test1").wait(5000);
             state = 2;
             $await("testF2").notify();
         }).catch(e => {
-            err = e;
+            err2 = e;
         });
 
-        $await("testF").wait(3500);
-        ow.test.assert(state, 1, "Problem with await (1)");
-        sleep(150, true);
-        $await("test1").notify();
-        $await("testF2").wait(2500);
-        ow.test.assert(state, 2, "Problem with await (2)");
+
+        $doWait($doAll([p1, p2]));
+        if (isDef(err1)) throw err1;
+        if (isDef(err2)) throw err2;
     };
 
     exports.testRetry = function() {
@@ -588,7 +597,7 @@
                 var sum = 0;
                 while(arr.length > 0) {
                     var val;
-                    sync(() => { val = arr.pop(); }, arr);
+                    syncFn(() => { val = arr.pop(); }, arr);
                     sum += (isDefined(val) ? val : 0);
                 }
                 log("Thread: " + uuid + "; " + sum);

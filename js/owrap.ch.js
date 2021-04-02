@@ -44,7 +44,7 @@ OpenWrap.ch.prototype.__types = {
 				}
 			} else {
 				this.__channels[aName].find(function(aKey) {
-					sync(function() { keys.push(aKey); }, keys);
+					syncFn(function() { keys.push(aKey); }, keys);
 				});
 			}
 		
@@ -633,7 +633,7 @@ OpenWrap.ch.prototype.__types = {
 		getAll       : function(aName, full) {
 			var res = [];
 			this.__cache[aName].Ch.forEach(function(aKey, aValue) {
-				sync(function() { res.push(aValue); }, res);
+				syncFn(function() { res.push(aValue); }, res);
 			}, full);
 			return res;
 		},
@@ -3869,7 +3869,7 @@ OpenWrap.ch.prototype.comms = {
 			if (sUUID == aUUID) return;
 			
 			$ch("__comm::" + na).create();
-			sync(function() { 
+			syncFn(function() { 
 				if (isUnDef(ow.ch.comms.__counter[na])) {
 					ow.ch.comms.__counter[na] = 0; 
 				}
@@ -3901,8 +3901,8 @@ OpenWrap.ch.prototype.comms = {
 						ow.ch.jobs[na].length < 1 &&
 						ow.ch.size(na) > 0) {
 						
-						sync(function() { ow.ch.comms.__counter[na] = 0; }, ow.ch.comms.__counter[na]);
-						sync(function() {
+						syncFn(function() { ow.ch.comms.__counter[na] = 0; }, ow.ch.comms.__counter[na]);
+						syncFn(function() {
 							//ow.obj.rest.set(aURL, { "o": "r", "k": Object.keys(ow.ch.getKeys(na)[0]), "t": t }, ow.ch.getAll(na), aL, aP, aT);
 							$rest({
 								login: aL,
@@ -3919,14 +3919,14 @@ OpenWrap.ch.prototype.comms = {
 				if (typeof v != "object") av = { "key": k, "value": v };
 				switch(op) {
 				case "setall": 
-					sync(function() { 
+					syncFn(function() { 
 						if (ow.ch.comms.__counter[na] != 0)
 							ow.ch.comms.__counter[na]++;
 						else
 							ow.ch.comms.__counter[na] = 1;
 					}, ow.ch.comms.__counter[na]);
 					var res;
-					sync(function() {
+					syncFn(function() {
 						//res = ow.obj.rest.jsonSet(aURL, { "o": "a", "k": k, "t": t }, v, aL, aP, aT); 
 						res = $rest({
 							login: aL,
@@ -3938,14 +3938,14 @@ OpenWrap.ch.prototype.comms = {
 					}, aURL);
 					break;
 				case "unsetall": 
-					sync(function() { 
+					syncFn(function() { 
 						if (ow.ch.comms.__counter[na] != 0)
 							ow.ch.comms.__counter[na]++;
 						else
 							ow.ch.comms.__counter[na] = 1;
 					}, ow.ch.comms.__counter[na]);
 					var res;
-					sync(function() {
+					syncFn(function() {
 						//res = ow.obj.rest.jsonSet(aURL, { "o": "ua", "k": k, "t": t }, v, aL, aP, aT); 
 						res = $rest({
 							login: aL,
@@ -3957,9 +3957,9 @@ OpenWrap.ch.prototype.comms = {
 					}, aURL);
 					break;					
 				case "set"   : 
-					sync(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
+					syncFn(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
 					var res;
-					sync(function() {
+					syncFn(function() {
 						//res = ow.obj.rest.jsonSet(aURL, { "o": "e", "k": ak, "t": t }, av, aL, aP, aT);
 						res = $rest({
 							login: aL,
@@ -3971,9 +3971,9 @@ OpenWrap.ch.prototype.comms = {
 					}, aURL);
 					break;
 				case "unset" : 
-					sync(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
+					syncFn(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
 					var res;
-					sync(function() {
+					syncFn(function() {
 						//res = ow.obj.rest.jsonRemove(aURL, { "o": "e", "k": ak, "t": t }, aL, aP, aT); 
 						res = $rest({
 							login: aL,
@@ -3986,7 +3986,7 @@ OpenWrap.ch.prototype.comms = {
 					break;				
 				default      : 
 					var res, resk;
-				    sync(function() {
+				    syncFn(function() {
 						//res = ow.obj.rest.jsonGet(aURL, { "o": "e", "k": ak }, aL, aP, aT);
 						//res = ow.obj.rest.jsonGet(aURL, { "o": "a" }, aL, aP, aT);
 						res = $rest({
@@ -4303,7 +4303,7 @@ OpenWrap.ch.prototype.server = {
 
 		function restSet(k, v) {
 			var cc;
-			sync(function() { 	
+			syncFn(function() { 	
 				if (isUnDef(ow.ch.server.__counter[aName])) {
 					ow.ch.server.__counter[aName] = 0; cc = 0; 
 				}
@@ -4314,7 +4314,7 @@ OpenWrap.ch.prototype.server = {
 				case "a":
 					//if (k.t < $ch(aName).getVersion()) return undefined;
 					if (isArray(k.k) && isArray(v)) {
-						sync(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+						syncFn(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
 						var rt = $ch(aName).setAll(k.k, v, k.t, aaUUID, aRequest);
 						return { "c": cc, "r": rt };
 					} 
@@ -4322,7 +4322,7 @@ OpenWrap.ch.prototype.server = {
 				case "ua":
 					//if (k.t < $ch(aName).getVersion()) return undefined;
 					if (isArray(k.k) && isArray(v)) {
-						sync(function() { cc = --ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+						syncFn(function() { cc = --ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
 						var rt = $ch(aName).unsetAll(k.k, v, k.t, aaUUID, aRequest);
 						return { "c": cc, "r": rt };
 					} 
@@ -4340,18 +4340,18 @@ OpenWrap.ch.prototype.server = {
 							return ak;
 						});
 
-						sync(function() { ow.ch.server.__counter[aName] = 0; cc = 0; }, ow.ch.server.__counter);
+						syncFn(function() { ow.ch.server.__counter[aName] = 0; cc = 0; }, ow.ch.server.__counter);
 						var rt = $ch(aName).setAll(k.k, v, k.t, aaUUID, aRequest);
 						return { "c": cc, "r": rt };
 					} 
 					break;					
 				case "e":		
 					//if (k.t < $ch(aName).getVersion()) return undefined;
-					sync(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+					syncFn(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
 					var rt = $ch(aName).set(k.k, v, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				case "es":
-					sync(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+					syncFn(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
 					var rt = $ch(aName).getSet(k.m, k.k, v, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				}
@@ -4362,7 +4362,7 @@ OpenWrap.ch.prototype.server = {
 			var cc;
 			//if (k.t < $ch(aName).getVersion()) return undefined;
 
-			sync(function() { 
+			syncFn(function() { 
 				if (isUnDef(ow.ch.server.__counter[aName])) {
 					ow.ch.server.__counter[aName] = 0; cc = 0; 
 				}
@@ -4371,7 +4371,7 @@ OpenWrap.ch.prototype.server = {
 			if (isDef(k.o)) {
 				if (k.o == "e") {
 					//if (k.t < $ch(aName).getVersion()) return undefined;
-					sync(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+					syncFn(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
 					var rt = $ch(aName).unset(k.k, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				}

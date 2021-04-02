@@ -8,13 +8,12 @@ ojob:
      expose : true
      port   : 17878
      log    : true
-   list:
-     oJob::log
-     oJob::jobs
-     oJob::todo
-     oJob::oJob
-     __owTest::tests
-
+     list:
+     - oJob::log
+     - oJob::jobs
+     - oJob::todo
+     - oJob::oJob
+     - __owTest::tests
 
 jobs:
    # RUN TESTS

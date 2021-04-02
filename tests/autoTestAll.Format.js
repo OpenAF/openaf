@@ -82,6 +82,13 @@
         ow.test.assert(ow.format.fromBase36(ow.format.toBase36(12345)), 12345, "Problem with conversion to base36");
     };
 
+    exports.testBytesAbbreviation = function() {
+        ow.test.assert(ow.format.fromBytesAbbreviation(ow.format.toBytesAbbreviation(123)), 123, "Problem with simple bytes abbreviation (1)");
+        ow.test.assert(ow.format.fromBytesAbbreviation(ow.format.toBytesAbbreviation(128 * 1024)), 128 * 1024, "Problem with simple bytes abbreviation (2)");
+        ow.test.assert(ow.format.fromBytesAbbreviation(ow.format.toBytesAbbreviation(128 * 1024 * 1024)), 128 * 1024 * 1024, "Problem with simple bytes abbreviation (3)");
+        ow.test.assert(ow.format.fromBytesAbbreviation(ow.format.toBytesAbbreviation(128 * 1024 * 1024 * 1024)), 128 * 1024 * 1024 * 1024, "Problem with simple bytes abbreviation (4)");
+    };
+
     exports.testHTML4 = function() {
         var testString = "This is áàç test with ã ê";
 

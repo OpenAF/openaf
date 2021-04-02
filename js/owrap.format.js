@@ -616,18 +616,18 @@ OpenWrap.format.prototype.streamSH = function(aFunc, anEncoding) {
 
 /**
  * <odoc>
- * <key>ow.format.streamSHPrefix(aPrefix, anEncoding) : Function</key>
+ * <key>ow.format.streamSHPrefix(aPrefix, anEncoding, aSeperator) : Function</key>
  * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will prefix each line with aPrefix
  * and used the returned string with print and printErr.
  * </odoc>
  */
-OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding) {
+OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSeparator) {
 	if (isUnDef(aPrefix)) aPrefix = "";
 	return function(o, e) {
 		$doWait(
 			$doAll([
-				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); print(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, __, false, __); }), 
-				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErr(ansiColor("RED", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, __, false, anEncoding); })
+				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); print(ansiColor("BOLD,BLACK", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, aSeparator, false, __); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErr(ansiColor("RED", "[" + aPrefix + "] ") + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, aSeparator, false, anEncoding); })
 			])
 		);
 	};
@@ -817,6 +817,38 @@ OpenWrap.format.prototype.toBytesAbbreviation = function (bytes, precision) {
 	}
 
 	return bytes.toPrecision(precision) + " " + sizes[posttxt];
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.fromBytesAbbreviation(aStr) : Number</key>
+ * Tries to reverse the ow.format.toBytesAbbreviation from aStr (string) back to the original value in bytes.\
+ * (available after ow.loadFormat())
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromBytesAbbreviation = function(aStr) {
+	ow.loadFormat();
+
+	_$(aStr, "aStr").isString().$_();
+
+	var sizes = ['BYTES', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+	aStr = aStr.trim();
+	var arr = aStr.split(/\s+/), unit, value;
+	if (arr.length >= 2) {
+		unit  = String(arr[arr.length - 1]);
+		value = Number(arr[arr.length - 2]);  
+	} else {
+		unit  = "";
+		value = parseFloat(aStr);
+	}
+	
+	var vfactor = 1;
+	for(var ii = 1; ii <= sizes.indexOf(unit.toUpperCase()); ii++) {
+		vfactor *= 1024;
+	}
+	
+	return Math.round(value * vfactor);
 }
 
 /**

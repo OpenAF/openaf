@@ -127,7 +127,10 @@ var nLinq = function(anObject) {
         if (aTmpl.indexOf("{ski}") >= 0) aTmpl = aTmpl.replace(/{ski}/g, ($$(aValue).isString() && !useCase ? "String(" : ""));
         if (aTmpl.indexOf("{eki}") >= 0) aTmpl = aTmpl.replace(/{eki}/g, ($$(aValue).isString() && !useCase ? ").toLowerCase()" : ""));
         if (isM) aTmpl = aTmpl.replace(/{k}/g, (!useDot ? "$$$$(r).get(" + JSON.stringify(aKey) + ")" : "r." + aKey)); else aTmpl = aTmpl.replace(/{k}/g, "r");
+        
+        if ($$(aValue).isString()) aValue = aValue.replace(/\$/g, "$$$");
         if ($$(aValue2).isDef()) {
+            if ($$(aValue2).isString()) aValue2 = aValue2.replace(/\$/g, "$$$");
             aValue2 = vValue(aValue2);
             aTmpl = aTmpl.replace(/{v}/g, aValue).replace(/{v2}/g, aValue2);
         } else {
