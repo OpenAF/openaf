@@ -958,11 +958,11 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		try {
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
 			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0); 
-			if (isDef(anException) && isDef(anException.javaException)) {
+			if (isDef(anException) && isDef(anException.javaException) && this.__ojob.logArgs) {
 				var ar = anException.javaException.getStackTrace();
-				execJob.error = [ String(anException.javaException) ];
-				for(var er in ar) { 
-					execJob.error.push(" at "+ ar[er]);
+		    		execJob.error = [ String(anException.javaException) ];
+			   	for(var er in ar) { 
+		 	      		execJob.error.push(" at "+ ar[er]);
 				}
 			} else {
 				execJob.error = String(anException);
@@ -1067,6 +1067,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		// Housekeeping
 		while (existing.log.length > this.__logLimit) existing.log.shift();
 
+                if (!this.__ojob.logArgs) delete existing.args;
 		this.getLogCh().set({ "ojobId": this.__id + aId, "name": aJobName }, existing);
 	}
 
@@ -1514,19 +1515,28 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						var useExt = true, recordError = true;
 						if (isDef(fint)) {
 							if (!fint(aValue, job, id, depInfo, e)) {
-								errors.push(stringify({ args: aValue, exception: e}));
+								if (parent.__ojob.logArgs) 
+   									errors.push(stringify({ args: aValue, exception: e}));
+								else
+									errors.push(stringify({ exception: e }));
 							}
 							recordError = false;
 							useExt = false;
 						}
 						if (isDef(fe) && useExt) {
 							if (!fe(aValue, job, id, depInfo, e)) {
-								errors.push(stringify({ args: aValue, exception: e}));
+								if (parent.__ojob.logArgs) 
+									errors.push(stringify({ args: aValue, exception: e}));
+								else
+									errors.push(stringify({ exception: e}));
 							}
 							recordError = false;
 						}
 						if (recordError) {
-							errors.push(stringify({ args: aValue, exception: e}));
+							if (parent.__ojob.logArgs)
+								errors.push(stringify({ args: aValue, exception: e}));
+							else	
+								errors.push(stringify({ exception: e}));
 						}
 					} finally {
 						return true;
@@ -1542,19 +1552,28 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						var useExt = true, recordError = true;
 						if (isDef(fint)) {
 							if (!fint(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
-								errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+								if (parent.__ojob.logArgs)
+									errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+								else
+									errors.push(stringify({ exception: e}));
 							}
 							recordError = false;
 							useExt = false;
 						}
 						if (isDef(fe) && useExt) {
 							if (!fe(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
-								errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+								if (parent.__ojob.logArgs)
+									errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+								else
+									errors.push(stringify({ exception: e}));
 							}
 							recordError = false;
 						}
 						if (recordError) {
-							errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+							if (parent.__ojob.logArgs)
+								errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+							else
+								errors.push(stringify({ exception: e}));
 						}
 					}
 				}
