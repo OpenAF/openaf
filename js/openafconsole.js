@@ -10,7 +10,7 @@ var CONSOLESEPARATOR = "-- ";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|view|sql|esql|dsql|pin|multi";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|view|sql|esql|dsql|pin|multi|diff";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "print(\"Encrypted text: \" + askEncrypt(\"Enter text: \"));",
