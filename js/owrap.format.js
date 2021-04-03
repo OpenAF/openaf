@@ -882,6 +882,9 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
   
 	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
   
+	if (isNull(aObj)) {
+        return null;
+    }
 	if (isMap(aObj)) {
 	   var pairs = [];
 	   Object.keys(aObj).forEach(r => {
