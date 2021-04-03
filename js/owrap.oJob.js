@@ -958,11 +958,11 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		try {
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
 			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0); 
-			if (isDef(anException) && isDef(anException.javaException)) {
+			if (isDef(anException) && isDef(anException.javaException) && this.__ojob.logArgs) {
 				var ar = anException.javaException.getStackTrace();
-				execJob.error = [ String(anException.javaException) ];
-				for(var er in ar) { 
-					execJob.error.push(" at "+ ar[er]);
+		    		execJob.error = [ String(anException.javaException) ];
+			   	for(var er in ar) { 
+		 	      		execJob.error.push(" at "+ ar[er]);
 				}
 			} else {
 				execJob.error = String(anException);
@@ -1067,6 +1067,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		// Housekeeping
 		while (existing.log.length > this.__logLimit) existing.log.shift();
 
+                if (!this.__ojob.logArgs) delete existing.args;
 		this.getLogCh().set({ "ojobId": this.__id + aId, "name": aJobName }, existing);
 	}
 
@@ -1514,19 +1515,28 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						var useExt = true, recordError = true;
 						if (isDef(fint)) {
 							if (!fint(aValue, job, id, depInfo, e)) {
-								errors.push(stringify({ args: aValue, exception: e}));
+								if (parent.__ojob.logArgs) 
+   									errors.push(stringify({ args: aValue, exception: e}));
+								else
+									errors.push(stringify({ exception: e }));
 							}
 							recordError = false;
 							useExt = false;
 						}
 						if (isDef(fe) && useExt) {
 							if (!fe(aValue, job, id, depInfo, e)) {
-								errors.push(stringify({ args: aValue, exception: e}));
+								if (parent.__ojob.logArgs) 
+									errors.push(stringify({ args: aValue, exception: e}));
+								else
+									errors.push(stringify({ exception: e}));
 							}
 							recordError = false;
 						}
 						if (recordError) {
-							errors.push(stringify({ args: aValue, exception: e}));
+							if (parent.__ojob.logArgs)
+								errors.push(stringify({ args: aValue, exception: e}));
+							else	
+								errors.push(stringify({ exception: e}));
 						}
 					} finally {
 						return true;
@@ -1542,19 +1552,28 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						var useExt = true, recordError = true;
 						if (isDef(fint)) {
 							if (!fint(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
-								errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+								if (parent.__ojob.logArgs)
+									errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+								else
+									errors.push(stringify({ exception: e}));
 							}
 							recordError = false;
 							useExt = false;
 						}
 						if (isDef(fe) && useExt) {
 							if (!fe(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
-								errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+								if (parent.__ojob.logArgs)
+									errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+								else
+									errors.push(stringify({ exception: e}));
 							}
 							recordError = false;
 						}
 						if (recordError) {
-							errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+							if (parent.__ojob.logArgs)
+								errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
+							else
+								errors.push(stringify({ exception: e}));
 						}
 					}
 				}
@@ -1892,7 +1911,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 					var prefix = "";
 					if (isString(aJobTypeArgs.shellPrefix)) {
-						prefix = ".prefix(\"" + aJobTypeArgs.shellPrefix + "\")";
+						prefix = ".prefix(objOrStr(args, \"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 					}
 					res += "var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh).putFile(ft, __uuid).sh(" + stringify(aJobTypeArgs.shell) + " + ' ' + __uuid)" + prefix + ".exit((r, s)=>s.rm(__uuid)).get(0); io.rm(ft);\n";
 					res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
@@ -1903,7 +1922,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				if (!(res.indexOf("/* __oaf_ojob shell */") >= 0)) {
 					var prefix = "";
 					if (isString(aJobTypeArgs.shellPrefix)) {
-						prefix = ".prefix(\"" + aJobTypeArgs.shellPrefix + "\")";
+						prefix = ".prefix(objOrStr(args, \"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 					}
 					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
 						var orig = String(res);
@@ -1951,7 +1970,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 							var orig = String(res);
 							var prefix = "";
 							if (isString(aJobTypeArgs.shellPrefix)) {
-								prefix = ".prefix(\"" + aJobTypeArgs.shellPrefix + "\")";
+								prefix = ".prefix(objOrStr(args, \"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 							}
                             res = "/* __oaf_ojob shell */ ";
 							if (aJobTypeArgs.noTemplate) {
@@ -2104,9 +2123,9 @@ OpenWrap.oJob.prototype.addTodo = function(aOJobID, aJobsCh, aTodoCh, aJobName, 
 
 /**
  * <ojob>
- * <key>ow.oJob.output(aObj, args, aFunc)</key>
+ * <key>ow.oJob.output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "yaml", "table", "map", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "yaml", "table", "map", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
@@ -2128,6 +2147,12 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  		case "json":
  			sprint(aObj, "");
  			break;
+		case "prettyjson":
+			sprint(aObj);
+			break;
+		case "slon":
+			print(ow.format.toSLON(aObj));
+			break;
  		case "yaml":
  			yprint(aObj);
  			break;

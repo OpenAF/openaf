@@ -2369,6 +2369,20 @@ function beep() {
 
 /**
  * <odoc>
+ * <key>objOrStr(aObj, aStr) : String</key>
+ * Given aObj (a map or an array) will try to assess if aStr is an aObj key (using $$.get).
+ * If yes, it will return the corresponding aObj value otherwise it will return aStr.
+ * </odoc>
+ */
+function objOrStr(aObj, aStr) {
+    if (!isMap(aObj) && !isArray(aObj)) return aStr;
+	var r = $$(aObj).get(aStr);
+	if (isUnDef(r)) r = aStr;
+	return r;
+}
+
+/**
+ * <odoc>
  * <key>watch(waitFor, aCommand, beautifyFlag, noPrint)</key>
  * Executes javascript aCommand provided every waitFor periods of time (expressed in ms). The screen
  * will be cleared and the execution will repeat indefinitely until the 'q' key is pressed. 

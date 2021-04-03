@@ -882,6 +882,9 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
   
 	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
   
+	if (isNull(aObj)) {
+        return null;
+    }
 	if (isMap(aObj)) {
 	   var pairs = [];
 	   Object.keys(aObj).forEach(r => {
@@ -897,7 +900,7 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	if (isDate(aObj)) {
 		return ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS');
 	}
-	if (!isMap(aObj) && !isArray(aObj)) return isString(aObj) ? dTheme.strQuote + aObj + dTheme.strQuote : aObj;
+	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) ? dTheme.strQuote + aObj + dTheme.strQuote : String(aObj));
   }
 
 /**
