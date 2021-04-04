@@ -1253,6 +1253,69 @@ OpenWrap.format.prototype.getPublicIP = function() {
 
 /**
  * <odoc>
+ * <key>ow.format.getTLSCertificates(aHost, aPort, withJava, aPath, aPass, aSoTimeout) : Array</key>
+ * Tries to retreive the TLS certificates from aHost, aPort (defaults to 443). Optionally if withJava=true the original certificate
+ * Java object will also be included. If the CA certificates is in a different location you can provide aPath and the corresponding aPass.
+ * Additionally you can specificy aSoTimeout (socket timeout in ms) which defaults to 10s.  
+ * </odoc>
+ */
+OpenWrap.format.prototype.getTLSCertificates = function(aHost, aPort, withJava, aPath, aPass, aSoTimeout) {
+    _$(aHost, "aHost").isString().$_();
+	aPort = _$(aPort, "aPort").isNumber().default(443);
+    aPath = _$(aPath, "aPath").isString().default(ow.format.getJavaHome() + "/lib/security/cacerts");
+	aPass = _$(aPass, "aPass").isString().default("changeit");
+	withJava = _$(withJava, "withJava").isBoolean().default(false);
+	aSoTimeout = _$(aSoTimeout, "aSoTimeout").isNumber().default(10000);
+
+    var context = javax.net.ssl.SSLContext.getInstance("TLS");
+    var tmf = javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+    var ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+    ks.load(io.readFileStream(aPath), (new java.lang.String(aPass)).toCharArray());
+    tmf.init(ks);
+    var defaultTrustManager = tmf.getTrustManagers()[0];
+    var cchain;
+    var tm = new JavaAdapter(javax.net.ssl.X509TrustManager, {
+      getAcceptedIssuers: function() {
+        return new java.security.cert.X509Certificate();
+      },
+      checkClientTrusted: function() {
+        throw new javax.net.ssl.UnsupportedOperationException();
+      },
+      checkServerTrusted: function(chain, authType) {
+        cchain = chain;
+        defaultTrustManager.checkServerTrusted(chain, authType);
+      }
+    });
+    context.init(null, [tm], null);
+    var factory = context.getSocketFactory();
+
+    var socket = factory.createSocket(aHost, aPort);
+    socket.setSoTimeout(aSoTimeout);
+    try {
+      socket.startHandshake();
+    } catch(e) {
+    }
+    socket.close();
+
+    var sres = af.fromJavaArray(cchain);
+    var res = sres.map(r => {
+	  var rr = {
+		issuerDN    : r.getIssuerDN(),
+		subjectDN   : r.getSubjectDN(),
+		notBefore   : new Date( r.getNotBefore().toGMTString() ),
+		notAfter    : new Date( r.getNotAfter().toGMTString() )
+	  };
+      if (withJava) rr.javaObj = r;
+	  if (!isNull(r.getSubjectAlternativeNames())) rr.alternatives = af.fromJavaArray( r.getSubjectAlternativeNames().toArray() ).map(af.fromJavaArray);
+ 
+	  return rr;
+    });
+    
+	return res;
+};
+
+/**
+ * <odoc>
  * <key>ow.format.testPublicPort(aPort) : Map</key>
  * Uses the functionality provided by http://ifconfig.co to return a map with the result of testing if aPort is within public 
  * reach from your apparent current public ip address. Please be aware of the request limits of the service (around 1 request
