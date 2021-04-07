@@ -2052,7 +2052,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			"args": (isDef(j.args) ? parent.__processArgs(j.args, jobArgs) : parent.__processArgs(jobArgs)),
 			"deps": (isDef(j.deps) && j.deps != null ? j.deps.concat(jobDeps) : jobDeps),
 			//"help": (isDef(j.help) ? j.help : "") + "\n" + jobHelp,
-			"help": johHelp,
+			"help": jobHelp,
 			"catch": jobCatch,
 			"from": jobFrom,
 			"to"  : jobTo,
