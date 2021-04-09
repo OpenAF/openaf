@@ -178,22 +178,22 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>9.4.33.v20201020</version>
+      <version>[9.4.39,)</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
-      <version>9.4.33.v20201020</version>
+      <version>[9.4.39,)</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
-      <version>9.4.33.v20201020</version>
+      <version>[9.4.39,)</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>9.4.33.v20201020</version>
+      <version>[9.4.39,)</version>
     </dependency>
     <dependency>
       <groupId>jline</groupId>
