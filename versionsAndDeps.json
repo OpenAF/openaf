@@ -233,7 +233,7 @@
 		},
 		{
 			"description": "Apache Commons HTTPComponents",
-			"path": ["lib/httpclient-4.5.13.jar", "lib/httpcore-4.4.13.jar", "lib/httpmime-4.5.13.jar"],
+			"path": ["lib/httpclient-4.5.13.jar", "lib/httpcore-4.4.14.jar", "lib/httpmime-4.5.13.jar"],
 			"version": "4.5.13",
 			"changes": false,
 			"type": ["java"],
@@ -251,8 +251,8 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.2.18.jar"],
-			"version": "42.2.18",
+			"path": ["lib/postgresql-42.2.19.jar"],
+			"version": "42.2.19",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -305,8 +305,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.11.3.jar"],
-			"version": "2.11.3",
+			"path": ["lib/jackson-core-2.12.2.jar"],
+			"version": "2.12.2",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",

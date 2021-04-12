@@ -4149,7 +4149,9 @@ OpenWrap.ch.prototype.server = {
 				}
 			});
 			if (res[0] != null) return res[0];
-		};
+		} else {
+			ow.ch.expose[aName] = [];
+		}
 
 		var hs;
 		var uuid = genUUID();
