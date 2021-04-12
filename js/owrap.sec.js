@@ -648,7 +648,7 @@ OpenWrap.sec.prototype.SBucket.prototype.getNewObj = function(sBucket, aLockSecr
        }
        margs.map(a => {
           var vv = (isDef(v._args[a]) ? v._args[a] : defaultArgs[a]);
-          if (vv == __) {
+          if (isUnDef(vv)) {
              ar.push("__");
           } else {
             if (isString(vv)) vv = stringify(vv, __, "");
