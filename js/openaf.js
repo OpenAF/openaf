@@ -2124,7 +2124,7 @@ function loadCompiled(aScript, dontCompile, dontLoad) {
 		var info = io.fileInfo(aScript);
 		if (info.isFile) {
             var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename)) + ".openaf_precompiled/";
-			if (info.filename.endsWith(".js")) {
+			if (info.filename.endsWith(".js") || info.filename.endsWith("_profile")) {
 				cl = info.filename.replace(/\./g, "_");
 				clFile = cl + ".class";
 				clFilepath = path + clFile;
@@ -8300,8 +8300,9 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 	try {
 		var fprof = java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE;
 		if (io.fileExists(fprof)) {
-			prof = io.readFileString(fprof);
-			af.compile(prof);
+			/*prof = io.readFileString(fprof);
+			af.compile(prof);*/
+			loadCompiled(fprof);
 		}
 	} catch(e) {
 		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
