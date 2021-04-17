@@ -2659,7 +2659,7 @@ function merge(aObjectA, aObjectB, alternative, deDup) {
 	}
 	if (__merge_alternative || alternative) {
 		var r = Object.assign({}, aObjectA);
-		if (isDef(aObjectB) && isMap(aObjectB)) {
+		if (isDef(aObjectB) && isMap(aObjectB) && !isNull(aObjectB)) {
 		  Object.keys(aObjectB).forEach(k => {
 			if (!isMap(aObjectB[k]) && !isArray(aObjectB[k])) {
 			  r[k] = aObjectB[k];
