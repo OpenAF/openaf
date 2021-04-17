@@ -1987,6 +1987,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 								res = "/* __oaf_ojob shellFn */ var code = " + stringify(res) + ";\n" + aJobTypeArgs.langFn;
 							}
 						}
+					} else {
+						logWarn("Language '" + aJobTypeArgs.lang + "' or shell or langFn not found in job '" + _aName + "'. Reverting to javascript.");
 					}
 				}
 			}
