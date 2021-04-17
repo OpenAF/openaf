@@ -5944,6 +5944,11 @@ function deleteFromArray(anArray, anIndex) {
 	return anArray;
 }
 
+// ****
+// oJob
+
+var OJOB_AUTHORIZEDDOMAINS = [ "ojob.io" ];
+
 /**
  * <odoc>
  * <key>oJobRunFile(aFile, args, aId, aOptionsMap, isSubJob)</key>

@@ -40,7 +40,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	if (isDef(ead) && ead != "null") 
 		this.authorizedDomains = String(ead).split(",");
 	else
-		this.authorizedDomains = (isDef(ow.oJob) && isDef(ow.oJob.authorizedDomains) ? ow.oJob.authorizedDomains : [ parent.__host, parent.__ip, "ojob.io" ]);
+		this.authorizedDomains = (isDef(ow.oJob) && isDef(ow.oJob.authorizedDomains) ? ow.oJob.authorizedDomains : OJOB_AUTHORIZEDDOMAINS);
 
 	addOnOpenAFShutdown(function() {
 		var fn = parent.shutdownFuncs.pop();
