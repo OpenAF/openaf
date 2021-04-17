@@ -825,7 +825,7 @@ OpenWrap.java.prototype.cipher.prototype.readKey4File = function(filename, isPri
  */
 OpenWrap.java.prototype.cipher.prototype.readKey4String = function(key, isPrivate, anAlgorithm) {
     var is = af.fromString2InputStream(key);
-    return this.readKey2Stream(is, key, isPrivate, anAlgorithm);
+    return this.readKey4Stream(is, isPrivate, anAlgorithm);
 };
 
 /**
