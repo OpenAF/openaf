@@ -750,30 +750,56 @@ OpenWrap.java.prototype.cipher.prototype.decrypt4Text = function(cipherText, pri
  * </odoc>
  */
 OpenWrap.java.prototype.cipher.prototype.saveKey2File = function(filename, key, isPrivate, anAlgorithm) {
-   _$(filename).isString().$_("Please provide a filename.");
-   _$(key).$_("Please provide the key to save.");
-   _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
-   anAlgorithm = _$(anAlgorithm).isString().default("RSA");
-
-   var keyFactory = java.security.KeyFactory.getInstance(anAlgorithm);
-   var spec;
-   if (isPrivate) {
-      spec = keyFactory.getKeySpec(key, af.getClass("java.security.spec." + anAlgorithm + "PrivateKeySpec"));
-   } else {
-      spec = keyFactory.getKeySpec(key, af.getClass("java.security.spec." + anAlgorithm + "PublicKeySpec"));
-   }
-   var modulus = spec.getModulus();
-   var exponent = (isPrivate ? spec.getPrivateExponent() : spec.getPublicExponent() );
-   var ostream = new java.io.ObjectOutputStream(new java.io.BufferedOutputStream(new Packages.org.apache.commons.codec.binary.Base64OutputStream(new java.io.FileOutputStream(filename))));
-   try {
-      ostream.writeObject(modulus);
-      ostream.writeObject(exponent);
-   } catch(e) {
-      sprintErr(e);
-   } finally {
-      ostream.close();
-   }
+    _$(filename).isString().$_("Please provide a filename.");
+    this.saveKey2Stream(new java.io.FileOutputStream(filename), key, isPrivate, anAlgorithm);
 };
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.saveKey2String(aKey, isPrivate, anAlgorithm) : String</key>
+ * Given a public or private aKey (from ow.java.cipher.readKey4File or genKeyPair) tries to return a string representation. If
+ * the aKey is private isPrivate must be true, if public is must be false.
+ * Optionally a key anAlgorithm can be provided (defaults to RSA).
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.saveKey2String = function(key, isPrivate, anAlgorithm) {
+    var os = af.fromString2OutputStream("");
+    this.saveKey2Stream(os, key, isPrivate, anAlgorithm);
+    return String(os.toString());
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.saveKey2Stream(aOutputStream, isPrivate, anAlgorithm) : String</key>
+ * Given a public or private aKey (from ow.java.cipher.readKey4File or genKeyPair) tries to return output to aOutputStream. If
+ * the aKey is private isPrivate must be true, if public is must be false.
+ * Optionally a key anAlgorithm can be provided (defaults to RSA).
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.saveKey2Stream = function(aOutputStream, key, isPrivate, anAlgorithm) {
+    _$(key).$_("Please provide the key to save.");
+    _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
+    anAlgorithm = _$(anAlgorithm).isString().default("RSA");
+ 
+    var keyFactory = java.security.KeyFactory.getInstance(anAlgorithm);
+    var spec;
+    if (isPrivate) {
+       spec = keyFactory.getKeySpec(key, af.getClass("java.security.spec." + anAlgorithm + "PrivateKeySpec"));
+    } else {
+       spec = keyFactory.getKeySpec(key, af.getClass("java.security.spec." + anAlgorithm + "PublicKeySpec"));
+    }
+    var modulus = spec.getModulus();
+    var exponent = (isPrivate ? spec.getPrivateExponent() : spec.getPublicExponent() );
+    var ostream = new java.io.ObjectOutputStream(new java.io.BufferedOutputStream(new Packages.org.apache.commons.codec.binary.Base64OutputStream(aOutputStream)));
+    try {
+       ostream.writeObject(modulus);
+       ostream.writeObject(exponent);
+    } catch(e) {
+       sprintErr(e);
+    } finally {
+       ostream.close();
+    }
+ };
 
 /**
  * <odoc>
@@ -785,27 +811,52 @@ OpenWrap.java.prototype.cipher.prototype.saveKey2File = function(filename, key, 
  */
 OpenWrap.java.prototype.cipher.prototype.readKey4File = function(filename, isPrivate, anAlgorithm) {
    _$(filename).isString().$_("Please provide a filename.");
-   _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
-   anAlgorithm = _$(anAlgorithm).isString().default("RSA");
 
-   var istream = new java.io.FileInputStream(filename);
-   var oistream = new java.io.ObjectInputStream(new java.io.BufferedInputStream(new Packages.org.apache.commons.codec.binary.Base64InputStream(istream)));
-   var key;
-   try {
-      var modulus = oistream.readObject();
-      var exponent = oistream.readObject();
-      var keyFactory = java.security.KeyFactory.getInstance(anAlgorithm);
-      if (!isPrivate) {
-         key = keyFactory.generatePublic(new java.security.spec[anAlgorithm + "PublicKeySpec"](modulus, exponent));
-      } else {
-         key = keyFactory.generatePrivate(new java.security.spec[anAlgorithm + "PrivateKeySpec"](modulus, exponent));
-      }
-   } catch(e) {
-      sprintErr(e);
-   } finally {
-      oistream.close();
-   }
-   return key;
+   return this.readKey4Stream(new java.io.FileInputStream(filename), isPrivate, anAlgorithm);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.readKey4String(aString, isPrivate, anAlgorithm) : Key</key>
+ * Given a key on aString previously saved with ow.java.cipher.saveKey2String returns the Key object to use with other functions.
+ * If the aKey is private isPrivate must be true, if public is must be false.
+ * Optionally a key anAlgorithm can be provided (defaults to RSA).
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.readKey4String = function(key, isPrivate, anAlgorithm) {
+    var is = af.fromString2InputStream(key);
+    return this.readKey4Stream(is, isPrivate, anAlgorithm);
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.readKey4Stream(aInputStream, isPrivate, anAlgorithm) : Key</key>
+ * Given a key on aInputStream previously saved with ow.java.cipher.saveKey2Stream returns the Key object to use with other functions.
+ * If the aKey is private isPrivate must be true, if public is must be false.
+ * Optionally a key anAlgorithm can be provided (defaults to RSA).
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.readKey4Stream = function(istream, isPrivate, anAlgorithm) {
+    _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.");
+    anAlgorithm = _$(anAlgorithm).isString().default("RSA");
+
+    var oistream = new java.io.ObjectInputStream(new java.io.BufferedInputStream(new Packages.org.apache.commons.codec.binary.Base64InputStream(istream)));
+    var key;
+    try {
+       var modulus = oistream.readObject();
+       var exponent = oistream.readObject();
+       var keyFactory = java.security.KeyFactory.getInstance(anAlgorithm);
+       if (!isPrivate) {
+          key = keyFactory.generatePublic(new java.security.spec[anAlgorithm + "PublicKeySpec"](modulus, exponent));
+       } else {
+          key = keyFactory.generatePrivate(new java.security.spec[anAlgorithm + "PrivateKeySpec"](modulus, exponent));
+       }
+    } catch(e) {
+       sprintErr(e);
+    } finally {
+       oistream.close();
+    }
+    return key;
 };
 
 /**
