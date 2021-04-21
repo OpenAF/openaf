@@ -1349,6 +1349,26 @@ OpenWrap.format.prototype.getOS = function() {
 
 /**
  * <odoc>
+ * <key>ow.format.getOSArch() : String</key>
+ * Returns the current operating system architecture string.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getOSArch = function() {
+	return String(java.lang.System.getProperty("os.arch"));
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.getOSVersion() : String</key>
+ * Returns the current operating system version string.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getOSVersion = function() {
+	return String(java.lang.System.getProperty("os.version"));
+};
+
+/**
+ * <odoc>
  * <key>ow.format.getCurrentDirectory() : String</key>
  * Returns the current working directory.
  * </odoc>
