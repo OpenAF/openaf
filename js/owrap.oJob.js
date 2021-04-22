@@ -993,7 +993,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			if (isUnDef(__conAnsi)) __initializeCon();
 			var ansis = __conAnsi && (java.lang.System.console() != null);
 			try {
-				var s = "", ss = "", sn = "";
+				var s = "", ss = "", sn = "", se = "";
 				var w = (isDef(__con)) ? __con.getTerminal().getWidth() : this.__conWidth;
 				var jansi = JavaImporter(Packages.org.fusesource.jansi);
 				
@@ -1003,7 +1003,8 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					s  = repeat(w, '─');
 					ss = repeat(w, '═');
 					se = repeat(w, '*');
-					sn = "";
+					//sn = "";
+					sn = String( jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) );
 				} else {
 					s  = repeat(this.__conWidth, '-');
 					ss = repeat(this.__conWidth, '=');
@@ -1060,7 +1061,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			} catch(e) { 
 				logErr(e); 
 			} finally { 
-				if (this.__ojob.logToConsole && ansis) ansiStop();
+				//if (this.__ojob.logToConsole && ansis) ansiStop();
 			}
 		};
 
@@ -1123,6 +1124,8 @@ OpenWrap.oJob.prototype.stop = function() {
 		this.oJobShouldStop = true;
 		this.running = false;
 		//stopLog();
+
+		if (this.__ojob.logToConsole && ansis) ansiStop();
 	}
 };
 
