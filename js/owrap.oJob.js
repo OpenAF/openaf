@@ -54,7 +54,7 @@ OpenWrap.oJob = function(isNonLocal) {
 		ow.loadServer(); 
 		parent.__sch = new ow.server.scheduler();
 	//}));
-	//this.__promises.push($do(() => {
+	//this.__promises.push($do(() => { 
 		ow.loadFormat();
 		plugin("Threads");
 	//}));
@@ -981,6 +981,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 	}
 
 	if (isDef(existing)) {
+		var ansis = false;
 		if (this.__ojob.logToConsole || this.__ojob.logToFile || isDef(getChLog())) {
 			var aa = "";
 			if (isDef(args) && this.__ojob.logArgs) {
@@ -991,7 +992,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			}
 
 			if (isUnDef(__conAnsi)) __initializeCon();
-			var ansis = __conAnsi && (java.lang.System.console() != null);
+			ansis = __conAnsi && (java.lang.System.console() != null);
 			try {
 				var s = "", ss = "", sn = "", se = "";
 				var w = (isDef(__con)) ? __con.getTerminal().getWidth() : this.__conWidth;
@@ -1031,9 +1032,9 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				};
 
 				var _e = function(m) { 
-					return ansis ? 
+					return String(ansis ? 
 							jansi.Ansi.ansi().bold().fg(jansi.Ansi.Color.RED).a(m).a(jansi.Ansi.Attribute.RESET) 
-							: m; 
+							: m); 
 				};
 
 				if (existing.name != 'oJob Log') {
