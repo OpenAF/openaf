@@ -1120,7 +1120,9 @@ OpenWrap.java.prototype.gc = function() {
  * </odoc>
  */
 OpenWrap.java.prototype.getAddressType = function(aTxt) {
-    var res ={
+    ow.loadNet();
+    return ow.net.getAddressType(aTxt);
+    /*var res ={
         isValidAddress: true,
         hostname: true,
         ipv4: false,
@@ -1153,7 +1155,7 @@ OpenWrap.java.prototype.getAddressType = function(aTxt) {
        res.hostname = false;
     }
  
-    return res;
+    return res;*/
 };
 
 /**
@@ -1163,7 +1165,9 @@ OpenWrap.java.prototype.getAddressType = function(aTxt) {
  * </odoc>
  */
 OpenWrap.java.prototype.getHost2IP = function(aName) {
-    return String(java.net.InetAddress.getByName(aName).getHostAddress());
+    ow.loadNet();
+    return ow.net.getHost2IP(aName);
+    //return String(java.net.InetAddress.getByName(aName).getHostAddress());
 };
 
 /**
@@ -1173,7 +1177,9 @@ OpenWrap.java.prototype.getHost2IP = function(aName) {
  * </odoc>
  */
 OpenWrap.java.prototype.getIP2Host = function(aIP) {
-    return String(java.net.InetAddress.getByName(aIP).getCanonicalHostName());
+    ow.loadNet();
+    return ow.net.getIP2Host(aIP);
+    //return String(java.net.InetAddress.getByName(aIP).getCanonicalHostName());
 };
 
 /**
@@ -1236,7 +1242,9 @@ OpenWrap.java.prototype.getClassVersion = function(aClassBytes) {
  * </odoc>
  */
 OpenWrap.java.prototype.getWhoIs = function(aQuery, server) {
-    var ws = new Packages.org.apache.commons.net.whois.WhoisClient();
+    ow.loadNet();
+    return this.getWhoIs(aQuery, server);
+    /*var ws = new Packages.org.apache.commons.net.whois.WhoisClient();
     server = _$(server).isString().default("whois.iana.org");
 
     ws.connect(server);
@@ -1290,7 +1298,7 @@ OpenWrap.java.prototype.getWhoIs = function(aQuery, server) {
 
     if (isDef(result.whois) && result.whois != server) result = ow.java.getWhoIs(aQuery, result.whois);
 
-    return result;
+    return result;*/
 };
 
 /**

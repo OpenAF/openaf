@@ -3882,6 +3882,13 @@ const ow = new OpenWrap();
 OpenWrap.prototype.loadDev = function() { loadCompiledLib("owrap_dev_js"); if (isUnDef(ow.dev)) { ow.dev = new OpenWrap.dev(); pods.declare("ow.dev", ow.dev); }; return ow.dev; };
 /**
  * <odoc>
+ * <key>ow.loadNet()</key>
+ * Loads OpenWrap net functionality. Basically functions for net.
+ * </odoc>
+ */
+OpenWrap.prototype.loadNet = function() { loadCompiledLib("owrap_net_js"); if (isUnDef(ow.net)) { ow.net = new OpenWrap.net(); pods.declare("ow.net", ow.net); }; return ow.net; };
+/**
+ * <odoc>
  * <key>ow.loadSec()</key>
  * Loads OpenWrap sec functionality. Basically functions for sec.
  * </odoc>
