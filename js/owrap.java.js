@@ -1243,7 +1243,7 @@ OpenWrap.java.prototype.getClassVersion = function(aClassBytes) {
  */
 OpenWrap.java.prototype.getWhoIs = function(aQuery, server) {
     ow.loadNet();
-    return this.getWhoIs(aQuery, server);
+    return ow.net.getWhoIs(aQuery, server);
     /*var ws = new Packages.org.apache.commons.net.whois.WhoisClient();
     server = _$(server).isString().default("whois.iana.org");
 
@@ -1281,9 +1281,9 @@ OpenWrap.java.prototype.getWhoIs = function(aQuery, server) {
                 capture = false;
             }
             if (key == "remarks") capture = false;
-            if (key.indexOf(">>>") >= 0 && value.indexOf("<<<") >= 0) {
-                key = key.replace(/>>>\s*/, "");
-                value = value.replace(/\s*<<</, "");
+            if (key.indexOf(">>>") >= 0 && value.indexOf("<<<") >= 0) {*/
+                //key = key.replace(/>>>\s*/, "");
+                /*value = value.replace(/\s*<<</, "");
                 preend = true;
             }
 
