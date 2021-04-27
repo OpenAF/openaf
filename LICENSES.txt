@@ -690,7 +690,7 @@ Creative Commons Notice
 
 -----------------------
 Third-party name      : ajv
-Version               : 6.12.4
+Version               : 8.1.0
 Changed from original : No
 Location in openaf.jar: js/ajv.js
 License               : 
