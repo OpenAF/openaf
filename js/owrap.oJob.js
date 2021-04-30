@@ -992,7 +992,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			}
 
 			if (isUnDef(__conAnsi)) __initializeCon();
-			ansis = __conAnsi && (java.lang.System.console() != null);
+			ansis = Boolean(__conAnsi && (java.lang.System.console() != null));
 			try {
 				var s = "", ss = "", sn = "", se = "";
 				var w = (isDef(__con)) ? __con.getTerminal().getWidth() : this.__conWidth;
