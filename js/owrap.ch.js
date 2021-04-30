@@ -1436,10 +1436,11 @@ OpenWrap.ch.prototype.__types = {
 	 * This OpenAF implementation connects to an ElasticSearch (ES) server/cluster. The creation options are:\
 	 * \
 	 *    - index (String/Function) The ES index to use or a function to return the name (see also ow.ch.utils.getElasticIndex).\
-	 *    - idKey (String) The ES key id field. Defaults to '_id'.\
-	 *    - url (String) The HTTP(S) URL to access the ES server/cluster.\
-	 *    - user (String) Optionally provide a user name to access the ES server/cluster.\
-	 *    - pass (String) Optionally provide a password to access the ES server/cluster (encrypted or not).\
+	 *    - idKey (String)          The ES key id field. Defaults to '_id'.\
+	 *    - url   (String)          The HTTP(S) URL to access the ES server/cluster.\
+	 *    - user  (String)          Optionally provide a user name to access the ES server/cluster.\
+	 *    - pass  (String)          Optionally provide a password to access the ES server/cluster (encrypted or not).\
+	 *    - fnId  (Function)        Optionally called on every operation to calculate the idKey with the key provided as argument.\
 	 * \
 	 * The getAll/getKeys functions accept an extra argument to provide a ES query map to restrict the results.
 	 * </odoc>
@@ -1461,6 +1462,18 @@ OpenWrap.ch.prototype.__types = {
 				this.__channels[aName].fnIndex = function() {
 					return options.index;
 				}
+			}
+
+			if (isFunction(options.fnId)) {
+				this.__channels[aName]._fnId = aK => {
+					if (isMap(aK) && Object.keys(aK).length == 1 && isDef(aK.key)) return aK;
+					if (isMap(aK) && isDef(aK[options.idKey])) return aK;
+					var r = {};
+					r[options.idKey] = (isString(aK) ? aK : options.fnId(aK));
+					return r;
+				}
+			} else {
+				this.__channels[aName]._fnId = aK => aK;
 			}
 		},
 		destroy      : function(aName) {
@@ -1557,6 +1570,8 @@ OpenWrap.ch.prototype.__types = {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			url += "/" + this.__channels[aName].idKey;
 			
+			aK = this.__channels[aName]._fnId(aK);
+
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
 				url += "/" + encodeURIComponent(aK[this.__channels[aName].idKey]);
 			} else {
@@ -1581,13 +1596,15 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(aVs) && isArray(aVs) && aVs.length <= 0) return;
 
 			for(var ii in aVs) {
-				if (aVs[ii] != null && isDef(aVs[ii][this.__channels[aName].idKey])) {
+				var ks = (isDef(aKs) ? ow.obj.filterKeys(aKs, aVs[ii]) : aVs[ii]);
+				var k = this.__channels[aName]._fnId(ks);
+				if (aVs[ii] != null && isDef(k[this.__channels[aName].idKey])) {
 					ops += stringify({ index: {
-						_index: this.__channels[aName].fnIndex(aKs[ii]), 
+						_index: this.__channels[aName].fnIndex(aVs[ii]), 
 						_type : this.__channels[aName].idKey,
-						_id   : aVs[ii][this.__channels[aName].idKey] 
-					}}, __, "") + "\n" + 
-					stringify(aVs[ii], __, "") + "\n";
+						_id   : k[this.__channels[aName].idKey] 
+					}}, __, "") + "\n" /*+ 
+					stringify(aVs[ii], __, "") + "\n";*/
 				}
 			}
 			
@@ -1597,13 +1614,14 @@ OpenWrap.ch.prototype.__types = {
 				try {
 					//return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
 					var parent = this;
-					return $rest({
+					var res = $rest({
 						login: function(h) { 
 							if (isDef(parent.__channels[aName].user))
 								h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 						},
 						preAction: this.__channels[aName].preAction
 					}).post(url, ops);
+					if (isMap(res) && isDef(res.response)) return jsonParse(res.response); else return res;
 				} catch(e) {
 					e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 					throw e;
@@ -1614,17 +1632,18 @@ OpenWrap.ch.prototype.__types = {
 			var url = this.__channels[aName].url;
 			url += "/_bulk";
 			var ops = "";
-			
 			if (isDef(aVs) && isArray(aVs) && aVs.length <= 0) return;
 
 			for(var ii in aVs) {
-				if (aVs[ii] != null && isDef(aVs[ii][this.__channels[aName].idKey])) {
+				var ks = (isDef(aKs) ? ow.obj.filterKeys(aKs, aVs[ii]) : aVs[ii]);
+				var k = this.__channels[aName]._fnId(ks);
+				if (aVs[ii] != null && isDef(k[this.__channels[aName].idKey])) {
 					ops += stringify({ delete: {
-						_index: this.__channels[aName].fnIndex(aKs[ii]), 
+						_index: this.__channels[aName].fnIndex(aVs[ii]), 
 						_type : this.__channels[aName].idKey,
-						_id   : aVs[ii][this.__channels[aName].idKey] 
-					}}, __, "") + "\n" + 
-					stringify(aVs[ii], __, "") + "\n";
+						_id   : k[this.__channels[aName].idKey] 
+					}}, __, "") + "\n" /*+ 
+					stringify(k, __, "") + "\n";*/
 				}
 			}
 			
@@ -1634,7 +1653,8 @@ OpenWrap.ch.prototype.__types = {
 				if (isDef(this.__channels[aName].user))
 					h.login(this.__channels[aName].user, this.__channels[aName].pass, true);
 				try {
-					return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
+					var res = h.exec(url, "POST", ops, {"Content-Type":"application/json"});
+					if (isMap(res) && isDef(res.response)) return jsonParse(res.response); else return res;
 				} catch(e) {
 					e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 					throw e;
@@ -1645,6 +1665,7 @@ OpenWrap.ch.prototype.__types = {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			url += "/" + this.__channels[aName].idKey;
 			
+			aK = this.__channels[aName]._fnId(aK);
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
 				url += "/" + encodeURIComponent(aK[this.__channels[aName].idKey]);
 			} else {
@@ -1685,6 +1706,7 @@ OpenWrap.ch.prototype.__types = {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			url += "/" + this.__channels[aName].idKey;
 			
+			aK = this.__channels[aName]._fnId(aK);
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
 				url += "/" + encodeURIComponent(aK[this.__channels[aName].idKey]);
 			} else {
