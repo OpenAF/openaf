@@ -1603,8 +1603,8 @@ OpenWrap.ch.prototype.__types = {
 						_index: this.__channels[aName].fnIndex(aVs[ii]), 
 						_type : this.__channels[aName].idKey,
 						_id   : k[this.__channels[aName].idKey] 
-					}}, __, "") + "\n" /*+ 
-					stringify(aVs[ii], __, "") + "\n";*/
+					}}, __, "") + "\n" + 
+					stringify(aVs[ii], __, "") + "\n";
 				}
 			}
 			
