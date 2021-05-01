@@ -59,7 +59,7 @@
 			"version": "6.12.4",
 			"changes": false,
 			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/epoberezkin/ajv/master/LICENSE",
+			"license": "https://raw.githubusercontent.com/ajv-validator/ajv/master/LICENSE",
 			"deps": []
 		},
 		{
@@ -251,8 +251,8 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.2.19.jar"],
-			"version": "42.2.19",
+			"path": ["lib/postgresql-42.2.20.jar"],
+			"version": "42.2.20",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -305,8 +305,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.12.2.jar"],
-			"version": "2.12.2",
+			"path": ["lib/jackson-core-2.12.3.jar"],
+			"version": "2.12.3",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",

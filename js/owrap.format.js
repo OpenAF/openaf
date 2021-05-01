@@ -917,6 +917,19 @@ OpenWrap.format.prototype.round = function(number, digits) {
     return number.toFixed(digits);
 }
 
+OpenWrap.format.prototype.toBase64 = function(aString) { return af.fromBytes2String(af.toBase64Bytes(aString)); }
+OpenWrap.format.prototype.fromBase64 = function(aString) { return af.fromBytes2String(af.fromBase64(aString)); }
+OpenWrap.format.prototype.md5  = md5;
+OpenWrap.format.prototype.sha1 = sha1;
+OpenWrap.format.prototype.sha256 = sha256;
+OpenWrap.format.prototype.sha512 = sha512;
+OpenWrap.format.prototype.toBoolean = toBoolean;
+OpenWrap.format.prototype.now = now;
+OpenWrap.format.prototype.nowUTC = nowUTC;
+OpenWrap.format.prototype.nowNano = nowNano;
+OpenWrap.format.prototype.hmacSHA256 = hmacSHA256;
+OpenWrap.format.prototype.hmacSHA512 = hmacSHA512;
+
 /**
  * <odoc>
  * <key>ow.format.timeago(aDate) : String</key>
@@ -1006,17 +1019,8 @@ OpenWrap.format.prototype.toWedoDate = function(aStringDate, aFormat) {
  * </odoc>
  */
 OpenWrap.format.prototype.getActualTime = function(useAlternative) {
-	plugin("HTTP");
-
-	if (useAlternative) {
-		//var h = ow.loadObj();
-		//return new Date(ow.obj.rest.jsonGet("http://now.httpbin.org").now.epoch * 1000);
-		return new Date((1000 * ($rest().get("http://worldclockapi.com/api/json/utc/now").currentFileTime / 10000000 - 11644473600)));
-	} else {
-		//plugin("XML");
-		//return new Date((new XML((new HTTP("https://nist.time.gov/actualtime.cgi")).response())).get("@time")/1000);
-		return new Date($rest().get("https://worldtimeapi.org/api/ip").unixtime * 1000);
-	}
+	ow.loadNet();
+	return ow.net.getActualTime(useAlternative);
 }
 
 /**
@@ -1244,11 +1248,13 @@ OpenWrap.format.prototype.escapeString = function(str, except) {
  * <key>ow.format.getPublicIP() : Map</key>
  * Uses the functionality provided by http://ifconfig.co to return a map with the apparent current public ip address,
  * public hostname and a guess of country and city. Please be aware of the request limits of the service (around 1 request
- * per minute).
+ * per minute).s
  * </odoc>
  */
 OpenWrap.format.prototype.getPublicIP = function() {
-	return $rest().get("https://ifconfig.co/json");
+	ow.loadNet();
+	return ow.net.getPublicIP();
+	//return $rest().get("https://ifconfig.co/json");
 };
 
 /**
@@ -1260,7 +1266,9 @@ OpenWrap.format.prototype.getPublicIP = function() {
  * </odoc>
  */
 OpenWrap.format.prototype.getTLSCertificates = function(aHost, aPort, withJava, aPath, aPass, aSoTimeout) {
-    _$(aHost, "aHost").isString().$_();
+	ow.loadNet();
+	return ow.net.getTLSCertificates(aHost, aPort, withJava, aPath, aPass, aSoTimeout);
+    /*_$(aHost, "aHost").isString().$_();
 	aPort = _$(aPort, "aPort").isNumber().default(443);
     aPath = _$(aPath, "aPath").isString().default(ow.format.getJavaHome() + "/lib/security/cacerts");
 	aPass = _$(aPass, "aPass").isString().default("changeit");
@@ -1311,7 +1319,7 @@ OpenWrap.format.prototype.getTLSCertificates = function(aHost, aPort, withJava, 
 	  return rr;
     });
     
-	return res;
+	return res;*/
 };
 
 /**
@@ -1323,8 +1331,10 @@ OpenWrap.format.prototype.getTLSCertificates = function(aHost, aPort, withJava, 
  * </odoc>
  */
 OpenWrap.format.prototype.testPublicPort = function(aPort) {
-	plugin("HTTP");
-	return JSON.parse((new HTTP("http://ifconfig.co/port/" + String(aPort))).response());
+	ow.loadNet();
+	return ow.net.testPublicPort(aPort);
+	/*plugin("HTTP");
+	return JSON.parse((new HTTP("http://ifconfig.co/port/" + String(aPort))).response());*/
 };
 
 /**
@@ -1414,7 +1424,9 @@ OpenWrap.format.prototype.getClasspath = function() {
  * </odoc>
  */
 OpenWrap.format.prototype.getHostName = function() {
-	return String(java.net.InetAddress.getLocalHost().getHostName());
+	ow.loadNet();
+	return ow.net.getHostName();
+	//return String(java.net.InetAddress.getLocalHost().getHostName());
 };
 
 /**
@@ -1424,7 +1436,9 @@ OpenWrap.format.prototype.getHostName = function() {
  * </odoc>
  */
 OpenWrap.format.prototype.getHostAddress = function() {
-	return String(java.net.InetAddress.getLocalHost().getHostAddress());
+	ow.loadNet();
+	return ow.net.getHostAddress();
+	//return String(java.net.InetAddress.getLocalHost().getHostAddress());
 };
 
 /**
@@ -1435,7 +1449,9 @@ OpenWrap.format.prototype.getHostAddress = function() {
  * </odoc>
  */
 OpenWrap.format.prototype.testHost = function(aAddress, aTimeout) {
-	_$(aAddress, "address").isString().$_();
+	ow.loadNet();
+	return ow.net.testHost(aAddress, aTimeout);
+	/*_$(aAddress, "address").isString().$_();
 	aTimeout = _$(aTimeout, "timeout").isNumber().default(4000);
 	
 	var init = now();
@@ -1445,7 +1461,7 @@ OpenWrap.format.prototype.testHost = function(aAddress, aTimeout) {
 	return { 
 	  time: lat,
 	  reachable: res
-	};
+	};*/
 };
 
 /**
@@ -1457,7 +1473,9 @@ OpenWrap.format.prototype.testHost = function(aAddress, aTimeout) {
  * </odoc>
  */
 OpenWrap.format.prototype.testPort = function(aAddress, aPort, aCustomTimeout) {
-    if (isUnDef(aCustomTimeout)) aCustomTimeout = 1500;
+	ow.loadNet();
+	return ow.net.testPort(aAddress, aPort, aCustomTimeout);
+    /*if (isUnDef(aCustomTimeout)) aCustomTimeout = 1500;
 
     try {
         var s = new java.net.Socket();
@@ -1466,7 +1484,7 @@ OpenWrap.format.prototype.testPort = function(aAddress, aPort, aCustomTimeout) {
         return true;
     } catch(e) {
         return false;
-    }
+    }*/
 };
 
 /**
@@ -1478,7 +1496,9 @@ OpenWrap.format.prototype.testPort = function(aAddress, aPort, aCustomTimeout) {
  * </odoc>
  */
 OpenWrap.format.prototype.testPortLatency = function(aHost, aPort, aCustomTimeout) {
-	aCustomTimeout = _$(aCustomTimeout).isNumber().default(60000);
+	ow.loadNet();
+	return ow.net.testPortLatency(aHost, aPort, aCustomTimeout);
+	/*aCustomTimeout = _$(aCustomTimeout).isNumber().default(60000);
 	var sock  = new java.net.Socket();
 	var iaddr = new java.net.InetSocketAddress(aHost, aPort);
 
@@ -1492,7 +1512,7 @@ OpenWrap.format.prototype.testPortLatency = function(aHost, aPort, aCustomTimeou
 		sock.close();
 	}
 
-	return latency;
+	return latency;*/
 };
 
 /**
@@ -1503,7 +1523,9 @@ OpenWrap.format.prototype.testPortLatency = function(aHost, aPort, aCustomTimeou
  * </odoc>
  */
 OpenWrap.format.prototype.testURLLatency = function(aURL, aCustomTimeout) {
-	ow.loadObj();
+	ow.loadNet();
+	return ow.net.testURLLatency(aURL, aCustomTimeout);
+	/*ow.loadObj();
 
 	var hc = new ow.obj.http();
 	hc.setThrowExceptions(true);
@@ -1515,7 +1537,7 @@ OpenWrap.format.prototype.testURLLatency = function(aURL, aCustomTimeout) {
 		latency = -1;
 	}
 
-	return latency;
+	return latency;*/
 };
 
 /**
@@ -2381,7 +2403,9 @@ OpenWrap.format.prototype.xls = {
  * </odoc>
  */
 OpenWrap.format.prototype.getDoH = function(aName, aType, aProvider) {
-	aProvider = _$(aProvider).default("cloudflare");
+	ow.loadNet();
+	return ow.net.getDoH(aName, aType, aProvider);
+	/*aProvider = _$(aProvider).default("cloudflare");
  
 	switch (aProvider) {
 	   case "google":
@@ -2406,7 +2430,7 @@ OpenWrap.format.prototype.getDoH = function(aName, aType, aProvider) {
 		  else return __;
 	   default:
 		  break;
-	}
+	}*/
 }
 
 /**
@@ -2416,7 +2440,9 @@ OpenWrap.format.prototype.getDoH = function(aName, aType, aProvider) {
  * </odoc>
  */
 OpenWrap.format.prototype.getReverseDoH = function(tIP, aProvider) {
-	var aIP = tIP, isV6 = false;
+	ow.loadNet();
+	return ow.net.getReverseDoH(tIP, aProvider);
+	/*var aIP = tIP, isV6 = false;
 	if (tIP.match(/:/)) {
 		ow.loadFormat();
 		isV6 = true;
@@ -2428,7 +2454,7 @@ OpenWrap.format.prototype.getReverseDoH = function(tIP, aProvider) {
 		aIP = String(tIP).split(/\./).reverse().join(".");
 	}
 
-	return this.getDoH(aIP + (isV6 ? ".ip6" : ".in-addr") + ".arpa", "ptr");
+	return this.getDoH(aIP + (isV6 ? ".ip6" : ".in-addr") + ".arpa", "ptr");*/
 }
 
 //loadLib(getOpenAFJar() + "::js/later.js");

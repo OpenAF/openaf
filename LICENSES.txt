@@ -3593,9 +3593,9 @@ License               :
 Check https://www.oracle.com/webapps/maven/register/license.html
 -----------------------
 Third-party name      : PostgreSQL JDBC
-Version               : 42.2.19
+Version               : 42.2.20
 Changed from original : No
-Location in openaf.jar: lib/postgresql-42.2.19.jar
+Location in openaf.jar: lib/postgresql-42.2.20.jar
 License               : 
 
 Check https://www.postgresql.org/about/licence/
@@ -4217,9 +4217,9 @@ License               :
 
 -----------------------
 Third-party name      : Jackson Core
-Version               : 2.12.2
+Version               : 2.12.3
 Changed from original : No
-Location in openaf.jar: lib/jackson-core-2.12.2.jar
+Location in openaf.jar: lib/jackson-core-2.12.3.jar
 License               : 
 
 
