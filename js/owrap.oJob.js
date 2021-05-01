@@ -1126,7 +1126,7 @@ OpenWrap.oJob.prototype.stop = function() {
 		this.running = false;
 		//stopLog();
 
-		if (this.__ojob.logToConsole && ansis) ansiStop();
+		if (this.__ojob.logToConsole && Boolean(__conAnsi && (java.lang.System.console() != null))) ansiStop();
 	}
 };
 

@@ -20,7 +20,8 @@ OpenWrap.metrics.prototype.__m = {
         load1 : java.lang.System.getProperty("os.name").indexOf("Windows") < 0 ? getCPULoad() : "n/a",
         load2 : java.lang.System.getProperty("os.name").indexOf("Windows") < 0 ? getCPULoad(true) : "n/a",
         cores : getNumberOfCores(),
-        _cores: __cpucores
+        _cores: __cpucores,
+        arch  : String(java.lang.System.getProperty("os.arch"))
     }),
     oaf: () => {
         var res = {
@@ -29,6 +30,7 @@ OpenWrap.metrics.prototype.__m = {
             nscopes: af.getScopeIds().length,
             preCompileLevel: __preCompileLevel,
             version: getVersion(),
+            dist   : getDistribution(),
             path   : getOpenAFPath(),
             java   : String(java.lang.System.getProperty("java.version")),
             javapath: String(java.lang.System.getProperty("java.home")),
@@ -95,6 +97,7 @@ OpenWrap.metrics.prototype.__m = {
     os: () => ({
         pid    : getPid(),
         name   : String(java.lang.System.getProperty("os.name")),
+        version: String(java.lang.System.getProperty("os.version")),
         host   : String(java.net.InetAddress.getLocalHost().getHostName()),
         ip     : String(java.net.InetAddress.getLocalHost().getHostAddress())
     }),
