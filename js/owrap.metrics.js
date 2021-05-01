@@ -188,12 +188,13 @@ OpenWrap.metrics.prototype.startCollecting = function(aChName, aPeriod, aSome) {
         plugin("Threads");
         ow.metrics.__t = new Threads();
         ow.metrics.__t.addScheduleThreadWithFixedDelay(function() {
-            var k = { t: now() };
+            var dd = now();
+            var k = { t: dd, d: new Date(dd) };
             var v;
-            if(isArray(aSome))
-               v = merge(k, ow.metrics.getSome(aSome)); 
+            if (isArray(aSome))
+                v = merge(k, ow.metrics.getSome(aSome)); 
             else
-	       v = merge(k, ow.metrics.getAll());
+	            v = merge(k, ow.metrics.getAll());
     
             ow.metrics.__ch.map(ch => {
                 $ch(ch).set(k, v);
