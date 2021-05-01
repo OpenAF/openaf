@@ -211,10 +211,15 @@ OpenWrap.metrics.prototype.startCollecting = function(aChName, aPeriod, aSome) {
  * </odoc>
  */
 OpenWrap.metrics.prototype.stopCollecting = function(aChName) {
-    aChName = _$(aChName).isString().default("__metrics");
-    if (ow.metrics.__ch.indexOf(aChName) < 0) throw "Not collecting into " + aChName;
+    aChName = _$(aChName).isString().default(__);
+    if (isDef(aChName) && ow.metrics.__ch.indexOf(aChName) < 0) throw "Not collecting into " + aChName;
 
-    ow.metrics.__ch = deleteFromArray(ow.metrics.__ch, ow.metrics.__ch.indexOf(aChName));
+    if (isDef(aChName)) {
+        ow.metrics.__ch = deleteFromArray(ow.metrics.__ch, ow.metrics.__ch.indexOf(aChName));
+    } else {
+        ow.metrics.__ch = [];
+    }
+
     if (isDef(ow.metrics.__t) && ow.metrics.__ch.length <= 0) {
         ow.metrics.__t.stop(true);
         ow.metrics.__t = __;
