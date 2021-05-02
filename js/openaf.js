@@ -955,7 +955,9 @@ function colorify(json) {
 	});
 };
 
-__JSON_unsafe = true;
+__JSONformat = {
+  unsafe: true
+};
 /**
  * <odoc>
  * <key>jsonParse(aString) : Map</key>
@@ -971,7 +973,7 @@ function jsonParse(astring, alternative, unsafe) {
 			} else {
 				a = JSON.parse(astring);
 			}
-                        if (__JSON_unsafe && unsafe) {
+                        if (__JSONformat.unsafe && unsafe) {
                      		traverse(a, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
                         }
 			return a;
@@ -6165,9 +6167,12 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 	return res;
 };
 
-__YAML_indent = 2;
-__YAML_arrayIndent = false;
-__YAML_lineWidth = -1;
+__YAMLformat = {
+  indent: 2,
+  arrayIndent: false,
+  lineWidth: -1,
+  unsafe: true
+};
 /**
  * <odoc>
  * <key>AF.toYAML(aJson, multiDoc) : String</key>
@@ -6176,7 +6181,7 @@ __YAML_lineWidth = -1;
  */
 AF.prototype.toYAML = function(aJson, multiDoc) { 
 	loadJSYAML(); 
-        var o = { indent: __YAML_indent, noArrayIndent: !__YAML_arrayIndent, lineWidth: __YAML_lineWidth };
+        var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth };
 	if (isArray(aJson) && multiDoc) {
 		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n");
 	} else {
@@ -6184,7 +6189,6 @@ AF.prototype.toYAML = function(aJson, multiDoc) {
 	}
 }
 
-__YAML_unsafe = true;
 /**
  * <odoc>
  * <key>AF.fromYAML(aYaml) : Object</key>
@@ -6195,7 +6199,7 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
 	loadJSYAML(); 
 	//if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); 
         var res;
-        if (__YAML_unsafe && unsafe) {
+        if (__YAMLformat.unsafe && unsafe) {
                 var t = new jsyaml.Type('tag:yaml.org,2002:js/eval', { kind: 'scalar', resolve: function() { return true }, construct: function(d){ return eval(d) }, predicate: isString, represent: function(o) { return o } });
                 var s = jsyaml.DEFAULT_SCHEMA.extend([t]); 
       		res = jsyaml.loadAll(aYAML, { schema: s }); 
@@ -6344,7 +6348,7 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
  */
 IO.prototype.readFileYAML = function(aYAMLFile, unsafe) { 
 	var r = io.readFileString(aYAMLFile); 
-	if (__YAML_unsafe && !unsafe) {
+	if (__YAMLformat.unsafe && !unsafe) {
 		r = r.replace(/(\!\!js\/eval .+)/g, "\"$1\"");
 	}
 	return af.fromYAML(r, unsafe); 
