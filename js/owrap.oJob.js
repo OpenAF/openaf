@@ -574,8 +574,12 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 		else {
 			var res = $rest({throwExceptions: true}).get(url);
  			if (isString(res)) {
-				try { res = af.fromYAML(res); } catch(e) {}
-     			}
+				try { res = af.fromYAML(res, true); } catch(e) {}
+     			} else {
+                        	if (isMap(res) && __JSON_unsafe) {
+                                	traverse(res, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+                                }
+                        }
 			return res;
     		}		
 	}
@@ -587,14 +591,19 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 			};
 		else {
 			var _r = $rest({ throwExceptions: true }).get(url);
-			if (isMap(_r)) return _r; else af.fromYAML(_r);
+			if (isMap(_r)) {
+ 				if (__JSON_unsafe) traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+				return _r; 
+			} else {
+				af.fromYAML(_r, true);
+			}
 		}
 	}
 
 	function _load(aFn) {
 		var res = {};
 		try {
-			res = aFn(aFile);
+			res = aFn(aFile, true);
 			return res;
 		} catch(e1) {
 			if (isDef(e1.message) && e1.message.match(/FileNotFoundException/)) {
@@ -604,7 +613,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 					try {
 						paths[i] = paths[i].replace(/\\+/g, "/");
 						paths[i] = paths[i].replace(/\/+/g, "/");
-						res = aFn(paths[i] + "/" + aFile);
+						res = aFn(paths[i] + "/" + aFile, true);
 						return res;
 					} catch(e2) {
 						if (!e2.message.match(/FileNotFoundException/)) {

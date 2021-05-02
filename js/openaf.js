@@ -955,13 +955,14 @@ function colorify(json) {
 	});
 };
 
+__JSON_unsafe = true;
 /**
  * <odoc>
  * <key>jsonParse(aString) : Map</key>
  * Shorcut for the native JSON.parse that returns an empty map if aString is not defined, empty or unparsable.
  * </odoc>
  */
-function jsonParse(astring, alternative) {
+function jsonParse(astring, alternative, unsafe) {
 	if (isDef(astring) && String(astring).length > 0) {
 		try {
 			var a;
@@ -970,6 +971,9 @@ function jsonParse(astring, alternative) {
 			} else {
 				a = JSON.parse(astring);
 			}
+                        if (__JSON_unsafe && unsafe) {
+                     		traverse(a, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+                        }
 			return a;
 		} catch(e) {
 			return astring;
@@ -6160,6 +6164,10 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 
 	return res;
 };
+
+__YAML_indent = 2;
+__YAML_arrayIndent = false;
+__YAML_lineWidth = -1;
 /**
  * <odoc>
  * <key>AF.toYAML(aJson, multiDoc) : String</key>
@@ -6168,22 +6176,32 @@ AF.prototype.getEncoding = function(aBytesOrString) {
  */
 AF.prototype.toYAML = function(aJson, multiDoc) { 
 	loadJSYAML(); 
+        var o = { indent: __YAML_indent, noArrayIndent: !__YAML_arrayIndent, lineWidth: __YAML_lineWidth };
 	if (isArray(aJson) && multiDoc) {
-		return aJson.map(y => jsyaml.dump(y)).join("\n---\n\n");
+		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n");
 	} else {
-		return jsyaml.dump(aJson); 
+		return jsyaml.dump(aJson, o); 
 	}
 }
+
+__YAML_unsafe = true;
 /**
  * <odoc>
  * <key>AF.fromYAML(aYaml) : Object</key>
  * Tries to parse aYaml into a javascript map.
  * </odoc>
  */
-AF.prototype.fromYAML = function(aYAML) { 
+AF.prototype.fromYAML = function(aYAML, unsafe) { 
 	loadJSYAML(); 
-	if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); 
-	var res = jsyaml.loadAll(aYAML); 
+	//if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); 
+        var res;
+        if (__YAML_unsafe && unsafe) {
+                var t = new jsyaml.Type('tag:yaml.org,2002:js/eval', { kind: 'scalar', resolve: function() { return true }, construct: function(d){ return eval(d) }, predicate: isString, represent: function(o) { return o } });
+                var s = jsyaml.DEFAULT_SCHEMA.extend([t]); 
+      		res = jsyaml.loadAll(aYAML, { schema: s }); 
+        } else {
+ 		res = jsyaml.loadAll(aYAML); 
+        }
 	if (isArray(res) && res.length == 1) {
 		return res[0];
 	} else {
@@ -6324,14 +6342,22 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
  * Tries to read aYAMLFile into a javascript object. 
  * </odoc>
  */
-IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFileString(aYAMLFile)); }
+IO.prototype.readFileYAML = function(aYAMLFile, unsafe) { 
+	var r = io.readFileString(aYAMLFile); 
+	if (__YAML_unsafe && !unsafe) {
+		r = r.replace(/(\!\!js\/eval .+)/g, "\"$1\"");
+	}
+	return af.fromYAML(r, unsafe); 
+}
 /**
  * <odoc>
  * <key>io.readFileJSON(aJSONFile) : Object</key>
  * Tries to read aJSONFile into a javascript object. 
  * </odoc>
  */
-IO.prototype.readFileJSON = function(aJSONFile) { return jsonParse(io.readFileString(aJSONFile), true); }
+IO.prototype.readFileJSON = function(aJSONFile, unsafe) { 
+	return jsonParse(io.readFileString(aJSONFile), true, unsafe); 
+}
 /**
  * <odoc>
  * <key>io.writeFileYAML(aYAMLFile, aObj, multidoc)</key>

@@ -74,7 +74,7 @@
 		{
 			"description": "js-yaml",
 			"path": ["js/js-yaml.js"],
-			"version": "3.14.0",
+			"version": "4.1.0",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/nodeca/js-yaml/master/LICENSE",
