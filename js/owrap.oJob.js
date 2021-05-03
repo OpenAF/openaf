@@ -566,34 +566,34 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 	var res = {}, parent = this;
 
 	var fnDown = url => {
-		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
 			return {
-				todo: [ "Unauthorized URL" ],
-				jobs: [ { name: "Unauthorized URL" } ]
+				todo: ["Unauthorized URL"],
+				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var res = $rest({throwExceptions: true}).get(url);
- 			if (isString(res)) {
-				try { res = af.fromYAML(res, true); } catch(e) {}
-     			} else {
-                        	if (isMap(res) && __JSON_unsafe) {
-                                	traverse(res, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
-                                }
-                        }
+			var res = $rest({ throwExceptions: true }).get(url);
+			if (isString(res)) {
+				try { res = af.fromYAML(res, true); } catch (e) { }
+			} else {
+				if (isMap(res) && __JSONformat.unsafe) {
+					traverse(res, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+				}
+			}
 			return res;
-    		}		
+		}
 	}
 	var fnDownYAML = url => {
-		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
 			return {
-				todo: [ "Unauthorized URL" ],
-				jobs: [ { name: "Unauthorized URL" } ]
+				todo: ["Unauthorized URL"],
+				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
 			var _r = $rest({ throwExceptions: true }).get(url);
 			if (isMap(_r)) {
- 				if (__JSON_unsafe) traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
-				return _r; 
+				if (__JSONformat.unsafe) traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+				return _r;
 			} else {
 				af.fromYAML(_r, true);
 			}
