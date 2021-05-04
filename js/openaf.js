@@ -6220,8 +6220,10 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
  * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
  * </odoc>
  */
-AF.prototype.fromXML2Obj = function (xml, ignored) {
+AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
 	ignored = _$(ignored).isArray().default(__);
+	aPrefix = _$(aPrefix).isString().default("_");
+
 	if (typeof xml != "xml") {
 		if (isString(xml)) {
 			xml = xml.replace(/^<\?xml[^?]*\?>/, "");
@@ -6245,7 +6247,7 @@ AF.prototype.fromXML2Obj = function (xml, ignored) {
 		for (var ichild in children) {
 			var child = children[ichild];
 			var name = child.localName();
-			var json = af.fromXML2Obj(child, ignored);
+			var json = af.fromXML2Obj(child, ignored, aPrefix);
 			var value = r[name];
 			if (isDef(value)) {
 				if (isString(value)) {
@@ -6269,12 +6271,12 @@ AF.prototype.fromXML2Obj = function (xml, ignored) {
 			var attribute = attributes[iattribute];
 			var name = attribute.localName();
 			if (ignored && ignored.indexOf(name) == -1) {
-				a["_" + name] = attribute.toString();
+				a[aPrefix + name] = attribute.toString();
 				c++;
 			}
 		}
-		if (c) {
-			if (r) a._ = r;
+		if (c > 0) {
+			if (isMap(r)) a = merge(a, r); else a[aPrefix] = r;
 			return a;
 		}
 	}
