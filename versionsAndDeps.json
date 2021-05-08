@@ -38,7 +38,7 @@
 		{
 			"description": "Handlebars",
 			"path": ["js/handlebars.js"],
-			"version": "4.7.6",
+			"version": "4.7.7",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/wycats/handlebars.js/master/LICENSE",

@@ -294,7 +294,7 @@ License               :
 
 -----------------------
 Third-party name      : Handlebars
-Version               : 4.7.6
+Version               : 4.7.7
 Changed from original : No
 Location in openaf.jar: js/handlebars.js
 License               : 
