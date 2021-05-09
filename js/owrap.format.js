@@ -1399,6 +1399,16 @@ OpenWrap.format.prototype.getJavaVersion = function() {
 
 /**
  * <odoc>
+ * <key>ow.format.getUserHome() : String</key>
+ * Returns the current user home path.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getUserHome = function() {
+	return String(java.lang.System.getProperty("user.home"));
+};
+
+/**
+ * <odoc>
  * <key>ow.format.getJavaHome() : String</key>
  * Returns the current java home directory.
  * </odoc>
