@@ -1761,6 +1761,7 @@ const PACKAGEJSON  = ".package.json";
 const PACKAGEYAML  = ".package.yaml";
 const PACKAGESJSON = "packages.json";
 const PACKAGESJSON_DB = ".opack.db";
+const PACKAGESJSON_USERDB = ".openaf-opack.db";
 const OPACKCENTRALJSON = "packages.json";
 
 var __opackParams;
@@ -1838,23 +1839,28 @@ function getOPackRemoteDB() {
 	//if (!isUnDef(zip)) zip.close();
 	return packages;
 }
-
+ 
 /**
  * <odoc>
  * <key>getOPackLocalDB() : Array</key>
  * Returns an Array of maps. Each map element is an opack package description of the currently 
- * locally installed opack packages.
+ * locally, and per user, installed opack packages.
  * </odoc>
  */
 function getOPackLocalDB() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+    var homeDB = String(java.lang.System.getProperty("user.home")) + "/" + PACKAGESJSON_USERDB;
 	var packages = {};
-	var exc;
+	var exc, homeDBCheck = false;
 
-	// Verify fileDB
+	// Verify fileDB and homeDB
 	try {
 		if (!io.fileInfo(fileDB).permissions.match(/r/) && io.fileInfo(fileDB).permissions != "") {
 			exc = fileDB + " is not acessible. Please check permissions (" + io.fileInfo(fileDB).permissions + ").";
+		}
+		homeDBCheck = io.fileExists(homeDB);
+		if (homeDBCheck && !io.fileInfo(homeDB).permissions.match(/r/) && io.fileInfo(homeDB).permissions != "") {
+			exc = homeDB + " is not acessible. Please check permissions (" + io.fileInfo(homeDB).permissions + ").";
 		}
 	} catch(e) {
 		exc = e;
@@ -1869,6 +1875,12 @@ function getOPackLocalDB() {
 			
 			for(var pack in packages) {
 				if (packages[pack].name == "OpenAF") packages[pack].version = getVersion();
+			}
+
+			if (homeDBCheck) {
+				var zip = new ZIP(io.readFileBytes(homeDB));
+				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON))));
+				zip.close();
 			}
 		} catch(e) {
 			exc = e;
