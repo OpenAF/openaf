@@ -35,7 +35,7 @@ License               :
 
 The MIT License (MIT)
 
-Copyright Â© 2013 BunKat
+Copyright © 2013 BunKat
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -294,7 +294,7 @@ License               :
 
 -----------------------
 Third-party name      : Handlebars
-Version               : 4.7.6
+Version               : 4.7.7
 Changed from original : No
 Location in openaf.jar: js/handlebars.js
 License               : 
@@ -741,7 +741,7 @@ limitations under the License.
 
 -----------------------
 Third-party name      : js-yaml
-Version               : 3.14.0
+Version               : 4.1.0
 Changed from original : No
 Location in openaf.jar: js/js-yaml.js
 License               : 

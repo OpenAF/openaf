@@ -566,35 +566,44 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 	var res = {}, parent = this;
 
 	var fnDown = url => {
-		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
 			return {
-				todo: [ "Unauthorized URL" ],
-				jobs: [ { name: "Unauthorized URL" } ]
+				todo: ["Unauthorized URL"],
+				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var res = $rest({throwExceptions: true}).get(url);
- 			if (isString(res)) {
-				try { res = af.fromYAML(res); } catch(e) {}
-     			}
+			var res = $rest({ throwExceptions: true }).get(url);
+			if (isString(res)) {
+				try { res = af.fromYAML(res, true); } catch (e) { }
+			} else {
+				if (isMap(res) && __JSONformat.unsafe) {
+					traverse(res, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+				}
+			}
 			return res;
-    		}		
+		}
 	}
 	var fnDownYAML = url => {
-		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0) 
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
 			return {
-				todo: [ "Unauthorized URL" ],
-				jobs: [ { name: "Unauthorized URL" } ]
+				todo: ["Unauthorized URL"],
+				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
 			var _r = $rest({ throwExceptions: true }).get(url);
-			if (isMap(_r)) return _r; else af.fromYAML(_r);
+			if (isMap(_r)) {
+				if (__JSONformat.unsafe) traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+				return _r;
+			} else {
+				af.fromYAML(_r, true);
+			}
 		}
 	}
 
 	function _load(aFn) {
 		var res = {};
 		try {
-			res = aFn(aFile);
+			res = aFn(aFile, true);
 			return res;
 		} catch(e1) {
 			if (isDef(e1.message) && e1.message.match(/FileNotFoundException/)) {
@@ -604,7 +613,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 					try {
 						paths[i] = paths[i].replace(/\\+/g, "/");
 						paths[i] = paths[i].replace(/\/+/g, "/");
-						res = aFn(paths[i] + "/" + aFile);
+						res = aFn(paths[i] + "/" + aFile, true);
 						return res;
 					} catch(e2) {
 						if (!e2.message.match(/FileNotFoundException/)) {
@@ -1853,6 +1862,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
     function procLang(aExec, aJobTypeArgs, aEach, aLang, aFile) {
 		var res = _$(aExec).default("");
+		aLang = _$(aLang).default("js");
 
 		aJobTypeArgs = _$(aJobTypeArgs).default({});
 		if (isDef(aLang)) aJobTypeArgs.lang = aLang;
@@ -2013,6 +2023,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			res = fnDef;
 		}
 
+	    //sprint({ e: aExec, l: aLang, r: res });
 		return res;
 	}
 
@@ -2040,8 +2051,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					j.args = (isDef(j.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(f.args));
 					j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
 					j.each = (isDef(j.each) && j.each != null ? j.each.concat(f.each) : f.each);
-					j.lang = f.lang;
-					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLock(procLang(f.exec, f.typeArgs, j.each, j.lang, j.file), f.typeArgs);
+					//j.lang = f.lang;
+					j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLock(procLang(f.exec, f.typeArgs, f.each, f.lang, f.file), f.typeArgs);
 					//j.help = (isDef(j.help) ? j.help : "") + "\n" + f.help;
 				} else {
 					logWarn("Didn't found from/earlier job '" + jobFrom[jfi] + "' for job '" + aName + "'");
@@ -2052,7 +2063,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		j = {
 			"name": aName,
 			"type": jobType,
-			"lang": jobLang,
+			//"lang": jobLang,
 			"file": jobFile,
 			"typeArgs": (isDef(j.typeArgs) ? merge(j.typeArgs, jobTypeArgs) : jobTypeArgs),
 			"args": (isDef(j.args) ? parent.__processArgs(j.args, jobArgs) : parent.__processArgs(jobArgs)),
@@ -2065,7 +2076,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			"each": (isDef(j.each) && j.each != null ? j.each.concat(jobEach) : jobEach),
 			"exec": j.exec
 		};	
-		j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLock(procLang(fstr, jobTypeArgs, j.each, j.lang, j.file), jobTypeArgs);
+		j.exec = (isDef(j.exec) ? j.exec : "") + "\n" + procLock(procLang(fstr, jobTypeArgs, jobEach, jobLang, jobFile), jobTypeArgs);
 
 		if (isDef(jobTo)) {
 			if (!isArray(jobTo)) jobTo = [ jobTo ];
@@ -2076,12 +2087,12 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				if (isDef(f)) {
 					//j.type = (isDef(f.type) ? f.type : j.type);
 					j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
-					j.lang = f.lang;
+					//j.lang = f.lang;
 					j.args = (isDef(f.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(j.args));
 					j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
 					j.each = j.each + "\n" + (isDef(f.each) ? f.each : "");
 					j.each = (isDef(f.each) && j.each != null ? j.each.concat(f.each) : j.each);
-					j.exec = j.exec + "\n" + (isDef(f.exec) ? procLock(procLang(f.exec, f.typeArgs, j.each, j.lang, j.file), jobTypeArgs) : "");
+					j.exec = j.exec + "\n" + (isDef(f.exec) ? procLock(procLang(f.exec, f.typeArgs, f.each, f.lang, f.file), jobTypeArgs) : "");
 					//j.help = j.help + "\n" + (isDef(f.help) ? f.help : "");
 				} else {
 					logWarn("Didn't found to/then job '" + jobTo[jfi] + "' for job '" + aName + "'");

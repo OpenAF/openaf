@@ -248,6 +248,7 @@ try {
 			file.filename !== 'fusejs.js' &&
 			file.filename !== 'handlebars.js' &&
 			file.filename !== 'lodash.js' &&
+                        file.filename !== 'owrap.ch.js' &&
  			file.filename !== 'jquery.js') {
 
 			var doIt = true;

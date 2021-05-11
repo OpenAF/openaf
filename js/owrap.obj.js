@@ -196,6 +196,40 @@ OpenWrap.obj.prototype.__getObj4Path = function(anObj, aPath) {
 
 /**
  * <odoc>
+ * <key>ow.obj.flatMap(data) : Array/Map</key>
+ * Given data as an array of maps or a single map tries to produce an output with only one level of keys per map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.flatMap = function(data) {
+	if (!isArray(data) && !isMap(data)) throw "data argument needs to be an array or a map";
+
+	var keys = [];
+
+	var anArray = (isArray(data) ? data : [ data ]);
+	if (anArray.length == 0) throw "need at least one element in data";
+	var res1 = anArray.map(v => {
+		var r = {};
+		traverse(v, (aK, aV, aP, aO) => {
+			if (aP.startsWith(".")) aP = aP.slice(1);
+			if (!isMap(aV) && !isArray(aV)) r[aP + (aP.length > 0 ? "." : "") + aK] = aV;
+		});
+		keys = $from(Object.keys(r)).union(keys).select();
+		return r;
+	});
+
+	var res2 = res1.map(v => {
+		var r = {};
+		keys.forEach(k => {
+			r[k] = v[k];
+		});
+		return r;
+	});
+
+	if (isArray(data)) return res2; else return res2[0];
+};
+
+/**
+ * <odoc>
  * <key>ow.obj.flatten(arrayOfMaps, aSeparator, aNADefault) : Array</key>
  * Converts any structured arrayOfMaps into a flat array of maps with only one level of keys. The map key path will be converted
  * into a single key using aSeparator (defaults to "_") and the value will be represented as aNADefault (defaults to "") when no 

@@ -118,7 +118,7 @@ function showHelp() {
 	for(let i in verbs) {
 		var verb = verbs[i];
 
-		if (!isUndefined(verb["help"])) {
+		if (!isUnDef(verb["help"])) {
 			print("   " + i + repeat(maxVerb - i.length + 1, ' ') + " - " + verb.help );
 			for(let j in verb.optionshelp) {
 				print(repeat(maxVerb, ' ') + "          " + verb.optionshelp[j]);
@@ -132,7 +132,7 @@ function showHelp() {
 
 // Retrieve OPack file using HTTP
 function getHTTPOPack(aURL) {
-	if (!isUndefined(zipCache[aURL])) {
+	if (!isUnDef(zipCache[aURL])) {
 		return zipCache[aURL];
 	}
 
@@ -154,7 +154,7 @@ function getHTTPOPack(aURL) {
 
 // OpenPack get packages
 function getRemoteDB() {
-	if (!isUndefined(remoteDB)) return remoteDB;
+	if (!isUnDef(remoteDB)) return remoteDB;
 
 	remoteDB = getOPackRemoteDB();
 
@@ -218,10 +218,22 @@ function removeRemoteDB(aPackage, aDB) {
 // OpenPack local register add
 function addLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+	var homeDB = String(java.lang.System.getProperty("user.home")) + "/" + PACKAGESJSON_USERDB;
+	var homeDBCheck = io.fileExists(homeDB);
+	var fileDBCheck = io.fileExists(fileDB);
+	var includeInFileDB = true;
 
 	try {
-		if (!io.fileInfo(fileDB).permissions.match(/w/)) {
-			throw fileDB + " is not acessible. Please check permissions.";
+		if (fileDBCheck && io.fileInfo(fileDB).permissions.indexOf("w") < 0) {
+			includeInFileDB = false;
+			//if (homeDBCheck) {
+				logWarn("'" + fileDB + "' is not accessible. Reverting to per-user oPack db.");
+			//} else {
+			//	throw fileDB + " is not accessible. Please check permissions.";
+			//}
+		}
+		if (homeDBCheck && io.fileInfo(homeDB).permissions.indexOf("w") < 0) {
+			throw homeDB + " is not accessible. Please check permissions.";
 		}
 	} catch(e) {
 		if (!(e.message.match(/NoSuchFileException/))) {
@@ -237,14 +249,21 @@ function addLocalDB(aPackage, aTarget) {
 
 	var packages = {};
 	var zip = new ZIP();
+
 	try {
-		//zip = new ZIP(io.readFileBytes(fileDB));
 		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
 	} catch(e) {
-		 if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
+		if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
+	}
+	if (homeDBCheck) {
+		try {
+			packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(homeDB, PACKAGESJSON)));
+		} catch(e) {
+			if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
+		}
 	}
 
-	if (!isUndefined(packages)) {
+	if (!isUnDef(packages)) {
 		packages[aTarget] = aPackage;
 	} else {
 		packages = {};
@@ -252,8 +271,10 @@ function addLocalDB(aPackage, aTarget) {
 	}
 
 	try {
-		zip.streamPutFile(fileDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
-		//io.writeFileBytes(fileDB, zip.generate({"compressionLevel":9}));
+		if (includeInFileDB)
+			zip.streamPutFile(fileDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
+		else
+			zip.streamPutFile(homeDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
 	} catch (e) {
 		logErr(e.message);
 		return;
@@ -268,12 +289,11 @@ function addLocalDB(aPackage, aTarget) {
 function getPackVersion(packageName, packag) {
 	if (packageName.toUpperCase() == "OPENAF") return getVersion();
 	
-	var packages = getLocalDB(true);
-
-	if (isUndefined(packag)) {
+	//var packages = getLocalDB(true);
+	if (isUnDef(packag)) {
 		var packageFound = findLocalDBByName(packageName);
 
-		if (!isUndefined(packageFound)) {
+		if (!isUnDef(packageFound)) {
 			return packageFound.version;
 		} else {
 			return;
@@ -286,7 +306,7 @@ function getPackVersion(packageName, packag) {
 // OpenPack get packages
 function getLocalDB(shouldRefresh) {
 	if (shouldRefresh == false)
-		if (!isUndefined(localDB)) return localDB;
+		if (!isUnDef(localDB)) return localDB;
 
 	localDB = getOPackLocalDB();
 	if (compare(localDB, {})) checkOpenAFinDB();
@@ -304,30 +324,46 @@ function findLocalDBByTarget(aTarget) {
 function findLocalDBByName(aName) {
 	var packages = getLocalDB();
 
-	if(isUndefined(aName) || aName.length <= 0) return;
+	if(isUnDef(aName) || aName.length <= 0) return;
+	var res;
 
-	for(let target in packages) {
+	for(var target in packages) {
 		var packag = packages[target];
-		if (packag.name.toUpperCase() == aName.toUpperCase()) return packag;
+		if (packag.name.toUpperCase() == aName.toUpperCase() ||
+		    ow.format.string.separatorsToUnix(target) == ow.format.string.separatorsToUnix(aName)) {
+			if (isDef(res)) {
+				if (ow.format.string.separatorsToUnix(target) == ow.format.string.separatorsToUnix(aName)) res = packag;
+			} else {
+				res = packag;
+			}
+
+			res.__target = target;
+		}
 	}
+
+	return res;
 }
 
 // OpenPack find a package target by name
 function findLocalDBTargetByName(aName) {
 	var packages = getLocalDB();
 
-	if(isUndefined(aName) || aName.length <= 0) return;
+	if(isUnDef(aName) || aName.length <= 0) return;
+	var res;
 
-	for(let target in packages) {
+	for(var target in packages) {
 		var packag = packages[target];
-		if (packag.name.toUpperCase() == aName.toUpperCase()) return target;
+		if (packag.name.toUpperCase() == aName.toUpperCase())  {
+			res = target;
+		}
 	}
+
+	return res;
 }
 
 // dependencies
 function verifyDeps(packag) {
-	//var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
-	var packages = getOPackLocalDB();
+	//var packages = getOPackLocalDB();
 	var results = {};
 
 	if (isMap(packag.dependencies)) {
@@ -336,7 +372,7 @@ function verifyDeps(packag) {
 	
 			var compareTo = findLocalDBByName(dep);
 			results[dep] = false;
-			if (!isUndefined(compareTo)) {
+			if (!isUnDef(compareTo)) {
 				if (compareTo.version == version)                          							{ results[dep] = true; continue; }
 				if (version.match(/^\>\=/) && compareTo.version >= version.replace(/^\>\=/, ""))  	{ results[dep] = true; continue; }
 				if (version.match(/^\<\=/) && compareTo.version <= version.replace(/^\<\=/, ""))  	{ results[dep] = true; continue; }
@@ -352,44 +388,76 @@ function verifyDeps(packag) {
 // OpenPack local register remove
 function removeLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+	var homeDB = String(java.lang.System.getProperty("user.home")) + "/" + PACKAGESJSON_USERDB;
+	var homeDBCheck = io.fileExists(homeDB);
+	var includeInFileDB = true;
 
-	if (!io.fileInfo(fileDB).permissions.match(/w/)) {
-		throw fileDB + " is not acessible. Please check permissions.";
+	if (io.fileInfo(fileDB).permissions.indexOf("w") < 0) {
+		if (homeDBCheck) {
+			if (io.fileInfo(homeDB).permissions.indexOf("w") < 0) {
+				throw "Can't access '" + fileDB + "' neither '" + homeDB + "'.";
+			}		
+			includeInFileDB = false;
+		} else {
+			throw fileDB + " is not accessible. Please check permissions.";
+		}
 	}
 
 	aTarget = (new java.io.File(aTarget)).getCanonicalPath() + "";
 
-	var packages = {};
-
+	var packages = {}, packagesLocal = {};
 	var zip = new ZIP();
 	try {
-		//zip = new ZIP(io.readFileBytes(fileDB));
-		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
+		if (includeInFileDB) {
+			packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
+		}
+		if (homeDBCheck) {
+			packagesLocal = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(homeDB, PACKAGESJSON)));
+		}
 	} catch(e) {
 		logErr(e.message);
 	}
 
-	if (!isUndefined(packages)) {
-		delete packages[aTarget];
-
-		try {
-			zip.streamPutFile(fileDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
-			//io.writeFileBytes(fileDB, zip.generate({"compressionLevel":9}));
-		} catch (e) {
-			logErr(e.message);
-			return;
+	if (isDef(packages) || isDef(packagesLocal)) {
+		var removed = false;
+		if (includeInFileDB) {
+			try {
+				if (isDef(packages) && isDef(packages[aTarget])) {
+					delete packages[aTarget];
+					removed = true;
+				}
+				if (removed) zip.streamPutFile(fileDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
+			} catch (e) {
+				logErr(e.message);
+				return;
+			}
+		} 
+		if (homeDBCheck) {
+			try {
+				if (isDef(packagesLocal) && isDef(packagesLocal[aTarget])) {
+					delete packagesLocal[aTarget];
+					removed = true;
+				}
+				if (removed) zip.streamPutFile(homeDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
+			} catch (e) {
+				logErr(e.message);
+				return;
+			}
 		}
-	}
-	//zip.close();
 
-	log("Package " + aPackage.name + " removed from local OpenPack DB");
+		if (!removed) 
+			logWarn("Package can't be removed from oPack database.");
+		else
+			log("Package " + aPackage.name + " removed from local OpenPack DB");
+	}
+	//zip.close();	
 }
 
 // Check OpenAF in local DB
 function checkOpenAFinDB() {
 	var packag = getPackage(getOpenAFJar());
 
-	if (isUndefined(packag.name)) return;
+	if (isUnDef(packag.name)) return;
 
 	addLocalDB(packag, getOpenAFPath());
 }
@@ -403,7 +471,7 @@ function listFiles(startPath, relPath, excludingList) {
 	var files = [];
 	if (isUnDef(excludingList)) excludingList = [];
 
-	if (isUndefined(relPath)) relPath = "";
+	if (isUnDef(relPath)) relPath = "";
 	startPath = startPath.replace(/\\+/g, "/");
 	relPath = relPath.replace(/\\+/g, "/");
 
@@ -568,17 +636,18 @@ function copyFile(source, target) {
 
 // Delete files from target
 function deleteFile(target) {
-	io.rm(target);
+	return io.rm(target);
 }
 
 // Make directory
 function mkdir(aNewDirectory) {
-    io.mkdir(aNewDirectory);
+    return io.mkdir(aNewDirectory);
 }
 
 // Remove directory
-function rmdir(aNewDirectory) {
-	io.rm(aNewDirectory);
+function rmdir(aNewDirectory, shouldCheck) {
+	if (shouldCheck && io.fileExists(aNewDirectory) && io.listFiles(aNewDirectory).files.length == 0) return;
+	return io.rm(aNewDirectory);
 }
 
 // ----------------------------------------------------------
@@ -722,14 +791,14 @@ function fromJsonYaml(aString) {
 function getPackage(packPath) {
 	var packag = {};
 
-	if (isUndefined(packPath)) return packag;
+	if (isUnDef(packPath)) return packag;
 
 	// determine if HTTP or local
 	if (packPath.match(/^http/i)) {
 		if (packPath.match(/\.(opack)|(jar)$/i)) {
 			// Remote OPack
 			var opack = getHTTPOPack(packPath);
-			if (isUndefined(opack)) return;
+			if (isUnDef(opack)) return;
 
 			// There should be no \n usually associated with package.json scripts
 			try {
@@ -737,7 +806,7 @@ function getPackage(packPath) {
 			} catch(e) {
 				packag = fromJsonYaml(af.fromBytes2String(opack.getFile(PACKAGEYAML)) + "");
 			}
-			if (isUndefined(packag.files)) {
+			if (isUnDef(packag.files)) {
 				packag.files = [];
 				var listOfFiles = opack.list();
 				for(let i in listOfFiles) {
@@ -764,7 +833,7 @@ function getPackage(packPath) {
 					}
 				}
 				packag = fromJsonYaml(output);
-				if (isUndefined(packag)) throw(packPath + "/" + PACKAGESJSON);
+				if (isUnDef(packag)) throw(packPath + "/" + PACKAGESJSON);
 				packag.__filelocation = "url";
 			} catch(e) {
 				logErr("Didn't find a package on '" + packPath + "' (" + e.message + ")");
@@ -782,7 +851,7 @@ function getPackage(packPath) {
 				} catch(e) {
 					packag = fromJsonYaml(af.fromBytes2String(opack.streamGetFile(packPath, PACKAGEYAML)) + "");
 				}
-				if (isUndefined(packag.files)) {
+				if (isUnDef(packag.files)) {
 					packag.files = [];
 					var listOfFiles = opack.list();
 					for(let i in listOfFiles) {
@@ -799,14 +868,14 @@ function getPackage(packPath) {
 			// File identified
 			try {
 				try {
-					packag = io.readFile(packPath + "/" + PACKAGEJSON);
+					packag = io.readFileJSON(packPath + "/" + PACKAGEJSON);
 				} catch(e) {
 					packag = io.readFileYAML(packPath + "/" + PACKAGEYAML);
 				}
 				packag.__filelocation = "local";
-				packag.__target = (new java.io.File(packPath)).getCanonicalPath() + "";
+				packag.__target = String((new java.io.File(packPath)).getCanonicalPath());
 
-				if (isUndefined(packag.files)) {
+				if (isUnDef(packag.files)) {
 					packag.files = listFiles(packPath);
 				}
 			} catch(e) {
@@ -855,15 +924,6 @@ function __opack_info(args) {
 	if (packag.__filelocation.match(/local$/)) remote = false; else remote = true;
 
 	var iinfo = {};
-	/*ansiStart();
-	print(ansiColor("bold", "INSTALLED IN: ") + args[0]);
-	print(ansiColor("bold", "NAME        : ") + packag.name);
-	print(ansiColor("bold", "VERSION     : ") + packag.version);
-	print(ansiColor("bold", "DESCRIPTION : ") + packag.description);
-	print(ansiColor("bold", "AUTHOR      : ") + packag.author);
-	print(ansiColor("bold", "REPOSITORY  : ") + "[" + packag.repository.type + "] " + packag.repository.url);
-	print(ansiColor("bold", "DEPENDS ON  :"));
-	print("");*/
 	iinfo = {
 		"Installed in": args[0],
 		"Name"        : packag.name,
@@ -905,7 +965,7 @@ function __opack_info(args) {
 		if (canGo) {
 			if (!remote) {
 				var status;
-				if (isUndefined(hashResults[file])) {
+				if (isUnDef(hashResults[file])) {
 					status = "not installed";
 				} else {
 					status = (hashResults[file]) ? "OK" : "CHANGED!";
@@ -928,27 +988,31 @@ function __opack_info(args) {
 function __opack_list(args) {
 	var packages = getLocalDB(true);
 
-	var sortIds = {};
+	/*var sortIds = {};
 	for(let i in packages) {
 		if (isDef(packages[i].name)) 
 			sortIds[packages[i].name.toLowerCase()] = i;
-	}
+	}*/
 
-	var usea = __conStatus || __initializeCon();
+	var usea = __conStatus || __initializeCon(); 
 
-	var packsIds = Object.keys(sortIds).sort(), ar = [];
-	for (let packageId in packsIds) {
-		packag = sortIds[packsIds[packageId]];
+	//var packsIds = Object.keys(sortIds).sort(), ar = [];
+	var ar = [];
+	var packsIds = $from(packages).sort("name").attach("key", r=>ow.format.string.separatorsToUnix(r._key)).distinct("_key");
+	for (var packageId in packsIds) {
+		//packag = packages[packsIds[packageId]];
+		var packag = packsIds[packageId];
 		if (packag == 'OpenPackDB') continue;
+		if (packages[packag].key == 'OpenAF') continue;
 		if (!usea) {
 			ansiStart();
-			print(ansiColor("bold", "[" + packages[packag].name + "]") + " (version " + ansiColor("green", packages[packag].version) + "):" + " " + ansiColor("cyan", packag.replace(new RegExp("^" + getOpenAFPath()), "(openaf)/")) + "");
+			print(ansiColor("bold", "[" + packages[packag].name + "]") + " (version " + ansiColor("green", packages[packag].version) + "):" + " " + ansiColor("cyan", packages[packag].key.replace(new RegExp("^" + getOpenAFPath()), "(openaf)/")) + "");
 			ansiStop();
 		} else {
 			ar.push({
 				name   : packages[packag].name,
 				version: packages[packag].version,
-				path   : packag.replace(new RegExp("^" + getOpenAFPath()), "[openaf]/")
+				path   : packages[packag].key.replace(new RegExp("^" + getOpenAFPath()), "[openaf]/")
 			});
 		}
 	}
@@ -1028,11 +1092,10 @@ function install(args) {
     	if (args[i] == "-arg") foundArg = true;
     	if (args[i] == "-justcopy") justCopy = true;
     	if (args[i] == "-noverify") nohash = true;
-		  if (args[i] == "-useunzip") useunzip = true;
-		  if (args[i] == "-cred") foundCred = true;
+		if (args[i] == "-useunzip") useunzip = true;
+		if (args[i] == "-cred") foundCred = true;
     }
 	var packag = getPackage(args[0]);
-	if (isUnDef(output)) output = getOpenAFPath() + "/" + packag.name;
 
 	if (isUnDef(packag.name) && packag.__filelocation != "opackurl") {
 		//logErr("Couldn't find package on location " + args[0]);
@@ -1045,10 +1108,19 @@ function install(args) {
 			return;
 		} else {
 			packag = getPackage(packFound.repository.url);
-			if (!forceOutput) output = getOpenAFPath() + "/" + packag.name;
+			//if (!forceOutput) output = getOpenAFPath() + "/" + packag.name;
 			args[0] = packag.repository.url;
 		}
 	}
+	if (isUnDef(output) && !forceOutput) {
+		if (io.fileInfo(getOpenAFPath()).permissions.indexOf("w") >= 0) {
+			output = getOpenAFPath() + "/" + packag.name;
+		} else {
+			output = String(java.lang.System.getProperty("user.home")) + "/.openaf-opack-" + packag.name; 
+		}
+	}
+	log("Install folder: " + output);
+
 
 	// Verify version
 	if (checkVersion(packag, force) || justCopy) {
@@ -1226,7 +1298,7 @@ function install(args) {
 
 // EXEC
 function __opack_exec(args) {
-	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
+	if (!isUnDef(args[0]) && args[0].toUpperCase() == 'OPENAF') {
 		logErr("Please use 'openaf' to execute OpenAF");
 		return;
 	}
@@ -1263,7 +1335,7 @@ function __opack_exec(args) {
 
 // SCRIPT
 function __opack_script(args, isDaemon, isJob) {
-	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
+	if (!isUnDef(args[0]) && args[0].toUpperCase() == 'OPENAF') {
 		logErr("Please use 'openaf' to execute OpenAF");
 		return;
 	}
@@ -1466,8 +1538,8 @@ function update(args) {
 
 // ERASE
 function erase(args, dontRemoveDir) {
-	if (!isUndefined(args[0]) && args[0].toUpperCase() == 'OPENAF') {
-		logErr("Can't delete OpenAF. Please delete manually or using another package manager (e.g. RPM)");
+	if (!isUnDef(args[0]) && args[0].toUpperCase() == 'OPENAF') {
+		logErr("Can't delete OpenAF. Please delete manually or following the uninstall instructions.");
 		return;
 	}
 
@@ -1476,7 +1548,7 @@ function erase(args, dontRemoveDir) {
 	var force = false;
 	var foundArg = false;
 
-    for(let i in args) {
+    for(var i in args) {
     	if (foundArg) {
     		arg = args[i];
     		foundArg = false;
@@ -1493,8 +1565,9 @@ function erase(args, dontRemoveDir) {
 			logErr("Package not found.");
 			return;
 		} else {
-			args[0] = findLocalDBTargetByName(args[0]);
+			//args[0] = findLocalDBTargetByName(args[0]);
 			packag.__filelocation = "local";
+			//packag.__target = orig;
 		}
 	} else {
 		args[0] = packag.name;
@@ -1504,9 +1577,10 @@ function erase(args, dontRemoveDir) {
 	if (isMap(packag.dependencies) &&
 		!force) {
 		var packages = getLocalDB(true);
-		for(let pack in packages) {
+		for(var pack in packages) {
 			if (isMap(packages[pack].dependencies) &&
-				typeof packages[pack].dependencies[packag.name] !== 'undefined') {
+				typeof packages[pack].dependencies[packag.name] !== 'undefined' &&
+				packag.name != "OpenAF") {
 				logErr("'" + packages[pack].name + "' depends on '" + packag.name + "'");
 				return;
 			}
@@ -1522,23 +1596,28 @@ function erase(args, dontRemoveDir) {
 		case "local": {
 			log("Erasing files");
 
+			if (io.fileExists(packag.__target) && io.fileInfo(packag.__target).permissions.indexOf("w") < 0) throw "No write permissions over '" + packag.__target + "'";
+
 			biggestMessage = 0;
-			for(let i in packag.files) {
+			for(var i in packag.files) {
 				var message = "Removing " + packag.files[i].replace(/^\/*/, "") + "...\r";
 				if (message.length > biggestMessage) biggestMessage = message.length;
 				lognl(message);
-				deleteFile(args[0] + "/" + packag.files[i].replace(/^\/*/, ""));
+				deleteFile(packag.__target + "/" + packag.files[i].replace(/^\/*/, ""));
 			}
 
-			var list = io.listFiles(args[0]);
-			for(let i in list.files) {
+			var list = io.listFiles(packag.__target);
+			for(var i in list.files) {
 				if (list.files[i].isDirectory) {
-					rmdir(list.files[i].filepath);
+					rmdir(list.files[i].filepath, true);
 				}
 			}
-			if (!dontRemoveDir) rmdir(args[0]);
-			log("Package " + packag.name + " erased." + repeat(biggestMessage, " "));
-			removeLocalDB(packag, args[0]);
+			if (!dontRemoveDir) rmdir(packag.__target, true);
+			if (!(io.fileExists(packag.__target) && io.listFiles(packag.__target).files.length > 0)) 
+				log("Package " + packag.name + " erased." + repeat(biggestMessage, " "));
+			else
+				logWarn("Package " + packag.name + " could not be erased." + repeat(biggestMessage, " "));
+			removeLocalDB(packag, packag.__target);
 			break;
 		}
 		default: // TODO: IMPLEMENT SEARCH LOCAL DB FOR OPACK INFO
@@ -1549,7 +1628,7 @@ function erase(args, dontRemoveDir) {
 
 // REMOVE LOCAL
 function remove(args) {
-        checkOpenAFindDB();
+        checkOpenAFinDB();
 	var packag = findLocalDBByName(args[0]);
 
 	if (typeof packag["name"] == 'undefined') {

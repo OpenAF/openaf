@@ -955,13 +955,16 @@ function colorify(json) {
 	});
 };
 
+__JSONformat = {
+  unsafe: true
+};
 /**
  * <odoc>
  * <key>jsonParse(aString) : Map</key>
  * Shorcut for the native JSON.parse that returns an empty map if aString is not defined, empty or unparsable.
  * </odoc>
  */
-function jsonParse(astring, alternative) {
+function jsonParse(astring, alternative, unsafe) {
 	if (isDef(astring) && String(astring).length > 0) {
 		try {
 			var a;
@@ -970,6 +973,9 @@ function jsonParse(astring, alternative) {
 			} else {
 				a = JSON.parse(astring);
 			}
+                        if (__JSONformat.unsafe && unsafe) {
+                     		traverse(a, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+                        }
 			return a;
 		} catch(e) {
 			return astring;
@@ -1755,6 +1761,7 @@ const PACKAGEJSON  = ".package.json";
 const PACKAGEYAML  = ".package.yaml";
 const PACKAGESJSON = "packages.json";
 const PACKAGESJSON_DB = ".opack.db";
+const PACKAGESJSON_USERDB = ".openaf-opack.db";
 const OPACKCENTRALJSON = "packages.json";
 
 var __opackParams;
@@ -1832,23 +1839,28 @@ function getOPackRemoteDB() {
 	//if (!isUnDef(zip)) zip.close();
 	return packages;
 }
-
+ 
 /**
  * <odoc>
  * <key>getOPackLocalDB() : Array</key>
  * Returns an Array of maps. Each map element is an opack package description of the currently 
- * locally installed opack packages.
+ * locally, and per user, installed opack packages.
  * </odoc>
  */
 function getOPackLocalDB() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
+    var homeDB = String(java.lang.System.getProperty("user.home")) + "/" + PACKAGESJSON_USERDB;
 	var packages = {};
-	var exc;
+	var exc, homeDBCheck = false;
 
-	// Verify fileDB
+	// Verify fileDB and homeDB
 	try {
 		if (!io.fileInfo(fileDB).permissions.match(/r/) && io.fileInfo(fileDB).permissions != "") {
 			exc = fileDB + " is not acessible. Please check permissions (" + io.fileInfo(fileDB).permissions + ").";
+		}
+		homeDBCheck = io.fileExists(homeDB);
+		if (homeDBCheck && !io.fileInfo(homeDB).permissions.match(/r/) && io.fileInfo(homeDB).permissions != "") {
+			exc = homeDB + " is not acessible. Please check permissions (" + io.fileInfo(homeDB).permissions + ").";
 		}
 	} catch(e) {
 		exc = e;
@@ -1863,6 +1875,12 @@ function getOPackLocalDB() {
 			
 			for(var pack in packages) {
 				if (packages[pack].name == "OpenAF") packages[pack].version = getVersion();
+			}
+
+			if (homeDBCheck) {
+				var zip = new ZIP(io.readFileBytes(homeDB));
+				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON))));
+				zip.close();
 			}
 		} catch(e) {
 			exc = e;
@@ -6160,6 +6178,13 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 
 	return res;
 };
+
+__YAMLformat = {
+  indent: 2,
+  arrayIndent: false,
+  lineWidth: -1,
+  unsafe: true
+};
 /**
  * <odoc>
  * <key>AF.toYAML(aJson, multiDoc) : String</key>
@@ -6168,22 +6193,31 @@ AF.prototype.getEncoding = function(aBytesOrString) {
  */
 AF.prototype.toYAML = function(aJson, multiDoc) { 
 	loadJSYAML(); 
+        var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth };
 	if (isArray(aJson) && multiDoc) {
-		return aJson.map(y => jsyaml.dump(y)).join("\n---\n\n");
+		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n");
 	} else {
-		return jsyaml.dump(aJson); 
+		return jsyaml.dump(aJson, o); 
 	}
 }
+
 /**
  * <odoc>
  * <key>AF.fromYAML(aYaml) : Object</key>
  * Tries to parse aYaml into a javascript map.
  * </odoc>
  */
-AF.prototype.fromYAML = function(aYAML) { 
+AF.prototype.fromYAML = function(aYAML, unsafe) { 
 	loadJSYAML(); 
-	if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); 
-	var res = jsyaml.loadAll(aYAML); 
+	//if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); 
+        var res;
+        if (__YAMLformat.unsafe && unsafe) {
+                var t = new jsyaml.Type('tag:yaml.org,2002:js/eval', { kind: 'scalar', resolve: function() { return true }, construct: function(d){ return eval(d) }, predicate: isString, represent: function(o) { return o } });
+                var s = jsyaml.DEFAULT_SCHEMA.extend([t]); 
+      		res = jsyaml.loadAll(aYAML, { schema: s }); 
+        } else {
+ 		res = jsyaml.loadAll(aYAML); 
+        }
 	if (isArray(res) && res.length == 1) {
 		return res[0];
 	} else {
@@ -6198,8 +6232,10 @@ AF.prototype.fromYAML = function(aYAML) {
  * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
  * </odoc>
  */
-AF.prototype.fromXML2Obj = function (xml, ignored) {
+AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
 	ignored = _$(ignored).isArray().default(__);
+	aPrefix = _$(aPrefix).isString().default("_");
+
 	if (typeof xml != "xml") {
 		if (isString(xml)) {
 			xml = xml.replace(/^<\?xml[^?]*\?>/, "");
@@ -6223,7 +6259,7 @@ AF.prototype.fromXML2Obj = function (xml, ignored) {
 		for (var ichild in children) {
 			var child = children[ichild];
 			var name = child.localName();
-			var json = af.fromXML2Obj(child, ignored);
+			var json = af.fromXML2Obj(child, ignored, aPrefix);
 			var value = r[name];
 			if (isDef(value)) {
 				if (isString(value)) {
@@ -6247,12 +6283,12 @@ AF.prototype.fromXML2Obj = function (xml, ignored) {
 			var attribute = attributes[iattribute];
 			var name = attribute.localName();
 			if (ignored && ignored.indexOf(name) == -1) {
-				a["_" + name] = attribute.toString();
+				a[aPrefix + name] = attribute.toString();
 				c++;
 			}
 		}
-		if (c) {
-			if (r) a._ = r;
+		if (c > 0) {
+			if (isMap(r)) a = merge(a, r); else a[aPrefix] = r;
 			return a;
 		}
 	}
@@ -6324,14 +6360,22 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
  * Tries to read aYAMLFile into a javascript object. 
  * </odoc>
  */
-IO.prototype.readFileYAML = function(aYAMLFile) { return af.fromYAML(io.readFileString(aYAMLFile)); }
+IO.prototype.readFileYAML = function(aYAMLFile, unsafe) { 
+	var r = io.readFileString(aYAMLFile); 
+	if (__YAMLformat.unsafe && !unsafe) {
+		r = r.replace(/(\!\!js\/eval .+)/g, "\"$1\"");
+	}
+	return af.fromYAML(r, unsafe); 
+}
 /**
  * <odoc>
  * <key>io.readFileJSON(aJSONFile) : Object</key>
  * Tries to read aJSONFile into a javascript object. 
  * </odoc>
  */
-IO.prototype.readFileJSON = function(aJSONFile) { return jsonParse(io.readFileString(aJSONFile), true); }
+IO.prototype.readFileJSON = function(aJSONFile, unsafe) { 
+	return jsonParse(io.readFileString(aJSONFile), true, unsafe); 
+}
 /**
  * <odoc>
  * <key>io.writeFileYAML(aYAMLFile, aObj, multidoc)</key>

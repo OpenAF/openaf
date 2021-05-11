@@ -678,8 +678,8 @@
             }
         };
 
-        ow.test.assert(af.toYAML(r), "a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n", "Problem converting to yaml.");
-        ow.test.assert(af.fromYAML("a: 1\nb: '123'\nc: true\nd:\n  - 1\n  - 2\n  - 3\ne:\n  a: 1\n  b: '123'\n  c: true\n"), r, "Problem converting from yaml.");
+        ow.test.assert(af.toYAML(r), "a: 1\nb: '123'\nc: true\nd:\n- 1\n- 2\n- 3\ne:\n  a: 1\n  b: '123'\n  c: true\n", "Problem converting to yaml.");
+        ow.test.assert(af.fromYAML("a: 1\nb: '123'\nc: true\nd:\n- 1\n- 2\n- 3\ne:\n  a: 1\n  b: '123'\n  c: true\n"), r, "Problem converting from yaml.");
     };
 
     exports.testXML2And4Obj = function() {
