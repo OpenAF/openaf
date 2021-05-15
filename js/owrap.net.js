@@ -409,7 +409,7 @@ OpenWrap.net.prototype.getIP2Host = function(aIP) {
         }
     });
 
-    if (isDef(result.whois) && result.whois != server) result = ow.java.getWhoIs(aQuery, result.whois);
+    if (isDef(result.whois) && result.whois != server) result = ow.net.getWhoIs(aQuery, result.whois);
 
     return result;
 };
