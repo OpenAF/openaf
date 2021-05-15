@@ -4099,10 +4099,11 @@ if (isUnDef(__odocsurl)) __odocsurl = __odoc;
 var __odocs, __odocsfiles = [];
 var __offlineHelp;
 if (isUnDef(__offlineHelp)) {
-	if (noHomeComms)
+	/*if (noHomeComms)
 		__offlineHelp = true;
 	else
-		__offlineHelp = false;
+		__offlineHelp = false;*/
+	__offlineHelp = true;
 }
 
 
