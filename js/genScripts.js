@@ -49,7 +49,8 @@ function generateWinBat() {
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% %*";
+  s = s + "chcp 65001 > NUL\n";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% %*";
   return s;
 }
 
@@ -61,7 +62,8 @@ function generateWinPackBat() {
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --opack -e \"%*\"";
+  s = s + "chcp 65001 > NUL\n";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --opack -e \"%*\"";
   return s;
 }
 
@@ -73,7 +75,8 @@ function generateWinJobBat() {
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --ojob -e \"%*\"";
+  s = s + "chcp 65001 > NUL\n";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --ojob -e \"%*\"";
   return s;
 }
 
@@ -84,10 +87,11 @@ function generateWinUpdateBat() {
   s += "set JAVA_HOME=\"" + javaHome + "\"\n";
   s += "set OPENAF_DIR=\"" + classPath + "\"\n";
   s += "\n";
-  s += "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --update\n";
+  s = s + "chcp 65001 > NUL\n";
+  s += "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --update\n";
   if (isDef(__genScriptsUpdate) && isArray(__genScriptsUpdate)) {
     __genScriptsUpdate.map(r => {
-      s += "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% " + r + "\n";
+      s += "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% " + r + "\n";
     });
   }
   return s;
@@ -101,7 +105,8 @@ function generateWinConsoleBat() {
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --console %*";
+  s = s + "chcp 65001 > NUL\n";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --console %*";
   return s;
 }
 
@@ -150,10 +155,10 @@ function generateUnixScript(options, shouldSep, extraOptions) {
     s += "ARGS=$@\n";
   }
   s += "\n";
-  s += "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
+  s += "\"$JAVA_HOME\"/bin/java " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
   if (isDef(extraOptions) && isArray(extraOptions)) {
     extraOptions.map(r => {
-      s += "\"$JAVA_HOME\"/bin/java " + javaargs + " -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + r + "\n";
+      s += "\"$JAVA_HOME\"/bin/java " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + r + "\n";
     });
   }
   s += "EXITCODE=$?\n";
@@ -211,7 +216,7 @@ var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
 var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
-var winConsolePSBat = generateWinConsolePSBat();
+//var winConsolePSBat = generateWinConsolePSBat();
 
 var unixScript, unixSB, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
 
@@ -231,7 +236,7 @@ try {
   if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\oafc.bat", winConsoleBat);
-  if (windows == 1) io.writeFileString(curDir + "\\openaf-console-ps.bat", winConsolePSBat);
+  //if (windows == 1) io.writeFileString(curDir + "\\openaf-console-ps.bat", winConsolePSBat);
   if (windows == 1) {
     io.writeFileBytes(curDir + "\\openaf.ico", io.readFileBytes(getOpenAFJar() + "::fonts/openaf.ico"));
     sh("powershell \"$sh=New-Object -COM WScript.Shell;$s=$sh.CreateShortcut('" + curDir + "\\OpenAF CONSOLE.lnk');$s.TargetPath='" + curDir + "\\openaf-console-ps.bat';$s.Description='OpenAF-console';$s.IconLocation='" + curDir + "\\openaf.ico';$s.WorkingDirectory='" + curDir + "';$s.save()\"", undefined, undefined, true);
