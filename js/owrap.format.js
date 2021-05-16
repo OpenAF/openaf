@@ -48,41 +48,47 @@ OpenWrap.format.prototype.string = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.format.string.wordWrap(aString, maxWidth, newLineSeparator) : String</key>
+	 * <key>ow.format.string.wordWrap(aString, maxWidth, newLineSeparator, tabDefault) : String</key>
 	 * Given aString word wraps the text on it given the maxWidth length per line. Optionally you can provide
-	 * a newLineSeparator otherwise '\n' will be used.
+	 * a newLineSeparator otherwise '\n' will be used. Optionally tabDefault determines how many spaces a tab represents (default 4)
 	 * (available after ow.loadFormat())
 	 * </odoc>
 	 */
-	wordWrap: function(str, maxWidth, newLine) {
-	    function testWhite(x) {
-	        var white = new RegExp(/^\s$/);
-	        return white.test(x.charAt(0));
-	    };
-	    
-	    var newLineStr = (isUndefined(newLine)) ? "\n" : newLine; done = false; res = '';
-	    do {                    
-	        found = false;
-	        // Inserts new line at first whitespace of the line
-	        for (var i = maxWidth - 1; i >= 0; i--) {
-	            if (testWhite(str.charAt(i))) {
-	                res = res + [str.slice(0, i), newLineStr].join('');
-	                str = str.slice(i + 1);
-	                found = true;
-	                break;
-	            }
-	        }
-	        // Inserts new line at maxWidth position, the word is too long to wrap
-	        if (!found) {
-	            res += [str.slice(0, maxWidth), newLineStr].join('');
-	            str = str.slice(maxWidth);
-	        }
-	
-	        if (str.length < maxWidth)
-	            done = true;
-	    } while (!done);
-	
-	    return res + str;
+	wordWrap: function(str, maxWidth, newLine, tabDefault) {
+		str = _$(str, "str").isString().default("");
+		tabDefault = _$(tabDefault, "tabDefault").isNumber().default(4);
+		_$(maxWidth, "maxWidth").isNumber().$_();
+	 
+		if (ansiLength(str) <= maxWidth) return str;
+	 
+		str = str.replace(/\t/g, repeat(tabDefault, " "));
+		 
+		 var newLineStr = (isUnDef(newLine)) ? "\n" : newLine; done = false, res = "";
+		 do {
+		   var lines = str.split(newLineStr), lid;
+		   found = false;
+		   for(lid = 0; lid < lines.length && !found; lid++) {
+			  if (ansiLength(lines[lid]) > maxWidth) {
+				 // Inserts new line at first whitespace of the line
+				 for (var i = maxWidth - 1; i >= 0; i--) {
+					if (lines[lid].charAt(i) == " ") {
+					   lines[lid] = lines[lid].slice(0, i) + newLineStr + lines[lid].slice(i+1).trim();
+					   found = true;
+					   break;
+					}
+				 }
+	 
+				 // Inserts new line at maxWidth position, the word is too long to wrap
+				 if (!found) {
+					lines[lid] = lines[lid].slice(0, maxWidth) + newLineStr + lines[lid].slice(maxWidth).trim();
+					found = true;
+				 }
+			  }
+		   }
+		   str = lines.join(newLineStr);
+		 } while (found);
+	 
+		 return str;
 	},
 
 	/**
@@ -2136,6 +2142,43 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
 	var slog = (m, f) => { this.logWarnWithFooter(m, f); };
 	this.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, slog);
 };
+
+/**
+ * <odoc>
+ * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText) : String</key>
+ * Generates a ansi escaped line with a "left side line" to display aString which will be word-wrap given 
+ * aSize (default to the current console size). Optionally ansi colors for ansiLine and ansiText can be provided (see ansiColor for possible values)
+ * </odoc>
+ */
+OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText) {
+	_$(aString, "aString").isString().$_();
+	aSize = _$(aSize, "aSize").isNumber().default(__);
+	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
+
+	var res = "";
+	var atop    = String.fromCharCode(9591);
+	var amiddle = String.fromCharCode(9474);
+	var abottom = String.fromCharCode(9589);
+ 
+	if (isUnDef(aSize)) {
+		__conStatus || __initializeCon(); 
+
+		if (isDef(__con)) {
+			var width = __con.getTerminal().getWidth();
+			aString = ow.format.string.wordWrap(aString, width - 2);
+		}
+	} else {
+		aString = ow.format.string.wordWrap(aString, aSize - 2);
+	}
+
+	res += ansiColor(ansiLine, atop) + "\n";
+	aString.split("\n").forEach(l => {
+	   res += ansiColor(ansiLine, amiddle) + ansiColor("RESET", " ") + (isDef(ansiText) ? ansiColor(ansiText, l) : l) + "\n";
+	});
+	res += ansiColor(ansiLine, abottom) + ansiColor("RESET", "");
+ 
+	return res;
+}
 
 /**
  * <odoc>
