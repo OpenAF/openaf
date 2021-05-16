@@ -7,6 +7,8 @@ var __pinprefix = "";
 var __autoupdate = false;
 var __autoupdateResume = true;
 var CONSOLESEPARATOR = "-- ";
+var HELPSEPARATOR = "-";
+var HELPSEPARATOR_ANSI = "─";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
@@ -22,6 +24,7 @@ var __exitActions = [];
 var __aliasparam;
 var __message = "";
 var __afDBs = {};
+ow.loadFormat();
 
 global.CONSOLETIMEOUT   = undefined;
 global.CONSOLECTRLC     = false;
@@ -568,53 +571,62 @@ function addAlias(aAssignment) {
  * Provides a help screen
  */
 function __help(aTerm) {
+	var __ores = "", c = "BOLD,BLUE";
+	var __o = s => __ores += s + "\n";
 	if(isUnDef(aTerm) || aTerm.length <= 0) {
-		__outputConsoleComments("help     Display this help text");
-		__outputConsoleComments("exit     Exit this console");
-		__outputConsoleComments("time     Turns on or off the timing of any script command provided (default off)");
-		__outputConsoleComments("output   Turns on or off the output of commands (default on)");
-		__outputConsoleComments("beautify Turns on or off the beautify of output (default on)");
-		__outputConsoleComments("color    Turns on or off the colorify of json output (default on)");
-		__outputConsoleComments("desc     Provides a description of the available methods for a class (example 'desc AF')");
-		__outputConsoleComments("scope    Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')");
-		__outputConsoleComments("alias    Create an alias for an openaf-console command line (example 'alias ola=print(\"hi\");')");
-		__outputConsoleComments("watch    Turns on or off an execution before every console prompt (example 'watch new Date();')");
-		__outputConsoleComments("pause    Pauses the output of a command if bigger than the terminal height (default off)");
-		__outputConsoleComments("sql      Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')");
-		__outputConsoleComments("dsql     Returns the list of columns produced by a SQL query over a db connection.");
-		__outputConsoleComments("esql     Executes the SQL statement, over a db connection (example 'esql db update...')");
-		__outputConsoleComments("diff     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
-		__outputConsoleComments("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
-		__outputConsoleComments("table    Tries to show the command result array as an ascii table.");
-		__outputConsoleComments("view     Tries to show the command result object as an ascii table.");
-		__outputConsoleComments("multi    Turns on or off the entry of multiline expressions (default on)");
-		__outputConsoleComments("clear    Tries to clear the screen.");
-		__outputConsoleComments("purge    Purge all the command history");
-		__outputConsoleComments("[others] Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
+		__o("help     Display this help text");
+		__o("exit     Exit this console");
+		__o("time     Turns on or off the timing of any script command provided (default off)");
+		__o("output   Turns on or off the output of commands (default on)");
+		__o("beautify Turns on or off the beautify of output (default on)");
+		__o("color    Turns on or off the colorify of json output (default on)");
+		__o("desc     Provides a description of the available methods for a class (example 'desc AF')");
+		__o("scope    Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')");
+		__o("alias    Create an alias for an openaf-console command line (example 'alias ola=print(\"hi\");')");
+		__o("watch    Turns on or off an execution before every console prompt (example 'watch new Date();')");
+		__o("pause    Pauses the output of a command if bigger than the terminal height (default off)");
+		__o("sql      Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')");
+		__o("dsql     Returns the list of columns produced by a SQL query over a db connection.");
+		__o("esql     Executes the SQL statement, over a db connection (example 'esql db update...')");
+		__o("diff     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
+		__o("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
+		__o("table    Tries to show the command result array as an ascii table.");
+		__o("view     Tries to show the command result object as an ascii table.");
+		__o("multi    Turns on or off the entry of multiline expressions (default on)");
+		__o("clear    Tries to clear the screen.");
+		__o("purge    Purge all the command history");
+		__o("[others] Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
 	} else {
 		var h;
 
 		if (aTerm == "scope") {
-			h = searchHelp("", undefined, ['scope']);
+			h = searchHelp("", __, ['scope']);
 		} else {
 			h = searchHelp(aTerm);
 		}
 		
 		if (isArray(h)) {
 			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
-				__outputConsoleComments(h[0].fullkey);
-				__outputConsoleComments(repeat(h[0].fullkey.length, '-'));
-				__outputConsoleComments(h[0].text);
+				__o(h[0].fullkey);
+				__o(repeat(h[0].fullkey.length, (__ansiflag && con.isAnsiSupported() ? HELPSEPARATOR_ANSI : HELPSEPARATOR)));
+				__o(h[0].text);
 			} else {
 				if (h.length > 1) {
-					for(let i in h) {
-						__outputConsoleComments(h[i].key);
+					for(var i in h) {
+						__o(h[i].key);
 					}
 				} else {
-					__outputConsoleComments("Term '" + aTerm + "' not found.");
+					__o("Term '" + aTerm + "' not found.");
+					c = "BOLD,RED";
 				}
 			}
 		}
+	}
+
+	if (__ansiflag && con.isAnsiSupported()) {
+		print(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c, "BOLD"));
+	} else {
+		__outputConsoleCommentsEnd(__ores);
 	}
 }
 
@@ -941,7 +953,12 @@ function __processCmdLine(aCommand, returnOnly) {
 
 		}
 	} catch(e) {
-		__outputConsoleError(String(e));
+		//__outputConsoleError(String(e));
+		if (__ansiflag && con.isAnsiSupported()) {
+			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), "BOLD,RED", "BOLD,WHITE"));
+		} else {
+			__outputConsoleError(__ores);
+		}
 	}
 
 	internalCommand = false;
