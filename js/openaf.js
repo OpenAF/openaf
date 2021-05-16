@@ -7755,13 +7755,13 @@ const $sh = function(aString) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh.prefix(aPrefix) : $sh</key>
-	 * When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefix.
+	 * <key>$sh.prefix(aPrefix, aTemplate) : $sh</key>
+	 * When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefix and optionally aTemplate.
 	 * </odoc>
 	 */
-	__sh.prototype.prefix = function(aPrefix) {
+	__sh.prototype.prefix = function(aPrefix, aTemplate) {
 		aPrefix = _$(aPrefix, "prefix").isString().default("sh");
-		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding) };
+		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, __, aTemplate) };
 		return this;
 	};
 
@@ -8015,14 +8015,14 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
-	 * <key>$ssh.prefix(aPrefix) : $ssh</key>
-	 * When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefix.
+	 * <key>$ssh.prefix(aPrefix, aTemplate) : $ssh</key>
+	 * When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefix and optionally aTemplate.
 	 * </odoc>
 	 */
-	__ssh.prototype.prefix = function(aPrefix) {
+	__ssh.prototype.prefix = function(aPrefix, aTemplate) {
 		aPrefix = _$(aPrefix, "prefix").isString().default("sh");
 		ow.loadFormat();
-		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, "\n") };
+		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, "\n", aTemplate) };
 		return this;
 	};
 
