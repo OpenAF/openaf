@@ -757,6 +757,9 @@ function __initializeCon() {
  */
 function ansiColor(aAnsi, aString, force) {
 	if (!__initializeCon()) return aString;
+	aAnsi = _$(aAnsi, "aAnsi").isString().default("");
+	aString = _$(aString, "aString").isString().default("");
+	force = _$(force, "force").isBoolean().default(false);
 
 	var con = __con;
 	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
@@ -764,7 +767,23 @@ function ansiColor(aAnsi, aString, force) {
 	var res = "";
 	
 	if (ansis) {
-		var res = jansi.Ansi.ansi().render("@|" + aAnsi.toLowerCase() + " " + aString + "|@");
+		var nAnsi = [];
+		aAnsi.split(",").forEach(r => {
+			if (r.startsWith("BG(")) {
+				var bg = r.match(/BG\((\d+)\)/);
+				if (!isNull(bg)) aString = "\033[48;5;" + bg[1] + "m" + aString;
+			} else if (r.startsWith("FG(")) {
+				var fg = r.match(/FG\((\d+)\)/);
+				if (!isNull(fg)) aString = "\033[38;5;" + fg[1] + "m" + aString;
+			} else {
+				nAnsi.push(r);
+			}
+		});
+		if (nAnsi.length > 0) {
+			res = jansi.Ansi.ansi().render("@|" + nAnsi.join(",").toLowerCase() + " " + aString + "|@");
+		} else {
+			res = aString;
+		}
 		//var res = Packages.openaf.JAnsiRender.render(aAnsi.toLowerCase() + " " + aString);
 		return String(res); 
 	} else {
@@ -831,6 +850,17 @@ function ansiStop(force) {
 			java.lang.System.out.flush(); java.lang.System.err.flush();
 		}
 	}
+}
+
+/**
+ * <odoc>
+ * <key>ansiLength(aString) : Number</key>
+ * Tries to return the aString length without any ansi control sequences.
+ * </odoc>
+ */
+function ansiLength(aString) {
+	_$(aString, "aString").isString().$_();
+	return aString.replace(/\033\[[0-9;]*m/g, "").length;
 }
 
 /**
