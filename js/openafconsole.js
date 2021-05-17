@@ -624,7 +624,7 @@ function __help(aTerm) {
 	}
 
 	if (__ansiflag && con.isAnsiSupported()) {
-		print(ow.format.withSideLine(ow.format.withMD(__ores.slice(0, __ores.length-1), "ITALIC"), con.getConsoleReader().getTerminal().getWidth(), c, "ITALIC"));
+		print(ow.format.withSideLine(ow.format.withMD(__ores.slice(0, __ores.length-1)), con.getConsoleReader().getTerminal().getWidth(), c));
 	} else {
 		__outputConsoleCommentsEnd(__ores);
 	}
