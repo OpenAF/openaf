@@ -574,28 +574,28 @@ function __help(aTerm) {
 	var __ores = "", c = "BOLD,BLUE";
 	var __o = s => __ores += s + "\n";
 	if(isUnDef(aTerm) || aTerm.length <= 0) {
-		__o("help     Display this help text");
-		__o("exit     Exit this console");
-		__o("time     Turns on or off the timing of any script command provided (default off)");
-		__o("output   Turns on or off the output of commands (default on)");
-		__o("beautify Turns on or off the beautify of output (default on)");
-		__o("color    Turns on or off the colorify of json output (default on)");
-		__o("desc     Provides a description of the available methods for a class (example 'desc AF')");
-		__o("scope    Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')");
-		__o("alias    Create an alias for an openaf-console command line (example 'alias ola=print(\"hi\");')");
-		__o("watch    Turns on or off an execution before every console prompt (example 'watch new Date();')");
-		__o("pause    Pauses the output of a command if bigger than the terminal height (default off)");
-		__o("sql      Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')");
-		__o("dsql     Returns the list of columns produced by a SQL query over a db connection.");
-		__o("esql     Executes the SQL statement, over a db connection (example 'esql db update...')");
-		__o("diff     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
-		__o("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
-		__o("table    Tries to show the command result array as an ascii table.");
-		__o("view     Tries to show the command result object as an ascii table.");
-		__o("multi    Turns on or off the entry of multiline expressions (default on)");
-		__o("clear    Tries to clear the screen.");
-		__o("purge    Purge all the command history");
-		__o("[others] Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
+		__o("__help__     _Display this help text_");
+		__o("__exit__     _Exit this console_");
+		__o("__time__     _Turns on or off the timing of any script command provided (default off)_");
+		__o("__output__   _Turns on or off the output of commands (default on)_");
+		__o("__beautify__ _Turns on or off the beautify of output (default on)_");
+		__o("__color__    _Turns on or off the colorify of json output (default on)_");
+		__o("__desc__     _Provides a description of the available methods for a class (example 'desc AF')_");
+		__o("__scope__    _Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')_");
+		__o("__alias__    _Create an alias for an openaf-console command line (example 'alias ola=print(\"hi\");')_");
+		__o("__watch__    _Turns on or off an execution before every console prompt (example 'watch new Date();')_");
+		__o("__pause__    _Pauses the output of a command if bigger than the terminal height (default off)_");
+		__o("__sql__      _Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')_");
+		__o("__dsql__     _Returns the list of columns produced by a SQL query over a db connection._");
+		__o("__esql__     _Executes the SQL statement, over a db connection (example 'esql db update...')_");
+		__o("__diff__     _Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)_");
+		__o("__pin__      _Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')_");
+		__o("__table__    _Tries to show the command result array as an ascii table._");
+		__o("__view__     _Tries to show the command result object as an ascii table._");
+		__o("__multi__    _Turns on or off the entry of multiline expressions (default on)_");
+		__o("__clear__    _Tries to clear the screen._");
+		__o("__purge__    _Purge all the command history_");
+		__o("__[others]__ _Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')_");
 	} else {
 		var h;
 
@@ -607,8 +607,8 @@ function __help(aTerm) {
 		
 		if (isArray(h)) {
 			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
-				__o(h[0].fullkey);
-				__o(repeat(h[0].fullkey.length, (__ansiflag && con.isAnsiSupported() ? HELPSEPARATOR_ANSI : HELPSEPARATOR)));
+				__o("**" + h[0].fullkey + "**");
+				__o("**" + repeat(h[0].fullkey.length, (__ansiflag && con.isAnsiSupported() ? HELPSEPARATOR_ANSI : HELPSEPARATOR)) + "**");
 				__o(h[0].text);
 			} else {
 				if (h.length > 1) {
@@ -624,7 +624,7 @@ function __help(aTerm) {
 	}
 
 	if (__ansiflag && con.isAnsiSupported()) {
-		print(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c, "BOLD"));
+		print(ow.format.withSideLine(ow.format.withMD(__ores.slice(0, __ores.length-1), "ITALIC"), con.getConsoleReader().getTerminal().getWidth(), c, "ITALIC"));
 	} else {
 		__outputConsoleCommentsEnd(__ores);
 	}
@@ -955,7 +955,7 @@ function __processCmdLine(aCommand, returnOnly) {
 	} catch(e) {
 		//__outputConsoleError(String(e));
 		if (__ansiflag && con.isAnsiSupported()) {
-			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), "BOLD,RED", "BOLD,WHITE"));
+			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), "BOLD,RED", "BOLD"));
 		} else {
 			__outputConsoleError(__ores);
 		}
