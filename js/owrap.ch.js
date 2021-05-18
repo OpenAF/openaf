@@ -2200,6 +2200,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [];
 			var _lst = this.__o[aName].fn("size", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 
 			if (this.__o[aName].treatAll) {
 				var res = $atomic(0);
@@ -2235,6 +2236,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("get", aK);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 			lst.map(c => {
 				arr.push($do( () => {
 					var _o = this.__r(aName, c, "get", [ this.__o[aName].fnTrans(aK) ]);
@@ -2250,6 +2252,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [];
 			var _lst = this.__o[aName].fn("foreach", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 			lst.map(c => {
 				arr.push($do( () => this.__r(aName, c, "forEach", [ aFunction ]) ));
 			});
@@ -2263,6 +2266,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("getall", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 			lst.map(c => {
 				arr.push($do( () => {
 					res.addAll( this.__r(aName, c, "getAll", [ full ]) );
@@ -2278,6 +2282,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("getkeys", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 			lst.map(c => {
 				arr.push($do( () => {
 					res.addAll( this.__r(aName, c, "getKeys", [ full ]) );
@@ -2292,6 +2297,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("getsortedkeys", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 			lst.map(c => {
 				arr.push($do( () => {
 					res.addAll( this.__r(aName, c, "getSortedKeys", [ full ]) );
@@ -2307,6 +2313,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("getset", aK);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 			lst.map(c => {
 				arr.push($do( () => {
 					res.add( this.__r(aName, c, "getSet", [ aMatch, this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
@@ -2321,6 +2328,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("set", aK);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 			lst.map(c => {
 				arr.push($do( () => {
 					res.add( this.__r(aName, c, "set", [ this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
@@ -2339,6 +2347,7 @@ OpenWrap.ch.prototype.__types = {
 				var arr = [];
 				var _lst = this.__o[aName].fn("setall", aKs);
 				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+				if (!isArray(lst)) lst = [ lst ];
 				var naKs = aKs.map(this.__o[aName].fnTrans);
 				lst.map(c => arr.push($do( () => this.__r(aName, c, "setAll", [ naKs, aVs, aTimestamp ]) )) );
 	
@@ -2355,6 +2364,7 @@ OpenWrap.ch.prototype.__types = {
 				var arr = [];
 				var _lst = this.__o[aName].fn("unsetall", aKs);
 				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+				if (!isArray(lst)) lst = [ lst ];
 				var naKs = aKs.map(this.__o[aName].fnTrans);
 				lst.map(c => {
 					arr.push($do( () => {
@@ -2385,6 +2395,7 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("unset", aK);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			if (!isArray(lst)) lst = [ lst ];
 			lst.map(c => {
 				arr.push($do( () => {
 					res.add( this.__r(aName, c, "unset", [ this.__o[aName].fnTrans(aK), aTimestamp ]) );
