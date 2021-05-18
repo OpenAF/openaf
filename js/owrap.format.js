@@ -2145,6 +2145,18 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
 	this.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, slog);
 };
 
+OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
+        _$(aString, "aString").isString().$_();
+        defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
+	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "");
+
+ 	res = res.replace(/(\*{3}|_{3})([^\*{3}_{3}]+)(\*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
+ 	res = res.replace(/(\*{2}|_{2})([^\*{2}_{2}]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
+ 	res = res.replace(/(\*|_)([^\*_]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
+	
+	return res;
+};
+
 /**
  * <odoc>
  * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText) : String</key>
@@ -2158,9 +2170,9 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
 
 	var res = "";
-	var atop    = String.fromCharCode(9591);
+	//var atop    = String.fromCharCode(9591);
 	var amiddle = String.fromCharCode(9474);
-	var abottom = String.fromCharCode(9589);
+	//var abottom = String.fromCharCode(9589);
  
 	if (isUnDef(aSize)) {
 		__conStatus || __initializeCon(); 
@@ -2173,11 +2185,13 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 		aString = ow.format.string.wordWrap(aString, aSize - 2);
 	}
 
-	res += ansiColor(ansiLine, atop) + "\n";
-	aString.split("\n").forEach(l => {
-	   res += ansiColor(ansiLine, amiddle) + ansiColor("RESET", " ") + (isDef(ansiText) ? ansiColor(ansiText, l) : l) + "\n";
+	//res += ansiColor(ansiLine, atop) + "\n";
+        var ar = aString.split("\n");
+	ar.forEach((l, li) => {
+	   res += ansiColor(ansiLine, amiddle) + ansiColor("RESET", " ") + (isDef(ansiText) ? ansiColor(ansiText, l) : l);
+	   if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
 	});
-	res += ansiColor(ansiLine, abottom) + ansiColor("RESET", "");
+	//res += ansiColor(ansiLine, abottom) + ansiColor("RESET", "");
  
 	return res;
 }
