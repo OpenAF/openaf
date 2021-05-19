@@ -1029,7 +1029,7 @@ function __checkVersion() {
 			io.cp(getOpenAFJar() + ".orig", getOpenAFPath() + "/openaf.jar.old.orig");
 			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar.repacked", getOpenAFPath() + "/openaf.jar.new");
 			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar", getOpenAFPath() + "/openaf.jar.new.orig");
-			__message = "OpenAF will update to version " + remoteRelease + " on exit.";
+			__message += "OpenAF will update to version " + remoteRelease + " on exit; ";
 			addOnOpenAFShutdown(() => {
 				__outputConsoleComments("Please hold on, updating to OpenAF version: " + remoteRelease + "...");
 				io.writeFileBytes(getOpenAFJar() + ".orig", io.readFileBytes(getOpenAFPath() + "/openaf.jar.new.orig"));
@@ -1061,7 +1061,7 @@ function __checkVersion() {
 				if (__autoupdate && !anotherOne)
 					openAFAutoUpdate();
 				else
-					__message = "There is a new OpenAF version available: " + current + ". Run 'openaf --update' to update.";
+					__message += "There is a new OpenAF version available: " + current + ". Run 'openaf --update' to update; ";
 			}
 		}
 		t.stop(true);
@@ -1253,7 +1253,8 @@ initThread.addThread(function(uuid) {
 	} catch(e) {
 		printErr("Error while loading " + java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE + ": " + String(e));
 	}
-	
+
+        if (io.getDefaultEncoding() != "UTF-8") __message += "Please ensure that the java option -D\"file.encoding=UTF-8\" is included (this can be achieved by executing 'cd " + getOpenAFPath() + " && ./oaf --install'); ";
 	if (!noHomeComms) __checkVersion();
 	initThread.stop();
 });
