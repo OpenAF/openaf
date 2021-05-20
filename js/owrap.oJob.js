@@ -1882,14 +1882,24 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		}
 
 		if (isDef(aJobTypeArgs.file)) {
-			res = io.readFileString(aJobTypeArgs.file);
+			if (io.fileExists(aJobTypeArgs.file)) {
+				res = io.readFileString(aJobTypeArgs.file);
+			} else {
+				logErr("File '" + aJobTypeArgs.file + " not found!");
+				res = "";
+			}
 		}
 
 		if (isDef(aFile)) {
 			if ( io.fileExists(aFile) ) {
 				res = io.readFileString(aFile);
+			} else {
+				logErr("File '" + aFile + " not found!");
+				res = "";
 			}
 		}
+
+		if (res == "") return res;
 
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
 			if (aJobTypeArgs.lang == "winssh") {
