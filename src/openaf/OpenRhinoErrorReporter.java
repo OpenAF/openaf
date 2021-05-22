@@ -27,9 +27,9 @@ public class OpenRhinoErrorReporter implements ErrorReporter {
 	 */
 	protected String pointString(String lineText, int lineOffset) {
 		if (lineText != null) {
-			StringBuilder res = new StringBuilder(lineText + "\n");
+			StringBuilder res = new StringBuilder("\"" + lineText + "\"\n ");
 			for(int a = 0; a < lineOffset; a++) res.append(' ');
-			res.append("^\n");
+			res.append("^");
 			return res.toString();
 		} else {
 			return "";
@@ -45,7 +45,7 @@ public class OpenRhinoErrorReporter implements ErrorReporter {
 		String source = (sourceURI != null && sourceURI.length() > 0) ? "[" + sourceURI + "]" : "";
 		
 		SimpleLog.log(SimpleLog.logtype.ERROR, 
-				"ERROR " + source + " -- " + message + ", line: " + l + ", column: " + lineOffset + ", global line: " + line + "\n" + pointString(lineText, lineOffset), 
+				"ERROR" + source + ": " + message + " (line: " + l + ", column: " + lineOffset + ", global line: " + line + ")\n" + pointString(lineText, lineOffset), 
 				null);
 	}
 
@@ -56,7 +56,7 @@ public class OpenRhinoErrorReporter implements ErrorReporter {
 		String source = (sourceURI != null && sourceURI.length() > 0) ? "[" + sourceURI + "]" : "";
 		
 		SimpleLog.log(SimpleLog.logtype.DEBUG, 
-				"RUNTIME ERROR " + source + " -- " + message + ", line: " + line + ", column: " + lineOffset + "\n" + pointString(lineText, lineOffset), 
+				"RUNTIME ERROR" + source + ": " + message + " (line: " + line + ", column: " + lineOffset + ")\n" + pointString(lineText, lineOffset), 
 				null);
 		return new EvaluatorException(
                 message, sourceURI, line, lineText, lineOffset);
@@ -70,7 +70,7 @@ public class OpenRhinoErrorReporter implements ErrorReporter {
 		String source = (sourceURI != null && sourceURI.length() > 0) ? "[" + sourceURI + "]" : "";
 		
 		SimpleLog.log(SimpleLog.logtype.DEBUG, 
-				"WARNING " + source + " -- " + message + ", line: " + l + ", column: " + lineOffset + ", global line: " + line + "\n" + pointString(lineText, lineOffset), 
+				"WARNING" + source + ": " + message + " (line: " + l + ", column: " + lineOffset + ", global line: " + line + ")\n" + pointString(lineText, lineOffset), 
 				null);
 	}
 

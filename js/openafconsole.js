@@ -20,6 +20,11 @@ var __alias = {
     "ojob": "(()=>{var f = __aliasparam.split(\" \"); var o = processExpr(\" \", false, __aliasparam); delete o[f[0]]; oJobRunFile(f[0], o);})()"
 };
 var __exitActions = [];
+var __consoleFormat = {
+	error: "WHITE",
+	errorLine: "BOLD,RED",
+	helpLine: "BOLD,BLUE"
+};
 
 var __aliasparam;
 var __message = "";
@@ -571,7 +576,7 @@ function addAlias(aAssignment) {
  * Provides a help screen
  */
 function __help(aTerm) {
-	var __ores = "", c = "BOLD,BLUE";
+	var __ores = "", c = __consoleFormat.helpLine;
 	var __o = s => __ores += s + "\n";
 	if(isUnDef(aTerm) || aTerm.length <= 0) {
 		__o("__help__     Display this help text");
@@ -617,7 +622,7 @@ function __help(aTerm) {
 					}
 				} else {
 					__o("Term '" + aTerm + "' not found.");
-					c = "BOLD,RED";
+					c = __consoleFormat.errorLine;
 				}
 			}
 		}
@@ -1259,6 +1264,12 @@ initThread.addThread(function(uuid) {
 	initThread.stop();
 });
 initThread.startNoWait();
+
+if(__ansiflag && con.isAnsiSupported()) {
+	Packages.openaf.SimpleLog.setNFunc(function(s) { 
+		printErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+	});
+}
 
 if (__expr.length > 0) cmd = __expr;
 cmd = cmd.trim();
