@@ -1108,7 +1108,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
  */
 OpenWrap.oJob.prototype.stop = function() {
 	if (this.python) {
-		$pyStop();
+		try { $pyStop(); } catch(e) {}
 		this.python = false;
 	}
 
@@ -1871,9 +1871,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			aJobTypeArgs.lang = "oaf";
 			res = io.readFileString(aJobTypeArgs.execJs);
 		}
-		if (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire)) {
+		if (aJobTypeArgs.lang == "oaf" && (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire))) {
 			aJobTypeArgs.execRequire = _$(aJobTypeArgs.execRequire, "execRequire").isString().default(parent.__execRequire);
-			aJobTypeArgs.lang = "oaf";
+			//aJobTypeArgs.lang = "oaf";
 			res = "var __r = require('" + aJobTypeArgs.execRequire + "'); if (isDef(__r['" + _aName + "'])) __r['" + _aName + "'](args); else throw \"Code for '" + _aName + "' not found!\";";
 		}
 		if (isDef(aJobTypeArgs.execPy))      {
