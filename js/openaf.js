@@ -2861,9 +2861,15 @@ function compare(x, y) {
 	if (!(x instanceof Object)) { return false; }
 	if (!(y instanceof Object)) { return false; }
 
-	var p = Object.keys(x);
-	return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
-	p.every(function (i) { return compare(x[i], y[i]); });
+	var p = Object.keys(x), q = Object.keys(y);
+        if (p.length != q.length) return false;
+        for(var k in x) { 
+           var v = x[k];
+	   if (isUnDef(y[k]) || (!compare(v, y[k]))) return false;
+	}
+        return true;
+	/*return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
+	p.every(function (i) { return compare(x[i], y[i]); });*/
 }
 
 /**
