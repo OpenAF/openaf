@@ -1862,7 +1862,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
     function procLang(aExec, aJobTypeArgs, aEach, aLang, aFile) {
 		var res = _$(aExec).default("");
-		aLang = _$(aLang).default("js");
+		aLang = _$(aLang).default("oaf");
 
 		aJobTypeArgs = _$(aJobTypeArgs).default({});
 		if (isDef(aLang)) aJobTypeArgs.lang = aLang;
@@ -1908,6 +1908,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 			switch(aJobTypeArgs.lang) {
 			case "js":
+				break;
+			case "oaf":
 				break;
 			case "python":
 				parent.python = true;
