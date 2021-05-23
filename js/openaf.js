@@ -5706,23 +5706,32 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	return jsonParse(res);
 };
 
-//    %[argument_index$][flags][width][.precision]conversion 
-// argument_index: number
-// flags         : "-" (left-justified), "#", "+" (include sign), " " (leading space), "0" (zero-padded), "," (separators), "(" (enclose negative)
-// conversion    : b/B (boolean), h/H (hash), s/S (string), "-" (left justify), c/C (character)
-// https://docs.oracle.com/javase/7/docs/api/java/util/Formatter.html
-// All numbers in js are float:
-// format("%.2f", 1.9)
-// format("%10.2f", 1.9) 
-//
-// Date:
-// format("Time: %tT", new Date())
-// format("Date: %1$tm %1$te, %1$tY %1$tT", new Date())
-
 __$f = {
 	//locale: java.util.Locale.US
 }
-var $f = function() {
+/**
+ * <odoc>
+ * <key>$f(aString, arg1, arg2, ...) : String</key>
+ * Formats aString with arg1, arg2 and any other arguments provided using java.util.Formatter. The format is composed
+ * of "%[argument_index$][flags][width][.precision]conversion". Do note that javascript numbers are converted to java.lang.Float. If you
+ * need it to convert to Integer, Long, Double, Float and BigDecimal please use $ft. The javascript Date type will be converted to java Calendar.
+ * So possible values:\
+ * \
+ *    argument_index: number\
+ *    flags         : '-' (left-justified); '#'; '+' (include sign); ' ' (leading space); '0' (zero-padded); ',' (separators); '(' (enclose negative values)\
+ *    conversion    : b/B (boolean), h/H (hash), s/S (string), "-" (left justify), c/C (character)\
+ * \
+ * Examples:\
+ * \
+ *    $f("Time %tT", new Date())\
+ *    $f("Date: %1$tm %1te, %1tY %1$tT", new Date())\
+ * \
+ *    $f("%.2f", 1.9)\
+ *    $f("%10.2f", 1.9)\
+ * \
+ * </odoc>
+ */
+const $f = function() {
 	var ff;
 	if (isDef(__$f.locale)) {
 		ff = new java.util.Formatter(__$f.locale);
@@ -5742,7 +5751,13 @@ var $f = function() {
 	return String(f.apply(ff, arguments));
 }
 
-var $ft = function() {
+/**
+ * <odoc>
+ * <key>$ft(aString, arg1, arg2, ...) : String</key>
+ * Equivalant to $f but number types are converted to Integer, Long, Double, Float and BigDecimal.
+ * </odoc>
+ */
+const $ft = function() {
 	var ff;
 	if (isDef(__$f.locale)) {
 		ff = new java.util.Formatter(__$f.locale);
