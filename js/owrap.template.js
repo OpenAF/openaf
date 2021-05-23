@@ -62,6 +62,11 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - toYAML          -- returns the YAML version of the parameter\
  *   - env             -- returns the current environment variable identified by the parameter\
  *   - escape          -- returns an escaped version of the parameter\
+ *   - f               -- uses the $f format function\
+ *   - ft              -- uses the $ft format function\
+ *   - get             -- uses the $$.get function to access objects\
+ *   - path            -- uses the $path function to query objects\
+ *   - toSLON          -- returns the ow.format.toSLON version of an objecft\
  * \
  * </odoc>
  */
