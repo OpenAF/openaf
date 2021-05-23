@@ -1030,7 +1030,8 @@ function jsonParse(astring, alternative, unsafe) {
  */
 function templify(aTemplateString, someData) {
 	someData = (isUnDef(someData)) ? this : someData;
-	return String(ow.loadTemplate().parse(aTemplateString, someData));
+	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
+	return String(ow.template.parse(aTemplateString, someData));
 }
 
 /**

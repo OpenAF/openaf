@@ -67,12 +67,17 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
 	ow.loadFormat();
-	ow.template.addHelper("debug", (s) => { sprint(s); });
-	ow.template.addHelper("stringify", (s) => { return stringify(s); });
+	ow.template.addHelper("debug", sprint);
+	ow.template.addHelper("stringify", stringify);
 	ow.template.addHelper("stringifyInLine", (s) => { return stringify(s, __, ""); });
-	ow.template.addHelper("toYAML", (s) => { return af.toYAML(s); });
-	ow.template.addHelper("env", (s) => { return String(java.lang.System.getenv().get(s)); });
+	ow.template.addHelper("toYAML", af.toYAML);
+	ow.template.addHelper("env", getEnv);
 	ow.template.addHelper("escape", (s) => { return s.replace(/['"]/g, "\\$1"); });	
+	ow.template.addHelper("f", $f);
+	ow.template.addHelper("ft", $ft);
+	ow.template.addHelper("get", (o, p) => $$(o).get(p));
+	ow.template.addHelper("path", (o, p) => $path(o, p));
+	ow.template.addHelper("toSLON", ow.format.toSLON);
 };
 
 /**
