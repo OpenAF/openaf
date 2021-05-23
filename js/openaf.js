@@ -1030,7 +1030,8 @@ function jsonParse(astring, alternative, unsafe) {
  */
 function templify(aTemplateString, someData) {
 	someData = (isUnDef(someData)) ? this : someData;
-	return String(ow.loadTemplate().parse(aTemplateString, someData));
+	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
+	return String(ow.template.parse(aTemplateString, someData));
 }
 
 /**
@@ -5071,6 +5072,8 @@ const $rest = function(ops) {
 		this.options.downloadResume = _$(this.options.downloadResume, "downloadResume").isBoolean().default(false);
 		this.options.retry = _$(this.options.retry, "retry").isNumber().default(0);
 		this.options.retryWait = _$(this.options.retryWait, "retryWait").isNumber().default(1500);
+		this.options.login = _$(this.options.login, "login").default(__);
+		this.options.pass = _$(this.options.pass, "pass").default(__);
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -5702,6 +5705,88 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	res = res.stdout.substr(res.stdout.indexOf(separator) + separator.length, res.stdout.length);
 	return jsonParse(res);
 };
+
+__$f = {
+	//locale: java.util.Locale.US
+}
+/**
+ * <odoc>
+ * <key>$f(aString, arg1, arg2, ...) : String</key>
+ * Formats aString with arg1, arg2 and any other arguments provided using java.util.Formatter. The format is composed
+ * of "%[argument_index$][flags][width][.precision]conversion". Do note that javascript numbers are converted to java.lang.Float. If you
+ * need it to convert to Integer, Long, Double, Float and BigDecimal please use $ft. The javascript Date type will be converted to java Calendar.
+ * So possible values:\
+ * \
+ *    argument_index: number\
+ *    flags         : '-' (left-justified); '#'; '+' (include sign); ' ' (leading space); '0' (zero-padded); ',' (separators); '(' (enclose negative values)\
+ *    conversion    : b/B (boolean), h/H (hash), s/S (string), "-" (left justify), c/C (character)\
+ * \
+ * Examples:\
+ * \
+ *    $f("Time %tT", new Date())\
+ *    $f("Date: %1$tm %1te, %1tY %1$tT", new Date())\
+ * \
+ *    $f("%.2f", 1.9)\
+ *    $f("%10.2f", 1.9)\
+ * \
+ * </odoc>
+ */
+const $f = function() {
+	var ff;
+	if (isDef(__$f.locale)) {
+		ff = new java.util.Formatter(__$f.locale);
+	} else {
+		ff = new java.util.Formatter();
+	}
+	var f = ff.format;
+
+	for (var k in arguments) {
+		if (isDate(arguments[k])) {
+			var sdf = new java.text.SimpleDateFormat();
+			sdf.format(arguments[k]);
+			arguments[k] = sdf.getCalendar()
+		}
+	}
+
+	return String(f.apply(ff, arguments));
+}
+
+/**
+ * <odoc>
+ * <key>$ft(aString, arg1, arg2, ...) : String</key>
+ * Equivalant to $f but number types are converted to Integer, Long, Double, Float and BigDecimal.
+ * </odoc>
+ */
+const $ft = function() {
+	var ff;
+	if (isDef(__$f.locale)) {
+		ff = new java.util.Formatter(__$f.locale);
+	} else {
+		ff = new java.util.Formatter();
+	}
+	var f = ff.format;
+
+	for (var k in arguments) {
+		if (isDate(arguments[k])) {
+			var sdf = new java.text.SimpleDateFormat();
+			sdf.format(arguments[k]);
+			arguments[k] = sdf.getCalendar()
+		}
+		if (isNumber(arguments[k]) && !isDecimal(arguments[k])) {
+			if (arguments[k] > java.lang.Integer.MAX_VALUE || arguments[k] < java.lang.Integer.MIN_VALUE) {
+				arguments[k] = new java.lang.Long(arguments[k]);
+			} else {
+				if (arguments[k] > java.lang.BigDecimal.MAX_VALUE || arguments[k] < java.lang.BigDecimal.MIN_VALUE) {
+					arguments[k] = new java.math.BigDecimal(arguments[k]);
+				} else {
+					arguments[k] = new java.lang.Integer(arguments[k]);
+				}
+			}
+		}
+	}
+
+	return String(f.apply(ff, arguments));
+}
 
 const $bottleneck = function(aName, aFn) {
 	if (isUnDef(global.__bottleneck)) global.__bottleneck = {};

@@ -62,17 +62,27 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - toYAML          -- returns the YAML version of the parameter\
  *   - env             -- returns the current environment variable identified by the parameter\
  *   - escape          -- returns an escaped version of the parameter\
+ *   - f               -- uses the $f format function\
+ *   - ft              -- uses the $ft format function\
+ *   - get             -- uses the $$.get function to access objects\
+ *   - path            -- uses the $path function to query objects\
+ *   - toSLON          -- returns the ow.format.toSLON version of an objecft\
  * \
  * </odoc>
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
 	ow.loadFormat();
-	ow.template.addHelper("debug", (s) => { sprint(s); });
-	ow.template.addHelper("stringify", (s) => { return stringify(s); });
+	ow.template.addHelper("debug", sprint);
+	ow.template.addHelper("stringify", stringify);
 	ow.template.addHelper("stringifyInLine", (s) => { return stringify(s, __, ""); });
-	ow.template.addHelper("toYAML", (s) => { return af.toYAML(s); });
-	ow.template.addHelper("env", (s) => { return String(java.lang.System.getenv().get(s)); });
+	ow.template.addHelper("toYAML", af.toYAML);
+	ow.template.addHelper("env", getEnv);
 	ow.template.addHelper("escape", (s) => { return s.replace(/['"]/g, "\\$1"); });	
+	ow.template.addHelper("f", $f);
+	ow.template.addHelper("ft", $ft);
+	ow.template.addHelper("get", (o, p) => $$(o).get(p));
+	ow.template.addHelper("path", (o, p) => $path(o, p));
+	ow.template.addHelper("toSLON", ow.format.toSLON);
 };
 
 /**
