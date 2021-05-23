@@ -7,6 +7,8 @@ var __pinprefix = "";
 var __autoupdate = false;
 var __autoupdateResume = true;
 var CONSOLESEPARATOR = "-- ";
+var HELPSEPARATOR = "-";
+var HELPSEPARATOR_ANSI = "─";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
@@ -18,10 +20,16 @@ var __alias = {
     "ojob": "(()=>{var f = __aliasparam.split(\" \"); var o = processExpr(\" \", false, __aliasparam); delete o[f[0]]; oJobRunFile(f[0], o);})()"
 };
 var __exitActions = [];
+var __consoleFormat = {
+	error: "WHITE",
+	errorLine: "BOLD,RED",
+	helpLine: "BOLD,BLUE"
+};
 
 var __aliasparam;
 var __message = "";
 var __afDBs = {};
+ow.loadFormat();
 
 global.CONSOLETIMEOUT   = undefined;
 global.CONSOLECTRLC     = false;
@@ -568,53 +576,62 @@ function addAlias(aAssignment) {
  * Provides a help screen
  */
 function __help(aTerm) {
+	var __ores = "", c = __consoleFormat.helpLine;
+	var __o = s => __ores += s + "\n";
 	if(isUnDef(aTerm) || aTerm.length <= 0) {
-		__outputConsoleComments("help     Display this help text");
-		__outputConsoleComments("exit     Exit this console");
-		__outputConsoleComments("time     Turns on or off the timing of any script command provided (default off)");
-		__outputConsoleComments("output   Turns on or off the output of commands (default on)");
-		__outputConsoleComments("beautify Turns on or off the beautify of output (default on)");
-		__outputConsoleComments("color    Turns on or off the colorify of json output (default on)");
-		__outputConsoleComments("desc     Provides a description of the available methods for a class (example 'desc AF')");
-		__outputConsoleComments("scope    Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')");
-		__outputConsoleComments("alias    Create an alias for an openaf-console command line (example 'alias ola=print(\"hi\");')");
-		__outputConsoleComments("watch    Turns on or off an execution before every console prompt (example 'watch new Date();')");
-		__outputConsoleComments("pause    Pauses the output of a command if bigger than the terminal height (default off)");
-		__outputConsoleComments("sql      Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')");
-		__outputConsoleComments("dsql     Returns the list of columns produced by a SQL query over a db connection.");
-		__outputConsoleComments("esql     Executes the SQL statement, over a db connection (example 'esql db update...')");
-		__outputConsoleComments("diff     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
-		__outputConsoleComments("pin      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
-		__outputConsoleComments("table    Tries to show the command result array as an ascii table.");
-		__outputConsoleComments("view     Tries to show the command result object as an ascii table.");
-		__outputConsoleComments("multi    Turns on or off the entry of multiline expressions (default on)");
-		__outputConsoleComments("clear    Tries to clear the screen.");
-		__outputConsoleComments("purge    Purge all the command history");
-		__outputConsoleComments("[others] Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
+		__o("__help__     Display this help text");
+		__o("__exit__     Exit this console");
+		__o("__time__     Turns on or off the timing of any script command provided (default off)");
+		__o("__output__   Turns on or off the output of commands (default on)");
+		__o("__beautify__ Turns on or off the beautify of output (default on)");
+		__o("__color__    Turns on or off the colorify of json output (default on)");
+		__o("__desc__     Provides a description of the available methods for a class (example 'desc AF')");
+		__o("__scope__    Lists the current OpenAF javascript scope loaded filtered by a regexp (example 'scope sha')");
+		__o("__alias__    Create an alias for an openaf-console command line (example 'alias ola=print(\"hi\");')");
+		__o("__watch__    Turns on or off an execution before every console prompt (example 'watch new Date();')");
+		__o("__pause__    Pauses the output of a command if bigger than the terminal height (default off)");
+		__o("__sql__      Executes a SQL query, over a db connection, displaying the result in a table (example 'sql adm select...')");
+		__o("__dsql__     Returns the list of columns produced by a SQL query over a db connection.");
+		__o("__esql__     Executes the SQL statement, over a db connection (example 'esql db update...')");
+		__o("__diff__     Show differences between object A and B (example 'diff A with B'; accepts with/withNew/withChanges/withFull)");
+		__o("__pin__      Pins the next command as a prefix for the next commands until an empty command (example 'pin sql db...')");
+		__o("__table__    Tries to show the command result array as an ascii table.");
+		__o("__view__     Tries to show the command result object as an ascii table.");
+		__o("__multi__    Turns on or off the entry of multiline expressions (default on)");
+		__o("__clear__    Tries to clear the screen.");
+		__o("__purge__    Purge all the command history");
+		__o("__[others]__ Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
 	} else {
 		var h;
 
 		if (aTerm == "scope") {
-			h = searchHelp("", undefined, ['scope']);
+			h = searchHelp("", __, ['scope']);
 		} else {
 			h = searchHelp(aTerm);
 		}
 		
 		if (isArray(h)) {
 			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
-				__outputConsoleComments(h[0].fullkey);
-				__outputConsoleComments(repeat(h[0].fullkey.length, '-'));
-				__outputConsoleComments(h[0].text);
+				__o("**" + h[0].fullkey + "**");
+				__o("**" + repeat(h[0].fullkey.length, (__ansiflag && con.isAnsiSupported() ? HELPSEPARATOR_ANSI : HELPSEPARATOR)) + "**");
+				__o(h[0].text);
 			} else {
 				if (h.length > 1) {
-					for(let i in h) {
-						__outputConsoleComments(h[i].key);
+					for(var i in h) {
+						__o(h[i].key);
 					}
 				} else {
-					__outputConsoleComments("Term '" + aTerm + "' not found.");
+					__o("Term '" + aTerm + "' not found.");
+					c = __consoleFormat.errorLine;
 				}
 			}
 		}
+	}
+
+	if (__ansiflag && con.isAnsiSupported()) {
+		print(ow.format.withSideLine(ow.format.withMD(__ores.slice(0, __ores.length-1)), con.getConsoleReader().getTerminal().getWidth(), c));
+	} else {
+		__outputConsoleCommentsEnd(__ores);
 	}
 }
 
@@ -941,7 +958,12 @@ function __processCmdLine(aCommand, returnOnly) {
 
 		}
 	} catch(e) {
-		__outputConsoleError(String(e));
+		//__outputConsoleError(String(e));
+		if (__ansiflag && con.isAnsiSupported()) {
+			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), "BOLD,RED", "BOLD"));
+		} else {
+			__outputConsoleError(__ores);
+		}
 	}
 
 	internalCommand = false;
@@ -1012,7 +1034,7 @@ function __checkVersion() {
 			io.cp(getOpenAFJar() + ".orig", getOpenAFPath() + "/openaf.jar.old.orig");
 			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar.repacked", getOpenAFPath() + "/openaf.jar.new");
 			getFile(__openafDownload, "openaf-" + remoteRelease + ".jar", getOpenAFPath() + "/openaf.jar.new.orig");
-			__message = "OpenAF will update to version " + remoteRelease + " on exit.";
+			__message += "OpenAF will update to version " + remoteRelease + " on exit; ";
 			addOnOpenAFShutdown(() => {
 				__outputConsoleComments("Please hold on, updating to OpenAF version: " + remoteRelease + "...");
 				io.writeFileBytes(getOpenAFJar() + ".orig", io.readFileBytes(getOpenAFPath() + "/openaf.jar.new.orig"));
@@ -1044,7 +1066,7 @@ function __checkVersion() {
 				if (__autoupdate && !anotherOne)
 					openAFAutoUpdate();
 				else
-					__message = "There is a new OpenAF version available: " + current + ". Run 'openaf --update' to update.";
+					__message += "There is a new OpenAF version available: " + current + ". Run 'openaf --update' to update; ";
 			}
 		}
 		t.stop(true);
@@ -1236,11 +1258,18 @@ initThread.addThread(function(uuid) {
 	} catch(e) {
 		printErr("Error while loading " + java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE + ": " + String(e));
 	}
-	
+
+        if (io.getDefaultEncoding() != "UTF-8") __message += "Please ensure that the java option -D\"file.encoding=UTF-8\" is included (this can be achieved by executing 'cd " + getOpenAFPath() + " && ./oaf --install'); ";
 	if (!noHomeComms) __checkVersion();
 	initThread.stop();
 });
 initThread.startNoWait();
+
+if(__ansiflag && con.isAnsiSupported()) {
+	Packages.openaf.SimpleLog.setNFunc(function(s) { 
+		printErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+	});
+}
 
 if (__expr.length > 0) cmd = __expr;
 cmd = cmd.trim();
