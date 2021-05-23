@@ -341,6 +341,7 @@ try {
 		"ow.format": OPENAF_BUILD_HOME + "/js/owrap.format.js",
 		"ow.template": OPENAF_BUILD_HOME + "/js/owrap.template.js",
 		"ow.java": OPENAF_BUILD_HOME + "/js/owrap.java.js",
+		"ow.net": OPENAF_BUILD_HOME + "/js/owrap.net.js",
 		"ow.server": OPENAF_BUILD_HOME + "/js/owrap.server.js",
 		"ow.obj": OPENAF_BUILD_HOME + "/js/owrap.obj.js",
 		"ow.ai": OPENAF_BUILD_HOME + "/js/owrap.ai.js",
