@@ -5071,6 +5071,8 @@ const $rest = function(ops) {
 		this.options.downloadResume = _$(this.options.downloadResume, "downloadResume").isBoolean().default(false);
 		this.options.retry = _$(this.options.retry, "retry").isNumber().default(0);
 		this.options.retryWait = _$(this.options.retryWait, "retryWait").isNumber().default(1500);
+		this.options.login = _$(this.options.login, "login").default(__);
+		this.options.pass = _$(this.options.pass, "pass").default(__);
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -5702,6 +5704,73 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	res = res.stdout.substr(res.stdout.indexOf(separator) + separator.length, res.stdout.length);
 	return jsonParse(res);
 };
+
+//    %[argument_index$][flags][width][.precision]conversion 
+// argument_index: number
+// flags         : "-" (left-justified), "#", "+" (include sign), " " (leading space), "0" (zero-padded), "," (separators), "(" (enclose negative)
+// conversion    : b/B (boolean), h/H (hash), s/S (string), "-" (left justify), c/C (character)
+// https://docs.oracle.com/javase/7/docs/api/java/util/Formatter.html
+// All numbers in js are float:
+// format("%.2f", 1.9)
+// format("%10.2f", 1.9) 
+//
+// Date:
+// format("Time: %tT", new Date())
+// format("Date: %1$tm %1$te, %1$tY %1$tT", new Date())
+
+__$f = {
+	//locale: java.util.Locale.US
+}
+var $f = function() {
+	var ff;
+	if (isDef(__$f.locale)) {
+		ff = new java.util.Formatter(__$f.locale);
+	} else {
+		ff = new java.util.Formatter();
+	}
+	var f = ff.format;
+
+	for (var k in arguments) {
+		if (isDate(arguments[k])) {
+			var sdf = new java.text.SimpleDateFormat();
+			sdf.format(arguments[k]);
+			arguments[k] = sdf.getCalendar()
+		}
+	}
+
+	return String(f.apply(ff, arguments));
+}
+
+var $ft = function() {
+	var ff;
+	if (isDef(__$f.locale)) {
+		ff = new java.util.Formatter(__$f.locale);
+	} else {
+		ff = new java.util.Formatter();
+	}
+	var f = ff.format;
+
+	for (var k in arguments) {
+		if (isDate(arguments[k])) {
+			var sdf = new java.text.SimpleDateFormat();
+			sdf.format(arguments[k]);
+			arguments[k] = sdf.getCalendar()
+		}
+		if (isNumber(arguments[k]) && !isDecimal(arguments[k])) {
+			if (arguments[k] > java.lang.Integer.MAX_VALUE || arguments[k] < java.lang.Integer.MIN_VALUE) {
+				arguments[k] = new java.lang.Long(arguments[k]);
+			} else {
+				if (arguments[k] > java.lang.BigDecimal.MAX_VALUE || arguments[k] < java.lang.BigDecimal.MIN_VALUE) {
+					arguments[k] = new java.math.BigDecimal(arguments[k]);
+				} else {
+					arguments[k] = new java.lang.Integer(arguments[k]);
+				}
+			}
+		}
+	}
+
+	return String(f.apply(ff, arguments));
+}
 
 const $bottleneck = function(aName, aFn) {
 	if (isUnDef(global.__bottleneck)) global.__bottleneck = {};
