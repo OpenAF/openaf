@@ -1,0 +1,31 @@
+ojob:
+  id    : nuno
+  opacks:
+    Docker: 20200509
+
+include:
+- oJobBasics.yaml
+
+todo:
+- name: hello2
+  args:
+    name: args
+  id  : nuno
+
+jobs:  
+- name: hello2
+  help: 
+    text: ola
+    expects:
+    - name: a 
+      desc: O coiso a
+  to  : oJob YAML
+
+- name: hello
+  lang: shell
+  exec: |
+    @echo off
+    echo 123
+
+    echo 456
+    echo 789

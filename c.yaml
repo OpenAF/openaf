@@ -1,0 +1,41 @@
+# Author: Anonymous
+
+todo:
+- pipi
+- Sample job
+
+ojob:
+  daemon: true
+  opacks      :
+  - openaf: 20200523
+  catch       : logErr(exception);
+  logToConsole: true   # to change when finished
+
+jobs:
+# ----------
+- name: Help
+  help: 
+    text   : Does stuff. 
+    expects: 
+    - name   : something
+      desc   : To do stuff
+      example: aValueExample
+
+- name: pipi
+  exec: |
+    print("OLA!");
+
+# ----------
+- name: aiai
+  deps: pipi
+  exec: |
+    print($ch("oJob::log").size());
+
+# ----------------
+- name: Sample job
+  type: periodic
+  typeArgs:
+    cron: "*/1 * * * * *"
+  exec: |
+    //oJobRunJob("aiai");
+    $job("aiai");
