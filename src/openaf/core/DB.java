@@ -739,15 +739,15 @@ public class DB {
 			
 			try {
 				con = DriverManager.getConnection(url, props);
+				con.setAutoCommit(false);
 			} catch(SQLException e) {
 				if (e.getMessage().contains("No suitable driver found")) {
 					Driver pdriver = (Driver) Class.forName(driver, true, OAFdCL.oafdcl).getDeclaredConstructor().newInstance();
 					DriverManager.registerDriver(new openaf.DBProxy(pdriver));
 					con = DriverManager.getConnection(url, props);
 				}
+				throw e;
 			}
-			
-			con.setAutoCommit(false);
 
 		//} catch (ClassNotFoundException | SQLException e) {
 			//SimpleLog.log(SimpleLog.logtype.ERROR, "Error connecting to database " + url + " using " + driver + ": " + e.getMessage(), e);

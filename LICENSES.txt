@@ -3585,9 +3585,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Oracle JDBC 19
-Version               : 19.7.0.0
+Version               : 21.1
 Changed from original : No
-Location in openaf.jar: lib/ojdbc8-19.7.0.0.jar
+Location in openaf.jar: lib/ojdbc8.jar
 License               : 
 
 Check https://www.oracle.com/webapps/maven/register/license.html
