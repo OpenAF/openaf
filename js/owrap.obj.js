@@ -196,12 +196,14 @@ OpenWrap.obj.prototype.__getObj4Path = function(anObj, aPath) {
 
 /**
  * <odoc>
- * <key>ow.obj.flatMap(data) : Array/Map</key>
+ * <key>ow.obj.flatMap(data, separator) : Array/Map</key>
  * Given data as an array of maps or a single map tries to produce an output with only one level of keys per map.
+ * Optionally you can provide a separator between parent keys and each key (defaults to '.').
  * </odoc>
  */
-OpenWrap.obj.prototype.flatMap = function(data) {
+OpenWrap.obj.prototype.flatMap = function(data, separator) {
 	if (!isArray(data) && !isMap(data)) throw "data argument needs to be an array or a map";
+	separator = _$(separator, "separator").isString().default(".");
 
 	var keys = [];
 
@@ -211,7 +213,7 @@ OpenWrap.obj.prototype.flatMap = function(data) {
 		var r = {};
 		traverse(v, (aK, aV, aP, aO) => {
 			if (aP.startsWith(".")) aP = aP.slice(1);
-			if (!isMap(aV) && !isArray(aV)) r[aP + (aP.length > 0 ? "." : "") + aK] = aV;
+			if (!isMap(aV) && !isArray(aV)) r[aP + (aP.length > 0 ? separator : "") + aK] = aV;
 		});
 		keys = $from(Object.keys(r)).union(keys).select();
 		return r;
