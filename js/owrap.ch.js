@@ -3580,8 +3580,12 @@ OpenWrap.ch.prototype.utils = {
 	 */
 	getHousekeepSubscriber: function(aTargetCh, numberOfKeys) {
 		if (isUnDef(numberOfKeys)) numberOfKeys = 100;
+		var parent = ow.ch.utils;
 		return function(aC, aO, aK, aV) {
+			$lock("lockHK_" + aC);
  			try {
+				$lock("lockHK_" + aC).lock();
+
 				var ln = $ch(aC).size();
 				if ((aO == "set" || aO == "setAll") && ln > numberOfKeys) {
 					while (ln > numberOfKeys) {
@@ -3593,8 +3597,12 @@ OpenWrap.ch.prototype.utils = {
 						ln = $ch(aC).size();
 					}
 				}
- 			} catch(e) { sprintErr(e); }
-
+ 			} catch(e) { 
+				sprintErr(e); 
+			} finally {
+				$lock("lockHK_" + aC).unlock();
+			}
+			return true;
 		};
 	},
 
