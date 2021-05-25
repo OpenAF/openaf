@@ -3574,20 +3574,35 @@ OpenWrap.ch.prototype.utils = {
 	 * <odoc>
 	 * <key>ow.ch.utils.getHousekeepSubscriber(aTargetCh, maxNumberOfKeys) : Function</key>
 	 * Returns a channel subscriber function that will keep the channel size to the maximum of maxNumberOfKeys (defaults to 100).
-	 * If the number of keys is bigger than maxNumberOfKeys than it will perform a channel shift operation (that will, depending on the
+	 * If the number of keys is bigger than maxNumberOfKeys than it will perform a channel unset operation (that will, depending on the
 	 * type of channel, remove the oldest element).
 	 * </odoc>
 	 */
 	getHousekeepSubscriber: function(aTargetCh, numberOfKeys) {
 		if (isUnDef(numberOfKeys)) numberOfKeys = 100;
+		var parent = ow.ch.utils;
 		return function(aC, aO, aK, aV) {
+			$lock("lockHK_" + aC);
  			try {
-				if ($ch(aTargetCh).size() > numberOfKeys) {
-					while ($ch(aTargetCh).size() > numberOfKeys) {
-						$ch(aTargetCh).shift();
+				$lock("lockHK_" + aC).lock();
+
+				var ln = $ch(aC).size();
+				if ((aO == "set" || aO == "setAll") && ln > numberOfKeys) {
+					while (ln > numberOfKeys) {
+						var o = $ch(aC).getSortedKeys();
+						if (o.length > numberOfKeys) {
+							var toDelete = o.filter((r, i) => i < numberOfKeys);
+							if (isArray(toDelete)) $ch(aC).unsetAll(Object.keys(toDelete[0]), toDelete);
+						}
+						ln = $ch(aC).size();
 					}
 				}
- 			} catch(e) { sprintErr(e); }
+ 			} catch(e) { 
+				sprintErr(e); 
+			} finally {
+				$lock("lockHK_" + aC).unlock();
+			}
+			return true;
 		};
 	},
 
