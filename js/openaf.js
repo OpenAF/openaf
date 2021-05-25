@@ -7617,6 +7617,97 @@ const $retry = function(aFunc, aNumTries) {
     return error;
 };
 
+var __lock = {};
+const $lock = function(aName) {
+	if (isUnDef(__lock[aName])) __lock[aName] = new java.util.concurrent.locks.ReentrantLock();
+
+	return {
+		getObject: () => __lock[aName],
+		/**
+		 * <odoc>
+		 * <key>$lock.lock()</key>
+		 * Given aLockName will lock until unlock is called.\
+		 * \
+		 *    $lock(aLockName).lock()\
+		 * \
+		 * </odoc>
+		 */
+		lock     : () => __lock[aName].lock(),
+		/**
+		 * <odoc>
+		 * <key>$lock.unlock()</key>
+		 * Given aLockName will unlock freeing any previous calls to lock.\
+		 * \
+		 *    $lock(aLockName).unlock()\
+		 * \
+		 * </odoc>
+		 */
+		unlock   : () => __lock[aName].unlock(),
+		/**
+		 * <odoc>
+		 * <key>$lock.isLocked() : Boolean</key>
+		 * Given aLockName will return true if locked otherwise false.\
+		 * \
+		 *    $lock(aLockName).isLocked()\
+		 * \
+		 * </odoc>
+		 */
+		isLocked : () => __lock[aName].isLocked(),
+		/**
+		 * <odoc>
+		 * <key>$lock.destroy()</key>
+		 * Given aLockName will destroy the provided lock entry.\
+		 * \
+		 *    $lock(aLockName).destroy()\
+		 * \
+		 * </odoc>
+		 */
+		destroy  : () => delete __lock[aName],
+		/**
+		 * <odoc>
+		 * <key>$lock.tryLock(aFunction, aTimeoutMS) : Boolean</key>
+		 * Given aLockName only execute aFunction when it's able to lock or after aTimeoutMS. If it
+		 * executed aFunction it will return true otherwise false.\
+		 * \
+		 *    $lock(aLockName).destroy()\
+		 * \
+		 * </odoc>
+		 */
+		tryLock  : (f, t) => {
+			_$(f, "function").isFunction().$_();
+			t = _$(t, "timeout").isNumber().default(__);
+
+			if (isDef(t)) {
+				if (__lock[aName].tryLock(t, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+					try {
+						f();
+					} catch(e) {
+						throw e;
+					} finally {
+						__lock[aName].unlock();
+					}
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				if (__lock[aName].tryLock()) {
+					try {
+						f();
+					} catch(e) {
+						throw e;
+					} finally {
+						__lock[aName].unlock();
+					}
+					return true;
+				} else {
+					return false;
+				}
+			}
+		}
+	}
+}
+
 /**
  * <odoc>
  * <key>$await(aName) : Object</key>
