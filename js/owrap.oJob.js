@@ -421,7 +421,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 				res.push(_r);
 			});
 			return res;
-		}
+		};
 		if (isDef(res.ojob)) {
 			if (isDef(res.ojob.opacks) && isMap(res.ojob.opacks)) res.ojob.opacks = _o2a(res.ojob.opacks);
 			if (isDef(res.ojob.opacks) && isArray(res.ojob.opacks)) {
@@ -481,6 +481,18 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 
 		if (dontLoadTodos) delete res.todo;
 		if (isUnDef(res.ojob)) res.ojob = {};
+
+		// Set code in the require cache
+		if (isMap(res.code)) {
+			if (isUnDef(require.cache)) require.cache = {};
+			Object.keys(res.code).forEach(k => {
+				try {
+					require.cache[k] = new Function('require', 'exports', 'module', res.code[k]);
+				} catch(e) {
+					logErr("Problem with code '" + k + "': " + e.message + " (#" + e.lineNumber + ")");
+				}
+			});
+		}
 	}
 
 	return res;
@@ -521,7 +533,7 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 		return t;
 	}
 
-	var res = { include: [], jobs: [], todo: [], ojob: {}, init: {} };
+	var res = { include: [], jobs: [], todo: [], ojob: {}, init: {}, code: {} };
 	
 	if (isUnDef(aJSONa)) return res;
 
@@ -557,7 +569,12 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	if (isDef(aJSONa.init)) 
 		res.init = merge(aJSONa.init, aJSONb.init);
 	else
-		res.init = isDef(aJSONb.init) ? aJSONb.init : {};		
+		res.init = isDef(aJSONb.init) ? aJSONb.init : {};
+
+	if (isDef(aJSONa.code)) 
+		res.code = merge(aJSONa.code, aJSONb.code);
+	else
+		res.code = isDef(aJSONb.code) ? aJSONb.code : {};			
 	
 	return res;
 };
