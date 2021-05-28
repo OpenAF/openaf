@@ -102,6 +102,7 @@ __bfprintFlag = false;
  * </odoc>
  */
 function print(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprint(str);
 	} else {
@@ -172,6 +173,7 @@ function yprint(str, multidoc) { return print(af.toYAML(str, multidoc)); }
  * </odoc>
  */
 function printnl(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintnl(str);
 	} else {
@@ -243,6 +245,7 @@ function tprint(aTemplateString, someData) {
  * </odoc>
  */
 function printErr(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintErr(str);
 	} else {
@@ -287,6 +290,7 @@ function yprintErr(str, multidoc) { return printErr(af.toYAML(str, multidoc)); }
  * </odoc>
  */
 function printErrnl(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintErrnl(str);
 	} else {
