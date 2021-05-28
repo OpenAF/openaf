@@ -102,6 +102,7 @@ __bfprintFlag = false;
  * </odoc>
  */
 function print(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprint(str);
 	} else {
@@ -172,6 +173,7 @@ function yprint(str, multidoc) { return print(af.toYAML(str, multidoc)); }
  * </odoc>
  */
 function printnl(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintnl(str);
 	} else {
@@ -243,6 +245,7 @@ function tprint(aTemplateString, someData) {
  * </odoc>
  */
 function printErr(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintErr(str);
 	} else {
@@ -287,6 +290,7 @@ function yprintErr(str, multidoc) { return printErr(af.toYAML(str, multidoc)); }
  * </odoc>
  */
 function printErrnl(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintErrnl(str);
 	} else {
@@ -6225,6 +6229,29 @@ function loadJSYAML() {
 
 loadCompiledLib("openafsigil_js");
 
+/**
+ * <odoc>
+ * <key>_i$(aValue, aPrefixMessage) : Object</key>
+ * Same as _$ but if aValue is not defined and aPrefixMessage if defined it will use ask() or askEncrypt() to 
+ * interactively ask the user for the value with the prompt "[aPrefixMessage]: ". Should only be
+ * used if user interaction is expected but to force not be interactiv you can set __i$interactive to false). Note: askEncrypt will be used if aPrefixMessage has any reference to "secret" or "pass".
+ * </odoc>
+ */
+var __i$interactive = true;
+var _i$ = (aValue, aPrefixMessage) => {
+	if (__i$interactive && isUnDef(aValue) && isString(aPrefixMessage)) {
+		if (aPrefixMessage.toLowerCase().indexOf("secret") >= 0 || 
+		    aPrefixMessage.toLowerCase().indexOf("pass") >= 0
+		   ) {
+			aValue = askEncrypt(aPrefixMessage + ": ");
+		} else {
+			aValue = ask(aPrefixMessage + ": ");
+		}
+		if (aValue == "") aValue = __;
+	}
+	return _$(aValue, aPrefixMessage);
+}
+
 var __correctYAML = false;
 
 /**
@@ -6829,11 +6856,14 @@ const ask = (aPrompt, aMask, _con) => {
  * <odoc>
  * <key>askEncrypt(aPrompt) : String</key>
  * Similar to ask but the return user input will be encrypted.
+ * If an empty string is entered by the user the function will return undefined.
  * </odoc>
  */
 const askEncrypt = (aPrompt, _con) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
-    return af.encrypt(ask(aPrompt, String.fromCharCode(0), _con));
+	var v = ask(aPrompt, String.fromCharCode(0), _con);
+	if (isString(v) && v == "") return __;
+    return af.encrypt(v);
 }
 
 /**
