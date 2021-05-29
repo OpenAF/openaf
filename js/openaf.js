@@ -2212,7 +2212,7 @@ function loadCompiled(aScript, dontCompile, dontLoad) {
  * </odoc>
  */
 var __loadedPlugins;
-function plugin(aPlugin) {
+function plugin(aPlugin, aClass) {
 	if (isUnDef(__loadedPlugins)) __loadedPlugins = {};
 	var pluginLoaded;
 	try {
@@ -2228,10 +2228,10 @@ function plugin(aPlugin) {
 					.select((f) => {
 						return (new java.io.File(f)).toURI().toURL();
 					}),
-					"openaf.plugins." + aPlugin
+					"openaf.plugins." + (isDef(aClass) ? aClass : aPlugin)
 				);
 			} else {
-				af.plugin("openaf.plugins." + aPlugin);
+				af.plugin("openaf.plugins." + (isDef(aClass) ? aClass : aPlugin));
 			}
 			__loadedPlugins[pluginLoaded] = true;
 
