@@ -20,6 +20,11 @@ var __alias = {
     "ojob": "(()=>{var f = __aliasparam.split(\" \"); var o = processExpr(\" \", false, __aliasparam); delete o[f[0]]; oJobRunFile(f[0], o);})()"
 };
 var __exitActions = [];
+var __consoleFormat = {
+	error: "WHITE",
+	errorLine: "BOLD,RED",
+	helpLine: "BOLD,BLUE"
+};
 
 var __aliasparam;
 var __message = "";
@@ -571,8 +576,8 @@ function addAlias(aAssignment) {
  * Provides a help screen
  */
 function __help(aTerm) {
-	var __ores = "", c = "BOLD,BLUE";
-	var __o = s => __ores += s + "\n";
+	var __ores = "", c = __consoleFormat.helpLine;
+	var __o = (s, nomd) => __ores += (nomd ? s : ow.format.withMD(s))+ "\n";
 	if(isUnDef(aTerm) || aTerm.length <= 0) {
 		__o("__help__     Display this help text");
 		__o("__exit__     Exit this console");
@@ -609,7 +614,7 @@ function __help(aTerm) {
 			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
 				__o("**" + h[0].fullkey + "**");
 				__o("**" + repeat(h[0].fullkey.length, (__ansiflag && con.isAnsiSupported() ? HELPSEPARATOR_ANSI : HELPSEPARATOR)) + "**");
-				__o(h[0].text);
+				__o(h[0].text, true);
 			} else {
 				if (h.length > 1) {
 					for(var i in h) {
@@ -617,14 +622,14 @@ function __help(aTerm) {
 					}
 				} else {
 					__o("Term '" + aTerm + "' not found.");
-					c = "BOLD,RED";
+					c = __consoleFormat.errorLine;
 				}
 			}
 		}
 	}
 
 	if (__ansiflag && con.isAnsiSupported()) {
-		print(ow.format.withSideLine(ow.format.withMD(__ores.slice(0, __ores.length-1)), con.getConsoleReader().getTerminal().getWidth(), c));
+		print(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c));
 	} else {
 		__outputConsoleCommentsEnd(__ores);
 	}
@@ -1259,6 +1264,12 @@ initThread.addThread(function(uuid) {
 	initThread.stop();
 });
 initThread.startNoWait();
+
+if(__ansiflag && con.isAnsiSupported()) {
+	Packages.openaf.SimpleLog.setNFunc(function(s) { 
+		printErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+	});
+}
 
 if (__expr.length > 0) cmd = __expr;
 cmd = cmd.trim();

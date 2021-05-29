@@ -242,8 +242,8 @@
 		},
 		{
 			"description": "Oracle JDBC 19",
-			"path": ["lib/ojdbc8-19.7.0.0.jar"],
-			"version": "19.7.0.0",
+			"path": ["lib/ojdbc8.jar"],
+			"version": "21.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.oracle.com/webapps/maven/register/license.html",

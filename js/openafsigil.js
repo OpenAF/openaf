@@ -1,5 +1,5 @@
-const $$ = function(aObj) {
-	const _r = {
+var $$ = function(aObj) {
+	var _r = {
 		/**
 		 * <odoc>
 		 * <key>$$.get(aPath) : Object</key>
@@ -94,12 +94,12 @@ const $$ = function(aObj) {
 };
 
 
-const _$ = function(aValue, aPrefixMessage) {
+var _$ = function(aValue, aPrefixMessage) {
     var defined;
     if ($$(aPrefixMessage).isDef()) aPrefixMessage += " "; else aPrefixMessage = "";
     if ($$(aValue).isDef()) defined = true; else defined = false;
 
-    const __r = {
+    var __r = {
         // Defaults
         /**
          * <odoc>

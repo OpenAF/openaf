@@ -41,7 +41,7 @@
     };
 
     exports.testWordWrap = function() {
-        ow.test.assert(ow.format.string.wordWrap("a long text to serve as an example", 10, "-"), "a long-text to-serve as-an-example", "Problem with word wrap.");        
+        ow.test.assert(ow.format.string.wordWrap("a long text to serve as an example", 10, "-"), "a long-text to-serve as-an example", "Problem with word wrap.");        
     };
 
     exports.testPad = function() {

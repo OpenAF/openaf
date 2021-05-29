@@ -2,6 +2,11 @@ package openaf;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Scriptable;
+
 import java.lang.String;
 
 /** 
@@ -16,7 +21,12 @@ public class SimpleLog {
 	public static enum logtype { INFO, ERROR, DEBUG };
 	public static logtype currentLogLevel = logtype.ERROR;
 	protected static boolean ready = false;
+	protected static NativeFunction nFunc = null; 
 	
+	public static void setNFunc(NativeFunction fn) {
+		nFunc = fn;
+	}
+
 	/**
 	 * Initializes with a SimpleLogAppender
 	 * 
@@ -51,6 +61,21 @@ public class SimpleLog {
 		
 	}
 
+	protected static void _log(String aString) {
+		if (nFunc == null) {
+			System.err.println(aString);
+		} else {
+			Context cx = (Context) AFCmdBase.jse.enterContext();
+			try {
+				nFunc.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { aString });
+			} catch(Exception e) {
+				System.err.println(e.getMessage());
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
+		}
+	}
+
 	/**
 	 * Logs an entry with a specific log type including the exception stack trace to be displayed if the level of debug is DEBUG.
 	 * 
@@ -62,15 +87,15 @@ public class SimpleLog {
 		if (log != null && level != null) {
 			switch(currentLogLevel) {
 			case DEBUG:
-				System.err.println(log);
+				_log(log);
 				if (e != null) e.printStackTrace();
 				break;
 			case ERROR:
-				if (level == logtype.INFO) System.err.println(log);
-				if (level == logtype.ERROR) System.err.println(log);
+				if (level == logtype.INFO) _log(log);
+				if (level == logtype.ERROR) _log(log);
 				break;
 			case INFO:
-				if (level == logtype.INFO) System.err.println(log);
+				if (level == logtype.INFO) _log(log);
 				break;
 			}
 		}

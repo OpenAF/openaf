@@ -1,29 +1,29 @@
 {
-  "author": "Nuno Aguiar",
-  "scripts": {
-    "posterase": "",
-    "postinstall": "print(sh('echo ' + getOpenAF() + ' --update'));",
-    "preerase": "",
-    "preinstall": ""
-  },
-  "keywords": [
-    "OpenAF",
-    "openaf",
-    "nacaf"
-  ],
-  "bugs": {
-    "url": ""
-  },
-  "repository": {
-    "type": "http",
-    "url": ""
-  },
-  "description": "OpenAF is a command-line utility/script interpreter based on Javascript",
-  "name": "OpenAF",
-  "main": "",
-  "license": "See license info in https://github.com/OpenAF/openaf/blob/master/LICENSE",
-  "version": "20161217",
-  "dependencies": {},
-  "files": [ ],
-  "filesHash": {}
-}
+    "author": "Nuno Aguiar",
+    "scripts": {
+      "posterase": "",
+      "postinstall": "print(sh('echo ' + getOpenAF() + ' --update'));",
+      "preerase": "",
+      "preinstall": ""
+    },
+    "keywords": [
+      "OpenAF",
+      "openaf",
+      "nacaf"
+    ],
+    "bugs": {
+      "url": ""
+    },
+    "repository": {
+      "type": "http",
+      "url": ""
+    },
+    "description": "OpenAF is a command-line utility/script interpreter based on Javascript",
+    "name": "OpenAF",
+    "main": "",
+    "license": "See license info in https://github.com/OpenAF/openaf/blob/master/LICENSE",
+    "version": "20161217",
+    "dependencies": {},
+    "files": [ ],
+    "filesHash": {}
+  }

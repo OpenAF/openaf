@@ -65,13 +65,14 @@ var httpServer = ow.server.httpd.start(port, "127.0.0.1", undefined, undefined, 
 httpServer.add("/wait", function(req) { return httpServer.replyOKHTML("<html><meta http-equiv=\"refresh\" content=\"1; url=\"/><body>Loading...</body></html>")});
 httpServer.setDefault("/wait");
 
-plugin("Threads");
-var initThread = new Threads();
-initThread.addThread(function(uuid) {
-	checkRemoteVersions();
-	initThread.stop();
-});
-initThread.startNoWait();
+// plugin("Threads");
+// var initThread = new Threads();
+// initThread.addThread(function(uuid) {
+// 	checkRemoteVersions();
+// 	initThread.stop();
+// });
+// initThread.startNoWait();
+$do(checkRemoteVersions);
 
 java.awt.Desktop.getDesktop().browse(new java.net.URI("http://127.0.0.1:" + port));
 
@@ -114,15 +115,21 @@ var defaultPage = {
 
 
 
-var paths = Object.keys(getOPackLocalDB());
-searchHelp("");
-for(var i in paths) {
-	try {
-		searchHelp("", paths[i]);
-	} catch(e) {
-		logWarn("Problem with oDoc for " + paths[i] + ": "+ String(e));
-	}
-}
+//var paths = Object.keys(getOPackLocalDB());
+$cache("odoc")
+.ttl(1000*60*60*24)
+.fn(id => searchHelp("", __, id));
+
+var sHelp, pHelp = $do(() => {
+	sHelp = searchHelp("").map(r => r.key).sort();
+});
+// for(var i in paths) {
+// 	try {
+// 		searchHelp("", paths[i]);
+// 	} catch(e) {
+// 		logWarn("Problem with oDoc for " + paths[i] + ": "+ String(e));
+// 	}
+// }
 
 ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, {
 	"/exec": function(req) {
@@ -199,13 +206,19 @@ ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, 
             var terms = [];
             var id = req.uri.replace(/^\/odoc\/*/g, "");
 
-            if (Object.keys(__odocs.aodocskeys).indexOf(id) > 0) {
-                terms = terms.concat($stream(searchHelp("", undefined, id).map(function(r) { return r.key; })).toArray());
-                terms = terms.sort();
-            } else {
-                terms = terms.concat($stream(searchHelp(id, undefined).map(function(r) { return r.key; })).toArray());
-                terms = terms.sort();
-            }
+            // if (Object.keys(__odocs.aodocskeys).indexOf(id) > 0) {
+            //     terms = terms.concat($stream($cache("odoc").get(id).map(function(r) { return r.key; })).toArray());
+            //     terms = terms.sort();
+            // } else {
+            //     terms = terms.concat($stream(searchHelp(id, __).map(function(r) { return r.key; })).toArray());
+            //     terms = terms.sort();
+            // }
+			if (id == "") {
+				if (isUnDef(sHelp)) $doWait(pHelp);
+				terms = terms.concat( sHelp );
+			} else {
+				terms = terms.concat( searchHelp(id, __).map(r => r.key) ).sort();
+			}
 
             if (terms.length == 1) {
                 odoc.contents = templates("odoc", { "id": id, "list": false, "terms": terms, "res": searchHelp(id)[0] });
@@ -261,7 +274,7 @@ ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, 
 
 }), function(req) {
     return httpServer.replyOKHTML(templates("index", defaultPage));
-}, undefined,
+}, __,
     function(req) {
 	keepRunning = true;
 });

@@ -2145,9 +2145,37 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
 	this.printWithProgressFooter(aMessage, aTemplate, aPerc, aSize, aUnixBlock, aWindowsBlock, aSpace, slog);
 };
 
+/**
+ * <odoc>
+ * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
+ * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
+ * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
+ * Currently supports only: bold, italic.
+ * </odoc>
+ */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
-        _$(aString, "aString").isString().$_();
-        defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
+    _$(aString, "aString").isString().$_();
+    defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
+	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "");
+
+ 	res = res.replace(/(\*{3}|_{3})([^\*{3}_{3}]+)(\*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
+ 	res = res.replace(/(\*{2}|_{2})([^\*{2}_{2}]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
+ 	res = res.replace(/(\*|_)([^\*_]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
+	
+	return res;
+};
+
+/**
+ * <odoc>
+ * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
+ * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
+ * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
+ * Currently supports only: bold, italic.
+ * </odoc>
+ */
+OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
+    _$(aString, "aString").isString().$_();
+    defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "");
 
  	res = res.replace(/(\*{3}|_{3})([^\*{3}_{3}]+)(\*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)

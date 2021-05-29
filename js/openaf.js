@@ -102,6 +102,7 @@ __bfprintFlag = false;
  * </odoc>
  */
 function print(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprint(str);
 	} else {
@@ -172,6 +173,7 @@ function yprint(str, multidoc) { return print(af.toYAML(str, multidoc)); }
  * </odoc>
  */
 function printnl(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintnl(str);
 	} else {
@@ -243,6 +245,7 @@ function tprint(aTemplateString, someData) {
  * </odoc>
  */
 function printErr(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintErr(str);
 	} else {
@@ -287,6 +290,7 @@ function yprintErr(str, multidoc) { return printErr(af.toYAML(str, multidoc)); }
  * </odoc>
  */
 function printErrnl(str) {
+	str = _$(str, "str").default("");
 	if (__bfprintFlag) {
 		bfprintErrnl(str);
 	} else {
@@ -1030,7 +1034,8 @@ function jsonParse(astring, alternative, unsafe) {
  */
 function templify(aTemplateString, someData) {
 	someData = (isUnDef(someData)) ? this : someData;
-	return String(ow.loadTemplate().parse(aTemplateString, someData));
+	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
+	return String(ow.template.parse(aTemplateString, someData));
 }
 
 /**
@@ -2861,9 +2866,15 @@ function compare(x, y) {
 	if (!(x instanceof Object)) { return false; }
 	if (!(y instanceof Object)) { return false; }
 
-	var p = Object.keys(x);
-	return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
-	p.every(function (i) { return compare(x[i], y[i]); });
+	var p = Object.keys(x), q = Object.keys(y);
+        if (p.length != q.length) return false;
+        for(var k in x) { 
+           var v = x[k];
+	   if (isUnDef(y[k]) || (!compare(v, y[k]))) return false;
+	}
+        return true;
+	/*return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
+	p.every(function (i) { return compare(x[i], y[i]); });*/
 }
 
 /**
@@ -5065,6 +5076,8 @@ const $rest = function(ops) {
 		this.options.downloadResume = _$(this.options.downloadResume, "downloadResume").isBoolean().default(false);
 		this.options.retry = _$(this.options.retry, "retry").isNumber().default(0);
 		this.options.retryWait = _$(this.options.retryWait, "retryWait").isNumber().default(1500);
+		this.options.login = _$(this.options.login, "login").default(__);
+		this.options.pass = _$(this.options.pass, "pass").default(__);
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -5697,6 +5710,88 @@ const $openaf = function(aScript, aPMIn, aOpenAF, extraJavaParamsArray) {
 	return jsonParse(res);
 };
 
+__$f = {
+	//locale: java.util.Locale.US
+}
+/**
+ * <odoc>
+ * <key>$f(aString, arg1, arg2, ...) : String</key>
+ * Formats aString with arg1, arg2 and any other arguments provided using java.util.Formatter. The format is composed
+ * of "%[argument_index$][flags][width][.precision]conversion". Do note that javascript numbers are converted to java.lang.Float. If you
+ * need it to convert to Integer, Long, Double, Float and BigDecimal please use $ft. The javascript Date type will be converted to java Calendar.
+ * So possible values:\
+ * \
+ *    argument_index: number\
+ *    flags         : '-' (left-justified); '#'; '+' (include sign); ' ' (leading space); '0' (zero-padded); ',' (separators); '(' (enclose negative values)\
+ *    conversion    : b/B (boolean), h/H (hash), s/S (string), "-" (left justify), c/C (character)\
+ * \
+ * Examples:\
+ * \
+ *    $f("Time %tT", new Date())\
+ *    $f("Date: %1$tm %1te, %1tY %1$tT", new Date())\
+ * \
+ *    $f("%.2f", 1.9)\
+ *    $f("%10.2f", 1.9)\
+ * \
+ * </odoc>
+ */
+const $f = function() {
+	var ff;
+	if (isDef(__$f.locale)) {
+		ff = new java.util.Formatter(__$f.locale);
+	} else {
+		ff = new java.util.Formatter();
+	}
+	var f = ff.format;
+
+	for (var k in arguments) {
+		if (isDate(arguments[k])) {
+			var sdf = new java.text.SimpleDateFormat();
+			sdf.format(arguments[k]);
+			arguments[k] = sdf.getCalendar()
+		}
+	}
+
+	return String(f.apply(ff, arguments));
+}
+
+/**
+ * <odoc>
+ * <key>$ft(aString, arg1, arg2, ...) : String</key>
+ * Equivalant to $f but number types are converted to Integer, Long, Double, Float and BigDecimal.
+ * </odoc>
+ */
+const $ft = function() {
+	var ff;
+	if (isDef(__$f.locale)) {
+		ff = new java.util.Formatter(__$f.locale);
+	} else {
+		ff = new java.util.Formatter();
+	}
+	var f = ff.format;
+
+	for (var k in arguments) {
+		if (isDate(arguments[k])) {
+			var sdf = new java.text.SimpleDateFormat();
+			sdf.format(arguments[k]);
+			arguments[k] = sdf.getCalendar()
+		}
+		if (isNumber(arguments[k]) && !isDecimal(arguments[k])) {
+			if (arguments[k] > java.lang.Integer.MAX_VALUE || arguments[k] < java.lang.Integer.MIN_VALUE) {
+				arguments[k] = new java.lang.Long(arguments[k]);
+			} else {
+				if (arguments[k] > java.lang.BigDecimal.MAX_VALUE || arguments[k] < java.lang.BigDecimal.MIN_VALUE) {
+					arguments[k] = new java.math.BigDecimal(arguments[k]);
+				} else {
+					arguments[k] = new java.lang.Integer(arguments[k]);
+				}
+			}
+		}
+	}
+
+	return String(f.apply(ff, arguments));
+}
+
 const $bottleneck = function(aName, aFn) {
 	if (isUnDef(global.__bottleneck)) global.__bottleneck = {};
 	var parent = this;
@@ -6133,6 +6228,29 @@ function loadJSYAML() {
 }
 
 loadCompiledLib("openafsigil_js");
+
+/**
+ * <odoc>
+ * <key>_i$(aValue, aPrefixMessage) : Object</key>
+ * Same as _$ but if aValue is not defined and aPrefixMessage if defined it will use ask() or askEncrypt() to 
+ * interactively ask the user for the value with the prompt "[aPrefixMessage]: ". Should only be
+ * used if user interaction is expected but to force not be interactiv you can set __i$interactive to false). Note: askEncrypt will be used if aPrefixMessage has any reference to "secret" or "pass".
+ * </odoc>
+ */
+var __i$interactive = true;
+var _i$ = (aValue, aPrefixMessage) => {
+	if (__i$interactive && isUnDef(aValue) && isString(aPrefixMessage)) {
+		if (aPrefixMessage.toLowerCase().indexOf("secret") >= 0 || 
+		    aPrefixMessage.toLowerCase().indexOf("pass") >= 0
+		   ) {
+			aValue = askEncrypt(aPrefixMessage + ": ");
+		} else {
+			aValue = ask(aPrefixMessage + ": ");
+		}
+		if (aValue == "") aValue = __;
+	}
+	return _$(aValue, aPrefixMessage);
+}
 
 var __correctYAML = false;
 
@@ -6738,11 +6856,14 @@ const ask = (aPrompt, aMask, _con) => {
  * <odoc>
  * <key>askEncrypt(aPrompt) : String</key>
  * Similar to ask but the return user input will be encrypted.
+ * If an empty string is entered by the user the function will return undefined.
  * </odoc>
  */
 const askEncrypt = (aPrompt, _con) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
-    return af.encrypt(ask(aPrompt, String.fromCharCode(0), _con));
+	var v = ask(aPrompt, String.fromCharCode(0), _con);
+	if (isString(v) && v == "") return __;
+    return af.encrypt(v);
 }
 
 /**
@@ -7525,6 +7646,97 @@ const $retry = function(aFunc, aNumTries) {
 
     return error;
 };
+
+var __lock = {};
+const $lock = function(aName) {
+	if (isUnDef(__lock[aName])) __lock[aName] = new java.util.concurrent.locks.ReentrantLock();
+
+	return {
+		getObject: () => __lock[aName],
+		/**
+		 * <odoc>
+		 * <key>$lock.lock()</key>
+		 * Given aLockName will lock until unlock is called.\
+		 * \
+		 *    $lock(aLockName).lock()\
+		 * \
+		 * </odoc>
+		 */
+		lock     : () => __lock[aName].lock(),
+		/**
+		 * <odoc>
+		 * <key>$lock.unlock()</key>
+		 * Given aLockName will unlock freeing any previous calls to lock.\
+		 * \
+		 *    $lock(aLockName).unlock()\
+		 * \
+		 * </odoc>
+		 */
+		unlock   : () => __lock[aName].unlock(),
+		/**
+		 * <odoc>
+		 * <key>$lock.isLocked() : Boolean</key>
+		 * Given aLockName will return true if locked otherwise false.\
+		 * \
+		 *    $lock(aLockName).isLocked()\
+		 * \
+		 * </odoc>
+		 */
+		isLocked : () => __lock[aName].isLocked(),
+		/**
+		 * <odoc>
+		 * <key>$lock.destroy()</key>
+		 * Given aLockName will destroy the provided lock entry.\
+		 * \
+		 *    $lock(aLockName).destroy()\
+		 * \
+		 * </odoc>
+		 */
+		destroy  : () => delete __lock[aName],
+		/**
+		 * <odoc>
+		 * <key>$lock.tryLock(aFunction, aTimeoutMS) : Boolean</key>
+		 * Given aLockName only execute aFunction when it's able to lock or after aTimeoutMS. If it
+		 * executed aFunction it will return true otherwise false.\
+		 * \
+		 *    $lock(aLockName).destroy()\
+		 * \
+		 * </odoc>
+		 */
+		tryLock  : (f, t) => {
+			_$(f, "function").isFunction().$_();
+			t = _$(t, "timeout").isNumber().default(__);
+
+			if (isDef(t)) {
+				if (__lock[aName].tryLock(t, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+					try {
+						f();
+					} catch(e) {
+						throw e;
+					} finally {
+						__lock[aName].unlock();
+					}
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				if (__lock[aName].tryLock()) {
+					try {
+						f();
+					} catch(e) {
+						throw e;
+					} finally {
+						__lock[aName].unlock();
+					}
+					return true;
+				} else {
+					return false;
+				}
+			}
+		}
+	}
+}
 
 /**
  * <odoc>
