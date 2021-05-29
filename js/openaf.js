@@ -2210,10 +2210,10 @@ function loadCompiled(aScript, dontCompile, dontLoad) {
 
 /**
  * <odoc>
- * <key>plugin(aPlugin)</key>
+ * <key>plugin(aPlugin, aClass)</key>
  * Provides a shortcut for the af.plugin function. It also provides a shortcut for plugins with
  * the java package "openaf.plugins" (e.g. af.plugin("openaf.plugins.HTTP") is the same
- * as plugin("HTTP")).
+ * as plugin("HTTP")). In alternative you can provide plugin aClass if it's different from aPlugin. 
  * </odoc>
  */
 var __loadedPlugins;
