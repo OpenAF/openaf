@@ -2224,7 +2224,7 @@ function plugin(aPlugin, aClass) {
 		if (!aPlugin.match(/\./)) {
 			pluginLoaded = "openaf.plugins." + aPlugin;
 			
-			if (__loadedPlugins[pluginLoaded]) return;
+			if (__loadedPlugins[pluginLoaded + (isDef(aClass) ? "::aClass" : "")]) return;
 			// Because ZIP is used in getOPackPath
 			if (aPlugin != "ZIP" && isDef(getOPackPath("plugin-" + aPlugin))) {
 				af.externalPlugin(
@@ -2238,7 +2238,7 @@ function plugin(aPlugin, aClass) {
 			} else {
 				af.plugin("openaf.plugins." + (isDef(aClass) ? aClass : aPlugin));
 			}
-			__loadedPlugins[pluginLoaded] = true;
+			__loadedPlugins[pluginLoaded + (isDef(aClass) ? "::aClass" : "")] = true;
 
 			return;
 		}
