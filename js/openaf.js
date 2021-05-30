@@ -6376,6 +6376,17 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
 
 /**
  * <odoc>
+ * <key>AF.toSLON(aObject, aTheme) : String</key>
+ * Converts aObject map/array into SLON representation (see more in help for ow.format.toSLON)
+ * </odoc>
+ */
+AF.prototype.toSLON = function(aObject, aTheme) {
+	ow.loadFormat();
+	return ow.format.toSLON(aObject, aTheme);
+}
+
+/**
+ * <odoc>
  * <key>af.fromXML2Obj(xml, ignored) : Object</key>
  * Tries to convert a XML object into a javascript object. Tag attributes will be ignored unless the corresponding tag name is included
  * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
