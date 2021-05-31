@@ -2290,6 +2290,10 @@ OpenWrap.format.prototype.xls = {
 	 * dash_dot,dash_dot_dot,dashed,dotted,double,hair,medium,medium_dash_dot,medium_dash_dot_dot,medium_dashed,none,
 	 * slanted_dash_dot,thick,thin\
 	 * \
+	 * Fill patterns:\
+	 * \
+	 * solid_foreground\
+	 * \
 	 * </odoc>
 	 */
 	getStyle: function(aXLS, aStyleMap) {
@@ -2356,7 +2360,7 @@ OpenWrap.format.prototype.xls = {
 			}
 		};
 		if (isJavaObject(rcf)) fnRCS().setFont(rcf);
-		fnRCS().setFillPattern(aXLS.getEnumFillPatternType("SOLID_FOREGROUND"));
+		if (isDef(aStyleMap.fillPattern)) fnRCS().setFillPattern(aXLS.getEnumFillPatternType(aStyleMap.fillPattern.toUpperCase()));
 		
 		aXLS.__styleCache[styleId] = fnRCS();
 		return fnRCS();
