@@ -2356,7 +2356,8 @@ OpenWrap.format.prototype.xls = {
 			}
 		};
 		if (isJavaObject(rcf)) fnRCS().setFont(rcf);
-
+		fnRCS().setFillPattern(aXLS.getEnumFillPatternType("SOLID_FOREGROUND"));
+		
 		aXLS.__styleCache[styleId] = fnRCS();
 		return fnRCS();
 	},

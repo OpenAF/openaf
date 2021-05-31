@@ -2210,21 +2210,21 @@ function loadCompiled(aScript, dontCompile, dontLoad) {
 
 /**
  * <odoc>
- * <key>plugin(aPlugin)</key>
+ * <key>plugin(aPlugin, aClass)</key>
  * Provides a shortcut for the af.plugin function. It also provides a shortcut for plugins with
  * the java package "openaf.plugins" (e.g. af.plugin("openaf.plugins.HTTP") is the same
- * as plugin("HTTP")).
+ * as plugin("HTTP")). In alternative you can provide plugin aClass if it's different from aPlugin. 
  * </odoc>
  */
 var __loadedPlugins;
-function plugin(aPlugin) {
+function plugin(aPlugin, aClass) {
 	if (isUnDef(__loadedPlugins)) __loadedPlugins = {};
 	var pluginLoaded;
 	try {
 		if (!aPlugin.match(/\./)) {
 			pluginLoaded = "openaf.plugins." + aPlugin;
 			
-			if (__loadedPlugins[pluginLoaded]) return;
+			if (__loadedPlugins[pluginLoaded + (isDef(aClass) ? "::aClass" : "")]) return;
 			// Because ZIP is used in getOPackPath
 			if (aPlugin != "ZIP" && isDef(getOPackPath("plugin-" + aPlugin))) {
 				af.externalPlugin(
@@ -2233,12 +2233,12 @@ function plugin(aPlugin) {
 					.select((f) => {
 						return (new java.io.File(f)).toURI().toURL();
 					}),
-					"openaf.plugins." + aPlugin
+					"openaf.plugins." + (isDef(aClass) ? aClass : aPlugin)
 				);
 			} else {
-				af.plugin("openaf.plugins." + aPlugin);
+				af.plugin("openaf.plugins." + (isDef(aClass) ? aClass : aPlugin));
 			}
-			__loadedPlugins[pluginLoaded] = true;
+			__loadedPlugins[pluginLoaded + (isDef(aClass) ? "::aClass" : "")] = true;
 
 			return;
 		}
@@ -6373,6 +6373,17 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
 		return res;
 	}
 };
+
+/**
+ * <odoc>
+ * <key>AF.toSLON(aObject, aTheme) : String</key>
+ * Converts aObject map/array into SLON representation (see more in help for ow.format.toSLON)
+ * </odoc>
+ */
+AF.prototype.toSLON = function(aObject, aTheme) {
+	ow.loadFormat();
+	return ow.format.toSLON(aObject, aTheme);
+}
 
 /**
  * <odoc>
