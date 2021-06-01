@@ -2382,6 +2382,7 @@ OpenWrap.format.prototype.xls = {
 	},
 	
 	getColor: function(aColorName, aXLS) {
+		if (isNumber(aColorName)) return aColorName;
 		return aXLS.getIndexedColors(aColorName);
 	},
 	/*
