@@ -375,13 +375,13 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 	if (isUnDef(aTheme)) {
         ow.loadFormat();
 		if (!ow.format.isWindows()) {
-			aTheme = "utf";
+			aTheme = (__conAnsi ? "utf" : "plain");
 			if (isUnDef(useAnsi) && __initializeCon()) {
 				useAnsi = __conAnsi;
 			}
 		} else {
 			if (__initializeCon()) {
-				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = "utf";
+				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
 				}
@@ -492,13 +492,13 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 	if (isUnDef(aTheme)) {
         ow.loadFormat();
 		if (!ow.format.isWindows()) {
-			aTheme = "utf";
+			aTheme = (__conAnsi ? "utf" : "plain");
 			if (isUnDef(useAnsi) && __initializeCon()) {
 				useAnsi = __conAnsi;
 			}
 		} else {
 			if (__initializeCon()) {
-				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = "utf";
+				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
 				}
@@ -708,6 +708,7 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 }
 
 var __con, __conStatus, __conAnsi;
+if (isUnDef(__conAnsi) && String(java.lang.System.getProperty("file.encoding")) != "UTF-8") __conAnsi = false;
 function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;
 
@@ -716,7 +717,7 @@ function __initializeCon() {
 	} catch(e) {
 		while(__con == "") sleep(25);
 		__conStatus = true;
-		__conAnsi = true;
+		__conAnsi = (isDef(__conAnsi) ? __conAnsi : true);
 		if (__conAnsi == true) __ansiColorFlag = true;
 		return true;
 	}
@@ -728,18 +729,18 @@ function __initializeCon() {
 			var ___c = new Console();
 			__con = (___c).getConsoleReader();
 			__conStatus = true;
-			__conAnsi = (___c).isAnsiSupported();
+			__conAnsi = (isDef(__conAnsi) ? __conAnsi : (___c).isAnsiSupported());
 			if (__conAnsi == true) __ansiColorFlag = true;
 			return true;
 		} catch(e) {
 			__conStatus = false;
-			__conAnsi = false;
+			__conAnsi = (isDef(__conAnsi) ? __conAnsi : false);
 			return false;
 		}
 	} else {
 		while(__con == "") sleep(25);
 		__conStatus = true;
-		__conAnsi = true;
+		__conAnsi = (isDef(__conAnsi) ? __conAnsi : true);
 		if (__conAnsi == true) __ansiColorFlag = true;
 		return true;
 	}
