@@ -304,13 +304,17 @@ public class IO extends ScriptableObject {
 			if (zf != null) {
 				try {
 					ZipEntry ze = zf.getEntry(fileComponents[1]);
-					java.io.InputStream is = zf.getInputStream(ze);
-					if (is != null) {
-						try {
-							res = IOUtils.toByteArray(is);
-						} finally {
-							is.close();
+					if (ze != null) {
+						java.io.InputStream is = zf.getInputStream(ze);
+						if (is != null) {
+							try {
+								res = IOUtils.toByteArray(is);
+							} finally {
+								is.close();
+							}
 						}
+					} else {
+						throw new IOException("file '" + fileComponents[1] + "' not found in '" + fileComponents[0] + "'");
 					}
 				} finally {
 					zf.close();

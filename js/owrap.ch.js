@@ -3582,20 +3582,19 @@ OpenWrap.ch.prototype.utils = {
 		if (isUnDef(numberOfKeys)) numberOfKeys = 100;
 		var parent = ow.ch.utils;
 		return function(aC, aO, aK, aV) {
-			$lock("lockHK_" + aC);
+                        if (aO != "set" && aO != "setAll") return;
+ 
  			try {
 				$lock("lockHK_" + aC).lock();
 
 				var ln = $ch(aC).size();
-				if ((aO == "set" || aO == "setAll") && ln > numberOfKeys) {
-					while (ln > numberOfKeys) {
-						var o = $ch(aC).getSortedKeys();
-						if (o.length > numberOfKeys) {
-							var toDelete = o.filter((r, i) => i < numberOfKeys);
-							if (isArray(toDelete)) $ch(aC).unsetAll(Object.keys(toDelete[0]), toDelete);
-						}
-						ln = $ch(aC).size();
+				while (ln > numberOfKeys) {
+					var o = $ch(aC).getSortedKeys();
+					if (o.length > numberOfKeys) {
+						var toDelete = o.filter((r, i) => i < numberOfKeys);
+						if (isArray(toDelete)) $ch(aC).unsetAll(Object.keys(toDelete[0]), toDelete);
 					}
+					ln = $ch(aC).size();
 				}
  			} catch(e) { 
 				sprintErr(e); 

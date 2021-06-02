@@ -612,9 +612,15 @@ function __help(aTerm) {
 		
 		if (isArray(h)) {
 			if (h.length == 1 && isDef(h[0].fullkey) && isDef(h[0].text)) {
-				__o("**" + h[0].fullkey + "**");
-				__o("**" + repeat(h[0].fullkey.length, (__ansiflag && con.isAnsiSupported() ? HELPSEPARATOR_ANSI : HELPSEPARATOR)) + "**");
-				__o(h[0].text, true);
+				if (__ansiflag) {
+					__o("**" + h[0].fullkey + "**");
+					__o("**" + repeat(h[0].fullkey.length, HELPSEPARATOR_ANSI) + "**");
+					__o(h[0].text, true);
+				} else {
+					__o(h[0].fullkey);
+					__o(repeat(h[0].fullkey.length, HELPSEPARATOR));
+					__o(h[0].text, true);
+				}
 			} else {
 				if (h.length > 1) {
 					for(var i in h) {
@@ -962,7 +968,7 @@ function __processCmdLine(aCommand, returnOnly) {
 		if (__ansiflag && con.isAnsiSupported()) {
 			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), "BOLD,RED", "BOLD"));
 		} else {
-			__outputConsoleError(__ores);
+			__outputConsoleError(String(e));
 		}
 	}
 
@@ -1167,15 +1173,15 @@ var con = new Console();
 if (__ansiColorFlag) ansiStart();
 //var __ansiflag = con.isAnsiSupported();
 var jansi = JavaImporter(Packages.org.fusesource.jansi);
-var __ansiflag = (jansi != null && isDef(jansi)) ? con.isAnsiSupported() : false;
+var __ansiflag = (isDef(__conAnsi) ? __conAnsi : (jansi != null && isDef(jansi)) ? con.isAnsiSupported() : false);
 var cmd = "";
 var timeCommand = false; var start; var end;
 var outputCommand = true;
 var beautifyCommand = true;
-var colorCommand = true;
+var colorCommand = __ansiflag;
 var pauseCommand = true;
 var watchCommand = false;
-var viewCommand = true;
+var viewCommand = __ansiflag;
 var multiCommand = true;
 var watchLine = "";
 var __previousAnsiFlag = __ansiflag;
