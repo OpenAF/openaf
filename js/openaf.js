@@ -708,7 +708,9 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 }
 
 var __con, __conStatus, __conAnsi;
-if (isUnDef(__conAnsi) && String(java.lang.System.getProperty("file.encoding")) != "UTF-8") __conAnsi = false;
+if (isUnDef(__conAnsi) && String(java.lang.System.getProperty("file.encoding")) != "UTF-8") {
+	__conAnsi = false;
+}
 function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;
 
@@ -2065,7 +2067,7 @@ function load(aScript, loadPrecompiled) {
 		}
 
 		if (isDef(error)) {
-			throw aScript + ": " + String(error);
+			throw new Error("Couldn't find or load '" + aScript + "'");
 		}
 	}
 }
@@ -8621,6 +8623,7 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 		af.compile(prof);
 	} catch(e) {
 		if (!e.message.match(/java\.io\.FileNotFoundException/) &&
+		    !e.message.match(/java\.io\.IOException/) &&
 		    !e.message.match(/java\.lang\.NullPointerException: entry/)) throw e;
 	}
 })();
