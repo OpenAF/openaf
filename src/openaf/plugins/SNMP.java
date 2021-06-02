@@ -2,6 +2,7 @@ package openaf.plugins;
 
 import java.io.IOException;
 import java.lang.String;
+import java.math.BigInteger;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
@@ -87,7 +88,7 @@ public class SNMP extends ScriptableObject {
 	 *    privProtocol   (String) 3DES, AES128, AES192, AES256, DES\
 	 *    authPassphrase (String)\
 	 *    privPassphrase (String)\
-	 *    engineId       (String)\
+	 *    engineId       (String) (in hex format only)\
 	 * \
 	 * </odoc>
 	 */
@@ -107,7 +108,9 @@ public class SNMP extends ScriptableObject {
 		if (version >= 2 && security instanceof NativeObject) {
 			NativeObject smap = (NativeObject) security;
 			if (smap.containsKey("securityName")) this.securityName = (String) smap.get("securityName");
-			if (smap.containsKey("engineId")) this.engineID = ((String) smap.get("engineId")).getBytes();
+
+			// Converting the engineID from HEX to byte array (issue #267)
+			if (smap.containsKey("engineId")) this.engineID = (new BigInteger( ((String) smap.get("engineId")), 16)).toByteArray();
 		}
 		if (version >= 3) {
 			if (security instanceof NativeObject) {
@@ -164,9 +167,21 @@ public class SNMP extends ScriptableObject {
 			USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(this.engineID), 0);
 			SecurityModels.getInstance().addSecurityModel(usm);
 			snmp.getUSM().addUser(new OctetString(this.securityName), new UsmUser(new OctetString(this.securityName), this.authProtocol, new OctetString(this.authPassphrase), this.privProtocol, new OctetString(this.privPassphrase)));
+			snmp.setLocalEngine(new OctetString(this.engineID).getValue(), 0, 0);   // Making sure the local Engine ID is also set
 		}
 
 		transport.listen();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>SNMP.getJavaObject() : JavaObject</key>
+	 * Returns the current internal Java object being used.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Object getJavaObject() {
+		return this.snmp;
 	}
 
 	/**
