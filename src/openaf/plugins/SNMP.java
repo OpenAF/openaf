@@ -3,6 +3,7 @@ package openaf.plugins;
 import java.io.IOException;
 import java.lang.String;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
@@ -110,7 +111,10 @@ public class SNMP extends ScriptableObject {
 			if (smap.containsKey("securityName")) this.securityName = (String) smap.get("securityName");
 
 			// Converting the engineID from HEX to byte array (issue #267)
-			if (smap.containsKey("engineId")) this.engineID = (new BigInteger( ((String) smap.get("engineId")), 16)).toByteArray();
+			byte tmpEngineId[] = (new BigInteger( ((String) smap.get("engineId")), 16)).toByteArray();
+			// First byte from BigInteger needs to be discarded
+			tmpEngineId = Arrays.copyOfRange(tmpEngineId, 1, tmpEngineId.length);
+			if (smap.containsKey("engineId")) this.engineID = tmpEngineId;
 		}
 		if (version >= 3) {
 			if (security instanceof NativeObject) {
