@@ -7676,7 +7676,7 @@ const $lock = function(aName) {
 		 * \
 		 * </odoc>
 		 */
-		lock     : () => __lock[aName].lock(),
+		lock     : () => __lock[aName].lockInterruptibly(),
 		/**
 		 * <odoc>
 		 * <key>$lock.unlock()</key>
