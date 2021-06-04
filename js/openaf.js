@@ -7700,9 +7700,13 @@ const $retry = function(aFunc, aNumTries) {
 var __flock = {};
 const $flock = function(aLockFile) {
 	if (isUnDef(__flock[aLockFile])) {
-		__flock[aLockFile] = {};
-		__flock[aLockFile].f = io.randomAccessFile(aLockFile, "rw");
-		__flock[aLockFile].c = __flock[aLockFile].f.getChannel();
+		$lock("__flock::" + aLockFile).lock();
+		if (isUnDef(__flock[aLockFile])) {
+			__flock[aLockFile] = {};
+			__flock[aLockFile].f = io.randomAccessFile(aLockFile, "rw");
+			__flock[aLockFile].c = __flock[aLockFile].f.getChannel();
+		}
+		$lock("__flock::" + aLockFile).unlock();
 	}
 	var r = {
 		getObject: () => __flock[aLockFile].f,
@@ -7784,7 +7788,10 @@ const $flock = function(aLockFile) {
 				if (isJavaObject(__flock[aLockFile].c)) __flock[aLockFile].c.close();
 			} catch(e) {
 			}
+			$lock("__flock::" + aLockFile).lock();
 			delete __flock[aLockFile];
+			$lock("__flock::" + aLockFile).unlock();
+			$lock("__flock::" + aLockFile).destroy();
 		},
 		/**
 		 * <odoc>
