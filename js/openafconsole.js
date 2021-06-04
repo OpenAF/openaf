@@ -1169,6 +1169,8 @@ function __pauseString(aString) {
 // ---------------------
 // MAIN
 // ---------------------
+__initializeCon();
+
 var con = new Console();
 if (__ansiColorFlag) ansiStart();
 //var __ansiflag = con.isAnsiSupported();
