@@ -1195,7 +1195,15 @@ OpenWrap.ch.prototype.__types = {
 			delete this.__channels[aName];
 		},
 		size         : function(aName) {
-			return Object.keys(this.__r(this.__channels[aName])).length;
+			var s;
+			this.__l(this.__channels[aName]);
+			try {
+				s = Object.keys(this.__r(this.__channels[aName])).length;
+			} finally {
+				this.__ul(this.__channels[aName]);
+			}
+			
+			return s;
 		},
 		forEach      : function(aName, aFunction) {
 			var m;
