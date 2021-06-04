@@ -740,7 +740,7 @@ function __initializeCon() {
 			return false;
 		}
 	} else {
-		while(__con == "") sleep(25);
+		while(__con == "") sleep(25, true);
 		__conStatus = true;
 		__conAnsi = (isDef(__conAnsi) ? __conAnsi : true);
 		if (__conAnsi == true) __ansiColorFlag = true;
@@ -7661,6 +7661,126 @@ const $retry = function(aFunc, aNumTries) {
     return error;
 };
 
+var __flock = {};
+const $flock = function(aLockFile) {
+	if (isUnDef(__flock[aLockFile])) {
+		__flock[aLockFile] = {};
+		__flock[aLockFile].f = io.randomAccessFile(aLockFile, "rw");
+		__flock[aLockFile].c = __flock[aLockFile].f.getChannel();
+	}
+	var r = {
+		getObject: () => __flock[aLockFile].f,
+		/**
+		 * <odoc>
+		 * <key>$flock.lock()</key>
+		 * Given aLockFile will use the file to filesystem lock until unlock is called.\
+		 * \
+		 *    $flock(aLockFile).lock()\
+		 * \
+		 * </odoc>
+		 */
+		lock : () => {
+			try {
+				__flock[aLockFile].l = __flock[aLockFile].c.lock();
+				return true;
+			} catch(e) {
+				r.destroy();
+				return false;
+			}
+		},
+		/**
+		 * <odoc>
+		 * <key>$flock.unlock()</key>
+		 * Given aLockFile will unlock freeing any previous calls to lock.\
+		 * \
+		 *    $flock(aLockFile).unlock()\
+		 * \
+		 * </odoc>
+		 */
+		unlock: () => {
+			if (isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
+				// warning on some newer JVMs: https://github.com/mozilla/rhino/issues/462
+				__flock[aLockFile].l.release();
+			}
+		},
+		/**
+		 * <odoc>
+		 * <key>$flock.isLocalLocked() : Boolean</key>
+		 * Given aLockFile will return true if locked in the current OpenAF instance otherwise false (see also isLocked).\
+		 * \
+		 *    $flock(aLockFile).isLocalLocked()\
+		 * \
+		 * </odoc>
+		 */
+		isLocalLocked: () => {
+			if (isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l) && __flock[aLockFile].l.isValid()) {
+				return true;
+			} else {
+				return false;
+			}
+		},
+		/**
+		 * <odoc>
+		 * <key>$flock.isLocked() : Boolean</key>
+		 * Given aLockFile will return true if locked in the current OpenAF instance or on the filesystem (by using $flock.tryLock) otherwise false (see also isLocalLocked).\
+		 * \
+		 *    $flock(aLockFile).isLocked()\
+		 * \
+		 * </odoc>
+		 */
+		isLocked: () => {
+			return !r.tryLock(() => {});
+		},
+		/**
+		 * <odoc>
+		 * <key>$lock.destroy()</key>
+		 * Given aLockFile will destroy the provided lock entry.\
+		 * \
+		 *    $flock(aLockFile).destroy()\
+		 * \
+		 * </odoc>
+		 */
+		destroy: () => {
+			if (r.isLocalLocked()) r.unlock();
+			//if (isDef(__flock[aLockFile].l)) __flock[aLockFile].l.close();
+			try {
+				if (isJavaObject(__flock[aLockFile].f)) __flock[aLockFile].f.close();
+				if (isJavaObject(__flock[aLockFile].c)) __flock[aLockFile].c.close();
+			} catch(e) {
+			}
+			delete __flock[aLockFile];
+		},
+		/**
+		 * <odoc>
+		 * <key>$lock.tryLock(aFunction) : Boolean</key>
+		 * Given aLockFile only execute aFunction if it's unlocked. If it
+		 * executed aFunction it will return true otherwise false.\
+		 * \
+		 *    $flock(aLockFile).tryLock(() => { ... })\
+		 * \
+		 * </odoc>
+		 */
+		tryLock: f => {
+			if (r.isLocalLocked()) return false;
+			try {
+				__flock[aLockFile].l = __flock[aLockFile].c.tryLock();
+				if (isNull(__flock[aLockFile].l)) return false;
+ 				try {
+					f();
+					return true;
+				} finally {
+					r.unlock();
+				}
+			} catch(e) {
+				r.destroy();
+			}
+			return false;
+		}
+	};
+
+	return r;
+};
+
 var __lock = {};
 const $lock = function(aName) {
 	if (isUnDef(__lock[aName])) __lock[aName] = new java.util.concurrent.locks.ReentrantLock();
@@ -7713,7 +7833,7 @@ const $lock = function(aName) {
 		 * Given aLockName only execute aFunction when it's able to lock or after aTimeoutMS. If it
 		 * executed aFunction it will return true otherwise false.\
 		 * \
-		 *    $lock(aLockName).destroy()\
+		 *    $lock(aLockName).tryLock(() => { ... })\
 		 * \
 		 * </odoc>
 		 */

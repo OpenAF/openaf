@@ -1150,12 +1150,15 @@ OpenWrap.ch.prototype.__types = {
 	 *    - multipart (Boolean) If YAML and multipart = true the YAML file will be multipart\
 	 *    - key       (String)  If a key contains "key" it will be replaced by the "key" value\
 	 *    - multipath (Boolean) Supports string keys with paths (e.g. ow.obj.setPath) (defaults to false)\
+	 *    - lock      (String)  If defined the filepath to a dummy file for filesystem lock while accessing the file\
 	 * \
 	 * </odoc>
 	 */
 	//
 	file: {
 		__channels: {},
+		__l: (m) => (isString(m.lock) ? $flock(m.lock).lock() : __),
+		__ul: (m) => (isString(m.lock) ? $flock(m.lock).unlock() : __),
 		__r: (m) => {
 			var r = {};
 			if (!io.fileExists(m.file)) return r;
@@ -1186,6 +1189,7 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].multipart = _$(options.multipart, "options.multipart").isBoolean().default(false);
 			this.__channels[aName].multipath = _$(options.multipath, "options.multipath").isBoolean().default(false);
 			this.__channels[aName].key       = _$(options.key, "options.key").isString().default(__);
+			this.__channels[aName].lock      = _$(options.lock, "options.lock").isString().default(__);
 		},
 		destroy      : function(aName) {
 			delete this.__channels[aName];
@@ -1194,21 +1198,45 @@ OpenWrap.ch.prototype.__types = {
 			return Object.keys(this.__r(this.__channels[aName])).length;
 		},
 		forEach      : function(aName, aFunction) {
-			var m = this.__r(this.__channels[aName]);
+			var m;
+			this.__l(this.__channels[aName]);
+			try {
+				m = this.__r(this.__channels[aName]);
+			} finally {
+				this.__ul(this.__channels[aName]);
+			}
 			Object.keys(m).map(k => {
 				try { aFunction(k, m[k]) } catch(e) {};
 			});
 		},
 		getAll      : function(aName, full) {
-			var m = this.__r(this.__channels[aName]);
+			var m;
+			this.__l(this.__channels[aName]);
+			try {
+				m = this.__r(this.__channels[aName]);
+			} finally {
+				this.__ul(this.__channels[aName]);
+			}
 			return Object.values(m);
 		},
 		getKeys      : function(aName, full) {
-			var m = this.__r(this.__channels[aName]);
+			var m;
+			this.__l(this.__channels[aName]);
+			try {
+				m = this.__r(this.__channels[aName]);
+			} finally {
+				this.__ul(this.__channels[aName]);
+			}
 			return Object.keys(m);
 		},
 		getSortedKeys: function(aName, full) {
-			var m = this.__r(this.__channels[aName]);
+			var m;
+			this.__l(this.__channels[aName]);
+			try {
+				m = this.__r(this.__channels[aName]);
+			} finally {
+				this.__ul(this.__channels[aName]);
+			}
 			var res = Object.keys(m); 
 			return res;	
 		},
@@ -1221,15 +1249,21 @@ OpenWrap.ch.prototype.__types = {
 			return __;
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
-			var m = this.__r(this.__channels[aName]);
-			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
-			var id = isDef(aK.key)   ? aK.key   : stringify(aK, __, "");
-			if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
-				ow.obj.setPath(m, id, isDef(aV.value) ? aV.value : aV);
-			} else {
-				m[id]  = isDef(aV.value) ? aV.value : aV;
+			var m;
+			this.__l(this.__channels[aName]);
+			try {
+				m = this.__r(this.__channels[aName]);
+				if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
+				var id = isDef(aK.key)   ? aK.key   : stringify(aK, __, "");
+				if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+					ow.obj.setPath(m, id, isDef(aV.value) ? aV.value : aV);
+				} else {
+					m[id]  = isDef(aV.value) ? aV.value : aV;
+				}
+				this.__w(this.__channels[aName], m);
+			} finally {
+				this.__ul(this.__channels[aName]);
 			}
-			this.__w(this.__channels[aName], m);
 			
 			return aK;
 		},
@@ -1246,7 +1280,13 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},		
 		get          : function(aName, aK) {
-			var m = this.__r(this.__channels[aName]);
+			var m;
+			this.__l(this.__channels[aName]);
+			try {
+				m = this.__r(this.__channels[aName]);
+			} finally {
+				this.__ul(this.__channels[aName]);
+			}
 			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
 			var id = isDef(aK.key)   ? aK.key   : stringify(aK, __, "");
 			if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
@@ -1266,16 +1306,22 @@ OpenWrap.ch.prototype.__types = {
 			return elem;
 		},
 		unset        : function(aName, aK, aTimestamp) {
-			var m = this.__r(this.__channels[aName]);
-			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
-			var id = isDef(aK.key)   ? aK.key   : stringify(aK, __, "");
-			delete m[id];
-			if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
-				ow.obj.setPath(m, id, __);
-			} else {
+			var m;
+			this.__l(this.__channels[aName]);
+			try {
+				m = this.__r(this.__channels[aName]);
+				if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
+				var id = isDef(aK.key)   ? aK.key   : stringify(aK, __, "");
 				delete m[id];
+				if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+					ow.obj.setPath(m, id, __);
+				} else {
+					delete m[id];
+				}
+				this.__w(this.__channels[aName], m);
+			} finally {
+				this.__ul(this.__channels[aName]);
 			}
-			this.__w(this.__channels[aName], m);
 		}
 	},	
 	// Remote channel implementation
