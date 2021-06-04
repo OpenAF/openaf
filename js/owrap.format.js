@@ -927,15 +927,18 @@ OpenWrap.format.prototype.round = function(number, digits) {
 
 OpenWrap.format.prototype.toBase64 = function(aString) { return af.fromBytes2String(af.toBase64Bytes(aString)); }
 OpenWrap.format.prototype.fromBase64 = function(aString) { return af.fromBytes2String(af.fromBase64(aString)); }
+OpenWrap.format.prototype.md2  = md2;
 OpenWrap.format.prototype.md5  = md5;
 OpenWrap.format.prototype.sha1 = sha1;
 OpenWrap.format.prototype.sha256 = sha256;
+OpenWrap.format.prototype.sha384 = sha384;
 OpenWrap.format.prototype.sha512 = sha512;
 OpenWrap.format.prototype.toBoolean = toBoolean;
 OpenWrap.format.prototype.now = now;
 OpenWrap.format.prototype.nowUTC = nowUTC;
 OpenWrap.format.prototype.nowNano = nowNano;
 OpenWrap.format.prototype.hmacSHA256 = hmacSHA256;
+OpenWrap.format.prototype.hmacSHA384 = hmacSHA384;
 OpenWrap.format.prototype.hmacSHA512 = hmacSHA512;
 
 /**

@@ -1588,6 +1588,19 @@ function nowNano() {
 
 /**
  * <odoc>
+ * <key>md2(anObject) : String</key>
+ * Will return of the MD2 in hexadecimal format for a given anObject.\
+ * For files you can provide a file stream: var s = io.readFileStream(getOpenAFJar()); md2(s); s.close()
+ * </odoc>
+ */
+ function md2(obj) {
+	var DigestUtils = org.apache.commons.codec.digest.DigestUtils;
+	return DigestUtils.md2Hex(obj) + "";
+}
+
+
+/**
+ * <odoc>
  * <key>md5(anObject) : String</key>
  * Will return of the MD5 in hexadecimal format for a given anObject.\
  * For files you can provide a file stream: var s = io.readFileStream(getOpenAFJar()); md5(s); s.close()
@@ -1624,6 +1637,18 @@ function sha256(obj) {
 
 /**
  * <odoc>
+ * <key>sha384(anObject) : String</key>
+ * Will return of the SHA-384 in hexadecimal format for a given anObject.\
+ * For files you can provide a file stream: var s = io.readFileStream(getOpenAFJar()); sha384(s); s.close()
+ * </odoc>
+ */
+ function sha384(obj) {
+	var DigestUtils = org.apache.commons.codec.digest.DigestUtils;
+	return DigestUtils.sha384Hex(obj) + "";
+}
+
+/**
+ * <odoc>
  * <key>sha512(anObject) : String</key>
  * Will return of the SHA-512 in hexadecimal format for a given anObject.\
  * For files you can provide a file stream: var s = io.readFileStream(getOpenAFJar()); sha512(s); s.close()
@@ -1642,7 +1667,7 @@ function sha512(obj) {
  * </odoc>
  */
 function hmacSHA256(data, key, toHex, alg) {
-	var alg = "HmacSHA256";
+	var alg = _$(alg).default("HmacSHA256");
 	if (isString(key)) key = (new java.lang.String(key)).getBytes("UTF-8");
 	var mac = javax.crypto.Mac.getInstance(alg);
 	mac.init(new javax.crypto.spec.SecretKeySpec(key, alg));
@@ -1663,6 +1688,17 @@ function hmacSHA256(data, key, toHex, alg) {
  */
 function hmacSHA512(data, key, toHex) {
 	return hmacSHA256(data, key, toHex, "HmacSHA512");
+}
+
+/**
+ * <odoc>
+ * <key>hmacSHA384(data, key, toHex) : ArrayOfBytes</key>
+ * Given data and a key will calculate the hash-based message authentication code (HMAC) using the SHA384 hash
+ * function. Optionally if toHex = true the output will be converted to hexadecimal lower case.
+ * </odoc>
+ */
+ function hmacSHA384(data, key, toHex) {
+	return hmacSHA256(data, key, toHex, "HmacSHA384");
 }
 
 /**
