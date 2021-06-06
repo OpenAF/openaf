@@ -110,11 +110,13 @@ public class SNMP extends ScriptableObject {
 			NativeObject smap = (NativeObject) security;
 			if (smap.containsKey("securityName")) this.securityName = (String) smap.get("securityName");
 
-			// Converting the engineID from HEX to byte array (issue #267)
-			byte tmpEngineId[] = (new BigInteger( ((String) smap.get("engineId")), 16)).toByteArray();
-			// First byte from BigInteger needs to be discarded
-			tmpEngineId = Arrays.copyOfRange(tmpEngineId, 1, tmpEngineId.length);
-			if (smap.containsKey("engineId")) this.engineID = tmpEngineId;
+			if (smap.containsKey("engineId")) {
+				// Converting the engineID from HEX to byte array (issue #267)
+				byte tmpEngineId[] = (new BigInteger( ((String) smap.get("engineId")), 16)).toByteArray();
+				// First byte from BigInteger needs to be discarded
+				tmpEngineId = Arrays.copyOfRange(tmpEngineId, 1, tmpEngineId.length);
+				this.engineID = tmpEngineId;
+			}
 		}
 		if (version >= 3) {
 			if (security instanceof NativeObject) {

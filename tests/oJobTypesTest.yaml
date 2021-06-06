@@ -1,0 +1,94 @@
+init:
+  hello: world
+
+todo:
+# SHUTDOWN ------
+- name: Via shutdown normal
+- name: Via shutdown repeat
+- name: Via shutdown inline
+  args: |
+    ({ verb: ow.oJob.init.hello })
+- name: Via shutdown inline repeat
+  args: |
+    ([{ verb: ow.oJob.init.hello }])
+
+# INLINE ---------
+- name: Via inline job
+- name: Via inline job repeat
+- name: Via inline todo
+  args: |
+    ({ verb: ow.oJob.init.hello })
+- name: Via inline todo repeat
+  args: |
+    ([{ verb: ow.oJob.init.hello }])
+
+# NORMAL ---------
+- name: Via job normal
+- name: Via todo normal
+  args: 
+    verb: world
+- name: Via job repeat
+- name: Via todo repeat
+  args: 
+  - verb: world
+
+
+# ojob:
+#   sequential: true
+
+jobs:
+- name: Via inline job
+  args: |
+    ({ verb: ow.oJob.init.hello })
+  exec: &EXE |
+    //yprint(args);
+    if (isDef(args.verb) && args.verb == 'world') print("arg : yes"); else print("arg : NO!!!");
+    if (isDef(args.init)) print("init: yes"); else print("init: NO!!!");
+    if (isDef(args.test)) print("ext : yes"); else print("ext : NO!!!");
+
+- name: Via inline job repeat
+  args: |
+    ([{ verb: ow.oJob.init.hello }])
+  exec: *EXE
+
+- name: Via inline todo
+  exec: *EXE
+
+- name: Via inline todo repeat
+  exec: *EXE
+
+- name: Via job normal
+  args:
+    verb: world
+  exec: *EXE
+
+- name: Via todo normal
+  exec: *EXE
+
+- name: Via job repeat
+  args:
+  - verb: world
+  exec: *EXE
+
+- name: Via todo repeat
+  exec: *EXE
+
+- name: Via shutdown normal
+  args:
+    verb: world
+  type: shutdown
+  exec: *EXE
+
+- name: Via shutdown inline
+  type: shutdown
+  exec: *EXE
+
+- name: Via shutdown repeat
+  args:
+  - verb: world
+  type: shutdown
+  exec: *EXE
+
+- name: Via shutdown inline repeat
+  type: shutdown
+  exec: *EXE

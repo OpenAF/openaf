@@ -7826,7 +7826,11 @@ const $flock = function(aLockFile) {
 
 var __lock = {};
 const $lock = function(aName) {
-	if (isUnDef(__lock[aName])) __lock[aName] = new java.util.concurrent.locks.ReentrantLock();
+	if (isUnDef(__lock[aName])) {
+		sync(() => {
+			__lock[aName] = new java.util.concurrent.locks.ReentrantLock();
+		}, __lock);
+	}
 
 	return {
 		getObject: () => __lock[aName],
@@ -7869,7 +7873,11 @@ const $lock = function(aName) {
 		 * \
 		 * </odoc>
 		 */
-		destroy  : () => delete __lock[aName],
+		destroy  : () => {
+			sync(() => {
+				delete __lock[aName];
+			}, __lock);
+		},
 		/**
 		 * <odoc>
 		 * <key>$lock.tryLock(aFunction, aTimeoutMS) : Boolean</key>

@@ -51,6 +51,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	});
 
 	//this.__promises.push($do(() => {
+		ow.loadTemplate();
 		ow.loadServer(); 
 		parent.__sch = new ow.server.scheduler();
 	//}));
@@ -1210,12 +1211,13 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 		} else {
 			if (isObject(aArgsA)) {
 				if (execStr && isDef(aArgsA.__oJobExec)) 
-					argss = this.__mergeArgs(argss, this.__processArgs(eval(aArgsA.__oJobExec)));
+					argss = this.__mergeArgs(argss, this.__processArgs(af.eval(aArgsA.__oJobExec), aArgsA));
 				else
 					argss = this.__mergeArgs(argss, aArgsA);
 			} else {
 				if (isString(aArgsA)) {
 					argss = this.__mergeArgs(argss, { __oJobExec: aArgsA });
+					if (execStr) argss = this.__mergeArgs(argss, this.__processArgs(af.eval(aArgsA)));
 				}
 			}
 		}
@@ -1244,14 +1246,14 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	this.oJobShouldStop = false;
 	if (isDef(this.init)) args = merge(args, { init: this.init });
 
-	global.args = args;
 	var parent = this;
 
 	if (this.__ojob != {}) {
-		if (isDef(this.__ojob.argsFromEnvs) && this.__ojob.argsFromEnvs) args = this.__processArgs(getEnvs(), args, aId);
+		if (isDef(this.__ojob.argsFromEnvs) && this.__ojob.argsFromEnvs) {
+			args = this.__processArgs(getEnvs(), args, aId);
+		}
 
 		if (isDef(this.__ojob.cronInLocalTime)) {
-			ow.loadFormat();
 			if (this.__ojob.cronInLocalTime) {
 				ow.format.cron.set2LocalTime();
 			} else {
@@ -1268,7 +1270,6 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		if (isDef(this.__ojob.catch) && !(isString(this.__ojob.catch))) this.__ojob.catch = __;
 
 		if (isDef(this.__ojob.metrics)) {
-			ow.loadServer();
 			if (isBoolean(this.__ojob.metrics) && this.__ojob.metrics) ow.server.telemetry.passive(__, __, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp);
 			if (isMap(this.__ojob.metrics)) {
 				if (isDef(this.__ojob.metrics.collect)) {
@@ -1331,6 +1332,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	    	}
 		}
 	}
+
+	global.args = args;
 
 	var t = new Threads();
 	this.mt = new Threads();
@@ -1537,6 +1540,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 	        if (isDef(aJob.typeArgs.single)) single = aJob.typeArgs.single;
 			if (!single) {
 				parallel4Array(args.__oJobRepeat, function(aValue) {
+					if (isUnDef(aValue.execid) && isUnDef(aValue.objId)) {
+						aValue.execid = args.execid;
+						aValue.objId = args.objId;
+					}
 					try {
 						(tb 
 						 ? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(aValue, job, id, depInfo); })
@@ -1574,6 +1581,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 				}, parent.__ojob.numThreads);
 			} else {
 				for(var aVi in args.__oJobRepeat) {
+					args.__oJobRepeat[aVi].execid = args.execid;
+					args.__oJobRepeat[aVi].objId = args.objId;
 					try {
 						(tb 
 						 ? tbres = $tb().timeout(timeout).stopWhen(stopWhen).exec(() => { f(args.__oJobRepeat[aVi], job, id, depInfo); })
@@ -1638,7 +1647,6 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 	
 	if (canContinue) {
 		var args = isDef(provideArgs) ? this.__processArgs(provideArgs, __, aId, true) : {};
-		
 		args.objId = this.getID() + altId;	
 		//args = this.__mergeArgs(args, this.__processArgs(aJob.args, __, __, true));
 		if (isUnDef(aJob.typeArgs)) {
@@ -1949,7 +1957,6 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					if (aJobTypeArgs.noTemplate) {
 						res += "";
 					} else {
-						ow.loadTemplate();
 						res += "io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
 					}
 					var prefix = "";
@@ -2095,7 +2102,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			//"lang": jobLang,
 			"file": jobFile,
 			"typeArgs": (isDef(j.typeArgs) ? merge(j.typeArgs, jobTypeArgs) : jobTypeArgs),
-			"args": (isDef(j.args) ? parent.__processArgs(j.args, jobArgs) : parent.__processArgs(jobArgs)),
+			"args": (isDef(j.args) ? parent.__processArgs(j.args, jobArgs, __, true) : parent.__processArgs(jobArgs, __, __, true)),
 			"deps": (isDef(j.deps) && j.deps != null ? j.deps.concat(jobDeps) : jobDeps),
 			//"help": (isDef(j.help) ? j.help : "") + "\n" + jobHelp,
 			"help": jobHelp,
@@ -2210,7 +2217,6 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			print(printMap(aObj, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi));
 			break;
 		case "jsmap":
-			ow.loadTemplate();
 			var res = ow.template.html.parseMap(aObj, true);
 			return "<html><style>" + res.css + "</style><body>" + res.out + "</body></html>";
  		case "pm":
