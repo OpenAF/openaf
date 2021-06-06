@@ -6137,7 +6137,16 @@ function deleteFromArray(anArray, anIndex) {
 // ****
 // oJob
 
+// List of authorized domains from which to run ojobs
 var OJOB_AUTHORIZEDDOMAINS = [ "ojob.io" ];
+
+// Hash list of oJob urls and filepaths (each key value is a the url/canonical filepath; value is [hash-alg]-[hash])
+// Do note that ojob.io urls need to be converted: ojob.io/echo -> https://ojob.io/echo.json
+var OJOB_INTEGRITY = {};
+// If OJOB_INTEGRITY_WARN is false oJob execution is halted if any integrity hash is found to be different
+var OJOB_INTEGRITY_WARN = true; 
+// IF OJOB_INTEGRITY_STRICT if true no oJob will execute if it's integrity is not verified.
+var OJOB_INTEGRITY_STRICT = false;
 
 /**
  * <odoc>

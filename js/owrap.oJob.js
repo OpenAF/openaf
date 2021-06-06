@@ -128,6 +128,48 @@ OpenWrap.oJob = function(isNonLocal) {
 	return this;
 };
 
+OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
+	_$(aFileOrPath, "aFileOrPath").isString().$_();
+	
+	var isUrl = false;
+	if (aFileOrPath.toLowerCase().startsWith("http://") || aFileOrPath.toLowerCase().startsWith("https://")) isUrl = true;
+
+	var stream;
+	if (isUrl) {
+		stream = $rest().get2Stream(aFileOrPath);
+	} else {
+		aFileOrPath = io.fileInfo(aFileOrPath).canonicalPath;
+		stream = io.readFileStream(aFileOrPath);
+	}
+
+	if (isDef(OJOB_INTEGRITY[aFileOrPath])) {
+		var valid = false;
+
+		[alg, h] = OJOB_INTEGRITY[aFileOrPath].split("-");
+		switch (alg) {
+		case "sha256":
+			valid = (sha256(stream) == h);
+			break;
+		case "sha512":
+			valid = (sha512(stream) == h);
+			break;
+		case "sha384":
+			valid = (sha384(stream) == h);
+			break;
+		case "sha1"  :
+			valid = (sha1(stream) == h);
+			break;
+		default      : 
+			valid = false;
+		}
+
+		stream.close();
+		return valid;
+	} else {
+		return __;
+	}
+};
+
 /**
  * <odoc>
  * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, init)</key>
@@ -661,6 +703,25 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 				if (!pp.endsWith("/") && aFile.indexOf("?") < 0) aFile += ".json";
 			}
         }
+
+		// Verify integrity
+		if (Object.keys(OJOB_INTEGRITY).length > 0) {
+			Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "oJob checking integrity of '" + aFile + "'", null);
+
+			var ig = this.verifyIntegrity(aFile);
+			if (isDef(ig) && ig == false) {
+				if (OJOB_INTEGRITY_WARN) {
+					logWarn("INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list. Execution will continue.");
+				} else {
+					throw "INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list.";
+				}
+			} else {
+				if (OJOB_INTEGRITY_STRICT && ig != true) {
+					throw "INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list.";
+				}
+			}
+		}
+
 		if (aFile.match(/\.ya?ml$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
