@@ -1347,6 +1347,19 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			}
 		}
 
+		// Daemon function that runs periodically using ojob.timeInterval
+		// If function returns true daemon will be interrupted
+		if (isString(this.__ojob.daemonFunc)) {
+			var parent = this;
+			this.periodicFuncs.push(() => {
+				var res = (new Function(parent.__ojob.daemonFunc))();
+				if (isDef(res) && res == true) {
+					parent.oJobShouldStop = true;
+				}
+				return false;
+			});
+		}
+
 	    if (isDef(this.__ojob.unique) && !this.__ojob.__subjob) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
@@ -1418,7 +1431,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		}, this.__ojob.checkStall.everySeconds * 1000);
 	}
 
-	var shouldStop = false;
+	//var shouldStop = false;
+	this.oJobShouldStop = false;
 	if (this.__ojob.sequential) {
 		var job = __;
 		//var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
@@ -1451,7 +1465,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		//t.addThread(function() {
 			// Check all jobs in the todo queue
 			var job = __; 
-			while(!shouldStop) {
+			while(!parent.oJobShouldStop) {
 				try {
 					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
 					var parentOJob = $from(parent.getTodoCh().getKeys()).useCase(true).equals("ojobId",  (parent.getID() + altId)).select();
@@ -1477,11 +1491,11 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 							});
 						}
 					}
-					if (!shouldStop && 
+					if (!parent.oJobShouldStop && 
 						!(isDef(parent.__ojob) && isDef(parent.__ojob.daemon) && parent.__ojob.daemon == true) &&
 		                parentOJob.length <= 0
 		               ) {
-		               	  shouldStop = true;
+		               	  parent.oJobShouldStop = true;
 		               	  try {
 						      if (!isSubJob) parent.stop();              		  
 		               	  } catch(e) {}
@@ -1504,7 +1518,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 	if (!(this.__ojob.sequential)) {
 		try {
-			while(shouldStop == false) {
+			while(parent.oJobShouldStop == false) {
 				t.waitForThreads(50);
 			}
 			t.stop();
