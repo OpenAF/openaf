@@ -7707,12 +7707,25 @@ const $retry = function(aFunc, aNumTries) {
 };
 
 var __flock = {};
-const $flock = function(aLockFile) {
+const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
+	aTimeout     = _$(aTimeout, "aTimeout").isNumber().default(60000); 
+	aWaitPerCall = _$(aWaitPerCall, "aWaitPerCall").isNumber().default(2500);
+
 	if (isUnDef(__flock[aLockFile])) {
 		$lock("__flock::" + aLockFile).lock();
 		if (isUnDef(__flock[aLockFile])) {
 			__flock[aLockFile] = {};
-			__flock[aLockFile].f = io.randomAccessFile(aLockFile, "rw");
+			var t = now();
+			$retry(() => { __flock[aLockFile].f = io.randomAccessFile(aLockFile, "rw") }, () => {
+				if (now() - t > aTimeout) {
+					return false;
+				} else {	
+					sleep(aWaitPerCall, true);
+				}
+				return true;
+			});
+			if (!isJavaObject(__flock[aLockFile].f) || isNull(__flock[aLockFile].f)) throw "Can't access '" + aLockFile + "'";
+			
 			__flock[aLockFile].c = __flock[aLockFile].f.getChannel();
 		}
 		$lock("__flock::" + aLockFile).unlock();
@@ -7747,7 +7760,7 @@ const $flock = function(aLockFile) {
 		 * </odoc>
 		 */
 		unlock: () => {
-			if (isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
+			if (isDef(__flock[aLockFile]) && isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
 				// warning on some newer JVMs: https://github.com/mozilla/rhino/issues/462
 				__flock[aLockFile].l.release();
 			}
@@ -7762,7 +7775,7 @@ const $flock = function(aLockFile) {
 		 * </odoc>
 		 */
 		isLocalLocked: () => {
-			if (isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l) && __flock[aLockFile].l.isValid()) {
+			if (isDef(__flock[aLockFile]) && isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l) && __flock[aLockFile].l.isValid()) {
 				return true;
 			} else {
 				return false;
