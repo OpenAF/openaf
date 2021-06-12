@@ -7714,7 +7714,7 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 	if (isUnDef(__flock[aLockFile])) {
 		$lock("__flock::" + aLockFile).lock();
 		if (isUnDef(__flock[aLockFile])) {
-			__flock[aLockFile] = {};
+			__flock[aLockFile] = { i: $atomic(0) };
 			var t = now();
 			$retry(() => { __flock[aLockFile].f = io.randomAccessFile(aLockFile, "rw") }, () => {
 				if (now() - t > aTimeout) {
@@ -7741,9 +7741,11 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 		 * \
 		 * </odoc>
 		 */
+                getMainObject: () => __flock[aLockFile],
 		lock : () => {
 			try {
-				__flock[aLockFile].l = __flock[aLockFile].c.lock();
+				if (isUnDef(__flock[aLockFile].l)) __flock[aLockFile].l = __flock[aLockFile].c.lock();
+                                __flock[aLockFile].i.inc();
 				return true;
 			} catch(e) {
 				r.destroy();
@@ -7760,10 +7762,16 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 		 * </odoc>
 		 */
 		unlock: () => {
-			if (isDef(__flock[aLockFile]) && isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
+			if (isDef(__flock[aLockFile].i)) {
+                           if (__flock[aLockFile].i.get() > 0) __flock[aLockFile].i.dec();
+                           if (__flock[aLockFile].i.get() <= 0) {
+                             if (isDef(__flock[aLockFile]) && isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
 				// warning on some newer JVMs: https://github.com/mozilla/rhino/issues/462
 				__flock[aLockFile].l.release();
-			}
+                             }
+                           }
+			   return __flock[aLockFile].i.get();
+                        }
 		},
 		/**
 		 * <odoc>
