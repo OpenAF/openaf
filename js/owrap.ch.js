@@ -2217,9 +2217,11 @@ OpenWrap.ch.prototype.__types = {
 	 * This channel type aggregates access to several channels. The creation options are:\
 	 * \
 	 *    - chs      (Array)    An array of names of channels to aggregate.\
-	 *    - fn       (Function) A function that will receive an operation and a key to return which channel name should be used (if no return or void all channels will be considered).\
+	 *    - fn       (Function) A function that will receive an operation, a key and value (when applicable)) to return which channel name should be used (if no return or void all channels will be considered).\
 	 *    - errFn    (Function) A function to call with: the name of this channel, the exception, the target channel, the operation and the arguments whenever a error occurs accessing a channel.\
 	 *    - fnTrans  (Function) A function to translate the key (for example, to remove elements used only on fn).\
+	 *    - fnKeys   (Function) Allows to filter an array of resulting keys, from different channels, for: getKeys, getSortedKeys\
+	 *    - fnValues (Function) Allows to filter an array of resulting values, from different channels, for: getAll, get, getSet, set and unset\
 	 *    - treatAll (Boolean)  If true size, setAll and unsetAll will be executed individually and fn called for each (default is false and size will take the first result)\
 	 * \
 	 * </odoc>
@@ -2244,6 +2246,12 @@ OpenWrap.ch.prototype.__types = {
 			options.fnTrans = _$(options.fnTrans, "fnTrans").isFunction().default(k => {
 				return k;
 			});
+			options.fnKeys = _$(options.fnKeys, "fnValues").isFunction().default(ks => {
+				return ks;
+			});
+			options.fnValues = _$(options.fnValues, "fnValues").isFunction().default(vs => {
+				return vs;
+			});
 			options.treatAll = _$(options.treatAll, "treatAll").isBoolean().default(false);
 			this.__o[aName] = options;
 		},
@@ -2259,7 +2267,7 @@ OpenWrap.ch.prototype.__types = {
 			if (this.__o[aName].treatAll) {
 				var res = $atomic(0);
 				
-				lst.map(c => {
+				lst.forEach(c => {
 					arr.push($do( () => {
 						var _o = this.__r(aName, c, "size");
 						if (isDef(_o)) res.getAdd(_o);
@@ -2271,7 +2279,7 @@ OpenWrap.ch.prototype.__types = {
 			} else {
 				var res;
 
-				lst.map(c => {
+				lst.forEach(c => {
 					arr.push($do( () => {
 						if (isUnDef(res)) {
 							var _o = this.__r(aName, c, "size");
@@ -2280,7 +2288,7 @@ OpenWrap.ch.prototype.__types = {
 					}));
 				});
 		
-				$doWait($doAll(arr));
+				$doWait($doFirst(arr));
 				return res;
 			}
 
@@ -2290,24 +2298,27 @@ OpenWrap.ch.prototype.__types = {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("get", aK);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
+			var parent = this;
+			
 			if (!isArray(lst)) lst = [ lst ];
-			lst.map(c => {
+			lst.forEach(c => {
 				arr.push($do( () => {
-					var _o = this.__r(aName, c, "get", [ this.__o[aName].fnTrans(aK) ]);
+					var _o = parent.__r(aName, c, "get", [ parent.__o[aName].fnTrans(aK) ]);
 					if (isDef(_o)) res.add(_o);
+					return 1;
 				}));
 			});
 	
-			$doWait($doFirst(arr));
+			$doWait($doAll(arr));
 	
-			return (res.length() > 0 ? res.get(0) : __);
+			return (res.length() > 0 ? this.__o[aName].fnValues(res.toArray())[0] : __);
 		},
 		forEach      : function(aName, aFunction) {
 			var arr = [];
 			var _lst = this.__o[aName].fn("foreach", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
-			lst.map(c => {
+			lst.forEach(c => {
 				arr.push($do( () => this.__r(aName, c, "forEach", [ aFunction ]) ));
 			});
 	
@@ -2321,7 +2332,7 @@ OpenWrap.ch.prototype.__types = {
 			var _lst = this.__o[aName].fn("getall", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
-			lst.map(c => {
+			lst.forEach(c => {
 				arr.push($do( () => {
 					res.addAll( this.__r(aName, c, "getAll", [ full ]) );
 				}));
@@ -2329,7 +2340,7 @@ OpenWrap.ch.prototype.__types = {
 	
 			$doWait($doAll(arr));
 	
-			return res.toArray();
+			return this.__o[aName].fnValues(res.toArray());
 		},
 		getKeys      : function(aName, full) {
 			ow.loadObj();
@@ -2337,7 +2348,7 @@ OpenWrap.ch.prototype.__types = {
 			var _lst = this.__o[aName].fn("getkeys", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
-			lst.map(c => {
+			lst.forEach(c => {
 				arr.push($do( () => {
 					res.addAll( this.__r(aName, c, "getKeys", [ full ]) );
 				}));
@@ -2345,14 +2356,14 @@ OpenWrap.ch.prototype.__types = {
 	
 			$doWait($doAll(arr));
 	
-			return res.toArray();
+			return this.__o[aName].fnKeys(res.toArray());
 		},
 		getSortedKeys: function(aName, full) {
 			var arr = [], res = new ow.obj.syncArray();
 			var _lst = this.__o[aName].fn("getsortedkeys", __);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
-			lst.map(c => {
+			lst.forEach(c => {
 				arr.push($do( () => {
 					res.addAll( this.__r(aName, c, "getSortedKeys", [ full ]) );
 				}));
@@ -2360,15 +2371,15 @@ OpenWrap.ch.prototype.__types = {
 	
 			$doWait($doAll(arr));
 	
-			return res.toArray();		
+			return this.__o[aName].fnKeys(res.toArray());		
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
 			ow.loadObj();
 			var arr = [], res = new ow.obj.syncArray();
-			var _lst = this.__o[aName].fn("getset", aK);
+			var _lst = this.__o[aName].fn("getset", aK, aV);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
-			lst.map(c => {
+			lst.forEach(c => {
 				arr.push($do( () => {
 					res.add( this.__r(aName, c, "getSet", [ aMatch, this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
 				}));
@@ -2376,14 +2387,14 @@ OpenWrap.ch.prototype.__types = {
 	
 			$doWait($doAll(arr));
 	
-			return res.toArray();
+			return this.__o[aName].fnValues(res.toArray());
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
 			var arr = [], res = new ow.obj.syncArray();
-			var _lst = this.__o[aName].fn("set", aK);
+			var _lst = this.__o[aName].fn("set", aK, aV);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
-			lst.map(c => {
+			lst.forEach(c => {
 				arr.push($do( () => {
 					res.add( this.__r(aName, c, "set", [ this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
 				}));
@@ -2391,19 +2402,19 @@ OpenWrap.ch.prototype.__types = {
 	
 			$doWait($doAll(arr));
 	
-			return res.toArray();
+			return this.__o[aName].fnValues(res.toArray());
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
 			ow.loadObj();
 			if (this.__o[aName].treatAll) {
-				aVs.map(v => this.set(aName, ow.obj.filterKeys(aKs, v), v));
+				aVs.forEach(v => this.set(aName, ow.obj.filterKeys(aKs, v), v));
 			} else {
 				var arr = [];
-				var _lst = this.__o[aName].fn("setall", aKs);
+				var _lst = this.__o[aName].fn("setall", aKs, aVs);
 				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 				if (!isArray(lst)) lst = [ lst ];
 				var naKs = aKs.map(this.__o[aName].fnTrans);
-				lst.map(c => arr.push($do( () => this.__r(aName, c, "setAll", [ naKs, aVs, aTimestamp ]) )) );
+				lst.forEach(c => arr.push($do( () => this.__r(aName, c, "setAll", [ naKs, aVs, aTimestamp ]) )) );
 	
 				$doWait($doAll(arr));
 			}
@@ -2413,14 +2424,14 @@ OpenWrap.ch.prototype.__types = {
 		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
 			if (this.__o[aName].treatAll) {
 				ow.loadObj();
-				aVs.map(v => this.unset(aName, ow.obj.filterKeys(aKs, v), v) );
+				aVs.forEach(v => this.unset(aName, ow.obj.filterKeys(aKs, v), v) );
 			} else {
 				var arr = [];
-				var _lst = this.__o[aName].fn("unsetall", aKs);
+				var _lst = this.__o[aName].fn("unsetall", aKs, aVs);
 				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 				if (!isArray(lst)) lst = [ lst ];
 				var naKs = aKs.map(this.__o[aName].fnTrans);
-				lst.map(c => {
+				lst.forEach(c => {
 					arr.push($do( () => {
 						res.add( this.__r(aName, c, "unsetAll", [ naKs, aVs, aTimestamp ]) );
 					}));
@@ -2447,10 +2458,10 @@ OpenWrap.ch.prototype.__types = {
 		unset        : function(aName, aK, aTimestamp) {
 			ow.loadObj();
 			var arr = [], res = new ow.obj.syncArray();
-			var _lst = this.__o[aName].fn("unset", aK);
+			var _lst = this.__o[aName].fn("unset", aK, aV);
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
-			lst.map(c => {
+			lst.forEach(c => {
 				arr.push($do( () => {
 					res.add( this.__r(aName, c, "unset", [ this.__o[aName].fnTrans(aK), aTimestamp ]) );
 				}));
@@ -2458,7 +2469,7 @@ OpenWrap.ch.prototype.__types = {
 	
 			$doWait($doAll(arr));
 	
-			return res.toArray();
+			return this.__o[aName].fnValues(res.toArray());
 		}
 	}
 };
@@ -3636,7 +3647,7 @@ OpenWrap.ch.prototype.utils = {
 		if (isUnDef(numberOfKeys)) numberOfKeys = 100;
 		var parent = ow.ch.utils;
 		return function(aC, aO, aK, aV) {
-                        if (aO != "set" && aO != "setAll") return;
+                        if (aO != "set" && aO != "setall") return;
  
  			try {
 				$lock("lockHK_" + aC).lock();
@@ -3645,8 +3656,8 @@ OpenWrap.ch.prototype.utils = {
 				while (ln > numberOfKeys) {
 					var o = $ch(aC).getSortedKeys();
 					if (o.length > numberOfKeys) {
-						var toDelete = o.filter((r, i) => i < numberOfKeys);
-						if (isArray(toDelete)) $ch(aC).unsetAll(Object.keys(toDelete[0]), toDelete);
+						var toDelete = o.filter((r, i) => i < (o.length - numberOfKeys));
+						if (isArray(toDelete) && toDelete.length > 0) $ch(aC).unsetAll(Object.keys(toDelete[0]), toDelete);
 					}
 					ln = $ch(aC).size();
 				}

@@ -128,6 +128,48 @@ OpenWrap.oJob = function(isNonLocal) {
 	return this;
 };
 
+OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
+	_$(aFileOrPath, "aFileOrPath").isString().$_();
+	
+	var isUrl = false;
+	if (aFileOrPath.toLowerCase().startsWith("http://") || aFileOrPath.toLowerCase().startsWith("https://")) isUrl = true;
+
+	var stream;
+	if (isUrl) {
+		stream = $rest().get2Stream(aFileOrPath);
+	} else {
+		aFileOrPath = io.fileInfo(aFileOrPath).canonicalPath;
+		stream = io.readFileStream(aFileOrPath);
+	}
+
+	if (isDef(OJOB_INTEGRITY[aFileOrPath])) {
+		var valid = false;
+
+		[alg, h] = OJOB_INTEGRITY[aFileOrPath].split("-");
+		switch (alg) {
+		case "sha256":
+			valid = (sha256(stream) == h);
+			break;
+		case "sha512":
+			valid = (sha512(stream) == h);
+			break;
+		case "sha384":
+			valid = (sha384(stream) == h);
+			break;
+		case "sha1"  :
+			valid = (sha1(stream) == h);
+			break;
+		default      : 
+			valid = false;
+		}
+
+		stream.close();
+		return valid;
+	} else {
+		return __;
+	}
+};
+
 /**
  * <odoc>
  * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, init)</key>
@@ -661,6 +703,25 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 				if (!pp.endsWith("/") && aFile.indexOf("?") < 0) aFile += ".json";
 			}
         }
+
+		// Verify integrity
+		if (Object.keys(OJOB_INTEGRITY).length > 0) {
+			Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "oJob checking integrity of '" + aFile + "'", null);
+
+			var ig = this.verifyIntegrity(aFile);
+			if (isDef(ig) && ig == false) {
+				if (OJOB_INTEGRITY_WARN) {
+					logWarn("INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list. Execution will continue.");
+				} else {
+					throw "INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list.";
+				}
+			} else {
+				if (OJOB_INTEGRITY_STRICT && ig != true) {
+					throw "INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list.";
+				}
+			}
+		}
+
 		if (aFile.match(/\.ya?ml$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
@@ -1286,6 +1347,19 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			}
 		}
 
+		// Daemon function that runs periodically using ojob.timeInterval
+		// If function returns true daemon will be interrupted
+		if (isString(this.__ojob.daemonFunc)) {
+			var parent = this;
+			this.periodicFuncs.push(() => {
+				var res = (new Function(parent.__ojob.daemonFunc))();
+				if (isDef(res) && res == true) {
+					parent.oJobShouldStop = true;
+				}
+				return false;
+			});
+		}
+
 	    if (isDef(this.__ojob.unique) && !this.__ojob.__subjob) {
 	    	if (isUnDef(this.__ojob.unique.pidFile)) this.__ojob.unique.pidFile = "ojob.pid";
 	    	if (isUnDef(this.__ojob.unique.killPrevious)) this.__ojob.unique.killPrevious = false;
@@ -1357,7 +1431,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		}, this.__ojob.checkStall.everySeconds * 1000);
 	}
 
-	var shouldStop = false;
+	//var shouldStop = false;
+	this.oJobShouldStop = false;
 	if (this.__ojob.sequential) {
 		var job = __;
 		//var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
@@ -1390,7 +1465,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		//t.addThread(function() {
 			// Check all jobs in the todo queue
 			var job = __; 
-			while(!shouldStop) {
+			while(!parent.oJobShouldStop) {
 				try {
 					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
 					var parentOJob = $from(parent.getTodoCh().getKeys()).useCase(true).equals("ojobId",  (parent.getID() + altId)).select();
@@ -1416,11 +1491,11 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 							});
 						}
 					}
-					if (!shouldStop && 
+					if (!parent.oJobShouldStop && 
 						!(isDef(parent.__ojob) && isDef(parent.__ojob.daemon) && parent.__ojob.daemon == true) &&
 		                parentOJob.length <= 0
 		               ) {
-		               	  shouldStop = true;
+		               	  parent.oJobShouldStop = true;
 		               	  try {
 						      if (!isSubJob) parent.stop();              		  
 		               	  } catch(e) {}
@@ -1443,7 +1518,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 	if (!(this.__ojob.sequential)) {
 		try {
-			while(shouldStop == false) {
+			while(parent.oJobShouldStop == false) {
 				t.waitForThreads(50);
 			}
 			t.stop();

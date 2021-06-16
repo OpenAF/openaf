@@ -6137,7 +6137,16 @@ function deleteFromArray(anArray, anIndex) {
 // ****
 // oJob
 
+// List of authorized domains from which to run ojobs
 var OJOB_AUTHORIZEDDOMAINS = [ "ojob.io" ];
+
+// Hash list of oJob urls and filepaths (each key value is a the url/canonical filepath; value is [hash-alg]-[hash])
+// Do note that ojob.io urls need to be converted: ojob.io/echo -> https://ojob.io/echo.json
+var OJOB_INTEGRITY = {};
+// If OJOB_INTEGRITY_WARN is false oJob execution is halted if any integrity hash is found to be different
+var OJOB_INTEGRITY_WARN = true; 
+// IF OJOB_INTEGRITY_STRICT if true no oJob will execute if it's integrity is not verified.
+var OJOB_INTEGRITY_STRICT = false;
 
 /**
  * <odoc>
@@ -7344,53 +7353,57 @@ oPromise.prototype.__exec = function() {
 				run: () => {
 					var ignore = false;
 					syncFn(() => { if (thisOP.executing) ignore = true; else thisOP.executing = true; }, thisOP.executing);
-					if (ignore) return;
+                    if (ignore) return;
+                    
+                    try {
+                        while (thisOP.executors.size() > 0) {
+                            var f = thisOP.executors.poll();
+                            // Exec
+                            if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED && f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
+                                var res, done = false;
+                                try {
+                                    var checkResult = true;
+                                    if (isDef(thisOP.value)) {
+                                        res = f.func(thisOP.value);
+                                    } else {
+                                        res = f.func(function (v) { checkResult = false; thisOP.resolve(v); },
+                                                    function (r) { checkResult = false; thisOP.reject(r); });
+                                    }
 
-					while (thisOP.executors.size() > 0) {
-						var f = thisOP.executors.poll();
-						// Exec
-						if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED && f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
-							var res, done = false;
-							try {
-								var checkResult = true;
-								if (isDef(thisOP.value)) {
-									res = f.func(thisOP.value);
-								} else {
-									res = f.func(function (v) { checkResult = false; thisOP.resolve(v); },
-												function (r) { checkResult = false; thisOP.reject(r); });
-								}
+                                    if (checkResult &&
+                                        (isJavaObject(res) || isDef(res)) &&
+                                        res != null &&
+                                        (thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED)) {
+                                        res = thisOP.resolve(res);
+                                    }
+                                } catch (e) {
+                                    thisOP.reject(e);
+                                }
+                            }
+                            // Reject
+                            if (thisOP.state == thisOP.states.PREFAILED || thisOP.state == thisOP.states.FAILED) {
+                                while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
+                                    f = thisOP.executors.poll();
+                                }
 
-								if (checkResult &&
-									(isJavaObject(res) || isDef(res)) &&
-									res != null &&
-									(thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED)) {
-									res = thisOP.resolve(res);
-								}
-							} catch (e) {
-								thisOP.reject(e);
-							}
-						}
-						// Reject
-						if (thisOP.state == thisOP.states.PREFAILED || thisOP.state == thisOP.states.FAILED) {
-							while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
-								f = thisOP.executors.poll();
-							}
-
-							if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
-								try {
-									f.func(thisOP.reason);
-									thisOP.state = thisOP.states.FULFILLED;
-								} catch (e) {
-									thisOP.state = thisOP.states.FAILED;
-									throw e;
-								}
-							} else {
-								if (isUnDef(f) || f == null) thisOP.state = thisOP.states.FAILED;
-							}
-						}
-					}
-
-					syncFn(() => { thisOP.executing = false; }, thisOP.executing);
+                                if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
+                                    try {
+                                        f.func(thisOP.reason);
+                                        thisOP.state = thisOP.states.FULFILLED;
+                                    } catch (e) {
+                                        thisOP.state = thisOP.states.FAILED;
+                                        throw e;
+                                    }
+                                } else {
+                                    if (isUnDef(f) || f == null) thisOP.state = thisOP.states.FAILED;
+                                }
+                            }
+                        }
+                    } catch(ee) {
+                        throw ee;
+                    } finally {
+					    syncFn(() => { thisOP.executing = false; }, thisOP.executing);
+                    }
 
 					if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty()) {
 						thisOP.state = thisOP.states.FULFILLED;
@@ -7402,7 +7415,7 @@ oPromise.prototype.__exec = function() {
 				}
 			}));
 		} catch(e) {
-			if (!String(e).match(/RejectedExecutionException/)) throw e;
+			if (String(e).indexOf("RejectedExecutionException") < 0) throw e;
 		}
 		// Try again if null
 	} while(isUnDef(this.__f) || this.__f == null);
@@ -7698,12 +7711,25 @@ const $retry = function(aFunc, aNumTries) {
 };
 
 var __flock = {};
-const $flock = function(aLockFile) {
+const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
+	aTimeout     = _$(aTimeout, "aTimeout").isNumber().default(60000); 
+	aWaitPerCall = _$(aWaitPerCall, "aWaitPerCall").isNumber().default(2500);
+
 	if (isUnDef(__flock[aLockFile])) {
 		$lock("__flock::" + aLockFile).lock();
 		if (isUnDef(__flock[aLockFile])) {
-			__flock[aLockFile] = {};
-			__flock[aLockFile].f = io.randomAccessFile(aLockFile, "rw");
+			__flock[aLockFile] = { i: $atomic(0) };
+			var t = now();
+			$retry(() => { __flock[aLockFile].f = io.randomAccessFile(aLockFile, "rw") }, () => {
+				if (now() - t > aTimeout) {
+					return false;
+				} else {	
+					sleep(aWaitPerCall, true);
+				}
+				return true;
+			});
+			if (!isJavaObject(__flock[aLockFile].f) || isNull(__flock[aLockFile].f)) throw "Can't access '" + aLockFile + "'";
+			
 			__flock[aLockFile].c = __flock[aLockFile].f.getChannel();
 		}
 		$lock("__flock::" + aLockFile).unlock();
@@ -7719,9 +7745,11 @@ const $flock = function(aLockFile) {
 		 * \
 		 * </odoc>
 		 */
+                getMainObject: () => __flock[aLockFile],
 		lock : () => {
 			try {
-				__flock[aLockFile].l = __flock[aLockFile].c.lock();
+				if (isUnDef(__flock[aLockFile].l)) __flock[aLockFile].l = __flock[aLockFile].c.lock();
+                                __flock[aLockFile].i.inc();
 				return true;
 			} catch(e) {
 				r.destroy();
@@ -7738,10 +7766,16 @@ const $flock = function(aLockFile) {
 		 * </odoc>
 		 */
 		unlock: () => {
-			if (isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
+			if (isDef(__flock[aLockFile].i)) {
+                           if (__flock[aLockFile].i.get() > 0) __flock[aLockFile].i.dec();
+                           if (__flock[aLockFile].i.get() <= 0) {
+                             if (isDef(__flock[aLockFile]) && isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
 				// warning on some newer JVMs: https://github.com/mozilla/rhino/issues/462
 				__flock[aLockFile].l.release();
-			}
+                             }
+                           }
+			   return __flock[aLockFile].i.get();
+                        }
 		},
 		/**
 		 * <odoc>
@@ -7753,7 +7787,7 @@ const $flock = function(aLockFile) {
 		 * </odoc>
 		 */
 		isLocalLocked: () => {
-			if (isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l) && __flock[aLockFile].l.isValid()) {
+			if (isDef(__flock[aLockFile]) && isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l) && __flock[aLockFile].l.isValid()) {
 				return true;
 			} else {
 				return false;

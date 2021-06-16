@@ -21,6 +21,16 @@
         logErr("Bye World!"); logWarn("?");
         lognl("no"); log(" line");
     };
+ 
+    exports.testDBPG = function() {
+        var db = new DB("jdbc:postgresql://hh-pgsql-public.ebi.ac.uk:5432/pfmegrnargs", "reader", "NWDMCE5xdipIjRrp");
+
+        var res = db.q("select 2+2 a");
+        ow.test.assert(isArray(res.results), true, "Problem with DB result (1)");
+        ow.test.assert(res.results[0].a, 4, "Problem with DB result (2)"); 
+
+        db.close();
+    };
 
     exports.testSHA1 = function() {
         var test = "This is a nice test";
@@ -34,6 +44,13 @@
         if (sha256(test) != "05692badaa2233bd7b5839940ab75f44fe82470eeaf8f9c24c54f25ead80b09c") {
             throw("value returned different from expected");
         }        
+    };
+  
+    exports.testSHA384 = function() {
+        var test = "This is a nice test";
+        if (sha384(test) != "2067005e336676ed8aa0445b7593dea7fb3ecb77453353e84105c229e0878fc721fe63d56ca0f82a9111fc1aa5fdf656") {
+            throw("value returned different from expected");
+        }
     };
 
     exports.testSHA512 = function() {

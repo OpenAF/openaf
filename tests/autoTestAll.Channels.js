@@ -116,13 +116,13 @@
 
     exports.testKeepHistory = function() {
         var t = ow.ch.utils.keepHistory(100, "__keepHistoryTest", () => { return { tt: new Date() } });
-        sleep(1500);
+        sleep(1500, true);
         t.stop();
         ow.test.assert($ch("__keepHistoryTest").size(), 10, "Problem with a simple ow.ch.utils.keepHistory setup.");
 
         $ch("__keepHistoryTest").destroy();
         var t = ow.ch.utils.keepHistory(100, "__keepHistoryTest", () => { return { id: nowNano(), tt: new Date() } }, ["id"], 20);
-        sleep(2500);
+        sleep(2500, true);
         t.stop();
         ow.test.assert(19 <= $ch("__keepHistoryTest").size() <= 21, true, "Problem with changing history size on ow.ch.utils.keepHistory.");
     };
