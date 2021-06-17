@@ -3593,9 +3593,9 @@ License               :
 Check https://www.oracle.com/webapps/maven/register/license.html
 -----------------------
 Third-party name      : PostgreSQL JDBC
-Version               : 42.2.20
+Version               : 42.2.22
 Changed from original : No
-Location in openaf.jar: lib/postgresql-42.2.20.jar
+Location in openaf.jar: lib/postgresql-42.2.22.jar
 License               : 
 
 Check https://www.postgresql.org/about/licence/
