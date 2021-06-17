@@ -2080,9 +2080,9 @@ License               :
 
 -----------------------
 Third-party name      : Apache Commons IO
-Version               : 2.8.0
+Version               : 2.9.0
 Changed from original : No
-Location in openaf.jar: lib/commons-io-2.8.0.jar
+Location in openaf.jar: lib/commons-io-2.9.0.jar
 License               : 
 
 Apache License
