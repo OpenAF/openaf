@@ -2523,6 +2523,9 @@ OpenWrap.ch.prototype.getVersion = function(aName) {
  */
 OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	aTimeout = _$(aTimeout).isNumber("aTimeout should be a number").default(-1);
+
+	if (Object.keys(this.jobs[aName]).length == 0) return this;
+	
 	var shouldContinue = 0, tini = now();
 	do {
 		shouldContinue = 0;
@@ -3342,7 +3345,7 @@ OpenWrap.ch.prototype.utils = {
 				if (isDef(ow.ch.__types.buffer.__s[c])) ow.ch.__types.buffer.__s[c].stop();
 			}
 		}
-		this.flushBuffer(aName);
+		ow.ch.utils.flushBuffer(aName);
 		if (isDef(aName)) {
 			$ch(aName).destroy();
 		} else {
