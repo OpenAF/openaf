@@ -818,19 +818,11 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(ow.ch.__types.buffer.__s[aName])) ow.ch.__types.buffer.__s[aName].stop();
 			if (isDef(ow.ch.__types.buffer.__f[aName])) ow.ch.__types.buffer.__f[aName](true);
 
-			if (isDef(ow.ch.__types.buffer.__bt[aName])) {
-				$ch(ow.ch.__types.buffer.__bc[aName]).waitForJobs(ow.ch.__types.buffer.__t[aName]);
-				$ch(ow.ch.__types.buffer.__bc[aName]).destroy();
-			}
-			
-			if (isDef(ow.ch.__types.buffer.__bt[aName])) {
-				$ch(ow.ch.__types.buffer.__bt[aName]).waitForJobs(ow.ch.__types.buffer.__t[aName]);
-				$ch(ow.ch.__types.buffer.__bt[aName]).destroy();
-			}
-
 			if (isDef(ow.ch.__types.buffer.__bn[aName])) delete ow.ch.__types.buffer.__bn[aName];
 			if (isDef(ow.ch.__types.buffer.__bf[aName])) delete ow.ch.__types.buffer.__bf[aName];
+			if (isDef(ow.ch.__types.buffer.__bc[aName])) $ch(ow.ch.__types.buffer.__bc[aName]).destroy();
 			if (isDef(ow.ch.__types.buffer.__bc[aName])) delete ow.ch.__types.buffer.__bc[aName];
+			if (isDef(ow.ch.__types.buffer.__bt[aName])) $ch(ow.ch.__types.buffer.__bt[aName]).destroy();
 			if (isDef(ow.ch.__types.buffer.__bt[aName])) delete ow.ch.__types.buffer.__bt[aName];
 			if (isDef(ow.ch.__types.buffer.__bi[aName])) delete ow.ch.__types.buffer.__bi[aName];
 			if (isDef(ow.ch.__types.buffer.__f[aName])) delete ow.ch.__types.buffer.__f[aName];
