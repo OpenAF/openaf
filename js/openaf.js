@@ -7807,7 +7807,7 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 		},
 		/**
 		 * <odoc>
-		 * <key>$lock.destroy()</key>
+		 * <key>$flock.destroy()</key>
 		 * Given aLockFile will destroy the provided lock entry.\
 		 * \
 		 *    $flock(aLockFile).destroy()\
@@ -7829,7 +7829,7 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 		},
 		/**
 		 * <odoc>
-		 * <key>$lock.tryLock(aFunction) : Boolean</key>
+		 * <key>$flock.tryLock(aFunction) : Boolean</key>
 		 * Given aLockFile only execute aFunction if it's unlocked. If it
 		 * executed aFunction it will return true otherwise false.\
 		 * \

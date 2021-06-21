@@ -817,9 +817,10 @@ OpenWrap.ch.prototype.__types = {
 		destroy      : function(aName) {
 			if (isDef(ow.ch.__types.buffer.__s[aName])) ow.ch.__types.buffer.__s[aName].stop();
 			if (isDef(ow.ch.__types.buffer.__f[aName])) ow.ch.__types.buffer.__f[aName](true);
-	
+
 			if (isDef(ow.ch.__types.buffer.__bn[aName])) delete ow.ch.__types.buffer.__bn[aName];
 			if (isDef(ow.ch.__types.buffer.__bf[aName])) delete ow.ch.__types.buffer.__bf[aName];
+			if (isDef(ow.ch.__types.buffer.__bc[aName])) $ch(ow.ch.__types.buffer.__bc[aName]).destroy();
 			if (isDef(ow.ch.__types.buffer.__bc[aName])) delete ow.ch.__types.buffer.__bc[aName];
 			if (isDef(ow.ch.__types.buffer.__bt[aName])) $ch(ow.ch.__types.buffer.__bt[aName]).destroy();
 			if (isDef(ow.ch.__types.buffer.__bt[aName])) delete ow.ch.__types.buffer.__bt[aName];
@@ -2522,6 +2523,9 @@ OpenWrap.ch.prototype.getVersion = function(aName) {
  */
 OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	aTimeout = _$(aTimeout).isNumber("aTimeout should be a number").default(-1);
+
+	if (Object.keys(this.jobs[aName]).length == 0) return this;
+	
 	var shouldContinue = 0, tini = now();
 	do {
 		shouldContinue = 0;
@@ -3316,7 +3320,7 @@ OpenWrap.ch.prototype.utils = {
 	 */
 	flushBuffer: function(aName) {
 		if (isDef(aName)) {
-			ow.ch.__types.buffer.__f[aName](true); 
+			if (isDef(ow.ch.__types.buffer.__f[aName])) ow.ch.__types.buffer.__f[aName](true); 
 			$ch(ow.ch.__types.buffer.__bt[aName]).waitForJobs(ow.ch.__types.buffer.__t[aName]);
 			$ch(ow.ch.__types.buffer.__bc[aName]).waitForJobs(ow.ch.__types.buffer.__t[aName]);
 		} else {
@@ -3341,7 +3345,7 @@ OpenWrap.ch.prototype.utils = {
 				if (isDef(ow.ch.__types.buffer.__s[c])) ow.ch.__types.buffer.__s[c].stop();
 			}
 		}
-		this.flushBuffer(aName);
+		ow.ch.utils.flushBuffer(aName);
 		if (isDef(aName)) {
 			$ch(aName).destroy();
 		} else {
