@@ -701,18 +701,22 @@ public class DB {
 	
 	/**
 	 * <odoc>
-	 * <key>DB.rollback()</key>
+	 * <key>DB.rollback(dontIgnoreError)</key>
 	 * Rollbacks the current database session on the current DB object instance.
-	 * In case of error an exception will be thrown.
+	 * In case of error an exception will be thrown if dontIgnoreError = true
 	 * </odoc>
 	 */
-	public void rollback() throws SQLException {
+	public void rollback(boolean dontIgnoreError) throws SQLException {
 		if (con != null) {
 			try {
 				con.rollback();
 			} catch (SQLException e) {
-				SimpleLog.log(SimpleLog.logtype.ERROR, "Error while rollback on " + url + ": " + e.getMessage(), e);
-				throw e;
+				if (!dontIgnoreError) {
+					SimpleLog.log(SimpleLog.logtype.DEBUG, "Error while rollback on " + url + ": " + e.getMessage(), e);
+				} else {
+					SimpleLog.log(SimpleLog.logtype.ERROR, "Error while rollback on " + url + ": " + e.getMessage(), e);
+					throw e;
+				}
 			}
 		}
 	}
@@ -727,8 +731,8 @@ public class DB {
 			
 			Properties props = new Properties();
 			
-			props.setProperty("user", AFCmdBase.afc.dIP(login));
-			props.setProperty("password", AFCmdBase.afc.dIP(pass));
+			if (login != null) props.setProperty("user", AFCmdBase.afc.dIP(login));
+			if (pass != null)  props.setProperty("password", AFCmdBase.afc.dIP(pass));
 			try {
 				if (timeout != null && Integer.valueOf(timeout) > 0) {
 					props.setProperty("connectTimeout", timeout);
@@ -739,14 +743,25 @@ public class DB {
 			
 			try {
 				con = DriverManager.getConnection(url, props);
-				con.setAutoCommit(false);
+				try {
+					con.setAutoCommit(false);
+				} catch(Exception e) {
+					SimpleLog.log(SimpleLog.logtype.DEBUG, "Error on setAutoCommit: " + e.getMessage(), e);
+				}
 			} catch(SQLException e) {
 				if (e.getMessage().contains("No suitable driver found")) {
+					SimpleLog.log(SimpleLog.logtype.DEBUG, "Using OAFdCL to load '" + driver + "': " + e.getMessage(), e);
 					Driver pdriver = (Driver) Class.forName(driver, true, OAFdCL.oafdcl).getDeclaredConstructor().newInstance();
 					DriverManager.registerDriver(new openaf.DBProxy(pdriver));
 					con = DriverManager.getConnection(url, props);
+					try {
+						con.setAutoCommit(false);
+					} catch(Exception e1) {
+						SimpleLog.log(SimpleLog.logtype.DEBUG, "Error on setAutoCommit: " + e1.getMessage(), e1);
+					}
+				} else {
+					throw e;
 				}
-				throw e;
 			}
 
 		//} catch (ClassNotFoundException | SQLException e) {
