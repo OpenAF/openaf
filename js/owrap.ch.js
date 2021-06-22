@@ -1236,7 +1236,7 @@ OpenWrap.ch.prototype.__types = {
 			} finally {
 				this.__ul(this.__channels[aName]);
 			}
-			return Object.keys(m);
+			return Object.keys(m).map(k => jsonParse(k));
 		},
 		getSortedKeys: function(aName, full) {
 			var m;
@@ -1246,7 +1246,7 @@ OpenWrap.ch.prototype.__types = {
 			} finally {
 				this.__ul(this.__channels[aName]);
 			}
-			var res = Object.keys(m); 
+			var res = Object.keys(m).map(k => jsonParse(k)); 
 			return res;	
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
