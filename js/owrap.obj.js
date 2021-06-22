@@ -232,6 +232,35 @@ OpenWrap.obj.prototype.flatMap = function(data, separator) {
 
 /**
  * <odoc>
+ * <key>ow.obj.reorderArrayMap(aKs, aArray, removeUnDefs) : Array</key>
+ * Given an array of keys (aKs) will project those for all maps in aArray (the ones not included with be included after).
+ * Optionally if removeUnDefs = true it will not include keys with undefined fields (evaluated for every map in the array).
+ * </odoc>
+ */
+OpenWrap.obj.prototype.reorderArrayMap = function (aKs, aArray, removeUnDefs) {
+	_$(aKs, "aKs").isArray().$_();
+	removeUnDefs = _$(removeUnDefs, "removeUnDefs").isBoolean().default(false);
+
+	if (isMap(aArray)) aArray = [aArray];
+
+	return aArray.map(r => {
+		var res = {};
+		var ks = Object.keys(r);
+		var tks = ks.filter(k => aKs.indexOf(k) < 0);
+		if (removeUnDefs) {
+			aKs.forEach(k => { if (isDef(r[k])) res[k] = r[k] });
+			tks.forEach(k => { if (isDef(r[k])) res[k] = r[k] });
+		} else {
+			aKs.forEach(k => { res[k] = r[k] });
+			tks.forEach(k => { res[k] = r[k] });
+		}
+		return res;
+	});
+}
+
+
+/**
+ * <odoc>
  * <key>ow.obj.flatten(arrayOfMaps, aSeparator, aNADefault) : Array</key>
  * Converts any structured arrayOfMaps into a flat array of maps with only one level of keys. The map key path will be converted
  * into a single key using aSeparator (defaults to "_") and the value will be represented as aNADefault (defaults to "") when no 
