@@ -130,19 +130,33 @@ OpenWrap.oJob = function(isNonLocal) {
 
 OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
 	_$(aFileOrPath, "aFileOrPath").isString().$_();
-	
-	var isUrl = false;
+    
+    var isUrl = false;
 	if (aFileOrPath.toLowerCase().startsWith("http://") || aFileOrPath.toLowerCase().startsWith("https://")) isUrl = true;
 
-	var stream;
-	if (isUrl) {
-		stream = $rest().get2Stream(aFileOrPath);
-	} else {
-		aFileOrPath = io.fileInfo(aFileOrPath).canonicalPath;
-		stream = io.readFileStream(aFileOrPath);
-	}
+    if (!isUrl) {
+        aFileOrPath = aFileOrPath.replace(/\\+/g, "/");
+		aFileOrPath = aFileOrPath.replace(/\/+/g, "/");
+        if (!io.fileExists(aFileOrPath)) {
+            var found = false;
+            Object.values(getOPackPaths()).forEach(f => {
+                if (!found && io.fileExists(f + "/" + aFileOrPath)) {
+                    aFileOrPath = f + "/" + aFileOrPath;
+                    found = true;
+                }
+            });
+        }
+        aFileOrPath = io.fileInfo(aFileOrPath).canonicalPath;
+    }
 
 	if (isDef(OJOB_INTEGRITY[aFileOrPath])) {
+        var stream;
+        if (isUrl) {
+            stream = $rest().get2Stream(aFileOrPath);
+        } else {
+            stream = io.readFileStream(aFileOrPath);
+        }
+    
 		var valid = false;
 
 		[alg, h] = OJOB_INTEGRITY[aFileOrPath].split("-");
