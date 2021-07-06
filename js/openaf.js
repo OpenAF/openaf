@@ -4151,11 +4151,6 @@ function loadAjv() {
 	if (res) pods.declare("Ajv", loadAjv());
 }
 
-function loadRegression() {
-	var res = loadCompiledLib("regression_js");
-	if (res) pods.declare("Regression", loadRegression());
-}
-
 /**
  * <odoc>
  * <key>loadLodash()</key>
