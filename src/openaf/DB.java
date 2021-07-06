@@ -165,8 +165,8 @@ public class DB extends ScriptableObject {
 	}
 
 	@JSFunction
-	public void rollback() throws SQLException {
-		coreDB.rollback();
+	public void rollback(boolean dontIgnoreError) throws SQLException {
+		coreDB.rollback(dontIgnoreError);
 	}
 
 	@JSFunction

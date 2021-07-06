@@ -11,6 +11,26 @@ OpenWrap.ai = function() {
 
 /**
  * <odoc>
+ * <key>ow.ai.regression() : Regression</key>
+ * Returns a Regression with the following functions:\
+ * \
+ *    linear(data, options) : Map\
+ *    power(data, options) : Map\
+ *    exponential(data, options) : Map\
+ *    logarithmic(data, options) : Map\
+ *    polynomial(data, options) : Map\
+ * \
+ *    data - an array of arrays of x, y values ([[0,1],[1,3],[2,5]])\
+ *    options - map to determine the order and precision ({ order: 2, precision: 5})\
+ * \
+ * </odoc>
+ */
+OpenWrap.ai.prototype.regression = function() {
+    return loadCompiledRequire("regression_js");
+}
+
+/**
+ * <odoc>
  * <key>ow.ai.network(aMap) : ow.ai.network</key>
  * Creates a neural network given the parameters in aMap. aMap should contain a "type" parameter to indicate
  * the type of network (perceptron, lstm, liquid or hopfield). Then aMap should contain a "args" parameter to

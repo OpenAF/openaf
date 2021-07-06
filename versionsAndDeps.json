@@ -98,6 +98,15 @@
 			"license": "https://raw.githubusercontent.com/lodash/lodash/master/LICENSE",
 			"deps": []
 		},
+                {
+			"description": "Regression",
+			"path": ["js/regression.js"],
+			"version": "2.0.1",
+			"changes": false,
+			"type": ["js"],
+			"license": "https://raw.githubusercontent.com/Tom-Alexander/regression-js/master/LICENSE",
+			"deps": []
+    		},
 		{
 			"description": "JsDiff",
 			"path": [ "js/diff.js" ],

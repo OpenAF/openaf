@@ -228,7 +228,7 @@ io.mkdir(OPENAF_BUILD_HOME + "/jslib");
 
 var zipJSlib = new ZIP();
 var validationForCompile = (filename) => { return (filename != "synaptic.js" && filename != "materialize.js" && filename != "handlebars.js" && filename != "jquery.js" && filename != "highlight.js"); };
-var validationForRequireCompile = (filename) => { return (filename == "handlebars.js" || filename == "showdown.js" || filename == "synaptic.js"); };
+var validationForRequireCompile = (filename) => { return (filename == "regression.js" || filename == "handlebars.js" || filename == "showdown.js" || filename == "synaptic.js"); };
 
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {
