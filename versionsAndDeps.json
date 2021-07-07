@@ -260,8 +260,8 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.2.22.jar"],
-			"version": "42.2.22",
+			"path": ["lib/postgresql-42.2.23.jar"],
+			"version": "42.2.23",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -314,8 +314,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.12.3.jar"],
-			"version": "2.12.3",
+			"path": ["lib/jackson-core-2.12.4.jar"],
+			"version": "2.12.4",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
