@@ -129,6 +129,8 @@ public class SNMP extends ScriptableObject {
 					case "HMAC384SHA512": authProtocol = org.snmp4j.security.AuthHMAC384SHA512.ID; break;
 					case "MD5": authProtocol = org.snmp4j.security.AuthMD5.ID; break;
 					case "SHA": authProtocol = org.snmp4j.security.AuthSHA.ID; break;
+					default:
+						throw new Exception("SNMP Auth protocol '" + (String) smap.get("authProtocol") + "' not supported (supported: HMAC128SHA224, HMAC192SHA256, HMAC256SHA384, HMAC384SHA51, MD5, SHA)");
 					}
 				}
 				if (smap.containsKey("privProtocol")) {
@@ -138,13 +140,15 @@ public class SNMP extends ScriptableObject {
 					case "AES192": privProtocol = org.snmp4j.security.PrivAES192.ID; break;
 					case "AES256": privProtocol = org.snmp4j.security.PrivAES256.ID; break;
 					case "DES": privProtocol = org.snmp4j.security.PrivDES.ID; break;
+					default:
+						throw new Exception("SNMP Priv protocol '" + (String) smap.get("privProtocol") + "' not supported (supported: 3DES, AES128, AES192, AES256, DES)");
 					}
 				}
 				if (smap.containsKey("authPassphrase")) {
-					this.authPassphrase = (String) smap.get("authPassphrase");	
+					this.authPassphrase = openaf.AFCmdBase.afc.dIP((String) smap.get("authPassphrase"));	
 				}
 				if (smap.containsKey("privPassphrase")) {
-					this.privPassphrase = (String) smap.get("privPassphrase");	
+					this.privPassphrase = openaf.AFCmdBase.afc.dIP((String) smap.get("privPassphrase"));	
 				}
 			}
 		}
