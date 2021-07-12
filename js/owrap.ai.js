@@ -29,6 +29,44 @@ OpenWrap.ai.prototype.regression = function() {
     return loadCompiledRequire("regression_js");
 }
 
+OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
+    entriesspan = _$(entriesspan, "entriesspan").isNumber().default(3);
+    ow.loadObj();
+
+    var _values = new ow.obj.syncArray();
+
+    return {
+        getValues: () => _values,
+        push     : value => {
+            _$(value, "value").isNumber().$_();
+
+            _values.add(value);
+            while (_values.length() > entriesspan) _values.remove(0);
+        },
+        deviation: () => {
+            if (_values.length() == 0) return 0;
+
+            var m = _values.toArray().reduce((a, v) => a + v, 0) / _values.length();
+            var r = _values.toArray().map(v => Math.pow(v - m, 2));
+            var sum = r.reduce((a, v) => a + v, 0);
+            return Math.sqrt(sum /_values.length());
+        },
+        variance: () => {
+            if (_values.length() == 0) return 0;
+
+            var m = _values.toArray().reduce((a, v) => a + v, 0) / _values.length();
+            var r = _values.toArray().map(v => Math.pow(v - m, 2));
+            var sum = r.reduce((a, v) => a + v, 0);
+            return sum /_values.length();
+        },
+        movingAverage: () => {
+            if (_values.length() == 0) return 0;
+
+            return _values.toArray().reduce((a, v) => a + v, 0) / _values.length();
+        }
+    }
+}
+
 /**
  * <odoc>
  * <key>ow.ai.network(aMap) : ow.ai.network</key>

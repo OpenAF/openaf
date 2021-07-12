@@ -47,7 +47,7 @@
         plugin("SNMP");
         var aTimeout = 3000, aNumberOfRetries = 3;
         var snmp = new SNMP("udp:snmpsim.try.thola.io/161", "public", aTimeout, aNumberOfRetries, 3, {
-            engineId      : "8000000001020304",
+            engineId      : "8000002a000000000001020304",
             authPassphrase: "authkey1",
             privPassphrase: "privkey1",
             authProtocol  : "MD5",
@@ -68,12 +68,12 @@
         plugin("SNMP");
         var aTimeout = 3000, aNumberOfRetries = 3;
         var snmp = new SNMP("udp:snmpsim.try.thola.io/161", "public", aTimeout, aNumberOfRetries, 3, {
-            engineId      : "8000000001020304",
+            engineId      : "8000002a000000000001020304",
             authPassphrase: "authkey1",
             privPassphrase: "privkey1",
             authProtocol  : "MD5",
-            privProtocol  : "DES",
-            securityName  : "usr-md5-des"
+            privProtocol  : "AES128",
+            securityName  : "usr-md5-aes"
         });
 
         snmp.trap("1.3.6.1.4.1.20408.4.1.1.2", [
@@ -89,7 +89,7 @@
         plugin("SNMP");
         var aTimeout = 3000, aNumberOfRetries = 3;
         var snmp = new SNMP("udp:snmpsim.try.thola.io/161", "public", aTimeout, aNumberOfRetries, 3, {
-            engineId      : "8000000001020304",
+            engineId      : "8000002a000000000001020304",
             authPassphrase: "authkey1",
             privPassphrase: "privkey1",
             authProtocol  : "MD5",
