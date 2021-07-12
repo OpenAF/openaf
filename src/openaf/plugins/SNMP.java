@@ -127,19 +127,19 @@ public class SNMP extends ScriptableObject {
 					case "HMAC192SHA256": authProtocol = org.snmp4j.security.AuthHMAC192SHA256.ID; break;
 					case "HMAC256SHA384": authProtocol = org.snmp4j.security.AuthHMAC256SHA384.ID; break;
 					case "HMAC384SHA512": authProtocol = org.snmp4j.security.AuthHMAC384SHA512.ID; break;
-					case "MD5": authProtocol = org.snmp4j.security.AuthMD5.ID; break;
-					case "SHA": authProtocol = org.snmp4j.security.AuthSHA.ID; break;
+					case "MD5"          : authProtocol = org.snmp4j.security.AuthMD5.ID; break;
+					case "SHA"          : authProtocol = org.snmp4j.security.AuthSHA.ID; break;
 					default:
 						throw new Exception("SNMP Auth protocol '" + (String) smap.get("authProtocol") + "' not supported (supported: HMAC128SHA224, HMAC192SHA256, HMAC256SHA384, HMAC384SHA51, MD5, SHA)");
 					}
 				}
 				if (smap.containsKey("privProtocol")) {
 					switch((String) smap.get("privProtocol")) {
-					case "3DES": privProtocol = org.snmp4j.security.Priv3DES.ID; break;
+					case "3DES"  : privProtocol = org.snmp4j.security.Priv3DES.ID; break;
 					case "AES128": privProtocol = org.snmp4j.security.PrivAES128.ID; break;
 					case "AES192": privProtocol = org.snmp4j.security.PrivAES192.ID; break;
 					case "AES256": privProtocol = org.snmp4j.security.PrivAES256.ID; break;
-					case "DES": privProtocol = org.snmp4j.security.PrivDES.ID; break;
+					case "DES"   : privProtocol = org.snmp4j.security.PrivDES.ID; break;
 					default:
 						throw new Exception("SNMP Priv protocol '" + (String) smap.get("privProtocol") + "' not supported (supported: 3DES, AES128, AES192, AES256, DES)");
 					}
