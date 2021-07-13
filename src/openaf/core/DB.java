@@ -826,4 +826,31 @@ public class DB {
 		convertDates = toggle;
 	}
 
+	/**
+	 * <odoc>
+	 * <key>DB.setAutoCommit(aFlag)</key>
+	 * Sets to true or false (defaults to false) the current database connection auto-commit.
+	 * </odoc>
+	 */
+    public void setAutoCommit(boolean toggle) throws Exception {
+		if (con != null) {
+			con.setAutoCommit(toggle);
+		} else {
+			throw new Exception("No connection defined.");
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>DB.getAutoCommit() : boolean</key>
+	 * Retrieves the current database connection auto-commit flag state.
+	 * </odoc>
+	 */
+	public boolean getAutoCommit() throws Exception {
+		if (con != null) {
+			return con.getAutoCommit();
+		} else {
+			throw new Exception("No connection defined.");
+		}
+	}
 }
