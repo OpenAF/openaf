@@ -188,8 +188,8 @@
 		},
 		{
 			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.9.0.jar"],
-			"version": "2.9.0",
+			"path": ["lib/commons-io-2.10.0.jar"],
+			"version": "2.10.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
