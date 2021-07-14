@@ -192,4 +192,14 @@ public class DB extends ScriptableObject {
 	public void convertDates(boolean toggle) {
 		coreDB.convertDates(toggle);
 	}
+
+	@JSFunction
+	public void setAutoCommit(boolean toggle) throws Exception {
+		coreDB.setAutoCommit(toggle);
+	}
+
+	@JSFunction
+	public boolean getAutoCommit() throws Exception {
+		return coreDB.getAutoCommit();
+	}
 }
