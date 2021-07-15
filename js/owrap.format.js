@@ -1259,7 +1259,7 @@ OpenWrap.format.prototype.escapeString = function(str, except) {
  * <key>ow.format.getPublicIP() : Map</key>
  * Uses the functionality provided by http://ifconfig.co to return a map with the apparent current public ip address,
  * public hostname and a guess of country and city. Please be aware of the request limits of the service (around 1 request
- * per minute).s
+ * per minute).
  * </odoc>
  */
 OpenWrap.format.prototype.getPublicIP = function() {
