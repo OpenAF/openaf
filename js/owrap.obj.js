@@ -1928,7 +1928,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	getContentLength: function(aURL, _l, _p, _t, aRequestMap, __h) {
-		var h = (isDef(__h)) ? __h : this.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -1966,7 +1966,7 @@ OpenWrap.obj.prototype.rest = {
 	get: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes) { 
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : this.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
 		
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2016,7 +2016,7 @@ OpenWrap.obj.prototype.rest = {
 	create: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : this.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2057,7 +2057,7 @@ OpenWrap.obj.prototype.rest = {
 	 */
 	upload: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod) {
 		aMethod = _$(aMethod, "aMethod").isString().default("POST");
-		var h = (isDef(__h)) ? __h : this.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2130,7 +2130,7 @@ OpenWrap.obj.prototype.rest = {
 	set: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : this.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2185,7 +2185,7 @@ OpenWrap.obj.prototype.rest = {
 	patch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : this.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
 
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2237,7 +2237,7 @@ OpenWrap.obj.prototype.rest = {
 	remove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes) {
 		//plugin("HTTP");
 		//var h = new HTTP();
-		var h = (isDef(__h)) ? __h : this.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
 				
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));
@@ -2282,7 +2282,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	head: function(aURL, aIdx, _l, _p, _t, aRequestMap, urlEncode, __h) {
-		var h = (isDef(__h)) ? __h : this.connectionFactory();
+		var h = (isDef(__h)) ? __h : ow.obj.rest.connectionFactory();
 				
 		if (isUnDef(_l) && isUnDef(_p)) {
 			var u = new java.net.URL(Packages.openaf.AFCmdBase.afc.fURL(aURL));

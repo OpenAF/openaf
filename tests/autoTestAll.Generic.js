@@ -238,7 +238,7 @@
         var res = $rest({ 
             timeout: 1,
             default: { no: "way" }
-        }).get("https://dns.google.com/resolve?" + $rest().query({ type: "a", name: "openaf.io" }));
+        }).get("https://dns.google.com/resolv?" + $rest().query({ type: "a", name: "openaf.io" }));
 
         ow.test.assert(res, { no: "way" }, "Problem with rest timeout.");
 

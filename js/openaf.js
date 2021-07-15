@@ -5105,18 +5105,19 @@ const $tb = function(aFunction) {
 var __openaf_rest = { urls: {}, stats: false };
 const $rest = function(ops) {
 	ow.loadObj();
+	var _toptions = {};
 	var _rest = function(aOptions) {
-		this.options = _$(aOptions).isMap().default({ });
-		this.options.default = _$(this.options.default, "default").isMap().default({});
-		this.options.throwExceptions = _$(this.options.throwExceptions, "throwExceptions").isBoolean().default(false);
-		this.options.collectAllStats = _$(this.options.collectAllStats, "collectAllStats").isBoolean().default(__openaf_rest.stats);
-		this.options.preAction = _$(this.options.preAction, "preAction").isFunction().default(__);
-		this.options.uriQuery = _$(this.options.uriQuery, "uriQuery").isBoolean().default(false);
-		this.options.downloadResume = _$(this.options.downloadResume, "downloadResume").isBoolean().default(false);
-		this.options.retry = _$(this.options.retry, "retry").isNumber().default(0);
-		this.options.retryWait = _$(this.options.retryWait, "retryWait").isNumber().default(1500);
-		this.options.login = _$(this.options.login, "login").default(__);
-		this.options.pass = _$(this.options.pass, "pass").default(__);
+		_toptions = _$(aOptions).isMap().default({ });
+		_toptions.default = _$(_toptions.default, "default").isMap().default({});
+		_toptions.throwExceptions = _$(_toptions.throwExceptions, "throwExceptions").isBoolean().default(false);
+		_toptions.collectAllStats = _$(_toptions.collectAllStats, "collectAllStats").isBoolean().default(__openaf_rest.stats);
+		_toptions.preAction = _$(_toptions.preAction, "preAction").isFunction().default(__);
+		_toptions.uriQuery = _$(_toptions.uriQuery, "uriQuery").isBoolean().default(false);
+		_toptions.downloadResume = _$(_toptions.downloadResume, "downloadResume").isBoolean().default(false);
+		_toptions.retry = _$(_toptions.retry, "retry").isNumber().default(0);
+		_toptions.retryWait = _$(_toptions.retryWait, "retryWait").isNumber().default(1500);
+		_toptions.login = _$(_toptions.login, "login").default(__);
+		_toptions.pass = _$(_toptions.pass, "pass").default(__);
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -5140,7 +5141,7 @@ const $rest = function(ops) {
 		return true;
 	};
     _rest.prototype.__stats = function(aBaseURI, isFail) {
-		if (this.options.collectAllStats) {
+		if (_toptions.collectAllStats) {
 			if (isUnDef(__openaf_rest.urls[aBaseURI])) __openaf_rest.urls[aBaseURI] = {};
 			__openaf_rest.urls[aBaseURI].c = (isDef(__openaf_rest.urls[aBaseURI].c) ? __openaf_rest.urls[aBaseURI].c++ : 1);
 			if (isFail) __openaf_rest.urls[aBaseURI].f = (isDef(__openaf_rest.urls[aBaseURI].f) ? __openaf_rest.urls[aBaseURI].f++ : 1);
@@ -5168,47 +5169,51 @@ const $rest = function(ops) {
 	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap, retBytes, aVerb) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
-		if (parent.options.uriQuery) {
+		if (_toptions.uriQuery) {
 			aBaseURI += "?" + $rest().query(aIdxMap);
 			aIdxMap = {};
 		}
 		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes" ];
 		if (parent.__check(aBaseURI)) {
-			var c = parent.options.retry, error;
+			var c = _toptions.retry, error;
 			do {
 				error = __;
 				try {
-					if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
+					if (isDef(_toptions.timeout) || isDef(_toptions.stopWhen)) {
 						var _r = $tb(() => {
-							if (isDef(parent.options.preAction)) { 
-								var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
+							if (isDef(_toptions.preAction)) { 
+								var _a = $a2m(fdef, [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ]);
+								_a.aVerb = aVerb;
+								var rres = _toptions.preAction(_a);
 								var args;
 								if (isDef(rres) && rres != null) 
 									args = $m2a(fdef, rres);
 								else
-									args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
+									args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ];
 								res = aFn[aSubFn].apply(aFn, args);
 							} else {
-								res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient, retBytes);
+								res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes);
 							}		
-						}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
+						}).timeout(_toptions.timeout).stopWhen(_toptions.stopWhen).exec();
 						if (_r !== true) {
 							parent.__stats(aBaseURI, true);
-							if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
+							if (_toptions.throwExceptions) throw _r; else res = _toptions.default;
 						} else {
 							parent.__stats(aBaseURI, false);
 						}
 					} else {
-						if (isDef(parent.options.preAction)) { 
-							var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ])));
+						if (isDef(_toptions.preAction)) { 
+							var _a = $a2m(fdef, [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ]);
+							_a.aVerb = aVerb;
+							var rres = _toptions.preAction(_a);
 							var args;
 							if (isDef(rres) && rres != null) 
 								args = $m2a(fdef, rres);
 							else
-								args = [ aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes ];
+								args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ];
 							res = aFn[aSubFn].apply(aFn, args);
 						} else {
-							res = aFn[aSubFn](aBaseURI, aIdxMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.httpClient, retBytes);
+							res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes);
 						}
 						parent.__stats(aBaseURI, false);
 					}
@@ -5216,69 +5221,73 @@ const $rest = function(ops) {
 					parent.__stats(aBaseURI, true);
 					error = e;
 					c--;
-					if (c > 0) sleep(parent.options.retryWait, true);
+					if (c > 0) sleep(_toptions.retryWait, true);
 				}
 			} while(isDef(error) && c > 0);
 
 			if (isDef(error)) {
-				if (parent.options.throwExceptions) {
+				if (_toptions.throwExceptions) {
 					throw error;
 				} else {
-					res = merge({ error: ow.obj.rest.exceptionParse(error) }, parent.options.default);
+					res = merge({ error: ow.obj.rest.exceptionParse(error) }, _toptions.default);
 				}
 			}
 		} else {
-			if (parent.options.throwExceptions) 
+			if (_toptions.throwExceptions) 
 				throw "Access to " + aBaseURI + " is currently internally disabled."; 
 			else 
-				res = parent.options.default;
+				res = _toptions.default;
 		}
 		return res;
 	};
 	_rest.prototype.__f2 = function(aFn, aSubFn, aBaseURI, aDataRowMap, aIdxMap, retBytes, aVerb) {
 		var res, parent = this;
 		aIdxMap = _$(aIdxMap).isMap().default({});
-		if (parent.options.uriQuery) {
+		if (_toptions.uriQuery) {
 			aBaseURI += "?" + $rest().query(aIdxMap);
 			aIdxMap = {};
 		}
 		var fdef = [ "aBaseURL", "aIdxMap", "aDataRowMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes", "aMethod" ];
 		if (parent.__check(aBaseURI)) {
-			var c = parent.options.retry, error;
+			var c = _toptions.retry, error;
 			do {
 				error = __;
 				try {
-					if (isDef(parent.options.timeout) || isDef(parent.options.stopWhen)) {
+					if (isDef(_toptions.timeout) || isDef(_toptions.stopWhen)) {
 						var _r = $tb(() => {
-							if (isDef(parent.options.preAction)) { 
-								var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes, aVerb ])));
+							if (isDef(_toptions.preAction)) { 
+								var _a = $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb ]);
+								_a.aVerb = aVerb;
+								var rres = _toptions.preAction(_a);
 								var args;
 								if (isDef(rres) && rres != null) 
 									args = $m2a(fdef, rres);
 								else
-									args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes, aVerb ];
+									args = [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb ];
 								res = aFn[aSubFn].apply(aFn, args);
 							} else {
-								res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes, aVerb);
+								res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb);
 							}
-						}).timeout(parent.options.timeout).stopWhen(parent.options.stopWhen).exec();
+						}).timeout(_toptions.timeout).stopWhen(_toptions.stopWhen).exec();
 						if (_r !== true) {
 							parent.__stats(aBaseURI, true);
-							if (parent.options.throwExceptions) throw _r; else res = parent.options.default;
+							if (_toptions.throwExceptions) throw _r; else res = _toptions.default;
 						} else {
 							parent.__stats(aBaseURI, false);
 						}
 					} else {
-						if (isDef(parent.options.preAction)) { 
-							var rres = parent.options.preAction(merge({aVerb: aVerb}, $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes, aVerb ])));
+						if (isDef(_toptions.preAction)) { 
+							var _a = $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb ]);
+							_a.aVerb = aVerb;
+							var rres = _toptions.preAction(_a);
 							var args;
 							if (isDef(rres) && rres != null) 
 								args = $m2a(fdef, rres);
 							else
-								args = [ aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes, aVerb ];
+								args = [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb ];
 							res = aFn[aSubFn].apply(aFn, args);
 						} else {
-							res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, parent.options.login, parent.options.pass, parent.options.connectionTimeout, parent.options.requestHeaders, parent.options.urlEncode, parent.options.httpClient, retBytes, aVerb);
+							res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb);
 						}
 						parent.__stats(aBaseURI, false);
 					}
@@ -5286,22 +5295,22 @@ const $rest = function(ops) {
 					parent.__stats(aBaseURI, true);
 					error = e;
 					c--;
-					if (c > 0) sleep(parent.options.retryWait, true);
+					if (c > 0) sleep(_toptions.retryWait, true);
 				}
 			} while(isDef(error) && c > 0);
 			
 			if (isDef(error)) {
-				if (parent.options.throwExceptions) {
+				if (_toptions.throwExceptions) {
 					throw error;
 				} else {
-					res = merge({ error: ow.obj.rest.exceptionParse(error) }, parent.options.default);
+					res = merge({ error: ow.obj.rest.exceptionParse(error) }, _toptions.default);
 				}
 			}
 		} else {
-			if (parent.options.throwExceptions) 
+			if (_toptions.throwExceptions) 
 				throw "Access to " + aBaseURI + " is currently internally disabled."; 
 			else 
-				res = parent.options.default;
+				res = _toptions.default;
 		}			
 		return res;
 	};
@@ -5346,9 +5355,9 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.get2File = function(aFilePath, aBaseURI, aIdxMap) {
-		if (this.options.downloadResume && io.fileExists(aFilePath)) {
-			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
-			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
+		if (_toptions.downloadResume && io.fileExists(aFilePath)) {
+			if (isUnDef(_toptions.requestHeaders)) _toptions.requestHeaders = {};
+			_toptions.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true, "get"));
 		} else {
 			ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "get", aBaseURI, aIdxMap, true, "get"));
@@ -5423,9 +5432,9 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */	
 	_rest.prototype.post2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
-		if (this.options.downloadResume && io.fileExists(aFilePath)) {
-			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
-			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
+		if (_toptions.downloadResume && io.fileExists(aFilePath)) {
+			if (isUnDef(_toptions.requestHeaders)) _toptions.requestHeaders = {};
+			_toptions.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true, "post"));
 		} else {
 			ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "create", aBaseURI, aDataRowMap, aIdxMap, true, "post"));
@@ -5500,9 +5509,9 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.put2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
-		if (this.options.downloadResume && io.fileExists(aFilePath)) {
-			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
-			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
+		if (_toptions.downloadResume && io.fileExists(aFilePath)) {
+			if (isUnDef(_toptions.requestHeaders)) _toptions.requestHeaders = {};
+			_toptions.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true, "put"));
 		} else {
 			ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "set", aBaseURI, aDataRowMap, aIdxMap, true, "put"));
@@ -5549,9 +5558,9 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.delete2File = function(aFilePath, aBaseURI, aIdxMap) {
-		if (this.options.downloadResume && io.fileExists(aFilePath)) {
-			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
-			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
+		if (_toptions.downloadResume && io.fileExists(aFilePath)) {
+			if (isUnDef(_toptions.requestHeaders)) _toptions.requestHeaders = {};
+			_toptions.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true, "delete"));
 		} else {
 			ioStreamCopy(io.writeFileStream(aFilePath), this.__f1(ow.obj.rest, "remove", aBaseURI, aIdxMap, true, "delete"));
@@ -5626,9 +5635,9 @@ const $rest = function(ops) {
 	 * </odoc>
 	 */
 	_rest.prototype.patch2File = function(aFilePath, aBaseURI, aDataRowMap, aIdxMap) {
-		if (this.options.downloadResume && io.fileExists(aFilePath)) {
-			if (isUnDef(this.options.requestHeaders)) this.options.requestHeaders = {};
-			this.options.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
+		if (_toptions.downloadResume && io.fileExists(aFilePath)) {
+			if (isUnDef(_toptions.requestHeaders)) _toptions.requestHeaders = {};
+			_toptions.requestHeaders.Range = "bytes=" + io.fileInfo(aFilePath).size + "-";
 			ioStreamCopy(io.writeFileStream(aFilePath, true), this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true, "patch"));
 		} else {
 			ioStreamCopy(io.writeFileStream(aFilePath), this.__f2(ow.obj.rest, "patch", aBaseURI, aDataRowMap, aIdxMap, true, "patch"));
