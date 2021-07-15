@@ -22,7 +22,7 @@ var __alias = {
 };
 var __exitActions = [];
 var __consoleFormat = {
-	error: "WHITE",
+	error: "BOLD,WHITE",
 	errorLine: "BOLD,RED",
 	helpLine: "BOLD,BLUE"
 };
@@ -967,7 +967,7 @@ function __processCmdLine(aCommand, returnOnly) {
 	} catch(e) {
 		//__outputConsoleError(String(e));
 		if (__ansiflag && con.isAnsiSupported()) {
-			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), "BOLD,RED", "BOLD"));
+			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
 		} else {
 			__outputConsoleError(String(e));
 		}
