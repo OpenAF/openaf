@@ -164,6 +164,15 @@
 			"deps": []
 		},
 		{
+			"description": "java-jwt",
+			"path": ["lib/java-jwt-3.18.1.jar"],
+			"version": "3.18.1",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/auth0/java-jwt/master/LICENSE",
+			"deps": []
+		},
+		{
 			"description": "JLine",
 			"path": ["lib/jline-2.14.5.jar"],
 			"version": "2.14.5",
