@@ -39,7 +39,14 @@
                         <argument>build.yaml</argument>
                     </arguments>
                 </configuration>
-            </plugin>            
+            </plugin>   
+            <plugin>
+              <artifactId>maven-clean-plugin</artifactId>
+              <version>3.1.0</version>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </plugin>         
         </plugins>
     <!--/pluginManagement-->
   </build>
