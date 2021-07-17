@@ -2042,10 +2042,10 @@ var __preCompileLevel = 2;
  * </odoc>
  */
 function load(aScript, loadPrecompiled) {
-	var error = "";
-	var fn = (aS, aLevel) => {
-		var res = false;
-		if (aS.indexOf("::") < 0 && (loadPrecompiled || __preCompileLevel >= aLevel)) {
+	var error = [], inErr = false;
+	var fn = function(aS, aLevel) {
+		var res = false, err;
+		if (aS.indexOf("::") < 0 && (loadPrecompiled || __preCompileLevel >= aLevel) && io.fileExists(aS)) {
 			try {
 				var cl = io.fileInfo(aS).filename.replace(/\.js$/, "_js");
 				res = loadCompiled(aS);
@@ -2055,31 +2055,32 @@ function load(aScript, loadPrecompiled) {
 					global[io.fileInfo(aS).filename.replace(/\.js$/, "")] = exp;
 					return aS;
 				}
-			} catch(e) {
-				if (e.message == "\"exports\" is not defined.") {
+			} catch(e1) {
+				if (e1.message == "\"exports\" is not defined.") {
 					io.rm(io.fileInfo(aS).canonicalPath.substr(0, io.fileInfo(aS).canonicalPath.length - io.fileInfo(aS).filename.length) + ".openaf_precompiled");
 					var exp = requireCompiled(aS);
 					global[io.fileInfo(aS).filename.replace(/\.js$/, "")] = exp;
 					return aS;
 				} else {
-					throw e;
+					err = e1
 				}
 			}
 		}
-		if (!res) {
+		if (!res && isUnDef(err)) {
 			try { 
 				af.load(aS);
-			} catch(e) {
-				if (e.message == "\"exports\" is not defined.") {
+			} catch(e2) {
+				if (e2.message == "\"exports\" is not defined.") {
 					var exp = require(aS);
 					global[io.fileInfo(aS).filename.replace(/\.js$/, "")] = exp;
 					return aS;
 				} else {
-					throw e;
+					err = e2;
 				}
 			}
 		}
-		return aScript;
+
+		if (isDef(err)) throw err; else return aScript;
 	};
 
 	if (io.fileExists(aScript)) {
@@ -2088,13 +2089,16 @@ function load(aScript, loadPrecompiled) {
 		var paths = getOPackPaths();
 		paths["__default"] = getOpenAFJar() + "::js";
 
-		var error;
 		for(var i in paths) {
 			try {
 				paths[i] = paths[i].replace(/\\+/g, "/");
 				return fn(paths[i] + "/" + aScript, 1);
-			} catch(e) {
-				error = e;
+			} catch(_e) {
+				if (_e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+				    _e.message.indexOf("java.lang.NullPointerException: entry") < 0) {
+						error.push(_e);
+						inErr = true;
+				}
 			}
 		}
 
@@ -2102,9 +2106,7 @@ function load(aScript, loadPrecompiled) {
 			return fn(__loadedfrom.replace(/[^\/]+$/, "") + aScript, 3);
 		}
 
-		if (isDef(error)) {
-			throw new Error("Couldn't find or load '" + aScript + "'");
-		}
+		throw new Error("Couldn't find or load '" + aScript + "' (" + String(error.join("; ")) + ")");
 	}
 }
 
