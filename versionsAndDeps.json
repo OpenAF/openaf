@@ -164,12 +164,12 @@
 			"deps": []
 		},
 		{
-			"description": "java-jwt",
-			"path": ["lib/java-jwt-3.18.1.jar"],
-			"version": "3.18.1",
+			"description": "jjwt",
+			"path": ["lib/jjwat-api-0.11.2.jar", "lib/jjwat-gson-0.11.2.jar", "lib/jjwat-impl-0.11.2.jar"],
+			"version": "0.11.2",
 			"changes": false,
 			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/auth0/java-jwt/master/LICENSE",
+			"license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",
 			"deps": []
 		},
 		{
