@@ -8,14 +8,21 @@ OpenWrap.net = function() {
 
 /**
  * <odoc>
- * <key>ow.net.getPublicIP() : Map</key>
- * Uses the functionality provided by http://ifconfig.co to return a map with the apparent current public ip address,
+ * <key>ow.net.getPublicIP(aIPAddress) : Map</key>
+ * Uses the functionality provided by https://ifconfig.co to return a map with the apparent current public ip address,
  * public hostname and a guess of country and city. Please be aware of the request limits of the service (around 1 request
- * per minute).
+ * per minute).\
+ * If aIPAddress is provided it will use the functionality provided by http://ip-api.com (if aIPAddress is a empty string it will
+ * use the current public IP address). Please be also aware of non-commercial and request limits of the service (around 45 requests
+ * per minute). The details provided by each service might differ depending on how update is each of the services' databases.
  * </odoc>
  */
-OpenWrap.net.prototype.getPublicIP = function() {
-	return $rest().get("https://ifconfig.co/json");
+OpenWrap.net.prototype.getPublicIP = function(aIPAddress) {
+    if (isUnDef(aIPAddress)) {
+        return $rest().get("https://ifconfig.co/json");
+    } else {
+        return $rest().get("http://ip-api.com/json/" + aIPAddress + "?fields=66846719");
+    }
 };
 
 /**
