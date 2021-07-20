@@ -164,6 +164,15 @@
 			"deps": []
 		},
 		{
+			"description": "jjwt",
+			"path": ["lib/jjwat-api-0.11.2.jar", "lib/jjwat-gson-0.11.2.jar", "lib/jjwat-impl-0.11.2.jar"],
+			"version": "0.11.2",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",
+			"deps": []
+		},
+		{
 			"description": "JLine",
 			"path": ["lib/jline-2.14.5.jar"],
 			"version": "2.14.5",

@@ -106,6 +106,24 @@ OpenWrap.net.prototype.getTLSCertificates = function(aHost, aPort, withJava, aPa
 
 /**
  * <odoc>
+ * <key>ow.net.getSSLPublicCertificates(aHost, aPort) : Array</key>
+ * Given aHost and aPort for a HTTPs connection it will retrieve the array of peer certificates available.
+ * You can retrieve the specific public key by using the method .getPublicKey for each array element. Usually you be
+ * interested on the first certificate of the returned array.
+ * </odoc>
+ */
+OpenWrap.net.prototype.getSSLPublicCertificates = function(aHost, aPort) {
+    var factory = javax.net.ssl.HttpsURLConnection.getDefaultSSLSocketFactory();
+    var socket = factory.createSocket(aHost, aPort);
+    socket.startHandshake();
+
+    var certs = socket.getSession().getPeerCertificates();
+
+    return certs;
+};
+
+/**
+ * <odoc>
  * <key>ow.net.testPublicPort(aPort) : Map</key>
  * Uses the functionality provided by http://ifconfig.co to return a map with the result of testing if aPort is within public 
  * reach from your apparent current public ip address. Please be aware of the request limits of the service (around 1 request

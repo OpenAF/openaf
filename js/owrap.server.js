@@ -3247,14 +3247,15 @@ OpenWrap.server.prototype.socket = {
 OpenWrap.server.prototype.jwt = {
     /**
      * <odoc>
-	 * <key>ow.server.jwt.getAlgorithm(aAlgorithm, aArg1, aArg2) : JavaAlgorithm></key>
-	 * To be used with verify and/or sign. Selects the JWT algorithm (defaults to HS256/HMAC256) using aArg1 and, optionally,
-	 * also aArg2 if the algorithm requires two arguments (see more in https://github.com/auth0/java-jwt).
+	 * <key>ow.server.jwt.genKey(aAlgorithm) : JavaObject</key>
+	 * Generates a key for the provided aAlgorithm (defaults to HS256). If aAlgorithm is not HS256, HS384 or HS512
+	 * the generated object will be a key pair for which you will need to user .getPrivate() for signing and .getPublic() for verify.
+	 * Possible algorithms: HS256, HS384, HS512, ES256, ES384, ES512, RS256, RS384, RS512, PS256 (java >= 11), PS384 (java >= 11), PS512 (java >= 11)
 	 * </odoc>
      */
-	getAlgorithm: (aAlgorithm, aArg1, aArg2) => {
-		aAlgorithm = _$(aAlgorithm, "algorithm").isString().default("HMAC256");
-		_$(aArg1, "first argument").$_();
+	genKey: (aAlgorithm) => {
+		aAlgorithm = _$(aAlgorithm, "algorithm").isString().default("HS256");
+		/*_$(aArg1, "first argument").$_();
 
 		if (aAlgorithm = "HS256") aAlgorithm = "HMAC256";
 
@@ -3262,18 +3263,34 @@ OpenWrap.server.prototype.jwt = {
 			return com.auth0.jwt.algorithms.Algorithm[aAlgorithm](aArg1, aArg2);
 		} else {
 			return com.auth0.jwt.algorithms.Algorithm[aAlgorithm](aArg1);
+		}*/
+		var key;
+
+		aAlgorithm = aAlgorithm.toUpperCase().trim();
+		try {
+			isJavaObject(Packages.io.jsonwebtoken.SignatureAlgorithm[aAlgorithm]);
+		} catch(e) {
+			throw "Algorithm '" + aAlgorithm + "' not available.";
 		}
+
+		if (aAlgorithm == "HS256" || aAlgorithm == "HS384" || aAlgorithm == "HS512") {
+			key = Packages.io.jsonwebtoken.security.Keys.secretKeyFor(Packages.io.jsonwebtoken.SignatureAlgorithm[aAlgorithm]);
+		} else {
+			key = Packages.io.jsonwebtoken.security.Keys.keyPairFor(Packages.io.jsonwebtoken.SignatureAlgorithm[aAlgorithm]);
+		}
+
+		return key;
 	},
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.jwt.verify(aAlgorithm, aArg1, aToken, aArg2) : Map</key>
-	 * Verifies the JWT provided with aToken using aAlgorithm with aArg1 and aArg2 (if needed). Returns the
-	 * converted json claims. If any verification fails it will throw a JavaException.
+	 * <key>ow.server.jwt.verify(aSecret1, aToken) : Map</key>
+	 * Verifies the JWT provided with aToken using aSecret1 (key (either a string or java.security.Key)). Returns the
+	 * converted json headers and claims. If any verification fails it will throw a JavaException.
 	 * </odoc>
 	 */
-	verify: (aAlgorithm, aSecret1, aToken, aSecret2) => {
-		_$(aToken, "token").isString().$_();
+	verify: (aSecret1, aToken) => {
+		/*_$(aToken, "token").isString().$_();
 		
 		var al = ow.server.jwt.getAlgorithm(aAlgorithm, aSecret1, aSecret2);
 		var verifier = com.auth0.jwt.JWT.require(al).build();
@@ -3289,24 +3306,88 @@ OpenWrap.server.prototype.jwt = {
 			if (notFound && dt.getClaims().get(keys[ii]).asString() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asString(); }
 			if (notFound && dt.getClaims().get(keys[ii]).asDate() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asDate(); }
 		}
-		return mkeys;
+		return mkeys;*/
+		_$(aToken, "token").isString().$_();
+
+		if (isString(aSecret1)) {
+			if (aSecret1.length > 0 && aSecret1.length < 32)  aSecret1 = aSecret1 + repeat(32 - aSecret1.length, "\u0000");
+			if (aSecret1.length > 32 && aSecret1.length < 48) aSecret1 = aSecret1 + repeat(48 - aSecret1.length, "\u0000");
+			if (aSecret1.length > 48 && aSecret1.length < 64) aSecret1 = aSecret1 + repeat(64 - aSecret1.length, "\u0000");
+
+			aSecret1 = Packages.io.jsonwebtoken.security.Keys.hmacShaKeyFor(af.fromString2Bytes(aSecret1));
+		}
+
+		var res = Packages.io.jsonwebtoken.Jwts.parserBuilder()
+		                             .setSigningKey(aSecret1)
+									 .build()
+									 .parseClaimsJws(aToken);
+
+		var gson = com.google.gson.GsonBuilder().create();
+		return {
+			headers: jsonParse(gson.toJson(res.getHeader())),
+			claims : jsonParse(gson.toJson(res.getBody()))
+		}
 	},
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.jwt.sign(aAlgorithm, aArg1, aFnAddClaims, aArg2) : String</key>
-	 * Signs a JWT using aAlgorithm with aArg1 and, optionally, aArg2 and returns the corresponing signature. To
-	 * add specific claims use the aFnAddClaims function that receives (and returns if modified) a com.auth0.jwt.JWT object
-	 * as argument and returns the signned JWT.
+	 * <key>ow.server.jwt.sign(aKey, aData) : String</key>
+	 * Signs a JWT using aKey (either a string or java.security.Key) returning the corresponding encoded JWT. To
+	 * add specific claims use aData map where you can add custom headers and/or custom claims or used the standard fields. 
+	 * Expected keys for aData:\
+	 * \
+	 *    audience    (String)\
+	 *    claims      (Map)\
+	 *    expiration  (Date)\
+	 *    headers     (Map)\
+	 *    issuer      (String)\
+	 *    id          (String)\
+	 *    issuedAt    (Date)\
+	 *    issuer      (String)\
+	 *    notBefore   (Date)\
+	 *    subject     (String)
 	 * </odoc>
 	 */
-	sign: (aAlgorithm, aSecret1, aFnAddClaims, aSecret2) => {
-		var al = ow.server.jwt.getAlgorithm(aAlgorithm, aSecret1, aSecret2);
+	sign: (aKey, aData) => {
+		/*var al = ow.server.jwt.getAlgorithm(aAlgorithm, aSecret1, aSecret2);
 		aFnAddClaims = _$(aFnAddClaims, "function").isFunction().default((r) => { return r; });
 
 		var jwt = com.auth0.jwt.JWT.create();
 		jwt = aFnAddClaims(jwt);
-		return jwt.sign(al);
+		return jwt.sign(al);*/
+		aData = _$(aData, "aData").isMap().default({});
+		var o = Packages.io.jsonwebtoken.Jwts.builder();
+
+		if (isString(aData.audience))   o = o.setAudience(aData.audience);
+		if (isDate(aData.expiration))   o = o.setExpiration(aData.expiration);
+		if (isString(aData.issuer))     o = o.setIssuer(aData.issuer);
+		if (isString(aData.id))         o = o.setId(aData.id);
+		if (isDate(aData.issuedAt))     o = o.setIssuedAt(aData.issuedAt);
+		if (isString(aData.issuer))     o = o.setIssuer(aData.issuer);
+		if (isDate(aData.notBefore))    o = o.setNotBefore(aData.notBefore);
+		if (isString(aData.subject))    o = o.setSubject(aData.subject);
+
+		if (isMap(aData.claims)) {
+			for(var k in aData.claims) {
+				o = o.claim(k, aData.claims[k]);
+			}
+		}
+
+		if (isMap(aData.headers)) {
+			for(var k in aData.headers) {
+				o = o.setHeaderParam(k, aData.headers[k]);
+			}
+		}
+
+		if (isString(aKey)) {
+			if (aKey.length > 0 && aKey.length < 32)  aKey = aKey + repeat(32 - aKey.length, "\u0000");
+			if (aKey.length > 32 && aKey.length < 48) aKey = aKey + repeat(48 - aKey.length, "\u0000");
+			if (aKey.length > 48 && aKey.length < 64) aKey = aKey + repeat(64 - aKey.length, "\u0000");
+
+			aKey = Packages.io.jsonwebtoken.security.Keys.hmacShaKeyFor(af.fromString2Bytes(aKey));
+		}
+
+		return String(o.signWith(aKey).compact());
 	},
 
 	/**
@@ -3318,7 +3399,7 @@ OpenWrap.server.prototype.jwt = {
 	decode: aToken => {
 		_$(aToken, "token").isString().$_();
 
-		var dt = com.auth0.jwt.JWT.decode(aToken);
+		/*var dt = com.auth0.jwt.JWT.decode(aToken);
 
 		var keys = dt.getClaims().keySet().toArray(), mkeys = {};
 		for(var ii in keys) {
@@ -3330,6 +3411,12 @@ OpenWrap.server.prototype.jwt = {
 			if (notFound && dt.getClaims().get(keys[ii]).asString() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asString(); }
 			if (notFound && dt.getClaims().get(keys[ii]).asDate() != null) { notFound = false; mkeys[keys[ii]] = dt.getClaims().get(keys[ii]).asDate(); }
 		}
-		return mkeys;
+		return mkeys;*/
+		var parts = aToken.split(".")
+
+		if (parts.length > 1) return {
+			headers: jsonParse( af.fromBytes2String( af.fromBase64( parts[0] ) ) ),
+			claims : jsonParse( af.fromBytes2String( af.fromBase64( parts[1] ) ) )
+		}
 	}
 }

@@ -1720,7 +1720,7 @@ function __opack_search(args) {
 
 	$from(results).sort("name").select((result) => {
 		ansiStart(); 
-		print(ansiColor("bold", "[" + result.name + "]") + " (version " + ansiColor("green", result.version) + "):");
+		print(ansiColor("bold", "[" + result.name + "]") + " (version " + ansiColor("green", String(result.version)) + "):");
 		print(result.description + "\n");
 		ansiStop();
 	});
