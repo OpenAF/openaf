@@ -479,6 +479,8 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			});
 			return res;
 		};
+
+
 		if (isDef(res.ojob)) {
 			if (isDef(res.ojob.opacks) && isMap(res.ojob.opacks)) res.ojob.opacks = _o2a(res.ojob.opacks);
 			if (isDef(res.ojob.opacks) && isArray(res.ojob.opacks)) {
@@ -632,12 +634,12 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 		res.code = merge(aJSONa.code, aJSONb.code);
 	else
 		res.code = isDef(aJSONb.code) ? aJSONb.code : {};			
-	
+
 	return res;
 };
 
 OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
-	var res = {}, parent = this;
+	var res = {}, parent = this, validation = false;
 
 	var fnDown = url => {
 		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
@@ -678,7 +680,6 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 		var res = {};
 		try {
 			res = aFn(aFile, true);
-			return res;
 		} catch(e1) {
 			if (isDef(e1.message) && e1.message.match(/FileNotFoundException/)) {
 				var paths = getOPackPaths();
@@ -688,7 +689,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 						paths[i] = paths[i].replace(/\\+/g, "/");
 						paths[i] = paths[i].replace(/\/+/g, "/");
 						res = aFn(paths[i] + "/" + aFile, true);
-						return res;
+						break;
 					} catch(e2) {
 						if (!e2.message.match(/FileNotFoundException/)) {
 							throw e2;
@@ -700,6 +701,24 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 				throw e1;
 			}
 		}
+		
+		// Check for internal signature
+		if (isDef(res.__jwt) && isDef(OJOB_SIGNATURE_KEY)) {
+			ow.loadObj();
+
+			if (!ow.obj.signVerify(OJOB_SIGNATURE_KEY, res)) {
+				if (OJOB_SIGNATURE_STRICT) {
+					logErr("SIGNATURE: Verification of '" + aFile + "' failed. Strict signature enforced. Not loading oJob definition.");
+					return {};
+				} else {
+					logWarn("SIGNATURE: Verification of '" + aFile + "' failed. Please check the source and update the corresponding signature. Execution will continue.");
+				}
+			} else {
+				validation = true;
+			}
+		}
+
+		return res;
 	}
 	
 	if (isDef(aFile)) {
@@ -718,7 +737,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 			}
         }
 
-		// Verify integrity
+		// Verify integrity 
 		if (Object.keys(OJOB_INTEGRITY).length > 0) {
 			Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "oJob checking integrity of '" + aFile + "'", null);
 
@@ -732,6 +751,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 			} else {
 				if (OJOB_INTEGRITY_STRICT && ig != true) {
 					throw "INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list.";
+				} else {
+					if (ig == true) validation = true;
 				}
 			}
 		}
@@ -751,6 +772,11 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 		} else if (aFile.match(/^https?:\/\//)) {
 			res = this.__merge(_load(fnDown), res);
 		}
+
+	}
+
+	if (OJOB_VALIDATION_STRICT && !validation) {
+		throw "OJOB VALIDATION OF '" + aFile + "' failed.";
 	}
 
 	return this.loadJSON(res, removeTodos);

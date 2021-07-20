@@ -6156,8 +6156,14 @@ var OJOB_AUTHORIZEDDOMAINS = [ "ojob.io" ];
 var OJOB_INTEGRITY = {};
 // If OJOB_INTEGRITY_WARN is false oJob execution is halted if any integrity hash is found to be different
 var OJOB_INTEGRITY_WARN = true; 
-// IF OJOB_INTEGRITY_STRICT if true no oJob will execute if it's integrity is not verified.
+// If OJOB_INTEGRITY_STRICT is true no oJob will execute if it's integrity is not verified.
 var OJOB_INTEGRITY_STRICT = false;
+// If OJOB_SIGNATURE_STRICT is true no oJob will execute if it's signature is not valid.
+var OJOB_SIGNATURE_STRICT = false;
+// Use OJOB_SIGNATURE_KEY key java object to validate oJob signatures;
+var OJOB_SIGNATURE_KEY = __;
+// If OJOB_VALIDATION_STRICT = true no oJob will execute if the signature doesn't exist or is not valid or if it's integrity wasn't checked & passed.
+var OJOB_VALIDATION_STRICT = false;
 
 /**
  * <odoc>
