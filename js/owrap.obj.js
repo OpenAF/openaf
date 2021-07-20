@@ -2606,6 +2606,84 @@ OpenWrap.obj.prototype.setPath = function(aObj, aPath, aValue) {
 
 /**
  * <odoc>
+ * <key>ow.obj.sign(aKey, aMap, aHashName, aHashFunction) : Map</key>
+ * Given aMap and aKey will return a signed aMap using aHashFunction (defaults to sha512) with the hash algorithm indication
+ * aHashName (defaults to 'sha512'). The signed aMap can later be verified with ow.obj.signVerify.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.sign = function(aKey, aMap, aHashName, aHashFunction) {
+    _$(aKey, "aKey").$_();
+    _$(aMap, "aMap").isMap().$_();
+    aHashName = _$(aHashName, "aHashName").isString().default("sha512");
+    aHashFunction = _$(aHashFunction, "aHashFunction").isFunction().default(sha512);
+
+    ow.loadServer();
+    if (isDef(aMap.__jwt)) delete aMap.__jwt;
+    var hash = aHashName + "-" + aHashFunction(stringify(sortMapKeys(aMap), __, ""));
+    var jwt = ow.server.jwt.sign(aKey, {
+        subject: "openaf map signature",
+        claims : {
+            oaf: hash
+        }
+    });
+
+    aMap.__jwt = jwt;
+    return aMap;
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.isSigned(aMap) : boolean</key>
+ * Verifies if the provided aMap was signed with ow.obj.sign function.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.isSigned = function(aMap) {
+    if (isUnDef(aMap.__jwt)) return false;
+
+    var jwt = aMap.__jwt;
+    ow.loadServer();
+    var djwt = ow.server.jwt.decode(jwt);
+    if (isDef(djwt) && isDef(djwt.claims) && isDef(djwt.claims.oaf)) return true;
+
+    return false;
+};
+
+/**
+ * <odoc>
+ * <key>ow.obj.signVerify(aKey, aMap) : boolean</key>
+ * Verifies the signature of a signed aMap with ow.obj.sign function given aKey. Returns true if the signature is valid.
+ * Supported hash functions of ow.obj.sign: sha512, sha384 and sha256.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.signVerify = function(aKey, aMap) {
+    _$(aKey, "aKey").$_();
+    _$(aMap, "aMap").isMap().$_();
+
+    if (!ow.obj.isSigned(aMap)) throw "No openaf map signature found.";
+
+    var jwt = ow.server.jwt.verify(aKey, aMap.__jwt);
+    var [fn, hash] = jwt.claims.oaf.split("-");
+    
+    var v = clone(aMap);
+    delete v.__jwt;
+
+    switch(fn) {
+    case "sha512": 
+        var vhash = sha512(stringify(sortMapKeys(v), __, ""));
+        if (vhash == hash) return true; else return false;
+    case "sha384": 
+        var vhash = sha384(stringify(sortMapKeys(v), __, ""));
+        if (vhash == hash) return true; else return false;
+    case "sha256": 
+        var vhash = sha256(stringify(sortMapKeys(v), __, ""));
+        if (vhash == hash) return true; else return false;
+    default:
+        throw "Hash algorithm not supported";
+    }
+};
+
+/**
+ * <odoc>
  * <key>ow.obj.syncArray(anArray) : ow.obj.syncArray</key>
  * Creates an instance of a thread-safe array/list. Optionally it can be initialized with anArray.
  * </odoc>
