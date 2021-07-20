@@ -326,4 +326,30 @@
         ow.test.assert(r.getTime() >= ow.format.toDate("20200101", "yyyyMMdd").getTime(), true, "Problem with ow.obj.randomDateRange (1)");
         ow.test.assert(r.getTime() <= ow.format.toDate("20201231", "yyyyMMdd").getTime(), true, "Problem with ow.obj.randomDateRange (2)");
     };
+
+    exports.testSignObj = function() {
+        // Generate a RSA key pair
+        ow.loadJava();
+        var cipher = new ow.java.cipher();
+        var keypair = cipher.genKeyPair();
+
+        // Example map
+        var data = {
+            x: 1,
+            y: -1
+        }
+
+        // Signing map
+        data = ow.obj.sign(keypair.privateKey, data);
+
+        // Verify
+        ow.test.assert(ow.obj.signVerify(keypair.publicKey, data), true, "Problem on verify of signed object (1)");
+
+        // Changing map
+        var ndata = clone(data);
+        ndata.y = 1;
+
+        // Verify changed
+        ow.test.assert(ow.obj.signVerify(keypair.publicKey, ndata), false, "Problem on verify of signed object (2)");
+    };
 })();

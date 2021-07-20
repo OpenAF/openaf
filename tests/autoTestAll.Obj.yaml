@@ -68,6 +68,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testObjFnGen;
 
+   - name: Obj::Sign object
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSignObj;
+
 todo:
 # Obj tests
 # ------------
@@ -84,3 +89,4 @@ todo:
 - Obj::Thread-safe array   
 - Obj::Generate One of
 - Obj::Generate One of Fn
+- Obj::Sign object
