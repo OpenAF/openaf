@@ -668,13 +668,14 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 			res = aFn(aFile, true);
 		} catch(e1) {
 			if (isDef(e1.message) && e1.message.match(/FileNotFoundException/)) {
-				var paths = getOPackPaths();
+				var paths = getOPackPaths(), found = false;
 				
 				for(var i in paths) {
 					try {
 						paths[i] = paths[i].replace(/\\+/g, "/");
 						paths[i] = paths[i].replace(/\/+/g, "/");
 						res = aFn(paths[i] + "/" + aFile, true);
+						found = true;
 						break;
 					} catch(e2) {
 						if (!e2.message.match(/FileNotFoundException/)) {
@@ -682,7 +683,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 						}
 					}
 				}
-				throw "File not found! (" + aFile + ")";
+				if (!found) throw "File not found! (" + aFile + ")";
 			} else {
 				throw e1;
 			}
