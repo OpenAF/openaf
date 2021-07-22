@@ -5142,11 +5142,12 @@ const $rest = function(ops) {
 
 		return true;
 	};
-    _rest.prototype.__stats = function(aBaseURI, isFail) {
+    _rest.prototype.__stats = function(aBaseURI, isFail, aETime) {
 		if (_toptions.collectAllStats) {
 			if (isUnDef(__openaf_rest.urls[aBaseURI])) __openaf_rest.urls[aBaseURI] = {};
-			__openaf_rest.urls[aBaseURI].c = (isDef(__openaf_rest.urls[aBaseURI].c) ? __openaf_rest.urls[aBaseURI].c++ : 1);
-			if (isFail) __openaf_rest.urls[aBaseURI].f = (isDef(__openaf_rest.urls[aBaseURI].f) ? __openaf_rest.urls[aBaseURI].f++ : 1);
+			__openaf_rest.urls[aBaseURI].c = (isDef(__openaf_rest.urls[aBaseURI].c) ? __openaf_rest.urls[aBaseURI].c + 1 : 1);
+			if (isFail) __openaf_rest.urls[aBaseURI].f = (isDef(__openaf_rest.urls[aBaseURI].f) ? __openaf_rest.urls[aBaseURI].f + 1 : 1);
+			if (!isFail && isDef(aETime)) __openaf_rest.urls[aBaseURI].t = (isDef(__openaf_rest.urls[aBaseURI].t) ? __openaf_rest.urls[aBaseURI].t + aETime : aETime);
 
 			if (Object.keys(__openaf_rest.urls).length > 0) {
 				// try host based
@@ -5162,10 +5163,13 @@ const $rest = function(ops) {
 					var host = String(url.getHost() + ":" + port);
 
 					if (isUnDef(__openaf_rest.urls[host])) __openaf_rest.urls[host] = {};
-					__openaf_rest.urls[host].c = (isDef(__openaf_rest.urls[host].c) ? __openaf_rest.urls[host].c++ : 1);
-					if (isFail) __openaf_rest.urls[host].f = (isDef(__openaf_rest.urls[host].f) ? __openaf_rest.urls[host].f++ : 1);
+					__openaf_rest.urls[host].c = (isDef(__openaf_rest.urls[host].c) ? __openaf_rest.urls[host].c + 1 : 1);
+					if (isFail) __openaf_rest.urls[host].f = (isDef(__openaf_rest.urls[host].f) ? __openaf_rest.urls[host].f + 1 : 1);
+					if (!isFail && isDef(aETime)) __openaf_rest.urls[host].t = (isDef(__openaf_rest.urls[host].t) ? __openaf_rest.urls[host].t + aETime : aETime);
 				} catch(e) { }
 			}
+
+			Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "REST call to '" + aBaseURI + "' fail=" + isFail + (!isFail ? "; time=" + aETime : ""), null);
 		}
 	};
 	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap, retBytes, aVerb) {
@@ -5177,7 +5181,7 @@ const $rest = function(ops) {
 		}
 		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes" ];
 		if (parent.__check(aBaseURI)) {
-			var c = _toptions.retry, error;
+			var c = _toptions.retry, error, __t;
 			do {
 				error = __;
 				try {
@@ -5194,14 +5198,16 @@ const $rest = function(ops) {
 									args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ];
 								res = aFn[aSubFn].apply(aFn, args);
 							} else {
+								__t = now();
 								res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes);
+								__t = now() - __t;
 							}		
 						}).timeout(_toptions.timeout).stopWhen(_toptions.stopWhen).exec();
 						if (_r !== true) {
-							parent.__stats(aBaseURI, true);
+							parent.__stats(aBaseURI, true, __t);
 							if (_toptions.throwExceptions) throw _r; else res = _toptions.default;
 						} else {
-							parent.__stats(aBaseURI, false);
+							parent.__stats(aBaseURI, false, __t);
 						}
 					} else {
 						if (isDef(_toptions.preAction)) { 
@@ -5213,14 +5219,18 @@ const $rest = function(ops) {
 								args = $m2a(fdef, rres);
 							else
 								args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ];
+							__t = now();
 							res = aFn[aSubFn].apply(aFn, args);
+							__t = now() - __t;
 						} else {
+							__t = now();
 							res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes);
+							__t = now() - __t;
 						}
-						parent.__stats(aBaseURI, false);
+						parent.__stats(aBaseURI, false, __t);
 					}
 				} catch(e) {
-					parent.__stats(aBaseURI, true);
+					parent.__stats(aBaseURI, true, __t);
 					error = e;
 					c--;
 					if (c > 0) sleep(_toptions.retryWait, true);
