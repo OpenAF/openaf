@@ -636,7 +636,7 @@ function __help(aTerm) {
 	}
 
 	if (__ansiflag && con.isAnsiSupported()) {
-		print(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c));
+		cprint(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c));
 	} else {
 		__outputConsoleCommentsEnd(__ores);
 	}
@@ -967,7 +967,7 @@ function __processCmdLine(aCommand, returnOnly) {
 	} catch(e) {
 		//__outputConsoleError(String(e));
 		if (__ansiflag && con.isAnsiSupported()) {
-			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+			cprint(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
 		} else {
 			__outputConsoleError(String(e));
 		}
@@ -1276,7 +1276,7 @@ initThread.startNoWait();
 
 if(__ansiflag && con.isAnsiSupported()) {
 	Packages.openaf.SimpleLog.setNFunc(function(s) { 
-		printErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+		cprintErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
 	});
 }
 

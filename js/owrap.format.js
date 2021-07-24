@@ -568,6 +568,18 @@ OpenWrap.format.prototype.string = {
 		});
 	
 		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn);
+	},
+	symbols: {
+		cross      : '┼',
+		crossHLeft : '┤',
+		lineHRight : '╶',
+		lineHLeft  : '╴',
+		lineH      : '─',
+		curveTRight: '╰',
+		curveBRight: '╭',
+		curveBLeft : '╮',
+		curveTLeft : '╯',
+		lineV      : '│'
 	}
 };
 	
@@ -2175,35 +2187,77 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
  * aSize (default to the current console size). Optionally ansi colors for ansiLine and ansiText can be provided (see ansiColor for possible values)
  * </odoc>
  */
-OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText) {
+OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText, aTheme) {
+	var symbols = ow.format.string.symbols;
+
 	_$(aString, "aString").isString().$_();
+	var defaultTheme = {
+		ltop   : __,
+		lmiddle: symbols.lineV,
+		lbottom: __,
+		rtop   : __,
+		rmiddle: __,
+		rbottom: __,
+		tmiddle: __,
+		bmiddle: __,
+		tab    : "   "
+	};
+	aTheme = _$(aTheme, "aTheme").isMap().default({});
+	aTheme = merge(defaultTheme, aTheme);
+
 	aSize = _$(aSize, "aSize").isNumber().default(__);
 	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
 
 	var res = "";
-	//var atop    = String.fromCharCode(9591);
-	var amiddle = String.fromCharCode(9474);
-	//var abottom = String.fromCharCode(9589);
+	//var ltop    = String.fromCharCode(9591);
+	//var lmiddle = String.fromCharCode(9474);
+	//var lbottom = String.fromCharCode(9589);
  
 	if (isUnDef(aSize)) {
 		__conStatus || __initializeCon(); 
 
 		if (isDef(__con)) {
-			var width = __con.getTerminal().getWidth();
-			aString = ow.format.string.wordWrap(aString, width - 2);
+			aSize = __con.getTerminal().getWidth();
+		} else {
+			aSize = 80;
 		}
-	} else {
-		aString = ow.format.string.wordWrap(aString, aSize - 2);
+	} 
+	aString = aString.replace(/\t/g, aTheme.tab);
+	aString = ow.format.string.wordWrap(aString, aSize - 2);
+
+	//res += ansiColor(ansiLine, ltop) + "\n";
+	if (isDef(aTheme.ltop)) {
+		res += ansiColor(ansiLine, aTheme.ltop);
+		if (isDef(aTheme.rtop)) {
+			var sp = (isDef(aTheme.tmiddle) ? aTheme.tmiddle : " ");
+			res += ansiColor(ansiLine, repeat(aSize - 2, sp));
+			res += ansiColor(ansiLine, aTheme.rtop);
+		}
+		res += "\n";
 	}
 
-	//res += ansiColor(ansiLine, atop) + "\n";
-        var ar = aString.split("\n");
+    var ar = aString.split("\n");
 	ar.forEach((l, li) => {
-	   res += ansiColor(ansiLine, amiddle) + ansiColor("RESET", " ") + (isDef(ansiText) ? ansiColor(ansiText, l) : l);
+	   if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", " ")
+	   res += (isDef(ansiText) ? ansiColor(ansiText, l) : l);
+	   if (isDef(aTheme.rmiddle)) {
+		   var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - l.length - 3, ' ')) : repeat(aSize - l.length - 3, ' '));
+		   res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
+		   res += ansiColor(ansiLine, aTheme.rmiddle);
+	   }
 	   if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
 	});
-	//res += ansiColor(ansiLine, abottom) + ansiColor("RESET", "");
- 
+	//res += ansiColor(ansiLine, lbottom) + ansiColor("RESET", "");
+    if (isDef(aTheme.lbottom)) {
+		res += ansiColor("RESET","\n") + ansiColor(ansiLine, aTheme.lbottom);
+		if (isDef(aTheme.rbottom)) {
+			var sp = (isDef(aTheme.bmiddle) ? aTheme.bmiddle : " ");
+			res += ansiColor(ansiLine, repeat(aSize - 2, sp));
+			res += ansiColor(ansiLine, aTheme.rbottom);
+		}
+		res += ansiColor("RESET", "");
+	}
+
 	return res;
 }
 
