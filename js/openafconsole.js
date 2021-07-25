@@ -21,16 +21,20 @@ var __alias = {
 	"ojobio": "oJobRunFile(\"ojob.io\")"
 };
 var __exitActions = [];
+ow.loadFormat();
 var __consoleFormat = {
 	error: "BOLD,WHITE",
 	errorLine: "BOLD,RED",
-	helpLine: "BOLD,BLUE"
+	helpLine: "BOLD,BLUE",
+	errorTheme: ow.format.withSideLineThemes().simpleLine,
+	helpTheme: ow.format.withSideLineThemes().simpleLine
 };
+
+var __consoleFormat2 = {"error":"BOLD,WHITE","errorLine":"RED","helpLine":"BLUE","errorTheme":{"lmiddle":"│","lbottom":"╰","bmiddle":"─","rmiddle":"│","rbottom":"╯"},"helpTheme":{"ltop":"╭","lmiddle":"│","lbottom":"╰"}};
 
 var __aliasparam;
 var __message = "";
 var __afDBs = {};
-ow.loadFormat();
 
 global.CONSOLETIMEOUT   = undefined;
 global.CONSOLECTRLC     = false;
@@ -636,7 +640,7 @@ function __help(aTerm) {
 	}
 
 	if (__ansiflag && con.isAnsiSupported()) {
-		cprint(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c));
+		cprint(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c, __, __consoleFormat.helpTheme));
 	} else {
 		__outputConsoleCommentsEnd(__ores);
 	}
@@ -967,7 +971,7 @@ function __processCmdLine(aCommand, returnOnly) {
 	} catch(e) {
 		//__outputConsoleError(String(e));
 		if (__ansiflag && con.isAnsiSupported()) {
-			cprint(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+			cprintErr(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme));
 		} else {
 			__outputConsoleError(String(e));
 		}
@@ -1276,7 +1280,7 @@ initThread.startNoWait();
 
 if(__ansiflag && con.isAnsiSupported()) {
 	Packages.openaf.SimpleLog.setNFunc(function(s) { 
-		cprintErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+		cprintErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme));
 	});
 }
 

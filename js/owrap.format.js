@@ -2264,7 +2264,7 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			lbottom: _s.turnTRight,
 			rtop   : _s.turnBLeft,
 			rmiddle: _s.dlineV,
-			rbottom: _s.turnTLeft,
+			rbottom: _s.turnTLeft
 		},
 		closedRect: {
 			ltop   : _s.lineBRight,
@@ -2274,7 +2274,7 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			lmiddle: _s.lineV,
 			rmiddle: _s.lineV,
 			rtop   : _s.lineBLeft,
-			rbottom: _s.lineTLeft,
+			rbottom: _s.lineTLeft
 		},
 		closedDoubleRect: {
 			ltop   : _s.turnBRight,
@@ -2284,7 +2284,7 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			lmiddle: _s.dlineV,
 			rmiddle: _s.dlineV,
 			rtop   : _s.turnBLeft,
-			rbottom: _s.turnTLeft,
+			rbottom: _s.turnTLeft
 		},
 		closedCurvedRect: {
 			ltop   : _s.curveBRight,
@@ -2294,52 +2294,45 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			lmiddle: _s.lineV,
 			rmiddle: _s.lineV,
 			rtop   : _s.curveBLeft,
-			rbottom: _s.curveTLeft,
+			rbottom: _s.curveTLeft
 		},
 		openTopRect: {
-			ltop   : _s.lineVBottom,
 			lbottom: _s.lineTRight,
 			bmiddle: _s.lineH,
 			lmiddle: _s.lineV,
 			rmiddle: _s.lineV,
-			rtop   : _s.lineVBottom,
-			rbottom: _s.lineTLeft,
+			rbottom: _s.lineTLeft
 		},
 		openBottomRect: {
 			ltop   : _s.lineBRight,
-			lbottom: _s.lineVTop,
 			tmiddle: _s.lineH,
 			lmiddle: _s.lineV,
 			rmiddle: _s.lineV,
-			rtop   : _s.lineBLeft,
-			rbottom: _s.lineVTop,
+			rtop   : _s.lineBLeft
 		},
 		openTopCurvedRect: {
-			ltop   : _s.curveBRight,
 			lmiddle: _s.lineV,
 			lbottom: _s.curveTRight,
 			bmiddle: _s.lineH,
-			rtop   : _s.curveBLeft,
 			rmiddle: _s.lineV,
-			rbottom: _s.curveTLeft,
+			rbottom: _s.curveTLeft
 		},
 		openBottomCurvedRect: {
 			ltop   : _s.curveBRight,
 			lmiddle: _s.lineV,
-			lbottom: _s.curveTRight,
 			tmiddle: _s.lineH,
 			rtop   : _s.curveBLeft,
-			rmiddle: _s.lineV,
-			rbottom: _s.curveTLeft,
+			rmiddle: _s.lineV
 		}
 	}
 };
 
 /**
  * <odoc>
- * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText) : String</key>
+ * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText, aTheme) : String</key>
  * Generates a ansi escaped line with a "left side line" to display aString which will be word-wrap given 
  * aSize (default to the current console size). Optionally ansi colors for ansiLine and ansiText can be provided (see ansiColor for possible values)
+ * and aTheme (using ow.format.withSideLineThemes, for example)
  * </odoc>
  */
 OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText, aTheme) {
@@ -2347,14 +2340,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 
 	_$(aString, "aString").isString().$_();
 	var defaultTheme = {
-		ltop   : __,
 		lmiddle: symbols.lineV,
-		lbottom: __,
-		rtop   : __,
-		rmiddle: __,
-		rbottom: __,
-		tmiddle: __,
-		bmiddle: __,
 		tab    : "   "
 	};
 	aTheme = _$(aTheme, "aTheme").isMap().default({});
@@ -2392,7 +2378,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	   if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", " ")
 	   res += (isDef(ansiText) ? ansiColor(ansiText, l) : l);
 	   if (isDef(aTheme.rmiddle)) {
-		   var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - l.length - 3, ' ')) : repeat(aSize - l.length - 3, ' '));
+		   var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - ansiLength(l) - 3, ' ')) : repeat(aSize - ansiLength(l) - 3, ' '));
 		   res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
 		   res += ansiColor(ansiLine, aTheme.rmiddle);
 	   }
