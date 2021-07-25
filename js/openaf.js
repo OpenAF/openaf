@@ -680,7 +680,7 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 
 	if (isUnDef(aTheme)) {
 		if (io.getDefaultEncoding() == "UTF-8") {
-			if (ansiWinTermCap()) {
+			if (!openafOldTheme && ansiWinTermCap()) {
 				aTheme = Packages.de.vandermeer.asciitable.v2.themes.OpenAFTableThemes.OPENAF_UTF_LIGHT.get();
 			} else {
 				aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
@@ -693,7 +693,7 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 	if (isString(aTheme)) {
 		switch(aTheme) {
 		case "utf"  : 
-			if (ansiWinTermCap()) {
+			if (!openafOldTheme && ansiWinTermCap()) {
 				aTheme = Packages.de.vandermeer.asciitable.v2.themes.OpenAFTableThemes.OPENAF_UTF_LIGHT.get();
 			} else {
 				aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
@@ -810,6 +810,7 @@ function ansiColor(aAnsi, aString, force) {
 
 var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 var __ansiColorValue;
+var openafOldTheme = true;
 
 /**
  * <odoc>

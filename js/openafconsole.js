@@ -6,7 +6,7 @@ var __pinflag = false;
 var __pinprefix = "";
 var __autoupdate = false;
 var __autoupdateResume = true;
-var consoleOldTheme = false;
+var consoleOldTheme = true;
 var CONSOLESEPARATOR = "-- ";
 var HELPSEPARATOR = "-";
 var HELPSEPARATOR_ANSI = "─";
@@ -1250,7 +1250,7 @@ if (isUnDef(__consoleFormat)) __consoleFormat = (!ansiWinTermCap() || consoleOld
 // Startup
 if (__ansiflag && con.isAnsiSupported()) {
    ansiStart();
-   print(ow.format.withSideLine("OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)", __, __consoleFormat.initLine, __consoleFormat.init, __consoleFormat.initTheme));
+   print(ow.format.withSideLine(" OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)", __, __consoleFormat.initLine, __consoleFormat.init, __consoleFormat.initTheme));
    ansiStop();
 } else {
    __outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)");
