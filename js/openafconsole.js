@@ -22,15 +22,19 @@ var __alias = {
 };
 var __exitActions = [];
 ow.loadFormat();
-var __consoleFormat = {
+var __consoleFormat = (!ansiWinTermCap() ? {
 	error: "BOLD,WHITE",
 	errorLine: "BOLD,RED",
 	helpLine: "BOLD,BLUE",
 	errorTheme: ow.format.withSideLineThemes().simpleLine,
 	helpTheme: ow.format.withSideLineThemes().simpleLine
-};
-
-var __consoleFormat2 = {"error":"BOLD,WHITE","errorLine":"RED","helpLine":"BLUE","errorTheme":{"lmiddle":"│","lbottom":"╰","bmiddle":"─","rmiddle":"│","rbottom":"╯"},"helpTheme":{"ltop":"╭","lmiddle":"│","lbottom":"╰"}};
+} : {
+	error: "BOLD,WHITE",
+	errorLine: "BOLD,RED",
+	helpLine: "BOLD,BLUE",
+	errorTheme: ow.format.withSideLineThemes().openTopCurvedRect,
+	helpTheme : ow.format.withSideLineThemes().simpleLineWithCTips
+});
 
 var __aliasparam;
 var __message = "";
@@ -640,7 +644,9 @@ function __help(aTerm) {
 	}
 
 	if (__ansiflag && con.isAnsiSupported()) {
-		cprint(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c, __, __consoleFormat.helpTheme));
+		ansiStart();
+		print(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c, __, __consoleFormat.helpTheme));
+		ansiStop();
 	} else {
 		__outputConsoleCommentsEnd(__ores);
 	}
@@ -652,19 +658,24 @@ function __outputConsole(anOutput, colorify) {
 
 function __outputConsoleNoEnd(anOutput, colorify) {
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		if (colorCommand && colorify) {
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (colorCommand && colorify) {
 			//if (isDef(__codepage) && isString(__codepage)) 
 			//	printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 			//else
+			//if (__ansiColorFlag)
+			//	printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+			//else
+			ansiStart();
 			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
-		} else {
+			ansiStop();
+		//} else {
 			//if (isDef(__codepage) && isString(__codepage))
 			//printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET), __, __codepage);
 			//else
-			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
-		}
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+			//printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		//}
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printnl(anOutput);
 	}
@@ -673,12 +684,17 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 function __outputConsoleEnd(anOutput, colorify) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutput = af.toEncoding(anOutput, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
 		//if (colorCommand && colorify) 
 		//   print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		//else
-		print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (__ansiColorFlag)
+		//	print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		//else
+		ansiStart(); 
+		print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET)); 
+		ansiStop();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutput);
 	}
@@ -691,9 +707,12 @@ function __outputConsoleComments(anOutputComment) {
 function __outputConsoleCommentsNoEnd(anOutputComment) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (__ansiColorFlag)
+		//	printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
+		//else
+		ansiStart(); printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET)); ansiStop();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printnl(anOutputComment);
 	}
@@ -702,9 +721,12 @@ function __outputConsoleCommentsNoEnd(anOutputComment) {
 function __outputConsoleCommentsEnd(anOutputComment) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (__ansiColorFlag)
+		//	print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
+		//else
+		ansiStart(); print(ansiColor("BOLD", anOutputComment)); ansiStop();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutputComment);
 	}
@@ -713,9 +735,12 @@ function __outputConsoleCommentsEnd(anOutputComment) {
 function __outputConsoleError(anError) {
 	//if (isDef(__codepage) && isString(__codepage)) anError = af.toEncoding(anError, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (__ansiColorFlag) 
+		//	printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
+		//else
+		ansiStart(); printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET)); ansiStop();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printErr(CONSOLESEPARATOR + anError);
 	}
@@ -723,9 +748,10 @@ function __outputConsoleError(anError) {
 
 function __clear() {
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		printnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//cprintnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		cls();
 	}
 }
 
@@ -971,7 +997,9 @@ function __processCmdLine(aCommand, returnOnly) {
 	} catch(e) {
 		//__outputConsoleError(String(e));
 		if (__ansiflag && con.isAnsiSupported()) {
-			cprintErr(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme));
+			ansiStart(); 
+			printErr(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme)); 
+			ansiStop();
 		} else {
 			__outputConsoleError(String(e));
 		}
@@ -986,7 +1014,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			var __pres = 0;
 			var lines = [];
 			if (beautifyCommand && !__cmd.trim().startsWith("sql") && !__cmd.trim().startsWith("esql") && !__cmd.trim().startsWith("dsql")) {
-				if (colorCommand && isObject(__res)) 
+				if (colorCommand) 
 					__lines = String(colorify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 				else
 					__lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
@@ -996,7 +1024,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
 			if (beautifyCommand && !__cmd.trim().startsWith("sql") && !__cmd.trim().startsWith("esql") && !__cmd.trim().startsWith("dsql")) {
-				if (colorCommand && isObject(__res))
+				if (colorCommand)
 					__outputConsole(String(colorify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"), true);
 				else
 					__outputConsole(String(stringify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
@@ -1280,7 +1308,7 @@ initThread.startNoWait();
 
 if(__ansiflag && con.isAnsiSupported()) {
 	Packages.openaf.SimpleLog.setNFunc(function(s) { 
-		cprintErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme));
+		ansiStart(); printErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme)); ansiStop();
 	});
 }
 
@@ -1306,7 +1334,10 @@ while(cmd != "exit") {
 			if (beautifyCommand) watchresult = String(stringify(watchresult)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
 		} catch(e) { watchresult = "ERROR: " + e.message; watchCommand = false; }
 		//cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ").trim();
-		print("[" + watchresult + " ]\n");
+		//if(__ansiflag && con.isAnsiSupported() && __ansiColorFlag)
+			ansiStart(); print("[" + watchresult + " ]\n"); ansiStop();
+		//else
+		//	print("[" + watchresult + " ]\n");
 	}
 	if (!multiCommand) {
 		cmd = con.readLinePrompt(__pinprefix + "> ").trim();

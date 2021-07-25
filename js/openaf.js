@@ -800,6 +800,34 @@ function ansiColor(aAnsi, aString, force) {
 
 var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 var __ansiColorValue;
+
+/**
+ * <odoc>
+ * <key>ansiWinTermCap() : boolean</key>
+ * Determines in Windows if the current terminal has support for newer capabilities or not (e.g. cmd.exe)
+ * </odoc>
+ */
+function ansiWinTermCap() {
+	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+		if (isDef(__ansiColorValue)) return (__ansiColorValue > 3);
+
+		var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
+		var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
+		var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
+		var mode = new com.sun.jna.ptr.IntByReference();
+		if (k32.GetConsoleMode(hout, mode)) {
+			__ansiColorValue = mode.getValue();
+			k32.SetConsoleMode(hout, 7); //15
+			k32.SetConsoleMode(herr, 7); 
+			return (__ansiColorValue > 3);
+		} else {
+			return false;
+		}
+	} else {
+		return true;
+	}
+}
+
 /**
  * <odoc>
  * <key>ansiStart(force)</key>
@@ -808,7 +836,8 @@ var __ansiColorValue;
  */
 function ansiStart(force) {
 	if (__ansiColorFlag) {
-		if (isUnDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+		ansiWinTermCap();
+		/*if (isUnDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
 			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
@@ -819,17 +848,17 @@ function ansiStart(force) {
 				k32.SetConsoleMode(herr, 7); //
 				__ansiColorFlag = true;
 			}
-		}
-	} else {
-		if (!__initializeCon()) return false;
-		var con = __con;
-		var ansis = force || (__conAnsi && (java.lang.System.console() != null));
-		var jansi = JavaImporter(Packages.org.fusesource.jansi);
-		if (ansis) {
-			java.lang.System.out.flush(); java.lang.System.err.flush();
-			jansi.AnsiConsole.systemInstall();
-		}
+		}*/
+	} 
+	if (!__initializeCon()) return false;
+	var con = __con;
+	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
+	var jansi = JavaImporter(Packages.org.fusesource.jansi);
+	if (ansis) {
+		java.lang.System.out.flush(); java.lang.System.err.flush();
+		jansi.AnsiConsole.systemInstall();
 	}
+	//}
 }
 
 /**
