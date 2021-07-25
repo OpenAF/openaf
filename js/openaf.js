@@ -680,7 +680,11 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 
 	if (isUnDef(aTheme)) {
 		if (io.getDefaultEncoding() == "UTF-8") {
-			aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
+			if (ansiWinTermCap()) {
+				aTheme = Packages.de.vandermeer.asciitable.v2.themes.OpenAFTableThemes.OPENAF_UTF_LIGHT.get();
+			} else {
+				aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
+			}
 		} else {
 			aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get();
 		}
@@ -688,7 +692,13 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 
 	if (isString(aTheme)) {
 		switch(aTheme) {
-		case "utf"  : aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get(); break;
+		case "utf"  : 
+			if (ansiWinTermCap()) {
+				aTheme = Packages.de.vandermeer.asciitable.v2.themes.OpenAFTableThemes.OPENAF_UTF_LIGHT.get();
+			} else {
+				aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
+			}
+			break;
 		case "plain": aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get(); break;
 		default     : aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get(); break;
 		}
