@@ -66,9 +66,11 @@ OpenWrap.metrics.prototype.__m = {
                 avgExecTime: ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].avg,
             })) : "n/a"),
             rest: (isDef(global.__openaf_rest) ? Object.keys(global.__openaf_rest.urls).map(r => ({
-                url: r,
-                hits: _$(global.__openaf_rest.urls[r].c).default(0),
-                miss: _$(global.__openaf_rest.urls[r].f).default(0)
+                url          : r,
+                hits         : _$(global.__openaf_rest.urls[r].c).default(0),
+                miss         : _$(global.__openaf_rest.urls[r].f).default(0),
+                totalTime    : _$(global.__openaf_rest.urls[r].t).default(-1),
+                avgTimePerHit: (isNumber(global.__openaf_rest.urls[r].t) && global.__openaf_rest.urls[r].c > 0) ? global.__openaf_rest.urls[r].t / (global.__openaf_rest.urls[r].c - _$(global.__openaf_rest.urls[r].f).default(0)) : -1
             })) : "n/a"),
             fns    : ow.metrics.__fnMetrics
         };

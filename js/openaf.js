@@ -680,7 +680,11 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 
 	if (isUnDef(aTheme)) {
 		if (io.getDefaultEncoding() == "UTF-8") {
-			aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
+			if (!openafOldTheme && ansiWinTermCap()) {
+				aTheme = Packages.de.vandermeer.asciitable.v2.themes.OpenAFTableThemes.OPENAF_UTF_LIGHT.get();
+			} else {
+				aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
+			}
 		} else {
 			aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get();
 		}
@@ -688,7 +692,13 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 
 	if (isString(aTheme)) {
 		switch(aTheme) {
-		case "utf"  : aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get(); break;
+		case "utf"  : 
+			if (!openafOldTheme && ansiWinTermCap()) {
+				aTheme = Packages.de.vandermeer.asciitable.v2.themes.OpenAFTableThemes.OPENAF_UTF_LIGHT.get();
+			} else {
+				aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.UTF_LIGHT.get();
+			}
+			break;
 		case "plain": aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get(); break;
 		default     : aTheme = Packages.de.vandermeer.asciitable.v2.themes.V2_E_TableThemes.PLAIN_7BIT.get(); break;
 		}
@@ -800,6 +810,35 @@ function ansiColor(aAnsi, aString, force) {
 
 var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 var __ansiColorValue;
+var openafOldTheme = true;
+
+/**
+ * <odoc>
+ * <key>ansiWinTermCap() : boolean</key>
+ * Determines in Windows if the current terminal has support for newer capabilities or not (e.g. cmd.exe)
+ * </odoc>
+ */
+function ansiWinTermCap() {
+	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+		if (isDef(__ansiColorValue)) return (__ansiColorValue > 3);
+
+		var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
+		var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
+		var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
+		var mode = new com.sun.jna.ptr.IntByReference();
+		if (k32.GetConsoleMode(hout, mode)) {
+			__ansiColorValue = mode.getValue();
+			k32.SetConsoleMode(hout, 7); //15
+			k32.SetConsoleMode(herr, 7); 
+			return (__ansiColorValue > 3);
+		} else {
+			return false;
+		}
+	} else {
+		return true;
+	}
+}
+
 /**
  * <odoc>
  * <key>ansiStart(force)</key>
@@ -808,7 +847,8 @@ var __ansiColorValue;
  */
 function ansiStart(force) {
 	if (__ansiColorFlag) {
-		if (isUnDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+		ansiWinTermCap();
+		/*if (isUnDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
 			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
@@ -819,17 +859,17 @@ function ansiStart(force) {
 				k32.SetConsoleMode(herr, 7); //
 				__ansiColorFlag = true;
 			}
-		}
-	} else {
-		if (!__initializeCon()) return false;
-		var con = __con;
-		var ansis = force || (__conAnsi && (java.lang.System.console() != null));
-		var jansi = JavaImporter(Packages.org.fusesource.jansi);
-		if (ansis) {
-			java.lang.System.out.flush(); java.lang.System.err.flush();
-			jansi.AnsiConsole.systemInstall();
-		}
+		}*/
+	} 
+	if (!__initializeCon()) return false;
+	var con = __con;
+	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
+	var jansi = JavaImporter(Packages.org.fusesource.jansi);
+	if (ansis) {
+		java.lang.System.out.flush(); java.lang.System.err.flush();
+		jansi.AnsiConsole.systemInstall();
 	}
+	//}
 }
 
 /**
@@ -5142,11 +5182,12 @@ const $rest = function(ops) {
 
 		return true;
 	};
-    _rest.prototype.__stats = function(aBaseURI, isFail) {
+    _rest.prototype.__stats = function(aBaseURI, isFail, aETime) {
 		if (_toptions.collectAllStats) {
 			if (isUnDef(__openaf_rest.urls[aBaseURI])) __openaf_rest.urls[aBaseURI] = {};
-			__openaf_rest.urls[aBaseURI].c = (isDef(__openaf_rest.urls[aBaseURI].c) ? __openaf_rest.urls[aBaseURI].c++ : 1);
-			if (isFail) __openaf_rest.urls[aBaseURI].f = (isDef(__openaf_rest.urls[aBaseURI].f) ? __openaf_rest.urls[aBaseURI].f++ : 1);
+			__openaf_rest.urls[aBaseURI].c = (isDef(__openaf_rest.urls[aBaseURI].c) ? __openaf_rest.urls[aBaseURI].c + 1 : 1);
+			if (isFail) __openaf_rest.urls[aBaseURI].f = (isDef(__openaf_rest.urls[aBaseURI].f) ? __openaf_rest.urls[aBaseURI].f + 1 : 1);
+			if (!isFail && isDef(aETime)) __openaf_rest.urls[aBaseURI].t = (isDef(__openaf_rest.urls[aBaseURI].t) ? __openaf_rest.urls[aBaseURI].t + aETime : aETime);
 
 			if (Object.keys(__openaf_rest.urls).length > 0) {
 				// try host based
@@ -5162,10 +5203,13 @@ const $rest = function(ops) {
 					var host = String(url.getHost() + ":" + port);
 
 					if (isUnDef(__openaf_rest.urls[host])) __openaf_rest.urls[host] = {};
-					__openaf_rest.urls[host].c = (isDef(__openaf_rest.urls[host].c) ? __openaf_rest.urls[host].c++ : 1);
-					if (isFail) __openaf_rest.urls[host].f = (isDef(__openaf_rest.urls[host].f) ? __openaf_rest.urls[host].f++ : 1);
+					__openaf_rest.urls[host].c = (isDef(__openaf_rest.urls[host].c) ? __openaf_rest.urls[host].c + 1 : 1);
+					if (isFail) __openaf_rest.urls[host].f = (isDef(__openaf_rest.urls[host].f) ? __openaf_rest.urls[host].f + 1 : 1);
+					if (!isFail && isDef(aETime)) __openaf_rest.urls[host].t = (isDef(__openaf_rest.urls[host].t) ? __openaf_rest.urls[host].t + aETime : aETime);
 				} catch(e) { }
 			}
+
+			Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "REST call to '" + aBaseURI + "' fail=" + isFail + (!isFail ? "; time=" + aETime : ""), null);
 		}
 	};
 	_rest.prototype.__f1 = function(aFn, aSubFn, aBaseURI, aIdxMap, retBytes, aVerb) {
@@ -5177,7 +5221,7 @@ const $rest = function(ops) {
 		}
 		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes" ];
 		if (parent.__check(aBaseURI)) {
-			var c = _toptions.retry, error;
+			var c = _toptions.retry, error, __t;
 			do {
 				error = __;
 				try {
@@ -5194,14 +5238,16 @@ const $rest = function(ops) {
 									args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ];
 								res = aFn[aSubFn].apply(aFn, args);
 							} else {
+								__t = now();
 								res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes);
+								__t = now() - __t;
 							}		
 						}).timeout(_toptions.timeout).stopWhen(_toptions.stopWhen).exec();
 						if (_r !== true) {
-							parent.__stats(aBaseURI, true);
+							parent.__stats(aBaseURI, true, __t);
 							if (_toptions.throwExceptions) throw _r; else res = _toptions.default;
 						} else {
-							parent.__stats(aBaseURI, false);
+							parent.__stats(aBaseURI, false, __t);
 						}
 					} else {
 						if (isDef(_toptions.preAction)) { 
@@ -5213,14 +5259,18 @@ const $rest = function(ops) {
 								args = $m2a(fdef, rres);
 							else
 								args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ];
+							__t = now();
 							res = aFn[aSubFn].apply(aFn, args);
+							__t = now() - __t;
 						} else {
+							__t = now();
 							res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes);
+							__t = now() - __t;
 						}
-						parent.__stats(aBaseURI, false);
+						parent.__stats(aBaseURI, false, __t);
 					}
 				} catch(e) {
-					parent.__stats(aBaseURI, true);
+					parent.__stats(aBaseURI, true, __t);
 					error = e;
 					c--;
 					if (c > 0) sleep(_toptions.retryWait, true);

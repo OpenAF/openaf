@@ -25,7 +25,7 @@ OpenWrap.format.prototype.string = {
 	       str += String.fromCharCode(code);
 	    }
 	    return str;
-        },
+    },
 	/**
 	 * <odoc>
 	 * <key>ow.format.string.getSurrogatePair(astralCodePoint) : Array</key>
@@ -571,6 +571,47 @@ OpenWrap.format.prototype.string = {
 	}
 };
 	
+OpenWrap.format.prototype.syms = function() {
+	return {
+		cross        : '┼',
+		crossHLeft   : '┤',
+		crossHRight  : '├',
+		crossVBottom : '┬',
+		crossVTop    : '┴',
+		lineHRight   : '╶',
+		lineHLeft    : '╴',
+		lineVTop     : '╵',
+		lineVBottom  : '╷',
+		lineH        : '─',
+		lineTRight   : '└',
+		lineBRight   : '┌',
+		lineBLeft    : '┐',
+		lineTLeft    : '┘',
+		curveTRight  : '╰',
+		curveBRight  : '╭',
+		curveBLeft   : '╮',
+		curveTLeft   : '╯',
+		lineV        : '│',
+		dlineV       : '║',
+		dlineH       : '═',
+		turnBRight   : '╔',
+		turnTRight   : '╚',
+		turnTLeft    : '╝',
+		turnBLeft    : '╗',
+		dcrossHRight : '╠',
+		dcrossHLeft  : '╣',
+		dcrossVBottom: '╦',
+		dcrossVTop   : '╩',
+		dcross       : '╬',
+		lBToT        : '╱',
+		lTToB        : '╲',
+		lCross       : '╳',
+		patternLight : '░',
+		patternMedium: '▒',
+		patternDark  : '▓'
+	}
+}
+
 /**
  * <odoc>
  * <key>ow.format.streamSHLog(aFunction) : Function</key>
@@ -2161,49 +2202,220 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "");
 
- 	res = res.replace(/(\*{3}|_{3})([^\*_]+)(\*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
+ 	res = res.replace(/(\*{3}|_{3})([^\*_]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
  	res = res.replace(/(\*{2}|_{2})([^\*_]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
  	res = res.replace(/(\*|_)([^\*_]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
 	
 	return res;
 };
 
+OpenWrap.format.prototype.withSideLineThemes = function() {
+	var _s = ow.format.syms();
+	return {
+		simpleLine: {
+			lmiddle: _s.lineV
+		},
+		doubleLine: {
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV
+		},
+		simpleLineWithTips: {
+			ltop   : _s.lineVBottom,
+			lmiddle: _s.lineV,
+			lbottom: _s.lineVTop
+		},
+		simpleLineWithBottomTip: {
+			lmiddle: _s.lineV,
+			lbottom: _s.lineVTop
+		},
+		simpleLineWithTopTip: {
+			ltop   : _s.lineVBottom,
+			lmiddle: _s.lineV
+		},
+		simpleLineWithCTips: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV,
+			lbottom: _s.curveTRight
+		},
+		simpleLineWithCBottomTip: {
+			lmiddle: _s.lineV,
+			lbottom: _s.curveTRight
+		},
+		simpleLineWithCTopTip: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV
+		},
+		simpleLineWithRTips: {
+			ltop   : _s.lineBRight,
+			lmiddle: _s.lineV,
+			lbottom: _s.lineTRight
+		},
+		simpleLineWithRTopTip: {
+			ltop   : _s.lineBRight,
+			lmiddle: _s.lineV
+		},
+		simpleLineWithRBottomTip: {
+			lmiddle: _s.lineV,
+			lbottom: _s.lineTRight
+		},
+		doubleLineWithRTips: {
+			ltop   : _s.turnBRight,
+			lmiddle: _s.dlineV,
+			lbottom: _s.turnTRight,
+			rtop   : _s.turnBLeft,
+			rmiddle: _s.dlineV,
+			rbottom: _s.turnTLeft
+		},
+		closedRect: {
+			ltop   : _s.lineBRight,
+			lbottom: _s.lineTRight,
+			tmiddle: _s.lineH,
+			bmiddle: _s.lineH,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.lineBLeft,
+			rbottom: _s.lineTLeft
+		},
+		closedDoubleRect: {
+			ltop   : _s.turnBRight,
+			lbottom: _s.turnTRight,
+			tmiddle: _s.dlineH,
+			bmiddle: _s.dlineH,
+			lmiddle: _s.dlineV,
+			rmiddle: _s.dlineV,
+			rtop   : _s.turnBLeft,
+			rbottom: _s.turnTLeft
+		},
+		closedCurvedRect: {
+			ltop   : _s.curveBRight,
+			lbottom: _s.curveTRight,
+			tmiddle: _s.lineH,
+			bmiddle: _s.lineH,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.curveBLeft,
+			rbottom: _s.curveTLeft
+		},
+		openTopRect: {
+			lbottom: _s.lineTRight,
+			bmiddle: _s.lineH,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rbottom: _s.lineTLeft
+		},
+		openBottomRect: {
+			ltop   : _s.lineBRight,
+			tmiddle: _s.lineH,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.lineBLeft
+		},
+		openRect: {
+			ltop   : _s.lineBRight,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.lineBLeft,
+			lbottom: _s.lineTRight,
+			rbottom: _s.lineTLeft
+		},
+		openTopCurvedRect: {
+			lmiddle: _s.lineV,
+			lbottom: _s.curveTRight,
+			bmiddle: _s.lineH,
+			rmiddle: _s.lineV,
+			rbottom: _s.curveTLeft
+		},
+		openBottomCurvedRect: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV,
+			tmiddle: _s.lineH,
+			rtop   : _s.curveBLeft,
+			rmiddle: _s.lineV
+		},
+		openCurvedRect: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV,
+			rtop   : _s.curveBLeft,
+			rmiddle: _s.lineV,
+ 			lbottom: _s.curveTRight,
+ 			rbottom: _s.curveTLeft
+		}
+	}
+};
+
 /**
  * <odoc>
- * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText) : String</key>
+ * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText, aTheme) : String</key>
  * Generates a ansi escaped line with a "left side line" to display aString which will be word-wrap given 
  * aSize (default to the current console size). Optionally ansi colors for ansiLine and ansiText can be provided (see ansiColor for possible values)
+ * and aTheme (using ow.format.withSideLineThemes, for example)
  * </odoc>
  */
-OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText) {
-	_$(aString, "aString").isString().$_();
+OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText, aTheme) {
+	var symbols = ow.format.syms();
+
+	aString = _$(aString, "aString").isString().default(__);
+	var defaultTheme = {
+		tab    : "   "
+	};
+	aTheme = _$(aTheme, "aTheme").isMap().default({ lmiddle: symbols.lineV });
+	aTheme = merge(defaultTheme, aTheme);
+
 	aSize = _$(aSize, "aSize").isNumber().default(__);
 	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
 
-	var res = "";
-	//var atop    = String.fromCharCode(9591);
-	var amiddle = String.fromCharCode(9474);
-	//var abottom = String.fromCharCode(9589);
+	var res = "\r";
  
 	if (isUnDef(aSize)) {
 		__conStatus || __initializeCon(); 
 
 		if (isDef(__con)) {
-			var width = __con.getTerminal().getWidth();
-			aString = ow.format.string.wordWrap(aString, width - 2);
+			aSize = __con.getTerminal().getWidth();
+		} else {
+			aSize = 80;
 		}
-	} else {
+	}
+      
+        if (isDef(aString)) { 
+		aString = aString.replace(/\t/g, aTheme.tab);
 		aString = ow.format.string.wordWrap(aString, aSize - 2);
+ 	}
+
+	if (isDef(aTheme.ltop) || isDef(aTheme.rtop)) {
+		res += ansiColor(ansiLine, aTheme.ltop);
+		if (isDef(aTheme.rtop)) {
+			var sp = (isDef(aTheme.tmiddle) ? aTheme.tmiddle : " ");
+			res += ansiColor(ansiLine, repeat(aSize - 2, sp));
+			res += ansiColor(ansiLine, aTheme.rtop);
+		}
 	}
 
-	//res += ansiColor(ansiLine, atop) + "\n";
-        var ar = aString.split("\n");
-	ar.forEach((l, li) => {
-	   res += ansiColor(ansiLine, amiddle) + ansiColor("RESET", " ") + (isDef(ansiText) ? ansiColor(ansiText, l) : l);
-	   if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
-	});
-	//res += ansiColor(ansiLine, abottom) + ansiColor("RESET", "");
- 
+	if (isDef(aString)) {
+           if (isDef(aTheme.ltop) || isDef(aTheme.rtop)) res += "\n";
+    	   var ar = aString.split("\n");
+	   ar.forEach((l, li) => {
+	      if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", " ")
+	      res += (isDef(ansiText) ? ansiColor(ansiText, l) : l);
+	      if (isDef(aTheme.rmiddle)) {
+		   var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - ansiLength(l) - 3, ' ')) : repeat(aSize - ansiLength(l) - 3, ' '));
+		   res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
+		   res += ansiColor(ansiLine, aTheme.rmiddle);
+	      }
+	      if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
+	   });
+	}
+
+    	if (isDef(aTheme.lbottom) || isDef(aTheme.rbottom)) {
+		if (isDef(aTheme.ltop) || isDef(aTheme.rtop) || isDef(aString)) res += ansiColor("RESET","\n")
+                res += ansiColor(ansiLine, aTheme.lbottom);
+		if (isDef(aTheme.rbottom)) {
+			var sp = (isDef(aTheme.bmiddle) ? aTheme.bmiddle : " ");
+			res += ansiColor(ansiLine, repeat(aSize - 2, sp));
+			res += ansiColor(ansiLine, aTheme.rbottom);
+		}
+		res += ansiColor("RESET", "");
+	}
+
 	return res;
 }
 

@@ -6,6 +6,7 @@ var __pinflag = false;
 var __pinprefix = "";
 var __autoupdate = false;
 var __autoupdateResume = true;
+var consoleOldTheme = true;
 var CONSOLESEPARATOR = "-- ";
 var HELPSEPARATOR = "-";
 var HELPSEPARATOR_ANSI = "─";
@@ -21,16 +22,12 @@ var __alias = {
 	"ojobio": "oJobRunFile(\"ojob.io\")"
 };
 var __exitActions = [];
-var __consoleFormat = {
-	error: "BOLD,WHITE",
-	errorLine: "BOLD,RED",
-	helpLine: "BOLD,BLUE"
-};
+ow.loadFormat();
+var __consoleFormat;
 
 var __aliasparam;
 var __message = "";
 var __afDBs = {};
-ow.loadFormat();
 
 global.CONSOLETIMEOUT   = undefined;
 global.CONSOLECTRLC     = false;
@@ -636,7 +633,9 @@ function __help(aTerm) {
 	}
 
 	if (__ansiflag && con.isAnsiSupported()) {
-		print(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c));
+		ansiStart();
+		print(ow.format.withSideLine(__ores.slice(0, __ores.length-1), con.getConsoleReader().getTerminal().getWidth(), c, __, __consoleFormat.helpTheme));
+		ansiStop();
 	} else {
 		__outputConsoleCommentsEnd(__ores);
 	}
@@ -648,19 +647,24 @@ function __outputConsole(anOutput, colorify) {
 
 function __outputConsoleNoEnd(anOutput, colorify) {
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		if (colorCommand && colorify) {
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (colorCommand && colorify) {
 			//if (isDef(__codepage) && isString(__codepage)) 
 			//	printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 			//else
+			//if (__ansiColorFlag)
+			//	printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+			//else
+			ansiStart();
 			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
-		} else {
+			ansiStop();
+		//} else {
 			//if (isDef(__codepage) && isString(__codepage))
 			//printnl(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.CYAN).a(anOutput).a(jansi.Ansi.Attribute.RESET), __, __codepage);
 			//else
-			printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
-		}
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+			//printnl(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		//}
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printnl(anOutput);
 	}
@@ -669,12 +673,17 @@ function __outputConsoleNoEnd(anOutput, colorify) {
 function __outputConsoleEnd(anOutput, colorify) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutput = af.toEncoding(anOutput, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
 		//if (colorCommand && colorify) 
 		//   print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
 		//else
-		print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (__ansiColorFlag)
+		//	print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET));
+		//else
+		ansiStart(); 
+		print(jansi.Ansi.ansi().boldOff().a(anOutput).a(jansi.Ansi.Attribute.RESET)); 
+		ansiStop();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutput);
 	}
@@ -687,9 +696,12 @@ function __outputConsoleComments(anOutputComment) {
 function __outputConsoleCommentsNoEnd(anOutputComment) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (__ansiColorFlag)
+		//	printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
+		//else
+		ansiStart(); printnl(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET)); ansiStop();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printnl(anOutputComment);
 	}
@@ -698,9 +710,12 @@ function __outputConsoleCommentsNoEnd(anOutputComment) {
 function __outputConsoleCommentsEnd(anOutputComment) {
 	//if (isDef(__codepage) && isString(__codepage)) anOutputComment = af.toEncoding(anOutputComment, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (__ansiColorFlag)
+		//	print(jansi.Ansi.ansi().bold().a(anOutputComment).a(jansi.Ansi.Attribute.RESET));
+		//else
+		ansiStart(); print(ansiColor("BOLD", anOutputComment)); ansiStop();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		print(anOutputComment);
 	}
@@ -709,9 +724,12 @@ function __outputConsoleCommentsEnd(anOutputComment) {
 function __outputConsoleError(anError) {
 	//if (isDef(__codepage) && isString(__codepage)) anError = af.toEncoding(anError, __, __codepage);
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//if (__ansiColorFlag) 
+		//	printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET));
+		//else
+		ansiStart(); printErr(jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.RED).a(CONSOLESEPARATOR + anError).a(jansi.Ansi.Attribute.RESET)); ansiStop();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 	} else {
 		printErr(CONSOLESEPARATOR + anError);
 	}
@@ -719,9 +737,10 @@ function __outputConsoleError(anError) {
 
 function __clear() {
 	if(__ansiflag && con.isAnsiSupported()) {
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
-		printnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
-		if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemInstall();
+		//cprintnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
+		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
+		cls();
 	}
 }
 
@@ -967,7 +986,9 @@ function __processCmdLine(aCommand, returnOnly) {
 	} catch(e) {
 		//__outputConsoleError(String(e));
 		if (__ansiflag && con.isAnsiSupported()) {
-			print(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+			ansiStart(); 
+			printErr(ow.format.withSideLine(String(e), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme)); 
+			ansiStop();
 		} else {
 			__outputConsoleError(String(e));
 		}
@@ -982,7 +1003,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			var __pres = 0;
 			var lines = [];
 			if (beautifyCommand && !__cmd.trim().startsWith("sql") && !__cmd.trim().startsWith("esql") && !__cmd.trim().startsWith("dsql")) {
-				if (colorCommand && isObject(__res)) 
+				if (colorCommand) 
 					__lines = String(colorify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
 				else
 					__lines = String(stringify(__res)).replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/([^\\])\\n/g, "$1\n").split(/\n/);
@@ -992,7 +1013,7 @@ function __showResultProcessCmdLine(__res, __cmd) {
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 		} else {
 			if (beautifyCommand && !__cmd.trim().startsWith("sql") && !__cmd.trim().startsWith("esql") && !__cmd.trim().startsWith("dsql")) {
-				if (colorCommand && isObject(__res))
+				if (colorCommand)
 					__outputConsole(String(colorify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"), true);
 				else
 					__outputConsole(String(stringify(__res)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r"));
@@ -1196,8 +1217,44 @@ con.getConsoleReader().setHistoryEnabled(true);
 con.getConsoleReader().setExpandEvents(false);
 //java.lang.System.setProperty("jansi.passthrough", true);
 
+// Read profile
+try {
+	__readProfile(java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE);
+} catch(e) {
+	printErr("Error while loading " + java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE + ": " + String(e));
+}
+
+// Ensure __consoleFormat
+if (isUnDef(__consoleFormat)) __consoleFormat = (!ansiWinTermCap() || consoleOldTheme ? {
+	error: "BOLD,WHITE",
+	errorLine: "BOLD,RED",
+	helpLine: "BOLD,BLUE",
+        init     : "BOLD,WHITE",
+        initLine : "BOLD,WHITE",
+        initTheme: { lmiddle: CONSOLESEPARATOR_ANSI.trim() },
+	errorTheme: ow.format.withSideLineThemes().simpleLine,
+	helpTheme: ow.format.withSideLineThemes().simpleLine
+} : {
+	error: "BOLD,WHITE",
+	errorLine: "BOLD,RED",
+	helpLine: "BLUE",
+        init      : "BOLD,WHITE",
+        initLine  : "FAINT,WHITE",
+        initTheme : ow.format.withSideLineThemes().openBottomCurvedRect,
+	errorTheme: ow.format.withSideLineThemes().openCurvedRect,
+	helpTheme : ow.format.withSideLineThemes().openCurvedRect,
+        doneLine  : "FAINT,WHITE",
+        doneTheme : ow.format.withSideLineThemes().openTopCurvedRect
+});
+
 // Startup
-__outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)");
+if (__ansiflag && con.isAnsiSupported()) {
+   ansiStart();
+   print(ow.format.withSideLine(" OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)", __, __consoleFormat.initLine, __consoleFormat.init, __consoleFormat.initTheme));
+   ansiStop();
+} else {
+   __outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)");
+}
 var historyFile;
 var jLineFileHistory;
 
@@ -1261,13 +1318,6 @@ initThread.addThread(function(uuid) {
 		} catch(e) { }
 	}
 
-	// Read profile
-	try {
-		__readProfile(java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE);
-	} catch(e) {
-		printErr("Error while loading " + java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE + ": " + String(e));
-	}
-
         if (io.getDefaultEncoding() != "UTF-8") __message += "Please ensure that the java option -D\"file.encoding=UTF-8\" is included (this can be achieved by executing 'cd " + getOpenAFPath() + " && ./oaf --install'); ";
 	if (!noHomeComms) __checkVersion();
 	initThread.stop();
@@ -1276,9 +1326,18 @@ initThread.startNoWait();
 
 if(__ansiflag && con.isAnsiSupported()) {
 	Packages.openaf.SimpleLog.setNFunc(function(s) { 
-		printErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error));
+		ansiStart(); printErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme)); ansiStop();
 	});
 }
+
+addOnOpenAFShutdown(() => {
+        if (__ansiflag && con.isAnsiSupported()) {
+   		ansiStart();
+		printnl("\r");
+		print(ow.format.withSideLine(__, __, __consoleFormat.doneLine, __consoleFormat.done, __consoleFormat.doneTheme));
+  		ansiStop();
+	}
+});
 
 if (__expr.length > 0) cmd = __expr;
 cmd = cmd.trim();
@@ -1302,7 +1361,10 @@ while(cmd != "exit") {
 			if (beautifyCommand) watchresult = String(stringify(watchresult)).replace(/\\t/g, "\t").replace(/([^\\])\\n/g, "$1\n").replace(/\\r/g, "\r");
 		} catch(e) { watchresult = "ERROR: " + e.message; watchCommand = false; }
 		//cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ").trim();
-		print("[" + watchresult + " ]\n");
+		//if(__ansiflag && con.isAnsiSupported() && __ansiColorFlag)
+			ansiStart(); print("[" + watchresult + " ]\n"); ansiStop();
+		//else
+		//	print("[" + watchresult + " ]\n");
 	}
 	if (!multiCommand) {
 		cmd = con.readLinePrompt(__pinprefix + "> ").trim();
