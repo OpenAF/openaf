@@ -6,6 +6,7 @@ var __pinflag = false;
 var __pinprefix = "";
 var __autoupdate = false;
 var __autoupdateResume = true;
+var consoleOldTheme = false;
 var CONSOLESEPARATOR = "-- ";
 var HELPSEPARATOR = "-";
 var HELPSEPARATOR_ANSI = "─";
@@ -22,19 +23,7 @@ var __alias = {
 };
 var __exitActions = [];
 ow.loadFormat();
-var __consoleFormat = (!ansiWinTermCap() ? {
-	error: "BOLD,WHITE",
-	errorLine: "BOLD,RED",
-	helpLine: "BOLD,BLUE",
-	errorTheme: ow.format.withSideLineThemes().simpleLine,
-	helpTheme: ow.format.withSideLineThemes().simpleLine
-} : {
-	error: "BOLD,WHITE",
-	errorLine: "BOLD,RED",
-	helpLine: "BOLD,BLUE",
-	errorTheme: ow.format.withSideLineThemes().openTopCurvedRect,
-	helpTheme : ow.format.withSideLineThemes().simpleLineWithCTips
-});
+var __consoleFormat;
 
 var __aliasparam;
 var __message = "";
@@ -1228,8 +1217,44 @@ con.getConsoleReader().setHistoryEnabled(true);
 con.getConsoleReader().setExpandEvents(false);
 //java.lang.System.setProperty("jansi.passthrough", true);
 
+// Read profile
+try {
+	__readProfile(java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE);
+} catch(e) {
+	printErr("Error while loading " + java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE + ": " + String(e));
+}
+
+// Ensure __consoleFormat
+if (isUnDef(__consoleFormat)) __consoleFormat = (!ansiWinTermCap() || consoleOldTheme ? {
+	error: "BOLD,WHITE",
+	errorLine: "BOLD,RED",
+	helpLine: "BOLD,BLUE",
+        init     : "BOLD,WHITE",
+        initLine : "BOLD,WHITE",
+        initTheme: { lmiddle: CONSOLESEPARATOR_ANSI.trim() },
+	errorTheme: ow.format.withSideLineThemes().simpleLine,
+	helpTheme: ow.format.withSideLineThemes().simpleLine
+} : {
+	error: "BOLD,WHITE",
+	errorLine: "BOLD,RED",
+	helpLine: "BLUE",
+        init      : "BOLD,WHITE",
+        initLine  : "FAINT,WHITE",
+        initTheme : ow.format.withSideLineThemes().openBottomCurvedRect,
+	errorTheme: ow.format.withSideLineThemes().openCurvedRect,
+	helpTheme : ow.format.withSideLineThemes().openCurvedRect,
+        doneLine  : "FAINT,WHITE",
+        doneTheme : ow.format.withSideLineThemes().openTopCurvedRect
+});
+
 // Startup
-__outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)");
+if (__ansiflag && con.isAnsiSupported()) {
+   ansiStart();
+   print(ow.format.withSideLine("OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)", __, __consoleFormat.initLine, __consoleFormat.init, __consoleFormat.initTheme));
+   ansiStop();
+} else {
+   __outputConsoleComments("OpenAF console (OpenAF version " + getVersion() + " (" + getDistribution() + ")) (type help for commands)");
+}
 var historyFile;
 var jLineFileHistory;
 
@@ -1293,13 +1318,6 @@ initThread.addThread(function(uuid) {
 		} catch(e) { }
 	}
 
-	// Read profile
-	try {
-		__readProfile(java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE);
-	} catch(e) {
-		printErr("Error while loading " + java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE + ": " + String(e));
-	}
-
         if (io.getDefaultEncoding() != "UTF-8") __message += "Please ensure that the java option -D\"file.encoding=UTF-8\" is included (this can be achieved by executing 'cd " + getOpenAFPath() + " && ./oaf --install'); ";
 	if (!noHomeComms) __checkVersion();
 	initThread.stop();
@@ -1311,6 +1329,15 @@ if(__ansiflag && con.isAnsiSupported()) {
 		ansiStart(); printErr(ow.format.withSideLine(String(s), con.getConsoleReader().getTerminal().getWidth(), __consoleFormat.errorLine, __consoleFormat.error, __consoleFormat.errorTheme)); ansiStop();
 	});
 }
+
+addOnOpenAFShutdown(() => {
+        if (__ansiflag && con.isAnsiSupported()) {
+   		ansiStart();
+		printnl("\r");
+		print(ow.format.withSideLine(__, __, __consoleFormat.doneLine, __consoleFormat.done, __consoleFormat.doneTheme));
+  		ansiStop();
+	}
+});
 
 if (__expr.length > 0) cmd = __expr;
 cmd = cmd.trim();

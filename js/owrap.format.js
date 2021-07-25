@@ -2310,6 +2310,14 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			rmiddle: _s.lineV,
 			rtop   : _s.lineBLeft
 		},
+		openRect: {
+			ltop   : _s.lineBRight,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.lineBLeft,
+			lbottom: _s.lineTRight,
+			rbottom: _s.lineTLeft
+		},
 		openTopCurvedRect: {
 			lmiddle: _s.lineV,
 			lbottom: _s.curveTRight,
@@ -2323,6 +2331,14 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			tmiddle: _s.lineH,
 			rtop   : _s.curveBLeft,
 			rmiddle: _s.lineV
+		},
+		openCurvedRect: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV,
+			rtop   : _s.curveBLeft,
+			rmiddle: _s.lineV,
+ 			lbottom: _s.curveTRight,
+ 			rbottom: _s.curveTLeft
 		}
 	}
 };
@@ -2338,18 +2354,17 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText, aTheme) {
 	var symbols = ow.format.syms();
 
-	_$(aString, "aString").isString().$_();
+	aString = _$(aString, "aString").isString().default(__);
 	var defaultTheme = {
-		lmiddle: symbols.lineV,
 		tab    : "   "
 	};
-	aTheme = _$(aTheme, "aTheme").isMap().default({});
+	aTheme = _$(aTheme, "aTheme").isMap().default({ lmiddle: symbols.lineV });
 	aTheme = merge(defaultTheme, aTheme);
 
 	aSize = _$(aSize, "aSize").isNumber().default(__);
 	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
 
-	var res = "";
+	var res = "\r";
  
 	if (isUnDef(aSize)) {
 		__conStatus || __initializeCon(); 
@@ -2359,34 +2374,40 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 		} else {
 			aSize = 80;
 		}
-	} 
-	aString = aString.replace(/\t/g, aTheme.tab);
-	aString = ow.format.string.wordWrap(aString, aSize - 2);
+	}
+      
+        if (isDef(aString)) { 
+		aString = aString.replace(/\t/g, aTheme.tab);
+		aString = ow.format.string.wordWrap(aString, aSize - 2);
+ 	}
 
-	if (isDef(aTheme.ltop)) {
+	if (isDef(aTheme.ltop) || isDef(aTheme.rtop)) {
 		res += ansiColor(ansiLine, aTheme.ltop);
 		if (isDef(aTheme.rtop)) {
 			var sp = (isDef(aTheme.tmiddle) ? aTheme.tmiddle : " ");
 			res += ansiColor(ansiLine, repeat(aSize - 2, sp));
 			res += ansiColor(ansiLine, aTheme.rtop);
 		}
-		res += "\n";
 	}
 
-    var ar = aString.split("\n");
-	ar.forEach((l, li) => {
-	   if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", " ")
-	   res += (isDef(ansiText) ? ansiColor(ansiText, l) : l);
-	   if (isDef(aTheme.rmiddle)) {
+	if (isDef(aString)) {
+           if (isDef(aTheme.ltop) || isDef(aTheme.rtop)) res += "\n";
+    	   var ar = aString.split("\n");
+	   ar.forEach((l, li) => {
+	      if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", " ")
+	      res += (isDef(ansiText) ? ansiColor(ansiText, l) : l);
+	      if (isDef(aTheme.rmiddle)) {
 		   var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - ansiLength(l) - 3, ' ')) : repeat(aSize - ansiLength(l) - 3, ' '));
 		   res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
 		   res += ansiColor(ansiLine, aTheme.rmiddle);
-	   }
-	   if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
-	});
+	      }
+	      if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
+	   });
+	}
 
-    if (isDef(aTheme.lbottom)) {
-		res += ansiColor("RESET","\n") + ansiColor(ansiLine, aTheme.lbottom);
+    	if (isDef(aTheme.lbottom) || isDef(aTheme.rbottom)) {
+		if (isDef(aTheme.ltop) || isDef(aTheme.rtop) || isDef(aString)) res += ansiColor("RESET","\n")
+                res += ansiColor(ansiLine, aTheme.lbottom);
 		if (isDef(aTheme.rbottom)) {
 			var sp = (isDef(aTheme.bmiddle) ? aTheme.bmiddle : " ");
 			res += ansiColor(ansiLine, repeat(aSize - 2, sp));
