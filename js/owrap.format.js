@@ -25,7 +25,7 @@ OpenWrap.format.prototype.string = {
 	       str += String.fromCharCode(code);
 	    }
 	    return str;
-        },
+    },
 	/**
 	 * <odoc>
 	 * <key>ow.format.string.getSurrogatePair(astralCodePoint) : Array</key>
@@ -568,21 +568,50 @@ OpenWrap.format.prototype.string = {
 		});
 	
 		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn);
-	},
-	symbols: {
-		cross      : '┼',
-		crossHLeft : '┤',
-		lineHRight : '╶',
-		lineHLeft  : '╴',
-		lineH      : '─',
-		curveTRight: '╰',
-		curveBRight: '╭',
-		curveBLeft : '╮',
-		curveTLeft : '╯',
-		lineV      : '│'
 	}
 };
 	
+OpenWrap.format.prototype.syms = function() {
+	return {
+		cross        : '┼',
+		crossHLeft   : '┤',
+		crossHRight  : '├',
+		crossVBottom : '┬',
+		crossVTop    : '┴',
+		lineHRight   : '╶',
+		lineHLeft    : '╴',
+		lineVTop     : '╵',
+		lineVBottom  : '╷',
+		lineH        : '─',
+		lineTRight   : '└',
+		lineBRight   : '┌',
+		lineBLeft    : '┐',
+		lineTLeft    : '┘',
+		curveTRight  : '╰',
+		curveBRight  : '╭',
+		curveBLeft   : '╮',
+		curveTLeft   : '╯',
+		lineV        : '│',
+		dlineV       : '║',
+		dlineH       : '═',
+		turnBRight   : '╔',
+		turnTRight   : '╚',
+		turnTLeft    : '╝',
+		turnBLeft    : '╗',
+		dcrossHRight : '╠',
+		dcrossHLeft  : '╣',
+		dcrossVBottom: '╦',
+		dcrossVTop   : '╩',
+		dcross       : '╬',
+		lBToT        : '╱',
+		lTToB        : '╲',
+		lCross       : '╳',
+		patternLight : '░',
+		patternMedium: '▒',
+		patternDark  : '▓'
+	}
+}
+
 /**
  * <odoc>
  * <key>ow.format.streamSHLog(aFunction) : Function</key>
@@ -2173,11 +2202,137 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "");
 
- 	res = res.replace(/(\*{3}|_{3})([^\*_]+)(\*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
+ 	res = res.replace(/(\*{3}|_{3})([^\*_]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
  	res = res.replace(/(\*{2}|_{2})([^\*_]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
  	res = res.replace(/(\*|_)([^\*_]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
 	
 	return res;
+};
+
+OpenWrap.format.prototype.withSideLineThemes = function() {
+	var _s = ow.format.syms();
+	return {
+		simpleLine: {
+			lmiddle: _s.lineV
+		},
+		doubleLine: {
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV
+		},
+		simpleLineWithTips: {
+			ltop   : _s.lineVBottom,
+			lmiddle: _s.lineV,
+			lbottom: _s.lineVTop
+		},
+		simpleLineWithBottomTip: {
+			lmiddle: _s.lineV,
+			lbottom: _s.lineVTop
+		},
+		simpleLineWithTopTip: {
+			ltop   : _s.lineVBottom,
+			lmiddle: _s.lineV
+		},
+		simpleLineWithCTips: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV,
+			lbottom: _s.curveTRight
+		},
+		simpleLineWithCBottomTip: {
+			lmiddle: _s.lineV,
+			lbottom: _s.curveTRight
+		},
+		simpleLineWithCTopTip: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV
+		},
+		simpleLineWithRTips: {
+			ltop   : _s.lineBRight,
+			lmiddle: _s.lineV,
+			lbottom: _s.lineTRight
+		},
+		simpleLineWithRTopTip: {
+			ltop   : _s.lineBRight,
+			lmiddle: _s.lineV
+		},
+		simpleLineWithRBottomTip: {
+			lmiddle: _s.lineV,
+			lbottom: _s.lineTRight
+		},
+		doubleLineWithRTips: {
+			ltop   : _s.turnBRight,
+			lmiddle: _s.dlineV,
+			lbottom: _s.turnTRight,
+			rtop   : _s.turnBLeft,
+			rmiddle: _s.dlineV,
+			rbottom: _s.turnTLeft,
+		},
+		closedRect: {
+			ltop   : _s.lineBRight,
+			lbottom: _s.lineTRight,
+			tmiddle: _s.lineH,
+			bmiddle: _s.lineH,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.lineBLeft,
+			rbottom: _s.lineTLeft,
+		},
+		closedDoubleRect: {
+			ltop   : _s.turnBRight,
+			lbottom: _s.turnTRight,
+			tmiddle: _s.dlineH,
+			bmiddle: _s.dlineH,
+			lmiddle: _s.dlineV,
+			rmiddle: _s.dlineV,
+			rtop   : _s.turnBLeft,
+			rbottom: _s.turnTLeft,
+		},
+		closedCurvedRect: {
+			ltop   : _s.curveBRight,
+			lbottom: _s.curveTRight,
+			tmiddle: _s.lineH,
+			bmiddle: _s.lineH,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.curveBLeft,
+			rbottom: _s.curveTLeft,
+		},
+		openTopRect: {
+			ltop   : _s.lineVBottom,
+			lbottom: _s.lineTRight,
+			bmiddle: _s.lineH,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.lineVBottom,
+			rbottom: _s.lineTLeft,
+		},
+		openBottomRect: {
+			ltop   : _s.lineBRight,
+			lbottom: _s.lineVTop,
+			tmiddle: _s.lineH,
+			lmiddle: _s.lineV,
+			rmiddle: _s.lineV,
+			rtop   : _s.lineBLeft,
+			rbottom: _s.lineVTop,
+		},
+		openTopCurvedRect: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV,
+			lbottom: _s.curveTRight,
+			bmiddle: _s.lineH,
+			rtop   : _s.curveBLeft,
+			rmiddle: _s.lineV,
+			rbottom: _s.curveTLeft,
+		},
+		openBottomCurvedRect: {
+			ltop   : _s.curveBRight,
+			lmiddle: _s.lineV,
+			lbottom: _s.curveTRight,
+			tmiddle: _s.lineH,
+			rtop   : _s.curveBLeft,
+			rmiddle: _s.lineV,
+			rbottom: _s.curveTLeft,
+		}
+	}
 };
 
 /**
@@ -2188,7 +2343,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
  * </odoc>
  */
 OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText, aTheme) {
-	var symbols = ow.format.string.symbols;
+	var symbols = ow.format.syms();
 
 	_$(aString, "aString").isString().$_();
 	var defaultTheme = {
@@ -2209,9 +2364,6 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
 
 	var res = "";
-	//var ltop    = String.fromCharCode(9591);
-	//var lmiddle = String.fromCharCode(9474);
-	//var lbottom = String.fromCharCode(9589);
  
 	if (isUnDef(aSize)) {
 		__conStatus || __initializeCon(); 
@@ -2225,7 +2377,6 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	aString = aString.replace(/\t/g, aTheme.tab);
 	aString = ow.format.string.wordWrap(aString, aSize - 2);
 
-	//res += ansiColor(ansiLine, ltop) + "\n";
 	if (isDef(aTheme.ltop)) {
 		res += ansiColor(ansiLine, aTheme.ltop);
 		if (isDef(aTheme.rtop)) {
@@ -2247,7 +2398,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	   }
 	   if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
 	});
-	//res += ansiColor(ansiLine, lbottom) + ansiColor("RESET", "");
+
     if (isDef(aTheme.lbottom)) {
 		res += ansiColor("RESET","\n") + ansiColor(ansiLine, aTheme.lbottom);
 		if (isDef(aTheme.rbottom)) {
