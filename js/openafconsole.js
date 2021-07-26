@@ -1226,25 +1226,25 @@ try {
 
 // Ensure __consoleFormat
 if (isUnDef(__consoleFormat)) __consoleFormat = (!ansiWinTermCap() || consoleOldTheme ? {
-	error: "BOLD,WHITE",
-	errorLine: "BOLD,RED",
-	helpLine: "BOLD,BLUE",
-        init     : "BOLD,WHITE",
-        initLine : "BOLD,WHITE",
-        initTheme: { lmiddle: CONSOLESEPARATOR_ANSI.trim() },
+	error     : "BOLD,WHITE",
+	errorLine : "BOLD,RED",
+	helpLine  : "BOLD,BLUE",
+    init      : "BOLD,WHITE",
+    initLine  : "BOLD,WHITE",
+    initTheme : { lmiddle: CONSOLESEPARATOR_ANSI.trim() },
 	errorTheme: ow.format.withSideLineThemes().simpleLine,
-	helpTheme: ow.format.withSideLineThemes().simpleLine
+	helpTheme : ow.format.withSideLineThemes().simpleLine
 } : {
-	error: "BOLD,WHITE",
-	errorLine: "BOLD,RED",
-	helpLine: "BLUE",
-        init      : "BOLD,WHITE",
-        initLine  : "FAINT,WHITE",
-        initTheme : ow.format.withSideLineThemes().openBottomCurvedRect,
+	error     : "BOLD,WHITE",
+	errorLine : "RED",
+	helpLine  : "BLUE",
+    init      : "BOLD,WHITE",
+    initLine  : "FAINT,WHITE",
+    initTheme : ow.format.withSideLineThemes().openBottomCurvedRect,
 	errorTheme: ow.format.withSideLineThemes().openCurvedRect,
 	helpTheme : ow.format.withSideLineThemes().openCurvedRect,
-        doneLine  : "FAINT,WHITE",
-        doneTheme : ow.format.withSideLineThemes().openTopCurvedRect
+    doneLine  : "FAINT,WHITE",
+    doneTheme : ow.format.withSideLineThemes().openTopCurvedRect
 });
 
 // Startup
