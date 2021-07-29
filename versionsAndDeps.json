@@ -250,8 +250,17 @@
 			"deps": []
 		},
 		{
+			"description": "Apache Commons HTTPComponents 5",
+			"path": ["lib/httpclient5-5.1.jar", "lib/httpcore5-5.1.1.jar", "lib/httpcore5-h2-5.1.1.jar"],
+			"version": "5.1",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+			"deps": []
+		},
+		{
 			"description": "Apache Commons HTTPComponents",
-			"path": ["lib/httpclient5-5.1.jar", "lib/httpcore5-5.1.1.jar", "lib/httpcore5-h2-5.1.1.jar", "lib/httpmime-4.5.13.jar"],
+			"path": ["lib/httpclient-4.5.13.jar", "lib/httpcore-4.4.14.jar", "lib/httpmime-4.5.13.jar"],
 			"version": "5.1",
 			"changes": false,
 			"type": ["java"],
