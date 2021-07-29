@@ -1615,10 +1615,28 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	this.__usv = true;
 	this.__uf = __;
 	this.__ufn = "file";
+	this._stream = __;
 	options = _$(options).isMap(options).default({});
-	if (options.accessCookies) this.__cookies = new Packages.org.apache.http.impl.client.BasicCookieStore();
-	if (options.accessCtx) this.__ctx = Packages.org.apache.http.client.protocol.HttpClientContext.create();
-	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
+	if (options.accessCookies) this.__cookies = new Packages.org.apache.hc.client5.http.impl.client.BasicCookieStore();
+	if (options.accessCtx) this.__ctx = Packages.org.apache.hc.client5.http.client.protocol.HttpClientContext.create();
+	//this.__h = new Packages.org.apache.hc.client5.http.impl.client.clients.createDefault();
+
+	// Setting ALPN to avoid warnings on java > 1.8
+	this._hcm = __;
+	if (!(String(java.lang.System.getProperty("java.version")).startsWith("1.8"))) {
+		var tlsStrategy = Packages.org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder.create()
+							.useSystemProperties()
+							.setTlsDetailsFactory(new Packages.org.apache.hc.core5.function.Factory({
+							create: (sslEngine) => {
+								return new Packages.org.apache.hc.core5.reactor.ssl.TlsDetails(sslEngine.getSession(), sslEngine.getApplicationProtocol());
+							}
+							}))
+							.build();
+		this._hcm = Packages.org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder.create()
+							.setTlsStrategy(tlsStrategy)
+							.build();			
+	}
+
 	if (isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 	}
@@ -1630,6 +1648,10 @@ OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
 
 	this.__ufn = aName;
 	this.__uf = aFile;
+};
+
+OpenWrap.obj.prototype.http.prototype.close = function() {
+	this.__h.close(org.apache.hc.core5.io.CloseMode.GRACEFUL);
 };
 
 OpenWrap.obj.prototype.http.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
@@ -1657,48 +1679,28 @@ OpenWrap.obj.prototype.http.prototype.__handleConfig = function(aH) {
 };
 
 OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
-	var r, canHaveIn = false;
+	var r, canHaveIn = false, parent = this;
 
 	if (isUnDef(aRequestType)) aRequestType = "GET";
 
-	switch(aRequestType.toUpperCase()) {
-	case "GET": 
-		r = new Packages.org.apache.http.client.methods.HttpGet(aUrl);
-		break;
-	case "POST": 
-		r = new Packages.org.apache.http.client.methods.HttpPost(aUrl);
+	if (["POST", "PATCH", "PUT"].indexOf(aRequestType.toUpperCase()) >= 0) {
 		canHaveIn = true;
-		break;
-	case "DELETE": 
-		r = new Packages.org.apache.http.client.methods.HttpDelete(aUrl);
-		break;
-	case "HEAD":
-		r = new Packages.org.apache.http.client.methods.HttpHead(aUrl);
-		break; 
-	case "PATCH":
-		r = new Packages.org.apache.http.client.methods.HttpPatch(aUrl);
-		canHaveIn = true;
-		break;
-	case "PUT":
-		r = new Packages.org.apache.http.client.methods.HttpPut(aUrl);
-		canHaveIn = true;
-		break;		
-	case "TRACE":
-		r = new Packages.org.apache.http.client.methods.HttpTrace(aUrl);
-		break;		
-	case "OPTIONS":
-		r = new Packages.org.apache.http.client.methods.HttpOptions(aUrl);
-		break;
-	default:
-		r = new Packages.org.apache.http.client.methods.HttpGet(aUrl);
-		break;
 	}
+
+	r = Packages.org.apache.hc.client5.http.async.methods.SimpleHttpRequest.create(aRequestType.toUpperCase(), aUrl);
 
 	// Set credentials
 	if (isDef(this.__l) && !(this.__forceBasic)) {
 		var getKey;
-		this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+		// If previous exist shut it down
+		if (isDef(this.__h)) this.__h.close(org.apache.hc.core5.io.CloseMode.GRACEFUL);
+		// Create new one
+		this.__h = new Packages.org.apache.hc.client5.http.impl.async.HttpAsyncClients.custom();
 		if (this.__usv) this.__h = this.__h.useSystemProperties();
+		if (isDef(this._hcm)) {
+			this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE)
+			this.__h = this.__h.setConnectionManager(this._hcm);
+		}
 		for(var key in this.__lps) {
 			if (aUrl.startsWith(key)) getKey = key;
 		}
@@ -1711,9 +1713,16 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 			this.__h = this.__h.build();
 		}
 	} else {
-		if (isUnDef(this.__h)) {
-			this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+		if (isUnDef(this.__h) || (isDef(this.__h) && this.__h.status != "ACTIVE")) {
+			// If previous exist shut it down
+			if (isDef(this.__h)) this.__h.close(org.apache.hc.core5.io.CloseMode.GRACEFUL);
+			// Create new one
+			this.__h = new Packages.org.apache.hc.client5.http.impl.async.HttpAsyncClients.custom();
 			if (this.__usv) this.__h = this.__h.useSystemProperties();
+			if (isDef(this._hcm)) {
+				this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE)
+				this.__h = this.__h.setConnectionManager(this._hcm);
+			}
 			this.__h = this.__handleConfig(this.__h);
 			this.__h = this.__h.build();
 		}
@@ -1722,7 +1731,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	// Set timeout
 	if (isDef(ow.obj.__httpTimeout) && isUnDef(aTimeout)) aTimeout = ow.obj.__httpTimeout;
 	if (isDef(aTimeout)) {
-		var rc = new Packages.org.apache.http.client.config.RequestConfig.custom();
+		var rc = new Packages.org.apache.hc.client5.http.client.config.RequestConfig.custom();
 		rc.setConnectionRequestTimeout(aTimeout);
 		rc.setConnectTimeout(aTimeout);
 		r.setConfig(rc.build());
@@ -1733,57 +1742,109 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
 	}
 
-	for(var i in aRequestMap) {
-		r.addHeader(i, aRequestMap[i]);
-	}
-
 	if (isDef(aIn) && isString(aIn) && canHaveIn) {
-		r.setEntity(Packages.org.apache.http.entity.StringEntity(aIn));
+		//r.setEntity(Packages.org.apache.hc.core5.http.io.entity.StringEntity(aIn));
+		r.setBody(aIn, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_TEXT);
 	} else {
 		if (isDef(this.__uf) && canHaveIn) {
-			//var fileBody = new Pacakges.org.apache.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.http.entity.ContentType.DEFAULT_BINARY);
-			var entityBuilder = Packages.org.apache.http.entity.mime.MultipartEntityBuilder.create();
-			entityBuilder.setMode(Packages.org.apache.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE);
+			//var fileBody = new Pacakges.org.apache.hc.client5.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.hc.client5.http.entity.ContentType.DEFAULT_BINARY);
+			/*var entityBuilder = Packages.org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder.create();
+			entityBuilder.setMode(Packages.org.apache.hc.client5.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE);
 			if (isString(this.__uf)) {
 				entityBuilder.addBinaryBody(this.__ufn, new java.io.File(this.__uf));
 			} else {
 				entityBuilder.addBinaryBody(this.__ufn, this.__uf);
 			}
 			var mutiPartHttpEntity = entityBuilder.build();
-			r.setEntity(mutiPartHttpEntity);
+			r.setEntity(mutiPartHttpEntity);*/
+			if (isString(this.__uf)) {
+				r.setBody(new Packages.org.apache.hc.client5.http.entity.mime.FileBody(new java.io.File(this.__uf)));
+			} else {
+				r.setBody(this.__uf, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY)
+			}
 		}
 	}
 
-	this.outputObj = {};
+	for(var i in aRequestMap) {
+		r.addHeader(i, aRequestMap[i]);
+	}
+
+	this.outputObj = {}, outObj = {};
 	this.__c = r;
-	if (isDef(this.__ctx)) 
-		this.__r = this.__h.execute(r, this.__ctx);
-	else
-		this.__r = this.__h.execute(r);
+	
+	var __f, __e, l_r;
+
+	// Only start if not active	
+	if (this.__h.status != "ACTIVE") this.__h.start();
+
+	var futCB, stream;
+	if (!returnStream) {
+		futCB = new Packages.org.apache.hc.core5.concurrent.FutureCallback({
+			completed: response => {
+				//parent.__r = response;
+				//l_r = response;
+			},
+			failed: exception => {
+				__e = exception;
+			},
+			cancelled: () => {
+				__e = new Error("Request cancelled.");
+			}
+		});
+
+		if (isDef(this.__ctx)) 
+			__f = this.__h.execute(r, this.__ctx, futCB)
+		else
+			__f = this.__h.execute(r, futCB);
+
+		// Wait for future
+		l_r = __f.get(); 
+		this.__r = l_r;
+	} else {				
+		var __hc = new Packages.openaf.HCUtils();
+		__f = this.__h.execute(__hc.getStreamProducer(r), __hc.getStreamConsumer(), null);
+		// Wait for future
+		__f.get();
+		stream = __hc.getStream();
+		this._stream = stream;
+		l_r = __hc.getResponse();
+		this.__r = l_r;
+
+		if (!isNull(__hc.getException())) {
+			throw __hc.getException();
+		}
+	}
+
+	// Throw exception if found
+	if (isDef(__e)) {
+		this.close();
+		throw __e;
+	}
 
 	if (isBytes && !returnStream) {
-		this.outputObj =  {
-			responseCode: this.responseCode(),
-			contentType: this.responseType(),
-			responseBytes: this.responseBytes()
+		outObj =  {
+			responseCode: Number(l_r.getCode()),
+			contentType: (isNull(l_r.getContentType())) ? "n/a" : String(l_r.getContentType().getMimeType()),
+			responseBytes: l_r.getBodyBytes()
 		};
 	} else {
 		if (returnStream) {
-			this.outputObj = this.responseStream();
+			outObj = stream;
 		} else {
-			this.outputObj = {
-				responseCode: this.responseCode(),
-				contentType: this.responseType(),
-				response: this.response()
+			outObj = {
+				responseCode: Number(l_r.getCode()),
+				contentType: (isNull(l_r.getContentType())) ? "n/a" : String(l_r.getContentType().getMimeType()),
+				response: l_r.getBodyText()
 			};
 		}
 	}
+	this.outputObj = outObj;
 
-	if (this.responseCode() >= 400 && this.__throwExceptions) {
-		switch(this.responseCode()) {
+	if (l_r.getCode() >= 400 && this.__throwExceptions) {
+		switch(l_r.getCode()) {
 		case 404: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
 		case 410: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
-		default: throw "IOException Server returned HTTP response code: " + this.responseCode() + " for URL: " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		default: throw "IOException Server returned HTTP response code: " + l_r.getCode() + " for URL: " + aUrl + "; response = " + stringify(this.getErrorResponse(__, outObj));
 		}
 	}
 	return this.outputObj;
@@ -1805,13 +1866,14 @@ OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, is
 	return this.exec(aUrl, "POST", aIn, aRequestMap, isBytes, aTimeout, returnStream);
 };
 
-OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) {
+OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson, aObj) {
+	aObj = _$(aObj).default(this.outputObj);
 	if (parseJson) {
-		var res = this.outputObj;
+		var res = aObj;
 		if (isDef(res.response)) res.response = jsonParse(res.response);
 		return res;	
 	} else
-		return this.outputObj;
+		return aObj;
 };
 
 OpenWrap.obj.prototype.http.prototype.getResponse = function() {
@@ -1830,9 +1892,9 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 			case "https": port = 443; break;
 			}
 		}
-		var as = new Packages.org.apache.http.auth.AuthScope(url.getHost(), port);
-		var up = new Packages.org.apache.http.auth.UsernamePasswordCredentials(Packages.openaf.AFCmdBase.afc.dIP(aUser), Packages.openaf.AFCmdBase.afc.dIP(aPassword));
-		var cred = new org.apache.http.impl.client.BasicCredentialsProvider();
+		var as = new Packages.org.apache.hc.client5.http.auth.AuthScope(url.getHost(), port);
+		var up = new Packages.org.apache.hc.client5.http.auth.UsernamePasswordCredentials(Packages.openaf.AFCmdBase.afc.dIP(aUser), new java.lang.String(Packages.openaf.AFCmdBase.afc.dIP(aPassword)).toCharArray());
+		var cred = new org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider();
 		cred.setCredentials(as, up);
 		this.__lps[urlPartial] = cred;
 	}
@@ -1845,34 +1907,34 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 OpenWrap.obj.prototype.http.prototype.response = function() {
 	//if (isDef(this.__r)) return this.__r;
 	try {
-		var res, ent = this.__r.getEntity();
-		if (ent != null) res = String(Packages.org.apache.http.util.EntityUtils.toString(ent));
-		//this.__r = res;
+		var res;
+		res = this.__r.getBodyText();
 		return res;
 	} finally {
-		this.__r.close();
+		//this.__r.close();
+		//this.close();
 	}
 };
 
 OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
 	//if (isDef(this.__rb)) return this.__rb;
 	try {
-		var res, ent = this.__r.getEntity();
-		if (ent != null) res = Packages.org.apache.http.util.EntityUtils.toByteArray(ent);
-		//this.__rb = res;
+		res = this.__r.getBodyBytes();
 		return res;
 	} finally {
-		this.__r.close();
+		//this.__r.close();
+		//this.close();
 	}
 };
 
 OpenWrap.obj.prototype.http.prototype.responseCode = function() {
-	return Number(this.__r.getStatusLine().getStatusCode());
+	return Number(this.__r.getCode());
 };
 
-OpenWrap.obj.prototype.http.prototype.responseHeaders = function() {
+OpenWrap.obj.prototype.http.prototype.responseHeaders = function(heads) {
+	heads = _$(heads).default(this.__r.getHeaders());
 	var ar = {};
-	var hh = this.__r.getAllHeaders();
+	var hh = heads;
 	for(var i in hh) {
 		var name = hh[i].getName();
 		if (isDef(ar[name]) && name.toLowerCase() == "set-cookie") {
@@ -1886,16 +1948,12 @@ OpenWrap.obj.prototype.http.prototype.responseHeaders = function() {
 };
 
 OpenWrap.obj.prototype.http.prototype.responseStream = function() {
-	var ent = this.__r.getEntity();
-	if (ent != null)
-		return this.__r.getEntity().getContent();
-	else 
-		return undefined;
+	return _stream;
 };
 
 OpenWrap.obj.prototype.http.prototype.responseType = function() {
 	try {
-		return String(this.__r.getEntity().getContentType().getValue());
+		return String(this.__r.getContentType().getMimeType());
 	} catch(e) {
 		return "";
 	}

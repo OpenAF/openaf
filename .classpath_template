@@ -4,4 +4,5 @@
 	{{#each lib}}
 	<classpathentry kind="lib" path="lib/{{this}}"/>
     {{/each}}
+	<classpathentry kind="output" path="bin"/>
 </classpath>

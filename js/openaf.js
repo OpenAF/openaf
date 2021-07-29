@@ -94,7 +94,7 @@ function getSerialize (fn, decycle) {
 //UTILS
 //-----
 
-__bfprintFlag = false;
+__bfprintFlag = true;
 /**
  * <odoc>
  * <key>print(aStr)</key>
@@ -810,7 +810,7 @@ function ansiColor(aAnsi, aString, force) {
 
 var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 var __ansiColorValue;
-var openafOldTheme = true;
+var openafOldTheme = false;
 
 /**
  * <odoc>
