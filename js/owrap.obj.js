@@ -1834,7 +1834,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 			outObj = {
 				responseCode: Number(l_r.getCode()),
 				contentType: (isNull(l_r.getContentType())) ? "n/a" : String(l_r.getContentType().getMimeType()),
-				response: l_r.getBodyText()
+				response: String(l_r.getBodyText())
 			};
 		}
 	}
@@ -1908,7 +1908,7 @@ OpenWrap.obj.prototype.http.prototype.response = function() {
 	//if (isDef(this.__r)) return this.__r;
 	try {
 		var res;
-		res = this.__r.getBodyText();
+		res = String(this.__r.getBodyText());
 		return res;
 	} finally {
 		//this.__r.close();
