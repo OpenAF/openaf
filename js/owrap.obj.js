@@ -1616,9 +1616,13 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	this.__uf = __;
 	this.__ufn = "file";
 	this._stream = __;
+	this._hpolicy = __;
 	options = _$(options).isMap(options).default({});
 	if (options.accessCookies) this.__cookies = new Packages.org.apache.hc.client5.http.impl.client.BasicCookieStore();
 	if (options.accessCtx) this.__ctx = Packages.org.apache.hc.client5.http.client.protocol.HttpClientContext.create();
+	if (options.force1) this._hpolicy = Packages.org.apache.hc.core5.http2.HttpVersionPolicy.FORCE_HTTP_1;
+	if (options.force2) this._hpolicy = Packages.org.apache.hc.core5.http2.HttpVersionPolicy.FORCE_HTTP_2;
+	if (options.forceNegotiate) this._hpolicy = Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE;
 	//this.__h = new Packages.org.apache.hc.client5.http.impl.client.clients.createDefault();
 
 	// Setting ALPN to avoid warnings on java > 1.8
@@ -1697,8 +1701,12 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		// Create new one
 		this.__h = new Packages.org.apache.hc.client5.http.impl.async.HttpAsyncClients.custom();
 		if (this.__usv) this.__h = this.__h.useSystemProperties();
+		if (isDef(this._hpolicy)) {
+			this.__h = this.__h.setVersionPolicy(this._hpolicy);
+		} else {
+			this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE);
+		}
 		if (isDef(this._hcm)) {
-			this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE)
 			this.__h = this.__h.setConnectionManager(this._hcm);
 		}
 		for(var key in this.__lps) {
@@ -1719,8 +1727,12 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 			// Create new one
 			this.__h = new Packages.org.apache.hc.client5.http.impl.async.HttpAsyncClients.custom();
 			if (this.__usv) this.__h = this.__h.useSystemProperties();
+			if (isDef(this._hpolicy)) {
+				this.__h = this.__h.setVersionPolicy(this._hpolicy);
+			} else {
+				this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE);
+			}
 			if (isDef(this._hcm)) {
-				this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE)
 				this.__h = this.__h.setConnectionManager(this._hcm);
 			}
 			this.__h = this.__handleConfig(this.__h);
