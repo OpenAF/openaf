@@ -1120,6 +1120,46 @@ OpenWrap.java.prototype.gc = function() {
 
 /**
  * <odoc>
+ * <key>ow.java.getSystemProperties() : Map</key>
+ * Retrieves the current list of system properties.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getSystemProperties = function() {
+    return af.fromJavaMap( java.lang.management.ManagementFactory.getRuntimeMXBean().getSystemProperties() );
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.getClassPath() : String</key>
+ * Retrieves the initial java classpath.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getClassPath = function() {
+    return String(java.lang.management.ManagementFactory.getRuntimeMXBean().getClassPath());
+}; 
+
+/**
+ * <odoc>
+ * <key>ow.java.getInputArguments() : Array</key>
+ * List of Java virtual machine input arguments
+ * </odoc>
+ */
+OpenWrap.java.prototype.getInputArguments = function() {
+    return af.fromJavaArray( java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments() );
+};
+
+/**
+ * <odoc>
+ * <key>ow.java.getLibraryPath() : String</key>
+ * Retrieves the initial OS library path.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getLibraryPath = function() {
+    return String( java.lang.management.ManagementFactory.getRuntimeMXBean().getLibraryPath() );
+}
+
+/**
+ * <odoc>
  * <key>ow.java.getAddressType(aAddress) : Map</key>
  * Given aAddress tries to return a map with the following flags: isValidAddress, hostname, ipv4, ipv6 and privateAddress
  * </odoc>
