@@ -1665,7 +1665,7 @@ OpenWrap.ch.prototype.__types = {
 			
 			if (ops.length > 0) {
 				ow.loadObj();
-				var h = new ow.obj.http();
+				//var h = new ow.obj.http();
 				try {
 					//return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
 					var parent = this;
@@ -1713,6 +1713,8 @@ OpenWrap.ch.prototype.__types = {
 				} catch(e) {
 					e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse());
 					throw e;
+				} finally {
+					h.close();
 				}
 			}
 		},		

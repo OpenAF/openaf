@@ -1624,22 +1624,7 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	if (options.force2) this._hpolicy = Packages.org.apache.hc.core5.http2.HttpVersionPolicy.FORCE_HTTP_2;
 	if (options.forceNegotiate) this._hpolicy = Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE;
 	//this.__h = new Packages.org.apache.hc.client5.http.impl.client.clients.createDefault();
-
-	// Setting ALPN to avoid warnings on java > 1.8
 	this._hcm = __;
-	if (!(String(java.lang.System.getProperty("java.version")).startsWith("1.8"))) {
-		var tlsStrategy = Packages.org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder.create()
-							.useSystemProperties()
-							.setTlsDetailsFactory(new Packages.org.apache.hc.core5.function.Factory({
-							create: (sslEngine) => {
-								return new Packages.org.apache.hc.core5.reactor.ssl.TlsDetails(sslEngine.getSession(), sslEngine.getApplicationProtocol());
-							}
-							}))
-							.build();
-		this._hcm = Packages.org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder.create()
-							.setTlsStrategy(tlsStrategy)
-							.build();			
-	}
 
 	if (isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
@@ -1654,8 +1639,82 @@ OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
 	this.__uf = aFile;
 };
 
+OpenWrap.obj.prototype.http.prototype.open = function() {
+	// Setting ALPN to avoid warnings on java > 1.8
+	if (!(String(java.lang.System.getProperty("java.version")).startsWith("1.8"))) {
+		var tlsStrategy = Packages.org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder.create()
+							.useSystemProperties()
+							.setTlsDetailsFactory(new Packages.org.apache.hc.core5.function.Factory({
+							create: (sslEngine) => {
+								return new Packages.org.apache.hc.core5.reactor.ssl.TlsDetails(sslEngine.getSession(), sslEngine.getApplicationProtocol());
+							}
+							}))
+							.build();
+		this._hcm = Packages.org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder.create()
+							.setTlsStrategy(tlsStrategy)
+							.build();			
+	}
+
+	// Set credentials
+	if (isDef(this.__l) && !(this.__forceBasic)) {
+		var getKey;
+		// If previous exist shut it down
+		if (isDef(this.__h)) this.close();
+		// Create new one
+		this.__h = new Packages.org.apache.hc.client5.http.impl.async.HttpAsyncClients.custom();
+		if (this.__usv) this.__h = this.__h.useSystemProperties();
+		if (isDef(this._hpolicy)) {
+			this.__h = this.__h.setVersionPolicy(this._hpolicy);
+		} else {
+			this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE);
+		}
+		if (isDef(this._hcm)) {
+			this.__h = this.__h.setConnectionManager(this._hcm);
+		}
+		for(var key in this.__lps) {
+			if (aUrl.startsWith(key)) getKey = key;
+		}
+		if (isDef(getKey)) {
+			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]);
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		} else {
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		}
+		return true;
+	} else {
+		if (isUnDef(this.__h) || (isDef(this.__h) && this.__h.status != "ACTIVE")) {
+			// If previous exist shut it down
+			if (isDef(this.__h)) this.close();
+			// Create new one
+			this.__h = new Packages.org.apache.hc.client5.http.impl.async.HttpAsyncClients.custom();
+			if (this.__usv) this.__h = this.__h.useSystemProperties();
+			if (isDef(this._hpolicy)) {
+				this.__h = this.__h.setVersionPolicy(this._hpolicy);
+			} else {
+				this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE);
+			}
+			if (isDef(this._hcm)) {
+				this.__h = this.__h.setConnectionManager(this._hcm);
+			}
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+			return true;
+		}
+	}
+
+	return false;
+};
+
 OpenWrap.obj.prototype.http.prototype.close = function() {
-	this.__h.close(org.apache.hc.core5.io.CloseMode.GRACEFUL);
+	if (isDef(this.__h)) {
+		this.__h.close(org.apache.hc.core5.io.CloseMode.GRACEFUL);
+		this._hcm = __;
+		return true;
+	} else {
+		return false;
+	}
 };
 
 OpenWrap.obj.prototype.http.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
@@ -1693,52 +1752,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 
 	r = Packages.org.apache.hc.client5.http.async.methods.SimpleHttpRequest.create(aRequestType.toUpperCase(), aUrl);
 
-	// Set credentials
-	if (isDef(this.__l) && !(this.__forceBasic)) {
-		var getKey;
-		// If previous exist shut it down
-		if (isDef(this.__h)) this.__h.close(org.apache.hc.core5.io.CloseMode.GRACEFUL);
-		// Create new one
-		this.__h = new Packages.org.apache.hc.client5.http.impl.async.HttpAsyncClients.custom();
-		if (this.__usv) this.__h = this.__h.useSystemProperties();
-		if (isDef(this._hpolicy)) {
-			this.__h = this.__h.setVersionPolicy(this._hpolicy);
-		} else {
-			this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE);
-		}
-		if (isDef(this._hcm)) {
-			this.__h = this.__h.setConnectionManager(this._hcm);
-		}
-		for(var key in this.__lps) {
-			if (aUrl.startsWith(key)) getKey = key;
-		}
-		if (isDef(getKey)) {
-			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]);
-			this.__h = this.__handleConfig(this.__h);
-			this.__h = this.__h.build();
-		} else {
-			this.__h = this.__handleConfig(this.__h);
-			this.__h = this.__h.build();
-		}
-	} else {
-		if (isUnDef(this.__h) || (isDef(this.__h) && this.__h.status != "ACTIVE")) {
-			// If previous exist shut it down
-			if (isDef(this.__h)) this.__h.close(org.apache.hc.core5.io.CloseMode.GRACEFUL);
-			// Create new one
-			this.__h = new Packages.org.apache.hc.client5.http.impl.async.HttpAsyncClients.custom();
-			if (this.__usv) this.__h = this.__h.useSystemProperties();
-			if (isDef(this._hpolicy)) {
-				this.__h = this.__h.setVersionPolicy(this._hpolicy);
-			} else {
-				this.__h = this.__h.setVersionPolicy(Packages.org.apache.hc.core5.http2.HttpVersionPolicy.NEGOTIATE);
-			}
-			if (isDef(this._hcm)) {
-				this.__h = this.__h.setConnectionManager(this._hcm);
-			}
-			this.__h = this.__handleConfig(this.__h);
-			this.__h = this.__h.build();
-		}
-	}
+	this.open();
 
 	// Set timeout
 	if (isDef(ow.obj.__httpTimeout) && isUnDef(aTimeout)) aTimeout = ow.obj.__httpTimeout;
@@ -2022,6 +2036,8 @@ OpenWrap.obj.prototype.rest = {
 		} catch(e) {
 		   e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 		   throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 	
@@ -2059,7 +2075,9 @@ OpenWrap.obj.prototype.rest = {
  		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 			throw e;
- 		}
+ 		} finally {
+			if (isUnDef(__h)) h.close();
+		}
 	},
 	
 	/**
@@ -2113,6 +2131,8 @@ OpenWrap.obj.prototype.rest = {
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 
@@ -2159,6 +2179,8 @@ OpenWrap.obj.prototype.rest = {
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 	
@@ -2227,6 +2249,8 @@ OpenWrap.obj.prototype.rest = {
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 
@@ -2282,6 +2306,8 @@ OpenWrap.obj.prototype.rest = {
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 	/**
@@ -2330,6 +2356,8 @@ OpenWrap.obj.prototype.rest = {
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 	/**
@@ -2378,6 +2406,8 @@ OpenWrap.obj.prototype.rest = {
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
+		} finally {
+			if (isUnDef(__h)) h.close();
 		}
 	},
 	/**

@@ -350,6 +350,17 @@ public class HTTP extends ScriptableObject {
 	
 	/**
 	 * <odoc>
+	 * <key>HTTP.close() : boolean</key>
+	 * Close any threads that might be in use. Returns true is successfull.
+	 * </odoc>
+	 */
+	@JSFunction
+	public boolean close() {
+		return true;
+	}
+
+	/**
+	 * <odoc>
 	 * <key>HTTP.response() : String</key>
 	 * Returns the HTTP request result as a string (if isBytes = false or default)
 	 * </odoc>

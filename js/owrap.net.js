@@ -248,7 +248,9 @@ OpenWrap.net.prototype.testURLLatency = function(aURL, aCustomTimeout) {
 		latency = now() - ini;
 	} catch(e) {
 		latency = -1;
-	}
+	} finally {
+        hc.close();
+    }
 
 	return latency;
 };

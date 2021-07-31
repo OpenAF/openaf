@@ -156,11 +156,16 @@ OpenWrap.java.prototype.maven.prototype.getFileVersion = function(artifactId, aF
     });
 
     var h = new ow.obj.http(this._getURL() + "/" + aURI + "/" + version + "/" + filename, "GET", "", __, true, __, true);
-
-    io.mkdir(aOutputDir);
-    var rstream = h.responseStream();
-    var wstream = io.writeFileStream(aOutputDir + "/" + filename);
-    ioStreamCopy(wstream, rstream);
+    try {
+        io.mkdir(aOutputDir);
+        var rstream = h.responseStream();
+        var wstream = io.writeFileStream(aOutputDir + "/" + filename);
+        ioStreamCopy(wstream, rstream);
+    } catch(e) {
+        throw e;
+    } finally {
+        h.close();
+    }
 };
 
 OpenWrap.java.prototype.maven.prototype.getDependencies = function(artifactId, aVersion, aOutputDir, aScope, aList, props) {

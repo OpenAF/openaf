@@ -667,6 +667,8 @@ OpenWrap.template.prototype.html = {
 			return aPrefix + "data:" + b.contentType.replace(/\; charset=utf-8\;/, "\;") +";base64," + af.fromBytes2String(af.toBase64Bytes(b.responseBytes)) + aSuffix;
 		} catch(e1) {
 			return ow.template.html.inlineSrc(aURL, aPrefix, aSuffix);
+		} finally {
+			h.close();
 		}
 	},
 	/**
@@ -733,6 +735,8 @@ OpenWrap.template.prototype.html = {
 						return aURL;
 					}
 				} 
+			} finally {
+				h.close();
 			}
 		};
 
