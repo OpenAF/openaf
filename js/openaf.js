@@ -1260,6 +1260,7 @@ function stopLog() {
  */
 function log(msg, formatOptions) {
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	__clogInfo.inc();
 	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
 	if (__logStatus) {
 		var f = () => {
@@ -1330,6 +1331,7 @@ function tlog(msg, someData, formatOptions) {
  */
 function lognl(msg, formatOptions) {
 	var data = (new Date()).toJSON(), nw = nowNano(), k, v;
+	__clogInfo.inc();
 	if (isDef(__logFormat)) formatOptions = merge(__logFormat, formatOptions);
 	if (__logStatus) {
 		var f = () => {
@@ -7720,7 +7722,7 @@ const $atomic = function(aInit, aType) {
 	}
 };
 
-var __clogErr = $atomic(), __clogWarn = $atomic();
+var __clogErr = $atomic(), __clogWarn = $atomic(), __clogInfo = $atomic();
 
 /**
  * <odoc>

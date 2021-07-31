@@ -36,6 +36,7 @@ OpenWrap.metrics.prototype.__m = {
             javapath: String(java.lang.System.getProperty("java.home")),
             init   : __oafInit,
             now    : now(),
+            logInfo: __clogInfo.get(),
             logErr : __clogErr.get(),
             logWarn: __clogWarn.get(),
             cpuCores: __cpucores,
