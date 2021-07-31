@@ -14,6 +14,17 @@ OpenWrap.metrics.prototype.__m = {
             free: Number(java.lang.Runtime.getRuntime().freeMemory())
         };
         res.used = res.total - res.free;
+        res.nonHeapUsed = Number(java.lang.management.ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed());
+        res.nonHeapCommitted = Number(java.lang.management.ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getCommitted());
+        res.nonHeapInit = Number(java.lang.management.ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getInit());
+        for(var ii in java.lang.management.ManagementFactory.getGarbageCollectorMXBeans()) {
+            var obj = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans()[ii];
+            var name = obj.name;
+            res[name] = {
+                gcCount: obj.collectionCount,
+                gcTime: obj.collectionTime
+            }
+        }
         return res;
     },
     cpu: () => ({
@@ -36,6 +47,7 @@ OpenWrap.metrics.prototype.__m = {
             javapath: String(java.lang.System.getProperty("java.home")),
             init   : __oafInit,
             now    : now(),
+            uptime : Number(java.lang.management.ManagementFactory.getRuntimeMXBean().uptime),
             logInfo: __clogInfo.get(),
             logErr : __clogErr.get(),
             logWarn: __clogWarn.get(),
@@ -73,13 +85,24 @@ OpenWrap.metrics.prototype.__m = {
                 totalTime    : _$(global.__openaf_rest.urls[r].t).default(-1),
                 avgTimePerHit: (isNumber(global.__openaf_rest.urls[r].t) && global.__openaf_rest.urls[r].c > 0) ? global.__openaf_rest.urls[r].t / (global.__openaf_rest.urls[r].c - _$(global.__openaf_rest.urls[r].f).default(0)) : -1
             })) : "n/a"),
-            fns    : ow.metrics.__fnMetrics
+            fns    : (isDef(ow.metrics.__fnMetrics) ? ow.metrics.__fnMetrics : {} )
         };
         if (isDef(res.fns)) {
             Object.keys(res.fns).map(r => {
                 res.fns[r].avg = res.fns[r].sum / (res.fns[r].err + res.fns[r].end);
             });
         }
+        return res;
+    },
+    java: () => {
+        var res = {};
+        res.name = java.lang.management.ManagementFactory.getRuntimeMXBean().vmName;
+        res.vendor = java.lang.management.ManagementFactory.getRuntimeMXBean().vmName;
+        res.version = java.lang.management.ManagementFactory.getRuntimeMXBean().vmVersion;
+        res.loadedClasses   = java.lang.management.ManagementFactory.getClassLoadingMXBean().loadedClassCount;
+        res.unLoadedClasses = java.lang.management.ManagementFactory.getClassLoadingMXBean().unloadedClassCount;
+        res.totalLoadedClasses = java.lang.management.ManagementFactory.getClassLoadingMXBean().totalLoadedClassCount;
+        
         return res;
     },
     ojob: () => {
@@ -102,7 +125,12 @@ OpenWrap.metrics.prototype.__m = {
         name   : String(java.lang.System.getProperty("os.name")),
         version: String(java.lang.System.getProperty("os.version")),
         host   : String(java.net.InetAddress.getLocalHost().getHostName()),
-        ip     : String(java.net.InetAddress.getLocalHost().getHostAddress())
+        ip     : String(java.net.InetAddress.getLocalHost().getHostAddress()),
+        virtualMem: Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().committedVirtualMemorySize),
+        totalSwap: Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().totalSwapSpaceSize),
+        freeSwap: Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().freeSwapSpaceSize),
+        totalPhysicalMem: Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().totalPhysicalMemorySize),
+        freePhysicalMem: Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().freePhysicalMemorySize)
     }),
     threads: () => {
         var res = {
@@ -114,7 +142,9 @@ OpenWrap.metrics.prototype.__m = {
                 state   : String(t.getState())
             })),
             active: Number(java.lang.Thread.activeCount()),
-            total : Number(java.lang.Thread.getAllStackTraces().size())
+            total : Number(java.lang.Thread.getAllStackTraces().size()),
+            peak  : Number(java.lang.management.ManagementFactory.getThreadMXBean().peakThreadCount),
+            daemon: Number(java.lang.management.ManagementFactory.getThreadMXBean().daemonThreadCount)
         };
         res.states = {};
         res.list.map(r => {
