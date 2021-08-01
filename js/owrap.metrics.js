@@ -388,7 +388,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             obj = (obj ? 1 : 0);
         }
         if (isNumber(obj)) {
-            ar.push((prefix + " " + Number(aObj) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : "")).replace(/\\{1}/g, "/".trim()));
+            ar.push(prefix + " " + Number(aObj) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
         }
         return ar;
     };
@@ -423,5 +423,5 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         ar = far;
     }
 
-    return ar.join("\n") + "\n";
+    return ar.map(r => r.replace(/\\{1}/g, "/").trim()).join("\n") + "\n";
 };
