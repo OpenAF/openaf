@@ -453,7 +453,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 						ow.metrics.add(r, new Function(this.__ojob.metrics.add[r]) );
 					});
 				}
-				ow.metrics.startCollecting(this.__ojob.metrics.chName, this.__ojob.metrics.period);
+				// To deprecate
+				// ow.metrics.startCollecting(this.__ojob.metrics.chName, this.__ojob.metrics.period, this.__ojob.metrics.noDate);
 			}
 		}
 	}
@@ -1381,10 +1382,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 						var period = _$(this.__ojob.metrics.collect.period, "ojob.metrics.collect.period").isNumber().default(__);
 						var some = _$(this.__ojob.metrics.collect.some, "ojob.metrics.collect.some").isArray().default(__);
 
-						ow.metrics.startCollecting(ch, period, some);
+						ow.metrics.startCollecting(ch, period, some, this.__ojob.metrics.collect.noDate);
 					}
 				}
-				ow.server.telemetry.passive(this.__ojob.metrics.port, this.__ojob.metrics.uri, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp);
+				if (isUnDef(this.__ojob.metrics.passive) || this.__ojob.metrics.passive) {
+					ow.server.telemetry.passive(this.__ojob.metrics.port, this.__ojob.metrics.uri, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp);
+				}
 			}
 		}
 
