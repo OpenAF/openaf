@@ -1785,6 +1785,160 @@ OpenWrap.ch.prototype.__types = {
 	},
 	/**
 	 * <odoc>
+	 * <key>ow.ch.types.prometheus</key>
+	 * This OpenAF implementation connects to a prometheus server. The creation options are:\
+	 * \
+	 *    - uriQuery  (String) The URL of a prometheus server (e.g. http://prometheus:9090) \
+	 *    - uriPushGW (String) The URL of a prometheus push gateway server (e.g. http://prometheus:9091).\
+	 *    - prefix    (String) If defined the prefix for all openmetrics.\
+	 *    - gwGroup   (Map)    A map of grouping labels for data ingestion by the push gw (job label must be defined).\
+	 *    - helpMap   (Map)    The helpMap for the openmetrics (see more in ow.metrics.fromObj2OpenMetrics).\
+	 * \
+	 * The forEach/getSet/pop/shift/unsetAll functions are not supported.\
+	 * The size function retrieves the total number of labels.\
+	 * The get/getAll function enables instant query (with the extra map key query), query range query (with the extra map keys query, start and end) and label values query (with the extra map key label).\
+	 * The set/setAll functions only consider the value(s) argument, the key(s) is ignored.\
+	 * \
+	 * Note: query by specific series are not currently supported.\
+	 * </odoc>
+	 */
+	prometheus: {
+		__channels: {},
+		create       : function(aName, shouldCompress, options) {
+			ow.loadMetrics();
+			options = _$(options, "options").isMap().default({});
+
+			options.urlQuery  = _$(options.urlQuery, "options.urlQuery").isString().default();
+			options.urlPushGW = _$(options.urlPushGW, "options.urlPushGW").isString().default(__);
+			options.prefix    = _$(options.prefix, "options.prefix").isString().default(__);
+			options.gwGroup   = _$(options.gwGroup, "options.gwGroup").isMap().default({});
+
+			if (isUnDef(options.urlQuery) && isUnDef(options.urlPushGW)) {
+				throw "options.urlQuery or options.urlPushGW need to be defined.";
+			}
+
+			if (isDef(options.urlPushGW) && isUnDef(options.gwGroup.job)) {
+				throw "options.gwGroup needs to have a job entry description";
+			}
+
+			this.__channels[aName] = options;
+		},
+		destroy      : function(aName) {
+			delete this.__channels[aName];
+		},
+		size         : function(aName) {
+			return this.getKeys(aName).length;
+		},
+		forEach      : function(aName, aFunction) {
+			throw "forEach not supported for prometheus.";
+		},
+		getAll      : function(aName, full) {
+			var _o = this.__channels[aName];
+
+			_$(_o.urlQuery, "prometheus query (urlQuery) url").$_();
+
+			var res, aK = _$(full, "getAll argument").isMap().$_();
+			// Instant query
+			if (isString(aK.query) && isUnDef(aK.start) && isUnDef(aK.end)) {
+				res = $rest({ urlEncode: true })
+				      .post(_o.urlQuery + "/api/v1/query", aK);
+
+				if (isMap(res) && isDef(res.status) && res.status == "success") {
+					if (isDef(res.data) && isDef(res.data.resultType) && res.data.resultType == "vector") {
+						return res.data.result;
+					}
+				}
+				return res;
+			}
+
+			// Query range query
+			if (isString(aK.query) && isDef(aK.start) && isDef(aK.end)) {
+				res = $rest({ urlEncode: true })
+					  .post(_o.urlQuery + "/api/v1/query_range", aK);
+
+				if (isMap(res) && isDef(res.status) && res.status == "success") {
+					if (isDef(res.data) && isDef(res.data.resultType) && res.data.resultType == "matrix") {
+						return res.data.result;
+					}
+				}
+				return res;
+			}
+
+			// Label query
+			if (isString(aK.label)) {
+				res = $rest({ urlEncode: true })
+			          .get(_o.urlQuery + "/api/v1/label/" + aK.label + "/values");
+
+				if (isDef(res.status) && res.status == "success") {
+					res = res.data;
+				}
+				return res;
+			}
+
+			return res;
+		},
+		getKeys      : function(aName, full) {
+			var _o = this.__channels[aName];
+
+			_$(_o.urlQuery, "prometheus query (urlQuery) url").$_();
+
+			var res = $rest({ urlEncode: true })
+			          .post(_o.urlQuery + "/api/v1/labels", isMap(full) ? full : __);
+					
+			if (isMap(res) && isDef(res.status) && res.status == "success") {
+				if (isArray(res.data)) res = res.data;
+			}
+
+			return res;
+		},
+		getSortedKeys: function(aName, full) {
+			var res = this.getKeys(aName, full);
+			
+			if (isArray(res)) res = res.sort();
+			return res;
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			throw "getSet not supported for prometheus.";
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var _o = this.__channels[aName];
+
+			_$(_o.urlQuery, "prometheus push gateway (urlPushGW) url").$_();
+
+			return $rest()
+			       .post(_o.urlPushGW + "/metrics" + $rest().index(_o.gwGroup), ow.metrics.fromObj2OpenMetrics(aV, _o.prefix, __, _o.helpMap));
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			var _o = this.__channels[aName];
+
+			return $rest()
+			       .post(_o.urlPushGW + "/metrics" + $rest().index(_o.gwGroup), ow.metrics.fromObj2OpenMetrics(aVs, _o.prefix, __, _o.helpMap));	
+		},
+		unsetAll       : function(aName, aKs, aVs, aTimestamp) {
+			throw "unsetAll not supported for prometheus.";		
+		},		
+		get          : function(aName, aK) {
+			var res = this.getAll(aName, aK);
+
+			if (isArray(res)) return res[0]; else return res;
+		},
+		pop          : function(aName) {
+			throw "pop not supported for prometheus.";	
+		},
+		shift        : function(aName) {
+			throw "shift not supported for prometheus.";
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var _o = this.__channels[aName];
+
+			_$(_o.urlQuery, "prometheus push gateway (urlPushGW) url").$_();
+
+			return $rest()
+			       .delete(_o.urlPushGW + "/metrics" + $rest().index(merge(_o.gwGroup, aK)));
+		}
+	},
+	/**
+	 * <odoc>
 	 * <key>ow.ch.types.mvs</key>
 	 * The channel type mvs uses H2 MVStore to keep key/value structures either in memory or in files.
 	 * The creation options are:\
