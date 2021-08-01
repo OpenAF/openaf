@@ -830,8 +830,10 @@ function ansiWinTermCap() {
 			__ansiColorValue = mode.getValue();
 			k32.SetConsoleMode(hout, 7); //15
 			k32.SetConsoleMode(herr, 7); 
+			if (__ansiColorValue <= 3) __bfprintFlag = false;
 			return (__ansiColorValue > 3);
 		} else {
+			__bfprintFlag = false;
 			return false;
 		}
 	} else {
