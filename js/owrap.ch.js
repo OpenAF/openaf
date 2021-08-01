@@ -1790,8 +1790,8 @@ OpenWrap.ch.prototype.__types = {
 	 * <key>ow.ch.types.prometheus</key>
 	 * This OpenAF implementation connects to a prometheus server. The creation options are:\
 	 * \
-	 *    - uriQuery  (String) The URL of a prometheus server (e.g. http://prometheus:9090) \
-	 *    - uriPushGW (String) The URL of a prometheus push gateway server (e.g. http://prometheus:9091).\
+	 *    - urlQuery  (String) The URL of a prometheus server (e.g. http://prometheus:9090) \
+	 *    - urlPushGW (String) The URL of a prometheus push gateway server (e.g. http://prometheus:9091).\
 	 *    - prefix    (String) If defined the prefix for all openmetrics.\
 	 *    - gwGroup   (Map)    A map of grouping labels for data ingestion by the push gw (job label must be defined).\
 	 *    - helpMap   (Map)    The helpMap for the openmetrics (see more in ow.metrics.fromObj2OpenMetrics).\
