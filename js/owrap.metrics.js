@@ -388,7 +388,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             obj = (obj ? 1 : 0);
         }
         if (isNumber(obj)) {
-            ar.push(prefix + " " + Number(aObj) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
+            ar.push((prefix + " " + Number(aObj) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : "")).replace(/\\{1}/g, "/".trim()));
         }
         return ar;
     };
