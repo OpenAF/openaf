@@ -40,6 +40,10 @@ var nLinq = function(anObject) {
         return aArrayA.concat(aArrayB.filter(r => ca.indexOf(JSON.stringify(aSortMap(r), void 0, "")) < 0));
     }
 
+    var aCartesian = function(aArrayA, aArrayB) {
+        return aArrayA.map(n => aArrayB.map(m => isMap(m) ? merge(n, m) : [n, m])).reduce((a, v) => a.concat(v));
+    }
+
     // Auxiliary functions - apply query conditions
     var applyConditions = (aOrig, aFunc) => {
         if ($$(aOrig).isFunction()) aOrig = aOrig();
@@ -459,6 +463,14 @@ var nLinq = function(anObject) {
             res = applyConditions(res);
             res = aUnion(res, aA2);
             
+            return code;
+        },
+        cartesian: (aA2) => {
+            _$(aA2, "cartesian param").isArray().$_();
+
+            res = applyConditions(res);
+            res = aCartesian(res, aA2);
+
             return code;
         },
         attach : (aKey, aValue) => {
