@@ -1639,7 +1639,7 @@ OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
 	this.__uf = aFile;
 };
 
-OpenWrap.obj.prototype.http.prototype.open = function() {
+OpenWrap.obj.prototype.http.prototype.open = function(aTimeout) {
 	// Setting ALPN to avoid warnings on java > 1.8
 	if (!(String(java.lang.System.getProperty("java.version")).startsWith("1.8"))) {
 		var tlsStrategy = Packages.org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder.create()
@@ -1653,6 +1653,18 @@ OpenWrap.obj.prototype.http.prototype.open = function() {
 		this._hcm = Packages.org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder.create()
 							.setTlsStrategy(tlsStrategy)
 							.build();			
+	}
+
+	var setTimeouts = () => {
+		// Set timeout
+		if (isDef(ow.obj.__httpTimeout) && isUnDef(aTimeout)) aTimeout = ow.obj.__httpTimeout;
+		var rc = new Packages.org.apache.hc.client5.http.config.RequestConfig.custom();
+		if (isDef(aTimeout)) {
+			rc.setConnectionRequestTimeout(aTimeout);
+			rc.setConnectTimeout(aTimeout);
+		}
+		//r.setConfig(rc.build());
+		this.__h = this.__h.setDefaultRequestConfig(rc.build());
 	}
 
 	// Set credentials
@@ -1674,6 +1686,7 @@ OpenWrap.obj.prototype.http.prototype.open = function() {
 		for(var key in this.__lps) {
 			if (aUrl.startsWith(key)) getKey = key;
 		}
+		setTimeouts();
 		if (isDef(getKey)) {
 			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]);
 			this.__h = this.__handleConfig(this.__h);
@@ -1698,6 +1711,7 @@ OpenWrap.obj.prototype.http.prototype.open = function() {
 			if (isDef(this._hcm)) {
 				this.__h = this.__h.setConnectionManager(this._hcm);
 			}
+			setTimeouts();
 			this.__h = this.__handleConfig(this.__h);
 			this.__h = this.__h.build();
 			return true;
@@ -1747,21 +1761,16 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	if (isUnDef(aRequestType)) aRequestType = "GET";
 
 	if (["POST", "PATCH", "PUT"].indexOf(aRequestType.toUpperCase()) >= 0) {
-		canHaveIn = true;
+		canHaveIn = true; 
 	}
 
-	r = Packages.org.apache.hc.client5.http.async.methods.SimpleHttpRequest.create(aRequestType.toUpperCase(), aUrl);
-
-	this.open();
-
-	// Set timeout
-	if (isDef(ow.obj.__httpTimeout) && isUnDef(aTimeout)) aTimeout = ow.obj.__httpTimeout;
-	if (isDef(aTimeout)) {
-		var rc = new Packages.org.apache.hc.client5.http.client.config.RequestConfig.custom();
-		rc.setConnectionRequestTimeout(aTimeout);
-		rc.setConnectTimeout(aTimeout);
-		r.setConfig(rc.build());
+	if (isDef(this.__uf)) {
+		r = Packages.org.apache.hc.core5.http.nio.support.AsyncRequestBuilder.create(aRequestType.toUpperCase()).setUri(aUrl);
+	} else {
+		r = Packages.org.apache.hc.client5.http.async.methods.SimpleHttpRequest.create(aRequestType.toUpperCase(), aUrl);
 	}
+
+	this.open(aTimeout);
 
 	r.addHeader("User-Agent", __OpenAFUserAgent);
 	if (this.__forceBasic && isDef(this.__l)) {
@@ -1771,6 +1780,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	if (isDef(aIn) && isString(aIn) && canHaveIn) {
 		//r.setEntity(Packages.org.apache.hc.core5.http.io.entity.StringEntity(aIn));
 		r.setBody(aIn, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_TEXT);
+		//r.setBody(new Packages.org.apache.hc.client5.http.entity.mime.InputStreamBody(af.fromString2InputStream(aIn), Packages.org.apache.hc.core5.http.ContentType.DEFAULT_TEXT));
 	} else {
 		if (isDef(this.__uf) && canHaveIn) {
 			//var fileBody = new Pacakges.org.apache.hc.client5.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.hc.client5.http.entity.ContentType.DEFAULT_BINARY);
@@ -1781,13 +1791,25 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 			} else {
 				entityBuilder.addBinaryBody(this.__ufn, this.__uf);
 			}
-			var mutiPartHttpEntity = entityBuilder.build();
-			r.setEntity(mutiPartHttpEntity);*/
+			var mutiPartHttpEntity = entityBuilder.build();*/
+
+			//r.setEntity(mutiPartHttpEntity);
+			//if (isString(this.__uf)) {
+				//r.setBody(new Packages.org.apache.hc.client5.http.entity.mime.FileBody(new java.io.File(this.__uf)));
+			//} else {
+			//	r.setBody(this.__uf, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY)
+			//}
+
+			var entityBuilder = Packages.org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder.create();
+			//entityBuilder = entityBuilder.setMode(Packages.org.apache.hc.client5.http.entity.mime.HttpMultipartMode.EXTENDED);
+			
 			if (isString(this.__uf)) {
-				r.setBody(new Packages.org.apache.hc.client5.http.entity.mime.FileBody(new java.io.File(this.__uf)));
+				entityBuilder = entityBuilder.addPart(this.__ufn, org.apache.hc.client5.http.entity.mime.FileBody(new java.io.File(this.__uf)));
 			} else {
-				r.setBody(this.__uf, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY)
+				entityBuilder = entityBuilder.addPart(this.__ufn, this.__uf);
 			}
+			var mutiPartHttpEntity = entityBuilder.build();
+			r.setEntity(mutiPartHttpEntity);
 		}
 	}
 
@@ -1804,31 +1826,28 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	if (this.__h.status != "ACTIVE") this.__h.start();
 
 	var futCB, stream;
-	if (!returnStream) {
-		futCB = new Packages.org.apache.hc.core5.concurrent.FutureCallback({
-			completed: response => {
-				//parent.__r = response;
-				//l_r = response;
-			},
-			failed: exception => {
-				__e = exception;
-			},
-			cancelled: () => {
-				__e = new Error("Request cancelled.");
-			}
-		});
 
-		if (isDef(this.__ctx)) 
-			__f = this.__h.execute(r, this.__ctx, futCB)
-		else
-			__f = this.__h.execute(r, futCB);
+	// Set callback
+	futCB = new Packages.org.apache.hc.core5.concurrent.FutureCallback({
+		completed: response => {
+			//parent.__r = response;
+			//l_r = response;
+		},
+		failed: exception => {
+			__e = exception;
+		},
+		cancelled: () => {
+			__e = new Error("Request cancelled.");
+		}
+	});
 
-		// Wait for future
-		l_r = __f.get(); 
-		this.__r = l_r;
-	} else {				
+	if (isUnDef(__f) && returnStream) {
 		var __hc = new Packages.openaf.HCUtils();
-		__f = this.__h.execute(__hc.getStreamProducer(r), __hc.getStreamConsumer(), null);
+		if (isDef(this.__ctx))
+			__f = this.__h.execute(__hc.getStreamProducer(r), __hc.getStreamConsumer(), this.__ctx, futCB);
+		else
+			__f = this.__h.execute(__hc.getStreamProducer(r), __hc.getStreamConsumer(), futCB);
+
 		// Wait for future
 		__f.get();
 		stream = __hc.getStream();
@@ -1839,6 +1858,29 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		if (!isNull(__hc.getException())) {
 			throw __hc.getException();
 		}
+	}
+
+	if (isUnDef(__f) && isDef(this.__uf)) {
+		var __hc = new Packages.openaf.HCUtils();
+		if (isDef(this.__ctx))
+			__f = this.__h.execute(r.build(), __hc.getConsumer(), this.__ctx, futCB);
+		else
+			__f = this.__h.execute(r.build(), __hc.getConsumer(), futCB);
+
+		// Wait for future
+		l_r = __f.get();
+		this.__r = l_r;
+	}
+
+	if (isUnDef(__f)) {
+		if (isDef(this.__ctx)) 
+			__f = this.__h.execute(r, this.__ctx, futCB)
+		else
+			__f = this.__h.execute(r, futCB);
+
+		// Wait for future
+		l_r = __f.get(); 
+		this.__r = l_r;
 	}
 
 	// Throw exception if found

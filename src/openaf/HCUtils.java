@@ -15,6 +15,13 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
+import org.apache.hc.core5.http.nio.support.BasicResponseProducer;
+
+import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
+import org.apache.hc.client5.http.async.methods.SimpleResponseConsumer;
+import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
+
+import org.apache.hc.core5.http.nio.entity.FileEntityProducer;
 
 /**
  * 
@@ -43,6 +50,18 @@ public class HCUtils {
         return stream;
     }
 
+    public SimpleRequestProducer getProducer(SimpleHttpRequest r) {
+        return SimpleRequestProducer.create(r);
+    }
+
+    public SimpleResponseConsumer getConsumer() {
+        return SimpleResponseConsumer.create();
+    }
+
+    public BasicRequestProducer getFileProducer(HttpRequest r, File f, ContentType ct, boolean chunked) {
+        return new BasicRequestProducer(r, new FileEntityProducer(f, ct, chunked));
+    }
+
     public BasicRequestProducer getStreamProducer(HttpRequest r) {
         return new BasicRequestProducer(r, null);
     }
@@ -58,7 +77,7 @@ public class HCUtils {
                     final ContentType contentType) throws HttpException, IOException {
                 response = res;
 
-                _f = File.createTempFile("test", "openaf");
+                _f = File.createTempFile("__oaf", ".temp");
                 _f.deleteOnExit();
                 _fc = new FileOutputStream(_f).getChannel();
             }
