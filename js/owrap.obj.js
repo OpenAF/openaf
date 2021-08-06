@@ -1804,12 +1804,18 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 			//entityBuilder = entityBuilder.setMode(Packages.org.apache.hc.client5.http.entity.mime.HttpMultipartMode.EXTENDED);
 			
 			if (isString(this.__uf)) {
-				entityBuilder = entityBuilder.addPart(this.__ufn, org.apache.hc.client5.http.entity.mime.FileBody(new java.io.File(this.__uf)));
+				//entityBuilder = entityBuilder.addBinaryBody(this.__uf, org.apache.hc.client5.http.entity.mime.FileBody(new java.io.File(this.__uf)), this.__ufn);
+				var _f = new java.io.File(this.__uf);
+				entityBuilder = entityBuilder.addBinaryBody(this.__ufn, _f, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY, _f.getName());
 			} else {
-				entityBuilder = entityBuilder.addPart(this.__ufn, this.__uf);
+				entityBuilder = entityBuilder.addBinaryBody(this.__ufn, this.__uf);
 			}
+			var boundary = sha1(nowNano());
+			entityBuilder.setBoundary(boundary);
 			var mutiPartHttpEntity = entityBuilder.build();
-			r.setEntity(mutiPartHttpEntity);
+			r.setEntity(af.fromInputStream2Bytes(mutiPartHttpEntity.getContent()), Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY);
+			r.setHeader("Content-Type", Packages.org.apache.hc.core5.http.ContentType.MULTIPART_FORM_DATA + "; boundary=" + boundary);
+			//r.setEntity(new org.apache.hc.core5.http.nio.entity.FileEntityProducer(new java.io.File(this.__uf)));
 		}
 	}
 
@@ -1841,6 +1847,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		}
 	});
 
+	// Handling returning a stream
 	if (isUnDef(__f) && returnStream) {
 		var __hc = new Packages.openaf.HCUtils();
 		if (isDef(this.__ctx))
@@ -1860,6 +1867,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		}
 	}
 
+	// Handling upload 
 	if (isUnDef(__f) && isDef(this.__uf)) {
 		var __hc = new Packages.openaf.HCUtils();
 		if (isDef(this.__ctx))
@@ -1872,6 +1880,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		this.__r = l_r;
 	}
 
+	// General handler
 	if (isUnDef(__f)) {
 		if (isDef(this.__ctx)) 
 			__f = this.__h.execute(r, this.__ctx, futCB)
