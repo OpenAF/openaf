@@ -1756,7 +1756,7 @@ OpenWrap.obj.prototype.http.prototype.__handleConfig = function(aH) {
 };
 
 OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
-	var r, canHaveIn = false, parent = this;
+	var r = __, canHaveIn = false, parent = this;
 
 	if (isUnDef(aRequestType)) aRequestType = "GET";
 
@@ -1783,29 +1783,13 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 		//r.setBody(new Packages.org.apache.hc.client5.http.entity.mime.InputStreamBody(af.fromString2InputStream(aIn), Packages.org.apache.hc.core5.http.ContentType.DEFAULT_TEXT));
 	} else {
 		if (isDef(this.__uf) && canHaveIn) {
-			//var fileBody = new Pacakges.org.apache.hc.client5.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.hc.client5.http.entity.ContentType.DEFAULT_BINARY);
-			/*var entityBuilder = Packages.org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder.create();
-			entityBuilder.setMode(Packages.org.apache.hc.client5.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE);
-			if (isString(this.__uf)) {
-				entityBuilder.addBinaryBody(this.__ufn, new java.io.File(this.__uf));
-			} else {
-				entityBuilder.addBinaryBody(this.__ufn, this.__uf);
-			}
-			var mutiPartHttpEntity = entityBuilder.build();*/
-
-			//r.setEntity(mutiPartHttpEntity);
-			//if (isString(this.__uf)) {
-				//r.setBody(new Packages.org.apache.hc.client5.http.entity.mime.FileBody(new java.io.File(this.__uf)));
-			//} else {
-			//	r.setBody(this.__uf, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY)
-			//}
-
+			// If not active no entity will be sent (bug?)
+			if (this.__h.status != "ACTIVE") { this.head(aUrl); }
 			var entityBuilder = Packages.org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder.create();
-			//entityBuilder = entityBuilder.setMode(Packages.org.apache.hc.client5.http.entity.mime.HttpMultipartMode.EXTENDED);
 			
+			var __hc = new Packages.openaf.HCUtils(), _f = __;
 			if (isString(this.__uf)) {
-				//entityBuilder = entityBuilder.addBinaryBody(this.__uf, org.apache.hc.client5.http.entity.mime.FileBody(new java.io.File(this.__uf)), this.__ufn);
-				var _f = new java.io.File(this.__uf);
+				_f = new java.io.File(this.__uf);
 				entityBuilder = entityBuilder.addBinaryBody(this.__ufn, _f, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY, _f.getName());
 			} else {
 				entityBuilder = entityBuilder.addBinaryBody(this.__ufn, this.__uf);
@@ -1813,7 +1797,10 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 			var boundary = sha1(nowNano());
 			entityBuilder.setBoundary(boundary);
 			var mutiPartHttpEntity = entityBuilder.build();
-			r.setEntity(af.fromInputStream2Bytes(mutiPartHttpEntity.getContent()), Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY);
+
+			r.setEntity( __hc.getEntityProducer(mutiPartHttpEntity.getContent(), 8192, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY) );
+			//print(af.fromInputStream2String(mutiPartHttpEntity.getContent()));
+
 			r.setHeader("Content-Type", Packages.org.apache.hc.core5.http.ContentType.MULTIPART_FORM_DATA + "; boundary=" + boundary);
 			//r.setEntity(new org.apache.hc.core5.http.nio.entity.FileEntityProducer(new java.io.File(this.__uf)));
 		}
@@ -1826,12 +1813,12 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	this.outputObj = {}, outObj = {};
 	this.__c = r;
 	
-	var __f, __e, l_r;
+	var __f = __, __e = __, l_r = __;
 
 	// Only start if not active	
 	if (this.__h.status != "ACTIVE") this.__h.start();
 
-	var futCB, stream;
+	var futCB = __, stream = __;
 
 	// Set callback
 	futCB = new Packages.org.apache.hc.core5.concurrent.FutureCallback({
@@ -1869,7 +1856,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 
 	// Handling upload 
 	if (isUnDef(__f) && isDef(this.__uf)) {
-		var __hc = new Packages.openaf.HCUtils();
+		var __hc = new Packages.openaf.HCUtils()
 		if (isDef(this.__ctx))
 			__f = this.__h.execute(r.build(), __hc.getConsumer(), this.__ctx, futCB);
 		else
