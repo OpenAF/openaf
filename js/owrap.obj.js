@@ -1606,7 +1606,306 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
 	this.__httpTimeout = aTimeout;
 };
 
-OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) {
+OpenWrap.obj.prototype.http4 = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) {
+	this.__lps = {}; 
+	this.__config = {};
+	this.__throwExceptions = true;
+	this.__r = __;
+	this.__rb = __; 
+	this.__usv = true;
+	this.__uf = __;
+	this.__ufn = "file";
+	options = _$(options).isMap(options).default({});
+	if (options.accessCookies) this.__cookies = new Packages.org.apache.http.impl.client.BasicCookieStore();
+	if (options.accessCtx) this.__ctx = Packages.org.apache.http.client.protocol.HttpClientContext.create();
+	//this.__h = new Packages.org.apache.http.impl.client.HttpClients.createDefault();
+	if (isDef(aURL)) {
+		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+	}
+};
+
+OpenWrap.obj.prototype.http4.prototype.upload = function(aName, aFile) {
+	this.__ufn = _$(aName, "aName").isString().default("file");
+	_$(aFile, "aFile").isString().$_();
+
+	this.__ufn = aName;
+	this.__uf = aFile;
+};
+
+OpenWrap.obj.prototype.http4.prototype.close = function() {
+
+};
+
+OpenWrap.obj.prototype.http4.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
+	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout);
+	return this.responseHeaders();
+};
+
+OpenWrap.obj.prototype.http4.prototype.setThrowExceptions = function(should) {
+	this.__throwExceptions = should;
+};
+
+OpenWrap.obj.prototype.http4.prototype.setConfig = function(aMap) {
+	this.__config = aMap;
+};
+
+OpenWrap.obj.prototype.http4.prototype.getCookieStore = function() {
+	return this.__cookies;
+};
+
+OpenWrap.obj.prototype.http4.prototype.__handleConfig = function(aH) {
+	if (isDef(this.__config.disableCookie) && this.__config.disableCookie) aH = aH.disableCookieManagement();
+	if (isDef(this.__config.disableRedirectHandling) && this.__config.disableRedirectHandling) aH = aH.disableRedirectHandling();
+	if (isDef(this.__cookies)) aH = aH.setDefaultCookieStore(this.__cookies);
+	return aH;
+};
+
+OpenWrap.obj.prototype.http4.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	var r, canHaveIn = false;
+
+	if (isUnDef(aRequestType)) aRequestType = "GET";
+
+	switch(aRequestType.toUpperCase()) {
+	case "GET": 
+		r = new Packages.org.apache.http.client.methods.HttpGet(aUrl);
+		break;
+	case "POST": 
+		r = new Packages.org.apache.http.client.methods.HttpPost(aUrl);
+		canHaveIn = true;
+		break;
+	case "DELETE": 
+		r = new Packages.org.apache.http.client.methods.HttpDelete(aUrl);
+		break;
+	case "HEAD":
+		r = new Packages.org.apache.http.client.methods.HttpHead(aUrl);
+		break; 
+	case "PATCH":
+		r = new Packages.org.apache.http.client.methods.HttpPatch(aUrl);
+		canHaveIn = true;
+		break;
+	case "PUT":
+		r = new Packages.org.apache.http.client.methods.HttpPut(aUrl);
+		canHaveIn = true;
+		break;		
+	case "TRACE":
+		r = new Packages.org.apache.http.client.methods.HttpTrace(aUrl);
+		break;		
+	case "OPTIONS":
+		r = new Packages.org.apache.http.client.methods.HttpOptions(aUrl);
+		break;
+	default:
+		r = new Packages.org.apache.http.client.methods.HttpGet(aUrl);
+		break;
+	}
+
+	// Set credentials
+	if (isDef(this.__l) && !(this.__forceBasic)) {
+		var getKey;
+		this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+		if (this.__usv) this.__h = this.__h.useSystemProperties();
+		for(var key in this.__lps) {
+			if (aUrl.startsWith(key)) getKey = key;
+		}
+		if (isDef(getKey)) {
+			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]);
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		} else {
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		}
+	} else {
+		if (isUnDef(this.__h)) {
+			this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+			if (this.__usv) this.__h = this.__h.useSystemProperties();
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		}
+	}
+
+	// Set timeout
+	if (isDef(ow.obj.__httpTimeout) && isUnDef(aTimeout)) aTimeout = ow.obj.__httpTimeout;
+	if (isDef(aTimeout)) {
+		var rc = new Packages.org.apache.http.client.config.RequestConfig.custom();
+		rc.setConnectionRequestTimeout(aTimeout);
+		rc.setConnectTimeout(aTimeout);
+		r.setConfig(rc.build());
+	}
+
+	r.addHeader("User-Agent", __OpenAFUserAgent);
+	if (this.__forceBasic && isDef(this.__l)) {
+		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
+	}
+
+	for(var i in aRequestMap) {
+		r.addHeader(i, aRequestMap[i]);
+	}
+
+	if (isDef(aIn) && isString(aIn) && canHaveIn) {
+		r.setEntity(Packages.org.apache.http.entity.StringEntity(aIn));
+	} else {
+		if (isDef(this.__uf) && canHaveIn) {
+			//var fileBody = new Pacakges.org.apache.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.http.entity.ContentType.DEFAULT_BINARY);
+			var entityBuilder = Packages.org.apache.http.entity.mime.MultipartEntityBuilder.create();
+			entityBuilder.setMode(Packages.org.apache.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE);
+			if (isString(this.__uf)) {
+				entityBuilder.addBinaryBody(this.__ufn, new java.io.File(this.__uf));
+			} else {
+				entityBuilder.addBinaryBody(this.__ufn, this.__uf);
+			}
+			var mutiPartHttpEntity = entityBuilder.build();
+			r.setEntity(mutiPartHttpEntity);
+		}
+	}
+
+	this.outputObj = {};
+	this.__c = r;
+	if (isDef(this.__ctx)) 
+		this.__r = this.__h.execute(r, this.__ctx);
+	else
+		this.__r = this.__h.execute(r);
+
+	if (isBytes && !returnStream) {
+		this.outputObj =  {
+			responseCode: this.responseCode(),
+			contentType: this.responseType(),
+			responseBytes: this.responseBytes()
+		};
+	} else {
+		if (returnStream) {
+			this.outputObj = this.responseStream();
+		} else {
+			this.outputObj = {
+				responseCode: this.responseCode(),
+				contentType: this.responseType(),
+				response: this.response()
+			};
+		}
+	}
+
+	if (this.responseCode() >= 400 && this.__throwExceptions) {
+		switch(this.responseCode()) {
+		case 404: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		case 410: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		default: throw "IOException Server returned HTTP response code: " + this.responseCode() + " for URL: " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		}
+	}
+	return this.outputObj;
+};
+
+OpenWrap.obj.prototype.http4.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream);
+};
+
+OpenWrap.obj.prototype.http4.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, true, aTimeout, false);
+};
+
+OpenWrap.obj.prototype.http4.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true);
+};
+
+OpenWrap.obj.prototype.http4.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	return this.exec(aUrl, "POST", aIn, aRequestMap, isBytes, aTimeout, returnStream);
+};
+
+OpenWrap.obj.prototype.http4.prototype.getErrorResponse = function(parseJson) {
+	if (parseJson) {
+		var res = this.outputObj;
+		if (isDef(res.response)) res.response = jsonParse(res.response);
+		return res;	
+	} else
+		return this.outputObj;
+};
+
+OpenWrap.obj.prototype.http4.prototype.getResponse = function() {
+	return this.outputObj;
+};
+	
+OpenWrap.obj.prototype.http4.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) {
+	if (isUnDef(urlPartial)) forceBasic = true;
+
+	if (!forceBasic) {
+		var url = new java.net.URL(urlPartial);
+		var port = url.getPort();
+		if (port < 0) {
+			switch(url.getProtocol()) {
+			case "http" : port = 80; break;
+			case "https": port = 443; break;
+			}
+		}
+		var as = new Packages.org.apache.http.auth.AuthScope(url.getHost(), port);
+		var up = new Packages.org.apache.http.auth.UsernamePasswordCredentials(Packages.openaf.AFCmdBase.afc.dIP(aUser), Packages.openaf.AFCmdBase.afc.dIP(aPassword));
+		var cred = new org.apache.http.impl.client.BasicCredentialsProvider();
+		cred.setCredentials(as, up);
+		this.__lps[urlPartial] = cred;
+	}
+
+	this.__l = aUser;
+	this.__p = aPassword;
+	this.__forceBasic = forceBasic;
+};
+
+OpenWrap.obj.prototype.http4.prototype.response = function() {
+	//if (isDef(this.__r)) return this.__r;
+	try {
+		var res, ent = this.__r.getEntity();
+		if (ent != null) res = String(Packages.org.apache.http.util.EntityUtils.toString(ent));
+		//this.__r = res;
+		return res;
+	} finally {
+		this.__r.close();
+	}
+};
+
+OpenWrap.obj.prototype.http4.prototype.responseBytes = function() {
+	//if (isDef(this.__rb)) return this.__rb;
+	try {
+		var res, ent = this.__r.getEntity();
+		if (ent != null) res = Packages.org.apache.http.util.EntityUtils.toByteArray(ent);
+		//this.__rb = res;
+		return res;
+	} finally {
+		this.__r.close();
+	}
+};
+
+OpenWrap.obj.prototype.http4.prototype.responseCode = function() {
+	return Number(this.__r.getStatusLine().getStatusCode());
+};
+
+OpenWrap.obj.prototype.http4.prototype.responseHeaders = function() {
+	var ar = {};
+	var hh = this.__r.getAllHeaders();
+	for(var i in hh) {
+		var name = hh[i].getName();
+		if (isDef(ar[name]) && name.toLowerCase() == "set-cookie") {
+			ar[name] = ar[name] + ";" + hh[i].getValue();
+		} else {
+			ar[hh[i].getName()] = hh[i].getValue();
+		}
+	}
+
+	return ar;
+};
+
+OpenWrap.obj.prototype.http4.prototype.responseStream = function() {
+	var ent = this.__r.getEntity();
+	if (ent != null)
+		return this.__r.getEntity().getContent();
+	else 
+		return undefined;
+};
+
+OpenWrap.obj.prototype.http4.prototype.responseType = function() {
+	try {
+		return String(this.__r.getEntity().getContentType().getValue());
+	} catch(e) {
+		return "";
+	}
+};
+
+OpenWrap.obj.prototype.http5 = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) {
 	this.__lps = {}; 
 	this.__config = {};
 	this.__throwExceptions = true;
@@ -1631,7 +1930,7 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	}
 };
 
-OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
+OpenWrap.obj.prototype.http5.prototype.upload = function(aName, aFile) {
 	this.__ufn = _$(aName, "aName").isString().default("file");
 	_$(aFile, "aFile").isString().$_();
 
@@ -1639,7 +1938,7 @@ OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
 	this.__uf = aFile;
 };
 
-OpenWrap.obj.prototype.http.prototype.open = function(aTimeout) {
+OpenWrap.obj.prototype.http5.prototype.open = function(aTimeout) {
 	// Setting ALPN to avoid warnings on java > 1.8
 	if (!(String(java.lang.System.getProperty("java.version")).startsWith("1.8"))) {
 		var tlsStrategy = Packages.org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder.create()
@@ -1721,7 +2020,7 @@ OpenWrap.obj.prototype.http.prototype.open = function(aTimeout) {
 	return false;
 };
 
-OpenWrap.obj.prototype.http.prototype.close = function() {
+OpenWrap.obj.prototype.http5.prototype.close = function() {
 	if (isDef(this.__h)) {
 		this.__h.close(org.apache.hc.core5.io.CloseMode.GRACEFUL);
 		this._hcm = __;
@@ -1731,31 +2030,31 @@ OpenWrap.obj.prototype.http.prototype.close = function() {
 	}
 };
 
-OpenWrap.obj.prototype.http.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
+OpenWrap.obj.prototype.http5.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
 	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout);
 	return this.responseHeaders();
 };
 
-OpenWrap.obj.prototype.http.prototype.setThrowExceptions = function(should) {
+OpenWrap.obj.prototype.http5.prototype.setThrowExceptions = function(should) {
 	this.__throwExceptions = should;
 };
 
-OpenWrap.obj.prototype.http.prototype.setConfig = function(aMap) {
+OpenWrap.obj.prototype.http5.prototype.setConfig = function(aMap) {
 	this.__config = aMap;
 };
 
-OpenWrap.obj.prototype.http.prototype.getCookieStore = function() {
+OpenWrap.obj.prototype.http5.prototype.getCookieStore = function() {
 	return this.__cookies;
 };
 
-OpenWrap.obj.prototype.http.prototype.__handleConfig = function(aH) {
+OpenWrap.obj.prototype.http5.prototype.__handleConfig = function(aH) {
 	if (isDef(this.__config.disableCookie) && this.__config.disableCookie) aH = aH.disableCookieManagement();
 	if (isDef(this.__config.disableRedirectHandling) && this.__config.disableRedirectHandling) aH = aH.disableRedirectHandling();
 	if (isDef(this.__cookies)) aH = aH.setDefaultCookieStore(this.__cookies);
 	return aH;
 };
 
-OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http5.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	var r = __, canHaveIn = false, parent = this;
 
 	if (isUnDef(aRequestType)) aRequestType = "GET";
@@ -1798,6 +2097,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 			entityBuilder.setBoundary(boundary);
 			var mutiPartHttpEntity = entityBuilder.build();
 
+			// USE WRITETO!!!!!
 			r.setEntity( __hc.getEntityProducer(mutiPartHttpEntity.getContent(), 8192, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY) );
 			//print(af.fromInputStream2String(mutiPartHttpEntity.getContent()));
 
@@ -1914,23 +2214,23 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	return this.outputObj;
 };
 
-OpenWrap.obj.prototype.http.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http5.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream);
 };
 
-OpenWrap.obj.prototype.http.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
+OpenWrap.obj.prototype.http5.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, true, aTimeout, false);
 };
 
-OpenWrap.obj.prototype.http.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
+OpenWrap.obj.prototype.http5.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true);
 };
 
-OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http5.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	return this.exec(aUrl, "POST", aIn, aRequestMap, isBytes, aTimeout, returnStream);
 };
 
-OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson, aObj) {
+OpenWrap.obj.prototype.http5.prototype.getErrorResponse = function(parseJson, aObj) {
 	aObj = _$(aObj).default(this.outputObj);
 	if (parseJson) {
 		var res = aObj;
@@ -1940,11 +2240,11 @@ OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson, aOb
 		return aObj;
 };
 
-OpenWrap.obj.prototype.http.prototype.getResponse = function() {
+OpenWrap.obj.prototype.http5.prototype.getResponse = function() {
 	return this.outputObj;
 };
 	
-OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) {
+OpenWrap.obj.prototype.http5.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) {
 	if (isUnDef(urlPartial)) forceBasic = true;
 
 	if (!forceBasic) {
@@ -1968,7 +2268,7 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 	this.__forceBasic = forceBasic;
 };
 
-OpenWrap.obj.prototype.http.prototype.response = function() {
+OpenWrap.obj.prototype.http5.prototype.response = function() {
 	//if (isDef(this.__r)) return this.__r;
 	try {
 		var res;
@@ -1980,7 +2280,7 @@ OpenWrap.obj.prototype.http.prototype.response = function() {
 	}
 };
 
-OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
+OpenWrap.obj.prototype.http5.prototype.responseBytes = function() {
 	//if (isDef(this.__rb)) return this.__rb;
 	try {
 		res = this.__r.getBodyBytes();
@@ -1991,11 +2291,11 @@ OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
 	}
 };
 
-OpenWrap.obj.prototype.http.prototype.responseCode = function() {
+OpenWrap.obj.prototype.http5.prototype.responseCode = function() {
 	return Number(this.__r.getCode());
 };
 
-OpenWrap.obj.prototype.http.prototype.responseHeaders = function(heads) {
+OpenWrap.obj.prototype.http5.prototype.responseHeaders = function(heads) {
 	heads = _$(heads).default(this.__r.getHeaders());
 	var ar = {};
 	var hh = heads;
@@ -2011,17 +2311,19 @@ OpenWrap.obj.prototype.http.prototype.responseHeaders = function(heads) {
 	return ar;
 };
 
-OpenWrap.obj.prototype.http.prototype.responseStream = function() {
+OpenWrap.obj.prototype.http5.prototype.responseStream = function() {
 	return _stream;
 };
 
-OpenWrap.obj.prototype.http.prototype.responseType = function() {
+OpenWrap.obj.prototype.http5.prototype.responseType = function() {
 	try {
 		return String(this.__r.getContentType().getMimeType());
 	} catch(e) {
 		return "";
 	}
 };
+
+OpenWrap.obj.prototype.http = OpenWrap.obj.prototype.http4;
 
 OpenWrap.obj.prototype.rest = {
 
@@ -2177,7 +2479,7 @@ OpenWrap.obj.prototype.rest = {
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.upload(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP, retBytes, aMethod) : String</key>
-	 * Tries to upload a new aDataRowMap entry (composed of name and in (a filename, a stream or an array of bytes)), identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP POST method or aMethod).
+	 * Tries to upload a new aDataRowMap entry (composed of the keys "name" and "in" (a filename, a stream or an array of bytes)), identified by aIndexMap, on the REST aBaseURI service returning the reply as a string (uses the HTTP POST method or aMethod).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object.
 	 * Optionally if retBytes = true returns a java stream.
@@ -2225,7 +2527,7 @@ OpenWrap.obj.prototype.rest = {
 	/**
 	 * <odoc>
 	 * <key>ow.obj.rest.jsonUpload(aBaseURI, aIndexMap, aDataRowMap, aLoginOrFunction, aPassword, aTimeout, aRequestMap, urlEncode, aHTTP, retBytes, aMethod) : String</key>
-	 * Tries to upload a new aDataRowMap entry (composed of name and in (a filename, a stream or an array of bytes)), identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP POST method or aMethod).
+	 * Tries to upload a new aDataRowMap entry (composed of the keys "name" and "in" (a filename, a stream or an array of bytes)), identified by aIndexMap, on the REST aBaseURI service returning the reply as a map (uses the HTTP POST method or aMethod).
 	 * Optionally you can provide aLogin, aPassword and/or aTimeout for the REST request or use a function (aLoginOrFunction)
 	 * that receives the HTTP object.
 	 * Optionally if retBytes = true returns a java stream.
