@@ -6348,6 +6348,10 @@ function loadJSYAML() {
 
 loadCompiledLib("openafsigil_js");
 
+var __flags = _$(__flags).isMap().default({
+	OJOB_SEQUENTIAL: true
+})
+
 /**
  * <odoc>
  * <key>_i$(aValue, aPrefixMessage) : Object</key>

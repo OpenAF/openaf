@@ -15,12 +15,11 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
-import org.apache.hc.core5.http.nio.support.BasicResponseProducer;
-
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.async.methods.SimpleResponseConsumer;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
-
+import org.apache.hc.core5.http.nio.StreamChannel;
+import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityProducer;
 import org.apache.hc.core5.http.nio.entity.FileEntityProducer;
 
 /**
@@ -62,7 +61,51 @@ public class HCUtils {
         return new BasicRequestProducer(r, new FileEntityProducer(f, ct, chunked));
     }
 
-    public BasicRequestProducer getStreamProducer(HttpRequest r) {
+    public AbstractBinAsyncEntityProducer getEntityProducer(InputStream is, int fragmentSizeHint, ContentType contentType) {
+        return new AbstractBinAsyncEntityProducer(fragmentSizeHint, contentType) {
+            protected boolean eof = false;
+            
+            @Override
+            public void failed(Exception cause) {
+                exception = cause;
+                cause.printStackTrace();
+                releaseResources();
+            }
+
+            @Override
+            public boolean isRepeatable() {
+                return true;
+            }
+
+            @Override
+            protected int availableData() {
+                if (eof) return -1;
+                try {
+                    if (is.available() > 0) return is.available(); else return 1;
+                } catch (IOException e) {
+                    return 0;
+                }
+            }
+
+            @Override
+            protected void produceData(StreamChannel<ByteBuffer> channel) throws IOException {
+                if (!eof) {
+                    ByteBuffer tbuf = ByteBuffer.allocate(fragmentSizeHint);
+                    int res = is.read(tbuf.array());
+                    if (res >= 0) {
+                        channel.write(tbuf);
+                    } else {
+                        eof = true;
+                    }
+                } else {
+                    channel.endStream();
+                    releaseResources();
+                }
+            }
+        };
+    }
+
+    public BasicRequestProducer getStreamRequestProducer(HttpRequest r, InputStream is) {
         return new BasicRequestProducer(r, null);
     }
 
@@ -70,6 +113,7 @@ public class HCUtils {
         return new AbstractBinResponseConsumer<Void>() {
             protected File _f;
             protected FileChannel _fc;
+            protected FileOutputStream _fos;
 
             @Override
             protected void start(
@@ -79,7 +123,8 @@ public class HCUtils {
 
                 _f = File.createTempFile("__oaf", ".temp");
                 _f.deleteOnExit();
-                _fc = new FileOutputStream(_f).getChannel();
+                _fos = new FileOutputStream(_f);
+                _fc = _fos.getChannel();
             }
 
             @Override
@@ -99,6 +144,7 @@ public class HCUtils {
                 }
                 if (endOfStream) {
                     _fc.close();
+                    _fos.close();
                     stream = Files.newInputStream(_f.toPath(), StandardOpenOption.DELETE_ON_CLOSE);
                 }
             }
