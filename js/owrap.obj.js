@@ -2323,7 +2323,7 @@ OpenWrap.obj.prototype.http5.prototype.responseType = function() {
 	}
 };
 
-OpenWrap.obj.prototype.http = OpenWrap.obj.prototype.http4;
+OpenWrap.obj.prototype.http = (__flags.HTTP_USE5 ? OpenWrap.obj.prototype.http5 : OpenWrap.obj.prototype.http4);
 
 OpenWrap.obj.prototype.rest = {
 

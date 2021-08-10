@@ -6349,7 +6349,9 @@ function loadJSYAML() {
 loadCompiledLib("openafsigil_js");
 
 var __flags = _$(__flags).isMap().default({
-	OJOB_SEQUENTIAL: true
+	OJOB_SEQUENTIAL: true,
+
+	HTTP_USE5: false
 })
 
 /**
