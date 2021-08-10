@@ -392,7 +392,7 @@
 			"name": "Email",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-net-3.7.2.jar",
+				"lib/commons-net-3.8.0.jar",
 				"lib/commons-email-1.5.jar",
 				"lib/javax.mail.jar"
 			],
