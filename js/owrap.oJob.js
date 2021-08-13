@@ -1492,7 +1492,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			var argss = args;
 			//var argss = merge(args, last);
 			//if (isDef(todo.args)) argss = this.__processArgs(merge(args, last), todo.args, aId);
-			if (isDef(todo.args)) argss = this.__processArgs(argss, todo.args, aId);
+			if (isDef(todo.args)) argss = this.__processArgs(args, todo.args, aId);
 			if (isDef(job)) {
 				var res = this.runJob(job, argss, aId, true);
 				if (res == true) {
