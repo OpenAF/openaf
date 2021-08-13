@@ -1466,14 +1466,15 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	this.oJobShouldStop = false;
 	this.__ojob.sequential = _$(this.__ojob.sequential).isBoolean().default(__flags.OJOB_SEQUENTIAL);
 	if (this.__ojob.sequential) {
-		var job = __, last = __;
+		var job = __; //last = __;
 		//var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
 		var listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
-			var argss = merge(args, last);
-			if (isDef(todo.args)) argss = this.__processArgs(merge(args, last), todo.args, aId);
+			//var argss = merge(args, last);
+			//if (isDef(todo.args)) argss = this.__processArgs(merge(args, last), todo.args, aId);
+			if (isDef(todo.args)) argss = this.__processArgs(args, todo.args, aId);
 			if (isDef(job)) {
 				var res = this.runJob(job, argss, aId, true, true);
 				if (res != false) {
@@ -1486,9 +1487,9 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 					delete res.objId;
 					delete res.execid;
 					delete res.__id;
-					last = res;
+					/*last = res;
 				} else {
-					last = __;
+					last = __;*/
 				}
 			} else {
 				logErr("Job " + todo.name + " not found!");
