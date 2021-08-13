@@ -266,7 +266,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	if (isDef(ojob.conAnsi)) { __conAnsi = ojob.conAnsi; __conStatus = Boolean(__conAnsi); }
 	if (isDef(ojob.conWidth)) this.__conWidth = ojob.conWidth;
 	this.__ojob.async = _$(ojob.async).isBoolean().default(false);
-    if (this.__ojob.async && this.__ojob.sequential) this.__ojob.sequential = false;
+    if (this.__ojob.async) this.__ojob.sequential = false;
 
 	this.__ojob.tags = _$(ojob.tags).isArray("The ojob.tags needs to be an array.").default([]);
 	if (isDef(this.__ojob.tags) && this.__ojob.tags.length > 0) {
