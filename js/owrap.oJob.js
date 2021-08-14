@@ -1498,6 +1498,15 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 						"todoId": todo.todoId
 					}, todo);
 				}
+				if (isMap(res)) {
+					delete res.objId;
+					delete res.execid;
+					delete res.__id;
+					$set("res", res);
+					/*last = res;
+				} else {
+					last = __;*/
+				}
 			} else {
 				logErr("Job " + todo.name + " not found!");
 				this.getTodoCh().unset({
@@ -1530,6 +1539,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 									"ojobId": todo.ojobId,
 									"todoId": todo.todoId
 								}, todo);
+							}
+							if (isMap(res)) {
+								delete res.objId;
+								delete res.execid;
+								delete res.__id;
+								$set("res", res);
 							}
 						} else {
 							logErr("Job " + todo.name + " not found!");
