@@ -2364,7 +2364,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	aSize = _$(aSize, "aSize").isNumber().default(__);
 	ansiLine = _$(ansiLine, "ansiLine").isString().default("RESET");
 
-	var res = "\r";
+	var res = ansiColor("RESET", "\r");
  
 	if (isUnDef(aSize)) {
 		__conStatus || __initializeCon(); 
@@ -2399,7 +2399,7 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	      if (isDef(aTheme.rmiddle)) {
 		   var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - ansiLength(l) - 3, ' ')) : repeat(aSize - ansiLength(l) - 3, ' '));
 		   res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
-		   res += ansiColor(ansiLine, aTheme.rmiddle);
+		   res += ansiColor("RESET", "") + ansiColor(ansiLine, aTheme.rmiddle);
 	      }
 	      if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
 	   });
