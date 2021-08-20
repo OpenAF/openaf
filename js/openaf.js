@@ -2395,7 +2395,7 @@ function isDefined(aObject) {
  * (see also isUnDef). Shortcut for the isDefined function.
  * </odoc>
  */
-function isDef(aObject)   { return (!(typeof aObject == 'undefined')) ? true : false; }
+function isDef(aObject)   { return (isJavaObject(aObject) || !(typeof aObject == 'undefined')) ? true : false; }
 /**
  * <odoc>
  * <key>isUnDef(aObject) : boolean</key>
@@ -2403,7 +2403,7 @@ function isDef(aObject)   { return (!(typeof aObject == 'undefined')) ? true : f
  * (see also isDef). Shortcut for the isUndefined function.
  * </odoc>
  */
-function isUnDef(aObject) { return (typeof aObject == 'undefined') ? true : false; }
+function isUnDef(aObject) { return (!isJavaObject(aObject) && typeof aObject == 'undefined') ? true : false; }
 
 if (isUnDef(Object.values)) Object.values = (m) => { return Object.keys(m).map(r => m[r]); };
 
