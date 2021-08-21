@@ -4,10 +4,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Set;
 
 import org.apache.hc.client5.http.async.methods.AbstractBinResponseConsumer;
 import org.apache.hc.core5.http.ContentType;
@@ -18,6 +21,8 @@ import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.async.methods.SimpleResponseConsumer;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
+import org.apache.hc.core5.http.nio.AsyncEntityProducer;
+import org.apache.hc.core5.http.nio.DataStreamChannel;
 import org.apache.hc.core5.http.nio.StreamChannel;
 import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityProducer;
 import org.apache.hc.core5.http.nio.entity.FileEntityProducer;
@@ -59,6 +64,83 @@ public class HCUtils {
 
     public BasicRequestProducer getFileProducer(HttpRequest r, File f, ContentType ct, boolean chunked) {
         return new BasicRequestProducer(r, new FileEntityProducer(f, ct, chunked));
+    }
+
+    public AsyncEntityProducer getStreamEntityProducer(PipedOutputStream os, long len) throws IOException {
+        PipedInputStream pis = new PipedInputStream(os);
+        
+        return new AsyncEntityProducer() {
+            @Override
+            public int available() {
+                try {
+                    return pis.available();
+                } catch (IOException e) {
+                    return -1;
+                }
+            }
+
+            @Override
+            public void produce(DataStreamChannel c) throws IOException {
+                while(pis.available() > 0) {
+                    ByteBuffer tbuf = ByteBuffer.allocate((pis.available() > 8192) ? 8192 : pis.available());
+                    int res = pis.read(tbuf.array());
+                    if (res >= 0) {
+                        c.write(tbuf);
+                    }
+                }
+
+                c.endStream();
+                releaseResources();
+            }
+
+            @Override
+            public void releaseResources() {
+                try {
+                    pis.close();
+                    os.close();
+                } catch (IOException cause) {
+                    exception = cause;
+                    cause.printStackTrace();
+                }
+            }
+
+            @Override
+            public String getContentEncoding() {
+                return "UTF-8";
+            }
+
+            @Override
+            public long getContentLength() {
+                return len;
+            }
+
+            @Override
+            public String getContentType() {
+                return ContentType.DEFAULT_BINARY.getMimeType();
+            }
+
+            @Override
+            public Set<String> getTrailerNames() {
+                return null;
+            }
+
+            @Override
+            public boolean isChunked() {
+                return false;
+            }
+
+            @Override
+            public void failed(Exception cause) {
+                exception = cause;
+                cause.printStackTrace();
+            }
+
+            @Override
+            public boolean isRepeatable() {
+                return false;
+            }
+            
+        };
     }
 
     public AbstractBinAsyncEntityProducer getEntityProducer(InputStream is, int fragmentSizeHint, ContentType contentType) {

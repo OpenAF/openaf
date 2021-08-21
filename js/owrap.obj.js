@@ -1626,7 +1626,7 @@ OpenWrap.obj.prototype.http4 = function(aURL, aRequestType, aIn, aRequestMap, is
 
 OpenWrap.obj.prototype.http4.prototype.upload = function(aName, aFile) {
 	this.__ufn = _$(aName, "aName").isString().default("file");
-	_$(aFile, "aFile").isString().$_();
+	if (!isJavaObject(aFile) && !isByteArray(aFile) && !isString(aFile)) throw "aFile is not a stream, an array of bytes or a string filepath"
 
 	this.__ufn = aName;
 	this.__uf = aFile;
@@ -1748,7 +1748,7 @@ OpenWrap.obj.prototype.http4.prototype.exec = function(aUrl, aRequestType, aIn, 
 			//var fileBody = new Pacakges.org.apache.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.http.entity.ContentType.DEFAULT_BINARY);
 			var entityBuilder = Packages.org.apache.http.entity.mime.MultipartEntityBuilder.create();
 			entityBuilder.setMode(Packages.org.apache.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE);
-			if (isString(this.__uf)) {
+			if (!isJavaObject(this.__uf) && isString(this.__uf)) {
 				entityBuilder.addBinaryBody(this.__ufn, new java.io.File(this.__uf));
 			} else {
 				entityBuilder.addBinaryBody(this.__ufn, this.__uf);
@@ -1932,7 +1932,7 @@ OpenWrap.obj.prototype.http5 = function(aURL, aRequestType, aIn, aRequestMap, is
 
 OpenWrap.obj.prototype.http5.prototype.upload = function(aName, aFile) {
 	this.__ufn = _$(aName, "aName").isString().default("file");
-	_$(aFile, "aFile").isString().$_();
+	if (!isJavaObject(aFile) && !isByteArray(aFile) && !isString(aFile)) throw "aFile is not a stream, an array of bytes or a string filepath"
 
 	this.__ufn = aName;
 	this.__uf = aFile;
@@ -2083,25 +2083,37 @@ OpenWrap.obj.prototype.http5.prototype.exec = function(aUrl, aRequestType, aIn, 
 	} else {
 		if (isDef(this.__uf) && canHaveIn) {
 			// If not active no entity will be sent (bug?)
-			if (this.__h.status != "ACTIVE") { this.head(aUrl); }
+			//if (this.__h.status != "ACTIVE") { this.head(aUrl); }
 			var entityBuilder = Packages.org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder.create();
 			
-			var __hc = new Packages.openaf.HCUtils(), _f = __;
-			if (isString(this.__uf)) {
-				_f = new java.io.File(this.__uf);
-				entityBuilder = entityBuilder.addBinaryBody(this.__ufn, _f, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY, _f.getName());
+			var __hc = new Packages.openaf.HCUtils(), os = new java.io.PipedOutputStream();
+			if (!isJavaObject(this.__uf) && isString(this.__uf)) {
+				//_f = new java.io.File(this.__uf);
+				//entityBuilder = entityBuilder.addBinaryBody(this.__ufn, _f, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY, _f.getName());
+				entityBuilder = entityBuilder.addBinaryBody(this.__ufn, new java.io.File(this.__uf));
 			} else {
 				entityBuilder = entityBuilder.addBinaryBody(this.__ufn, this.__uf);
 			}
+
 			var boundary = sha1(nowNano());
 			entityBuilder.setBoundary(boundary);
 			var mutiPartHttpEntity = entityBuilder.build();
 
 			// USE WRITETO!!!!!
-			r.setEntity( __hc.getEntityProducer(mutiPartHttpEntity.getContent(), 8192, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY) );
+			//r.setEntity( __hc.getStreamEntityProducer(os) );
+			//r.setEntity( __hc.getEntityProducer(mutiPartHttpEntity.getContent(), 8192, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY) );
+			var _ftmp = io.createTempFile("openaf", ".tmp");
+			var os = io.writeFileStream(_ftmp);
+			mutiPartHttpEntity.writeTo(os);
+			os.flush();
+			os.close();
+			
+			//r.setEntity( new Packages.org.apache.hc.core5.http.io.entity.FileEntity(new java.io.File(_ftmp), Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY) );
+			r.setEntity( __hc.getEntityProducer(io.readFileStream(_ftmp), 8192, Packages.org.apache.hc.core5.http.ContentType.DEFAULT_BINARY) );
+			//io.rm(_ftmp);
 			//print(af.fromInputStream2String(mutiPartHttpEntity.getContent()));
 
-			r.setHeader("Content-Type", Packages.org.apache.hc.core5.http.ContentType.MULTIPART_FORM_DATA + "; boundary=" + boundary);
+			r.setHeader("Content-Type", Packages.org.apache.hc.core5.http.ContentType.MULTIPART_FORM_DATA + "; charset=utf-8; boundary=" + boundary);
 			//r.setEntity(new org.apache.hc.core5.http.nio.entity.FileEntityProducer(new java.io.File(this.__uf)));
 		}
 	}
