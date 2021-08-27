@@ -2,6 +2,7 @@ package openaf.plugins.HTTPws;
 
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.Scriptable;
+import org.eclipse.jetty.client.HttpClient;
 import org.mozilla.javascript.Context;
 
 import java.net.URI;
@@ -125,10 +126,12 @@ public class WebSockets {
         org.eclipse.jetty.client.HttpClient hclient = null;
 
         if (anURL.toLowerCase().startsWith("wss")) {
-            org.eclipse.jetty.util.ssl.SslContextFactory ssl = new org.eclipse.jetty.util.ssl.SslContextFactory.Client(
-                    supportSelfSigned);
+            org.eclipse.jetty.util.ssl.SslContextFactory.Client ssl = new org.eclipse.jetty.util.ssl.SslContextFactory.Client(supportSelfSigned);
             if (supportSelfSigned) { ssl.setValidateCerts(false); ssl.setTrustAll(true); }
-            hclient = new org.eclipse.jetty.client.HttpClient(ssl);
+            org.eclipse.jetty.io.ClientConnector clientConnector = new org.eclipse.jetty.io.ClientConnector();
+            clientConnector.setSslContextFactory(ssl);
+
+            hclient = new HttpClient(new org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic(clientConnector));
             client = new org.eclipse.jetty.websocket.client.WebSocketClient(hclient);
         } else {
             client = new org.eclipse.jetty.websocket.client.WebSocketClient();
