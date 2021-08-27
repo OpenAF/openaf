@@ -38,18 +38,26 @@
 
     exports.testHTTPWSClient = function() {
         plugin("HTTP");
-        var session; var output = "";
-        var res = (new HTTP()).wsClient("ws://echo.websocket.org",
+        var session; var output = [];
+        var res = (new HTTP()).wsClient("ws://ws.kraken.com",
             function(aSession) { session = aSession; },
-            function(aType, aPayload, aOffset, aLength) { if (aType == "text") output += aPayload; },
+            function(aType, aPayload, aOffset, aLength) { if (aType == "text") output.push(aPayload); },
             function(aCause) { },
             function(aStatusCode, aReason) { });
-        session.getRemote().sendString("Hello World!");
-        while(output.length < 1) { res.fut.get(); sleep(100); };
-        session.stop();
+        session.getRemote().sendString(stringify({
+            event: "subscribe",
+            pair : [ "XBT/USD", "XBT/EUR" ],
+            subscription: {
+                name: "ticker"
+            }
+        }));
+        //while(output.length < 1) { res.fut.get(); sleep(100, true); };
+        res.fut.get(); sleep(1000, true);
+        //session.stop();
         res.client.stop();
     
-        ow.test.assert(output, "Hello World!", "Problem with testing websockets against echo.websocket.org");    
+        ow.test.assert(isMap(jsonParse(output[0])), true, "Problem with testing websockets against ws.kraken.com (1)");    
+        ow.test.assert(output.length > 1, true, "Problem with testing websockets against ws.kraken.com (2)");  
     };
 
     exports.testBasicAuth = function() {
