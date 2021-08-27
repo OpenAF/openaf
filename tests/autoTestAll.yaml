@@ -2,7 +2,8 @@ include:
    - oJobTest.yaml
 
 ojob:
-   sequential: false
+   opacks    :
+   - oJob-common
    async     : true
    channels  :
      expose : true
