@@ -100,7 +100,11 @@ OpenWrap.oJob = function(isNonLocal) {
 		"perl": {
 			lang: "perl",
 			shell: "perl"
-		}
+		},
+                "sh" : { 
+                        lang: "sh",
+                        langFn: "var s = $sh(); code.split('\\n').forEach(l => s = s.sh(templify(l, args)) ); if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.shellPrefix)) { s = s.prefix(job.typeArgs.shellPrefix); s.get(); } else { s.exec(); }"
+                }
 	};
 
 	this.periodicFuncs = [];
