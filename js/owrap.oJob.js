@@ -1798,15 +1798,17 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			//return true;
 			break;
 		case "jobs":
-			if (isDef(aJob.typeArgs.file)) {
+			if (isDef(aJob.typeArgs.file) || isDef(aJob.typeArgs.url)) {
 				aJob.typeArgs.file = this.__processTypeArg(aJob.typeArgs.file);
+				aJob.typeArgs.url  = this.__processTypeArg(aJob.typeArgs.url);
 				try {
-					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
+					var uuid = parent.__addLog("start", aJob.name, __, args, __, aId);
 					args.execid = uuid;
 					if (isUnDef(args.__oJobRepeat)) args = this.__mergeArgs(args, aJob.args);
 
-					parent.runFile(aJob.typeArgs.file, args, aJob.typeArgs.file, true);
-					this.__addLog("success", aJob.name, uuid, args, undefined, aId);
+					var f = isDef(aJob.typeArgs.file) ? aJob.typeArgs.file : aJob.typeArgs.url;
+					parent.runFile(f, args, f, true);
+					this.__addLog("success", aJob.name, uuid, args, __, aId);
 
 					//return true;
 				} catch(e) {
@@ -1814,7 +1816,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					//return true;
 				}
 			} else {
-				this.__addLog("error", aJob.name, uuid, args, "No typeArgs.file provided.", aId);
+				this.__addLog("error", aJob.name, uuid, args, "No typeArgs.file or typeArgs.url provided.", aId);
 				//return true;
 			}
 			break;
