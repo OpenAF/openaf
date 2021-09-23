@@ -6,7 +6,7 @@
  * job todo register and oJob::oJob for oJob instances registry.
  * </odoc>
  */
-OpenWrap.oJob = function(isNonLocal) { 
+ OpenWrap.oJob = function(isNonLocal) { 
 	//startLog();
 	//if (isDef(ow.oJob)) return ow.oJob;
 
@@ -134,11 +134,11 @@ OpenWrap.oJob = function(isNonLocal) {
 
 OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
 	_$(aFileOrPath, "aFileOrPath").isString().$_();
-    
-    var isUrl = false;
+	
+	var isUrl = false;
 	if (aFileOrPath.toLowerCase().startsWith("http://") || aFileOrPath.toLowerCase().startsWith("https://")) isUrl = true;
 
-    if (!isUrl) {
+	if (!isUrl) {
         aFileOrPath = aFileOrPath.replace(/\\+/g, "/");
 		aFileOrPath = aFileOrPath.replace(/\/+/g, "/");
         if (!io.fileExists(aFileOrPath)) {
@@ -154,13 +154,13 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
     }
 
 	if (isDef(OJOB_INTEGRITY[aFileOrPath])) {
-        var stream;
-        if (isUrl) {
-            stream = $rest().get2Stream(aFileOrPath);
-        } else {
-            stream = io.readFileStream(aFileOrPath);
-        }
-    
+		var stream;
+		if (isUrl) {
+			stream = $rest().get2Stream(aFileOrPath);
+		} else {
+			stream = io.readFileStream(aFileOrPath);
+		}
+
 		var valid = false;
 
 		[alg, h] = OJOB_INTEGRITY[aFileOrPath].split("-");
@@ -214,7 +214,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	this.__execRequire = _$(ojob.execRequire, "execRequire").isString().default(void 0);
 
 	// Check todos
-	for(var i in todo) {
+	/*for(var i in todo) {
 		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
 			//var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
 			var j = $from(jobs).useCase(true).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).at(0);
@@ -223,7 +223,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 				j.deps.push((isObject(todo[i-1]) ? todo[i-1].name : todo[i-1]));
 			}
 		}
-	}
+	}*/
 
 	if (isDef(init)) this.init = init;
 	
@@ -1482,8 +1482,9 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 	//var shouldStop = false;
 	this.oJobShouldStop = false;
+	this.__ojob.sequential = _$(this.__ojob.sequential).isBoolean().default(__flags.OJOB_SEQUENTIAL);
 	if (this.__ojob.sequential) {
-		var job = __;
+		var job = __; //last = __;
 		//var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
 		var listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 		while(listTodos.length > 0) {
@@ -1492,10 +1493,10 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			var argss = args;
 			//var argss = merge(args, last);
 			//if (isDef(todo.args)) argss = this.__processArgs(merge(args, last), todo.args, aId);
-			if (isDef(todo.args)) argss = this.__processArgs(args, todo.args, aId);
+			if (isDef(todo.args)) argss = this.__processArgs(argss, todo.args, aId);
 			if (isDef(job)) {
-				var res = this.runJob(job, argss, aId, true);
-				if (res == true) {
+				var res = this.runJob(job, argss, aId, true, true);
+				if (res != false) {
 					this.getTodoCh().unset({
 						"ojobId": todo.ojobId,
 						"todoId": todo.todoId
@@ -1535,7 +1536,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 						var todo = parent.getTodoCh().get(parentOJob[ipoj]);
 						job = parent.getJobsCh().get({ "name": todo.name });
 						var argss = args;
-						if (isDef(todo.args)) argss = parent.__processArgs(argss, todo.args, aId);
+						if (isDef(todo.args)) argss = parent.__processArgs(args, todo.args, aId);
 						if (isDef(job)) {
 							var res = parent.runJob(job, argss, aId, !(parent.__ojob.async));
 							if (res == true) {
