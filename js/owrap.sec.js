@@ -8,17 +8,17 @@ OpenWrap.sec = function() {
 
 /**
  * <odoc>
- * <key>ow.sec.openSBuckets(aRepo, aMainSecret)</key>
+ * <key>ow.sec.openSBuckets(aRepo, aMainSecret, aFile)</key>
  * Opens aRepo SBucket using aMainSecret. 
  * </odoc>
  */
-OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret) {
+OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
    var rep   = _$(aRepo, "aRepo").isString().default("");
    aRepo = rep;
    var isWin = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 
    if (rep != "") rep = "-" + rep;
-   var f = java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".yml";
+   var f = isDef(aFile) ? aFile : java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".yml";
 
    $ch("___openaf_sbuckets" + rep).create(1, "file", {
       file          : f,
@@ -42,19 +42,19 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret) {
          io.writeFileString(ff, aMainSecret);
       }
    }
-   ow.sec._sb[aRepo] = new ow.sec.SBucket("___openaf_sbuckets" + rep, aMainSecret, "default", aMainSecret);
+   ow.sec._sb[aRepo] = new ow.sec.SBucket("___openaf_sbuckets" + rep, aMainSecret, "default", isUnDef(aFile) ? aMainSecret : __);
 };
 
 /**
  * <odoc>
- * <key>$sec.$sec(aRepo, dBucket, dLockSecret, aMainSecret) : $sec</key>
+ * <key>$sec.$sec(aRepo, dBucket, dLockSecret, aMainSecret, aFile) : $sec</key>
  * Shortcut for acessing ow.sec.SBuckets given aMainSecret and, optionally, aRepo. A default dBucket and the corresponding
  * dLockSecret can be provided.
  * </odoc>
  */
-const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
+const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
    dBucket     = _$(dBucket, "dBucket").isString().default(__);
-   dLockSecret = _$(dLockSecret, "dLockSecret").isString().default("aMainSecret");
+   dLockSecret = _$(dLockSecret, "dLockSecret").isString().default(__);
    var dKey;
 
    try {
@@ -70,7 +70,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret) {
    var rep   = _$(aRepo, "aRepo").isString().default("");
    aRepo = rep;
 
-   if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret);
+   if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret, aFile);
 
    return {
       /**
@@ -311,25 +311,34 @@ OpenWrap.sec.prototype.SBucket = function(aCh, aMainSecret, sBucket, aLockSecret
 };
  
 const __sbucket__encrypt = function(aObj, aMainKey, aKey) {
-    var mk; 
-    try {
-       mk = af.decrypt(Packages.openaf.AFCmdBase.afc.dIP(aKey), sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16));
-    } catch(e) {
-       mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
+    if (isDef(aKey)) {
+      var mk; 
+      try {
+         mk = af.decrypt(Packages.openaf.AFCmdBase.afc.dIP(aKey), sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16));
+      } catch(e) {
+         mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
+      }
+      var s = af.encrypt(stringify(isMap(aObj) ? sortMapKeys(aObj) : aObj, __, ""), sha512(mk).substr(0, 16));
+      return af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(s)));
+    } else {
+      return aObj;
     }
-    var s = af.encrypt(stringify(isMap(aObj) ? sortMapKeys(aObj) : aObj, __, ""), sha512(mk).substr(0, 16));
-    return af.fromBytes2String(af.toBase64Bytes(af.fromString2Bytes(s)));
+
 };
  
 const __sbucket__decrypt = function(aObj, aMainKey, aKey) {
-    var mk; 
-    try {
-       mk = af.decrypt(Packages.openaf.AFCmdBase.afc.dIP(aKey), sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16));
-    } catch(e) {
-       mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
-    }
-    var s = af.fromBytes2String(af.fromBase64(aObj));
-    return jsonParse(af.decrypt(s, sha512(mk).substr(0, 16)));
+   if (isDef(aKey)) {
+      var mk; 
+      try {
+         mk = af.decrypt(Packages.openaf.AFCmdBase.afc.dIP(aKey), sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16));
+      } catch(e) {
+         mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
+      }
+      var s = af.fromBytes2String(af.fromBase64(aObj));
+      return jsonParse(af.decrypt(s, sha512(mk).substr(0, 16)));
+   } else {
+      return aObj;
+   }
 };
 
 const __sbucket__uri = function(aUri) {
@@ -366,10 +375,10 @@ OpenWrap.sec.prototype.SBucket.prototype.getSecret = function(sBucket, aLockSecr
     aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
  
     var kv = $ch(this.aCh).get({ sbucket: sBucket});
-    if (isDef(kv) && isDef(kv.v)) {
-       var sb = __sbucket__decrypt(kv.v, this.s, aLockSecret);
-       if (isMap(sb) && isDef(sb.name) && sb.name == sBucket) {
-          return sb.keys[aKey];
+    if (isDef(kv) && ( (isDef(kv.v) && isDef(aLockSecret)) || (isMap(kv) && isUnDef(aLockSecret)) ) ) {
+       var sb = isDef(aLockSecret) ? __sbucket__decrypt(kv.v, this.s, aLockSecret) : kv;
+       if (isMap(sb)) {
+          return (isDef(aLockSecret) ? sb.keys[aKey] : sb[aKey]);
        } else {
           throw "Wrong bucket and/or secret";
        }
@@ -395,10 +404,12 @@ OpenWrap.sec.prototype.SBucket.prototype.getKeys = function(sBucket, aLockSecret
       rres[r] = [];
       if (r == sBucket) {
          var kv = $ch(this.aCh).get({ sbucket: r });
-         if (isDef(kv) && isDef(kv.v)) {
-            var sb = __sbucket__decrypt(kv.v, this.s, aLockSecret);
-            if (isDef(sb.keys)) {
+         if (isDef(kv) && ( (isDef(kv.v) && isDef(aLockSecret)) || (isMap(kv) && isUnDef(aLockSecret)) ) ) {
+            var sb = isDef(aLockSecret) ? __sbucket__decrypt(kv.v, this.s, aLockSecret) : kv;
+            if (isDef(aLockSecret) && isDef(sb.keys)) {
                rres[r] = Object.keys(sb.keys);
+            } else if (isUnDef(aLockSecret) && isDef(sb)) {
+               rres[r] = Object.keys(sb);
             }
          }
       }
@@ -428,10 +439,10 @@ OpenWrap.sec.prototype.SBucket.prototype.getSecretAs = function(sBucket, aLockSe
     aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
 
     var kv = $ch(this.aCh).get({ sbucket: sBucket});
-    if (isDef(kv) && isDef(kv.v)) {
+    if (isDef(kv) && ( (isDef(kv.v) && isDef(aLockSecret)) || (isMap(kv) && isUnDef(aLockSecret)) ) ) {
        var sb = __sbucket__decrypt(kv.v, this.s, aLockSecret);
-       if (isMap(sb) && isDef(sb.name) && sb.name == sBucket) {
-          return af.encrypt(sb.keys[aKey], aEncryptKey);
+       if (isMap(sb)) {
+          return af.encrypt(isDef(aLockSecret) ? sb.keys[aKey] : sb[aKey], aEncryptKey);
        } else {
           throw "Wrong bucket and/or secret";
        }
@@ -461,9 +472,11 @@ OpenWrap.sec.prototype.SBucket.prototype.createBucket = function(sBucket, aLockS
    aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
  
    if (isDef($ch(this.aCh).get({ sbucket: sBucket }))) return;
-   var obj = { name: sBucket, keys: {} };
  
-   $ch(this.aCh).set({ sbucket: sBucket }, { sbucket: sBucket, v: __sbucket__encrypt(obj, this.s, aLockSecret) });
+   if (isDef(aLockSecret)) 
+      $ch(this.aCh).set({ sbucket: sBucket }, { sbucket: sBucket, v: __sbucket__encrypt({ name: sBucket, keys: {} }, this.s, aLockSecret) });
+   else
+      $ch(this.aCh).set({ sbucket: sBucket }, {});
 };
 
 /**
@@ -489,15 +502,18 @@ OpenWrap.sec.prototype.SBucket.prototype.setSecret = function(sBucket, aLockSecr
     aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
  
     var kv = $ch(this.aCh).get({ sbucket: sBucket});
-    if (isUnDef(kv) || isUnDef(kv.v)) {
+    if (isUnDef(kv)) {
        this.createBucket(sBucket, aLockSecret);
     }
  
     kv = $ch(this.aCh).get({ sbucket: sBucket});
-    var sb = __sbucket__decrypt(kv.v, this.s, aLockSecret);
-    if (isMap(sb) && isDef(sb.name) && sb.name == sBucket) {
-       sb.keys[aKey] = aObj;
-       $ch(this.aCh).set({ sbucket: sBucket }, { sbucket: sBucket, v: __sbucket__encrypt(sb, this.s, aLockSecret) });
+    var sb = isDef(aLockSecret) ? __sbucket__decrypt(kv.v, this.s, aLockSecret) : kv;
+    if (isMap(sb)) {
+       if (isDef(aLockSecret)) sb.keys[aKey] = aObj; else sb[aKey] = aObj;
+       if (isDef(aLockSecret))
+         $ch(this.aCh).set({ sbucket: sBucket }, { sbucket: sBucket, v: __sbucket__encrypt(sb, this.s, aLockSecret) });
+       else
+         $ch(this.aCh).set({ sbucket: sBucket }, sb);
     } else {
        throw "Wrong bucket and/or secret";
     }
@@ -524,15 +540,18 @@ OpenWrap.sec.prototype.SBucket.prototype.unsetSecret = function(sBucket, aLockSe
     aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
  
     var kv = $ch(this.aCh).get({ sbucket: sBucket});
-    if (isUnDef(kv) || isUnDef(kv.v)) {
+    if (isUnDef(kv)) {
        this.createBucket(sBucket, aLockSecret);
     }
  
     kv = $ch(this.aCh).get({ sbucket: sBucket});
-    var sb = __sbucket__decrypt(kv.v, this.s, aLockSecret);
-    if (isMap(sb) && isDef(sb.name) && sb.name == sBucket) {
-       delete sb.keys[aKey];
-       $ch(this.aCh).set({ sbucket: sBucket }, { sbucket: sBucket, v: __sbucket__encrypt(sb, this.s, aLockSecret) });
+    var sb = isDef(aLockSecret) ? __sbucket__decrypt(kv.v, this.s, aLockSecret) : kv;
+    if (isMap(sb)) {
+       if (isDef(aLockSecret)) delete sb.keys[aKey]; else delete sb[aKey];
+       if (isDef(aLockSecret))
+          $ch(this.aCh).set({ sbucket: sBucket }, { sbucket: sBucket, v: __sbucket__encrypt(sb, this.s, aLockSecret) });
+       else
+          $ch(this.aCh).set({ sbucket: sBucket }, sb);
     } else {
        throw "Wrong bucket and/or secret";
     }
