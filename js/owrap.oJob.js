@@ -1535,7 +1535,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 						var todo = parent.getTodoCh().get(parentOJob[ipoj]);
 						job = parent.getJobsCh().get({ "name": todo.name });
 						var argss = args;
-						if (isDef(todo.args)) argss = parent.__processArgs(args, todo.args, aId);
+						if (isDef(todo.args)) argss = parent.__processArgs(argss, todo.args, aId);
 						if (isDef(job)) {
 							var res = parent.runJob(job, argss, aId, !(parent.__ojob.async));
 							if (res == true) {
