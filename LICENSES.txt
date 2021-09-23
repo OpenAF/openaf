@@ -4670,9 +4670,9 @@ License               :
 
 -----------------------
 Third-party name      : Jackson Core
-Version               : 2.12.4
+Version               : 2.12.5
 Changed from original : No
-Location in openaf.jar: lib/jackson-core-2.12.4.jar
+Location in openaf.jar: lib/jackson-core-2.12.5.jar
 License               : 
 
 
