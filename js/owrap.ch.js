@@ -1505,7 +1505,7 @@ OpenWrap.ch.prototype.__types = {
 		create       : function(aName, shouldCompress, options) {
 			ow.loadObj();
 			if (isUnDef(options.index)) throw "Please define an elastic search index to use";
-			if (isUnDef(options.idKey)) options.idKey = "_id";
+			if (isUnDef(options.idKey)) options.idKey = "id";
 			if (isUnDef(options.url))   throw "Please define the elastic search url";
 			/*if (isUnDef(options.user) || isUnDef(options.pass))  
 				throw "Please define an user and pass to access the elastic search";*/
@@ -1619,7 +1619,13 @@ OpenWrap.ch.prototype.__types = {
 			return this.getKeys(aName, full);	
 		},
 		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
-			throw "Channel operation not supported in Elastic Search";
+			//throw "Channel operation not supported in Elastic Search";
+			var res;
+			res = this.get(aName, aK);
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp);
+			}
+			return undefined;
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
