@@ -1530,6 +1530,8 @@ OpenWrap.ch.prototype.__types = {
 			} else {
 				this.__channels[aName]._fnId = aK => aK;
 			}
+
+		    if (isUnDef(options.throwExceptions)) this.__channels[aName].throwExceptions = true;
 		},
 		destroy      : function(aName) {
 			delete this.__channels[aName];
@@ -1544,6 +1546,7 @@ OpenWrap.ch.prototype.__types = {
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});*/
 			var res = $rest({
+				throwExceptions: parent.__channels[aName].throwExceptions,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1575,6 +1578,7 @@ OpenWrap.ch.prototype.__types = {
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});*/
 			var res = $rest({
+				throwExceptions: parent.__channels[aName].throwExceptions,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1603,6 +1607,7 @@ OpenWrap.ch.prototype.__types = {
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});*/
 			var res = $rest({
+				throwExceptions: parent.__channels[aName].throwExceptions,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1641,6 +1646,7 @@ OpenWrap.ch.prototype.__types = {
 				
 			var parent = this;
 			var res = $rest({
+				throwExceptions: parent.__channels[aName].throwExceptions,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1676,6 +1682,7 @@ OpenWrap.ch.prototype.__types = {
 					//return h.exec(url, "POST", ops, {"Content-Type":"application/json"});
 					var parent = this;
 					var res = $rest({
+						throwExceptions: parent.__channels[aName].throwExceptions,
 						login: function(h) { 
 							if (isDef(parent.__channels[aName].user))
 								h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1741,6 +1748,7 @@ OpenWrap.ch.prototype.__types = {
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});*/
 			var res = $rest({
+				throwExceptions: parent.__channels[aName].throwExceptions,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1782,6 +1790,7 @@ OpenWrap.ch.prototype.__types = {
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});*/
 			var res = $rest({
+				throwExceptions: parent.__channels[aName].throwExceptions,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
