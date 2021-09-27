@@ -2517,9 +2517,7 @@ OpenWrap.obj.prototype.rest = {
  			_l(h);
  		}
 		
-		var rmap = (urlEncode) ?
-				   merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
+		var rmap = aRequestMap;
 
 		try {
 			_$(aDataRow, "aDataRow").isMap().$_();
