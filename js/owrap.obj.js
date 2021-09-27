@@ -2517,9 +2517,9 @@ OpenWrap.obj.prototype.rest = {
  			_l(h);
  		}
 		
-		/*var rmap = (urlEncode) ?
+		var rmap = (urlEncode) ?
 				   merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);*/
+				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 
 		try {
 			_$(aDataRow, "aDataRow").isMap().$_();
@@ -2527,7 +2527,7 @@ OpenWrap.obj.prototype.rest = {
 			_$(aDataRow.in, "aDataRow.in").$_();
 
 			h.upload(aDataRow.name, aDataRow.in);
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), aMethod, __, __, __, _t, retBytes);
+			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), aMethod, __, rmap, __, _t, retBytes);
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
