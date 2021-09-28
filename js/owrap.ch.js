@@ -1531,7 +1531,7 @@ OpenWrap.ch.prototype.__types = {
 				this.__channels[aName]._fnId = aK => aK;
 			}
 
-		    if (isUnDef(options.throwExceptions)) this.__channels[aName].throwExceptions = true;
+		    if (isUnDef(options.throwExceptions)) this.__channels[aName].throwExceptions = false;
 		},
 		destroy      : function(aName) {
 			delete this.__channels[aName];
@@ -1545,14 +1545,19 @@ OpenWrap.ch.prototype.__types = {
 				if (isDef(parent.__channels[aName].user))
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});*/
-			var res = $rest({
-				throwExceptions: parent.__channels[aName].throwExceptions,
-				login: function(h) { 
-					if (isDef(parent.__channels[aName].user))
-						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-				},
-				preAction: this.__channels[aName].preAction
-			}).get(url);
+			var res;
+			try {
+				res = $rest({
+					throwExceptions: parent.__channels[aName].throwExceptions,
+					login: function(h) { 
+						if (isDef(parent.__channels[aName].user))
+							h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+					},
+					preAction: this.__channels[aName].preAction
+				}).get(url);
+			} catch(e) {
+				if (isthrow e;
+			}
 			if (isDef(res) && isDef(res.count)) {
 				return res.count;
 			} else {
