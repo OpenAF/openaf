@@ -1545,19 +1545,14 @@ OpenWrap.ch.prototype.__types = {
 				if (isDef(parent.__channels[aName].user))
 					h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
 			});*/
-			var res;
-			try {
-				res = $rest({
-					throwExceptions: parent.__channels[aName].throwExceptions,
-					login: function(h) { 
-						if (isDef(parent.__channels[aName].user))
-							h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
-					},
-					preAction: this.__channels[aName].preAction
-				}).get(url);
-			} catch(e) {
-				if (isthrow e;
-			}
+			var res = $rest({
+				throwExceptions: parent.__channels[aName].throwExceptions,
+				login: function(h) { 
+					if (isDef(parent.__channels[aName].user))
+						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
+				},
+				preAction: this.__channels[aName].preAction
+			}).get(url);
 			if (isDef(res) && isDef(res.count)) {
 				return res.count;
 			} else {
