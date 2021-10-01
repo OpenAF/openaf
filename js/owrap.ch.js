@@ -1347,8 +1347,23 @@ OpenWrap.ch.prototype.__types = {
 			delete this.__channels[aName];
 		},
 		size         : function(aName) {
-			var r = this.getKeys(aName);
-			if (isDef(r)) return r.length;
+			var rr = $rest({
+				login: this.__channels[aName].login,
+				pass: this.__channels[aName].password,
+				connectionTimeout: this.__channels[aName].timeout,
+				default: this.__channels[aName].default,
+				timeout: this.__channels[aName].timeout,
+				stopWhen: this.__channels[aName].stopWhen,
+				throwExceptions: this.__channels[aName].throwExceptions,
+				preAction: this.__channels[aName].preAction
+			}).get(this.__channels[aName].url + $rest().index({ o: "l" })).r;
+
+			if (isMap(rr) && rr == {}) {
+				var r = this.getKeys(aName);
+				if (isDef(r)) return r.length;
+			} else {
+				return rr;
+			}
 		},
 		forEach      : function(aName, aFunction) {
 			var aKs = this.getKeys(aName);
@@ -1496,6 +1511,7 @@ OpenWrap.ch.prototype.__types = {
 	 *    - user  (String)          Optionally provide a user name to access the ES server/cluster.\
 	 *    - pass  (String)          Optionally provide a password to access the ES server/cluster (encrypted or not).\
 	 *    - fnId  (Function)        Optionally called on every operation to calculate the idKey with the key provided as argument.\
+	 *    - size  (Number)          Optionally getAll/getKeys to return more than 10 records (up to 10000).\
 	 * \
 	 * The getAll/getKeys functions accept an extra argument to provide a ES query map to restrict the results.
 	 * </odoc>
@@ -1570,7 +1586,11 @@ OpenWrap.ch.prototype.__types = {
 			url += "/_search";
 			var ops = {};
 			
-			if (isDef(full) && isObject(full)) { ops = full; } 
+			if (isDef(full) && isMap(full)) { 
+				ops = full; 
+			} else {
+				if (isDef(this.__channels[aName].size)) ops = { size: this.__channels[aName].size };
+			}
 				
 			var parent = this;
 			/*var res = ow.obj.rest.jsonCreate(url, {}, ops, function(h) { 
@@ -1599,7 +1619,11 @@ OpenWrap.ch.prototype.__types = {
 			url += "/_search";
 			var ops = {};
 			
-			if (isDef(full) && isObject(full)) { ops = full; } 
+			if (isDef(full) && isMap(full)) { 
+				ops = full; 
+			} else {
+				if (isDef(this.__channels[aName].size)) ops = { size: this.__channels[aName].size };
+			}
 				
 			var parent = this;
 			/*var res = ow.obj.rest.jsonCreate(url, {}, merge(ops, { _source: false }), function(h) { 
@@ -4671,13 +4695,15 @@ OpenWrap.ch.prototype.server = {
 			if (isDef(k.o)) {
 				switch(k.o) {
 				case "a":
-					return { "r": $ch(aName).getAll(aRequest), "c": ow.ch.server.__counter[aName] };
+					return { "r": $ch(aName).getAll(__), "c": ow.ch.server.__counter[aName] };
 				case "e":
-					return { "r": $ch(aName).get(k.k, aRequest), "c": ow.ch.server.__counter[aName] };
+					return { "r": $ch(aName).get(k.k, __), "c": ow.ch.server.__counter[aName] };
 				case "k":
-					return { "r": $ch(aName).getKeys(false, aRequest), "c": ow.ch.server.__counter[aName] };
+					return { "r": $ch(aName).getKeys(false, __), "c": ow.ch.server.__counter[aName] };
 				case "s":
-					return { "r": $ch(aName).getSortedKeys(false, aRequest), "c": ow.ch.server.__counter[aName] };
+					return { "r": $ch(aName).getSortedKeys(false, __), "c": ow.ch.server.__counter[aName] };
+				case "l":
+					return { "r": $ch(aName).size(), "c": ow.ch.server.__counter[aName] };
 				}
 			}
 		}
