@@ -1505,13 +1505,14 @@ OpenWrap.ch.prototype.__types = {
 	 * <key>ow.ch.types.elasticsearch</key>
 	 * This OpenAF implementation connects to an ElasticSearch (ES) server/cluster. The creation options are:\
 	 * \
-	 *    - index (String/Function) The ES index to use or a function to return the name (see also ow.ch.utils.getElasticIndex).\
-	 *    - idKey (String)          The ES key id field. Defaults to '_id'.\
-	 *    - url   (String)          The HTTP(S) URL to access the ES server/cluster.\
-	 *    - user  (String)          Optionally provide a user name to access the ES server/cluster.\
-	 *    - pass  (String)          Optionally provide a password to access the ES server/cluster (encrypted or not).\
-	 *    - fnId  (Function)        Optionally called on every operation to calculate the idKey with the key provided as argument.\
-	 *    - size  (Number)          Optionally getAll/getKeys to return more than 10 records (up to 10000).\
+	 *    - index  (String/Function) The ES index to use or a function to return the name (see also ow.ch.utils.getElasticIndex).\
+	 *    - format (String)          If index is a string will use format with ow.ch.utils.getElasticIndex.\
+	 *    - idKey  (String)          The ES key id field. Defaults to 'id'.\
+	 *    - url    (String)          The HTTP(S) URL to access the ES server/cluster.\
+	 *    - user   (String)          Optionally provide a user name to access the ES server/cluster.\
+	 *    - pass   (String)          Optionally provide a password to access the ES server/cluster (encrypted or not).\
+	 *    - fnId   (String/Function) Optionally called on every operation to calculate the idKey with the key provided as argument. If string will the corresponding hash function (md5/sha1/etc...) with sortMapKeys + stringify.\
+	 *    - size   (Number)          Optionally getAll/getKeys to return more than 10 records (up to 10000).\
 	 * \
 	 * The getAll/getKeys functions accept an extra argument to provide a ES query map to restrict the results.
 	 * </odoc>
@@ -1530,8 +1531,12 @@ OpenWrap.ch.prototype.__types = {
 			if (isFunction(options.index)) {
 				this.__channels[aName].fnIndex = options.index;
 			} else {
-				this.__channels[aName].fnIndex = function() {
-					return options.index;
+				if (isString(options.format)) {
+					this.__channels[aName].fnIndex = ow.ch.utils.getElasticIndex(options.index, options.format);
+				} else {
+					this.__channels[aName].fnIndex = function() {
+						return options.index;
+					}
 				}
 			}
 
@@ -1544,7 +1549,27 @@ OpenWrap.ch.prototype.__types = {
 					return r;
 				}
 			} else {
-				this.__channels[aName]._fnId = aK => aK;
+				if (isString(options.fnId)) {
+					var _fn;
+					switch(options.fnId.toLowerCase()) {
+					case "md2"   : _fn = md2
+					case "md5"   : _fn = md5
+					case "sha1"  : _fn = sha1
+					case "sha256": _fn = sha256
+					case "sha384": _fn = sha384
+					case "sha512": _fn = sha512
+					default      : _fn = sha1
+					}
+					this.__channels[aName]._fnId = aK => {
+						if (isMap(aK) && Object.keys(aK).length == 1 && isDef(aK.key)) return aK;
+						if (isMap(aK) && isDef(aK[options.idKey])) return aK;
+						var r = {};
+						r[options.idKey] = (isString(aK) ? aK : _fn(stringify(sortMapKeys(aK), __, "")));
+						return r;
+					}
+				} else {
+					this.__channels[aName]._fnId = aK => aK;
+				}
 			}
 
 		    if (isUnDef(options.throwExceptions)) this.__channels[aName].throwExceptions = false;
@@ -1607,7 +1632,7 @@ OpenWrap.ch.prototype.__types = {
 			}).post(url, ops);
 			if (isDef(res) && isDef(res.hits) && isDef(res.hits.hits)) {
 				return $stream(res.hits.hits).map(function(r) {
-					r._source._id = r._id;
+					r._source["_id"] = r["_id"];
 					return r._source;
 				}).toArray();
 			} else {
@@ -1658,7 +1683,8 @@ OpenWrap.ch.prototype.__types = {
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
-			url += "/" + this.__channels[aName].idKey;
+			//url += "/" + this.__channels[aName].idKey;
+			url += "/_doc";
 			
 			aK = this.__channels[aName]._fnId(aK);
 
@@ -1669,6 +1695,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 				
 			var parent = this;
+
 			var res = $rest({
 				throwExceptions: parent.__channels[aName].throwExceptions,
 				login: function(h) { 
@@ -1690,12 +1717,12 @@ OpenWrap.ch.prototype.__types = {
 				var ks = (isDef(aKs) ? ow.obj.filterKeys(aKs, aVs[ii]) : aVs[ii]);
 				var k = this.__channels[aName]._fnId(ks);
 				if (aVs[ii] != null && isDef(k[this.__channels[aName].idKey])) {
-					ops += stringify({ index: {
+					var m = { index: {
 						_index: this.__channels[aName].fnIndex(aVs[ii]), 
-						_type : this.__channels[aName].idKey,
-						_id   : k[this.__channels[aName].idKey] 
-					}}, __, "") + "\n" + 
-					stringify(aVs[ii], __, "") + "\n";
+						_id   : k[this.__channels[aName].idKey]
+					}};
+					
+					ops += stringify(m, __, "") + "\n" + stringify(aVs[ii], __, "") + "\n";
 				}
 			}
 			
@@ -1730,11 +1757,11 @@ OpenWrap.ch.prototype.__types = {
 				var ks = (isDef(aKs) ? ow.obj.filterKeys(aKs, aVs[ii]) : aVs[ii]);
 				var k = this.__channels[aName]._fnId(ks);
 				if (aVs[ii] != null && isDef(k[this.__channels[aName].idKey])) {
-					ops += stringify({ delete: {
+					var m = { delete: {
 						_index: this.__channels[aName].fnIndex(aVs[ii]), 
-						_type : this.__channels[aName].idKey,
-						_id   : k[this.__channels[aName].idKey] 
-					}}, __, "") + "\n" /*+ 
+						_id   : k[this.__channels[aName].idKey]
+					}};
+					ops += stringify(m, __, "") + "\n" /*+ 
 					stringify(k, __, "") + "\n";*/
 				}
 			}
@@ -1755,7 +1782,7 @@ OpenWrap.ch.prototype.__types = {
 		},		
 		get          : function(aName, aK) {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
-			url += "/" + this.__channels[aName].idKey;
+			url += "/_doc";
 			
 			aK = this.__channels[aName]._fnId(aK);
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
@@ -1797,7 +1824,7 @@ OpenWrap.ch.prototype.__types = {
 		},
 		unset        : function(aName, aK, aTimestamp) {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
-			url += "/" + this.__channels[aName].idKey;
+			url += "/_doc";
 			
 			aK = this.__channels[aName]._fnId(aK);
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
