@@ -6225,9 +6225,16 @@ var OJOB_VALIDATION_STRICT = false;
  * Runs a oJob aFile with the provided args (arguments).
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
- */
+ */ 
 function oJobRunFile(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
-	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
+	var oo;
+	if (isDef(aId)) {
+		loadCompiledLib("owrap_oJob_js");
+		oo = new OpenWrap.oJob();
+	} else {
+		oo = ow.loadOJob();
+	}
+
 	oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap);
 }
 
