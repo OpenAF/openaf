@@ -85,7 +85,8 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 			// Send
 			if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();
 			this.sport = aSendPort;
-			this.pidfile = getOpenAFPath() + "/openaf_python.pid";
+			//this.pidfile = getOpenAFPath() + "/openaf_python.pid";
+			this.pidfile = ow.format.getUserHome() + "/.openaf_python.pid";
 			var s = "# -*- coding: utf-8 -*-\n";
 			s += "import json\n";
 			s += "import sys\n";
