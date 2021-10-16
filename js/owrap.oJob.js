@@ -409,7 +409,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 						if (isUnDef(global.oJobClusters)) global.oJobClusters = {}; 
 						if (isUnDef(this.__mstTime)) this.__mstTime = [];
 					
-						for(let ii in this.__ojob.channels.clusters) {
+						for(var ii in this.__ojob.channels.clusters) {
 							var cluster = this.__ojob.channels.clusters[ii];
 
 							_$(cluster.name).isString().$_("Each channel cluster must have a name.");
@@ -1121,8 +1121,10 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			var aa = "";
 			if (isDef(args) && this.__ojob.logArgs) {
 				var temp = clone(args);
-				delete temp.objId;
-				delete temp.execid;
+				if (isMap(temp)) {
+					delete temp.objId;
+					delete temp.execid;
+				}
 				aa = "[" + existing.name + "] | " + JSON.stringify(temp) + "\n";
 			}
 
@@ -1478,7 +1480,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 				exit(-1);
 			} 
 		}, this.__ojob.checkStall.everySeconds * 1000);
-	}
+	} 
 
 	//var shouldStop = false;
 	this.oJobShouldStop = false;
@@ -2224,7 +2226,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			if (!isArray(jobFrom)) jobFrom = [ jobFrom ];
 			_$(jobFrom).isArray();
 
-			for(let jfi in jobFrom) {
+			for(var jfi in jobFrom) {
 				var f = (isMap(jobFrom[jfi]) ? procJob(jobFrom[jfi].name, jobFrom[jfi].deps, jobFrom[jfi].type, jobFrom[jfi].typeArgs, jobFrom[jfi].args, jobFrom[jfi].exec, jobFrom[jfi].from, jobFrom[jfi].to, jobFrom[jfi].help, jobFrom[jfi].catch, jobFrom[jfi].each, jobFrom[jfi].lang, jobFrom[jfi].file) : aJobsCh.get({ "name": jobFrom[jfi] }));
 				if (isDef(f)) {
 					//j.type = _$(j.type).isString().default(f.type);
@@ -2263,7 +2265,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			if (!isArray(jobTo)) jobTo = [ jobTo ];
 			_$(jobTo).isArray();
 
-			for(let jfi in jobTo) {
+			for(var jfi in jobTo) {
 				var f = (isMap(jobTo[jfi]) ? procJob(jobTo[jfi].name, jobTo[jfi].deps, jobTo[jfi].type, jobTo[jfi].typeArgs, jobTo[jfi].args, jobTo[jfi].exec, jobTo[jfi].from, jobTo[jfi].to, jobTo[jfi].help, jobTo[jfi].catch, jobTo[jfi].each, jobTo[jfi].lang, jobTo[jfi].file) : aJobsCh.get({ "name": jobTo[jfi] }));
 				if (isDef(f)) {
 					//j.type = (isDef(f.type) ? f.type : j.type);
