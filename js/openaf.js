@@ -2683,6 +2683,8 @@ function extend() {
 	};
 
 	jQuery.isPlainObject = function( obj ) {
+		if (isJavaObject(obj)) return false;
+		
 		if ( jQuery.type( obj ) !== "object" || obj.nodeType ) {
 			return false;
 		}
