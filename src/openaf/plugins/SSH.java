@@ -25,6 +25,7 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
+import org.mozilla.javascript.NativeJavaObject;
 
 import openaf.AFCmdBase;
 import openaf.SimpleLog;
@@ -44,6 +45,7 @@ import com.jcraft.jsch.SftpException;
 import com.jcraft.jsch.SftpStatVFS;
 import com.jcraft.jsch.UIKeyboardInteractive;
 import com.jcraft.jsch.UserInfo;
+import com.jcraft.jsch.SftpProgressMonitor;
 
 /**
  * 
@@ -447,21 +449,26 @@ public class SSH extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.get(aRemoteFilePath, aLocalFilePath) : String</key>
+	 * <key>SSH.get(aRemoteFilePath, aLocalFilePath, monitor) : String</key>
 	 * Retrieves a file, using the SFTP connection, from aRemoteFilePath to aLocalFilePath.
 	 * Use SSH.getBytes in case you are reading a binary file.
+	 * Optionally you can provided a callback function called monitor (see more in ow.format.sshProgress)
 	 * </odoc>
 	 */
 	@JSFunction
-	public String get(String remoteFile, String localFile) throws JSchException, SftpException {
+	public String get(String remoteFile, String localFile, Object monitor) throws JSchException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		String res = null;
 		
+		if (localFile == null) localFile = remoteFile;
 		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
 			//if (!channel.isConnected()) channel.connect();
-			
-			channel.get(remoteFile, localFile);
+
+			if (monitor != null && !(monitor instanceof Undefined)) 
+				channel.get(remoteFile, localFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap());
+			else
+				channel.get(remoteFile, localFile);
 			
 			//channel.disconnect();
 		}		
@@ -476,16 +483,23 @@ public class SSH extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object getBytes(String remoteFile) throws JSchException, IOException, SftpException {
+	public Object getBytes(String remoteFile, Object monitor) throws JSchException, IOException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		byte[] res = null;
 		
 		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
 			//if (!channel.isConnected()) channel.connect();
-			try (InputStream is = channel.get(remoteFile)) {
-				res = IOUtils.toByteArray(is);
+			if (monitor != null && !(monitor instanceof Undefined)) {
+				try (InputStream is = channel.get(remoteFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap())) {
+					res = IOUtils.toByteArray(is);
+				}
+			} else {
+				try (InputStream is = channel.get(remoteFile)) {
+					res = IOUtils.toByteArray(is);
+				}
 			}
+
 
 			//channel.disconnect();
 		}
@@ -495,19 +509,24 @@ public class SSH extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.putBytes(aRemoteFilePath, bytes)</key>
+	 * <key>SSH.putBytes(aRemoteFilePath, bytes, monitor)</key>
 	 * Writes an array of bytes on aRemoteFilePath, using the SFTP connection.
+	 * Optionally you can provided a callback function called monitor (see more in ow.format.sshProgress)
 	 * </odoc>
 	 */
 	@JSFunction
-	public void putBytes(String remoteFile, Object bytes) throws JSchException, SftpException {
+	public void putBytes(String remoteFile, Object bytes, Object monitor) throws JSchException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		
 		//channel = (ChannelSftp) getSftpChannel();	
 		if (channel != null && bytes instanceof byte[]) {
 			//if (!channel.isConnected()) channel.connect();
 			
-			channel.put(new ByteArrayInputStream((byte[]) bytes), remoteFile);
+			if (monitor != null && !(monitor instanceof Undefined)) {
+				channel.put(new ByteArrayInputStream((byte[]) bytes), remoteFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap());
+			} else {
+				channel.put(new ByteArrayInputStream((byte[]) bytes), remoteFile);
+			}
 			
 			//channel.disconnect();
 		}
@@ -515,20 +534,26 @@ public class SSH extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.put(aSourceFilePath, aRemoteFilePath)</key>
+	 * <key>SSH.put(aSourceFilePath, aRemoteFilePath, monitor)</key>
 	 * Copies a aSourceFilePath to aRemoteFilePath, using the SFTP connection.
+	 * Optionally you can provided a callback function called monitor (see more in ow.format.sshProgress)
 	 * </odoc>
 	 */
 	@JSFunction
-	public void put(String sourceFile, String remoteFile) throws JSchException, IOException, FileNotFoundException, SftpException {
+	public void put(String sourceFile, String remoteFile, Object monitor) throws JSchException, IOException, FileNotFoundException, SftpException {
 		ChannelSftp channel = (ChannelSftp) getSftpChannel();
 		String res = null;
 		
+		if (remoteFile == null) remoteFile = sourceFile;
 		//channel = (ChannelSftp) getSftpChannel();
 		if (channel != null) {
 			//if (!channel.isConnected()) channel.connect();
 			try ( InputStream is = new FileInputStream(sourceFile) ) {
-				channel.put(is, remoteFile);
+				if (monitor != null && !(monitor instanceof Undefined)) {
+					channel.put(is, remoteFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap());
+				} else {
+					channel.put(is, remoteFile);
+				}
 			}
 			
 			//channel.disconnect();
@@ -852,46 +877,74 @@ public class SSH extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.sftpGet(aRemoteFile, aLocalFile) : JavaStream</key>
+	 * <key>SSH.sftpGet(aRemoteFile, aLocalFile, monitor) : JavaStream</key>
 	 * Retrieves a remote file over the SFTP connection to be stored on the local path provided. If aLocalFile is
 	 * not provided the remote file contents will be returned as a Java Stream
+	 * Optionally you can provided a callback function called monitor (see more in ow.format.sshProgress)
 	 * </odoc>
 	 * @throws IOException 
 	 */
 	@JSFunction
-	public Object sftpGet(String remoteFile, String localFile) throws SftpException, JSchException, IOException {
+	public Object sftpGet(String remoteFile, String localFile, Object monitor) throws SftpException, JSchException, IOException {
 		ChannelSftp ch = (ChannelSftp) getSftpChannel();
 		
-		if (localFile != null && !localFile.equals("") && !localFile.endsWith("undefined")) {
-			ch.get(remoteFile, localFile);
+		if (localFile == null) localFile = remoteFile;
+		if (monitor != null && !(monitor instanceof Undefined)) {
+			if (localFile != null && !localFile.equals("") && !localFile.endsWith("undefined")) {
+				ch.get(remoteFile, localFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap());
+			} else {
+				try ( InputStream is = ch.get(remoteFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap()) ) {
+					return IOUtils.toBufferedInputStream(is);
+				}
+			}
 		} else {
-			try ( InputStream is = ch.get(remoteFile) ) {
-				return IOUtils.toBufferedInputStream(is);
+			if (localFile != null && !localFile.equals("") && !localFile.endsWith("undefined")) {
+				ch.get(remoteFile, localFile);
+			} else {
+				try ( InputStream is = ch.get(remoteFile) ) {
+					return IOUtils.toBufferedInputStream(is);
+				}
 			}
 		}
+
 		return remoteFile;
 	}
 	
 	/**
 	 * <odoc>
-	 * <key>SSH.sftpPut(aSource, aRemoteFile)</key>
+	 * <key>SSH.sftpPut(aSource, aRemoteFile, monitor)</key>
 	 * Sends aSource file (if string) or a Java stream to a remote file path over a SFTP connection.
+	 * Optionally you can provided a callback function called monitor (see more in ow.format.sshProgress)
 	 * </odoc>
 	 * @throws Exception 
 	 */
 	@JSFunction
-	public void sftpPut(Object aSource, String aRemoteFile) throws Exception {
+	public void sftpPut(Object aSource, String aRemoteFile, Object monitor) throws Exception {
 		ChannelSftp ch = (ChannelSftp) getSftpChannel();
 		
-		if (aSource instanceof String) {
-			ch.put((String) aSource, aRemoteFile);
-		} else {
-			if (aSource instanceof InputStream) {
-				try ( OutputStream os = ch.put(aRemoteFile) ) {
-					IOUtils.copyLarge((InputStream) aSource, os);
-				}
+		if (monitor != null && !(monitor instanceof Undefined)) {
+			if (aSource instanceof String) {
+				ch.put((String) aSource, aRemoteFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap());
 			} else {
-				throw new Exception("Expecting a string source file name or a Java Input stream as source");
+				if (aSource instanceof InputStream) {
+					try ( OutputStream os = ch.put(aRemoteFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap(), 0) ) {
+						IOUtils.copyLarge((InputStream) aSource, os);
+					}
+				} else {
+					throw new Exception("Expecting a string source file name or a Java Input stream as source");
+				}
+			}
+		} else {
+			if (aSource instanceof String) {
+				ch.put((String) aSource, aRemoteFile);
+			} else {
+				if (aSource instanceof InputStream) {
+					try ( OutputStream os = ch.put(aRemoteFile) ) {
+						IOUtils.copyLarge((InputStream) aSource, os);
+					}
+				} else {
+					throw new Exception("Expecting a string source file name or a Java Input stream as source");
+				}
 			}
 		}
 	}	

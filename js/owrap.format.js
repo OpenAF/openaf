@@ -1866,6 +1866,48 @@ OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {
 
 /**
  * <odoc>
+ * <key>ow.format.sshProgress(aFn) : Object</key>
+ * Returns a SSH Java progress monitor callback object to be use with the SSH plugin functions.
+ * Expects callback aFn that will be called with state (e.g. begin, count, end) and an Info map.
+ * The Info map is composed of:
+ *    source - the reported source of the transfer\
+ *    target - the reported target of the transfer\
+ *    op     - the operation being performed (get or put)\
+ *    start  - reported unix epoch when the transfer started\
+ *    end    - reported unix epoch when the transfer stopped\
+ *    count  - the last reported byte count\
+ *    speed  - the calculated speed of transfer\
+ * \
+ * If the returned value is false the transfer will be cancelled.
+ * </odoc>
+ */
+OpenWrap.format.prototype.sshProgress = function(aFn) {
+	_$(aFn).isFunction().$_();
+    var info = {};
+
+    return new Packages.com.jcraft.jsch.SftpProgressMonitor({ 
+        count: function(c) {
+            info.count = c;
+            info.speed = (c * 1000) / (now() - info.start);
+            return aFn("count", info);
+        }, 
+        end  : function() { 
+            info.end = now();
+            aFn("end", info);
+        }, 
+        init : function(op, src, dest, max) {
+            info.source   = src;
+            info.target   = dest;
+            info.maxBytes = max;
+            info.op       = (op == 1) ? "get" : "put";
+            info.start    = now();
+            aFn("begin", info);
+        }
+    });
+}
+
+/**
+ * <odoc>
  * <key>ow.format.progressReport(aMainFunc, aProgressFunc, aTimeout)</key>
  * Executes aMainFunc to execute some synchronous function while aProgressFunc is called asynchronously to 
  * keep track of progress. You can also provide an alternative aTimeout between aProgressFunc calls (defaults to 150ms).
