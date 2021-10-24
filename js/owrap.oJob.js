@@ -78,6 +78,7 @@
 
 	//this.__sch = new ow.server.scheduler();
 	this.__ojob = { recordLog: true, logArgs: false, numThreads: __, logToConsole: true };
+	this.__help = {};
 	this.__expr = processExpr(" ");
 	if (isDef(this.__expr[""])) delete this.__expr[""];
 	this.__logLimit = 3;
@@ -190,17 +191,18 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
 
 /**
  * <odoc>
- * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, init)</key>
+ * <key>oJob.load(aJobsList, aTodoList, aoJobList, args, aId, init, help)</key>
  * Loads a set of aJobsList, corresponding aTodoList and a list of aoJobList.
  * Optionally you can provide aId to segment these specific jobs.
  * </odoc>
  */
-OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
+OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help) {
 	ojob = _$(ojob).isMap().default({});
 
 	if (isUnDef(jobs)) jobs = [];
 	if (isUnDef(todo)) todo = [];
 	this.__ojob = merge(this.__ojob, ojob);
+	this.__help = merge(this.__help, help);
 
 	if (isUnDef(aId) && isDef(this.__ojob.id)) aId = this.__ojob.id;
 
@@ -295,6 +297,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init) {
 	}
 
 	this.__ojob.depsWait = _$(this.__ojob.depsWait).isBoolean().default(false);
+	this.__ojob.showHelp = _$(this.__ojob.showHelp).isBoolean().default(true);
 
 	this.__ojob.checkStall = _$(ojob.checkStall).isMap().default(__);
 	if (isDef(this.__ojob_checkStall)) {
@@ -644,6 +647,11 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	else
 		res.code = isDef(aJSONb.code) ? aJSONb.code : {};			
 
+	if (isDef(aJSONa.help)) 
+		res.help = merge(aJSONa.help, aJSONb.help);
+	else
+		res.help = isDef(aJSONb.help) ? aJSONb.help : {};	
+
 	return res;
 };
 
@@ -879,7 +887,7 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptions
 			s.ojob.__subjob = true;
 		}
 		if (isUnDef(aOptionsMap) || !isMap(aOptionsMap)) aOptionsMap = {};
-		this.load(s.jobs, s.todo, merge(aOptionsMap, s.ojob), args, aId, s.init);
+		this.load(s.jobs, s.todo, merge(aOptionsMap, s.ojob), args, aId, s.init, s.help);
 	}
 };
 
@@ -1351,6 +1359,57 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 
 /**
  * <odoc>
+ * <key>ow.oJob.showHelp(aHelpMap, args) : boolean</key>
+ * Given a job help map and the current arguments determines if there is a need to show help usage text and shows it on stdout.
+ * Returns true if help was output, false otherwise.
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs) {
+	_$(aHelpMap, "helpMap").isMap().$_();
+	_$(aArgs, "args").isMap().$_();
+
+	aHelpMap.expects = _$(aHelpMap.expects, "helpMap.expects").isArray().default([]);
+	
+	// Check if there is a need to show help
+	var shouldShow = false;
+	aHelpMap.expects.filter(param => isDef(param.mandatory) && param.mandatory).forEach(param => {
+	  if (isUnDef(aArgs[param.name])) shouldShow = true;
+	})
+
+	if (!shouldShow) return false;
+
+	var usage = ansiColor("BOLD", "Usage:") + " ojob ";
+	var example = ansiColor("BOLD", "Example:\n") + ansiColor("GREEN", "'$ ojob ");
+	var pargs = "";
+
+	// Get current name
+	usage   += __expr.replace(/^([^ ]+).*/, "$1 ");
+	example += ansiColor("GREEN", __expr.replace(/^([^ ]+).*/, "$1 "));
+
+	// Check params
+	var maxSize = 0;
+	aHelpMap.expects.forEach(param => maxSize = (maxSize > param.name.length) ? maxSize : param.name.length);
+	aHelpMap.expects.forEach(param => {
+	  usage   += "[" + param.name + "=..." + "] ";
+	  if (isUnDef(param.mandatory) || param.mandatory) {
+		example += ansiColor("GREEN", param.name + "=" + param.example.replace(/ /g, "\\ ") + " ");
+		pargs += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, param.desc);
+	  } else {
+		pargs += $f("%" + maxSize + "s: %s\n", param.name, param.desc);
+	  }
+	  
+	});
+
+	if (isDef(aHelpMap.text)) print(ansiColor("ITALIC", aHelpMap.text));
+	print(usage);
+	if (pargs.length > 0) print(ow.format.withSideLine(pargs.replace(/\n$/mg, ""), __, "BLUE", __, ow.format.withSideLineThemes().simpleLineWithCTips));
+	print(example + ansiColor("GREEN", "'") + "\n");
+
+	return true;
+};
+
+/**
+ * <odoc>
  * <key>oJob.start(args, shouldStop, aId, isSubJob) : oJob</key>
  * Starts the todo list. Optionally you can provide arguments to be used by each job.
  * Optionally you can provide aId to segment these specific jobs.
@@ -1467,6 +1526,22 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	}
 
 	global.args = args;
+
+    // Show help if enabled and determined
+    if (this.__ojob.showHelp) {
+		// Find reserved job called 'Help' or use the default help on the ojob definition
+		var helpmap;
+		if (compare(this.__help, {})) {
+			job = this.getJobsCh().get({ name: "Help" });
+			if (isDef(job) && isDef(job.help)) helpmap = job.help;
+		} else {
+			helpmap = this.__help;
+		}
+		if (isDef(helpmap)) {
+			// Call format function with the help map and current arguments. Stop if help was output
+			if (this.showHelp(helpmap, args)) return;
+		}
+	}
 
 	var t = new Threads();
 	this.mt = new Threads();
