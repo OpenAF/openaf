@@ -79,6 +79,7 @@
 	//this.__sch = new ow.server.scheduler();
 	this.__ojob = { recordLog: true, logArgs: false, numThreads: __, logToConsole: true };
 	this.__help = {};
+	this.__file = "thisOJob.yaml";
 	this.__expr = processExpr(" ");
 	if (isDef(this.__expr[""])) delete this.__expr[""];
 	this.__logLimit = 3;
@@ -656,7 +657,7 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 };
 
 OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
-	var res = {}, parent = this, validation = false;
+	var res = {}, parent = this, validation = false, aOrigFile = aFile;
 
 	var fnDown = url => {
 		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
@@ -796,6 +797,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 	if (OJOB_VALIDATION_STRICT && !validation) {
 		throw "OJOB VALIDATION OF '" + aFile + "' failed.";
 	}
+
+	this.__file = aOrigFile;
 
 	return this.loadJSON(res, removeTodos);
 };
@@ -1383,8 +1386,10 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	var pargs = "";
 
 	// Get current name
-	usage   += __expr.replace(/^([^ ]+).*/, "$1 ");
-	example += ansiColor("GREEN", __expr.replace(/^([^ ]+).*/, "$1 "));
+	//usage   += __expr.replace(/^([^ ]+).*/, "$1 ");
+	//example += ansiColor("GREEN", __expr.replace(/^([^ ]+).*/, "$1 "));
+	usage   += this.__file + " ";
+	example += ansiColor("GREEN", this.__file + " ");
 
 	// Check params
 	var maxSize = 0;
