@@ -226,6 +226,7 @@ function ojob_jobhelp() {
 	if (isDef(file)) {
 		var oj = ow.loadOJob().previewFile(file);
 		var hh = $from(oj.jobs).equals("name", job).select({ "name": "n/a", "help": "n/a" })[0];
+		if (hh.name == "Help" && isMap(hh.help) && isUnDef(hh.exec) && isDef(oj.help)) hh = __;
 		if (isDef(hh)) {
 			print(hh.name);
 			print(repeat(hh.name.length, '-'));
