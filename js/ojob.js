@@ -67,7 +67,7 @@ function ojob_showHelp() {
 	print("  -deps          Draws a list of dependencies of todo jobs on a file.");
 	print("  -jobhelp (job) Display any available help information for a job.");
 	print("");
-	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE +")");
+	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE + ")");
 	ojob_shouldRun = false;
 }
 
@@ -89,7 +89,7 @@ function ojob__getFile() {
 
 function ojob_compile() {
 	var file = ojob__getFile();
-	
+
 	if (isDef(file)) {
 		print(af.toYAML(ow.loadOJob().previewFile(file)));
 	}
@@ -98,7 +98,7 @@ function ojob_compile() {
 
 function ojob_tojson() {
 	var file = ojob__getFile();
-	
+
 	if (isDef(file)) {
 		sprint(ow.loadOJob().previewFile(file));
 	}
@@ -107,7 +107,7 @@ function ojob_tojson() {
 
 function ojob_jobs() {
 	var file = ojob__getFile();
-	
+
 	if (isDef(file)) {
 		print(af.toYAML($stream(ow.loadOJob().previewFile(file).jobs).map("name").distinct().toArray().sort()));
 	}
@@ -131,22 +131,22 @@ function ojob_draw() {
 			return [];
 		}
 	}
-	
+
 	function getPaths(aJobName, res) {
 		var j = $from(oj.jobs).equals("name", aJobName).first();
-		
+
 		if (isUnDef(res)) res = {
 			from: [],
 			to  : []
 		};
-		
+
 		if (isUnDef(j)) return res;
-	
+
 		res = {
 			to  : res.to.concat(j.to),
 			from: res.from.concat(j.from)
 		};
-	
+
 		res = getPaths(j.from, res);
 		res = getPaths(j.to, res);
 
@@ -166,9 +166,9 @@ function ojob_draw() {
 				var r = getPath(dep);
 				if (r.length > 0) {
 					msg += " (" + r + ")";
-				}	
+				}
 			}
-			
+
 		}
 
 		return msg;
@@ -177,7 +177,7 @@ function ojob_draw() {
 	if (oj.ojob.sequential) {
 		print("Sequential dependencies are enabled.\n");
 	}
-	
+
 	ansiStart();
 	print(ansiColor("bold,underline", "\nDependencies:"));
 	oj.todo.map(function(v) {
@@ -187,7 +187,7 @@ function ojob_draw() {
 		var deps = getDeps(nn);
 		print(getPath(nn));
 	});
-	
+
 	print(ansiColor("bold,underline", "\nPaths:"));
 	oj.todo.map(function(v) {
 		if (isDef(v.job) && isUnDef(v.name)) v.name = v.job;
@@ -204,16 +204,16 @@ function ojob_draw() {
 		print(msg);
 	});
 	ansiStop();
-	
+
 	ojob_shouldRun = false;
 }
 
 function ojob_jobhelp() {
 	var file = ojob__getFile();
-	
+
 	//var ks = Object.keys(params);
-	var job = String(__expr).replace(/.+-jobhelp */i, ""); 
-        params = [];
+	var job = String(__expr).replace(/.+-jobhelp */i, "");
+	params = [];
 	if (job != "") {
 		params = [];
 	} else {
@@ -222,9 +222,10 @@ function ojob_jobhelp() {
 		return undefined;*/
 		job = "help";
 	}
-	
+
 	if (isDef(file)) {
-		var hh = $from(ow.loadOJob().previewFile(file).jobs).equals("name", job).select({"name":"n/a", "help": "n/a"})[0];
+		var oj = ow.loadOJob().previewFile(file);
+		var hh = $from(oj.jobs).equals("name", job).select({ "name": "n/a", "help": "n/a" })[0];
 		if (isDef(hh)) {
 			print(hh.name);
 			print(repeat(hh.name.length, '-'));
@@ -235,29 +236,33 @@ function ojob_jobhelp() {
 				print(hh.help.text + "\n");
 				if (isDef(hh.help.expects)) {
 					print("Expects:");
-          				tprint("{{#each expects}}   {{name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help);
+					tprint("{{#each expects}}   {{name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help);
 				}
 				if (isDef(hh.help.returns)) {
-         				print("Returns:");
-          				tprint("{{#each returns}}   {{name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help);
+					print("Returns:");
+					tprint("{{#each returns}}   {{name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help);
 				}
 			}
 		} else {
-                   	printErr("Didn't find job help for '" + job + "'.");
-                        return undefined;
-                }
+			if (isDef(oj.help)) {
+				if (!(isDef(oj.ojob) && isDef(oj.ojob.showHelp) && oj.ojob.showHelp == false)) ow.oJob.showHelp(oj.help, {}, true);
+			} else {
+				printErr("Didn't find job help for '" + job + "'.");
+				return __;
+			}
+		}
 	}
 	ojob_shouldRun = false;
 }
 
 function ojob_todo() {
 	var file = ojob__getFile();
-	
+
 	if (isDef(file)) {
 		var l = ow.loadOJob().previewFile(file).todo;
 		var r = [];
 		for(var i in l) {
-			if (isObject(l[i])) 
+			if (isObject(l[i]))
 				r.push(l[i].name);
 			else
 				r.push(l[i]);
@@ -276,7 +281,7 @@ function ojob_runFile() {
 		//for(var ii in params) {
 		//	__expr += ii + "=" + params[ii].replace(/ /g, "\\ ") + " ";
 		//}
-		
+
 		if (isDef(file)) {
 			oJobRunFile(file, ojob_args, __, (nocolor) ? { conAnsi: false } : __);
 		}
