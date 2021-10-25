@@ -1406,7 +1406,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	  }
 	});
 
-	if (isDef(aHelpMap.text)) print(ansiColor("ITALIC", aHelpMap.text));
+	if (isDef(aHelpMap.text)) print(ansiColor("RESET", aHelpMap.text));
 	print(usage);
 	if (pargs.length > 0) print(ow.format.withSideLine(pargs.replace(/\n$/mg, ""), __, "BLUE", __, ow.format.withSideLineThemes().simpleLineWithCTips));
 	print(example + ansiColor("GREEN", "'") + "\n");
