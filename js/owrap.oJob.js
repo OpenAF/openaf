@@ -189,7 +189,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	if (isUnDef(jobs)) jobs = [];
 	if (isUnDef(todo)) todo = [];
 	this.__ojob = merge(this.__ojob, ojob);
-	this.__help = merge(this.__help, help);
+	if (isMap(help) && !compare(help, {})) this.__help = help;
 
 	if (isUnDef(aId) && isDef(this.__ojob.id)) aId = this.__ojob.id;
 
@@ -591,7 +591,7 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 		return t;
 	}
 
-	var res = { include: [], jobs: [], todo: [], ojob: {}, init: {}, code: {} };
+	var res = { include: [], jobs: [], todo: [], ojob: {}, init: {}, code: {}, help: {} };
 	
 	if (isUnDef(aJSONa)) return res;
 
