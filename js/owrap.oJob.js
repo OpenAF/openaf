@@ -1359,19 +1359,19 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 
 /**
  * <odoc>
- * <key>ow.oJob.showHelp(aHelpMap, args) : boolean</key>
+ * <key>ow.oJob.showHelp(aHelpMap, args, showAnyway) : boolean</key>
  * Given a job help map and the current arguments determines if there is a need to show help usage text and shows it on stdout.
  * Returns true if help was output, false otherwise.
  * </odoc>
  */
-OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs) {
+OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	_$(aHelpMap, "helpMap").isMap().$_();
 	_$(aArgs, "args").isMap().$_();
 
 	aHelpMap.expects = _$(aHelpMap.expects, "helpMap.expects").isArray().default([]);
 	
 	// Check if there is a need to show help
-	var shouldShow = false;
+	var shouldShow = _$(showAnyway).isBoolean().default(false);
 	aHelpMap.expects.filter(param => isDef(param.mandatory) && param.mandatory).forEach(param => {
 	  if (isUnDef(aArgs[param.name])) shouldShow = true;
 	})
@@ -1388,16 +1388,17 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs) {
 
 	// Check params
 	var maxSize = 0;
-	aHelpMap.expects.forEach(param => maxSize = (maxSize > param.name.length) ? maxSize : param.name.length);
+	aHelpMap.expects.forEach(param => maxSize = (isDef(param.name) && maxSize > param.name.length) ? maxSize : param.name.length);
 	aHelpMap.expects.forEach(param => {
-	  usage   += "[" + param.name + "=..." + "] ";
-	  if (isUnDef(param.mandatory) || param.mandatory) {
-		example += ansiColor("GREEN", param.name + "=" + param.example.replace(/ /g, "\\ ") + " ");
-		pargs += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, param.desc);
-	  } else {
-		pargs += $f("%" + maxSize + "s: %s\n", param.name, param.desc);
+	  if (isDef(param.name)) {
+		usage   += "[" + param.name + "=..." + "] ";
+		if (isUnDef(param.mandatory) || param.mandatory) {
+		  example += ansiColor("GREEN", param.name + "=" + (isDef(param.example) ? param.example.replace(/ /g, "\\ ") + " " : "..."));
+		  pargs += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
+		} else {
+		  pargs += $f("%" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
+		}
 	  }
-	  
 	});
 
 	if (isDef(aHelpMap.text)) print(ansiColor("ITALIC", aHelpMap.text));
@@ -1539,7 +1540,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		}
 		if (isDef(helpmap)) {
 			// Call format function with the help map and current arguments. Stop if help was output
-			if (this.showHelp(helpmap, args)) return;
+			if (this.showHelp(helpmap, args, false)) return;
 		}
 	}
 
