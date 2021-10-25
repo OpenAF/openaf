@@ -1393,7 +1393,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	  if (isDef(param.name)) {
 		usage   += "[" + param.name + "=..." + "] ";
 		if (isUnDef(param.mandatory) || param.mandatory) {
-		  example += ansiColor("GREEN", param.name + "=" + (isDef(param.example) ? param.example.replace(/ /g, "\\ ") + " " : "..."));
+		  example += ansiColor("GREEN", param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "..."));
 		  pargs += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
 		} else {
 		  pargs += $f("%" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
