@@ -1368,7 +1368,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	if (!shouldShow) return false;
 
 	var usage = ansiColor("BOLD", "Usage:") + " ojob ";
-	var example = ansiColor("BOLD", "Example:\n") + ansiColor("GREEN", "'$ ojob ");
+	var example = ansiColor("BOLD", "\nExample: ") + ansiColor("GREEN", "'$ ojob ");
 	var pargs = "";
 
 	// Get current name
@@ -1392,7 +1392,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	  }
 	});
 
-	if (isDef(aHelpMap.text)) print(ansiColor("RESET", aHelpMap.text));
+	if (isDef(aHelpMap.text)) print(ansiColor("RESET", aHelpMap.text + "\n"));
 	print(usage);
 	if (pargs.length > 0) print(ow.format.withSideLine(pargs.replace(/\n$/mg, ""), __, "BLUE", __, ow.format.withSideLineThemes().simpleLineWithCTips));
 	print(example + ansiColor("GREEN", "'") + "\n");
