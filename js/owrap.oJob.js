@@ -1371,6 +1371,9 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	_$(aHelpMap, "helpMap").isMap().$_();
 	_$(aArgs, "args").isMap().$_();
 
+	if (!__flags.OJOB_HELPSIMPLEUI) __initializeCon();
+	var simpleUI = __flags.OJOB_HELPSIMPLEUI ? true : !(isDef(__conAnsi) ? __conAnsi : false);
+
 	aHelpMap.expects = _$(aHelpMap.expects, "helpMap.expects").isArray().default([]);
 	
 	// Check if there is a need to show help
@@ -1381,16 +1384,28 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 
 	if (!shouldShow) return false;
 
-	var usage = ansiColor("BOLD", "Usage:") + " ojob ";
-	var example = ansiColor("BOLD", "\nExample: ") + ansiColor("GREEN", "'$ ojob ");
+	var usage, example;
+	if (simpleUI) {
+		usage   = "Usage: ojob ";
+		example = "Example: '$ ojob ";
+	} else {
+		usage   = ansiColor("BOLD", "Usage:") + " ojob ";
+		example = ansiColor("BOLD", "\nExample: ") + ansiColor("GREEN", "'$ ojob ");
+	}
+
 	var pargs = "";
 
 	// Get current name
 	//usage   += __expr.replace(/^([^ ]+).*/, "$1 ");
 	//example += ansiColor("GREEN", __expr.replace(/^([^ ]+).*/, "$1 "));
-	usage   += this.__file + " ";
-	example += ansiColor("GREEN", this.__file + " ");
-
+	if (simpleUI) {
+		usage   += this.__file + " ";
+		example += this.__file + " ";
+	} else {
+		usage   += this.__file + " ";
+		example += ansiColor("GREEN", this.__file + " ");
+	}
+	
 	// Check params
 	var maxSize = 0;
 	aHelpMap.expects.forEach(param => maxSize = (isDef(param.name) && maxSize > param.name.length) ? maxSize : param.name.length);
@@ -1398,18 +1413,34 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 	  if (isDef(param.name)) {
 		usage   += "[" + param.name + "=..." + "] ";
 		if (isUnDef(param.mandatory) || param.mandatory) {
-		  example += ansiColor("GREEN", param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "..."));
-		  pargs += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
+		  if (simpleUI) {
+			example += param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "...");
+			pargs   += $f(" *   %" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
+		  } else {
+			example += ansiColor("GREEN", param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "..."));
+			pargs   += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
+		  }
 		} else {
-		  pargs += $f("%" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
+		  if (simpleUI) {
+			pargs += $f("     %" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
+		  } else {
+			pargs += $f("%" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
+		  }
 		}
 	  }
 	});
 
-	if (isDef(aHelpMap.text)) print(ansiColor("RESET", aHelpMap.text + "\n"));
-	print(usage);
-	if (pargs.length > 0) print(ow.format.withSideLine(pargs.replace(/\n$/mg, ""), __, "BLUE", __, ow.format.withSideLineThemes().simpleLineWithCTips));
-	print(example + ansiColor("GREEN", "'") + "\n");
+	if (simpleUI) {
+		if (isDef(aHelpMap.text)) print(aHelpMap.text + "\n");
+		print(usage);
+		if (pargs.length > 0) print("\n" + pargs);
+		print(example + "'\n");
+	} else {
+		if (isDef(aHelpMap.text)) print(ansiColor("RESET", aHelpMap.text + "\n"));
+		print(usage);
+		if (pargs.length > 0) print(ow.format.withSideLine(pargs.replace(/\n$/mg, ""), __, "BLUE", __, ow.format.withSideLineThemes().simpleLineWithCTips));
+		print(example + ansiColor("GREEN", "'") + "\n");
+	}
 
 	return true;
 };
