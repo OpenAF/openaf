@@ -3,9 +3,13 @@
 // Python
 
 OpenWrap.python = function() {
-        var pen = getEnv("OAF_PYTHON");
-        if (isDef(pen) && pen != "null") this.python = pen; else this.python = "python";
-	this.reset(true);
+    var pen = getEnv("OAF_PYTHON");
+    if (isDef(pen) && pen != "null") {
+		this.python = pen; 
+	} else {
+		this.python = "python";
+	}
+	this.reset(true, isDef(pen) && pen != "null");
 	this.cServer = $atomic();
 	this.running = false;
 
@@ -86,7 +90,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 			if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();
 			this.sport = aSendPort;
 			//this.pidfile = getOpenAFPath() + "/openaf_python.pid";
-			this.pidfile = ow.format.getUserHome() + "/.openaf_python.pid";
+			this.pidfile = ow.format.getUserHome().replace(/\\/g, "/") + "/.openaf_python.pid";
 			var s = "# -*- coding: utf-8 -*-\n";
 			s += "import json\n";
 			s += "import sys\n";
@@ -203,11 +207,23 @@ OpenWrap.python.prototype.stopServer = function(aPort, force) {
 	}
 };
 
-OpenWrap.python.prototype.reset = function(noException) {
-	try {
+OpenWrap.python.prototype.reset = function(noException, tryOthers) {
+	var fn = (aPy) => {
 		var res = $sh(this.python + " --version").get(0);
 		this.version = (res.stderr.match(/ 2\./) ? 2 : (res.stdout.match(/ 3\./) ? 3 : -1) );
 		if (this.version < 0) throw res.stderr;
+	}
+
+	try {
+		if (tryOthers) {
+			try {
+				fn(this.python);
+			} catch(e1) {
+				fn("python3");
+			}
+		} else {
+			fn(this.python);
+		}
 	} catch(e) {
 		this.version = -1;
 		if (!noException) throw "Can't find or determine python version (" + e + ")";
