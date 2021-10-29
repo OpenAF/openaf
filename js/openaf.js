@@ -381,6 +381,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 			}
 		} else {
 			if (__initializeCon()) {
+				if (!ansiWinTermCap()) ansiStart();
 				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
@@ -498,6 +499,7 @@ function printMap(aValueR, aWidth, aTheme, useAnsi) {
 			}
 		} else {
 			if (__initializeCon()) {
+				if (!ansiWinTermCap()) ansiStart();
 				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;

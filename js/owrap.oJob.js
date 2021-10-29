@@ -1373,6 +1373,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 
 	if (!__flags.OJOB_HELPSIMPLEUI) __initializeCon();
 	var simpleUI = __flags.OJOB_HELPSIMPLEUI ? true : !(isDef(__conAnsi) ? __conAnsi : false);
+	if (ow.format.isWindows() && !ansiWinTermCap()) simpleUI = true;
 
 	aHelpMap.expects = _$(aHelpMap.expects, "helpMap.expects").isArray().default([]);
 	
