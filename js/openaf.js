@@ -6810,6 +6810,7 @@ CSV.prototype.fromArray2File = function(anArray, aFile, withHeadersOrStreamForma
 		if (isArray(withHeadersOrStreamFormat)) {
 			csv.setStreamFormat({ withHeaders: withHeadersOrStreamFormat });
 		} else {
+			if (isMap(withHeadersOrStreamFormat) && isUnDef(withHeadersOrStreamFormat.withHeaders)) withHeadersOrStreamFormat.withHeaders = Object.keys(anArray[0]);
 			csv.setStreamFormat(withHeadersOrStreamFormat);
 		}
 	} else {

@@ -82,22 +82,6 @@ public class CSV extends ScriptableObject {
 	}
 
 	@JSFunction
-	/**
-	 * <odoc>
-	 * <key>CSV.setStreamFormat(aMap)</key>
-	 * Set the options that will be used with CSV.fromStream. Available options are:\
-	 * \
-	 * format: String\
-	 *   You can choose between DEFAULT, EXCEL, INFORMIX_UNLOAD, INFORMIX_UNLOAD_CSV, MYSQL, RFC4180, ORACLE, POSTGRESQL_CSV, POSTGRESQL_TEXT and TDF (please check http://commons.apache.org/proper/commons-csv/user-guide.html)\
-	 * withHeader: Boolean\
-	 *   Tries to automatically use the available header\
-	 * withHeaders: Array\
-	 *   An array of header strings in the order that data lines will appear.\
-	 * quoteMode: String\
-	 *   You can choose between ALL, ALL_NON_NULL, MINIMAL, NON_NUMERIC and NONE.\
-	 * \
-	 * </odoc>
-	 */
 	public void setStreamFormat(Object objs) {
 		if (objs instanceof NativeJavaObject) {
 			this.csvFormat = (CSVFormat) ((NativeJavaObject) objs).unwrap();
@@ -154,19 +138,22 @@ public class CSV extends ScriptableObject {
 				}
 				this.csvFormat = this.csvFormat.withHeader(hs);
 			}
+
+			if (jsMap.contains("withDelimiter")) {
+				this.csvFormat = this.csvFormat.withDelimiter(((String) jsMap.get("withDelimiter")).charAt(0));
+			}
+
+			if (jsMap.contains("withEscape")) {
+				this.csvFormat = this.csvFormat.withEscape(((String) jsMap.get("withEscape")).charAt(0));
+			}	
+
+			if (jsMap.contains("withNullString")) {
+				this.csvFormat = this.csvFormat.withNullString((String) jsMap.get("withNullString"));
+			}
 		}
 	}
 
 	@JSFunction
-	/**
-	 * <odoc>
-	 * <key>CSV.toStream(aStream, aFunction)</key>
-	 * Tries to write a CSV to aStream calling aFunction and expecting it to return a map with the fields previously set with CSV.setStreamFormat and
-	 * corresponding values for each line (each call will represent a line). The fields
-	 * need to be specificed in withHeaders map property in CSV.setStreamFormat. The aFunction will be called continuosly until a different output from a map is
-	 * returned. Note: aStream won't be closed.
-	 * </odoc>
-	 */
 	public void toStream(Object aStream, NativeFunction func) throws IOException {
 		if (aStream instanceof OutputStream) {
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter((OutputStream) aStream));
@@ -198,14 +185,6 @@ public class CSV extends ScriptableObject {
 	}
 
 	@JSFunction
-	/**
-	 * <odoc>
-	 * <key>CSV.fromStream(aStream, aFunction)</key>
-	 * Tries to read a CSV from aStream a calls aFunction with a map representing the fields of each line. The format
-	 * is determined by CSV.setStreamFormat and each map entry will have either the number of the field or the corresponding name
-	 * depending on the header options.
-	 * </odoc>
-	 */
 	public void fromStream(Object aStream, NativeFunction func) throws IOException {
 		if (aStream instanceof InputStream) {
 			boolean hasHeaders = false;
