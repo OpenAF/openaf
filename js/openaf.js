@@ -2954,14 +2954,13 @@ function compare(x, y) {
 	if (!(y instanceof Object)) { return false; }
 
 	var p = Object.keys(x), q = Object.keys(y);
-        if (p.length != q.length) return false;
-        for(var k in x) { 
-           var v = x[k];
-	   if (isUnDef(y[k]) || (!compare(v, y[k]))) return false;
+    if (p.length != q.length) return false;
+    for(var k in x) { 
+        var v = x[k];
+	    if (isUnDef(y[k]) || (!compare(v, y[k]))) return false;
 	}
-        return true;
-	/*return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
-	p.every(function (i) { return compare(x[i], y[i]); });*/
+    
+	return true;
 }
 
 /**
@@ -6263,7 +6262,14 @@ function oJobRunFileAsync(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
  * </odoc>
  */
 function oJobRun(aJson, args, aId) {
-	var oo = (isDef(aId) ? new OpenWrap.oJob() : ow.loadOJob());
+	var oo;
+	if (isDef(aId)) {
+		loadCompiledLib("owrap_oJob_js");
+		oo = new OpenWrap.oJob();
+	} else {
+		oo = ow.loadOJob();
+	}
+
 	var s = oo.loadJSON(aJson);
 	oo.load(s.jobs, s.todo, s.ojob, args, aId, s.init);
 	oo.start(args, true, aId);
@@ -6280,8 +6286,8 @@ function oJobRun(aJson, args, aId) {
 function oJobRunJob(aJob, args, aId, rArgs) {
 	var oo;
 	if (isDef(aId)) {
+		loadCompiledLib("owrap_oJob_js");
 		oo = new OpenWrap.oJob();
-		if (isDef(ow.oJob)) oo.__ojob = clone(ow.oJob.__ojob);
 	} else {
 		oo = ow.loadOJob();
 	}
