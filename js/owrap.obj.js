@@ -2123,7 +2123,11 @@ OpenWrap.obj.prototype.http5.prototype.exec = function(aUrl, aRequestType, aIn, 
 	}
 
 	for(var i in aRequestMap) {
-		r.addHeader(i, aRequestMap[i]);
+ 		if (r.containsHeader(i)) {
+ 			r.setHeader(i, aRequestMap[i]);
+ 		} else {
+ 			r.addHeader(i, aRequestMap[i]);
+ 		}
 	}
 
 	this.outputObj = {}, outObj = {};
