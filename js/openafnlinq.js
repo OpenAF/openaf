@@ -15,6 +15,41 @@ var nLinq = function(anObject) {
 
     // Auxiliary functions
 
+    var aCompare = function(x, y) {
+        'use strict';
+    
+        if (x === null || x === undefined || y === null || y === undefined) { return x === y; }
+        if (x.constructor !== y.constructor) { return false; }
+        if (x instanceof Function) { return x === y; }
+        if (x instanceof RegExp) { return x === y; }
+        if (x === y || x.valueOf() === y.valueOf()) { return true; }
+        if (Array.isArray(x) && x.length !== y.length) { return false; }
+        if (x instanceof Date) { return false; }
+        if (!(x instanceof Object)) { return false; }
+        if (!(y instanceof Object)) { return false; }
+    
+        var p = Object.keys(x), q = Object.keys(y);
+        if (p.length != q.length) return false;
+        for(var k in x) { 
+            var v = x[k];
+            if ($$(y[k]).isUnDef() || (!aCompare(v, y[k]))) return false;
+        }
+        
+        return true;
+    }
+
+    var aArrayContains = function(anArray, aObj, aPreFilter) {
+        _$(anArray).isArray().$_();
+    
+        var ii, found = false;
+        for(ii = 0; ii < anArray.length && !found; ii++) {
+            var o = (isFunction(aPreFilter)) ? aPreFilter(anArray[ii]) : anArray[ii];
+            if (aCompare(aObj, o)) found = true;
+        }
+    
+        return (found ? ii-1 : -1);
+    }
+
     var aSortMap = function(aMap) {
         if (!$$(aMap).isMap()) return aMap;
 
@@ -485,6 +520,35 @@ var nLinq = function(anObject) {
             } else {
                 res = res.map(r => { $$(r).set(aKey, aValue); return r; });
             }
+
+            return code;
+        },
+        filter : aValue => {
+            _$(aValue, "value").$_();
+
+            res = applyConditions(res);
+            res = res.filter(r => {
+                var d = true;
+                
+                if (isMap(aValue) && isMap(r)) {
+                    Object.keys(aValue).forEach(rr => {
+                        if (!aCompare(aValue[rr], r[rr])) d = false;
+                    })
+                }
+                if (isArray(r)) {
+                    if (aArrayContains(r, aValue) < 0) d = false;
+                }
+
+                if (isFunction(aValue) && !aValue(r)) d = false;
+
+                if (isNumber(aValue) || isString(aValue)) {
+                    if (isNumber(r) || isString(r)) {
+                        if (r != aValue) d = false;
+                    }
+                }
+
+                return d;
+            });
 
             return code;
         },
