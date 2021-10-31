@@ -1822,15 +1822,17 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 	}
 
 	// Verify global state
-	if (canContinue && isMap(aJob.typeArgs) && isDef(aJob.typeArgs.when)) {
+	if (canContinue && isDef(aJob.typeArgs) && isDef(aJob.typeArgs.when)) {
 		var w;
 		if (isString(aJob.typeArgs.when)) w = [ aJob.typeArgs.when ]; else w = aJob.typeArgs.when;
-		var _state = parent.getState();
-		if (isString(_state)) {
-			if (_state == "never" || _state == "exit") return true;
-			if (w.indexOf(_state) < 0) {
-				canContinue = false;
-				return true;
+		if (w.length > 0) {
+			var _state = parent.getState();
+			if (isString(_state)) {
+				if (_state == "never" || _state == "exit") return true;
+				if (w.indexOf(_state) < 0) {
+					canContinue = false;
+					return true;
+				}
 			}
 		}
 	}

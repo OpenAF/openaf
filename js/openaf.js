@@ -6327,7 +6327,8 @@ const $job = function(aJob, args, aId) {
  */
 function oJobRunJobAsync(aJob, args, aId) {
 	return $do(() => {
-		return oJobRunJob(aJob, args, aId);
+		oJobRunJob(aJob, args, aId);
+		return true
 	});
 }
 
