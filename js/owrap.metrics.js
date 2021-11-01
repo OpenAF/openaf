@@ -333,6 +333,74 @@ OpenWrap.metrics.prototype.collectMetrics = function(aName, aFunction) {
 
 /**
  * <odoc>
+ * <key>OpenWrap.metrics.prototype.fromOpenMetrics2Array(aLines) : Array</key>
+ * Given an array or string newline delimited string following the OpenMetrics format 
+ * will try to return an array with each metric, value, labels, timestamp and perceived prefix.
+ * </odoc>
+ */
+OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
+    if (isString(lines)) lines = lines.split("\n");
+
+    if (!isArray(lines)) throw "Input can't be converted to an array of lines";
+
+    // Turn into a map of entries
+    var dr = {};
+    var d = lines.filter(line => !line.startsWith("#") && line.length > 0).map(line => {
+        var res = line.match(/^([^\{]+?)({[^\}]+})? ([^ ]+?)( [^ ]+?)?$/);
+        var data = {
+            metric: res[1],
+            labels: (isNull(res[2]) ? {} : jsonParse(res[2].replace(/=/g, ":"), true)),
+            value: Number(res[3]),
+            timestamp: (isNumber(res[4]) ? Number(res[4]) : __)
+        }
+
+        if (isUnDef(dr[data.metric])) {
+            var back = ""
+            var sattr = data.metric.split("_")
+            sattr.forEach(part => {
+                if (isUnDef(dr[back + part])) dr[back + part] = 0;
+                dr[back + part] += 1;
+                back += part + "_"
+            });
+        }
+
+        return data;
+    });
+
+    // Get metric entries entry count
+    var entries = {};
+    $from(d)
+    .sort("metric")
+    .select(r => {
+        var back = "";
+        r.metric.split("_").forEach(rr => {
+            var n = back + "_" + rr;
+            back = n;
+            entries[n] = isUnDef(entries[n]) ? 0 : entries[n] + 1;
+        })
+    })
+
+    // Add the prefix to each entry
+    var dd = d.map((r, ii) => {
+        var prefix, lastp = __, tent;
+
+        do {
+            tent = r.metric.substring(0, lastp).substring(0, r.metric.lastIndexOf("_"));
+            if (isDef(entries["_" + tent]) && entries["_" + tent] > 0) {
+                prefix = tent;
+            }
+            lastp = tent.lastIndexOf("_");
+        } while (isUnDef(prefix) && tent.indexOf("_") > 0)
+
+        r.prefix = prefix
+        return r
+    });
+
+    return dd;
+}
+
+/**
+ * <odoc>
  * <key>ow.metrics.fromObj2OpenMetrics(aObj, aPrefix, aTimestamp, aHelpMap) : String</key>
  * Given aObj will return a string of open metric (prometheus) metric strings. Optionally you can provide a prefix (defaults to "metric") 
  * and/or aTimestamp (that will be used for all aObj values).
