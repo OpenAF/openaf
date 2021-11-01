@@ -1704,6 +1704,59 @@ OpenWrap.server.prototype.telemetry = {
 		var t = new Threads();
 		t.addScheduleThreadWithFixedDelay(aSendFunc, aPeriod);
 		t.startNoWait();
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.server.telemetry.send2nAttrMon(anAttrMonCValsURL, anAttrPrefix, anArrayOfMetricNames) : Function</key>
+	 * Returns a function to be used with ow.server.telemetry.active to send metrics to nAttrMon using the provided anAttrMonCValsURL,
+	 * anAttrPrefix (e.g. "myjobname/") and, optionally, an array of metrics (anArrayOfMetricsNames)
+	 * </odoc>
+	 */
+	send2nAttrMon: function(anAttrMonCValsURL, anAttrPrefix, anArrayOfMetricNames) {
+		_$(anAttrPrefix, "anAttrPrefix").isString().$_();
+		var name = "openaf::metrics::" + md5(anAttrMonCValsURL);
+		ow.loadObj();
+
+		return function() {
+			$ch(name).createRemote(anAttrMonCValsURL);
+			var tval = new Date();
+			var vals;
+			if (isArray(anArrayOfMetricNames)) {
+				vals = ow.metrics.getSome(anArrayOfMetricNames);
+			} else {
+				vals = ow.metrics.getAll();
+			}
+			Object.keys(vals).forEach(k => {
+				$ch(name).set({ 
+					name: anAttrPrefix + k 
+				}, vals[k])
+			});
+		}
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.server.telemetry.send2Prometheus(aPrometheusGatewayURL, aPrefix, anArrayOfMetricNames) : Function</key>
+	 * Returns a function to be used with ow.server.telemetry.active to send metrics to a OpenMetrics/Prometheus gateway using the provided
+	 * aPrometheusGatewayURL with aPrefix (e.g. "myjobname") and, optionally, an array of metrics (anArrayOfMetricsNames)
+	 * </odoc>
+	 */
+	send2Prometheus: function(aPrometheusGatewayURL, aPrefix, anArrayOfMetricNames) {
+		_$(aPrefix, "aPrefix").isString().$_();
+		
+		return function() {
+			var aObj;
+			if (isArray(anArrayOfMetricNames)) {
+				aObj = ow.metrics.getSome(anArrayOfMetricNames);
+			} else {
+				aObj = ow.metrics.getAll();
+			}
+
+			$rest({
+				requestHeaders: {
+					"Content-Type": "text/plain"
+				}
+			}).post(aPrometheusGatewayURL, ow.metrics.fromObj2OpenMetrics(aObj, aPrefix));
+		}
 	}
 };
 
