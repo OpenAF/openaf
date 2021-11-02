@@ -1481,9 +1481,11 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 		if (isDef(this.__ojob.id) && isUnDef(aId)) aId = this.__ojob.id;
 
+        // onerror as an alias for catch
 		if (isDef(this.__ojob.onerror) && isUnDef(this.__ojob.catch)) this.__ojob.catch = this.__ojob.onerror;
 		if (isDef(this.__ojob.catch) && !(isString(this.__ojob.catch))) this.__ojob.catch = __;
 
+        // Active (push) and passive metrics
 		if (isDef(this.__ojob.metrics)) {
 			if (isBoolean(this.__ojob.metrics) && this.__ojob.metrics) ow.server.telemetry.passive(__, __, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp);
 			if (isMap(this.__ojob.metrics)) {
@@ -1497,7 +1499,59 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 						ow.metrics.startCollecting(ch, period, some, this.__ojob.metrics.collect.noDate);
 					}
 				}
-				if (isUnDef(this.__ojob.metrics.passive) || this.__ojob.metrics.passive) {
+				// Active and passive telemetry
+				var active  = isMap(this.__ojob.metrics.active);
+				var passive = isUnDef(this.__ojob.metrics.passive) || this.__ojob.metrics.passive; 
+				if (active) {
+					// active telemetry
+					var fn;
+					// Prometheus/OpenMetrics
+					// ojob:
+					// 	daemon : true
+					// 	metrics:
+					// 		add   :
+					// 		mystuff: |
+					// 			return { mystuff: now(), mystuff2: nowNano() }
+					// 		active: 
+					// 		periodInMs : 1000
+					// 		openmetrics:
+					// 			url    : http://127.0.0.1:9091/metrics/job/test
+					// 			prefix : test
+					// 			metrics:
+					// 			- mystuff
+					// 			- mem
+					if (isMap(this.__ojob.metrics.active.openmetrics)) {
+						fn = ow.server.telemetry.send2Prometheus(this.__ojob.metrics.active.openmetrics.url, this.__ojob.metrics.active.openmetrics.prefix, this.__ojob.metrics.active.openmetrics.metrics);
+					}
+					// nAttrMon
+					// ojob:
+					// 	daemon : true
+					// 	metrics:
+					// 		add   :
+					// 		mystuff: |
+					// 			return { mystuff: now(), mystuff2: nowNano() }
+					// 		active: 
+					// 		periodInMs : 1000
+					// 		nattrmon   :
+					// 			url       : http://change:me@127.0.0.1:7777/remote
+					// 			attrPrefix: Testa/
+					// 			metrics   :
+					// 			- mystuff
+					// 			- mem
+					if (isMap(this.__ojob.metrics.active.nattrmon)) {
+						fn = ow.server.telemetry.send2nAttrMon(this.__ojob.metrics.active.nattrmon.url, this.__ojob.metrics.active.nattrmon.attrPrefix, this.__ojob.metrics.active.nattrmon.metrics);
+					}
+					// OR provide a custom function to send telemetry somewhere
+					if (isString(this.__ojob.metrics.active.fn)) {
+						fn = new Function(this.__ojob.metrics.active.fn);
+					}
+					ow.server.telemetry.active(fn, this.__ojob.metrics.active.periodInMs);
+
+					// If nothing else was said don't assume passive should still be done
+					if (isUnDef(this.__ojob.metrics.passive)) passive = false;
+				} 
+				// Passive
+				if (passive) {
 					ow.server.telemetry.passive(this.__ojob.metrics.port, this.__ojob.metrics.uri, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp);
 				}
 			}
