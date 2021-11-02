@@ -1144,7 +1144,8 @@ var __logFormat = {
 	indent    : "",
 	async     : true,
 	asyncLevel: 3,
-	profile   : false
+	profile   : false,
+	format    : "default"
 };
 var __logPromise;
 
@@ -1268,14 +1269,14 @@ function log(msg, formatOptions) {
 		var f = () => {
 			k = { n: nw, t: "INFO" };
 			v = { n: nw, d: data, t: "INFO", m: msg };
-			if (isDef(__logFormat) && formatOptions.profile) {
+			if (isDef(formatOptions) && formatOptions.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
 				v.systemLoad = getCPULoad();
 			}
 			$ch("__log").set(k, v);
 		};
-		if (isDef(__logFormat) && formatOptions.async) {
+		if (isDef(formatOptions) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=> {
@@ -1286,19 +1287,30 @@ function log(msg, formatOptions) {
 		} else 
 			f();
 	}
-	var go = (isDef(__logFormat) && (formatOptions.off || formatOptions.offInfo)) ? false : true;
+	var go = (isDef(formatOptions) && (formatOptions.off || formatOptions.offInfo)) ? false : true;
 	if (go) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
-			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
-			ansiStart();
-			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
-			print(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg);
-			ansiStop();
+			formatOptions = _$(formatOptions).isMap().default({});
+			formatOptions.format = _$(formatOptions.format).isString().default("default");
+			switch(formatOptions.format) {
+			case "json":
+				sprint({ "@timestamp": new Date(data), level: "INFO", message: msg }, "");
+				break;
+			case "slon":
+				print(af.toSLON({ "@timestamp": new Date(data), level: "INFO", message: msg }));
+				break;
+			default:
+				var sep = (isDef(formatOptions) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
+				var ind = (isDef(formatOptions) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
+				ansiStart();
+				data = (isDef(formatOptions) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
+				print(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg);
+				ansiStop();
+			}
 			return 1;
 		};
-		if (isDef(__logFormat) && formatOptions.async) {
+		if (isDef(formatOptions) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -1339,14 +1351,14 @@ function lognl(msg, formatOptions) {
 		var f = () => {
 			k = { n: nw, t: "INFO" };
 			v = { n: nw, d: data, t: "INFO", m: msg };
-			if (isDef(__logFormat) && formatOptions.profile) {
+			if (isDef(formatOptions) && formatOptions.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
 				v.systemLoad = getCPULoad();
 			}
 			$ch("__log").set(k, v);
 		};
-		if (isDef(__logFormat) && formatOptions.async) {
+		if (isDef(formatOptions) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -1357,19 +1369,31 @@ function lognl(msg, formatOptions) {
 		} else 
 			f();
 	}
-	var go = (isDef(__logFormat) && (formatOptions.off || formatOptions.offInfo)) ? false : true;
+	var go = (isDef(formatOptions) && (formatOptions.off || formatOptions.offInfo)) ? false : true;
 	if (go) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
-			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
-			ansiStart();
-			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
-			printnl(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg + "\r");
-			ansiStop();
+			formatOptions = _$(formatOptions).isMap().default({});
+			formatOptions.format = _$(formatOptions.format).isString().default("default");
+			switch(formatOptions.format) {
+			case "json":
+				sprintnl({ "@timestamp": new Date(data), level: "INFO", message: msg }, "");
+				break;
+			case "slon":
+				printnl(af.toSLON({ "@timestamp": new Date(data), level: "INFO", message: msg }));
+				break;
+			default:
+				var sep = (isDef(formatOptions) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
+				var ind = (isDef(formatOptions) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
+				ansiStart();
+				data = (isDef(formatOptions) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
+				printnl(ind + ansiColor("BOLD", data) + sep + "INFO" + sep + msg);
+				ansiStop();
+			}
+
 			return 1;
 		};
-		if (isDef(__logFormat) && formatOptions.async) {
+		if (isDef(formatOptions) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -1411,14 +1435,14 @@ function logErr(msg, formatOptions) {
 		var f = () => {
 			k = { n: nw, t: "ERROR" };
 			v = { n: nw, d: data, t: "ERROR", m: msg };
-			if (isDef(__logFormat) && formatOptions.profile) {
+			if (isDef(formatOptions) && formatOptions.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
 				v.systemLoad = getCPULoad();
 			}
 			$ch("__log").set(k, v);
 		};
-		if (isDef(__logFormat) && formatOptions.async) {
+		if (isDef(formatOptions) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw);
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -1429,19 +1453,31 @@ function logErr(msg, formatOptions) {
 		} else 
 			f();
 	}
-	var go = (isDef(__logFormat) && (formatOptions.off || formatOptions.offError)) ? false : true;
+	var go = (isDef(formatOptions) && (formatOptions.off || formatOptions.offError)) ? false : true;
 	if (go) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
-			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
-			ansiStart();
-			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
-			printErr(ind + ansiColor("BOLD", data) + sep + ansiColor("red", "ERROR") + sep + msg);
-			ansiStop();
+			formatOptions = _$(formatOptions).isMap().default({});
+			formatOptions.format = _$(formatOptions.format).isString().default("default");
+			switch(formatOptions.format) {
+			case "json":
+				sprintErr({ "@timestamp": new Date(data), level: "ERROR", message: msg }, "");
+				break;
+			case "slon":
+				printErr(af.toSLON({ "@timestamp": new Date(data), level: "ERROR", message: msg }));
+				break;
+			default:
+				var sep = (isDef(formatOptions) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
+				var ind = (isDef(formatOptions) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
+				ansiStart();
+				data = (isDef(formatOptions) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
+				printErr(ind + ansiColor("BOLD", data) + sep + ansiColor("red", "ERROR") + sep + msg);
+				ansiStop();
+			}
+
 			return 1;
 		};
-		if (isDef(__logFormat) && formatOptions.async) {
+		if (isDef(formatOptions) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -1471,14 +1507,14 @@ function logWarn(msg, formatOptions) {
 		var f = () => {
 			k = { n: nw, t: "WARN" };
 			v = { n: nw, d: data, t: "WARN", m: msg };
-			if (isDef(__logFormat) && formatOptions.profile) {
+			if (isDef(formatOptions) && formatOptions.profile) {
 				v.freeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 				v.totalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
 				v.systemLoad = getCPULoad();
 			}
 			$ch("__log").set(k, v);
 		};
-		if (isDef(__logFormat) && formatOptions.async) {
+		if (isDef(formatOptions) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw);
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
@@ -1489,19 +1525,30 @@ function logWarn(msg, formatOptions) {
 		} else 
 			f();
 	}
-	var go = (isDef(__logFormat) && (formatOptions.off || formatOptions.offWarn)) ? false : true;
+	var go = (isDef(formatOptions) && (formatOptions.off || formatOptions.offWarn)) ? false : true;
 	if (go) {
 		if (isUnDef(__conStatus)) __initializeCon();
 		var f = () => {
-			var sep = (isDef(__logFormat) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
-			var ind = (isDef(__logFormat) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
-			ansiStart();
-			data = (isDef(__logFormat) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
-			print(ind + ansiColor("BOLD", data) + sep + ansiColor("yellow", "WARN") + sep + msg);
-			ansiStop();
+			formatOptions = _$(formatOptions).isMap().default({});
+			formatOptions.format = _$(formatOptions.format).isString().default("default");
+			switch(formatOptions.format) {
+			case "json":
+				sprint({ "@timestamp": new Date(data), level: "WARN", message: msg }, "");
+				break;
+			case "slon":
+				print(af.toSLON({ "@timestamp": new Date(data), level: "WARN", message: msg }));
+				break;
+			default:
+				var sep = (isDef(formatOptions) && (isDef(formatOptions.separator))) ? formatOptions.separator : " | ";
+				var ind = (isDef(formatOptions) && (isDef(formatOptions.indent))) ? formatOptions.indent : "";
+				ansiStart();
+				data = (isDef(formatOptions) && isDef(formatOptions.dateFormat)) ? ow.loadFormat().fromDate(new Date(data), formatOptions.dateFormat, formatOptions.dateTZ) : data;
+				print(ind + ansiColor("BOLD", data) + sep + ansiColor("yellow", "WARN") + sep + msg);
+				ansiStop();
+			}
 			return 1;
 		};
-		if (isDef(__logFormat) && formatOptions.async) {
+		if (isDef(formatOptions) && formatOptions.async) {
 			if (isDef(global.__logQueue)) global.__logQueue.push(nw + "S");
 			__initializeLogPromise();
 			__logPromise = __logPromise.then(f, ()=>{
