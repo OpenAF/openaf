@@ -14,22 +14,35 @@ OpenWrap.sec = function() {
  */
 OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
    var rep   = _$(aRepo, "aRepo").isString().default("");
-   aRepo = rep;
+   aRepo = String(rep);
    var isWin = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 
    if (rep != "") rep = "-" + rep;
-   var f = isDef(aFile) ? aFile : java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".yml";
+   if (aRepo != "system") {
+      var f = isDef(aFile) ? aFile : java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".yml";
 
-   $ch("___openaf_sbuckets" + rep).create(1, "file", {
-      file          : f,
-      yaml          : true,
-      key           : "sbucket"
-   });
+      $ch("___openaf_sbuckets" + rep).create(1, "file", {
+         file          : f,
+         yaml          : true,
+         key           : "sbucket"
+      });
 
-   if (io.fileExists(f) && !isWin) {
-      $sh("chmod a-rwx " + f)
-      .sh("chmod u+rw " + f)
-      .exec();
+      if (io.fileExists(f) && !isWin) {
+         $sh("chmod a-rwx " + f)
+         .sh("chmod u+rw " + f)
+         .exec();
+      }
+   } else {
+      // Special repo system with bucket envs for system variables
+      $ch("___openaf_sbuckets" + rep).create();
+      var evs = getEnvs(), envs = {};
+      Object.keys(evs).forEach(env => {
+         if (evs[env].trim().indexOf("{") == 0) 
+            envs[env] = jsonParse(evs[env], true);
+         else
+            envs[env] = evs[env]
+      })
+      $ch("___openaf_sbuckets" + rep).set({ sbucket: "envs" }, envs);
    }
 
    if (isUnDef(ow.sec._sb)) ow.sec._sb = {};
@@ -42,7 +55,7 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
          io.writeFileString(ff, aMainSecret);
       }
    }
-   ow.sec._sb[aRepo] = new ow.sec.SBucket("___openaf_sbuckets" + rep, aMainSecret, "default", isUnDef(aFile) ? aMainSecret : __);
+   ow.sec._sb[aRepo] = new ow.sec.SBucket("___openaf_sbuckets" + rep, aMainSecret, "default", isUnDef(aFile) && aRepo != "system" ? aMainSecret : __);
 };
 
 /**
@@ -253,6 +266,9 @@ OpenWrap.sec.prototype.purgeSBuckets = function(aRepo) {
    try { this.closeSBuckets(aRepo); } catch(e) {}
 
    var rep   = _$(aRepo, "aRepo").isString().default("");
+   if (rep == "default") rep = "";
+   if (rep == "system") return;
+
    aRepo = rep;
    if (rep != "") rep = "-" + rep;
 
