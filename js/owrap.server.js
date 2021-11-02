@@ -1690,7 +1690,7 @@ OpenWrap.server.prototype.telemetry = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.server.telemetry.active(aSendFund, aPeriod)</key>
+	 * <key>ow.server.telemetry.active(aSendFunc, aPeriod)</key>
 	 * Setup recurrent execution of aSendFunc with the propose of sending ow.metrics for a provided aPeriod (defaults to 60000 ms). 
 	 * </odoc>
 	 */
