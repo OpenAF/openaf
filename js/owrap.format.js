@@ -1011,7 +1011,7 @@ OpenWrap.format.prototype.timeago = function(date) {
 
 /**
  * <odoc>
- * <key>ow.format.toDate(aStringDate, aFormat) : Date</key>
+ * <key>ow.format.toDate(aStringDate, aFormat, aTimeZone) : Date</key>
  * Will convert aStringDate into a javascript Date given aFormat:\
  * \
  *   G - Era descriptor (AD)\
@@ -1037,12 +1037,14 @@ OpenWrap.format.prototype.timeago = function(date) {
  *   Z - Time zone (-0800)\
  *   X - Time zone (-08; -0800; -08:00)\
  * \
+ * Optionally you can also provide the original aTimeZone (like 'America/New_York', 'Europe/London', 'UTC', ...)\
  * (available after ow.loadFormat())
  * </odoc>
  */
-OpenWrap.format.prototype.toDate = function(aStringDate, aFormat) {
+OpenWrap.format.prototype.toDate = function(aStringDate, aFormat, aTimeZone) {
 	var sdf = new java.text.SimpleDateFormat(aFormat);
-	return new Date(sdf.parse(aStringDate).getTime());
+	if (isDef(aTimeZone)) sdf.setTimeZone(java.util.TimeZone.getTimeZone(aTimeZone));
+	return new Date(sdf.parse(aStringDate).toInstant());
 }
 
 /**
