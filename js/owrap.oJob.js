@@ -64,6 +64,7 @@ OpenWrap.oJob = function(isNonLocal) {
 		parent.getJobsCh().create(0, "simple");
 		parent.getLogCh().create(0, "simple");
 		parent.getMainCh().create(0, "simple");
+		parent.getMetricsCh().create(0, "simple");
 
 		parent.getMainCh().set(
 			{ "uuid": parent.__id },
@@ -442,6 +443,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 
 	if (isDef(this.__ojob.metrics)) {
 		ow.loadMetrics();
+		
 		if (isBoolean(this.__ojob.metrics)) {
 			ow.metrics.startCollecting();
 		} else {
@@ -944,6 +946,13 @@ OpenWrap.oJob.prototype.getLogCh = function() { return $ch("oJob::log"); };
  * </odoc>
  */
 OpenWrap.oJob.prototype.getMainCh = function() { return $ch("oJob::oJob"); };
+/**
+ * <odoc>
+ * <key>ow.oJob.getMetricsCh() : Channel</key>
+ * Gets the oJob::metrics channel
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getMetricsCh = function() { return $ch("oJob::metrics") };
 /**
  * <odoc>
  * <key>oJob.getID() : String</key>
@@ -1757,12 +1766,32 @@ OpenWrap.oJob.prototype.getState = function() {
 
 /**
  * <odoc>
- * <key>ow.oJOb.setState(aState)</key>
+ * <key>ow.oJob.setState(aState)</key>
  * Sets the current global state to be used with todo.when
  * </odoc>
  */
 OpenWrap.oJob.prototype.setState = function(aState) {
 	$set("ojob::state", String(aState));
+}
+
+/**
+ * <odoc>
+ * <key>ow.oJob.getMetric(aMetricId)</key>
+ * Retrieves the current metric identified by aMetricId
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getMetric = function(aId) {
+	return _$(ow.oJob.getMetricsCh().get({ id: aId })).isMap().default({})
+}
+
+/**
+ * <odoc>
+ * <key>ow.oJob.setMetric(aId, aMetricObj)</key>
+ * Sets aMetricObj for the metric identified with aId
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.setMetric = function(aId, aObj) {
+	ow.oJob.getMetricsCh().set({ id: aId }, aObj)
 }
 
 /**
