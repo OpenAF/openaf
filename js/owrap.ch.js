@@ -1086,7 +1086,7 @@ OpenWrap.ch.prototype.__types = {
 			return __;
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
-			var id = stringify(aK, __, "");
+			var id = stringify(sortMapKeys(aK), __, "");
 			var old = this.__channels[aName][id];
 			if (isUnDef(old)) {
 				this.__channels[aName][id] = {
@@ -1113,7 +1113,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},		
 		get          : function(aName, aK) {
-			var id = stringify(aK, __, "");
+			var id = stringify(sortMapKeys(aK), __, "");
 			var res = this.__channels[aName][id];
 			if (isDef(res)) 
 				return res.v;
@@ -1135,7 +1135,7 @@ OpenWrap.ch.prototype.__types = {
 			return elem;
 		},
 		unset        : function(aName, aK, aTimestamp) {
-			var id = stringify(aK, __, "");
+			var id = stringify(sortMapKeys(aK), __, "");
 			delete this.__channels[aName][id];
 		}
 	},	
@@ -1263,7 +1263,7 @@ OpenWrap.ch.prototype.__types = {
 			try {
 				m = this.__r(this.__channels[aName]);
 				if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
-				var id = isDef(aK.key)   ? aK.key   : stringify(aK, __, "");
+				var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
 				if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
 					ow.obj.setPath(m, id, isDef(aV.value) ? aV.value : aV);
 				} else {
@@ -1297,7 +1297,7 @@ OpenWrap.ch.prototype.__types = {
 				this.__ul(this.__channels[aName]);
 			}
 			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
-			var id = isDef(aK.key)   ? aK.key   : stringify(aK, __, "");
+			var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
 			if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
 				return ow.obj.getPath(m, id);
 			} else {
@@ -1320,7 +1320,7 @@ OpenWrap.ch.prototype.__types = {
 			try {
 				m = this.__r(this.__channels[aName]);
 				if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
-				var id = isDef(aK.key)   ? aK.key   : stringify(aK, __, "");
+				var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
 				delete m[id];
 				if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
 					ow.obj.setPath(m, id, __);
@@ -2154,7 +2154,7 @@ OpenWrap.ch.prototype.__types = {
 		set          : function(aName, ak, av, aTimestamp) {
 			var map = this.__s[aName].openMap(this.__m[aName](ak));
 
-			map.put(stringify(ak, __, this.__o[aName].stry), stringify(av, __, this.__o[aName].stry));
+			map.put(stringify(sortMapKeys(ak), __, this.__o[aName].stry), stringify(av, __, this.__o[aName].stry));
 			this.__s[aName].commit();
 			return ak;
 		},
@@ -2164,7 +2164,7 @@ OpenWrap.ch.prototype.__types = {
 				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
 				var av = anArrayOfMapData[iii];
 				var map = this.__s[aName].openMap(this.__m[aName](ak));
-				map.put(stringify(ak, __, this.__o[aName].stry), stringify(av, __, this.__o[aName].stry));
+				map.put(stringify(sortMapKeys(ak), __, this.__o[aName].stry), stringify(av, __, this.__o[aName].stry));
 			}
 			this.__s[aName].sync();
 			this.__s[aName].commit();
@@ -2175,7 +2175,7 @@ OpenWrap.ch.prototype.__types = {
 				var ak = ow.obj.filterKeys(anArrayOfKeys, anArrayOfMapData[iii]);
 				//var av = anArrayOfMapData[iii];
 				var map = this.__s[aName].openMap(this.__m[aName](ak));
-				map.remove(stringify(ak, __, this.__o[aName].stry));
+				map.remove(stringify(sortMapKeys(ak), __, this.__o[aName].stry));
 			}
 			this.__s[aName].sync();
 			this.__s[aName].commit();
@@ -2183,7 +2183,7 @@ OpenWrap.ch.prototype.__types = {
 		get          : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
-			var r = map.get(stringify(aKey, __, this.__o[aName].stry));
+			var r = map.get(stringify(sortMapKeys(aKey), __, this.__o[aName].stry));
 			if (r == null || isUnDef(r)) return __; else return jsonParse(r);
 		},
 		pop          : function(aName) {
@@ -2199,7 +2199,7 @@ OpenWrap.ch.prototype.__types = {
 		unset        : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
-			return jsonParse(map.remove(stringify(aKey, __, this.__o[aName].stry)));
+			return jsonParse(map.remove(stringify(sortMapKeys(aKey), __, this.__o[aName].stry)));
 		}
 	},
 	/**
@@ -2315,7 +2315,7 @@ OpenWrap.ch.prototype.__types = {
 	etcd: {
 		__channels: {},
 		__escape: (s) => {
-			return encodeURIComponent(stringify(s, __, "")).replace(/%2F/g, "%25--%3B");
+			return encodeURIComponent(stringify(sortMapKeys(s), __, "")).replace(/%2F/g, "%25--%3B");
 		},
 		__unescape: (s) => {
 			return jsonParse(s.replace(/\%--\;/g, "/"));
