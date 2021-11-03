@@ -2718,8 +2718,8 @@ OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 		this.jobs[aName] = {};
 		this.channels[aName] = type;
 		this.vers[aName] = nowUTC();
-		this.lock[aName] = new java.util.concurrent.locks.ReentrantLock();
-		this.lock2[aName] = new java.util.concurrent.locks.ReentrantLock();
+		ow.ch.lock[aName] = new java.util.concurrent.locks.ReentrantLock();
+		ow.ch.lock2[aName] = new java.util.concurrent.locks.ReentrantLock();
 	}
 	return this;
 };
@@ -2832,14 +2832,14 @@ OpenWrap.ch.prototype.size = function(aName) {
 	//	}
 
 	var res, error;
-	this.lock[aName].lock();
+	ow.ch.lock[aName].lock();
 	//sync(function() {
 	try {
 		res = ow.ch.__types[ow.ch.channels[aName]].size(aName);
 	} catch(e) {
 		error = e;
 	} finally {
-		this.lock[aName].unlock();
+		ow.ch.lock[aName].unlock();
 	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
@@ -3054,7 +3054,7 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
  
 	var parent = this;
 	var res, error; 
-	this.lock[aName].lock();
+	ow.ch.lock[aName].lock();
 	//sync(function() {
 	try {
 		res = parent.__types[parent.channels[aName]].set(aName, ak, av, aTimestamp, x); 
@@ -3062,7 +3062,7 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 	} catch(e) {
 		error = e;
 	} finally {
-		this.lock[aName].unlock();
+		ow.ch.lock[aName].unlock();
 	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
@@ -3132,7 +3132,7 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 	var parent = this;
 	var res, error;
  
-	this.lock[aName].lock();
+	ow.ch.lock[aName].lock();
 	//sync(function() {
 		try {
 			res = parent.__types[parent.channels[aName]].setAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
@@ -3140,7 +3140,7 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 		} catch(e) {
 			error = e;
 		} finally {
-			this.lock[aName].unlock();
+			ow.ch.lock[aName].unlock();
 		}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
@@ -3200,7 +3200,7 @@ OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData
 	var res, error;
 	
 	if (isUnDef(parent.__types[parent.channels[aName]].unsetAll)) return __; 
-	this.lock[aName].lock();
+	ow.ch.lock[aName].lock();
 	//sync(function() {
 		try {
 			res = parent.__types[parent.channels[aName]].unsetAll(aName, anArrayOfKeys, anArrayOfMapData, aTimestamp, x);
@@ -3208,7 +3208,7 @@ OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData
 		} catch(e) {
 			error = e;
 		} finally {
-			this.lock[aName].unlock();
+			ow.ch.lock[aName].unlock();
 		}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
@@ -3261,14 +3261,14 @@ OpenWrap.ch.prototype.get = function(aName, aKey, x) {
 
 	var res, error;
 	var parent = this 
-	this.lock[aName].lock();
+	ow.ch.lock[aName].lock();
 	//sync(function() {
 	try {
 		res = parent.__types[parent.channels[aName]].get(aName, aKey, x);
 	} catch(e) {
 		error = e;
 	} finally {
-		this.lock[aName].unlock();
+		ow.ch.lock[aName].unlock();
 	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
@@ -3290,7 +3290,7 @@ OpenWrap.ch.prototype.pop = function(aName) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 
 	var res, out, error;
-	this.lock2[aName].lock();
+	ow.ch.lock2[aName].lock();
 	try {
 		if (this.size(aName) > 0) {
 			res = this.__types[this.channels[aName]].pop(aName);
@@ -3300,7 +3300,7 @@ OpenWrap.ch.prototype.pop = function(aName) {
 	} catch(e) { 
 		error = e; 
 	} finally {
-		this.lock2[aName].unlock();
+		ow.ch.lock2[aName].unlock();
 	}
 
 	if (isDef(error)) throw error;
@@ -3322,7 +3322,7 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 	
 	var res, out, error;
 	var parent = this 
-	this.lock[aName].lock();
+	ow.ch.lock[aName].lock();
 	//sync(function() {
 	try {
 		res = parent.__types[parent.channels[aName]].getSet(aName, aMatch, aKey, aValue, aTimestamp, x); 
@@ -3330,7 +3330,7 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 	} catch(e) {
 		error = e;
 	} finally {
-		this.lock[aName].unlock();
+		ow.ch.lock[aName].unlock();
 	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
@@ -3381,7 +3381,7 @@ OpenWrap.ch.prototype.shift = function(aName) {
 	if (isUnDef(this.channels[aName])) throw "Channel " + aName + " doesn't exist.";
 
 	var res, out, error;
-	this.lock2[aName].lock();
+	ow.ch.lock2[aName].lock();
 	try {
 		if (this.size(aName) > 0) {
 	//		switch(this.channels[aName]) {
@@ -3396,7 +3396,7 @@ OpenWrap.ch.prototype.shift = function(aName) {
 	} catch(e) { 
 		error = e;
 	} finally {
-		this.lock2[aName].unlock();
+		ow.ch.lock2[aName].unlock();
 	}
 
 	if (isDef(error)) throw e;
@@ -3422,7 +3422,7 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	if (typeof aKey != "object") ak = { "key": aKey };
 
 	var parent = this, res, error; 
-	this.lock[aName].lock();
+	ow.ch.lock[aName].lock();
 	//sync(function() {	
 	try {
 		res = parent.__types[parent.channels[aName]].unset(aName, ak, x);
@@ -3430,7 +3430,7 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 	} catch(e) {
 		error = e;
 	} finally {
-		this.lock[aName].unlock();
+		ow.ch.lock[aName].unlock();
 	}
 	//}, this.channels[aName]);
 	if (isDef(error)) throw error;
