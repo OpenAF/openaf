@@ -926,6 +926,7 @@ public class SSH extends ScriptableObject {
 			if (aSource instanceof String) {
 				ch.put((String) aSource, aRemoteFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap());
 			} else {
+				if (aSource instanceof NativeJavaObject) aSource = ((NativeJavaObject) aSource).unwrap();
 				if (aSource instanceof InputStream) {
 					try ( OutputStream os = ch.put(aRemoteFile, (SftpProgressMonitor) ((NativeJavaObject) monitor).unwrap(), 0) ) {
 						IOUtils.copyLarge((InputStream) aSource, os);
@@ -938,6 +939,7 @@ public class SSH extends ScriptableObject {
 			if (aSource instanceof String) {
 				ch.put((String) aSource, aRemoteFile);
 			} else {
+				if (aSource instanceof NativeJavaObject) aSource = ((NativeJavaObject) aSource).unwrap();
 				if (aSource instanceof InputStream) {
 					try ( OutputStream os = ch.put(aRemoteFile) ) {
 						IOUtils.copyLarge((InputStream) aSource, os);
