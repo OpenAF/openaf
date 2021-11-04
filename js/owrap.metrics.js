@@ -171,6 +171,16 @@ OpenWrap.metrics.prototype.add = function(aName, aFn) {
 
 /**
  * <odoc>
+ * <key>ow.metrics.exists(aName) : Boolean</key>
+ * Determines if metric aName is currenly assigned.
+ * </odoc>
+ */
+OpenWrap.metrics.prototype.exists = function(aName) { 
+    return isFunction(ow.metrics.__m[aName])
+}
+
+/**
+ * <odoc>
  * <key>ow.metrics.getSome(anArrayOfNames) : Map</key>
  * Returns just the metrics in the provided anArrayOfNames.
  * </odoc>

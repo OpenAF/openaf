@@ -1837,7 +1837,35 @@ OpenWrap.oJob.prototype.getMetric = function(aId) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.setMetric = function(aId, aObj) {
+	ow.loadMetrics()
+
+	if (isMap(aObj)) aObj.id = aId
 	ow.oJob.getMetricsCh().set({ id: aId }, aObj)
+	if (isMap(aObj) && isString(aObj.type) && !ow.metrics.exists(aObj.type)) 
+	   ow.metrics.add(aObj.type, ow.oJob.getMetrics(aObj.type))
+}
+
+/**
+ * <odoc>
+ * <key>ow.oJob.getMetrics(aType) : Function</key>
+ * Returns a function to be used with ow.metrics.add to add functions by metric aType
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getMetrics = function(aType) {
+	ow.loadObj()
+	ow.loadMetrics()
+
+	return function() {
+		var data  = ow.oJob.getMetricsCh().getAll()
+
+		return $from(data)
+			   .equals("type", aType)
+			   .select(r => {
+				  var s = clone(r)
+			      delete s.type
+				  return s
+			   })
+	}
 }
 
 /**
