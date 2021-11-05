@@ -1180,6 +1180,7 @@ function __initializeLogPromise() {
  * - separator  (string)  String to use as separator\
  * - async      (boolean) Run in async mode\
  * - profile    (boolean) Gathers memory and system load stats\
+ * - format     (string)  Sets the format to output logs (e.g. json, slon, human)\
  * \
  * </odoc>
  */
