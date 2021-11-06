@@ -513,7 +513,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			for (var i in res.include) {
 				if (isUnDef(_includeLoaded[res.include[i]])) {
 					_includeLoaded[res.include[i]] = 1;
-					var f = this.__loadFile(res.include[i]);
+					var f = this.__loadFile(res.include[i], __, true);
 					if (isUnDef(f)) throw "Problem loading include '" + res.include[i] + "'.";
 					res = this.__merge(f, res);
 				}
@@ -523,7 +523,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			for (var i in res.jobsInclude) {
 				if (isUnDef(_includeLoaded[res.jobsInclude[i]])) {
 					_includeLoaded[res.jobsInclude[i]] = 1;
-					var f = this.__loadFile(res.jobsInclude[i], true);
+					var f = this.__loadFile(res.jobsInclude[i], true, true);
 					if (isUnDef(f)) throw "Problem loading job include '" + res.jobsInclude[i] + "'.";
 					res = this.__merge(f, res);
 				}
@@ -644,7 +644,7 @@ OpenWrap.oJob.prototype.__merge = function(aJSONa, aJSONb) {
 	return res;
 };
 
-OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
+OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 	var res = {}, parent = this, validation = false, aOrigFile = aFile;
 
 	var fnDown = url => {
@@ -786,7 +786,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
 		throw "OJOB VALIDATION OF '" + aFile + "' failed.";
 	}
 
-	this.__file = aOrigFile;
+	if (!isInclude) this.__file = aOrigFile;
 
 	return this.loadJSON(res, removeTodos);
 };
@@ -872,7 +872,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
-	var s = this.__loadFile(aFile);
+	var s = this.__loadFile(aFile, isInclude);
 	if (isDef(s)) {
 		if (isSubJob && isDef(s.ojob)) {
 			s.ojob.__subjob = true;
