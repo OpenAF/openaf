@@ -872,7 +872,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
-	var s = this.__loadFile(aFile, isInclude);
+	var s = this.__loadFile(aFile);
 	if (isDef(s)) {
 		if (isSubJob && isDef(s.ojob)) {
 			s.ojob.__subjob = true;
