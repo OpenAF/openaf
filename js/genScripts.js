@@ -8,8 +8,9 @@ var requirements = {
 };
 var extraArgsForJava9 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
 var extraArgsForJava10 = extraArgsForJava9 + " ";
-var extraArgsForJava11 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+var extraArgsForJava11 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit";
 var extraArgsForJava12 = extraArgsForJava11 + " -Xshare:off";
+var extraArgsForJava17 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED  -Xshare:off";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -210,7 +211,8 @@ log("Checking requirements");
 if (Number(javaVer) != null && Number(javaVer) == 9) javaargs += " " + extraArgsForJava9;  
 if (Number(javaVer) != null && Number(javaVer) == 10) javaargs += " " + extraArgsForJava10;
 if (Number(javaVer) != null && Number(javaVer) == 11) javaargs += " " + extraArgsForJava11;
-if (Number(javaVer) != null && Number(javaVer) > 11) javaargs += " " + extraArgsForJava12;
+if (Number(javaVer) != null && Number(javaVer) > 11 && Number(javaVer) < 17) javaargs += " " + extraArgsForJava12;
+if (Number(javaVer) != null && Number(javaVer) >= 17) javaargs += " " + extraArgsForJava17;
 
 var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
