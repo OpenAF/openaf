@@ -195,7 +195,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>9.4.43.v2021062</version>
+      <version>9.4.43.v20210629</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

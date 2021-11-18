@@ -573,7 +573,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 };
 
 OpenWrap.oJob.prototype.__toEnvs = function(aMap) {
-	var res = {};
+	var res = getEnvs();
 	traverse(aMap, (aK, aV, aP, aO) => {
 		if (!isMap(aV) && !isArray(aV)) {
      			aP = aP.replace(/\./g, "_");
