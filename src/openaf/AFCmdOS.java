@@ -263,7 +263,7 @@ public class AFCmdOS extends AFCmdBase {
 	 * @param args
 	 * @throws MalformedURLException 
 	 */
-	protected void processArgs(String[] args) throws MalformedURLException {
+	protected void processArgs(String[] args) {
 		boolean checkNext = false;
 		String checkOption = "";
 		
@@ -510,7 +510,7 @@ public class AFCmdOS extends AFCmdBase {
 				break;
 			}
 		} else {
-			pmIn = new JsonObject();
+			//pmIn = new JsonObject();
 		}
 		
 		JsonObject pmOut = execute(pmIn, op, processScript, theInput, false);
@@ -645,72 +645,92 @@ public class AFCmdOS extends AFCmdBase {
 			cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
 			NativeObject jsonPMOut = new NativeObject();
-			
-			synchronized(this) {
-				Object opmIn;
-				opmIn = AFBase.jsonParse(pmIn.toString(), false);
-				
-				Object noSLF4JErrorOnly = Context.javaToJS(__noSLF4JErrorOnly, (Scriptable) jse.getGlobalscope());
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__noSLF4JErrorOnly", noSLF4JErrorOnly);
 
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "pmIn", opmIn);
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__pmIn", opmIn);
-									
+			Object opmIn; 
+			Scriptable gscope = (Scriptable) jse.getGlobalscope();
+			Object noSLF4JErrorOnly = Context.javaToJS(__noSLF4JErrorOnly, gscope);
+			
+			// Issue 34
+			if (System.getProperty("java.util.logging.config.file") == null) {
+				System.setProperty("java.util.logging.config.file", "");
+			}
+			if (__noSLF4JErrorOnly) {
+				// Set logging to ERROR 
+				try {
+					for(ch.qos.logback.classic.Logger logger : ((ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME)).getLoggerContext().getLoggerList()) {
+						if (logger.getLevel() != ch.qos.logback.classic.Level.ERROR) logger.setLevel(ch.qos.logback.classic.Level.ERROR);
+					}	
+				} catch (Exception e) {
+				}
+			}
+
+			if (pmIn != null) {
+				opmIn = AFBase.jsonParse(pmIn.toString(), false);
+			} else {
+				opmIn = AFCmdBase.jse.newObject(gscope);
+			}
+			
+			synchronized(this) {		
+				ScriptableObject.putProperty(gscope, "__noSLF4JErrorOnly", noSLF4JErrorOnly);
+	
+				ScriptableObject.putProperty(gscope, "pmIn", opmIn);
+				ScriptableObject.putProperty(gscope, "__pmIn", opmIn);
+			
 				// Add pmOut object
-				Object opmOut = Context.javaToJS(jsonPMOut, (Scriptable) jse.getGlobalscope());
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "pmOut", opmOut);
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__pmOut", opmOut);
+				Object opmOut = Context.javaToJS(jsonPMOut, gscope);
+				ScriptableObject.putProperty(gscope, "pmOut", opmOut);
+				ScriptableObject.putProperty(gscope, "__pmOut", opmOut);
 				
 				// Add expr object
-				Object opmExpr = Context.javaToJS(exprInput, (Scriptable) jse.getGlobalscope());
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "expr", opmExpr);
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__expr", opmExpr);
-				ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__args", args);
+				Object opmExpr = Context.javaToJS(exprInput, gscope);
+				ScriptableObject.putProperty(gscope, "expr", opmExpr);
+				ScriptableObject.putProperty(gscope, "__expr", opmExpr);
+				ScriptableObject.putProperty(gscope, "__args", args);
 				
 				// Add scriptfile object
 				if (filescript) {
-					Object scriptFile = Context.javaToJS(scriptfile, (Scriptable) jse.getGlobalscope());
-					ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__scriptfile", scriptFile);
-					ScriptableObject.putProperty((Scriptable) jse.getGlobalscope(), "__iszip", (zip == null) ? false: true);
+					Object scriptFile = Context.javaToJS(scriptfile, gscope);
+					ScriptableObject.putProperty(gscope, "__scriptfile", scriptFile);
+					ScriptableObject.putProperty(gscope, "__iszip", (zip == null) ? false: true);
 				}
 
 				// Add AF class
-				ScriptableObject.defineClass((Scriptable) jse.getGlobalscope(), AFBase.class, false, true);
+				ScriptableObject.defineClass(gscope, AFBase.class, false, true);
 				
 				// Add DB class
-				ScriptableObject.defineClass((Scriptable) jse.getGlobalscope(), DB.class, false, true);
+				ScriptableObject.defineClass(gscope, DB.class, false, true);
 				
 				// Add CSV class
-				ScriptableObject.defineClass((Scriptable) jse.getGlobalscope(), CSV.class, false, true);
+				ScriptableObject.defineClass(gscope, CSV.class, false, true);
 				
 				// Add IO class
-				ScriptableObject.defineClass((Scriptable) jse.getGlobalscope(), IOBase.class, false, true);			
+				ScriptableObject.defineClass(gscope, IOBase.class, false, true);			
 				
 				// Add this object
 				Scriptable afScript = null;
-				afScript = (Scriptable) jse.newObject((Scriptable) jse.getGlobalscope(), "AF");
+				afScript = (Scriptable) jse.newObject(gscope, "AF");
 				
-				if (!ScriptableObject.hasProperty((Scriptable) jse.getGlobalscope(), "af"))
-					((IdScriptableObject) jse.getGlobalscope()).put("af", (Scriptable) jse.getGlobalscope(), afScript);
+				if (!ScriptableObject.hasProperty(gscope, "af"))
+					((IdScriptableObject) gscope).put("af", gscope, afScript);
 				
 				// Add the IO object
-				if (!ScriptableObject.hasProperty((Scriptable) jse.getGlobalscope(), "io"))
-					((IdScriptableObject) jse.getGlobalscope()).put("io", (Scriptable) jse.getGlobalscope(), jse.newObject(jse.getGlobalscope(), "IO"));
+				if (!ScriptableObject.hasProperty(gscope, "io"))
+					((IdScriptableObject) gscope).put("io", gscope, jse.newObject(gscope, "IO"));
 				
 			}
-			
+
 			AFBase.runFromClass(Class.forName("openaf_js").getDeclaredConstructor().newInstance());
 			cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
-				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + pmIn.toString() + ")";
+				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + pmIn + ")";
 			}
 			
 			Object res = null;
 			if (injectscript || filescript || injectcode || processScript) {
 				Context cxl = (Context) jse.enterContext();
 				org.mozilla.javascript.Script compiledScript = cxl.compileString(script, scriptfile, 1, null);
-				res = compiledScript.exec(cxl, (Scriptable) jse.getGlobalscope());
+				res = compiledScript.exec(cxl, gscope);
 				jse.exitContext();
 			} 
 
@@ -726,7 +746,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 			
 			// Convert to ParameterMap
-			Object stringify = NativeJSON.stringify(cx, (Scriptable) jse.getGlobalscope(), jsonPMOut, null, null);
+			Object stringify = NativeJSON.stringify(cx, gscope, jsonPMOut, null, null);
 			try {
 				// Issue #125
 				Class.forName("com.google.gson.Gson");
@@ -756,12 +776,12 @@ public class AFCmdOS extends AFCmdBase {
 		AFCmdOS afc = new AFCmdOS();
 		AFCmdBase.args = args;
 
-		try {			
+		//try {			
 			afc.processArgs(args);				
-		} catch (MalformedURLException e1) {
+		/*} catch (MalformedURLException e1) {
 			SimpleLog.log(SimpleLog.logtype.ERROR, "Error with the URL: " + e1.getMessage(), null);
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "", e1);
-		}
+		}*/
 		
 		try {
 			afc.execute(System.in, System.out, "");					
