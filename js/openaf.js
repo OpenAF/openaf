@@ -27,11 +27,22 @@ var __genScriptsUpdate = [];
 var __noSLF4JErrorOnly;
 //Set openaf variables
 var __openaf;
-try {
+if (isUnDef(__openaf)) __openaf =
+// BEGIN_SET__OPENAF
+{
+   "noHomeComms"   : false,
+   "opackCentral"  : [ "https://openaf.io/opack.db" ],
+   "openafBuild"   : [ "https://openaf.io/build" ],
+   "openafRelease" : [ "https://openaf.io/release" ],
+   "openafDownload": [ "https://openaf.io" ],
+   "odoc"          : [ "https://openaf.io/odoc" ]
+}
+// END_SET__OPENAF
+/*try {
 	__openaf = io.readFile(getOpenAFJar() + "::openaf.json");
 } catch(e) {
 	__openaf = {};
-}
+}*/
 
 noHomeComms = (isDef(__openaf.noHomeComms)) ? __openaf.noHomeComms : false;
 var __opackCentral = (isDef(__openaf.opackCentral)) ? __openaf.opackCentral : [
@@ -8915,7 +8926,7 @@ var console = { log: log, warn: logWarn, error: logErr };
 //__initializeCon();
 
 // Set logging to ERROR 
-{
+/*{
 	// Issue 34
 	if (java.lang.System.getProperty("java.util.logging.config.file") == null) {
 		java.lang.System.setProperty("java.util.logging.config.file", "");
@@ -8929,17 +8940,17 @@ var console = { log: log, warn: logWarn, error: logErr };
 			}
 		} catch (e) {}
 	}
-};
+};*/
 
 // Set user agent
-{
+//{
 	__setUserAgent();
-}
+//}
 
 // Set network DNS TTL
-(function() {
+//(function() {
 	java.security.Security.setProperty("networkaddress.cache.ttl", 60);
-})();
+//})();
 
 // Set __pm
 var __pm = __pmIn;
@@ -8956,19 +8967,18 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 	try {
 		var fprof = java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE;
 		if (io.fileExists(fprof)) {
-			/*prof = io.readFileString(fprof);
-			af.compile(prof);*/
 			loadCompiled(fprof);
 		}
 	} catch(e) {
 		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
 	}
-	
-	prof ="";
+
 	try {
-		var fprof = getOpenAFJar() + "::" + OPENAFPROFILE;
-		prof = io.readFileString(fprof);
-		af.compile(prof);
+		if (af.getClass("openaf.OAFRepack").getResourceAsStream("/" + OPENAFPROFILE) != null) {
+			var fprof = getOpenAFJar() + "::" + OPENAFPROFILE;
+			prof = io.readFileString(fprof);
+			af.compile(prof);
+		}
 	} catch(e) {
 		if (!e.message.match(/java\.io\.FileNotFoundException/) &&
 		    !e.message.match(/java\.io\.IOException/) &&

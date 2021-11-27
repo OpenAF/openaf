@@ -230,6 +230,16 @@ var zipJSlib = new ZIP();
 var validationForCompile = (filename) => { return (filename != "synaptic.js" && filename != "materialize.js" && filename != "handlebars.js" && filename != "jquery.js" && filename != "highlight.js"); };
 var validationForRequireCompile = (filename) => { return (filename == "regression.js" || filename == "handlebars.js" || filename == "showdown.js" || filename == "synaptic.js"); };
 
+if (io.fileExists(OPENAF_BUILD_HOME + "/openaf.json")) {
+	log("Loading " + OPENAF_BUILD_HOME + "/openaf.json...")
+	var txt = io.readFileString(OPENAF_BUILD_HOME + "/openaf.json")
+	var s = io.readFileString(OPENAF_BUILD_HOME + "/js/openaf.js")
+	
+	s = s.replace(/(\/\/ BEGIN_SET__OPENAF\n)(.+\n)+(\/\/ END_SET__OPENAF\n)/m, "$1" + txt + "\n$3")
+	log("Rewriting " + OPENAF_BUILD_HOME + "/js/openaf.jar...")
+	io.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", s)
+}
+
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {
 try {	
