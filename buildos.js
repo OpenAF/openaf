@@ -240,6 +240,16 @@ if (io.fileExists(OPENAF_BUILD_HOME + "/openaf.json")) {
 	io.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", s)
 }
 
+var compileJS2Java = (classfile, script, path) => {
+	var tmpFile = io.createTempFile("build_", ".js");
+	io.writeFileString(tmpFile, script);
+
+	var cmd = "java -classpath " + OPENAF_BUILD_HOME + "/bin:" + OPENAF_BUILD_HOME + "/lib/js.jar openaf.CompileJS2Java " + classfile + " " + tmpFile + " " + path;
+	$sh(cmd)
+	.prefix(classfile)
+	.get(0)
+}
+
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {
 try {	
