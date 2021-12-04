@@ -7741,6 +7741,9 @@ const includeOPack = function(aOPackName, aMinVersion) {
 		}
 		return true;
 	}
+	if (io.fileExists(aOPackName) && io.fileInfo(aOPackName).isDirectory) {
+		oPack("add2db " + aOPackName)
+	}
 	if (isUnDef(getOPackPath(aOPackName))) {
         oPack("install " + aOPackName);
         if (isUnDef(getOPackPath(aOPackName))) throw "Couldn't install opack '" + aOPackName + "'.";
@@ -7750,7 +7753,7 @@ const includeOPack = function(aOPackName, aMinVersion) {
         if (version < aMinVersion) {
             oPack("update " + aOPackName);
             version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
-            if (version < aMinVersion) throw "Couldn't update opack " + aOPackName + " from version " + version + "to >=" + aMinVersion;
+            if (version < aMinVersion) throw "Couldn't update opack " + aOPackName + " from version " + version + " to >=" + aMinVersion;
         }
     }    
     return true;
