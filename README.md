@@ -84,12 +84,12 @@ Just delete the original empty folder where you executed the install command.
 
 ## Documentation
 
-* [How to](How-to)
-* [All functions, objects, plugins and libraries](documentation)
-* [oJob](oJob)
-* [OpenAF Channels](OpenAF-Channels)
-* [OpenAF oPromises](OpenAF-oPromise)
-* [Code tips & tricks](Tips-&-tricks)
+* [How to](https://docs.openaf.io/docs/howto/)
+* [All functions, objects, plugins and libraries](https://docs.openaf.io/docs/reference/)
+* [oJob](https://docs.openaf.io/docs/concepts/oJob.html)
+* [OpenAF Channels](https://docs.openaf.io/docs/concepts/OpenAF-Channels.html)
+* [OpenAF oPromises](https://docs.openaf.io/docs/concepts/OpenAF-oPromise.html)
+<!--* [Code tips & tricks](Tips-&-tricks)-->
 
 ## Building
 
