@@ -1513,6 +1513,7 @@ OpenWrap.ch.prototype.__types = {
 	 *    - pass   (String)          Optionally provide a password to access the ES server/cluster (encrypted or not).\
 	 *    - fnId   (String/Function) Optionally called on every operation to calculate the idKey with the key provided as argument. If string will the corresponding hash function (md5/sha1/etc...) with sortMapKeys + stringify.\
 	 *    - size   (Number)          Optionally getAll/getKeys to return more than 10 records (up to 10000).\
+	 *    - stamp  (Map)             Optionally merge with stamp map.\
 	 * \
 	 * The getAll/getKeys functions accept an extra argument to provide a ES query map to restrict the results.
 	 * </odoc>
@@ -1682,6 +1683,12 @@ OpenWrap.ch.prototype.__types = {
 			return undefined;
 		},
 		set          : function(aName, aK, aV, aTimestamp) {
+			if (isMap(this.__channels[aName].stamp) && isMap(aK)) {
+				aK = merge(aK, this.__channels[aName].stamp)
+			}
+			if (isMap(this.__channels[aName].stamp) && isMap(aV)) {
+				aV = merge(aV, this.__channels[aName].stamp)
+			}
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			//url += "/" + this.__channels[aName].idKey;
 			url += "/_doc";
@@ -1714,7 +1721,13 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(aVs) && isArray(aVs) && aVs.length <= 0) return;
 
 			for(var ii in aVs) {
+				if (isMap(this.__channels[aName].stamp) && isMap(aVs[ii])) {
+					aVs[ii] = merge(aVs[ii], this.__channels[aName].stamp)
+				}
 				var ks = (isDef(aKs) ? ow.obj.filterKeys(aKs, aVs[ii]) : aVs[ii]);
+				if (isMap(this.__channels[aName].stamp) && isMap(ks)) {
+					ks = merge(ks, this.__channels[aName].stamp)
+				}
 				var k = this.__channels[aName]._fnId(ks);
 				if (aVs[ii] != null && isDef(k[this.__channels[aName].idKey])) {
 					var m = { index: {
@@ -1754,7 +1767,13 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(aVs) && isArray(aVs) && aVs.length <= 0) return;
 
 			for(var ii in aVs) {
+				if (isMap(this.__channels[aName].stamp) && isMap(aVs[ii])) {
+					aVs[ii] = merge(aVs[ii], this.__channels[aName].stamp)
+				}
 				var ks = (isDef(aKs) ? ow.obj.filterKeys(aKs, aVs[ii]) : aVs[ii]);
+				if (isMap(this.__channels[aName].stamp) && isMap(ks)) {
+					ks = merge(ks, this.__channels[aName].stamp)
+				}
 				var k = this.__channels[aName]._fnId(ks);
 				if (aVs[ii] != null && isDef(k[this.__channels[aName].idKey])) {
 					var m = { delete: {
@@ -1827,7 +1846,7 @@ OpenWrap.ch.prototype.__types = {
 		unset        : function(aName, aK, aTimestamp) {
 			var url = this.__channels[aName].url + "/" + this.__channels[aName].fnIndex(aK);
 			url += "/_doc";
-			
+
 			aK = this.__channels[aName]._fnId(aK);
 			if (isDef(aK) && isObject(aK) && isDef(aK[this.__channels[aName].idKey])) { 
 				url += "/" + encodeURIComponent(aK[this.__channels[aName].idKey]);
