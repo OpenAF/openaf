@@ -343,7 +343,7 @@ OpenWrap.metrics.prototype.collectMetrics = function(aName, aFunction) {
 
 /**
  * <odoc>
- * <key>OpenWrap.metrics.prototype.fromOpenMetrics2Array(aLines) : Array</key>
+ * <key>ow.metrics.fromOpenMetrics2Array(aLines) : Array</key>
  * Given an array or string newline delimited string following the OpenMetrics format 
  * will try to return an array with each metric, value, labels, timestamp and perceived prefix.
  * </odoc>
