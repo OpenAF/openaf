@@ -74,9 +74,9 @@ OpenWrap.metrics.prototype.__m = {
                 ttl : global.__$cache[r].attl,
                 maxSize: global.__$cache[r].msize,
                 size: global.__$cache[r].size(),
-                hits: ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].hits,
-                miss: ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].miss,
-                avgExecTime: ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].avg,
+                hits: isUnDef(ow.ch.__types.cache.__cacheStats[global.__$cache[r].name]) ? __ : ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].hits,
+                miss: isUnDef(ow.ch.__types.cache.__cacheStats[global.__$cache[r].name]) ? __ : ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].miss,
+                avgExecTime: isUnDef(ow.ch.__types.cache.__cacheStats[global.__$cache[r].name]) ? __ : ow.ch.__types.cache.__cacheStats[global.__$cache[r].name].avg,
             })) : "n/a"),
             rest: (isDef(global.__openaf_rest) ? Object.keys(global.__openaf_rest.urls).map(r => ({
                 url          : r,
