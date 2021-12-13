@@ -2323,9 +2323,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			aJobTypeArgs.lang = "oaf";
 			res = io.readFileString(aJobTypeArgs.execJs);
 		}
-		if (aJobTypeArgs.lang == "oaf" && (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire))) {
+		if (res == "" && aJobTypeArgs.lang == "oaf" && (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire))) {
 			aJobTypeArgs.execRequire = _$(aJobTypeArgs.execRequire, "execRequire").isString().default(parent.__execRequire);
-			//aJobTypeArgs.lang = "oaf";
 			res = "var __r = require('" + aJobTypeArgs.execRequire + "'); if (isDef(__r['" + _aName + "'])) __r['" + _aName + "'](args); else throw \"Code for '" + _aName + "' not found!\";";
 		}
 		if (isDef(aJobTypeArgs.execPy))      {
@@ -2496,7 +2495,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		if (isString(jobEach)) jobEach = [ jobEach ];
 		jobDeps = _$(jobDeps).isArray().default([]);
 		jobType = _$(jobType).isString().default("simple");
-		jobFunc = _$(jobFunc).default(function() {});
+		jobFunc = _$(jobFunc).default("");
 		jobHelp = _$(jobHelp).default({});
 		jobEach = _$(jobEach).isArray().default([]);
 		
