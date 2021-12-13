@@ -3668,8 +3668,16 @@ function isNull(obj) {
  * </odoc>
  */
 function isJavaObject(obj) {
-	var s = Object.prototype.toString.call(obj);
-	return (s === '[object JavaObject]' || s === '[object JavaArray]');
+	//var s = Object.prototype.toString.call(obj);
+	//return (s === '[object JavaObject]' || s === '[object JavaArray]');
+	try {
+		if (obj.getClass() instanceof java.lang.Object)
+			return true
+		else
+			return false
+	} catch(e) {
+		return false
+	}
 }
 
 /**
