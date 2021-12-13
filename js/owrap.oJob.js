@@ -166,22 +166,30 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
 
 		var valid = false;
 
-		[alg, h] = OJOB_INTEGRITY[aFileOrPath].split("-");
-		switch (alg) {
-		case "sha256":
-			valid = (sha256(stream) == h);
-			break;
-		case "sha512":
-			valid = (sha512(stream) == h);
-			break;
-		case "sha384":
-			valid = (sha384(stream) == h);
-			break;
-		case "sha1"  :
-			valid = (sha1(stream) == h);
-			break;
-		default      : 
-			valid = false;
+		if (OJOB_INTEGRITY[aFileOrPath].indexOf("-") >= 0) {
+			[alg, h] = OJOB_INTEGRITY[aFileOrPath].split("-");
+			switch (alg) {
+			case "sha256":
+				valid = (sha256(stream) == h);
+				break;
+			case "sha512":
+				valid = (sha512(stream) == h);
+				break;
+			case "sha384":
+				valid = (sha384(stream) == h);
+				break;
+			case "sha1"  :
+				valid = (sha1(stream) == h);
+				break;
+			case "md5"   :
+				valid = (md5(stream) == h)
+				break
+			case "md2"   :
+				valid = (md2(stream) == h)
+				break
+			default      : 
+				valid = false;
+			}
 		}
 
 		stream.close();
@@ -317,6 +325,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		setLog(ojob.log);
 	}
 
+	// Channels
 	if (isDef(this.__ojob.channels)) {
 		if (this.__ojob.channels.recordLog) startLog();
 		if (isDef(this.__ojob.channels.create) && isArray(this.__ojob.channels.create)) {
@@ -519,6 +528,20 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 						loadLib(res.ojob.loads[ii]);
 					}
 				}
+			}
+
+			// Integrity
+			if (isDef(res.ojob.integrity)) {
+				if (isArray(res.ojob.integrity.list)) {
+					res.ojob.integrity.list.forEach(entry => {
+						if (isMap(entry) && Object.keys(entry).length > 0) {
+							var k = Object.keys(entry)[0]
+							if (isUnDef(OJOB_INTEGRITY[k])) OJOB_INTEGRITY[k] = entry[k]
+						}
+					})
+				}
+				if (isBoolean(res.ojob.integrity.strict)) OJOB_INTEGRITY_STRICT = res.ojob.integrity.strict
+				if (isBoolean(res.ojob.integrity.warn))   OJOB_INTEGRITY_WARN   = res.ojob.integrity.warn
 			}
 		}
 
@@ -762,7 +785,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		if (Object.keys(OJOB_INTEGRITY).length > 0) {
 			Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "oJob checking integrity of '" + aFile + "'", null);
 
-			var ig = this.verifyIntegrity(aFile);
+			var ig = parent.verifyIntegrity(aFile);
 			if (isDef(ig) && ig == false) {
 				if (OJOB_INTEGRITY_WARN) {
 					logWarn("INTEGRITY OF '" + aFile + "' failed. Please check the source and update the corresponding integrity hash list. Execution will continue.");
@@ -2325,6 +2348,28 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		}
 		if (res == "" && aJobTypeArgs.lang == "oaf" && (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire))) {
 			aJobTypeArgs.execRequire = _$(aJobTypeArgs.execRequire, "execRequire").isString().default(parent.__execRequire);
+
+			// Verify integrity 
+			if (Object.keys(OJOB_INTEGRITY).length > 0) {
+				Packages.openaf.SimpleLog.log(Packages.openaf.SimpleLog.logtype.DEBUG, "oJob checking integrity of '" + aJobTypeArgs.execRequire + "'", null);
+
+				var ig = ow.oJob.verifyIntegrity(aJobTypeArgs.execRequire);
+				if (isDef(ig) && ig == false) {
+					if (OJOB_INTEGRITY_WARN) {
+						logWarn(_aName + " | INTEGRITY OF '" + aJobTypeArgs.execRequire + "' failed. Please check the source and update the corresponding integrity hash list. Execution will continue.");
+					} else {
+						throw _aName + " | INTEGRITY OF '" + aJobTypeArgs.execRequire + "' failed. Please check the source and update the corresponding integrity hash list.";
+					}
+				} else {
+					if (OJOB_INTEGRITY_STRICT && ig != true) {
+						throw _aName + " | INTEGRITY OF '" + aJobTypeArgs.execRequire + "' failed. Please check the source and update the corresponding integrity hash list.";
+					} else {
+						if (OJOB_VALIDATION_STRICT && ig == false) {
+							throw _aName + " | OJOB VALIDATION OF '" + aFile + "' failed.";
+						}
+					}
+				}
+			}
 			res = "var __r = require('" + aJobTypeArgs.execRequire + "'); if (isDef(__r['" + _aName + "'])) __r['" + _aName + "'](args); else throw \"Code for '" + _aName + "' not found!\";";
 		}
 		if (isDef(aJobTypeArgs.execPy))      {
