@@ -1529,6 +1529,8 @@ OpenWrap.ch.prototype.__types = {
 				throw "Please define an user and pass to access the elastic search";*/
 			this.__channels[aName] = options;
 			
+			if (isDef(options.stamp) && isUnDef(options.seeAll)) this.__channels[aName].seeAll = false
+
 			if (isFunction(options.index)) {
 				this.__channels[aName].fnIndex = options.index;
 			} else {
@@ -1616,6 +1618,7 @@ OpenWrap.ch.prototype.__types = {
 				ops = full; 
 			} else {
 				if (isDef(this.__channels[aName].size)) ops = { size: this.__channels[aName].size };
+				if (isDef(this.__channels[aName].stamp) && !this.__channels[aName].seeAll) ops = merge(ops, ow.ch.utils.getElasticQuery(Object.keys(this.__channels[aName].stamp).map(k => k+":"+this.__channels[aName].stamp[k]).join(" AND ")) )
 			}
 				
 			var parent = this;
@@ -1649,6 +1652,7 @@ OpenWrap.ch.prototype.__types = {
 				ops = full; 
 			} else {
 				if (isDef(this.__channels[aName].size)) ops = { size: this.__channels[aName].size };
+				if (isDef(this.__channels[aName].stamp) && !this.__channels[aName].seeAll) ops = merge(ops, ow.ch.utils.getElasticQuery(Object.keys(this.__channels[aName].stamp).map(k => k+":"+this.__channels[aName].stamp[k]).join(" AND ")) )
 			}
 				
 			var parent = this;
