@@ -422,82 +422,83 @@
     };
 
     exports.testDo = function() {
-        var success = false;
+        var success = $atomic(false, "boolean");
+
         $doWait($do((s, f) => {
-            success = true;
-            s(true);
-            return true;
+            success.set(true)
+            s(true)
+            return true
         }));
 
-        ow.test.assert(success, true, "Problem with simple $do");
+        ow.test.assert(success.get(), true, "Problem with simple $do");
 
-        success = false;
+        success = $atomic(false, "boolean")
         $doWait($do((s, f) => {
-            success = false;
-            s(123);
+            success.set(false)
+            s(123)
         }).then((v) => {
-            if (v == 123) success = true;
+            if (v == 123) success.set(true)
             return v;
         }));
 
-        ow.test.assert(success, true, "Problem with $do().then() using onFullfilment");
+        ow.test.assert(success.get(), true, "Problem with $do().then() using onFullfilment");
 
-        success = false;
+        success = $atomic(false, "boolean")
         $doWait($do((s, f) => {
-            success = false;
-            return 123;
+            success.set(false)
+            return 123
         }).then((v) => {
-            if (v == 123) success = true;
+            if (v == 123) success.set(true)
             return v;
         }));
 
-        ow.test.assert(success, true, "Problem with $do().then() using return");
+        ow.test.assert(success.get(), true, "Problem with $do().then() using return");
 
-        success = true;
+        success = $atomic(0)
         $doWait($do((s, f) => {
-            success = true;
-            f(123);
-            return true;
+            f(123)
+            success.set(1)
+            return true
         }).then((v) => {
-            if (v == 123) success = true;
-            return v;
+            if (v == 123) success.set(2); else success.set(22)
+            return v
         }).catch((r) => {
-            if (r == 123) success = false;
+            if (r == 123) success.set(3); else success.set(33)
         }));
 
-        ow.test.assert(success, false, "Problem with $do().then().catch() using onReject");
+        ow.test.assert(success.get(), 3, "Problem with $do().then().catch() using onReject");
 
-        success = true;
+        success = $atomic(true, "boolean")
         $doWait($do((s, f) => {
-            success = true;
+            success.set(true)
             throw 123;
         }).then((v) => {
-            if (v == 123) success = true;
+            if (v == 123) success.set(true)
             return v;
         }).catch((r) => {
-            if (String(r) == 123) success = false;
-        }));
+            if (String(r) == 123) success.set(false)
+        }))
 
-        ow.test.assert(success, false, "Problem with $do().then().catch() using throw");
+        ow.test.assert(success.get(), false, "Problem with $do().then().catch() using throw");
 
-        success = true;
-        var res = false;
+        success = $atomic(true, "boolean")
+        var res = $atomic(false, "boolean")
         $doWait($do(() => {
-            success = true;
+            success.set(true)
             return success;
         }).then((v) => {
-            if (v) success = true; else success = false;
+            if (v) success.set(true); else success.set(false)
             return v;
         }).catch((r) => {
-            if (r == 123) res = true; else res = false;
+            if (r == 123) res.set(true); else res.set(false);
         }).then((v) => {
-            if (!v) success = false; else success = true;
+            if (!v) success.set(false); else success.set(true)
             throw 123;
         }).catch((r) => {
-            if (r == 123) res = false; else res = true;
-        }));
+            if (r == 123) res.set(false); else res.set(true)
+        }))
 
-        ow.test.assert(res, false, "Problem with multiple $do().then().catch()");
+        ow.test.assert(res.get(), false, "Problem with multiple $do().then().catch()");
     };
 
     exports.testDoAll = function() {

@@ -7326,10 +7326,10 @@ const oPromise = function(aFunction, aRejFunction) {
 		NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
 	};
 
-	this.state = this.states.NEW;
-	this.executing = false;
+	this.state = $atomic(this.states.NEW, "int");
+	this.executing = $atomic(false, "boolean");
 	this.executors = new java.util.concurrent.ConcurrentLinkedQueue();
-
+	
 	this.then(aFunction, aRejFunction);
 };
 
@@ -7373,7 +7373,7 @@ oPromise.prototype.catch = function(onReject) {
  * </odoc>
  */
 oPromise.prototype.all = function(anArray) {
-	if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+	if (this.state.get() != this.states.NEW || this.executing.get() == true) throw "oPromise is already executing.";
 
 	var parent = this;
 
@@ -7386,8 +7386,8 @@ oPromise.prototype.all = function(anArray) {
 				for(var iii in anArray) {
 					if (anArray[iii] != null) {
 						if (anArray[iii] instanceof oPromise) {
-							if (!anArray[iii].executing) {
-								switch(anArray[iii].state) {
+							if (!anArray[iii].executing.get()) {
+								switch(anArray[iii].state.get()) {
 								case anArray[iii].states.NEW:
 									shouldStop = false;
 									break;
@@ -7434,7 +7434,7 @@ oPromise.prototype.all = function(anArray) {
  * </odoc>
  */
 oPromise.prototype.race = function(anArray) {
-	if (this.state != this.states.NEW || this.executing == true) throw "oPromise is already executing.";
+	if (this.state.get() != this.states.NEW || this.executing.get() == true) throw "oPromise is already executing.";
 	
 	var parent = this;
 
@@ -7447,8 +7447,8 @@ oPromise.prototype.race = function(anArray) {
 				for(var i in anArray) {
 					if (anArray[i] != null) {
 						if (anArray[i] instanceof oPromise) {
-							if (!anArray[i].executing) {
-								switch(anArray[i].state) {
+							if (!anArray[i].executing.get()) {
+								switch(anArray[i].state.get()) {
 								case anArray[i].states.NEW:
 									shouldStop = false;				
 									break;
@@ -7487,13 +7487,14 @@ oPromise.prototype.race = function(anArray) {
 
 oPromise.prototype.reject = function(aReason) {
 	this.reason = aReason;
-	this.state = this.states.PREFAILED;
+	this.state.set(this.states.PREFAILED);
 
 	return this;
 };
 
 oPromise.prototype.resolve = function(aValue) {
-	if (this.state == this.states.FULFILLED) this.state = this.states.NEW;
+	//if (this.state == this.states.FULFILLED) this.state = this.states.NEW;
+	this.state.setIf(this.states.FULFILLED, this.states.NEW)
 	this.value = (!isJavaObject(aValue) && isUnDef(aValue)) ? null : aValue;
 	return this;
 };
@@ -7511,67 +7512,72 @@ oPromise.prototype.__exec = function() {
 		try {
 			this.__f = __getThreadPool().submit(new java.lang.Runnable({
 				run: () => {
-					var ignore = false;
-					syncFn(() => { if (thisOP.executing) ignore = true; else thisOP.executing = true; }, thisOP.executing);
-                    if (ignore) return;
+					//var ignore = false;
+					//syncFn(() => { if (thisOP.executing.get()) ignore = true; else thisOP.executing.set(true); }, thisOP.executing.get());
+					if (!thisOP.executing.setIf(false, true)) return
+                    //if (ignore) return;
                     
                     try {
                         while (thisOP.executors.size() > 0) {
-                            var f = thisOP.executors.poll();
-                            // Exec
-                            if (thisOP.state != thisOP.states.PREFAILED && thisOP.state != thisOP.states.FAILED && f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
-                                var res, done = false;
-                                try {
-                                    var checkResult = true;
-                                    if (isDef(thisOP.value)) {
-                                        res = f.func(thisOP.value);
-                                    } else {
-                                        res = f.func(function (v) { checkResult = false; thisOP.resolve(v); },
-                                                    function (r) { checkResult = false; thisOP.reject(r); });
-                                    }
+							var f = thisOP.executors.poll();
+							// Exec
+							if (thisOP.state.get() != thisOP.states.PREFAILED && 
+								thisOP.state.get() != thisOP.states.FAILED && 
+								f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
+								var res, done = false;
+								try {
+									var checkResult = $atomic(true, "boolean");
+									if (isDef(thisOP.value)) {
+										res = f.func(thisOP.value);
+									} else {
+										res = f.func(function (v) { checkResult.set(false); thisOP.resolve(v); },
+													function (r) { checkResult.set(false); thisOP.reject(r); });
+									}
 
-                                    if (checkResult &&
-                                        (isJavaObject(res) || isDef(res)) &&
-                                        res != null &&
-                                        (thisOP.state == thisOP.states.NEW || thisOP.state == thisOP.states.FULFILLED)) {
-                                        res = thisOP.resolve(res);
-                                    }
-                                } catch (e) {
-                                    thisOP.reject(e);
-                                }
-                            }
-                            // Reject
-                            if (thisOP.state == thisOP.states.PREFAILED || thisOP.state == thisOP.states.FAILED) {
-                                while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
-                                    f = thisOP.executors.poll();
-                                }
+									if (checkResult.get() &&
+										(isJavaObject(res) || isDef(res)) &&
+										res != null &&
+										(thisOP.state.get() == thisOP.states.NEW || thisOP.state.get() == thisOP.states.FULFILLED)) {
+										res = thisOP.resolve(res);
+									}
+								} catch (e) {
+									thisOP.reject(e);
+								}
+							}
+							// Reject
+							if (thisOP.state.get() == thisOP.states.PREFAILED || thisOP.state.get() == thisOP.states.FAILED) {
+								while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
+									f = thisOP.executors.poll();
+								}
 
-                                if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
-                                    try {
-                                        f.func(thisOP.reason);
-                                        thisOP.state = thisOP.states.FULFILLED;
-                                    } catch (e) {
-                                        thisOP.state = thisOP.states.FAILED;
-                                        throw e;
-                                    }
-                                } else {
-                                    if (isUnDef(f) || f == null) thisOP.state = thisOP.states.FAILED;
-                                }
-                            }
+								if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
+									try {
+										f.func(thisOP.reason);
+										thisOP.state.set(thisOP.states.FULFILLED);
+									} catch (e) {
+										thisOP.state.set(thisOP.states.FAILED);
+										throw e;
+									}
+								} else {
+									if (isUnDef(f) || f == null) thisOP.state.set(thisOP.states.FAILED);
+								}
+							}
                         }
                     } catch(ee) {
                         throw ee;
                     } finally {
-					    syncFn(() => { thisOP.executing = false; }, thisOP.executing);
+					    //syncFn(() => { thisOP.executing.set(false); }, thisOP.executing.get());
+						thisOP.executing.set(false)
+
+						if (thisOP.executors.isEmpty()) {
+							thisOP.state.setIf(thisOP.states.NEW, thisOP.states.FULFILLED);
+							thisOP.state.setIf(thisOP.states.PREFAILED, thisOP.states.FAILED);
+						}
                     }
 
-					if (thisOP.state == thisOP.states.NEW && thisOP.executors.isEmpty()) {
-						thisOP.state = thisOP.states.FULFILLED;
-					}
-
-					if (thisOP.state == thisOP.states.PREFAILED && thisOP.executors.isEmpty()) {
+					/*if (thisOP.state == thisOP.states.PREFAILED && thisOP.executors.isEmpty()) {
 						thisOP.state = thisOP.states.FAILED;
-					}
+					}*/
 				}
 			}));
 		} catch(e) {
@@ -7788,6 +7794,7 @@ const includeOPack = function(aOPackName, aMinVersion) {
  *    boolean.get    - Get the current boolean\
  *    boolean.set    - Set the current boolean\
  *    boolean.getSet - Get and Set the current boolean\
+ *    boolean.setIf  - Only sets the current boolean if first boolean is equal to first argument\
  * \
  * </odoc>
  */
@@ -7796,18 +7803,21 @@ const $atomic = function(aInit, aType) {
 	aType = _$(aType).isString().oneOf([ "int", "long", "boolean" ]).default("long");
 
 	var _fNum = function(obj) { this.v = obj; };
-	_fNum.prototype.getObj = function()  { return this.v; };
-	_fNum.prototype.dec    = function()  { return this.v.decrementAndGet(); };
-	_fNum.prototype.inc    = function()  { return this.v.incrementAndGet(); };
-	_fNum.prototype.get    = function()  { return this.v.get(); };
-	_fNum.prototype.getSet = function(n) { return this.v.getAndSet(n); };
-	_fNum.prototype.getAdd = function(n) { return this.v.getAndAdd(n); };
+	_fNum.prototype.getObj        = function()  { return this.v; };
+	_fNum.prototype.dec           = function()  { return this.v.decrementAndGet(); };
+	_fNum.prototype.inc           = function()  { return this.v.incrementAndGet(); };
+	_fNum.prototype.get           = function()  { return this.v.get(); };
+	_fNum.prototype.getSet        = function(n) { return this.v.getAndSet(n); };
+	_fNum.prototype.getAdd        = function(n) { return this.v.getAndAdd(n); };
+	_fNum.prototype.set           = function(n) { return this.v.set(n); };
+	_fNum.prototype.setIf         = function(t, n) { return this.v.compareAndSet(t, n); }
 
 	var _fBol = function() { this.v = new java.util.concurrent.atomic.AtomicBoolean(aInit); };
-	_fBol.prototype.getObj = function()  { return this.v; };
-	_fBol.prototype.get    = function()  { return this.v.get(); };
-	_fBol.prototype.getSet = function(n) { return this.v.getAndSet(n); };
-	_fBol.prototype.set    = function(n) { return this.v.set(n); };
+	_fBol.prototype.getObj        = function()  { return this.v; };
+	_fBol.prototype.get           = function()  { return this.v.get(); };
+	_fBol.prototype.getSet        = function(n) { return this.v.getAndSet(n); };
+	_fBol.prototype.set           = function(n) { return this.v.set(n); };
+	_fBol.prototype.setIf         = function(t, n) { return this.v.compareAndSet(t, n) };
 
 	switch(aType) {
 	case "boolean": return new _fBol();
@@ -8241,25 +8251,31 @@ const $doFirst = function(anArray) {
  * </odoc>
  */
 const $doWait = function(aPromise, aWaitTimeout) {
+	_$(aPromise, "aPromise").check(v => { return v instanceof oPromise }).$_()
+
+	var __sfn = aP => { try { return aP.state.get() } catch(e) { sleep(25); return __ } }
+	var __efn = aP => { try { return aP.executing.get() } catch(e) { sleep(25); return __ } }
+	var __ffn = aP => { try { return aP.__f.get() } catch(e) { sleep(25); return __ } }
+
 	if (isDef(aWaitTimeout)) {
 		var init = now();
-		while(aPromise.state != aPromise.states.FULFILLED && 
-			  aPromise.state != aPromise.states.FAILED &&
-			  (isUnDef(aPromise.__f) || aPromise.executing || !aPromise.executors.isEmpty()) &&
-		      ((now() - init) < aWaitTimeout)) {
-			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
+		while(__sfn(aPromise) != aPromise.states.FULFILLED && 
+				__sfn(aPromise) != aPromise.states.FAILED &&
+				(__efn(aPromise) || !aPromise.executors.isEmpty()) &&
+				((now() - init) < aWaitTimeout)) {
+			__ffn(aPromise)
 		}
-		while(aPromise.executing && ((now() - init) < aWaitTimeout) && !aPromise.executors.isEmpty()) {
-			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
+		while(((now() - init) < aWaitTimeout) && (__efn(aPromise) || !aPromise.executors.isEmpty())) {
+			__ffn(aPromise)
 		}
 	} else {
-		while(aPromise.state != aPromise.states.FULFILLED && 
-			  aPromise.state != aPromise.states.FAILED &&
-			  (isUnDef(aPromise.__f) || aPromise.executing || !aPromise.executors.isEmpty())) {
-			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
+		while(__sfn(aPromise) != aPromise.states.FULFILLED && 
+			  __sfn(aPromise) != aPromise.states.FAILED &&
+			  (isUnDef(aPromise.__f) || __efn(aPromise) || !aPromise.executors.isEmpty())) {
+			__ffn(aPromise)
 		}
-		while(aPromise.executing && !aPromise.executors.isEmpty()) {
-			if (isDef(aPromise.__f)) aPromise.__f.get(); else sleep(25);
+		while((isUnDef(aPromise.__f) || __efn(aPromise) || !aPromise.executors.isEmpty())) {
+			__ffn(aPromise)
 		}
 	}
 
