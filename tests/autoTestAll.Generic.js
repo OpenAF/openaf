@@ -399,7 +399,7 @@
             }
         });
 
-        if (isDef(err)) throw err;
+        if (isDef(err) && err.message.indexOf("sleep interrupted") < 0) throw err;
         ow.test.assert(__state, 2, "Problem with threadBox timeout (2).");
 
         __state = 0;
@@ -417,7 +417,7 @@
             }
         });
 
-        if (isDef(err)) throw err;
+        if (isDef(err) && err.message.indexOf("sleep interrupted") < 0) throw err;
         ow.test.assert(__state, 1, "Problem with stopWhen.");
     };
 
@@ -499,7 +499,7 @@
 
         ow.test.assert(res, false, "Problem with multiple $do().then().catch()");
     };
-
+    
     exports.testDoAll = function() {
         var success = [];
 
