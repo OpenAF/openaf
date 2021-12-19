@@ -7775,41 +7775,49 @@ const includeOPack = function(aOPackName, aMinVersion) {
  * Creates an atomic object of aType (defaults to long) to be get/set atomically on a multithreading script initialized with aInitValue.
  * aType can be "int", "long" and "boolean". Each with different methods:\
  * \
- *    int.dec       - Decrement an integer\
- *    int.inc       - Increment an integer\
- *    int.get       - Get the current integer\
- *    int.getSet(n) - Get and Set the current integer\
- *    int.getAdd(n) - Get and Add to the current integer\
+ *    int.dec          - Decrement an integer\
+ *    int.inc          - Increment an integer\
+ *    int.get          - Get the current integer\
+ *    int.getSet(n)    - Get and Set the current integer\
+ *    int.getAdd(n)    - Get and Add to the current integer\
+ *    int.setIf(t, n)  - Set the current integer to n if current value is t\
+ *    int.set          - Set the current integer\
  * \
- *    long.dec       - Decrement an long\
- *    long.inc       - Increment an long\
- *    long.get       - Get the current long\
- *    long.getSet(n) - Get and Set the current long\
- *    long.getAdd(n) - Get and Add to the current long\
+ *    long.dec         - Decrement an long\
+ *    long.inc         - Increment an long\
+ *    long.get         - Get the current long\
+ *    long.getSet(n)   - Get and Set the current long\
+ *    long.getAdd(n)   - Get and Add to the current long\
+ *    long.setIf(t, n) - Set the current long to n if current value is t\
+ *    long.set         - Set the current long\
  * \
- *    boolean.get    - Get the current boolean\
- *    boolean.set    - Set the current boolean\
- *    boolean.getSet - Get and Set the current boolean\
+ *    boolean.get         - Get the current boolean\
+ *    boolean.set         - Set the current boolean\
+ *    boolean.getSet      - Get and Set the current boolean\
+ *    boolean.setIf(t, n) - Set the current boolean to n if current value is t\\
  * \
  * </odoc>
  */
-const $atomic = function(aInit, aType) {
+ const $atomic = function(aInit, aType) {
 	aInit = _$(aInit).default(0);
 	aType = _$(aType).isString().oneOf([ "int", "long", "boolean" ]).default("long");
 
 	var _fNum = function(obj) { this.v = obj; };
-	_fNum.prototype.getObj = function()  { return this.v; };
-	_fNum.prototype.dec    = function()  { return this.v.decrementAndGet(); };
-	_fNum.prototype.inc    = function()  { return this.v.incrementAndGet(); };
-	_fNum.prototype.get    = function()  { return this.v.get(); };
-	_fNum.prototype.getSet = function(n) { return this.v.getAndSet(n); };
-	_fNum.prototype.getAdd = function(n) { return this.v.getAndAdd(n); };
+	_fNum.prototype.getObj        = function()  { return this.v; };
+	_fNum.prototype.dec           = function()  { return this.v.decrementAndGet(); };
+	_fNum.prototype.inc           = function()  { return this.v.incrementAndGet(); };
+	_fNum.prototype.get           = function()  { return this.v.get(); };
+	_fNum.prototype.getSet        = function(n) { return this.v.getAndSet(n); };
+	_fNum.prototype.getAdd        = function(n) { return this.v.getAndAdd(n); };
+	_fNum.prototype.set           = function(n) { return this.v.set(n); };
+	_fNum.prototype.setIf         = function(t, n) { return this.v.compareAndSet(t, n); }
 
 	var _fBol = function() { this.v = new java.util.concurrent.atomic.AtomicBoolean(aInit); };
-	_fBol.prototype.getObj = function()  { return this.v; };
-	_fBol.prototype.get    = function()  { return this.v.get(); };
-	_fBol.prototype.getSet = function(n) { return this.v.getAndSet(n); };
-	_fBol.prototype.set    = function(n) { return this.v.set(n); };
+	_fBol.prototype.getObj        = function()  { return this.v; };
+	_fBol.prototype.get           = function()  { return this.v.get(); };
+	_fBol.prototype.getSet        = function(n) { return this.v.getAndSet(n); };
+	_fBol.prototype.set           = function(n) { return this.v.set(n); };
+	_fBol.prototype.setIf         = function(t, n) { return this.v.compareAndSet(t, n) };
 
 	switch(aType) {
 	case "boolean": return new _fBol();
