@@ -7779,22 +7779,26 @@ const includeOPack = function(aOPackName, aMinVersion) {
  * Creates an atomic object of aType (defaults to long) to be get/set atomically on a multithreading script initialized with aInitValue.
  * aType can be "int", "long" and "boolean". Each with different methods:\
  * \
- *    int.dec       - Decrement an integer\
- *    int.inc       - Increment an integer\
- *    int.get       - Get the current integer\
- *    int.getSet(n) - Get and Set the current integer\
- *    int.getAdd(n) - Get and Add to the current integer\
+ *    int.dec          - Decrement an integer\
+ *    int.inc          - Increment an integer\
+ *    int.get          - Get the current integer\
+ *    int.getSet(n)    - Get and Set the current integer\
+ *    int.getAdd(n)    - Get and Add to the current integer\
+ *    int.setIf(t, n)  - Set the current integer to n if current value is t\
+ *    int.set          - Set the current integer\
  * \
- *    long.dec       - Decrement an long\
- *    long.inc       - Increment an long\
- *    long.get       - Get the current long\
- *    long.getSet(n) - Get and Set the current long\
- *    long.getAdd(n) - Get and Add to the current long\
+ *    long.dec         - Decrement an long\
+ *    long.inc         - Increment an long\
+ *    long.get         - Get the current long\
+ *    long.getSet(n)   - Get and Set the current long\
+ *    long.getAdd(n)   - Get and Add to the current long\
+ *    long.setIf(t, n) - Set the current long to n if current value is t\
+ *    long.set         - Set the current long\
  * \
- *    boolean.get    - Get the current boolean\
- *    boolean.set    - Set the current boolean\
- *    boolean.getSet - Get and Set the current boolean\
- *    boolean.setIf  - Only sets the current boolean if first boolean is equal to first argument\
+ *    boolean.get         - Get the current boolean\
+ *    boolean.set         - Set the current boolean\
+ *    boolean.getSet      - Get and Set the current boolean\
+ *    boolean.setIf(t, n) - Set the current boolean to n if current value is t\\
  * \
  * </odoc>
  */
