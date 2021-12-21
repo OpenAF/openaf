@@ -2773,7 +2773,9 @@ OpenWrap.ch.prototype.waitForJobs = function(aName, aTimeout) {
 	do {
 		shouldContinue = 0;
 		for(var ii in this.jobs[aName]) {
-			if (this.jobs[aName][ii].state.get() != this.jobs[aName][ii].states.NEW) {
+			var _st = this.jobs[aName][ii].state.get()
+			if (_st != this.jobs[aName][ii].states.FULFILLED &&
+			    _st != this.jobs[aName][ii].states.FAILED) {
 				$doWait(this.jobs[aName][ii], (aTimeout >= 0 ? aTimeout : __));
 			} else {
 				shouldContinue++;
