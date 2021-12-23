@@ -932,5 +932,24 @@
 
         try { res = false; _$(3).check(v => { return v - 4 == 0; }); } catch(e) { res = true; }
         ow.test.assert(res, true, "Problem with check (2).");
+
+        // Conversion
+        try { res = _$("123 ").toNumber().isNumber().$_() } catch(e) { res = __ }
+        ow.test.assert(res, 123, "Problem with toNumber (1)")
+
+        try { res = _$("1o3").toNumber().isNumber().$_() } catch(e) { res = __ }
+        ow.test.assert(res, __, "Problem with toNumber (2)")
+
+        try { res = _$(12.34).toString().isString().$_() } catch(e) { res = __ }
+        ow.test.assert(res, "12.34", "Problem with toString (1)")
+
+        try { res = _$(" trUe ").toBoolean().isBoolean().$_() } catch(e) { res = __ }
+        ow.test.assert(res, true, "Problem with toBoolean (1)")
+
+        try { res = _$(" 45, 32, , 1a2 ").toArray().isArray().$_() } catch(e) { res = __ }
+        ow.test.assert(res, ["45","32","","1a2"], "Problem with toArray (1)")
+
+        try { res = _$(" { a: 12, b: true, c: 'abc' }").toMap().isMap().$_() } catch(e) { res = __ }
+        ow.test.assert(res, {a:12,b:true,c:'abc'}, "Problem with toMap (1)")
     };
 })();
