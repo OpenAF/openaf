@@ -1362,7 +1362,7 @@ while(cmd != "exit") {
 		} catch(e) { watchresult = "ERROR: " + e.message; watchCommand = false; }
 		//cmd = con.readLinePrompt("[ " + watchresult + " ]\n" + __pinprefix + "> ").trim();
 		//if(__ansiflag && con.isAnsiSupported() && __ansiColorFlag)
-			ansiStart(); print("[" + watchresult + " ]\n"); ansiStop();
+		if (isDef(watchresult) && watchresult.length > 0 && watchresult != '""') { ansiStart(); print("[ " + watchresult + " ]\n"); ansiStop(); }
 		//else
 		//	print("[" + watchresult + " ]\n");
 	}
