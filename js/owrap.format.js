@@ -2251,7 +2251,8 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
  	res = res.replace(/(\*|_)([^\*_\n]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
 
 	res = res.replace(/^# (.+)/mg, ansiColor("WHITE,BOLD,UNDERLINE", "$1") + da)
-	res = res.replace(/^##+ (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)
+	res = res.replace(/^## (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)
+	res = res.replace(/^###+ (.+)/mg, ansiColor("BOLD", "$1") + da)
 	
 	var isTab = false, fields = [], data = []
 	if (res.indexOf("|") >= 0) {
