@@ -2246,10 +2246,54 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "");
 
- 	res = res.replace(/(\*{3}|_{3})([^\*_]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
- 	res = res.replace(/(\*{2}|_{2})([^\*_]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
- 	res = res.replace(/(\*|_)([^\*_]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
+ 	res = res.replace(/(\*{3}|_{3})([^\*_\n]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
+ 	res = res.replace(/(\*{2}|_{2})([^\*_\n]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
+ 	res = res.replace(/(\*|_)([^\*_\n]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
+
+	res = res.replace(/^# (.+)/mg, ansiColor("WHITE,BOLD,UNDERLINE", "$1") + da)
+	res = res.replace(/^##+ (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)
 	
+	var isTab = false, fields = [], data = []
+	if (res.indexOf("|") >= 0) {
+		res = res.split("\n").map(l => {
+			if ((/^(\|[^\|]+)+\|$/).test(l)) {
+				if (isTab) {
+					if ((/^(\|[-: ]+)+\|$/).test(l)) {
+						// Separator
+						return null
+					} else {
+						if (l.trim().indexOf("|") == 0) {
+							var m = {}
+							l.split("|").forEach((s, i) => {
+								if (i == 0) return
+		
+								if (isDef(fields[i-1])) {
+									m[fields[i-1]] = s
+								}
+							})
+							data.push(m)
+						} 
+					}
+				} else {
+					if (fields.length == 0) {
+						fields = l.split("|").filter(s => s.length > 0).map(r => r.trim())
+						isTab = true
+						return null
+					}
+				}
+			} else {
+				if (isTab) {
+					isTab = false
+					fields = []
+					var cdata = clone(data)
+					data = []
+					return printTable(cdata)
+				}
+				return l
+			}
+		}).filter(isString).join("\n")
+	}
+
 	return res;
 };
 
