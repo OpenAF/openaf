@@ -423,8 +423,8 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 		var cols = Object.keys(row);
 		cols.forEach(function(col) {
 			if (isUnDef(maxsize[col])) 
-				maxsize[String(col)] = col.length;
-			if (maxsize[String(col)] < String(row[String(col)]).length) maxsize[String(col)] = String(row[String(col)]).length;
+				maxsize[String(col)] = ansiLength(col);
+			if (maxsize[String(col)] < ansiLength(String(row[String(col)]))) maxsize[String(col)] = ansiLength(String(row[String(col)]));
 		});
 	});
 
@@ -443,7 +443,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
 				} else {
-					output += repeat(Math.floor((maxsize[String(col)] - String(col).length)/2), ' ') + (useAnsi ? ansiColor(colorMap.lines, String(col)) : String(col)) + repeat(Math.round((maxsize[String(col)] - String(col).length) / 2), ' ');
+					output += repeat(Math.floor((maxsize[String(col)] - ansiLength(String(col)))/2), ' ') + (useAnsi ? ansiColor(colorMap.lines, String(col)) : String(col)) + repeat(Math.round((maxsize[String(col)] - ansiLength(String(col))) / 2), ' ');
 					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 				}
 				colNum++;
@@ -474,7 +474,7 @@ function printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme
 				output += "..."; outOfWidth = true;
 			} else {	
 				var value = String(row[String(col)]).replace(/\n/g, " ");
-				output += (useAnsi ? ansiColor(_getColor(row[String(col)]), value) : value) + repeat(maxsize[String(col)] - String(row[String(col)]).length, ' ');
+				output += (useAnsi ? ansiColor(_getColor(row[String(col)]), value) : value) + repeat(maxsize[String(col)] - ansiLength(String(row[String(col)])), ' ');
 				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 			}
 			colNum++;
