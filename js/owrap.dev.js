@@ -424,13 +424,15 @@ oBook.prototype.printPart = function(partId) {
     
     //if (includeCode) txt += "\n" + this.struct[partId].code + "\n"
     print(ow.format.withSideLine(head + ow.format.withMD(txt), __, "YELLOW", __, thm))
-    if (includeCode) print(ansiColor("ITALIC,WHITE", "Copy+paste the following code or adapt it if needed:\n\n") + this.struct[partId].code)
+    if (includeCode) print(ansiColor("ITALIC,WHITE", "Copy+paste the following code or adapt it, if needed, as instructed:\n\n") + this.struct[partId].code)
 
-    if (!includeCode && this.struct[partId].code.length > 0) {
-        print(ansiColor("ITALIC,WHITE", "Execute the following code or adapt it if needed:"))
-        con.getConsoleReader().getCursorBuffer().write(this.struct[partId].code.trim())
-    } else {
-        this.interaction()
+    if (!includeCode) {
+        if (this.struct[partId].code.length > 0) {
+            print(ansiColor("ITALIC,WHITE", "Execute the following code or adapt it, if needed, as instructed:"))
+            con.getConsoleReader().getCursorBuffer().write(this.struct[partId].code.trim())
+        } else {
+            this.interaction()
+        }
     }
 }
 
