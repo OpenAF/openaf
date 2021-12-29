@@ -393,13 +393,14 @@ OpenWrap.dev.prototype.JSDebug.prototype.setFn = function(aObject, aMethod, aFn,
     return res;
 };
 
-var oBook = function(aBook) {
+var oBook = function(aBook, exitOnEnd) {
     if (isString(aBook) && aBook.indexOf("\n") < 0 && io.fileExists(aBook)) aBook = io.readFileString(aBook)
 
     this.book = isString(aBook) ? aBook : ""
     this.pos = -1
     this.struct = isArray(aBook) ? aBook : []
     this._show = true
+    this.exitOnEnd = _$(exitOnEnd, "exitOnEnd").isBoolean().default(false)
 
     if (isString(aBook)) this.parse()
 }
@@ -440,6 +441,7 @@ oBook.prototype.bookEnd = function() {
     var thm = ow.format.withSideLineThemes().openTopCurvedRect
 
     print(ow.format.withSideLine(ow.format.withMD("(obook end)"), __, "YELLOW", __, thm))
+    if (this.exitOnEnd) exit(0)
 }
 
 oBook.prototype.bookStart = function() {
@@ -572,8 +574,8 @@ oBook.prototype.parse = function() {
     }
 }
 
-var obook = function(aBook) {
-    global._obook = new oBook(aBook)
+var obook = function(aBook, exitOnEnd) {
+    global._obook = new oBook(aBook, exitOnEnd)
     watchLine = "_obook.interaction()"
     watchCommand = true
     global._obook.bookStart()
