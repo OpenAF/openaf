@@ -411,22 +411,25 @@ var oBook = function(aBook) {
 oBook.prototype.printPart = function(partId) {
     _$(partId).isNumber().$_()
 
-    var thm = ow.format.withSideLineThemes().closedCurvedRect
-    //thm.lmiddle = " "
-    //thm.rmiddle = " "
+    var thm = ow.format.withSideLineThemes().simpleLineWithTips
+    thm.rtop    = thm.ltop
+    thm.rmiddle = thm.lmiddle
+    thm.rbottom = thm.lbottom
 
-    var txt = ansiColor("YELLOW,BOLD", "[" + (partId+1) + "/" + this.struct.length + "]\n\n")
-    txt += ansiColor("WHITE", this.struct[partId].text)
+    var head = ansiColor("YELLOW,BOLD", "[" + (partId+1) + "/" + this.struct.length + "]\n\n")
+    var txt = this.struct[partId].text
     var includeCode = false
     if (this.struct[partId].code.split("\n").length > 1) includeCode = true
     
     //if (includeCode) txt += "\n" + this.struct[partId].code + "\n"
-    print(ow.format.withSideLine(ow.format.withMD(txt), __, "YELLOW", __, thm))
+    print(ow.format.withSideLine(head + ow.format.withMD(txt), __, "YELLOW", __, thm))
     if (includeCode) print(ansiColor("ITALIC,WHITE", "Copy+paste the following code or adapt it if needed:\n\n") + this.struct[partId].code)
 
-    if (!includeCode) {
+    if (!includeCode && this.struct[partId].code.length > 0) {
         print(ansiColor("ITALIC,WHITE", "Execute the following code or adapt it if needed:"))
         con.getConsoleReader().getCursorBuffer().write(this.struct[partId].code.trim())
+    } else {
+        this.interaction()
     }
 }
 
@@ -434,13 +437,13 @@ oBook.prototype.bookEnd = function() {
     watchLine    = ""
     watchCommand = false
 
-    var thm = ow.format.withSideLineThemes().closedCurvedRect
+    var thm = ow.format.withSideLineThemes().openTopCurvedRect
 
     print(ow.format.withSideLine(ow.format.withMD("(obook end)"), __, "YELLOW", __, thm))
 }
 
 oBook.prototype.bookStart = function() {
-    var thm = ow.format.withSideLineThemes().closedCurvedRect
+    var thm = ow.format.withSideLineThemes().openBottomCurvedRect
 
     print(ow.format.withSideLine(ow.format.withMD("(obook start)"), __, "YELLOW", __, thm))
 }
@@ -471,7 +474,7 @@ oBook.prototype.interaction = function() {
                     this._show = false
                 }
                 
-                _msg = "\r(" + _pos + " press enter, for others use up/down arrows)"
+                _msg = "\r(" + _pos + " press enter, for others use up/down keys, to continue entering commands Ctrl+U and to quit press 'q')"
                 printnl(_msg)
                 var _c = String(con.readChar("")).charCodeAt(0)
 
@@ -528,7 +531,7 @@ oBook.prototype.interaction = function() {
             if (this._show) {
                 this.printPart(this.pos)
             } else {
-                if (this.pos > this.struct.length) this.bookEnd()
+                if (this.pos >= (this.struct.length-1)) this.bookEnd()
             }
         } else {
             this._show = true
@@ -545,6 +548,16 @@ oBook.prototype.parse = function() {
         } else {
             return ""
         }
+    }
+
+    var ro = this.book.match(/^\*requires (.+) >= (.+)\*/m)
+    if (isArray(ro) && ro.length > 0) {
+        ro.forEach(r => {
+            var _r = r.match(/^\*requires (.+) >= (.+)\*/)
+            if (_r && _r.length == 3) {
+                includeOPack(_r[1], _r[2])
+            }
+        })
     }
 
     var lst = this.book.split(/````\w*/)
