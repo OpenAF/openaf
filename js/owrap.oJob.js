@@ -2398,7 +2398,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 			res = "var __r = require('" + aJobTypeArgs.execRequire + "'); if (isDef(__r['" + _aName + "'])) __r['" + _aName + "'](args); else throw \"Code for '" + _aName + "' not found!\";";
 		}
-		if (isMap(aCheck)) {
+		if (isDef(aCheck) && isMap(aCheck)) {
 			var _in = addSigil(aName, aCheck.in)
 			var _out = addSigil(aName, aCheck.out)
 
