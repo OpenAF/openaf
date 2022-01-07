@@ -241,6 +241,16 @@ if (io.fileExists(ojson)) {
 	io.writeFileString(OPENAF_BUILD_HOME + "/js/openaf.js", s)
 }
 
+var compileJS2Java = (classfile, script, path) => {
+	var tmpFile = io.createTempFile("build_", ".js");
+	io.writeFileString(tmpFile, script);
+
+	var cmd = "java -classpath " + OPENAF_BUILD_HOME + "/bin:" + OPENAF_BUILD_HOME + "/lib/js.jar openaf.CompileJS2Java " + classfile + " " + tmpFile + " " + path;
+	$sh(cmd)
+	.prefix(classfile)
+	.get(0)
+}
+
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {
 try {	
@@ -292,9 +302,11 @@ try {
 			try {
 				log("Compiling from minimized " + file.filename + "...");
 			  if (validationForCompile(file.filename))
-			    af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
+			    //af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
+				compileJS2Java(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
 			  if (validationForRequireCompile(file.filename))
-			    af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");
+			    //af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");
+				compileJS2Java(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");
 			} catch(e) {
 				logErr("Error while compiling to java classes ('" + file.filename + "'): " + e);
 			}
@@ -304,14 +316,16 @@ try {
 			}, tempJar);
 		} else {
 			try {
-			  log("Compiling from source " + file.filename + "...");
-			  if (validationForCompile(file.filename))
-			    af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
-			  if (validationForRequireCompile(file.filename))
-			    af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");			 
-			} catch(e) {
-				logErr("Error while compiling to java classes ('" + file.filename + "'): " + e);
-			}   
+				log("Compiling from source " + file.filename + "...");
+				if (validationForCompile(file.filename))
+				  //af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
+				  compileJS2Java(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename), OPENAF_BUILD_HOME + "/jslib")
+				if (validationForRequireCompile(file.filename))
+				  //af.compileToClasses(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib");			 
+				  compileJS2Java(file.filename.replace(/\./g, "_"), "var __" + file.filename.replace(/\./g, "_") + " = function(require, exports, module) {" + io.readFileString(OPENAF_BUILD_HOME + "/js/" + file.filename) + "}", OPENAF_BUILD_HOME + "/jslib")
+			  } catch(e) {
+				  logErr("Error while compiling to java classes ('" + file.filename + "'): " + e);
+			  }   
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
 				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));				
