@@ -359,7 +359,7 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
         var res = line.match(/^([^\{]+?)({[^\}]+})? ([^ ]+?)( [^ ]+?)?$/);
         var data = {
             metric: res[1],
-            labels: (isNull(res[2]) ? {} : jsonParse(res[2].replace(/=/g, ":"), true)),
+            labels: (isNull(res[2]) ? {} : jsonParse(res[2].replace(/([^=,\{\}]+)=([^=,\{\}]+)/g, "\"$1\":$2"), true)),
             value: Number(res[3]),
             timestamp: (isNumber(res[4]) ? Number(res[4]) : __)
         }
