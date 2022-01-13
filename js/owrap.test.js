@@ -30,7 +30,14 @@ OpenWrap.test.prototype.getAllProfileLast = function() { var r = {}; for(var i i
  * Turns on (off by default) the display of java stack trace on java exceptions if aBooleanSetting = true.
  * </odoc>
  */
-OpenWrap.test.prototype.setShowStackTrace = function(aValue) { this.__showStackTrace = aValue; };
+OpenWrap.test.prototype.setShowStackTrace = function(aValue) { this.__showStackTrace = aValue }
+/**
+ * <odoc>
+ * <key>ow.test.setKeepStackTrace(aBooleanSetting)</key>
+ * Turns on (off by default) on keeping the java stack trace on java exceptions if aBooleanSetting = true.
+ * </odoc>
+ */
+OpenWrap.test.prototype.setKeepStackTrace = function(aValue) { this.__keepStackTrace = aValue }
 /**
  * <odoc>
  * <key>ow.test.setMemoryProfile(aBooleanSetting)</key>
@@ -54,15 +61,16 @@ OpenWrap.test.prototype.setOutput         = function(aValue) { this.__showOutput
  * </odoc>
  */
 OpenWrap.test.prototype.reset = function() {
-	this.getChannel().destroy();
-	this.getChannel().create();
-	this.__countTest = 0;
-	this.__countPass = 0;
-	this.__countFail = 0;
-	this.__profile = {};
-	this.__showStackTrace = true;
-	this.__memoryprofile  = false;
-	this.__showOutput     = true;
+	this.getChannel().destroy()
+	this.getChannel().create()
+	this.__countTest = 0
+	this.__countPass = 0
+	this.__countFail = 0
+	this.__profile = {}
+	this.__showStackTrace = true
+	this.__memoryprofile  = false
+	this.__showOutput     = true
+	this.__keepStackTrace = false
 }
 
 /**
@@ -270,11 +278,13 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 		execInfo.exception = String(e);
 		info.fail++;
 		this.__countFail++;
-		if (this.__showStackTrace) {
-			try {
-				e.javaException.printStackTrace();
-			} catch(e) { }
-		}
+		
+		try {
+			if (this.__showStackTrace) e.javaException.printStackTrace()
+		} catch(e1) { }
+		try {
+			if (this.__keepStackTrace) execInfo.stackTrace = getJavaStackTrace(e)
+		} catch(e1) { }
 		
 		info.executions.push(execInfo);
 		this.getChannel().set(aMessage, info);
@@ -288,7 +298,16 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
  * </odoc>
  */
 OpenWrap.test.prototype.getChannel = function() {
-	return $ch("__owTest::tests");
+	return $ch("__owTest::tests")
+}
+/**
+ * <odoc>
+ * <key>ow.test.getExecHistory() : Array</key>
+ * Gets the test results execution history.
+ * </odoc>
+ */
+OpenWrap.test.prototype.getExecHistory = function() {
+	return this.getChannel().getAll()
 }
 
 OpenWrap.test.prototype.toMarkdown = function() {
