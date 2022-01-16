@@ -3815,8 +3815,8 @@ OpenWrap.ch.prototype.utils = {
     /**
      * <odoc>
      * <key>ow.ch.utils.getMirrorSubscriber(aTargetCh, aFunc) : Function</key>
-     * Returns a channel subscriber function that will mirror any changes to aTargetCh if aFunc returns true when invoked
-     * with the key being changed.
+     * Returns a channel subscriber function that will mirror any changes to aTargetCh if aFunc(key, op) returns true when invoked
+     * with the key being changed and the corresponding operation.
      * </odoc>
      */
 	getMirrorSubscriber: function(aTargetCh, aFunc) {
@@ -3824,7 +3824,7 @@ OpenWrap.ch.prototype.utils = {
 			if (isUnDef(aFunc)) aFunc = function() { return true; };
 			switch(aO) {
 			case "set": 
-				if (aFunc(aK)) $ch(aTargetCh).set(aK, aV);
+				if (aFunc(aK, aO)) $ch(aTargetCh).set(aK, aV);
 				break;
 			case "setall": 
 				//for (var k in aK) {
@@ -3832,19 +3832,19 @@ OpenWrap.ch.prototype.utils = {
 				//}
 				var sV = [];
 				for (var v in aV) {
-					if(aFunc(aV[v])) sV.push(aV[v]);
+					if(aFunc(aV[v], aO)) sV.push(aV[v]);
 				}
 				$ch(aTargetCh).setAll(aK, sV);
 				break;
 			case "unsetall":
 				var sV = [];
 				for (var v in aV) {
-					if(aFunc(aV[v])) sV.push(aV[v]);
+					if(aFunc(aV[v], aO)) sV.push(aV[v]);
 				}
 				$ch(aTargetCh).unsetAll(aK, sV);
 				break;
 			case "unset": 
-				if (aFunc(aK)) $ch(aTargetCh).unset(aK);
+				if (aFunc(aK, aO)) $ch(aTargetCh).unset(aK);
 				break;
 			}		
 		}
