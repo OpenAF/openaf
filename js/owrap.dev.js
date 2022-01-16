@@ -420,7 +420,14 @@ oBook.prototype.printPart = function(partId) {
     var head = ansiColor("YELLOW,BOLD", "[" + (partId+1) + "/" + this.struct.length + "]\n\n")
     var txt = this.struct[partId].text
     var includeCode = false
-    if (this.struct[partId].code.split("\n").length > 1) includeCode = true
+    if (this.struct[partId].code.split("\n").length > 1) {
+        includeCode = true
+        this.includeCodeLines = this.struct[partId].code.split("\n").length-1
+        __pinprefix = this.includeCodeLines+1
+    } else {
+        this.includeCodeLines = 0
+        __pinprefix = ""
+    }
     
     //if (includeCode) txt += "\n" + this.struct[partId].code + "\n"
     print(ow.format.withSideLine(head + ow.format.withMD(txt), __, "YELLOW", __, thm))
@@ -460,7 +467,7 @@ oBook.prototype.interaction = function() {
             this._show = false
         }
 
-        if (this._show) {
+        if (this._show && this.includeCodeLines <= 0) {
             var _out = false
             var _msg = ""
             do {
@@ -527,7 +534,7 @@ oBook.prototype.interaction = function() {
                     // q
                     this._show = false
                     _out = true
-                    this.bookEnd()
+                    this.pos = this.struct.length
                 }
                 printnl("\r" + repeat(_msg.length, " ") + "\r")
             } while(_out == false)
@@ -538,6 +545,10 @@ oBook.prototype.interaction = function() {
                 if (this.pos >= (this.struct.length-1)) this.bookEnd()
             }
         } else {
+            if (this.includeCodeLines > 0) {
+                __pinprefix = this.includeCodeLines
+                this.includeCodeLines--
+            } 
             this._show = true
         }
     }
@@ -564,7 +575,7 @@ oBook.prototype.parse = function() {
         })
     }
 
-    var lst = this.book.split(/````\w*/)
+    var lst = this.book.replace(/````javascript\n([^`]+)````/mg, "````````\n$1````````").split(/````````\w*/)
     for(var i = 0; i < lst.length; i = i + 2) {
         if ((isString(lst[i]) && lst[i].length > 0) || 
             (isString(lst[i+1]) && lst[i+1].length > 0)) {
