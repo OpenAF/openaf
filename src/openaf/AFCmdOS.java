@@ -638,7 +638,7 @@ public class AFCmdOS extends AFCmdBase {
 				}
 				
 				if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().daemon();";
-				if (injectcode) script += code;
+				if (injectcode) script += "\n" + code;
 			}
 			
 			Context cx = (Context) jse.getNotSafeContext();
