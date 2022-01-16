@@ -1263,6 +1263,7 @@ function stopLog() {
 	//sleep(100);
 	$ch("__log").waitForJobs(-1);
 	$ch("__log").destroy();
+	__logFormat.hk = __
 }
 
 /**
