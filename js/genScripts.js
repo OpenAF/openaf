@@ -46,6 +46,8 @@ function generateWinBat() {
   var s;
 
   s = "@echo off\n\n";
+  s = s + "set thispath=%~dp0\n"
+  s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
@@ -59,6 +61,8 @@ function generateWinPackBat() {
   var s;
 
   s = "@echo off\n\n";
+  s = s + "set thispath=%~dp0\n"
+  s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
@@ -72,6 +76,8 @@ function generateWinJobBat() {
   var s;
 
   s = "@echo off\n\n";
+  s = s + "set thispath=%~dp0\n"
+  s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
@@ -84,6 +90,8 @@ function generateWinJobBat() {
 function generateWinUpdateBat() {
   var s;
   s = "@echo off\n\n";
+  s += "set thispath=%~dp0\n"
+  s += "set DIR=%thispath:~0,-1%\n"
   s += "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s += "set JAVA_HOME=\"" + javaHome + "\"\n";
   s += "set OPENAF_DIR=\"" + classPath + "\"\n";
@@ -102,6 +110,8 @@ function generateWinConsoleBat() {
   var s;
 
   s = "@echo off\n\n";
+  s = s + "set thispath=%~dp0\n"
+  s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
@@ -146,6 +156,8 @@ function generateUnixScript(options, shouldSep, extraOptions) {
   }
 
   s = "#!" + shLocation + "\n\n";
+  s += "cd `dirname $0`\n"
+  s += "DIR=`pwd`\n"
   s += "stty -icanon min 1 -echo 2>/dev/null\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OPENAF_DIR=\"" + classPath + "\"\n";
@@ -179,6 +191,7 @@ var curDir    = "";
 var javaVer   = "";
 var javaHome  = "";
 var classPath = "";
+var inSameDir = false
 
 var windows = 0;
 var shLocation;
@@ -193,6 +206,13 @@ try {
   logErr("Couldn't retrieve system properties: " + e.message);
   java.lang.System.exit(0);
 }
+
+var jh = javaHome.replace(/\\/g, "/");
+if (jh.substring(0, getOpenAFPath().lastIndexOf("/")+1) == getOpenAFPath()) {
+  inSameDir = true
+  javaHome = (os.match(/Windows/) ? "%DIR%" : "$DIR") + "/" + jh.substring(getOpenAFPath().lastIndexOf("/")+1)
+}
+classPath = (os.match(/Windows/) ? "%DIR%" : "$DIR") + "/" + classPath.substring(getOpenAFJar().lastIndexOf("/") + 1)
 
 if(os.match(/Windows/)) {
 	log("Identified system as Windows = '" + os + "'");
@@ -305,7 +325,7 @@ var zip = new ZIP();
 zip.streamPutFile(getOpenAFPath() + "/.opack.db", "packages.json", af.fromString2Bytes(stringify(p)));
 
 // Checking if reinstall script can be built
-ow.loadFormat();
+/*ow.loadFormat();
 var jh = ow.format.getJavaHome().replace(/\\/g, "/");
 if (jh.substring(0, jh.lastIndexOf("/")+1) == getOpenAFPath()) {
   if (windows == 1) {
@@ -316,7 +336,7 @@ if (jh.substring(0, jh.lastIndexOf("/")+1) == getOpenAFPath()) {
     io.writeFileString(curDir + "/reinstall.sh", "#!" + shLocation + "\n\n" +  jh.substring(jh.lastIndexOf("/")+1) + "/bin/java -jar openaf.jar --install\n");
     sh("chmod u+x " + curDir + "/reinstall.sh", "", null, false);
   }
-}
+}*/
 
 if (!noHomeComms) {
   if (windows == 1) {
@@ -331,4 +351,4 @@ if (!noHomeComms) {
 
 log("Done installing scripts");
 
-af.load(classPath + "::js/repack.js");
+af.load(getOpenAFJar() + "::js/repack.js");
