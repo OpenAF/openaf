@@ -1945,6 +1945,7 @@ const PACKAGESJSON_USERDB = ".openaf-opack.db";
 const OPACKCENTRALJSON = "packages.json";
 
 var __opackParams;
+var __opackOpenAF;
 /**
  * <odoc>
  * <key>oPack(aParameters)</key>
@@ -2033,6 +2034,11 @@ function getOPackLocalDB() {
 	var packages = {};
 	var exc, homeDBCheck = false;
 
+    if (isUnDef(__opackOpenAF)) {
+		__opackOpenAF = io.readFileJSON(getOpenAFJar() + "::.package.json")
+		__opackOpenAF.version = getVersion()
+	}
+
 	// Verify fileDB and homeDB
 	try {
 		if (!io.fileInfo(fileDB).permissions.match(/r/) && io.fileInfo(fileDB).permissions != "") {
@@ -2052,15 +2058,21 @@ function getOPackLocalDB() {
 			var zip = new ZIP(io.readFileBytes(fileDB));
 			packages = af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON)));
 			zip.close();
-			
-			for(var pack in packages) {
-				if (packages[pack].name == "OpenAF") packages[pack].version = getVersion();
-			}
 
 			if (homeDBCheck) {
 				var zip = new ZIP(io.readFileBytes(homeDB));
-				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON))));
+				var packagesLocal = af.fromJson(af.fromBytes2String(zip.getFile(PACKAGESJSON)));
+				packages = merge(packagesLocal, packages)
 				zip.close();
+			}
+
+			for(var pack in packages) {
+				if (packages[pack].name == "OpenAF") packages[pack].version = getVersion()
+				if (pack.startsWith("$DIR/")) {
+					var newPack = pack.replace("$DIR/", getOpenAFPath())
+					packages[newPack] = packages[pack]
+					delete packages[pack]
+				}
 			}
 		} catch(e) {
 			exc = e;
@@ -2068,6 +2080,10 @@ function getOPackLocalDB() {
 	}
 
 	if (isDef(exc) && isDef(exc.message) && (!exc.message.match(/NoSuchFileException/))) throw exc;
+
+	// No OpenAF on packages loaded
+	for(var pi in packages) { if (packages[pi].name == "OpenAF") delete packages[pi] }
+	packages["OpenAF"] = __opackOpenAF
 
 	return packages;
 }

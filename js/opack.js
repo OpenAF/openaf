@@ -242,7 +242,14 @@ function addLocalDB(aPackage, aTarget) {
 	}
 
 	try {
-		aTarget = (new java.io.File(aTarget)).getCanonicalPath() + "";
+		var fi = String(java.io.File(aTarget).getCanonicalPath())
+		aTarget = fi.replace(/\/$/, "")
+		var cop = getOpenAFPath().replace(/\/$/, "")
+		//aTarget = String((new java.io.File(aTarget)).getCanonicalPath())
+		if (aTarget.length > cop.length &&
+		    aTarget.substring(0, cop.length) == cop) {
+			aTarget = "$DIR" + aTarget.substring(cop.length)
+		}
 	} catch(e) {
 		logErr(e.message);
 	}
@@ -257,11 +264,18 @@ function addLocalDB(aPackage, aTarget) {
 	}
 	if (homeDBCheck) {
 		try {
-			packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(homeDB, PACKAGESJSON)));
+			var p = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(homeDB, PACKAGESJSON)))
+			for (var pi in p) {
+				if (pi.startsWith("$DIR")) delete p[pi]
+			}
+			packages = merge(p, packages)
 		} catch(e) {
 			if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
 		}
 	}
+
+	// No OpenAF on packages from files
+	for(var pi in packages) { if (packages[pi].name == "OpenAF") delete packages[pi] }
 
 	if (!isUnDef(packages)) {
 		packages[aTarget] = aPackage;
@@ -273,8 +287,14 @@ function addLocalDB(aPackage, aTarget) {
 	try {
 		if (includeInFileDB)
 			zip.streamPutFile(fileDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
-		else
+		else {
+			// No OpenAF on homeDB
+			for(var pi in packages) { 
+				if (packages[pi].name == "OpenAF") delete packages[pi] 
+				if (pi.startsWith("$DIR")) delete packages[pi]
+			}
 			zip.streamPutFile(homeDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
+		}
 	} catch (e) {
 		logErr(e.message);
 		return;
@@ -337,7 +357,7 @@ function findLocalDBByName(aName) {
 				res = packag;
 			}
 
-			res.__target = target;
+			res.__target = target
 		}
 	}
 
@@ -392,6 +412,8 @@ function removeLocalDB(aPackage, aTarget) {
 	var homeDBCheck = io.fileExists(homeDB);
 	var includeInFileDB = true;
 
+	if (isMap(aPackage) && isDef(aPackage.name) && aPackage.name == "OpenAF") return
+
 	if (io.fileInfo(fileDB).permissions.indexOf("w") < 0) {
 		if (homeDBCheck) {
 			if (io.fileInfo(homeDB).permissions.indexOf("w") < 0) {
@@ -403,16 +425,29 @@ function removeLocalDB(aPackage, aTarget) {
 		}
 	}
 
-	aTarget = (new java.io.File(aTarget)).getCanonicalPath() + "";
-
+	var fi = String(java.io.File(aTarget).getCanonicalPath())
+	aTarget = fi.replace(/\/$/, "")
+	var cop = getOpenAFPath().replace(/\/$/, "")
+	//aTarget = String((new java.io.File(aTarget)).getCanonicalPath())
+	if (aTarget.length > cop.length &&
+		aTarget.substring(0, cop.length) == cop) {
+		aTarget = "$DIR" + aTarget.substring(cop.length)
+	}
 	var packages = {}, packagesLocal = {};
 	var zip = new ZIP();
 	try {
 		if (includeInFileDB) {
-			packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
+			packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)))
+			// No OpenAF on db
+			for(var pi in packages) { if (packages[pi].name == "OpenAF") delete packages[pi] }
 		}
 		if (homeDBCheck) {
-			packagesLocal = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(homeDB, PACKAGESJSON)));
+			packagesLocal = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(homeDB, PACKAGESJSON)))
+			// No OpenAF on homeDB
+			for(var pi in packagesLocal) { 
+				if (packagesLocal[pi].name == "OpenAF") delete packagesLocal[pi] 
+				if (pi.startsWith("$DIR")) delete packagesLocal[pi]
+			}
 		}
 	} catch(e) {
 		logErr(e.message);
@@ -438,7 +473,12 @@ function removeLocalDB(aPackage, aTarget) {
 					delete packagesLocal[aTarget];
 					removed = true;
 				}
-				if (removed) zip.streamPutFile(homeDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
+				for (var pi in packagesLocal) {
+					if (packagesLocal[pi].name == "OpenAF") delete packagesLocal[pi]
+					if (pi.startsWith("$DIR")) delete packagesLocal[pi]
+				}
+				
+				if (removed) zip.streamPutFile(homeDB, PACKAGESJSON, af.fromString2Bytes(stringify(packagesLocal)));
 			} catch (e) {
 				logErr(e.message);
 				return;
@@ -455,11 +495,12 @@ function removeLocalDB(aPackage, aTarget) {
 
 // Check OpenAF in local DB
 function checkOpenAFinDB() {
-	var packag = getPackage(getOpenAFJar());
+	// deprecated
+	/*var packag = getPackage("OpenAF")
 
-	if (isUnDef(packag.name)) return;
+	if (isUnDef(packag) || isUnDef(packag.name)) return;
 
-	addLocalDB(packag, getOpenAFPath());
+	addLocalDB(packag, "OpenAF");*/
 }
 
 // ----------------------------------------------------------
@@ -646,7 +687,7 @@ function mkdir(aNewDirectory) {
 
 // Remove directory
 function rmdir(aNewDirectory, shouldCheck) {
-	if (shouldCheck && io.fileExists(aNewDirectory) && io.listFiles(aNewDirectory).files.length == 0) return;
+	if (shouldCheck && io.fileExists(aNewDirectory) && io.listFiles(aNewDirectory).files.length != 0) return;
 	return io.rm(aNewDirectory);
 }
 
@@ -1114,7 +1155,7 @@ function install(args) {
 	}
 	if (isUnDef(output) && !forceOutput) {
 		if (io.fileInfo(getOpenAFPath()).permissions.indexOf("w") >= 0) {
-			output = getOpenAFPath() + "/" + packag.name;
+			output = getOpenAFPath() + packag.name;
 		} else {
 			output = String(java.lang.System.getProperty("user.home")) + "/.openaf-opack-" + packag.name; 
 		}
@@ -1306,7 +1347,7 @@ function __opack_exec(args) {
 	packag = findLocalDBByName(args[0]);
 	var target;
 
-	if (typeof packag == 'undefined' || typeof packag["name"] == 'undefined') {
+	if (isUnDef(packag) || isUnDef(packag["name"])) {
 		packag = getPackage(args[0]);
 		if (packag.__filelocation != 'local') {
 			if (packag.__filelocation == 'opacklocal') {
@@ -1343,7 +1384,7 @@ function __opack_script(args, isDaemon, isJob) {
 	packag = findLocalDBByName(args[0]);
 	var target;
 
-	if (typeof packag == 'undefined' || typeof packag["name"] == 'undefined') {
+	if (isUnDef(packag) || isUnDef(packag["name"])) {
 		packag = getPackage(args[0]);
 		if (packag.__filelocation != 'local') {
 			if (packag.__filelocation == 'opacklocal') {
@@ -1367,10 +1408,18 @@ function __opack_script(args, isDaemon, isJob) {
 	var windows   = (os.match(/Windows/)) ? 1 : 0;
 	var javaargs = "";
 	var params = splitBySeparator(__expr, " ");
+	var inSameDir = false
 	for(var i in params) {
 		var param = splitBySeparator(params[i], "=");
 		if (param.length == 2 && param[0] == "args") javaargs = param[1];
 	}
+
+	var jh = javaHome.replace(/\\/g, "/");
+	if (jh.substring(0, getOpenAFPath().lastIndexOf("/")+1) == getOpenAFPath()) {
+		inSameDir = true
+		javaHome = (os.match(/Windows/) ? "%DIR%" : "$DIR") + "/" + jh.substring(getOpenAFPath().lastIndexOf("/")+1)
+	}
+	classPath = (os.match(/Windows/) ? "%DIR%" : "$DIR") + "/" + classPath.substring(getOpenAFJar().lastIndexOf("/") + 1)
 
 	function generateUnixScript(options) {
 		var s;
@@ -1394,6 +1443,8 @@ function __opack_script(args, isDaemon, isJob) {
 		}
 	  
 		s = "#!" + shLocation + "\n\n";
+		s += "cd `dirname $0`\n"
+		s += "DIR=`pwd`\n"
 		s = s + "stty -icanon min 1 -echo 2>/dev/null\n";
 		s = s + "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
 		s = s + "OPENAF_DIR=\"" + classPath + "\"\n";
@@ -1409,6 +1460,8 @@ function __opack_script(args, isDaemon, isJob) {
 		var s;
   
 		s = "@echo off\n\n";
+		s = s + "set thispath=%~dp0\n"
+		s = s + "set DIR=%thispath:~0,-1%\n"
 		s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
 		s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
 		s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
@@ -1558,10 +1611,10 @@ function erase(args, dontRemoveDir) {
     	if (args[i] == "-force") force = true;
     }
 
-	if (typeof packag == 'undefined' || typeof packag["name"] == 'undefined') {
-		packag = findLocalDBByName(args[0]);
+	if (isUnDef(packag) || isUnDef(packag["name"])) {
+		packag = findLocalDBByName(args[0])
 
-		if (typeof packag == 'undefined' || typeof packag["name"] == 'undefined') {
+		if (isUnDef(packag) || isUnDef(packag["name"])) {
 			logErr("Package not found.");
 			return;
 		} else {
@@ -1628,10 +1681,10 @@ function erase(args, dontRemoveDir) {
 
 // REMOVE LOCAL
 function remove(args) {
-        checkOpenAFinDB();
+    checkOpenAFinDB();
 	var packag = findLocalDBByName(args[0]);
 
-	if (typeof packag["name"] == 'undefined') {
+	if (isDef(packag) && isUnDef(packag["name"])) {
 		logErr("Package not found on the local OpenPack DB.");
 		return;
 	} else {
@@ -1650,7 +1703,7 @@ function removeCentral(args) {
 function addCentral(args) {
 	var packag = getPackage(args[0]);
 
-	if (typeof packag["name"] == 'undefined') {
+	if (isUnDef(packag["name"])) {
 		logErr("Package not found");
 		return;
 	} else {
@@ -1664,7 +1717,7 @@ function add(args) {
 	checkOpenAFinDB();
 	var packag = getPackage(args[0]);
 
-	if (typeof packag["name"] == 'undefined') {
+	if (isUnDef(packag["name"])) {
 		logErr("Package not found.");
 		return;
 	} else {
@@ -1846,9 +1899,9 @@ for(let i in verbs) {
 			case 'genpack'        : genpack(params); break;
 			case 'pack'           : pack(params); break;
 			case 'add2db'         : add(params); break;
-			case 'remove2db'      : remove(params); break;
+			case 'remove4db'      : remove(params); break;
 			case 'add2remotedb'   : addCentral(params); break;
-			case 'remove2remotedb': removeCentral(params); break;
+			case 'remove4remotedb': removeCentral(params); break;
 			case 'script'         : __opack_script(params); break;
 			case 'daemon'         : __opack_script(params, true); break;
 			case 'ojob'           : __opack_script(params, false, true); break;
