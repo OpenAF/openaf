@@ -7773,7 +7773,17 @@ const includeOPack = function(aOPackName, aMinVersion) {
 		return true;
 	}
 	if (io.fileExists(aOPackName) && io.fileInfo(aOPackName).isDirectory) {
-		oPack("add2db " + aOPackName)
+		// Check if it already exists
+		if (isDef(getOPackPath(aOPackName))) {
+			var version = $from(getOPackLocalDB()).equals("name", aOPackName).at(0).version
+			// Check version
+			if (version < aMinVersion) {
+				oPack("add2db " + oPackName)
+			}
+		} else {
+			// add it if it's on the same directory
+			oPack("add2db " + aOPackName)
+		}
 	}
 	if (isUnDef(getOPackPath(aOPackName))) {
         oPack("install " + aOPackName);
