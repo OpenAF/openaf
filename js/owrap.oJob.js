@@ -2282,14 +2282,37 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		
 		var argsNames = Object.keys(aCheck)
 
+		var splitCheck = s => {
+			var ig = __
+			var res = []
+			var buf = ""
+		  
+			for(var i = 0; i < s.length; i++) {
+			  if (isUnDef(ig) && (s[i] == '"' || s[i] == "'")) {
+				ig = s[i]
+			  } else {
+				if (s[i] == ig) ig = __
+			  }
+			  if (isUnDef(ig) && s[i] == ".") {
+				res.push(buf)
+				buf = ""
+			  } else {
+				buf += s[i]
+			  }
+			}
+			if (buf.length > 0) res.push(buf)
+
+			return res
+		}
+
 		var code = argsNames.map(a => {
 			var hasDefault = false
 			var _c = ""
-			var conds = aCheck[a].split(".")
+			var conds = splitCheck(aCheck[a])
 			conds.forEach(c => {
 				if (c.startsWith("default(")) hasDefault = true
 				if (c.indexOf("(") < 0 && c[c.length-1] != ")") c += "()"
-				var _f = c.substr(0, c.indexOf("("))
+				var _f = c.substring(0, c.indexOf("("))
 				if (lstFns.indexOf(_f) >= 0) {
 					_c = _c + "." + c
 				}
