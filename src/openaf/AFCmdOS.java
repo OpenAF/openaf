@@ -632,13 +632,13 @@ public class AFCmdOS extends AFCmdBase {
 			}
 			
 			if (script != null) {
+				if (injectcode) script = code + "\n" + script;
 				if (script.startsWith("#") || script.startsWith(PREFIX_SCRIPT)) {
 					script = script.replaceAll("^#.*", "//");
 					script = script.replaceFirst(PREFIX_SCRIPT, "");
 				}
 				
 				if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().daemon();";
-				if (injectcode) script += "\n" + code;
 			}
 			
 			Context cx = (Context) jse.getNotSafeContext();
