@@ -155,9 +155,11 @@ function generateUnixScript(options, shouldSep, extraOptions) {
     log("sh located in "+ shLocation);
   }
 
-  s = "#!" + shLocation + "\n\n";
+  s = "#!" + shLocation + "\n";
+  s += "CDIR=`pwd`\n"
   s += "cd `dirname $0`\n"
   s += "DIR=`pwd`\n"
+  s += "cd $CDIR\n"
   s += "stty -icanon min 1 -echo 2>/dev/null\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OPENAF_DIR=\"" + classPath + "\"\n";
