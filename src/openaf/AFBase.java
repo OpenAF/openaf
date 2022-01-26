@@ -47,6 +47,7 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJSON;
 import org.mozilla.javascript.NativeJavaArray;
 import org.mozilla.javascript.NativeJavaObject;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
@@ -892,7 +893,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void load(String js) throws Exception {
+	public void load(String js, NativeFunction callback) throws Exception {
 		String includeScript = null;
 
 		if (js == null) throw new Exception("No filename provided.");
@@ -948,12 +949,18 @@ public class AFBase extends ScriptableObject {
 						"Error loading file: " + js + "; " + e.getMessage(), e);
 				throw e;
 			}			
-		}
+		} 
 
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		try {
 			ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfrom", js);
-			includeScript = includeScript.replaceAll("^#[^\n]*\n", "//\n");
+			includeScript = includeScript.replaceAll("^#[^\n]*\n", "//\n"); 
+			if (callback != null) {
+				Object isc = callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {includeScript});
+				if (isc != null) {
+					includeScript = isc.toString();
+				}
+			}
 			compile(includeScript, js);
 			//cx.evaluateString(AFCmdBase.jse.getGlobalscope(), includeScript.toString(), js, 1, null);
 		} catch (Exception e) {
