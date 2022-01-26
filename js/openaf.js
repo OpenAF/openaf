@@ -43,6 +43,7 @@ if (isUnDef(__openaf)) __openaf =
 } catch(e) {
 	__openaf = {};
 }*/
+var __closed = false
 
 noHomeComms = (isDef(__openaf.noHomeComms)) ? __openaf.noHomeComms : false;
 var __opackCentral = (isDef(__openaf.opackCentral)) ? __openaf.opackCentral : [
@@ -2155,6 +2156,8 @@ function loadExternalJars(aPath, dontCheck) {
  */
 var __preCompileLevel = 2;
 
+var __loadPreParser = function(s) { return s }
+
 /**
  * <odoc>
  * <key>load(aScript)</key>
@@ -2190,7 +2193,7 @@ function load(aScript, loadPrecompiled) {
 		}
 		if (!res && isUnDef(err)) {
 			try { 
-				af.load(aS);
+				af.load(aS, __loadPreParser);
 			} catch(e2) {
 				if (e2.message == "\"exports\" is not defined.") {
 					var exp = require(aS);
@@ -2298,6 +2301,8 @@ function requireCompiled(aScript, dontCompile, dontLoad) {
 					if (!dontCompile) {
 						io.mkdir(path);
 						io.rm(clFilepath);
+						var code = io.readFileString(info.canonicalPath)
+						if (!__closed) code = __loadPreParser(code) 
 						af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + io.readFileString(info.canonicalPath) + "}", path);
 					}
 				}
@@ -2349,7 +2354,9 @@ function loadCompiled(aScript, dontCompile, dontLoad) {
 					if (!dontCompile) {
 						io.mkdir(path);
 						io.rm(clFilepath);
-						af.compileToClasses(cl, io.readFileString(info.canonicalPath), path);
+						var code = io.readFileString(info.canonicalPath)
+						if (!__closed) code = __loadPreParser(code) 
+						af.compileToClasses(cl, code, path);
 					}
 				}
                 aScript = clFilepath;
