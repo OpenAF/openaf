@@ -2487,8 +2487,8 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
         if (isDef(aTheme.ltop) || isDef(aTheme.rtop)) res += "\n";
     	var ar = aString.split("\n");
 	    ar.forEach((l, li) => {
-			if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", " ")
-			res += (isDef(ansiText) ? ansiColor(ansiText, l) : l);
+			if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", "")
+			res += (isDef(ansiText) ? ansiColor(ansiText, " " + l) : " " + l);
 			if (isDef(aTheme.rmiddle)) {
 				var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - ansiLength(l) - 3, ' ')) : repeat(aSize - ansiLength(l) - 3, ' '));
 				res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
