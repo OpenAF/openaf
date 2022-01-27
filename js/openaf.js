@@ -4073,20 +4073,32 @@ function require(aScript, force) {
 	if (!force && isFunction(require.cache[aScript])) {
 		f = require.cache[aScript];
 	} else {	
+		var fPath = aS => {
+			if (!io.fileExists(aS)) {
+				var origScript = String(aS)
+				for(var opack in getOPackPaths()) {
+					if (opack != "OpenAF") {
+						var path = getOPackPath(opack) + "/" + origScript
+						if (io.fileExists(path)) {
+							aS = path
+						}
+					}
+				}
+			}
+			return aS
+		}
+
 		if (aScript.match(/::/)) {
 			var comps = aScript.match(/(.+)::(.+)/);
 			plugin("ZIP");
 			var zip = new ZIP();
-			o = af.fromBytes2String(zip.streamGetFile(comps[1], comps[2]));
+			o = af.fromBytes2String(zip.streamGetFile(fPath(comps[1]), comps[2]));
 		} else {	
-			o = io.readFileString(aScript);
+			o = io.readFileString(fPath(aScript));
 		}
 		
-		var opackpaths = getOPackPaths();
-		for(var opack in opackpaths) {
-			o = io.readFileString(aScript);
-		}
-		
+		if (isUnDef(o)) throw "Couldn't load '" + aScript + "'"
+		if (!__closed) o = __loadPreParser(o)
 		f = new Function('require', 'exports', 'module', o);
 		require.cache[aScript] = f;
 	}
