@@ -2355,6 +2355,10 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			rmiddle: _s.dlineV,
 			rbottom: _s.turnTLeft
 		},
+		doubleLineBothSides: {
+			lmiddle: _s.dlineV,
+			rmiddle: _s.dlineV
+		},
 		closedRect: {
 			ltop   : _s.lineBRight,
 			lbottom: _s.lineTRight,
@@ -2480,21 +2484,22 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 	}
 
 	if (isDef(aString)) {
-           if (isDef(aTheme.ltop) || isDef(aTheme.rtop)) res += "\n";
-    	   var ar = aString.split("\n");
-	   ar.forEach((l, li) => {
-	      if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", " ")
-	      res += (isDef(ansiText) ? ansiColor(ansiText, l) : l);
-	      if (isDef(aTheme.rmiddle)) {
-		   var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - ansiLength(l) - 3, ' ')) : repeat(aSize - ansiLength(l) - 3, ' '));
-		   res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
-		   res += ansiColor("RESET", "") + ansiColor(ansiLine, aTheme.rmiddle);
-	      }
-	      if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
-	   });
+        if (isDef(aTheme.ltop) || isDef(aTheme.rtop)) res += "\n";
+    	var ar = aString.split("\n");
+	    ar.forEach((l, li) => {
+			if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", " ")
+			res += (isDef(ansiText) ? ansiColor(ansiText, l) : l);
+			if (isDef(aTheme.rmiddle)) {
+				var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - ansiLength(l) - 3, ' ')) : repeat(aSize - ansiLength(l) - 3, ' '));
+				res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
+				res += ansiColor("RESET", "") + ansiColor(ansiLine, aTheme.rmiddle);
+			}
+			if (li < (ar.length - 1)) res += ansiColor("RESET", "\n");
+	    });
+		res += ansiColor("RESET", "")
 	}
 
-    	if (isDef(aTheme.lbottom) || isDef(aTheme.rbottom)) {
+    if (isDef(aTheme.lbottom) || isDef(aTheme.rbottom)) {
 		if (isDef(aTheme.ltop) || isDef(aTheme.rtop) || isDef(aString)) res += ansiColor("RESET","\n")
                 res += ansiColor(ansiLine, aTheme.lbottom);
 		if (isDef(aTheme.rbottom)) {
