@@ -2191,7 +2191,7 @@ function load(aScript, loadPrecompiled) {
 		}
 		if (!res && isUnDef(err)) {
 			try { 
-				af.load(aS, __loadPreParser);
+				if (__closed) af.load(aS); else af.load(aS, __loadPreParser);
 			} catch(e2) {
 				if (e2.message == "\"exports\" is not defined.") {
 					var exp = require(aS);
