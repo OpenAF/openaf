@@ -43,7 +43,8 @@ if (isUnDef(__openaf)) __openaf =
 } catch(e) {
 	__openaf = {};
 }*/
-var __closed = false
+var __closed
+if (isUnDef(__closed)) __closed = false
 
 noHomeComms = (isDef(__openaf.noHomeComms)) ? __openaf.noHomeComms : false;
 var __opackCentral = (isDef(__openaf.opackCentral)) ? __openaf.opackCentral : [
