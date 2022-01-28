@@ -472,11 +472,11 @@ public class AFCmdOS extends AFCmdBase {
 		//br.close();
 		
 		if (INPUT_TYPE != inputtype.INPUT_EXPR) {
-			if (!exprInput.equals("")) {
+			//if (!exprInput.equals("")) {
 				//theInput.append(exprInput);
-			} else {
+			//} else {
 				theInput.append(input);
-			}
+			//}
 		} else {
 			theInput.append(input);
 			INPUT_TYPE = inputtype.INPUT_SCRIPT;
