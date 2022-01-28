@@ -42,6 +42,7 @@ public class AFCmdOS extends AFCmdBase {
 	final public static String argHelp = "Usage: openaf [options]\n\n"
 			+ "Options:\n" 
 			+ "   -e (input)         - provide input directly instead of using stdin\n"
+			+ "   -c (input)         - provide javascript code directly\n"
 			+ "   -p                 - received streaming input (OS pipe)\n"
 			+ "   -o                 - output mode (__pmOut displayed)\n"
 			+ "   -f (script file)   - provide a script file directly\n"
@@ -472,7 +473,7 @@ public class AFCmdOS extends AFCmdBase {
 		
 		if (INPUT_TYPE != inputtype.INPUT_EXPR) {
 			if (!exprInput.equals("")) {
-				theInput.append(exprInput);
+				//theInput.append(exprInput);
 			} else {
 				theInput.append(input);
 			}
