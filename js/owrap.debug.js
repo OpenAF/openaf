@@ -109,21 +109,21 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     // checkpoint equivalent
     l = line.trim().match(/\/\/\@ (.+)$/)
     if (isArray(l)) {
-      var s = l[1]
-      line = line.replace(/\/\/\@ (.+)$/, _m("\"" + sign.checkpoint + " " + s.replace(/\"/g, "\\\"") + "\""))
+      var s = l[1].replace(/\"/g, "\\\"")
+      line = line.replace(/\/\/\@ (.+)$/, _m("\"" + sign.checkpoint + " " + s + "\""))
     }
 
     // profile end equivalent
     l = line.trim().match(/\/\/\] (.+)$/)
     if (isArray(l)) {
       var s = l[1]
-      line = line.replace(/\/\/\] (.+)$/, _m("\"" + sign.time + " " + s + ": \" + ow.format.elapsedTime4ms(now() - global._debugData['" + s + "'])"))
+      line = line.replace(/\/\/\] (.+)$/, _m("\"" + sign.time + " " + s.replace(/\"/g, "\\\"") + ": \" + ow.format.elapsedTime4ms(now() - global._debugData['" + s.replace(/\'/g, "\\\'") + "'])"))
     }
 
     // profile begin equivalent
     l = line.trim().match(/\/\/\[ (.+)$/)
     if (isArray(l)) {
-      var s = l[1]
+      var s = l[1].replace(/\'/g, "\\\'")
       line = line.replace(/\/\/\[ (.+)$/, ";global._debugData['" + s + "']=now();")
     }
 
@@ -131,27 +131,27 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     l = line.trim().match(/\/\/\# (.+)$/)
     if (isArray(l)) {
       var s = l[1]
-      line = line.replace(/\/\/\# (.+)$/, _m("\"" + sign.assert + " " + s + "\"", s))
+      line = line.replace(/\/\/\# (.+)$/, _m("\"" + sign.assert + " " + s.replace(/\"/g, "\\\"") + "\"", s))
     }
 
     // print equivalent
     l = line.trim().match(/\/\/\? (.+)$/)
     if (isArray(l)) {
-      var s = l[1]
+      var s = l[1].replace(/\"/g, "\\\"")
       line = line.replace(/\/\/\? (.+)$/, _m("\""+ sign.print + " " + s + " = \" + stringify(" + s + ") + \"\""))
     }
 
     // slon print equivalent
     l = line.trim().match(/\/\/\?s (.+)$/)
     if (isArray(l)) {
-      var s = l[1]
+      var s = l[1].replace(/\"/g, "\\\"")
       line = line.replace(/\/\/\?s (.+)$/, _m("\"" + sign.print + " " + s + " = \" + af.toSLON(" + s + ") + \"\""))
     }
 
     // yaml print equivalent
     l = line.trim().match(/\/\/\?y (.+)$/)
     if (isArray(l)) {
-      var s = l[1]
+      var s = l[1].replace(/\"/g, "\\\"")
       line = line.replace(/\/\/\?y (.+)$/, _m("\"" + sign.print + " " + s + " = \\n\" + af.toYAML(" + s + ") + \"\""))
     }
 
