@@ -43,9 +43,6 @@ if (isUnDef(__openaf)) __openaf =
 } catch(e) {
 	__openaf = {};
 }*/
-var __closed
-if (isUnDef(__closed)) __closed = false
-
 noHomeComms = (isDef(__openaf.noHomeComms)) ? __openaf.noHomeComms : false;
 var __opackCentral = (isDef(__openaf.opackCentral)) ? __openaf.opackCentral : [
 	"http://openaf.io/opack.db"
@@ -2194,7 +2191,7 @@ function load(aScript, loadPrecompiled) {
 		}
 		if (!res && isUnDef(err)) {
 			try { 
-				if (__closed) af.load(aS); else af.load(aS, __loadPreParser);
+				if (__flags.OAF_CLOSED) af.load(aS); else af.load(aS, __loadPreParser);
 			} catch(e2) {
 				if (e2.message == "\"exports\" is not defined.") {
 					var exp = require(aS);
@@ -2303,7 +2300,7 @@ function requireCompiled(aScript, dontCompile, dontLoad) {
 						io.mkdir(path);
 						io.rm(clFilepath);
 						var code = io.readFileString(info.canonicalPath)
-						if (!__closed) code = __loadPreParser(code) 
+						if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
 						af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + io.readFileString(info.canonicalPath) + "}", path);
 					}
 				}
@@ -2356,7 +2353,7 @@ function loadCompiled(aScript, dontCompile, dontLoad) {
 						io.mkdir(path);
 						io.rm(clFilepath);
 						var code = io.readFileString(info.canonicalPath)
-						if (!__closed) code = __loadPreParser(code) 
+						if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
 						af.compileToClasses(cl, code, path);
 					}
 				}
@@ -4101,7 +4098,7 @@ function require(aScript, force) {
 		}
 		
 		if (isUnDef(o)) throw "Couldn't load '" + aScript + "'"
-		if (!__closed) o = __loadPreParser(o)
+		if (!__flags.OAF_CLOSED) o = __loadPreParser(o)
 		f = new Function('require', 'exports', 'module', o);
 		require.cache[aScript] = f;
 	}
@@ -6475,7 +6472,8 @@ loadCompiledLib("openafsigil_js");
 
 var __flags = _$(__flags).isMap().default({
 	OJOB_SEQUENTIAL  : true,
-	OJOB_HELPSIMPLEUI: false
+	OJOB_HELPSIMPLEUI: false,
+	OAF_CLOSED       : false
 })
 
 /**
