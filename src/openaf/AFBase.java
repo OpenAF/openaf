@@ -912,6 +912,8 @@ public class AFBase extends ScriptableObject {
 						includeScript = IOUtils.toString(isr);
 						isr.close();
 					}
+				} catch(Exception e) {
+					throw e;
 				} finally {
 					zip.close();
 				}
@@ -942,7 +944,7 @@ public class AFBase extends ScriptableObject {
 					}
 					
 					if (includeScript == null)
-						includeScript = FileUtils.readFileToString(new File(js), (Charset) null);
+						includeScript = FileUtils.readFileToString(new File(js), Charset.forName("UTF-8"));
 				}
 			} catch (IOException e) {
 				SimpleLog.log(logtype.DEBUG,
@@ -956,9 +958,9 @@ public class AFBase extends ScriptableObject {
 			ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfrom", js);
 			includeScript = includeScript.replaceAll("^#[^\n]*\n", "//\n"); 
 			if (callback != null) {
-				Object isc = callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {includeScript});
+				Object isc = callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {new java.lang.String(js)});
 				if (isc != null) {
-					includeScript = isc.toString();
+					js = isc.toString();
 				}
 			}
 			compile(includeScript, js);
