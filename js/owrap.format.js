@@ -1813,6 +1813,9 @@ OpenWrap.format.prototype.dateDiff = {
  * </odoc>
  */
 OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {
+	if (aMs == 0) return "~0 ms"
+	if (aMs < 1) return ">1 ms"
+
     var ms = Math.abs(aMs);
 
     var msSecond = 1000,
@@ -1863,7 +1866,7 @@ OpenWrap.format.prototype.elapsedTime4ms = function(aMs, aFormat) {
         chunksCount++;
     }
 
-    return chunks.join(aFormat.sep);
+	return chunks.join(aFormat.sep);
 };
 
 /**
