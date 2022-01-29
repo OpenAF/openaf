@@ -985,6 +985,8 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public Object compile(String script, String name) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
+		cx.setOptimizationLevel(9);
+		cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6); 
 		org.mozilla.javascript.Script compiledScript = cx.compileString(script, name, 1, null);
 		AFCmdBase.jse.addNumberOfLines(script);
 		Object ret = compiledScript.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
