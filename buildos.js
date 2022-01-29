@@ -283,7 +283,7 @@ try {
 
 			if (doIt) {
 				log("-> Compiling " + file.filename);
-				var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT5" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+				var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT_2019" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
 				log("<- Compiled  " + file.filename);
 				destjssha.files.push({
 					file: file.filename,
@@ -374,6 +374,7 @@ try {
 		"ow.sec": OPENAF_BUILD_HOME + "/js/owrap.sec.js",
 		"ow.metrics": OPENAF_BUILD_HOME + "/js/owrap.metrics.js",
 		"ow.python": OPENAF_BUILD_HOME + "/js/owrap.python.js",
+		"ow.debug": OPENAF_BUILD_HOME + "/js/owrap.debug.js",
 		"afbase": OPENAF_BUILD_HOME + "/src/openaf/AFBase.java",
 		"io": OPENAF_BUILD_HOME + "/src/openaf/IOBase.java",
 		"iocore": OPENAF_BUILD_HOME + "/src/openaf/core/IO.java",

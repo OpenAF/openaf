@@ -25,7 +25,10 @@ public class CompileJS2Java {
     }
 
     public static void compileToClasses(String classfile, String script, String path) {
-		ClassCompiler cc = new ClassCompiler(new CompilerEnvirons());
+		CompilerEnvirons ce = new CompilerEnvirons();
+		ce.setOptimizationLevel(9);
+		ce.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6); 
+		ClassCompiler cc = new ClassCompiler(ce);
 		Object compiled[] = cc.compileToClassFiles(script, classfile, 1, classfile);
 		if (path == null || path.equals("undefined"))
 			path = "";
