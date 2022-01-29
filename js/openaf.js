@@ -3320,7 +3320,7 @@ const getPid = function() {
 const addOnOpenAFShutdown = function(aFunction) {
 	plugin("Threads");
 	try {
-		(new Threads()).addOpenAFShutdownHook(() => {
+		(new Threads()).addOpenAFShutdownHook(function() {
 			try {
 				aFunction();
 			} catch(e) {}
