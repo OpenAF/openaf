@@ -121,7 +121,7 @@ var OAF_VALIDATION_STRICT = false;
  * Get serialize version detecting circular references (internal use)
  *
  */
-const getSerialize = function(fn, decycle) {
+var getSerialize = function(fn, decycle) {
 	function getPath (value, seen, keys) {
 		var index = seen.indexOf(value);
 		var path = [ keys[index] ];
