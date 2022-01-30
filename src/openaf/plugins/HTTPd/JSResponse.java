@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.lang.String;
+import java.lang.Exception;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
@@ -68,7 +69,12 @@ public class JSResponse extends Response {
 			NativeFunction func = HTTPServer.callbacks.get(this.httpd.getListeningPort() + ":" + props.get("uri"));
 			Object ret = null; 
 			if (func != null) {
-				ret = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {json});
+				try {
+					ret = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {json});
+				} catch(Exception e) {
+					System.err.println("HTTPd error on request=" + AFCmdBase.jse.stringify(json, null, "").toString() + " with exception=" + e.getMessage());
+					e.printStackTrace();
+				}
 			}
 			
 			if (ret == null) { ret = new String(""); }
