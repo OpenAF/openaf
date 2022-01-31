@@ -78,9 +78,6 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
       throw "File '" + aCode + "' not found."
     }
   }
-
-  // CRLF to LF
-  code = code.replace(/\r\n/g, "\n")
     
   var _m = (s, c) => {
     var _s = ";try{"
@@ -106,7 +103,7 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
   sign.error      = _$(sign.error).default("!")
   sign.time       = _$(sign.time).default(":")
 
-  code = code.split("\n").map(line => {
+  code = code.split(/\r\n|\n/).map(line => {
     var l
 
     // checkpoint equivalent
