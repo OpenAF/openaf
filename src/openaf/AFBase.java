@@ -958,9 +958,9 @@ public class AFBase extends ScriptableObject {
 			ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfrom", js);
 			includeScript = includeScript.replaceAll("^#[^\n]*\n", "//\n"); 
 			if (callback != null) {
-				Object isc = callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {new java.lang.String(js)});
+				Object isc = callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {new java.lang.String(includeScript)});
 				if (isc != null) {
-					js = isc.toString();
+					includeScript = isc.toString();
 				}
 			}
 			compile(includeScript, js);
