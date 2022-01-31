@@ -1,0 +1,39 @@
+version : '3'
+
+networks:
+  elastic:
+    driver: bridge
+
+services:
+  elastic:
+    image         : docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: elastic
+    environment   :
+    - node.name=elastic
+    - cluster.name=es-cluster
+    - discovery.type=single-node
+    - bootstrap.memory_lock=true
+    - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits       :
+      memlock:
+        soft: -1
+        hard: -1
+    ports         :
+    - "9200:9200"
+    volumes :
+    - data:/usr/share/elasticsearch/data
+    networks:
+    - elastic
+  kibana:
+    image         : docker.elastic.co/kibana/kibana:7.15.2
+    container_name: kibana
+    ports         :
+    - 5601:5601
+    environment   :
+      ELASTICSEARCH_URL  : http://elastic:9200
+      ELASTICSEARCH_HOSTS: '["http://elastic:9200"]'
+    networks      :
+    - elastic
+
+volumes:
+  data:

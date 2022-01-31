@@ -1,0 +1,11 @@
+jobs:
+- name: a1
+  exec: print('a1')
+- name: a2
+  type    : jobs
+  typeArgs:
+    file: d.yaml
+
+todo:
+- a1
+- a2

@@ -1,0 +1,20 @@
+jobs:
+- name: b
+  from: c
+  to  : d
+  exec: |
+    print(345)
+
+- name: c
+  exec: | 
+    print(123)
+
+- name: d
+  to  : oJob Test
+  exec: args.func = print 
+
+include:
+- oJobTest.yaml
+
+todo:
+- b

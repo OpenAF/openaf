@@ -1,0 +1,45 @@
+# Author: Anonymous
+#init: 
+
+todo:
+- Sample job
+
+help:
+  text   : Sample job
+  # expects: 
+  # - name     : something
+  #   desc     : To do stuff
+  #   example  : aValueExample
+  #   mandatory: false
+
+ojob:
+  opacks      :
+  - openaf     : 20210515
+  - oJob-common: 20211210
+  catch       : logErr(exception)
+  logToConsole: true   # to change when finished
+  integrity   : 
+    list  :
+    - /workspaces/openaf/a.js   : md5-20b80887c6cc58e611501db5b11cba93
+    - /workspaces/openaf/aa.yaml: md5-3f4ee4b8930d6894e61d90cc49234c56
+  execRequire : a.js
+
+include:
+- ojob.yaml
+- aa.yaml
+
+jobs:
+# ====================
+- name    : Sample job
+  from    : 
+  - Start
+  to      : 
+  - End
+  - nuno
+
+# -----------
+- name: Start
+
+# ---------
+- name: End
+

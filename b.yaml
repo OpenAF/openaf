@@ -1,0 +1,48 @@
+todo:
+- ops1
+
+include:
+- ojob.yaml
+
+jobs:
+- name : ops3
+  check:
+    in:
+      obj: "toMap.isMap.default({ x: 1, y: 1})"
+  exec : |
+    sprint(args.obj)
+
+- name : ops2
+  check:
+    in:
+      lst: toArray.isArray.default([])
+  exec : |
+    sprint(args.lst)
+
+- name: ops1
+  from:
+  - mul
+  to  :
+  - ojob debug
+
+# ----------
+- name : add
+  check:
+    in :
+      a: isString.default("test")
+      b: isString.default(".mva.yaml")
+    out:
+      result: isString
+  exec : |
+    args.result = args.a + args.b
+
+# ----------
+- name : mul
+  check: 
+    in :
+      result: toNumber.isNumber.default(1)
+      c     : toNumber.isNumber.default(1)
+    out:
+      result: isNumber
+  exec : |
+    args.result = args.result * args.c

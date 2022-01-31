@@ -1,0 +1,4 @@
+jobs:
+- name: nuno
+  exec: |
+    print("TEST!")
