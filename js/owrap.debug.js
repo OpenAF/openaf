@@ -78,6 +78,9 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
       throw "File '" + aCode + "' not found."
     }
   }
+
+  // CRLF to LF
+  code = code.replace(/\r\n/g, "\n")
     
   var _m = (s, c) => {
     var _s = ";try{"
