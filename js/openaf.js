@@ -6476,6 +6476,7 @@ const oJobRunJob = function(aJob, args, aId, rArgs) {
 	if (isDef(aId)) {
 		loadCompiledLib("owrap_oJob_js");
 		oo = new OpenWrap.oJob();
+		oo.__ojob = clone(ow.oJob.__ojob)
 	} else {
 		oo = ow.loadOJob();
 	}
