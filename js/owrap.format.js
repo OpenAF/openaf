@@ -2441,16 +2441,18 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 
 /**
  * <odoc>
- * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText, aTheme) : String</key>
+ * <key>ow.format.withSideLine(aString, aSize, ansiLine, ansiText, aTheme, aExtra) : String</key>
  * Generates a ansi escaped line with a "left side line" to display aString which will be word-wrap given 
  * aSize (default to the current console size). Optionally ansi colors for ansiLine and ansiText can be provided (see ansiColor for possible values)
- * and aTheme (using ow.format.withSideLineThemes, for example)
+ * and aTheme (using ow.format.withSideLineThemes, for example). For closed rectangle themes aExtra map can include a header, footer, headerAlign (
+ * left or right or center) and footerAlign (left or right or center).
  * </odoc>
  */
-OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText, aTheme) {
+OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansiText, aTheme, aExtra) {
 	var symbols = ow.format.syms();
 
 	aString = _$(aString, "aString").isString().default(__);
+	aExtra  = _$(aExtra, "aExtra").isMap().default({})
 	var defaultTheme = {
 		tab    : "   "
 	};
@@ -2481,7 +2483,26 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 		res += ansiColor(ansiLine, aTheme.ltop);
 		if (isDef(aTheme.rtop)) {
 			var sp = (isDef(aTheme.tmiddle) ? aTheme.tmiddle : " ");
-			res += ansiColor(ansiLine, repeat(aSize - 2, sp));
+			if (isString(aExtra.header) && aExtra.header.length < (aSize - 4)) {
+				if (aExtra.headerAlign == "right") {
+					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.header), sp))
+					res += aExtra.header
+					res += ansiColor(ansiLine, repeat(2, sp))
+				}
+				if (aExtra.headerAlign == "center") {
+					var _l = aSize - 4 - ansiLength(aExtra.header)
+					res += ansiColor(ansiLine, repeat(Math.floor(_l / 2) +1, sp))
+					res += aExtra.header
+					res += ansiColor(ansiLine, repeat(Math.round(_l / 2) +1, sp))
+				}
+				if (isUnDef(aExtra.headerAlign) || aExtra.headerAlign == "left") {
+					res += ansiColor(ansiLine, repeat(2, sp))
+					res += aExtra.header
+					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.header), sp))
+				}
+			} else {
+				res += ansiColor(ansiLine, repeat(aSize - 2, sp));
+			}
 			res += ansiColor(ansiLine, aTheme.rtop);
 		}
 	}
@@ -2507,9 +2528,28 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
                 res += ansiColor(ansiLine, aTheme.lbottom);
 		if (isDef(aTheme.rbottom)) {
 			var sp = (isDef(aTheme.bmiddle) ? aTheme.bmiddle : " ");
-			res += ansiColor(ansiLine, repeat(aSize - 2, sp));
-			res += ansiColor(ansiLine, aTheme.rbottom);
+			if (isString(aExtra.footer) && aExtra.footer.length < (aSize - 4)) {
+				if (aExtra.footerAlign == "right") {
+					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.footer), sp))
+					res += aExtra.footer
+					res += ansiColor(ansiLine, repeat(2, sp))
+				}
+				if (aExtra.footerAlign == "center") {
+					var _l = aSize - 4 - ansiLength(aExtra.footer)
+					res += ansiColor(ansiLine, repeat(Math.floor(_l / 2) +1, sp))
+					res += aExtra.footer
+					res += ansiColor(ansiLine, repeat(Math.round(_l / 2) +1, sp))
+				}
+				if (isUnDef(aExtra.footerAlign) || aExtra.footerAlign == "left") {
+					res += ansiColor(ansiLine, repeat(2, sp))
+					res += aExtra.footer
+					res += ansiColor(ansiLine, repeat(aSize - 4 - ansiLength(aExtra.footer), sp))
+				}
+			} else {
+				res += ansiColor(ansiLine, repeat(aSize - 2, sp))
+			}
 		}
+		res += ansiColor(ansiLine, aTheme.rbottom)
 		res += ansiColor("RESET", "");
 	}
 

@@ -971,9 +971,15 @@ const ansiStop = function(force) {
  * Tries to return the aString length without any ansi control sequences.
  * </odoc>
  */
-const ansiLength = function(aString) {
-	_$(aString, "aString").isString().$_();
-	return aString.replace(/\033\[[0-9;]*m/g, "").length;
+const ansiLength = function(aString, force) {
+	_$(aString, "aString").isString().$_()
+
+	var ansis = force || (__conAnsi && (java.lang.System.console() != null))
+	if (ansis) {
+		return aString.replace(/\033\[[0-9;]*m/g, "").length
+	} else {
+		return aString.length
+	}
 }
 
 /**
