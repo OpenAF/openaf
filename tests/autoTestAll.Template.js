@@ -36,6 +36,17 @@
         }
     };
 
+    exports.testOpenAFHelpers = function() {
+        ow.loadTemplate()
+        ow.template.addOpenAFHelpers()
+
+        $set("testOpenAFHelpers", "123")
+        $set("testOpenAFHelpers2", { x: 1, y: -1 })
+    
+        ow.test.assert(templify("{{$get 'testOpenAFHelpers'}}"), "123", "Problem with $get template helper")
+        ow.test.assert(templify("{{$getObj 'testOpenAFHelpers2' 'y'}}"), "-1", "Problem with $getObj template helper")
+    }
+
     exports.testConditionalHelpers = function() {
         ow.loadTemplate();
         ow.template.addConditionalHelpers();

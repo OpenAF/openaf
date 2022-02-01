@@ -27,6 +27,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testFormatHelpers;
 
+   - name: Template::Test openaf helpers
+     from: Template::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testOpenAFHelpers
+
    - name: Template::Test conditional helpers
      from: Template::Init
      to  : oJob Test
@@ -47,3 +52,4 @@ todo:
    - Template::Test format helpers
    - Template::Test conditional helpers
    - Template::Test partial helpers
+   - Template::Test openaf helpers
