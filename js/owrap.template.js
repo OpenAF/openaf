@@ -83,6 +83,8 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 	ow.template.addHelper("get", (o, p) => $$(o).get(p));
 	ow.template.addHelper("path", (o, p) => $path(o, p));
 	ow.template.addHelper("toSLON", ow.format.toSLON);
+	ow.template.addHelper("$get", $get)
+	ow.template.addHelper("$getObj", (o, p) => $$($get(o)).get(p))
 };
 
 /**
