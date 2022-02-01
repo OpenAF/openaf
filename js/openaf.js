@@ -845,7 +845,7 @@ const ansiColor = function(aAnsi, aString, force) {
 	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	var res = "";
 	
-	if (ansis) {
+	if (ansis && aAnsi.length > 0) {
 		var nAnsi = [];
 		aAnsi.split(",").forEach(r => {
 			if (r.startsWith("BG(")) {
