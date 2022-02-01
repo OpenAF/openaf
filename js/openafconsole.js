@@ -827,7 +827,7 @@ function __view(aCmd, fromCommand, shouldClear) {
 		} catch(e) {
 			if (shouldClear) __clear();
 			//if (isUnDef(__res)) __res = __processCmdLine(aCmd); 
-			__showResultProcessCmdLine(__res, aCmd);
+			if (!isJavaException(e)) __showResultProcessCmdLine(__res, aCmd);
 			throw e;
 		}	
 			
