@@ -198,6 +198,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testTB;
 
+   - name: OpenAF::Range
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testRange;
+
    - name: OpenAF::Cache
      from: OpenAF::Init
      to  : oJob Test
@@ -270,6 +275,7 @@ todo:
    - OpenAF::Map Array
    - OpenAF::PSelect
    - OpenAF::Thread box
+   - OpenAF::Range
    - OpenAF::Test Rest
    - OpenAF::Test Void shortcut
    - OpenAF::Test Envs
