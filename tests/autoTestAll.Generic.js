@@ -22,6 +22,13 @@
         lognl("no"); log(" line");
     };
  
+    exports.testRange = function() {
+        ow.test.assert(range(5).length, 5, "Problem with range size")
+        ow.test.assert(range(1, 5)[0], 5, "Problem with range start")
+        ow.test.assert(range(5, -10)[0], -10, "Problem with negative range start")
+        ow.test.assert((function() { try { range(-5); return 1 } catch(e) { return String(e) } })(), "RangeError: Inappropriate array length.", "Problem with negative range count")
+    }
+
     exports.testDBPG = function() {
         var db = new DB("jdbc:postgresql://hh-pgsql-public.ebi.ac.uk:5432/pfmegrnargs", "reader", "NWDMCE5xdipIjRrp");
 
