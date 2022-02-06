@@ -52,6 +52,11 @@ OpenWrap.oJob = function(isNonLocal) {
 
 	//this.__promises.push($do(() => {
 		ow.loadTemplate();
+		ow.template.addConditionalHelpers()
+		ow.template.addOpenAFHelpers()
+		ow.template.addFormatHelpers()
+		// Add template helper to retrieve oJob state
+		ow.template.addHelper("_state", r => ow.oJob.getState(r))
 		ow.loadServer(); 
 		parent.__sch = new ow.server.scheduler();
 	//}));
@@ -131,6 +136,9 @@ OpenWrap.oJob = function(isNonLocal) {
 			}
 		});
 	}
+
+	// Set state
+	this.setState("init")
 
 	return this;
 };
@@ -1925,7 +1933,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 		}
 	}
 
-	function _run(aExec, args, job, id) {		
+	function _run(aExec, args, job, id) {	
+		// Find templates on args	
+		traverse(args, (aK, aV, aP, aO) => {
+			if (isString(aV) && aV.indexOf("{{") >= 0) {
+				aO[aK] = templify(aV, args)
+			}
+		})
+
 		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
 		var fe, fint;
 		if (isDef(parent.__ojob.catch)) fe = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);

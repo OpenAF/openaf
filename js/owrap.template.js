@@ -66,11 +66,16 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - ft              -- uses the $ft format function\
  *   - get             -- uses the $$.get function to access objects\
  *   - path            -- uses the $path function to query objects\
- *   - toSLON          -- returns the ow.format.toSLON version of an objecft\
+ *   - toSLON          -- returns the ow.format.toSLON version of an object\
+ *   - $get            -- returns the corresponding value for a key on $get\
+ *   - $getObj         -- equivalent to $get with the extra parameter for $$.get path\ 
  * \
  * </odoc>
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
+	// Don't load if already loaded
+	if (this.__helperOpenAF) return
+
 	ow.loadFormat();
 	ow.template.addHelper("debug", sprint);
 	ow.template.addHelper("stringify", stringify);
@@ -85,6 +90,8 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 	ow.template.addHelper("toSLON", ow.format.toSLON);
 	ow.template.addHelper("$get", $get)
 	ow.template.addHelper("$getObj", (o, p) => $$($get(o)).get(p))
+
+	this.__helperOpenAF = true
 };
 
 /**
@@ -94,8 +101,13 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
  * </odoc>
  */
 OpenWrap.template.prototype.addFormatHelpers = function() {
+	// Don't load if already loaded
+	if (this.__helperFormat) return
+
 	ow.loadFormat();
 	this.addHelpers("owFormat_", ow.format);
+
+	this.__helperFormat = true
 }
 
 /**
@@ -106,6 +118,9 @@ OpenWrap.template.prototype.addFormatHelpers = function() {
  * </odoc>
  */
 OpenWrap.template.prototype.addConditionalHelpers = function() {
+	// Don't load if already loaded
+	if (this.__helperCond) return 
+
 	// Based on assemble.io handlebars helpers https://github.com/assemble/handlebars-helpers
 	ow.template.addHelper("and", function(a, b, s) { return (a && b) ? s.fn(this) : s.inverse(this); });
 	ow.template.addHelper("compare", function(a, op, b, s) {
@@ -211,7 +226,9 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 	ow.template.addHelper("unlessGt", function(ctx, s) { return (ctx > s.hash.compare) ? s.fn(this) : s.inverse(this); });	
 	ow.template.addHelper("unlessLt", function(ctx, s) { return (ctx < s.hash.compare) ? s.fn(this) : s.inverse(this); });		
 	ow.template.addHelper("unlessGteq", function(ctx, s) { return (ctx >= s.hash.compare) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("unlessLteq", function(ctx, s) { return (ctx <= s.hash.compare) ? s.fn(this) : s.inverse(this); });			
+	ow.template.addHelper("unlessLteq", function(ctx, s) { return (ctx <= s.hash.compare) ? s.fn(this) : s.inverse(this); });	
+	
+	this.__helperCond = true
 }
 
 /**
