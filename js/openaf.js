@@ -975,11 +975,14 @@ const ansiLength = function(aString, force) {
 	_$(aString, "aString").isString().$_()
 
 	var ansis = force || (__conAnsi && (java.lang.System.console() != null))
+	var s 
 	if (ansis) {
-		return aString.replace(/\033\[[0-9;]*m/g, "").length
+		s = aString.replace(/\033\[[0-9;]*m/g, "")
 	} else {
-		return aString.length
+		s = aString
 	}
+
+	return Number((new java.lang.String(s)).codePointCount(0, s.length))
 }
 
 /**

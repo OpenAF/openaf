@@ -1221,6 +1221,20 @@ public class AFBase extends ScriptableObject {
 	public static String getOpenAFJar() {
 		return AFCmdBase.getJarFilePath(AFCmdBase.class);
 	}	
+
+	/**
+	 * <odoc>
+	 * <key>af.visibleLength(aString) : int</key>
+	 * Given aString will try to remove ansi characters and just count code point (e.g. removing combined
+	 * characters like emojis).
+	 * </odoc>
+	 */
+	@JSFunction
+	public static int visibleLength(String s) {
+		s = s.replaceAll("\\033\\[[0-9;]*m", "");
+		return s.codePointCount(0, s.length());
+	}
+
 	/**
 	 * <odoc>
 	 * <key>af.sync(aFunction, aObject)</key>
