@@ -417,90 +417,98 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
  * </odoc>
  */
 OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap) {
-    var handled = false;
-    aPrefix = _$(aPrefix, "prefix").isString().default("metric");
-    aPrefix = aPrefix.replace(/[^a-zA-Z0-9]/g, "_");
+    var handled = false
+    aPrefix = _$(aPrefix, "prefix").isString().default("metric")
+    aPrefix = aPrefix.replace(/[^a-zA-Z0-9]/g, "_")
+
+    // https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md
+
+    var _help = aMetric => {
+        if (isDef(aHelpMap) && isMap(aHelpMap)) {
+            var far = ""
+            if (isDef(aMetric) && isDef(aHelpMap[aMetric])) {
+                var h = aHelpMap[aMetric];
+                if (isDef(h.text)) far += "# " + h.text + "\n"
+                if (isDef(h.help)) far += "# HELP " + aMetric + " " + h.help + "\n"
+                if (isDef(h.type)) far += "# TYPE " + aMetric + " " + h.type + "\n"
+            }
+            return far
+        } else {
+            return ""
+        }
+    }
 
     var _map = (obj, prefix, lbs) => { 
-        var ar = [];
+        var ar = ""
         if (isMap(obj)) {
-            var keys = Object.keys(obj);
-            // build label
-            lbs = _$(lbs).default([]);
-            var origLbs = clone(lbs);
-            keys.map(key => {
-                if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) lbs.push(key + "=\"" + String(obj[key]) + "\"");
-            });
-            var lprefix = (lbs.length > 0 ? "{" + lbs.join(",") + "}" : "");
-            keys.map(key => {
+            var keys = Object.keys(obj)
+            // build labels
+            lbs = _$(lbs).default([])
+            keys.forEach(key => {
+                if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) 
+                    lbs.push(key + "=\"" + String(obj[key]).replace(/\n/g, "\\\n").replace(/\"/g, "\\\\") + "\"")
+            })
+            var lprefix = (lbs.length > 0 ? "{" + lbs.join(",") + "}" : "")
+
+            // build each map metric entry
+            keys.forEach(key => {
                 if (isDef(obj[key])) {
-                    var k = key.replace(/[^a-zA-Z0-9]/g, "_");
-                    if (isBoolean(obj[key])) ar.push(prefix + "_" + k + lprefix + " " + (obj[key] ? "1" : "0") + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
-                    if (isNumber(obj[key])) ar.push(prefix + "_" + k + lprefix + " " + Number(obj[key]) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
-                    if (isMap(obj[key])) ar = ar.concat(_map(obj[key], prefix + "_" + k, clone(lbs)));
-                    if (isArray(obj[key])) ar = ar.concat(_arr(obj[key], prefix + "_" + k, clone(lbs)));
+                    var k = key.replace(/[^a-zA-Z0-9]/g, "_")
+                    if (isBoolean(obj[key])) ar += _help(prefix + "_" + k) + prefix + "_" + k + lprefix + " " + (obj[key] ? "1" : "0") + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
+                    if (isNumber(obj[key]))  ar += _help(prefix + "_" + k) + prefix + "_" + k + lprefix + " " + Number(obj[key]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
+                    if (isMap(obj[key]))     ar += _map(obj[key], prefix + "_" + k, clone(lbs))
+                    if (isArray(obj[key]))   ar += _arr(obj[key], prefix + "_" + k, clone(lbs))
                 }
-            });
-            lbs = origLbs;
+            })
         }
         return ar;
-    };
+    }
     var _arr = (obj, prefix, lbs) => { 
-        var ar = [];
+        var ar = ""
         if (isArray(obj)) {
-            lbs = _$(lbs).default([]);
+            lbs = _$(lbs).default([])
             for(var i in obj) {
                 if (isDef(obj[i])) {
-                    var tlbs = clone(lbs);
-                    tlbs.push("_id" + "=\"" + String(i) + "\"");
-                    if (isMap(obj[i])) ar = ar.concat(_map(obj[i], prefix, tlbs));
-                    if (isArray(obj[i])) ar = ar.concat(_arr(obj[i], prefix, tlbs));
-                    if (isNumber(obj[i]) || isBoolean(obj[i])) ar = ar.concat(_sim[i], prefix, tlbs);
+                    var tlbs = lbs.concat("_id" + "=\"" + String(i) + "\"")
+                    if (isMap(obj[i]))                         ar += _map(obj[i], prefix, tlbs)
+                    if (isArray(obj[i]))                       ar += _arr(obj[i], prefix, tlbs)
+                    if (isNumber(obj[i]) || isBoolean(obj[i])) ar += _sim(obj[i], prefix, tlbs)
                 }
             }
         }
-        return ar;
-    };
-    var _sim = (obj, prefix) => { 
-        var ar = [];
+        return ar
+    }
+    var _sim = (obj, prefix, tlbs) => { 
+        var ar = ""
         if (isBoolean(obj)) {
             obj = (obj ? 1 : 0);
         }
-        if (isNumber(obj)) {
-            ar.push(prefix + " " + Number(aObj) + " " + (isDef(aTimestamp) ? Number(aTimestamp) : ""));
-        }
-        return ar;
-    };
 
-    var ar = [];
+        tlbs = _$(tlbs).default([])
+        var lprefix = (tlbs.length > 0 ? "{" + tlbs.join(",") + "}" : "")
+
+        if (isNumber(obj)) {
+            ar += _help(prefix) + prefix + lprefix + " " + Number(aObj) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
+        }
+        return ar
+    }
+
+    var ar = ""
     if (isMap(aObj)) {
         handled = true;
-        ar = _map(aObj, aPrefix);
+        ar += _map(aObj, aPrefix)
     }
 
     if (isArray(aObj)) {
         handled = true;
-        ar = _arr(aObj, aPrefix);
+        ar += _arr(aObj, aPrefix)
     }
 
     if (!handled) {
-        ar = _sim(aObj, aPrefix);
+        ar += _sim(aObj, aPrefix)
     }
 
-    if (isDef(aHelpMap) && isMap(aHelpMap)) {
-        var far = [];
-        ar.map(item => {
-            var it = item.match(/^(.+?)(\{| )/);
-            if (isDef(it[1]) && isDef(aHelpMap[it[1]])) {
-                var h = aHelpMap[it[1]];
-                if (isDef(h.text)) far.push("# " + h.text);
-                if (isDef(h.help)) far.push("# HELP " + it[1] + " " + h.help);
-                if (isDef(h.type)) far.push("# TYPE " + it[1] + " " + h.type);
-            }
-            far.push(item);
-        });
-        ar = far;
-    }
-
-    return ar.map(r => r.replace(/\\{1}/g, "/").trim()).join("\n") + "\n";
-};
+    //return ar.map(r => r.replace(/\\{1}/g, "/").trim()).join("\n") + "\n";
+    //return ar.replace(/\\{1}/g, "/").trim() + "\n"
+    return ar.trim() + "\n"
+}
