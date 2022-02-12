@@ -233,18 +233,6 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 
 	this.__execRequire = _$(ojob.execRequire, "execRequire").isString().default(void 0);
 
-	// Check todos
-	/*for(var i in todo) {
-		if (isDef(ojob) && isDef(ojob.sequential) && ojob.sequential && i > 0) {
-			//var j = $path(jobs, "[?name==`" + (isObject(todo[i]) ? todo[i].name : todo[i]) + "`] | @[0]");
-			var j = $from(jobs).useCase(true).equals("name", (isObject(todo[i]) ? todo[i].name : todo[i])).at(0);
-			if (isDef(j) && !isNull(j)) {
-				if (isUnDef(j.deps)) j.deps = [];
-				j.deps.push((isObject(todo[i-1]) ? todo[i-1].name : todo[i-1]));
-			}
-		}
-	}*/
-
 	if (isDef(init)) this.init = init;
 	
 	// Calculate dependencies
@@ -1498,9 +1486,25 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 	this.running = true;
 	this.oJobShouldStop = false;
-	if (isDef(this.init)) args = merge(args, { init: this.init });
 
 	var parent = this;
+
+	this.__ojob = _$(this.__ojob).default({})
+	if (isDef(this.__ojob.initTemplateEscape)) {
+		this.__ojob.initTemplateEscape = this.__ojob.initTemplateEscape
+	} else {
+		this.__ojob.initTemplateEscape = true
+	}
+
+	if (isDef(this.init) && this.__ojob.initTemplateEscape) {
+		traverse(this.init, (aK, aV, aP, aO) => {
+			if (isString(aV) && aV.indexOf("{{") >= 0) {
+				aO[aK] = aV.replace(/\{(\{+)/g, "\\{$1")
+			}
+		})
+	}
+
+	if (isDef(this.init)) args = merge(args, { init: this.init })
 
 	if (this.__ojob != {}) {
 		if (isDef(this.__ojob.argsFromEnvs) && this.__ojob.argsFromEnvs) {
@@ -1657,7 +1661,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		}
 	}
 
-	global.args = args;
+	global.args = args
+	global.init = this.init
 
     // Show help if enabled and determined
     if (this.__ojob.showHelp) {
