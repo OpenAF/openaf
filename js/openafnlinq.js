@@ -140,8 +140,40 @@ var nLinq = function(anObject) {
         return aValue;
     };
 
+    var flatObj = aObj => {
+        var _t = (aMap, aFunc, aParent) => {
+            var keys = Object.keys(aMap)
+            _$(aFunc, "aFunc").isFunction().$_()
+            var aParent = _$(aParent).isString().default("")
+        
+            for(var i in keys) {
+                if ($$(aMap[keys[i]]).isMap() || $$(aMap[keys[i]]).isArray()) {
+                    var newParent = ((aParent == "") ? "" : aParent + ".") + keys[i]
+                    _t(aMap[keys[i]], aFunc, newParent)
+                } else {
+                    aFunc(keys[i], aMap[keys[i]], aParent, aMap)
+                }
+            }
+        }
+    
+        var _m = {}
+        _t(aObj, (aK, aV, aP, aO) => {
+            _m[aP + (aP == "" ? "" : ".") + aK] = aV
+        })
+        return _m
+    }
+
     // Auxiliary functions - given a key, a value, a query template app change the current query
     var applyWhere = (aKey, aValue, aTmpl, isOr, isTwoValues, aValue2) => {
+        // If aKey is a map perform multiple applies
+        if ($$(aValue2).isUnDef() && $$(aKey).isMap()) {
+            var _m = flatObj(aKey)
+            Object.keys(_m).forEach(k => {
+                applyWhere(k, _m[k], aTmpl, isOr)
+            })
+            return
+        }
+
         var isM, useDot = true;
         if (isTwoValues) {
             isM = $$(aValue2).isDef();
@@ -452,7 +484,7 @@ var nLinq = function(anObject) {
                 }
             });
 
-            return vals;
+            return vals
         },
         at     : aParam => {
             _$(aParam, "index").isNumber().$_();
