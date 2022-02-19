@@ -6584,7 +6584,8 @@ loadCompiledLib("openafsigil_js");
 var __flags = _$(__flags).isMap().default({
 	OJOB_SEQUENTIAL  : true,
 	OJOB_HELPSIMPLEUI: false,
-	OAF_CLOSED       : false
+	OAF_CLOSED       : false,
+	MD_NOMAXWIDTH    : true
 })
 
 /**
