@@ -1,6 +1,6 @@
 Third-party name      : Showdown
-Version               : 1.9.1
-Changed from original : No
+Version               : 2.0.0
+Changed from original : Yes
 Location in openaf.jar: js/showdown.js
 License               : 
 
@@ -73,7 +73,7 @@ SOFTWARE.
 
 -----------------------
 Third-party name      : FuseJS
-Version               : 6.4.1
+Version               : 6.5.3
 Changed from original : No
 Location in openaf.jar: js/fusejs.js
 License               : 
@@ -758,7 +758,7 @@ THE SOFTWARE.
 
 -----------------------
 Third-party name      : jQuery minified
-Version               : 3.5.1
+Version               : 3.6.0
 Changed from original : No
 Location in openaf.jar: js/jquery.js
 License               : 
@@ -786,7 +786,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 -----------------------
 Third-party name      : Lodash
-Version               : 4.17.20
+Version               : 4.17.21
 Changed from original : No
 Location in openaf.jar: js/lodash.js
 License               : 
@@ -4707,7 +4707,7 @@ There are references to the equations in that paper commented through the source
 
 -----------------------
 Third-party name      : Highlight
-Version               : 10.1.2
+Version               : 11.4.0
 Changed from original : No
 Location in openaf.jar: js/highlight.js
 License               : 

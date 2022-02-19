@@ -9,7 +9,7 @@
     font-size: small;
 }
 .njsmap_table {
-    border: 1px solid lightgray;
+    border: 0px solid lightgray;
     border-spacing: 0;
     line-height: 1;
     box-sizing: border-box;
