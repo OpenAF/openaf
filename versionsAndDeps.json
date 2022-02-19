@@ -2,8 +2,8 @@
 	"external": [{
 			"description": "Showdown",
 			"path": ["js/showdown.js"],
-			"version": "1.9.1",
-			"changes": false,
+			"version": "2.0.0",
+			"changes": true,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/showdownjs/showdown/master/LICENSE",
 			"deps": []
@@ -29,7 +29,7 @@
 		{
 			"description": "FuseJS",
 			"path": ["js/fusejs.js"],
-			"version": "6.4.1",
+			"version": "6.5.3",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/krisk/Fuse/master/LICENSE",
@@ -83,7 +83,7 @@
 		{
 			"description": "jQuery minified",
 			"path": ["js/jquery.js"],
-			"version": "3.5.1",
+			"version": "3.6.0",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/jquery/jquery/master/LICENSE.txt",
@@ -92,7 +92,7 @@
 		{
 			"description": "Lodash",
 			"path": ["js/lodash.js"],
-			"version": "4.17.20",
+			"version": "4.17.21",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/lodash/lodash/master/LICENSE",
@@ -346,7 +346,7 @@
 		{
 			"description": "Highlight",
 			"path": ["js/highlight.js"],
-			"version": "10.1.2",
+			"version": "11.4.0",
 			"changes": false,
 			"type": ["javascript"],
 			"license": "https://raw.githubusercontent.com/isagalaev/highlight.js/master/LICENSE",
