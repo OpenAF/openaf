@@ -1606,6 +1606,53 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
 	this.__httpTimeout = aTimeout;
 };
 
+// https://javadoc.io/static/com.squareup.okhttp3/okhttp/3.14.9/index.html?okhttp3/Request.html
+OpenWrap.obj.prototype.http3 = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
+	this.url = _$(aURL, "aURL").isString().default(__)
+	//this.request = new Packages.okhttp3.Request.Builder().url(aURL).build()
+	var clt = new Packages.okhttp3.OkHttpClient().Builder()
+
+	if (isDef(aTimeout)) this.client.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	this.client = clt.build()
+}
+
+OpenWrap.obj.prototype.http3.prototype.upload = function(aName, aFile) { }
+OpenWrap.obj.prototype.http3.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) { 
+	aURL = _$(aURL, "aURL").isString().default(this.url)
+
+	var req = new Packages.okhttp3.Request.Builder().url(aURL).head()
+	this.request = req.build()
+	var clt = this.client.newBuilder().readTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	clt = clt.build()
+
+	var response = clt.newCall(this.request).execute(), res
+	if (isBytes) {
+		res = response.body().bytes()
+	} else {
+		res = response.body().string()
+	}
+	response.body().close()
+	return res
+}
+OpenWrap.obj.prototype.http3.prototype.setThrowExceptions = function(should) { }
+OpenWrap.obj.prototype.http3.prototype.setConfig = function(aMap) { }
+OpenWrap.obj.prototype.http3.prototype.getCookieStore = function() { }
+OpenWrap.obj.prototype.http3.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { }
+OpenWrap.obj.prototype.http3.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) { }
+OpenWrap.obj.prototype.http3.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) { }
+OpenWrap.obj.prototype.http3.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) { }
+OpenWrap.obj.prototype.http3.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) { }
+OpenWrap.obj.prototype.http3.prototype.getErrorResponse = function(parseJson) { }
+OpenWrap.obj.prototype.http3.prototype.getResponse = function()  { }
+OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) { }
+OpenWrap.obj.prototype.http3.prototype.response = function() { }
+OpenWrap.obj.prototype.http3.prototype.responseBytes = function() { }
+OpenWrap.obj.prototype.http3.prototype.responseCode = function() { }
+OpenWrap.obj.prototype.http3.prototype.responseHeaders = function() { }
+OpenWrap.obj.prototype.http3.prototype.responseStream = function() { }
+OpenWrap.obj.prototype.http3.prototype.responseType = function() { }
+
+
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) {
 	this.__lps = {}; 
 	this.__config = {};
