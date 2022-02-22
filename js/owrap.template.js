@@ -582,6 +582,40 @@ OpenWrap.template.prototype.md = {
 	},
 	/**
 	 * <odoc>
+	 * <key>ow.template.md.fromTable(aMarkdown) : Array</key>
+	 * Tries to transform aMarkdown table text into an array.
+	 * </odoc>
+	 */
+	fromTable: function(aMD) {
+		var ar = aMD.split("\n").map(r => r.split("|").map(s => s.trim()))
+
+		// Process header
+		var hdrs = ar[0]
+		hdrs.shift()
+		hdrs.pop()
+	  
+		// Remove header and separator
+		ar.shift()
+		ar.shift()
+	  
+		// Process rows
+		var m = []
+		ar.forEach(r => {
+		  if (r.length == 1) return
+		  r.shift()
+		  r.pop()
+	  
+		  var mr = {}
+		  hdrs.forEach((h, i) => {
+			mr[h] = r[i]
+		  })
+		  m.push(mr)
+		})
+	  
+		return m
+	},
+	/**
+	 * <odoc>
 	 * <key>ow.template.md.htmlArrayMap(anMapOrArray) : String</key>
 	 * Converts anMapOrArray into a div html suitable to be added to a markdown.
 	 * </odoc>
