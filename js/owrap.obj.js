@@ -1610,9 +1610,9 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
 OpenWrap.obj.prototype.http3 = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
 	this.url = _$(aURL, "aURL").isString().default(__)
 	//this.request = new Packages.okhttp3.Request.Builder().url(aURL).build()
-	var clt = new Packages.okhttp3.OkHttpClient().Builder()
+	var clt = new Packages.okhttp3.OkHttpClient.Builder()
 
-	if (isDef(aTimeout)) this.client.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isDef(aTimeout)) clt = clt.this.client.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 	this.client = clt.build()
 }
 
@@ -1622,7 +1622,9 @@ OpenWrap.obj.prototype.http3.prototype.head = function(aURL, aIn, aRequestMap, i
 
 	var req = new Packages.okhttp3.Request.Builder().url(aURL).head()
 	this.request = req.build()
-	var clt = this.client.newBuilder().readTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	var clt = this.client.newBuilder()
+	if (isNumber(aTimeout))
+	var clt = this.readTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 	clt = clt.build()
 
 	var response = clt.newCall(this.request).execute(), res
