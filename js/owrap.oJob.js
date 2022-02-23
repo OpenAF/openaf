@@ -1130,7 +1130,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			existing.totalTime += execJob.endTime - execJob.startTime;
 			existing.avgTime = existing.totalTime / existing.count;
 		} catch(e) {
-			logErr("Can't add success log for '" + aJobName + "' for job exec id '" + aJobExecId + "': " + e.message);
+			logWarn("Can't add success log for '" + aJobName + "' for job exec id '" + aJobExecId + "': " + e.message);
 		}
 		break;
 	case "error"   :
@@ -1152,7 +1152,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 			existing.totalTime += execJob.endTime - execJob.startTime;
 			existing.avgTime = existing.totalTime / existing.count;
 		} catch(e) {
-			logErr("Can't add error log for '" + aJobName + "' for job exec id '" + aJobExecId + "': " + e.message);
+			logWarn("Can't add error log for '" + aJobName + "' for job exec id '" + aJobExecId + "': " + e.message);
 		}
 		break;
 	case "depsfail":

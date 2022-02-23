@@ -1618,41 +1618,202 @@ OpenWrap.obj.prototype.http3 = function(aURL, aRequestType, aIn, aRequestMap, is
 
 OpenWrap.obj.prototype.http3.prototype.upload = function(aName, aFile) { }
 OpenWrap.obj.prototype.http3.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) { 
-	aURL = _$(aURL, "aURL").isString().default(this.url)
-
-	var req = new Packages.okhttp3.Request.Builder().url(aURL).head()
-	this.request = req.build()
-	var clt = this.client.newBuilder()
-	if (isNumber(aTimeout))
-	var clt = this.readTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
-	clt = clt.build()
-
-	var response = clt.newCall(this.request).execute(), res
-	if (isBytes) {
-		res = response.body().bytes()
-	} else {
-		res = response.body().string()
-	}
-	response.body().close()
-	return res
+	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout)
+	return this.responseHeaders()
 }
 OpenWrap.obj.prototype.http3.prototype.setThrowExceptions = function(should) { }
 OpenWrap.obj.prototype.http3.prototype.setConfig = function(aMap) { }
 OpenWrap.obj.prototype.http3.prototype.getCookieStore = function() { }
-OpenWrap.obj.prototype.http3.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { }
-OpenWrap.obj.prototype.http3.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) { }
-OpenWrap.obj.prototype.http3.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) { }
-OpenWrap.obj.prototype.http3.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) { }
-OpenWrap.obj.prototype.http3.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) { }
-OpenWrap.obj.prototype.http3.prototype.getErrorResponse = function(parseJson) { }
-OpenWrap.obj.prototype.http3.prototype.getResponse = function()  { }
-OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) { }
-OpenWrap.obj.prototype.http3.prototype.response = function() { }
-OpenWrap.obj.prototype.http3.prototype.responseBytes = function() { }
-OpenWrap.obj.prototype.http3.prototype.responseCode = function() { }
-OpenWrap.obj.prototype.http3.prototype.responseHeaders = function() { }
-OpenWrap.obj.prototype.http3.prototype.responseStream = function() { }
-OpenWrap.obj.prototype.http3.prototype.responseType = function() { }
+OpenWrap.obj.prototype.http3.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
+	aURL = _$(aURL, "aURL").isString().default(this.url)
+	aIn  = _$(aIn, "aIn").default("")
+
+	var req = new Packages.okhttp3.Request.Builder().url(aURL)
+	var aBody
+	var mediaType = null
+
+	if (isMap(aRequestMap)) {
+		if (isDef(aRequestMap["Content-Type"])) mediaType = aRequestMap["Content-Type"]
+	} else {
+		aRequestMap = { }
+	}
+
+	if (isBytes) {
+		aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), aIn)
+	} else {
+		aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), String(aIn))
+	}
+
+	if (isUnDef(aRequestType)) aRequestType = "GET";
+
+	switch(aRequestType.toUpperCase()) {
+	case "GET"    : req = req.get(); break;
+	case "POST"   : req = req.post(aBody); break; 
+	case "DELETE" : req = req.delete(aBody); break;
+	case "HEAD"   : req = req.head(); break;
+	case "PATCH"  : req = req.patch(aBody); break;
+	case "PUT"    : req = req.put(aBody); break;
+	case "TRACE"  : req = req.method("TRACE", aBody); break;
+	case "OPTIONS": req = req.method("OPTIONS", aBody); break;
+	default       : req = req.get(); break;
+	}
+
+	// Headers
+	req.header("User-Agent", __OpenAFUserAgent)
+	Object.keys(aRequestMap).forEach(header => {
+		req.header(header, aRequestMap[header])
+	})
+
+	this.request = req.build()
+	var clt = this.client.newBuilder()
+
+	// Timeout
+	if (isDef(ow.obj.__httpTimeout) && isUnDef(aTimeout)) aTimeout = ow.obj.__httpTimeout
+	if (isNumber(aTimeout)) clt = this.readTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+
+	clt = clt.build()
+
+	this._response = clt.newCall(this.request).execute()
+	this.outputObj = {}
+
+	if (isBytes && !returnStream) {
+		this.outputObj =  {
+			responseCode: this.responseCode(),
+			contentType: this.responseType(),
+			responseBytes: this.responseBytes()
+		};
+	} else {
+		if (returnStream) {
+			this.outputObj = this.responseStream();
+		} else {
+			this.outputObj = {
+				responseCode: this.responseCode(),
+				contentType: this.responseType(),
+				response: this.response()
+			};
+		}
+	}
+
+	if (this.responseCode() >= 400 && this.__throwExceptions) {
+		switch(this.responseCode()) {
+		case 404: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		case 410: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		default: throw "IOException Server returned HTTP response code: " + this.responseCode() + " for URL: " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		}
+	}
+
+	return this.outputObj
+
+	/*
+	
+	// Set credentials
+	if (isDef(this.__l) && !(this.__forceBasic)) {
+		var getKey;
+		this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+		if (this.__usv) this.__h = this.__h.useSystemProperties();
+		for(var key in this.__lps) {
+			if (aUrl.startsWith(key)) getKey = key;
+		}
+		if (isDef(getKey)) {
+			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]);
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		} else {
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		}
+	} else {
+		if (isUnDef(this.__h)) {
+			this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
+			if (this.__usv) this.__h = this.__h.useSystemProperties();
+			this.__h = this.__handleConfig(this.__h);
+			this.__h = this.__h.build();
+		}
+	}
+
+	if (this.__forceBasic && isDef(this.__l)) {
+		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
+	}
+
+	for(var i in aRequestMap) {
+		if (r.containsHeader(i)) {
+			r.setHeader(i, aRequestMap[i]);
+		} else {
+			r.addHeader(i, aRequestMap[i]);
+		}
+	}
+
+	if (isDef(aIn) && isString(aIn) && canHaveIn) {
+		r.setEntity(Packages.org.apache.http.entity.StringEntity(aIn));
+	} else {
+		if (isDef(this.__uf) && canHaveIn) {
+			//var fileBody = new Pacakges.org.apache.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.http.entity.ContentType.DEFAULT_BINARY);
+			var entityBuilder = Packages.org.apache.http.entity.mime.MultipartEntityBuilder.create();
+			entityBuilder.setMode(Packages.org.apache.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE);
+			if (isString(this.__uf)) {
+				entityBuilder.addBinaryBody(this.__ufn, new java.io.File(this.__uf));
+			} else {
+				entityBuilder.addBinaryBody(this.__ufn, this.__uf);
+			}
+			var mutiPartHttpEntity = entityBuilder.build();
+			r.setEntity(mutiPartHttpEntity);
+		}
+	}
+	*/
+}
+OpenWrap.obj.prototype.http3.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
+	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream)
+}
+OpenWrap.obj.prototype.http3.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, true, aTimeout, false)
+}
+OpenWrap.obj.prototype.http3.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true)
+}
+OpenWrap.obj.prototype.http3.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true)
+}
+OpenWrap.obj.prototype.http3.prototype.getErrorResponse = function(parseJson) { 
+	if (parseJson) {
+		var res = this.outputObj
+		if (isDef(res.response)) res.response = jsonParse(res.response)
+		return res;	
+	} else
+		return this.outputObj
+}
+OpenWrap.obj.prototype.http3.prototype.getResponse = function()  { 
+	return this.outputObj
+}
+OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) { 
+	// tbc
+}
+OpenWrap.obj.prototype.http3.prototype.response = function() {
+	var res = this._response.body().string()
+	this._response.body().close()
+	return res
+}
+OpenWrap.obj.prototype.http3.prototype.responseBytes = function() {
+	var res = this._response.body().bytes()
+	this._response.body().close()
+	return res
+}
+OpenWrap.obj.prototype.http3.prototype.responseCode = function() { 
+	return this._response.code()
+}
+OpenWrap.obj.prototype.http3.prototype.responseHeaders = function() { 
+	var m = af.fromJavaMap( this._response.headers().toMultimap() )
+	Object.keys(m).forEach(k => m[k]=(isArray(m[k]) && m[k].length == 1 ? m[k][0] : m[k]))
+
+	return m
+}
+OpenWrap.obj.prototype.http3.prototype.responseStream = function() { 
+	var res = this._response.body().byteStream()
+	this._response.body().close()
+	return res
+}
+OpenWrap.obj.prototype.http3.prototype.responseType = function() { 
+	return this._response.header("content-type")
+}
 
 
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) {
