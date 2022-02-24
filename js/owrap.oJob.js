@@ -1913,7 +1913,7 @@ OpenWrap.oJob.prototype.getMetrics = function(aType) {
  */
 OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec, listTodos) {
 	rExec = _$(rExec, "rExec").isBoolean().default(false);
-	var parent = this, resExec = true, noTemplateArgs = false
+	var parent = this, resExec = true, noTemplateArgs = true
 	var altId = (isDef(aId) ? aId : "");
 	aId = altId;
 
