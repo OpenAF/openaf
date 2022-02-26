@@ -1493,7 +1493,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	if (isDef(this.__ojob.initTemplateEscape)) {
 		this.__ojob.initTemplateEscape = this.__ojob.initTemplateEscape
 	} else {
-		this.__ojob.initTemplateEscape = true
+		this.__ojob.initTemplateEscape = false
 	}
 
 	if (isDef(this.init) && this.__ojob.initTemplateEscape) {
