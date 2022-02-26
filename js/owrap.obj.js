@@ -1812,7 +1812,6 @@ OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceB
 		var nb = this.client.newBuilder()
 		nb.authenticator({
 			authenticate: (route, response) => {
-				print(".. authenticate")
 				var resCount = response => {
 					var result = 1
 					while ((response = response.priorResponse()) != null) {
@@ -1825,7 +1824,6 @@ OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceB
 					return null
 				}
 				var credential = Packages.okhttp3.Credentials.basic(aUser, aPassword)
-				print(credential)
 				return response.request().newBuilder().header("Authorization", credential).build()
 			}
 		})
@@ -1837,12 +1835,12 @@ OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceB
 }
 OpenWrap.obj.prototype.http3.prototype.response = function() {
 	var res = this._response.body().string()
-	this._response.body().close()
+	//this._response.body().close()
 	return res
 }
 OpenWrap.obj.prototype.http3.prototype.responseBytes = function() {
 	var res = this._response.body().bytes()
-	this._response.body().close()
+	//this._response.body().close()
 	return res
 }
 OpenWrap.obj.prototype.http3.prototype.responseCode = function() { 
@@ -1856,11 +1854,14 @@ OpenWrap.obj.prototype.http3.prototype.responseHeaders = function() {
 }
 OpenWrap.obj.prototype.http3.prototype.responseStream = function() { 
 	var res = this._response.body().byteStream()
-	this._response.body().close()
+	//this._response.body().close()
 	return res
 }
 OpenWrap.obj.prototype.http3.prototype.responseType = function() { 
 	return this._response.header("content-type")
+}
+OpenWrap.obj.prototype.http3.prototype.close = function() {
+	this._response.body().close()
 }
 
 
