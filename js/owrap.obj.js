@@ -1608,12 +1608,15 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
 
 // https://javadoc.io/static/com.squareup.okhttp3/okhttp/3.14.9/index.html?okhttp3/Request.html
 OpenWrap.obj.prototype.http3 = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
-	this.url = _$(aURL, "aURL").isString().default(__)
 	//this.request = new Packages.okhttp3.Request.Builder().url(aURL).build()
 	var clt = new Packages.okhttp3.OkHttpClient.Builder()
 
-	if (isDef(aTimeout)) clt = clt.this.client.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isDef(aTimeout)) clt = clt.client.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 	this.client = clt.build()
+
+	if (isDef(aURL)) {
+		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)
+	}
 }
 
 OpenWrap.obj.prototype.http3.prototype.upload = function(aName, aFile) { }
@@ -1621,11 +1624,13 @@ OpenWrap.obj.prototype.http3.prototype.head = function(aURL, aIn, aRequestMap, i
 	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout)
 	return this.responseHeaders()
 }
-OpenWrap.obj.prototype.http3.prototype.setThrowExceptions = function(should) { }
+OpenWrap.obj.prototype.http3.prototype.setThrowExceptions = function(should) {
+	this.__throwExceptions = should
+}
 OpenWrap.obj.prototype.http3.prototype.setConfig = function(aMap) { }
 OpenWrap.obj.prototype.http3.prototype.getCookieStore = function() { }
 OpenWrap.obj.prototype.http3.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
-	aURL = _$(aURL, "aURL").isString().default(this.url)
+	aURL = _$(aURL, "aURL").isString().$_()
 	aIn  = _$(aIn, "aIn").default("")
 
 	var req = new Packages.okhttp3.Request.Builder().url(aURL)
@@ -1785,7 +1790,50 @@ OpenWrap.obj.prototype.http3.prototype.getResponse = function()  {
 	return this.outputObj
 }
 OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) { 
-	// tbc
+	if (isUnDef(urlPartial)) forceBasic = true;
+
+	this.__l = Packages.openaf.AFCmdBase.afc.dIP(aUser)
+	this.__p = Packages.openaf.AFCmdBase.afc.dIP(aPassword)
+
+	//if (forceBasic) {
+		/*var url = new java.net.URL(urlPartial);
+		var port = url.getPort();
+		if (port < 0) {
+			switch(url.getProtocol()) {
+			case "http" : port = 80; break;
+			case "https": port = 443; break;
+			}
+		}*/
+		//var as = new Packages.org.apache.http.auth.AuthScope(url.getHost(), port);
+		//var up = new Packages.org.apache.http.auth.UsernamePasswordCredentials(Packages.openaf.AFCmdBase.afc.dIP(aUser), Packages.openaf.AFCmdBase.afc.dIP(aPassword));
+		//var cred = new org.apache.http.impl.client.BasicCredentialsProvider();
+		//cred.setCredentials(as, up);
+		//this.__lps[urlPartial] = cred;
+		var nb = this.client.newBuilder()
+		nb.authenticator({
+			authenticate: (route, response) => {
+				print(".. authenticate")
+				var resCount = response => {
+					var result = 1
+					while ((response = response.priorResponse()) != null) {
+						result++
+					}
+					return result
+				}
+
+				if (resCount(response) >= 3) {
+					return null
+				}
+				var credential = Packages.okhttp3.Credentials.basic(aUser, aPassword)
+				print(credential)
+				return response.request().newBuilder().header("Authorization", credential).build()
+			}
+		})
+		this.client = nb.build()
+	//}
+
+	this.__forceBasic = forceBasic;
+
 }
 OpenWrap.obj.prototype.http3.prototype.response = function() {
 	var res = this._response.body().string()
