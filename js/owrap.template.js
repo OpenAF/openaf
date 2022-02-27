@@ -56,17 +56,17 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  * <key>ow.template.addOpenAFHelpers()</key>
  * Adds custom helpers:\
  * \
- *   - debug           -- calls sprint for the parameter\
- *   - stringify       -- stringify the parameter\
- *   - stringifyInLine -- stringify in the same line the parameter\
- *   - toYAML          -- returns the YAML version of the parameter\
- *   - env             -- returns the current environment variable identified by the parameter\
- *   - escape          -- returns an escaped version of the parameter\
- *   - f               -- uses the $f format function\
- *   - ft              -- uses the $ft format function\
- *   - get             -- uses the $$.get function to access objects\
- *   - path            -- uses the $path function to query objects\
- *   - toSLON          -- returns the ow.format.toSLON version of an object\
+ *   - $debug           -- calls sprint for the parameter\
+ *   - $stringify       -- stringify the parameter\
+ *   - $stringifyInLine -- stringify in the same line the parameter\
+ *   - $toYAML          -- returns the YAML version of the parameter\
+ *   - $env             -- returns the current environment variable identified by the parameter\
+ *   - $escape          -- returns an escaped version of the parameter\
+ *   - $f               -- uses the $f format function\
+ *   - $ft              -- uses the $ft format function\
+ *   - $get             -- uses the $$.get function to access objects\
+ *   - $path            -- uses the $path function to query objects\
+ *   - $toSLON          -- returns the ow.format.toSLON version of an object\
  *   - $get            -- returns the corresponding value for a key on $get\
  *   - $getObj         -- equivalent to $get with the extra parameter for $$.get path\ 
  * \
@@ -77,17 +77,17 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 	if (this.__helperOpenAF) return
 
 	ow.loadFormat();
-	ow.template.addHelper("debug", sprint);
-	ow.template.addHelper("stringify", stringify);
-	ow.template.addHelper("stringifyInLine", (s) => { return stringify(s, __, ""); });
-	ow.template.addHelper("toYAML", af.toYAML);
-	ow.template.addHelper("env", getEnv);
-	ow.template.addHelper("escape", (s) => { return s.replace(/['"]/g, "\\$1"); });	
-	ow.template.addHelper("f", $f);
-	ow.template.addHelper("ft", $ft);
-	ow.template.addHelper("get", (o, p) => $$(o).get(p));
-	ow.template.addHelper("path", (o, p) => $path(o, p));
-	ow.template.addHelper("toSLON", ow.format.toSLON);
+	ow.template.addHelper("$debug", sprint);
+	ow.template.addHelper("$stringify", stringify);
+	ow.template.addHelper("$stringifyInLine", (s) => { return stringify(s, __, ""); });
+	ow.template.addHelper("$toYAML", af.toYAML);
+	ow.template.addHelper("$env", getEnv);
+	ow.template.addHelper("$escape", (s) => { return s.replace(/['"]/g, "\\$1"); });	
+	ow.template.addHelper("$f", $f);
+	ow.template.addHelper("$ft", $ft);
+	ow.template.addHelper("$get", (o, p) => $$(o).get(p));
+	ow.template.addHelper("$path", (o, p) => $path(o, p));
+	ow.template.addHelper("$toSLON", ow.format.toSLON);
 	ow.template.addHelper("$get", $get)
 	ow.template.addHelper("$getObj", (o, p) => $$($get(o)).get(p))
 
@@ -113,7 +113,7 @@ OpenWrap.template.prototype.addFormatHelpers = function() {
 /**
  * <odoc>
  * <key>ow.template.addConditionalHelpers()</key>
- * Adds helper functions equivalent to assemble.io comparison helpers.
+ * Adds helper functions equivalent to assemble.io comparison helpers starting with "$"
  * See more in http://assemble.io/helpers/helpers-comparison.html
  * </odoc>
  */
@@ -122,8 +122,8 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 	if (this.__helperCond) return 
 
 	// Based on assemble.io handlebars helpers https://github.com/assemble/handlebars-helpers
-	ow.template.addHelper("and", function(a, b, s) { return (a && b) ? s.fn(this) : s.inverse(this); });
-	ow.template.addHelper("compare", function(a, op, b, s) {
+	ow.template.addHelper("$and", function(a, b, s) { return (a && b) ? s.fn(this) : s.inverse(this); });
+	ow.template.addHelper("$compare", function(a, op, b, s) {
 		if (arguments.length < 4) { throw 'Compare helper expects 4 arguments'; }
 		var result;	
 		switch(op) {
@@ -142,7 +142,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (result === false) return s.inverse(this); 
 		return s.fn(this);
 	});
-	ow.template.addHelper("contains", function(collec, value, sIdx, s) {
+	ow.template.addHelper("$contains", function(collec, value, sIdx, s) {
 		loadUnderscore();
 		if (typeof sIdx === 'object') {
 			s = sIdx; sIdx = undefined;
@@ -151,7 +151,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if(_.contains(collec, value, sIdx)) return s.fn(this); 
 		return s.inverse(this);
 	});
-	ow.template.addHelper("gt", function(a, b, s) {
+	ow.template.addHelper("$gt", function(a, b, s) {
 		if (arguments.length === 2) {
 			s = b;
 			b = s.hash.compare;
@@ -159,7 +159,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (a > b) return s.fn(this);
 		return s.inverse(this);
 	});
-	ow.template.addHelper("gte", function(a, b, s) {
+	ow.template.addHelper("$gte", function(a, b, s) {
 		if (arguments.length === 2) {
 			s = b;
 			b = s.hash.compare;
@@ -167,7 +167,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (a >= b) return s.fn(this);
 		return s.inverse(this);
 	});
-	ow.template.addHelper("has", function(v, p, s) {
+	ow.template.addHelper("$has", function(v, p, s) {
 		loadUnderscore();
 		if (arguments.length === 2) return p.inverse(this);
 		if (arguments.length === 1) return v.inverse(this);
@@ -177,7 +177,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (isObject(v) && _.isString(p) && p in v) return s.fn(this);
 		s.inverse(this);
 	});
-	ow.template.addHelper("eq", function(a, b, s) {
+	ow.template.addHelper("$eq", function(a, b, s) {
 		if (arguments.length === 2) {
 			s = b;
 			b = s.hash.compare;
@@ -185,10 +185,10 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (a === b) return s.fn(this);
 		return s.inverse(this);
 	});	
-	ow.template.addHelper("ifEven", function(n, s) { return (n % 2 == 0) ? s.fn(this) : s.inverse(this); });
-	ow.template.addHelper("ifNth", function(a, b, s) { return (++b % a === 0) ? s.fn(this) : s.inverse(this); });
-	ow.template.addHelper("ifOdd", function(n, s) { return (n % 2 == 1) ? s.fn(this) : s.inverse(this); });
-	ow.template.addHelper("is", function(a, b, s) {
+	ow.template.addHelper("$ifEven", function(n, s) { return (n % 2 == 0) ? s.fn(this) : s.inverse(this); });
+	ow.template.addHelper("$ifNth", function(a, b, s) { return (++b % a === 0) ? s.fn(this) : s.inverse(this); });
+	ow.template.addHelper("$ifOdd", function(n, s) { return (n % 2 == 1) ? s.fn(this) : s.inverse(this); });
+	ow.template.addHelper("$is", function(a, b, s) {
 		if (arguments.length === 2) {
 			s = b;
 			b = s.hash.compare;
@@ -196,7 +196,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (a === b) return s.fn(this);
 		return s.inverse(this);
 	});	
-	ow.template.addHelper("isnt", function(a, b, s) {
+	ow.template.addHelper("$isnt", function(a, b, s) {
 		if (arguments.length === 2) {
 			s = b;
 			b = s.hash.compare;
@@ -204,7 +204,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (a !== b) return s.fn(this);
 		return s.inverse(this);
 	});
-	ow.template.addHelper("lt", function(a, b, s) {
+	ow.template.addHelper("$lt", function(a, b, s) {
 		if (arguments.length === 2) {
 			s = b;
 			b = s.hash.compare;
@@ -212,7 +212,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (a < b) return s.fn(this);
 		return s.inverse(this);
 	});		
-	ow.template.addHelper("lte", function(a, b, s) {
+	ow.template.addHelper("$lte", function(a, b, s) {
 		if (arguments.length === 2) {
 			s = b;
 			b = s.hash.compare;
@@ -220,13 +220,13 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		if (a <= b) return s.fn(this);
 		return s.inverse(this);
 	});		
-	ow.template.addHelper("neither", function(a, b, s) { return (!a && !b) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("or", function(a, b, s) { return (a === true || b === true) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("unlessEq", function(ctx, s) { return (ctx === s.hash.compare) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("unlessGt", function(ctx, s) { return (ctx > s.hash.compare) ? s.fn(this) : s.inverse(this); });	
-	ow.template.addHelper("unlessLt", function(ctx, s) { return (ctx < s.hash.compare) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("unlessGteq", function(ctx, s) { return (ctx >= s.hash.compare) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("unlessLteq", function(ctx, s) { return (ctx <= s.hash.compare) ? s.fn(this) : s.inverse(this); });	
+	ow.template.addHelper("$neither", function(a, b, s) { return (!a && !b) ? s.fn(this) : s.inverse(this); });		
+	ow.template.addHelper("$or", function(a, b, s) { return (a === true || b === true) ? s.fn(this) : s.inverse(this); });		
+	ow.template.addHelper("$unlessEq", function(ctx, s) { return (ctx === s.hash.compare) ? s.fn(this) : s.inverse(this); });		
+	ow.template.addHelper("$unlessGt", function(ctx, s) { return (ctx > s.hash.compare) ? s.fn(this) : s.inverse(this); });	
+	ow.template.addHelper("$unlessLt", function(ctx, s) { return (ctx < s.hash.compare) ? s.fn(this) : s.inverse(this); });		
+	ow.template.addHelper("$unlessGteq", function(ctx, s) { return (ctx >= s.hash.compare) ? s.fn(this) : s.inverse(this); });		
+	ow.template.addHelper("$unlessLteq", function(ctx, s) { return (ctx <= s.hash.compare) ? s.fn(this) : s.inverse(this); });	
 	
 	this.__helperCond = true
 }
