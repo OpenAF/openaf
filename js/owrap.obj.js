@@ -1619,7 +1619,13 @@ OpenWrap.obj.prototype.http3 = function(aURL, aRequestType, aIn, aRequestMap, is
 	}
 }
 
-OpenWrap.obj.prototype.http3.prototype.upload = function(aName, aFile) { }
+OpenWrap.obj.prototype.http3.prototype.upload = function(aName, aFile) {
+	this.__ufn = _$(aName, "aName").isString().default("file")
+	_$(aFile, "aFile").isString().$_()
+
+	this.__ufn = aName
+	this.__uf = aFile
+}
 OpenWrap.obj.prototype.http3.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) { 
 	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout)
 	return this.responseHeaders()
@@ -1631,7 +1637,7 @@ OpenWrap.obj.prototype.http3.prototype.setConfig = function(aMap) { }
 OpenWrap.obj.prototype.http3.prototype.getCookieStore = function() { }
 OpenWrap.obj.prototype.http3.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
 	aURL = _$(aURL, "aURL").isString().$_()
-	aIn  = _$(aIn, "aIn").default("")
+	aIn  = _$(aIn, "aIn").default(__)
 
 	var req = new Packages.okhttp3.Request.Builder().url(aURL)
 	var aBody
@@ -1643,10 +1649,26 @@ OpenWrap.obj.prototype.http3.prototype.exec = function(aURL, aRequestType, aIn, 
 		aRequestMap = { }
 	}
 
-	if (isBytes) {
-		aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), aIn)
+	if (isDef(aIn)) {
+		if (isBytes) {
+			aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), aIn)
+		} else {
+			aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), String(aIn))
+		}
 	} else {
-		aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), String(aIn))
+		if (isDef(this.__uf)) {
+			var f 
+			if (isString(this.__uf)) {
+				f = new java.io.File(this.__uf)
+			} else {
+				f = this.__uf
+			}
+			if (isUnDef(this.__ufn)) {
+				aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), f)
+			} else {
+				aBody = Packages.okhttp3.MultipartBody.Builder().setType(Packages.okhttp3.MultipartBody.FORM).addFormDataPart(this.__ufn, this.__uf, Packages.okhttp3.RequestBody.create(isNull(mediaType) ? Packages.okhttp3.MediaType.get("application/octet-stream") : Packages.okhttp3.MediaType.get(mediaType), f)).build()
+			}
+		}
 	}
 
 	if (isUnDef(aRequestType)) aRequestType = "GET";
@@ -1776,7 +1798,7 @@ OpenWrap.obj.prototype.http3.prototype.getStream = function(aUrl, aIn, aRequestM
 	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true)
 }
 OpenWrap.obj.prototype.http3.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
-	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true)
+	return this.exec(aUrl, "POST", aIn, aRequestMap, false, aTimeout, true)
 }
 OpenWrap.obj.prototype.http3.prototype.getErrorResponse = function(parseJson) { 
 	if (parseJson) {
