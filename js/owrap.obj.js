@@ -1607,7 +1607,7 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
 };
 
 // https://javadoc.io/static/com.squareup.okhttp3/okhttp/3.14.9/index.html?okhttp3/Request.html
-OpenWrap.obj.prototype.http3 = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
+OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
 	//this.request = new Packages.okhttp3.Request.Builder().url(aURL).build()
 	var clt = new Packages.okhttp3.OkHttpClient.Builder()
 
@@ -1619,23 +1619,23 @@ OpenWrap.obj.prototype.http3 = function(aURL, aRequestType, aIn, aRequestMap, is
 	}
 }
 
-OpenWrap.obj.prototype.http3.prototype.upload = function(aName, aFile) {
+OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
 	this.__ufn = _$(aName, "aName").isString().default("file")
 	_$(aFile, "aFile").isString().$_()
 
 	this.__ufn = aName
 	this.__uf = aFile
 }
-OpenWrap.obj.prototype.http3.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) { 
+OpenWrap.obj.prototype.http.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) { 
 	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout)
 	return this.responseHeaders()
 }
-OpenWrap.obj.prototype.http3.prototype.setThrowExceptions = function(should) {
+OpenWrap.obj.prototype.http.prototype.setThrowExceptions = function(should) {
 	this.__throwExceptions = should
 }
-OpenWrap.obj.prototype.http3.prototype.setConfig = function(aMap) { }
-OpenWrap.obj.prototype.http3.prototype.getCookieStore = function() { }
-OpenWrap.obj.prototype.http3.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
+OpenWrap.obj.prototype.http.prototype.setConfig = function(aMap) { }
+OpenWrap.obj.prototype.http.prototype.getCookieStore = function() { }
+OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
 	aURL = _$(aURL, "aURL").isString().$_()
 	aIn  = _$(aIn, "aIn").default(__)
 
@@ -1788,19 +1788,19 @@ OpenWrap.obj.prototype.http3.prototype.exec = function(aURL, aRequestType, aIn, 
 	}
 	*/
 }
-OpenWrap.obj.prototype.http3.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
+OpenWrap.obj.prototype.http.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
 	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream)
 }
-OpenWrap.obj.prototype.http3.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
+OpenWrap.obj.prototype.http.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, true, aTimeout, false)
 }
-OpenWrap.obj.prototype.http3.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
+OpenWrap.obj.prototype.http.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true)
 }
-OpenWrap.obj.prototype.http3.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	return this.exec(aUrl, "POST", aIn, aRequestMap, false, aTimeout, true)
 }
-OpenWrap.obj.prototype.http3.prototype.getErrorResponse = function(parseJson) { 
+OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) { 
 	if (parseJson) {
 		var res = this.outputObj
 		if (isDef(res.response)) res.response = jsonParse(res.response)
@@ -1808,10 +1808,10 @@ OpenWrap.obj.prototype.http3.prototype.getErrorResponse = function(parseJson) {�
 	} else
 		return this.outputObj
 }
-OpenWrap.obj.prototype.http3.prototype.getResponse = function()  { 
+OpenWrap.obj.prototype.http.prototype.getResponse = function()  { 
 	return this.outputObj
 }
-OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) { 
+OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) { 
 	if (isUnDef(urlPartial)) forceBasic = true;
 
 	this.__l = Packages.openaf.AFCmdBase.afc.dIP(aUser)
@@ -1855,39 +1855,39 @@ OpenWrap.obj.prototype.http3.prototype.login = function(aUser, aPassword, forceB
 	this.__forceBasic = forceBasic;
 
 }
-OpenWrap.obj.prototype.http3.prototype.response = function() {
+OpenWrap.obj.prototype.http.prototype.response = function() {
 	var res = this._response.body().string()
 	//this._response.body().close()
 	return res
 }
-OpenWrap.obj.prototype.http3.prototype.responseBytes = function() {
+OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
 	var res = this._response.body().bytes()
 	//this._response.body().close()
 	return res
 }
-OpenWrap.obj.prototype.http3.prototype.responseCode = function() { 
+OpenWrap.obj.prototype.http.prototype.responseCode = function() { 
 	return this._response.code()
 }
-OpenWrap.obj.prototype.http3.prototype.responseHeaders = function() { 
+OpenWrap.obj.prototype.http.prototype.responseHeaders = function() { 
 	var m = af.fromJavaMap( this._response.headers().toMultimap() )
 	Object.keys(m).forEach(k => m[k]=(isArray(m[k]) && m[k].length == 1 ? m[k][0] : m[k]))
 
 	return m
 }
-OpenWrap.obj.prototype.http3.prototype.responseStream = function() { 
+OpenWrap.obj.prototype.http.prototype.responseStream = function() { 
 	var res = this._response.body().byteStream()
 	//this._response.body().close()
 	return res
 }
-OpenWrap.obj.prototype.http3.prototype.responseType = function() { 
+OpenWrap.obj.prototype.http.prototype.responseType = function() { 
 	return this._response.header("content-type")
 }
-OpenWrap.obj.prototype.http3.prototype.close = function() {
+OpenWrap.obj.prototype.http.prototype.close = function() {
 	this._response.body().close()
 }
 
 
-OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) {
+OpenWrap.obj.prototype.http0 = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) {
 	this.__lps = {}; 
 	this.__config = {};
 	this.__throwExceptions = true;
@@ -1905,7 +1905,7 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	}
 };
 
-OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
+OpenWrap.obj.prototype.http0.prototype.upload = function(aName, aFile) {
 	this.__ufn = _$(aName, "aName").isString().default("file");
 	_$(aFile, "aFile").isString().$_();
 
@@ -1913,31 +1913,31 @@ OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
 	this.__uf = aFile;
 };
 
-OpenWrap.obj.prototype.http.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
+OpenWrap.obj.prototype.http0.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) {
 	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout);
 	return this.responseHeaders();
 };
 
-OpenWrap.obj.prototype.http.prototype.setThrowExceptions = function(should) {
+OpenWrap.obj.prototype.http0.prototype.setThrowExceptions = function(should) {
 	this.__throwExceptions = should;
 };
 
-OpenWrap.obj.prototype.http.prototype.setConfig = function(aMap) {
+OpenWrap.obj.prototype.http0.prototype.setConfig = function(aMap) {
 	this.__config = aMap;
 };
 
-OpenWrap.obj.prototype.http.prototype.getCookieStore = function() {
+OpenWrap.obj.prototype.http0.prototype.getCookieStore = function() {
 	return this.__cookies;
 };
 
-OpenWrap.obj.prototype.http.prototype.__handleConfig = function(aH) {
+OpenWrap.obj.prototype.http0.prototype.__handleConfig = function(aH) {
 	if (isDef(this.__config.disableCookie) && this.__config.disableCookie) aH = aH.disableCookieManagement();
 	if (isDef(this.__config.disableRedirectHandling) && this.__config.disableRedirectHandling) aH = aH.disableRedirectHandling();
 	if (isDef(this.__cookies)) aH = aH.setDefaultCookieStore(this.__cookies);
 	return aH;
 };
 
-OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http0.prototype.exec = function(aUrl, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	var r, canHaveIn = false;
 
 	if (isUnDef(aRequestType)) aRequestType = "GET";
@@ -2074,23 +2074,23 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aUrl, aRequestType, aIn, a
 	return this.outputObj;
 };
 
-OpenWrap.obj.prototype.http.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http0.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream);
 };
 
-OpenWrap.obj.prototype.http.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
+OpenWrap.obj.prototype.http0.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, true, aTimeout, false);
 };
 
-OpenWrap.obj.prototype.http.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
+OpenWrap.obj.prototype.http0.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true);
 };
 
-OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
+OpenWrap.obj.prototype.http0.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream) {
 	return this.exec(aUrl, "POST", aIn, aRequestMap, isBytes, aTimeout, returnStream);
 };
 
-OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) {
+OpenWrap.obj.prototype.http0.prototype.getErrorResponse = function(parseJson) {
 	if (parseJson) {
 		var res = this.outputObj;
 		if (isDef(res.response)) res.response = jsonParse(res.response);
@@ -2099,11 +2099,11 @@ OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) {
 		return this.outputObj;
 };
 
-OpenWrap.obj.prototype.http.prototype.getResponse = function() {
+OpenWrap.obj.prototype.http0.prototype.getResponse = function() {
 	return this.outputObj;
 };
 	
-OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) {
+OpenWrap.obj.prototype.http0.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) {
 	if (isUnDef(urlPartial)) forceBasic = true;
 
 	if (!forceBasic) {
@@ -2127,7 +2127,7 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 	this.__forceBasic = forceBasic;
 };
 
-OpenWrap.obj.prototype.http.prototype.response = function() {
+OpenWrap.obj.prototype.http0.prototype.response = function() {
 	//if (isDef(this.__r)) return this.__r;
 	try {
 		var res, ent = this.__r.getEntity();
@@ -2139,7 +2139,7 @@ OpenWrap.obj.prototype.http.prototype.response = function() {
 	}
 };
 
-OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
+OpenWrap.obj.prototype.http0.prototype.responseBytes = function() {
 	//if (isDef(this.__rb)) return this.__rb;
 	try {
 		var res, ent = this.__r.getEntity();
@@ -2151,11 +2151,11 @@ OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
 	}
 };
 
-OpenWrap.obj.prototype.http.prototype.responseCode = function() {
+OpenWrap.obj.prototype.http0.prototype.responseCode = function() {
 	return Number(this.__r.getStatusLine().getStatusCode());
 };
 
-OpenWrap.obj.prototype.http.prototype.responseHeaders = function() {
+OpenWrap.obj.prototype.http0.prototype.responseHeaders = function() {
 	var ar = {};
 	var hh = this.__r.getAllHeaders();
 	for(var i in hh) {
@@ -2170,7 +2170,7 @@ OpenWrap.obj.prototype.http.prototype.responseHeaders = function() {
 	return ar;
 };
 
-OpenWrap.obj.prototype.http.prototype.responseStream = function() {
+OpenWrap.obj.prototype.http0.prototype.responseStream = function() {
 	var ent = this.__r.getEntity();
 	if (ent != null)
 		return this.__r.getEntity().getContent();
@@ -2178,7 +2178,7 @@ OpenWrap.obj.prototype.http.prototype.responseStream = function() {
 		return undefined;
 };
 
-OpenWrap.obj.prototype.http.prototype.responseType = function() {
+OpenWrap.obj.prototype.http0.prototype.responseType = function() {
 	try {
 		return String(this.__r.getEntity().getContentType().getValue());
 	} catch(e) {

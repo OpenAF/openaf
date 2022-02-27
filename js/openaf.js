@@ -2347,6 +2347,7 @@ const load = function(aScript, loadPrecompiled) {
 			}
 		}
 
+		global.__loadedfrom = _$(global.__loadedfrom).default(__)
 		if (isDef(__loadedfrom)) {
 			return fn(__loadedfrom.replace(/[^\/]+$/, "") + aScript, 3);
 		}
