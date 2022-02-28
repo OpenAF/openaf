@@ -1493,7 +1493,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	if (isDef(this.__ojob.initTemplateEscape)) {
 		this.__ojob.initTemplateEscape = this.__ojob.initTemplateEscape
 	} else {
-		this.__ojob.initTemplateEscape = true
+		this.__ojob.initTemplateEscape = false
 	}
 
 	if (isDef(this.init) && this.__ojob.initTemplateEscape) {
@@ -1913,7 +1913,7 @@ OpenWrap.oJob.prototype.getMetrics = function(aType) {
  */
 OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec, listTodos) {
 	rExec = _$(rExec, "rExec").isBoolean().default(false);
-	var parent = this, resExec = true;
+	var parent = this, resExec = true, noTemplateArgs = true
 	var altId = (isDef(aId) ? aId : "");
 	aId = altId;
 
@@ -1985,12 +1985,16 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 	}
 
 	function _run(aExec, args, job, id) {	
+		if (isDef(aJob.typeArgs.noTemplateArgs)) noTemplateArgs = aJob.typeArgs.noTemplateArgs; else noTemplateArgs = true
+		
 		// Find templates on args	
-		traverse(args, (aK, aV, aP, aO) => {
-			if (isString(aV) && aV.indexOf("{{") >= 0) {
-				aO[aK] = templify(aV, args)
-			}
-		})
+		if (!noTemplateArgs) {
+			traverse(args, (aK, aV, aP, aO) => {
+				if (isString(aV) && aV.indexOf("{{") >= 0) {
+					aO[aK] = templify(aV, args)
+				}
+			})
+		}
 
 		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
 		var fe, fint;
