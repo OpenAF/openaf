@@ -975,10 +975,11 @@ function __processCmdLine(aCommand, returnOnly) {
 				//if (timeCommand && aCommand.length > 0) __time(__end - __start);
 
 				if (outputCommand &&
-					typeof __res !== 'undefined') {
+					isDef(__res)) {
+					if (isByteArray(__res)) __res = af.fromBytes2String(__res)
 					return __res;
 				} else {
-					return undefined;
+					return __;
 				}
 			}
 

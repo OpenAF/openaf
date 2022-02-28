@@ -3797,7 +3797,7 @@ const isNull = function(obj) {
  * </odoc>
  */
 const isByteArray = function(obj) {
-	return (isDef(obj.getClass) && obj.getClass().getName() == "byte[]");
+	return (isDef(obj.getClass) && (obj.getClass().getName() == "byte[]" || obj.getClass().getTypeName() == "byte[]"));
 }
 
 /**
