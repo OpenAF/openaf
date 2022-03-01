@@ -291,18 +291,22 @@
         var aa = $atomic(0), ab = $atomic(0);
         $doA2B((fn) => {
             var ii;
-            for(var ii = 0; ii < 150; ii++) {
+            for(var ii = 0; ii < 550; ii++) {
                 fn(ii);
                 aa.inc();
             }
             print("aa " + aa.get());
             print("ab " + ab.get());
         }, v => {
+            if (!isNumber(v) && v <= 550) throw "Not a number"
             ab.inc();
             return true;
+        }, __, __, e => {
+            logErr(e)
+            throw e
         });
         print("ab " + ab.get());
-        ow.test.assert(ab.get(), 150, "Problem with do A2B.");
+        ow.test.assert(ab.get(), 550, "Problem with do A2B.");
     };
 
     exports.testAwait = function() {

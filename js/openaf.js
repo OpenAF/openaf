@@ -8338,36 +8338,36 @@ const $await = function(aName) {
  * </odoc>
  */
 const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction) {
-    var recs = $atomic(), srecs = $atomic(), trecs = $atomic();
-    var noc  = _$(noc).isNumber().default(getNumberOfCores());
-	var id   = md5(aAFn.toString() + aBFn.toString()) + (Math.random()*100000000000000000);
-	defaultTimeout = _$(defaultTimeout).isNumber().default(2500);
+    var recs = $atomic(), srecs = $atomic(), trecs = $atomic()
+    var noc  = _$(noc).isNumber().default(getNumberOfCores())
+	var id   = md5(aAFn.toString() + aBFn.toString()) + (Math.random()*100000000000000000)
+	defaultTimeout = _$(defaultTimeout).isNumber().default(2500)
 
     var B = function(aObj) {
-        var cc = recs.inc();
-        srecs.inc();
+        var cc = recs.inc()
+        srecs.inc()
         while(cc > noc) { $await(id).wait(defaultTimeout); cc = recs.get(); }
         $do(() => {
-			//aBFn(aObj);
-			aBFn.apply(this, arguments);
-            recs.dec();
-            trecs.inc();
-            $await(id).notify();
+			aBFn(aObj)
+			//aBFn.apply(this, arguments)
+            recs.dec()
+            trecs.inc()
+            $await(id).notify()
         }).catch((e) => {
-            recs.dec();
-            trecs.inc();
-			$await(id).notify();
-			//aErrorFunction(e, aObj);
-			aErrorFunction(e, arguments);
+            recs.dec()
+            trecs.inc()
+			$await(id).notify()
+			aErrorFunction(e, aObj)
+			//aErrorFunction(e, arguments)
 		});
-		$await(id).notify();
+		$await(id).notify()
     }
  
-	aAFn(B);
-	$await(id).notify();
+	aAFn(B)
+	$await(id).notify()
 
-	do { $await(id).wait(defaultTimeout); } while(recs.get() > 0 && srecs.get() != trecs.get());
-	$await(id).destroy();
+	do { $await(id).wait(defaultTimeout); } while(recs.get() > 0 && srecs.get() != trecs.get())
+	$await(id).destroy()
 };
 
 /**
