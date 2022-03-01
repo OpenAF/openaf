@@ -51,14 +51,14 @@
         ow.loadTemplate();
         ow.template.addConditionalHelpers();
         ow.test.assert(
-            templify("{{#isnt number 5}}Kiss my shiny metal ass!{{else}}Never mind :({{/isnt}}", { number: 5}),
+            templify("{{#$isnt number 5}}Kiss my shiny metal ass!{{else}}Never mind :({{/$isnt}}", { number: 5}),
             "Never mind :(",
-            "Problem with template conditional helper isnt."
+            "Problem with template conditional helper $isnt."
         );
         ow.test.assert(
-            templify("{{#gt number 8}}Kiss my shiny metal ass!{{else}}Never mind :({{/gt}}", {number: 5}),
+            templify("{{#$gt number 8}}Kiss my shiny metal ass!{{else}}Never mind :({{/$gt}}", {number: 5}),
             "Never mind :(",
-            "Problem with template conditional helper gt."
+            "Problem with template conditional helper $gt."
         );        
     };
 
