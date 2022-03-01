@@ -1612,6 +1612,7 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	this.__throwExceptions = true
 	this.__uf = __
 	this.__ufn = "file"
+	this.__forceBasic = false
 	options = _$(options).isMap(options).default({})
 
 	var clt = new Packages.okhttp3.OkHttpClient.Builder()
@@ -1720,6 +1721,10 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 	case "TRACE"  : req = req.method("TRACE", aBody); break;
 	case "OPTIONS": req = req.method("OPTIONS", aBody); break;
 	default       : req = req.get(); break;
+	}
+
+	if (this.__forceBasic && isDef(this.__l)) {
+		req.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
 	}
 
 	// Headers
