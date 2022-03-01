@@ -1634,7 +1634,42 @@ OpenWrap.obj.prototype.http.prototype.setThrowExceptions = function(should) {
 	this.__throwExceptions = should
 }
 OpenWrap.obj.prototype.http.prototype.setConfig = function(aMap) { }
-OpenWrap.obj.prototype.http.prototype.getCookieStore = function() { }
+OpenWrap.obj.prototype.http.prototype.getCookieStore = function() { 
+	return this.__cookiesCh
+}
+OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) { 
+	aCh = _$(aCh, "aCh").isString().default("oaf::cookies")
+	this.__cookiesCh = aCh
+	this.__cookies = $ch(aCh).create()
+	this.client = this.client.newBuilder().cookieJar({
+		loadForRequest  : aUrl => { 
+			var res = []
+			this.__cookies.forEach((k, v) => {
+				var cookie = Packages.okhttp3.Cookie.parse(aUrl, v.value)
+				if (cookie.expiresAt() < now()) {
+					this.__cookies.unset(k)
+				} else {
+					if (cookie.matches(aUrl)) {
+						res.push(cookie)
+					}
+				}
+			})
+			return res
+		},
+		saveFromResponse: (aUrl, cookies) => { 
+			var lst = af.fromJavaArray(cookies).map(r => {
+				var k = {
+					name    : r.name(),
+					domain  : r.domain(),
+					path    : r.path(),
+					secure  : r.secure(),
+					hostOnly: r.hostOnly()
+				}
+				this.__cookies.set(k, merge(k, { value: r.toString() }))
+			})
+		}
+	}).build()
+}
 OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
 	aURL = _$(aURL, "aURL").isString().$_()
 	aIn  = _$(aIn, "aIn").default(__)
