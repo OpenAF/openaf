@@ -1608,7 +1608,12 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
 
 // https://javadoc.io/static/com.squareup.okhttp3/okhttp/3.14.9/index.html?okhttp3/Request.html
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
-	//this.request = new Packages.okhttp3.Request.Builder().url(aURL).build()
+	this.__config = {}
+	this.__throwExceptions = true
+	this.__uf = __
+	this.__ufn = "file"
+	options = _$(options).isMap(options).default({})
+
 	var clt = new Packages.okhttp3.OkHttpClient.Builder()
 
 	if (isDef(aTimeout)) clt = clt.client.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
@@ -1673,16 +1678,13 @@ OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) {
 OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream) { 
 	aURL = _$(aURL, "aURL").isString().$_()
 	aIn  = _$(aIn, "aIn").default(__)
+	aRequestMap = _$(aRequestMap, "aRequestMap").isMap().default({})
 
 	var req = new Packages.okhttp3.Request.Builder().url(aURL)
 	var aBody
 	var mediaType = null
 
-	if (isMap(aRequestMap)) {
-		if (isDef(aRequestMap["Content-Type"])) mediaType = aRequestMap["Content-Type"]
-	} else {
-		aRequestMap = { }
-	}
+	if (isDef(aRequestMap["Content-Type"])) mediaType = aRequestMap["Content-Type"]
 
 	if (isDef(aIn)) {
 		if (isBytes) {
@@ -1711,7 +1713,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 	switch(aRequestType.toUpperCase()) {
 	case "GET"    : req = req.get(); break;
 	case "POST"   : req = req.post(aBody); break; 
-	case "DELETE" : req = req.delete(aBody); break;
+	case "DELETE" : req = req.delete(); break;
 	case "HEAD"   : req = req.head(); break;
 	case "PATCH"  : req = req.patch(aBody); break;
 	case "PUT"    : req = req.put(aBody); break;
@@ -1731,7 +1733,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 
 	// Timeout
 	if (isDef(ow.obj.__httpTimeout) && isUnDef(aTimeout)) aTimeout = ow.obj.__httpTimeout
-	if (isNumber(aTimeout)) clt = this.readTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isNumber(aTimeout)) clt = clt.readTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 
 	clt = clt.build()
 
@@ -1758,9 +1760,9 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 
 	if (this.responseCode() >= 400 && this.__throwExceptions) {
 		switch(this.responseCode()) {
-		case 404: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
-		case 410: throw "FileNotFoundException " + aUrl + "; response = " + stringify(this.getErrorResponse());
-		default: throw "IOException Server returned HTTP response code: " + this.responseCode() + " for URL: " + aUrl + "; response = " + stringify(this.getErrorResponse());
+		case 404: throw "FileNotFoundException " + aURL + "; response = " + stringify(this.getErrorResponse());
+		case 410: throw "FileNotFoundException " + aURL + "; response = " + stringify(this.getErrorResponse());
+		default: throw "IOException Server returned HTTP response code: " + this.responseCode() + " for URL: " + aURL + "; response = " + stringify(this.getErrorResponse());
 		}
 	}
 
@@ -1838,7 +1840,7 @@ OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, is
 OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) { 
 	if (parseJson) {
 		var res = this.outputObj
-		if (isDef(res.response)) res.response = jsonParse(res.response)
+		if (isDef(res) && isDef(res.response)) res.response = jsonParse(res.response)
 		return res;	
 	} else
 		return this.outputObj
@@ -1891,33 +1893,46 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 
 }
 OpenWrap.obj.prototype.http.prototype.response = function() {
+	if (isUnDef(this._response)) return __
+
 	var res = this._response.body().string()
 	//this._response.body().close()
 	return res
 }
 OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
+	if (isUnDef(this._response)) return __
+
 	var res = this._response.body().bytes()
 	//this._response.body().close()
 	return res
 }
 OpenWrap.obj.prototype.http.prototype.responseCode = function() { 
+	if (isUnDef(this._response)) return __
+
 	return this._response.code()
 }
 OpenWrap.obj.prototype.http.prototype.responseHeaders = function() { 
+	if (isUnDef(this._response)) return __
+	
 	var m = af.fromJavaMap( this._response.headers().toMultimap() )
 	Object.keys(m).forEach(k => m[k]=(isArray(m[k]) && m[k].length == 1 ? m[k][0] : m[k]))
 
 	return m
 }
 OpenWrap.obj.prototype.http.prototype.responseStream = function() { 
+	if (isUnDef(this._response)) return __
+
 	var res = this._response.body().byteStream()
-	//this._response.body().close()
 	return res
 }
 OpenWrap.obj.prototype.http.prototype.responseType = function() { 
+	if (isUnDef(this._response)) return __
+
 	return this._response.header("content-type")
 }
 OpenWrap.obj.prototype.http.prototype.close = function() {
+	if (isUnDef(this._response)) return __
+
 	this._response.body().close()
 }
 
@@ -2267,8 +2282,10 @@ OpenWrap.obj.prototype.rest = {
 		}
 		 
 		try {
-			h.exec(aURL, "HEAD", __, aRequestMap, __, _t);
-			return Number(h.responseHeaders()["Content-Length"]) || Number(h.responseHeaders()["content-length"]);
+			h.exec(aURL, "HEAD", __, aRequestMap, __, _t)
+			var res = Number(h.responseHeaders()["Content-Length"]) || Number(h.responseHeaders()["content-length"])
+			if (isUnDef(__h)) h.close()
+			return res
 		} catch(e) {
 		   e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 		   throw e;
@@ -2305,7 +2322,9 @@ OpenWrap.obj.prototype.rest = {
  		}
  		
  		try {
- 			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", __, aRequestMap, retBytes, _t, retBytes);
+ 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", __, aRequestMap, retBytes, _t, retBytes)
+			if (isUnDef(__h)) h.close()
+			return res
  		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
 			throw e;
@@ -2359,7 +2378,9 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes)
+			if (isUnDef(__h)) h.close()
+			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2403,7 +2424,9 @@ OpenWrap.obj.prototype.rest = {
 			_$(aDataRow.in, "aDataRow.in").$_();
 
 			h.upload(aDataRow.name, aDataRow.in);
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), aMethod, __, rmap, __, _t, retBytes);
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), aMethod, __, rmap, __, _t, retBytes)
+			if (isUnDef(__h)) h.close()
+			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2471,7 +2494,9 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes)
+			if (isUnDef(__h)) h.close()
+			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2526,7 +2551,9 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes);
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes)
+			if (isUnDef(__h)) h.close()
+			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2574,7 +2601,9 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			return h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", __, aRequestMap, retBytes, _t, retBytes);
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", __, aRequestMap, retBytes, _t, retBytes)
+			if (isUnDef(__h)) h.close()
+			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
@@ -2619,10 +2648,11 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "HEAD", __, aRequestMap, __, _t, __);
-			res.contentType = "application/json";
-			res.response = h.responseHeaders();
-			return res;
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "HEAD", __, aRequestMap, __, _t, __)
+			res.contentType = "application/json"
+			res.response = h.responseHeaders()
+			if (isUnDef(__h)) h.close()
+			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
 			throw e;
