@@ -2328,7 +2328,7 @@ OpenWrap.obj.prototype.rest = {
  		
  		try {
  			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "GET", __, aRequestMap, retBytes, _t, retBytes)
-			if (isUnDef(__h)) h.close()
+			if (isUnDef(__h) && !retBytes) h.close()
 			return res
  		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + stringify(h.getErrorResponse(true));
@@ -2384,7 +2384,7 @@ OpenWrap.obj.prototype.rest = {
 
 		try {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes)
-			if (isUnDef(__h)) h.close()
+			if (isUnDef(__h) && !retBytes) h.close()
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
@@ -2430,7 +2430,7 @@ OpenWrap.obj.prototype.rest = {
 
 			h.upload(aDataRow.name, aDataRow.in);
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), aMethod, __, rmap, __, _t, retBytes)
-			if (isUnDef(__h)) h.close()
+			if (isUnDef(__h) && !retBytes) h.close()
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
@@ -2500,7 +2500,7 @@ OpenWrap.obj.prototype.rest = {
 		
 		try {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes)
-			if (isUnDef(__h)) h.close()
+			if (isUnDef(__h) && !retBytes) h.close()
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
@@ -2557,7 +2557,7 @@ OpenWrap.obj.prototype.rest = {
 		
 		try {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes)
-			if (isUnDef(__h)) h.close()
+			if (isUnDef(__h) && !retBytes) h.close()
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
@@ -2607,7 +2607,7 @@ OpenWrap.obj.prototype.rest = {
 		
 		try {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "DELETE", __, aRequestMap, retBytes, _t, retBytes)
-			if (isUnDef(__h)) h.close()
+			if (isUnDef(__h) && !retBytes) h.close()
 			return res
 		} catch(e) {
 			e.message = "Exception " + e.message + "; error = " + String(h.getErrorResponse(true));
