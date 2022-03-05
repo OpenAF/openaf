@@ -1900,7 +1900,7 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 OpenWrap.obj.prototype.http.prototype.response = function() {
 	if (isUnDef(this._response)) return __
 
-	var res = this._response.body().string()
+	var res = String(this._response.body().string())
 	//this._response.body().close()
 	return res
 }
