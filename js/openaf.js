@@ -982,7 +982,10 @@ const ansiLength = function(aString, force) {
 		s = aString
 	}
 
-	return Number((new java.lang.String(s)).codePointCount(0, s.length))
+	if (__flags.VISIBLELENGTH)
+		return Number((new java.lang.String(s)).codePointCount(0, s.length))
+	else
+		return Number(s.length)
 }
 
 /**
@@ -6586,6 +6589,7 @@ var __flags = _$(__flags).isMap().default({
 	OJOB_SEQUENTIAL  : true,
 	OJOB_HELPSIMPLEUI: false,
 	OAF_CLOSED       : false,
+	VISIBLELENGTH    : false,
 	MD_NOMAXWIDTH    : true
 })
 
