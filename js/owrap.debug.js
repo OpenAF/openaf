@@ -207,21 +207,21 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     l = line.trim().match(/\/\/\? (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\? (.+)$/, _m("\""+ sign.print + " " + s + " = \" + stringify(" + s + ") + \"\""))
+      line = line.replace(/\/\/\? (.+)$/, _m("\""+ sign.print + " " + s + " = \" + stringify(" + l[1] + ") + \"\""))
     }
 
     // slon print equivalent
     l = line.trim().match(/\/\/\?s (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\?s (.+)$/, _m("\"" + sign.print + " " + s + " = \" + af.toSLON(" + s + ") + \"\""))
+      line = line.replace(/\/\/\?s (.+)$/, _m("\"" + sign.print + " " + s + " = \" + af.toSLON(" + l[1] + ") + \"\""))
     }
 
     // yaml print equivalent
     l = line.trim().match(/\/\/\?y (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\?y (.+)$/, _m("\"" + sign.print + " " + s + " = \\n\" + af.toYAML(" + s + ") + \"\""))
+      line = line.replace(/\/\/\?y (.+)$/, _m("\"" + sign.print + " " + s + " = \\n\" + af.toYAML(" + l[1] + ") + \"\""))
     }
 
     return line
