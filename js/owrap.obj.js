@@ -2255,7 +2255,7 @@ OpenWrap.obj.prototype.rest = {
 	 */
 	exceptionParse: function(anException) {
 		var er = jsonParse(String(anException).replace(/.+response =/, ""));
-		if (isDef(er) && isDef(er.contentType) && er.contentType.toLowerCase().match(/application\/json/))
+		if (isDef(er) && isDef(er.contentType) && String(er.contentType).toLowerCase().match(/application\/json/))
 			er.response = jsonParse(er.response);
 		return er;
 	},
