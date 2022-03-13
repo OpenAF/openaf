@@ -29,6 +29,16 @@ var __noSLF4JErrorOnly;
 
 /**
  * <odoc>
+ * <key>isJavaClass(aObj) : boolean</key>
+ * Return true if aObj is a Java class, false otherwise
+ * </odoc>
+ */
+const isJavaClass = function(obj) {
+	if (Object.prototype.toString.call(obj).indexOf(" JavaClass") >= 0) return true; else return false
+}
+
+/**
+ * <odoc>
  * <key>isJavaObject(aObj) : boolean</key>
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
@@ -42,6 +52,14 @@ var __noSLF4JErrorOnly;
 		else
 			return false
 	} catch(e) {
+		if (String(e).indexOf("getClass") >= 0) {
+			try {
+				var s = Object.prototype.toString.call(obj)
+				return s.indexOf("object Java") >= 0
+			} catch(e1) {
+				return false
+			}
+		}
 		return false
 	}
 }
@@ -3801,7 +3819,11 @@ const isNull = function(obj) {
  * </odoc>
  */
 const isByteArray = function(obj) {
-	return (isDef(obj.getClass) && (obj.getClass().getName() == "byte[]" || obj.getClass().getTypeName() == "byte[]"));
+	try {
+		return (isDef(obj.getClass) && (obj.getClass().getName() == "byte[]" || obj.getClass().getTypeName() == "byte[]"))
+	} catch(e) {
+		return false
+	}
 }
 
 /**
@@ -3818,19 +3840,27 @@ const isUUID = function(obj) {
 	}
 }
 
+/**
+ * <odoc>
+ * <key>descType(aObject) : String</key>
+ * Given aObject will try to return the apparent type withing: undefined, null, bytearray,
+ * javaclass, java, boolean, array, number, string, function, date, map and object.
+ * </odoc>
+ */
 const descType = function(aObj) {
-	if (isUnDef(aObj)) return "undefined";
-	if (isNull(aObj)) return "null";
-	if (isBoolean(aObj)) return "boolean";
-	if (isNumber(aObj)) return "number";
-	if (isString(aObj)) return "string";
-	if (isFunction(aObj)) return "function";
-	if (isByteArray(aObj)) return "bytearray";
-	if (isArray(aObj)) return "array";
-	if (isJavaObject(aObj)) return "java";
-	if (isDate(aObj)) return "date";
-	if (isMap(aObj)) return "map";
-	if (isObject(aObj)) return "object";
+	if (isUnDef(aObj)) return "undefined"
+	if (isNull(aObj)) return "null"
+	if (isByteArray(aObj)) return "bytearray"
+	if (isJavaClass(aObj)) return "javaclass"
+	if (isJavaObject(aObj)) return "java"
+	if (isBoolean(aObj)) return "boolean"
+	if (isArray(aObj)) return "array"
+	if (isNumber(aObj)) return "number"
+	if (isString(aObj)) return "string"
+	if (isFunction(aObj)) return "function"
+	if (isDate(aObj)) return "date"
+	if (isMap(aObj)) return "map"
+	if (isObject(aObj)) return "object"
 }
 
 /**
