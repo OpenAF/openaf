@@ -2137,12 +2137,16 @@ OpenWrap.ch.prototype.__types = {
 
 			var map = this.__s[aName].openMap(this.__m[aName](full));
 
-			var start = _$(full.start, "full.start").isNumber().default(0);
-			var max = this.size(aName);
-			var limit = _$(full.end, "full.end").isNumber().default(max);
-
-			for(var i = start; i < limit && i < max; i++) {
-				res.push(jsonParse(map.getKey(i)));
+			if (isDef(full.start) || isDef(full.end)) {
+				var start = _$(full.start, "full.start").isNumber().default(0);
+				var max = this.size(aName);
+				var limit = _$(full.end, "full.end").isNumber().default(max);
+	
+				for(var i = start; i < limit && i < max; i++) {
+					res.push(jsonParse(map.getKey(i), true));
+				}
+			} else {
+				res = af.fromJavaArray(map.keyList()).map(r => jsonParse(r, true))
 			}
 
 			return res;
@@ -2153,12 +2157,16 @@ OpenWrap.ch.prototype.__types = {
 
 			var map = this.__s[aName].openMap(this.__m[aName](full));
 
-			var start = _$(full.start, "full.start").isNumber().default(0);
-			var max = this.size(aName);
-			var limit = _$(full.end, "full.end").isNumber().default(max);
-
-			for(var i = start; i < limit && i < max; i++) {
-				res.push(jsonParse(map.get(map.getKey(i))));
+			if (isDef(full.start) || isDef(full.end)) {
+				var start = _$(full.start, "full.start").isNumber().default(0);
+				var max = this.size(aName);
+				var limit = _$(full.end, "full.end").isNumber().default(max);
+	
+				for(var i = start; i < limit && i < max; i++) {
+					res.push(jsonParse(map.get(map.getKey(i)), true));
+				}
+			} else {
+				res = af.fromJavaArray(map.keyList()).map(k => jsonParse(map.get(k), true))
 			}
 
 			return res;
@@ -2207,22 +2215,22 @@ OpenWrap.ch.prototype.__types = {
 			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
 			var r = map.get(stringify(sortMapKeys(aKey), __, this.__o[aName].stry));
-			if (r == null || isUnDef(r)) return __; else return jsonParse(r);
+			if (r == null || isUnDef(r)) return __; else return jsonParse(r, true);
 		},
 		pop          : function(aName) {
 			var map = this.__s[aName].openMap(this.__m[aName]());
 			var aKey = map.lastKey();
-			return jsonParse(map.remove(aKey));	
+			return jsonParse(map.remove(aKey), true);	
 		},
 		shift        : function(aName) {
 			var map = this.__s[aName].openMap(this.__m[aName]());
 			var aKey = map.firstKey();
-			return jsonParse(map.remove(aKey));
+			return jsonParse(map.remove(aKey), true);
 		},
 		unset        : function(aName, aKey) {
 			var map = this.__s[aName].openMap(this.__m[aName](aKey));
 
-			return jsonParse(map.remove(stringify(sortMapKeys(aKey), __, this.__o[aName].stry)));
+			return jsonParse(map.remove(stringify(sortMapKeys(aKey), __, this.__o[aName].stry)), true);
 		}
 	},
 	/**
