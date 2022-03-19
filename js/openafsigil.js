@@ -1,9 +1,9 @@
-var $$ = function(aObj) {
-	var _r = {
+const $$ = function(aObj) {
+	const _r = {
 		/**
 		 * <odoc>
 		 * <key>$$.get(aPath) : Object</key>
-		 * Given aObject it will try to parse the aPath a retrive the corresponding object under that path. Example:\
+		 * Given aObject it will try to parse the aPath and retrive the corresponding object under that path. Example:\
 		 * \
 		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
 		 * \
@@ -30,6 +30,48 @@ var $$ = function(aObj) {
 			}
             return aObj;
 		},
+		/**
+		 * <odoc>
+		 * <key>$$.getI(aPath) : Object</key>
+		 * Given aObject it will try to parse the aPath (in a case-insensitive way) and retrive the corresponding object under that path. Example:\
+		 * \
+		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
+		 * \
+		 * print($$(a).getI("b.C")); // 2\
+		 * sprint($$(a).getI("B.d")); // [0, 1]\
+		 * print($$(a).getI("B.D[0]")); // 0\
+		 * \
+		 * </odoc>
+		 */
+        getI: aPath => {
+            if (!$$(aObj).isObject()) return void 0
+
+			aPath = aPath.replace(/\[(\w+)\]/g, '.$1')
+			aPath = aPath.replace(/^\./, '')
+
+			var a = aPath.split('.')
+			for (var i = 0, n = a.length; i < n; ++i) {
+				var k = a[i]
+
+                if ($$(aObj).isMap()) {
+                    var ks = {}, k2 = String(k).toUpperCase()
+                    Object.keys(aObj).forEach(r => ks[r.toUpperCase()] = r)
+                    
+                    if (k2 in ks) {
+                        aObj = aObj[ks[k2]]
+                    } else {
+                        return
+                    }
+                } else {
+                    if (k in aObj) {
+                        aObj = aObj[k];
+                    } else {
+                        return;
+                    }
+                }
+			}
+            return aObj
+        },
 		/**
 		 * <odoc>
 		 * <key>$$.set(aPath, aNewValue) : Object</key>
@@ -94,12 +136,12 @@ var $$ = function(aObj) {
 };
 
 
-var _$ = function(aValue, aPrefixMessage) {
+const _$ = function(aValue, aPrefixMessage) {
     var defined;
     if ($$(aPrefixMessage).isDef()) aPrefixMessage += " "; else aPrefixMessage = "";
     if ($$(aValue).isDef()) defined = true; else defined = false;
 
-    var __r = {
+    const __r = {
         // Defaults
         /**
          * <odoc>
