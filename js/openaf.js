@@ -6977,6 +6977,68 @@ IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallba
 
 /**
  * <odoc>
+ * <key>io.readStreamJSON(aJSONFile, aValFunc) : Map</key>
+ * Reads a JSON file (aJSONFile) without loading all structures to memory (usefull to handling large JSON files).
+ * The aValFunc receives a single string argument with the current JSON path being processed (for example $.log.entries[123].request),
+ * where "$" is the root of the JSON document. When aValFunc returns true the current JSON structure is recorded in memory.
+ * If aValFunc is not defined it will return true for all paths. Returns the JSON structure recorded in memory.\
+ * \
+ * Example:\
+ * \
+ *    var amap = io.readStreamJSON("someFile.har",\
+ *                                 path => (/^\$\.log\.entries\[\d+\]\.request/).test(path))\
+ * \
+ * </odoc>
+ */
+IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
+	_$(aJSONFile, "aJSONFile").isString().$_()
+	aValFunc = _$(aValFunc, "aValFunc").isFunction().default(() => true)
+
+	var is = java.io.FileReader(aJSONFile)
+	var jr = Packages.com.google.gson.stream.JsonReader(is)
+	
+	try {
+		var pending = 0, nam, res = {}, tmp = []
+
+		do {
+			var val = __, hasVal = false, path = String(jr.getPath())
+			var next = String(jr.peek().toString())
+
+			switch(next) {
+			case "BEGIN_OBJECT": jr.beginObject(); pending++; break
+			case "BEGIN_ARRAY" : jr.beginArray();  pending++; break
+			case "END_OBJECT"  : jr.endObject();   pending--; break
+			case "END_ARRAY"   : jr.endArray();    pending--; break
+			case "STRING"      : hasVal = true; val = String(jr.nextString())   ; break
+			case "BOOLEAN"     : hasVal = true; val = Boolean(jr.nextBoolean()) ; break
+			case "DOUBLE"      : hasVal = true; val = Number(jr.nextDouble())   ; break
+			case "NUMBER"      : hasVal = true; val = Number(jr.nextDouble())   ; break
+			case "INT"         : hasVal = true; val = Number(jr.nextInt())      ; break
+			case "LONG"        : hasVal = true; val = Number(jr.nextLong())     ; break
+			case "NULL"        : hasVal = true; val = jr.nextNull()             ; break
+			case "NAME"        : nam = String(jr.nextName()); break
+			case "END_DOCUMENT": pending = 0; break
+			default            : if (!jr.hasNext()) pending = 0
+			}
+		
+			if (hasVal && aValFunc(path) > 0) {
+				tmp.push({ k: path, v: val })
+			}
+		} while(pending > 0)
+	} catch(e) {
+		throw e
+	} finally {
+		jr.close()
+		is.close()
+	}
+
+	tmp.forEach(r => $$(res).set(r.k.substring(2), r.v))
+	
+	return res
+}
+
+/**
+ * <odoc>
  * <key>io.isBinaryFile(aFile, confirmLimit) : boolean</key>
  * Tries to determine if the provided aFile is a binary or text file by checking the first 1024 chars (limit can be changed using
  * confirmLimit). Returns true if file is believed to be binary. Based on the function isBinaryArray.
