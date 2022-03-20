@@ -95,7 +95,7 @@ OpenWrap.test.prototype.assert = function(aResult, checkValue, errorMessage, not
  * </odoc>
  */
 OpenWrap.test.prototype.start = function(aKey) {
-	if (isUndefined(this.__profile[aKey])) {
+	if (isUnDef(this.__profile[aKey])) {
 		this.__profile[aKey] = {
 			hits: 0,
 			sum: 0,
@@ -223,7 +223,7 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
  */
 OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 	var info = this.getChannel().get(aMessage);
-	if (isUndefined(info)) info = {
+	if (isUnDef(info)) info = {
 		"test" : aMessage.replace(/.+::/, ""),
 		"suite": (aMessage.indexOf("::") > 0) ? aMessage.replace(/::.+/, "") : "Test suite", 
 		"hits" : 0,
@@ -233,7 +233,7 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 		"executions": []
 	};
 	
-	if (this.__showOutput) log("TEST | " + aMessage);
+	if (this.__showOutput) log(aMessage + " | TEST");
 	this.__countTest++;
 	
 	var execInfo = {};
@@ -246,9 +246,15 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 	
 	execInfo.start = this.__profile[aMessage].start;
 	
+	var setResult = result => {
+		if (isMap(result) || isArray(result)) result = af.toSLON(result)
+		execInfo.result = result
+		log(aMessage + " | " + result)
+	}
+
 	try {
 		info.hits++;
-		var res = aFunction();
+		var res = aFunction(setResult);
 		
 		execInfo.elapsedTime = this.stop(aMessage);
 		if (this.__memoryprofile) {
@@ -259,7 +265,7 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 		execInfo.status = "PASS";
 		info.pass++;
 		
-		if (this.__showOutput) log("PASS | " + aMessage);
+		if (this.__showOutput) log(aMessage + " | PASS");
 		this.__countPass++;
 		
 		info.executions.push(execInfo);
@@ -273,7 +279,7 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem;
 			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem); 
 		}
-		if (this.__showOutput) log("FAIL | " + aMessage + " | " + e);
+		if (this.__showOutput) log(aMessage + " | FAIL | " + e);
 		execInfo.status = "FAIL";
 		execInfo.exception = String(e);
 		info.fail++;
@@ -321,7 +327,7 @@ OpenWrap.test.prototype.toMarkdown = function() {
 
     md += "## Result details\n\n";
 
-	md += "| Suite | Test | Status | Time | Fail message |\n";
+	md += "| Suite | Test | Status | Time | Result       |\n";
 	md += "|-------|------|--------|------|--------------|\n";
 
 	var data = [];
@@ -333,7 +339,8 @@ OpenWrap.test.prototype.toMarkdown = function() {
 					test     : v.test,
 					status   : v.executions[i].status,
 					time     : v.executions[i].elapsedTime,
-					exception: v.executions[i].exception
+					exception: v.executions[i].exception,
+					result   : v.executions[i].result
 				});
 			}
 	});
@@ -343,7 +350,7 @@ OpenWrap.test.prototype.toMarkdown = function() {
 		md += " | " + d.test;
 		md += " | <span style=\"background-color: " + (d.status == "PASS" ? "green" : "red") + "; color: white\">&nbsp;&nbsp;" + d.status + "&nbsp;&nbsp;</span>";
 		md += " | " + ow.loadFormat().elapsedTime4ms(d.time);
-		md += " | " + (isDef(d.exception) ? d.exception.replace(/\n/mg, " ") : "n/a");
+		md += " | " + (isDef(d.exception) ? d.exception.replace(/\n/mg, " ") : (isDef(d.result) ? d.result : "n/a"));
 		md += " |\n"; 
 	});
 
@@ -390,14 +397,14 @@ OpenWrap.test.prototype.toJUnitXML = function(testSuitesId, testSuitesName) {
 					"name"       : v.test,
 					"time"       : ex.elapsedTime,
 					"failMessage": ex.exception,
-					"failed"     : (isDefined(ex.exception))
+					"failed"     : (isDef(ex.exception))
 				}
 			})
 		};
 		
-		var previous = $from(xmlInfo.testSuites).equals("name", (isDefined(v.suite)) ? v.suite : v.test).at(0);
+		var previous = $from(xmlInfo.testSuites).equals("name", (isDef(v.suite)) ? v.suite : v.test).at(0);
 		
-		if (isUndefined(previous)) {
+		if (isUnDef(previous)) {
 			xmlInfo.tests++;
 			xmlInfo.testSuites.push(testSuite);
 		} else {

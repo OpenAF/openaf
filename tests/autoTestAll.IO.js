@@ -8,6 +8,12 @@
         io.rm(file);
     };
 
+    exports.testIOStreamJSON = function() {
+        var o = io.readStreamJSON("../versionsAndDeps.json", p=>(/^\$\.external\[\d+\]\.description/).test(p))
+
+        ow.test.assert($from(o.external).equals("description", "GSON").any(), true, "Problem with io.readStreamJSON.")
+    }
+
     exports.testIOStream = function() {
         var file = "autoTestAll.test";
         var stream = io.writeFileStream(file);

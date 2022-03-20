@@ -16,6 +16,9 @@ function nJSMap(aValue, aType) {
             if ($$(aValue).isString()) return "<span style=\"color: DarkSlateGray\">" + aValue + "</span>";
             if (typeof aValue == "boolean") return "<span style=\"color: steelblue\">" + aValue + "</span>";
             return aValue;
+        } else {
+            // if date
+            if ("undefined" !== typeof (aValue).getDate) return String(aValue);
         }
         var out = "";
         if ($$(aValue).isArray() && aValue.length > 0) {

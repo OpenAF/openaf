@@ -687,7 +687,11 @@ function mkdir(aNewDirectory) {
 
 // Remove directory
 function rmdir(aNewDirectory, shouldCheck) {
-	if (shouldCheck && io.fileExists(aNewDirectory) && io.listFiles(aNewDirectory).files.length != 0) return;
+	if (shouldCheck && 
+		io.fileExists(aNewDirectory) && 
+		$from(io.listFiles(aNewDirectory).files)
+		.equals("isFile", true)
+		.any()) return;
 	return io.rm(aNewDirectory);
 }
 
@@ -701,7 +705,13 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 	if (isUnDef(__remoteHTTP)) __remoteHTTP = new ow.obj.http();
     var res;
 
+	ow.loadNet()
+	var path = ow.net.path4URL(aURL), host = ow.net.host4URL(aURL)
+	path = path.substring(0, path.lastIndexOf("/"))
+
 	try {
+		var si = $sec().get("opack::" + host + "::" + path)
+		if (isMap(si)) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(si.u), Packages.openaf.AFCmdBase.afc.dIP(si.p), aURL) 
 		res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 		if (res.responseCode == 401) throw "code: 401";
 	} catch(e) {
@@ -712,6 +722,12 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 			}
 			__remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
 			res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+			if (res.responseCode == 200) {
+				$sec().set("opack::" + host + "::" + path, {
+					u: __remoteUser,
+					p: __remotePass
+				})
+			}
 		} else {
 			throw e;
 		}
@@ -1661,10 +1677,15 @@ function erase(args, dontRemoveDir) {
 				deleteFile(packag.__target + "/" + packag.files[i].replace(/^\/*/, ""));
 			}
 
-			var list = io.listFiles(packag.__target);
-			for(var i in list.files) {
-				if (list.files[i].isDirectory) {
-					rmdir(list.files[i].filepath, true);
+			// Remove precompiled
+			var list = listFilesRecursive(packag.__target);
+			for(var i in list) {
+				if (list[i].isDirectory) {
+					if (list[i].filename == ".openaf_precompiled") {
+						rmdir(list[i].filepath)
+					} else {
+						rmdir(list[i].filepath, true)
+					}
 				}
 			}
 			if (!dontRemoveDir) rmdir(packag.__target, true);

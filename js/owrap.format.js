@@ -1153,7 +1153,7 @@ OpenWrap.format.prototype.fromUnixDate = function(aUnixDate) {
 OpenWrap.format.prototype.fromLDAPDate = function(aLDAPDate) {
 	return new Date(((aLDAPDate / 10000000) - 11644473600) * 1000);
 };
-
+ 
 /**
  * <odoc>
  * <key>ow.format.toLDAPDate(aDate) : Number</key>
@@ -1208,12 +1208,8 @@ OpenWrap.format.prototype.isWedoDate = function(aWedoDate) {
  * </odoc>
  */
 OpenWrap.format.prototype.isIPv4 = function(aIP) {
-	if (isString(aIP) && 
-	    aIP.match(/^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/)) {
-		return true;
-	} else {
-		return false;
-	}
+	ow.loadNet()
+	return ow.net.isIPv4(aIP)
 };
 
 /**
@@ -1223,12 +1219,8 @@ OpenWrap.format.prototype.isIPv4 = function(aIP) {
  * </odoc>
  */
 OpenWrap.format.prototype.isIPv6 = function(aIP) {
-	if (isString(aIP) && 
-	    aIP.match(/^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/)) {
-		return true;
-	} else {
-		return false;
-	}
+	ow.loadNet()
+	return ow.net.isIPv6(aIP)
 };
 
 /**
@@ -1253,16 +1245,8 @@ OpenWrap.format.prototype.isEmail = function(aEmail) {
  * </odoc>
  */
 OpenWrap.format.prototype.isURL = function(aURL) {
-	try {
-		if (isString(aURL) &&
-		(new java.net.URI(aURL)).isAbsolute()) {
-			return true;
-		} else {
-			return false;
-		}
-	} catch(e) {
-		return false;
-	}
+	ow.loadNet()
+	return ow.net.isURL(aURL)
 };
 
 /**
@@ -1272,12 +1256,8 @@ OpenWrap.format.prototype.isURL = function(aURL) {
  * </odoc>
  */
 OpenWrap.format.prototype.isHost = function(aHost) {
-	if (isString(aHost) &&
-	    aHost.match(/^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/)) {
-		return true;
-	} else {
-		return false;
-	}
+	ow.loadNet()
+	return ow.net.isHost(aHost)
 };
 
 /**

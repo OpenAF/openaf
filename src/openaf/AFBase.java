@@ -66,6 +66,8 @@ import org.mozilla.javascript.xml.XMLObject;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.ast.AstRoot;
 
+import java.util.zip.ZipEntry;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -906,21 +908,30 @@ public class AFBase extends ScriptableObject {
 			js = js + ".js";
 		}
 		
-		if (js.indexOf("::") > 0) {
-			ZipFile zip = new ZipFile(js.replaceFirst("::.+",  ""));
-			if (zip != null) {
-				try {
-					java.io.InputStreamReader isr = new InputStreamReader(zip.getInputStream(zip.getEntry(js.replaceFirst(".+::", ""))));
-					if (isr != null) {
-						includeScript = IOUtils.toString(isr);
-						isr.close();
+		if (js.indexOf("::") > 0) { 
+			if (openaf.core.IO.fileExists(js.replaceFirst("::.+", ""))) {
+				ZipFile zip = new ZipFile(js.replaceFirst("::.+",  ""));
+				if (zip != null) {
+					try {
+						ZipEntry zE = zip.getEntry(js.replaceFirst(".+::", ""));
+						if (zE != null) {
+							java.io.InputStreamReader isr = new InputStreamReader(zip.getInputStream(zE));
+							if (isr != null) {
+								includeScript = IOUtils.toString(isr);
+								isr.close();
+							}
+						} else {
+							throw new Exception("Entry '" + js.replaceFirst(".+::", "") + "' not found.");
+						}
+					} catch(Exception e) {
+						throw e;
+					} finally {
+						zip.close();
 					}
-				} catch(Exception e) {
-					throw e;
-				} finally {
-					zip.close();
+					ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip", js.replaceFirst("::[^:]+$",  ""));
 				}
-				ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfromzip", js.replaceFirst("::[^:]+$",  ""));
+			} else {
+				throw new Exception("'" + js.replaceFirst("::.+", "") + "' not found.");
 			}
 		} else {
 			try {
@@ -956,25 +967,27 @@ public class AFBase extends ScriptableObject {
 			}			
 		} 
 
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		try {
-			ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfrom", js);
-			includeScript = includeScript.replaceAll("^#[^\n]*\n", "//\n"); 
-			if (callback != null) {
-				Object isc = callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {new java.lang.String(includeScript)});
-				if (isc != null) {
-					includeScript = isc.toString();
+		if (includeScript != null) {
+			Context cx = (Context) AFCmdBase.jse.enterContext();
+			try {
+				ScriptableObject.putProperty((Scriptable) AFCmdBase.jse.getGlobalscope(), "__loadedfrom", js);
+				includeScript = includeScript.replaceAll("^#[^\n]*\n", "//\n"); 
+				if (callback != null) {
+					Object isc = callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {new java.lang.String(includeScript)});
+					if (isc != null) {
+						includeScript = isc.toString();
+					}
 				}
+				compile(includeScript, js);
+				//cx.evaluateString(AFCmdBase.jse.getGlobalscope(), includeScript.toString(), js, 1, null);
+			} catch (Exception e) {
+				SimpleLog.log(logtype.DEBUG,
+						"Error reading file: " + js + "; " + e.getMessage(), e);
+				//AFCmdBase.jse.exitContext();
+				throw e;
+			} finally {
+				AFCmdBase.jse.exitContext();
 			}
-			compile(includeScript, js);
-			//cx.evaluateString(AFCmdBase.jse.getGlobalscope(), includeScript.toString(), js, 1, null);
-		} catch (Exception e) {
-			SimpleLog.log(logtype.DEBUG,
-					"Error reading file: " + js + "; " + e.getMessage(), e);
-			//AFCmdBase.jse.exitContext();
-			throw e;
-		} finally {
-			AFCmdBase.jse.exitContext();
 		}
 	}
 
@@ -1584,14 +1597,17 @@ public class AFBase extends ScriptableObject {
 
 		GoogleAuthenticator gauth = new GoogleAuthenticator();
 		GoogleAuthenticatorKey gkey = gauth.createCredentials();
+
 		JSList sCds = AFCmdBase.jse.getNewList(null);
 		sCds.addAll(gkey.getScratchCodes());
 		map.put("scratchCodes", sCds.getList());
 		map.put("verificationCode", String.format("%06d", gkey.getVerificationCode()));
 		map.put("key", gkey.getKey());
 		map.put("encryptedKey", encrypt(gkey.getKey(), null));
-		map.put("qrChart", GoogleAuthenticatorQRGenerator.getOtpAuthURL(issuer, accountName, gkey));
-		map.put("otpURL", GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(issuer, accountName, gkey));
+		//map.put("qrChart", GoogleAuthenticatorQRGenerator.getOtpAuthURL(issuer, accountName, gkey));
+		//map.put("otpURL", GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(issuer, accountName, gkey));
+		map.put("qrChart", "https://api.qrserver.com/v1/create-qr-code/?data=otpauth%3A%2F%2Ftopt%2F" + issuer + "%3A" + accountName + "%3Fsecret%3D" + gkey.getKey() + "%26issuer%3D" + issuer + "%26algorithm%3D" + gkey.getConfig().getHmacHashFunction().toString().replace("Hmac", "") + "%26digits%3D" + gkey.getConfig().getCodeDigits() + "%26period%3D" + (gkey.getConfig().getTimeStepSizeInMillis() / 1000) + "&size=200x200&ecc=M&margin=0");
+		map.put("otpURL", "otpauth://totp/" + issuer + ":" + accountName + "?secret=" + gkey.getKey() + "&issuer=" + issuer + "&algorithm=" + gkey.getConfig().getHmacHashFunction().toString().replace("Hmac", "") + "&digits=" + gkey.getConfig().getCodeDigits() + "&period=" + (gkey.getConfig().getTimeStepSizeInMillis() / 1000));
 
 		return map.getMap();
 	}

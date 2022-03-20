@@ -29,6 +29,16 @@ var __noSLF4JErrorOnly;
 
 /**
  * <odoc>
+ * <key>isJavaClass(aObj) : boolean</key>
+ * Return true if aObj is a Java class, false otherwise
+ * </odoc>
+ */
+const isJavaClass = function(obj) {
+	if (Object.prototype.toString.call(obj).indexOf(" JavaClass") >= 0) return true; else return false
+}
+
+/**
+ * <odoc>
  * <key>isJavaObject(aObj) : boolean</key>
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
@@ -42,6 +52,14 @@ var __noSLF4JErrorOnly;
 		else
 			return false
 	} catch(e) {
+		if (String(e).indexOf("getClass") >= 0) {
+			try {
+				var s = Object.prototype.toString.call(obj)
+				return s.indexOf("object Java") >= 0
+			} catch(e1) {
+				return false
+			}
+		}
 		return false
 	}
 }
@@ -982,7 +1000,10 @@ const ansiLength = function(aString, force) {
 		s = aString
 	}
 
-	return Number((new java.lang.String(s)).codePointCount(0, s.length))
+	if (__flags.VISIBLELENGTH)
+		return Number((new java.lang.String(s)).codePointCount(0, s.length))
+	else
+		return Number(s.length)
 }
 
 /**
@@ -2347,6 +2368,7 @@ const load = function(aScript, loadPrecompiled) {
 			}
 		}
 
+		global.__loadedfrom = _$(global.__loadedfrom).default(__)
 		if (isDef(__loadedfrom)) {
 			return fn(__loadedfrom.replace(/[^\/]+$/, "") + aScript, 3);
 		}
@@ -3797,7 +3819,11 @@ const isNull = function(obj) {
  * </odoc>
  */
 const isByteArray = function(obj) {
-	return (isDef(obj.getClass) && (obj.getClass().getName() == "byte[]" || obj.getClass().getTypeName() == "byte[]"));
+	try {
+		return (isDef(obj.getClass) && (obj.getClass().getName() == "byte[]" || obj.getClass().getTypeName() == "byte[]"))
+	} catch(e) {
+		return false
+	}
 }
 
 /**
@@ -3814,19 +3840,27 @@ const isUUID = function(obj) {
 	}
 }
 
+/**
+ * <odoc>
+ * <key>descType(aObject) : String</key>
+ * Given aObject will try to return the apparent type withing: undefined, null, bytearray,
+ * javaclass, java, boolean, array, number, string, function, date, map and object.
+ * </odoc>
+ */
 const descType = function(aObj) {
-	if (isUnDef(aObj)) return "undefined";
-	if (isNull(aObj)) return "null";
-	if (isBoolean(aObj)) return "boolean";
-	if (isNumber(aObj)) return "number";
-	if (isString(aObj)) return "string";
-	if (isFunction(aObj)) return "function";
-	if (isByteArray(aObj)) return "bytearray";
-	if (isArray(aObj)) return "array";
-	if (isJavaObject(aObj)) return "java";
-	if (isDate(aObj)) return "date";
-	if (isMap(aObj)) return "map";
-	if (isObject(aObj)) return "object";
+	if (isUnDef(aObj)) return "undefined"
+	if (isNull(aObj)) return "null"
+	if (isByteArray(aObj)) return "bytearray"
+	if (isJavaClass(aObj)) return "javaclass"
+	if (isJavaObject(aObj)) return "java"
+	if (isBoolean(aObj)) return "boolean"
+	if (isArray(aObj)) return "array"
+	if (isNumber(aObj)) return "number"
+	if (isString(aObj)) return "string"
+	if (isFunction(aObj)) return "function"
+	if (isDate(aObj)) return "date"
+	if (isMap(aObj)) return "map"
+	if (isObject(aObj)) return "object"
 }
 
 /**
@@ -6585,6 +6619,7 @@ var __flags = _$(__flags).isMap().default({
 	OJOB_SEQUENTIAL  : true,
 	OJOB_HELPSIMPLEUI: false,
 	OAF_CLOSED       : false,
+	VISIBLELENGTH    : false,
 	MD_NOMAXWIDTH    : true
 })
 
@@ -6939,6 +6974,68 @@ IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallba
 		}
 	});
 };
+
+/**
+ * <odoc>
+ * <key>io.readStreamJSON(aJSONFile, aValFunc) : Map</key>
+ * Reads a JSON file (aJSONFile) without loading all structures to memory (usefull to handling large JSON files).
+ * The aValFunc receives a single string argument with the current JSON path being processed (for example $.log.entries[123].request),
+ * where "$" is the root of the JSON document. When aValFunc returns true the current JSON structure is recorded in memory.
+ * If aValFunc is not defined it will return true for all paths. Returns the JSON structure recorded in memory.\
+ * \
+ * Example:\
+ * \
+ *    var amap = io.readStreamJSON("someFile.har",\
+ *                                 path => (/^\$\.log\.entries\[\d+\]\.request/).test(path))\
+ * \
+ * </odoc>
+ */
+IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
+	_$(aJSONFile, "aJSONFile").isString().$_()
+	aValFunc = _$(aValFunc, "aValFunc").isFunction().default(() => true)
+
+	var is = java.io.FileReader(aJSONFile)
+	var jr = Packages.com.google.gson.stream.JsonReader(is)
+	
+	try {
+		var pending = 0, nam, res = {}, tmp = []
+
+		do {
+			var val = __, hasVal = false, path = String(jr.getPath())
+			var next = String(jr.peek().toString())
+
+			switch(next) {
+			case "BEGIN_OBJECT": jr.beginObject(); pending++; break
+			case "BEGIN_ARRAY" : jr.beginArray();  pending++; break
+			case "END_OBJECT"  : jr.endObject();   pending--; break
+			case "END_ARRAY"   : jr.endArray();    pending--; break
+			case "STRING"      : hasVal = true; val = String(jr.nextString())   ; break
+			case "BOOLEAN"     : hasVal = true; val = Boolean(jr.nextBoolean()) ; break
+			case "DOUBLE"      : hasVal = true; val = Number(jr.nextDouble())   ; break
+			case "NUMBER"      : hasVal = true; val = Number(jr.nextDouble())   ; break
+			case "INT"         : hasVal = true; val = Number(jr.nextInt())      ; break
+			case "LONG"        : hasVal = true; val = Number(jr.nextLong())     ; break
+			case "NULL"        : hasVal = true; val = jr.nextNull()             ; break
+			case "NAME"        : nam = String(jr.nextName()); break
+			case "END_DOCUMENT": pending = 0; break
+			default            : if (!jr.hasNext()) pending = 0
+			}
+		
+			if (hasVal && aValFunc(path) > 0) {
+				tmp.push({ k: path, v: val })
+			}
+		} while(pending > 0)
+	} catch(e) {
+		throw e
+	} finally {
+		jr.close()
+		is.close()
+	}
+
+	tmp.forEach(r => $$(res).set(r.k.substring(2), r.v))
+	
+	return res
+}
 
 /**
  * <odoc>

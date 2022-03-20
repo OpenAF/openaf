@@ -259,6 +259,15 @@
 			"deps": []
 		},
 		{
+			"description": "OkHTTP Client",
+			"path": ["okhttp-4.9.3.jar", "okio-3.0.0.jar", "kotlin-stdlib-1.6.10.jar"],
+			"version": "4.9.3",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",
+			"deps": []
+		},
+		{
 			"description": "Oracle JDBC 19",
 			"path": ["lib/ojdbc8.jar"],
 			"version": "21.1",
