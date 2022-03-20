@@ -710,6 +710,9 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 	path = path.substring(0, path.lastIndexOf("/"))
 
 	try {
+		// Ensure bucket default exists
+		try { $sec().get("opack::") } catch(e) { $sec().set("opack::", {}) }
+				
 		var si = $sec().get("opack::" + host + "::" + path)
 		if (isMap(si)) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(si.u), Packages.openaf.AFCmdBase.afc.dIP(si.p), aURL) 
 		res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
