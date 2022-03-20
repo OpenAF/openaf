@@ -727,10 +727,12 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 			__remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
 			res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 			if (res.responseCode == 200) {
-				$sec().set("opack::" + host + "::" + path, {
-					u: __remoteUser,
-					p: __remotePass
-				})
+				try {
+					$sec().set("opack::" + host + "::" + path, {
+						u: __remoteUser,
+						p: __remotePass
+					})
+				} catch(e2) {}
 			}
 		} else {
 			throw e;
