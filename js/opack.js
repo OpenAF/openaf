@@ -687,7 +687,11 @@ function mkdir(aNewDirectory) {
 
 // Remove directory
 function rmdir(aNewDirectory, shouldCheck) {
-	if (shouldCheck && io.fileExists(aNewDirectory) && io.listFiles(aNewDirectory).files.length != 0) return;
+	if (shouldCheck && 
+		io.fileExists(aNewDirectory) && 
+		$from(io.listFiles(aNewDirectory).files)
+		.equals("isFile", true)
+		.any()) return;
 	return io.rm(aNewDirectory);
 }
 
@@ -1661,10 +1665,15 @@ function erase(args, dontRemoveDir) {
 				deleteFile(packag.__target + "/" + packag.files[i].replace(/^\/*/, ""));
 			}
 
-			var list = io.listFiles(packag.__target);
-			for(var i in list.files) {
-				if (list.files[i].isDirectory) {
-					rmdir(list.files[i].filepath, true);
+			// Remove precompiled
+			var list = listFilesRecursive(packag.__target);
+			for(var i in list) {
+				if (list[i].isDirectory) {
+					if (list[i].filename == ".openaf_precompiled") {
+						rmdir(list[i].filepath)
+					} else {
+						rmdir(list[i].filepath, true)
+					}
 				}
 			}
 			if (!dontRemoveDir) rmdir(packag.__target, true);
