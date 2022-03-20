@@ -18,6 +18,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testIOJSON;
  
+   - name: IO::IO Test Stream JSON
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testIOStreamJSON
+
    - name: IO::IO Test read/writeFileStream
      from: IO::Init
      to  : oJob Test
@@ -57,6 +62,7 @@ todo:
    # IO tests
    # --------
    - IO::IO Test JSON
+   - IO::IO Test Stream JSON
    - IO::IO Test copy streams
    - IO::IO Test read/writeFileStream
    - IO::IO Test read/writeFileStreamBytes
