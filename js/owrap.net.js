@@ -164,6 +164,17 @@ OpenWrap.net.prototype.getHostAddress = function() {
 
 /**
  * <odoc>
+ * <key>ow.net.host4URL(aURL) : String</key>
+ * Given aURL it will return the corresponding host:port.
+ * </odoc>
+ */
+OpenWrap.net.prototype.host4URL = function(aURL) {
+    var url = java.net.URL(aURL)
+    return String(url.getHost()) + ":" + (url.getPort() == -1 ? Number(url.getDefaultPort()) : Number(url.getPort()))
+}
+
+/**
+ * <odoc>
  * <key>ow.net.testHost(aAddress, aTimeout) : Map</key>
  * Uses the java implementation (e.g. usually ICMP ping) for testing reachability to an aAddress. It timeouts after aTimeout (defaults to
  * 4000ms). Returns a map with the "time" spent trying to get an answer from aAddress and a boolean "reachable" with the result.
