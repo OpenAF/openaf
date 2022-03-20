@@ -705,7 +705,13 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 	if (isUnDef(__remoteHTTP)) __remoteHTTP = new ow.obj.http();
     var res;
 
+	ow.loadNet()
+	var path = ow.net.path4URL(aURL), host = ow.net.host4URL(aURL)
+	path = path.substring(0, path.lastIndexOf("/"))
+
 	try {
+		var si = $sec().get("opack::" + host + "::" + path)
+		if (isMap(si)) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(si.u), Packages.openaf.AFCmdBase.afc.dIP(si.p), aURL) 
 		res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 		if (res.responseCode == 401) throw "code: 401";
 	} catch(e) {
@@ -716,6 +722,12 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 			}
 			__remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL);
 			res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
+			if (res.responseCode == 200) {
+				$sec().set("opack::" + host + "::" + path, {
+					u: __remoteUser,
+					p: __remotePass
+				})
+			}
 		} else {
 			throw e;
 		}
