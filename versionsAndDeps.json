@@ -286,6 +286,15 @@
 			"deps": []
 		},
 		{
+			"description": "DNS Java",
+			"path": ["lib/dnsjava-3.5.0.jar"],
+			"version": "3.5.0",
+			"changes": false,
+			"type": ["java"],
+			"license": "Check https://github.com/dnsjava/dnsjava/blob/master/LICENSE",
+			"deps": []
+		},
+		{
 			"description": "JavaMail API",
 			"path": ["lib/javax.mail.jar"],
 			"version": "1.6.2",
