@@ -572,7 +572,10 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			throw("jobs entries need to be defined as arrays.");
 		}
 
-		if (dontLoadTodos) delete res.todo;
+		if (dontLoadTodos) {
+			delete res.todo
+			delete res.help
+		}
 		if (isUnDef(res.ojob)) res.ojob = {};
 
 		// Set code in the require cache

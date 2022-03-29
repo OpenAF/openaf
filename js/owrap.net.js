@@ -341,6 +341,40 @@ OpenWrap.net.prototype.testURLLatency = function(aURL, aCustomTimeout) {
 
 /**
  * <odoc>
+ * <key>ow.net.getDNS(aName, aType, aServer) : Object</key>
+ * Given aName will do a DNS search for aType (defaults to "a") optionally using dns server aServer.
+ * Returns an object or an array of objects.
+ * </odoc>
+ */
+OpenWrap.net.prototype.getDNS = function(aName, aType, aServer) {
+    _$(aName, "aName").isString().$_()
+    aType   = _$(aType, "aType").isString().default("a")
+    aServer = _$(aServer, "aServer").isString().default(__)
+
+    var getProps = aObj => {
+        var rr = {}
+        Object.keys(aObj).forEach(r => {
+            if (r.startsWith("get") && (r != "getClass")) {
+                rr[r.substring(3)] = aObj[r]()
+            }
+        })
+        return rr
+    }
+
+    var res = []
+    var records = new Packages.org.xbill.DNS.Lookup(aName, Packages.org.xbill.DNS.Type[aType.toUpperCase()])
+    if (isDef(aServer)) records.setResolver(new Packages.org.xbill.DNS.SimpleResolver(aServer))
+    records = records.run()
+    for(var i in records) {
+        var rec = records[i]
+        res.push(getProps(rec))
+    }
+    if (res.length == 1) res = res[0]
+    return res
+}
+
+/**
+ * <odoc>
  * <key>ow.net.getDoH(aAddr, aType, aProvider) : Array</key>
  * Performs a DNS over HTTPs query with aAddr. Optionally you can provide the aType of record (defaults to 'a') and
  * the DNS over HTTPs aProvider between 'google' and 'cloudflare'.
