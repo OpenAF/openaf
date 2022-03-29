@@ -713,7 +713,7 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 		res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 		if (res.responseCode == 401) throw "code: 401";
 	} catch(e) {
-		if (String(e).indexOf("code: 401") >= 0 || String(e).indexOf("javax.crypto.BadPaddingException") >= 0) {
+		if (String(e).indexOf("code: 401") >= 0) {
 			// Ensure bucket default exists
 			try { $sec().get("opack::") } catch(e) { $sec().set("opack::", {}) }
 				
