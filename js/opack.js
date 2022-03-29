@@ -718,7 +718,7 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 			try { $sec().get("opack::") } catch(e) { $sec().set("opack::", {}) }
 				
 			var si = $sec().get("opack::" + host + "::" + path)
-			if (isMap(si) && (isUnDef(__remoteUser) || isUnDef(__remotePass))) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(si.u), Packages.openaf.AFCmdBase.afc.dIP(si.p), aURL)
+			if (isMap(si) && (isUnDef(__remoteUser) || isUnDef(__remotePass))) { __remoteUser = Packages.openaf.AFCmdBase.afc.dIP(si.u); __remotePass = Packages.openaf.AFCmdBase.afc.dIP(si.p) }
 			if (isDef(__remoteUser) && isDef(__remotePass)) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL)
 
 			if (isUnDef(__remoteUser) || isUnDef(__remotePass)) {
