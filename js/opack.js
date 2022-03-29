@@ -710,16 +710,17 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 	path = path.substring(0, path.lastIndexOf("/"))
 
 	try {
-		// Ensure bucket default exists
-		try { $sec().get("opack::") } catch(e) { $sec().set("opack::", {}) }
-				
-		var si = $sec().get("opack::" + host + "::" + path)
-		if (isMap(si) && (isUnDef(__remoteUser) || isUnDef(__remotePass))) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(si.u), Packages.openaf.AFCmdBase.afc.dIP(si.p), aURL)
-		if (isDef(__remoteUser) && isDef(__remotePass)) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL)
 		res = __remoteHTTP.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream);
 		if (res.responseCode == 401) throw "code: 401";
 	} catch(e) {
-		if (String(e).indexOf("code: 401") >= 0 || String(e).indexOf("javax.crypto.BadPaddingException") >= 0) {
+		if (String(e).indexOf("code: 401") >= 0) {
+			// Ensure bucket default exists
+			try { $sec().get("opack::") } catch(e) { $sec().set("opack::", {}) }
+				
+			var si = $sec().get("opack::" + host + "::" + path)
+			if (isMap(si) && (isUnDef(__remoteUser) || isUnDef(__remotePass))) { __remoteUser = Packages.openaf.AFCmdBase.afc.dIP(si.u); __remotePass = Packages.openaf.AFCmdBase.afc.dIP(si.p) }
+			if (isDef(__remoteUser) && isDef(__remotePass)) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL)
+
 			if (isUnDef(__remoteUser) || isUnDef(__remotePass)) {
 				__remoteUser = ask("Enter authentication user: ");
 				__remotePass = ask("Enter authentication password: ", String.fromCharCode(0));
