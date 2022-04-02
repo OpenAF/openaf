@@ -18,7 +18,7 @@ jobs:
         - Build OpenAFOS
      exec  : >
         log("Repacking...");
-        sh("java -jar " + global.path + "/openaf.jar --repack", "", undefined, true);
+        sh(ow.format.getJavaHome() + "/bin/java -jar " + global.path + "/openaf.jar --repack", "", undefined, true);
 
    # Copy OpenAF to the right place for use
    - name  : Copy OpenAF
