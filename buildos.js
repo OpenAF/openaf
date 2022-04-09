@@ -1,6 +1,7 @@
 // Build OpenAF
 //
 plugin("ZIP");
+ow.loadFormat()
 
 var params = processExpr();
 
@@ -245,7 +246,7 @@ var compileJS2Java = (classfile, script, path) => {
 	var tmpFile = io.createTempFile("build_", ".js");
 	io.writeFileString(tmpFile, script);
 
-	var cmd = "java -classpath " + OPENAF_BUILD_HOME + "/bin:" + OPENAF_BUILD_HOME + "/lib/js.jar openaf.CompileJS2Java " + classfile + " " + tmpFile + " " + path;
+	var cmd = ow.format.getJavaHome() + "/bin/java -classpath " + OPENAF_BUILD_HOME + "/bin:" + OPENAF_BUILD_HOME + "/lib/js.jar openaf.CompileJS2Java " + classfile + " " + tmpFile + " " + path;
 	$sh(cmd)
 	.prefix(classfile)
 	.get(0)

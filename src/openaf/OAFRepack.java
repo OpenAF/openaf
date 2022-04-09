@@ -135,6 +135,7 @@ public class OAFRepack {
                     if (zos == null) throw new Exception("Couldn't write output zip file " + aDestFile);
 
                     try {
+                        zos.setMethod(ZipOutputStream.DEFLATED);
                         zos.setLevel(9);
         
                         // Execute

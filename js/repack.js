@@ -31,12 +31,12 @@ function getModulesToExclude() {
 	loadUnderscore();
 	var plugins = __expr.split(/,/);
 	var toExclude = [];
-
-	var vad = io.readFile(getOpenAFJar() + "::versionsAndDeps.json");
+	
+	var vad = io.readFileJSON(getOpenAFJar() + "::versionsAndDeps.json");
 
 	for(let i in plugins) {
 		var libsOut = _.flatten($from(vad.plugins).equals("name", plugins[i]).equals("removable", true).select(function(r) { return r.deps; }));
-		var libsIn  = _.flatten($from(vad.plugins).not().equals("name", plugins[i]).select(function(r) { return r.deps; }));
+		var libsIn  = _.flatten($from(vad.plugins).notEquals("name", plugins[i]).select(function(r) { return r.deps; }));
 	
 		toExclude = toExclude.concat(_.without(libsOut, libsIn));
 	}
@@ -47,7 +47,7 @@ function getModulesToExclude() {
 			toExclude[i] = toExclude[i].replace(/^lib\//, "");
 		}
 	}
-
+    
 	return toExclude;
 }
 
@@ -168,14 +168,17 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 	var list = zip.list(oldVersionFile);
 	list = merge(list, includeMore);
 
-	var c = 0;
+	var c = 0, maxS = 0
 	for(let i in list) {
 		c++;
 		var el = list[i];
 
-		lognl("Progress " + Math.round(c * 100 / Object.keys(list).length) + "% (" + c + "/" + Object.keys(list).length + ")\r");
+		var m = "Progress " + Math.round(c * 100 / Object.keys(list).length) + "% (" + c + "/" + Object.keys(list).length + ")\r"
+		if (maxS < m.length) maxS = m.length
+		lognl(m);
 		
 		if (toExclude.indexOf(el.name) >= 0) {
+			lognl(repeat(maxS, " ") + "\r")
 			log("Excluding " + el.name);
 			continue;
 		}  

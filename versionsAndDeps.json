@@ -268,9 +268,9 @@
 			"deps": []
 		},
 		{
-			"description": "Oracle JDBC 19",
+			"description": "Oracle JDBC 21",
 			"path": ["lib/ojdbc8.jar"],
-			"version": "21.1",
+			"version": "21.5",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.oracle.com/webapps/maven/register/license.html",
@@ -400,12 +400,13 @@
 		{
 			"name": "Email",
 			"removable": true,
-			"hardDeps": [
-				"lib/commons-net-3.8.0.jar",
-				"lib/commons-email-1.5.jar",
-				"lib/javax.mail.jar"
+			"deps": [
+				"lib/javax.mail.jar",
+				"lib/commons-email-1.5.jar"
 			],
-			"deps": []
+			"hardDeps": [
+				"lib/commons-net-3.8.0.jar"
+			]
 		},
 		{
 			"name": "GIT",
@@ -431,12 +432,13 @@
 				"lib/jetty-io-9.4.43.jar",
 				"lib/jetty-util-9.4.43.jar",
 				"lib/jetty-client-9.4.43.jar",
-				"lib/jetty-http-9.4.43.jar",
+				"lib/jetty-http-9.4.43.jar"
+			],
+			"deps": [
 				"lib/websocket-api-9.4.43.jar",
 				"lib/websocket-client-9.4.43.jar",
 				"lib/websocket-common-9.4.43.jar"
-			],
-			"deps": []
+			]
 		},
 		{
 			"name": "JMX",
@@ -512,8 +514,24 @@
 			"name": "BSDiff",
 			"removable": true,
 			"hardDeps": [
-				"lib/jbsdiff-1.0.jar",
 				"lib/commons-compress-1.20.jar"
+			],
+			"deps": [
+				"lib/jbsdiff-1.0.jar"
+			]
+		},
+		{
+			"name": "Oracle",
+			"removable": true,
+			"deps": [
+				"lib/ojdbc8.jar"
+			]
+		},
+		{
+			"name": "PostgreSQL",
+			"removable": true,
+			"deps": [
+				"lib/postgresql-42.3.3.jar"
 			]
 		}
 	]

@@ -1505,15 +1505,17 @@ OpenWrap.ch.prototype.__types = {
 	 * <key>ow.ch.types.elasticsearch</key>
 	 * This OpenAF implementation connects to an ElasticSearch (ES) server/cluster. The creation options are:\
 	 * \
-	 *    - index  (String/Function) The ES index to use or a function to return the name (see also ow.ch.utils.getElasticIndex).\
-	 *    - format (String)          If index is a string will use format with ow.ch.utils.getElasticIndex.\
-	 *    - idKey  (String)          The ES key id field. Defaults to 'id'.\
-	 *    - url    (String)          The HTTP(S) URL to access the ES server/cluster.\
-	 *    - user   (String)          Optionally provide a user name to access the ES server/cluster.\
-	 *    - pass   (String)          Optionally provide a password to access the ES server/cluster (encrypted or not).\
-	 *    - fnId   (String/Function) Optionally called on every operation to calculate the idKey with the key provided as argument. If string will the corresponding hash function (md5/sha1/etc...) with sortMapKeys + stringify.\
-	 *    - size   (Number)          Optionally getAll/getKeys to return more than 10 records (up to 10000).\
-	 *    - stamp  (Map)             Optionally merge with stamp map.\
+	 *    - index       (String/Function) The ES index to use or a function to return the name (see also ow.ch.utils.getElasticIndex).\
+	 *    - format      (String)          If index is a string will use format with ow.ch.utils.getElasticIndex.\
+	 *    - idKey       (String)          The ES key id field. Defaults to 'id'.\
+	 *    - url         (String)          The HTTP(S) URL to access the ES server/cluster.\
+	 *    - user        (String)          Optionally provide a user name to access the ES server/cluster.\
+	 *    - pass        (String)          Optionally provide a password to access the ES server/cluster (encrypted or not).\
+	 *    - fnId        (String/Function) Optionally called on every operation to calculate the idKey with the key provided as argument. If string will the corresponding hash function (md5/sha1/etc...) with sortMapKeys + stringify.\
+	 *    - size        (Number)          Optionally getAll/getKeys to return more than 10 records (up to 10000).\
+	 *    - stamp       (Map)             Optionally merge with stamp map.\
+	 *    - timeout     (Number)          Optional request timeout in ms.\
+	 * 
 	 * \
 	 * The getAll/getKeys functions accept an extra argument to provide a ES query map to restrict the results.
 	 * </odoc>
@@ -1591,6 +1593,7 @@ OpenWrap.ch.prototype.__types = {
 			});*/
 			var res = $rest({
 				throwExceptions: parent.__channels[aName].throwExceptions,
+				timeout: parent.__channels[aName].timeout,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1628,6 +1631,7 @@ OpenWrap.ch.prototype.__types = {
 			});*/
 			var res = $rest({
 				throwExceptions: parent.__channels[aName].throwExceptions,
+				timeout: parent.__channels[aName].timeout,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1662,6 +1666,7 @@ OpenWrap.ch.prototype.__types = {
 			});*/
 			var res = $rest({
 				throwExceptions: parent.__channels[aName].throwExceptions,
+				timeout: parent.__channels[aName].timeout,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1709,6 +1714,7 @@ OpenWrap.ch.prototype.__types = {
 
 			var res = $rest({
 				throwExceptions: parent.__channels[aName].throwExceptions,
+				timeout: parent.__channels[aName].timeout,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1751,6 +1757,7 @@ OpenWrap.ch.prototype.__types = {
 					var parent = this;
 					var res = $rest({
 						throwExceptions: parent.__channels[aName].throwExceptions,
+						timeout: parent.__channels[aName].timeout,
 						login: function(h) { 
 							if (isDef(parent.__channels[aName].user))
 								h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1821,6 +1828,7 @@ OpenWrap.ch.prototype.__types = {
 			});*/
 			var res = $rest({
 				throwExceptions: parent.__channels[aName].throwExceptions,
+				timeout: parent.__channels[aName].timeout,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);
@@ -1863,6 +1871,7 @@ OpenWrap.ch.prototype.__types = {
 			});*/
 			var res = $rest({
 				throwExceptions: parent.__channels[aName].throwExceptions,
+				timeout: parent.__channels[aName].timeout,
 				login: function(h) { 
 					if (isDef(parent.__channels[aName].user))
 						h.login(parent.__channels[aName].user, parent.__channels[aName].pass, true);

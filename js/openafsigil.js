@@ -341,22 +341,22 @@ const _$ = function(aValue, aPrefixMessage) {
         },        
         less: (aVal, aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is less than " + aVal;
-            if (defined && aValue > aVal) throw aMessage;
+            if (defined && aValue >= aVal) throw aMessage;
             return __r;
         },
         lessEquals: (aVal, aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is less or equals than " + aVal;
-            if (defined && aValue >= aVal) throw aMessage;
+            if (defined && aValue > aVal) throw aMessage;
             return __r;
         },
         greater: (aVal, aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is greater than " + aVal;
-            if (defined && aValue < aVal) throw aMessage;
+            if (defined && aValue <= aVal) throw aMessage;
             return __r;
         },
         greaterEquals: (aVal, aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is greater or equals than " + aVal;
-            if (defined && aValue <= aVal) throw aMessage;
+            if (defined && aValue < aVal) throw aMessage;
             return __r;
         },
 		

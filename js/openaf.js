@@ -1765,6 +1765,16 @@ const nowUTC = function() {
 
 /**
  * <odoc>
+ * <key>nowTZ() : Number</key>
+ * Returns the same as now() but adjusted with the local timezone offset.
+ * </odoc>
+ */
+const nowTZ = function() {
+	return now() - Number(new Date().getTimezoneOffset() * 1000)
+}
+
+/**
+ * <odoc>
  * <key>nowNano() : Number</key>
  * Will return the current system time in nanoseconds.
  * </odoc>
@@ -5398,6 +5408,7 @@ const $rest = function(ops) {
 		_toptions.retryWait = _$(_toptions.retryWait, "retryWait").isNumber().default(1500);
 		_toptions.login = _$(_toptions.login, "login").default(__);
 		_toptions.pass = _$(_toptions.pass, "pass").default(__);
+		_toptions.options = _$(_toptions.options, "options").isMap().default(__)
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
@@ -5457,7 +5468,7 @@ const $rest = function(ops) {
 			aBaseURI += "?" + $rest().query(aIdxMap);
 			aIdxMap = {};
 		}
-		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes" ];
+		var fdef = [ "aBaseURL", "aIdxMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes", "options" ];
 		if (parent.__check(aBaseURI)) {
 			var c = _toptions.retry, error, __t;
 			do {
@@ -5466,18 +5477,18 @@ const $rest = function(ops) {
 					if (isDef(_toptions.timeout) || isDef(_toptions.stopWhen)) {
 						var _r = $tb(() => {
 							if (isDef(_toptions.preAction)) { 
-								var _a = $a2m(fdef, [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ]);
+								var _a = $a2m(fdef, [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options ]);
 								_a.aVerb = aVerb;
 								var rres = _toptions.preAction(_a);
 								var args;
 								if (isDef(rres) && rres != null) 
 									args = $m2a(fdef, rres);
 								else
-									args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ];
+									args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options ];
 								res = aFn[aSubFn].apply(aFn, args);
 							} else {
 								__t = now();
-								res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes);
+								res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes, _toptions.options );
 								__t = now() - __t;
 							}		
 						}).timeout(_toptions.timeout).stopWhen(_toptions.stopWhen).exec();
@@ -5489,20 +5500,20 @@ const $rest = function(ops) {
 						}
 					} else {
 						if (isDef(_toptions.preAction)) { 
-							var _a = $a2m(fdef, [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ]);
+							var _a = $a2m(fdef, [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options ]);
 							_a.aVerb = aVerb;
 							var rres = _toptions.preAction(_a);
 							var args;
 							if (isDef(rres) && rres != null) 
 								args = $m2a(fdef, rres);
 							else
-								args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes ];
+								args = [ aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options ];
 							__t = now();
 							res = aFn[aSubFn].apply(aFn, args);
 							__t = now() - __t;
 						} else {
 							__t = now();
-							res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes);
+							res = aFn[aSubFn](aBaseURI, aIdxMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.httpClient, retBytes, _toptions.options);
 							__t = now() - __t;
 						}
 						parent.__stats(aBaseURI, false, __t);
@@ -5537,7 +5548,7 @@ const $rest = function(ops) {
 			aBaseURI += "?" + $rest().query(aIdxMap);
 			aIdxMap = {};
 		}
-		var fdef = [ "aBaseURL", "aIdxMap", "aDataRowMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes", "aMethod" ];
+		var fdef = [ "aBaseURL", "aIdxMap", "aDataRowMap", "login", "pass", "conTimeout", "reqHeaders", "urlEncode", "httpClient", "retBytes", "aMethod", "options" ];
 		if (parent.__check(aBaseURI)) {
 			var c = _toptions.retry, error;
 			do {
@@ -5546,17 +5557,17 @@ const $rest = function(ops) {
 					if (isDef(_toptions.timeout) || isDef(_toptions.stopWhen)) {
 						var _r = $tb(() => {
 							if (isDef(_toptions.preAction)) { 
-								var _a = $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb ]);
+								var _a = $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options ]);
 								_a.aVerb = aVerb;
 								var rres = _toptions.preAction(_a);
 								var args;
 								if (isDef(rres) && rres != null) 
 									args = $m2a(fdef, rres);
 								else
-									args = [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb ];
+									args = [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options ];
 								res = aFn[aSubFn].apply(aFn, args);
 							} else {
-								res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb);
+								res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options);
 							}
 						}).timeout(_toptions.timeout).stopWhen(_toptions.stopWhen).exec();
 						if (_r !== true) {
@@ -5567,17 +5578,17 @@ const $rest = function(ops) {
 						}
 					} else {
 						if (isDef(_toptions.preAction)) { 
-							var _a = $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb ]);
+							var _a = $a2m(fdef, [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options ]);
 							_a.aVerb = aVerb;
 							var rres = _toptions.preAction(_a);
 							var args;
 							if (isDef(rres) && rres != null) 
 								args = $m2a(fdef, rres);
 							else
-								args = [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb ];
+								args = [ aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options ];
 							res = aFn[aSubFn].apply(aFn, args);
 						} else {
-							res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, aVerb);
+							res = aFn[aSubFn](aBaseURI, aIdxMap, aDataRowMap, _toptions.login, _toptions.pass, _toptions.connectionTimeout, _toptions.requestHeaders, _toptions.urlEncode, _toptions.httpClient, retBytes, _toptions.options);
 						}
 						parent.__stats(aBaseURI, false);
 					}
@@ -7228,6 +7239,59 @@ const $m2a = (aDef, aMap) => {
 const sortMapKeys = (aMap) => {
 	aMap = _$(aMap).isMap().default({});
 	return $a2m(Object.keys(aMap).sort(), $m2a(Object.keys(aMap).sort(), aMap))
+}
+
+/**
+ * <odoc>
+ * <key>$a4m(anArray, aKey, dontRemove) : Array</key>
+ * Tries to create a map of maps from the provided anArrays. Optionally if aKey is provided
+ * it will be used to create the map keys (otherwise will fallback to "row[number]"). And can also
+ * optionally indicate by dontRemove = true that aKey shouldn't be removed from each map.
+ * \
+ * var a = [\
+ *   { "abc": "123", "xpt": "000", "key": "A1" },\
+ *   { "abc": "456", "xpt": "001", "key": "A2" },\
+ *   { "abc": "789", "xpt": "002", "key": "A3" }\
+ * ]\
+ * \
+ * $a4m(a, "key");\
+ * // {\
+ * //   "A1": { "abc": "123", "xpt": "000" },\
+ * //   "A2": { "abc": "456", "xpt": "001" },\
+ * //   "A3": { "abc": "789", "xpt": "002" }\
+ * // }\
+ * \
+ * </odoc>
+ */
+const $a4m = (anArray, aKey, dontRemove) => {
+	ow.loadObj()
+	return ow.obj.fromArray2Obj(anArray, aKey, dontRemove)
+}
+
+/**
+ * <odoc>
+ * <key>$m4a(aMap, aKey) : Array</key>
+ * Tries to create an array of maps from the provided aMap map of maps. Optionally if aKey is provided
+ * it will be added to each array map with the map key. Example:\
+ * \
+ * var a = {\
+ *    "A1": { "abc": "123", "xpt": "000" },\
+ *    "A2": { "abc": "456", "xpt": "001" },\
+ *    "A3": { "abc": "789", "xpt": "002" }\
+ * }\
+ * \
+ * $m4a(a, "key");\
+ * // [\
+ * //  { "key": "A1", "abc": "123", "xpt": "000" },\
+ * //  { "key": "A2", "abc": "456", "xpt": "001" },\
+ * //  { "key": "A3", "abc": "789", "xpt": "002" }\
+ * // ]\
+ * \
+ * </odoc>
+ */
+const $m4a = (aMap, aKey) => {
+	ow.loadObj()
+	return ow.obj.fromObj2Array(aMap, aKey)
 }
 
 /**

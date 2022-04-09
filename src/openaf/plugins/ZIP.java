@@ -405,6 +405,7 @@ public class ZIP extends ScriptableObject {
 			try {
 				if (options != null && options.equals("undefined") && !(options instanceof Undefined)) {
 					String _r = (String) ((NativeObject) options).get("compressionLevel");
+					zos.setMethod(ZipOutputStream.DEFLATED);
 					if (_r != null) zos.setLevel(Integer.parseInt(_r));
 				}
 					
@@ -453,6 +454,7 @@ public class ZIP extends ScriptableObject {
 			try ( ZipOutputStream zos = new ZipOutputStream(baos) ) {
 				if (options != null && options.equals("undefined") && !(options instanceof Undefined)) {
 					String _r = (String) ((NativeObject) options).get("compressionLevel");
+					zos.setMethod(ZipOutputStream.DEFLATED);
 					if (_r != null) zos.setLevel(Integer.parseInt(_r));
 				}
 					
