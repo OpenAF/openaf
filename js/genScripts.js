@@ -299,6 +299,8 @@ if (!noopacks) {
   $from(io.listFiles(curDir).files).ends("filename", ".opack").select(function(r) {
      log("Trying to install " + r.filename + "...");
      oPack("install " + r.filepath);
+     // After installing try renaming the file (#369)
+     try { io.mv(r.filepath, r.filepath.replace(/\.opack$/, ".opack.installed")) } catch(e) { /* ignore errors */ }
   });
 }
 
