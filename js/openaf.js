@@ -6959,24 +6959,33 @@ IO.prototype.writeFileJSON = function(aJSONFile, aObj, aSpace) { return io.write
 /**
  * <odoc>
  * <key>io.writeLineNDJSON(aNDJSONFile, aObj, aEncode)</key>
- * Writes aObj into a single line on aNDJSONFile (newline delimited JSON). Optionally you can provide
- * an encoding.
+ * Writes aObj into a single line on aNDJSONFile (newline delimited JSON) (or an output stream). Optionally you can provide
+ * an encoding (only is a string filename is provided)
  * </odoc>
  */
 IO.prototype.writeLineNDJSON = function(aNDJSONFile, aObj, aEncode) {
-	io.writeFileString(aNDJSONFile, stringify(aObj, __, "")+__separator, aEncode, true);
+	if (!isJavaObject(aNDJSONFile)) {
+		io.writeFileString(aNDJSONFile, stringify(aObj, __, "")+__separator, aEncode, true)
+	} else {
+		ioStreamWrite(aNDJSONFile, stringify(aObj, __, "")+__separator)
+	}
 };
 
 /**
  * <odoc>
  * <key>io.readLinesNDJSON(aNDJSONFile, aFuncCallback, aErrorCallback)</key>
- * Opens aNDJSONFile (a newline delimited JSON) as a stream call aFuncCallback with each parse JSON. If
+ * Opens aNDJSONFile (a newline delimited JSON) (a filename or an input stream) as a stream call aFuncCallback with each parse JSON. If
  * aFuncCallback returns true the cycle will be interrupted. For any parse error it calls the aErrorCallback 
  * with each exception.
  * </odoc>
  */
 IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallback) {
-	var rfs = io.readFileStream(aNDJSONFile);
+	var rfs
+	if (!isJavaObject(aNDJSONFile)) {
+		rfs = io.readFileStream(aNDJSONFile)
+	} else {
+		rfs = aNDJSONFile
+	}
 	ioStreamReadLines(rfs, (line) => {
 		try {
 			return aFuncCallback(jsonParse(line));
