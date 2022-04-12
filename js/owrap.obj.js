@@ -492,6 +492,66 @@ OpenWrap.obj.prototype.fromObj2Array = function(aObj, aKey) {
 
 /**
  * <odoc>
+ * <key>ow.obj.filter(anArray, aMap) : Object</key>
+ * Given anArray will use $from with the options on aMap basically making all $from options map parameters. Example:\
+ * \ 
+ * filter:\
+ *   where:\
+ *   - cond: equals\
+ *     args:\
+ *     - isFile\
+ *     - true\
+ *   transform:\
+ *   - func: attach\
+ *     args:\
+ *     - lastAccess\
+ *     - !!js/eval elem => new Date(elem.lastAccess)\
+ *   - func: sort\
+ *     args:\
+ *     - "-size"\
+ *   select:\
+ *     filename: n/a\
+ *     size    : -1\
+ *   #selector:\
+ *   #  func: at\
+ *   #  args:\
+ *   #  - 0\
+ * \
+ * </odoc>
+ */
+OpenWrap.obj.prototype.filter = function(aArray, aMap) {
+	aMap = _$(aMap, "aMap").isMap().default({})
+	aArray = _$(aArray, "aArray").isArray().default([])
+
+	aMap.where = _$(aMap.where, "where").isArray().default([])
+	aMap.select = _$(aMap.select, "select").default(__)
+	aMap.transform = _$(aMap.transform, "transform").isArray().default([])
+	aMap.selector = _$(aMap.selector, "selector").isMap().default(__)
+	aArray = _$(aArray, "aArray").isArray().default([])
+
+	var f = $from(aArray)
+
+	aMap.where.forEach(w => {
+		if (isString(w.cond)) f = f[w.cond].apply(f, w.args)
+	})
+	aMap.transform.forEach(t => {
+		if (isString(t.func)) {
+			f = f[t.func].apply(f, t.args)
+		}
+	})
+
+	var res
+	if (isString(aMap.select)) res = f.tselect(new Function("elem", "index", "array", aMap.select))
+	if (isMap(aMap.select)) res = f.select(aMap.select)
+
+	if (isUnDef(res) && isMap(aMap.selector)) res = (isString(aMap.selector.func) ? $$({}).set(aMap.selector.func, f[aMap.selector.func].apply(f, aMap.selector.args)) : res)
+	if (isUnDef(res) && isUnDef(aMap.select)) res = f.select()
+
+	return res
+}
+
+/**
+ * <odoc>
  * <key>ow.obj.filterKeys(anArrayKeyNames, aMap) : Map</key>
  * Given aMap will return an equivalent Map with only the keys contained in the anArrayKeyNames.
  * Note: doesn't traverse existing sub-maps.

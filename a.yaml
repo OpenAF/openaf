@@ -1,0 +1,192 @@
+todo:
+#- Write Hello World
+- name: ojob queue
+- name: Rules Injector
+  args:
+    dataJob: DataJob
+    rules  :
+    - dataJob: DataJob
+      job    : Write Hello World
+      expr   : "'{{file}}' == 'hello.txt'"
+      #data   :
+      #  file: "hello.txt"
+      #  _go : true
+#- name: Injector
+
+ojob:
+  daemon: true
+
+jobs:
+- name: DataJob
+  exec: |
+    args.file = "hello.txt"
+    args._go  = true
+
+# --------------------
+- name: Rules Injector
+  type: periodic
+  typeArgs:
+    cron: "*/5 * * * * *"
+  exec: | 
+    $job("ojob queue rules", args)
+
+# --------------
+- name: Injector
+  type: periodic
+  typeArgs:
+    cron: "*/5 * * * * *"
+  exec: |
+    $job("ojob queue inject", {
+      actionJob: "Write Hello World",
+      data     : {
+        file: "hello.txt",
+        _go : true
+      }
+    })
+
+# =======================
+- name: Write Hello World
+  to  : ojob job
+  args:
+    _checks : Check Write Hello World
+    _actions:
+      create   : Action Write Hello World - Create
+      overwrite: Action Write Hello World - Overwrite
+
+
+# ------------------------------
+- name : Check Write Hello World
+  check:
+    in:
+      file: isString
+  exec : |
+    args._action = "none"
+    if (!io.fileExists(args.file)) {
+      args._action = "create"
+    } else {
+      var ctns = io.readFileString(args.file)
+      if (ctns != "Hello World!") args._action = "overwrite"
+    }
+
+# ---------------------------------------
+- name: Action Write Hello World - Create
+  exec: |
+    io.writeFileString(args.file, "Hello World!")
+
+# ------------------------------------------
+- name: Action Write Hello World - Overwrite
+  to  : Action Write Hello World - Create
+
+# *****************
+- name : ojob queue
+  check:
+    in:
+      actionTimeout: isNumber.default(__)
+      name         : isString.default("myQueue")
+      queueStamp   : isMap.default({})      
+  exec : |
+    ow.loadServer()
+    if (isUnDef(global._queue)) global._queue = []
+    global._queue[args.name] = new ow.server.queue(args.queueStamp, args.name, "queue::" + args.name)
+
+    $ch("queue::" + args.name).subscribe((aC, aO, aK, aV) => {
+      if (aO == "set" || aO == "setAll") {
+        var o = global._queue[args.name].receive(args.actionTimeout)
+        if (isDef(o) && isMap(o.obj) && isString(o.obj.actionJob)) {
+          if (isString(o.obj.actionJob)) $job(o.obj.actionJob, o.obj.data)
+          global._queue[args.name].delete(o.id)
+        }
+      }
+    }) 
+
+# ************************
+- name : ojob queue inject
+  check:
+    in:
+      name     : isString.default("myQueue")
+      actionJob: isString
+      data     : isMap
+      priority : isNumber.default(__)
+      ttl      : isNumber.default(__)   
+  exec : |
+    if (isArray(global._queue) && isDef(global._queue[args.name])) {
+      global._queue[args.name].send({
+        actionJob: args.actionJob,
+        data     : args.data
+      }, __, args.ttl, args.priority)
+    }
+
+# ***********************
+- name : ojob queue rules
+  deps : ojob queue
+  check:
+    in:
+      dataJob : isString.default(__)
+      name    : isString.default("myQueue")
+      rules   : isArray.default([])
+  exec : |
+    if (isArray(global._queue) && isDef(global._queue[args.name])) {
+      var data = {}
+      if (isDef(args.dataJob)) data = $job(args.dataJob, args)
+      args.rules.forEach(rule => {
+        if (eval(templify(rule.expr, args.data))) {
+          if (isString(rule.job)) {
+            global._queue[args.name].send({
+              actionJob: rule.job,
+              data     : merge(data, rule.data)
+            }, __, rule.ttl, rule.priority)
+          }
+        } 
+      })
+    } else {
+      throw "Queue name '" + args.name + "' not found!"
+    }
+
+# ***************
+- name : ojob job
+  check:
+    in:
+      _go: toBoolean.isBoolean.default(false)
+  exec : |
+    if (isString(args._checks))  args._checks  = [ args._checks ]
+    if (isMap(args._actions))    args._actions = [ args._actions ]
+    
+    var hideArgs = ar => {
+      var nar = clone(ar)
+      delete nar._checks
+      delete nar._actions
+      return nar
+    }
+
+    args._action = "none"
+    args._checks.forEach(r => {
+      if (isString(r)) {
+        var res = $job(r, hideArgs(args))
+        if (isMap(res) && isString(res._action)) args._action = res._action 
+      } else {
+        logErr("oJob Job 'checks' must be job names")
+      }
+    })
+
+    args._actions.forEach(r => {
+      if (isMap(r)) {
+        log(" action: " + args._action)
+        if (args._action == "none" || isUnDef(Object.keys(r).indexOf(args._action) < 0)) {
+          // Do nothing
+        } else {
+          // Do the action(s)
+          var acts
+          if (isArray(r[args._action]))  acts = r[args._action]
+          if (isString(r[args._action])) acts = [ r[args._action] ]
+          acts.forEach(s => {
+            if (args._go) {
+              $job(s, hideArgs(args))
+            } else {
+              log("Would execute '" + s + "'")
+            }
+          })
+        }
+      } else {
+        logErr("oJob Job 'actions' must be a map (actionName: jobName)")
+      }
+    })
