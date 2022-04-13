@@ -7509,7 +7509,13 @@ const $channels = function(a) {
 	
 	return {
 		getName      : function() { return a; },
-		create       : function(shouldCompress, type, opts) { ow.ch.create(a, shouldCompress, type, opts); return $channels(a); },
+		create       : function(shouldCompress, type, opts) { 
+			if (isString(shouldCompress) && isMap(type)) {
+				ow.ch.create(a, 1, shouldCompress, type)
+			} else {
+				ow.ch.create(a, shouldCompress, type, opts); return $channels(a)
+			}
+		},
 		list         : function() { return ow.ch.list(); },
 		destroy      : function() { ow.ch.destroy(a); return $channels(a); },
 		size         : function() { return ow.ch.size(a); },
