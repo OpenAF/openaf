@@ -413,13 +413,14 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
  * <odoc>
  * <key>ow.metrics.fromObj2OpenMetrics(aObj, aPrefix, aTimestamp, aHelpMap) : String</key>
  * Given aObj will return a string of open metric (prometheus) metric strings. Optionally you can provide a prefix (defaults to "metric") 
- * and/or aTimestamp (that will be used for all aObj values).
+ * and/or aTimestamp (that will be used for all aObj values). Note: prefixes should not start with a digit.
  * </odoc>
  */
 OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap) {
     var handled = false
     aPrefix = _$(aPrefix, "prefix").isString().default("metric")
     aPrefix = aPrefix.replace(/[^a-zA-Z0-9]/g, "_")
+    if (/\d.+/.test(aPrefix)) aPrefix = "_" + aPrefix
 
     // https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md
 
@@ -445,8 +446,23 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             // build labels
             lbs = _$(lbs).default([])
             keys.forEach(key => {
-                if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) 
-                    lbs.push(key + "=\"" + String(obj[key]).replace(/\n/g, "\\\n").replace(/\"/g, "\\\\") + "\"")
+                if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) {
+                    var _key   = String(key)
+                    var _value = String(obj[key])
+                    // Handling limits
+                    if (__flags.OPENMETRICS_LABEL_MAX) {
+                        if (_key.length > 128)   _key = _key.substring(0, 128)
+                        if (_value.length > 128) _value = _value.substring(0, 128)
+                    }
+                    
+                    // Escaping
+                    if (/\d.+/.test(_key)) _key = "_" + _key
+                    _key = _key.replace(/[^a-zA-Z0-9]/g, "_")
+                    _value = _value.replace(/\n/g, "\\\\n").replace(/\\/g, "\\\\").replace(/\"/g, "\\\"")
+                    
+                    // Adding
+                    lbs.push(_key + "=\"" + _value + "\"")
+                }
             })
             var lprefix = (lbs.length > 0 ? "{" + lbs.join(",") + "}" : "")
 
