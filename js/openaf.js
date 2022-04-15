@@ -6632,7 +6632,7 @@ var __flags = _$(__flags).isMap().default({
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : false,
 	MD_NOMAXWIDTH              : true,
-	OPENMETRICS_LABEL_VALUE_MAX: true   // If false openmetrics label value length won't be restricted
+	OPENMETRICS_LABEL_MAX      : true   // If false openmetrics label name & value length won't be restricted
 })
 
 /**
