@@ -445,8 +445,11 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             // build labels
             lbs = _$(lbs).default([])
             keys.forEach(key => {
-                if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) 
-                    lbs.push(key + "=\"" + String(obj[key]).replace(/\n/g, "\\\n").replace(/\"/g, "\\\\") + "\"")
+                if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) {
+                    var value = String(obj[key])
+                    if (__flags.OPENMETRICS_LABEL_VALUE_MAX && value.length > 128) value = value.substring(0, 128)
+                    lbs.push(key + "=\"" + value.replace(/\n/g, "\\\\n").replace(/\\/g, "\\\\").replace(/\"/g, "\\\"") + "\"")
+                }
             })
             var lprefix = (lbs.length > 0 ? "{" + lbs.join(",") + "}" : "")
 

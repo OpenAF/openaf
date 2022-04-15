@@ -6627,11 +6627,12 @@ const loadJSYAML = function() {
 loadCompiledLib("openafsigil_js");
 
 var __flags = _$(__flags).isMap().default({
-	OJOB_SEQUENTIAL  : true,
-	OJOB_HELPSIMPLEUI: false,
-	OAF_CLOSED       : false,
-	VISIBLELENGTH    : false,
-	MD_NOMAXWIDTH    : true
+	OJOB_SEQUENTIAL            : true,
+	OJOB_HELPSIMPLEUI          : false,
+	OAF_CLOSED                 : false,
+	VISIBLELENGTH              : false,
+	MD_NOMAXWIDTH              : true,
+	OPENMETRICS_LABEL_VALUE_MAX: true   // If false openmetrics label value length won't be restricted
 })
 
 /**
