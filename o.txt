@@ -1,5 +1,0 @@
-TLS 1.2 or 1.3
-disable SSL v1, v2, v3 and TLS v1.0 and v1.1
-disable DES, RC2, RC4, CBC 
-
-https://java.com/en/configure_crypto.html
