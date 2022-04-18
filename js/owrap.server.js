@@ -1668,15 +1668,19 @@ OpenWrap.server.prototype.telemetry = {
 
 		var r = {};
 		r[aURI] = (r, aH) => {
+			var om = useOpenMetrics
+			if (isDef(r.params.f) && r.params.f == "json") om = false
+			if (isDef(r.params.f) && r.params.f == "om")   om = true
+			
 			try {
 				if (isDef(r.params) && isDef(r.params.s)) {
-					if (useOpenMetrics) {
+					if (om) {
 						return aHs.replyOKText(ow.metrics.fromObj2OpenMetrics(ow.metrics.getSome(r.params.s.split(",")), openMetricsPrefix, now(), openMetricsHelp));
 					} else {
 						return ow.server.httpd.reply(ow.metrics.getSome(r.params.s.split(",")));
 					}
 				} else {
-					if (useOpenMetrics) {
+					if (om) {
 						return aHs.replyOKText(ow.metrics.fromObj2OpenMetrics(ow.metrics.getAll(), openMetricsPrefix, now(), openMetricsHelp));
 					} else {
 						return ow.server.httpd.reply(ow.metrics.getAll());
