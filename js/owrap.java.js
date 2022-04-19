@@ -1073,6 +1073,41 @@ OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivK
 
 /**
  * <odoc>
+ * <key>ow.java.getCMemory(shouldFormat) : Map</key>
+ * Returns a map with the current cgroup runtime max, total, used and free memory. If shouldFormat = true ow.format.toBytesAbbreviation will be used.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getCMemory = function(shouldFormat) {
+    if (io.fileExists("/sys/fs/cgroup/memory")) {
+        var vals = {
+            m: Number(io.readFileString("/sys/fs/cgroup/memory/memory.limit_in_bytes")),
+            t: Number(io.readFileString("/sys/fs/cgroup/memory/memory.max_usage_in_bytes")),
+            f: -1,
+            u: Number(io.readFileString("/sys/fs/cgroup/memory/memory.usage_in_bytes"))
+        };
+        vals.f = vals.t - vals.u;
+    
+        if (shouldFormat) {
+            ow.loadFormat();
+            return {
+                max: ow.format.toBytesAbbreviation(vals.m),
+                total: ow.format.toBytesAbbreviation(vals.t),
+                used: ow.format.toBytesAbbreviation(vals.u),
+                free: ow.format.toBytesAbbreviation(vals.f)
+            };
+        } else {
+            return {
+                max: vals.m,
+                total: vals.t,
+                used: vals.u,
+                free: vals.f
+            };
+        }
+    }
+}
+
+/**
+ * <odoc>
  * <key>ow.java.getMemory(shouldFormat) : Map</key>
  * Returns a map with the current java runtime max, total, used and free heap memory. If shouldFormat = true ow.format.toBytesAbbreviation will be used.
  * </odoc>
