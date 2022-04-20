@@ -27,6 +27,10 @@ OpenWrap.metrics.prototype.__m = {
         }
         return res;
     },
+    cmem: () => {
+        ow.loadJava()
+        return ow.java.getCMemory()
+    },
     cpu: () => ({
         load1 : java.lang.System.getProperty("os.name").indexOf("Windows") < 0 ? getCPULoad() : "n/a",
         load2 : java.lang.System.getProperty("os.name").indexOf("Windows") < 0 ? getCPULoad(true) : "n/a",
