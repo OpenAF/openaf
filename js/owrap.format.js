@@ -1463,6 +1463,26 @@ OpenWrap.format.prototype.getClasspath = function() {
 
 /**
  * <odoc>
+ * <key>ow.format.getTmpDir() : String</key>
+ * Returns the current temporary directory.
+ * </odoc>
+ */
+OpenWrap.format.prototype.getTmpDir = function() {
+	return String(java.lang.System.getProperty("java.io.tmpdir"))
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.getUserName() : String</key>
+ * Returns the current user name.
+ * </odoc>
+ */
+ OpenWrap.format.prototype.getUserName = function() {
+	return String(java.lang.System.getProperty("user.name"))
+}
+
+/**
+ * <odoc>
  * <key>ow.format.getHostName() : String</key>
  * Returns the current hostname.
  * </odoc>
