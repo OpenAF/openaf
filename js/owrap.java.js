@@ -1378,6 +1378,152 @@ OpenWrap.java.prototype.getWhoIs = function(aQuery, server) {
 
 /**
  * <odoc>
+ * <key>ow.java.getLocalJavaPIDs(aUserID) : Array</key>
+ * Will return an array with the pid and the path for hsperf (to use with ow.java.parseHSPerf) that are currently running in the current system. 
+ * If aUserID is not provided the current user name will be used.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getLocalJavaPIDs = function(aUserID) {
+    ow.loadFormat()
+
+    aUserID = _$(aUserID, "aUserID").isString().default(ow.format.getUserName())
+    var td = ow.format.getTmpDir() + "/hsperfdata_" + aUserID
+
+    return $from(io.listFiles(td).files)
+           .equals("isFile", true)
+           .match("filename", "\\d+")
+           .select(r => ({
+             pid : r.filename,
+             path: r.canonicalPath
+           }))
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.parseHSPerf(aByteArrayOrFile, retFlat) : Map</key>
+ * Given aByteArray or a file path for a java hsperf file (using ow.java.getLocalJavaPIDs or similar) will return the java performance information parsed into a map.
+ * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent value.
+ * </odoc>
+ */
+OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
+    if (isString(aByteArray)) aByteArray = io.readFileBytesRO(aByteArray)
+
+    if (!isByteArray(aByteArray)) throw "aByteArray argument provided not a java byte array"
+    retFlat    = _$(retFlat, "retFlat").isBoolean().default(false)
+
+    var buffer = aByteArray, pos
+
+    var readName = function(aNameLen) {
+        var sb = ""
+        while(aNameLen-- > 0) {
+            var ch = buffer[pos++] & 0xff
+            if (ch != 0) sb += String.fromCharCode(ch)
+        }
+        return sb
+    }
+
+    var readInt = function() {
+        var v = 0xff & buffer[pos++]
+        v |= (0xff & buffer[pos++]) << 8
+        v |= (0xff & buffer[pos++]) << 16
+        v |= (0xff & buffer[pos++]) << 24
+        return (v < 0 ? Math.pow(2,32) + v : v)
+    }
+
+    var readLong = function() {
+        var v = 0xff & buffer[pos++]
+        v |= (0xff & buffer[pos++]) << 8
+        v |= (0xff & buffer[pos++]) << 16
+        v |= (0xff & buffer[pos++]) << 24
+        v |= (0xff & buffer[pos++]) << 32
+        v |= (0xff & buffer[pos++]) << 40
+        v |= (0xff & buffer[pos++]) << 48
+        v |= (0xff & buffer[pos++]) << 56
+        return (v < 0 ? Math.pow(2,32) + v : v)
+    }
+
+    var res = {}
+    try {
+        pos = 0
+        var value = readInt()
+        if (value != 0xc0c0feca) return 4
+
+        readInt()
+        var length = readInt()
+        if (length > buffer.length) return 4
+
+        readInt()
+        readInt()
+        readInt()
+        readInt()
+
+        var count = readInt()
+        while(count-- > 0) {
+            var start = pos
+            var len = readInt()
+
+            if (start + len > length) return 4
+
+            var nameStart = readInt()
+            if (nameStart + len > length) return 4
+
+            var slen = readInt()
+            var kind = readInt()
+
+            var valStart = readInt()
+            if (valStart + len > length || valStart < nameStart) return 4
+
+            pos = start + nameStart
+            var nameLen = valStart - nameStart
+
+            var propName = readName(nameLen)
+            var s = ""
+            var type = kind & 0xff
+            switch(type) {
+            case 0x4a:
+                s += readLong()
+                break
+            case 66:
+                s = readName(slen)
+                break
+            default:
+                s = "0"
+            }
+            res[propName] = s
+
+            pos = start + len
+        }
+    } catch(e) {
+        throw e
+    }
+
+    if (!retFlat) {
+        var res2 = {}
+        Object.keys(res).forEach(k => {
+            nk = k.replace(/\.self$/, "_self")
+            nk = nk.replace(/(\.)0*(\d+)(\.)?/g, "[$2]$3")
+    
+            if (nk.indexOf("[") > 0) {
+                var cp = ""
+                nk.split("[").forEach((k2, i) => {
+                    if (i > 0) cp += "["
+                    if (k2 != "") {
+                        var obj = $$(res2).get(cp + k2)
+                        if (isUnDef(obj)) $$(res2).set(cp + k2, [])
+                    }
+                    cp += k2
+                })
+            }
+            $$(res2).set(nk, res[k])
+        })
+        return res2
+    } else {
+        return res
+    }
+}
+
+/**
+ * <odoc>
  * <key>ow.java.setIgnoreSSLDomains(aList, aPassword)</key>
  * Replaces the current Java SSL socket factory with a version with a custom trust manager that will "ignore" verification
  * of SSL certificates whose domains are part of aList. Optionally aPassword for the key store can be forced.
