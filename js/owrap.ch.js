@@ -748,8 +748,9 @@ OpenWrap.ch.prototype.__types = {
 			this.__lcks[aName] = new ow.server.locks(true);
 
 			var parent = this;
-			this.__f[aName] = function(force) {
-				var cont = false;
+			this.__f[aName] = function(force, itsTime) {
+				itsTime = _$(itsTime).isBoolean().default(false)
+				var cont = itsTime
 
 				if (isUnDef(parent.__bt[aName])) return true
 
@@ -798,7 +799,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(this.__bm[aName]) && this.__bm[aName] > 0) {
 				plugin("Threads");
 				this.__s[aName] = new Threads();
-				this.__s[aName].addScheduleThreadWithFixedDelay(function() { parent.__f[aName](false); }, this.__bm[aName]);
+				this.__s[aName].addScheduleThreadWithFixedDelay(function() { parent.__f[aName](false, true); }, this.__bm[aName]);
 			}
 	
 			if (addShut) {
