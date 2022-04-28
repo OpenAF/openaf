@@ -748,8 +748,11 @@ OpenWrap.ch.prototype.__types = {
 			this.__lcks[aName] = new ow.server.locks(true);
 
 			var parent = this;
-			this.__f[aName] = function(force) {
-				var cont = false;
+			this.__f[aName] = function(force, itsTime) {
+				itsTime = _$(itsTime).isBoolean().default(false)
+				var cont = itsTime
+
+				if (isUnDef(parent.__bt[aName])) return true
 
 				if (isDef(parent.__bf[aName]) && isFunction(parent.__bf[aName])) {
 					cont = parent.__bf[aName](parent.__bt[aName]);
@@ -764,7 +767,7 @@ OpenWrap.ch.prototype.__types = {
 							return true;
 						}
 					} else {
-						parent.__lcks[aName].lock("openaf::ch::buffer::" + aName, 50, -1);
+						parent.__lcks[aName].lock("openaf::ch::buffer::" + aName, 50, -1, 50);
 					}
 
 					try {
@@ -796,7 +799,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(this.__bm[aName]) && this.__bm[aName] > 0) {
 				plugin("Threads");
 				this.__s[aName] = new Threads();
-				this.__s[aName].addScheduleThreadWithFixedDelay(function() { parent.__f[aName](true); }, this.__bm[aName]);
+				this.__s[aName].addScheduleThreadWithFixedDelay(function() { parent.__f[aName](false, true); }, this.__bm[aName]);
 			}
 	
 			if (addShut) {
@@ -3662,7 +3665,8 @@ OpenWrap.ch.prototype.utils = {
 	 */
 	closeBuffer: function(aName) {
 		if (isDef(aName)) {
-			if (isDef(ow.ch.__types.buffer.__s[aName])) ow.ch.__types.buffer.__s[aName].stop();
+			if (isUnDef(ow.ch.__types.buffer.__s[aName]) && isDef(ow.ch.__types.buffer.__s[aName + "::__bufferTransit"])) aName = aName + "::__bufferTransit"
+			if (isDef(ow.ch.__types.buffer.__s[aName])) ow.ch.__types.buffer.__s[aName].stop()
 		} else {
 			for(var c in ow.ch.__types.buffer.__s) {
 				if (isDef(ow.ch.__types.buffer.__s[c])) ow.ch.__types.buffer.__s[c].stop();

@@ -6922,6 +6922,20 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
 };
 /**
  * <odoc>
+ * <key>io.readFileBytesRO(aFile) : ByteArray</key>
+ * Tries to read aFile in read-only mode (even if being used by another process) and returns the corresponding byte array.
+ * </odoc>
+ */
+IO.prototype.readFileBytesRO = function(aFile) {
+	var buffer = newJavaArray(java.lang.Byte.TYPE, io.fileInfo(aFile).size)
+	var fc = java.nio.channels.FileChannel.open((new java.io.File(aFile)).toPath(), java.nio.file.StandardOpenOption.READ)
+	var dst = java.nio.ByteBuffer.wrap(buffer)
+	fc.read(dst)
+	fc.close()
+	return buffer
+}
+/**
+ * <odoc>
  * <key>io.readFileYAML(aYAMLFile) : Object</key>
  * Tries to read aYAMLFile into a javascript object. 
  * </odoc>
