@@ -67,8 +67,9 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $get             -- uses the $$.get function to access objects\
  *   - $path            -- uses the $path function to query objects\
  *   - $toSLON          -- returns the ow.format.toSLON version of an object\
- *   - $get            -- returns the corresponding value for a key on $get\
- *   - $getObj         -- equivalent to $get with the extra parameter for $$.get path\ 
+ *   - $get             -- returns the corresponding value for a key on $get\
+ *   - $getObj          -- equivalent to $get with the extra parameter for $$.get path\ 
+ *   - $dateDiff        -- returns a number of seconds for a provided date optionally (second argument) with minutes, hours, days, months, weeks or years and (third argument) a default value\
  * \
  * </odoc>
  */
@@ -90,6 +91,30 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 	ow.template.addHelper("$toSLON", ow.format.toSLON);
 	ow.template.addHelper("$get", $get)
 	ow.template.addHelper("$getObj", (o, p) => $$($get(o)).get(p))
+
+	ow.template.addHelper("$dateDiff", (a, p, isN) => {
+		if (isDef(a) && a != null) {
+				var res = "seconds"
+				if (isDef(p) && p != null && isString(p)) res = p
+				try {
+						switch(res) {
+						case "minutes": return ow.format.dateDiff.inMinutes(new Date(a))
+						case "hours"  : return ow.format.dateDiff.inHours(new Date(a))
+						case "days"   : return ow.format.dateDiff.inDays(new Date(a))
+						case "months" : return ow.format.dateDiff.inMonths(new Date(a))
+						case "weeks"  : return ow.format.dateDiff.inWeeks(new Date(a))
+						case "years"  : return ow.format.dateDiff.inYears(new Date(a))
+						case "seconds":
+						default:
+								return ow.format.dateDiff.inSeconds(new Date(a))
+						}
+				} catch(e) {
+						return (isString(isN) ? isN : null)
+				}
+		} else {
+				return (isString(isN) ? isN : null)
+		}
+	})
 
 	this.__helperOpenAF = true
 };
