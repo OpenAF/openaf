@@ -158,6 +158,16 @@ OpenWrap.metrics.prototype.__m = {
                 res.states[r.state] += 1;
         });
         return res;
+    },
+    hotspotVM: () => {
+        ow.loadJava()
+        var _hspF = $from(ow.java.getLocalJavaPIDs()).equals("pid", getPid()).at(0)
+
+        if (isMap(_hspF)) {
+            return ow.java.parseHSPerf(_hspF.path).sun
+        } else {
+            return __
+        }
     }
 };
 
