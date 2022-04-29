@@ -1379,7 +1379,7 @@ OpenWrap.java.prototype.getWhoIs = function(aQuery, server) {
 /**
  * <odoc>
  * <key>ow.java.getLocalJavaPIDs(aUserID) : Array</key>
- * Will return an array with the pid and the path for hsperf (to use with ow.java.parseHSPerf) that are currently running in the current system. 
+ * Will return an array with the pid and the path for hsperf (to use with ow.java.parseHSPerf) that are currently running (hotspot jvms only) in the current system. 
  * If aUserID is not provided the current user name will be used.
  * </odoc>
  */
@@ -1401,7 +1401,7 @@ OpenWrap.java.prototype.getLocalJavaPIDs = function(aUserID) {
 /**
  * <odoc>
  * <key>ow.java.parseHSPerf(aByteArrayOrFile, retFlat) : Map</key>
- * Given aByteArray or a file path for a java hsperf file (using ow.java.getLocalJavaPIDs or similar) will return the java performance information parsed into a map.
+ * Given aByteArray or a file path for a java (hotspot jvm) hsperf file (using ow.java.getLocalJavaPIDs or similar) will return the java performance information parsed into a map.
  * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent value.
  * </odoc>
  */
