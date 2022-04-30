@@ -8,6 +8,7 @@ import java.util.Arrays;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
@@ -324,6 +325,9 @@ public class SNMP extends ScriptableObject {
 			trap.setType(PDU.TRAP);
 		else 
 			trap.setType(PDU.INFORM);
+
+		if (data instanceof NativeJavaObject)
+			data = ((NativeJavaObject) data).unwrap();
 
 		OID ooid = new OID(oid);
 		trap.add(new VariableBinding(SnmpConstants.snmpTrapOID, ooid));
