@@ -336,6 +336,7 @@ public class SNMP extends ScriptableObject {
 					if (nmentry.containsKey("type") && nmentry.containsKey("value") && nmentry.containsKey("OID")) {
 						// Value types: i - integer, u - unsigned, c - counter32, s - string, x - hex string, d - decimal string, n - nullobj, o - objid, t - timeticks, a - ipaddress, b - bits
 						OID toid = new OID((String) nmentry.get("OID"));
+						// https://www.agentpp.com/doc/snmp4j-agent/org/snmp4j/agent/io/prop/PropertyMOInput.html
 						switch((String) nmentry.get("type")) {
 						case "i": 
 							trap.add(new VariableBinding(toid, new Integer32((Integer) nmentry.get("value"))));
@@ -360,9 +361,10 @@ public class SNMP extends ScriptableObject {
 							break;
 						case "b": 
 							break;
+						case "d":
 						case "s": 
 						default:
-						trap.add(new VariableBinding(toid, new OctetString((String) nmentry.get("value"))));
+							trap.add(new VariableBinding(toid, new OctetString((String) nmentry.get("value").toString())));
 						}
 					} else {
 						System.out.println("ERR: doesn't have type, value and OID");

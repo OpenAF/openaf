@@ -260,7 +260,7 @@
 		},
 		{
 			"description": "OkHTTP Client",
-			"path": ["okhttp-4.9.3.jar", "okio-3.0.0.jar", "kotlin-stdlib-1.6.10.jar"],
+			"path": ["okhttp-4.9.3.jar", "okio-3.0.0.jar", "kotlin-stdlib-1.4.32.jar"],
 			"version": "4.9.3",
 			"changes": false,
 			"type": ["java"],
@@ -457,7 +457,7 @@
 			"name": "SNMP",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-2.8.7.jar",
+				"lib/snmp4j-2.8.11.jar",
 				"lib/snmp4j-agent-2.7.4.jar"
 			]
 		},
@@ -465,7 +465,7 @@
 			"name": "SNMPServer",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-2.7.0.jar",
+				"lib/snmp4j-2.8.11.jar",
 				"lib/snmp4j-agent-2.7.4.jar"
 			]
 		},
