@@ -308,6 +308,62 @@ OpenWrap.format.prototype.string = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.chart(aName, aDataPoint, aHSIze, aVSize, aMin, aMax, aTheme) : String</key>
+	 * Given data aName will store, between calls, aDataPoint provided to plot a chart with a horizontal aHSize
+	 * and a vertical aVSize. Optionally aMin value and aMax value can be provided. aTheme can optionally also be provided
+	 * containing the map entries space (char), bar (char), point (char), vertical (boolean) and axis (boolean)
+	 * </odoc>
+	 */
+	chart: (aName, aDataPoint, aHSize, aVSize, aMin, aMax, aTheme) => {
+		// Check
+		_$(aName, "aName").isString().$_()
+	
+		aDataPoint = _$(aDataPoint, "aDataPoint").isNumber().default(__)
+		aHSize     = _$(aHSize).isNumber().default(45)
+		aVSize     = _$(aVSize).isNumber().default(15)
+		aMax       = _$(aMax).isNumber().default(__)
+		aMin       = _$(aMin).isNumber().default(__)
+		aTheme     = _$(aTheme).isMap().default({})
+	
+		aTheme = merge( { vertical: false, axis: true }, aTheme)
+	
+		// Get previous
+		var cN = "__oaf::chart"
+		$ch(cN).create()
+		var data = $ch(cN).get({ name: aName })
+		data = _$(data, "data").isMap().default({ name: aName, data: [] })
+	
+		// Store data
+		if (isDef(aDataPoint)) {
+			data.data.push(aDataPoint)
+			while (data.data.length > (aTheme.vertical ? aVSize : aHSize )) data.data.shift()
+			$ch(cN).set({ name: aName }, data)
+		}
+	
+		var cc = true
+		if (!ow.format.isWindows()) {
+			cc = (__conAnsi ? true : false);
+		} else {
+			if (__initializeCon()) {
+				if (!ansiWinTermCap()) ansiStart();
+				if (isDef(__con.getTerminal().getOutputEncoding())) cc = (__conAnsi ? true : false);
+			}
+		}
+
+		aTheme = merge({ space: (cc ? "░" : " "), bar: (cc ? "▓" : "*") }, aTheme) 
+
+		// Render data
+		if (isUnDef(aMax)) aMax = $from(data.data).max()
+		if (isUnDef(aMin)) aMin = $from(data.data).min()
+		var ar = data.data.map(dp => ow.format.string.progress(dp, aMax, aMin, (aTheme.vertical ? aHSize : aVSize ), aTheme.bar, aTheme.space, aTheme.point)) 
+
+		var haxis = (aTheme.axis ? "\n" + (cc ? ow.format.syms().curveTRight : "+") + repeat(aHSize, (cc ? ow.format.syms().lineH : "-")) : "")
+		var vaxis = (aTheme.axis ? (cc ? ow.format.syms().lineV : "|") : "")
+		return (aTheme.vertical ? ar.map(r=>vaxis+r).join("\n") + haxis : ow.format.transposeArrayLines(ar).map(r=>vaxis+r).join("\n") + haxis )
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.progress(aNumericValue, aMax, aMin, aSize, aIndicator, aSpace) : String</key>
 	 * Outputs an in-line progress bar given aNumericValue, aMax value, aMin value, the aSize of the bar and the aIndicator
 	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to 5, aIndicator defaults to "#" 
@@ -1677,6 +1733,7 @@ OpenWrap.format.prototype.transposeArrayLines = function(anLineArray) {
 	for(let i in anLineArray) {
 		if (aLimit < anLineArray[i].length) aLimit = anLineArray[i].length;
 	}	
+	aLimit--
 	for(let j = 0; j <= aLimit; j++) {
 		if (isUnDef(newArray[j])) newArray[j] = "";
 		for(let i in anLineArray) {
