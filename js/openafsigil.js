@@ -291,7 +291,7 @@ const _$ = function(aValue, aPrefixMessage) {
 		// Generic validations
         check: (aFunction, aMessage) => {
 			if (!$$(aFunction).isFunction() && !$$(aFunction).isString()) throw "please provide a function to check";
-            var res = ($$(aFunction).isFunction() ? aFunction(aValue) : (new Function('v', 'return ' + aFunction))(aValue));
+            var res = ($$(aFunction).isFunction() ? aFunction(aValue) : (newFn('v', 'return ' + aFunction))(aValue));
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "is not ok";
             if (defined && !res) throw aMessage;
             return __r;

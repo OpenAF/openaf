@@ -822,7 +822,7 @@ function fixSheBang(aFile) {
 // Run a script
 function runScript(aScript) {
 	try {
-		var s = new Function(aScript);
+		var s = newFn(aScript);
 		s();
 	} catch(e) {
 		logErr(e);

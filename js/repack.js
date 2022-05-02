@@ -124,7 +124,7 @@ $from(ow.obj.fromObj2Array(getOPackLocalDB(), "path")).notEmpty("scripts.prerepa
 	} else {
 		log("Executing prepack actions from oPack '" + r.name + "'");
 		try {
-			var s = new Function(r.scripts.prerepack);
+			var s = newFn(r.scripts.prerepack);
 			s();
 		} catch(e) {
 			logErr("opack '" + r.name + "': " + e);

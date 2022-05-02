@@ -2155,7 +2155,7 @@ OpenWrap.ch.prototype.__types = {
 				options.map = function() { return "default"; };
 			} else {
 				if (isString(options.map)) {
-					options.map = new Function("return '" + options.map + "';");
+					options.map = newFn("return '" + options.map + "';");
 				}
 			}
 

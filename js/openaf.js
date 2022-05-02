@@ -6665,6 +6665,27 @@ var __correctYAML = false;
 
 /**
  * <odoc>
+ * <key>newFn() : Function</key>
+ * Builds a new Function handling any debug needs if necessary.
+ * </odoc>
+ */
+const newFn = function() {
+	var args = []
+	for(var i in arguments) {
+		args.push(arguments[i])
+	}
+	
+	if (isDef(global.__debugLoadPreParser)) {
+		var code = args.pop()
+		code = ow.debug.debug(code, __, true)
+		args.push(code)
+	}
+	//return af.eval("(function(" + args.join(",") + "){" + code + "})")
+	return Function.apply(null, args)
+}
+
+/**
+ * <odoc>
  * <key>af.runFromExternalClass(aClassName, aPath)</key>
  * Tries to "execute" aClassName from a previously compiled OpenAF script, with af.compileToClasses, on aPath.\
  * \
