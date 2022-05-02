@@ -11,6 +11,7 @@ import java.lang.String;
 
 import openaf.AFCmdBase;
 import openaf.JSEngine;
+import openaf.OpenRhinoErrorReporter;
 
 /**
  * Rhino JSEngine implementation
@@ -57,6 +58,7 @@ public class RhinoEngine implements JSEngine {
 		cx = org.mozilla.javascript.Context.enter();
 		cx.setOptimizationLevel(compLevel);
 		cx.setLanguageVersion(Context.VERSION_ES6); 
+		cx.setErrorReporter(new OpenRhinoErrorReporter());
 		globalscope = cx.initStandardObjects();
 		ready = true;
 	}

@@ -144,7 +144,8 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     if (io.fileExists(aCode)) {
       code = io.readFileString(aCode)
     } else {
-      throw "File '" + aCode + "' not found."
+      //throw "File '" + aCode + "' not found."
+      code = aCode
     }
   }
     
