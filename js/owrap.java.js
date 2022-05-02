@@ -1423,22 +1423,12 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
     }
 
     var readInt = function() {
-        var v = 0xff & buffer[pos++]
-        v |= (0xff & buffer[pos++]) << 8
-        v |= (0xff & buffer[pos++]) << 16
-        v |= (0xff & buffer[pos++]) << 24
+        var v = Number(java.math.BigInteger([ buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++] ].reverse()).intValue())
         return (v < 0 ? Math.pow(2,32) + v : v)
     }
 
     var readLong = function() {
-        var v = 0xff & buffer[pos++]
-        v |= (0xff & buffer[pos++]) << 8
-        v |= (0xff & buffer[pos++]) << 16
-        v |= (0xff & buffer[pos++]) << 24
-        v |= (0xff & buffer[pos++]) << 32
-        v |= (0xff & buffer[pos++]) << 40
-        v |= (0xff & buffer[pos++]) << 48
-        v |= (0xff & buffer[pos++]) << 56
+        var v = Number(java.math.BigInteger([ buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++], buffer[pos++] ].reverse()).longValue())
         return (v < 0 ? Math.pow(2,32) + v : v)
     }
 
@@ -1480,14 +1470,9 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
             var s = ""
             var type = kind & 0xff
             switch(type) {
-            case 0x4a:
-                s += readLong()
-                break
-            case 66:
-                s = readName(slen)
-                break
-            default:
-                s = "0"
+            case 0x4a: s += readLong()   ; break
+            case 66  : s = readName(slen); break
+            default  : s = "0"
             }
             res[propName] = s
 
