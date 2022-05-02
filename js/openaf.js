@@ -2308,6 +2308,9 @@ const __codeVerify = function(aCode, aFile) {
 	}
 }
 
+const loadDebug = aScript => ow.loadDebug().load(aScript)
+const requireDebug = (aScript, aForce) => ow.loadDebug().require(aScript, aForce)
+
 /**
  * <odoc>
  * <key>load(aScript)</key>

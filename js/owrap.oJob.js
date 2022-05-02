@@ -287,6 +287,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	this.addTodos(todo, args, aId);
 
 	// Check ojob settings
+	if (isDef(ojob.debug)) this.__ojob.debug = ojob.debug;
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
 	if (isDef(ojob.logLimit)) this.__logLimit = ojob.logLimit;
@@ -1191,7 +1192,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					ss = repeat(w, '═');
 					se = repeat(w, '*');
 					//sn = "";
-					sn = String( jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) );
+					sn = String( jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) ) + "\n";
 				} else {
 					s  = repeat(this.__conWidth, '-');
 					ss = repeat(this.__conWidth, '=');
@@ -1704,6 +1705,19 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			} 
 		}, this.__ojob.checkStall.everySeconds * 1000);
 	} 
+
+	// Handle debug
+	if (isDef(this.__ojob.debug) && this.__ojob.debug) {
+		ow.loadDebug()
+        ow.debug.register()
+		var ch = ow.oJob.getJobsCh()
+		ch.forEach((k, job) => {
+			if (isUnDef(job.lang) || (isDef(job.lang) && (job.lang == "oaf" || job.lang == "js") ) ) {
+				job.exec = ow.debug.debug(job.exec, isMap(this.__ojob.debug) ? this.__ojob.debug : __, true)
+			}
+			ch.set({ name: jj }, job)
+		})
+	}
 
 	//var shouldStop = false;
 	this.oJobShouldStop = false;
