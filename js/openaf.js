@@ -6663,15 +6663,25 @@ const _i$ = (aValue, aPrefixMessage) => {
 
 var __correctYAML = false;
 
+/**
+ * <odoc>
+ * <key>newFn() : Function</key>
+ * Builds a new Function handling any debug needs if necessary.
+ * </odoc>
+ */
 const newFn = function() {
 	var args = []
 	for(var i in arguments) {
 		args.push(arguments[i])
 	}
-
-	var code = args.pop()
-	if (isDef(global.__debugLoadPreParser)) code = ow.debug.debug(code, __, true)
-	return af.eval("(function(" + args.join(",") + "){" + code + "})")
+	
+	if (isDef(global.__debugLoadPreParser)) {
+		var code = args.pop()
+		code = ow.debug.debug(code, __, true)
+		args.push(code)
+	}
+	//return af.eval("(function(" + args.join(",") + "){" + code + "})")
+	return Function.apply(null, args)
 }
 
 /**
