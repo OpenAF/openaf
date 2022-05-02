@@ -653,7 +653,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 			
 			Context cx = (Context) jse.getNotSafeContext();
-			cx.setErrorReporter(new OpenRhinoErrorReporter());
+			//cx.setErrorReporter(new OpenRhinoErrorReporter()); 
 			
 			NativeObject jsonPMOut = new NativeObject();
 
@@ -731,7 +731,7 @@ public class AFCmdOS extends AFCmdBase {
 			}
 
 			AFBase.runFromClass(Class.forName("openaf_js").getDeclaredConstructor().newInstance());
-			cx.setErrorReporter(new OpenRhinoErrorReporter());
+			//cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
 				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + pmIn + ")";
