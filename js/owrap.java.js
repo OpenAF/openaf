@@ -261,7 +261,7 @@ OpenWrap.java.prototype.maven.prototype.processMavenFile = function(aDirectory, 
 
             var testfunc;
             if (isDef(arts.testFunc)) {
-                testfunc = new Function(arts.testFunc);
+                testfunc = newFn(arts.testFunc);
             }
 
             var outputDir = _$(arts.output).isString().default(aDirectory);

@@ -1378,7 +1378,8 @@ while(cmd != "exit") {
 		}, t => {
 			if (t.endsWith("\n\n") || RESERVEDWORDS.split("|").indexOf(t.trim().split(/ +/)[0]) >= 0 || Object.keys(__alias).indexOf(t.trim().split(/ +/)[0]) >= 0 ) return true;
 			try {
-				new Function(t);
+				//new Function(t);
+				newFn(t)
 				return true;
 			} catch(e) {
 				if (String(e).startsWith("SyntaxError:")) {

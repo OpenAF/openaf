@@ -104,7 +104,7 @@ var nLinq = function(anObject, aK) {
         if (isFunction(aFunc)) {
             f = aFunc;
         } else {
-            f = new Function("r", "whereFn", "return $$(r).isDef() ? (" + where + ") : void 0");
+            f = newFn("r", "whereFn", "return $$(r).isDef() ? (" + where + ") : void 0");
         }
         if (alimit != 0) {
             if (negative) 
@@ -612,7 +612,7 @@ var nLinq = function(anObject, aK) {
                 }
             }
 
-            res = res.sort(new Function("a", "b", ssort));
+            res = res.sort(newFn("a", "b", ssort));
 
             return code;
         },
@@ -677,7 +677,7 @@ var nLinq = function(anObject, aK) {
             })
         
             var res
-            if (isString(aMap.select)) res = code.tselect(new Function("elem", "index", "array", aMap.select))
+            if (isString(aMap.select)) res = code.tselect(newFn("elem", "index", "array", aMap.select))
             if (isMap(aMap.select)) res = code.select(aMap.select)
         
             if (isUnDef(res) && isMap(aMap.selector)) res = (isString(aMap.selector.func) ? $$({}).set(aMap.selector.func, code[aMap.selector.func].apply(code, aMap.selector.args)) : res)

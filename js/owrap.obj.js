@@ -541,7 +541,7 @@ OpenWrap.obj.prototype.filter = function(aArray, aMap) {
 	})
 
 	var res
-	if (isString(aMap.select)) res = f.tselect(new Function("elem", "index", "array", aMap.select))
+	if (isString(aMap.select)) res = f.tselect(newFn("elem", "index", "array", aMap.select))
 	if (isMap(aMap.select)) res = f.select(aMap.select)
 
 	if (isUnDef(res) && isMap(aMap.selector)) res = (isString(aMap.selector.func) ? $$({}).set(aMap.selector.func, f[aMap.selector.func].apply(f, aMap.selector.args)) : res)

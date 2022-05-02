@@ -470,7 +470,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 			if (isMap(this.__ojob.metrics)) {
 				if (isDef(this.__ojob.metrics.add) && isMap(this.__ojob.metrics.add)) {
 					Object.keys(this.__ojob.metrics.add).map(r => {
-						ow.metrics.add(r, new Function(this.__ojob.metrics.add[r]) );
+						ow.metrics.add(r, newFn(this.__ojob.metrics.add[r]) );
 					});
 				}
 				// To deprecate
@@ -584,7 +584,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			if (isUnDef(require.cache)) require.cache = {};
 			Object.keys(res.code).forEach(k => {
 				try {
-					require.cache[k] = new Function('require', 'exports', 'module', res.code[k]);
+					require.cache[k] = newFn('require', 'exports', 'module', res.code[k]);
 				} catch(e) {
 					logErr("Problem with code '" + k + "': " + e.message + " (#" + e.lineNumber + ")");
 				}
@@ -1591,7 +1591,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 					}
 					// OR provide a custom function to send telemetry somewhere
 					if (isString(this.__ojob.metrics.active.fn)) {
-						fn = new Function(this.__ojob.metrics.active.fn);
+						fn = newFn(this.__ojob.metrics.active.fn);
 					}
 					ow.server.telemetry.active(fn, this.__ojob.metrics.active.periodInMs);
 
@@ -1610,7 +1610,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		if (isString(this.__ojob.daemonFunc)) {
 			var parent = this;
 			this.periodicFuncs.push(() => {
-				var res = (new Function(parent.__ojob.daemonFunc))();
+				var res = (newFn(parent.__ojob.daemonFunc))();
 				if (isDef(res) && res == true) {
 					parent.oJobShouldStop = true;
 				}
@@ -1695,7 +1695,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		this.__mtStart = now();
 		this.mt.addScheduleThreadAtFixedRate(function() {
 			if (isDef(parent.__ojob.checkStall.checkFunc)) {
-				var res = (new Function(parent.__ojob.checkStall.checkFunc))(parent.__mtStart);
+				var res = (newFn(parent.__ojob.checkStall.checkFunc))(parent.__mtStart);
 				if (res) exit(-1);
 			}
 			if ((now() - parent.__mtStart) > (parent.__ojob.checkStall.killAfterSeconds * 1000)) {
@@ -1950,7 +1950,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					if (isDef(depInf) && depInf.success) {
 						canContinue = true;
 						if (isDef(aJob.deps[j].onSuccess)) {
-							var res = (new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onSuccess))(provideArgs, aJob, aId);
+							var res = (newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onSuccess))(provideArgs, aJob, aId);
 							canContinue = res;
 						}
 						depInfo[dep].result = true;
@@ -1963,7 +1963,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 							canContinue = false;
 							this.__addLog("depsFail", aJob.name, undefined, provideArgs, undefined, aId);
 							if (isDef(aJob.deps[j].onFail) && isDef(depInf) && depInf.error) {
-								var res = (new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onFail))(provideArgs, aJob, aId);
+								var res = (newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onFail))(provideArgs, aJob, aId);
 								canContinue = res;
 							}
 							depInfo[dep].result = false;
@@ -2013,14 +2013,14 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			})
 		}
 
-		var f = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
+		var f = newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
 		var fe, fint;
-		if (isDef(parent.__ojob.catch)) fe = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
-		if (isDef(aJob.catch)) fint = new Function("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + aJob.catch);
+		if (isDef(parent.__ojob.catch)) fe = newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
+		if (isDef(aJob.catch)) fint = newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + aJob.catch);
 		
 		var stopWhen, timeout, tb = false, tbres;
 		if (isDef(aJob.typeArgs.timeout))  { tb = true; timeout = aJob.typeArgs.timeout; }
-		if (isDef(aJob.typeArgs.stopWhen)) { tb = true; stopWhen = new Function(aJob.typeArgs.stopWhen); }
+		if (isDef(aJob.typeArgs.stopWhen)) { tb = true; stopWhen = newFn(aJob.typeArgs.stopWhen); }
 
 		if (isDef(args.__oJobRepeat)) { 
 			var errors = [];
@@ -2619,10 +2619,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
 			fnDef += "$doA2B(each => { " + res + " }, (_r, _n) => { _oj.map(_aJob => { ";
 			fnDef += "  var _canDo = true; if(isDef(_n) && _n != _aJob.name) _canDo = false;"
-			fnDef += "  try { if (isDef(_aJob) && _canDo) { var fn = new Function(\"var args = arguments[0]; var job = {name:'" + _aName + "'}; \" + _aJob.exec); ";
+			fnDef += "  try { if (isDef(_aJob) && _canDo) { var fn = newFn(\"var args = arguments[0]; var job = {name:'" + _aName + "'}; \" + _aJob.exec); ";
 			fnDef += "  return fn( merge(_r, { init: args.init }) ); } else { return __; }";
-			fnDef += "} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (new Function(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, __, \"\") + \"); \" + _aJob.catch))(ea2b); }";
-			fnDef += "}); }, __, __, " + (isUnDef(_jobCatch) ? "__" : "new Function(\"var args = arguments[1], job = {name:'" + _aName + "'}, exception = arguments[0]; " + _jobCatch.replace(/"/g, "\\\"") + "\")" ) + "); ";
+			fnDef += "} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (newFn(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, __, \"\") + \"); \" + _aJob.catch))(ea2b); }";
+			fnDef += "}); }, __, __, " + (isUnDef(_jobCatch) ? "__" : "newFn(\"var args = arguments[1], job = {name:'" + _aName + "'}, exception = arguments[0]; " + _jobCatch.replace(/"/g, "\\\"") + "\")" ) + "); ";
 
 			res = fnDef;
 		}
