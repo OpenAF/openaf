@@ -62,6 +62,7 @@ public class AFCmdOS extends AFCmdBase {
 	final protected static String OPTION_OUTPUT_MODE = "-o";
 	final protected static String OPTION_DEBUG = "-debug";
 	final protected static String OPTION_EXPR = "-e";
+	final protected static String OPTION_CDEBUG = "-d";
 	final protected static String OPTION_SILENT = "-s";
 	final protected static String OPTION_HELP = "-h";
 	final protected static String OPTION_SCRIPTHELP = "-helpscript";
@@ -106,6 +107,7 @@ public class AFCmdOS extends AFCmdBase {
 	protected boolean classscript = false;
 	protected boolean opack = false;
 	protected boolean console = false;
+	protected boolean cdebug = false;
 	protected boolean ojob = false;
 	protected boolean injectscript = false;
 	protected boolean injectclass = false;
@@ -276,7 +278,7 @@ public class AFCmdOS extends AFCmdBase {
 					exprInput = a;
 					continue;
 				case OPTION_SCRIPTFILE:
-					scriptfile = a;
+					if (cdebug) code = "loadDebug('" + a + "')"; else scriptfile = a;
 					continue;
 				case OPTION_SB:
 					exprInput = a;
@@ -309,6 +311,14 @@ public class AFCmdOS extends AFCmdBase {
 				continue;
 			case OPTION_DEBUG:
 				SimpleLog.currentLogLevel = SimpleLog.logtype.DEBUG;
+				continue;
+			case OPTION_CDEBUG:
+			    cdebug = true;
+				silentMode = true;
+				checkNext = true;
+				checkOption = OPTION_SCRIPTFILE;
+				code = "";
+				injectcode = true;
 				continue;
 			case OPTION_SCRIPTFILE:
 				checkNext = true;
