@@ -6663,6 +6663,17 @@ const _i$ = (aValue, aPrefixMessage) => {
 
 var __correctYAML = false;
 
+const newFn = function() {
+	var args = []
+	for(var i in arguments) {
+		args.push(arguments[i])
+	}
+
+	var code = args.pop()
+	if (isDef(global.__debugLoadPreParser)) code = ow.debug.debug(code, __, true)
+	return af.eval("(function(" + args.join(",") + "){" + code + "})")
+}
+
 /**
  * <odoc>
  * <key>af.runFromExternalClass(aClassName, aPath)</key>
