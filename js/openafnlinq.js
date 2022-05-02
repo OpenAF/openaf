@@ -1,11 +1,12 @@
 /* Author: Nuno Aguiar */
 
 var nLinq_USE_CASE = false;
-var nLinq = function(anObject) {
+var nLinq = function(anObject, aK) {
     // Verify input
     if ($$(anObject).isMap()) {
+        aK = _$(aK, "aKey").isString().default("_key")
         anObject = Object.keys(anObject).map(k => {
-            if ($$(anObject[k]).isMap()) anObject[k]._key = k;
+            if ($$(anObject[k]).isMap()) anObject[k][aK] = k;
             return anObject[k];
         });
     }
@@ -657,7 +658,33 @@ var nLinq = function(anObject) {
             
             return code.skip(aSkip).take(aTake);
         },
-
+        // Apply map
+        apply: aMap => {
+            aMap   = _$(aMap, "aMap").isMap().default({})
+        
+            aMap.where = _$(aMap.where, "where").isArray().default([])
+            aMap.select = _$(aMap.select, "select").default(void 0)
+            aMap.transform = _$(aMap.transform, "transform").isArray().default([])
+            aMap.selector = _$(aMap.selector, "selector").isMap().default(void 0)
+        
+            aMap.where.forEach(w => {
+                if (isString(w.cond)) code = code[w.cond].apply(code, w.args)
+            })
+            aMap.transform.forEach(t => {
+                if (isString(t.func)) {
+                    code = code[t.func].apply(code, t.args)
+                }
+            })
+        
+            var res
+            if (isString(aMap.select)) res = code.tselect(new Function("elem", "index", "array", aMap.select))
+            if (isMap(aMap.select)) res = code.select(aMap.select)
+        
+            if (isUnDef(res) && isMap(aMap.selector)) res = (isString(aMap.selector.func) ? $$({}).set(aMap.selector.func, code[aMap.selector.func].apply(code, aMap.selector.args)) : res)
+            if (isUnDef(res) && isUnDef(aMap.select)) res = code.select()
+        
+            return res
+        },
         // Main selector
         select : aParam => {
             res = applyConditions(res);
@@ -693,6 +720,24 @@ var nLinq = function(anObject) {
                     }
                 }
             }
+        },
+        mselect: (aParam, aKey, dontRemove) => {
+            var anArray = code.select(aParam)
+            aKey        = _$(aKey, "aKey").isString().default("_key")
+            dontRemove  = _$(dontRemove, "dontRemove").isBoolean().default(false)
+
+            var res = {};
+            for(var i in anArray) {
+                var item = anArray[i]
+                if ($$(aKey).isDef() && $$(item[aKey]).isDef()) {
+                    var k = item[aKey]
+                    res[k] = item
+                    if (!dontRemove) delete res[k][aKey]
+                } else {
+                    res["row" + i] = item
+                }
+            }
+            return res
         },
         define : aParam => {
             res = code.select(aParam);

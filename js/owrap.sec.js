@@ -28,9 +28,10 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
       });
 
       if (io.fileExists(f) && !isWin) {
+         // quietly set permissions
          $sh("chmod a-rwx " + f)
          .sh("chmod u+rw " + f)
-         .exec();
+         .get();
       }
    } else {
       // Special repo system with bucket envs for system variables
