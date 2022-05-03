@@ -1402,7 +1402,7 @@ OpenWrap.java.prototype.getLocalJavaPIDs = function(aUserID) {
  * <odoc>
  * <key>ow.java.parseHSPerf(aByteArrayOrFile, retFlat) : Map</key>
  * Given aByteArray or a file path for a java (hotspot jvm) hsperf file (using ow.java.getLocalJavaPIDs or similar) will return the java performance information parsed into a map.
- * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent value.
+ * If retFlat = true the returned map will be a flat map with each java performance metric and correspondent value plus additional calculations with the prefix "__"
  * </odoc>
  */
 OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
@@ -1501,6 +1501,25 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
             }
             $$(res2).set(nk, res[k])
         })
+
+        res2.sun.rt.__createVmBeginDate = new Date(Number(res2.sun.rt.createVmBeginTime))
+        res2.sun.rt.__createVmEndDate   = new Date(Number(res2.sun.rt.createVmEndTime))
+        res2.sun.rt.__vmInitDoneDate    = new Date(Number(res2.sun.rt.vmInitDoneTime))
+        res2.sun.rt.__totalRunningTime  = Number(res2.sun.os.hrt.ticks) / 1000000
+        res2.sun.rt.__percAppTime       = ((res2.sun.rt.applicationTime/1000000) / res2.sun.rt.__totalRunningTime) * 100
+
+        for(var i in res2.sun.gc.collector) {
+            if (res2.sun.gc.collector[i].lastEntryTime > 0) {
+                res2.sun.gc.collector[i].__lastEntryDate = new Date(Number(res2.sun.rt.createVmBeginTime) + Number(res2.sun.gc.collector[i].lastEntryTime/1000000))
+                res2.sun.gc.collector[i].__lastExitDate  = new Date(Number(res2.sun.rt.createVmBeginTime) + Number(res2.sun.gc.collector[i].lastExitTime/1000000))
+                res2.sun.gc.collector[i].__lastExecTime  = res2.sun.gc.collector[i].__lastExitDate.getTime() - res2.sun.gc.collector[i].__lastEntryDate.getTime()
+                res2.sun.gc.collector[i].__avgExecTime   = (res2.sun.gc.collector[i].time/1000000) / res2.sun.gc.collector[i].invocations
+            }
+        }
+        for(var i in res2.sun.gc.generation) {
+            res2.sun.gc.generation[i].__totalUsed = $from(res2.sun.gc.generation[i].space).sum("used")
+        }
+
         return res2
     } else {
         return res
