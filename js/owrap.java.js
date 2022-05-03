@@ -1506,19 +1506,23 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
         res2.sun.rt.__createVmEndDate   = new Date(Number(res2.sun.rt.createVmEndTime))
         res2.sun.rt.__vmInitDoneDate    = new Date(Number(res2.sun.rt.vmInitDoneTime))
         res2.sun.rt.__totalRunningTime  = Number(res2.sun.os.hrt.ticks) / 1000000
-        res2.sun.rt.__percAppTime       = ((res2.sun.rt.applicationTime/1000000) / res2.sun.rt.__totalRunningTime) * 100
 
+        var accTime = 0
         for(var i in res2.sun.gc.collector) {
             if (res2.sun.gc.collector[i].lastEntryTime > 0) {
                 res2.sun.gc.collector[i].__lastEntryDate = new Date(Number(res2.sun.rt.createVmBeginTime) + Number(res2.sun.gc.collector[i].lastEntryTime/1000000))
                 res2.sun.gc.collector[i].__lastExitDate  = new Date(Number(res2.sun.rt.createVmBeginTime) + Number(res2.sun.gc.collector[i].lastExitTime/1000000))
                 res2.sun.gc.collector[i].__lastExecTime  = res2.sun.gc.collector[i].__lastExitDate.getTime() - res2.sun.gc.collector[i].__lastEntryDate.getTime()
                 res2.sun.gc.collector[i].__avgExecTime   = (res2.sun.gc.collector[i].time/1000000) / res2.sun.gc.collector[i].invocations
+
+                accTime += res2.sun.gc.collector[i].time/1000000
             }
         }
         for(var i in res2.sun.gc.generation) {
             res2.sun.gc.generation[i].__totalUsed = $from(res2.sun.gc.generation[i].space).sum("used")
         }
+
+        res2.sun.rt.__percAppTime       = 100 - ((accTime / res2.sun.rt.__totalRunningTime) * 100)
 
         return res2
     } else {
