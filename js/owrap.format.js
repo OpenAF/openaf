@@ -563,7 +563,7 @@ OpenWrap.format.prototype.string = {
          * <odoc>
          * <key>ow.format.string.grid(aMatrix, aX, aY, aBgPattern, shouldReturn) : String</key>
          * Will generate a aX per aY grid to be displayed with aBgPattern (defaults to " "). Each grid cell with use the contents on aMatrix
-         * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in cell spacing, a type (either map, table or string) 
+         * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in cell spacing, a type (either map, table, func or string) 
          * and a title. If shouldReturn = true it will just return the string content instead of trying to print it.
          + </odoc>
          */
@@ -596,8 +596,9 @@ OpenWrap.format.prototype.string = {
 					var p = "", cs = Math.floor((aY / line.length) * xspan);
 			
 					switch(col.type) {
-					case "map": p = printMap(col.obj, cs, "utf", true); break; 
+					case "map"  : p = printMap(col.obj, cs, "utf", true); break; 
 					case "table": p = printTable(col.obj, cs, __, true, "utf"); break;
+					case "func" : p = String(newFn("cs", col.obj)(cs)).split(/\r?\n/).map(r => r.substring(0, cs)).join("\n"); break;
 					default: p = String(col.obj).split(/\r?\n/).map(r => r.substring(0, cs)).join("\n");
 					}
 	
