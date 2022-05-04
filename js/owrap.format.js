@@ -598,7 +598,7 @@ OpenWrap.format.prototype.string = {
 					switch(col.type) {
 					case "map"  : p = printMap(col.obj, cs, "utf", true); break; 
 					case "table": p = printTable(col.obj, cs, __, true, "utf"); break;
-					case "func" : p = String(newFn("cs", col.obj)(cs)).split(/\r?\n/).map(r => r.substring(0, cs)).join("\n"); break;
+					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan), cs)).split(/\r?\n/).map(r => r.substring(0, cs)).join("\n"); break;
 					default: p = String(col.obj).split(/\r?\n/).map(r => r.substring(0, cs)).join("\n");
 					}
 	
