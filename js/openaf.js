@@ -6958,6 +6958,144 @@ IO.prototype.readFileBytesRO = function(aFile) {
 	fc.close()
 	return buffer
 }
+IO.prototype.readFileTARBytes = function(aTARFile, aFilePath, isGzip) {
+	var br
+	io.readFileTARStream(aTARFile, isGzip, _is => {
+		if (_is != "null") {
+			var _e = _is.getNextTarEntry()
+			while(_e != null && _e.getName() != aFilePath) {
+				_e = _is.getNextTarEntry()	
+			}
+			if (_e != null && _e.getName() == aFilePath) {
+				br = Packages.org.apache.commons.io.IOUtils.toByteArray(_is)
+			}
+		}
+	})
+	return br
+}
+IO.prototype.readFileTAR2Stream = function(aTARFile, aFilePath, isGzip, aFunc) {
+	var br
+	io.readFileTARStream(aTARFile, isGzip, _is => {
+		if (_is != "null") {
+			var _e = _is.getNextTarEntry()
+			while(_e != null && _e.getName() != aFilePath) {
+				_e = _is.getNextTarEntry()	
+			}
+			if (_e != null && _e.getName() == aFilePath) {
+				aFunc(_is)
+			}
+		}
+	})
+}
+IO.prototype.readFileTARStream = function(aTARfile, isGzip, aFunc) {
+	isGzip = _$(isGzip, "isGzip").isBoolean().default(false)
+	aFunc  = _$(aFunc, "aFunc").isFunction().$_()
+
+	var isJ, isGZ
+	if (isJavaObject(aTARfile)) {
+		isJ = true
+	} else {
+		isJ = false
+		isGZ = isGzip || (aTARfile.endsWith(".tar.gz") || aTARfile.endsWith(".tgz"))
+	}
+
+	var iss
+	if (!isJ) {
+		if (isGZ) 
+			iss = io.readFileGzipStream(aTARfile)
+		else
+			iss = io.readFileStream(aTARfile)
+	} else {
+		if (isGZ)
+			iss = java.util.zip.GZIPInputStream(aTARfile)
+		else
+			iss = aTARfile
+	}
+	var _is = Packages.org.apache.commons.compress.archivers.tar.TarArchiveInputStream(iss)
+
+	aFunc(_is)
+
+	_is.close()
+	iss.close()
+}
+IO.prototype.writeFileTARStream = function(aTARfile, isGzip, aFunc) {
+	isGzip = _$(isGzip, "isGzip").isBoolean().default(false)
+	aFunc  = _$(aFunc, "aFunc").isFunction().$_()
+
+	var isJ, isGZ
+	if (isJavaObject(aTARfile)) {
+		isJ = true
+	} else {
+		isJ = false
+		isGZ = isGzip || (aTARfile.endsWith(".tar.gz") || aTARfile.endsWith(".tgz"))
+	}
+
+	var oss
+	if (!isJ) {
+		if (isGZ) 
+			oss = io.writeFileGzipStream(aTARfile)
+		else
+			oss = io.writeFileStream(aTARfile)
+	} else {
+		if (isGZ)
+			oss = java.util.zip.GZIPOutputStream(aTARfile)
+		else
+			oss = aTARfile
+	}
+	var _os = Packages.org.apache.commons.compress.archivers.tar.TarArchiveOutputStream(oss)
+	_os.setLongFileMode(Packages.org.apache.commons.compress.archivers.tar.TarArchiveOutputStream.LONGFILE_GNU)
+
+	aFunc(_os)
+
+	oss.close()
+	//_os.close()
+}
+IO.prototype.writeFileTARBytes = function(aTARFile, aFilePath, isGzip, aArrayBytes) {
+	io.writeFileTAR2Stream(aTARFile, isGzip, aFn => {
+		aFn(aFilePath, af.fromBytes2InputStream(aArrayBytes))
+	})
+}
+IO.prototype.writeFileTAR2Stream = function(aTARFile, isGzip, aFunc) {
+	io.writeFileTARStream(aTARFile, isGzip, _os => {
+		if (_os != "null") {
+			aFunc((aFilePath, aStream) => {
+				var f = new java.io.File(aFilePath)
+				var _e = _os.createArchiveEntry(f, aFilePath)
+				_e.setSize(aStream.available())
+				_os.putArchiveEntry(_e)
+				ioStreamCopy(_os, aStream)
+				_os.closeArchiveEntry()
+			})
+		}
+	})
+}
+IO.prototype.listFilesTAR = function(aTARfile, isGzip) {
+	var files = []
+	
+	io.readFileTARStream(aTARfile, isGzip, _is => {
+		if (_is != "null") {
+			var _e = _is.getNextTarEntry()
+			while(_e != null) {
+				files.push({
+					isDirectory  : _e.isDirectory(),
+					isFile       : _e.isFile(),
+					canonicalPath: String(_e.getName()),
+					filepath     : String(_e.getName()),
+					filename     : String(_e.getName()).substring(String(_e.getName()).lastIndexOf("/")+1),
+					size         : Number(_e.getSize()),
+					lastModified : new Date(_e.getModTime()),
+					groupId      : Number(_e.getGroupId()),
+					group        : String(_e.getGroupName()),
+					userId       : Number(_e.getUserId()),
+					user         : String(_e.getUserName())
+				})
+				_e = _is.getNextTarEntry()
+			}
+		}
+	})
+
+	return files
+}
 /**
  * <odoc>
  * <key>io.readFileYAML(aYAMLFile) : Object</key>
