@@ -6958,9 +6958,16 @@ IO.prototype.readFileBytesRO = function(aFile) {
 	fc.close()
 	return buffer
 }
+/**
+ * <odoc>
+ * <key>io.readFileTARBytes(aTARFile, aFilePath, isGzip) : ByteArray</key>
+ * Given aTARFile (or stream) will try to retrieve aFilePath and return the corresponding byte array. If aTARFile is a stream
+ * you should specify with isGzip = true/false if it has been "gzipped".
+ * </odoc>
+ */
 IO.prototype.readFileTARBytes = function(aTARFile, aFilePath, isGzip) {
 	var br
-	io.readFileTARStream(aTARFile, isGzip, _is => {
+	io.readFileTAR2Stream(aTARFile, isGzip, _is => {
 		if (_is != "null") {
 			var _e = _is.getNextTarEntry()
 			while(_e != null && _e.getName() != aFilePath) {
@@ -6973,9 +6980,15 @@ IO.prototype.readFileTARBytes = function(aTARFile, aFilePath, isGzip) {
 	})
 	return br
 }
-IO.prototype.readFileTAR2Stream = function(aTARFile, aFilePath, isGzip, aFunc) {
-	var br
-	io.readFileTARStream(aTARFile, isGzip, _is => {
+/**
+ * <odoc>
+ * <key>io.readFileTARStream(aTARFile, aFilePath, isGzip, aFunc)</key>
+ * Given aTARFile (or stream) will try to retrieve aFilePath and call aFunc(tion) with the corresponding Java input stream. If aTARFile is a stream
+ * you should specify with isGzip = true/false if it has been "gzipped".
+ * </odoc>
+ */
+IO.prototype.readFileTARStream = function(aTARFile, aFilePath, isGzip, aFunc) {
+	io.readFileTAR2Stream(aTARFile, isGzip, _is => {
 		if (_is != "null") {
 			var _e = _is.getNextTarEntry()
 			while(_e != null && _e.getName() != aFilePath) {
@@ -6987,7 +7000,14 @@ IO.prototype.readFileTAR2Stream = function(aTARFile, aFilePath, isGzip, aFunc) {
 		}
 	})
 }
-IO.prototype.readFileTARStream = function(aTARfile, isGzip, aFunc) {
+/**
+ * <odoc>
+ * <key>io.readFileTAR2Stream(aTARfile, isGzip, aFunc)</key>
+ * Given aTARFile (or stream) will call aFunc(tion) with the corresponding Java TAR input stream. If aTARFile is a stream
+ * you should specify with isGzip = true/false if it has been "gzipped". Note: for direct usage use io.readFileTARStream
+ * </odoc>
+ */
+IO.prototype.readFileTAR2Stream = function(aTARfile, isGzip, aFunc) {
 	isGzip = _$(isGzip, "isGzip").isBoolean().default(false)
 	aFunc  = _$(aFunc, "aFunc").isFunction().$_()
 
@@ -7018,7 +7038,14 @@ IO.prototype.readFileTARStream = function(aTARfile, isGzip, aFunc) {
 	_is.close()
 	iss.close()
 }
-IO.prototype.writeFileTARStream = function(aTARfile, isGzip, aFunc) {
+/**
+ * <odoc>
+ * <key>io.writeFileTAR4Stream(aTARfile, isGzip, aFunc)</key>
+ * Given aTARfile (or output stream (with isGzip = true/false)) will call aFunc with the Java TAR output stream.
+ * Note: for direct usage use io.writeFileTARStream
+ * </odoc>
+ */
+IO.prototype.writeFileTAR4Stream = function(aTARfile, isGzip, aFunc) {
 	isGzip = _$(isGzip, "isGzip").isBoolean().default(false)
 	aFunc  = _$(aFunc, "aFunc").isFunction().$_()
 
@@ -7047,32 +7074,54 @@ IO.prototype.writeFileTARStream = function(aTARfile, isGzip, aFunc) {
 
 	aFunc(_os)
 
-	oss.close()
-	//_os.close()
+	Packages.org.apache.commons.io.IOUtils.closeQuietly(oss)
+	Packages.org.apache.commons.io.IOUtils.closeQuietly(_os)
 }
+/**
+ * <odoc>
+ * <key>io.writeFileTARBytes(aTARfile, aFilePath, isGzip, aArrayBytes)</key>
+ * Given aTARfile (or output stream (with isGzip = true/false)) will write aArrayBytes into aFilePath in the TAR file/stream.
+ * Note: for multiple files use io.writeFileTARStream
+ * </odoc>
+ */
 IO.prototype.writeFileTARBytes = function(aTARFile, aFilePath, isGzip, aArrayBytes) {
-	io.writeFileTAR2Stream(aTARFile, isGzip, aFn => {
+	io.writeFileTARStream(aTARFile, isGzip, aFn => {
 		aFn(aFilePath, af.fromBytes2InputStream(aArrayBytes))
 	})
 }
-IO.prototype.writeFileTAR2Stream = function(aTARFile, isGzip, aFunc) {
-	io.writeFileTARStream(aTARFile, isGzip, _os => {
+/**
+ * <odoc>
+ * <key>io.writeFileTARStream(aTARfile, isGzip, aFunc)</key>
+ * Given aTARfile (or output stream (with isGzip = true/false)) will call aFunc(tion) providing, as argument, a writer function
+ * with two arguments: aFilePath and a Java input stream for the contents.
+ * </odoc>
+ */
+IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc) {
+	io.writeFileTAR4Stream(aTARFile, isGzip, _os => {
 		if (_os != "null") {
 			aFunc((aFilePath, aStream) => {
 				var f = new java.io.File(aFilePath)
 				var _e = _os.createArchiveEntry(f, aFilePath)
 				_e.setSize(aStream.available())
 				_os.putArchiveEntry(_e)
-				ioStreamCopy(_os, aStream)
+				Packages.org.apache.commons.io.IOUtils.copyLarge(aStream, _os)
 				_os.closeArchiveEntry()
 			})
 		}
 	})
 }
+/**
+ * <odoc>
+ * <key>io.listFilesTAR(aTARfile, isGzip) : Array</key>
+ * Given aTARfile (or output stream (with isGzip = true/false)) will return an array with the TAR file entries. Each entry will
+ * have: isDirectory (boolean), isFile (boolean), canonicalPath (string), filepath (string), filename (string), size (number),
+ * lastModified (date), groupId (string), group (string), userId (string) and user (string). 
+ * </odoc> 
+ */
 IO.prototype.listFilesTAR = function(aTARfile, isGzip) {
 	var files = []
 	
-	io.readFileTARStream(aTARfile, isGzip, _is => {
+	io.readFileTAR2Stream(aTARfile, isGzip, _is => {
 		if (_is != "null") {
 			var _e = _is.getNextTarEntry()
 			while(_e != null) {

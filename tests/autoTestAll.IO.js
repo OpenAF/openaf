@@ -129,4 +129,21 @@
         io.rm("__autoNewTest.js");
         ow.test.assert(io.fileExists("__autoNewTest.js"), false, "Problem removing file.");
     };
+
+    exports.testTAR = () => {
+        var tmp1 = io.createTempFile("tartest1_", ".tgz")
+        var str = "This is a test"
+
+        io.writeFileTARStream(tmp1, __, writer => {
+            $from(io.listFiles(getOpenAFPath()).files)
+            .equals("isFile", true)
+            .select(r => writer(r.filename, io.readFileStream(r.filepath)) )
+        })
+
+        var lst = io.listFilesTAR(tmp1)
+        ow.test.assert($from(lst).equals("filename", "openaf.jar").any(), true, "Problem with writeFileTARStream/listFilesTAR")
+
+        io.writeFileTARBytes(tmp1, "test.txt", __, af.fromString2Bytes(str))
+        ow.test.assert(af.fromBytes2String(io.readFileTARBytes(tmp1, "test.txt")), str, "Problem with writeFileTARBytes/readFileTARBytes")
+    }
 })();

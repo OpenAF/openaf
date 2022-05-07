@@ -58,6 +58,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testCopyMoveDeleteFile;
 
+   - name: IO::IO Test TAR functionality
+     from: IO::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testTAR;
+
 todo:
    # IO tests
    # --------
@@ -71,3 +76,4 @@ todo:
    - IO::IO Test Gzip Native to Byte array
    - IO::IO Test binary file detection
    - IO::IO Test copy/move/delete file
+   - IO::IO Test TAR functionality
