@@ -1041,28 +1041,31 @@ OpenWrap.format.prototype.hmacSHA512 = hmacSHA512;
 
 /**
  * <odoc>
- * <key>ow.format.timeago(aDate) : String</key>
+ * <key>ow.format.timeago(aDate, isAbv) : String</key>
  * Will output how much time ago aDate is (e.g. 2 years ago, 30 minutes ago, etc...).\
+ * Optionally isAbv = true for abbreviated output. 
  * (available after ow.loadFormat())
  * </odoc>
  */
-OpenWrap.format.prototype.timeago = function(date) {
+OpenWrap.format.prototype.timeago = function(date, isAbv) {
+	_$(isAbv, "isAbv").isBoolean().default(false)
+
     date = new Date(date);
     var seconds = Math.floor((new Date() - date) / 1000);
     var interval = Math.floor(seconds / 31536000);
-    if (interval > 1) {return "" + interval + " years ago"; }
+    if (interval > 1) {return "" + interval + (isAbv ? "yrs" : " years ago") }
     interval = Math.floor(seconds / 2592000);
-    if (interval > 1) {return "" + interval + " months ago"; }
+    if (interval > 1) {return "" + interval + (isAbv ? "mths" : " months ago") }
     interval = Math.floor(seconds / 86400);
-    if (interval > 1) {return "" + interval + " days ago"; }
+    if (interval > 1) {return "" + interval + (isAbv ? "days" : " days ago") }
     interval = Math.floor(seconds / 3600);
-    if (interval > 1) {return "" + interval + " hours ago"; }
+    if (interval > 1) {return "" + interval + (isAbv ? "hrs" : " hours ago") }
     interval = Math.floor(seconds / 60);
-    if (interval > 1) {return "" + interval + " minutes ago"; }
+    if (interval > 1) {return "" + interval + (isAbv ? "mins" : " minutes ago") }
     if (Math.floor(seconds) === 0) {
-      return 'Just now';
+      return (isAbv ? "now" : 'Just now');
     } else {
-      return Math.floor(seconds) + ' seconds ago';
+      return Math.floor(seconds) + (isAbv ? "secs" : ' seconds ago');
     }
 }
 
