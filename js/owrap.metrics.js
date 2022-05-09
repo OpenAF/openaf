@@ -164,7 +164,82 @@ OpenWrap.metrics.prototype.__m = {
         var _hspF = $from(ow.java.getLocalJavaPIDs()).equals("pid", getPid()).at(0)
 
         if (isMap(_hspF)) {
-            return ow.java.parseHSPerf(_hspF.path).sun
+            var o = ow.java.parseHSPerf(_hspF.path)
+
+            var gcGens = []
+            $from(o.sun.gc.generation).select(gen => {
+              gcGens.push({
+                gen  : gen.name,
+                used : gen.__totalUsed,
+                total: gen.capacity,
+                max  : gen.maxCapacity
+              })
+            })
+
+            var gcCols = []
+            gcCols = o.sun.gc.collector.map(r => {
+                return {
+                  name : r.name,
+                  count: r.invocations,
+                  avg  : r.__avgExecTime,
+                  last : r.__lastExecTime,
+                  lastEntryTime: isDate(r.__lastEntryDate) ? r.__lastEntryDate.getTime() : __,
+                  lastExitTime: isDate(r.__lastExitDate) ? r.__lastExitDate.getTime() : __,
+                  lastEntryDate: r.__lastEntryDate,
+                  lastExitDate: r.__lastExitDate,
+                  lastExecTime: r.__lastExecTime,
+                  avgExecTime: r.__avgExecTime
+                }
+            })
+
+            var gcSpaces = []
+            $from(o.sun.gc.generation).select(gen => {
+                $from(gen.space).select(space => {
+                  gcSpaces.push({
+                    gen  : gen.name,
+                    space: space.name,
+                    used : space.used > 0 ? space.used : 0,
+                    total: space.capacity > 0 ? space.capacity : 0,
+                    max  : space.maxCapacity > 0 ? space.maxCapacity : 0
+                  })
+                })
+            })
+
+            var mem = { max: 0, total: 0, used: 0, free: 0 }
+            $from(o.sun.gc.generation).select(gen => {
+              $from(gen.space).select(space => {
+                mem.max   = (mem.max < Number(space.maxCapacity)) ? Number(space.maxCapacity) : mem.max
+                mem.used  = mem.used + Number(space.used)
+                mem.total = isNumber(space.capacity) ? mem.total + Number(space.capacity) : mem.total
+              })
+            })
+
+            return {
+                java: {
+                    cmd: o.sun.rt.javaCommand,
+                    started: o.sun.rt.__createVmBeginDate.toISOString(),
+                    jvmName: o.java.property.java.vm.name,
+                    jvmVersion: o.java.property.java.vm.version,
+                    jvmVendor: o.java.property.java.vm.vendor,
+                    gcCause: o.sun.gc.cause,
+                    gcLastCause: o.sun.gc.lastCause,
+                    appTime: ow.format.round(o.sun.rt.__percAppTime, 2),
+                    vmStart: o.sun.rt.__createVmBeginDate
+                },
+                gcGens: gcGens,
+                gcCollections: gcCols,
+                gcSpaces: gcSpaces,
+                memory: {
+                    max: mem.max,
+                    total: mem.total,
+                    used: mem.used,
+                    free: mem.total - mem.used,
+                    metaMax: o.sun.gc.metaspace.maxCapacity,
+                    metaTotal: o.sun.gc.metaspace.capacity,
+                    metaUsed: o.sun.gc.metaspace.used,
+                    metaFree: o.sun.gc.metaspace.capacity - o.sun.gc.metaspace.used
+                }
+            }
         } else {
             return __
         }
