@@ -460,7 +460,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         if (isMap(obj)) {
             var keys = Object.keys(obj)
             // build labels
-            lbs = _$(lbs).default([])
+            lbs = _$(lbs).default({})
             keys.forEach(key => {
                 if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) {
                     var _key   = String(key)
@@ -477,10 +477,10 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
                     _value = _value.replace(/\n/g, "\\\\n").replace(/\\/g, "\\\\").replace(/\"/g, "\\\"")
                     
                     // Adding
-                    if (lbs.filter(r => r.startsWith(_key + "=")).length <= 0) lbs.push(_key + "=\"" + _value + "\"")
+                    lbs[_key] = "\"" + _value + "\""
                 }
             })
-            var lprefix = (lbs.length > 0 ? "{" + lbs.join(",") + "}" : "")
+            var lprefix = (Object.keys(lbs).length > 0 ? "{" + Object.keys(lbs).map(k => k + "=" + lbs[k]).join(",") + "}" : "")
   
             // build each map metric entry
             keys.forEach(key => {
@@ -499,14 +499,15 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         suf = _$(suf).default("")
         var ar = ""
         if (isArray(obj)) {
-            lbs = _$(lbs).default([])
+            lbs = _$(lbs).default({})
             var orig = String(suf)
             for(var i in obj) {
                 if (isDef(obj[i])) {
-                    //var tlbs = lbs.concat("_id" + "=\"" + String(i) + "\"")
                     var tlbs = clone(lbs)
+                    if (isDef(tlbs["_id"])) tlbs["_id"] = "\"" + tlbs["_id"].replace(/"/g, "") + "." + String(i) + "\""; else tlbs["_id"] = "\"" + String(i) + "\""
+                    //var tlbs = clone(lbs)
                     //try to identify key
-                    var addSuf = false
+                    /*var addSuf = false
                     if (isMap(obj[i])) {
                         if (isDef(obj[i].key))  { suf = orig + "_" + obj[i].keyb; addSuf = true }
                         if (isDef(obj[i].name)) { suf = orig + "_" + obj[i].name; addSuf = true }
@@ -517,7 +518,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
                         if (!addSuf) suf = orig + "_row" + String(i)
                     } else {
                         suf = orig + "_row" + String(i)
-                    }
+                    }*/
   
                     if (isMap(obj[i]))                         ar += _map(obj[i], prefix, tlbs, suf)
                     if (isArray(obj[i]))                       ar += _arr(obj[i], prefix, tlbs, suf)
@@ -535,8 +536,8 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             obj = (obj ? 1 : 0);
         }
   
-        tlbs = _$(tlbs).default([])
-        var lprefix = (tlbs.length > 0 ? "{" + tlbs.join(",") + "}" : "")
+        tlbs = _$(tlbs).default({})
+        var lprefix = (Object.keys(tlbs).length > 0 ? "{" + Object.keys(tlbs).map(k => k + "=" + tlbs[k]).join(",") + "}" : "")
   
         if (isNumber(obj)) {
             ar += _help(prefix) + prefix + suf + lprefix + " " + Number(aObj) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
