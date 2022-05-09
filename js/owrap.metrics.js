@@ -514,9 +514,9 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
                         if (isDef(obj[i].uuid)) { suf = orig + "_" + obj[i].uuid; addSuf = true }
                         if (isDef(obj[i].UUID)) { suf = orig + "_" + obj[i].UUID; addSuf = true }
   
-                        if (!addSuf) suf = orig + "_id" + String(i)
+                        if (!addSuf) suf = orig + "_row" + String(i)
                     } else {
-                        suf = orig + "_id" + String(i)
+                        suf = orig + "_row" + String(i)
                     }
   
                     if (isMap(obj[i]))                         ar += _map(obj[i], prefix, tlbs, suf)
