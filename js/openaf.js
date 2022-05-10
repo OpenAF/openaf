@@ -6946,6 +6946,38 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
 };
 /**
  * <odoc>
+ * <key>io.pipeLn(aFunc)</key>
+ * Starts a wait on stdin calling aFunc everytime a line is sent to stdin. The wait cycle breaks
+ * when aFunc returns true.
+ * </odoc>
+ */
+IO.prototype.pipeLn = function(aFunc) {
+	var br = new java.io.BufferedReader(new java.io.InputStreamReader(java.lang.System.in))
+
+	var cont = true
+	while(cont) {
+		var line = br.readLine()
+		if (line != null) cont = !aFunc(line); else cont = false
+	}
+}
+/**
+ * <odoc>
+ * <key>io.pipeCh(aFunc)</key>
+ * Starts a wait on stdin calling aFunc everytime a character is sent to stdin. The wait cycle breaks
+ * when aFunc returns true.
+ * </odoc>
+ */
+IO.prototype.pipeCh = function(aFunc) {
+	var br = new java.io.BufferedReader(new java.io.InputStreamReader(java.lang.System.in))
+  
+	var cont = true
+	while(cont) {
+	  var c = br.read()
+	  if (c != null) cont = !aFunc(c); else cont = false
+	}
+}
+/**
+ * <odoc>
  * <key>io.readFileBytesRO(aFile) : ByteArray</key>
  * Tries to read aFile in read-only mode (even if being used by another process) and returns the corresponding byte array.
  * </odoc>

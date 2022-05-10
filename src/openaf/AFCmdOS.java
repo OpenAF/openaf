@@ -473,10 +473,12 @@ public class AFCmdOS extends AFCmdBase {
 				input.append("\n");
 			}
 		} else {
-			while (br.ready()) {
-				input.append(br.readLine());
-				input.append("\n");
-			}			
+			if (!filescript) {
+				while (br.ready()) {
+					input.append(br.readLine());
+					input.append("\n");
+				}			
+			}
 		}
 		
 		//br.close();
