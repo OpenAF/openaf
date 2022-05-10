@@ -473,7 +473,7 @@ public class AFCmdOS extends AFCmdBase {
 				input.append("\n");
 			}
 		} else {
-			if (!filescript) {
+			if (!filescript && !ojob) {
 				while (br.ready()) {
 					input.append(br.readLine());
 					input.append("\n");
