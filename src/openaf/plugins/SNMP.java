@@ -343,10 +343,18 @@ public class SNMP extends ScriptableObject {
 						// https://www.agentpp.com/doc/snmp4j-agent/org/snmp4j/agent/io/prop/PropertyMOInput.html
 						switch((String) nmentry.get("type")) {
 						case "i": 
-							trap.add(new VariableBinding(toid, new Integer32((Integer) nmentry.get("value"))));
+							if (nmentry.get("value") instanceof java.lang.Double) {
+								trap.add(new VariableBinding(toid, new Integer32(((Double) nmentry.get("value")).intValue())));
+							} else {
+								trap.add(new VariableBinding(toid, new Integer32((Integer) nmentry.get("value"))));
+							}
 							break;
 						case "u": 
-							trap.add(new VariableBinding(toid, new UnsignedInteger32((Integer) nmentry.get("value"))));
+							if (nmentry.get("value") instanceof java.lang.Double) {
+								trap.add(new VariableBinding(toid, new UnsignedInteger32(((Double) nmentry.get("value")).intValue())));
+							} else {
+								trap.add(new VariableBinding(toid, new UnsignedInteger32((Integer) nmentry.get("value"))));
+							}
 							break;
 						case "c": 
 							trap.add(new VariableBinding(toid, new Counter32((Integer) nmentry.get("value"))));
@@ -363,7 +371,8 @@ public class SNMP extends ScriptableObject {
 						case "a": 
 							trap.add(new VariableBinding(toid, new TimeTicks((Integer) nmentry.get("value"))));
 							break;
-						case "b": 
+						case "b":
+							// The BIT STRING type has been temporarily defined in RFC 1442 and obsoleted by RFC 2578. Use OctetString (i.e. BITS syntax) instead.
 							break;
 						case "d":
 						case "s": 
