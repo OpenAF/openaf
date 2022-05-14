@@ -564,30 +564,52 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
  * <odoc>
  * <key>printTree(aObj, aOptions) : String</key>
  * Given aObj(ect) will return a tree with the object elements. Optionaly you can specificy aOptions:
- * noansi (boolean) no ansi character sequences, curved (boolean) for UTF curved characters, fullKeySize (boolean) to
+ * noansi (boolean) no ansi character sequences, curved (boolean) for UTF curved characters, wordWrap (boolean) to wrap long string values, compact (boolean) to compact tree lines, fullKeySize (boolean) to
  * pad the each entry key, fullValSize (boolean) to pad the entire key and value and withValues (boolean) to include or not each key values
  * </odoc>
  */
- const printTree = function(aM, aOptions, aPrefix) {
+const printTree = function(aM, aOptions, aPrefix) {
 	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
 
 	var out  = ""
 	aPrefix  = _$(aPrefix).isString().default("")
 	aOptions = _$(aOptions).isMap().default({})
+	var useAnsi = true, useCurved = true
   
-	aOptions = merge({
-	  noansi: false,
-	  curved: true,
-	  fullKeySize: true,
-	  fullValSize: false,
-	  withValues: true
-	}, aOptions)
+	ow.loadFormat()
+	if (!ow.format.isWindows()) {
+		useCurved = (__conAnsi ? true : false)
+		if (isUnDef(useAnsi) && __initializeCon()) {
+			useAnsi = __conAnsi
+		}
+	} else {
+		if (__initializeCon()) {
+			if (!ansiWinTermCap()) ansiStart();
+			if (isDef(__con.getTerminal().getOutputEncoding())) useCurved = (__conAnsi ? true : false)
+			if (isUnDef(useAnsi)) {
+				useAnsi = __conAnsi
+			}
+		}
+	}
+
+	aOptions = merge(merge({ noansi: !useAnsi, curved: useCurved }, __flags.TREE), aOptions)
   
-	var line = (aOptions.noansi ? "|" : "│") 
-	var endc = (aOptions.noansi ? "\\- " : (aOptions.curved ? "╰─ " : "└─ "))
-	var strc = (aOptions.noansi ? "/- " : "┬─ ")
-	var ssrc = (aOptions.noansi ? "-- " : "── ")
-	var midc = (aOptions.noansi ? "|- " : "├─ ")
+	var slines, line, endc, strc, ssrc, midc
+	if (aOptions.compact) {
+		slines = 2
+		line = (aOptions.noansi ? "|" : "│") 
+		endc = (aOptions.noansi ? "\\ " : (aOptions.curved ? "╰ " : "└ "))
+		strc = (aOptions.noansi ? "/ " : "┬ ")
+		ssrc = (aOptions.noansi ? "- " : "─ ")
+		midc = (aOptions.noansi ? "| " : "├ ")
+	} else {
+		slines = 3
+		line = (aOptions.noansi ? "|" : "│") 
+		endc = (aOptions.noansi ? "\\- " : (aOptions.curved ? "╰─ " : "└─ "))
+		strc = (aOptions.noansi ? "/- " : "┬─ ")
+		ssrc = (aOptions.noansi ? "-- " : "── ")
+		midc = (aOptions.noansi ? "|- " : "├─ ")
+	}
   
 	var size = Object.keys(aM).length, ksize = __, vsize = __
   
@@ -638,22 +660,39 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		  if (_lv > vsize) vsize = _lv
 	  })
 	}
+
+	var _wf = (m, p) => {
+		if (!aOptions.wordWrap) return m
+
+		p = _$(p).isString().default("") + " "
+		if (!isString(m)) return m
+		var ss = Number(__con.getTerminal().getWidth())
+		var ts = ss - _al(p)
+
+		if (m.indexOf("\n") < 0)
+			if (ts <= 0 || m.length <= ts) return m
+
+		return ow.format.string.wordWrap(m, ts).split("\n").map((_l, i) => {
+			if (i == 0) return _l
+			return p + _l
+		}).join("\n")
+	}
   
 	Object.keys(aM).forEach((k, i) => {
 	  var suffix = "", v = _get(k, aM[k]), lv = _al(v)
+	  var aPrefix2 = (i < (size-1) ? line : " ") + repeat((isDef(ksize) ? ksize : _al(k)) + slines, " ")
+
 	  if (isObject(aM[k])) {
-		suffix = printTree(aM[k], 
-				      	   aOptions, 
-					       aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + 3, " "))
+		suffix = printTree(aM[k], aOptions, aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " "))
 	  }
   
 	  if (i > 0 && size <= (i+1)) {
-		out += aPrefix + endc + v + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix
+		out += aPrefix + endc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix
 	  } else {
 		if (i == 0) {
-		  out += (size == 1 ? ssrc : strc) + v + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
+		  out += (size == 1 ? ssrc : strc) + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
 		} else {
-		  out += aPrefix + midc + v + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
+		  out += aPrefix + midc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
 		}
 	  }
 	})
@@ -6738,7 +6777,14 @@ var __flags = _$(__flags).isMap().default({
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : false,
 	MD_NOMAXWIDTH              : true,
-	OPENMETRICS_LABEL_MAX      : true   // If false openmetrics label name & value length won't be restricted
+	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
+	TREE: {
+		fullKeySize: true,
+		fullValSize: false,
+		withValues : true,
+		wordWrap   : true,
+		compact    : true
+	}
 })
 
 /**

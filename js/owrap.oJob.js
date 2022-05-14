@@ -2784,7 +2784,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			if (isArray(aObj)) print(printTable(aObj, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)));
  			break;
 		case "tree":
-			print(printTree(aObj), { noansi: !__conAnsi, curved: isDef(this.__codepage) ? true : false })
+			print(printTree(aObj, { noansi: !__conAnsi, curved: isDef(this.__codepage) ? true : false }))
 			break;
  		case "map":
  			print(printMap(aObj, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi));
