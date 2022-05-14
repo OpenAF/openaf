@@ -560,8 +560,17 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	return output;
 }
 
-const printTree = function(aM, aOptions, aPrefix) {
-	//[] call
+/**
+ * <odoc>
+ * <key>printTree(aObj, aOptions) : String</key>
+ * Given aObj(ect) will return a tree with the object elements. Optionaly you can specificy aOptions:
+ * noansi (boolean) no ansi character sequences, curved (boolean) for UTF curved characters, fullKeySize (boolean) to
+ * pad the each entry key, fullValSize (boolean) to pad the entire key and value and withValues (boolean) to include or not each key values
+ * </odoc>
+ */
+ const printTree = function(aM, aOptions, aPrefix) {
+	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
+
 	var out  = ""
 	aPrefix  = _$(aPrefix).isString().default("")
 	aOptions = _$(aOptions).isMap().default({})
@@ -583,12 +592,31 @@ const printTree = function(aM, aOptions, aPrefix) {
 	var size = Object.keys(aM).length, ksize = __, vsize = __
   
 	var miniCache = {}
+
+	var _clr = __, _ac = __, _al = __
+	if (!aOptions.noansi) {
+		_clr = aO => {
+			switch(descType(aO)) {
+			case "number": return ansiColor(__colorFormat.number, String(aO))
+			case "string": return ansiColor(__colorFormat.string, String(aO))
+			case "boolean": return ansiColor(__colorFormat.boolean, String(aO))
+			default: return ansiColor(__colorFormat.default, String(aO))
+			}
+		}
+		_ac  = ansiColor
+		_al  = ansiLength
+	} else {
+		_clr = s => s
+		_ac  = (o, s) => s
+		_al  = s => s.length
+	}
+
 	var _get = (k, v) => {
 	  if (isDef(miniCache[k])) return miniCache[k]
   
 	  var _k = (isNumber(k) ? "[" + k + "]" : k) 
 	  if (aOptions.withValues) {
-		miniCache[k] = ansiColor(__colorFormat.key, _k) + (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + (!isObject(v) ? ": " + colorify(v) : "")
+		miniCache[k] = _ac(__colorFormat.key, _k) + (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + (!isObject(v) ? ": " + _clr(v) : "")
 	  } else {
 		miniCache[k] = _k
 	  }
@@ -605,11 +633,14 @@ const printTree = function(aM, aOptions, aPrefix) {
   
 	if (aOptions.fullValSize) {
 	  vsize = 0
-	  Object.keys(aM).forEach(k => (ansiLength(_get(k, aM[k])) > vsize ? vsize = ansiLength(_get(k, aM[k])) : __))
+	  Object.keys(aM).forEach(k => {
+		  var lv = _al(_get(k, aM[k]))
+		  if (_lv > vsize) vsize = _lv
+	  })
 	}
   
 	Object.keys(aM).forEach((k, i) => {
-	  var suffix = "", v = _get(k, aM[k]), lv = ansiLength(v)
+	  var suffix = "", v = _get(k, aM[k]), lv = _al(v)
 	  if (isObject(aM[k])) {
 		suffix = printTree(aM[k], 
 				      	   aOptions, 
