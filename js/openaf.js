@@ -560,6 +560,78 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	return output;
 }
 
+const printTree = function(aM, aOptions, aPrefix) {
+	//[] call
+	var out  = ""
+	aPrefix  = _$(aPrefix).isString().default("")
+	aOptions = _$(aOptions).isMap().default({})
+  
+	aOptions = merge({
+	  noansi: false,
+	  curved: true,
+	  fullKeySize: true,
+	  fullValSize: false,
+	  withValues: true
+	}, aOptions)
+  
+	var line = (aOptions.noansi ? "|" : "│") 
+	var endc = (aOptions.noansi ? "\\- " : (aOptions.curved ? "╰─ " : "└─ "))
+	var strc = (aOptions.noansi ? "/- " : "┬─ ")
+	var ssrc = (aOptions.noansi ? "-- " : "── ")
+	var midc = (aOptions.noansi ? "|- " : "├─ ")
+  
+	var size = Object.keys(aM).length, ksize = __, vsize = __
+  
+	var miniCache = {}
+	var _get = (k, v) => {
+	  if (isDef(miniCache[k])) return miniCache[k]
+  
+	  var _k = (isNumber(k) ? "[" + k + "]" : k) 
+	  if (aOptions.withValues) {
+		miniCache[k] = ansiColor(__colorFormat.key, _k) + (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + (!isObject(v) ? ": " + colorify(v) : "")
+	  } else {
+		miniCache[k] = _k
+	  }
+	  return miniCache[k]
+	}
+  
+	if (aOptions.fullKeySize) {
+	  ksize = 0
+	  Object.keys(aM).forEach(k => {
+		var _k = (isNumber(k) ? "[" + k + "]" : k) 
+		if (_k.length > ksize) ksize = _k.length
+	  })
+	}
+  
+	if (aOptions.fullValSize) {
+	  vsize = 0
+	  Object.keys(aM).forEach(k => (ansiLength(_get(k, aM[k])) > vsize ? vsize = ansiLength(_get(k, aM[k])) : __))
+	}
+  
+	Object.keys(aM).forEach((k, i) => {
+	  var suffix = "", v = _get(k, aM[k]), lv = ansiLength(v)
+	  if (isObject(aM[k])) {
+		suffix = printTree(aM[k], 
+				      	   aOptions, 
+					       aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + 3, " "))
+	  }
+  
+	  if (i > 0 && size <= (i+1)) {
+		out += aPrefix + endc + v + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix
+	  } else {
+		if (i == 0) {
+		  out += (size == 1 ? ssrc : strc) + v + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
+		} else {
+		  out += aPrefix + midc + v + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
+		}
+	  }
+	})
+  
+	out = (out.endsWith("\n") ? out.substring(0, out.length - 2) : out)
+  
+	return out
+}
+
 /**
  * <odoc>
  * <key>printMap(aMap, aWidth, aTheme, useAnsi) : String</key>
