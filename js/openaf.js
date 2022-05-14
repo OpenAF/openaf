@@ -562,18 +562,20 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 /**
  * <odoc>
- * <key>printTree(aObj, aOptions) : String</key>
- * Given aObj(ect) will return a tree with the object elements. Optionaly you can specificy aOptions:
+ * <key>printTree(aObj, aWidth, aOptions) : String</key>
+ * Given aObj(ect) will return a tree with the object elements. Optionaly you can specificy aWidth and/or aOptions:
  * noansi (boolean) no ansi character sequences, curved (boolean) for UTF curved characters, wordWrap (boolean) to wrap long string values, compact (boolean) to compact tree lines, fullKeySize (boolean) to
  * pad the each entry key, fullValSize (boolean) to pad the entire key and value and withValues (boolean) to include or not each key values
  * </odoc>
  */
-const printTree = function(aM, aOptions, aPrefix) {
+const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
 
 	var out  = ""
 	aPrefix  = _$(aPrefix).isString().default("")
 	aOptions = _$(aOptions).isMap().default({})
+	aWidth   = _$(aWidth).isNumber().default(__con.getTerminal().getWidth())
+
 	var useAnsi = true, useCurved = true
   
 	ow.loadFormat()
@@ -666,7 +668,7 @@ const printTree = function(aM, aOptions, aPrefix) {
 
 		p = _$(p).isString().default("") + " "
 		if (!isString(m)) return m
-		var ss = Number(__con.getTerminal().getWidth())
+		var ss = Number(aWidth)
 		var ts = ss - _al(p)
 
 		if (m.indexOf("\n") < 0)
@@ -683,7 +685,7 @@ const printTree = function(aM, aOptions, aPrefix) {
 	  var aPrefix2 = (i < (size-1) ? line : " ") + repeat((isDef(ksize) ? ksize : _al(k)) + slines, " ")
 
 	  if (isObject(aM[k])) {
-		suffix = printTree(aM[k], aOptions, aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " "))
+		suffix = printTree(aM[k], aWidth, aOptions, aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " "))
 	  }
   
 	  if (i > 0 && size <= (i+1)) {
