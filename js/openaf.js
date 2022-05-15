@@ -576,7 +576,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	aOptions = _$(aOptions).isMap().default({})
 	aWidth   = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
   
-	aOptions = merge({
+	aOptions = merge(merge({
 	  noansi: false,
 	  curved: true,
 	  fullKeySize: true,
@@ -584,7 +584,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	  withValues: true,
       wordWrap: true,
 	  compact: true
-	}, aOptions)
+	}, __flags.TREE), aOptions)
   
 	var slines, line, endc, strc, ssrc, midc
 	if (aOptions.compact) {
