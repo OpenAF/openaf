@@ -574,27 +574,17 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	var out  = ""
 	aPrefix  = _$(aPrefix).isString().default("")
 	aOptions = _$(aOptions).isMap().default({})
-	aWidth   = _$(aWidth).isNumber().default(__con.getTerminal().getWidth())
-
-	var useAnsi = true, useCurved = true
+	aWidth   = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
   
-	ow.loadFormat()
-	if (!ow.format.isWindows()) {
-		useCurved = (__conAnsi ? true : false)
-		if (isUnDef(useAnsi) && __initializeCon()) {
-			useAnsi = __conAnsi
-		}
-	} else {
-		if (__initializeCon()) {
-			if (!ansiWinTermCap()) ansiStart();
-			if (isDef(__con.getTerminal().getOutputEncoding())) useCurved = (__conAnsi ? true : false)
-			if (isUnDef(useAnsi)) {
-				useAnsi = __conAnsi
-			}
-		}
-	}
-
-	aOptions = merge(merge({ noansi: !useAnsi, curved: useCurved }, __flags.TREE), aOptions)
+	aOptions = merge({
+	  noansi: false,
+	  curved: true,
+	  fullKeySize: true,
+	  fullValSize: false,
+	  withValues: true,
+      wordWrap: true,
+	  compact: true
+	}, aOptions)
   
 	var slines, line, endc, strc, ssrc, midc
 	if (aOptions.compact) {
@@ -668,15 +658,15 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 
 		p = _$(p).isString().default("") + " "
 		if (!isString(m)) return m
-		var ss = Number(aWidth)
+		var ss = aWidth
 		var ts = ss - _al(p)
 
 		if (m.indexOf("\n") < 0)
-			if (ts <= 0 || m.length <= ts) return m
+			if (ts <= 0 || m.substring(m.indexOf(": ")).length <= ts) return m
 
 		return ow.format.string.wordWrap(m, ts).split("\n").map((_l, i) => {
 			if (i == 0) return _l
-			return p + _l
+			return ansiColor("RESET", p) + ansiColor(__colorFormat.string, _l)
 		}).join("\n")
 	}
   
@@ -6786,6 +6776,9 @@ var __flags = _$(__flags).isMap().default({
 		withValues : true,
 		wordWrap   : true,
 		compact    : true
+	},
+	CONSOLE: {
+		view: "map"
 	}
 })
 
