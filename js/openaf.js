@@ -611,10 +611,10 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	if (!aOptions.noansi) {
 		_clr = aO => {
 			switch(descType(aO)) {
-			case "number": return ansiColor(__colorFormat.number, String(aO))
-			case "string": return ansiColor(__colorFormat.string, String(aO))
-			case "boolean": return ansiColor(__colorFormat.boolean, String(aO))
-			default: return ansiColor(__colorFormat.default, String(aO))
+			case "number": return _ac(__colorFormat.number, String(aO)+_ac("RESET",""))
+			case "string": return _ac(__colorFormat.string, String(aO)+_ac("RESET",""))
+			case "boolean": return _ac(__colorFormat.boolean, String(aO)+_ac("RESET",""))
+			default: return _ac(__colorFormat.default, String(aO)+_ac("RESET",""))
 			}
 		}
 		_ac  = ansiColor
@@ -674,7 +674,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	  var suffix = "", v = _get(k, aM[k]), lv = _al(v)
 	  var aPrefix2 = (i < (size-1) ? line : " ") + repeat((isDef(ksize) ? ksize : _al(k)) + slines, " ")
 
-	  if (isObject(aM[k])) {
+	  if (isMap(aM[k]) || isArray(aM[k])) {
 		suffix = printTree(aM[k], aWidth, aOptions, aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " "))
 	  }
   
@@ -682,9 +682,9 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		out += aPrefix + endc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix
 	  } else {
 		if (i == 0) {
-		  out += (size == 1 ? ssrc : strc) + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
+		  out += (size == 1 ? ssrc : strc) + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + _ac("RESET", "") + "\n"
 		} else {
-		  out += aPrefix + midc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
+		  out += aPrefix + midc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + _ac("RESET", "") + "\n"
 		}
 	  }
 	})
