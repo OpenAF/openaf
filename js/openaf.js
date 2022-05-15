@@ -562,6 +562,140 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 /**
  * <odoc>
+ * <key>printTree(aObj, aWidth, aOptions) : String</key>
+ * Given aObj(ect) will return a tree with the object elements. Optionaly you can specificy aWidth and/or aOptions:
+ * noansi (boolean) no ansi character sequences, curved (boolean) for UTF curved characters, wordWrap (boolean) to wrap long string values, compact (boolean) to compact tree lines, fullKeySize (boolean) to
+ * pad the each entry key, fullValSize (boolean) to pad the entire key and value and withValues (boolean) to include or not each key values
+ * </odoc>
+ */
+const printTree = function(aM, aWidth, aOptions, aPrefix) {
+	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
+
+	var out  = ""
+	aPrefix  = _$(aPrefix).isString().default("")
+	aOptions = _$(aOptions).isMap().default({})
+	aWidth   = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
+  
+	aOptions = merge({
+	  noansi: false,
+	  curved: true,
+	  fullKeySize: true,
+	  fullValSize: false,
+	  withValues: true,
+      wordWrap: true,
+	  compact: true
+	}, aOptions)
+  
+	var slines, line, endc, strc, ssrc, midc
+	if (aOptions.compact) {
+		slines = 2
+		line = (aOptions.noansi ? "|" : "│") 
+		endc = (aOptions.noansi ? "\\ " : (aOptions.curved ? "╰ " : "└ "))
+		strc = (aOptions.noansi ? "/ " : "┬ ")
+		ssrc = (aOptions.noansi ? "- " : "─ ")
+		midc = (aOptions.noansi ? "| " : "├ ")
+	} else {
+		slines = 3
+		line = (aOptions.noansi ? "|" : "│") 
+		endc = (aOptions.noansi ? "\\- " : (aOptions.curved ? "╰─ " : "└─ "))
+		strc = (aOptions.noansi ? "/- " : "┬─ ")
+		ssrc = (aOptions.noansi ? "-- " : "── ")
+		midc = (aOptions.noansi ? "|- " : "├─ ")
+	}
+  
+	var size = Object.keys(aM).length, ksize = __, vsize = __
+  
+	var miniCache = {}
+
+	var _clr = __, _ac = __, _al = __
+	if (!aOptions.noansi) {
+		_clr = aO => {
+			switch(descType(aO)) {
+			case "number": return ansiColor(__colorFormat.number, String(aO))
+			case "string": return ansiColor(__colorFormat.string, String(aO))
+			case "boolean": return ansiColor(__colorFormat.boolean, String(aO))
+			default: return ansiColor(__colorFormat.default, String(aO))
+			}
+		}
+		_ac  = ansiColor
+		_al  = ansiLength
+	} else {
+		_clr = s => s
+		_ac  = (o, s) => s
+		_al  = s => s.length
+	}
+
+	var _get = (k, v) => {
+	  if (isDef(miniCache[k])) return miniCache[k]
+  
+	  var _k = (isNumber(k) ? "[" + k + "]" : k) 
+	  if (aOptions.withValues) {
+		miniCache[k] = _ac(__colorFormat.key, _k) + (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + (!isObject(v) ? ": " + _clr(v) : "")
+	  } else {
+		miniCache[k] = _k
+	  }
+	  return miniCache[k]
+	}
+  
+	if (aOptions.fullKeySize) {
+	  ksize = 0
+	  Object.keys(aM).forEach(k => {
+		var _k = (isNumber(k) ? "[" + k + "]" : k) 
+		if (_k.length > ksize) ksize = _k.length
+	  })
+	}
+  
+	if (aOptions.fullValSize) {
+	  vsize = 0
+	  Object.keys(aM).forEach(k => {
+		  var lv = _al(_get(k, aM[k]))
+		  if (_lv > vsize) vsize = _lv
+	  })
+	}
+
+	var _wf = (m, p) => {
+		if (!aOptions.wordWrap) return m
+
+		p = _$(p).isString().default("") + " "
+		if (!isString(m)) return m
+		var ss = aWidth
+		var ts = ss - _al(p)
+
+		if (m.indexOf("\n") < 0)
+			if (ts <= 0 || m.substring(m.indexOf(": ")).length <= ts) return m
+
+		return ow.format.string.wordWrap(m, ts).split("\n").map((_l, i) => {
+			if (i == 0) return _l
+			return ansiColor("RESET", p) + ansiColor(__colorFormat.string, _l)
+		}).join("\n")
+	}
+  
+	Object.keys(aM).forEach((k, i) => {
+	  var suffix = "", v = _get(k, aM[k]), lv = _al(v)
+	  var aPrefix2 = (i < (size-1) ? line : " ") + repeat((isDef(ksize) ? ksize : _al(k)) + slines, " ")
+
+	  if (isObject(aM[k])) {
+		suffix = printTree(aM[k], aWidth, aOptions, aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " "))
+	  }
+  
+	  if (i > 0 && size <= (i+1)) {
+		out += aPrefix + endc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix
+	  } else {
+		if (i == 0) {
+		  out += (size == 1 ? ssrc : strc) + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
+		} else {
+		  out += aPrefix + midc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + "\n"
+		}
+	  }
+	})
+  
+	out = (out.endsWith("\n") ? out.substring(0, out.length - 2) : out)
+  
+	return out
+}
+
+/**
+ * <odoc>
  * <key>printMap(aMap, aWidth, aTheme, useAnsi) : String</key>
  * Returns a ASCII map representation of aMap optionally with a give aWidth, aTheme and/or useAnsi boolean. aTheme can be "utf" or "plain" depending on the
  * terminal capabilities.
@@ -6635,7 +6769,17 @@ var __flags = _$(__flags).isMap().default({
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : false,
 	MD_NOMAXWIDTH              : true,
-	OPENMETRICS_LABEL_MAX      : true   // If false openmetrics label name & value length won't be restricted
+	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
+	TREE: {
+		fullKeySize: true,
+		fullValSize: false,
+		withValues : true,
+		wordWrap   : true,
+		compact    : true
+	},
+	CONSOLE: {
+		view: "map"
+	}
 })
 
 /**

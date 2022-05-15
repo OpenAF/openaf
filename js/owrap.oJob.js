@@ -2749,7 +2749,7 @@ OpenWrap.oJob.prototype.addTodo = function(aOJobID, aJobsCh, aTodoCh, aJobName, 
  * <ojob>
  * <key>ow.oJob.output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "yaml", "table", "map", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "yaml", "table", "tree", "map", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
@@ -2783,6 +2783,9 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  		case "table":
  			if (isArray(aObj)) print(printTable(aObj, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)));
  			break;
+		case "tree":
+			print(printTree(aObj, __, { noansi: !__conAnsi, curved: isDef(this.__codepage) ? true : false }))
+			break;
  		case "map":
  			print(printMap(aObj, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi));
 			break;

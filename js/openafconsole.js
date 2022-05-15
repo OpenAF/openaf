@@ -13,7 +13,7 @@ var HELPSEPARATOR_ANSI = "─";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|view|sql|esql|dsql|pin|multi|diff";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|tree|view|sql|esql|dsql|pin|multi|diff";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "print(\"Encrypted text: \" + askEncrypt(\"Enter text: \"));",
@@ -796,6 +796,35 @@ function __table(aCmd) {
 	return false;
 }
 
+function __tree(aCmd) {
+	if (aCmd.match(/^off$|^0$/i)) { __flags.CONSOLE.view = "map"; return; }
+	if (aCmd.match(/^on$|^1$/i)) { __flags.CONSOLE.view = "tree"; return; }
+	if (aCmd == "") {
+		if (__flags.CONSOLE.view == "tree") {
+			__outputConsoleComments("View tree is active")
+		} else {
+			__outputConsoleComments("View tree is not active")
+		}
+		return true
+	}
+	
+	var __res = __processCmdLine(aCmd, true)
+	if ((isArray(__res) || isMap(__res))) {
+		var __pres = 0;
+		if (pauseCommand) {
+			var __lines = printTree(__res, con.getConsoleReader().getTerminal().getWidth(), { noansi: !colorCommand, curved: isDef(this.__codepage) ? true : false }).split(/\n/)
+			while(__pres >= 0) __pres = __pauseArray(__lines, __pres)
+		} else {
+			__outputConsole(printTree(__res, con.getConsoleReader().getTerminal().getWidth(), { noansi: !colorCommand, curved: isDef(this.__codepage) ? true : false }))
+		}
+		return true
+	} else {
+		__outputConsoleError("Not an array or a map.")
+		return true
+	}
+	return false
+}
+
 function __multi(aCmd) {
 	if (aCmd.match(/^off$|^0$/i)) { multiCommand = false; return; }
 	if (aCmd.match(/^on$|^1$/i)) { multiCommand = true; return; }
@@ -835,10 +864,19 @@ function __view(aCmd, fromCommand, shouldClear) {
 		if (outputCommand && (isMap(__res) || isArray(__res)) && Object.keys(__res).length > 0) {
 			var __pres = 0, prefix = (colorCommand ? jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) : "");
 			if (pauseCommand) {
-				var __lines = (prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand)).split(/\n/);
+				var __lines
+				if (__flags.CONSOLE.view == "tree") {
+					__lines = (prefix + printTree(__res, __, { noansi: !colorCommand, curved: isDef(this.__codepage) ? true : false })).split(/\n/)
+				} else {
+					__lines = (prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand)).split(/\n/)
+				}
 				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 			} else {
-				__outputConsole(prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand));
+				if (__flags.CONSOLE.view == "tree") {
+					__outputConsole(prefix + printTree(__res, __, { noansi: !colorCommand, curved: isDef(this.__codepage) ? true : false }))
+				} else {
+					__outputConsole(prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand))
+				}
 			}
 			if (isDef(__timeResult) && timeCommand) __time(__timeResult);
 			return true;
@@ -904,6 +942,10 @@ function __processCmdLine(aCommand, returnOnly) {
 			if (aCommand.match(/^table(?: +|$)/)) {
 				internalCommand = __table(aCommand.replace(/^table */, ""));
 			}		
+			if (aCommand.match(/^tree(?: +|$)/)) {
+				internalCommand = true
+				__tree(aCommand.replace(/^tree */, ""));
+			}	
 			if (aCommand.match(/^view(?: +|$)/)) {
 				internalCommand = true;
 				__view(aCommand.replace(/^view */, ""), true);
