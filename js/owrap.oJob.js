@@ -2502,16 +2502,16 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 			switch(aJobTypeArgs.lang) {
 			case "js":
-				res = origRes
+				res = res + "\n" + origRes
 				break;
 			case "oaf":
-				res = origRes
+				res = res + "\n" + origRes
 				break;
 			case "python":
 				parent.python = true;
 				if (!(res.indexOf("/* __oaf_ojob python */") >= 0)) {
 					var orig = String(res);
-					res  = "/* __oaf_ojob python */ $pyStart();";
+					res = "/* __oaf_ojob python */ $pyStart();" + res + "\n"
 					if (aJobTypeArgs.noTemplate) {
 						res += orig + ";try { args = merge(args, $py(" + stringify(origRes) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
 					} else {
@@ -2524,7 +2524,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				if (!(res.indexOf("/* __oaf_ojob ssh */") >= 0)) {
 					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh");
 					var orig = String(res);
-					res = "/* __oaf_ojob ssh */ var ft = io.createTempFile('ojob_', '.ojob'); io.writeFileString(ft, " + stringify(origRes) + ");\n";
+					res = "/* __oaf_ojob ssh */ var ft = io.createTempFile('ojob_', '.ojob'); io.writeFileString(ft, " + stringify(origRes) + ");\n" + res + "\n"
 					if (aJobTypeArgs.noTemplate) {
 						res += orig + ";";
 					} else {
@@ -2547,7 +2547,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
 						var orig = String(res);
-						res = "/* __oaf_ojob shell */ var ft = io.createTempFile('ojob_', '.bat'); io.writeFileString(ft, " + stringify(origRes) + ");\n";
+						res = "/* __oaf_ojob shell */ var ft = io.createTempFile('ojob_', '.bat'); io.writeFileString(ft, " + stringify(origRes) + ");\n" + res + "\n"
 						if (aJobTypeArgs.noTemplate) {
 							res += orig + ";";
 						} else {
@@ -2559,7 +2559,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					} else {
 						aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
 						var orig = String(res);
-                        res = "/* __oaf_ojob shell */ ";
+                        res = "/* __oaf_ojob shell */ " + res + "\n"
 						if (aJobTypeArgs.noTemplate) {
 							res += orig + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
 						} else {
@@ -2593,7 +2593,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 							if (isString(aJobTypeArgs.shellPrefix)) {
 								prefix = ".prefix(objOrStr(args, \"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 							}
-                            res = "/* __oaf_ojob shell */ ";
+                            res = "/* __oaf_ojob shell */ " + res + "\n";
 							if (aJobTypeArgs.noTemplate) {
 								res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
 							} else {
@@ -2605,7 +2605,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					} else if (isDef(aJobTypeArgs.langFn)) {
 						if (isString(aJobTypeArgs.langFn)) {
 							if (!(res.indexOf("/* __oaf_ojob shellFn */") >= 0)) {
-								res = "/* __oaf_ojob shellFn */ var code = " + stringify(origRes) + ";\n" + aJobTypeArgs.langFn;
+								res = "/* __oaf_ojob shellFn */ \n" + res + "\n var code = " + stringify(origRes) + ";\n" + aJobTypeArgs.langFn;
 							}
 						}
 					} else {
