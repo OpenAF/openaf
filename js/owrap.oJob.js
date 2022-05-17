@@ -2426,7 +2426,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 	}
 
     function procLang(aExec, aJobTypeArgs, aEach, aLang, aFile, aName, aCheck) {
-		var res = _$(aExec).default("");
+		var res = ""
+		var origRes = String(aExec)
 		aLang = _$(aLang).default("oaf");
 
 		aJobTypeArgs = _$(aJobTypeArgs).default({});
@@ -2434,9 +2435,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
 		if (isDef(aJobTypeArgs.execJs))      {
 			aJobTypeArgs.lang = "oaf";
-			res = io.readFileString(aJobTypeArgs.execJs);
+			origRes = io.readFileString(aJobTypeArgs.execJs);
 		}
-		if (res == "" && aJobTypeArgs.lang == "oaf" && (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire))) {
+		if (origRes == "" && aJobTypeArgs.lang == "oaf" && (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire))) {
 			aJobTypeArgs.execRequire = _$(aJobTypeArgs.execRequire, "execRequire").isString().default(parent.__execRequire);
 
 			// Verify integrity 
@@ -2460,7 +2461,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 				}
 			}
-			res = "var __r = require('" + aJobTypeArgs.execRequire + "'); if (isDef(__r['" + _aName + "'])) __r['" + _aName + "'](args); else throw \"Code for '" + _aName + "' not found!\";";
+			origRes = "var __r = require('" + aJobTypeArgs.execRequire + "'); if (isDef(__r['" + _aName + "'])) __r['" + _aName + "'](args); else throw \"Code for '" + _aName + "' not found!\";";
 		}
 		if (isDef(aCheck) && isMap(aCheck)) {
 			var _in = addSigil(aName, aCheck.in)
@@ -2471,28 +2472,28 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		}
 		if (isDef(aJobTypeArgs.execPy))      {
 			aJobTypeArgs.lang = "python";
-			res = io.readFileString(aJobTypeArgs.execPy);
+			origRes = io.readFileString(aJobTypeArgs.execPy);
 		}
 
 		if (isDef(aJobTypeArgs.file)) {
 			if (io.fileExists(aJobTypeArgs.file)) {
-				res = io.readFileString(aJobTypeArgs.file);
+				origRes = io.readFileString(aJobTypeArgs.file);
 			} else {
 				logErr("File '" + aJobTypeArgs.file + " not found!");
-				res = "";
+				origRes = "";
 			}
 		}
 
 		if (isDef(aFile)) {
 			if ( io.fileExists(aFile) ) {
-				res = io.readFileString(aFile);
+				origRes = io.readFileString(aFile);
 			} else {
 				logErr("File '" + aFile + " not found!");
-				res = "";
+				origRes = "";
 			}
 		}
 
-		if (res == "") return res;
+		if (origRes == "") return origRes;
 
 		if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.lang)) {
 			if (aJobTypeArgs.lang == "winssh") {
@@ -2501,8 +2502,10 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 			switch(aJobTypeArgs.lang) {
 			case "js":
+				res = origRes
 				break;
 			case "oaf":
+				res = origRes
 				break;
 			case "python":
 				parent.python = true;
@@ -2510,9 +2513,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					var orig = String(res);
 					res  = "/* __oaf_ojob python */ $pyStart();";
 					if (aJobTypeArgs.noTemplate) {
-						res += "try { args = merge(args, $py(" + stringify(orig) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
+						res += orig + ";try { args = merge(args, $py(" + stringify(origRes) + " + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
 					} else {
-						res += "try { args = merge(args, $py(templify(" + stringify(orig) + ", args) + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
+						res += orig + ";try { args = merge(args, $py(templify(" + stringify(origRes) + ", args) + \"\\n\", { args: args, id: id }, [\"args\"], true).args);";
 					}
 					res += "} catch(e) { throw e; $pyStop(); };\n";
 				}
@@ -2521,11 +2524,11 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				if (!(res.indexOf("/* __oaf_ojob ssh */") >= 0)) {
 					aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh");
 					var orig = String(res);
-					res = "/* __oaf_ojob ssh */ var ft = io.createTempFile('ojob_', '.ojob'); io.writeFileString(ft, " + stringify(orig) + ");\n";
+					res = "/* __oaf_ojob ssh */ var ft = io.createTempFile('ojob_', '.ojob'); io.writeFileString(ft, " + stringify(origRes) + ");\n";
 					if (aJobTypeArgs.noTemplate) {
-						res += "";
+						res += orig + ";";
 					} else {
-						res += "io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
+						res += orig + ";io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
 					}
 					var prefix = "";
 					if (isString(aJobTypeArgs.shellPrefix)) {
@@ -2544,11 +2547,11 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 					if (ow.format.isWindows() && isUnDef(aJobTypeArgs.shell)) {
 						var orig = String(res);
-						res = "/* __oaf_ojob shell */ var ft = io.createTempFile('ojob_', '.bat'); io.writeFileString(ft, " + stringify(orig) + ");\n";
+						res = "/* __oaf_ojob shell */ var ft = io.createTempFile('ojob_', '.bat'); io.writeFileString(ft, " + stringify(origRes) + ");\n";
 						if (aJobTypeArgs.noTemplate) {
-							res += "";
+							res += orig + ";";
 						} else {
-							res += "io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
+							res += orig + ";io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
 						}
 						res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(ft.replace(/\\\\/g, '/')).sh('del ' + ft)" + prefix + ".get(0);\n";
 						res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
@@ -2558,9 +2561,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 						var orig = String(res);
                         res = "/* __oaf_ojob shell */ ";
 						if (aJobTypeArgs.noTemplate) {
-							res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(orig) + ")" + prefix + ".get(0);\n";
+							res += orig + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
 						} else {
-							res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(orig) + ", args))" + prefix + ".get(0);\n";
+							res += orig + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
 						}
 						res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
@@ -2592,9 +2595,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 							}
                             res = "/* __oaf_ojob shell */ ";
 							if (aJobTypeArgs.noTemplate) {
-								res = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(orig) + ")" + prefix + ".get(0);\n";
+								res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
 							} else {
-								res = "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(orig) + ", args))" + prefix + ".get(0);\n";
+								res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
 							}
 							res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 							res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
@@ -2602,7 +2605,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					} else if (isDef(aJobTypeArgs.langFn)) {
 						if (isString(aJobTypeArgs.langFn)) {
 							if (!(res.indexOf("/* __oaf_ojob shellFn */") >= 0)) {
-								res = "/* __oaf_ojob shellFn */ var code = " + stringify(res) + ";\n" + aJobTypeArgs.langFn;
+								res = "/* __oaf_ojob shellFn */ var code = " + stringify(origRes) + ";\n" + aJobTypeArgs.langFn;
 							}
 						}
 					} else {
