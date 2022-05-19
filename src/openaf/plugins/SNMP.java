@@ -13,6 +13,7 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
+import org.mozilla.javascript.ConsString;
 import org.snmp4j.AbstractTarget;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
@@ -339,7 +340,12 @@ public class SNMP extends ScriptableObject {
 
 					if (nmentry.containsKey("type") && nmentry.containsKey("value") && nmentry.containsKey("OID")) {
 						// Value types: i - integer, u - unsigned, c - counter32, s - string, x - hex string, d - decimal string, n - nullobj, o - objid, t - timeticks, a - ipaddress, b - bits
-						OID toid = new OID((String) nmentry.get("OID"));
+						OID toid;
+						if (nmentry.get("OID") instanceof String) {
+							toid = new OID((String) nmentry.get("OID"));
+						} else {
+							toid = new OID(((ConsString) nmentry.get("OID")).toString());
+						}
 						// https://www.agentpp.com/doc/snmp4j-agent/org/snmp4j/agent/io/prop/PropertyMOInput.html
 						switch((String) nmentry.get("type")) {
 						case "i": 
