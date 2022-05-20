@@ -611,9 +611,10 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	if (!aOptions.noansi) {
 		_clr = aO => {
 			switch(descType(aO)) {
-			case "number": return _ac(__colorFormat.number, String(aO)+_ac("RESET",""))
-			case "string": return _ac(__colorFormat.string, String(aO)+_ac("RESET",""))
+			case "number" : return _ac(__colorFormat.number, String(aO)+_ac("RESET",""))
+			case "string" : return _ac(__colorFormat.string, String(aO)+_ac("RESET",""))
 			case "boolean": return _ac(__colorFormat.boolean, String(aO)+_ac("RESET",""))
+			case "java"   : return _ac(__colorFormat.string, String(aO.toString())+_ac("RESET",""))
 			default: return _ac(__colorFormat.default, String(aO)+_ac("RESET",""))
 			}
 		}
@@ -630,7 +631,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
   
 	  var _k = (isNumber(k) ? "[" + k + "]" : k) 
 	  if (aOptions.withValues) {
-		miniCache[k] = _ac(__colorFormat.key, _k) + (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + (!isObject(v) ? ": " + _clr(v) : "")
+		miniCache[k] = _ac(__colorFormat.key, _k) + (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + (!(isMap(v) || isArray(v)) ? ": " + _clr(v) : "")
 	  } else {
 		miniCache[k] = _k
 	  }
