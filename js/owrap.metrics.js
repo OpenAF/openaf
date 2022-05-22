@@ -500,16 +500,19 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
 
 /**
  * <odoc>
- * <key>ow.metrics.fromObj2OpenMetrics(aObj, aPrefix, aTimestamp, aHelpMap) : String</key>
+ * <key>ow.metrics.fromObj2OpenMetrics(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap) : String</key>
  * Given aObj will return a string of open metric (prometheus) metric strings. Optionally you can provide a prefix (defaults to "metric") 
- * and/or aTimestamp (that will be used for all aObj values). Note: prefixes should not start with a digit.
+ * and/or aTimestamp (that will be used for all aObj values) and aConvMap composed of a key with a map of possible values and corresponding
+ * translation to numbers. Note: prefixes should not start with a digit.
  * </odoc>
  */
-OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap) {
+OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap) {
     var handled = false
     aPrefix = _$(aPrefix, "prefix").isString().default("metric")
     aPrefix = aPrefix.replace(/[^a-zA-Z0-9]/g, "_")
     if (/^\d.+/.test(aPrefix)) aPrefix = "_" + aPrefix
+
+    aConvMap = _$(aConvMap, "aConvMap").isMap().default({})
   
     // https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md
   
@@ -561,6 +564,16 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             keys.forEach(key => {
                 if (isDef(obj[key])) {
                     var k = key.replace(/[^a-zA-Z0-9]/g, "_")
+                    if (isMap(aConvMap) && isString(obj[key])) {
+                        if (isMap(aConvMap[key]) && isNumber(aConvMap[key][obj[key]])) {
+                            ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[key][obj[key]]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
+                            return 1
+                        }
+                        if (isMap(aConvMap[prefix + "_" + k + suf]) && isNumber(aConvMap[prefix + "_" + k + suf][obj[key]])) {
+                            ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[prefix + "_" + k + suf][obj[key]]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
+                            return 1
+                        }     
+                    } 
                     if (isBoolean(obj[key])) ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (obj[key] ? "1" : "0") + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
                     if (isNumber(obj[key]))  ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + Number(obj[key]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
                     if (isMap(obj[key]))     ar += _map(obj[key], prefix + "_" + k, clone(lbs), suf)
