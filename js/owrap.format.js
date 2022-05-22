@@ -928,34 +928,85 @@ OpenWrap.format.prototype.toBytesAbbreviation = function (bytes, precision) {
 
 /**
  * <odoc>
- * <key>ow.format.fromBytesAbbreviation(aStr) : Number</key>
- * Tries to reverse the ow.format.toBytesAbbreviation from aStr (string) back to the original value in bytes.\
+ * <key>ow.format.fromBytesAbbreviation(aStr, useDecimal) : Number</key>
+ * Tries to reverse the ow.format.toBytesAbbreviation from aStr (string) back to the original value in bytes.
+ * Use useDecimal=true to interpret KB as 1000 instead of 1024 (see more in https://en.wikipedia.org/wiki/Byte#Multiple-byte_units)\
  * (available after ow.loadFormat())
  * </odoc>
  */
-OpenWrap.format.prototype.fromBytesAbbreviation = function(aStr) {
-	ow.loadFormat();
+OpenWrap.format.prototype.fromBytesAbbreviation = function(aStr, useDecimal) {
+	_$(aStr, "aStr").isString().$_()
+	iseDecimal = _$(useDecimal, "useDecimal").isBoolean().default(false)
 
-	_$(aStr, "aStr").isString().$_();
+	var sizes  = ['BYTES', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+	var msizes = [ 'BYTES', 'KIB', 'MIB', 'GIB', 'TIB', 'PIB', 'EIB', 'ZIB', 'YIB' ]
+	var misizes = [ 'BYTES', 'KI', 'MI', 'GI', 'TI', 'PI', 'EI', 'ZI', 'YI' ]
 
-	var sizes = ['BYTES', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-	aStr = aStr.trim();
-	var arr = aStr.split(/\s+/), unit, value;
+	aStr = aStr.trim()
+	var arr = aStr.match(/(-?[0-9\.]+)\s*([a-zA-Z]+)/), unit, value
 	if (arr.length >= 2) {
-		unit  = String(arr[arr.length - 1]);
-		value = Number(arr[arr.length - 2]);  
+		unit  = String(arr[2])
+		value = Number(arr[1])
 	} else {
-		unit  = "";
-		value = parseFloat(aStr);
+		unit  = ""
+		value = parseFloat(aStr)
 	}
-	
-	var vfactor = 1;
-	for(var ii = 1; ii <= sizes.indexOf(unit.toUpperCase()); ii++) {
-		vfactor *= 1024;
+
+	var vfactor = 1
+	if (sizes.indexOf(unit.toUpperCase()) > 0) {		
+		for(var ii = 1; ii <= sizes.indexOf(unit.toUpperCase()); ii++) {
+			vfactor *= (useDecimal ? 1000 : 1024)
+		}
+	} 
+	if (msizes.indexOf(unit.toUpperCase()) > 0) {		
+		for(var ii = 1; ii <= msizes.indexOf(unit.toUpperCase()); ii++) {
+			vfactor *= 1024
+		}
+	} else {
+		for(var ii = 1; ii <= misizes.indexOf(unit.toUpperCase()); ii++) {
+			vfactor *= 1024
+		}
 	}
-	
-	return Math.round(value * vfactor);
+			
+	return Math.round(value * vfactor)
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.fromTimeAbbreviation(aStr) : Number</key>
+ * From aStr time abbreviation (e.g. 1h2m3s (1 hour, 2 minutes and 3 seconds)) will return the corresponding amount
+ * of time in ms.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromTimeAbbreviation = function(aStr) {
+	_$(aStr, "aStr").isString().$_()
+
+	var ars = aStr.trim().match(/[0-9]+[a-zA-Z]+/g), res = 0
+	if (!isArray(ars) || ars.length == 0) return parseInt(aStr)
+	for(var i in ars) {
+		var ar = ars[i].match(/([0-9]+)\s*([a-zA-Z]+)/)
+		if (isArray(ar) && ar.length > 0) {
+			var v = Number(ar[1])
+			var u = String(ar[2])
+
+			var _u = {
+				"ms": 1,
+				"s" : 1000,
+				"m" : 60 * 1000,
+				"h" : 60 * 60 * 1000,
+				"d" : 24 * 60 * 60 * 1000,
+				"M" : 30 * 24 * 60 * 60 * 1000,
+				"y" : 365 * 24 * 60 * 60 * 1000
+			}
+			if (isDef(_u[u])) {
+				res += v * _u[u]
+			} else {
+				res += v
+			}
+		}
+	}
+
+	return res
 }
 
 /**
