@@ -570,12 +570,22 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
  */
 const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
-
 	var out  = ""
 	aPrefix  = _$(aPrefix).isString().default("")
 	aOptions = _$(aOptions).isMap().default({})
-	aWidth   = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
-  
+
+	ow.loadFormat();
+	if (!ow.format.isWindows()) {
+		if (isUnDef(aOptions.noansi) && __initializeCon()) {
+			aOptions.noansi = !__conAnsi
+		}
+	} else {
+		if (__initializeCon()) {
+			if (!ansiWinTermCap()) ansiStart()
+			if (isUnDef(aOptions.noansi)) aOptions.noansi = !__conAnsi
+		}
+	}
+
 	aOptions = merge(merge({
 	  noansi: false,
 	  curved: true,
@@ -602,6 +612,8 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		ssrc = (aOptions.noansi ? "-- " : "── ")
 		midc = (aOptions.noansi ? "|- " : "├─ ")
 	}
+
+	aWidth   = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
   
 	var size = Object.keys(aM).length, ksize = __, vsize = __
   
