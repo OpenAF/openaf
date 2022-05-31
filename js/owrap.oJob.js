@@ -83,7 +83,7 @@
 	//}));
 
 	//this.__sch = new ow.server.scheduler();
-	this.__ojob = { recordLog: true, logArgs: false, numThreads: __, logToConsole: true };
+	this.__ojob = { recordLog: true, logArgs: false, numThreads: __, logToConsole: true, logOJob: false };
 	this.__help = {};
 	this.__file = "thisOJob.yaml";
 	this.__expr = processExpr(" ");
@@ -293,7 +293,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	if (isDef(ojob.logLimit)) this.__logLimit = ojob.logLimit;
 	if (isDef(ojob.conAnsi)) { __conAnsi = ojob.conAnsi; __conStatus = Boolean(__conAnsi); }
 	if (isDef(ojob.conWidth)) this.__conWidth = ojob.conWidth;
-	this.__ojob.async = _$(ojob.async).isBoolean().default(false);
+	this.__ojob.logOJob = _$(ojob.logOJob, "logOJob").isBoolean().default(false)
+	this.__ojob.async   = _$(ojob.async).isBoolean().default(false);
     if (this.__ojob.async) this.__ojob.sequential = false;
 
 	this.__ojob.tags = _$(ojob.tags).isArray("The ojob.tags needs to be an array.").default([]);
@@ -318,6 +319,12 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	if (isDef(ojob.logToFile) && isMap(ojob.logToFile)) {
 		ow.ch.utils.setLogToFile(ojob.logToFile);
 	}
+
+	if (toBoolean(getEnv("OJOB_JSONLOG"))) {
+		if (isUnDef(ojob.log)) ojob.log = {}
+		ojob.log.format = "json"
+	}
+
 	if (isDef(ojob.log) && isMap(ojob.log)) {
 		setLog(ojob.log);
 	}
@@ -1167,7 +1174,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 
 	if (isDef(existing)) {
 		var ansis = false;
-		if (this.__ojob.logToConsole || this.__ojob.logToFile || isDef(getChLog())) {
+		if (this.__ojob.logToConsole || this.__ojob.logOJob || this.__ojob.logToFile || isDef(getChLog())) {
 			var aa = "";
 			if (isDef(args) && this.__ojob.logArgs) {
 				var temp = clone(args);
@@ -1231,18 +1238,21 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "STARTED", __m2 = __d.replace(/(T|Z)/g, " ").trim();
 						if (this.__ojob.logToConsole) { syncFn(() => { printnl(_g(aa) + _c(">> ") + _b(__m1) + " " + _c(s.substr(0, s.length - (__m1.length + __m2.length) - 2 - 2 -1) + " " + __m2 + sn)); }, this); }
+						if (this.__ojob.logOJob)      { log(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
 					if (existing.start && existing.error) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "ERROR", __m2 = __d.replace(/(T|Z)/g, " ").trim();
 						if (this.__ojob.logToConsole) { syncFn(() => { printErr("\n" + _e("!! ") + _g(aa) + _b(__m1) + " " + _e(se.substr(0, se.length - (__m1.length + __m2.length) - 2 - 2 -1) + " " + __m2 + sn) + af.toYAML(existing.log) + "\n" + _e(se)); }, this); }
+						if (this.__ojob.logOJob)      { logErr(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m1 + "\n" + stringify(existing.log) });
 					}
 					if (existing.start && existing.success) { 
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "SUCCESS", __m2 = __d.replace(/(T|Z)/g, " ").trim();
 						if (this.__ojob.logToConsole) { syncFn(() => { printnl("\n" + _g(aa) + _c("<< ") + _b(__m1) + " " + _c(ss.substr(0, ss.length - (__m1.length + __m2.length) - 2 - 2 -1) + " " + __m2 + sn)); }, this); }
+						if (this.__ojob.logOJob)      { log(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
 				}
