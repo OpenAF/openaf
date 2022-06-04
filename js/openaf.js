@@ -601,7 +601,8 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		slines = 2
 		line = (aOptions.noansi ? "|" : "│") 
 		endc = (aOptions.noansi ? "\\ " : (aOptions.curved ? "╰ " : "└ "))
-		strc = (aOptions.noansi ? "/ " : "┬ ")
+		//strc = (aOptions.noansi ? "/ " : "┬ ")
+		strc = (aOptions.noansi ? "/ " : "╭ ")
 		ssrc = (aOptions.noansi ? "- " : "─ ")
 		midc = (aOptions.noansi ? "| " : "├ ")
 	} else {
@@ -613,7 +614,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		midc = (aOptions.noansi ? "|- " : "├─ ")
 	}
 
-	aWidth   = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
+	aWidth = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
   
 	var size = Object.keys(aM).length, ksize = __, vsize = __
   
@@ -662,7 +663,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	  vsize = 0
 	  Object.keys(aM).forEach(k => {
 		  var lv = _al(_get(k, aM[k]))
-		  if (_lv > vsize) vsize = _lv
+		  if (lv > vsize) vsize = lv
 	  })
 	}
 
@@ -672,12 +673,15 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		p = _$(p).isString().default("") + " "
 		if (!isString(m)) return m
 		var ss = aWidth
-		var ts = ss - _al(p)
+		var ps = _al(p)
+		var ms = _al(m.substring(m.indexOf(": ")))
 
-		if (m.indexOf("\n") < 0)
-			if (ts <= 0 || m.substring(m.indexOf(": ")).length <= ts) return m
+		if (m.indexOf("\n") < 0) {
+			//if (ts <= 0 || m.substring(m.indexOf(": ")).length <= ts) { return m }
+			if (ps + ms < ss) return m
+		}
 
-		return ow.format.string.wordWrap(m, ts).split("\n").map((_l, i) => {
+		return ow.format.string.wordWrap(m, ss-ps).split("\n").map((_l, i) => {
 			if (i == 0) return _l
 			return ansiColor("RESET", p) + ansiColor(__colorFormat.string, _l)
 		}).join("\n")
@@ -4631,7 +4635,7 @@ if (isUnDef(__offlineHelp)) {
  * <odoc>
  * <key>setOfflineHelp(aBoolean)</key>
  * Forces help (odoc) to be retrieved locally (if aBoolean is true) or reestablishes the normal behaviour
- * of retriving from online first (if aBoolean is false)
+ * of retrieving from online first (if aBoolean is false)
  * </odoc>
  */
 const setOfflineHelp = function(aBoolean) {
@@ -6791,7 +6795,7 @@ var __flags = _$(__flags).isMap().default({
 		compact    : true
 	},
 	CONSOLE: {
-		view: "map"
+		view: "tree"
 	}
 })
 
