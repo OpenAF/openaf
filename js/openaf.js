@@ -9646,6 +9646,118 @@ const $ssh = function(aMap) {
     return new __ssh(aMap);
 };
 
+const $csv = function(aMap) {
+	var _s = {
+		quoteMode: "MINIMAL", withHeader: true
+	}
+	aMap = _$(aMap, "aMap").isMap().default({})
+	_s = merge(_s, aMap)
+
+	var _to, _from
+	var csv = new CSV()
+
+	var _r = {
+		fromFn: fn => {
+			if (isUnDef(_to)) _to = af.newOutputStream()
+			csv.toStream(_to, function() { return fn() })
+			_to.close()
+			return _to.toString()
+		},
+		fromArray: (ar, fn) => {
+			ar = _$(ar, "array").isArray().default([])
+			var ari = ar.length
+			fn = _$(fn, "fn").isFunction().default(() => (ari >= 0 ? ar[ar.length - ari--] : __))
+
+			if (ari <= 0) return ""
+			
+			_s.withHeaders = Object.keys(ar[0])
+			csv.setStreamFormat(_s)
+			_r.fromFn(fn)
+		},
+		toStream: aS => {
+			_to = aS
+			return _r
+		},
+		toFile: (aF, append) => {
+			append = _$(append, "append").isBoolean().default(false)
+			_to = io.writeFileStream(aF, append)
+			if (append) _r.setHeader(false)
+			return _r
+		},
+		fromFile: aF => {
+			_from = io.readFileStream(aF)
+			return _r
+		},
+		fromStream: aS => {
+			_from = aS
+			return _r 
+		},
+		toFn: fn => {
+			if (isUnDef(_s.withHeader)) _r.setHeader(true)
+			if (!isJavaObject(_from)) throw "Require 'fromStream'"
+
+			csv.setStreamFormat(_s)
+			csv.fromStream(_from, function(m) { fn(m) })
+			_from.close()
+			
+			return true
+		},
+		toArray: () => {
+			var ar = []
+
+			_r.toFn(m => {
+				ar.push(m)
+			})			
+
+			return ar
+		},
+		setFormat: aF => {
+			aF = _$(aF, "format").oneOf(["default", "excel", "informix_unload_csv", "informix_unload", "mysql", "rfc4180", "oracle", "postgresql_csv", "postgresql_text", "tdf"]).$_()
+			_s.format = aF.toUpperCase()
+			return _r
+		},
+		setHeader: aH => {
+			aH = _$(aH, "header").isBoolean().default(true)
+			_s.withHeader = aH
+			return _r
+		},
+		withHeaders: aHs => {
+			aHs = _$(aHs, "headers").isArray().$_()
+			_s.withHeaders = aHs
+			return _r
+		},
+		setQuoteMode: aM => {
+			aM = _$(aM, "quoteMode").oneOf(["all", "all_non_null", "minimal", "non_numeric", "none"]).$_()
+			_s.quoteMode = aM.toUpperCase()
+			return _r
+		},
+		withDelimiter: aD => {
+			aD = _$(aD, "delimiter").isString().default(",")
+			_s.withDelimiter = aD
+			return _r
+		},
+		withEscape: aE => {
+			aE = _$(aE, "escape").isString().default("\"")
+			_s.withEscape = aE
+			return _r
+		},
+		withNull: aN => {
+			aN = _$(aN, "null").isString().default("_NA")
+			_s.withNullString = aN
+			return _r
+		},
+		getSettings: () => {
+			return _s
+		},
+		setSettings: s => {
+			_s = s
+			return _r
+		}
+	}
+
+	return _r
+}
+
 /**
  * <odoc>
  * <key>$set(aKey, aValue)</key>
