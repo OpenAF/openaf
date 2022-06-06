@@ -602,14 +602,14 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		line = (aOptions.noansi ? "|" : "│") 
 		endc = (aOptions.noansi ? "\\ " : (aOptions.curved ? "╰ " : "└ "))
 		//strc = (aOptions.noansi ? "/ " : "┬ ")
-		strc = (aOptions.noansi ? "/ " : "╭ ")
+		strc = (aOptions.noansi ? "/ " :  (aOptions.curved ? "╭ " : "┌ "))
 		ssrc = (aOptions.noansi ? "- " : "─ ")
 		midc = (aOptions.noansi ? "| " : "├ ")
 	} else {
 		slines = 3
 		line = (aOptions.noansi ? "|" : "│") 
 		endc = (aOptions.noansi ? "\\- " : (aOptions.curved ? "╰─ " : "└─ "))
-		strc = (aOptions.noansi ? "/- " : "┬─ ")
+		strc = (aOptions.noansi ? "/- " :  (aOptions.curved ? "╭─ " : "┌─ "))
 		ssrc = (aOptions.noansi ? "-- " : "── ")
 		midc = (aOptions.noansi ? "|- " : "├─ ")
 	}
