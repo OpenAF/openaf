@@ -682,7 +682,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		}
 
 		return m.substring(0, m.indexOf(": ") + 2) + 
-		       ow.format.string.wordWrap(m.substring(m.indexOf(": ") + 2), ss-ps).split("\n").map((_l, ii) => {
+		       ow.format.string.wordWrap(m.substring(m.indexOf(": ") + 2), ss-ps-1).split("\n").map((_l, ii) => {
 			if (ii == 0) return _l
 			return ansiColor("RESET", p) + ansiColor(__colorFormat.string, _l)
 		}).join("\n")
@@ -9647,6 +9647,17 @@ const $ssh = function(aMap) {
     return new __ssh(aMap);
 };
 
+/**
+ * <odoc>
+ * <key>$csv(aMap) : $csv</key>
+ * Provides a shortcut to access CSV functionality. Optionally you can provide options through aMap.\
+ * \
+ * Examples:\
+ *   $csv().fromInFile("test.csv").toOutArray()\
+ *   $csv().fromInFile("test.csv").toOutFn(m => print( af.toSLON(m) ))\
+ *   $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray()
+ * </odoc>
+ */
 const $csv = function(aMap) {
 	var _s = {
 		quoteMode: "MINIMAL", withHeader: true
