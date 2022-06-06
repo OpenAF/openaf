@@ -11,6 +11,7 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.lang.String;
 
 import org.apache.commons.csv.CSVFormat;
@@ -43,8 +44,8 @@ public class CSV extends ScriptableObject {
 	 */
 	private static final long serialVersionUID = -7745871696050328345L;
 	protected openaf.core.CSV csv;
-	protected CSVFormat csvFormat = CSVFormat.DEFAULT.withQuoteMode(QuoteMode.NON_NUMERIC);
-	protected Map<String, Integer> heads = null;
+	protected CSVFormat csvFormat = CSVFormat.DEFAULT;
+	protected List<String> heads = null;
 
 	@Override
 	public String getClassName() {
@@ -89,6 +90,7 @@ public class CSV extends ScriptableObject {
 
 		if (objs instanceof NativeObject) {
 			NativeObject obj = (NativeObject) objs;
+			CSVFormat.Builder csvFormatB = null;
 			JSEngine.JSMap jsMap = AFCmdBase.jse.getNewMap(AFCmdBase.jse.getGlobalscope());
 			
 			for(Object id : obj.getAllIds()) {
@@ -110,20 +112,22 @@ public class CSV extends ScriptableObject {
 				default: this.csvFormat = CSVFormat.DEFAULT;
 				}
 			}
+
+			csvFormatB = this.csvFormat.builder();
 			
 			if (jsMap.contains("quoteMode")) {
 				switch(((String) jsMap.get("quoteMode")).toUpperCase()) {
-				case "ALL": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.ALL); break;
-				case "ALL_NON_NULL": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.ALL_NON_NULL); break;
-				case "MINIMAL": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.MINIMAL); break;
-				case "NON_NUMERIC": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.NON_NUMERIC); break;
-				case "NONE": this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.NONE); break;
-				default: this.csvFormat = this.csvFormat.withQuoteMode(QuoteMode.NON_NUMERIC);
+				case "ALL": csvFormatB = csvFormatB.setQuoteMode(QuoteMode.ALL); break;
+				case "ALL_NON_NULL": csvFormatB = csvFormatB.setQuoteMode(QuoteMode.ALL_NON_NULL); break;
+				case "MINIMAL": csvFormatB = csvFormatB.setQuoteMode(QuoteMode.MINIMAL); break;
+				case "NON_NUMERIC": csvFormatB = csvFormatB.setQuoteMode(QuoteMode.NON_NUMERIC); break;
+				case "NONE": csvFormatB = csvFormatB.setQuoteMode(QuoteMode.NONE); break;
+				default: csvFormatB = csvFormatB.setQuoteMode(QuoteMode.NON_NUMERIC);
 				}
 			}
 			
-			if (jsMap.contains("withHeader") && ((boolean) jsMap.get("withHeader"))) {
-				this.csvFormat = this.csvFormat.withHeader();
+			if (jsMap.contains("withHeader")) {
+				csvFormatB = csvFormatB.setSkipHeaderRecord(!((boolean) jsMap.get("withHeader")));
 			}
 
 			if (jsMap.contains("withHeaders")) {
@@ -131,25 +135,29 @@ public class CSV extends ScriptableObject {
 				NativeArray na = ((NativeArray) jsMap.get("withHeaders"));
 				String[] hs = new String[na.size()];
 
-				this.heads = new HashMap<String, Integer>();
+				this.heads = new ArrayList<String>();
 				for(Object ob : na) {
 					hs[c] = (String) ob;
-					this.heads.put((String) ob, java.lang.Integer.valueOf(c++));
+					//this.heads.put((String) ob, );
+					this.heads.add((String) ob);
+					c++;
 				}
-				this.csvFormat = this.csvFormat.withHeader(hs);
+				csvFormatB = csvFormatB.setHeader(hs);
 			}
 
 			if (jsMap.contains("withDelimiter")) {
-				this.csvFormat = this.csvFormat.withDelimiter(((String) jsMap.get("withDelimiter")).charAt(0));
+				csvFormatB = csvFormatB.setDelimiter(((String) jsMap.get("withDelimiter")).charAt(0));
 			}
 
 			if (jsMap.contains("withEscape")) {
-				this.csvFormat = this.csvFormat.withEscape(((String) jsMap.get("withEscape")).charAt(0));
+				csvFormatB = csvFormatB.setEscape(((String) jsMap.get("withEscape")).charAt(0));
 			}	
 
 			if (jsMap.contains("withNullString")) {
-				this.csvFormat = this.csvFormat.withNullString((String) jsMap.get("withNullString"));
+				csvFormatB = csvFormatB.setNullString((String) jsMap.get("withNullString"));
 			}
+
+			this.csvFormat = csvFormatB.build();
 		}
 	}
 
@@ -168,9 +176,10 @@ public class CSV extends ScriptableObject {
 					res = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { });
 					if (res instanceof NativeObject) {
 						NativeObject obj = ((NativeObject) res);
-						for(String head : this.heads.keySet()) {
+						int c = 0;
+						for(String head : this.heads) {
 							if (obj.containsKey(head)) {
-								values[this.heads.get(head)] = obj.get(head);
+								values[c++] = obj.get(head);
 							}
 						}
 						ppp.printRecord(values);
@@ -190,15 +199,20 @@ public class CSV extends ScriptableObject {
 			boolean hasHeaders = false;
 			String[] headers = null;
 			Reader reader = new InputStreamReader(((InputStream) aStream), "UTF-8");
-			CSVParser parser = new CSVParser(reader, this.csvFormat.withSkipHeaderRecord());
+			if (!this.csvFormat.getSkipHeaderRecord() && this.heads == null) {
+				this.csvFormat = this.csvFormat.builder().setHeader().build();
+			}
+			CSVParser parser = new CSVParser(reader, this.csvFormat);
 			
-			if (parser.getHeaderMap() != null || this.heads != null) {
-				if (this.heads == null) this.heads = parser.getHeaderMap();
+			
+			if (parser.getHeaderNames() != null || this.heads != null) {
+				if (this.heads == null) this.heads = parser.getHeaderNames();
 
 				hasHeaders = true;
 				headers = new String[this.heads.size()];
-				for(String head : this.heads.keySet()) {
-					headers[this.heads.get(head)] = head;
+				int c = 0;
+				for(String head : this.heads) {
+					headers[c++] = head;
 				}
 			}
 
@@ -213,7 +227,7 @@ public class CSV extends ScriptableObject {
 							if (hasHeaders && headers.length > c) {
 								m.put(headers[c], value);
 							} else {
-								m.put(Integer.toString(c), value);
+								m.put("f"+Integer.toString(c), value);
 							}
 							c++;
 						}

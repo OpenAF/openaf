@@ -601,7 +601,8 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		slines = 2
 		line = (aOptions.noansi ? "|" : "│") 
 		endc = (aOptions.noansi ? "\\ " : (aOptions.curved ? "╰ " : "└ "))
-		strc = (aOptions.noansi ? "/ " : "┬ ")
+		//strc = (aOptions.noansi ? "/ " : "┬ ")
+		strc = (aOptions.noansi ? "/ " : "╭ ")
 		ssrc = (aOptions.noansi ? "- " : "─ ")
 		midc = (aOptions.noansi ? "| " : "├ ")
 	} else {
@@ -613,7 +614,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		midc = (aOptions.noansi ? "|- " : "├─ ")
 	}
 
-	aWidth   = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
+	aWidth = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
   
 	var size = Object.keys(aM).length, ksize = __, vsize = __
   
@@ -662,7 +663,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	  vsize = 0
 	  Object.keys(aM).forEach(k => {
 		  var lv = _al(_get(k, aM[k]))
-		  if (_lv > vsize) vsize = _lv
+		  if (lv > vsize) vsize = lv
 	  })
 	}
 
@@ -672,13 +673,17 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		p = _$(p).isString().default("") + " "
 		if (!isString(m)) return m
 		var ss = aWidth
-		var ts = ss - _al(p)
+		var ps = _al(p)
+		var ms = _al(m.substring(m.indexOf(": ")))
 
-		if (m.indexOf("\n") < 0)
-			if (ts <= 0 || m.substring(m.indexOf(": ")).length <= ts) return m
+		if (m.indexOf("\n") < 0) {
+			//if (ts <= 0 || m.substring(m.indexOf(": ")).length <= ts) { return m }
+			if (m.indexOf(": ") < 0 || ps + ms - 2 < ss) return m
+		}
 
-		return ow.format.string.wordWrap(m, ts).split("\n").map((_l, i) => {
-			if (i == 0) return _l
+		return m.substring(0, m.indexOf(": ") + 2) + 
+		       ow.format.string.wordWrap(m.substring(m.indexOf(": ") + 2), ss-ps-1).split("\n").map((_l, ii) => {
+			if (ii == 0) return _l
 			return ansiColor("RESET", p) + ansiColor(__colorFormat.string, _l)
 		}).join("\n")
 	}
@@ -4631,7 +4636,7 @@ if (isUnDef(__offlineHelp)) {
  * <odoc>
  * <key>setOfflineHelp(aBoolean)</key>
  * Forces help (odoc) to be retrieved locally (if aBoolean is true) or reestablishes the normal behaviour
- * of retriving from online first (if aBoolean is false)
+ * of retrieving from online first (if aBoolean is false)
  * </odoc>
  */
 const setOfflineHelp = function(aBoolean) {
@@ -6791,7 +6796,7 @@ var __flags = _$(__flags).isMap().default({
 		compact    : true
 	},
 	CONSOLE: {
-		view: "map"
+		view: "tree"
 	}
 })
 
@@ -9641,6 +9646,137 @@ const $ssh = function(aMap) {
 
     return new __ssh(aMap);
 };
+
+/**
+ * <odoc>
+ * <key>$csv(aMap) : $csv</key>
+ * Provides a shortcut to access CSV functionality. Optionally you can provide options through aMap.\
+ * \
+ * Examples:\
+ *   $csv().fromInFile("test.csv").toOutArray()\
+ *   $csv().fromInFile("test.csv").toOutFn(m => print( af.toSLON(m) ))\
+ *   $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray()
+ * </odoc>
+ */
+const $csv = function(aMap) {
+	var _s = {
+		quoteMode: "MINIMAL", withHeader: true
+	}
+	aMap = _$(aMap, "aMap").isMap().default({})
+	_s = merge(_s, aMap)
+
+	var _to, _from
+	var csv = new CSV()
+
+	var _r = {
+		fromInFn: fn => {
+			var wasUnDef = false
+			if (isUnDef(_to)) {
+				_to = af.newOutputStream()
+				wasUnDef = true
+			}
+			csv.toStream(_to, function() { return fn() })
+			_to.close()
+			return (wasUnDef ? _to.toString() : true)
+		},
+		fromInArray: (ar, fn) => {
+			ar = _$(ar, "array").isArray().default([])
+			var ari = ar.length
+			fn = _$(fn, "fn").isFunction().default(() => (ari >= 0 ? ar[ar.length - ari--] : __))
+
+			if (ari <= 0) return ""
+			
+			_s.withHeaders = Object.keys(ar[0])
+			csv.setStreamFormat(_s)
+			return _r.fromInFn(fn)
+		},
+		fromInString: s => {
+			_from = af.fromString2InputStream(s)
+			return _r
+		},
+		toOutStream: aS => {
+			_to = aS
+			return _r
+		},
+		toOutFile: (aF, append) => {
+			append = _$(append, "append").isBoolean().default(false)
+			_to = io.writeFileStream(aF, append)
+			if (append) _r.setHeader(false)
+			return _r
+		},
+		fromInFile: aF => {
+			_from = io.readFileStream(aF)
+			return _r
+		},
+		fromInStream: aS => {
+			_from = aS
+			return _r 
+		},
+		toOutFn: fn => {
+			if (isUnDef(_s.withHeader)) _r.setHeader(true)
+			if (!isJavaObject(_from)) throw "Require 'fromStream'"
+
+			csv.setStreamFormat(_s)
+			csv.fromStream(_from, function(m) { fn(m) })
+			_from.close()
+			
+			return true
+		},
+		toOutArray: () => {
+			var ar = []
+
+			_r.toOutFn(m => {
+				ar.push(m)
+			})			
+
+			return ar
+		},
+		setFormat: aF => {
+			aF = _$(aF, "format").oneOf(["default", "excel", "informix_unload_csv", "informix_unload", "mysql", "rfc4180", "oracle", "postgresql_csv", "postgresql_text", "tdf"]).$_()
+			_s.format = aF.toUpperCase()
+			return _r
+		},
+		setHeader: aH => {
+			aH = _$(aH, "header").isBoolean().default(true)
+			_s.withHeader = aH
+			return _r
+		},
+		withHeaders: aHs => {
+			aHs = _$(aHs, "headers").isArray().$_()
+			_s.withHeaders = aHs
+			return _r
+		},
+		setQuoteMode: aM => {
+			aM = _$(aM, "quoteMode").oneOf(["all", "all_non_null", "minimal", "non_numeric", "none"]).$_()
+			_s.quoteMode = aM.toUpperCase()
+			return _r
+		},
+		withDelimiter: aD => {
+			aD = _$(aD, "delimiter").isString().default(",")
+			_s.withDelimiter = aD
+			return _r
+		},
+		withEscape: aE => {
+			aE = _$(aE, "escape").isString().default("\"")
+			_s.withEscape = aE
+			return _r
+		},
+		withNull: aN => {
+			aN = _$(aN, "null").isString().default("_NA")
+			_s.withNullString = aN
+			return _r
+		},
+		getSettings: () => {
+			return _s
+		},
+		setSettings: s => {
+			_s = s
+			return _r
+		}
+	}
+
+	return _r
+}
 
 /**
  * <odoc>

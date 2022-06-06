@@ -136,7 +136,7 @@ function getHTTPOPack(aURL) {
 		return zipCache[aURL];
 	}
 
-	log("Retriving " + aURL);
+	log("Retrieiving " + aURL);
 	try {
 		var http = execHTTPWithCred(aURL.replace(/ /g, "%20"), "GET", "", {}, true);
 		var opack = new ZIP(http);
@@ -893,7 +893,7 @@ function getPackage(packPath) {
 						output = af.fromBytes2String(http);
 						retry = false;
 					} catch(e1) {
-						logErr("Error while retriving remote package: " + String(e1));
+						logErr("Error while retrieiving remote package: " + String(e1));
 					}
 				}
 				packag = fromJsonYaml(output);

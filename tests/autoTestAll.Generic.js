@@ -773,9 +773,9 @@
 
         var a = { a : 1, b : { c: 2, d: [0, 1] } };
 
-        ow.test.assert($$(a).get("b.c"), 2, "Problem with retriving a number with $$().get()");
-        ow.test.assert($$(a).get("b.d"), [0, 1], "Problem with retriving an array with $$().get()");
-        ow.test.assert($$(a).get("b.d[0]"), 0, "Problem with retriving an element of an array with $$().get()");
+        ow.test.assert($$(a).get("b.c"), 2, "Problem with retrieving a number with $$().get()");
+        ow.test.assert($$(a).get("b.d"), [0, 1], "Problem with retrieving an array with $$().get()");
+        ow.test.assert($$(a).get("b.d[0]"), 0, "Problem with retrieving an element of an array with $$().get()");
     };
 
      exports.testSetPath = function() {
@@ -783,9 +783,9 @@
 
         var a = { a : 1, b : { c: 2, d: [0, 1] } };
 
-        ow.test.assert($$($$(a).set("b.c", 1234)).get("b.c"), 1234, "Problem with retriving a number after $$().set()");
-        ow.test.assert($$($$(a).set("b.d", [ 0, 1, 2 ])).get("b.d"), [0, 1, 2], "Problem with retriving an array after $$().set()");
-        ow.test.assert($$($$(a).set("b.d[0]", 4321)).get("b.d[0]"), 4321, "Problem with retriving an element of an array after $$().set()");
+        ow.test.assert($$($$(a).set("b.c", 1234)).get("b.c"), 1234, "Problem with retrieving a number after $$().set()");
+        ow.test.assert($$($$(a).set("b.d", [ 0, 1, 2 ])).get("b.d"), [0, 1, 2], "Problem with retrieving an array after $$().set()");
+        ow.test.assert($$($$(a).set("b.d[0]", 4321)).get("b.d[0]"), 4321, "Problem with retrieving an element of an array after $$().set()");
     };       
 
     exports.testSearchKeyAndValues = function() {
