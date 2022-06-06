@@ -678,11 +678,12 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 
 		if (m.indexOf("\n") < 0) {
 			//if (ts <= 0 || m.substring(m.indexOf(": ")).length <= ts) { return m }
-			if (ps + ms < ss) return m
+			if (m.indexOf(": ") < 0 || ps + ms - 2 < ss) return m
 		}
 
-		return ow.format.string.wordWrap(m, ss-ps).split("\n").map((_l, i) => {
-			if (i == 0) return _l
+		return m.substring(0, m.indexOf(": ") + 2) + 
+		       ow.format.string.wordWrap(m.substring(m.indexOf(": ") + 2), ss-ps).split("\n").map((_l, ii) => {
+			if (ii == 0) return _l
 			return ansiColor("RESET", p) + ansiColor(__colorFormat.string, _l)
 		}).join("\n")
 	}
@@ -9657,13 +9658,17 @@ const $csv = function(aMap) {
 	var csv = new CSV()
 
 	var _r = {
-		fromFn: fn => {
-			if (isUnDef(_to)) _to = af.newOutputStream()
+		fromInFn: fn => {
+			var wasUnDef = false
+			if (isUnDef(_to)) {
+				_to = af.newOutputStream()
+				wasUnDef = true
+			}
 			csv.toStream(_to, function() { return fn() })
 			_to.close()
-			return _to.toString()
+			return (wasUnDef ? _to.toString() : true)
 		},
-		fromArray: (ar, fn) => {
+		fromInArray: (ar, fn) => {
 			ar = _$(ar, "array").isArray().default([])
 			var ari = ar.length
 			fn = _$(fn, "fn").isFunction().default(() => (ari >= 0 ? ar[ar.length - ari--] : __))
@@ -9672,27 +9677,31 @@ const $csv = function(aMap) {
 			
 			_s.withHeaders = Object.keys(ar[0])
 			csv.setStreamFormat(_s)
-			_r.fromFn(fn)
+			return _r.fromInFn(fn)
 		},
-		toStream: aS => {
+		fromInString: s => {
+			_from = af.fromString2InputStream(s)
+			return _r
+		},
+		toOutStream: aS => {
 			_to = aS
 			return _r
 		},
-		toFile: (aF, append) => {
+		toOutFile: (aF, append) => {
 			append = _$(append, "append").isBoolean().default(false)
 			_to = io.writeFileStream(aF, append)
 			if (append) _r.setHeader(false)
 			return _r
 		},
-		fromFile: aF => {
+		fromInFile: aF => {
 			_from = io.readFileStream(aF)
 			return _r
 		},
-		fromStream: aS => {
+		fromInStream: aS => {
 			_from = aS
 			return _r 
 		},
-		toFn: fn => {
+		toOutFn: fn => {
 			if (isUnDef(_s.withHeader)) _r.setHeader(true)
 			if (!isJavaObject(_from)) throw "Require 'fromStream'"
 
@@ -9702,10 +9711,10 @@ const $csv = function(aMap) {
 			
 			return true
 		},
-		toArray: () => {
+		toOutArray: () => {
 			var ar = []
 
-			_r.toFn(m => {
+			_r.toOutFn(m => {
 				ar.push(m)
 			})			
 
