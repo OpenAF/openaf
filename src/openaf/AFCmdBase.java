@@ -16,7 +16,7 @@ import java.lang.String;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20220412";
+	public static String VERSION = "20220607";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 	
@@ -26,10 +26,14 @@ public class AFCmdBase {
 	public static AFCmdBase afc;
 	public static ZipFile zip;
 	public static int optLevel = 9;
+	public static boolean dontDIP = false;
 	
 	public String dIP(Object aPass) {
 		if (aPass instanceof String) {
-			return (String) AFBase.decryptIfPossible((String) aPass);
+			if (!dontDIP)
+				return (String) AFBase.decryptIfPossible((String) aPass);
+			else 
+				return (String) aPass;
 		} 
 		if (aPass instanceof NativeFunction) {
 			try {
