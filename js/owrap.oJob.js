@@ -2799,9 +2799,6 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 		case "tree":
 			print(printTree(aObj, __, { noansi: !__conAnsi }))
 			break;
- 		case "map":
- 			print(printMap(aObj, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi));
-			break;
 		case "jsmap":
 			var res = ow.template.html.parseMap(aObj, true);
 			return "<html><style>" + res.css + "</style><body>" + res.out + "</body></html>";
