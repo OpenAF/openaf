@@ -1016,6 +1016,39 @@ OpenWrap.java.prototype.cipher.prototype.verify = function(sigToVerify, aPublicK
 
 /**
  * <odoc>
+ * <key>ow.java.cipher.encodeCert(aCert) : String</key>
+ * Encodes aCert(ificate) into a base64 PEM representation.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.encodeCert = function(aCert) {
+    _$(aCert, "aCert").$_()
+    
+    var beginTxt = "-----BEGIN CERTIFICATE KEY-----\n"
+    var endTxt = "-----END CERTIFICATE KEY-----\n"
+    
+    var encoder = java.util.Base64.getMimeEncoder(64, java.lang.System.getProperty("line.separator").getBytes())
+    return beginTxt + af.fromBytes2String(encoder.encode(aCert.getEncoded())) + "\n" + endTxt
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.cipher.encodeKey(aKey, isPrivate) : String</key>
+ * Encodes private (isPrivate = true) or public key into a base64 key representation.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.encodeKey = function(aKey, isPrivate) {
+    _$(aKey, "aKey").$_()
+    isPrivate = _$(isPrivate, "isPrivate").isBoolean().default(false)
+
+    var beginTxt = "-----BEGIN " + (isPrivate ? "PRIVATE" : "PUBLIC") + " KEY-----\n"
+    var endTxt = "-----END " + (isPrivate ? "PRIVATE" : "PUBLIC") + " KEY-----\n"
+    
+    var encoder = java.util.Base64.getMimeEncoder(64, java.lang.System.getProperty("line.separator").getBytes())
+    return beginTxt + af.fromBytes2String(encoder.encode(aKey.getEncoded())) + "\n" + endTxt
+}
+
+/**
+ * <odoc>
  * <key>ow.java.cipher.genCert(aDn, aPublicKey, aPrivateKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType) : JavaSignature</key>
  * Generates a certificate with aDn (defaults to "cn=openaf"), using aPublicKey and aPrivateKey, for aValidity date (defaults to a date 
  * one year from now). Optionally you can specify aSigAlgName (defaults to SHA256withRSA), a file based aKeyStore and the corresponding
