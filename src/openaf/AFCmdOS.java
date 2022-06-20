@@ -120,10 +120,12 @@ public class AFCmdOS extends AFCmdBase {
 	@Override
 	public String dIP(Object aPass) {
 		if (aPass instanceof String) {
-			if (!dontDIP)
+			if (!dontDIP && !((String) aPass).startsWith("$raw$")) {
 				return (String) AFBase.decryptIfPossible((String) aPass);
-			else 
+			} else {
+				if (((String) aPass).startsWith("$raw$")) return ((String) aPass).substring(5);
 				return (String) aPass;
+			}
 		} 
 		if (aPass instanceof NativeFunction) {
 			try {
