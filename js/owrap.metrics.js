@@ -564,7 +564,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             keys.forEach(key => {
                 if (isDef(obj[key])) {
                     var k = key.replace(/[^a-zA-Z0-9]/g, "_")
-                    if (isMap(aConvMap) && isString(obj[key])) {
+                    if (isMap(aConvMap) && isString(obj[key]) && isDef(aConvMap[key])) {
                         if (isMap(aConvMap[key]) && isNumber(aConvMap[key][obj[key]])) {
                             ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[key][obj[key]]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
                             return 1
