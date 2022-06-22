@@ -1049,6 +1049,29 @@ OpenWrap.java.prototype.cipher.prototype.encodeKey = function(aKey, isPrivate) {
 
 /**
  * <odoc>
+ * <key>ow.java.cipher.decodeKey(aString, isPrivate, anAlgorithm) : JavaObject</key>
+ * Decode aString base64 key representation (from encodeKey) into a public or private (isPrivate = true) key
+ * optionally specifying anAlgorithm (defaults to RSA)
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.decodeKey = function(aString, isPrivate, anAlgorithm) {
+    _$(isPrivate).isBoolean().$_("Please indicate if it's a private or public key.")
+    anAlgorithm = _$(anAlgorithm).isString().default("RSA")
+
+    var k = af.fromBase64(aString.split("\n").filter(r=>!r.startsWith("-----")).join(""))
+    var keySpec, keyFactory = java.security.KeyFactory.getInstance(anAlgorithm)
+
+    if (isPrivate) {
+        keySpec = new java.security.spec.PKCS8EncodedKeySpec(k)
+        return keyFactory.generatePrivate(keySpec)
+    } else {
+        keySpec = new java.security.spec.X509EncodedKeySpec(k)
+        return keyFactory.generatePublic(keySpec)
+    }
+}
+
+/**
+ * <odoc>
  * <key>ow.java.cipher.genCert(aDn, aPublicKey, aPrivateKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType) : JavaSignature</key>
  * Generates a certificate with aDn (defaults to "cn=openaf"), using aPublicKey and aPrivateKey, for aValidity date (defaults to a date 
  * one year from now). Optionally you can specify aSigAlgName (defaults to SHA256withRSA), a file based aKeyStore and the corresponding
