@@ -1,5 +1,5 @@
-var _fparam = __expr.match(/^([^ ]+) ?/);
-var fparam = (isArray(_fparam) && _fparam.length > 0) ? _fparam[1] : "";
+var _fparam = __expr.split(/ +/).filter(r => !r.startsWith("-"))
+var fparam = (isArray(_fparam) && _fparam.length > 0) ? _fparam[0] : "";
 var params = processExpr(" ");
 var ojob_shouldRun = true;
 var ojob_args = {};
@@ -47,6 +47,11 @@ if (isDef(params["-jobhelp"]) && params["-jobhelp"] == "") {
 	ojob_jobhelp();
 }
 
+if (isDef(params["-which"]) && params["-which"] == "") {
+	delete params["-which"]
+	ojob_which()
+}
+
 //if ($from(Object.keys(params)).starts("-").any()) {
 //	$from(Object.keys(params)).starts("-").select(function(r) {
 //		ojob_args[r.replace(/^-/, "")] = params[r];
@@ -66,18 +71,13 @@ function ojob_showHelp() {
 	print("  -todo          List the final todo list.");
 	print("  -deps          Draws a list of dependencies of todo jobs on a file.");
 	print("  -jobhelp (job) Display any available help information for a job.");
+	print("  -which         Determines from where an oJob will be loaded from.")
 	print("");
 	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE + ")");
 	ojob_shouldRun = false;
 }
 
 function ojob__getFile() {
-	/*var ks = Object.keys(params);
-	if (ks.length >= 1) {
-		var f = ks[0];
-		delete params[f];
-		print(f);
-		return f; */
 	if (isDef(fparam)) {
 		return fparam;
 	} else {
@@ -206,6 +206,33 @@ function ojob_draw() {
 	ansiStop();
 
 	ojob_shouldRun = false;
+}
+
+function ojob_which() {
+	var aFileOrPath = ojob__getFile()
+
+	var isUrl = false
+	if (aFileOrPath.toLowerCase().startsWith("http://") || aFileOrPath.toLowerCase().startsWith("https://")) isUrl = true
+
+	if (!isUrl) {
+        aFileOrPath = aFileOrPath.replace(/\\+/g, "/")
+		aFileOrPath = aFileOrPath.replace(/\/+/g, "/")
+        if (!io.fileExists(aFileOrPath)) {
+            var found = false
+			var paths = getOPackPaths()
+			if (io.fileExists(__flags.OJOB_LOCALPATH)) paths["__ojobs_local"] = __flags.OJOB_LOCALPATH
+            Object.values(paths).forEach(f => {
+                if (!found && io.fileExists(f + "/" + aFileOrPath)) {
+                    aFileOrPath = f + "/" + aFileOrPath
+                    found = true
+                }
+            });
+        }
+        aFileOrPath = io.fileInfo(aFileOrPath).canonicalPath
+    } 
+
+	print(aFileOrPath)
+	ojob_shouldRun = false
 }
 
 function ojob_jobhelp() {
