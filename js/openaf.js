@@ -6784,6 +6784,7 @@ loadCompiledLib("openafsigil_js");
 var __flags = _$(__flags).isMap().default({
 	OJOB_SEQUENTIAL            : true,
 	OJOB_HELPSIMPLEUI          : false,
+	OJOB_LOCALPATH             : getOpenAFPath() + "ojobs",
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : false,
 	MD_NOMAXWIDTH              : true,
