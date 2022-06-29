@@ -154,7 +154,9 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
 		aFileOrPath = aFileOrPath.replace(/\/+/g, "/");
         if (!io.fileExists(aFileOrPath)) {
             var found = false;
-            Object.values(getOPackPaths()).forEach(f => {
+			var paths = getOPackPaths()
+			if (io.fileExists(__flags.OJOB_LOCALPATH)) paths["__ojobs_local"] = __flags.OJOB_LOCALPATH
+            Object.values(paths).forEach(f => {
                 if (!found && io.fileExists(f + "/" + aFileOrPath)) {
                     aFileOrPath = f + "/" + aFileOrPath;
                     found = true;
@@ -733,6 +735,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		} catch(e1) {
 			if (isDef(e1.message) && e1.message.match(/FileNotFoundException/)) {
 				var paths = getOPackPaths(), found = false;
+				if (io.fileExists(__flags.OJOB_LOCALPATH)) paths["__ojobs_local"] = __flags.OJOB_LOCALPATH
 				
 				for(var i in paths) {
 					try {
