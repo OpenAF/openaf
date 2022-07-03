@@ -44,7 +44,7 @@ var nLinq = function(anObject, aK) {
     
         var ii, found = false;
         for(ii = 0; ii < anArray.length && !found; ii++) {
-            var o = (isFunction(aPreFilter)) ? aPreFilter(anArray[ii]) : anArray[ii];
+            var o = ($$(aPreFilter).isFunction()) ? aPreFilter(anArray[ii]) : anArray[ii];
             if (aCompare(aObj, o)) found = true;
         }
     
@@ -101,10 +101,10 @@ var nLinq = function(anObject, aK) {
 
         where = where.replace(/\;/g, " ");
         var f;
-        if (isFunction(aFunc)) {
+        if ($$(aFunc).isFunction()) {
             f = aFunc;
         } else {
-            f = newFn("r", "whereFn", "return $$(r).isDef() ? (" + where + ") : void 0");
+            f = new Function("r", "whereFn", "return $$(r).isDef() ? (" + where + ") : void 0");
         }
         if (alimit != 0) {
             if (negative) 
@@ -548,7 +548,7 @@ var nLinq = function(anObject, aK) {
             res = applyConditions(res);
 
             //aKey = vKey(aKey);
-            if (isFunction(aValue)) {
+            if ($$(aValue).isFunction()) {
                 res = res.map(r => { $$(r).set(aKey, aValue(r)); return r; });
             } else {
                 res = res.map(r => { $$(r).set(aKey, aValue); return r; });
@@ -563,19 +563,19 @@ var nLinq = function(anObject, aK) {
             res = res.filter(r => {
                 var d = true;
                 
-                if (isMap(aValue) && isMap(r)) {
+                if ($$(aValue).isMap() && $$(r).isMap()) {
                     Object.keys(aValue).forEach(rr => {
                         if (!aCompare(aValue[rr], r[rr])) d = false;
                     })
                 }
-                if (isArray(r)) {
+                if ($$(r).isArray()) {
                     if (aArrayContains(r, aValue) < 0) d = false;
                 }
 
-                if (isFunction(aValue) && !aValue(r)) d = false;
+                if ($$(aValue).isFunction() && !aValue(r)) d = false;
 
-                if (isNumber(aValue) || isString(aValue)) {
-                    if (isNumber(r) || isString(r)) {
+                if ($$(aValue).isNumber() || $$(aValue).isString()) {
+                    if ($$(r).isNumber() || $$(r).isString()) {
                         if (r != aValue) d = false;
                     }
                 }
@@ -612,7 +612,7 @@ var nLinq = function(anObject, aK) {
                 }
             }
 
-            res = res.sort(newFn("a", "b", ssort));
+            res = res.sort(new Function("a", "b", ssort));
 
             return code;
         },
@@ -668,20 +668,20 @@ var nLinq = function(anObject, aK) {
             aMap.selector = _$(aMap.selector, "selector").isMap().default(void 0)
         
             aMap.where.forEach(w => {
-                if (isString(w.cond)) code = code[w.cond].apply(code, w.args)
+                if ($$(w.cond).isString()) code = code[w.cond].apply(code, w.args)
             })
             aMap.transform.forEach(t => {
-                if (isString(t.func)) {
+                if ($$(t.func).isString()) {
                     code = code[t.func].apply(code, t.args)
                 }
             })
         
             var res
-            if (isString(aMap.select)) res = code.tselect(newFn("elem", "index", "array", aMap.select))
-            if (isMap(aMap.select)) res = code.select(aMap.select)
+            if ($$(aMap.select).isString()) res = code.tselect(new Function("elem", "index", "array", aMap.select))
+            if ($$(aMap.select).isMap()) res = code.select(aMap.select)
         
-            if (isUnDef(res) && isMap(aMap.selector)) res = (isString(aMap.selector.func) ? $$({}).set(aMap.selector.func, code[aMap.selector.func].apply(code, aMap.selector.args)) : res)
-            if (isUnDef(res) && isUnDef(aMap.select)) res = code.select()
+            if ($$(res).isUnDef() && $$(aMap.selector).isMap()) res = ($$(aMap.selector.func).isString() ? $$({}).set(aMap.selector.func, code[aMap.selector.func].apply(code, aMap.selector.args)) : res)
+            if ($$(res).isUnDef() && $$(aMap.select).isUnDef()) res = code.select()
         
             return res
         },
@@ -724,7 +724,7 @@ var nLinq = function(anObject, aK) {
         mselect: (aParam, aKey, dontRemove) => {
             var anArray = code.select(aParam)
             aKey        = _$(aKey, "aKey").isString().default("_key")
-            dontRemove  = _$(dontRemove, "dontRemove").isBoolean().default(false)
+            dontRemove  = _$(dontRemove, "dontRemove").isBoolean().default(true)
 
             var res = {};
             for(var i in anArray) {
@@ -759,7 +759,7 @@ var nLinq = function(anObject, aK) {
         streamFn : aParam => {
             return () => {
                 var r = code.select(aParam);
-                res = (isFunction(anObject) ? anObject() : anObject);
+                res = ($$(anObject).isFunction() ? anObject() : anObject);
                 return r;
             };
         },

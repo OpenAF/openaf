@@ -220,10 +220,11 @@ const _$ = function(aValue, aPrefixMessage) {
         }, 
         toMap: (aMessage) => {
             if ($$(aMessage).isUnDef()) aMessage = aPrefixMessage + "can't be converted to a map"
-            if (defined) try { 
+            if (defined) 
+              try { 
                 var __f = j => { return ($$(global.jsonParse).isFunction() ? global.jsonParse(j, true) : JSON.parse(j)) }
                 aValue = __f(aValue) 
-            } catch(e) { throw aMessage }
+              } catch(e) { throw aMessage }
             return __r
         },
         isObject: (aMessage) => {
