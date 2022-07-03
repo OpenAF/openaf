@@ -707,7 +707,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	  }
 	})
   
-	out = (out.endsWith("\n") ? out.substring(0, out.length - 2) : out)
+	out = (out.endsWith("\n") ? out.substring(0, out.length - _al(_ac("RESET", "") + "\n")) : out)
   
 	return out
 }

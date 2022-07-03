@@ -1742,7 +1742,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
-			var argss = args;
+			var argss = merge(args, $get("res"));
 			//var argss = merge(args, last);
 			//if (isDef(todo.args)) argss = this.__processArgs(merge(args, last), todo.args, aId);
 			if (isDef(todo.args)) argss = this.__processArgs(argss, todo.args, aId);
