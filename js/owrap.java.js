@@ -1246,6 +1246,107 @@ OpenWrap.java.prototype.getLibraryPath = function() {
 
 /**
  * <odoc>
+ * <key>ow.java.ini() : Object</key>
+ * Returns an object to handle Windows INI / Java properties kind of files. Available methods are:\
+ * \
+ *   load(content)   - Given a INI/properties file content converts to an internal format\
+ *   loadFile(aFile) - Loads a file with load()\
+ *   get()           - Returns a map of the internal format representation\
+ *   put(aMap)       - Read aMap into the internal format representation (arrays not fully supported)\
+ *   save()          - Returns a INI/properties string\
+ *   saveFile(aFile) - Saves a file using save()\
+ * \
+ * Examples:\
+ * \
+ *   ow.java.ini().loadFile("/etc/os-release").get()\
+ *   ow.java.ini().put(myMap).save()
+ * </odoc>
+ */
+OpenWrap.java.prototype.ini = function() {
+    var data = {}
+
+    var _r = {
+        readProperties: content => {
+            var props = new java.util.Properties()
+            props.load(af.fromString2InputStream(content))
+
+            var r = {}
+            for(var o of props) {
+                o[1] = String(o[1])
+                if (o[1].toLowerCase() == "true" || o[1].toLowerCase() == "false") o[1] = toBoolean(o[1]) 
+                if (isNumber(o[1])) o[1] = Number(o[1])
+                r[o[0]] = o[1] 
+            }
+            return r
+        },
+        load: content => {
+            var t = content.split("\n")
+
+            // remove comments and empty lines
+            t = t.map(r => r.trim())
+                 .filter(r => !r.startsWith(";") && !r.startsWith("#"))
+                 .filter(r => r.length > 0)
+
+            var path = "", buf = ""
+            var plns = l => {
+                if (isUnDef(l) || l.startsWith("[")) {
+                    if (path == "") 
+                        data = merge(data, _r.readProperties(buf))
+                    else 
+                        $$(data).set(path, merge($$(data).get(path), _r.readProperties(buf)))
+
+                    buf = ""
+                    if (isDef(l)) {
+                        var sec = l.match(/^\[(.+)\]$/)
+
+                        if (isArray(sec) && sec.length > 1) {
+                            if (l.startsWith("[.")) 
+                                path += sec[1]
+                            else
+                                path = sec[1]
+                        }
+                    }
+                } else {
+                    buf += l + "\n"
+                }
+            }
+            
+            t.forEach(plns)
+            if (path == "") 
+                data = merge(data, _r.readProperties(buf))
+            else 
+                $$(data).set(path, merge($$(data).get(path), _r.readProperties(buf)))
+            return _r
+        },
+        loadFile: aFile => _r.load(io.readFileString(aFile)),
+        get: () => { return data },
+        put: m => {
+            data = m
+            return _r
+        },
+        save: () => {
+            var s = "", ss = "", psec = ""
+            traverse(data, (aK, aV, aP, aO) => {
+                if (aP.startsWith(".")) aP = aP.substr(1)
+                if (!isArray(aV) && !isMap(aV)) {
+                    if (aP != psec) {
+                        psec = aP
+                        if (s.length != 0) s += "\n"
+                        s += "[" + psec + "]\n"
+                    }
+                    s += aK + "=" + aV + "\n"
+                }
+            })
+            s += ss
+            return s
+        },
+        saveFile: aFile => io.writeFileString(aFile, _r.save())
+    }
+    return _r
+}
+
+/**
+ * <odoc>
  * <key>ow.java.getAddressType(aAddress) : Map</key>
  * Given aAddress tries to return a map with the following flags: isValidAddress, hostname, ipv4, ipv6 and privateAddress
  * </odoc>
