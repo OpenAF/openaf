@@ -429,15 +429,15 @@
 			"removable": false,
 			"hardDeps": [
 				"lib/commons-io-2.8.0.jar",
-				"lib/jetty-io-9.4.43.jar",
-				"lib/jetty-util-9.4.43.jar",
-				"lib/jetty-client-9.4.43.jar",
-				"lib/jetty-http-9.4.43.jar"
+				"lib/jetty-io-9.4.48.v20220622.jar",
+				"lib/jetty-util-9.4.48.v20220622.jar",
+				"lib/jetty-client-9.4.48.v20220622.jar",
+				"lib/jetty-http-9.4.48.v20220622.jar"
 			],
 			"deps": [
-				"lib/websocket-api-9.4.43.jar",
-				"lib/websocket-client-9.4.43.jar",
-				"lib/websocket-common-9.4.43.jar"
+				"lib/websocket-api-9.4.48.v20220622.jar",
+				"lib/websocket-client-9.4.48.v20220622.jar",
+				"lib/websocket-common-9.4.48.v20220622.jar"
 			]
 		},
 		{
