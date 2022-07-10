@@ -1,4 +1,5 @@
-/* Author: Nuno Aguiar */
+// Version: 0.1.0a
+// Author : Nuno Aguiar
 
 var nLinq_USE_CASE = false;
 var nLinq = function(anObject, aK) {
@@ -763,6 +764,35 @@ var nLinq = function(anObject, aK) {
                 return r;
             };
         },
+
+        // Map query
+        query: aMap => {
+            aMap = _$(aMap, "aMap").isMap().default({})
+        
+            aMap.where     = _$(aMap.where, "where").isArray().default([])
+            aMap.select    = _$(aMap.select, "select").default(void 0)
+            aMap.transform = _$(aMap.transform, "transform").isArray().default([])
+            aMap.selector  = _$(aMap.selector, "selector").isMap().default(void 0)
+        
+            var f = code
+        
+            aMap.where.forEach(w => {
+                if ($$(w.cond).isString()) code = code[w.cond].apply(code, w.args)
+            })
+            aMap.transform.forEach(t => {
+                if ($$(t.func).isString()) code = code[t.func].apply(code, t.args)
+            })
+        
+            var _res
+            if ($$(aMap.select).isString()) _res = code.tselect(newFn("elem", "index", "array", aMap.select))
+            if ($$(aMap.select).isMap()) _res = code.select(aMap.select)
+        
+            if ($$(_res).isUnDef() && $$(aMap.selector).isMap()) _res = ($$(aMap.selector.func).isString() ? code[aMap.selector.func].apply(code, aMap.selector.args) : _res)
+            if ($$(_res).isUnDef() && $$(aMap.select).isUnDef()) _res = code.select()
+        
+            return _res
+        },
+
         pselect : aParam => {
 		    var pres = splitArray(res);
 		    var fRes = [];

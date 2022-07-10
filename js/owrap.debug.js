@@ -130,7 +130,8 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     assert    : 0x1F44D,
     print     : 0x1F50E,
     error     : 0x1F621,
-    time      : "🕒"
+    time      : "🕒",
+    count     : "🧮"
   })
   args.includeTime = _$(args.includeTime, "includeTime").toBoolean().isBoolean().default(false)
   
@@ -172,6 +173,7 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
   sign.print      = _$(sign.print).default("?")
   sign.error      = _$(sign.error).default("!")
   sign.time       = _$(sign.time).default(":")
+  sign.count      = _$(sign.count).default("n")
 
   code = code.split(/\r\n|\n/).map(line => {
     var l
@@ -195,6 +197,22 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     if (isArray(l)) {
       var s = l[1].replace(/\'/g, "\\\'")
       line = line.replace(/\/\/\[ (.+)$/, ";global._debugData['" + s + "']=now();")
+    }
+
+    // increment equivalent
+    l = line.trim().match(/\/\/\+ (.+)$/)
+    if (isArray(l)) {
+      var s = l[1].replace(/\'/g, "\\\'")
+      if (isUnDef($get("__debug::" + s))) $set("__debug::" + s, $atomic())
+      line = line.replace(/\/\/\+ (.+)$/, _m("\"" + sign.count + " " + s + ": \" + $get(\"__debug::" + s + "\").inc()"))
+    }
+
+    // decrement equivalent
+    l = line.trim().match(/\/\/\- (.+)$/)
+    if (isArray(l)) {
+      var s = l[1].replace(/\'/g, "\\\'")
+      if (isUnDef($get("__debug::" + s))) $set("__debug::" + s, $atomic())
+      line = line.replace(/\/\/\- (.+)$/, _m("\"" + sign.count + " " + s + ": \" + $get(\"__debug::" + s + "\").dec()"))
     }
 
     // assert equivalent

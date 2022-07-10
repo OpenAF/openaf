@@ -568,34 +568,42 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
  * pad the each entry key, fullValSize (boolean) to pad the entire key and value and withValues (boolean) to include or not each key values
  * </odoc>
  */
-const printTree = function(aM, aWidth, aOptions, aPrefix) {
+const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
+    isSub = _$(isSub, "isSub").isBoolean().default(false)
 	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
+
 	var out  = ""
-	aPrefix  = _$(aPrefix).isString().default("")
-	aOptions = _$(aOptions).isMap().default({})
+	aPrefix  = _$(aPrefix, "aPrefix").isString().default("")
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+    aWidth   = _$(aWidth, "aWidth").isNumber().default(__)
 
-	ow.loadFormat();
-	if (!ow.format.isWindows()) {
-		if (isUnDef(aOptions.noansi) && __initializeCon()) {
-			aOptions.noansi = !__conAnsi
-		}
-	} else {
-		if (__initializeCon()) {
-			if (!ansiWinTermCap()) ansiStart()
-			if (isUnDef(aOptions.noansi)) aOptions.noansi = !__conAnsi
-		}
-	}
+    // Don't repeat options if already done as a sub-call
+    if (!isSub) {
+        ow.loadFormat();
+        if (!ow.format.isWindows()) {
+            if (isUnDef(aOptions.noansi) && __initializeCon()) {
+                aOptions.noansi = !__conAnsi
+            }
+        } else {
+            if (__initializeCon()) {
+                if (!ansiWinTermCap()) ansiStart()
+                if (isUnDef(aOptions.noansi)) aOptions.noansi = !__conAnsi
+            }
+        }
 
-	aOptions = merge(merge({
-	  noansi: false,
-	  curved: true,
-	  fullKeySize: true,
-	  fullValSize: false,
-	  withValues: true,
-      wordWrap: true,
-	  compact: true
-	}, __flags.TREE), aOptions)
+        // Merge with default options
+        aOptions = merge(merge({
+            noansi: false,
+            curved: true,
+            fullKeySize: true,
+            fullValSize: false,
+            withValues: true,
+            wordWrap: true,
+            compact: true
+          }, __flags.TREE), aOptions)
+    }
   
+    // Decide on decorations to use
 	var slines, line, endc, strc, ssrc, midc
 	if (aOptions.compact) {
 		slines = 2
@@ -614,61 +622,104 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 		midc = (aOptions.noansi ? "|- " : "├─ ")
 	}
 
-	aWidth = _$(aWidth).isNumber().default(Number(__con.getTerminal().getWidth()))
+	if (isUnDef(aWidth)) aWidth = Number(__con.getTerminal().getWidth())
   
-	var size = Object.keys(aM).length, ksize = __, vsize = __
-  
+	var aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
 	var miniCache = {}
 
+    // Prepare aux functions
 	var _clr = __, _ac = __, _al = __
 	if (!aOptions.noansi) {
+		_dt = aO => {
+			if (isUnDef(aO)) return "undefined"
+			if (isJavaClass(aO)) return "java"
+			if (isJavaObject(aO)) return "java"
+			if (isBoolean(aO)) return "boolean"
+			if (isNumber(aO)) return "number"
+			if (isString(aO)) return "string"
+		}
 		_clr = aO => {
-			switch(descType(aO)) {
-			case "number" : return _ac(__colorFormat.number, String(aO)+_ac("RESET",""))
-			case "string" : return _ac(__colorFormat.string, String(aO)+_ac("RESET",""))
-			case "boolean": return _ac(__colorFormat.boolean, String(aO)+_ac("RESET",""))
-			case "java"   : return _ac(__colorFormat.string, String(aO.toString())+_ac("RESET",""))
-			default: return _ac(__colorFormat.default, String(aO)+_ac("RESET",""))
+			switch(_dt(aO)) {
+			case "number" : return _ac(__colorFormat.number, String(aO))+_ac("RESET","")
+			case "string" : return _ac(__colorFormat.string, String(aO))+_ac("RESET","")
+			case "boolean": return _ac(__colorFormat.boolean, String(aO))+_ac("RESET","")
+			case "java"   : return _ac(__colorFormat.string, String(aO.toString()))+_ac("RESET","")
+			default       : return _ac(__colorFormat.default, String(aO))+_ac("RESET","")
 			}
 		}
-		_ac  = ansiColor
-		_al  = ansiLength
+		_ac  = (aAnsi, aString) => {
+			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi](aString)
+			var res = ansiColor(aAnsi, aString, true)
+			return res
+		}
+		_al  = m => {
+			//var l = ansiLength(m, true)
+			var s = m.replace(/\033\[[0-9;]*m/g, "")
+			if (__flags.VISIBLELENGTH)
+				return Number((new java.lang.String(s)).codePointCount(0, s.length))
+			else
+				return Number(s.length)
+		}
 	} else {
 		_clr = s => s
 		_ac  = (o, s) => s
 		_al  = s => s.length
 	}
 
+    // Render key and value
 	var _get = (k, v) => {
 	  if (isDef(miniCache[k])) return miniCache[k]
   
 	  var _k = (isNumber(k) ? "[" + k + "]" : k) 
 	  if (aOptions.withValues) {
-		miniCache[k] = _ac(__colorFormat.key, _k) + (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + (!(isMap(v) || isArray(v)) ? ": " + _clr(v) : "")
+		miniCache[k] = _ac(__colorFormat.key, _k) + 
+                       (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + 
+                       (!(isMap(v) || isArray(v)) ? ": " + _clr(v) : "")
 	  } else {
 		miniCache[k] = _k
 	  }
 	  return miniCache[k]
 	}
   
-	if (aOptions.fullKeySize) {
-	  ksize = 0
-	  Object.keys(aM).forEach(k => {
-		var _k = (isNumber(k) ? "[" + k + "]" : k) 
-		if (_k.length > ksize) ksize = _k.length
-	  })
-	}
-  
-	if (aOptions.fullValSize) {
-	  vsize = 0
-	  Object.keys(aM).forEach(k => {
-		  var lv = _al(_get(k, aM[k]))
-		  if (lv > vsize) vsize = lv
-	  })
-	}
+    // Determine max sizes of keys and values
+    if (aOptions.fullKeySize || aOptions.fullValSize) {
+        if (aOptions.fullKeySize) ksize = 0
+        if (aOptions.fullValSize) vsize = 0
+        aMKeys.forEach(k => {
+            if (aOptions.fullKeySize) {
+                var _k = (isNumber(k) ? "[" + k + "]" : k) 
+                if (_k.length > ksize) ksize = _k.length
+            }
+            if (aOptions.fullValSize) {
+                var lv = _al(_get(k, aM[k]))
+                if (lv > vsize) vsize = lv
+            }
+        }) 
+    }
 
+    var _tw = (s, mx) => {
+        if (s.length <= mx || mx <= 0) throw "Insufficient width"
+        var ar = []
+        var i = 0
+        do {
+			var sub = s.substr(i, mx)
+            if (sub.indexOf("\n") >= 0) {
+				var ni = sub.indexOf("\n")
+				ar.push(s.substr(i, ni))
+				i += ni
+			} else {
+				ar.push(sub)
+				i += mx
+			}
+        } while(i < s.length)
+        return ar
+    }
+
+    // Text wrap function
 	var _wf = (m, p) => {
-		if (!aOptions.wordWrap) return m
+		if (!aOptions.wordWrap) {
+            return m
+        }
 
 		p = _$(p).isString().default("") + " "
 		if (!isString(m)) return m
@@ -681,19 +732,21 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 			if (m.indexOf(": ") < 0 || ps + ms - 2 < ss) return m
 		}
 
-		return m.substring(0, m.indexOf(": ") + 2) + 
-		       ow.format.string.wordWrap(m.substring(m.indexOf(": ") + 2), ss-ps-1).split("\n").map((_l, ii) => {
-			if (ii == 0) return _l
-			return ansiColor("RESET", p) + ansiColor(__colorFormat.string, _l)
-		}).join("\n")
+		var _res = m.substring(0, m.indexOf(": ") + 2) + 
+                _tw(m.substring(m.indexOf(": ") + 2), ss-ps-1).map((_l, ii) => {
+                    if (ii == 0) return _l
+                    return _ac("RESET", p) + _ac(__colorFormat.string, _l)
+                }).join("\n")
+
+        return _res
 	}
   
-	Object.keys(aM).forEach((k, i) => {
+	aMKeys.forEach((k, i) => {
 	  var suffix = "", v = _get(k, aM[k]), lv = _al(v)
 	  var aPrefix2 = (i < (size-1) ? line : " ") + repeat((isDef(ksize) ? ksize : _al(k)) + slines, " ")
 
 	  if (isMap(aM[k]) || isArray(aM[k])) {
-		suffix = printTree(aM[k], aWidth, aOptions, aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " "))
+		suffix = printTree(aM[k], aWidth, aOptions, aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " "), true)
 	  }
   
 	  if (i > 0 && size <= (i+1)) {
@@ -708,8 +761,30 @@ const printTree = function(aM, aWidth, aOptions, aPrefix) {
 	})
   
 	out = (out.endsWith("\n") ? out.substring(0, out.length - _al(_ac("RESET", "") + "\n")) : out)
-  
+  	
 	return out
+}
+
+/**
+ * <odoc>
+ * <key>printTreeOrS(aObj, aWidth, aOptions) : String</key>
+ * Tries to use printTree with the provided arguments. In case printTree throws an exception (like insuffisance width)
+ * if will fallback to colorify or stringify (if the noansi option is true).
+ * </odoc>
+ */
+const printTreeOrS = function(aM, aWidth, aOptions) {
+	try {
+		return printTree(aM, aWidth, aOptions)
+	} catch(e) {
+		aOptions = merge(merge({
+            noansi: false
+          }, __flags.TREE), aOptions)
+		if (aOptions.noansi) {
+			return stringify(aM)
+		} else {
+			return colorify(aM)
+		}
+	}
 }
 
 /**
@@ -992,9 +1067,36 @@ function __initializeCon() {
 	}
 }
 
+var __ansiColorCache = {}
+const __ansiColorPrep = function(aAnsi) {
+	var jansi = JavaImporter(Packages.org.fusesource.jansi)
+	var aString = "RRR"
+
+	var nAnsi = []
+	aAnsi.split(",").forEach(r => {
+		if (r.startsWith("BG(")) {
+			var bg = r.match(/BG\((\d+)\)/)
+			if (!isNull(bg)) aString = "\033[48;5;" + bg[1] + "m" + aString
+		} else if (r.startsWith("FG(")) {
+			var fg = r.match(/FG\((\d+)\)/)
+			if (!isNull(fg)) aString = "\033[38;5;" + fg[1] + "m" + aString
+		} else {
+			nAnsi.push(r)
+		}
+	})
+
+	var o 
+	if (nAnsi.length > 0) {
+		o = String(jansi.Ansi.ansi().render("@|" + nAnsi.join(",").toLowerCase() + " " + aString + "|@"))
+	} else {
+		o = aString
+	}
+
+	return new Function("s", "return \"" + o.replace("RRR", "\"+s+\"") + "\"")
+}
 /**
  * <odoc>
- * <key>ansiColor(aAnsi, aString, force) : String</key>
+ * <key>ansiColor(aAnsi, aString, force, noCache) : String</key>
  * Returns the ANSI codes together with aString, if determined that the current terminal can handle ANSI codes (overridden
  * by force = true), with the attributes defined in aAnsi. Please use with ansiStart() and ansiStop().
  * The attributes separated by commas can be:\
@@ -1006,35 +1108,23 @@ function __initializeCon() {
  * \
  * </odoc>
  */
-const ansiColor = function(aAnsi, aString, force) {
-	if (!__initializeCon()) return aString;
+const ansiColor = function(aAnsi, aString, force, noCache) {
+	if (!force && !__initializeCon()) return aString;
 	aAnsi = _$(aAnsi, "aAnsi").isString().default("");
 	aString = _$(aString, "aString").isString().default("");
 	force = _$(force, "force").isBoolean().default(false);
+	noCache = _$(noCache, "noCache").isBoolean().default(!__flags.ANSICOLOR_CACHE)
 
 	var con = __con;
 	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
-	var jansi = JavaImporter(Packages.org.fusesource.jansi);
 	var res = "";
 	
 	if (ansis && aAnsi.length > 0) {
-		var nAnsi = [];
-		aAnsi.split(",").forEach(r => {
-			if (r.startsWith("BG(")) {
-				var bg = r.match(/BG\((\d+)\)/);
-				if (!isNull(bg)) aString = "\033[48;5;" + bg[1] + "m" + aString;
-			} else if (r.startsWith("FG(")) {
-				var fg = r.match(/FG\((\d+)\)/);
-				if (!isNull(fg)) aString = "\033[38;5;" + fg[1] + "m" + aString;
-			} else {
-				nAnsi.push(r);
-			}
-		});
-		if (nAnsi.length > 0) {
-			res = jansi.Ansi.ansi().render("@|" + nAnsi.join(",").toLowerCase() + " " + aString + "|@");
-		} else {
-			res = aString;
-		}
+		if (noCache) return __ansiColorPrep(aAnsi)(aString)
+		if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi](aString)
+
+		__ansiColorCache[aAnsi] = __ansiColorPrep(aAnsi)
+		return __ansiColorCache[aAnsi](aString)
 		//var res = Packages.openaf.JAnsiRender.render(aAnsi.toLowerCase() + " " + aString);
 		return String(res); 
 	} else {
@@ -6788,6 +6878,7 @@ var __flags = _$(__flags).isMap().default({
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : false,
 	MD_NOMAXWIDTH              : true,
+	ANSICOLOR_CACHE            : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
 	TREE: {
 		fullKeySize: true,
