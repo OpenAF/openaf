@@ -13,6 +13,11 @@ if (isDef(params["-h"]) && params["-h"] == "") {
 	ojob_showHelp();
 }
 
+if (isDef(params["-global"]) && params["-global"] == "") {
+	delete params["-global"]
+	ojob_global()
+}
+
 if (isDef(params["-compile"]) && params["-compile"] == "") {
 	delete params["-compile"];
 	ojob_compile();
@@ -72,6 +77,7 @@ function ojob_showHelp() {
 	print("  -deps          Draws a list of dependencies of todo jobs on a file.");
 	print("  -jobhelp (job) Display any available help information for a job.");
 	print("  -which         Determines from where an oJob will be loaded from.")
+	print("  -global        List global jobs for this installation.")
 	print("");
 	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE + ")");
 	ojob_shouldRun = false;
@@ -206,6 +212,21 @@ function ojob_draw() {
 	ansiStop();
 
 	ojob_shouldRun = false;
+}
+
+function ojob_global() {
+	var lst = $from(io.listFiles(__flags.OJOB_LOCALPATH).files)
+	            .sort("filename")
+				.select(r => { 
+					var oj = (r.filepath.endsWith(".json") ? io.readFileJSON(r.filepath) : io.readFileYAML(r.filepath))
+					return {
+						oJob: r.filename,
+						description: (isMap(oj) && isMap(oj.help) ? oj.help.text : "n/a"),
+						"# todo": (isMap(oj) && isArray(oj.todo)) ? oj.todo.length : "n/a"
+					} 
+				})
+	print(printTable(lst))
+	ojob_shouldRun = false
 }
 
 function ojob_which() {
