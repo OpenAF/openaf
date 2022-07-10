@@ -715,9 +715,14 @@ function execHTTPWithCred(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeou
 	} catch(e) {
 		if (String(e).indexOf("code: 401") >= 0) {
 			// Ensure bucket default exists
-			try { $sec(__, "opack").get("opack::") } catch(e) { $sec(__, "opack").set("opack::", {}) }
+			var si
+			try {
+				try { $sec(__, "opack").get("opack::") } catch(e1) { $sec(__, "opack").set("opack::", {}) }
 				
-			var si = $sec(__, "opack").get("opack::" + host + "::" + path)
+				si = $sec(__, "opack").get("opack::" + host + "::" + path)
+			} catch(ee) {
+			}
+
 			if (isMap(si) && (isUnDef(__remoteUser) || isUnDef(__remotePass))) { __remoteUser = Packages.openaf.AFCmdBase.afc.dIP(si.u); __remotePass = Packages.openaf.AFCmdBase.afc.dIP(si.p) }
 			if (isDef(__remoteUser) && isDef(__remotePass)) __remoteHTTP.login(Packages.openaf.AFCmdBase.afc.dIP(__remoteUser), Packages.openaf.AFCmdBase.afc.dIP(__remotePass), aURL)
 
