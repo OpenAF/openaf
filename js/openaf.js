@@ -698,24 +698,29 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
     }
 
     var _tw = (s, mx) => {
-        if (s.length <= mx) return s.split("\n")
-		if (mx <= 0) throw "Insufficient width"
+        if (s.length <= mx || mx <= 0) throw "Insufficient width"
         var ar = []
-        var i = 0
+        var i = 0, mxp = Math.floor(mx * 0.25)
         do {
 			var sub = s.substr(i, mx)
             if (sub.indexOf("\n") >= 0) {
 				var ni = sub.indexOf("\n")
 				ar.push(s.substr(i, ni))
-				i += ni
+				i += ni + 1
 			} else {
-				ar.push(sub)
-				i += mx
+				if (s.length > i+mx+1 && s.substr(i, mx+1).match(/ [^ ]+$/)) {
+					var mxp = sub.lastIndexOf(" ")
+					ar.push(s.substr(i, mxp))
+					i += mxp + 1
+				} else {
+					ar.push(sub)
+					i += mx
+				}
 			}
         } while(i < s.length)
         return ar
     }
-
+	
     // Text wrap function
 	var _wf = (m, p) => {
 		if (!aOptions.wordWrap) {
