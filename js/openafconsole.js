@@ -812,10 +812,10 @@ function __tree(aCmd) {
 	if ((isArray(__res) || isMap(__res))) {
 		var __pres = 0;
 		if (pauseCommand) {
-			var __lines = printTree(__res, con.getConsoleReader().getTerminal().getWidth(), { noansi: !colorCommand }).split(/\n/)
+			var __lines = printTreeOrS(__res, con.getConsoleReader().getTerminal().getWidth(), { noansi: !colorCommand }).split(/\n/)
 			while(__pres >= 0) __pres = __pauseArray(__lines, __pres)
 		} else {
-			__outputConsole(printTree(__res, con.getConsoleReader().getTerminal().getWidth(), { noansi: !colorCommand }))
+			__outputConsole(printTreeOrS(__res, con.getConsoleReader().getTerminal().getWidth(), { noansi: !colorCommand }))
 		}
 		return true
 	} else {
@@ -866,14 +866,14 @@ function __view(aCmd, fromCommand, shouldClear) {
 			if (pauseCommand) {
 				var __lines
 				if (__flags.CONSOLE.view == "tree") {
-					__lines = (prefix + printTree(__res, __, { noansi: !colorCommand })).split(/\n/)
+					__lines = (prefix + printTreeOrS(__res, __, { noansi: !colorCommand })).split(/\n/)
 				} else {
 					__lines = (prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand)).split(/\n/)
 				}
 				while(__pres >= 0) __pres = __pauseArray(__lines, __pres);
 			} else {
 				if (__flags.CONSOLE.view == "tree") {
-					__outputConsole(prefix + printTree(__res, __, { noansi: !colorCommand }))
+					__outputConsole(prefix + printTreeOrS(__res, __, { noansi: !colorCommand }))
 				} else {
 					__outputConsole(prefix + printMap(__res, __, (isDef(__codepage) ? "utf" : __), colorCommand))
 				}

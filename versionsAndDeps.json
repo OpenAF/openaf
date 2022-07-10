@@ -184,8 +184,8 @@
 		},
 		{
 			"description": "JAnsi",
-			"path": ["lib/jansi-1.18.jar"],
-			"version": "1.18",
+			"path": ["lib/jansi-2.4.0.jar"],
+			"version": "2.4.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/fusesource/jansi/master/license.txt",

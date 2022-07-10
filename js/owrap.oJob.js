@@ -2773,7 +2773,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	args = _$(args).default({});
  	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
  		if (isArray(obj) || isMap(obj))
-			print(printTree(obj, __, { noansi: !__conAnsi }))
+			print(printTreeOrS(obj, __, { noansi: !__conAnsi }))
  		else
  			sprint(obj);
  	});
@@ -2800,7 +2800,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			if (isArray(aObj)) print(printTable(aObj, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)));
  			break;
 		case "tree":
-			print(printTree(aObj, __, { noansi: !__conAnsi }))
+			print(printTreeOrS(aObj, __, { noansi: !__conAnsi }))
 			break;
 		case "jsmap":
 			var res = ow.template.html.parseMap(aObj, true);

@@ -571,6 +571,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
     isSub = _$(isSub, "isSub").isBoolean().default(false)
 	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
+
 	var out  = ""
 	aPrefix  = _$(aPrefix, "aPrefix").isString().default("")
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
@@ -697,12 +698,19 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
     }
 
     var _tw = (s, mx) => {
-        if (s.length <= mx) return s
+        if (s.length <= mx || mx <= 0) throw "Insufficient width"
         var ar = []
         var i = 0
         do {
-            ar.push(s.substr(i, mx))
-            i += 10
+			var sub = s.substr(i, mx)
+            if (sub.indexOf("\n") >= 0) {
+				var ni = sub.indexOf("\n")
+				ar.push(s.substr(i, ni))
+				i += ni
+			} else {
+				ar.push(sub)
+				i += mx
+			}
         } while(i < s.length)
         return ar
     }
@@ -725,7 +733,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		}
 
 		var _res = m.substring(0, m.indexOf(": ") + 2) + 
-                _tw(m.substring(m.indexOf(": ") + 2), ss-ps-1).split("\n").map((_l, ii) => {
+                _tw(m.substring(m.indexOf(": ") + 2), ss-ps-1).map((_l, ii) => {
                     if (ii == 0) return _l
                     return _ac("RESET", p) + _ac(__colorFormat.string, _l)
                 }).join("\n")
@@ -753,10 +761,31 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 	})
   
 	out = (out.endsWith("\n") ? out.substring(0, out.length - _al(_ac("RESET", "") + "\n")) : out)
-  
+  	
 	return out
 }
 
+/**
+ * <odoc>
+ * <key>printTreeOrS(aObj, aWidth, aOptions) : String</key>
+ * Tries to use printTree with the provided arguments. In case printTree throws an exception (like insuffisance width)
+ * if will fallback to colorify or stringify (if the noansi option is true).
+ * </odoc>
+ */
+const printTreeOrS = function(aM, aWidth, aOptions) {
+	try {
+		return printTree(aM, aWidth, aOptions)
+	} catch(e) {
+		aOptions = merge(merge({
+            noansi: false
+          }, __flags.TREE), aOptions)
+		if (aOptions.noansi) {
+			return stringify(aM)
+		} else {
+			return colorify(aM)
+		}
+	}
+}
 
 /**
  * <odoc>
