@@ -3637,10 +3637,7 @@ const pidCheck = function(aPid) {
 				return true;
 			} 
 		} else {
-			af.sh("kill -0 " + aPid);
-			if (__exitcode == 0) {
-				return true;
-			} 
+			if ($sh("kill -0 " + aPid).get(0).exitcode == 0) return true
 		}
 	} catch(e) {
 	}
