@@ -216,6 +216,8 @@ function ojob_draw() {
 
 function ojob_global() {
 	var lst = $from(io.listFiles(__flags.OJOB_LOCALPATH).files)
+			    .equals("isFile", true)
+				.match("filename", "(\.ya?ml|\.json)$")
 	            .sort("filename")
 				.select(r => { 
 					var oj = (r.filepath.endsWith(".json") ? io.readFileJSON(r.filepath) : io.readFileYAML(r.filepath))
