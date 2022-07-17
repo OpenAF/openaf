@@ -757,7 +757,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		}
 		
 		// Check for internal signature
-		if (isDef(res.__jwt) && isDef(OJOB_SIGNATURE_KEY)) {
+		if (isDef(res) && isDef(res.__jwt) && isDef(OJOB_SIGNATURE_KEY)) {
 			ow.loadObj();
 
 			if (!ow.obj.signVerify(OJOB_SIGNATURE_KEY, res)) {
