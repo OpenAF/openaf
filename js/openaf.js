@@ -698,7 +698,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
     }
 
     var _tw = (s, mx) => {
-        if (s.length <= mx || mx <= 0) throw "Insufficient width"
+        if (s.length >= mx || mx <= 0) throw "Insufficient width (length = " + s.length + "; max = " + mx + ")"
         var ar = []
         var i = 0, mxp = Math.floor(mx * 0.25)
         do {
