@@ -4494,11 +4494,10 @@ const require = function(aScript, force) {
 // OpenWrap
 //
 
-const OpenWrap = function() {}
+var OpenWrap = function() {}
 //if (isUnDef(OpenWrap))
 //	OpenWrap = function() {}
 
-const ow = new OpenWrap();
 //if (isUnDef(ow))
 //	ow = new OpenWrap();
 
@@ -4617,6 +4616,8 @@ OpenWrap.prototype.loadOJob = function() { loadCompiledLib("owrap_oJob_js"); if 
  * </odoc>
  */
 OpenWrap.prototype.loadJava = function() { loadCompiledLib("owrap_java_js"); if (isUnDef(ow.java)) { ow.java = new OpenWrap.java(); pods.declare("ow.java", ow.java); }; return ow.java; };
+
+var ow = new OpenWrap()
 
 /**
  * <odoc>
