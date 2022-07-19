@@ -11,27 +11,28 @@
 </head>
 <body>
   <nav class="grey lighten-5" role="navigation">
-    <div class="nav-wrapper container"><a id="logo-container" href="{{logo.link}}" class="brand-logo orange-text thin">{{logo.text}}</a>
-      <ul class="right hide-on-med-and-down waves-effect waves-light thin">
+    <div class="nav-wrapper container">
+      <a id="logo-container" href="{{logo.link}}" class="brand-logo orange-text thin">{{logo.text}}</a>
+      <a href="#" data-target="mobile" class="sidenav-trigger button-collapse orange-text thin"><i class="material-icons">menu</i></a>
+      <ul id="nav-mobile" class="right hide-on-med-and-down side-nav waves-effect waves-light thin">
         {{#each navbar}}
         <li><a href="{{link}}" class="orange-text">{{text}}</a></li>
         {{/each}}
       </ul>
-
-      <ul id="nav-mobile" class="side-nav waves-effect waves-light thin">
-        {{#each navbar}}
-        <li><a href="{{link}}" class="orange-text">{{text}}</a></li>
-        {{/each}}
-      </ul>
-      <a href="#" data-activates="nav-mobile" class="button-collapse orange-text thin"><i class="material-icons">menu</i></a>
     </div>
   </nav>
+  <ul id="mobile" class="sidenav">
+    {{#each navbar}}
+    <li><a href="{{link}}" class="orange-text">{{text}}</a></li>
+    {{/each}}
+  </ul>
 
   <!--  Scripts-->
   <script src="js/jquery.js"></script>
   <script src="js/materialize.js"></script>
   <script src="js/stream.js"></script>
   <script src="js/underscore.js"></script>
+  <script src="js/nlinq.js"></script>
 
   <div class="section">
     <div class="container no-pad-bot s12">
@@ -51,7 +52,7 @@
 
   <script>
     $( document ).ready(function(){
-       $(".button-collapse").sideNav();
+       $(".sidenav").sidenav();
     });
     window.onbeforeunload = function(event) {
        $.ajax({ async: false, type: 'GET', url: '/exec/quit', success: function(d) {}});
