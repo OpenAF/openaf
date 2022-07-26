@@ -113,6 +113,61 @@ OpenWrap.net.prototype.getTLSCertificates = function(aHost, aPort, withJava, aPa
 
 /**
  * <odoc>
+ * <key>ow.net.getStoredCertificates(aStoreFile, aPassword) : Array</key>
+ * Given a Java certificate store (aStoreFile) will retrieve a list of aliases, issuer DN, subject DN, expire notBefore and notAfter dates.
+ * Optionally aPassword can be provided if different from the default one.
+ * </odoc>
+ */
+OpenWrap.net.prototype.getStoredCertificates = function(aStoreFile, aPassword) {
+    _$(aStoreFile, "aStoreFile").isString().$_()
+    aPassword = _$(aPassword, "aPassword").isString().default("changeit")
+
+    var ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType())
+    var is = io.readFileStream(aStoreFile)
+    ks.load(is, (new java.lang.String(Packages.openaf.AFCmdBase.afc.dIP(aPassword))).toCharArray())
+    is.close()
+
+    var res = []
+    var it = ks.aliases()
+    while(it.hasNext()) {
+        var alias = it.next()
+        var c = ks.getCertificate(alias)
+        res.push({
+            alias    : alias,
+            issuerDN : c.getIssuerDN(),
+            subjectDN: c.getSubjectDN(),
+            notBefore: new Date(c.getNotBefore().toGMTString()),
+            notAfter : new Date(c.getNotAfter().toGMTString()) 
+        })
+    }
+
+    return res
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.getCAStoredCertificates(aPassword) : Array</key>
+ * Will retrieve a list of aliases, issuer DN, subject DN, expire notBefore and notAfter dates from the current Java "cacerts" file.
+ * Optionally aPassword can be provided if different from the default one.
+ * </odoc>
+ */
+OpenWrap.net.prototype.getCAStoredCertificates = function(aPassword) {
+    return ow.net.getStoredCertificates(ow.format.getJavaHome() + "/lib/security/cacerts", aPassword)
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.getJSSECAStoredCertificates(aPassword) : Array</key>
+ * Will retrieve a list of aliases, issuer DN, subject DN, expire notBefore and notAfter dates from the current Java "jssecacerts" file.
+ * Optionally aPassword can be provided if different from the default one.
+ * </odoc>
+ */
+OpenWrap.net.prototype.getJSSECAStoredCertificates = function(aPassword) {
+    return ow.net.getStoredCertificates(ow.format.getJavaHome() + "/lib/security/jssecacerts", aPassword)
+}
+
+/**
+ * <odoc>
  * <key>ow.net.getSSLPublicCertificates(aHost, aPort) : Array</key>
  * Given aHost and aPort for a HTTPs connection it will retrieve the array of peer certificates available.
  * You can retrieve the specific public key by using the method .getPublicKey for each array element. Usually you be
