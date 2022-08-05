@@ -9140,7 +9140,7 @@ const $doWait = function(aPromise, aWaitTimeout) {
 	return aPromise;
 }
 
-const $sh = function(aString) {
+const $sh = function(aString, aIn) {
     var __sh = function(aCmd, aIn) {
         this.q = [];
         this.wd = __;
@@ -9383,7 +9383,7 @@ const $sh = function(aString) {
         return this;
     };
 
-    return new __sh(aString);
+    return new __sh(aString, aIn);
 };
 
 const $ssh = function(aMap) {

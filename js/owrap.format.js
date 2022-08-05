@@ -28,6 +28,56 @@ OpenWrap.format.prototype.string = {
     },
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.genPass(aSize, aSets, aExclude, aWeights) : String</key>
+	 * Tries to generate a random password with aSize (defaults to 12) optionally given an array of aSets (between lowercase, uppercase, numbers, symbols and symbols2)
+	 * and also aExclude a string of characters given an optional percentage of aWeights probability for each aSets.
+	 * </odoc>
+	 */
+	genPass: (aSize, aSets, aExclude, aWeights) => {
+		var sets = {
+			lowercase: "abcdefghijklmnopqrstuvwxyz",
+			uppercase: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+			numbers  : "1234567890",
+			symbols  : "!@#$%*+_-?",
+			symbols2 : "\",./:;'<=>(){}?@[\\]^`~&"
+		}
+
+		var weight = {
+			lowercase: 40,
+			uppercase: 36,
+			numbers  : 15,
+			symbols  : 9,
+			symbols2 : 9
+		}
+
+		aSize    = _$(aSize, "aSize").isNumber().default(12)
+		aSets    = _$(aSets, "aSets").isArray().default(["lowercase","uppercase","numbers","symbols"])
+		aWeights = _$(aWeights, "aWeigths").isMap().default({})
+		aWeights = merge(weight, aWeights)
+		aExclude = _$(aExclude, "aExclude").isString().default("")
+
+		ow.loadObj()
+
+		var pass = "", numberOfSets = sets.length
+
+		var ar = aSets.map(r => ({
+			s: sets[r], 
+			w: weight[r]
+		}))
+
+		var pass = "", sr = new java.security.SecureRandom()
+		for(var i = 0; i < aSize; i++) {
+			var s, c;
+			do {
+				s = String( ow.obj.oneOf( ar, "w" ).s )
+				c = s.charAt( sr.nextInt(s.length) )
+			} while(aExclude.indexOf(c) >= 0)
+			pass += c 
+		}
+		return pass
+	},
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.getSurrogatePair(astralCodePoint) : Array</key>
 	 * Returns an array of two 8 bit codes given an unicode astralCodePoint of 16 bits
 	 * </odoc>
