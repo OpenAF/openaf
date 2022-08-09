@@ -413,7 +413,7 @@
 			"removable": true,
 			"deps": [
 				"lib/org-eclipse-jgit-5.8.1.jar",
-				"lib/jsch-0.1.55.jar",
+				"lib/jsch-0.2.1.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -476,7 +476,7 @@
 				"lib/commons-io-2.8.0.jar"
 			],
 			"deps": [
-				"lib/jsch-0.1.55.jar",
+				"lib/jsch-0.2.1.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -531,7 +531,7 @@
 			"name": "PostgreSQL",
 			"removable": true,
 			"deps": [
-				"lib/postgresql-42.4.0.jar"
+				"lib/postgresql-42.4.1.jar"
 			]
 		}
 	]

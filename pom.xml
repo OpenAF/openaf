@@ -225,7 +225,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.4.0</version>
+      <version>42.4.1</version>
     </dependency>
     <dependency>
       <groupId>org.snmp4j</groupId>
@@ -283,7 +283,7 @@
       <version>1.2.11</version>
     </dependency> 
     <dependency>
-      <groupId>com.github.mwiedee</groupId>
+      <groupId>com.github.mwiede</groupId>
       <artifactId>jsch</artifactId>
       <version>0.2.1</version>
     </dependency> 
