@@ -599,7 +599,8 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
             fullValSize: false,
             withValues: true,
             wordWrap: true,
-            compact: true
+            compact: true,
+			minSize: 5
           }, __flags.TREE), aOptions)
     }
   
@@ -697,8 +698,8 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
         }) 
     }
 
-    var _tw = (s, mx) => {
-        if (s.length >= mx || mx <= 0) throw "Insufficient width (length = " + s.length + "; max = " + mx + ")"
+    var _tw = (ps, s, mx) => {
+        if ((ps.length + aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + aOptions.minSize) + "; max = " + mx + ")"
         var ar = []
         var i = 0, mxp = Math.floor(mx * 0.25)
         do {
@@ -739,7 +740,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		}
 
 		var _res = m.substring(0, m.indexOf(": ") + 2) + 
-                _tw(m.substring(m.indexOf(": ") + 2), ss-ps-1).map((_l, ii) => {
+                _tw(m.substring(0, m.indexOf(": ") + 2), m.substring(m.indexOf(": ") + 2), ss-ps-1).map((_l, ii) => {
                     if (ii == 0) return _l
                     return _ac("RESET", p) + _ac(__colorFormat.string, _l)
                 }).join("\n")

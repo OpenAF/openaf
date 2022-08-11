@@ -772,14 +772,55 @@ public class IO extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>io.createTempFile(aPrefix, aSuffix) : String</key>
-	 * Creates a temporary with the provided aPrefix and aSuffix that will be deleted upon execution exit. The absolute path for it is returned.
+	 * <key>io.createTempFile(aPrefix, aSuffix, aPath) : String</key>
+	 * Creates a temporary file with the provided aPrefix and aSuffix that will be deleted upon execution exit. The absolute path for it is returned.
+	 * Optionally, if aPath is defined, the temporary file will be created in aPath.
 	 * </odoc>
 	 */
 	@JSFunction
-	public String createTempFile(String prefix, String suffix) throws IOException {
-		File f = File.createTempFile(prefix, suffix);
-		f.deleteOnExit();
-		return f.getAbsolutePath();
+	public String createTempFile(String prefix, String suffix, Object path) throws IOException {
+		if (prefix.equals("undefined")) prefix = "";
+		if (suffix.equals("undefined")) suffix = "";
+
+		if (path != null && path instanceof String) {
+			Path p = java.nio.file.Files.createTempFile((new File((String) path)).toPath(), prefix, suffix);
+			p.toFile().deleteOnExit();
+			return p.toFile().getAbsolutePath();
+		} else {
+			File f = File.createTempFile(prefix, suffix);
+			f.deleteOnExit();
+			return f.getAbsolutePath();
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>io.createTempDir(aPrefix, aPath) : String</key>
+	 * Creates a temporary directory with the provided aPrefix that will be deleted completly (all files and folders inside) upon execution exit. The absolute path for it is returned.
+	 * Optionally, if aPath is defined, the temporary directory will be created in aPath.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String createTempDir(String prefix, Object path) throws IOException {
+		Path p;
+
+		if (prefix.equals("undefined")) prefix = "";
+		if (path != null && path instanceof String) {
+			p = java.nio.file.Files.createTempDirectory((new File((String) path)).toPath(), prefix);
+		} else {
+			p = java.nio.file.Files.createTempDirectory(prefix);
+		}
+		//p.toFile().deleteOnExit();
+		IO I = this;
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			public void run() {
+				try {
+					I.rm(p.toFile().getAbsolutePath());
+				} catch(IOException e) {
+					System.err.println(e);
+				}
+			}
+		}));
+		return p.toFile().getAbsolutePath();
 	}
 }
