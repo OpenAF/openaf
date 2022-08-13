@@ -1262,9 +1262,9 @@ con.getConsoleReader().setExpandEvents(false);
 
 // Read profile
 try {
-	__readProfile(java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE);
+	__readProfile(__gHDir() + "/" + CONSOLEPROFILE);
 } catch(e) {
-	printErr("Error while loading " + java.lang.System.getProperty("user.home") + "/" + CONSOLEPROFILE + ": " + String(e));
+	printErr("Error while loading " + __gHDir() + "/" + CONSOLEPROFILE + ": " + String(e));
 }
 
 // Ensure __consoleFormat
@@ -1306,7 +1306,7 @@ plugin("Threads");
 var initThread = new Threads();
 initThread.addThread(function(uuid) {
 	// History file
-	historyFile = java.lang.System.getProperty("user.home") + "/" + CONSOLEHISTORY;
+	historyFile = __gHDir() + "/" + CONSOLEHISTORY;
 	jLineFileHistory = new Packages.jline.console.history.FileHistory(new java.io.File(historyFile));
 	con.getConsoleReader().setHistory(jLineFileHistory);
 	con.getConsoleReader().addCompleter(

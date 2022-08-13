@@ -1600,7 +1600,8 @@ OpenWrap.format.prototype.getJavaVersion = function() {
  * </odoc>
  */
 OpenWrap.format.prototype.getUserHome = function() {
-	return String(java.lang.System.getProperty("user.home"));
+	var d = String(java.lang.System.getProperty("user.home"))
+	return d
 };
 
 /**

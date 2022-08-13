@@ -218,7 +218,7 @@ function removeRemoteDB(aPackage, aDB) {
 // OpenPack local register add
 function addLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
-	var homeDB = String(java.lang.System.getProperty("user.home")) + "/" + PACKAGESJSON_USERDB;
+	var homeDB = __gHDir() + "/" + PACKAGESJSON_USERDB;
 	var homeDBCheck = io.fileExists(homeDB);
 	var fileDBCheck = io.fileExists(fileDB);
 	var includeInFileDB = true;
@@ -408,7 +408,7 @@ function verifyDeps(packag) {
 // OpenPack local register remove
 function removeLocalDB(aPackage, aTarget) {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
-	var homeDB = String(java.lang.System.getProperty("user.home")) + "/" + PACKAGESJSON_USERDB;
+	var homeDB = __gHDir() + "/" + PACKAGESJSON_USERDB;
 	var homeDBCheck = io.fileExists(homeDB);
 	var includeInFileDB = true;
 
@@ -1185,7 +1185,7 @@ function install(args) {
 		if (io.fileInfo(getOpenAFPath()).permissions.indexOf("w") >= 0) {
 			output = getOpenAFPath() + packag.name;
 		} else {
-			output = String(java.lang.System.getProperty("user.home")) + "/.openaf-opack-" + packag.name; 
+			output = __gHDir() + "/.openaf-opack-" + packag.name; 
 		}
 	}
 	log("Install folder: " + output);

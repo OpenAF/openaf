@@ -8,7 +8,7 @@ var needupdate = false;
 var updateversion = "";
 var keepRunning = true;
 
-ow.server.checkIn(java.lang.System.getProperty("user.home") + "/.openaf.pid", function(aPid) {
+ow.server.checkIn(__gHDir() + "/.openaf.pid", function(aPid) {
 	log("Killing previous " + ow.server.getPid(aPid));
 	pidKill(ow.server.getPid(aPid), true);
 	return true;
