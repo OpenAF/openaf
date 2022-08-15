@@ -92,6 +92,7 @@ public class AFBase extends ScriptableObject {
 	 */
 	private static final long serialVersionUID = 1L;
 	private static String K = "openappframework";
+	private static Boolean jsonParseOld = null;
 
 	public AFBase() {
 		super();
@@ -198,7 +199,19 @@ public class AFBase extends ScriptableObject {
 			ret = AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
 		} else {
 			if (alternative) {
-				out = JsonParser.parseString(out).toString();
+				if (jsonParseOld == null) {
+					try {
+						JsonParser.class.getMethod("parseString");
+						jsonParseOld = false;
+					} catch(Exception e) {
+						jsonParseOld = true;
+					}
+				}
+				if (jsonParseOld) {
+					out = (new JsonParser()).parse(out).toString();
+				} else {
+					out = JsonParser.parseString(out).toString();
+				}
 			}
 			ret = NativeJSON.parse(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), out, new Callable() {
 				@Override
