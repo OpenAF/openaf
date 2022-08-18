@@ -130,7 +130,7 @@ function generateWinConsolePSBat() {
   return s;
 }
 
-function generateUnixScript(options, shouldSep, extraOptions) {
+function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   var s;
 
   if (typeof shLocation === 'undefined') {
@@ -160,7 +160,7 @@ function generateUnixScript(options, shouldSep, extraOptions) {
   s += "cd `dirname $0`\n"
   s += "DIR=`pwd`\n"
   s += "cd $CDIR\n"
-  s += "stty -icanon min 1 -echo 2>/dev/null\n";
+  if (isCon) s += "stty -icanon min 1 -echo 2>/dev/null\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OPENAF_DIR=\"" + classPath + "\"\n";
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
@@ -177,7 +177,7 @@ function generateUnixScript(options, shouldSep, extraOptions) {
     });
   }
   s += "EXITCODE=$?\n";
-  s += "stty icanon echo 2>/dev/null\n";
+  if (isCon) s += "stty icanon echo 2>/dev/null\n";
   s += "exit $EXITCODE\n";
   return s;
 }
@@ -249,7 +249,7 @@ var unixScript, unixSB, unixPackScript, unixJobScript, unixConsoleScript, unixUp
   unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
   unixPackScript = generateUnixScript("--opack -e \"$*\"");
   unixJobScript = generateUnixScript("--ojob -e \"$*\"");
-  unixConsoleScript = generateUnixScript("--console \"$@\"");
+  unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true);
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 //}
 
