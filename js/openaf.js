@@ -600,7 +600,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
             withValues: true,
             wordWrap: true,
             compact: true,
-			minSize: 5
+            minSize: 5
           }, __flags.TREE), aOptions)
     }
   
@@ -783,13 +783,26 @@ const printTreeOrS = function(aM, aWidth, aOptions) {
 	try {
 		return printTree(aM, aWidth, aOptions)
 	} catch(e) {
-		aOptions = merge(merge({
-            noansi: false
-          }, __flags.TREE), aOptions)
-		if (aOptions.noansi) {
-			return stringify(aM)
+		aOptions = merge(__flags.TREE, aOptions)
+		if (aOptions.fullKeySize) {
+			aOptions.fullKeySize = false
+			try {
+				return printTree(aM, aWidth, aOptions)
+			} catch(e1) {
+				aOptions = merge({ noansi: false }, aOptions)
+				if (aOptions.noansi) {
+					return stringify(aM)
+				} else {
+					return colorify(aM)
+				}
+			}
 		} else {
-			return colorify(aM)
+			aOptions = merge({ noansi: false }, aOptions)
+			if (aOptions.noansi) {
+				return stringify(aM)
+			} else {
+				return colorify(aM)
+			}
 		}
 	}
 }
@@ -2370,7 +2383,7 @@ const getOPackRemoteDB = function() {
  */
 const getOPackLocalDB = function() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
-    var homeDB = String(java.lang.System.getProperty("user.home")) + "/" + PACKAGESJSON_USERDB;
+    var homeDB = __gHDir + "/" + PACKAGESJSON_USERDB;
 	var packages = {};
 	var exc, homeDBCheck = false;
 
@@ -6894,7 +6907,8 @@ var __flags = _$(__flags).isMap().default({
 	},
 	CONSOLE: {
 		view: "tree"
-	}
+	},
+	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir"))
 })
 
 /**
@@ -6921,6 +6935,12 @@ const _i$ = (aValue, aPrefixMessage) => {
 }
 
 var __correctYAML = false;
+
+const __gHDir = () => {
+	var d = String(java.lang.System.getProperty("user.home"))
+	if (io.fileInfo(d).permissions.indexOf("w") < 0) d = __flags.ALTERNATIVE_HOME
+	return d
+}
 
 /**
  * <odoc>
@@ -9980,7 +10000,7 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 (function() {
 	var prof = "";
 	try {
-		var fprof = java.lang.System.getProperty("user.home") + "/" + OPENAFPROFILE;
+		var fprof = __gHDir + "/" + OPENAFPROFILE;
 		if (io.fileExists(fprof)) {
 			loadCompiled(fprof);
 		}

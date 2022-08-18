@@ -92,6 +92,7 @@ public class AFBase extends ScriptableObject {
 	 */
 	private static final long serialVersionUID = 1L;
 	private static String K = "openappframework";
+	private static Boolean jsonParseOld = null;
 
 	public AFBase() {
 		super();
@@ -198,7 +199,19 @@ public class AFBase extends ScriptableObject {
 			ret = AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
 		} else {
 			if (alternative) {
-				out = JsonParser.parseString(out).toString();
+				if (jsonParseOld == null) {
+					try {
+						JsonParser.class.getMethod("parseString");
+						jsonParseOld = false;
+					} catch(Exception e) {
+						jsonParseOld = true;
+					}
+				}
+				if (jsonParseOld) {
+					out = (new JsonParser()).parse(out).toString();
+				} else {
+					out = JsonParser.parseString(out).toString();
+				}
 			}
 			ret = NativeJSON.parse(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), out, new Callable() {
 				@Override
@@ -433,7 +446,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object sh(Object s, String in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding, boolean dontWait, Object envs) throws IOException, InterruptedException {
+	public Object sh(Object s, Object in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding, boolean dontWait, Object envs) throws IOException, InterruptedException {
 		ProcessBuilder pb = null;
 		Charset Cencoding = null;
 
@@ -470,10 +483,13 @@ public class AFBase extends ScriptableObject {
 		final Process p = pb.start();
 		//p = Runtime.getRuntime().exec(s);
 			
-		if (in != null) {
+		if (in instanceof NativeJavaObject) {
+			in = ((NativeJavaObject) in).unwrap();
+		}
+		if (in instanceof String) {
 			try {
 				OutputStream stdin = p.getOutputStream();
-				stdin.write(in.getBytes());
+				stdin.write(((String) in).getBytes());
 				stdin.close();
 			} catch(IOException e) {}
 		}

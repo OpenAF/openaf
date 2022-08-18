@@ -19,7 +19,7 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
 
    if (rep != "") rep = "-" + rep;
    if (aRepo != "system") {
-      var f = isDef(aFile) ? aFile : java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".yml";
+      var f = isDef(aFile) ? aFile : __gHDir() + "/.openaf-sec" + rep + ".yml";
 
       $ch("___openaf_sbuckets" + rep).create(1, "file", {
          file          : f,
@@ -48,7 +48,7 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
 
    if (isUnDef(ow.sec._sb)) ow.sec._sb = {};
    if (isUnDef(aMainSecret)) {
-      var ff = java.lang.System.getProperty("user.home") + "/.openaf-sec";
+      var ff = __gHDir() + "/.openaf-sec";
       if (io.fileExists(ff)) {
          aMainSecret = io.readFileString(ff);
       } else {
@@ -273,7 +273,7 @@ OpenWrap.sec.prototype.purgeSBuckets = function(aRepo) {
    aRepo = rep;
    if (rep != "") rep = "-" + rep;
 
-   var f = java.lang.System.getProperty("user.home") + "/.openaf-sec" + rep + ".yml";
+   var f = __gHDir()+ "/.openaf-sec" + rep + ".yml";
 
    io.rm(f);
 };

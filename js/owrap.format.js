@@ -792,6 +792,59 @@ OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSepara
 
 /**
  * <odoc>
+ * <key>ow.format.streamHandle(aHandle, inHandle, errHandle, outHandle, bufferSize) : Function</key>
+ * Returns a function to help automated interaction with a running process. The function aHandle receives: aType (in/err); aTxt, 
+ * inHandle (function), errHandle (function) and an outHandle (function). Optionally you can provide an alternative inHandle function to print
+ * stdout text, an errHandle function to print stderr text, an outHandle function to send text to stdin and/or a non default bufferSize.\
+ * \
+ * Example:\
+ * \
+ * var res = $sh("myProcess.sh --something")\
+ *           .cb(expect((aType, aTxt, inHandle, errHandle, outHandle) => {\
+ *              if (aType == "in") {\
+ *                 inHandle(aTxt)\
+ *                 if (/ name\?/.test(aTxt))                return outHandle("Scott\n")\
+ *	               if (aTxt.indexOf("Anything else?") >= 0) return outHandle("nope!\n")\
+ *              }\
+ *           }))\
+ *           .get(0)\
+ * \
+ * </odoc>
+ */
+OpenWrap.format.prototype.streamHandle = function(aHandle, inHandle, errHandle, outHandle, bufferSize) {
+	aHandle    = _$(aHandle, "aHandle").isFunction().default((aType, aTxt, inHandle, errHandle, outHandle) => {
+		if (aType == "in")  inHandle(aTxt)
+		if (aType == "err") errHandle(aTxt)
+	})
+	bufferSize = _$(bufferSize, "bufferSize").isNumber().default(__) 
+	inHandle   = _$(inHandle, "inHandle").isFunction().default(printnl)
+	errHandle  = _$(errHandle, "errHandle").isFunction().default(printErrnl) 
+	outHandle  = _$(outHandle, "outHandle").isFunction().default((txt, inp) => {
+		inp.flush()
+		ioStreamWrite(inp, txt)
+		inp.flush()
+	})
+
+	return function(out, err, inp) { 
+		$doAll([
+			$do(() => {
+				ioStreamRead(out, f => { 
+					aHandle("in", f, inHandle, errHandle, txt => outHandle(txt, inp))
+				}, bufferSize, false)
+			}),
+			$do(() => {
+				ioStreamRead(err, f => { 
+					aHandle("err", f, inHandle, errHandle, txt => outHandle(txt, inp))
+				}, bufferSize, false)
+			})
+		])
+
+		return 0
+	}
+}
+
+/**
+ * <odoc>
  * <key>ow.format.addNumberSeparator(aNumber, aSeparator) : String</key>
  * Returns a formatted number with decimal separators (default is comma but you can provide a custom
  * aSeparator).\
@@ -1600,7 +1653,8 @@ OpenWrap.format.prototype.getJavaVersion = function() {
  * </odoc>
  */
 OpenWrap.format.prototype.getUserHome = function() {
-	return String(java.lang.System.getProperty("user.home"));
+	var d = String(java.lang.System.getProperty("user.home"))
+	return d
 };
 
 /**

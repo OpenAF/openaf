@@ -101,22 +101,6 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 		}
 
 		if (rowSum <= this.max) return ret;
-		
-		/*ret = WidthAnsiLongestWordTab.longestWord(table);
-
-		for (int i = 0; i < ret.length; i++) {
-			if (this.max != 0) {
-				if (ret[i] > this.max) {
-					ret[i] = this.max;
-				}
-			} else if (this.maxAr != null) {
-				if (this.maxAr[i] != -1) {
-					if (ret[i] > this.maxAr[i]) {
-						ret[i] = this.maxAr[i];
-					}
-				}
-			}
-		}*/
 
 		int colSum = 0;
 		for (int i = 0; i < ret.length; i++) {

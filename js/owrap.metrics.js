@@ -234,10 +234,10 @@ OpenWrap.metrics.prototype.__m = {
                     total: mem.total,
                     used: mem.used,
                     free: mem.total - mem.used,
-                    metaMax: o.sun.gc.metaspace.maxCapacity,
-                    metaTotal: o.sun.gc.metaspace.capacity,
-                    metaUsed: o.sun.gc.metaspace.used,
-                    metaFree: o.sun.gc.metaspace.capacity - o.sun.gc.metaspace.used
+                    metaMax: (isMap(o.sun.gc.metaspace) ? o.sun.gc.metaspace.maxCapacity : __),
+                    metaTotal: (isMap(o.sun.gc.metaspace) ? o.sun.gc.metaspace.capacity : __),
+                    metaUsed: (isMap(o.sun.gc.metaspace) ? o.sun.gc.metaspace.used : __),
+                    metaFree: (isMap(o.sun.gc.metaspace) ? o.sun.gc.metaspace.capacity - o.sun.gc.metaspace.used : __)
                 }
             }
         } else {
@@ -275,16 +275,19 @@ OpenWrap.metrics.prototype.exists = function(aName) {
  * </odoc>
  */
 OpenWrap.metrics.prototype.getSome = function(aArray) {
-    var r = {}, errors = [];
-    aArray.map(f => {
-        try {
-            r[f] = ow.metrics.__m[f]();
-        } catch(e) {
-            r[f] = "error";
-            logErr(e);
-        }
-    });
-    return r;
+    aArray = _$(aArray, "aArray").isArray().default([])
+    var r = {}, errors = []
+    aArray.forEach(f => {
+        while( ! $lock("__openaf::metrics::" + f).tryLock(() => {
+            try {
+                r[f] = ow.metrics.__m[f]();
+            } catch(e) {
+                r[f] = "error";
+                logErr("Metrics | " + e);
+            }
+        }) ) sleep(50, true)
+    })
+    return r
 };
 
 /**
