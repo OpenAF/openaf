@@ -6701,16 +6701,18 @@ const clearInterval = function(uuid) {
 
 /**
  * <odoc>
- * <key>range(aCount, aStart) : Array</key>
+ * <key>range(aCount, aStart, aStep) : Array</key>
  * Generates an array with aCount of numbers starting at 1. Optionally you can provide a different
- * aStart number.
+ * aStart number and/or aStep increment.
  * </odoc>
  */
-const range = (aCount, aStart) => {
+const range = (aCount, aStart, aStep) => {
 	aStart = _$(aStart, "aStart").isNumber().default(1)
 	aCount = _$(aCount, "aCount").isNumber().default(1)
+	aStep  = _$(aStep, "aStep").isNumber().default(1)
 
-	return Array.from(Array(aCount).keys(), n => n + aStart)
+
+	return Array.from(Array(aCount).keys(), n => (n + aStart) * aStep)
 }
 
 /**
