@@ -2383,7 +2383,7 @@ const getOPackRemoteDB = function() {
  */
 const getOPackLocalDB = function() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
-    var homeDB = __gHDir + "/" + PACKAGESJSON_USERDB;
+    var homeDB = __gHDir() + "/" + PACKAGESJSON_USERDB;
 	var packages = {};
 	var exc, homeDBCheck = false;
 
@@ -10002,7 +10002,7 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 (function() {
 	var prof = "";
 	try {
-		var fprof = __gHDir + "/" + OPENAFPROFILE;
+		var fprof = __gHDir() + "/" + OPENAFPROFILE;
 		if (io.fileExists(fprof)) {
 			loadCompiled(fprof);
 		}
