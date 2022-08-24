@@ -9794,6 +9794,7 @@ const $csv = function(aMap) {
 				_to = af.newOutputStream()
 				wasUnDef = true
 			}
+			csv.setStreamFormat(_s)
 			csv.toStream(_to, function() { return fn() })
 			_to.close()
 			return (wasUnDef ? _to.toString() : true)
