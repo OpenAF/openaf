@@ -278,7 +278,7 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.2.23.jar"],
+			"path": ["lib/postgresql-42.5.0.jar"],
 			"version": "42.2.23",
 			"changes": false,
 			"type": ["java"],
