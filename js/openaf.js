@@ -2196,10 +2196,102 @@ const bcrypt = function(aText, aVerifyHash, hashingRounds) {
  * </odoc>
  */
 const splitBySeparator = function(aString, aSep) {
-	if (isUnDef(aString) || aString == null) return [];
-	if (isUnDef(aSep)) aSep = ";";
+	if (isUnDef(aString) || aString == null) return []
+	if (isUnDef(aSep)) aSep = ";"
 
-	return aString.replace(new RegExp(aSep, "g"), "\\" + aSep).replace(new RegExp("\\\\\\\\(?=" + aSep + ")", "g") , "").split("\\" + aSep + "");
+	return aString.replace(new RegExp(aSep, "g"), "\\" + aSep)
+					.replace(new RegExp("\\\\\\\\(?=" + aSep + ")", "g") , "")
+					.split("\\" + aSep + "")
+}
+
+/**
+ * <odoc>
+ * <key>splitKVBySeparator(aString, aOptions) : Map</key>
+ * Given aString with multiple key/value entries will return a map with the same. Optionally you can provide aOptions:\
+ * \
+ *    sep  - the key/value entries separator (defaults to " ")\
+ *    ksep - the key separator from a value (defaults to "=")\
+ *    esc  - the escape character (defaults to "\\")\
+ *    qto  - the quote character (defaults to "\"")\
+ *    nul  - the null representation (defaults to null)\
+ * \
+ * </odoc>
+ */
+const splitKVBySeparator = function(aString, aOptions) {
+	_$(aString, "aString").isString().$_()
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	aOptions = merge({
+		sep : " ",
+		ksep: "=",
+		esc : "\\",
+		qto : "\"",
+		nul : null
+	}, aOptions)
+	
+	aSep = aOptions.sep
+	var aKSep = aOptions.ksep
+	var aEsc  = aOptions.esc
+	var aQto  = aOptions.qto
+	
+	var res = {}, isK = true, isV = false, isQ = false, buf = "", k = "", v = ""
+	aString = aString.trim()
+
+	for(var i = 0; i < aString.length; i++) {
+		// ignore more than one separator
+		if (!isQ && i > 0 && aString[i-1] == aSep && aString[i] == aSep) continue
+		// if it's a key/value separator switch to value
+		if (!isQ && isK && aString[i] == aKSep) {
+			if (i == 0 || aString[i - 1] != aEsc) {
+				isK = false
+				isV = true
+				k = buf
+				buf = ""
+				continue
+			}
+		}
+		// if it's a separator and it's value switch to key
+		if (!isQ && isV && aString[i] == aSep) {
+			if (aString[i - 1] != aEsc) {
+				isK = true
+				isV = false
+				v = buf
+				buf = ""
+				res[k] = v
+				continue
+			}
+		}
+		// if it's an alone key
+		if (!isQ && isK && aString[i] == aSep) {
+			isK = true
+			isV = false
+			k = buf
+			buf = ""
+			res[k] = aOptions.nul 
+			continue
+		}
+		// if it's a quote
+		if (aString[i] == aQto) {
+			// if it's a beginning of a quote
+			if (i == 0 || (!isQ && aString[i-1] != aEsc)) { isQ = true; continue }
+			// if it's the end of a quote
+			if (isQ && aString[i-1] != aEsc) { isQ = false; continue }
+		}
+		// if it reached this far it's text
+		if (i > 0 && aString[i-1] == aEsc && aString[i] == aEsc) {
+			// If escape is escaped
+			buf += aEsc
+		} else {
+			// Unless it's escape keep it
+			if (aString[i] != aEsc) buf += aString[i]
+		}
+	}
+	if (buf.length > 0) {
+		v = buf
+		buf = ""
+		res[k] = v
+	}
+
+	return res
 }
 
 /**
@@ -2213,17 +2305,30 @@ const splitBySeparator = function(aString, aSep) {
 const processExpr = function(aSep, ignoreCase, aSource) {
     aSource = _$(aSource, "aSource").isString().default(__expr);
 	aSep    = _$(aSep, "aSep").isString().default(";");
-	var args = splitBySeparator(aSource, aSep);
-	var pairs = {};
+	var pairs = {}
 
-	for(var argIdx in args) {
-		var arg = args[argIdx];
-
-		var pair = splitBySeparator(arg, "=");
-		if (!ignoreCase)
-			pairs[String(pair[0])] = (isUnDef(pair[1]) ? "" : pair[1]);
-		else
-			pairs[String(pair[0]).toLowerCase()] = (isUnDef(pair[1]) ? "" : pair[1]);
+	if (!__flags.ALTERNATIVE_PROCESSEXPR) {
+		var args = splitBySeparator(aSource, aSep);
+	
+		for(var argIdx in args) {
+			var arg = args[argIdx];
+	
+			var pair = splitBySeparator(arg, "=");
+			if (!ignoreCase)
+				pairs[String(pair[0])] = (isUnDef(pair[1]) ? "" : pair[1]);
+			else
+				pairs[String(pair[0]).toLowerCase()] = (isUnDef(pair[1]) ? "" : pair[1]);
+		}
+	} else {
+		var args = splitKVBySeparator(aSource, { sep: aSep, nul: "" })
+	
+		Object.keys(args).forEach(arg => {
+			if (!ignoreCase) {
+				pairs[arg] = args[arg]
+			} else {
+				pairs[arg.toLowerCase()] = args[arg]
+			}
+		})
 	}
 
 	//load __pmIn to pairs
@@ -2234,7 +2339,7 @@ const processExpr = function(aSep, ignoreCase, aSource) {
 			pairs[String(attrname).toLowerCase()] = __pmIn[attrname];
 	}
 
-	return pairs;
+	return pairs
 }
 
 /**
@@ -6910,7 +7015,8 @@ var __flags = _$(__flags).isMap().default({
 	CONSOLE: {
 		view: "tree"
 	},
-	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir"))
+	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
+	ALTERNATIVE_PROCESSEXPR    : true
 })
 
 /**
