@@ -2233,7 +2233,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 	var aEsc  = aOptions.esc
 	var aQto  = aOptions.qto
 	
-	var res = {}, isK = true, isV = false, isQ = false, buf = "", k = "", v = ""
+	var res = {}, isK = true, isV = false, isQ = false, buf = "", k = __, v = __
 	aString = aString.trim()
 
 	for(var i = 0; i < aString.length; i++) {
@@ -2288,7 +2288,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 	if (buf.length > 0) {
 		v = buf
 		buf = ""
-		res[k] = v
+		res[k] = (isUnDef(v) ? aOptions.nul : v)
 	}
 
 	return res
