@@ -2245,6 +2245,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 				isK = false
 				isV = true
 				k = buf
+                v = __
 				buf = ""
 				continue
 			}
@@ -2265,6 +2266,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 			isK = true
 			isV = false
 			k = buf
+            v = __
 			buf = ""
 			res[k] = aOptions.nul 
 			continue
@@ -2286,7 +2288,8 @@ const splitKVBySeparator = function(aString, aOptions) {
 		}
 	}
 	if (buf.length > 0) {
-		v = buf
+		if (isK) { k = buf; v = __ }
+        if (isV) { v = buf }
 		buf = ""
 		res[k] = (isUnDef(v) ? aOptions.nul : v)
 	}
