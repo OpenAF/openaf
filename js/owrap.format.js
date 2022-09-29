@@ -609,14 +609,14 @@ OpenWrap.format.prototype.string = {
 			ansiStart(); print(o.join("")); printnl( jansi.Ansi.ansi().cursorUpLine(numberOfLines + 2) ); ansiStop();
 		}
 	},
-        /**
-         * <odoc>
-         * <key>ow.format.string.grid(aMatrix, aX, aY, aBgPattern, shouldReturn) : String</key>
-         * Will generate a aX per aY grid to be displayed with aBgPattern (defaults to " "). Each grid cell with use the contents on aMatrix
-         * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in cell spacing, a type (either map, table, func or string) 
-         * and a title. If shouldReturn = true it will just return the string content instead of trying to print it.
-         + </odoc>
-         */
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.grid(aMatrix, aX, aY, aBgPattern, shouldReturn) : String</key>
+	 * Will generate a aX per aY grid to be displayed with aBgPattern (defaults to " "). Each grid cell with use the contents on aMatrix
+	 * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in cell spacing, a type (either map, table, func or string) 
+	 * and a title. If shouldReturn = true it will just return the string content instead of trying to print it.
+	 * </odoc>
+	 */
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
 		plugin("Console");
 		var _con_ = new Console();
@@ -676,7 +676,18 @@ OpenWrap.format.prototype.string = {
 		});
 	
 		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn);
-	}
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.wildcardTest(aString, aPattern) : Boolean</key>
+	 * Given aString will try to apply aPattern using '*' wildcards (to match zero or more characters) or '?' question-mark to
+	 * match a single character. Will return true if the aPattern can be applied to aString.
+	 * </odoc>
+	 */
+	wildcardTest: (str, pattern) => {
+        var w = "^" + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$"
+        return (new RegExp(w, 'i')).test(str)
+    }
 };
 	
 OpenWrap.format.prototype.syms = function() {
