@@ -684,10 +684,7 @@ OpenWrap.format.prototype.string = {
 	 * match a single character. Will return true if the aPattern can be applied to aString.
 	 * </odoc>
 	 */
-	wildcardTest: (str, pattern) => {
-        var w = "^" + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$"
-        return (new RegExp(w, 'i')).test(str)
-    }
+	wildcardTest: (str, pattern) => (new RegExp("^" + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", 'i')).test(str)
 };
 	
 OpenWrap.format.prototype.syms = function() {
