@@ -1739,10 +1739,11 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		var job = __; //last = __;
 		//var listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]");
 		var listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
+		this.__ojob.shareArgs = _$(this.__ojob.shareArgs).isBoolean().default(__flags.OJOB_SHAREARGS)
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
-			var argss = merge(args, $get("res"));
+			var argss = (this.__ojob.shareArgs) ? merge(args, $get("res")) : args
 			//var argss = merge(args, last);
 			//if (isDef(todo.args)) argss = this.__processArgs(merge(args, last), todo.args, aId);
 			if (isDef(todo.args)) argss = this.__processArgs(argss, todo.args, aId);

@@ -1,4 +1,4 @@
-// Version: 0.1.0a
+// Version: 0.1.0b
 // Author : Nuno Aguiar
 
 var nLinq_USE_CASE = false;
@@ -487,6 +487,19 @@ var nLinq = function(anObject, aK) {
             });
 
             return vals
+        },
+        countBy: (aKey, aCountKey, aAltKey) => {
+            aKey      = _$(aKey).isString().default("key")
+            aCountKey = _$(aCountKey).isString().default("_count")
+            aAltKey   = _$(aAltKey).isString().default(aKey)
+
+            var _res = code.group(aKey)
+            return Object.keys(_res).map(k => {
+                var _m = {}
+                _m[aAltKey] = k
+                _m[aCountKey] = _res[k].length
+                return _m
+            })
         },
         at     : aParam => {
             _$(aParam, "index").isNumber().$_();
