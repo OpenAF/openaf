@@ -1426,7 +1426,7 @@ OpenWrap.java.prototype.getJarVersion = function(aJarFile) {
     plugin("ZIP");
     var zip = new ZIP();
 
-    Object.keys( zip.list(aJarFile) ).map(r => {
+    Object.keys( zip.list(aJarFile) ).forEach(r => {
         var v = ow.java.getClassVersion(aJarFile + "::" + r);
         if (vers.indexOf(v) < 0 && isDef(v)) {
             vers.push(v);
