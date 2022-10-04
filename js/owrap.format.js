@@ -679,12 +679,19 @@ OpenWrap.format.prototype.string = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.format.string.wildcardTest(aString, aPattern) : Boolean</key>
+	 * <key>ow.format.string.wildcardTest(aString, aPattern, caseSensitive) : Boolean</key>
 	 * Given aString will try to apply aPattern using '*' wildcards (to match zero or more characters) or '?' question-mark to
-	 * match a single character. Will return true if the aPattern can be applied to aString.
+	 * match a single character. Will return true if the aPattern can be applied to aString. Optionally if caseSensitive=true the pattern will be tested
+	 * with case sensitive.
 	 * </odoc>
 	 */
-	wildcardTest: (str, pattern) => (new RegExp("^" + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", 'i')).test(str)
+	wildcardTest: (str, pattern, scase) => {
+		_$(str, "str").isString().$_()
+		_$(pattern, "pattern").isString().$_()
+		scase = _$(scase, "scase").isBoolean().default(false)
+
+		return (new RegExp("^" + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", (scase ? __ : 'i'))).test(str)
+	}
 };
 	
 OpenWrap.format.prototype.syms = function() {
