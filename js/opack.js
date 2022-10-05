@@ -1057,17 +1057,16 @@ function __opack_info(args) {
 function __opack_list(args) {
 	var packages = getLocalDB(true);
 
-	/*var sortIds = {};
-	for(let i in packages) {
-		if (isDef(packages[i].name)) 
-			sortIds[packages[i].name.toLowerCase()] = i;
-	}*/
-
 	var usea = __conStatus || __initializeCon(); 
 
 	//var packsIds = Object.keys(sortIds).sort(), ar = [];
 	var ar = [];
-	var packsIds = $from(packages).sort("name").attach("key", r=>ow.format.string.separatorsToUnix(r._key)).distinct("_key");
+	var packsIds = $from(packages)
+	               .attach("iname", r => r.name.toLowerCase())
+				   .attach("key", r => ow.format.string.separatorsToUnix(r._key))
+				   .sort("iname")
+				   .distinct("_key")
+
 	for (var packageId in packsIds) {
 		//packag = packages[packsIds[packageId]];
 		var packag = packsIds[packageId];
