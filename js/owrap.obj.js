@@ -3084,7 +3084,9 @@ OpenWrap.obj.prototype.signVerify = function(aKey, aMap) {
     var v = clone(aMap);
     delete v.__jwt;
 
-    switch(fn) {
+    ow.loadJava()
+    return ow.java.checkDigest(fn + ":" + hash, stringify(sortMapKeys(v), __, ""))
+    /*switch(fn) {
     case "sha512": 
         var vhash = sha512(stringify(sortMapKeys(v), __, ""));
         if (vhash == hash) return true; else return false;
@@ -3096,7 +3098,7 @@ OpenWrap.obj.prototype.signVerify = function(aKey, aMap) {
         if (vhash == hash) return true; else return false;
     default:
         throw "Hash algorithm not supported";
-    }
+    }*/
 };
 
 /**
