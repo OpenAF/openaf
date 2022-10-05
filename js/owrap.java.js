@@ -6,6 +6,73 @@ OpenWrap.java = function() {
 	return ow.java;
 };
 
+/**
+ * <odoc>
+ * <key>ow.java.getDigestAlgs() : Array</key>
+ * Retrieves the current JVM list of digest algorithms (and provider) to be used with ow.java.digestAsHex.
+ * </odoc> 
+ */
+OpenWrap.java.prototype.getDigestAlgs = function() {
+    var data = []
+    var providers = af.fromJavaArray(java.security.Security.getProviders())
+
+    for(var provider of providers) {
+        var svcs = provider.getServices()
+        for(var service of svcs) {
+            if (String(service.getType()).toLowerCase() == "messagedigest") {
+                data.push({ 
+                    provider: String(provider.toString()), 
+                    algorithm: String(service.getAlgorithm()) 
+                })
+            }
+        }
+    }
+    
+    return data
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.digestAsHex(aAlg, aMessage) : String</key>
+ * Given an avaiable JVM aAlg(orithm) (check with ow.java.getDigestAlgs) will return the corresponding aMessage
+ *  (which can be a string, byte array, ByteBuffer, File or InputStream) digest in hexadecimal format.
+ * </odoc>
+ */
+OpenWrap.java.prototype.digestAsHex = function(aAlg, aMsg) {
+    _$(aAlg, "aAlg").isString().$_()
+    return String(Packages.org.apache.commons.codec.digest.DigestUtils(aAlg).digestAsHex(aMsg)) 
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.checkDigest(aDigestString, aMessage) : boolean</key>
+ * Given aDigestString (e.g. [algorithm]:[digest]) and aMessage will verify the digest verifies returning true or false
+ * </odoc>
+ */
+OpenWrap.java.prototype.checkDigest = function(aDigest, aMsg) {
+    _$(aDigest, "aDigest").isString().$_()
+    _$(aMsg, "aMsg").$_()
+
+    var oafi = [ "md2", "md5", "sha1", "sha256", "sha384", "sha512" ]
+    var alg = aDigest.substring(0, aDigest.indexOf(":")).toLowerCase()
+    var msg = aDigest.substring(alg.length + 1)
+    var lst = ow.java.getDigestAlgs()
+    if (oafi.indexOf(alg) >= 0 || $from(lst).equals("algorithm", alg).any()) {
+        switch(alg) {
+        case "md2": return md2(aMsg) == msg
+        case "md5": return md5(aMsg) == msg
+        case "sha1": return sha1(aMsg) == msg
+        case "sha256": return sha256(aMsg) == msg
+        case "sha384": return sha384(aMsg) == msg
+        case "sha512": return sha512(aMsg) == msg
+        default:
+            return ow.java.digestAsHex($from(lst).equals("algorithm", alg).at(0).algorithm, aMsg) == msg
+        }
+    } else {
+        throw "'" + alg + "' not supported with this java version."
+    }
+}
+
 OpenWrap.java.prototype.maven = function() {
     ow.loadObj();
     this.urls = [
