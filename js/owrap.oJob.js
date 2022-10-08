@@ -201,6 +201,10 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
 				valid = false;
 			}
 		}
+                if (OJOB_INTEGRITY[aFileOrPath].indexOf(":") >= 0) {
+                        ow.loadJava()
+                        valid = ow.java.checkDigest(OJOB_INTEGRITY[aFileOrPath], stream)
+                }
 
 		stream.close();
 		return valid;

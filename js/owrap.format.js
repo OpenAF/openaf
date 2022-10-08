@@ -152,16 +152,15 @@ OpenWrap.format.prototype.string = {
 	 * ow.format.string.closest("/user/1", anArrayOfStrings); // Returns /user\
 	 * ow.format.string.closest("/u1", anArrayOfStrings); // Returns /u\
 	 * ow.format.string.closest("/userna", anArrayOfStrings); // Returns /user\
-	 * ow.format.string.closest("/usernam", anArrayOfStrings); // Returns /username\
-	 * \
+	 * ow.format.string.closest("/usernam", anArrayOfStrings); // Returns /username
 	 * </odoc>
 	 *
 	 * from https://github.com/ianstormtaylor/closest-match
 	 */
 	closest: function(aString, aList, aThreshold) {
-		var threshold = (isDefined(aThreshold)) ? aThreshold : 3;
+		var threshold = _$(aThreshold, "aThreshold").isNumber().default(3)
 		
-		if (!aString || !aList) return false;
+		if (!isString(aString) || !isArray(aList)) return false;
 	
 		var distance, match;
 		for (var i = 0, candidate; candidate = aList[i]; i++) {
@@ -173,7 +172,7 @@ OpenWrap.format.prototype.string = {
 			}
 		}
 	
-		if (distance > aThreshold) return false;
+		if (distance > threshold) return false;
 		return match;
 	},
 
@@ -679,12 +678,19 @@ OpenWrap.format.prototype.string = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.format.string.wildcardTest(aString, aPattern) : Boolean</key>
+	 * <key>ow.format.string.wildcardTest(aString, aPattern, caseSensitive) : Boolean</key>
 	 * Given aString will try to apply aPattern using '*' wildcards (to match zero or more characters) or '?' question-mark to
-	 * match a single character. Will return true if the aPattern can be applied to aString.
+	 * match a single character. Will return true if the aPattern can be applied to aString. Optionally if caseSensitive=true the pattern will be tested
+	 * with case sensitive.
 	 * </odoc>
 	 */
-	wildcardTest: (str, pattern) => (new RegExp("^" + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", 'i')).test(str)
+	wildcardTest: (str, pattern, scase) => {
+		_$(str, "str").isString().$_()
+		_$(pattern, "pattern").isString().$_()
+		scase = _$(scase, "scase").isBoolean().default(false)
+
+		return (new RegExp("^" + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", (scase ? __ : 'i'))).test(str)
+	}
 };
 	
 OpenWrap.format.prototype.syms = function() {
