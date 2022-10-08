@@ -7020,7 +7020,9 @@ var __flags = _$(__flags).isMap().default({
 		view: "tree"
 	},
 	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
-	ALTERNATIVE_PROCESSEXPR    : true
+	ALTERNATIVE_PROCESSEXPR    : true,
+	HTTP_TIMEOUT               : __,
+    HTTP_CON_TIMEOUT           : __
 })
 
 /**

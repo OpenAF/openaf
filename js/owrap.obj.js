@@ -1675,6 +1675,9 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	this.__forceBasic = false
 	options = _$(options, "options").isMap(options).default({})
 
+	aTimeout = _$(aTimeout, "aTimeout").isNumber().default(__flags.HTTP_TIMEOUT)
+	options.timeout = _$(options.timeout, "options.timeout").isNumber().default(__flags.HTTP_CON_TIMEOUT)
+
 	var clt = new Packages.okhttp3.OkHttpClient.Builder()
 
 	if (isDef(aTimeout)) clt = clt.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
