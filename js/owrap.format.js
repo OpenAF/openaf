@@ -152,16 +152,15 @@ OpenWrap.format.prototype.string = {
 	 * ow.format.string.closest("/user/1", anArrayOfStrings); // Returns /user\
 	 * ow.format.string.closest("/u1", anArrayOfStrings); // Returns /u\
 	 * ow.format.string.closest("/userna", anArrayOfStrings); // Returns /user\
-	 * ow.format.string.closest("/usernam", anArrayOfStrings); // Returns /username\
-	 * \
+	 * ow.format.string.closest("/usernam", anArrayOfStrings); // Returns /username
 	 * </odoc>
 	 *
 	 * from https://github.com/ianstormtaylor/closest-match
 	 */
 	closest: function(aString, aList, aThreshold) {
-		var threshold = (isDefined(aThreshold)) ? aThreshold : 3;
+		var threshold = _$(aThreshold, "aThreshold").isNumber().default(3)
 		
-		if (!aString || !aList) return false;
+		if (!isString(aString) || !isArray(aList)) return false;
 	
 		var distance, match;
 		for (var i = 0, candidate; candidate = aList[i]; i++) {
@@ -173,7 +172,7 @@ OpenWrap.format.prototype.string = {
 			}
 		}
 	
-		if (distance > aThreshold) return false;
+		if (distance > threshold) return false;
 		return match;
 	},
 
