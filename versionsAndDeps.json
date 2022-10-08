@@ -29,7 +29,7 @@
 		{
 			"description": "FuseJS",
 			"path": ["js/fusejs.js"],
-			"version": "6.5.3",
+			"version": "6.6.2",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/krisk/Fuse/master/LICENSE",
@@ -83,7 +83,7 @@
 		{
 			"description": "jQuery minified",
 			"path": ["js/jquery.js"],
-			"version": "3.6.0",
+			"version": "3.6.1",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/jquery/jquery/master/LICENSE.txt",
