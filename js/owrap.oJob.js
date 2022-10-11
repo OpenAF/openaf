@@ -2768,9 +2768,25 @@ OpenWrap.oJob.prototype.addTodo = function(aOJobID, aJobsCh, aTodoCh, aJobName, 
 
 /**
  * <ojob>
+ * <key>ow.oJob.outputParse(aObj) : Object</key>
+ * Given aObj, resulting of calling ow.oJob.output with __format=pm or __format=args, will revert back to the original 
+ * map, array or object.
+ * </ojob>
+ */
+OpenWrap.oJob.prototype.outputParse = function(aObj) {
+	var p = _$(aObj).default(__pm)
+
+	if (isArray(p._list)) return p._list
+	if (isMap(p._map))    return p._map
+	if (isDef(p.result))  return p.result
+	return p
+}
+
+/**
+ * <ojob>
  * <key>ow.oJob.output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "yaml", "table", "tree", "map", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "yaml", "table", "tree", "map", "res", "args", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
@@ -2807,6 +2823,18 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 		case "tree":
 			print(printTreeOrS(aObj, __, { noansi: !__conAnsi }))
 			break;
+		case "res":
+			$set("res", aObj)
+			break
+		case "args":
+			if (isArray(aObj)) 
+				args._list = aObj
+			else
+				if (isMap(aObj))
+					args._map = aObj
+				else
+					args.result = aObj
+			break
 		case "jsmap":
 			var res = ow.template.html.parseMap(aObj, true);
 			return "<html><style>" + res.css + "</style><body>" + res.out + "</body></html>";
