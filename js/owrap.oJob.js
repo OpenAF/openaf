@@ -6,9 +6,10 @@
  * job todo register and oJob::oJob for oJob instances registry.
  * </odoc>
  */
- OpenWrap.oJob = function(isNonLocal) { 
+OpenWrap.oJob = function(isNonLocal) { 
 	//startLog();
 	//if (isDef(ow.oJob)) return ow.oJob;
+	if (isUnDef(ow.oJob)) ow.oJob = this
 
 	this.__promises = [];
 	var parent = this;
@@ -61,7 +62,7 @@
 		parent.__sch = new ow.server.scheduler();
 	//}));
 	//this.__promises.push($do(() => { 
-		ow.loadFormat();
+		//ow.loadFormat();
 		plugin("Threads");
 	//}));
 	//this.__promises.push($do(() => {
@@ -81,7 +82,6 @@
 			}
 		);
 	//}));
-
 	//this.__sch = new ow.server.scheduler();
 	this.__ojob = { recordLog: true, logArgs: false, numThreads: __, logToConsole: true, logOJob: false };
 	this.__help = {};
@@ -127,7 +127,7 @@
 
 	this.__codepage = __;
 
-	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+	if (ow.format.isWindows()) {
 		$do(() => {
 			if (isUnDef(__conAnsi)) __initializeCon();
 			var res = __con.getTerminal().getOutputEncoding();
@@ -2866,4 +2866,4 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	}
 }
 
-ow.oJob = new OpenWrap.oJob();
+//ow.oJob = new OpenWrap.oJob();
