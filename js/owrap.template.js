@@ -86,7 +86,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		escape: s => { return s.replace(/['"]/g, "\\$1"); },
 		f: $f,
 		ft: $ft,
-		get: (o, p) => $get,
+		get: (o, p) => $get(o),
 		path: (o, p) => $path(o, p),
 		toSLON: ow.format.toSLON,
 		getObj: (o, p) => $$($get(o)).get(p),
