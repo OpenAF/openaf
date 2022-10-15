@@ -394,6 +394,7 @@ OpenWrap.dev.prototype.JSDebug.prototype.setFn = function(aObject, aMethod, aFn,
 };
 
 var oBook = function(aBook, exitOnEnd) {
+    //if (isString(aBook) && aBook.match(/^https?\:\/\//)) aBook = $rest().get(aBook)
     if (isString(aBook) && aBook.indexOf("\n") < 0 && io.fileExists(aBook)) aBook = io.readFileString(aBook)
 
     this.book = isString(aBook) ? aBook : ""
@@ -498,7 +499,7 @@ oBook.prototype.interaction = function() {
                         this._show = false
                         _out = true
                     }
-                    if (_c == 91) {
+                    if (_c == 91 || _c == 79) {
                         _c = String(con.readChar("")).charCodeAt(0)
 
                         // others
