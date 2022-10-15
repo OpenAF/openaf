@@ -11,11 +11,11 @@ for(let i in ls.external) {
     ls.external[i].ppath = ls.external[i].path.join(", ");
     
     lines += templify("\
-Third-party name      : {{description}}\n\
-Version               : {{version}}\n\
+Third-party name      : {{{description}}}\n\
+Version               : {{{version}}}\n\
 Changed from original : {{#if changes}}Yes{{else}}No{{/if}}\n\
-Location in openaf.jar: {{ppath}}\n\
-License               : \n\n{{license}}\n\
+Location in openaf.jar: {{{ppath}}}\n\
+License               : \n\n{{{license}}}\n\
 -----------------------\n", ls.external[i]);
 }
 
