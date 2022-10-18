@@ -1682,8 +1682,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		}
 	}
 
-	global.args = args
-	global.init = this.init
+	global.args = merge(global.args, args)
+	global.init = merge(global.init, this.init)
 
     // Show help if enabled and determined
     if (this.__ojob.showHelp) {
