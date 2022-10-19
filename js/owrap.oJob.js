@@ -63,14 +63,13 @@ OpenWrap.oJob = function(isNonLocal) {
 	//}));
 	//this.__promises.push($do(() => { 
 		//ow.loadFormat();
-		plugin("Threads");
 	//}));
 	//this.__promises.push($do(() => {
-		parent.getTodoCh().create(0, "simple");
-		parent.getJobsCh().create(0, "simple");
-		parent.getLogCh().create(0, "simple");
-		parent.getMainCh().create(0, "simple");
-		parent.getMetricsCh().create(0, "simple");
+		parent.getTodoCh().create(0, "simple")
+		parent.getJobsCh().create(0, "simple")
+		parent.getLogCh().create(0, "simple")
+		parent.getMainCh().create(0, "simple")
+		parent.getMetricsCh().create(0, "simple")
 
 		parent.getMainCh().set(
 			{ "uuid": parent.__id },
@@ -232,7 +231,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 
 	if (isArray(ojob.langs)) {
 		var pp = this;
-		ojob.langs.map(l => {
+		ojob.langs.forEach(l => {
 			if (isDef(l.lang)) pp.__langs[l.lang] = l;
 		});
 	}
@@ -482,7 +481,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		} else {
 			if (isMap(this.__ojob.metrics)) {
 				if (isDef(this.__ojob.metrics.add) && isMap(this.__ojob.metrics.add)) {
-					Object.keys(this.__ojob.metrics.add).map(r => {
+					Object.keys(this.__ojob.metrics.add).forEach(r => {
 						ow.metrics.add(r, newFn(this.__ojob.metrics.add[r]) );
 					});
 				}
@@ -780,18 +779,18 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 	}
 	
 	if (isDef(aFile)) {
-		ow.oJob.authorizedDomains.map(d => {
+		ow.oJob.authorizedDomains.forEach(d => {
 			if (aFile.startsWith(d) && !io.fileExists(aFile)) {
-				aFile = "https://" + aFile;
+				aFile = "https://" + aFile
 			}
 		});
 
     	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
-			var pp = (new java.net.URI(aFile)).getPath();
+			var pp = (new java.net.URI(aFile)).getPath()
 			if (pp == "") {
-				aFile += "/";
+				aFile += "/"
 			} else {
-				if (!pp.endsWith("/") && aFile.indexOf("?") < 0) aFile += ".json";
+				if (!pp.endsWith("/") && aFile.indexOf("?") < 0) aFile += ".json"
 			}
         }
 
@@ -839,7 +838,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 
 	if (!isInclude) this.__file = aOrigFile;
 
-	return this.loadJSON(res, removeTodos);
+	return this.loadJSON(res, removeTodos)
 };
 
 /**

@@ -3,6 +3,7 @@
 // Channels
 
 OpenWrap.ch = function() {
+	plugin("Threads")
 	return ow.ch;
 };
 
@@ -559,7 +560,7 @@ OpenWrap.ch.prototype.__types = {
 				}
 				var parent = this;
 				$do(() => {
-					parent.getKeys(aName, true).map(v => {
+					parent.getKeys(aName, true).forEach(v => {
 						try {
 							if (v.____t <= (nowUTC() - parent.__cache[aName].TTL)) 
 								parent.unset(aName, v);
@@ -797,7 +798,6 @@ OpenWrap.ch.prototype.__types = {
 			};
 	
 			if (isDef(this.__bm[aName]) && this.__bm[aName] > 0) {
-				plugin("Threads");
 				this.__s[aName] = new Threads();
 				this.__s[aName].addScheduleThreadWithFixedDelay(function() { parent.__f[aName](false, true); }, this.__bm[aName]);
 			}
@@ -1266,7 +1266,7 @@ OpenWrap.ch.prototype.__types = {
 			} finally {
 				this.__ul(this.__channels[aName]);
 			}
-			Object.keys(m).map(k => {
+			Object.keys(m).forEach(k => {
 				try { aFunction(k, m[k]) } catch(e) {};
 			});
 		},
@@ -2831,7 +2831,6 @@ OpenWrap.ch.prototype.__types = {
  */
 OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 	if (Object.keys(this.channels).indexOf(aName) < 0) {
-		plugin("Threads");
 		type = (isDef(type)) ? type : "simple";
 
 		this.__types[type].create(aName, shouldCompress, options);
@@ -3649,7 +3648,6 @@ OpenWrap.ch.prototype.utils = {
 		}
 
 		if (isNumber(every)) {
-			plugin("Threads");
 			var t = new Threads();
 			t.addScheduleThreadWithFixedDelay(__f, every);
 			return {
