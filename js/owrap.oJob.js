@@ -2858,7 +2858,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			}
  			break;
  		case "map":
-			print(printMap(obj, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
+			print(printMap(aObj, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
 			break
 		default   :
 			aFunc(aObj)
