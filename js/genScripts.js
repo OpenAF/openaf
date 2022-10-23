@@ -24,6 +24,7 @@ for(var i in __args) {
 		__expr = __expr.replace(String(__args[i]), "");
   	}
 }
+if (javaargs.indexOf("$OAF_JARGS") >= 0) logWarn("There shouldn't be any references to OAF_JARGS in the provided arguments. Generated scripts might no longer work.")
 if (javaargs != "") log("Java arguments to use = '" + javaargs + "'");
 
 for(var j in __args) {
