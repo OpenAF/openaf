@@ -6870,6 +6870,8 @@ const oJobRunFile = function(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
 		oo = ow.loadOJob();
 	}
 
+	aOptionsMap = _$(aOptionsMap, "aOptionsMap").isMap().default({ shareArgs: false })
+
 	oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap);
 }
 

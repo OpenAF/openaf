@@ -232,15 +232,6 @@
 			"deps": []
 		},
 		{
-			"description": "Apache Commons Text",
-			"path": ["lib/commons-text-1.9.jar"],
-			"version": "1.9",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
-			"deps": []
-		},
-		{
 			"description": "Apache Commons Compress",
 			"path": ["lib/commons-compress-1.20.jar"],
 			"version": "1.20",
