@@ -8,8 +8,8 @@ var requirements = {
 };
 var extraArgsForJava9 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
 var extraArgsForJava10 = extraArgsForJava9 + " ";
-var extraArgsForJava11 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit";
-var extraArgsForJava12 = extraArgsForJava11 + " -Xshare:off";
+var extraArgsForJava11 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit -Xshare:off";
+var extraArgsForJava12 = extraArgsForJava11 + " ";
 var extraArgsForJava17 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED  -Xshare:off";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
@@ -50,10 +50,10 @@ function generateWinBat() {
   s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
-  s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
+  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
   s = s + "chcp 65001 > NUL\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% %*";
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% %*";
   return s;
 }
 
@@ -65,10 +65,10 @@ function generateWinPackBat() {
   s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
-  s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
+  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
   s = s + "chcp 65001 > NUL\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --opack -e \"%*\"";
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --opack -e \"%*\"";
   return s;
 }
 
@@ -80,10 +80,10 @@ function generateWinJobBat() {
   s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
-  s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
+  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
   s = s + "chcp 65001 > NUL\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --ojob -e \"%*\"";
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --ojob -e \"%*\"";
   return s;
 }
 
@@ -94,13 +94,13 @@ function generateWinUpdateBat() {
   s += "set DIR=%thispath:~0,-1%\n"
   s += "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s += "set JAVA_HOME=\"" + javaHome + "\"\n";
-  s += "set OPENAF_DIR=\"" + classPath + "\"\n";
+  s += "set OAF_DIR=\"" + classPath + "\"\n";
   s += "\n";
   s = s + "chcp 65001 > NUL\n";
-  s += "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --update\n";
+  s += "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --update\n";
   if (isDef(__genScriptsUpdate) && isArray(__genScriptsUpdate)) {
     __genScriptsUpdate.map(r => {
-      s += "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% " + r + "\n";
+      s += "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% " + r + "\n";
     });
   }
   return s;
@@ -114,10 +114,10 @@ function generateWinConsoleBat() {
   s = s + "set DIR=%thispath:~0,-1%\n"
   s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
   s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
-  s = s + "set OPENAF_DIR=\"" + classPath + "\"\n";
+  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
   s = s + "\n";
   s = s + "chcp 65001 > NUL\n";
-  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OPENAF_DIR% --console %*";
+  s = s + "%JAVA_HOME%\\bin\\java " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --console %*";
   return s;
 }
 
@@ -125,8 +125,8 @@ function generateWinConsolePSBat() {
   var s;
 
   s = "@echo off\n\n";
-  //s = s + "powershell -ExecutionPolicy Unrestricted -command \"&{ [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding('1252'); $pshost = get-host; $console = $pshost.UI.RawUI; $console.WindowTitle = 'OpenAF-console'; $console.ForegroundColor = 'black'; $console.BackgroundColor = 'white'; $newsize = $console.windowsize; $newsize.width = 120; $newsize.height = 55; $console.windowsize = $newsize; $newsize = $console.buffersize; $newsize.width = 120; $newsize.height = 3000; $console.buffersize = $newsize; Clear-Host; $JAVA_HOME = '" + javaHome + "'; $OPENAF_DIR = '" + classPath + "'; $cmd = '&\\\"' + $JAVA_HOME + '\\bin\\java\\\" " + javaargs + " -D\\\"java.system.class.loader=openaf.OAFdCL\\\" -jar \"' + $OPENAF_DIR + '\" --console'; iex $cmd; }\"";
-  s = s + "powershell -ExecutionPolicy Unrestricted -command \"&{ $pshost = get-host; $console = $pshost.UI.RawUI; $console.WindowTitle = 'OpenAF-console'; $console.ForegroundColor = 'black'; $console.BackgroundColor = 'white'; $newsize = $console.windowsize; $newsize.width = 120; $newsize.height = 55; $console.windowsize = $newsize; $newsize = $console.buffersize; $newsize.width = 120; $newsize.height = 3000; $console.buffersize = $newsize; Clear-Host; $JAVA_HOME = '" + javaHome + "'; $OPENAF_DIR = '" + classPath + "'; $cmd = '&\\\"' + $JAVA_HOME + '\\bin\\java\\\" " + javaargs + " -D\\\"java.system.class.loader=openaf.OAFdCL\\\" -jar \"' + $OPENAF_DIR + '\" --console'; iex $cmd; }\"";
+  //s = s + "powershell -ExecutionPolicy Unrestricted -command \"&{ [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding('1252'); $pshost = get-host; $console = $pshost.UI.RawUI; $console.WindowTitle = 'OpenAF-console'; $console.ForegroundColor = 'black'; $console.BackgroundColor = 'white'; $newsize = $console.windowsize; $newsize.width = 120; $newsize.height = 55; $console.windowsize = $newsize; $newsize = $console.buffersize; $newsize.width = 120; $newsize.height = 3000; $console.buffersize = $newsize; Clear-Host; $JAVA_HOME = '" + javaHome + "'; $OAF_DIR = '" + classPath + "'; $cmd = '&\\\"' + $JAVA_HOME + '\\bin\\java\\\" " + javaargs + " -D\\\"java.system.class.loader=openaf.OAFdCL\\\" -jar \"' + $OAF_DIR + '\" --console'; iex $cmd; }\"";
+  s = s + "powershell -ExecutionPolicy Unrestricted -command \"&{ $pshost = get-host; $console = $pshost.UI.RawUI; $console.WindowTitle = 'OpenAF-console'; $console.ForegroundColor = 'black'; $console.BackgroundColor = 'white'; $newsize = $console.windowsize; $newsize.width = 120; $newsize.height = 55; $console.windowsize = $newsize; $newsize = $console.buffersize; $newsize.width = 120; $newsize.height = 3000; $console.buffersize = $newsize; Clear-Host; $JAVA_HOME = '" + javaHome + "'; $OAF_DIR = '" + classPath + "'; $cmd = '&\\\"' + $JAVA_HOME + '\\bin\\java\\\" " + javaargs + " -D\\\"java.system.class.loader=openaf.OAFdCL\\\" -jar \"' + $OAF_DIR + '\" --console'; iex $cmd; }\"";
   return s;
 }
 
@@ -162,7 +162,7 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "cd $CDIR\n"
   if (isCon) s += "stty -icanon min 1 -echo 2>/dev/null\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
-  s += "OPENAF_DIR=\"" + classPath + "\"\n";
+  s += "OAF_DIR=\"" + classPath + "\"\n";
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
   if (shouldSep) {
     s += "SCRIPT=$1\n";
@@ -170,10 +170,10 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
     s += "ARGS=$@\n";
   }
   s += "\n";
-  s += "\"$JAVA_HOME\"/bin/java " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + options + "\n";
+  s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + options + "\n";
   if (isDef(extraOptions) && isArray(extraOptions)) {
     extraOptions.map(r => {
-      s += "\"$JAVA_HOME\"/bin/java " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OPENAF_DIR " + r + "\n";
+      s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + r + "\n";
     });
   }
   s += "EXITCODE=$?\n";
