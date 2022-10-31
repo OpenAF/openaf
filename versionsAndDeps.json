@@ -65,7 +65,7 @@
 		{
 			"description": "JMESPath",
 			"path": ["js/jmespath.js"],
-			"version": "0.15.0",
+			"version": "0.16.0",
 			"changes": true,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/jmespath/jmespath.js/master/LICENSE",
