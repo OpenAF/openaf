@@ -2798,70 +2798,76 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			sprint(obj);
  	});
 
- 	var format = (isDef(global.__format) ? global.__format : "human");
+ 	var format = (isDef(global.__format) ? global.__format : "human")
+	var path   = __
 
- 	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase();
- 	if (isDef(args.__format)) format = String(args.__format).toLowerCase();
+ 	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
+ 	if (isDef(args.__format)) format = String(args.__format).toLowerCase()
+
+	if (isDef(args.__PATH)) path = String(args.__PATH).toLowerCase()
+ 	if (isDef(args.__path)) path = String(args.__path).toLowerCase()
+
+	var res = isDef(path) ? $path(aObj, path) : aObj
 
  	switch (format) {
  		case "json":
- 			sprint(aObj, "");
+ 			sprint(res, "");
  			break;
 		case "prettyjson":
-			sprint(aObj);
+			sprint(res);
 			break;
 		case "slon":
-			print(ow.format.toSLON(aObj));
+			print(ow.format.toSLON(res));
 			break;
  		case "yaml":
- 			yprint(aObj);
+ 			yprint(res);
  			break;
  		case "table":
- 			if (isArray(aObj)) print(printTable(aObj, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)));
+ 			if (isArray(res)) print(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)));
  			break;
 		case "tree":
-			print(printTreeOrS(aObj, __, { noansi: !__conAnsi }))
+			print(printTreeOrS(res, __, { noansi: !__conAnsi }))
 			break;
 		case "res":
-			$set("res", aObj)
+			$set("res", res)
 			break
 		case "args":
-			if (isArray(aObj)) 
-				args._list = aObj
+			if (isArray(res)) 
+				args._list = res
 			else
-				if (isMap(aObj))
-					args._map = aObj
+				if (isMap(res))
+					args._map = res
 				else
-					args.result = aObj
+					args.result = res
 			break
 		case "jsmap":
-			var res = ow.template.html.parseMap(aObj, true);
+			var res = ow.template.html.parseMap(res, true);
 			return "<html><style>" + res.css + "</style><body>" + res.out + "</body></html>";
  		case "pm":
  			var _p;
- 			if (isArray(aObj)) _p = {
- 				_list: aObj
+ 			if (isArray(res)) _p = {
+ 				_list: res
  			};
- 			if (isMap(aObj)) _p = {
- 				_map: aObj
+ 			if (isMap(res)) _p = {
+ 				_map: res
  			};
  			if (isUnDef(_p)) _p = {
- 				result: aObj
+ 				result: res
  			};
  			__pm = merge(__pm, _p);
  			break;
  		case "csv":
- 			if (isArray(aObj)) {
+ 			if (isArray(res)) {
  				var csv = new CSV();
- 				csv.toCsv(aObj);
+ 				csv.toCsv(res);
  				print(csv.w());
  			}
  			break;
  		case "map":
-			print(printMap(aObj, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
+			print(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
 			break
 		default   :
-			aFunc(aObj)
+			aFunc(res)
  	}
 }
 
