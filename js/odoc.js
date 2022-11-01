@@ -229,6 +229,7 @@ ODocs.prototype.load = function(aID, aFilename) {
 
 	var zip;
 	if (isUnDef(aFilename) && isDef(this.filesIds[aID])) aFileName = this.filesIds[aID];
+	if (isUnDef(aFilename)) aFilename = getOpenAFJar()
 	if (aFilename.match(/\.(jar|db|zip)$/)) {
 		var zipContainer = new ZIP();
 		zip = new ZIP(zipContainer.streamGetFile(aFilename, ".odoc.db"));

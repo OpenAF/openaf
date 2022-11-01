@@ -57,7 +57,13 @@ public class DB {
 	 * <key>DB.db(aDriver, aURL, aLogin, aPassword, aTimeout)</key>
 	 * Creates a new instance of the object DB providing java class aDriver (e.g. oracle.jdbc.OracleDriver)
 	 * that must be included on OpenAF's classpath, a JDBC aURL, aLogin and aPassword. If the aDriver is 
-	 * null or undefined the Oracle driver will be used. Optionally you can provide aTimeout in ms.
+	 * null or undefined the Oracle driver will be used. Optionally you can provide aTimeout in ms.\
+	 * \
+	 * Examples of JDBC URLs:\
+	 * \
+	 * - Oracle Thin: jdbc:oracle:thin:@{{host}}:{{port}}:{{database}}\
+	 * - PostgreSQL : jdbc:postgresql://{{host}}:{{port}}/{{database}}\
+	 * - H2         : jdbc:h2:{{file}}
 	 * </odoc>
 	 */
 	public void newDB(String driver, String url, String login, String pass, String timeout) throws Exception {
