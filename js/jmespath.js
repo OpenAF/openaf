@@ -1122,7 +1122,7 @@
 
   };
 
-  function Runtime(interpreter) {
+  function Runtime(interpreter, funcs) {
     this._interpreter = interpreter;
     this.functionTable = {
         // name: [function, <signature>]
@@ -1203,6 +1203,9 @@
             _signature: [{types: [TYPE_ANY], variadic: true}]
         }
     };
+    for (var key in funcs) {
+      if (funcs.hasOwnProperty(key)) this.functionTable[key] = funcs[key];
+    }
   }
 
   Runtime.prototype = {
@@ -1653,12 +1656,12 @@
       return lexer.tokenize(stream);
   }
 
-  function search(data, expression) {
+  function search(data, expression, funcs) {
       var parser = new Parser();
       // This needs to be improved.  Both the interpreter and runtime depend on
       // each other.  The runtime needs the interpreter to support exprefs.
       // There's likely a clean way to avoid the cyclic dependency.
-      var runtime = new Runtime();
+      var runtime = new Runtime(void 0, funcs);
       var interpreter = new TreeInterpreter(runtime);
       runtime._interpreter = interpreter;
       var node = parser.parse(expression);
@@ -1669,4 +1672,17 @@
   exports.compile = compile;
   exports.search = search;
   exports.strictDeepEqual = strictDeepEqual;
+
+  exports.types = {
+    "number"      : TYPE_NUMBER,
+    "any"         : TYPE_ANY,
+    "string"      : TYPE_STRING,
+    "array"       : TYPE_ARRAY,
+    "object"      : TYPE_OBJECT,
+    "boolean"     : TYPE_BOOLEAN,
+    "expref"      : TYPE_EXPREF,
+    "null"        : TYPE_NULL,
+    "array_number": TYPE_ARRAY_NUMBER,
+    "array_string": TYPE_ARRAY_STRING
+  };
 })(typeof exports === "undefined" ? this.jmespath = {} : exports);

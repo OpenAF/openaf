@@ -3647,7 +3647,7 @@ var $from = function(a) {
  *   $path(arr, "a[*].b | [0]"); \
  * \
  * [Functions]: \
- *   abs(x), avg(x), contains(x, y), ceil(x), floor(x), join(x, arr), keys(obj), length(x), map(expr, arr), max(x), max_by(x, y), merge(a, b), min(a), min_by(a, b), not_null(a), reverse(arr), sort(arr), sort_by(a, y), starts_with(a, b), sum(a), to_array(a), to_string(a), to_number(a), type(a), values(a)\
+ *   abs(x), avg(x), contains(x, y), ceil(x), floor(x), join(x, arr), keys(obj), length(x), map(expr, arr), max(x), max_by(x, y), merge(a, b), min(a), min_by(a, b), not_null(a), reverse(arr), sort(arr), sort_by(a, y), starts_with(a, b), ends_with(a, b), sum(a), to_array(a), to_string(a), to_number(a), type(a), values(a)\
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * Custom functions:\
