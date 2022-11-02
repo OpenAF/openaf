@@ -2785,7 +2785,7 @@ OpenWrap.oJob.prototype.outputParse = function(aObj) {
  * <ojob>
  * <key>ow.oJob.output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "yaml", "table", "tree", "map", "res", "args", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "tree", "map", "res", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
@@ -2819,6 +2819,12 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 		case "slon":
 			print(ow.format.toSLON(res));
 			break;
+		case "ndjson":
+			if (isArray(res)) res.forEach(e => print(stringify(e, __, "")))
+			break
+		case "xml":
+			print(af.fromObj2XML(res))
+			break
  		case "yaml":
  			yprint(res);
  			break;
