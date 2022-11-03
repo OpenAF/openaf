@@ -951,7 +951,10 @@ OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob, aOptionsM
  * </odoc>
  */
 OpenWrap.oJob.prototype.previewFile = function(aFile) {
-	return this.__loadFile(aFile);
+	var res = this.__loadFile(aFile);
+	if (isDef(res.include)) res.include = []
+	if (isDef(res.jobsInclude)) res.jobsInclude = []
+	return res
 };
 
 /**
