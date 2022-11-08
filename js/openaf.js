@@ -657,7 +657,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			//var l = ansiLength(m, true)
 			var s = m.replace(/\033\[[0-9;]*m/g, "")
 			if (__flags.VISIBLELENGTH)
-				return Number((new java.lang.String(s)).codePointCount(0, s.length))
+				return Number(visibleLength(s))
 			else
 				return Number(s.length)
 		}
@@ -1263,7 +1263,7 @@ const ansiLength = function(aString, force) {
 	}
 
 	if (__flags.VISIBLELENGTH)
-		return Number((new java.lang.String(s)).codePointCount(0, s.length))
+		return Number(visibleLength(s))
 	else
 		return Number(s.length)
 }
@@ -3587,6 +3587,29 @@ const arrayContains = function(anArray, aObj, aPreFilter) {
 const inherit = function(Child, Parent) {
 	Child.prototype = Object.create(Parent.prototype);
 	Child.prototype.constructor = Child;
+}
+
+/**
+ * <odoc>
+ * <key>visibleLength(aString) : Number</key>
+ * More complete af.visibleLength function
+ * </odoc>
+ */
+const visibleLength = str => {
+    var l = 0
+    for(var i = 0; i < str.length; i++) {
+        if (escape(str.charAt(i)).length >= 4) {
+            l += 2
+        } else {
+            l++
+        }
+    }
+    var vL = af.visibleLength(str)
+    var len = str.length
+
+    if (vL < len) return len
+    if (vL == len && l == len * 2) return l
+    return len
 }
 
 /**
@@ -7007,7 +7030,7 @@ var __flags = _$(__flags).isMap().default({
 	OJOB_HELPSIMPLEUI          : false,
 	OJOB_LOCALPATH             : getOpenAFPath() + "ojobs",
 	OAF_CLOSED                 : false,
-	VISIBLELENGTH              : false,
+	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
 	ANSICOLOR_CACHE            : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
