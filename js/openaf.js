@@ -3600,10 +3600,14 @@ var __visibleLength2
 const visibleLength = str => {
 	if (isUnDef(__visibleLength2)) __visibleLength2 = af.fromBytes2String(io.gunzip(af.fromBase64(__visibleLength)))
 	
-	str = str.replace(/\\033\\[[0-9;]*m/g, "")
+	str = str.replace(/\033\[[0-9;]*m/g, "")
 	var l = 0
 	for(var i = 0; i < str.length; i++) {
-	   l += Number(__visibleLength2[str.charCodeAt(i) - 32])
+		var _c = str.charCodeAt(i)
+		if (_c <= 32)
+			l += 1
+		else
+	   		l += Number(__visibleLength2[str.charCodeAt(i) - 32])
 	}
 	return l
 }
