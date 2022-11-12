@@ -448,16 +448,16 @@
 			"name": "SNMP",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-2.8.11.jar",
-				"lib/snmp4j-agent-2.7.4.jar"
+				"lib/snmp4j-2.8.15.jar",
+				"lib/snmp4j-agent-2.7.8.jar"
 			]
 		},
 		{
 			"name": "SNMPServer",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-2.8.11.jar",
-				"lib/snmp4j-agent-2.7.4.jar"
+				"lib/snmp4j-2.8.15.jar",
+				"lib/snmp4j-agent-2.7.8.jar"
 			]
 		},
 		{
