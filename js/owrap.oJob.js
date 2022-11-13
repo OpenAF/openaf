@@ -2876,7 +2876,11 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 			print(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
 			break
 		default   :
-			aFunc(res)
+			if (format.startsWith("set_")) {
+				$set(format.substring(4), res)
+			} else {
+				aFunc(res)
+			}
  	}
 }
 
