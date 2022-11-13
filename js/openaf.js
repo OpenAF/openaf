@@ -1034,6 +1034,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 	}
 	
 	aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 2);
+	Packages.openaf.asciitable.render.WidthAnsiLongestWordTab.setCallback(function(str) { return visibleLength(str) })
 	var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
 	rt.setTheme(aTheme);
 	rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
@@ -3604,7 +3605,7 @@ const visibleLength = str => {
 	var l = 0
 	for(var i = 0; i < str.length; i++) {
 		var _c = str.charCodeAt(i)
-		if (_c <= 32)
+		if (_c <= 254)
 			l += 1
 		else
 	   		l += Number(__visibleLength2[str.charCodeAt(i) - 32])
