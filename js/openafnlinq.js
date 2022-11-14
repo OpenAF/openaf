@@ -1,4 +1,4 @@
-// Version: 0.1.0b
+// Version: 0.1.1
 // Author : Nuno Aguiar
 
 var nLinq_USE_CASE = false;
@@ -570,6 +570,21 @@ var nLinq = function(anObject, aK) {
 
             return code;
         },
+        toDate: aKey => {
+            _$(aKey, "key").$_()
+
+            res = applyConditions(res)
+            res.forEach(r => {
+                try {
+                    var v = $$(r).get(aKey)
+                    if ($$(v).isString() || $$(v).isNumber())
+                        $$(r).set(aKey, new Date(v))
+                } catch(e) {
+                }
+            })         
+            
+            return code
+        },
         filter : aValue => {
             _$(aValue, "value").$_();
 
@@ -712,10 +727,23 @@ var nLinq = function(anObject, aK) {
                 } else {
                     // array parameter
                     if ($$(aParam).isArray()) {
-                        var aNewParam = {};
+                        var _c = {}
                         aParam.forEach(r => {
-                            if ($$(r).isString()) $$(aNewParam).set(r, void 0);
-                        });
+                            if ($$(r).isString()) {
+                                if (r.indexOf(":") > 0) {
+                                    var key = r.substring(0, r.indexOf(":"))
+                                    var mkey = r.substring(r.indexOf(":") + 1)
+                                    _c[key] = mkey
+                                } else {
+                                    _c[r] = r
+                                }
+                            }
+                        })
+                        return res.map(_r => {
+                            var _res = {}
+                            Object.keys(_c).forEach(r => $$(_res).set(r, $$(_r).get(_c[r])))
+                            return _res
+                        })
                     }
                     // map parameter
                     if ($$(aParam).isMap()) {
