@@ -552,6 +552,89 @@ OpenWrap.net.prototype.getIP2Host = function(aIP) {
 
 /**
  * <odoc>
+ * <key>ow.net.ipv4SubNetInfo(aCIDRorAddress, aMask) : Map</key>
+ * Given an IPv4 aCIDR or anAddress with aMask will return a map with the corresponding subnet info including
+ * netmask, broadcast address, address count, low &amp; high address, etc...
+ * </odoc>
+ */
+OpenWrap.net.prototype.ipv4SubNetInfo = function(aCIDR, aMask) {
+    _$(aCIDR, "aCIDRorAddress").isString().$_()
+    aMask = _$(aMask, "aMask").isString().default(__)
+
+    var su
+    if (isDef(aMask)) {
+        su = new org.apache.commons.net.util.SubnetUtils(aCIDR, aMask)
+    } else {
+        su = new org.apache.commons.net.util.SubnetUtils(aCIDR)
+    }
+
+    su = su.getInfo()
+    return {
+        cidr: String(su.getCidrSignature()),
+        netmask: String(su.getNetmask()),
+        address: String(su.getAddress()),
+        networkAddress: String(su.getNetworkAddress()),
+        addressCount: Number(su.getAddressCountLong()),
+        broadcast: String(su.getBroadcastAddress()),
+        low: String(su.getLowAddress()),
+        high: String(su.getHighAddress())
+    }
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.getAddressInfo(aAddress) : Map</key>
+ * Given an IPv4 or IPv6 aAddress will return a map with hostname, address and corresponding address flags
+ * to determine which type of address it is (is it a private address? is it a loopback? is it a multicast address?)
+ * </odoc>
+ */
+OpenWrap.net.prototype.getAddressInfo = function(aAddr) {
+    _$(aAddr, "aAddr").$_()
+
+    var ia = java.net.InetAddress.getByName(aAddr)
+    return {
+        hostname: ia.getHostName(),
+        canonicalHostName: ia.getCanonicalHostName(),
+        hostAddress: ia.getHostAddress(),
+        isIPv4: ow.net.isIPv4(aAddr),
+        isIPv6: ow.net.isIPv6(aAddr),
+        isLoopback: ia.isLoopbackAddress(),
+        isPrivateAddress: ia.isSiteLocalAddress(),
+        isMulticast: ia.isMulticastAddress(),
+        isAnyLocalAddress: ia.isAnyLocalAddress(),
+        isLinkLocalAddress: ia.isLinkLocalAddress(),
+        isMulticastGlobal: ia.isMCGlobal(),
+        isMulticastNode: ia.isMCNodeLocal(),
+        isMulticastLink: ia.isMCLinkLocal(),
+        isMulticastSite: ia.isMCSiteLocal(),
+        isMulticastOrg: ia.isMCOrgLocal()
+    }
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.ipv4SubNetInRange(aTestAddress, aCIDRorAddress, aMask) : boolean</key>
+ * Given IPv4 aTestAddress and a aCIDR or anAddress with aMask will return true if the aTestAddress is part of the subnet
+ * represented by aCIDR or aAddress + aMask (false otherwise).
+ * </odoc>
+ */
+OpenWrap.net.prototype.ipv4SubNetInRange = function(aAddr, aCIDR, aMask) {
+    _$(aAddr, "aTestAddress").$_()
+    _$(aCIDR, "aCIDRorAddress").isString().$_()
+    aMask = _$(aMask, "aMask").isString().default(__)
+
+    var su
+    if (isDef(aMask)) {
+        su = org.apache.commons.net.util.SubnetUtils(aCIDR, aMask)
+    } else {
+        su = org.apache.commons.net.util.SubnetUtils(aCIDR)
+    }
+
+    return su.getInfo().isInRange(aAddr)
+}
+
+/**
+ * <odoc>
  * <key>ow.net.getWhoIs(aQuery, aInitServer) : Map</key>
  * Tries to perform a whois aQuery for a domain or an ip address. Optionally you can provide aInitServer (defaults to whois.iana.org)
  * </odoc>
