@@ -951,7 +951,10 @@ OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob, aOptionsM
  * </odoc>
  */
 OpenWrap.oJob.prototype.previewFile = function(aFile) {
-	return this.__loadFile(aFile);
+	var res = this.__loadFile(aFile);
+	if (isDef(res.include)) res.include = []
+	if (isDef(res.jobsInclude)) res.jobsInclude = []
+	return res
 };
 
 /**
@@ -2873,7 +2876,11 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 			print(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
 			break
 		default   :
-			aFunc(res)
+			if (format.startsWith("set_")) {
+				$set(format.substring(4), res)
+			} else {
+				aFunc(res)
+			}
  	}
 }
 

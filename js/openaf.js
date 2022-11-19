@@ -657,7 +657,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			//var l = ansiLength(m, true)
 			var s = m.replace(/\033\[[0-9;]*m/g, "")
 			if (__flags.VISIBLELENGTH)
-				return Number((new java.lang.String(s)).codePointCount(0, s.length))
+				return Number(visibleLength(s))
 			else
 				return Number(s.length)
 		}
@@ -1034,6 +1034,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 	}
 	
 	aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 2);
+	Packages.openaf.asciitable.render.WidthAnsiLongestWordTab.setCallback(function(str) { return visibleLength(str) })
 	var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
 	rt.setTheme(aTheme);
 	rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
@@ -1263,7 +1264,7 @@ const ansiLength = function(aString, force) {
 	}
 
 	if (__flags.VISIBLELENGTH)
-		return Number((new java.lang.String(s)).codePointCount(0, s.length))
+		return Number(visibleLength(s))
 	else
 		return Number(s.length)
 }
@@ -3587,6 +3588,29 @@ const arrayContains = function(anArray, aObj, aPreFilter) {
 const inherit = function(Child, Parent) {
 	Child.prototype = Object.create(Parent.prototype);
 	Child.prototype.constructor = Child;
+}
+
+/**
+ * <odoc>
+ * <key>visibleLength(aString) : Number</key>
+ * More complete af.visibleLength function
+ * </odoc>
+ */
+const __visibleLength = "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"
+var __visibleLength2
+const visibleLength = str => {
+	if (isUnDef(__visibleLength2)) __visibleLength2 = af.fromBytes2String(io.gunzip(af.fromBase64(__visibleLength)))
+	
+	str = str.replace(/\033\[[0-9;]*m/g, "")
+	var l = 0
+	for(var i = 0; i < str.length; i++) {
+		var _c = str.charCodeAt(i)
+		if (_c <= 254)
+			l += 1
+		else
+	   		l += Number(__visibleLength2[str.charCodeAt(i) - 32])
+	}
+	return l
 }
 
 /**
@@ -7007,7 +7031,7 @@ var __flags = _$(__flags).isMap().default({
 	OJOB_HELPSIMPLEUI          : false,
 	OJOB_LOCALPATH             : getOpenAFPath() + "ojobs",
 	OAF_CLOSED                 : false,
-	VISIBLELENGTH              : false,
+	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
 	ANSICOLOR_CACHE            : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,

@@ -36,7 +36,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 	V2_TableTheme theme;
 
 	/** Width of the table. */
-	V2_Width width;
+	WidthAnsiLongestWordTab width;
 	String[][] colorMap;
 
 	/** List of rows processed and ready to b rendered. */
@@ -71,7 +71,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 	@Override
 	public AnsiAsciiTableRenderer setWidth(V2_Width width){
 		if(width!=null){
-			this.width = width;
+			this.width = (WidthAnsiLongestWordTab) width;
 		}
 		return this;
 	}
@@ -235,7 +235,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 								clr = this.colorMap[rowi][k];
 								t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
 								//t = openaf.JAnsiRender.render(clr.toLowerCase() + " " + columns[i][k]);
-								nw = width + (t.length() - columns[i][k].length());
+								nw = width + (t.length() - WidthAnsiLongestWordTab.visibleLength(columns[i][k]));
 							} else {
 								t = columns[i][k];
 								nw = width;
@@ -251,7 +251,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 							clr = this.colorMap[rowi][k];
 							t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
 							//t = openaf.JAnsiRender.render(clr.toLowerCase() + " " + columns[i][k]);
-							nw = cols[k] + (t.length() - columns[i][k].length());
+							nw = cols[k] + (t.length() - WidthAnsiLongestWordTab.visibleLength(columns[i][k]));
 						} else {
 							t = columns[i][k];
 							nw = cols[k];
@@ -296,7 +296,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 				String[] ar = StringUtils.split(str);
 				int length = 0;
 				for(String s : ar){
-					length += s.length();
+					length += WidthAnsiLongestWordTab.visibleLength(s);
 				}
 
 				//first spaces to distributed (even)

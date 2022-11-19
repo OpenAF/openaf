@@ -13,10 +13,16 @@ import de.vandermeer.asciitable.v2.row.V2_Row;
 import de.vandermeer.asciitable.v2.row.ContentRow;
 import org.apache.commons.lang3.StringUtils;
 
+import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
+import openaf.AFCmdBase;
+
 public class WidthAnsiLongestWordTab implements V2_Width {
 
 	protected int max;
 	protected int[] maxAr;
+	protected static NativeFunction callback;
 
 	public WidthAnsiLongestWordTab(int maxSize) {
 		if (maxSize < 3) {
@@ -35,6 +41,22 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 			}
 		}
 		this.maxAr = maxAr;
+	}
+
+	public static void setCallback(NativeFunction callback) {
+		WidthAnsiLongestWordTab.callback = callback;
+	}
+
+	public static int visibleLength(String str) {
+		Context cx = (Context) AFCmdBase.jse.enterContext();
+		Object ret = null; 
+		try {
+			ret = WidthAnsiLongestWordTab.callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { str });
+		} finally {
+			AFCmdBase.jse.exitContext();
+		}
+
+		return ((Double) ret).intValue();
 	}
 
 	public static int[] longestWord(V2_AsciiTable table) {
@@ -56,7 +78,7 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 						String car = crow.getColumns()[i].toString().replaceAll("\\033\\[[0-9;]*m", "");
 						String[] ar = StringUtils.split(car);
 						for (int k = 0; k < ar.length; k++) {
-							int count = ar[k].length() + crow.getPadding()[i] + crow.getPadding()[i];
+							int count = visibleLength(ar[k]) + crow.getPadding()[i] + crow.getPadding()[i];
 							if (count > ret[i]) {
 								ret[i] = count;
 							}
@@ -88,7 +110,7 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 				for (int i = 0; i < crow.getColumns().length; i++) {
 					if (crow.getColumns()[i] != null) {
 						String car = crow.getColumns()[i].toString().replaceAll("\\033\\[[0-9;]*m", "");
-						int ln = car.length() + crow.getPadding()[i] + crow.getPadding()[i];
+						int ln = visibleLength(car) + crow.getPadding()[i] + crow.getPadding()[i];
 						if (ln > ret[i]) ret[i] = ln;
 					}
 				}
