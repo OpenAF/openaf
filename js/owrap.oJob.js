@@ -1975,7 +1975,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						}
 						depInfo[dep].result = true;
 					} else {
-						if (isUnDef(depInf) && !parent.__ojob.depsWait && isUnDef(listTodos)) listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
+						if (isUnDef(depInf) && !parent.__ojob.depsWait && isUnDef(listTodos)) listTodos = $from(this.getTodoCh().getAll()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 						if (isUnDef(depInf) && !parent.__ojob.depsWait && $from(listTodos).equals("name", dep).none()) {
 							// No wait for unexisting deps (depsWait) then exit
 							return true;
