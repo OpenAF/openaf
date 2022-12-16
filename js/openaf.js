@@ -2018,6 +2018,27 @@ const now = function() {
 
 /**
  * <odoc>
+ * <key>nowE() : Number</key>
+ * Returns the current epoch time in seconds.
+ * </odoc>
+ */
+const nowE = function() {
+	return Number(java.time.Instant.now().getEpochSecond())
+}
+
+/**
+ * <odoc>
+ * <key>nowNanoE() : Number</key>
+ * Returns the current epoch time in nanoseconds.
+ * </odoc>
+ */
+const nowNanoE = function() {
+	var t = java.time.Instant.now()
+	return $f("%.0f%09.0f", t.getEpochSecond(), t.getNano())
+}
+
+/**
+ * <odoc>
  * <key>nowUTC() : Number</key>
  * Will return the current system time in milliseconds.
  * </odoc>

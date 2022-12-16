@@ -134,8 +134,8 @@ public class IOBase extends openaf.core.IO {
 	}
 	
 	@JSFunction
-	public static Object writeFileGzipStream(String filename) throws IOException {
-		return openaf.core.IO.writeFileGzipStream(filename);
+	public static Object writeFileGzipStream(String filename, boolean shouldAppend) throws IOException {
+		return openaf.core.IO.writeFileGzipStream(filename, shouldAppend);
 	}
 	
 	@JSFunction

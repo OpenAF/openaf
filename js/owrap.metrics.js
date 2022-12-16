@@ -558,6 +558,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
                     _value = _value.replace(/\n/g, "\\\\n").replace(/\\/g, "\\\\").replace(/\"/g, "\\\"")
                     
                     // Adding
+                    if (_key[0] == "_") _key = aPrefix + _key
                     lbs[_key] = "\"" + _value + "\""
                 }
             })

@@ -1975,7 +1975,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						}
 						depInfo[dep].result = true;
 					} else {
-						if (isUnDef(depInf) && !parent.__ojob.depsWait && isUnDef(listTodos)) listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
+						if (isUnDef(depInf) && !parent.__ojob.depsWait && isUnDef(listTodos)) listTodos = $from(this.getTodoCh().getAll()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 						if (isUnDef(depInf) && !parent.__ojob.depsWait && $from(listTodos).equals("name", dep).none()) {
 							// No wait for unexisting deps (depsWait) then exit
 							return true;
@@ -2393,6 +2393,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			var ig = __
 			var res = []
 			var buf = ""
+			var iDot = 0
 		  
 			for(var i = 0; i < s.length; i++) {
 			  if (isUnDef(ig) && (s[i] == '"' || s[i] == "'")) {
@@ -2400,7 +2401,11 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			  } else {
 				if (s[i] == ig) ig = __
 			  }
-			  if (isUnDef(ig) && s[i] == ".") {
+			  
+			  if (s[i] == "(") iDot++
+			  if (s[i] == ")") iDot--
+
+			  if (iDot <= 0 && isUnDef(ig) && s[i] == ".") {
 				res.push(buf)
 				buf = ""
 			  } else {

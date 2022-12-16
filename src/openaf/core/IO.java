@@ -608,8 +608,9 @@ public class IO extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>io.writeFileGzipStream(aFilename) : JavaStream</key>
-	 * Creates and returns a JavaStream to write to a gzip aFilename. For example:\
+	 * <key>io.writeFileGzipStream(aFilename, shouldAppend) : JavaStream</key>
+	 * Creates and returns a JavaStream to write to a gzip aFilename. Optionally if shouldAppend=true
+	 * it will append to an existing file. For example:\
 	 * \
 	 * var stream = io.writeFileGzipStream("afile.txt.gz");\
 	 * ioStreamWrite(stream, "Hello "); // you can also use ioStreamWriteBytes \
@@ -619,8 +620,8 @@ public class IO extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public static Object writeFileGzipStream(String filename) throws IOException {
-		return new GZIPOutputStream(FileUtils.openOutputStream(new File(filename)));
+	public static Object writeFileGzipStream(String filename, boolean shouldAppend) throws IOException {
+		return new GZIPOutputStream(FileUtils.openOutputStream(new File(filename), shouldAppend));
 	}
 	
 	/**

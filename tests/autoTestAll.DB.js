@@ -31,7 +31,7 @@
         var db = createDBInMem("test2", false);
         db.convertDates(true);
 
-        var res = db.q("select 1 i, 1.5 f1, 1.0 f2, 'abc' t, sysdate d from dual").results[0];
+        var res = db.q("select 1 i, 1.5 f1, 1.0 f2, 'abc' t, now() d from dual").results[0];
 
         ow.test.assert(res.I === 1, true, "Problem with db integer conversion");
         ow.test.assert(res.F1 === 1.5, true, "Problem with db float conversion 1");
@@ -40,8 +40,8 @@
         ow.test.assert(Object.prototype.toString.call(res.D) == "[object Date]", true, "Problem with db date conversion");
 
         db.u("create table teste (a varchar(10), b date)");
-        db.u("insert into teste values ('aaa', SYSDATE)");
-        db.u("insert into teste values ('bbb', SYSDATE)");
+        db.u("insert into teste values ('aaa', now())");
+        db.u("insert into teste values ('bbb', now())");
         db.u("insert into teste values ('ccc', null)");
         
         ow.test.assert(db.q("select * from teste").results.length, 3, "Problem with null dates conversion");
