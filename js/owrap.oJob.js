@@ -555,6 +555,10 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 		}
 
 		var _includeLoaded = {};
+		if (isDef(res.ojob) && res.ojob.includeOJob) {
+			if (isUnDef(res.jobsInclude)) res.jobsInclude = []
+			res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
+		}
 		if (isDef(res.include) && isArray(res.include)) {
 			for (var i in res.include) {
 				if (isUnDef(_includeLoaded[res.include[i]])) {
@@ -570,7 +574,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 				if (isUnDef(_includeLoaded[res.jobsInclude[i]])) {
 					_includeLoaded[res.jobsInclude[i]] = 1;
 					var f = this.__loadFile(res.jobsInclude[i], true, true);
-					if (isUnDef(f)) throw "Problem loading job include '" + res.jobsInclude[i] + "'.";
+					if (isUnDef(f)) throw "Problem loading job include '" + res.jobsInclude[i] + "'."
 					res = this.__merge(f, res);
 				}
 			}
