@@ -689,7 +689,21 @@ OpenWrap.format.prototype.string = {
 		_$(pattern, "pattern").isString().$_()
 		scase = _$(scase, "scase").isBoolean().default(false)
 
-		return (new RegExp("^" + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", (scase ? __ : 'i'))).test(str)
+		return (ow.format.string.wildcardRE(pattern, scase)).test(str)
+	},
+    /**
+	 * <odoc>
+	 * <key>ow.format.string.wildcardRE(aPattern, caseSensitive) : RegExp</key>
+	 * Given aPattern using '*' wildcards (to match zero or more characters) or '?' question-mark to
+	 * match a single character will return the corresponding RegExp. Optionally if caseSensitive=true the RegExp will include
+	 * case sensitive option.
+	 * </odoc>
+	 */
+	wildcardRE: (pattern, scase) => {
+		_$(pattern, "pattern").isString().$_()
+		scase = _$(scase, "scase").isBoolean().default(false)
+
+		return new RegExp("^" + pattern.replace(/([.+^${}()|[\]\\])/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", (scase ? __ : 'i'))
 	}
 };
 	
