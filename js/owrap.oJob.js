@@ -707,6 +707,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
+			if (url.endsWith("/")) url += "index.json"
+			
 			var res = $rest({ throwExceptions: true }).get(url);
 			if (isString(res)) {
 				try { res = af.fromYAML(res, true); } catch (e) { }
@@ -1555,6 +1557,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
         // onerror as an alias for catch
 		if (isDef(this.__ojob.onerror) && isUnDef(this.__ojob.catch)) this.__ojob.catch = this.__ojob.onerror;
 		if (isDef(this.__ojob.catch) && !(isString(this.__ojob.catch))) this.__ojob.catch = __;
+
+		if (isNumber(this.__ojob.poolThreadFactor)) __resetThreadPool(this.__ojob.poolThreadFactor)
 
         // Active (push) and passive metrics
 		if (isDef(this.__ojob.metrics)) {
