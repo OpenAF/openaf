@@ -522,6 +522,18 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 					if (isMap(res.ojob.opacks[ii])) includeOPack(Object.keys(res.ojob.opacks[ii])[0], res.ojob.opacks[ii][Object.keys(res.ojob.opacks[ii])[0]]);
 				}
 			}
+
+			if (isDef(res.ojob.owraps) && isArray(res.ojob.owraps)) {
+				for(var ii in res.ojob.owraps) {
+					if (isString(res.ojob.owraps[ii])) {
+						if (isDef(ow["load" + res.ojob.owraps[ii]])) {
+							ow["load" + res.ojob.owraps[ii]]()
+						} else {
+							logErr("owrap '" + res.ojob.owraps[ii] + "' not found!")
+						}
+					}
+				}
+			}
 		
 			if (isDef(res.ojob.loadLibs) && isArray(res.ojob.loadLibs)) {
 				for(var ii in res.ojob.loadLibs) {
