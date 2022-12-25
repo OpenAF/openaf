@@ -7908,10 +7908,17 @@ CSV.prototype.fromFile2Array = function(aFile, withHeadersOrStreamFormat) {
  * </odoc>
  */
 const $fnDef4Help = (aFnName) => {
-	var res = searchHelp(aFnName);
+	_$(aFnName, "aFnName").isString().$_()
+	aFnName = aFnName.replace(/^(global\.|this\.)/, "")
+
+	if (isUnDef(global.__oaf_fnDef_cache)) global.__oaf_fnDef_cache = {}
+	if (isDef(__oaf_fnDef_cache[aFnName])) return __oaf_fnDef_cache[aFnName]
+	var res = searchHelp(aFnName)
 
 	if (isDef(res) && isArray(res) && res.length > 0) {
-		return res[0].fullkey.replace(/ +/g, "").replace(/.+\((.*)\) *:*.*/, "$1").split(/,/);
+		var _r = res[0].fullkey.replace(/ +/g, "").replace(/.+\((.*)\) *:*.*/, "$1").split(/,/)
+		__oaf_fnDef_cache[aFnName] = _r
+		return _r
 	}
 	return []; 
 };
