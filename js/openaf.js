@@ -7069,7 +7069,8 @@ var __flags = _$(__flags).isMap().default({
 	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR    : true,
 	HTTP_TIMEOUT               : __,
-    HTTP_CON_TIMEOUT           : __
+    HTTP_CON_TIMEOUT           : __,
+	DOH_PROVIDER               : "cloudflare"
 })
 
 /**
