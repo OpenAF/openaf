@@ -421,6 +421,9 @@ if (isUnDef(OPENAF_JSON)) {
         log("Added " + OPENAF_JSON + "...");
 }
 
+tempJar.putFile("ojob.json", io.readFileBytes(OPENAF_BUILD_HOME + "/ojob.json"))
+log("Added " + OPENAF_BUILD_HOME + "/ojob.json")
+
 //Build deps
 log("Building dependencies");
 io.writeFileString(OPENAF_BUILD_HOME + "/dependencies.json", stringify(buildDeps()));

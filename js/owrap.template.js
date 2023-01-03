@@ -78,6 +78,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 
 	ow.loadFormat()
 	var obj = {
+		"$": (t, d) => isDef(t) ? t : d,
 		debug: sprint,
 		stringify: stringify,
 		stringifyInLine: s => { return stringify(s, __, "") },

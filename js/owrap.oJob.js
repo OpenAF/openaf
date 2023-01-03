@@ -522,6 +522,18 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 					if (isMap(res.ojob.opacks[ii])) includeOPack(Object.keys(res.ojob.opacks[ii])[0], res.ojob.opacks[ii][Object.keys(res.ojob.opacks[ii])[0]]);
 				}
 			}
+
+			if (isDef(res.ojob.owraps) && isArray(res.ojob.owraps)) {
+				for(var ii in res.ojob.owraps) {
+					if (isString(res.ojob.owraps[ii])) {
+						if (isDef(ow["load" + res.ojob.owraps[ii]])) {
+							ow["load" + res.ojob.owraps[ii]]()
+						} else {
+							logErr("owrap '" + res.ojob.owraps[ii] + "' not found!")
+						}
+					}
+				}
+			}
 		
 			if (isDef(res.ojob.loadLibs) && isArray(res.ojob.loadLibs)) {
 				for(var ii in res.ojob.loadLibs) {
@@ -555,6 +567,10 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 		}
 
 		var _includeLoaded = {};
+		if (isDef(res.ojob) && res.ojob.includeOJob) {
+			if (isUnDef(res.jobsInclude)) res.jobsInclude = []
+			res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
+		}
 		if (isDef(res.include) && isArray(res.include)) {
 			for (var i in res.include) {
 				if (isUnDef(_includeLoaded[res.include[i]])) {
@@ -570,7 +586,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 				if (isUnDef(_includeLoaded[res.jobsInclude[i]])) {
 					_includeLoaded[res.jobsInclude[i]] = 1;
 					var f = this.__loadFile(res.jobsInclude[i], true, true);
-					if (isUnDef(f)) throw "Problem loading job include '" + res.jobsInclude[i] + "'.";
+					if (isUnDef(f)) throw "Problem loading job include '" + res.jobsInclude[i] + "'."
 					res = this.__merge(f, res);
 				}
 			}
@@ -703,6 +719,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
+			if (url.endsWith("/")) url += "index.json"
+			
 			var res = $rest({ throwExceptions: true }).get(url);
 			if (isString(res)) {
 				try { res = af.fromYAML(res, true); } catch (e) { }
@@ -1552,6 +1570,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		if (isDef(this.__ojob.onerror) && isUnDef(this.__ojob.catch)) this.__ojob.catch = this.__ojob.onerror;
 		if (isDef(this.__ojob.catch) && !(isString(this.__ojob.catch))) this.__ojob.catch = __;
 
+		if (isNumber(this.__ojob.poolThreadFactor)) __resetThreadPool(this.__ojob.poolThreadFactor)
+
         // Active (push) and passive metrics
 		if (isDef(this.__ojob.metrics)) {
 			if (isBoolean(this.__ojob.metrics) && this.__ojob.metrics) ow.server.telemetry.passive(__, __, this.__ojob.metrics.openMetrics, this.__ojob.metrics.openMetricsPrefix, this.__ojob.metrics.openMetricsHelp);
@@ -2022,7 +2042,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 	}
 
 	function _run(aExec, args, job, id) {	
-		if (isDef(aJob.typeArgs.noTemplateArgs)) noTemplateArgs = aJob.typeArgs.noTemplateArgs; else noTemplateArgs = true
+		if (isDef(aJob.typeArgs.noTemplateArgs)) noTemplateArgs = aJob.typeArgs.noTemplateArgs; else noTemplateArgs = !parent.__ojob.templateArgs
 		
 		// Find templates on args	
 		if (!noTemplateArgs) {

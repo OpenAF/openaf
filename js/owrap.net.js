@@ -430,15 +430,68 @@ OpenWrap.net.prototype.getDNS = function(aName, aType, aServer) {
 
 /**
  * <odoc>
+ * <key>ow.net.doh(aAddr, aType, aProvider, aCache, aCacheTimeout) : String</key>
+ * Performs a DNS over HTTPs query with aAddr. Optionally you can provide the aType of record (defaults to 'a') and
+ * the DNS over HTTPs aProvider between 'google', 'cloudflare', 'nextdns' and 'local' (that doesn't use DoH but fallbacks to 
+ * Java's DNS resolver). Returns the first IP address found. If aCache is provided (optionally with aCacheTimeout in ms) the results
+ * will be cached.
+ * </odoc>
+ */
+OpenWrap.net.prototype.doh = function(aName, aType, aProvider, aCache, aCacheTimeout) {
+    aProvider = _$(aProvider, "aProvider").isString().default(__flags.DOH_PROVIDER)
+    aType     = _$(aType, "aType").isString().default("a")
+    _$(aName, "aName").isString().$_()
+
+    var _fn = (aN, aT, aP) => {
+        var _r = ow.net.getDoH(aN, aT, aP)
+        if (isArray(_r) && _r.length > 0 && isString(_r[0].data)) {
+            if (_r[0].data.match(/^(\d+[:\.]*)+$/))
+                return _r[0].data
+            else
+                return _fn(_r[0].data)
+        } else {
+            return aN
+        }
+    }
+
+    if (isString(aCache)) {
+        if  ($ch().list().indexOf(aCache) < 0) {
+            // One minute cache timeout by default
+            aCacheTimeout = _$(aCacheTimeout, "aCacheTimeout").isNumber().default(60000)
+            $cache(aCache)
+            .ttl(aCacheTimeout)
+            .maxSize(1000000)
+            .fn(aK => { return { r: _fn(aK.n, aK.t, aK.p) } })
+            .create()
+        }
+
+        var _rs = $cache(aCache).get({ n: aName, t: aType, p: aProvider })
+        if (isDef(_rs) && isDef(_rs.r)) return _rs.r; else return _rs
+    } else {
+        return _fn(aName, aType, aProvider)
+    }
+}
+
+/**
+ * <odoc>
  * <key>ow.net.getDoH(aAddr, aType, aProvider) : Array</key>
  * Performs a DNS over HTTPs query with aAddr. Optionally you can provide the aType of record (defaults to 'a') and
- * the DNS over HTTPs aProvider between 'google' and 'cloudflare'.
+ * the DNS over HTTPs aProvider between 'google', 'cloudflare', 'nextdns' and 'local' (that doesn't use DoH but fallbacks to 
+ * Java's DNS resolver).
  * </odoc>
  */
 OpenWrap.net.prototype.getDoH = function(aName, aType, aProvider) {
-	aProvider = _$(aProvider).default("cloudflare");
+	aProvider = _$(aProvider).default(__flags.DOH_PROVIDER);
  
 	switch (aProvider) {
+       case "local":
+          var _r = ow.net.getDNS(aName, aType)
+          return [{
+            name: _r.Name,
+            type: _r.Type,
+            TTL : _r.TTL,
+            data: _r.Address.getHostAddress()
+          }]
 	   case "google":
 		  var res = $rest({ uriQuery: true }).get("https://8.8.8.8/resolve", {
 			 name: aName,
@@ -446,6 +499,12 @@ OpenWrap.net.prototype.getDoH = function(aName, aType, aProvider) {
 		  });
 		  if (isDef(res.Answer)) return res.Answer;
 		  else return __;
+       case "nextdns":
+          var res = $rest({ uriQuery: true }).get("https://dns.nextdns.io", {
+            name: aName,
+            type: aType
+          })
+          if (isDef(res.Answer)) return res.Answer; else return __
 	   case "cloudflare":
 		  var res = $rest({
 						requestHeaders: {
