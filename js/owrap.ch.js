@@ -2841,8 +2841,10 @@ OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
 		this.jobs[aName] = {};
 		this.channels[aName] = type;
 		this.vers[aName] = nowUTC();
-		ow.ch.lock[aName] = new java.util.concurrent.locks.ReentrantLock();
-		ow.ch.lock2[aName] = new java.util.concurrent.locks.ReentrantLock();
+		sync(() => {
+			ow.ch.lock[aName] = new java.util.concurrent.locks.ReentrantLock()
+			ow.ch.lock2[aName] = new java.util.concurrent.locks.ReentrantLock()
+		}, this)
 	}
 	return this;
 };
