@@ -279,22 +279,33 @@ function ojob_jobhelp() {
 		var hh = $from(oj.jobs).equals("name", job).select({ "name": "n/a", "help": "n/a" })[0];
 		if (isDef(hh) && hh.name == "Help" && isMap(hh.help) && isUnDef(hh.exec) && isDef(oj.help)) hh = __;
 		if (isDef(hh)) {
-			print(hh.name);
-			print(repeat(hh.name.length, '-'));
+			ow.loadFormat()
+			if (!__flags.OJOB_HELPSIMPLEUI) __initializeCon();
+			var simpleUI = __flags.OJOB_HELPSIMPLEUI ? true : !(isDef(__conAnsi) ? __conAnsi : false);
+			if (ow.format.isWindows() && !ansiWinTermCap()) simpleUI = true
+
+			print(simpleUI ? hh.name : ansiColor("BOLD", hh.name));
+			print(simpleUI ? repeat(hh.name.length, '-') : ansiColor("BOLD", repeat(hh.name.length, '-')))
 			print("");
-			if (isString(hh.help))
+			if (isDef(hh.help) && isString(hh.help))
 				print(hh.help);
 			else {
-				print(hh.help.text + "\n");
+				if (isDef(hh.help.text)) print(hh.help.text + "\n")
 				if (isDef(hh.help.expects)) {
-					print("Expects:")
+					print(simpleUI ? "Expects:\n" : ansiColor("BOLD", "Expects:\n"))
 					var ml = $from(hh.help.expects).attach("len", r => r.name.length).max("len").len
-					tprint("{{#each expects}}   {{$f '%" + ml + "s' name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help)
+					if (simpleUI)
+						tprint("{{#each expects}}   {{$f '%" + ml + "s' name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help)
+					else
+					   	tprint("{{#each expects}}   {{$f '%" + ml + "s' name}} - " + ansiColor("BOLD", "{{#if required}}(required) {{/if}}") + ansiColor("ITALIC", "{{{desc}}}") + "\n{{/each}}\n", hh.help)
 				}
 				if (isDef(hh.help.returns)) {
-					print("Returns:")
+					print(simpleUI ? "Returns:\n" : ansiColor("BOLD", "Returns:\n"))
 					var ml = $from(hh.help.returns).attach("len", r => r.name.length).max("len").len
-					tprint("{{#each returns}}   {{$f '%" + ml + "s' name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help)
+					if (simpleUI)
+						tprint("{{#each returns}}   {{$f '%" + ml + "s' name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help)
+					else
+						tprint("{{#each returns}}   {{$f '%" + ml + "s' name}} - " + ansiColor("BOLD", "{{#if required}}(required) {{/if}}") + ansiColor("ITALIC", "{{{desc}}}") + "\n{{/each}}\n", hh.help)
 				}
 			}
 		} else {
