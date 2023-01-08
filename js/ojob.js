@@ -287,12 +287,14 @@ function ojob_jobhelp() {
 			else {
 				print(hh.help.text + "\n");
 				if (isDef(hh.help.expects)) {
-					print("Expects:");
-					tprint("{{#each expects}}   {{name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help);
+					print("Expects:")
+					var ml = $from(hh.help.expects).attach("len", r => r.name.length).max("len").len
+					tprint("{{#each expects}}   {{$f '%" + ml + "s' name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help)
 				}
 				if (isDef(hh.help.returns)) {
-					print("Returns:");
-					tprint("{{#each returns}}   {{name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help);
+					print("Returns:")
+					var ml = $from(hh.help.returns).attach("len", r => r.name.length).max("len").len
+					tprint("{{#each returns}}   {{$f '%" + ml + "s' name}} - {{#if required}}(required) {{/if}}{{{desc}}}\n{{/each}}\n", hh.help)
 				}
 			}
 		} else {
