@@ -557,6 +557,65 @@ jobs:
       if (args.__key != "args") $set(args.__key, _res); else args.size = _res
     }
 
+# -----------------
+- name : ojob print
+  help :
+    text: Prints a message line given an OpenAF template
+    expects:
+    - name: __key
+      desc: Map key to retrieve ('args' for arguments)
+    - name: __path
+      desc: The path to consider from the __key
+    - name: msg
+      desc: The message template to use
+      required: true
+    - name: level
+      desc: The level of the message (info (default) or error)
+  check:
+    in:
+      __key  : isString.default("res")
+      __path : isString.default("@")
+      msg    : isString
+      level  : isString.oneOf(["info","error"]).default("info")
+  exec : |
+    var data = args.__key == "args" ? $path(args, args.__path) : $path($get(args.__key), args.__path)
+
+    switch(args.level) {
+    case "error": tprintErr(args.msg, data); break
+    case "info" : tprint(args.msg, data)   ; break
+    }
+
+# ---------------
+- name : ojob log
+  help :
+    text: Logs a message line given an OpenAF template
+    expects:
+    - name: __key
+      desc: Map key to retrieve ('args' for arguments)
+    - name: __path
+      desc: The path to consider from the __key
+    - name: msg
+      desc: The message template to use
+      required: true
+    - name: level
+      desc: The level of the message (info (default), warn or error)
+    - name: options
+      desc: Extra options to provide to the tlog* functions. See more in the help of tlog, tlogErr and tlogWarn.
+  check:
+    in:
+      __key  : isString.default("res")
+      __path : isString.default("@")
+      msg    : isString
+      level  : isString.oneOf(["info","warn","error"]).default("info")
+      options: isMap.default({})
+  exec : |
+    var data = args.__key == "args" ? $path(args, args.__path) : $path($get(args.__key), args.__path)
+
+    switch(args.level) {
+    case "warn" : tlogWarn(args.msg, data, args.options); break
+    case "error": tlogErr(args.msg, data, args.options) ; break
+    case "info" : tlog(args.msg, data, args.options)    ; break
+    }
 
 # OJOB FUNCTION
 # --------------------
