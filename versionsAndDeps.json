@@ -332,7 +332,7 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.12.5.jar"],
+			"path": ["lib/jackson-core-2.14.1.jar"],
 			"version": "2.12.5",
 			"changes": false,
 			"type": ["java"],
