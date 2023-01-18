@@ -69,6 +69,9 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $get             -- returns the corresponding value for a key on $get\
  *   - $getObj          -- equivalent to $get with the extra parameter for $$.get path\ 
  *   - $dateDiff        -- returns a number of seconds for a provided date optionally (second argument) with minutes, hours, days, months, weeks or years and (third argument) a default value\
+ *   - $switch          -- equivalent to a javascript switch\
+ *   - $case            -- to be used with $switch for each case\
+ *   - $default         -- to be used with $switch for each case\
  * \
  * </odoc>
  */
@@ -79,6 +82,22 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 	ow.loadFormat()
 	var obj = {
 		"$": (t, d) => isDef(t) ? t : d,
+		switch: (value, options) => {
+			this.switch_value = value
+			this.switch_break = false
+			return options.fn(this)
+		},
+		case: (value, options) => {
+			if (value == this.switch_value) {
+			  this.switch_break = true
+			  return options.fn(this)
+			}
+		},
+		default: (value, options) => {
+			if (this.switch_break == false) {
+			  return value
+			}
+		},
 		debug: sprint,
 		stringify: stringify,
 		stringifyInLine: s => { return stringify(s, __, "") },
