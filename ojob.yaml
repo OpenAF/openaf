@@ -1044,7 +1044,7 @@ jobs:
     text: If the provided "condition" is evaluated as true it will execute the "then" jobs otherwise it will execute the "else" jobs
     expects:
     - name: __condition
-      desc: An OpenAF code condition with templating functionality
+      desc: "An OpenAF code condition with templating functionality (example: \"{{abc}} == 123\")"
     - name: __then
       desc: One job or a list of jobs to execute if the "condition" is true
     - name: __else
