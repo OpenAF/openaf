@@ -1305,3 +1305,73 @@ jobs:
     }
 
     if (isString(args.state) && isDef(ow.oJob.setState)) ow.oJob.setState(args.state);
+
+# ----------------
+- name : ojob todo
+  help: 
+    text: "Executes an ojob sub-todo.\nNOTE: doesn't perform any checks for recursive behaviour!"
+    expects:
+    - name: todo
+      desc: A string or array of todo' maps 
+    - name: todo[].name
+      desc: Name of the job to execute
+    - name: todo[].args
+      desc: Arguments to merge (if isolateArgs is not true) with the main job arguments
+    - name: todo[].isolateArgs
+      desc: Boolean to indicate, for a specific todo, that args should be isolated from all others
+    - name: todo[].isolateJob
+      desc: Boolean to indicate, for a specific todo, that the job should run in a different scope (e.g. deps will not work)
+    - name: todo[].templateArgs
+      desc: Boolean to indicate, for a specific todo, to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+    - name: isolateArgs
+      desc: Boolean, false by default, to indicate that args should be isolated from all others
+    - name: isolateJob
+      desc: Boolean, false by default, to indicate that the job should run in a different scope (e.g. deps will not work)
+    - name: templateArgs
+      desc: Boolean, true by default, to indicate to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+    - name: __debug
+      desc: Boolean to indicate that each job execution parameters should be printed before executing
+  check: 
+    in:
+      isolateArgs : toBoolean.isBoolean.default(false)
+      isolateJob  : toBoolean.isBoolean.default(false)
+      templateArgs: toBoolean.isBoolean.default(true)
+      __debug     : toBoolean.isBoolean.default(false)
+  exec : |
+    if (!isString(args.todo) && !isArray(args.todo)) throw "todo needs to be a string or an array"
+
+    if (isString(args.todo)) args.todo = [ args.todo ]
+    args.todo.forEach(j => {
+      if (!isMap(j) && !isString(j)) throw "todo entry needs to be a map or a string (" + af.toSLON(j) + ")"
+      if (isMap(j)) {
+        if (isUnDef(j.name)) throw "no name was provided in (" + af.toSLON(j) + ")"
+
+        j.templateArgs = _$(j.templateArgs, "templateArgs " + j.name).isBoolean().default(args.templateArgs)
+        j.isolateArgs  = _$(j.isolateArgs, "isolateArgs " + j.name).isBoolean().default(args.isolateArgs)
+        j.isolateJob   = _$(j.isolateJob, "isolateJob " + j.name).isBoolean().default(args.isolateJob)
+
+        if (j.templateArgs && isDef(j.args)) {
+          traverse(j.args, (aK, aV, aP, aO) => {
+            if (isString(aV)) {
+              aO[aK] = templify(aV, args)
+            }
+          })
+        }
+        var _j = {
+          name: j.name,
+          args: j.isolateArgs ? j.args : merge(args, j.args),
+          id  : j.isolateJob ? __ : ow.oJob.__id
+        }
+        if (args.__debug) cprint( ow.format.withSideLine(colorify(_j), __, "YELLOW", __, ow.format.withSideLineThemes().openBottomCurvedRect) )
+        $job(_j.name, _j.args, _j.id)
+      }
+      if (isString(j)) {
+        var _j = {
+          name: j,
+          args: args.isolateArgs ? {} : args,
+          id  : args.isolateJob ? __ : ow.oJob.__id
+        }
+        if (args.__debug) cprint( ow.format.withSideLine(colorify(_j), __, "YELLOW", __, ow.format.withSideLineThemes().openBottomCurvedRect) )
+        $job(_j.name, _j.args, _j.id)
+      }
+    })
