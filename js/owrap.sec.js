@@ -56,7 +56,7 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
          io.writeFileString(ff, aMainSecret);
       }
    }
-   ow.sec._sb[aRepo] = new ow.sec.SBucket("___openaf_sbuckets" + rep, aMainSecret, "default", isUnDef(aFile) && aRepo != "system" ? aMainSecret : __);
+   ow.sec._sb[aRepo] = new ow.sec.SBucket("___openaf_sbuckets" + rep, aMainSecret, "default", aRepo != "system" ? aMainSecret : __)
 };
 
 /**
@@ -238,6 +238,22 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
          aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(dLockSecret);
          aBucket     = _$(aBucket, "aBucket").isString().default(dBucket);
          return ow.sec._sb[aRepo].setBucket(aBucket, aLockSecret, aBucketString);
+      },
+      /**
+       * <odoc>
+       * <key>$sec.encSKey(aKey) : String</key>
+       * Given aKey will return the encrypted version of it with the current main sectet for the repo.\
+       * \
+       * Example:\
+       * \
+       *   $sec("test", "b1", $sec("test", __, __, "Password123").encSKey("Password1"), "Password123", "test.yml").set("mysecret", { l:"l", p:"p" })\
+       *   // ...\
+       *   $sec("test", "b1", $sec("test", __, __, "Password123").encSKey("Password1"), "Password123", "test.yml").get("mysecret")\
+       * \
+       * </odoc>
+       */
+      encSKey: aKey => {
+         return af.encrypt(aKey, sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainSecret)).substr(0, 16))
       }
    };
 };
@@ -331,7 +347,7 @@ const __sbucket__encrypt = function(aObj, aMainKey, aKey) {
     if (isDef(aKey)) {
       var mk; 
       try {
-         mk = af.decrypt(Packages.openaf.AFCmdBase.afc.dIP(aKey), sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16));
+         mk = af.decrypt(aKey, sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16))
       } catch(e) {
          mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
       }
@@ -347,7 +363,7 @@ const __sbucket__decrypt = function(aObj, aMainKey, aKey) {
    if (isDef(aKey)) {
       var mk; 
       try {
-         mk = af.decrypt(Packages.openaf.AFCmdBase.afc.dIP(aKey), sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16));
+         mk = af.decrypt(aKey, sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainKey)).substr(0, 16))
       } catch(e) {
          mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
       }
