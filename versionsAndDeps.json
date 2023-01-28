@@ -332,7 +332,7 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.12.5.jar"],
+			"path": ["lib/jackson-core-2.14.1.jar"],
 			"version": "2.12.5",
 			"changes": false,
 			"type": ["java"],
@@ -404,7 +404,7 @@
 			"removable": true,
 			"deps": [
 				"lib/org-eclipse-jgit-5.8.1.jar",
-				"lib/jsch-0.2.1.jar",
+				"lib/jsch-0.2.7.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -467,7 +467,7 @@
 				"lib/commons-io-2.8.0.jar"
 			],
 			"deps": [
-				"lib/jsch-0.2.1.jar",
+				"lib/jsch-0.2.7.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",

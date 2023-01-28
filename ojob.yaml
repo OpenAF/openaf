@@ -1,0 +1,1411 @@
+# Author: Nuno Aguiar
+
+jobs:
+# OJOB DEBUG
+# ----------------
+- name : ojob debug
+  help :
+    text: Outputs the current args and res values to help debug an ojob flow.
+  exec : |
+    ow.loadFormat()
+    print("")
+    cprint( ow.format.withSideLine("ARGS:", __, "YELLOW", "BOLD", ow.format.withSideLineThemes().openBottomCurvedRect) )
+    cprint( ow.format.withSideLine(colorify(args), __, "YELLOW", __, ow.format.withSideLineThemes().openTopCurvedRect) )
+    cprint( ow.format.withSideLine("RES:", __, "YELLOW,BOLD", "BOLD", ow.format.withSideLineThemes().openBottomCurvedRect) )
+    cprint( ow.format.withSideLine(colorify($get("res")), __, "YELLOW,BOLD", __, ow.format.withSideLineThemes().openTopCurvedRect) )
+
+# --------------------
+- name: ojob job debug
+  help: 
+    text   : | 
+      Provides an alternative to print based debug.
+
+      Example:
+        # ----------------
+        - name: Sample job
+          exec: |
+            //@ Declaring array
+            var ar = [ 0, 1, 2, 3, 4, 5 ]
+
+            //@ Start cycle
+            var ii = 0;
+            while(ii < ar.length) {
+              print("II = " + ii)
+              ii++
+              //# ii == 3
+            }
+            //@ End cycle
+            //? ii
+
+            //?s args
+            //?y args
+    expects:
+    - name: job
+      desc: The job to change to include debug
+    - name: jobs
+      desc: The jobs array to change to include debug
+    - name: lineColor
+      desc: The line color around the debug info
+    - name: textColor
+      desc: The text color around the debug info
+    - name: theme
+      desc: The withSideLineThemes theme to use
+    - name: emoticons
+      desc: If emoticons should be used or not
+    - name: signs
+      desc: "A custom map of emoticons (keys: checkpoint, assert and print)"
+    - name: includeTime
+      desc: A boolean value to indicate if a time indication should be included
+  check:
+    in:
+      job        : isString.default(__)
+      jobs       : isArray.default([])
+      lineColor  : isString.default("FG(220)")
+      textColor  : isString.default("BG(230),BLACK")
+      lineError  : isString.default("FG(220)")
+      textError  : isString.default("BG(196),FG(255),BOLD")
+      theme      : isString.default("doubleLineBothSides")
+      emoticons  : toBoolean.isBoolean.default(true)
+      signs      : isMap.default(__)
+      includeTime: toBoolean.isBoolean.default(false)
+  exec: |
+    var OAF_DEBUG_ARGS
+    if (isMap(OAF_DEBUG_ARGS)) args = merge(OAF_DEBUG_ARGS, args)
+    
+    args.signs     = _$(args.signs, "signs").isMap().default({
+      checkpoint: 0x1F37A,
+      assert    : 0x1F44D,
+      print     : 0x1F50E,
+      error     : 0x1F621,
+      time      : "🕒"
+    })
+ 
+    if (isDef(args.job) && args.jobs.length == 0) args.jobs.push(args.job)
+
+    if (isUnDef(getEnv("OJOB_DEBUG")) || toBoolean(getEnv("OJOB_DEBUG"))) {
+      ow.loadFormat()
+      var ch = ow.oJob.getJobsCh()
+
+      if (args.jobs.length == 0) args.jobs = ch.getKeys().filter(j => j.name != "ojob job debug").map(j => j.name)
+
+      var owd = false
+      if (isDef(ow.loadDebug)) {
+        ow.loadDebug()
+        ow.debug.register()
+        owd = true
+      }
+
+      args.jobs.forEach(jj => {
+        var job = ch.get({ name: jj })
+        
+        if (owd) {
+          if (isUnDef(job.lang) || (isDef(job.lang) && (job.lang == "oaf" || job.lang == "js") ) ) {
+            job.exec = ow.debug.debug(job.exec, args, true)
+          }
+        } else {
+          var _m = (s, c) => {
+            var _s = ";try{"
+            if (isDef(c)) _s += "if(" + c + ") {"
+            var _t = (args.includeTime ? "(new Date()).toISOString() +\" | \" + " : "")
+            _s += "cprint(ow.format.withSideLine(" + _t + s + ", __, \"" + args.lineColor + "\", \"" + args.textColor + "\", ow.format.withSideLineThemes()." + args.theme + ")) "
+            if (isDef(c)) _s += "}"
+            _s += "}catch(__e_debug){cprint(ow.format.withSideLine(" + _t + "' " + sign.error + " ' + String(__e_debug), __, \"" + args.lineError + "\", \"" + args.textError + "\", ow.format.withSideLineThemes()." + args.theme + "))};"
+            return _s
+          }
+
+          var sign
+          if (args.emoticons) {
+            sign = args.signs
+            if (isNumber(sign.checkpoint)) sign.checkpoint = ow.format.string.unicode(sign.checkpoint)
+            if (isNumber(sign.assert)) sign.assert = ow.format.string.unicode(sign.assert)
+            if (isNumber(sign.print)) sign.print = ow.format.string.unicode(sign.print)
+            if (isNumber(sign.error)) sign.error = ow.format.string.unicode(sign.error)
+          }
+          sign.checkpoint = _$(sign.checkpoint).default("@")
+          sign.assert     = _$(sign.assert).default("#")
+          sign.print      = _$(sign.print).default("?")
+          sign.error      = _$(sign.error).default("!")
+
+          job.exec = job.exec.split("\n").map(line => {
+            var l
+
+            // checkpoint equivalent
+            l = line.trim().match(/\/\/\@ (.+)$/)
+            if (isArray(l)) {
+              var s = l[1]
+              line = line.replace(/\/\/\@ (.+)$/, _m("\" " + sign.checkpoint + " " + s.replace(/\"/g, "\\\"") + "\""))
+            }
+
+            // assert equivalent
+            l = line.trim().match(/\/\/\# (.+)$/)
+            if (isArray(l)) {
+              var s = l[1]
+              line = line.replace(/\/\/\# (.+)$/, _m("\" " + sign.assert + " " + s + "\"", s))
+            }
+
+            // print equivalent
+            l = line.trim().match(/\/\/\? (.+)$/)
+            if (isArray(l)) {
+              var s = l[1]
+              line = line.replace(/\/\/\? (.+)$/, _m("\" "+ sign.print + " " + s + " = \" + stringify(" + s + ") + \"\""))
+            }
+
+            // slon print equivalent
+            l = line.trim().match(/\/\/\?s (.+)$/)
+            if (isArray(l)) {
+              var s = l[1]
+              line = line.replace(/\/\/\?s (.+)$/, _m("\" " + sign.print + " " + s + " = \" + af.toSLON(" + s + ") + \"\""))
+            }
+
+            // yaml print equivalent
+            l = line.trim().match(/\/\/\?y (.+)$/)
+            if (isArray(l)) {
+              var s = l[1]
+              line = line.replace(/\/\/\?y (.+)$/, _m("\" " + sign.print + " " + s + " = \" + af.toYAML(" + s + ") + \"\""))
+            }
+
+            return line
+          }).join("\n")
+        }
+        
+        ch.set({ name: jj }, job)
+      })
+    }
+
+# OJOB GET
+# ---------------
+- name : ojob get
+  help : 
+    text   : Retrieves a specific map key (or path) using $get
+    expects:
+    - name: __key
+      desc: Map key to retrieve (key is also checked for compatibility)
+    - name: __path
+      desc: The path to consider from the __key
+  check:
+    in:
+      __key : isString.default("res")
+      __path: isString.default("@")
+  exec : |
+    if (isUnDef(args.__key) && isDef(args.key)) args.__key = args.key
+  
+    var res = args.__key == "args" ? $path(args, args.__path) : $path($get(args.__key), args.__path)
+    if (isArray(res)) res = { _list: res }
+    return res
+
+# OJOB SET
+# ---------------
+- name : ojob set
+  help : 
+    text   : Sets a "key" with the current value on a "path" using $set
+    expects:
+    - name: __key
+      desc: Map key
+    - name: __path
+      desc: A key or path to a value from the current args
+  check:
+    in:
+      __key : isString.default("res")
+      __path: isString
+  exec : |
+    var r = $path(args, args.__path)
+  
+    if (isDef(r) && args.__key != "args") $set(args.__key, r)
+
+# OJOB FILE GET
+# --------------------
+- name : ojob file get
+  help :
+    text   : "Retrieves a specific map key (or path) from an YAML or JSON file provided."
+    expects:
+    - name    : __file
+      desc    : The file path to an YAML or JSON file
+      required: true
+    - name: __path
+      desc: Path of the file contents
+    - name: __cache
+      desc: "Boolean value that if false it won't cache the file contents (default: true)"
+    - name: __ttl
+      desc: If cache is enabled lets you define a numeric ttl
+    - name: __out
+      desc: The path on args to set the map key/path contents
+    - name: __key
+      desc: If __out is not defined will set the content into the provided key
+  check:
+    in:
+      __file : isString 
+      __path : isString.default("@")
+      __cache: toBoolean.isBoolean.default(true)
+      __ttl  : isNumber.default(__)
+      __out  : isString.default(__)
+      __key  : isString.default("res")
+  exec : |
+    var res;
+    if (args.__cache) {
+      var c = $cache("__ojob_file_get");
+      if (isDef(args.__ttl)) c= c.ttl(args.__ttl);
+      c = c.fn(aK => {
+        if (isDef(aK.file)) {
+          if (aK.file.endsWith(".json")) {
+            return io.readFileJSON(aK.file);
+          } else {
+            if (/\.ya?ml$/.test(aK.file)) {
+              return io.readFileYAML(aK.file);
+            } else {
+              return { error: "Not an yaml, yml or json file."};
+            }
+          }
+        } else {
+          return {}
+        }
+      })
+      .create();
+
+      res = c.get({ file: args.__file });
+    } else {
+      if (args.__file.endsWith(".json")) {
+        res = io.readFileJSON(args.__file);
+      } else {
+        if (/\.ya?ml$/.test(args.__file)) {
+          res = io.readFileYAML(args.__file);
+        } else {
+          res = { error: "Not an yaml, yml or json file."};
+        }
+      }
+    }
+
+    res = $path(res, args.__path)
+    if (isDef(args.__out)) {
+      $$(args).set(args.__out, res)
+    } else {
+      if (isDef(args.__key)) {
+        $set(args.__key, res)
+      } else {
+        Object.keys(res).forEach(r => $$(args).set(r, res[r]))
+      }
+    }
+
+# OJOB TEMPLATE
+# --------------------
+- name : ojob template
+  help :
+    text: Applies the OpenAF template over the provided data producing an output.
+    expects:
+    - name: __key
+      desc: The key that holds template and/or data (default to 'res'). If 'args' it will use the current arguments.
+    - name: __tpath
+      desc: The path in __key where a string with the template can be found.
+    - name: __dpath
+      desc: The path in __key where a map/array data to use can be found.
+    - name: __out
+      desc: The output will be stored into the provided key (defaults to 'res')
+    - name: template
+      desc: If defined, will be used as template
+    - name: templateFile
+      desc: If defined, it will use the provided template file.
+    - name: data
+      desc: If defined, will be used as data
+    - name: dataFile
+      desc: If defined, it will use the provided data file (either yaml or json).
+    - name: outputFile
+      desc: If defined, the output will be written to the provided file path.
+    returns:
+    - name: output
+      desc: If no outputFile is provided this will hold the output of applying the template with the provided data
+  check:
+    in:
+      __key       : isString.default("res")
+      __tpath     : isString.default("@")
+      __dpath     : isString.default("@")
+      __out       : isString.default("res")
+      templateFile: isString.default(__)
+      dataFile    : isString.default(__)
+      outputFile  : isString.default(__)
+  exec : |
+    ow.loadTemplate()
+
+    ow.template.addConditionalHelpers()
+    ow.template.addFormatHelpers()
+    ow.template.addOpenAFHelpers()
+
+    var data, template
+
+    if (isDef(args.data)) {
+      data = args.data
+    } else {
+      data = args.__key == "args" ? $path(args, args.__dpath) : $path($get(args.__key), args.__dpath)
+    }
+
+    if (isDef(args.dataFile)) {
+      if (args.dataFile.match(/\.ya?ml$/i)) {
+        data = io.readFileYAML(args.dataFile)
+      } else {
+        data = io.readFileJSON(args.dataFile)
+      }
+    }
+
+    if (isDef(args.template)) {
+      template = args.template
+    } else {
+      template = args.__key == "args" ? $path(args, args.__tpath) : $path($get(args.__key), args.__tpath)
+    }
+
+    if (isDef(args.templateFile)) {
+      template = io.readFileString(args.templateFile)
+    }
+
+    if (isDef(args.logJob)) $job(args.logJob, args)
+    var _r = templify(template, data)
+    
+    if (isDef(args.outputFile)) {
+      io.writeFileString(args.outputFile, _r)
+    } else {
+      if (args.__out == "args") {
+        args.output = _r
+      } else {
+        $set(args.__out, { output: _r })
+      }
+    }
+
+# ---------------------------
+- name : ojob template folder
+  help :
+    text: >
+      Given a templateFolder it will execute 'ojob template' for each (recursively), with the provided data, to output to outputFolder.
+      Optionally metaTemplate can be use where each json/yaml file in templateFolder all or part of the arguments for 'ojob template'.
+    expects:
+    - name: templateFolder
+      desc: The original folder where the templates are located.
+      required: true
+    - name: __templatePath
+      desc: If defined, will apply a $path string over the recursive list of files in templateFolder.
+    - name: outputFolder
+      desc: The path where the output should be stored.
+      required: true
+    - name: data
+      desc: If defined, will be used as data
+    - name: dataFile
+      desc: If defined, it will use the provided data file (either yaml or json).
+    - name: __key
+      desc: The key that holds template and/or data (default to 'res'). If 'args' it will use the current arguments.
+    - name: __dpath
+      desc: The path in __key where a map/array data to use can be found.
+    - name: logJob
+      desc: A ojob job to log the 'ojob template' activity (receives the same arguments as 'ojob template')
+    - name: metaTemplate
+      desc: Boolean that if 'true' will interpret any json/yaml file, in the templateFolder, as a map/array of arguments to use when calling 'ojob template' overriden the defaults.
+  check:
+    in:
+      templateFolder: isString
+      __templatePath: isString.default("@")
+      outputFolder  : isString
+      dataFile      : isString.default(__)
+      __key         : isString.default("res")
+      __dpath       : isString.default("@")
+      logJob        : isString.default(__)
+      metaTemplate  : toBoolean.isBoolean.default(false)
+  exec : |
+    var data
+    if (isDef(args.data)) {
+      data = args.data
+    } else {
+      data = args.__key == "args" ? $path(args, args.__dpath) : $path($get(args.__key), args.__dpath)
+    }
+    if (isDef(args.dataFile)) {
+      if (args.dataFile.match(/\.ya?ml$/i)) {
+        data = io.readFileYAML(args.dataFile)
+      } else {
+        data = io.readFileJSON(args.dataFile)
+      }
+    }
+
+    var lst = []
+    $path(listFilesRecursive(args.templateFolder), args.__templatePath).forEach(f => {
+      var _d = {
+        templateFile : f.filepath,
+        outputFile   : f.filepath.replace(new RegExp("^" + args.templateFolder), args.outputFolder),
+        data         : data,
+        logJob       : args.logJob
+      }
+      if (args.metaTemplate && f.filename.match(/\.(ya?ml|json)$/i)) {
+        var _t
+        if (f.filename.match(/\.ya?ml$/i)) {
+          _t = io.readFileYAML(f.filepath)
+        } else {
+          _t = io.readFileJSON(f.filepath)
+        }
+        delete _d.templateFile
+
+        if (isMap(_t)) {
+          if (isDef(_t.outputFile) && !_t.outputFile.startsWith("/")) _t.outputFile = args.outputFolder + "/" + _t.outputFile
+          lst.push(merge(_d, _t))
+        }
+        if (isArray(_t)) {
+          lst = lst.concat(_t.map(_r => {
+            if (isDef(_r.outputFile) && !_r.outputFile.startsWith("/")) _r.outputFile = args.outputFolder + "/" + _r.outputFile
+            return merge(_d, _r)
+          }))
+        }
+      } else {
+        lst.push(_d)
+      }
+    })
+
+    io.mkdir(args.outputFolder)
+    $job("ojob template", lst)
+
+# ------------------------
+- name : ojob find/replace
+  help :
+    text   : Performs an in-memory find/replace on a provided string or file and outputs to args.output or, optionally, to a file.
+    expects:
+    - name: __key
+      desc: The key that holds template and/or data (default to 'res'). If 'args' it will use the current arguments.
+    - name: __path
+      desc: The path in __key where a map of replacements ([text/regexp]:[replace text]) can be found.
+    - name: inputKey
+      desc: If defined, indicates the key that holds the string of data to replace.
+    - name: inputPath
+      desc: If defined with inputKey, indicates the path to use to select the string of data to replace.
+    - name: inputFile
+      desc: If defined the contents to be replaced will be read from the inputFile.
+    - name: outputFile
+      desc: If defined will output of the content replacement to the defined file.
+    - name: useRegExp
+      desc: Boolean value to determine if the map of replacements will be interpreted as a regexp or text.
+    - name: logJob
+      desc: Optionally provide a logging job with the current args and __op with 'read' or 'write'
+    returns:
+    - name: output
+      desc: If outputFile is not defined the output will contain the content replacement 
+  check: 
+    in:
+      __key     : isString.default("res")
+      __path    : isString.default("@")
+      inputKey  : isString.default(__)
+      inputPath : isString.default(__)
+      inputFile : isString.default(__)
+      outputFile: isString.default(__)
+      useRegExp : toBoolean.isBoolean.default(false)
+      logJob    : default(__)
+  exec : |
+    var data = $path((args.__key == "args" ? args : $get(args.__key), args.__path)
+    _$(data, "__key data").isMap().$_()
+
+    if (isUnDef(args.inputKey) && isUnDef(args.inputFile)) throw "Need args inputKey or inputFile"
+
+    var escapeRegExp = aString => aString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+    args.__op = "read"
+    if (isDef(args.logJob)) $job(args.logJob, args)
+
+    var content
+    if (isDef(args.inputKey)) {
+      content = $path((args.__key == "args" ? args : $get(args.__key), args.__path)
+    } else {
+      content = io.readFileString(args.inputFile)
+    }
+
+    Object.keys(data).forEach(k => {
+      content = content.replace(new RegExp(args.useRegExp ? k : escapeRegExp(k), "g"), data[k])
+    })
+
+    args.__op = "write"
+    if (isDef(args.logJob)) $job(args.logJob, args)
+    if (isDef(args.outputFile)) {
+      io.writeFileString(args.outputFile, content)
+    } else {
+      args.output = content
+    }
+
+# OJOB CHANNEL
+# ------------
+- name : ojob channel
+  help :
+    text: Provides a set of operations over an OpenAF channel
+    expects:
+    - name: __name
+      desc: The name of the OpenAF channel to use
+      required: true
+    - name: __op
+      desc: The operation to perform (e.g. setall, set, get, unset, unsetall, getkeys, getall and size)
+      required: true
+    - name: __key
+      desc: The key from where to retrieve the operation arguments (args to retrive from arguments)
+    - name: __kpath
+      desc: If defined, the path over the values retrieved from __key where the key or keys of the operation are defined
+    - name: key
+      desc: If defined, the key to use with the operations set, get and unset
+    - name: keys
+      desc: If defined, the set of fields to use with the operations setall and unsetall
+    - name: value
+      desc: If defined, the value to use with the operations set, get and unset
+    - name: values
+      desc: If defined, an array of values to use with the operations setall and unsetall
+    - name: __vpath
+      desc: If defined, the path over the values retrieved from __key where the value or values of the operation are defined
+    - name: extra
+      desc: If defined, will provide an extra argument (usually a map), depending on channel type, for the getall and getkeys operations.
+    returns:
+    - name: _list
+      desc: If __key == 'args' will return the results of getall and getkeys
+    - name: _map
+      desc: If __key == 'args' will return the results of get
+    - name: size
+      desc: If __key == 'args' will return the size of the channel
+  check:
+    in:
+      __name  : isString
+      __op    : isString
+      key     : default(__)
+      keys    : default(__)
+      value   : default(__)
+      values  : default(__)
+      __kpath : isString.default(__)
+      __vpath : isString.default(__)
+      extra   : default(__)
+      __key   : default("res")
+  exec : |
+    var getKV = () => {
+      var r = { k: __, v: __ }
+
+      if (isDef(args.key)) r.k = args.key
+      if (isDef(args.keys)) r.k = args.keys
+      if (isDef(args.value)) r.v = args.value
+      if (isDef(args.values)) r.v = args.values
+      if (args.__key == "args") {
+        if (isDef(args.__kpath)) r.k = $path(args, args.__kpath)
+        if (isDef(args.__vpath)) r.v = $path(args, args.__vpath)   
+      } else {
+        if (isDef(args.__kpath)) r.k = $path($get(args.__key), args.__kpath)
+        if (isDef(args.__vpath)) r.v = $path($get(args.__key), args.__vpath) 
+      }
+      return r 
+    }
+    switch (args.__op.toLowerCase()) {
+    case "getall":
+      var _res = $ch(args.__name).getAll(args.extra)
+      if (isUnDef(_res)) _res = []
+      if (args.__key != "args") $set(args.__key, _res); else args._list = _res
+      break
+    case "setall":
+      var _r = getKV()
+      $ch(args.__name).setAll(_r.k, _r.v)
+      break
+    case "set":
+      var _r = getKV()
+      $ch(args.__name).set(_r.k, _r.v)
+      break
+    case "get":
+      var _r = getKV()
+      var _res = $ch(args.__name).get(_r.k)
+      if (isUnDef(_res)) _res = {}
+      if (args.__key != "args") $set(args.__key, _res); else args._map = _res
+      break
+    case "unset":
+      var _r = getKV()
+      $ch(args.__name).unset(_r.k)
+      break
+    case "unsetall":
+      var _r = getKV()
+      $ch(args.__name).unsetAll(_r.k, _r.v)
+      break
+    case "getkeys":
+      var _res = $ch(args.__name).getKeys(args.extra)
+      if (isUnDef(_res)) _res = []
+      if (args.__key != "args") $set(args.__key, _res); else args._list = _res
+      break
+    case "size":
+      var _res = $ch(args.__name).size()
+      if (isUnDef(_res)) _res = -1
+      if (args.__key != "args") $set(args.__key, _res); else args.size = _res
+    }
+
+# -----------------
+- name : ojob print
+  help :
+    text: Prints a message line given an OpenAF template
+    expects:
+    - name: __key
+      desc: Map key to retrieve ('args' for arguments)
+    - name: __path
+      desc: The path to consider from the __key
+    - name: msg
+      desc: The message template to use
+      required: true
+    - name: level
+      desc: The level of the message (info (default) or error)
+  check:
+    in:
+      __key  : isString.default("res")
+      __path : isString.default("@")
+      msg    : isString
+      level  : isString.oneOf(["info","error"]).default("info")
+  exec : |
+    var data = args.__key == "args" ? $path(args, args.__path) : $path($get(args.__key), args.__path)
+
+    switch(args.level) {
+    case "error": tprintErr(args.msg, data); break
+    case "info" : tprint(args.msg, data)   ; break
+    }
+
+# ---------------
+- name : ojob log
+  help :
+    text: Logs a message line given an OpenAF template
+    expects:
+    - name: __key
+      desc: Map key to retrieve ('args' for arguments)
+    - name: __path
+      desc: The path to consider from the __key
+    - name: msg
+      desc: The message template to use
+      required: true
+    - name: level
+      desc: The level of the message (info (default), warn or error)
+    - name: options
+      desc: Extra options to provide to the tlog* functions. See more in the help of tlog, tlogErr and tlogWarn.
+  check:
+    in:
+      __key  : isString.default("res")
+      __path : isString.default("@")
+      msg    : isString
+      level  : isString.oneOf(["info","warn","error"]).default("info")
+      options: isMap.default({})
+  exec : |
+    var data = args.__key == "args" ? $path(args, args.__path) : $path($get(args.__key), args.__path)
+
+    switch(args.level) {
+    case "warn" : tlogWarn(args.msg, data, args.options); break
+    case "error": tlogErr(args.msg, data, args.options) ; break
+    case "info" : tlog(args.msg, data, args.options)    ; break
+    }
+
+# OJOB FUNCTION
+# --------------------
+- name : ojob function
+  help :
+    text : |
+      Executes the provided function mapping any args to the function arguments using the odoc help available for the provided function.
+      Note: accessing odoc might be slow on a first execution.
+    expects:
+    - name: __key
+      desc: The key string to retrieve previous results (defaults to 'res')
+      required: true
+    - name: __fn
+      desc: The function to execute
+    - name: __path
+      desc: If defined the args path for the function arguments to consider
+    - name: __fnPath
+      desc: If defined the args path where to set the function result
+  check:
+    in:
+      __fn : isString
+      __key: isString.default("res")
+  exec: |
+    if (args.__fn.indexOf(".") < 0) args.__fn = "global." + args.__fn; 
+    var res = $fnM(args.__fn, (isDef(args.__path) ? $path(args, args.__path) : args));
+    if (isString(args.__fnPath)) res = $$({}).set(args.__fnPath, res);
+    if (isString(args.__key)) $set(args.__key, res); else args = merge(args, res)
+
+# OJOB OUTPUT
+# -----------------
+- name: ojob output
+  help: 
+    text   : Prints the current arguments to the console.
+    expects:
+    - name: __key
+      desc: The key string to retrieve previous results (defaults to 'res'). If "args" will retrieve from current args.
+    - name: __path
+      desc: A path string to a map/array over the results set on key. 
+    - name: __format
+      desc: The output format (e.g. see ow.oJob.output help)
+    - name: __title
+      desc: Encapsulates the output map/array with a title key.
+    - name: __internal
+      desc: Boolean value that if true it will display the internal oJob entries on the arguments (default false)
+  exec: |
+    if (isUnDef(args.__key) && isDef(args.key)) args.__key = args.key
+    if (isUnDef(args.__path) && isDef(args.path)) args.__path = args.path
+    if (isUnDef(args.__format) && isDef(args.format)) args.__format = args.format
+    if (isUnDef(args.__title) && isDef(args.title)) args.__title = args.title
+    if (isUnDef(args.__internal) && isDef(args.internal)) args.__internal = args.internal
+
+    args.__key = _$(args.__key, "key").isString().default("res");
+    var res    = args.__key == "args" ? args : $get(args.__key)
+    if (isUnDef(res)) res = args;
+    if (isDef(res) && !toBoolean(args.__internal)) {
+       delete res.objId;
+       delete res.execid;
+       delete res.id;
+    }
+
+    if (isDef(args.format)) { args.__format = args.format; delete args.format; }
+    if (isDef(args.__path)) { res = $path(res, args.__path); delete args.__path; }
+    if (isMap(res) && isDef(res._list)) res = res._list;
+    if (isMap(res) && isDef(res._map))  res = res._map;
+
+    if (isDef(args.__title)) {
+      var r = {}; r[args.__title] = res;
+      ow.oJob.output(r, args);
+    } else {
+      ow.oJob.output(res, args);
+    }
+
+# OJOB FINAL REPORT
+# -------------------------------
+- name        : ojob final report
+  to          : ojob report
+  type        : shutdown
+  help        : 
+    text: Outputs a jobs report (e.g. job name, status, number of executions, total time, avg time and last execution) upon ojob termination
+    expects:
+    - name: __format
+      desc: Can be json, yaml, table (default) or any other ow.oJob.output format
+
+# OJOB REPORT
+# -------------------------
+- name        : ojob report
+  help        : 
+    text: Outputs a jobs report (e.g. job name, status, number of executions, total time, avg time and last execution)
+    expects:
+    - name: __format
+      desc: Can be json, yaml, table (default) or any other ow.oJob.output format
+  exec        : |
+    ow.loadFormat(); print("\n");
+
+    var logs = $ch("oJob::log").getAll();
+    var report = $from(logs)
+                 .notEquals("name", "ojob report")
+                 .notEquals("name", "ojob final report")
+                 .select(r => ({
+          "Job name"  : r.name,
+          "Status"    : (r.start ? (r.success ? "OK" : (r.deps ? (r.error ? "NOT OK!" : "executing") : "failed deps")) : "not started"),
+          "# execs"   : r.count,
+          "Total time": ow.format.elapsedTime4ms(r.totalTime, { abrev: true }),
+          "Avg time"  : ow.format.elapsedTime4ms(r.avgTime, { abrev: true }),
+          "Last exec" : (r.log.length > 0 ? ow.format.timeago($from(r.log).sort("-endTime").at(0).endTime) : "n/a")
+      }));
+
+    report.push({
+      "Job name"  : "TOTAL:",
+      "Status"    : "",
+      "# execs"   : "",
+      "Total time": ow.format.elapsedTime4ms((now() - $from(logs).sort("createDate").at(0).createDate)),
+      "Avg time"  : "",
+      "Last exec" : ""
+    });
+
+    args.__format = _$(args.__format).default("table");
+    ow.oJob.output(report, args);
+
+# OJOB SWITCH
+# ------------------
+- name: ojob options
+  help: 
+    text: |
+      Adds new "todo" entries depending on the value of a provided args variable.
+
+      Example:
+
+        __optionOn : mode
+        __lowerCase: true
+        __todos    :
+          mode1:
+          - Job 1
+          - Job 2
+          mode2:
+          - Job 2
+          - Job 3
+        __default:
+        - Job 2
+    expects:
+    - name: __optionOn
+      desc: The variable in args that will define which set of "todo"s will be added (trimmed)
+      required: true
+    - name: __lowerCase
+      desc: Boolean value to determine if should compare the optionOn in lower case (defaults to false)
+    - name: __upperCase
+      desc: Boolean value to determine if should compare the optionOn in upper case (defaults to false)
+    - name: __todos
+      desc: Map where each option value should have a list/array of "todo"s
+      required: true
+    - name: __default
+      desc: Default array of "todo"s
+    - name: __async
+      desc: Boolean value that if true, run the todos in async mode
+  check:
+    in:
+      __optionOn : isString
+      __todos    : isMap
+      __lowerCase: toBoolean.isBoolean.default(false)
+      __upperCase: toBoolean.isBoolean.default(false)
+      __default  : default([])
+      __async    : toBoolean.isBoolean.default(false) 
+  exec: |
+    if (isUnDef(args.__optionOn) && isDef(args.optionOn)) args.__optionOn = args.optionOn
+    if (isUnDef(args.__todos) && isDef(args.todos)) args.__todos = args.todos
+    if (isUnDef(args.__lowerCase) && isDef(args.lowerCase)) args.__lowerCase = args.lowerCase
+    if (isUnDef(args.__upperCase) && isDef(args.upperCase)) args.__upperCase = args.upperCase
+    if (isUnDef(args.__default) && isDef(args.default)) args.__default = args.default
+
+    if (isString(args.__default)) args.__default = [ args.__default ]
+
+    var todoValue = String(args[args.__optionOn]).trim();
+    if (args.__lowerCase) todoValue = todoValue.toLowerCase()
+    if (args.__upperCase) todoValue = todoValue.toUpperCase()
+
+    var res = {}, iargs = clone(args)
+    delete iargs.__default
+    delete iargs.__lowerCase
+    delete iargs.__upperCase
+    delete iargs.__todos
+    delete iargs.__optionOn
+    delete iargs.__async
+
+    var rj = job => (isMap(job) ? $job(job.name, merge(job.args, merge(iargs, res))) : $job(job, merge(iargs, res)))
+    if (isDef(args.__todos[todoValue]) && isString(args.__todos[todoValue])) args.__todos[todoValue] = [ args.__todos[todoValue] ]
+    if (isDef(args.__todos[todoValue]) && isArray(args.__todos[todoValue])) {
+      args.__todos[todoValue].forEach(j => {
+        if (args.__async) 
+          $do(() => res = rj(j) )
+        else 
+          res = rj(j)
+      })
+    } else {
+      args.__default.map(j => {
+        if (args.__async) 
+          $do(() => res = rj(j) )
+        else 
+          res = rj(j)
+      })
+    }
+    
+# OJOB SEC GET
+# -------------------
+- name : ojob sec get
+  help : 
+    text   : This job will get a SBucket secret and map it to oJob's args
+    expects:
+    - name: secIn
+      desc: The args path where all the remaining sec arguments should be read from (defaults to no path)
+    - name: "[secIn].secOut"
+      desc: The args path to be mapped with the secret (defaults to secIn)
+    - name: "[secIn].secKey"
+      desc: The SBucket key
+    - name: "[secIn].secRepo"
+      desc: The SBucket repository
+    - name: "[secIn].secBucket"
+      desc: The SBucket name
+    - name: "[secIn].secPass"
+      desc: The SBucket password
+    - name: "[secIn].secMainPass"
+      desc: The SBucket repository password
+    - name: "[secIn].secFile"
+      desc: Optional provide a specific sbucket file
+    - name: "[secIn].secDontAsk"
+      desc: Determine if passwords should be asked from the user (default=false)
+    - name: "[secIn].secIgnore"
+      desc: If true will ignore errors of sec parameters not being provided (default=false)
+    returns:
+    - name: "[secIn].[secOut]"
+      desc: The args path to be mapped with the secret (defaults to secIn)
+  check:
+    in:
+      secIn: isString.default("")
+  exec : |
+    ow.loadSec()
+    var secIn = args.secIn
+    if (secIn != "") secIn += ".";
+
+    var secIgnore   = _$($$(args).get(secIn + "secIgnore"), "secIgnore").isBoolean().default(false);
+    var secOut      = _$($$(args).get(secIn + "secOut"), "secOut").default(secIn != "" ? secIn.replace(/\.$/, "") : __);
+    if (!secIgnore) _$($$(args).get(secIn + "secKey"), "secKey").$_();
+    var secDontAsk  = toBoolean( _$($$(args).get(secIn + "secDontAsk"), "secDontAsk").default(false) );
+    var secKey      = _$($$(args).get(secIn + "secKey"), "secKey").default(__);
+    var secBucket   = _$($$(args).get(secIn + "secBucket"), "secBucket").default(__);
+    var secPass     = _$($$(args).get(secIn + "secPass"), "secPass").default(__);
+    var secFile     = _$($$(args).get(secIn + "secFile"), "secFile").default(__);
+    var secRepo     = _$($$(args).get(secIn + "secRepo"), "secRepo").default(__);
+    var secMainPass = _$($$(args).get(secIn + "secMainPass"), "secMainPass").default(__);
+
+    if (!secDontAsk && isDef(secKey)) {
+       secBucket = askDef(secBucket, "Sec bucket: ");
+       if (isDef(secBucket) && isUnDef(secFile)) secPass = askDef(secPass, "Sec bucket '" + secBucket + "' pass: ", true);
+       if (isDef(secRepo))                       secMainPass = askDef(secMainPass, "Sec repo '" + secRepo + "' pass: ", true);
+    }
+
+    if (isUnDef(secPass) && isDef(args.secPass))         secPass = args.secPass
+    if (isUnDef(secMainPass) && isDef(args.secMainPass)) secMainPass = args.secMainPass
+
+    if (isDef(secKey)) {
+       var res = $sec(secRepo, secBucket, secPass, secMainPass, secFile).get(secKey);
+       if (isUnDef(res)) throw "Couldn't retrieve secKey '" + secKey + "' from bucket '" + secBucket + "'!";
+       if (isDef(secOut) && secOut.length > 0) {
+         var prev = $$(args).get(secOut);
+         $$(args).set(secOut, (isDef(prev) ? merge(prev, res) : res));
+       } else {
+         Object.keys(res).forEach(r => $$(args).set(r, res[r]));
+       }
+    } 
+
+# OJOB SPLIT TO ITEMS
+# --------------------------
+- name : ojob split to items
+  help : 
+    text: | 
+      Splits an args source into an array of maps (_list).
+
+      Example:
+
+        a source string with the value "abc, xyz, 1"
+        + separator = ','
+        transforms into:
+
+        - item: abc
+        - item: xyz
+        - item: 1
+    expects:
+    - name: source
+      desc: A object path to the string source to split
+    - name: separator
+      desc: The separator for the source string (defaults to \n)
+  exec: |
+    _$(args.source, "source").isString().$_();
+    args.separator = _$(args.separator, "separator").isString().default("\n");
+
+    ow.loadObj();
+    args._list = String(ow.obj.getPath(args, args.source)).split(args.separator).map(r => {
+      return { item: r };
+    });
+
+# OJOB QUERY
+# -----------------
+- name : ojob query
+  help : 
+    text: Performs a query (using ow.obj.filter) to the existing args.
+    expects:
+    - name: __query
+      desc: The query map for ow.obj.filter
+    - name: __from
+      desc: The path to the args key to perform the query
+    - name: __to
+      desc: The path to where the results should be stores
+    - name: __key
+      desc: If __from and __to not provided defaults to $get/$set on the provided key
+  exec : |
+    if (isUnDef(args.__from) && isDef(args.from)) args.__from = args.from
+    if (isUnDef(args.__key) && isDef(args.key)) args.__key = args.key
+    if (isUnDef(args.__query)) args.__query = {}
+
+    if (isUnDef(args.__from) && isUnDef(args.__key)) args.__key = "res"
+    var f = isDef(args.__from) ? $path(args, args.__from) : $get(args.__key)
+   
+    ow.loadObj()
+    var res = ow.obj.filter(f, args.__query)
+    if (isUnDef(args.__from) && isDef(args.__key)) { 
+      $set(args.__key, res)
+    } else { 
+      if (isDef(args.__to)) {
+        $$(args).set(args.__to, res)
+      } else {
+        if (isDef(args.__from)) {
+          $$(args).set(args.__from, res)
+        } else {
+          return isArray(res) ? { _list: res } : res 
+        }
+      }
+    }
+
+# OJOB ENV
+# --------
+- name : ojob set envs
+  help : 
+    text: Sets job args based on environment variables.
+    expects:
+    - name: envs
+      desc: A map where each key corresponds to an environment variable and the value to the args path where it should be placed
+  check:
+    in:
+      envs: isMap
+  exec : |
+    Object.keys(args.envs).forEach(key => {
+      var p = args.envs[key];
+      var v = getEnv(key);
+      if (isDef(v) && !isNull(v)) $$(args).set(String(p), String(v));
+    });
+
+# OJOB CONTROL
+# ------------
+
+# --------------
+- name : ojob if
+  help :
+    text: If the provided "condition" is evaluated as true it will execute the "then" jobs otherwise it will execute the "else" jobs
+    expects:
+    - name: __condition
+      desc: "An OpenAF code condition with templating functionality (example: \"{{abc}} == 123\")"
+    - name: __then
+      desc: One job or a list of jobs to execute if the "condition" is true
+    - name: __else
+      desc: One job or a list of jobs to execute if the "condition" is false
+    - name: __debug
+      desc: Boolean to indicate if should log the original condition and the parsed condition for debug proposes
+  check:
+    in:
+      __condition: isString
+      __then     : default([])
+      __else     : default([])
+      __debug    : toBoolean.isBoolean.default(false)
+  exec : |
+    if (isString(args.__then)) args.__then = [ args.__then ]
+    if (isString(args.__else)) args.__else = [ args.__else ]
+
+    var c = String(args.__condition)
+    delete args.__condition
+
+    var t = clone(args.__then)
+    delete args.__then
+
+    var e = clone(args.__else)
+    delete args.__else
+
+    var d = Boolean(args.__debug)
+    delete args.__debug
+
+    var expr = templify(c, args).replace(/\n/g, "")
+    if (d) log(" DEBUG | " + af.toSLON({ origCondition: " "+c+" ", parsedCondition: " "+expr+" " }))
+
+    var res = af.eval(expr)
+    if (d) log(" DEBUG | " + af.toSLON({ origCondition: " "+c+" ", result: res }))
+
+    var fn = j => {
+      if (isString(j))               $job(j, args)
+      if (isMap(j) && isDef(j.name)) $job(j.name, j.args)
+    }
+    if (res) t.forEach(fn); else e.forEach(fn)
+
+# ------------------
+- name : ojob repeat
+  help : 
+    text: Repeats sequentially, for a specific number of "times", the provided list of "jobs" (one or more)
+    expects:
+    - name: __times
+      desc: The number of times to repeat the provided list of jobs
+    - name: __jobs
+      desc: One job or a list of jobs to execute each time
+  check:
+    in:
+      __times: toNumber.isNumber
+  exec : |
+    if (!(isString(args.__jobs) || isArray(args.__jobs))) throw "The provided 'jobs' need to be one or a list of jobs."
+    if (isUnDef(args.__jobs)) throw "No 'jobs' list was provided."
+
+    if (isString(args.__jobs)) args.__jobs = [ args.__jobs ]
+    var njobs = clone(args.__jobs)
+    delete args.__jobs
+
+    var ntimes = Number(args.__times)
+    delete args.__times
+
+    for(var n = 0; n < ntimes; n++) {
+      njobs.forEach(j => $job(j, args))
+    }
+
+# ----------------------------
+- name : ojob repeat with each
+  help : 
+    text: Repeats the configured "jobs" (one or more jobs) sequentially for each element of the provided "key" list.
+    expects:
+    - name: __key
+      desc: The key for an existing list or args
+    - name: __path
+      desc: The path to consider from __key
+    - name: __jobs
+      desc: One job or a list of jobs to execute each time
+  check:
+    in:
+      __key : isString
+      __path: isString.default("@")
+  exec : |
+    if (!(isString(args.__jobs) || isArray(args.__jobs))) throw "The provided 'jobs' need to be one or a list of jobs."
+    if (isUnDef(args.__jobs)) throw "No 'jobs' list was provided."
+
+    var ak = String(args.__key)
+    var ap = String(args.__path)
+    delete args.__key
+    delete args.__path
+
+    if (isString(args.__jobs)) args.__jobs = [ args.__jobs ]
+    var njobs = clone(args.__jobs)
+    delete args.__jobs
+
+    var arr = ak == "args" ? $path(args, ap) : $path($get(ak), ap)
+    if (!isArray(arr)) throw "The key/path '" + ak + "' is not an array/list."
+    arr.forEach(elem => {
+      njobs.forEach(j => $job(j, merge(args, elem)))
+    })
+
+# OJOB JOB
+# --------
+
+# ---------------
+- name : ojob job
+  help : 
+    text: |
+      Provides a way to organize idempotent jobs. One or more "checks" jobs will be called to determine an args._action.
+      Initially the args._action is set to "none". If the "checks" jobs determine an action it will call the corresponding
+      jobs on "actions" jobs. If "_go=true" is not provided, instead of running, it will only return a plan of actions. 
+      For example:
+
+        - name: Write Hello World
+          to  : ojob job
+          args:
+            _checks : Check Hello World
+            _actions:
+              create   : Create Hello World
+              overwrite: Overwrite Hello World
+              delete   : Delete Hello World
+    expects:
+    - name: _checks
+      desc: A list of one or more jobs to be called to perform checks to determine an args._action
+    - name: _actions
+      desc: A map of possible values of args._action whose values are one or more jobs to execute
+    - name: _go
+      desc: A boolean value (defaults to false) that controls if the _actions jobs are called (when true) or not
+  check:
+    in:
+      _go: toBoolean.isBoolean.default(false)
+  exec : |
+    if (isString(args._checks))  args._checks  = [ args._checks ]
+    if (isString(args._actions)) args._actions = { none: args._actions }
+    
+    var hideArgs = ar => {
+      var nar = clone(ar)
+      delete nar._checks
+      delete nar._actions
+      return nar
+    }
+
+    args._action = "none"
+    args._checks.forEach(r => {
+      if (isString(r)) {
+        var res = $job(r, hideArgs(args))
+        if (isMap(res) && isString(res._action)) args._action = res._action 
+      } else {
+        logErr("oJob Job 'checks' must be job names")
+      }
+    })
+
+    $ch("_ojob_plan").create()
+    $ch("_ojob_plan").get({ name: job.name })
+    var plan = []
+
+    if (isDef(args._actions[args._action])) {
+       // Do the action(s)
+       var acts
+       if (isArray(args._actions[args._action]))  acts = args._actions[args._action]
+       if (isString(args._actions[args._action])) acts = [ args._actions[args._action] ]
+       acts.forEach(s => {
+         if (args._go) {
+           $job(s, hideArgs(args))
+         } else {
+           plan.push(s)
+         }
+       })
+    }
+
+    $ch("_ojob_plan").set({ name: job.name }, { 
+      name: job.name,
+      action: args._action,
+      "go?": args._go,
+      plan: plan
+    })
+
+# ----------------------
+- name : ojob job report
+  help : 
+    text: Outputs a job jobs report (e.g. job name, action and plan)
+    expects:
+    - name: __format
+      desc: Can be json, yaml, table (default) or any other ow.oJob.output format
+  exec : |
+    ow.oJob.output($ch("_ojob_plan").getAll(), { __format: _$(args.__format).default("table") })
+    
+# ----------------------------
+- name : ojob job final report
+  type : shutdown
+  to   : ojob job report
+  help : 
+    text: Outputs a job jobs report (e.g. job name, action and plan) upon ojob termination
+    expects:
+    - name: __format
+      desc: Can be json, yaml, table (default) or any other ow.oJob.output format
+
+# OJOB STATE
+# --------------------
+- name: ojob set state
+  help: 
+    text: Changes the current state.
+    expects:
+    - name: __state
+      desc: The state to change to (to execute todo.when)
+  exec: |
+    if (isUnDef(args.__state) && isDef(args.state)) args.__state = args.state
+
+    _$(args.__state, "state").isString().$_();
+    ow.oJob.setState(args.__state);
+
+# --------------------
+- name: ojob get state
+  help: 
+    text: Gets the current state into args.state.
+    returns:
+    - name: state
+      desc: The current state
+  exec: |
+    args.state = ow.oJob.getState();
+
+# ----------------
+- name: ojob state
+  help: 
+    text: | 
+      Changes the current state depending on the value of a provided args variable.
+
+        Example:
+
+          stateOn  : mode
+          lowerCase: true
+          default  : Help
+    expects:
+    - name: stateOn
+      desc: The variable in args that will define the current global set (to execute todo.when)
+    - name: lowerCase
+      desc: A boolean value to determine if should compare the stateOn in lower case (defaults to false)
+    - name: upperCase
+      desc: A boolean value to determine if should compare the stateOn in upper case (defaults to false)
+    - name: validStates
+      desc: An array of valid states to change to. If not included the default will be choosen (or none).
+    - name: default
+      desc: Default value of state
+  check:
+    in:
+      stateOn  : isString.default("state")
+      lowerCase: toBoolean.isBoolean.default(false)
+      upperCase: toBoolean.isBoolean.default(false)
+      default  : default(__) 
+  exec : |
+    args.state     = _$(args[args.stateOn], args.stateOn).default(args.default);
+    if (args.lowerCase && isString(args.state)) args.state = args.state.toLowerCase();
+    if (args.upperCase && isString(args.state)) args.state = args.state.toUpperCase()
+    if (isArray(args.validStates)) {
+      if (args.validStates.indexOf(args.state) < 0) {
+        if (isDef(args.default)) args.state = args.default; else args.state = __;
+      }
+    }
+
+    if (isString(args.state) && isDef(ow.oJob.setState)) ow.oJob.setState(args.state);
+
+# ----------------
+- name : ojob todo
+  help: 
+    text: "Executes an ojob sub-todo.\nNOTE: doesn't perform any checks for recursive behaviour!"
+    expects:
+    - name: todo
+      desc: A string or array of todo' maps 
+    - name: todo[].name
+      desc: Name of the job to execute
+    - name: todo[].args
+      desc: Arguments to merge (if isolateArgs is not true) with the main job arguments
+    - name: todo[].isolateArgs
+      desc: Boolean to indicate, for a specific todo, that args should be isolated from all others
+    - name: todo[].isolateJob
+      desc: Boolean to indicate, for a specific todo, that the job should run in a different scope (e.g. deps will not work)
+    - name: todo[].templateArgs
+      desc: Boolean to indicate, for a specific todo, to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+    - name: isolateArgs
+      desc: Boolean, false by default, to indicate that args should be isolated from all others
+    - name: isolateJob
+      desc: Boolean, false by default, to indicate that the job should run in a different scope (e.g. deps will not work)
+    - name: templateArgs
+      desc: Boolean, true by default, to indicate to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+    - name: __debug
+      desc: Boolean to indicate that each job execution parameters should be printed before executing
+  check: 
+    in:
+      isolateArgs : toBoolean.isBoolean.default(false)
+      isolateJob  : toBoolean.isBoolean.default(false)
+      templateArgs: toBoolean.isBoolean.default(true)
+      __debug     : toBoolean.isBoolean.default(false)
+  exec : |
+    if (!isString(args.todo) && !isArray(args.todo)) throw "todo needs to be a string or an array"
+
+    if (isString(args.todo)) args.todo = [ args.todo ]
+    args.todo.forEach(j => {
+      if (!isMap(j) && !isString(j)) throw "todo entry needs to be a map or a string (" + af.toSLON(j) + ")"
+      $job("ojob run", {
+        job         : j,
+        id          : ow.oJob.__id,
+        isolateArgs : args.isolateArgs,
+        isolateJob  : args.isolateJob,
+        templateArgs: args.templateArgs,
+        __debug     : args.__debug,
+        args        : args
+      })
+    })
+
+# ---------------
+- name : ojob run
+  check:
+    in:
+      job         : default(__)
+      id          : isString.default(ow.oJob.__id)
+      isolateArgs : toBoolean.isBoolean.default(false)
+      isolateJob  : toBoolean.isBoolean.default(false)
+      templateArgs: toBoolean.isBoolean.default(true)
+      __debug     : toBoolean.isBoolean.default(false)
+  help: 
+    text: "Executes an ojob but alternatively use 'ojob todo' or $job for most functionality."
+    expects:
+    - name: job
+      desc: Name of the job to execute
+    - name: id
+      desc: The oJob id to execute (leave undefined to default to the current one)
+    - name: args
+      desc: The args to consider on execution.
+    - name: isolateArgs
+      desc: Boolean to indicate that args should be isolated.
+    - name: isolateJob
+      desc: Boolean to indicate that the job should run in a different scope (e.g. deps will not work)
+    - name: templateArgs
+      desc: Boolean to indicate to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+    - name: __debug
+      desc: Boolean to indicate that each job execution parameters should be printed before executing
+  exec : |
+    if (!isString(args.job) && !isMap(args.job)) {
+      throw "job needs to be either a string or job map"
+    }
+
+    if (isString(args.job)) args.job = { name: args.job }
+
+    args.job.templateArgs = _$(args.job.templateArgs, "templateArgs " + args.job.name).isBoolean().default(args.templateArgs)
+    args.job.isolateArgs  = _$(args.job.isolateArgs, "isolateArgs " + args.job.name).isBoolean().default(args.isolateArgs)
+    args.job.isolateJob   = _$(args.job.isolateJob, "isolateJob " + args.job.name).isBoolean().default(args.isolateJob)
+
+    if (args.job.templateArgs && isDef(args.args)) {
+      if (args.job.templateArgs && isDef(args.job.args)) {
+        traverse(args.job.args, (aK, aV, aP, aO) => {
+          if (isString(aV)) {
+            aO[aK] = templify(aV, args)
+          }
+        })
+      }
+    }
+
+    var _j = {
+      name: args.job.name,
+      args: args.job.isolateArgs ? args.job.args : merge(args.args, args.job.args),
+      id  : args.job.isolateJob ? __ : args.id
+    }
+    if (args.__debug) cprint( ow.format.withSideLine(colorify(_j), __, "YELLOW", __, ow.format.withSideLineThemes().openBottomCurvedRect) )
+    $job(_j.name, _j.args, _j.id)

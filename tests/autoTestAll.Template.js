@@ -45,6 +45,10 @@
     
         ow.test.assert(templify("{{$get 'testOpenAFHelpers'}}"), "123", "Problem with $get template helper")
         ow.test.assert(templify("{{$getObj 'testOpenAFHelpers2' 'y'}}"), "-1", "Problem with $getObj template helper")
+
+        ow.test.assert(templify("{{#$switch 'a'}}{{#$case 'a'}}A{{/$case}}{{#$case 'b'}}B{{/$case}}{{#$default 'D'}}{{/$default}}{{/$switch}}"), "A", "Problem with switch case 1")
+        ow.test.assert(templify("{{#$switch 'b'}}{{#$case 'a'}}A{{/$case}}{{#$case 'b'}}B{{/$case}}{{#$default 'D'}}{{/$default}}{{/$switch}}"), "B", "Problem with switch case 2")
+        ow.test.assert(templify("{{#$switch 'x'}}{{#$case 'a'}}A{{/$case}}{{#$case 'b'}}B{{/$case}}{{#$default 'D'}}{{/$default}}{{/$switch}}"), "D", "Problem with switch default")
     }
 
     exports.testConditionalHelpers = function() {
