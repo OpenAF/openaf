@@ -439,17 +439,23 @@ const tprintErr = function(aTemplateString, someData) {
 
 /**
  * <odoc>
- * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme) : String</key>
+ * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
- * Optionally you can specify aWidthLimit and useAnsi.
+ * Optionally you can specify aWidthLimit, useAnsi and/or aBgColor.
  * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf" or "plain")
  * </odoc>
  */
-const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme) {
+const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor) {
 	var count = 0;
 	var maxsize = {};
 	var output = "";
+	aBgColor = _$(aBgColor, "aBgColor").isString().default(__)
 	var colorMap = { lines: "RESET", value: "CYAN" };
+
+	if (isDef(aBgColor)) {
+		colorMap.lines = aBgColor + "," + colorMap.lines
+		colorMap.value = aBgColor + "," + colorMap.value
+	}
 
 	ow.loadFormat();
 	if (isUnDef(aTheme)) {
@@ -478,10 +484,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	}
 
 	var _getColor = (aValue) => {
-		if (isNumber(aValue)) return __colorFormat.number;
-		if (isString(aValue)) return __colorFormat.string;
-		if (isBoolean(aValue)) return __colorFormat.boolean;
-		return __colorFormat.default;
+		var _bg = isDef(aBgColor) ? aBgColor + "," : ""
+		if (isNumber(aValue)) return _bg + __colorFormat.number
+		if (isString(aValue)) return _bg + __colorFormat.string
+		if (isBoolean(aValue)) return _bg + __colorFormat.boolean
+		return _bg + __colorFormat.default
 	};
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
@@ -512,7 +519,9 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
 				} else {
-					output += repeat(Math.floor((maxsize[String(col)] - ansiLength(String(col)))/2), ' ') + (useAnsi ? ansiColor(colorMap.lines, String(col)) : String(col)) + repeat(Math.round((maxsize[String(col)] - ansiLength(String(col))) / 2), ' ');
+					var _ps = repeat(Math.floor((maxsize[String(col)] - ansiLength(String(col)))/2), ' ')
+					var _pe = repeat(Math.round((maxsize[String(col)] - ansiLength(String(col))) / 2), ' ')
+					output += (useAnsi ? ansiColor(colorMap.lines, _ps + String(col) + _pe) : _ps + String(col) + _pe)
 					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 				}
 				colNum++;
@@ -543,7 +552,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				output += "..."; outOfWidth = true;
 			} else {	
 				var value = String(row[String(col)]).replace(/\n/g, " ");
-				output += (useAnsi ? ansiColor(_getColor(row[String(col)]), value) : value) + repeat(maxsize[String(col)] - ansiLength(String(row[String(col)])), ' ');
+				var _pe = repeat(maxsize[String(col)] - ansiLength(String(row[String(col)])), ' ')
+				output += (useAnsi ? ansiColor(_getColor(row[String(col)]), value + _pe) : value + _pe)
 				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 			}
 			colNum++;
@@ -639,16 +649,19 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			if (isNumber(aO)) return "number"
 			if (isString(aO)) return "string"
 		}
+		_acr = () => _ac("RESET","")
 		_clr = aO => {
 			switch(_dt(aO)) {
-			case "number" : return _ac(__colorFormat.number, String(aO))+_ac("RESET","")
-			case "string" : return _ac(__colorFormat.string, String(aO))+_ac("RESET","")
-			case "boolean": return _ac(__colorFormat.boolean, String(aO))+_ac("RESET","")
-			case "java"   : return _ac(__colorFormat.string, String(aO.toString()))+_ac("RESET","")
-			default       : return _ac(__colorFormat.default, String(aO))+_ac("RESET","")
+			case "number" : return _ac(__colorFormat.number, String(aO)) + _acr()
+			case "string" : return _ac(__colorFormat.string, String(aO)) + _acr()
+			case "boolean": return _ac(__colorFormat.boolean, String(aO)) + _acr()
+			case "java"   : return _ac(__colorFormat.string, String(aO.toString())) + _acr()
+			default       : return _ac(__colorFormat.default, String(aO)) + _acr()
 			}
 		}
 		_ac  = (aAnsi, aString) => {
+			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
+			if (aAnsi.length == 0) return aString
 			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi](aString)
 			var res = ansiColor(aAnsi, aString, true)
 			return res
@@ -674,8 +687,8 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 	  var _k = (isNumber(k) ? "[" + k + "]" : k) 
 	  if (aOptions.withValues) {
 		miniCache[k] = _ac(__colorFormat.key, _k) + 
-                       (isDef(ksize) ? repeat(ksize - _k.length, " ") : "") + 
-                       (!(isMap(v) || isArray(v)) ? ": " + _clr(v) : "")
+                       _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")) + 
+                       _ac("", (!(isMap(v) || isArray(v)) ? ": " + _clr(v) : ""))
 	  } else {
 		miniCache[k] = _k
 	  }
@@ -750,24 +763,24 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
   
 	aMKeys.forEach((k, i) => {
 	  var suffix = "", v = _get(k, aM[k]), lv = _al(v)
-	  var aPrefix2 = (i < (size-1) ? line : " ") + repeat((isDef(ksize) ? ksize : _al(k)) + slines, " ")
+	  var aPrefix2 = _ac("", (i < (size-1) ? line : " ") + repeat((isDef(ksize) ? ksize : _al(k)) + slines, " "))
 
 	  if (isMap(aM[k]) || isArray(aM[k])) {
-		suffix = printTree(aM[k], aWidth, aOptions, aPrefix + (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " "), true)
+		suffix = printTree(aM[k], aWidth, aOptions, aPrefix +  _ac("", (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " ")), true)
 	  }
   
 	  if (i > 0 && size <= (i+1)) {
-		out += aPrefix + endc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix
+		out += aPrefix + _ac("", endc) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ")) + suffix
 	  } else {
 		if (i == 0) {
-		  out += (size == 1 ? ssrc : strc) + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + _ac("RESET", "") + "\n"
+		  out += _ac("", (size == 1 ? ssrc : strc)) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix) + _ac("RESET", "") + _ac("","\n")
 		} else {
-		  out += aPrefix + midc + _wf(v, aPrefix + aPrefix2) + (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix + _ac("RESET", "") + "\n"
+		  out += aPrefix + _ac("", midc) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ")) + suffix + _ac("RESET", "") +  _ac("","\n")
 		}
 	  }
 	})
   
-	out = (out.endsWith("\n") ? out.substring(0, out.length - _al(_ac("RESET", "") + "\n")) : out)
+	out = (out.endsWith("\n") ? out.substring(0, out.length - _al(_ac("RESET", "") + _ac("","\n"))) : out)
   	
 	return out
 }
