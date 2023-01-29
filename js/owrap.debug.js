@@ -136,6 +136,8 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
   args.includeTime = _$(args.includeTime, "includeTime").toBoolean().isBoolean().default(false)
   
   if (!isMap(global._debugData)) global._debugData = { p: { } }
+  if (!isString(global._debugPrefix)) global._debugPrefix = ""
+  if (!isObject(global._debugTime)) global._debugTime = $atomic(0, "long")
 
   // Determine if code is a file or actual code
   var code
@@ -154,11 +156,15 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     var _s = ";try{"
     if (isDef(c)) _s += "if(" + c + ") {"
     var _t = (args.includeTime ? "(new Date()).toISOString() +\" | \" + " : "")
+    _t += "global._debugPrefix + "
     _s += "cprint(ow.format.withSideLine(" + _t + s + ", __, \"" + args.lineColor + "\", \"" + args.textColor + "\", ow.format.withSideLineThemes()." + args.theme + ")) "
     if (isDef(c)) _s += "}"
     _s += "}catch(__e_debug){cprint(ow.format.withSideLine(" + _t + "'" + sign.error + " ' + String(__e_debug), __, \"" + args.lineError + "\", \"" + args.textError + "\", ow.format.withSideLineThemes()." + args.theme + "))};"
     return _s
   }
+
+  var _pb = ";{let _ini=now();"
+  var _pe = ";global._debugTime.getAdd(now()-_ini);}"
 
   var sign = {}
   if (args.emoticons) {
@@ -182,21 +188,49 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     l = line.trim().match(/\/\/\@ (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\@ (.+)$/, _m("\"" + sign.checkpoint + " " + s + "\""))
+      line = line.replace(/\/\/\@ (.+)$/, _pb + _m("\"" + sign.checkpoint + " " + s.replace(/\"/g, "\\\"") + "\"") + _pe)
     }
 
     // profile end equivalent
     l = line.trim().match(/\/\/\] (.+)$/)
     if (isArray(l)) {
       var s = l[1]
-      line = line.replace(/\/\/\] (.+)$/, _m("\"" + sign.time + " " + s.replace(/\"/g, "\\\"") + ": \" + ow.format.elapsedTime4ms(now() - global._debugData['" + s.replace(/\'/g, "\\\'") + "'])"))
+      line = line.replace(/\/\/\] (.+)$/, _pb + _m("\"" + sign.time + " " + s.replace(/\"/g, "\\\"") + " =  \" + ow.format.elapsedTime4ms(now() - global._debugTime.get() - global._debugData['" + s.replace(/\'/g, "\\\'") + "'])") + _pe)
+    }
+
+    // profile end equivalent with prefix
+    l = line.trim().match(/\/\/\]\} (.+)$/)
+    if (isArray(l)) {
+      var s = l[1]
+      line = line.replace(/\/\/\]\} (.+)$/, _pb + _m("\"" + sign.time + " " + s.replace(/\"/g, "\\\"") + " = \" + ow.format.elapsedTime4ms(now() - global._debugTime.get() - global._debugData['" + s.replace(/\'/g, "\\\'") + "'])") + ";global._debugPrefix=global._debugPrefix.replace('" + s.replace(/\'/g, "\\\"") + " | ', '');" + _pe)
+    }
+
+    // block begin equivalent with prefix
+    l = line.trim().match(/\/\/\{ (.+)$/)
+    if (isArray(l)) {
+      var s = l[1].replace(/\'/g, "\\\'")
+      line = line.replace(/\/\/\{ (.+)$/, _pb + ";global._debugPrefix+='" + s.replace(/\'/g, "\\\"") + " | ';" + _pe)
+    }
+
+    // block end equivalent
+    l = line.trim().match(/\/\/\]\} (.+)$/)
+    if (isArray(l)) {
+      var s = l[1]
+      line = line.replace(/\/\/\]\} (.+)$/, _pb + ";global._debugPrefix=global._debugPrefix.replace('" + s.replace(/\'/g, "\\\"") + " | ', '');" + _pe)
     }
 
     // profile begin equivalent
     l = line.trim().match(/\/\/\[ (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\'/g, "\\\'")
-      line = line.replace(/\/\/\[ (.+)$/, ";global._debugData['" + s + "']=now();")
+      line = line.replace(/\/\/\[ (.+)$/, _pb + ";global._debugData['" + s.replace(/\'/g, "\\\"") + "']=now()-global._debugTime.get();" + _pe)
+    }
+
+    // profile begin equivalent with prefix
+    l = line.trim().match(/\/\/\{\[ (.+)$/)
+    if (isArray(l)) {
+      var s = l[1].replace(/\'/g, "\\\'")
+      line = line.replace(/\/\/\{\[ (.+)$/, _pb + ";global._debugPrefix+='" + s.replace(/\'/g, "\\\"") + " | ';global._debugData['" + s.replace(/\'/g, "\\\"") + "']=now()-global._debugTime.get();" + _pe)
     }
 
     // increment equivalent
@@ -204,7 +238,7 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     if (isArray(l)) {
       var s = l[1].replace(/\'/g, "\\\'")
       if (isUnDef($get("__debug::" + s))) $set("__debug::" + s, $atomic())
-      line = line.replace(/\/\/\+ (.+)$/, _m("\"" + sign.count + " " + s + ": \" + $get(\"__debug::" + s + "\").inc()"))
+      line = line.replace(/\/\/\+ (.+)$/, _pb + _m("\"" + sign.count + " " + s.replace(/\"/g, "\\\"") + ": \" + $get(\"__debug::" + s.replace(/\"/g, "\\\"") + "\").inc()") + _pe)
     }
 
     // decrement equivalent
@@ -212,35 +246,56 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     if (isArray(l)) {
       var s = l[1].replace(/\'/g, "\\\'")
       if (isUnDef($get("__debug::" + s))) $set("__debug::" + s, $atomic())
-      line = line.replace(/\/\/\- (.+)$/, _m("\"" + sign.count + " " + s + ": \" + $get(\"__debug::" + s + "\").dec()"))
+      line = line.replace(/\/\/\- (.+)$/, _pb + _m("\"" + sign.count + " " + s.replace(/\"/g, "\\\"") + ": \" + $get(\"__debug::" + s.replace(/\"/g, "\\\"") + "\").dec()") + _pe)
     }
 
     // assert equivalent
     l = line.trim().match(/\/\/\# (.+)$/)
     if (isArray(l)) {
       var s = l[1]
-      line = line.replace(/\/\/\# (.+)$/, _m("\"" + sign.assert + " " + s.replace(/\"/g, "\\\"") + "\"", s))
+      line = line.replace(/\/\/\# (.+)$/, _pb + _m("\"" + sign.assert + " " + s.replace(/\"/g, "\\\"") + "\"", s) + _pe)
     }
 
     // print equivalent
     l = line.trim().match(/\/\/\? (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\? (.+)$/, _m("\""+ sign.print + " " + s + " = \" + stringify(" + l[1] + ") + \"\""))
+      line = line.replace(/\/\/\? (.+)$/, _pb + _m("\""+ sign.print + " " + s.replace(/\"/g, "\\\"") + " = \" + stringify(" + l[1] + ") + \"\"") + _pe)
+    }
+
+    // json print equivalent
+    l = line.trim().match(/\/\/\?j (.+)$/)
+    if (isArray(l)) {
+      var s = l[1].replace(/\"/g, "\\\"")
+      line = line.replace(/\/\/\?j (.+)$/, _pb + _m("\""+ sign.print + " " + s.replace(/\"/g, "\\\"") + " = \" + stringify(" + l[1] + ") + \"\"") + _pe)
     }
 
     // slon print equivalent
     l = line.trim().match(/\/\/\?s (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\?s (.+)$/, _m("\"" + sign.print + " " + s + " = \" + af.toSLON(" + l[1] + ") + \"\""))
+      line = line.replace(/\/\/\?s (.+)$/, _pb + _m("\"" + sign.print + " " + s.replace(/\"/g, "\\\"") + " = \" + af.toSLON(" + l[1] + ") + \"\"") + _pe)
     }
 
     // yaml print equivalent
     l = line.trim().match(/\/\/\?y (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\?y (.+)$/, _m("\"" + sign.print + " " + s + " = \\n\" + af.toYAML(" + l[1] + ") + \"\""))
+      line = line.replace(/\/\/\?y (.+)$/, _pb + _m("\"" + sign.print + " " + s.replace(/\"/g, "\\\"") + " = \\n\" + af.toYAML(" + l[1] + ") + \"\"") + _pe)
+    }
+
+    // tree print equivalent
+    l = line.trim().match(/\/\/\?r (.+)$/)
+    if (isArray(l)) {
+      var s = l[1].replace(/\"/g, "\\\"")
+      line = line.replace(/\/\/\?r (.+)$/, _pb + _m("\"" + sign.print + " " + s.replace(/\"/g, "\\\"") + " = \\n\" + printTree(" + l[1] + ",__,{bgcolor:\"" + args.textColor + "\"}) + \"\"") + _pe)
+    }
+
+    // table print equivalent
+    l = line.trim().match(/\/\/\?t (.+)$/)
+    if (isArray(l)) {
+      var s = l[1].replace(/\"/g, "\\\"")
+      line = line.replace(/\/\/\?t (.+)$/, _pb + _m("\"" + sign.print + " " + s.replace(/\"/g, "\\\"") + " = \\n\" + printTable(" + l[1] + ",__,true,__,__,\"" + args.textColor + "\") + \"\"") + _pe)
     }
 
     return line
