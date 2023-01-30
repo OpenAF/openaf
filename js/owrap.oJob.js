@@ -1752,9 +1752,9 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		var ch = ow.oJob.getJobsCh()
 		ch.forEach((k, job) => {
 			if (isUnDef(job.lang) || (isDef(job.lang) && (job.lang == "oaf" || job.lang == "js") ) ) {
-				job.exec = ow.debug.debug(job.exec, isMap(this.__ojob.debug) ? this.__ojob.debug : __, true)
+				job.exec = ow.debug.debug(job.exec, isMap(this.__ojob.debug) ? this.__ojob.debug : __, true, k.name)
 			}
-			ch.set({ name: jj }, job)
+			ch.set(k, job)
 		})
 	}
 
