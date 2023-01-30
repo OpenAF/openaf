@@ -1258,7 +1258,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 							: m); 
 				};
 
-				if (existing.name != 'oJob Log') {
+				if (__flags.OJOB_JOBSIGNORELOG.indexOf(existing.name) < 0) {
 					var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 					var msg = "[" + existing.name + "]" + sep + this.__pid + sep;
 					if (existing.start && (!existing.error && !existing.success)) { 
