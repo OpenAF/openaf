@@ -88,7 +88,7 @@ OpenWrap.debug.prototype.require = function(aScript, force) {
 var OAF_DEBUG_ARGS
 /**
  * <odoc>
- * <key>ow.debug.debug(aCode, args, aReturnCode) : String</key>
+ * <key>ow.debug.debug(aCode, args, aReturnCode, aPrefix) : String</key>
  * Parses aCode for debug comments and replaces the appropriate code. The comments code that can be used are:\
  * \
  *   //@  This is a checkpoint on the code you want to know it was reached\
@@ -96,8 +96,16 @@ var OAF_DEBUG_ARGS
  *   //?  printVarA\
  *   //?s printInSLONVarA\
  *   //?y printInYAMLVarA\
+ *   //?t printInTableVarA\
+ *   //?r printInTreeVarA\
+ *   //{  begin of unique block with prefix\
+ *   //}  end of unique block with prefix\
  *   //[  begin of unique profile block\
  *   //]  end of unique profile block\
+ *   //{[ begin of unique profile block with prefix\
+ *   //]} end of unique profile block with prefix\
+ *   //+  incrementVarA\
+ *   //-  decrementVarA\ 
  * \
  * If aReturnCode is true instead of executing the code, the code will just be returned. Customization can be provided through args
  * or the global map variable OAF_DEBUG_ARGS accepting the following entries:\
@@ -112,7 +120,7 @@ var OAF_DEBUG_ARGS
  *   includeTime (boolean) defaults to false
  * </odoc>
  */
-OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
+OpenWrap.debug.prototype.debug = function(aCode, args, returnCode, aPrefix) {
   if (isDef(getEnv("OAF_DEBUG_ARGS"))) OAF_DEBUG_ARGS = jsonParse(getEnv("OAF_DEBUG_ARGS"), true)
   if (isMap(OAF_DEBUG_ARGS) && isUnDef(args)) args = OAF_DEBUG_ARGS
   
@@ -181,6 +189,7 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
   sign.time       = _$(sign.time).default(":")
   sign.count      = _$(sign.count).default("n")
 
+  if (isString(aPrefix)) code = "\n//{ " + aPrefix + "\n" + code + "\n//} " + aPrefix + "\n"
   code = code.split(/\r\n|\n/).map(line => {
     var l
 
@@ -202,21 +211,21 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     l = line.trim().match(/\/\/\]\} (.+)$/)
     if (isArray(l)) {
       var s = l[1]
-      line = line.replace(/\/\/\]\} (.+)$/, _pb + _m("\"" + sign.time + " " + s.replace(/\"/g, "\\\"") + " = \" + ow.format.elapsedTime4ms(now() - global._debugTime.get() - global._debugData['" + s.replace(/\'/g, "\\\'") + "'])") + ";global._debugPrefix=global._debugPrefix.replace('" + s.replace(/\'/g, "\\\"") + " | ', '');" + _pe)
+      line = line.replace(/\/\/\]\} (.+)$/, _pb + _m("\"" + sign.time + " " + s.replace(/\"/g, "\\\"") + " = \" + ow.format.elapsedTime4ms(now() - global._debugTime.get() - global._debugData['" + s.replace(/\'/g, "\\\'") + "'])") + ";global._debugPrefix=global._debugPrefix.replace('" + s.replace(/\'/g, "\\\"") + " > ', '');" + _pe)
     }
 
     // block begin equivalent with prefix
     l = line.trim().match(/\/\/\{ (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\'/g, "\\\'")
-      line = line.replace(/\/\/\{ (.+)$/, _pb + ";global._debugPrefix+='" + s.replace(/\'/g, "\\\"") + " | ';" + _pe)
+      line = line.replace(/\/\/\{ (.+)$/, _pb + ";global._debugPrefix+='" + s.replace(/\'/g, "\\\"") + " > ';" + _pe)
     }
 
     // block end equivalent
-    l = line.trim().match(/\/\/\]\} (.+)$/)
+    l = line.trim().match(/\/\/\} (.+)$/)
     if (isArray(l)) {
       var s = l[1]
-      line = line.replace(/\/\/\]\} (.+)$/, _pb + ";global._debugPrefix=global._debugPrefix.replace('" + s.replace(/\'/g, "\\\"") + " | ', '');" + _pe)
+      line = line.replace(/\/\/\} (.+)$/, _pb + ";global._debugPrefix=global._debugPrefix.replace('" + s.replace(/\'/g, "\\\"") + " > ', '');" + _pe)
     }
 
     // profile begin equivalent
@@ -230,7 +239,7 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     l = line.trim().match(/\/\/\{\[ (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\'/g, "\\\'")
-      line = line.replace(/\/\/\{\[ (.+)$/, _pb + ";global._debugPrefix+='" + s.replace(/\'/g, "\\\"") + " | ';global._debugData['" + s.replace(/\'/g, "\\\"") + "']=now()-global._debugTime.get();" + _pe)
+      line = line.replace(/\/\/\{\[ (.+)$/, _pb + ";global._debugPrefix+='" + s.replace(/\'/g, "\\\"") + " > ';global._debugData['" + s.replace(/\'/g, "\\\"") + "']=now()-global._debugTime.get();" + _pe)
     }
 
     // increment equivalent
@@ -288,14 +297,14 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode) {
     l = line.trim().match(/\/\/\?r (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\?r (.+)$/, _pb + _m("\"" + sign.print + " " + s.replace(/\"/g, "\\\"") + " = \\n\" + printTree(" + l[1] + ",__,{bgcolor:\"" + args.textColor + "\"}) + \"\"") + _pe)
+      line = line.replace(/\/\/\?r (.+)$/, _pb + _m("\"" + sign.print + " " + s.replace(/\"/g, "\\\"") + " = \\n\" + printTree(" + l[1] + ",__,{bgcolor:\"" + args.textColor.split(",").filter(r=>r.toUpperCase().startsWith("BG")).join(",") + "\"}) + \"\"") + _pe)
     }
 
     // table print equivalent
     l = line.trim().match(/\/\/\?t (.+)$/)
     if (isArray(l)) {
       var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\?t (.+)$/, _pb + _m("\"" + sign.print + " " + s.replace(/\"/g, "\\\"") + " = \\n\" + printTable(" + l[1] + ",__,true,__,__,\"" + args.textColor + "\") + \"\"") + _pe)
+      line = line.replace(/\/\/\?t (.+)$/, _pb + _m("\"" + sign.print + " " + s.replace(/\"/g, "\\\"") + " = \\n\" + printTable(" + l[1] + ",__,true,__,__,\"" + args.textColor.split(",").filter(r=>r.toUpperCase().startsWith("BG")).join(",") + "\") + \"\"") + _pe)
     }
 
     return line
