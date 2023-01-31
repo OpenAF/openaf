@@ -142,9 +142,10 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode, aPrefix) {
     count     : "🧮"
   })
   args.includeTime = _$(args.includeTime, "includeTime").toBoolean().isBoolean().default(false)
-  
+  args.filter = _$(args.filter, "filter").default([])
+
+  if (!isArray(args.filter)) args.filter = [ args.filter ]
   if (!isMap(global._debugData)) global._debugData = { p: { } }
-  if (!isString(global._debugPrefix)) global._debugPrefix = ""
   if (!isObject(global._debugTime)) global._debugTime = $atomic(0, "long")
 
   // Determine if code is a file or actual code
@@ -162,13 +163,19 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode, aPrefix) {
     
   var _m = (s, c) => {
     var _s = ";try{"
+    if (args.filter.length > 0) _s += "if(_debugPrefix.split(' > ').filter(r=>" + stringify(args.filter,__,"") + ".indexOf(r)>=0).length > 0) {"
     if (isDef(c)) _s += "if(" + c + ") {"
     var _t = (args.includeTime ? "(new Date()).toISOString() +\" | \" + " : "")
-    _t += "global._debugPrefix + "
+    _t += "_debugPrefix + "
     _s += "cprint(ow.format.withSideLine(" + _t + s + ", __, \"" + args.lineColor + "\", \"" + args.textColor + "\", ow.format.withSideLineThemes()." + args.theme + ")) "
     if (isDef(c)) _s += "}"
+    if (args.filter.length > 0) _s += "}"
     _s += "}catch(__e_debug){cprint(ow.format.withSideLine(" + _t + "'" + sign.error + " ' + String(__e_debug), __, \"" + args.lineError + "\", \"" + args.textError + "\", ow.format.withSideLineThemes()." + args.theme + "))};"
     return _s
+  }
+
+  var _s = s => {
+    return s.replace(/\$\{([^ \{\}]+)\}/g, "' + $1 + '")
   }
 
   var _pb = ";{let _ini=now();"
@@ -189,43 +196,47 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode, aPrefix) {
   sign.time       = _$(sign.time).default(":")
   sign.count      = _$(sign.count).default("n")
 
-  if (isString(aPrefix)) code = "\n//{ " + aPrefix + "\n" + code + "\n//} " + aPrefix + "\n"
+  if (isString(aPrefix)) 
+    code = "\nvar _debugPrefix = ''\n//{ " + aPrefix + "\n" + code + "\n//} " + aPrefix + "\n"
+  else
+    code = "\nvar _debugPrefix = ''\n" + code 
+
   code = code.split(/\r\n|\n/).map(line => {
     var l
 
     // checkpoint equivalent
     l = line.trim().match(/\/\/\@ (.+)$/)
     if (isArray(l)) {
-      var s = l[1].replace(/\"/g, "\\\"")
-      line = line.replace(/\/\/\@ (.+)$/, _pb + _m("\"" + sign.checkpoint + " " + s.replace(/\"/g, "\\\"") + "\"") + _pe)
+      var s = _s(l[1].replace(/\'/g, "\\\'"))
+      line = line.replace(/\/\/\@ (.+)$/, _pb + _m("'" + sign.checkpoint + " " + s + "'") + _pe)
     }
 
     // profile end equivalent
     l = line.trim().match(/\/\/\] (.+)$/)
     if (isArray(l)) {
-      var s = l[1]
-      line = line.replace(/\/\/\] (.+)$/, _pb + _m("\"" + sign.time + " " + s.replace(/\"/g, "\\\"") + " =  \" + ow.format.elapsedTime4ms(now() - global._debugTime.get() - global._debugData['" + s.replace(/\'/g, "\\\'") + "'])") + _pe)
+      var s = _s(l[1].replace(/\'/g, "\\\'"))
+      line = line.replace(/\/\/\] (.+)$/, _pb + _m("\"" + sign.time + " " + s + " =  \" + ow.format.elapsedTime4ms(now() - global._debugTime.get() - global._debugData['" + s + "'])") + _pe)
     }
 
     // profile end equivalent with prefix
     l = line.trim().match(/\/\/\]\} (.+)$/)
     if (isArray(l)) {
-      var s = l[1]
-      line = line.replace(/\/\/\]\} (.+)$/, _pb + _m("\"" + sign.time + " " + s.replace(/\"/g, "\\\"") + " = \" + ow.format.elapsedTime4ms(now() - global._debugTime.get() - global._debugData['" + s.replace(/\'/g, "\\\'") + "'])") + ";global._debugPrefix=global._debugPrefix.replace('" + s.replace(/\'/g, "\\\"") + " > ', '');" + _pe)
+      var s = _s(l[1].replace(/\'/g, "\\\'"))
+      line = line.replace(/\/\/\]\} (.+)$/, _pb + _m("\"" + sign.time + " = \" + ow.format.elapsedTime4ms(now() - global._debugTime.get() - global._debugData['" + s + "'])") + ";_debugPrefix=_debugPrefix.replace('" + s + " > ', '');" + _pe)
     }
 
     // block begin equivalent with prefix
     l = line.trim().match(/\/\/\{ (.+)$/)
     if (isArray(l)) {
-      var s = l[1].replace(/\'/g, "\\\'")
-      line = line.replace(/\/\/\{ (.+)$/, _pb + ";global._debugPrefix+='" + s.replace(/\'/g, "\\\"") + " > ';" + _pe)
+      var s = _s(l[1].replace(/\'/g, "\\\'"))
+      line = line.replace(/\/\/\{ (.+)$/, _pb + ";_debugPrefix+='" + s + " > ';" + _pe)
     }
 
     // block end equivalent
     l = line.trim().match(/\/\/\} (.+)$/)
     if (isArray(l)) {
-      var s = l[1]
-      line = line.replace(/\/\/\} (.+)$/, _pb + ";global._debugPrefix=global._debugPrefix.replace('" + s.replace(/\'/g, "\\\"") + " > ', '');" + _pe)
+      var s = _s(l[1].replace(/\'/g, "\\\'"))
+      line = line.replace(/\/\/\} (.+)$/, _pb + ";_debugPrefix=_debugPrefix.replace('" + s + " > ', '');" + _pe)
     }
 
     // profile begin equivalent
@@ -238,8 +249,8 @@ OpenWrap.debug.prototype.debug = function(aCode, args, returnCode, aPrefix) {
     // profile begin equivalent with prefix
     l = line.trim().match(/\/\/\{\[ (.+)$/)
     if (isArray(l)) {
-      var s = l[1].replace(/\'/g, "\\\'")
-      line = line.replace(/\/\/\{\[ (.+)$/, _pb + ";global._debugPrefix+='" + s.replace(/\'/g, "\\\"") + " > ';global._debugData['" + s.replace(/\'/g, "\\\"") + "']=now()-global._debugTime.get();" + _pe)
+      var s = _s(l[1].replace(/\'/g, "\\\'"))
+      line = line.replace(/\/\/\{\[ (.+)$/, _pb + ";_debugPrefix+='" + s + " > ';global._debugData['" + s + "']=now()-global._debugTime.get();" + _pe)
     }
 
     // increment equivalent
