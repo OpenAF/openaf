@@ -8,8 +8,7 @@
  */
 OpenWrap.oJob = function(isNonLocal) { 
 	//startLog();
-	//if (isDef(ow.oJob)) return ow.oJob;
-	if (isUnDef(ow.oJob)) ow.oJob = this
+	if (isDef(ow.oJob)) return ow.oJob; else ow.oJob = this
 
 	this.__promises = [];
 	var parent = this;
@@ -1899,8 +1898,9 @@ OpenWrap.oJob.prototype.run = function(provideArgs, aId) {
  * Get current global state, if defined.
  * </odoc> 
  */
-OpenWrap.oJob.prototype.getState = function() {
-	return String($get("ojob::state"));
+OpenWrap.oJob.prototype.getState = function(altId) {
+	altId = _$(altId, "altId").isString().default("")
+	return String($get("ojob::state::" + this.getID() + altId))
 }
 
 /**
@@ -1909,8 +1909,9 @@ OpenWrap.oJob.prototype.getState = function() {
  * Sets the current global state to be used with todo.when
  * </odoc>
  */
-OpenWrap.oJob.prototype.setState = function(aState) {
-	$set("ojob::state", String(aState));
+OpenWrap.oJob.prototype.setState = function(aState, altId) {
+	altId = _$(altId, "altId").isString().default("")
+	$set("ojob::state::" + this.getID() + altId, String(aState))
 }
 
 /**
