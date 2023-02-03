@@ -2719,9 +2719,9 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 		}
 	}
       
-        if (isDef(aString)) { 
+    if (isDef(aString)) { 
 		aString = aString.replace(/\t/g, aTheme.tab);
-		aString = ow.format.string.wordWrap(aString, aSize - 2);
+		aString = ow.format.string.wordWrap(aString, aSize - 3);
  	}
 
 	if (isDef(aTheme.ltop) || isDef(aTheme.rtop)) {
@@ -2759,7 +2759,9 @@ OpenWrap.format.prototype.withSideLine = function(aString, aSize, ansiLine, ansi
 			if (isDef(aTheme.lmiddle)) res += ansiColor(ansiLine, aTheme.lmiddle) + ansiColor("RESET", "")
 			res += (isDef(ansiText) ? ansiColor(ansiText, " " + l) : " " + l);
 			if (isDef(aTheme.rmiddle)) {
-				var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(aSize - ansiLength(l) - 3, ' ')) : repeat(aSize - ansiLength(l) - 3, ' '));
+				var _spl = aSize - ansiLength(l) - 3
+				if (_spl < 0) _spl = 0
+				var sp = (isDef(ansiText) ? ansiColor(ansiText, repeat(_spl, ' ')) : repeat(_spl, ' '));
 				res += (isDef(ansiText) ? ansiColor(ansiText, sp) : sp);
 				res += ansiColor("RESET", "") + ansiColor(ansiLine, aTheme.rmiddle);
 			}
