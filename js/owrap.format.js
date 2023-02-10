@@ -1059,6 +1059,42 @@ OpenWrap.format.prototype.toBytesAbbreviation = function (bytes, precision) {
 
 /**
  * <odoc>
+ * <key>ow.format.fromSIAbbreviation(aString) : Number</key>
+ * Converts the provided string using SI notationp prefix (do previously make the necessary conversions: 5mV -> 5m, 5cm -> 5c, 9km -> 9k) to the corresponding number.
+ * Uses the current approved SI prefix list (https://en.wikipedia.org/wiki/Metric_prefix)
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromSIAbbreviation = function(aStr) {
+    _$(aStr).isString().$_()
+    aStr = aStr.trim()
+    var arr = aStr.match(/(-?[0-9\.]+)\s*([a-zA-Z]+)/), unit, value
+	if (arr.length >= 2) {
+		unit  = String(arr[2])
+		value = Number(arr[1])
+	} else {
+		unit  = ""
+		value = parseFloat(aStr)
+	}
+
+    var hUnits = ["da","h","k","M","G","T","P","E","Z","Y","R","Q"]
+    var lUnits = ["d","c","m","μ","n","p","f","a","z","y","r","q"]
+
+    var res = value
+    var hUi = hUnits.indexOf(unit)
+    if (hUi >= 0) {
+        res = res * Math.pow(10, hUi + 1)
+    } else {
+        lUi = lUnits.indexOf(unit)
+        if (lUi >= 0) {
+            res = res * Math.pow(10, - (lUi + 1))
+        }
+    }
+
+    return res
+}
+
+/**
+ * <odoc>
  * <key>ow.format.fromBytesAbbreviation(aStr, useDecimal) : Number</key>
  * Tries to reverse the ow.format.toBytesAbbreviation from aStr (string) back to the original value in bytes.
  * Use useDecimal=true to interpret KB as 1000 instead of 1024 (see more in https://en.wikipedia.org/wiki/Byte#Multiple-byte_units)\
