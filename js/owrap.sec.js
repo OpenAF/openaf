@@ -13,7 +13,9 @@ OpenWrap.sec = function() {
  * </odoc>
  */
 OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
-   var rep   = _$(aRepo, "aRepo").isString().default("");
+   var rep   = _$(aRepo, "aRepo").isString().default(__)
+   if (isUnDef(rep)) rep = isDef(aFile) ? aFile : ""
+   
    aRepo = String(rep);
    var isWin = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
 
@@ -67,6 +69,9 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
  * </odoc>
  */
 const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
+   var rep   = _$(aRepo, "aRepo").isString().default(__)
+   if (isUnDef(rep)) rep = isDef(aFile) ? aFile : ""
+
    dBucket     = _$(dBucket, "dBucket").isString().default(__);
    dLockSecret = _$(dLockSecret, "dLockSecret").isString().default(__);
    var dKey;
@@ -81,7 +86,6 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
       dKey        = o.key;
    } catch(e) {
    }
-   var rep   = _$(aRepo, "aRepo").isString().default("");
    aRepo = rep;
 
    if (isUnDef(ow.sec._sb) || isUnDef(ow.sec._sb[aRepo])) ow.sec.openSBuckets(aRepo, aMainSecret, aFile);
@@ -204,7 +208,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       unsetRepo: () => {
-         return ow.sec.purgeSBuckets(aRepo);
+         return ow.sec.purgeSBuckets(aRepo, aFile);
       },
       /**
        * <odoc>
@@ -213,7 +217,7 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        * </odoc>
        */
       close: () => {
-         return ow.sec.closeSBuckets(aRepo);
+         return ow.sec.closeSBuckets(aRepo, aFile);
       },
       /**
        * <odoc>
@@ -260,12 +264,13 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
 
 /**
  * <odoc>
- * <key>ow.sec.closeSBuckets(aRepo)</key>
+ * <key>ow.sec.closeSBuckets(aRepo, aFile)</key>
  * Close a previously open aRepo SBucket.
  * </odoc>
  */
-OpenWrap.sec.prototype.closeSBuckets = function(aRepo) {
-   var rep   = _$(aRepo, "aRepo").isString().default("");
+OpenWrap.sec.prototype.closeSBuckets = function(aRepo, aFile) {
+   var rep   = _$(aRepo, "aRepo").isString().default("")
+   if (isUnDef(rep)) rep = isDef(aFile) ? aFile : ""
    aRepo = rep;
    if (rep != "") rep = "-" + rep;
 
@@ -275,14 +280,16 @@ OpenWrap.sec.prototype.closeSBuckets = function(aRepo) {
 
 /**
  * <odoc>
- * <key>ow.sec.purgeSBuckets(aRepo)</key>
+ * <key>ow.sec.purgeSBuckets(aRepo, aFile)</key>
  * Purge aRepo SBucket.
  * </odoc>
  */
-OpenWrap.sec.prototype.purgeSBuckets = function(aRepo) {
-   try { this.closeSBuckets(aRepo); } catch(e) {}
+OpenWrap.sec.prototype.purgeSBuckets = function(aRepo, aFile) {
+   try { this.closeSBuckets(aRepo, aFile); } catch(e) {}
 
-   var rep   = _$(aRepo, "aRepo").isString().default("");
+   var rep   = _$(aRepo, "aRepo").isString().default("")
+   if (isUnDef(rep)) rep = isDef(aFile) ? aFile : ""
+
    if (rep == "default") rep = "";
    if (rep == "system") return;
 
@@ -408,10 +415,12 @@ OpenWrap.sec.prototype.SBucket.prototype.getSecret = function(sBucket, aLockSecr
     aLockSecret = _$(aLockSecret, "aLockSecret").isString().default(this.aLockSecret);
  
     var kv = $ch(this.aCh).get({ sbucket: sBucket});
-    if (isDef(kv) && ( (isDef(kv.v) && isDef(aLockSecret)) || (isMap(kv) && isUnDef(aLockSecret)) ) ) {
-       var sb = isDef(aLockSecret) ? __sbucket__decrypt(kv.v, this.s, aLockSecret) : kv;
+    //if (isDef(kv) && ( (isDef(kv.v) && isDef(aLockSecret)) || (isMap(kv) && isUnDef(aLockSecret)) ) ) {
+    if (isMap(kv)) {
+       var _isenc = isDef(kv.sbucket) && kv.sbucket == sBucket && isString(kv.v) && isDef(aLockSecret)
+       var sb = _isenc ? __sbucket__decrypt(kv.v, this.s, aLockSecret) : kv
        if (isMap(sb)) {
-          return (isDef(aLockSecret) ? sb.keys[aKey] : sb[aKey]);
+          return (_isenc ? sb.keys[aKey] : sb[aKey]);
        } else {
           throw "Wrong bucket and/or secret";
        }
