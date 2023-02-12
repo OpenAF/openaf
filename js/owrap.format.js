@@ -1068,6 +1068,7 @@ OpenWrap.format.prototype.fromSIAbbreviation = function(aStr) {
     _$(aStr).isString().$_()
     aStr = aStr.trim()
     var arr = aStr.match(/(-?[0-9\.]+)\s*([a-zA-Z]+)/), unit, value
+	if (isNull(arr)) return aStr
 	if (arr.length >= 2) {
 		unit  = String(arr[2])
 		value = Number(arr[1])
@@ -1078,15 +1079,16 @@ OpenWrap.format.prototype.fromSIAbbreviation = function(aStr) {
 
     var hUnits = ["da","h","k","M","G","T","P","E","Z","Y","R","Q"]
     var lUnits = ["d","c","m","μ","n","p","f","a","z","y","r","q"]
+	var vUnits = [1,2,3,6,9,12,15,18,21,24,27,30]
 
     var res = value
     var hUi = hUnits.indexOf(unit)
     if (hUi >= 0) {
-        res = res * Math.pow(10, hUi + 1)
+        res = res * Math.pow(10, vUnits[lUi])
     } else {
         lUi = lUnits.indexOf(unit)
         if (lUi >= 0) {
-            res = res * Math.pow(10, - (lUi + 1))
+            res = res * Math.pow(10, - vUnits[lUi])
         }
     }
 
@@ -1236,10 +1238,10 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
  * </odoc>
  */
 OpenWrap.format.prototype.round = function(number, digits) {
-    if (isUndefined(digits)) {
-      digits = 0;
-    }
-    return number.toFixed(digits);
+	_$(number, "number").isNumber().$_()
+	digits = _$(digits, "digits").isNumber().default(0)
+	if (number == 0) return 0
+    return number.toFixed(digits)
 }
 
 OpenWrap.format.prototype.toBase64 = function(aString) { return af.fromBytes2String(af.toBase64Bytes(aString)); }
