@@ -44,6 +44,10 @@ OpenWrap.python.prototype.initCode = function(includeCoding) {
 		s += "         return None\n\n";
 		s += "def _oaf(e):\n";
 		s += "   return _(e)\n\n";
+		s += "def _g(key):\n"
+		s += "   return _(\"$get('\" + str(key) + \"')\")\n"
+	    s += "def _s(key, value):\n"
+		s += "   _(\"$set('\" + str(key) + \"', \" + _d(value) + \")\")\n\n"
 		return s;
 	} else {
 		return "# -*- coding: utf-8 -*-\n\n";
