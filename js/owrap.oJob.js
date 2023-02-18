@@ -2698,11 +2698,18 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			_$(jobFrom).isArray();
 
 			for(var jfi in jobFrom) {
-				var f = (isMap(jobFrom[jfi]) ? procJob(jobFrom[jfi].name, jobFrom[jfi].deps, jobFrom[jfi].type, jobFrom[jfi].typeArgs, jobFrom[jfi].args, jobFrom[jfi].exec, jobFrom[jfi].from, jobFrom[jfi].to, jobFrom[jfi].help, jobFrom[jfi].catch, jobFrom[jfi].each, jobFrom[jfi].lang, jobFrom[jfi].file, jobFrom[jfi].check) : aJobsCh.get({ "name": jobFrom[jfi] }));
+				var f
+				if (isDef(jobFrom[jfi]) && isMap(jobFrom[jfi])) {
+					var _a = aJobsCh.get({ "name": jobFrom[jfi].name })
+					var _b = procJob(jobFrom[jfi].name, jobFrom[jfi].deps, jobFrom[jfi].type, jobFrom[jfi].typeArgs, jobFrom[jfi].args, jobFrom[jfi].exec, jobFrom[jfi].from, jobFrom[jfi].to, jobFrom[jfi].help, jobFrom[jfi].catch, jobFrom[jfi].each, jobFrom[jfi].lang, jobFrom[jfi].file, jobFrom[jfi].check)
+				    f = isDef(_a) ? merge(_b, _a) : _b
+			    } else {
+					f = aJobsCh.get({ "name": jobFrom[jfi] })
+				}
 				if (isDef(f)) {
 					//j.type = _$(j.type).isString().default(f.type);
 					j.typeArgs = (isDef(j.typeArgs) ? merge(j.typeArgs, f.typeArgs) : f.typeArgs);
-					j.args = (isDef(j.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(f.args));
+					if (isMap(f.args) && Object.keys(f.args).length > 0) j.exec += "\nargs = ow.oJob.__processArgs(args, " + stringify(f.args,__,"") + ")\n"
 					j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
 					j.each = (isDef(j.each) && j.each != null ? j.each.concat(f.each) : f.each);
 					//j.lang = f.lang;
@@ -2737,12 +2744,19 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			_$(jobTo).isArray();
 
 			for(var jfi in jobTo) {
-				var f = (isMap(jobTo[jfi]) ? procJob(jobTo[jfi].name, jobTo[jfi].deps, jobTo[jfi].type, jobTo[jfi].typeArgs, jobTo[jfi].args, jobTo[jfi].exec, jobTo[jfi].from, jobTo[jfi].to, jobTo[jfi].help, jobTo[jfi].catch, jobTo[jfi].each, jobTo[jfi].lang, jobTo[jfi].file) : aJobsCh.get({ "name": jobTo[jfi] }));
+				var f
+				if (isDef(jobTo[jfi]) && isMap(jobTo[jfi])) {
+					var _a = aJobsCh.get({ "name": jobTo[jfi].name })
+					var _b = procJob(jobTo[jfi].name, jobTo[jfi].deps, jobTo[jfi].type, jobTo[jfi].typeArgs, jobTo[jfi].args, jobTo[jfi].exec, jobTo[jfi].from, jobTo[jfi].to, jobTo[jfi].help, jobTo[jfi].catch, jobTo[jfi].each, jobTo[jfi].lang, jobTo[jfi].file, jobTo[jfi].check)
+				    f = isDef(_a) ? merge(_b, _a) : _b
+			    } else {
+					f = aJobsCh.get({ "name": jobTo[jfi] })
+				}
 				if (isDef(f)) {
 					//j.type = (isDef(f.type) ? f.type : j.type);
 					j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
 					//j.lang = f.lang;
-					j.args = (isDef(f.args) ? parent.__processArgs(j.args, f.args) : parent.__processArgs(j.args));
+					if (isMap(f.args) && Object.keys(f.args).length > 0) j.exec += "\nargs = ow.oJob.__processArgs(args, " + stringify(f.args,__,"") + ")\n"
 					j.deps = (isDef(f.deps) && j.deps != null ? j.deps.concat(f.deps) : j.deps);
 					j.each = j.each + "\n" + (isDef(f.each) ? f.each : "");
 					j.each = (isDef(f.each) && j.each != null ? j.each.concat(f.each) : j.each);
