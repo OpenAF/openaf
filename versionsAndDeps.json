@@ -522,7 +522,7 @@
 			"name": "PostgreSQL",
 			"removable": true,
 			"deps": [
-				"lib/postgresql-42.4.1.jar"
+				"lib/postgresql-42.5.1.jar"
 			]
 		}
 	]
