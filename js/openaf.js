@@ -7113,6 +7113,8 @@ const _i$ = (aValue, aPrefixMessage) => {
 var __correctYAML = false;
 
 const __gHDir = () => {
+	var _e = getEnv("OAF_HOME")
+	if (isDef(_e)) return _e
 	var d = String(java.lang.System.getProperty("user.home"))
 	if (io.fileInfo(d).permissions.indexOf("w") < 0) d = __flags.ALTERNATIVE_HOME
 	return d
