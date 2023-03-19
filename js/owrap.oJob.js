@@ -2859,6 +2859,9 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 		case "prettyjson":
 			sprint(res);
 			break;
+		case "cjson":
+			cprint(res)
+			break
 		case "slon":
 			print(ow.format.toSLON(res));
 			break;
