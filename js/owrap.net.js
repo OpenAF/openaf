@@ -611,6 +611,66 @@ OpenWrap.net.prototype.getIP2Host = function(aIP) {
 
 /**
  * <odoc>
+ * <key>ow.net.sendUDPPacket(aHost, aPort, aMsg, dontWait, bufferSize) : Bytes</key>
+ * Tries to send a string or array of bytes aMsh to aHost and aPort using UDP. If dontWait=true it won't wait
+ * for a response that is stored in a buffer (where bufferSize = 1024 bytes, by default).
+ * </odoc>
+ */
+OpenWrap.net.prototype.sendUDPPacket = function(aHost, aPort, aMsg, dontWait, bufferSize) {
+    _$(aHost, "aHost").isString().$_()
+    _$(aPort, "aPort").isNumber().$_()
+    _$(aMsg, "aMsg").isString().$_()
+
+    bufferSize = _$(bufferSize, "bufferSize").isNumber().default(1024)
+    dontWait = _$(dontWait, "dontWait").isBoolean().default(false)
+
+    var ds  = new java.net.DatagramSocket()
+    var msg = isString(aMsg) ? af.fromString2Bytes(aMsg) : aMsg
+    var dp  = new java.net.DatagramPacket(msg, msg.length, java.net.InetAddress.getByName(aHost), aPort)
+
+    ds.send(dp)
+
+    if (!dontWait) {
+        var buf = newJavaArray(java.lang.Byte.TYPE, bufferSize)
+        var recv = new java.net.DatagramPacket(buf, bufferSize)
+        ds.receive(recv)
+        return recv.getData()
+    }
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.sendTCPPacket(aHost, aPort, aMsg, dontWait) : Bytes</key>
+ * Tries to send a string or array of bytes aMsh to aHost and aPort using TCP. If dontWait=true it won't wait
+ * for a response.
+ * </odoc>
+ */
+OpenWrap.net.prototype.sendTCPPacket = function(aHost, aPort, aMsg, dontWait) {
+    _$(aHost, "aHost").isString().$_()
+    _$(aPort, "aPort").isNumber().$_()
+    _$(aMsg, "aMsg").isString().$_()
+
+    dontWait = _$(dontWait, "dontWait").isBoolean().default(false)
+
+    var res
+    var cs = new java.net.Socket(aHost, aPort)
+    var is = cs.getInputStream()
+    var os = cs.getOutputStream()
+    
+    ioStreamWrite(os, aMsg)
+    if (!dontWait) {
+        res = af.fromInputStream2Bytes(is)
+        is.close()
+    }
+
+    os.close()
+    cs.close()
+
+    return res
+}
+
+/**
+ * <odoc>
  * <key>ow.net.ipv4SubNetInfo(aCIDRorAddress, aMask) : Map</key>
  * Given an IPv4 aCIDR or anAddress with aMask will return a map with the corresponding subnet info including
  * netmask, broadcast address, address count, low &amp; high address, etc...
