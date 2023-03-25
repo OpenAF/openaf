@@ -1083,6 +1083,24 @@ OpenWrap.java.prototype.cipher.prototype.verify = function(sigToVerify, aPublicK
 
 /**
  * <odoc>
+ * <key>ow.java.cipher.getCert4File(aFile) : Java</key>
+ * Given a X509 certificate aFile will return the corresponding Java certificate object.
+ * </odoc>
+ */
+OpenWrap.java.prototype.cipher.prototype.getCert4File = function(aFile) {
+    _$(aFile).isString().$_()
+
+    var cf = java.security.cert.CertificateFactory.getInstance("X509")
+    var is = io.readFileStream(aFile)
+
+    var cert = cf.generateCertificate(is)
+    is.close()
+
+    return cert
+}
+
+/**
+ * <odoc>
  * <key>ow.java.cipher.encodeCert(aCert) : String</key>
  * Encodes aCert(ificate) into a base64 PEM representation.
  * </odoc>
