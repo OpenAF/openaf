@@ -135,8 +135,8 @@ OpenWrap.oJob = function(isNonLocal) {
 		});
 	}
 
-	// Set state
-	this.setState("init")
+	// Set state - changed to on-demand
+	// this.setState("init") 
 
 	return this;
 };
@@ -219,6 +219,7 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help) {
+	sprint($ch().list())
 	ojob = _$(ojob).isMap().default({});
 
 	if (isUnDef(jobs)) jobs = [];
@@ -1900,7 +1901,8 @@ OpenWrap.oJob.prototype.run = function(provideArgs, aId) {
  */
 OpenWrap.oJob.prototype.getState = function(altId) {
 	altId = _$(altId, "altId").isString().default("")
-	return String($get("ojob::state::" + this.getID() + altId))
+	var _s = $get("ojob::state::" + this.getID() + altId)
+	return isDef(_s) ? String(_s) : "init"
 }
 
 /**
