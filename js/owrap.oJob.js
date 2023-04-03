@@ -219,7 +219,6 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help) {
-	sprint($ch().list())
 	ojob = _$(ojob).isMap().default({});
 
 	if (isUnDef(jobs)) jobs = [];
