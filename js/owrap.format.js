@@ -1309,6 +1309,7 @@ OpenWrap.format.prototype.toBoolean = toBoolean;
 OpenWrap.format.prototype.now = now;
 OpenWrap.format.prototype.nowUTC = nowUTC;
 OpenWrap.format.prototype.nowNano = nowNano;
+OpenWrap.format.prototype.hmacSHA1 = hmacSHA1;
 OpenWrap.format.prototype.hmacSHA256 = hmacSHA256;
 OpenWrap.format.prototype.hmacSHA384 = hmacSHA384;
 OpenWrap.format.prototype.hmacSHA512 = hmacSHA512;

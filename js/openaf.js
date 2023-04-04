@@ -2197,6 +2197,17 @@ const hmacSHA384 = function(data, key, toHex) {
 
 /**
  * <odoc>
+ * <key>hmacSHA1(data, key, toHex) : ArrayOfBytes</key>
+ * Given data and a key will calculate the hash-based message authentication code (HMAC) using the SHA1 hash
+ * function. Optionally if toHex = true the output will be converted to hexadecimal lower case.
+ * </odoc>
+ */
+const hmacSHA1 = function(data, key, toHex) {
+	return hmacSHA256(data, key, toHex, "HmacSHA1")
+}
+
+/**
+ * <odoc>
  * <key>bcrypt(aText, aVerifyHash, hashingRounds) : String/boolean</key>
  * If aText is provided it will return the resulting string of applying the bcrypt hash to aText. Optionally the bcrypt hashingRounds (between 4 and 
  * 31, default 10) can be provided (note: the more rounds, the more slower and secure).
