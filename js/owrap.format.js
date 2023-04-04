@@ -936,6 +936,32 @@ OpenWrap.format.prototype.toBase36 = function(aNumber, aLength) {
 	return (isDef(aLength)) ? ow.format.string.leftPad(t , aLength, "0") : t;
 };
 
+/*
+ * <odoc>
+ * <key>ow.format.toBase32(aString) : String</key>
+ * Given aString or array of bytes transforms the contents to base 32.
+ * </odoc>
+ */
+OpenWrap.format.prototype.toBase32 = function(aString) {
+	var b32 = new Packages.org.apache.commons.codec.binary.Base32()
+
+	if (isString(aString)) aString = af.fromString2Bytes(aString)
+	return af.fromBytes2String(b32.encode(aString))
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.toBase16(aString) : String</key>
+ * Given aString or array of bytes transforms the contents to base 16.
+ * </odoc>
+ */
+OpenWrap.format.prototype.toBase16 = function(aString) {
+	var b16 = new Packages.org.apache.commons.codec.binary.Base16()
+
+	if (isString(aString)) aString = af.fromString2Bytes(aString)
+	return af.fromBytes2String(b16.encode(aString))
+}
+
 /**
  * <odoc>
  * <key>ow.format.fromBase36(aString) : Number</key>
@@ -945,6 +971,32 @@ OpenWrap.format.prototype.toBase36 = function(aNumber, aLength) {
 OpenWrap.format.prototype.fromBase36 = function(aString) {
 	return parseInt(aString, 36);
 };
+
+/**
+ * <odoc>
+ * <key>ow.format.fromBase32(aString) : bytes</key>
+ * Given a base 32 aString transforms it back to the original array of bytes.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromBase32 = function(aString) {
+	_$(aString, "aString").isString().$_()
+	var b32 = new Packages.org.apache.commons.codec.binary.Base32()
+
+	return b32.decode(aString)
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.fromBase16(aString) : bytes</key>
+ * Given a base 16 aString transforms it back to the original array of bytes.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromBase16 = function(aString) {
+	_$(aString, "aString").isString().$_()
+	var b16 = new Packages.org.apache.commons.codec.binary.Base16()
+
+	return b16.decode(aString)
+}
 
 /**
  * <odoc>
