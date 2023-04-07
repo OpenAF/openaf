@@ -7079,6 +7079,7 @@ var __flags = _$(__flags).isMap().default({
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
+	MD_SHOWDOWN_OPTIONS        : {},
 	ANSICOLOR_CACHE            : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
 	TREE: {
