@@ -3719,6 +3719,9 @@ var $from = function(a) {
  *   abs(x), avg(x), contains(x, y), ceil(x), floor(x), join(x, arr), keys(obj), length(x), map(expr, arr), max(x), max_by(x, y), merge(a, b), min(a), min_by(a, b), not_null(a), reverse(arr), sort(arr), sort_by(a, y), starts_with(a, b), ends_with(a, b), sum(a), to_array(a), to_string(a), to_number(a), type(a), values(a)\
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
+ * [OpenAF custom functions]: \
+ *   count_by(arr, 'field'), group(arr, 'field'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text')\
+ * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
  * \
@@ -3727,6 +3730,39 @@ var $from = function(a) {
 const $path = function(aObj, aPath, customFunctions) {
 	loadCompiledLib("jmespath_js");
 	
+	aPath = _$(aPath, "aPath").isString().default("@")
+	customFunctions = _$(customFunctions, "customFunctions").isMap().default({})
+	customFunctions = merge({
+		count_by: {
+			_func: ar => $from(ar[0]).countBy(ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		group: {
+			_func: ar => $from(ar[0]).group(ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		unique: {
+			_func: ar => uniqArray(ar[0]),
+			_signature: [ { types: [ jmespath.types.array ] } ]
+		},
+		to_map: {
+			_func: ar => $from(ar[0]).mselect(__, ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		flat_map: {
+			_func: ar => ow.loadObj().flatMap(ar[0]),
+			_signature: [ { types: [ jmespath.types.array, jmespath.types.object ] } ]
+		},
+		search_keys: {
+			_func: ar => searchKeys(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		search_values: {
+			_func: ar => searchValues(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		}
+	}, customFunctions)
+
 	if (isDef(aObj))
 		return jmespath.search(aObj, aPath, customFunctions);
 	else
