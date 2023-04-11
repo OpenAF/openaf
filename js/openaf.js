@@ -662,7 +662,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		_ac  = (aAnsi, aString) => {
 			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
 			if (aAnsi.length == 0) return aString
-			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi](aString)
+			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
 			var res = ansiColor(aAnsi, aString, true)
 			return res
 		}
@@ -1101,7 +1101,9 @@ function __initializeCon() {
 	}
 }
 
-var __ansiColorCache = {}
+var __ansiColorCache = {
+	RESET: "\x1b[m"
+}
 const __ansiColorPrep = function(aAnsi) {
 	var jansi = JavaImporter(Packages.org.fusesource.jansi)
 	var aString = "RRR"
@@ -1126,7 +1128,8 @@ const __ansiColorPrep = function(aAnsi) {
 		o = aString
 	}
 
-	return new Function("s", "return \"" + o.replace("RRR", "\"+s+\"") + "\"")
+	return o.substring(0, o.indexOf("RRR"))
+	//return new Function("s", "return \"" + o.replace("RRR", "\"+s+\"") + "\"")
 }
 /**
  * <odoc>
@@ -1154,13 +1157,11 @@ const ansiColor = function(aAnsi, aString, force, noCache) {
 	var res = "";
 	
 	if (ansis && aAnsi.length > 0) {
-		if (noCache) return __ansiColorPrep(aAnsi)(aString)
-		if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi](aString)
+		if (noCache) return __ansiColorPrep(aAnsi) + aString + __ansiColorCache["RESET"]
+		if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
 
 		__ansiColorCache[aAnsi] = __ansiColorPrep(aAnsi)
-		return __ansiColorCache[aAnsi](aString)
-		//var res = Packages.openaf.JAnsiRender.render(aAnsi.toLowerCase() + " " + aString);
-		return String(res); 
+		return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
 	} else {
 		return aString;
 	}
