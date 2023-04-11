@@ -357,6 +357,169 @@ OpenWrap.format.prototype.string = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.lineChart(aSeries, aOptions) : String</key>
+	 * Given an array of values (1 series) or an array of arrays of values (multiple series) will plot a line chart in 
+	 * ascii, with the provided aOptions, a return the corresponding string. Available options:\
+	 * \
+	 *   min     (number)   The minimum value to use in the chart\
+	 *   max     (number)   The maximum value to use in the chart\
+	 *   height  (number)   The line chart lines height to use\
+	 *   colors  (array)    Array of color names to use for each series\
+	 *   label   (boolean)  Boolean value to indicate if y labels should be included (default true)\
+	 *   format  (function) Custom functions that receives a value and returns a formatted string for labels\
+	 *   dColor  (string)   The default color to use\
+	 *   offset  (number)   The offset to assume (default 2)\
+	 *   padding (string)   The chart padding string (default "")\
+	 *   fixed   (number)   If no custom format function is provided will be the fixed decimals to use (default 2)\
+	 *   symbols (array)    An array of 10 characters to replace the default symbols\
+	 * </odoc>
+	 */
+    lineChart: (aSeries, aCfg) => {
+		// Based on https://github.com/kroitor/asciichart
+	
+		// control sequences for coloring
+		var linechart = {}
+		linechart.defaultSymbols = [ '┼', '┤', '╶', '╴', '─', '╰', '╭', '╮', '╯', '│' ]
+	
+	    var colored = (aS, color, dc) => {
+			if (isUnDef(aS)) return ""
+			if (isUnDef(color)) {
+				return isDef(dc) ? aS + __ansiColorCache[dc] : aS
+			} 
+			if (isUnDef(__ansiColorCache[color])) __ansiColorCache[color] = __ansiColorPrep(color)
+			return __ansiColorCache[color] +  aS + (isDef(dc) ? __ansiColorCache[dc] : __ansiColorCache["RESET"])
+		}
+	
+		linechart.colored = colored
+		linechart.plot = function(series, cfg) {
+			if (isNumber(series[0])) series = [series]
+			cfg = _$(cfg, "options").isMap().default({})
+	
+			let min = isDef(cfg.min) ? cfg.min : series[0][0]
+			let max = isDef(cfg.max) ? cfg.max : series[0][0]
+	
+			for (let j = 0; j < series.length; j++) {
+				for (let i = 0; i < series[j].length; i++) {
+					min = Math.min(min, series[j][i])
+					max = Math.max(max, series[j][i])
+				}
+			}
+	
+			let range   = Math.abs(max - min)
+			let fixed   = _$(cfg.fixed, "fixed").isNumber().default(2)
+			if (fixed < 0) fixed = 0
+			let offset  = _$(cfg.offset, "offset").isNumber().default(2)
+			if (offset < 0) offset = 0
+			let padding = _$(cfg.padding, "padding").isString().default('')
+			let height  = _$(cfg.height, "height").isNumber().default(range)
+			let colors  = _$(cfg.colors, "colors").isArray().default([])
+			let slabel  = _$(cfg.label, "label").isBoolean().default(true)
+			let ratio   = range !== 0 ? height / range : 1;
+			let min2    = Math.round(min * ratio)
+			let max2    = Math.round(max * ratio)
+			let rows    = Math.abs(max2 - min2)
+			let dcolor  = _$(cfg.dColor, "dColor").isString().default(__)
+			let width = 0
+			for (let i = 0; i < series.length; i++) {
+				width = Math.max(width, series[i].length)
+			}
+	
+			width = width + offset
+			let symbols = _$(cfg.symbols, "symbols").isArray().default(linechart.defaultSymbols)
+			let format  = _$(cfg.format, "format").isFunction().default(x => x.toFixed(fixed))
+	
+			// Preparing empty space
+			let result = new Array(rows + 1) // empty space
+			for (let i = 0; i <= rows; i++) {
+				result[i] = new Array(width)
+				for (let j = 0; j < width; j++) {
+					result[i][j] = ' '
+				}
+			}
+		
+			// axis + labels
+			var maxLabelSize = 0
+			for (let y = min2; y <= max2; ++y) { // axis + labels
+				if (slabel) {
+					if (offset < 2) offset = 2
+					let label = String(format(rows > 0 ? max - (y - min2) * range / rows : y, y - min2))
+					if (!isString(label)) label = ""
+					if (label.length < 2) label = repeat(2 - label.length, " ")
+					result[y - min2][Math.max(offset - label.length, 0)] = label
+					if (label.length > maxLabelSize) maxLabelSize = label.length
+				}
+				result[y - min2][offset - 1] = (y == 0) ? symbols[0] : symbols[1]
+			}
+	
+			// plotting
+			for (let j = 0; j < series.length; j++) {
+				let currentColor = colors[j % colors.length]
+				let y0 = Math.round(series[j][0] * ratio) - min2
+				result[rows - y0][offset - 1] = colored(symbols[0], currentColor, dcolor) // first value
+	
+				for (let x = 0; x < series[j].length - 1; x++) { // plot the line
+					let y0 = Math.round(series[j][x + 0] * ratio) - min2
+					let y1 = Math.round(series[j][x + 1] * ratio) - min2
+					if (y0 == y1) {
+						result[rows - y0][x + offset] = colored(symbols[4], currentColor, dcolor)
+					} else {
+						result[rows - y1][x + offset] = colored((y0 > y1) ? symbols[5] : symbols[6], currentColor, dcolor)
+						result[rows - y0][x + offset] = colored((y0 > y1) ? symbols[7] : symbols[8], currentColor, dcolor)
+						let from = Math.min(y0, y1)
+						let to = Math.max(y0, y1)
+						for (let y = from + 1; y < to; y++) {
+							result[rows - y][x + offset] = colored(symbols[9], currentColor, dcolor)
+						}
+					}
+				}
+			}
+	
+			var _r = result.map(x => { 
+				if (maxLabelSize > 0) x.unshift(padding + repeat(maxLabelSize - x[0].length, " "))
+				return colored(x.join(''), dcolor, dcolor) 
+			}).join('\n')
+			return _r
+		}
+	
+		return linechart.plot(aSeries, aCfg)
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.lineChartLegend(titles, options) : Array</key>
+	 * Given an array of titles and the options provided to ow.format.string.lineChart will return an array
+	 * with each "symbol" and color used for each series and the corresponding "title".
+	 * </odoc>
+	 */
+	lineChartLegend: (titles, options) => {
+		_$(titles, "titles").isArray().$_()
+		options = _$(options, "options").isMap().default({})
+	
+		function colored(aS, color, dc) {
+			// do not color it if color is not specified
+			//return isUnDef(color) ? char : (linechart[color.toLowerCase()] + char + linechart.reset)
+			if (isUnDef(aS)) return ""
+			if (isUnDef(color)) {
+				return isDef(dc) ? aS + __ansiColorCache[dc] : aS
+			} 
+			if (isUnDef(__ansiColorCache[color])) __ansiColorCache[color] = __ansiColorPrep(color)
+			return __ansiColorCache[color] +  aS + (isDef(dc) ? __ansiColorCache[dc] : __ansiColorCache["RESET"])
+		}
+	
+		let _sym = _$(options.symbols, "symbols").isArray().default([ '┼', '┤', '╶', '╴', '─', '╰', '╭', '╮', '╯', '│' ])
+		let dcolor  = isDef(options.defaultColor) ? options.defaultColor : __
+		var ar = titles.map((t, i) => {
+			return {
+				symbol: colored(_sym[4], options.colors[i], dcolor),
+				title : colored(t, dcolor, dcolor)
+			}
+		})
+	
+		return ar
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.chart(aName, aDataPoint, aHSIze, aVSize, aMin, aMax, aTheme) : String</key>
 	 * Given data aName will store, between calls, aDataPoint provided to plot a chart with a horizontal aHSize
 	 * and a vertical aVSize. Optionally aMin value and aMax value can be provided. aTheme can optionally also be provided
