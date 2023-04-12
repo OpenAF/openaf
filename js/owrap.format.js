@@ -364,6 +364,7 @@ OpenWrap.format.prototype.string = {
 	 *   min     (number)   The minimum value to use in the chart\
 	 *   max     (number)   The maximum value to use in the chart\
 	 *   height  (number)   The line chart lines height to use\
+	 *   width   (number)   The maxium width of the line chart\  
 	 *   colors  (array)    Array of color names to use for each series\
 	 *   label   (boolean)  Boolean value to indicate if y labels should be included (default true)\
 	 *   format  (function) Custom functions that receives a value and returns a formatted string for labels\
@@ -383,11 +384,16 @@ OpenWrap.format.prototype.string = {
 	
 	    var colored = (aS, color, dc) => {
 			if (isUnDef(aS)) return ""
-			if (isUnDef(color)) {
-				return isDef(dc) ? aS + __ansiColorCache[dc] : aS
+			if (isUnDef(color) || color == dc) {
+				if (isDef(dc)) {
+					if (isUnDef(__ansiColorCache[dc])) __ansiColorCache[dc] = __ansiColorPrep(dc)
+					return __ansiColorCache[dc] + aS + ""
+				} else {
+					return aS
+				}
 			} 
 			if (isUnDef(__ansiColorCache[color])) __ansiColorCache[color] = __ansiColorPrep(color)
-			return __ansiColorCache[color] +  aS + (isDef(dc) ? __ansiColorCache[dc] : __ansiColorCache["RESET"])
+			return __ansiColorCache[color] + aS + (isDef(dc) ? __ansiColorCache[dc] : __ansiColorCache["RESET"])
 		}
 	
 		linechart.colored = colored
@@ -420,19 +426,22 @@ OpenWrap.format.prototype.string = {
 			let rows    = Math.abs(max2 - min2)
 			let dcolor  = _$(cfg.dColor, "dColor").isString().default(__)
 			let width = 0
+
+			let maxwidth = _$(cfg.width, "width").isNumber().default(__)
 			for (let i = 0; i < series.length; i++) {
 				width = Math.max(width, series[i].length)
 			}
-	
 			width = width + offset
+
 			let symbols = _$(cfg.symbols, "symbols").isArray().default(linechart.defaultSymbols)
 			let format  = _$(cfg.format, "format").isFunction().default(x => x.toFixed(fixed))
 	
 			// Preparing empty space
 			let result = new Array(rows + 1) // empty space
+			let _mw = isDef(maxwidth) ? Math.min(maxwidth, width) : width
 			for (let i = 0; i <= rows; i++) {
-				result[i] = new Array(width)
-				for (let j = 0; j < width; j++) {
+				result[i] = new Array(_mw)
+				for (let j = 0; j < _mw; j++) {
 					result[i][j] = ' '
 				}
 			}
@@ -445,7 +454,7 @@ OpenWrap.format.prototype.string = {
 					let label = String(format(rows > 0 ? max - (y - min2) * range / rows : y, y - min2))
 					if (!isString(label)) label = ""
 					if (label.length < 2) label = repeat(2 - label.length, " ")
-					result[y - min2][Math.max(offset - label.length, 0)] = label
+					result[y - min2][Math.max(offset - label.length, 0)] = isDef(dcolor) ? colored(label, dcolor, dcolor) : label
 					if (label.length > maxLabelSize) maxLabelSize = label.length
 				}
 				result[y - min2][offset - 1] = (y == 0) ? symbols[0] : symbols[1]
@@ -453,30 +462,42 @@ OpenWrap.format.prototype.string = {
 	
 			// plotting
 			for (let j = 0; j < series.length; j++) {
+				let _x, xoffset = 0
+				if (isDef(maxwidth) ) {
+					_x = maxwidth - maxLabelSize
+					xoffset = (series[j].length > _x) ? series[j].length - _x : 0
+					//print("_x = " + _x + " | xoffset = " + xoffset + " | len = " + series[j].length)
+				}
+
 				let currentColor = colors[j % colors.length]
-				let y0 = Math.round(series[j][0] * ratio) - min2
+				let y0 = Math.round(series[j][xoffset + 0] * ratio) - min2
 				result[rows - y0][offset - 1] = colored(symbols[0], currentColor, dcolor) // first value
 	
-				for (let x = 0; x < series[j].length - 1; x++) { // plot the line
+				for (let x = xoffset; x < series[j].length - 1; x++) { // plot the line
 					let y0 = Math.round(series[j][x + 0] * ratio) - min2
 					let y1 = Math.round(series[j][x + 1] * ratio) - min2
 					if (y0 == y1) {
-						result[rows - y0][x + offset] = colored(symbols[4], currentColor, dcolor)
+						result[rows - y0][(x - xoffset) + offset] = colored(symbols[4], currentColor, dcolor)
 					} else {
-						result[rows - y1][x + offset] = colored((y0 > y1) ? symbols[5] : symbols[6], currentColor, dcolor)
-						result[rows - y0][x + offset] = colored((y0 > y1) ? symbols[7] : symbols[8], currentColor, dcolor)
+						result[rows - y1][(x - xoffset) + offset] = colored((y0 > y1) ? symbols[5] : symbols[6], currentColor, dcolor)
+						result[rows - y0][(x - xoffset) + offset] = colored((y0 > y1) ? symbols[7] : symbols[8], currentColor, dcolor)
 						let from = Math.min(y0, y1)
 						let to = Math.max(y0, y1)
 						for (let y = from + 1; y < to; y++) {
-							result[rows - y][x + offset] = colored(symbols[9], currentColor, dcolor)
+							result[rows - y][(x - xoffset) + offset] = colored(symbols[9], currentColor, dcolor)
 						}
 					}
 				}
 			}
 	
 			var _r = result.map(x => { 
-				if (maxLabelSize > 0) x.unshift(padding + repeat(maxLabelSize - x[0].length, " "))
-				return colored(x.join(''), dcolor, dcolor) 
+				var _e = ansiLength(x[0])
+				if (maxLabelSize > 0) {
+					x.unshift(padding + repeat(maxLabelSize - _e, " "))
+					_e += ansiLength(x[0])
+				}
+				var __r = (isDef(maxwidth) ? x.slice(0, maxwidth - _e + 2) : x)
+				return colored(__r.join(''), dcolor, dcolor) 
 			}).join('\n')
 			return _r
 		}
