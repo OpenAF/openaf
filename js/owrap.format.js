@@ -541,6 +541,64 @@ OpenWrap.format.prototype.string = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.dataLineChart(aName, aDataPoint, aHSIze, aVSize, aOptions) : String</key>
+	 * Given data aName will store, between calls, aDataPoint (number or array of numbers) provided to plot a line chart with a horizontal aHSize
+	 * and a vertical aVSize. Optionally aOptions, equivalent to ow.format.string.lineChart options, can optionally also be provided.
+	 * </odoc>
+	 */
+	dataLineChart: (aName, aDataPoint, aHSize, aVSize, aOptions) => {
+		// Check
+		_$(aName, "aName").isString().$_()
+	
+		aDataPoint = _$(aDataPoint, "aDataPoint").default(__)
+		aHSize     = _$(aHSize).isNumber().default(45)
+		aVSize     = _$(aVSize).isNumber().default(15)
+		aOptions   = _$(aOptions).isMap().default({})
+	
+		if (!isNumber(aDataPoint) 
+		  && !isArray(aDataPoint) 
+		  && (isArray(aDataPoint) && aDataPoint.map(isNumber).reduce((aC,cV) => aC && cV, true)))
+		   throw "data point should be a number or an array of numbers"
+
+		// Get previous
+		var cN = "__oaf::chart"
+		$ch(cN).create()
+		var data = $ch(cN).get({ name: aName })
+		data = _$(data, "data").isMap().default({ name: aName, data: [] })
+	
+		// Store data
+		if (isDef(aDataPoint)) {
+			data.data.push(aDataPoint)	
+			while (data.data.length > aHSize ) data.data.shift()
+			$ch(cN).set({ name: aName }, data)
+		}
+	
+		var cc = true
+		if (!ow.format.isWindows()) {
+			cc = (__conAnsi ? true : false);
+		} else {
+			if (__initializeCon()) {
+				if (!ansiWinTermCap()) ansiStart();
+				if (isDef(__con.getTerminal().getOutputEncoding())) cc = (__conAnsi ? true : false);
+			}
+		}
+
+		var ar
+		if (isNumber(aDataPoint)) {
+			ar = data.data
+		} else {
+			if (data.data.length > 0) {
+				ar = []
+				for(var i = 0; i < data.data[0].length; i++) {
+					ar[i] = data.data.map(r => r[i])
+				}
+			}
+		}
+		return ow.format.string.lineChart(ar, merge({ width: aHSize, height: aVSize }, aOptions))
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.chart(aName, aDataPoint, aHSIze, aVSize, aMin, aMax, aTheme) : String</key>
 	 * Given data aName will store, between calls, aDataPoint provided to plot a chart with a horizontal aHSize
 	 * and a vertical aVSize. Optionally aMin value and aMax value can be provided. aTheme can optionally also be provided
