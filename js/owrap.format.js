@@ -541,6 +541,22 @@ OpenWrap.format.prototype.string = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.dataClean(aName)</key>
+	 * Given aName for data points entered using ow.format.string.chart and ow.format.string.dataLineChart will effectively delete all cached data.
+	 * If aName is not provided it will eliminate of cached data.
+	 * </odoc>
+	 */
+	dataClean: (aName) => {
+		aName = _$(aName, "aName").isString().default(__)
+		if (isDef(aName)) {
+			$ch("__oaf::chart").unset({ name: aName })
+		} else {
+			$ch("__oaf::chart").unsetAll(["name"], $ch("oaf__chart").getKeys())
+		}
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.dataLineChart(aName, aDataPoint, aHSIze, aVSize, aOptions) : String</key>
 	 * Given data aName will store, between calls, aDataPoint (number or array of numbers) provided to plot a line chart with a horizontal aHSize
 	 * and a vertical aVSize. Optionally aOptions, equivalent to ow.format.string.lineChart options, can optionally also be provided.

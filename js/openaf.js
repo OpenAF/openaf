@@ -437,6 +437,69 @@ const tprintErr = function(aTemplateString, someData) {
 	tprintErrnl(aTemplateString + __separator, someData);
 }
 
+const printChart = as => {
+    var _d = as.split(/ +/)
+    var name = _$(_d.shift(), "name").isString().$_()
+    var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si", "clean"]).$_()
+
+    if (type == "clean") {
+        ow.format.string.dataClean(name)
+        return
+    }
+    var useColor = false
+    var colors = [], titles = []
+
+    if (_d.filter(r => r.indexOf(":") > 0).length > 0) {
+        if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
+        useColor = true
+    }
+
+    var data = _d.map(r => {
+        if (useColor) {
+            var _ar = r.split(":")
+            colors.push(_ar[1])
+            titles.push(_ar[0])
+            return global[_ar[0]]()
+        } else {
+            return global[r]()
+        }
+    })
+
+    //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
+    var options = {}
+    if (useColor) options.colors = colors
+
+    switch(type) {
+    case "int":
+        options.format = x => Number(x).toFixed(0)
+        break
+    case "dec":
+        options.format = x => String(x)
+        break
+    case "dec1":
+        options.format = x => Number(x).toFixed(1)
+        break
+    case "dec2":
+        options.format = x => Number(x).toFixed(2)
+        break
+    case "dec3":
+        options.format = x => Number(x).toFixed(3)
+        break
+    case "bytes":
+        options.format = x => ow.format.toBytesAbbreviation(x)
+        break
+    case "si":
+        options.format = x => ow.format.toAbbreviation(x)
+        break
+    }
+
+    var _out = ow.format.string.dataLineChart(name, data, con.getConsoleReader().getTerminal().getWidth(), con.getConsoleReader().getTerminal().getHeight() - 5, options)
+    if (useColor) {
+        _out += "\n\n  " + ow.format.string.lineChartLegend(titles, options).map(r => r.symbol + " " + r.title).join("  ")
+    }
+    return _out
+}
+
 /**
  * <odoc>
  * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor) : String</key>
