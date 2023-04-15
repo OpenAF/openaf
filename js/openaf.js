@@ -437,10 +437,15 @@ const tprintErr = function(aTemplateString, someData) {
 	tprintErrnl(aTemplateString + __separator, someData);
 }
 
-const printChart = as => {
+const printChart = (as, hSize, vSize, aMax, aMin) => {
     var _d = as.split(/ +/)
     var name = _$(_d.shift(), "name").isString().$_()
     var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si", "clean"]).$_()
+
+    aMax  = _$(aMax, "aMax").isNumber().default(__)
+	aMin  = _$(aMin, "aMin").isNumber().default(__)
+    hSize = _$(hSize, "hSize").isNumber().default(con.getConsoleReader().getTerminal().getWidth())
+	vSize = _$(vSize, "vSize").isNumber().default(con.getConsoleReader().getTerminal().getHeight() - 5)
 
     if (type == "clean") {
         ow.format.string.dataClean(name)
@@ -455,18 +460,22 @@ const printChart = as => {
     }
 
     var data = _d.map(r => {
-        if (useColor) {
-            var _ar = r.split(":")
-            colors.push(_ar[1])
-            titles.push(_ar[0])
-            return global[_ar[0]]()
-        } else {
-            return global[r]()
-        }
+		try {
+			if (useColor) {
+				var _ar = r.split(":")
+				colors.push(_ar[1])
+				titles.push((_ar.length > 2) ? _ar[2] : _ar[0])
+				return global[_ar[0]]()
+			} else {
+				return global[r]()
+			}	
+		} catch(dme) {
+			throw "Error on '" + r + "': " + dme
+		}
     })
 
     //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
-    var options = {}
+    var options = { max: aMax, min: aMin }
     if (useColor) options.colors = colors
 
     switch(type) {
@@ -493,7 +502,7 @@ const printChart = as => {
         break
     }
 
-    var _out = ow.format.string.dataLineChart(name, data, con.getConsoleReader().getTerminal().getWidth(), con.getConsoleReader().getTerminal().getHeight() - 5, options)
+    var _out = ow.format.string.dataLineChart(name, data, hSize, vSize, options)
     if (useColor) {
         _out += "\n\n  " + ow.format.string.lineChartLegend(titles, options).map(r => r.symbol + " " + r.title).join("  ")
     }

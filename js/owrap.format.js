@@ -472,6 +472,7 @@ OpenWrap.format.prototype.string = {
 				let currentColor = colors[j % colors.length]
 				let y0 = Math.round(series[j][xoffset + 0] * ratio) - min2
 				result[rows - y0][offset - 1] = colored(symbols[0], currentColor, dcolor) // first value
+				if (slabel && offset >= 2) result[rows - y0][offset - 2] = colored(result[rows - y0][offset - 2], currentColor, dcolor) // label value
 	
 				for (let x = xoffset; x < series[j].length - 1; x++) { // plot the line
 					let y0 = Math.round(series[j][x + 0] * ratio) - min2
@@ -1348,7 +1349,9 @@ OpenWrap.format.prototype.toAbbreviation = function(number, digits) {
  * </odoc>
  */
 OpenWrap.format.prototype.toBytesAbbreviation = function (bytes, precision) {
-	if (isUndefined(precision)) precision = 3;
+    bytes = _$(bytes, "bytes").isNumber().default(0)
+	if (bytes == 0) return "0 bytes"
+	if (isUnDef(precision)) precision = 3
 
 	var sizes = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 	var posttxt = 0;
