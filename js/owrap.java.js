@@ -408,6 +408,159 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId,
     return this.removeOldVersionsSpecific(artifactId, aFilenameTemplate, this.getLatestVersion(aURI), aOutputDir, aFunction);
 };
 
+OpenWrap.java.prototype.JMX = function(aURL, aUser, aPass, aProvider) {
+    if (isMap(aURL)) aURL = templify("service:jmx:rmi:///jndi/rmi://{{host}}:{{port}}/jmxrmi", { host: aURL.host, port: aURL.port })
+    aURL      = _$(aURL, "aURL").isString().default(__)
+    aUser     = _$(aUser, "aUser").isString().default(__)
+    aPass     = _$(aPass, "aPass").isString().default(__)
+    aProvider = _$(aProvider, "aProvider").isString().default(__)
+
+    plugin("JMX")
+    this._jmx = new JMX(aURL, aUser, aPass, aProvider)
+}
+
+OpenWrap.java.prototype.JMX.prototype.queryNames = function(aQuery) {
+    aQuery = _$(aQuery, "aQuery").isString().default("java.lang:*")
+    if (aQuery.indexOf(":") < 0) aQuery += ":*"
+
+    var res = this._jmx.getJavaServerConnection().queryMBeans(new javax.management.ObjectName(aQuery), null)
+    return af.fromJavaArray(res.toArray()).map(r => String(r.getObjectName()))
+}
+
+OpenWrap.java.prototype.JMX.prototype.getAll = function() {
+    var data = {}
+
+    this.getDomains().sort().forEach(d => {
+        data[d] = {}
+        this.queryNames(d).sort().forEach(obj => {
+            data[d] = merge(data[d], this.getObjects(obj))
+        })
+    })
+
+    return data
+}
+
+OpenWrap.java.prototype.JMX.prototype.getDomains = function() {
+    return af.fromJavaArray(this._jmx.getJavaServerConnection().getDomains()).map(d => String(d))
+}
+
+OpenWrap.java.prototype.JMX.prototype.getJavaStd = function() {
+    return this.getObjects()
+}
+
+OpenWrap.java.prototype.JMX.prototype.getObjects = function(aObj) {
+    var res = { }, errors = []
+    this.queryNames(aObj).sort().forEach(obj => {
+        var type, name
+        obj.substring(obj.indexOf(":") + 1).split(",").forEach(r => {
+            var ar = r.split("=")
+            if (ar[0] == "type") type = ar[1]
+            if (ar[0] == "name") name = ar[1]
+        })
+        if (isDef(type)) {
+            if (isDef(name)) {
+                res[type] = {}
+                try {
+                    res[type][name] = this.getObject(obj)
+                } catch(e) {
+                    errors.push({ obj: obj, error: e })
+                }
+            } else {
+                try {
+                    res[type] = this.getObject(obj)
+                } catch(e) {
+                    errors.push({ obj: obj, error: e })
+                }
+            }
+        }
+    })
+    if (errors.length > 0) res._errors = errors
+    return res
+}
+
+OpenWrap.java.prototype.JMX.prototype.getObject = function(aObj) {
+    const _tt = (_o, p) => {
+        if (p == "ObjectName") return
+        if (!isJavaObject(_o)) {
+            $$(data).set(p, _o)
+            return
+        }
+        if (_o instanceof java.lang.String)  {
+            $$(data).set(p, String(_o))
+            return
+        }
+        if (_o instanceof java.lang.Number)  {
+            $$(data).set(p, Number(_o))
+            return
+        }
+        if (_o instanceof java.lang.Boolean) {
+            $$(data).set(p, Boolean(_o))
+            return
+        }
+        if (_o instanceof javax.management.openmbean.CompositeDataSupport) {
+            var _cm = af.fromJavaArray(_o.getCompositeType().keySet().toArray())
+            _cm.forEach(m => _tt(_o.get(m), p + "." + m) )
+            return
+        }
+        if (_o instanceof javax.management.openmbean.TabularDataSupport) {
+            var _cm = af.fromJavaArray(_o.keySet().toArray())
+            _cm.forEach((m1, i) => _tt(_o.get(af.fromJavaArray(m1)), p + "[" + i + "]" ) )
+            return
+        }
+        if (isJavaObject(_o)) {
+            if (String(_o.getClass()).startsWith("class [")) {
+                af.fromJavaArray(_o).forEach((m, i) => {
+                    _tt(m, p + "[" + i + "]")
+                })
+                return
+            }
+        }
+        //@ unknown
+        //? p
+        //? descType(_o)
+        $$(data).set(p, _o)
+    }
+
+    var obj = this._jmx.getObject(aObj)
+    var _map = af.fromJavaMap(obj.getAttributes())
+    if (isArray(_map.attributes)) {
+        var data = {}
+        _map.attributes.forEach(attr => {
+            _tt(obj.get(attr.name), attr.name)
+            /*if (isDef(attr.openType)) {
+                var _n = attr.name
+                if (_n == "ObjectName") return 
+                data[_n] = {}
+                var _o = obj.get(_n)
+                _tt(_o, _n)*/
+                /*if (_o instanceof javax.management.openmbean.CompositeDataSupport) {
+                    _gCT(obj.get(_n), _n)
+                    _gotit = true
+                }
+                if (_o instanceof java.lang.String) {
+                    data[_n] = String(obj.get(_n))
+                    _gotit = true
+                }
+                if (String(_o.getClass()).startsWith("class [")) {
+                    data[_n] = af.fromJavaArray(_o)
+                    _gotit = true
+                }
+                if (_o instanceof javax.management.openmbean.TabularDataSupport) {
+                    var _cm = af.fromJavaArray(obj.get(_n).keySet().toArray())
+                    _cm.forEach((m1, i) => {
+                        _gCT(obj.get(_n).get(af.fromJavaArray(m1)), _n + "[" + i + "]" )
+                    })
+                    _gotit = true
+                }*/
+                //if (!_gotit) data[_n] = obj.get(_n).getClass()
+            /*} else {
+                _tt(obj.get(attr.name), attr.name)
+            }*/
+        })
+        return data
+    }
+}
+
 /**
  * <odoc>
  * <key>ow.java.IMAP(aServer, aUser, aPassword, isSSL, aPort, isReadOnly)</key>
