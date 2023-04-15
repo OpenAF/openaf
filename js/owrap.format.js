@@ -549,10 +549,11 @@ OpenWrap.format.prototype.string = {
 	 */
 	dataClean: (aName) => {
 		aName = _$(aName, "aName").isString().default(__)
+		if ($ch().list().indexOf("__oaf::chart") >= 0) return
 		if (isDef(aName)) {
 			$ch("__oaf::chart").unset({ name: aName })
 		} else {
-			$ch("__oaf::chart").unsetAll(["name"], $ch("oaf__chart").getKeys())
+			$ch("__oaf::chart").unsetAll(["name"], $ch("oaf::__chart").getKeys())
 		}
 	},
 
