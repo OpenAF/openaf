@@ -437,15 +437,31 @@ const tprintErr = function(aTemplateString, someData) {
 	tprintErrnl(aTemplateString + __separator, someData);
 }
 
-const printChart = (as, hSize, vSize, aMax, aMin) => {
-    var _d = as.split(/ +/)
+/**
+ * <odoc>
+ * <key>printChart(aFormatString, hSize, vSize, aMax, aMin) : String</key>
+ * Produces a line chart given aFormatString, a hSize (horizontal max size), a vSize (vertical max size), aMax (the axis max value) and aMin 
+ * (the axis min value). The aFormatString should be composed of "&lt;dataset&gt; &lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
+ * \
+ *    The dataset should be an unique name (data can be cleaned with ow.format.string.dataClean);\
+ *    The units can be: int, dec1, dec2, dec3, dec, bytes and si;\
+ *    Each function should return the corresponding current value;\
+ *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
+ *    Optionally each legend, if used, will be included in a bottom legend;\
+ * \
+ * </odoc>
+ */
+const printChart = function(as, hSize, vSize, aMax, aMin) {
+	_$(as, "aFormatString").isString().$_()
+	
+    var _d = as.trim().split(/ +/)
     var name = _$(_d.shift(), "name").isString().$_()
     var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si", "clean"]).$_()
 
     aMax  = _$(aMax, "aMax").isNumber().default(__)
 	aMin  = _$(aMin, "aMin").isNumber().default(__)
-    hSize = _$(hSize, "hSize").isNumber().default(con.getConsoleReader().getTerminal().getWidth())
-	vSize = _$(vSize, "vSize").isNumber().default(con.getConsoleReader().getTerminal().getHeight() - 5)
+    hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+	vSize = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
 
     if (type == "clean") {
         ow.format.string.dataClean(name)
@@ -472,7 +488,7 @@ const printChart = (as, hSize, vSize, aMax, aMin) => {
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
 		}
-    })
+    }).filter(r => isDef(r))
 
     //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
     var options = { max: aMax, min: aMin }
@@ -502,10 +518,17 @@ const printChart = (as, hSize, vSize, aMax, aMin) => {
         break
     }
 
-    var _out = ow.format.string.dataLineChart(name, data, hSize, vSize, options)
+	var _out
+	try {
+		io.writeFileString("/tmp/test", name + "; " + stringify(data, __, true) + "; " + hSize + "; " + vSize + "; " + stringify(options, __, true) + "\n", __, true)
+    	_out = ow.format.string.dataLineChart(name, data, hSize, vSize, options)
+	} catch(e) {
+		io.writeFileString("/tmp/test", "ERROR: " + name + " " + stringify(data,__,"") + " " + stringify(options,__,"") + " | " + e + "\n", __, true)
+	}
     if (useColor) {
         _out += "\n\n  " + ow.format.string.lineChartLegend(titles, options).map(r => r.symbol + " " + r.title).join("  ")
     }
+	
     return _out
 }
 
@@ -3793,7 +3816,7 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   count_by(arr, 'field'), group(arr, 'field'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text')\
+ *   count_by(arr, 'field'), group(arr, 'field'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field')\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -3833,6 +3856,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		search_values: {
 			_func: ar => searchValues(ar[0], ar[1]),
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		delete: {
+			_func: ar => { delete ar[0][ar[1]]; return ar[0] },
+			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
