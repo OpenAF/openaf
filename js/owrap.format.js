@@ -401,8 +401,8 @@ OpenWrap.format.prototype.string = {
 			if (isNumber(series[0])) series = [series]
 			cfg = _$(cfg, "options").isMap().default({})
 	
-			let min = isDef(cfg.min) ? cfg.min : series[0][0]
-			let max = isDef(cfg.max) ? cfg.max : series[0][0]
+			let min = isNumber(cfg.min) ? cfg.min : series[0][0]
+			let max = isNumber(cfg.max) ? cfg.max : series[0][0]
 	
 			for (let j = 0; j < series.length; j++) {
 				for (let i = 0; i < series[j].length; i++) {
