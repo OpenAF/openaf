@@ -80,6 +80,8 @@
         ow.test.assert(ow.format.fromOctal(ow.format.toOctal(12345)), 12345, "Problem with conversion to octal");
         ow.test.assert(ow.format.fromHex(ow.format.toHex(12345)), 12345, "Problem with conversion to hex");    
         ow.test.assert(ow.format.fromBase36(ow.format.toBase36(12345)), 12345, "Problem with conversion to base36");
+        ow.test.assert(af.fromBytes2String(ow.format.fromBase32(ow.format.toBase32("abc12345"))), "abc12345", "Problem with conversion to base32")
+        ow.test.assert(af.fromBytes2String(ow.format.fromBase16(ow.format.toBase16("abc12345"))), "abc12345", "Problem with conversion to base16")
     };
 
     exports.testBytesAbbreviation = function() {

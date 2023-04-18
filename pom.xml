@@ -170,37 +170,37 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>9.4.50.v20221201</version>
+      <version>9.4.51.v20230217</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
-      <version>9.4.50.v20221201</version>
+      <version>9.4.51.v20230217</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
-      <version>9.4.50.v20221201</version>
+      <version>9.4.51.v20230217</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>9.4.50.v20221201</version>
+      <version>9.4.51.v20230217</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-common</artifactId>
-      <version>9.4.50.v20221201</version>
+      <version>9.4.51.v20230217</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-api</artifactId>
-      <version>9.4.50.v20221201</version>
+      <version>9.4.51.v20230217</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
-      <version>9.4.50.v20221201</version>
+      <version>9.4.51.v20230217</version>
     </dependency>
     <dependency>
       <groupId>jline</groupId>
@@ -285,7 +285,7 @@
     <dependency>
       <groupId>com.github.mwiede</groupId>
       <artifactId>jsch</artifactId>
-      <version>0.2.7</version>
+      <version>0.2.8</version>
     </dependency> 
   </dependencies>
   

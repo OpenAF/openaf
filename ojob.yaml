@@ -1,6 +1,12 @@
 # Author: Nuno Aguiar
 
 jobs:
+# OJOB PLACEHOLDER
+# -----------------------
+- name : ojob placeholder
+  help :
+    text: Placeholder job to allow for arguments injection
+
 # OJOB DEBUG
 # ----------------
 - name : ojob debug

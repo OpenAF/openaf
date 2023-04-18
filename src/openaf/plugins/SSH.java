@@ -90,8 +90,13 @@ public class SSH extends ScriptableObject {
 
 			if (uri.getScheme().toLowerCase().equals("ssh")) {
 				this.port = uri.getPort();
-				this.login = AFCmdBase.afc.dIP(uri.getUserInfo().split(":")[0]);
-				this.password = AFCmdBase.afc.dIP(uri.getUserInfo().split(":")[1]);
+				if (uri.getUserInfo().indexOf(":") >= 0) {
+					this.login = AFCmdBase.afc.dIP(uri.getUserInfo().split(":")[0]);
+					this.password = AFCmdBase.afc.dIP(uri.getUserInfo().split(":")[1]);
+				} else {
+					this.login = AFCmdBase.afc.dIP(uri.getUserInfo());
+					this.password = "";
+				}
 				this.identity = uri.getPath();
 
 				if (uri.getQuery() != null) {
@@ -234,7 +239,7 @@ public class SSH extends ScriptableObject {
 		if (session != null) session.setTimeout(aTimeout);
 	}
 	
-	protected void connectSSH() throws JSchException {
+	protected void connectSSH() throws JSchException, IOException {
 		if (SimpleLog.getCurrentLogLevel() == logtype.DEBUG) 
 			JSch.setLogger(new SSHLogger());
 		

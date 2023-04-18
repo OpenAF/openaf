@@ -357,6 +357,266 @@ OpenWrap.format.prototype.string = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.lineChart(aSeries, aOptions) : String</key>
+	 * Given an array of values (1 series) or an array of arrays of values (multiple series) will plot a line chart in 
+	 * ascii, with the provided aOptions, a return the corresponding string. Available options:\
+	 * \
+	 *   min     (number)   The minimum value to use in the chart\
+	 *   max     (number)   The maximum value to use in the chart\
+	 *   height  (number)   The line chart lines height to use\
+	 *   width   (number)   The maxium width of the line chart\  
+	 *   colors  (array)    Array of color names to use for each series\
+	 *   label   (boolean)  Boolean value to indicate if y labels should be included (default true)\
+	 *   format  (function) Custom functions that receives a value and returns a formatted string for labels\
+	 *   dColor  (string)   The default color to use\
+	 *   offset  (number)   The offset to assume (default 2)\
+	 *   padding (string)   The chart padding string (default "")\
+	 *   fixed   (number)   If no custom format function is provided will be the fixed decimals to use (default 2)\
+	 *   symbols (array)    An array of 10 characters to replace the default symbols\
+	 * </odoc>
+	 */
+    lineChart: (aSeries, aCfg) => {
+		// Based on https://github.com/kroitor/asciichart
+	
+		// control sequences for coloring
+		var linechart = {}
+		linechart.defaultSymbols = [ '┼', '┤', '╶', '╴', '─', '╰', '╭', '╮', '╯', '│' ]
+	
+	    var colored = (aS, color, dc) => {
+			if (isUnDef(aS)) return ""
+			if (isUnDef(color) || color == dc) {
+				if (isDef(dc)) {
+					if (isUnDef(__ansiColorCache[dc])) __ansiColorCache[dc] = __ansiColorPrep(dc)
+					return __ansiColorCache[dc] + aS + ""
+				} else {
+					return aS
+				}
+			} 
+			if (isUnDef(__ansiColorCache[color])) __ansiColorCache[color] = __ansiColorPrep(color)
+			return __ansiColorCache[color] + aS + (isDef(dc) ? __ansiColorCache[dc] : __ansiColorCache["RESET"])
+		}
+	
+		linechart.colored = colored
+		linechart.plot = function(series, cfg) {
+			if (isNumber(series[0])) series = [series]
+			cfg = _$(cfg, "options").isMap().default({})
+	
+			let min = isNumber(cfg.min) ? cfg.min : series[0][0]
+			let max = isNumber(cfg.max) ? cfg.max : series[0][0]
+	
+			for (let j = 0; j < series.length; j++) {
+				for (let i = 0; i < series[j].length; i++) {
+					min = Math.min(min, series[j][i])
+					max = Math.max(max, series[j][i])
+				}
+			}
+	
+			let range   = Math.abs(max - min)
+			let fixed   = _$(cfg.fixed, "fixed").isNumber().default(2)
+			if (fixed < 0) fixed = 0
+			let offset  = _$(cfg.offset, "offset").isNumber().default(2)
+			if (offset < 0) offset = 0
+			let padding = _$(cfg.padding, "padding").isString().default('')
+			let height  = _$(cfg.height, "height").isNumber().default(range)
+			let colors  = _$(cfg.colors, "colors").isArray().default([])
+			let slabel  = _$(cfg.label, "label").isBoolean().default(true)
+			let ratio   = range !== 0 ? height / range : 1;
+			let min2    = Math.round(min * ratio)
+			let max2    = Math.round(max * ratio)
+			let rows    = Math.abs(max2 - min2)
+			let dcolor  = _$(cfg.dColor, "dColor").isString().default(__)
+			let width = 0
+
+			let maxwidth = _$(cfg.width, "width").isNumber().default(__)
+			for (let i = 0; i < series.length; i++) {
+				width = Math.max(width, series[i].length)
+			}
+			width = width + offset
+
+			let symbols = _$(cfg.symbols, "symbols").isArray().default(linechart.defaultSymbols)
+			let format  = _$(cfg.format, "format").isFunction().default(x => x.toFixed(fixed))
+	
+			// Preparing empty space
+			let result = new Array(rows + 1) // empty space
+			let _mw = isDef(maxwidth) ? Math.min(maxwidth, width) : width
+			for (let i = 0; i <= rows; i++) {
+				result[i] = new Array(_mw)
+				for (let j = 0; j < _mw; j++) {
+					result[i][j] = ' '
+				}
+			}
+		
+			// axis + labels
+			var maxLabelSize = 0
+			for (let y = min2; y <= max2; ++y) { // axis + labels
+				if (slabel) {
+					if (offset < 2) offset = 2
+					let label = String(format(rows > 0 ? max - (y - min2) * range / rows : y, y - min2))
+					if (!isString(label)) label = ""
+					if (label.length < 2) label = repeat(2 - label.length, " ")
+					result[y - min2][Math.max(offset - label.length, 0)] = isDef(dcolor) ? colored(label, dcolor, dcolor) : label
+					if (label.length > maxLabelSize) maxLabelSize = label.length
+				}
+				result[y - min2][offset - 1] = (y == 0) ? symbols[0] : symbols[1]
+			}
+	
+			// plotting
+			for (let j = 0; j < series.length; j++) {
+				let _x, xoffset = 0
+				if (isDef(maxwidth) ) {
+					_x = maxwidth - maxLabelSize
+					xoffset = (series[j].length > _x) ? series[j].length - _x : 0
+					//print("_x = " + _x + " | xoffset = " + xoffset + " | len = " + series[j].length)
+				}
+
+				let currentColor = colors[j % colors.length]
+				let y0 = Math.round(series[j][xoffset + 0] * ratio) - min2
+				result[rows - y0][offset - 1] = colored(symbols[0], currentColor, dcolor) // first value
+				if (slabel && offset >= 2) result[rows - y0][offset - 2] = colored(result[rows - y0][offset - 2], currentColor, dcolor) // label value
+	
+				for (let x = xoffset; x < series[j].length - 1; x++) { // plot the line
+					let y0 = Math.round(series[j][x + 0] * ratio) - min2
+					let y1 = Math.round(series[j][x + 1] * ratio) - min2
+					if (y0 == y1) {
+						result[rows - y0][(x - xoffset) + offset] = colored(symbols[4], currentColor, dcolor)
+					} else {
+						result[rows - y1][(x - xoffset) + offset] = colored((y0 > y1) ? symbols[5] : symbols[6], currentColor, dcolor)
+						result[rows - y0][(x - xoffset) + offset] = colored((y0 > y1) ? symbols[7] : symbols[8], currentColor, dcolor)
+						let from = Math.min(y0, y1)
+						let to = Math.max(y0, y1)
+						for (let y = from + 1; y < to; y++) {
+							result[rows - y][(x - xoffset) + offset] = colored(symbols[9], currentColor, dcolor)
+						}
+					}
+				}
+			}
+	
+			var _r = result.map(x => { 
+				var _e = ansiLength(x[0])
+				if (maxLabelSize > 0) {
+					x.unshift(padding + repeat(maxLabelSize - _e, " "))
+					_e += ansiLength(x[0])
+				}
+				var __r = (isDef(maxwidth) ? x.slice(0, maxwidth - _e + 2) : x)
+				return colored(__r.join(''), dcolor, dcolor) 
+			}).join('\n')
+			return _r
+		}
+	
+		return linechart.plot(aSeries, aCfg)
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.lineChartLegend(titles, options) : Array</key>
+	 * Given an array of titles and the options provided to ow.format.string.lineChart will return an array
+	 * with each "symbol" and color used for each series and the corresponding "title".
+	 * </odoc>
+	 */
+	lineChartLegend: (titles, options) => {
+		_$(titles, "titles").isArray().$_()
+		options = _$(options, "options").isMap().default({})
+	
+		function colored(aS, color, dc) {
+			// do not color it if color is not specified
+			//return isUnDef(color) ? char : (linechart[color.toLowerCase()] + char + linechart.reset)
+			if (isUnDef(aS)) return ""
+			if (isUnDef(color)) {
+				return isDef(dc) ? aS + __ansiColorCache[dc] : aS
+			} 
+			if (isUnDef(__ansiColorCache[color])) __ansiColorCache[color] = __ansiColorPrep(color)
+			return __ansiColorCache[color] +  aS + (isDef(dc) ? __ansiColorCache[dc] : __ansiColorCache["RESET"])
+		}
+	
+		let _sym = _$(options.symbols, "symbols").isArray().default([ '┼', '┤', '╶', '╴', '─', '╰', '╭', '╮', '╯', '│' ])
+		let dcolor  = isDef(options.defaultColor) ? options.defaultColor : __
+		var ar = titles.map((t, i) => {
+			return {
+				symbol: colored(_sym[4], options.colors[i], dcolor),
+				title : colored(t, dcolor, dcolor)
+			}
+		})
+	
+		return ar
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.dataClean(aName)</key>
+	 * Given aName for data points entered using ow.format.string.chart and ow.format.string.dataLineChart will effectively delete all cached data.
+	 * If aName is not provided it will eliminate of cached data.
+	 * </odoc>
+	 */
+	dataClean: (aName) => {
+		aName = _$(aName, "aName").isString().default(__)
+		if ($ch().list().indexOf("__oaf::chart") >= 0) return
+		if (isDef(aName)) {
+			$ch("__oaf::chart").unset({ name: aName })
+		} else {
+			$ch("__oaf::chart").unsetAll(["name"], $ch("oaf::__chart").getKeys())
+		}
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.dataLineChart(aName, aDataPoint, aHSIze, aVSize, aOptions) : String</key>
+	 * Given data aName will store, between calls, aDataPoint (number or array of numbers) provided to plot a line chart with a horizontal aHSize
+	 * and a vertical aVSize. Optionally aOptions, equivalent to ow.format.string.lineChart options, can optionally also be provided.
+	 * </odoc>
+	 */
+	dataLineChart: (aName, aDataPoint, aHSize, aVSize, aOptions) => {
+		// Check
+		_$(aName, "aName").isString().$_()
+	
+		aDataPoint = _$(aDataPoint, "aDataPoint").default(__)
+		aHSize     = _$(aHSize).isNumber().default(45)
+		aVSize     = _$(aVSize).isNumber().default(15)
+		aOptions   = _$(aOptions).isMap().default({})
+	
+		if (!isNumber(aDataPoint) 
+		  && !isArray(aDataPoint) 
+		  && (isArray(aDataPoint) && aDataPoint.map(isNumber).reduce((aC,cV) => aC && cV, true)))
+		   throw "data point should be a number or an array of numbers"
+
+		// Get previous
+		var cN = "__oaf::chart"
+		$ch(cN).create()
+		var data = $ch(cN).get({ name: aName })
+		data = _$(data, "data").isMap().default({ name: aName, data: [] })
+	
+		// Store data
+		if (isDef(aDataPoint)) {
+			data.data.push(aDataPoint)	
+			while (data.data.length > aHSize ) data.data.shift()
+			$ch(cN).set({ name: aName }, data)
+		}
+	
+		var cc = true
+		if (!ow.format.isWindows()) {
+			cc = (__conAnsi ? true : false);
+		} else {
+			if (__initializeCon()) {
+				if (!ansiWinTermCap()) ansiStart();
+				if (isDef(__con.getTerminal().getOutputEncoding())) cc = (__conAnsi ? true : false);
+			}
+		}
+
+		var ar
+		if (isNumber(aDataPoint)) {
+			ar = data.data
+		} else {
+			if (data.data.length > 0) {
+				ar = []
+				for(var i = 0; i < data.data[0].length; i++) {
+					ar[i] = data.data.map(r => r[i])
+				}
+			}
+		}
+		return ow.format.string.lineChart(ar, merge({ width: aHSize, height: aVSize }, aOptions))
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.chart(aName, aDataPoint, aHSIze, aVSize, aMin, aMax, aTheme) : String</key>
 	 * Given data aName will store, between calls, aDataPoint provided to plot a chart with a horizontal aHSize
 	 * and a vertical aVSize. Optionally aMin value and aMax value can be provided. aTheme can optionally also be provided
@@ -936,6 +1196,32 @@ OpenWrap.format.prototype.toBase36 = function(aNumber, aLength) {
 	return (isDef(aLength)) ? ow.format.string.leftPad(t , aLength, "0") : t;
 };
 
+/*
+ * <odoc>
+ * <key>ow.format.toBase32(aString) : String</key>
+ * Given aString or array of bytes transforms the contents to base 32.
+ * </odoc>
+ */
+OpenWrap.format.prototype.toBase32 = function(aString) {
+	var b32 = new Packages.org.apache.commons.codec.binary.Base32()
+
+	if (isString(aString)) aString = af.fromString2Bytes(aString)
+	return af.fromBytes2String(b32.encode(aString))
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.toBase16(aString) : String</key>
+ * Given aString or array of bytes transforms the contents to base 16.
+ * </odoc>
+ */
+OpenWrap.format.prototype.toBase16 = function(aString) {
+	var b16 = new Packages.org.apache.commons.codec.binary.Base16()
+
+	if (isString(aString)) aString = af.fromString2Bytes(aString)
+	return af.fromBytes2String(b16.encode(aString))
+}
+
 /**
  * <odoc>
  * <key>ow.format.fromBase36(aString) : Number</key>
@@ -945,6 +1231,32 @@ OpenWrap.format.prototype.toBase36 = function(aNumber, aLength) {
 OpenWrap.format.prototype.fromBase36 = function(aString) {
 	return parseInt(aString, 36);
 };
+
+/**
+ * <odoc>
+ * <key>ow.format.fromBase32(aString) : bytes</key>
+ * Given a base 32 aString transforms it back to the original array of bytes.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromBase32 = function(aString) {
+	_$(aString, "aString").isString().$_()
+	var b32 = new Packages.org.apache.commons.codec.binary.Base32()
+
+	return b32.decode(aString)
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.fromBase16(aString) : bytes</key>
+ * Given a base 16 aString transforms it back to the original array of bytes.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromBase16 = function(aString) {
+	_$(aString, "aString").isString().$_()
+	var b16 = new Packages.org.apache.commons.codec.binary.Base16()
+
+	return b16.decode(aString)
+}
 
 /**
  * <odoc>
@@ -1038,7 +1350,9 @@ OpenWrap.format.prototype.toAbbreviation = function(number, digits) {
  * </odoc>
  */
 OpenWrap.format.prototype.toBytesAbbreviation = function (bytes, precision) {
-	if (isUndefined(precision)) precision = 3;
+    bytes = _$(bytes, "bytes").isNumber().default(0)
+	if (bytes == 0) return "0 bytes"
+	if (isUnDef(precision)) precision = 3
 
 	var sizes = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 	var posttxt = 0;
@@ -1164,6 +1478,7 @@ OpenWrap.format.prototype.fromTimeAbbreviation = function(aStr) {
 				"m" : 60 * 1000,
 				"h" : 60 * 60 * 1000,
 				"d" : 24 * 60 * 60 * 1000,
+				"w" : 7 * 24 * 60 * 60 * 1000,
 				"M" : 30 * 24 * 60 * 60 * 1000,
 				"y" : 365 * 24 * 60 * 60 * 1000
 			}
@@ -1256,6 +1571,7 @@ OpenWrap.format.prototype.toBoolean = toBoolean;
 OpenWrap.format.prototype.now = now;
 OpenWrap.format.prototype.nowUTC = nowUTC;
 OpenWrap.format.prototype.nowNano = nowNano;
+OpenWrap.format.prototype.hmacSHA1 = hmacSHA1;
 OpenWrap.format.prototype.hmacSHA256 = hmacSHA256;
 OpenWrap.format.prototype.hmacSHA384 = hmacSHA384;
 OpenWrap.format.prototype.hmacSHA512 = hmacSHA512;

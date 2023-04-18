@@ -410,6 +410,182 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId,
 
 /**
  * <odoc>
+ * <key>ow.java.JMX(aURL, aUser, aPass, aProvider) : JMX</key>
+ * Creates a JMX connection to the provided URL (similar to service:jmx:rmi:///jndi/rmi://1.2.3.4:1234/jmxrmi or a map with a host and a port).
+ * Optionally, if necessary, aUser and aPass. To customize the JMX provider use aProvider.
+ * </odoc>
+ */
+OpenWrap.java.prototype.JMX = function(aURL, aUser, aPass, aProvider) {
+    if (isMap(aURL)) aURL = templify("service:jmx:rmi:///jndi/rmi://{{host}}:{{port}}/jmxrmi", { host: aURL.host, port: aURL.port })
+    aURL      = _$(aURL, "aURL").isString().default(__)
+    aUser     = _$(aUser, "aUser").isString().default(__)
+    aPass     = _$(aPass, "aPass").isString().default(__)
+    aProvider = _$(aProvider, "aProvider").isString().default(__)
+
+    plugin("JMX")
+    this._jmx = new JMX(aURL, aUser, aPass, aProvider)
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.JMX.queryNames(aQuery) : Array</key>
+ * Given aQuery (similar to 'java.lang:*') given a JMX domain it will query the JMX target and return a list of registered domain + name + type ready to be used
+ * with ow.java.JMX.getObject. 
+ * </odoc>
+ */
+OpenWrap.java.prototype.JMX.prototype.queryNames = function(aQuery) {
+    aQuery = _$(aQuery, "aQuery").isString().default("java.lang:*")
+    if (aQuery.indexOf(":") < 0) aQuery += ":*"
+
+    var res = this._jmx.getJavaServerConnection().queryMBeans(new javax.management.ObjectName(aQuery), null)
+    return af.fromJavaArray(res.toArray()).map(r => String(r.getObjectName()))
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.JMX.getAll() : Map</key>
+ * Will query the JMX target for all registered domains, query the registered objects for each domain and returns a combined map of the corresponding values.
+ * </odoc>
+ */
+OpenWrap.java.prototype.JMX.prototype.getAll = function() {
+    var data = {}
+
+    this.getDomains().sort().forEach(d => {
+        data[d] = {}
+        this.queryNames(d).sort().forEach(obj => {
+            data[d] = merge(data[d], this.getObjects(obj))
+        })
+    })
+
+    return data
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.JMX.getDomains() : Array</key>
+ * Will query the JMX target for existing domains to be used with ow.java.JMX.queryNames a return the corresponding list.
+ * </odoc>
+ */
+OpenWrap.java.prototype.JMX.prototype.getDomains = function() {
+    return af.fromJavaArray(this._jmx.getJavaServerConnection().getDomains()).map(d => String(d))
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.JMX.getJavaStd() : Map</key>
+ * Will query the JMX target for the "java.lang.*" objects and return the corresponding map. 
+ * </odoc>
+ */
+OpenWrap.java.prototype.JMX.prototype.getJavaStd = function() {
+    return this.getObjects()
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.JMX.getObjects(aObjectName) : Map</key>
+ * Given a JMX domain + name + type or JMX aQuery (similar to the provided to ow.java.JMX.queryNames) will retrieve all objects
+ * from each domain, name and type. The returned map will be organized by a map "name" entry with sub-map for each "type".
+ * </odoc>
+ */
+OpenWrap.java.prototype.JMX.prototype.getObjects = function(aObj) {
+    var res = { }, errors = []
+    this.queryNames(aObj).sort().forEach(obj => {
+        var type, name
+        obj.substring(obj.indexOf(":") + 1).split(",").forEach(r => {
+            var ar = r.split("=")
+            if (ar[0] == "type") type = ar[1]
+            if (ar[0] == "name") name = ar[1]
+        })
+        if (isDef(type)) {
+            if (isDef(name)) {
+                res[type] = {}
+                try {
+                    res[type][name] = this.getObject(obj)
+                } catch(e) {
+                    if (String(e).indexOf("java.lang.UnsupportedOperationException") < 0) errors.push({ obj: obj, error: e })
+                }
+            } else {
+                try {
+                    res[type] = this.getObject(obj)
+                } catch(e) {
+                    if (String(e).indexOf("java.lang.UnsupportedOperationException") < 0) errors.push({ obj: obj, error: e })
+                }
+            }
+        }
+    })
+    if (errors.length > 0) res._errors = errors
+    return res
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.JMX.getObject(anObject) : Map</key>
+ * Given a JMX anObject will find all the corresponding attributes, retrieve their corresponding values and returning in a map. If any errors
+ * occurred a map entry "_errors" with an array of errors will be included in the returned map.
+ * </odoc>
+ */
+OpenWrap.java.prototype.JMX.prototype.getObject = function(aObj) {
+    var errors = []
+
+    const _tt = (_o, p) => {
+        if (p == "ObjectName") return
+        if (!isJavaObject(_o)) {
+            $$(data).set(p, _o)
+            return
+        }
+        if (_o instanceof java.lang.String)  {
+            $$(data).set(p, String(_o))
+            return
+        }
+        if (_o instanceof java.lang.Number)  {
+            $$(data).set(p, Number(_o))
+            return
+        }
+        if (_o instanceof java.lang.Boolean) {
+            $$(data).set(p, Boolean(_o))
+            return
+        }
+        if (_o instanceof javax.management.openmbean.CompositeDataSupport) {
+            var _cm = af.fromJavaArray(_o.getCompositeType().keySet().toArray())
+            _cm.forEach(m => _tt(_o.get(m), p + "." + m) )
+            return
+        }
+        if (_o instanceof javax.management.openmbean.TabularDataSupport) {
+            var _cm = af.fromJavaArray(_o.keySet().toArray())
+            $$(data).set(p, [])
+            _cm.forEach((m1, i) => _tt(_o.get(af.fromJavaArray(m1)), p + "[" + i + "]" ) )
+            return
+        }
+        if (isJavaObject(_o)) {
+            if (String(_o.getClass()).startsWith("class [")) {
+                $$(data).set(p, [])
+                af.fromJavaArray(_o).forEach((m, i) => {
+                    _tt(m, p + "[" + i + "]")
+                })
+                return
+            }
+        }
+        $$(data).set(p, _o)
+    }
+
+    var obj = this._jmx.getObject(aObj)
+    var _map = af.fromJavaMap(obj.getAttributes())
+    if (isArray(_map.attributes)) {
+        var data = {}
+        _map.attributes.forEach(attr => {
+            try {
+                _tt(obj.get(attr.name), attr.name)
+            } catch(afe) {
+                if (String(afe).indexOf("java.lang.UnsupportedOperationException") < 0) errors.push(attr.name + " | " + afe)
+            }
+        })
+        if (errors.length > 0) data._errors = errors
+        return data
+    }
+}
+
+/**
+ * <odoc>
  * <key>ow.java.IMAP(aServer, aUser, aPassword, isSSL, aPort, isReadOnly)</key>
  * Creates an instance to access aServer, using aUser and aPassword through a optional aPort and optionally using isSSL = true to use SSL.
  * If isReadOnly = true the folders will be open only as read-only.

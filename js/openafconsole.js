@@ -13,7 +13,7 @@ var HELPSEPARATOR_ANSI = "─";
 var CONSOLESEPARATOR_ANSI = "── ";
 var CONSOLEHISTORY = ".openaf-console_history";
 var CONSOLEPROFILE = ".openaf-console_profile";
-var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|tree|view|sql|esql|dsql|pin|multi|diff";
+var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch|clear|purge|pause|table|tree|view|sql|esql|dsql|pin|multi|diff|reset";
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "print(\"Encrypted text: \" + askEncrypt(\"Enter text: \"));",
@@ -537,10 +537,11 @@ function __watch(aLineOfCommands) {
 				}
 
 				t.stop();
-				__clear();
+				__reset()
 			} catch(e) {
-				printErr(e.message);
-				t.stop(true);
+				__reset()
+				t.stop(true)
+				printErr(e.message)
 			}
 			//colorCommand = oldcolorCommand;
 		} else {
@@ -597,6 +598,7 @@ function __help(aTerm) {
 		__o("__view__     Tries to show the command result object as an ascii table.");
 		__o("__multi__    Turns on or off the entry of multiline expressions (default on)");
 		__o("__clear__    Tries to clear the screen.");
+		__o("__reset__    Resets the terminal in unix based consoles.")
 		__o("__purge__    Purge all the command history");
 		__o("__[others]__ Executed as a OpenAF script command (example 'print(\"ADEUS!!!\");')");
 	} else {
@@ -741,6 +743,14 @@ function __clear() {
 		//cprintnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
 		//if (!__ansiColorFlag) jansi.AnsiConsole.systemUninstall();
 		cls();
+	}
+}
+
+function __reset() {
+	if (ow.format.isWindows()) {
+		__clear()
+	} else {
+		sh("stty icanon echo 2>/dev/null && /bin/sh -c reset && stty -icanon min 1 -echo 2>/dev/null", __, __, true)
 	}
 }
 
@@ -973,6 +983,10 @@ function __processCmdLine(aCommand, returnOnly) {
 			if (aCommand.match(/^clear(?: +|$)/)) {
 				internalCommand = true;
 				__clear();
+			}
+			if (aCommand.match(/^reset(?: +|$)/)) {
+				internalCommand = true;
+				__reset();
 			}
 			if (aCommand.match(/^pause(?: +|$)/)) {
 				internalCommand = true;

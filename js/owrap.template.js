@@ -685,7 +685,7 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
 
 /**
  * <odoc>
- * <key>ow.template.parseMD2HTML(aMarkdownString, isFull, removeMaxWidth) : String</key>
+ * <key>ow.template.parseMD2HTML(aMarkdownString, isFull, removeMaxWidth, extraDownOptions) : String</key>
  * Given aMarkdownString will parse it with showdown (using the github flavor) and return the HTML in a string. If isFull = true
  * it will produce a complete HTML with references for the highlight library+css and github markdown css included internally in OpenAF.
  * Example:\
@@ -696,23 +696,43 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
  * \
  * </odoc>
  */
-OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth) {
+OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions) {
+	extraDownOptions = _$(extraDownOptions).isMap().default(__flags.MD_SHOWDOWN_OPTIONS)
+
 	removeMaxWidth = _$(removeMaxWidth, "removeMaxWidth").isBoolean().default(__flags.MD_NOMAXWIDTH)
 	//var showdown = require(getOpenAFJar() + "::js/showdown.js");
 	var showdown = loadCompiledRequire("showdown_js");
 	showdown.setFlavor("github");
-        showdown.setOption("customizedHeaderId", "true");
-        showdown.setOption("parseImgDimensions", "true");
-        showdown.setOption("simplifiedAutoLink", "true");
-        showdown.setOption("strikethrough", "true");
-        showdown.setOption("tables", "true");
-        showdown.setOption("tablesHeaderId", "true");
-        showdown.setOption("tasklists", "true");
-        showdown.setOption("backslashEscapesHTMLTags", "true");
-        showdown.setOption("emoji", "true");
-        showdown.setOption("underline", "true");
-	showdown.setOption("splitAdjacentBlockquotes", "true");
+	/*showdown.setOption("customizedHeaderId", "true");
+	showdown.setOption("parseImgDimensions", "true");
+	showdown.setOption("simplifiedAutoLink", "true");
+	showdown.setOption("strikethrough", "true");
+	showdown.setOption("tables", "true");
+	showdown.setOption("tablesHeaderId", "true");
+	showdown.setOption("tasklists", "true");
+	showdown.setOption("backslashEscapesHTMLTags", "true");
+	showdown.setOption("emoji", "true");
+	showdown.setOption("underline", "true");
+	showdown.setOption("splitAdjacentBlockquotes", "true");*/
         
+	extraDownOptions = merge({
+		"customizedHeaderId"      : true,
+		"parseImgDimensions"      : true,
+		"simplifiedAutoLink"      : true,
+		"strikethrough"           : true,
+		"tables"                  : true,
+		"tablesHeaderId"          : true,
+		"tasklists"               : true,
+		"backslashEscapesHTMLTags": true,
+		"emoji"                   : true,
+		"underline"               : true,
+		"splitAdjacentBlockquotes": true
+	}, extraDownOptions)
+
+	Object.keys(extraDownOptions).forEach(k => {
+		showdown.setOption(k, extraDownOptions[k])
+	})
+
 	var converter = new showdown.Converter();
 
 	if (isFull) {

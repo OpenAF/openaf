@@ -439,6 +439,101 @@ const tprintErr = function(aTemplateString, someData) {
 
 /**
  * <odoc>
+ * <key>printChart(aFormatString, hSize, vSize, aMax, aMin) : String</key>
+ * Produces a line chart given aFormatString, a hSize (horizontal max size), a vSize (vertical max size), aMax (the axis max value) and aMin 
+ * (the axis min value). The aFormatString should be composed of "&lt;dataset&gt; &lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
+ * \
+ *    The dataset should be an unique name (data can be cleaned with ow.format.string.dataClean);\
+ *    The units can be: int, dec1, dec2, dec3, dec, bytes and si;\
+ *    Each function should return the corresponding current value;\
+ *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
+ *    Optionally each legend, if used, will be included in a bottom legend;\
+ * \
+ * </odoc>
+ */
+const printChart = function(as, hSize, vSize, aMax, aMin) {
+	_$(as, "aFormatString").isString().$_()
+	
+    var _d = as.trim().split(/ +/)
+    var name = _$(_d.shift(), "name").isString().$_()
+    var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si", "clean"]).$_()
+
+    aMax  = _$(aMax, "aMax").isNumber().default(__)
+	aMin  = _$(aMin, "aMin").isNumber().default(__)
+    hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+	vSize = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
+
+    if (type == "clean") {
+        ow.format.string.dataClean(name)
+        return
+    }
+    var useColor = false
+    var colors = [], titles = []
+
+    if (_d.filter(r => r.indexOf(":") > 0).length > 0) {
+        if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
+        useColor = true
+    }
+
+    var data = _d.map(r => {
+		try {
+			if (useColor) {
+				var _ar = r.split(":")
+				colors.push(_ar[1])
+				titles.push((_ar.length > 2) ? _ar[2] : _ar[0])
+				return global[_ar[0]]()
+			} else {
+				return global[r]()
+			}	
+		} catch(dme) {
+			throw "Error on '" + r + "': " + dme
+		}
+    }).filter(r => isDef(r))
+
+    //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
+    var options = { max: aMax, min: aMin }
+    if (useColor) options.colors = colors
+
+    switch(type) {
+    case "int":
+        options.format = x => Number(x).toFixed(0)
+        break
+    case "dec":
+        options.format = x => String(x)
+        break
+    case "dec1":
+        options.format = x => Number(x).toFixed(1)
+        break
+    case "dec2":
+        options.format = x => Number(x).toFixed(2)
+        break
+    case "dec3":
+        options.format = x => Number(x).toFixed(3)
+        break
+    case "bytes":
+        options.format = x => ow.format.toBytesAbbreviation(x)
+        break
+    case "si":
+        options.format = x => ow.format.toAbbreviation(x)
+        break
+    }
+
+	var _out
+	try {
+		io.writeFileString("/tmp/test", name + "; " + stringify(data, __, true) + "; " + hSize + "; " + vSize + "; " + stringify(options, __, true) + "\n", __, true)
+    	_out = ow.format.string.dataLineChart(name, data, hSize, vSize, options)
+	} catch(e) {
+		io.writeFileString("/tmp/test", "ERROR: " + name + " " + stringify(data,__,"") + " " + stringify(options,__,"") + " | " + e + "\n", __, true)
+	}
+    if (useColor) {
+        _out += "\n\n  " + ow.format.string.lineChartLegend(titles, options).map(r => r.symbol + " " + r.title).join("  ")
+    }
+	
+    return _out
+}
+
+/**
+ * <odoc>
  * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
  * Optionally you can specify aWidthLimit, useAnsi and/or aBgColor.
@@ -662,7 +757,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		_ac  = (aAnsi, aString) => {
 			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
 			if (aAnsi.length == 0) return aString
-			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi](aString)
+			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
 			var res = ansiColor(aAnsi, aString, true)
 			return res
 		}
@@ -1101,7 +1196,9 @@ function __initializeCon() {
 	}
 }
 
-var __ansiColorCache = {}
+var __ansiColorCache = {
+	RESET: "\x1b[m"
+}
 const __ansiColorPrep = function(aAnsi) {
 	var jansi = JavaImporter(Packages.org.fusesource.jansi)
 	var aString = "RRR"
@@ -1126,7 +1223,8 @@ const __ansiColorPrep = function(aAnsi) {
 		o = aString
 	}
 
-	return new Function("s", "return \"" + o.replace("RRR", "\"+s+\"") + "\"")
+	return o.substring(0, o.indexOf("RRR"))
+	//return new Function("s", "return \"" + o.replace("RRR", "\"+s+\"") + "\"")
 }
 /**
  * <odoc>
@@ -1154,13 +1252,11 @@ const ansiColor = function(aAnsi, aString, force, noCache) {
 	var res = "";
 	
 	if (ansis && aAnsi.length > 0) {
-		if (noCache) return __ansiColorPrep(aAnsi)(aString)
-		if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi](aString)
+		if (noCache) return __ansiColorPrep(aAnsi) + aString + __ansiColorCache["RESET"]
+		if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
 
 		__ansiColorCache[aAnsi] = __ansiColorPrep(aAnsi)
-		return __ansiColorCache[aAnsi](aString)
-		//var res = Packages.openaf.JAnsiRender.render(aAnsi.toLowerCase() + " " + aString);
-		return String(res); 
+		return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
 	} else {
 		return aString;
 	}
@@ -2193,6 +2289,17 @@ const hmacSHA512 = function(data, key, toHex) {
  */
 const hmacSHA384 = function(data, key, toHex) {
 	return hmacSHA256(data, key, toHex, "HmacSHA384");
+}
+
+/**
+ * <odoc>
+ * <key>hmacSHA1(data, key, toHex) : ArrayOfBytes</key>
+ * Given data and a key will calculate the hash-based message authentication code (HMAC) using the SHA1 hash
+ * function. Optionally if toHex = true the output will be converted to hexadecimal lower case.
+ * </odoc>
+ */
+const hmacSHA1 = function(data, key, toHex) {
+	return hmacSHA256(data, key, toHex, "HmacSHA1")
 }
 
 /**
@@ -3708,6 +3815,9 @@ var $from = function(a) {
  *   abs(x), avg(x), contains(x, y), ceil(x), floor(x), join(x, arr), keys(obj), length(x), map(expr, arr), max(x), max_by(x, y), merge(a, b), min(a), min_by(a, b), not_null(a), reverse(arr), sort(arr), sort_by(a, y), starts_with(a, b), ends_with(a, b), sum(a), to_array(a), to_string(a), to_number(a), type(a), values(a)\
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
+ * [OpenAF custom functions]: \
+ *   count_by(arr, 'field'), group(arr, 'field'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field')\
+ * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
  * \
@@ -3716,6 +3826,43 @@ var $from = function(a) {
 const $path = function(aObj, aPath, customFunctions) {
 	loadCompiledLib("jmespath_js");
 	
+	aPath = _$(aPath, "aPath").isString().default("@")
+	customFunctions = _$(customFunctions, "customFunctions").isMap().default({})
+	customFunctions = merge({
+		count_by: {
+			_func: ar => $from(ar[0]).countBy(ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		group: {
+			_func: ar => $from(ar[0]).group(ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		unique: {
+			_func: ar => uniqArray(ar[0]),
+			_signature: [ { types: [ jmespath.types.array ] } ]
+		},
+		to_map: {
+			_func: ar => $from(ar[0]).mselect(__, ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		flat_map: {
+			_func: ar => ow.loadObj().flatMap(ar[0]),
+			_signature: [ { types: [ jmespath.types.array, jmespath.types.object ] } ]
+		},
+		search_keys: {
+			_func: ar => searchKeys(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		search_values: {
+			_func: ar => searchValues(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		delete: {
+			_func: ar => { delete ar[0][ar[1]]; return ar[0] },
+			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
+		}
+	}, customFunctions)
+
 	if (isDef(aObj))
 		return jmespath.search(aObj, aPath, customFunctions);
 	else
@@ -7068,6 +7215,7 @@ var __flags = _$(__flags).isMap().default({
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
+	MD_SHOWDOWN_OPTIONS        : {},
 	ANSICOLOR_CACHE            : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
 	TREE: {
@@ -9597,7 +9745,7 @@ const $ssh = function(aMap) {
 	 * <odoc>
 	 * <key>$ssh.$ssh(aMap) : $ssh</key>
 	 * Builds an object to allow access through ssh. aMap should be a ssh string with the format: ssh://user:pass@host:port/identificationKey?timeout=1234&amp;compression=true or
-	 * a map with the keys: host, port, login, pass, id/key, compress and timeout. See "help SSH.SSH" for more info.
+	 * a map with the keys: host, port, login, pass, id (file key) / key (string representation), compress and timeout. See "help SSH.SSH" for more info.
 	 * </odoc>
 	 */
     var __ssh = function(aMap) {

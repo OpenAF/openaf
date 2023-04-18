@@ -144,7 +144,7 @@ public class JMX extends ScriptableObject {
 				pm.put("operations", Arrays.asList(mbi.getOperations()));
 				pm.put("attributes", Arrays.asList(mbi.getAttributes()));
 			}
-			
+		
 			Object out;
 			//try {
 				out = AFCmdBase.jse.convertObject(pm);
@@ -278,6 +278,11 @@ public class JMX extends ScriptableObject {
 		return new JMXObject(objName);
 	}
 	
+	@JSFunction
+	public Object getJavaServerConnection() {
+		return mbeanCon;
+	}
+
 	/**
 	 * <odoc>
 	 * <key>JMX.getLocals() : Object</key>
