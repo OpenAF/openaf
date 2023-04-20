@@ -3192,13 +3192,14 @@ const isBinaryArray = function(anArrayOfChars, confirmLimit) {
  * <odoc>
  * <key>listFilesRecursive(aPath) : Map</key>
  * Performs the io.listFiles function recursively given aPath. The returned map will be equivalent to
- * the io.listFiles function (see more in io.listFiles). 
+ * the io.listFiles function (see more in io.listFiles). Alternatively you can specify
+ * to usePosix=true and it will add to the map the owner, group and full permissions of each file and folder.
  * </odoc>
  */
-const listFilesRecursive = function(aPath) {
+const listFilesRecursive = function(aPath, usePosix) {
 	if (isUnDef(aPath)) return [];
 
-	var files = io.listFiles(aPath);
+	var files = io.listFiles(aPath, usePosix)
 	if(isUnDef(files)) return [];
 	var ret = [];
 	files = files.files;
@@ -3207,7 +3208,7 @@ const listFilesRecursive = function(aPath) {
 
 	for(var ii in files) {
 		if (files[ii].isDirectory) {
-			ret = ret.concat(listFilesRecursive(files[ii].filepath));
+			ret = ret.concat(listFilesRecursive(files[ii].filepath, usePosix))
 		}
 	}
 
@@ -7728,18 +7729,27 @@ IO.prototype.writeFileTARBytes = function(aTARFile, aFilePath, isGzip, aArrayByt
 }
 /**
  * <odoc>
- * <key>io.writeFileTARStream(aTARfile, isGzip, aFunc)</key>
+ * <key>io.writeFileTARStream(aTARfile, isGzip, aFunc, aDefaultMap)</key>
  * Given aTARfile (or output stream (with isGzip = true/false)) will call aFunc(tion) providing, as argument, a writer function
- * with two arguments: aFilePath and a Java input stream for the contents.
+ * with three arguments: aFilePath, a Java input stream for the contents and the modification date for the target file. 
+ * Optionally aDefaultDate can be provided to be used whenever a date is not provided or for folders.
  * </odoc>
  */
-IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc) {
+IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc, aDefaultMap) {
+	aDefaultMap = _$(aDefaultMap, "aDefaultMap").isMap().default({ date: new Date() })
+
 	io.writeFileTAR4Stream(aTARFile, isGzip, _os => {
 		if (_os != "null") {
-			aFunc((aFilePath, aStream) => {
+			aFunc((aFilePath, aStream, aInfoMap) => {
+				aInfoMap = _$(aInfoMap, "aInfoMap").isMap().default(aDefaultMap)
+				if (isNumber(aInfoMap.lastModified)) aInfoMap.lastModified = new Date(aInfoMap.lastModified)
+
 				var f = new java.io.File(aFilePath)
 				var _e = _os.createArchiveEntry(f, aFilePath)
 				_e.setSize(aStream.available())
+				_e.setModTime(aInfoMap.lastModified)
+				if (isDef(aInfoMap.uid)) _e.setUserId(aInfoMap.uid)
+				if (isDef(aInfoMap.gid)) _e.setGroupdId(aInfoMap.gid)
 				_os.putArchiveEntry(_e)
 				Packages.org.apache.commons.io.IOUtils.copyLarge(aStream, _os)
 				_os.closeArchiveEntry()
