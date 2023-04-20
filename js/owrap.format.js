@@ -673,6 +673,37 @@ OpenWrap.format.prototype.string = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.updateLine(aPrintNLFn) : Function</key>
+	 * Facilitates updating a message in the same line without entering new-lines. It will use the aPrintNLFn (if not defined uses printnl).
+	 * Returns an object with two functions: line(aMessage) and end(). The function line() should be called to change the current line message. On the 
+	 * end calling the function end() will clean-up a return the cursor to the beginning of the line.
+	 * </odoc>
+	 */
+	updateLine: function(aPrintNLFn) {
+		aPrintNLFn = _$(aPrintNLFn, "aPrintNLFn").isFunction().default(printnl)
+		var _r = {
+			lsize: 0,
+			line : l => {
+				aPrintNLFn(repeat(this.lsize, " ") + "\r" + l + "\r")
+				this.lsize = l.length
+			},
+			end  : () => {
+				aPrintNLFn(repeat(this.lsize, " ") + "\r")
+			}
+		} 
+		return _r
+	},
+
+	/** 
+	 * <odoc>
+	 * <key>ow.format.string.bool(aBoolValue, isLight, anExtra) : String</key>
+	 * Given aBoolValue will return a green checkmark or a red cross character. If necessary anExtra ansiColor attributes can be added.
+	 * </odoc>
+	 */
+	bool: (aValue, isLight, anExtra) => isLight ? (aValue ? ansiColor((anExtra ? anExtra+",":"") + "GREEN", "\u2713") : ansiColor((anExtra ? anExtra+",":"") + "RED", "\u2715")) : (aValue ? ansiColor((anExtra ? anExtra+",":"") + "GREEN", "\u2714") : ansiColor((anExtra ? anExtra+",":"") + "RED", "\u2716")),
+
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.progress(aNumericValue, aMax, aMin, aSize, aIndicator, aSpace) : String</key>
 	 * Outputs an in-line progress bar given aNumericValue, aMax value, aMin value, the aSize of the bar and the aIndicator
 	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to 5, aIndicator defaults to "#" 
