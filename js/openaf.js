@@ -7736,7 +7736,7 @@ IO.prototype.writeFileTARBytes = function(aTARFile, aFilePath, isGzip, aArrayByt
  * </odoc>
  */
 IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc, aDefaultMap) {
-	aDefaultMap = _$(aDefaultMap, "aDefaultMap").isMap().default({ date: new Date() })
+	aDefaultMap = _$(aDefaultMap, "aDefaultMap").isMap().default({ lastModified: new Date() })
 
 	io.writeFileTAR4Stream(aTARFile, isGzip, _os => {
 		if (_os != "null") {
