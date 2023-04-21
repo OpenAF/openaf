@@ -957,9 +957,12 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptions
  * </odoc>
  */
 OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
-	this.loadFile(aFile, args, aId, isSubJob, aOptionsMap);
-	this.start(args, true, aId, isSubJob);
-};
+	var orig
+	if (isSubJob) orig = clone(this.__ojob)
+	this.loadFile(aFile, args, aId, isSubJob, aOptionsMap)
+	this.start(args, true, aId, isSubJob)
+	if (isSubJob) this.__ojob = orig
+}
 
 /**
  * <odoc>
