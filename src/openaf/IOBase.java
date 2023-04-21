@@ -43,8 +43,8 @@ public class IOBase extends openaf.core.IO {
 	}	
 	
 	@JSFunction
-	public static Object fileInfo(String filepath) throws IOException {
-		return openaf.core.IO.fileInfo(filepath);
+	public static Object fileInfo(String filepath, boolean posix) throws IOException {
+		return openaf.core.IO.fileInfo(filepath, posix);
 	}
 	
 	@JSFunction

@@ -19,12 +19,14 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.CopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
@@ -46,6 +48,11 @@ import java.lang.String;
  *
  */
 public class IO extends ScriptableObject {
+
+	protected static PosixFilePermission[] permissionBits = new PosixFilePermission[] {
+		PosixFilePermission.OTHERS_EXECUTE, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_READ,
+		PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_READ,
+		PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ };
 
 	/**
 	 * <odoc>
@@ -167,7 +174,20 @@ public class IO extends ScriptableObject {
                                                 if (posix) {
                                                 	fileMap.put("group", ((PosixFileAttributes) attr).group().getName());
                                                 	fileMap.put("user", ((PosixFileAttributes) attr).owner().getName());
-                                                	fileMap.put("posixPermissions", PosixFilePermissions.toString(((PosixFileAttributes) attr).permissions()));
+                                                	fileMap.put("gid", ((PosixFileAttributes) attr).group().hashCode());
+                                                	fileMap.put("uid", ((PosixFileAttributes) attr).owner().hashCode());
+													String perm = PosixFilePermissions.toString(((PosixFileAttributes) attr).permissions());
+													fileMap.put("posixPermissions", perm);
+									
+													int posixPermissionsInt = 0;
+													Set<PosixFilePermission> sperms = PosixFilePermissions.fromString(perm);
+													for(int i = 0; i < permissionBits.length; i++) {
+														if (sperms.contains(permissionBits[i])) {
+															posixPermissionsInt += 1 << i;
+														}
+													}
+
+													fileMap.put("mode", posixPermissionsInt);
                                                 }
                                                 
                                         filesMap.add(fileMap.getMap());
@@ -183,17 +203,28 @@ public class IO extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>io.fileInfo(aFilePath)</key>
+	 * <key>io.fileInfo(aFilePath, usePosix)</key>
 	 * Returns a file map with filename, filepath, lastModified, createTime, lastAccess, 
-	 * size, permissions, isDirectory and isFile.
+	 * size, permissions, isDirectory and isFile. Alternatively you can specify
+	 * to usePosix=true and it will add to the map the owner, group and full permissions of each file and folder.
 	 * </odoc>
 	 */
 	@JSFunction
-	public static Object fileInfo(String filepath) throws IOException {
+	public static Object fileInfo(String filepath, boolean posix) throws IOException {
 		JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
 		File file = new File(filepath);
 		if (file != null) {
-			BasicFileAttributes attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+			BasicFileAttributes attr;
+			if (posix) {
+				try {
+					attr = Files.readAttributes(file.toPath(), PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+				} catch(Exception e) {
+					posix = false;
+					attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+				}
+			} else {
+				attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+			}
 			
 			StringBuilder sb = new StringBuilder();
 			no.put("isDirectory", file.isDirectory());
@@ -209,6 +240,23 @@ public class IO extends ScriptableObject {
 			if (file.canRead())    sb.append("r");
 			if (file.canWrite())   sb.append("w");
 			no.put("permissions", sb.toString());
+			if (posix) {
+				no.put("group", ((PosixFileAttributes) attr).group().getName());
+				no.put("user", ((PosixFileAttributes) attr).owner().getName());
+				no.put("gid", ((PosixFileAttributes) attr).group().hashCode());
+				no.put("uid", ((PosixFileAttributes) attr).owner().hashCode());
+				String perm = PosixFilePermissions.toString(((PosixFileAttributes) attr).permissions());
+				no.put("posixPermissions", perm);
+
+				int posixPermissionsInt = 0;
+				Set<PosixFilePermission> sperms = PosixFilePermissions.fromString(perm);
+				for(int i = 0; i < permissionBits.length; i++) {
+					if (sperms.contains(permissionBits[i])) {
+						posixPermissionsInt += 1 << i;
+					}
+				}
+				no.put("mode", posixPermissionsInt);
+			}
 		}		
 		
 		return no.getMap();
