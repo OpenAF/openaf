@@ -997,9 +997,34 @@ OpenWrap.format.prototype.string = {
 		return new RegExp("^" + pattern.replace(/([.+^${}()|[\]\\])/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", (scase ? __ : 'i'))
 	}
 };
-	
+
 OpenWrap.format.prototype.syms = function() {
 	return {
+		check_mark      : "\u2714",
+		light_check_mark: "\u2713",
+		cross_mark      : "\u2716",
+		light_cross_mark: "\u2715",
+		pause           : "\u23F8",
+		stop            : "\u23F9",
+		play            : "\u25B7",	
+		offonstandby    : "\u23FB",
+		offon           : "\u23FC",
+		form_checkmark  : "\u2611",
+		form_crossmark  : "\u2612",
+		arrowleft       : "←",
+		arrowright      : "→",
+		arrowup         : "↑",
+		arrowdown       : "↓",
+		asterism        : "⁂",
+		fullrightfinger : "☛",
+		rightfinger     : "☞",
+		fullstar        : "★",
+		star            : "☆",
+		square          : "□",
+		space           : "␣",
+		cloud           : "☁",
+		thumbsup        : "👍",
+		thumbsdown      : "👎",
 		cross        : '┼',
 		crossHLeft   : '┤',
 		crossHRight  : '├',
