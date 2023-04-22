@@ -1165,10 +1165,11 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.count++;
 		try { 
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
-			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0);
-			execJob.endTime = now();
-			existing.totalTime += execJob.endTime - execJob.startTime;
-			existing.avgTime = existing.totalTime / existing.count;
+			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0)
+			execJob = _$(execJob, "execJob").isMap().default({})
+			execJob.endTime = now()
+			existing.totalTime += execJob.endTime - execJob.startTime
+			existing.avgTime = existing.totalTime / existing.count
 		} catch(e) {
 			logWarn("Can't add success log for '" + aJobName + "' for job exec id '" + aJobExecId + "': " + e.message);
 		}
@@ -1179,6 +1180,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		try {
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
 			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0); 
+			execJob = _$(execJob, "execJob").isMap().default({})
 			if (isDef(anException) && isDef(anException.javaException) && this.__ojob.logArgs) {
 				var ar = anException.javaException.getStackTrace();
 		    		execJob.error = [ String(anException.javaException) ];
@@ -1536,8 +1538,9 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob) {
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, this.__expr, aId) : this.__expr;
 
-	this.running = true;
-	this.oJobShouldStop = false;
+	var localStop = false
+	if (!isSubJob) this.running = true
+	if (!isSubJob) this.oJobShouldStop = false
 
 	var parent = this;
 
@@ -1770,7 +1773,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	}
 
 	//var shouldStop = false;
-	this.oJobShouldStop = false;
+	if (!isSubJob) this.oJobShouldStop = false
 	this.__ojob.sequential = _$(this.__ojob.sequential).isBoolean().default(__flags.OJOB_SEQUENTIAL);
 	if (this.__ojob.sequential) {
 		var job = __; //last = __;
@@ -1819,8 +1822,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		t.addSingleThread(function() {
 		//t.addThread(function() {
 			// Check all jobs in the todo queue
-			var job = __; 
-			while(!parent.oJobShouldStop) {
+			var job = __
+			while(!(parent.oJobShouldStop && localStop)) {
 				try {
 					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
 					var parentOJob = $from(parent.getTodoCh().getKeys()).useCase(true).equals("ojobId",  (parent.getID() + altId)).select();
@@ -1855,11 +1858,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 							});
 						}
 					}
-					if (!parent.oJobShouldStop && 
+					if (!(parent.oJobShouldStop && localStop) &&
 						!(isDef(parent.__ojob) && isDef(parent.__ojob.daemon) && parent.__ojob.daemon == true) &&
 		                parentOJob.length <= 0
 		               ) {
-		               	  parent.oJobShouldStop = true;
+						  if (!isSubJob) parent.oJobShouldStop = true;
+						  localStop = true
 		               	  try {
 						      if (!isSubJob) parent.stop();              		  
 		               	  } catch(e) {}
@@ -1882,7 +1886,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 	if (!(this.__ojob.sequential)) {
 		try {
-			while(parent.oJobShouldStop == false) {
+			while(parent.oJobShouldStop == false && localStop == false) {
 				t.waitForThreads(50);
 			}
 			t.stop();
