@@ -2859,13 +2859,16 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	});
 
  	var format = (isDef(global.__format) ? global.__format : "human")
-	var path   = __
+	var path   = __, csv = __
 
  	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
  	if (isDef(args.__format)) format = String(args.__format).toLowerCase()
 
 	if (isDef(args.__PATH)) path = String(args.__PATH).toLowerCase()
  	if (isDef(args.__path)) path = String(args.__path).toLowerCase()
+
+	if (isDef(args.__CSV)) csv = jsonParse(args.__CSV, true)
+	if (isDef(args.__csv)) csv = jsonParse(args.__csv, true)
 
 	var res = isDef(path) ? $path(aObj, path) : aObj
 
@@ -2927,9 +2930,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			break;
  		case "csv":
  			if (isArray(res)) {
- 				var csv = new CSV();
- 				csv.toCsv(res);
- 				print(csv.w());
+				print($csv(csv).fromInArray(res))
  			}
  			break;
  		case "map":
