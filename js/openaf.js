@@ -10114,6 +10114,7 @@ const $ssh = function(aMap) {
  * Provides a shortcut to access CSV functionality. Optionally you can provide options through aMap.\
  * \
  * Examples:\
+ *   $cvs().fromInArray(anArray)\
  *   $csv().fromInFile("test.csv").toOutArray()\
  *   $csv().fromInFile("test.csv").toOutFn(m => print( af.toSLON(m) ))\
  *   $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray()
@@ -10137,7 +10138,25 @@ const $csv = function(aMap) {
 				wasUnDef = true
 			}
 			csv.setStreamFormat(_s)
-			csv.toStream(_to, function() { return fn() })
+			csv.toStream(_to, function() { 
+				var res = fn() 
+				if (isMap(res)) {
+					Object.keys(res).forEach(k => {
+						switch(descType(res[k])) {
+						case "undefined":
+							res[k] = null
+							break
+						case "date" :
+							res[k] = res[k].toISOString()
+							break
+						case "map"  :
+						case "array":
+							res[k] = stringify(res, __, "")
+						}
+					})
+					return res
+				}
+			})
 			_to.close()
 			return (wasUnDef ? _to.toString() : true)
 		},
