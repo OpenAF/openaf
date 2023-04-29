@@ -364,7 +364,7 @@ OpenWrap.format.prototype.string = {
 	 *   min     (number)   The minimum value to use in the chart\
 	 *   max     (number)   The maximum value to use in the chart\
 	 *   height  (number)   The line chart lines height to use\
-	 *   width   (number)   The maxium width of the line chart\  
+	 *   width   (number)   The maxium width of the line chart\
 	 *   colors  (array)    Array of color names to use for each series\
 	 *   label   (boolean)  Boolean value to indicate if y labels should be included (default true)\
 	 *   format  (function) Custom functions that receives a value and returns a formatted string for labels\
@@ -498,8 +498,10 @@ OpenWrap.format.prototype.string = {
 					_e += ansiLength(x[0])
 				}
 				var __r = (isDef(maxwidth) ? x.slice(0, maxwidth - _e + 2) : x)
-				return colored(__r.join(''), dcolor, dcolor) 
-			}).join('\n')
+				var __o = colored(__r.join(''), dcolor, dcolor) 
+				var __ol = __o.length - ansiLength(__o)
+				return ansiLength(__o) > maxwidth ? __o.substring(0, maxwidth + __ol) : __o + repeat(maxwidth - ansiLength(__o), " ")
+			}).join(ansiColor("RESET", "") + "\n") + ansiColor("RESET", "")
 			return _r
 		}
 	
@@ -874,29 +876,31 @@ OpenWrap.format.prototype.string = {
 		
 		var fn = (orig, x, y, str) => { 
 			var c = -1; 
-			str.split(/\r?\n/).map(r => { 
+			str.split(/\r?\n/).forEach(r => { 
 				c++; 
 				if ( (x + c) < numberOfLines) {
-					var rm = r.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "");
+					//var rm = r.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "");
+					var rml = visibleLength(r)
 		
 					orig[x + c] = orig[x + c].substring(0, y + extra[x + c]) + 
-						   r + 
-						   orig[x + c].substring(y + rm.length + extra[x + c]); 
+						          r + 
+						          orig[x + c].substring(y + rml + extra[x + c])
 			
-					extra[x + c] = extra[x + c]+ r.length - rm.length;
+					extra[x + c] = extra[x + c]+ (r.length - rml)
 				}
 			}); 
 	
 		};
 		
-		anArrayElements.map(elem => {
+		anArrayElements.forEach(elem => {
 			fn(o, elem.x, elem.y, elem.t);
 		});
 		
 		if (shouldReturn) {
 			return o.join("");
 		} else {
-			ansiStart(); print(o.join("")); printnl( jansi.Ansi.ansi().cursorUpLine(numberOfLines + 2) ); ansiStop();
+			cprint(o.join(""))
+			printnl( jansi.Ansi.ansi().cursorUpLine(numberOfLines + 2) )
 		}
 	},
 	/**
@@ -908,64 +912,66 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
-		plugin("Console");
-		var _con_ = new Console();
-		aY = _$(aY, "width").isNumber().default(Number(_con_.getConsoleReader().getTerminal().getWidth()));
-		aX = _$(aX, "height").isNumber().default(Number(Math.floor(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)));
+		plugin("Console")
+		var _con_ = new Console()
+		aY = _$(aY, "width").isNumber().default(Number(_con_.getConsoleReader().getTerminal().getWidth()))
+		aX = _$(aX, "height").isNumber().default(Number(Math.floor(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)))
 	
-		var elems = [], l = 0, ignore = [];
-		aElems.map(line => {
-			var c = 0;
+		var elems = [], l = 0, ignore = []
+		aElems.forEach(line => {
+			var c = 0
 
-			line.map(col => {
+			line.forEach(col => {
 				if (ignore.indexOf("Y:" + c + "X:" + l) < 0) {
-					if (isUnDef(col)) col = "";
-					if (!isMap(col)) col = { obj: col };
+					if (isUnDef(col)) col = ""
+					if (!isMap(col)) col = { obj: col }
 	
 					if (isUnDef(col.type)) {
 						if (isMap(col.obj) || isArray(col.obj)) 
-							col.type = "map";
+							col.type = "map"
 						else
-							col.type = "human";
+							col.type = "human"
 					}
 
-					var xspan = _$(col.xspan, "xspan").isNumber().default(1);
-					var yspan = _$(col.yspan, "yspan").isNumber().default(1);
-					if (xspan > 1) for(var ii = c + 1; ii < c + xspan; ii++) { ignore.push("Y:" + ii + "X:" + l); }
-					if (yspan > 1) for(var ii = l + (aX + 1); ii < l + ((aX + 1) * yspan); ii += aX + 1) { ignore.push("Y:" + c + "X:" + ii); }
-					var p = "", cs = Math.floor((aY / line.length) * xspan);
+					var xspan = _$(col.xspan, "xspan").isNumber().default(1)
+					var yspan = _$(col.yspan, "yspan").isNumber().default(1)
+					if (xspan > 1) for(var ii = c + 1; ii < c + xspan; ii++) { ignore.push("Y:" + ii + "X:" + l) }
+					if (yspan > 1) for(var ii = l + (aX + 1); ii < l + ((aX + 1) * yspan); ii += aX + 1) { ignore.push("Y:" + c + "X:" + ii) }
+					var p = "", cs = Math.floor((aY / line.length) * xspan)
 			
 					switch(col.type) {
-					case "map"  : p = printMap(col.obj, cs-1, "utf", true); break; 
-					case "tree" : p = printTreeOrS(col.obj, cs-1); break;
-					case "table": p = printTable(col.obj, cs-1, __, true, "utf"); break;
-					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)).split(/\r?\n/).map(r => r.substring(0, cs-1)).join("\n"); break;
-					default: p = String(col.obj).split(/\r?\n/).map(r => r.substring(0, cs-1)).join("\n");
+					case "map"  : p = printMap(col.obj, cs-1, "utf", true); break
+					case "tree" : p = printTreeOrS(col.obj, cs-1); break
+					case "table": p = printTable(col.obj, cs-1, __, true, "utf"); break
+					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)); break
+					default: p = String(col.obj)
 					}
 	
+					p = p.split(/\r?\n/).map(r => r.substring(0, cs-1 + (r.length - visibleLength(r)) ))
+
 					if (isDef(col.title)) {
-						p = ansiColor("BOLD", "> " + col.title + " " + repeat(cs - 4 - col.title.length, "─")) + "\n" + p;
+						p.unshift( ansiColor("RESET,BOLD", "> " + col.title + " " + repeat(cs - 4 - col.title.length, "─")) )
 					}
 					
-					var pp = p.split(/\r?\n/), po = [];
+					var pp = p, po = []
 					if (pp.length > (aX * yspan)) {
 						for(var ii = 0; ii <= (aX * yspan); ii++) {
-							po.push(pp[ii]);
+							po.push(pp[ii])
 						}
-						po = po.join("\n");
+						po = po.join("\n")
 					} else {
-						po = p;
+						po = p.join("\n")
 					}
 					
-					elems.push({ x: l, y: cs * c, t: po });
+					elems.push({ x: l, y: cs * c, t: po })
 				}
-				c++;
-			});
+				c++
+			})
 
-			l += aX + 1;
-		});
+			l += aX + 1
+		})
 	
-		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn);
+		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn)
 	},
 	/**
 	 * <odoc>
