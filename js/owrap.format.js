@@ -417,7 +417,8 @@ OpenWrap.format.prototype.string = {
 			let offset  = _$(cfg.offset, "offset").isNumber().default(2)
 			if (offset < 0) offset = 0
 			let padding = _$(cfg.padding, "padding").isString().default('')
-			let height  = _$(cfg.height, "height").isNumber().default(range)
+			let height  = _$(cfg.height, "height").isNumber().default(__)
+			height = isDef(cfg.height) ? cfg.height - 1 : range
 			let colors  = _$(cfg.colors, "colors").isArray().default([])
 			let slabel  = _$(cfg.label, "label").isBoolean().default(true)
 			let ratio   = range !== 0 ? height / range : 1;
@@ -943,6 +944,7 @@ OpenWrap.format.prototype.string = {
 					case "map"  : p = printMap(col.obj, cs-1, "utf", true); break
 					case "tree" : p = printTreeOrS(col.obj, cs-1); break
 					case "table": p = printTable(col.obj, cs-1, __, true, "utf"); break
+					case "chart": p = printChart(col.obj, my, mx-2); break;
 					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)); break
 					default: p = String(col.obj)
 					}
