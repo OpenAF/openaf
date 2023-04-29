@@ -445,7 +445,7 @@ const tprintErr = function(aTemplateString, someData) {
  * \
  *    The dataset should be an unique name (data can be cleaned with ow.format.string.dataClean);\
  *    The units can be: int, dec1, dec2, dec3, dec, bytes and si;\
- *    Each function should return the corresponding current value;\
+ *    Each function should return the corresponding current value (optionally it can be a number directly);\
  *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
  *    Optionally each legend, if used, will be included in a bottom legend;\
  * \
@@ -480,10 +480,10 @@ const printChart = function(as, hSize, vSize, aMax, aMin) {
 			if (useColor) {
 				var _ar = r.split(":")
 				colors.push(_ar[1])
-				titles.push((_ar.length > 2) ? _ar[2] : _ar[0])
-				return global[_ar[0]]()
+				titles.push((_ar.length > 2) ? _ar[2] : "")
+				return isNumber(_ar[0]) ? _ar[0] : global[_ar[0]]() 
 			} else {
-				return global[r]()
+				return isNumber(r) ? r : global[r]()
 			}	
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
@@ -519,13 +519,15 @@ const printChart = function(as, hSize, vSize, aMax, aMin) {
     }
 
 	var _out
+	var useLegend = useColor & titles.reduce((pV, cV, cI, aR) => { if (cV == "") return 0; return pV + cV.length }, 0 ) > 0
 	try {
-		io.writeFileString("/tmp/test", name + "; " + stringify(data, __, true) + "; " + hSize + "; " + vSize + "; " + stringify(options, __, true) + "\n", __, true)
-    	_out = ow.format.string.dataLineChart(name, data, hSize, vSize, options)
+		//io.writeFileString("/tmp/test", name + "; " + stringify(data, __, true) + "; " + hSize + "; " + vSize + "; " + stringify(options, __, true) + "\n", __, true)
+    	_out = ow.format.string.dataLineChart(name, data, hSize, useLegend ? vSize -2 : vSize, options)
 	} catch(e) {
-		io.writeFileString("/tmp/test", "ERROR: " + name + " " + stringify(data,__,"") + " " + stringify(options,__,"") + " | " + e + "\n", __, true)
-	}
-    if (useColor) {
+		//io.writeFileString("/tmp/test", "ERROR: " + name + " " + stringify(data,__,"") + " " + stringify(options,__,"") + " | " + e + "\n", __, true)
+		throw e
+	} 
+    if (useLegend) {
         _out += "\n\n  " + ow.format.string.lineChartLegend(titles, options).map(r => r.symbol + " " + r.title).join("  ")
     }
 	
