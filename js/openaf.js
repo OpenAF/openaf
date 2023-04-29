@@ -1361,8 +1361,10 @@ const ansiStop = function(force) {
  * Tries to return the aString length without any ansi control sequences.
  * </odoc>
  */
-const ansiLength = function(aString, force) {
+
+const ansiLength = function(aString, force, useVisibleLength) {
 	_$(aString, "aString").isString().$_()
+	useVisibleLength = _$(useVisibleLength, "useVisibleLength").isBoolean().default(__flags.VISIBLELENGTH)
 
 	var ansis = force || (__conAnsi && (java.lang.System.console() != null))
 	var s 
@@ -1372,7 +1374,7 @@ const ansiLength = function(aString, force) {
 		s = aString
 	}
 
-	if (__flags.VISIBLELENGTH)
+	if (useVisibleLength)
 		return Number(visibleLength(s))
 	else
 		return Number(s.length)
