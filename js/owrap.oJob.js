@@ -957,9 +957,12 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptions
  * </odoc>
  */
 OpenWrap.oJob.prototype.runFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
-	this.loadFile(aFile, args, aId, isSubJob, aOptionsMap);
-	this.start(args, true, aId, isSubJob);
-};
+	var orig
+	if (isSubJob) orig = clone(this.__ojob)
+	this.loadFile(aFile, args, aId, isSubJob, aOptionsMap)
+	this.start(args, true, aId, isSubJob)
+	if (isSubJob) this.__ojob = orig
+}
 
 /**
  * <odoc>
@@ -1162,10 +1165,11 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		existing.count++;
 		try { 
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
-			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0);
-			execJob.endTime = now();
-			existing.totalTime += execJob.endTime - execJob.startTime;
-			existing.avgTime = existing.totalTime / existing.count;
+			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0)
+			execJob = _$(execJob, "execJob").isMap().default({})
+			execJob.endTime = now()
+			existing.totalTime += execJob.endTime - execJob.startTime
+			existing.avgTime = existing.totalTime / existing.count
 		} catch(e) {
 			logWarn("Can't add success log for '" + aJobName + "' for job exec id '" + aJobExecId + "': " + e.message);
 		}
@@ -1176,6 +1180,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		try {
 			//var execJob = $path(existing.log, "[?id==`" + currentJobExecId + "`] | @[0]"); 
 			var execJob = $from(existing.log).useCase(true).equals("id", currentJobExecId).at(0); 
+			execJob = _$(execJob, "execJob").isMap().default({})
 			if (isDef(anException) && isDef(anException.javaException) && this.__ojob.logArgs) {
 				var ar = anException.javaException.getStackTrace();
 		    		execJob.error = [ String(anException.javaException) ];
@@ -1223,7 +1228,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					ansiStart();
 					s  = repeat(w, '─');
 					ss = repeat(w, '═');
-					se = repeat(w, '*');
+					se = repeat(w, '╍');
 					//sn = "";
 					sn = String( jansi.Ansi.ansi().a(jansi.Ansi.Attribute.RESET) ) + "\n";
 				} else {
@@ -1236,6 +1241,12 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				var _c = function(m) { 
 					return String(ansis ? 
 							jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.GREEN).a(m).a(jansi.Ansi.Attribute.RESET) 
+							: m); 
+				};
+
+				var _s = function(m) { 
+					return String(ansis ? 
+							jansi.Ansi.ansi().boldOff().fg(jansi.Ansi.Color.BLUE).a(m).a(jansi.Ansi.Attribute.RESET) 
 							: m); 
 				};
 				
@@ -1261,23 +1272,26 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 					var msg = "[" + existing.name + "]" + sep + this.__pid + sep;
 					if (existing.start && (!existing.error && !existing.success)) { 
+						var __f = ansis ? "\u25B7 " : ">> "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "STARTED", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (this.__ojob.logToConsole) { syncFn(() => { printnl(_g(aa) + _c(">> ") + _b(__m1) + " " + _c(s.substr(0, s.length - (__m1.length + __m2.length) - 2 - 2 -1) + " " + __m2 + sn)); }, this); }
+						if (this.__ojob.logToConsole) { syncFn(() => { printnl(_g(aa) + _s(__f) + _b(__m1) + " " + _s(s.substr(0, ansiLength(s) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
 						if (this.__ojob.logOJob)      { log(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
 					if (existing.start && existing.error) { 
+						var __f = ansis ? "\u2716 " : "!! "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "ERROR", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (this.__ojob.logToConsole) { syncFn(() => { printErr("\n" + _e("!! ") + _g(aa) + _b(__m1) + " " + _e(se.substr(0, se.length - (__m1.length + __m2.length) - 2 - 2 -1) + " " + __m2 + sn) + af.toYAML(existing.log) + "\n" + _e(se)); }, this); }
+						if (this.__ojob.logToConsole) { syncFn(() => { printErr("\n" + _e(__f) + _g(aa) + _b(__m1) + " " + _e(se.substr(0, ansiLength(se) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn) + af.toYAML(existing.log) + "\n" + _e(se)); }, this); }
 						if (this.__ojob.logOJob)      { logErr(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m1 + "\n" + stringify(existing.log) });
 					}
 					if (existing.start && existing.success) { 
+						var __f = ansis ? "\u2714 " : "<< "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "SUCCESS", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (this.__ojob.logToConsole) { syncFn(() => { printnl("\n" + _g(aa) + _c("<< ") + _b(__m1) + " " + _c(ss.substr(0, ss.length - (__m1.length + __m2.length) - 2 - 2 -1) + " " + __m2 + sn)); }, this); }
+						if (this.__ojob.logToConsole) { syncFn(() => { printnl("\n" + _g(aa) + _c(__f) + _b(__m1) + " " + _c(ss.substr(0, ansiLength(ss) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
 						if (this.__ojob.logOJob)      { log(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
@@ -1292,7 +1306,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		// Housekeeping
 		while (existing.log.length > this.__logLimit) existing.log.shift();
 
-                if (!this.__ojob.logArgs) delete existing.args;
+        if (!this.__ojob.logArgs) delete existing.args
 		this.getLogCh().set({ "ojobId": this.__id + aId, "name": aJobName }, existing);
 	}
 
@@ -1524,8 +1538,9 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob) {
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, this.__expr, aId) : this.__expr;
 
-	this.running = true;
-	this.oJobShouldStop = false;
+	var localStop = false
+	if (!isSubJob) this.running = true
+	if (!isSubJob) this.oJobShouldStop = false
 
 	var parent = this;
 
@@ -1758,7 +1773,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	}
 
 	//var shouldStop = false;
-	this.oJobShouldStop = false;
+	if (!isSubJob) this.oJobShouldStop = false
 	this.__ojob.sequential = _$(this.__ojob.sequential).isBoolean().default(__flags.OJOB_SEQUENTIAL);
 	if (this.__ojob.sequential) {
 		var job = __; //last = __;
@@ -1807,8 +1822,8 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		t.addSingleThread(function() {
 		//t.addThread(function() {
 			// Check all jobs in the todo queue
-			var job = __; 
-			while(!parent.oJobShouldStop) {
+			var job = __
+			while(!(parent.oJobShouldStop && localStop)) {
 				try {
 					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
 					var parentOJob = $from(parent.getTodoCh().getKeys()).useCase(true).equals("ojobId",  (parent.getID() + altId)).select();
@@ -1843,11 +1858,12 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 							});
 						}
 					}
-					if (!parent.oJobShouldStop && 
+					if (!(parent.oJobShouldStop && localStop) &&
 						!(isDef(parent.__ojob) && isDef(parent.__ojob.daemon) && parent.__ojob.daemon == true) &&
 		                parentOJob.length <= 0
 		               ) {
-		               	  parent.oJobShouldStop = true;
+						  if (!isSubJob) parent.oJobShouldStop = true;
+						  localStop = true
 		               	  try {
 						      if (!isSubJob) parent.stop();              		  
 		               	  } catch(e) {}
@@ -1870,7 +1886,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 
 	if (!(this.__ojob.sequential)) {
 		try {
-			while(parent.oJobShouldStop == false) {
+			while(parent.oJobShouldStop == false && localStop == false) {
 				t.waitForThreads(50);
 			}
 			t.stop();
@@ -2843,13 +2859,16 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	});
 
  	var format = (isDef(global.__format) ? global.__format : "human")
-	var path   = __
+	var path   = __, csv = __
 
  	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
  	if (isDef(args.__format)) format = String(args.__format).toLowerCase()
 
 	if (isDef(args.__PATH)) path = String(args.__PATH).toLowerCase()
  	if (isDef(args.__path)) path = String(args.__path).toLowerCase()
+
+	if (isDef(args.__CSV)) csv = jsonParse(args.__CSV, true)
+	if (isDef(args.__csv)) csv = jsonParse(args.__csv, true)
 
 	var res = isDef(path) ? $path(aObj, path) : aObj
 
@@ -2911,9 +2930,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			break;
  		case "csv":
  			if (isArray(res)) {
- 				var csv = new CSV();
- 				csv.toCsv(res);
- 				print(csv.w());
+				print($csv(csv).fromInArray(res))
  			}
  			break;
  		case "map":

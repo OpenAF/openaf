@@ -439,29 +439,30 @@ const tprintErr = function(aTemplateString, someData) {
 
 /**
  * <odoc>
- * <key>printChart(aFormatString, hSize, vSize, aMax, aMin) : String</key>
+ * <key>printChart(aFormatString, hSize, vSize, aMax, aMin, dColor) : String</key>
  * Produces a line chart given aFormatString, a hSize (horizontal max size), a vSize (vertical max size), aMax (the axis max value) and aMin 
  * (the axis min value). The aFormatString should be composed of "&lt;dataset&gt; &lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
  * \
  *    The dataset should be an unique name (data can be cleaned with ow.format.string.dataClean);\
  *    The units can be: int, dec1, dec2, dec3, dec, bytes and si;\
- *    Each function should return the corresponding current value;\
+ *    Each function should return the corresponding current value (optionally it can be a number directly);\
  *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
  *    Optionally each legend, if used, will be included in a bottom legend;\
  * \
  * </odoc>
  */
-const printChart = function(as, hSize, vSize, aMax, aMin) {
+const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 	_$(as, "aFormatString").isString().$_()
 	
     var _d = as.trim().split(/ +/)
     var name = _$(_d.shift(), "name").isString().$_()
     var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si", "clean"]).$_()
 
-    aMax  = _$(aMax, "aMax").isNumber().default(__)
-	aMin  = _$(aMin, "aMin").isNumber().default(__)
-    hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
-	vSize = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
+    aMax    = _$(aMax, "aMax").isNumber().default(__)
+	aMin    = _$(aMin, "aMin").isNumber().default(__)
+    hSize   = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+	vSize   = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
+	options = _$(options, "options").isMap().default({})
 
     if (type == "clean") {
         ow.format.string.dataClean(name)
@@ -480,10 +481,10 @@ const printChart = function(as, hSize, vSize, aMax, aMin) {
 			if (useColor) {
 				var _ar = r.split(":")
 				colors.push(_ar[1])
-				titles.push((_ar.length > 2) ? _ar[2] : _ar[0])
-				return global[_ar[0]]()
+				titles.push((_ar.length > 2) ? _ar[2] : "")
+				return isNumber(_ar[0]) ? _ar[0] : global[_ar[0]]() 
 			} else {
-				return global[r]()
+				return isNumber(r) ? r : global[r]()
 			}	
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
@@ -491,12 +492,12 @@ const printChart = function(as, hSize, vSize, aMax, aMin) {
     }).filter(r => isDef(r))
 
     //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
-    var options = { max: aMax, min: aMin }
+    var options = merge(options, { max: aMax, min: aMin })
     if (useColor) options.colors = colors
 
     switch(type) {
     case "int":
-        options.format = x => Number(x).toFixed(0)
+        options.format = x => $f("%2.0f", Number(x))
         break
     case "dec":
         options.format = x => String(x)
@@ -519,17 +520,124 @@ const printChart = function(as, hSize, vSize, aMax, aMin) {
     }
 
 	var _out
+	var useLegend = useColor & titles.reduce((pV, cV, cI, aR) => { if (cV == "") return 0; return pV + cV.length }, 0 ) > 0
 	try {
-		io.writeFileString("/tmp/test", name + "; " + stringify(data, __, true) + "; " + hSize + "; " + vSize + "; " + stringify(options, __, true) + "\n", __, true)
-    	_out = ow.format.string.dataLineChart(name, data, hSize, vSize, options)
+		//io.writeFileString("/tmp/test", name + "; " + stringify(data, __, true) + "; " + hSize + "; " + vSize + "; " + stringify(options, __, true) + "\n", __, true)
+    	_out = ow.format.string.dataLineChart(name, data, hSize, useLegend ? vSize -2 : vSize, options)
 	} catch(e) {
-		io.writeFileString("/tmp/test", "ERROR: " + name + " " + stringify(data,__,"") + " " + stringify(options,__,"") + " | " + e + "\n", __, true)
-	}
-    if (useColor) {
+		//io.writeFileString("/tmp/test", "ERROR: " + name + " " + stringify(data,__,"") + " " + stringify(options,__,"") + " | " + e + "\n", __, true)
+		throw e
+	} 
+    if (useLegend) {
         _out += "\n\n  " + ow.format.string.lineChartLegend(titles, options).map(r => r.symbol + " " + r.title).join("  ")
     }
 	
     return _out
+}
+
+/**
+ * <odoc>
+ * <key>printBars(aFormatString, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) : String</key>
+ * Produces horizontal bars given aFormatString, a hSize (horizontal max size), aMax (the axis max value) and aMin 
+ * (the axis min value). The aFormatString should be composed of "&lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
+ * \
+ *    The units can be: int, dec1, dec2, dec3, dec, bytes and si;\
+ *    Each function should return the corresponding current value (optionally it can be a number directly);\
+ *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
+ *    Optionally each legend, if used, will be included in a bottom legend;\
+ * \
+ * </odoc>
+ */
+const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
+	_$(as, "aFormatString").isString().$_()
+	
+    var _d = as.trim().split(/ +/)
+    var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si"]).$_()
+
+    aMax  = _$(aMax, "aMax").isNumber().default(__)
+	aMin  = _$(aMin, "aMin").isNumber().default(__)
+    hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+
+	aIndicatorChar = _$(aIndicatorChar, "aIndicatorChar").isString().default("=")
+	aSpaceChar     = _$(aSpaceChar, "aSpaceChar").isString().default(" ")
+
+    var useColor = false
+    var colors = [], titles = []
+
+	if (_d.filter(r => r.indexOf(":") > 0).length > 0) {
+        if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
+        useColor = true
+    }
+
+    var data = _d.map(r => {
+		try {
+			if (useColor) {
+				var _ar = r.split(":")
+				colors.push(_ar[1])
+				titles.push((_ar.length > 2) ? _ar[2] : "")
+				return isNumber(_ar[0]) ? _ar[0] : global[_ar[0]]() 
+			} else {
+				return isNumber(r) ? r : global[r]()
+			}	
+		} catch(dme) {
+			throw "Error on '" + r + "': " + dme
+		}
+    }).filter(r => isDef(r))
+
+    if (isUnDef(aMax)) aMax = $from(data).max()
+    if (isUnDef(aMin)) aMin = $from(data).min()
+    if (aMin > 0) aMin = 0
+
+    var fn
+
+    switch(type) {
+    case "int":
+        fn = x => $f("%2.0f", Number(x))
+        break
+    case "dec":
+        fn = x => String(x)
+        break
+    case "dec1":
+        fn = x => Number(x).toFixed(1)
+        break
+    case "dec2":
+        fn = x => Number(x).toFixed(2)
+        break
+    case "dec3":
+        fn = x => Number(x).toFixed(3)
+        break
+    case "bytes":
+        fn = x => ow.format.toBytesAbbreviation(x)
+        break
+    case "si":
+        fn = x => ow.format.toAbbreviation(x)
+        break
+    }
+
+	var _out = {}, values = []
+	try {
+        var maxTitle = titles.reduce((pV,cV,cI,aR) => {
+            return Math.max(Number(pV), (isString(cV) ? cV.length : ("f" + String(cI)).length))
+        }, 0)
+        var maxValue = data.reduce((pV,cV,cI,aR) => {
+            var _v = fn(cV)
+            values.push(_v)
+            return Math.max(pV, String(_v).length)
+        }, 0)
+		data.forEach((d, i) => {
+            var _vv = $f("%" + maxValue + "s", String(values[i]))
+            var _s = hSize -2 -2 -2 -maxTitle -maxValue
+            var _v = ansiColor(colors[i], ow.format.string.progress(Number(d), Number(aMax), Number(aMin), Number(aMax > _s ? _s : aMax), aIndicatorChar, aSpaceChar)) + " :" + _vv
+			if (isDef(titles[i])) {
+				_out[titles[i]] = $f("%" + maxTitle + "s", _v)
+			} else {
+				_out["f" + String(i)] = $f("%" + maxTitle + "s", _v)
+			}
+		})
+    	return printTree(_out)
+	} catch(e) {
+		throw e
+	} 
 }
 
 /**
@@ -1361,8 +1469,10 @@ const ansiStop = function(force) {
  * Tries to return the aString length without any ansi control sequences.
  * </odoc>
  */
-const ansiLength = function(aString, force) {
+
+const ansiLength = function(aString, force, useVisibleLength) {
 	_$(aString, "aString").isString().$_()
+	useVisibleLength = _$(useVisibleLength, "useVisibleLength").isBoolean().default(__flags.VISIBLELENGTH)
 
 	var ansis = force || (__conAnsi && (java.lang.System.console() != null))
 	var s 
@@ -1372,7 +1482,7 @@ const ansiLength = function(aString, force) {
 		s = aString
 	}
 
-	if (__flags.VISIBLELENGTH)
+	if (useVisibleLength)
 		return Number(visibleLength(s))
 	else
 		return Number(s.length)
@@ -1548,6 +1658,8 @@ const templify = function(aTemplateString, someData) {
 	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
 	return String(ow.template.parse(aTemplateString, someData));
 }
+
+const $t = templify
 
 /**
  * <odoc>
@@ -3192,13 +3304,14 @@ const isBinaryArray = function(anArrayOfChars, confirmLimit) {
  * <odoc>
  * <key>listFilesRecursive(aPath) : Map</key>
  * Performs the io.listFiles function recursively given aPath. The returned map will be equivalent to
- * the io.listFiles function (see more in io.listFiles). 
+ * the io.listFiles function (see more in io.listFiles). Alternatively you can specify
+ * to usePosix=true and it will add to the map the owner, group and full permissions of each file and folder.
  * </odoc>
  */
-const listFilesRecursive = function(aPath) {
+const listFilesRecursive = function(aPath, usePosix) {
 	if (isUnDef(aPath)) return [];
 
-	var files = io.listFiles(aPath);
+	var files = io.listFiles(aPath, usePosix)
 	if(isUnDef(files)) return [];
 	var ret = [];
 	files = files.files;
@@ -3207,7 +3320,7 @@ const listFilesRecursive = function(aPath) {
 
 	for(var ii in files) {
 		if (files[ii].isDirectory) {
-			ret = ret.concat(listFilesRecursive(files[ii].filepath));
+			ret = ret.concat(listFilesRecursive(files[ii].filepath, usePosix))
 		}
 	}
 
@@ -7728,18 +7841,28 @@ IO.prototype.writeFileTARBytes = function(aTARFile, aFilePath, isGzip, aArrayByt
 }
 /**
  * <odoc>
- * <key>io.writeFileTARStream(aTARfile, isGzip, aFunc)</key>
+ * <key>io.writeFileTARStream(aTARfile, isGzip, aFunc, aDefaultMap)</key>
  * Given aTARfile (or output stream (with isGzip = true/false)) will call aFunc(tion) providing, as argument, a writer function
- * with two arguments: aFilePath and a Java input stream for the contents.
+ * with three arguments: aFilePath, a Java input stream for the contents and the modification date for the target file. 
+ * Optionally aDefaultDate can be provided to be used whenever a date is not provided or for folders.
  * </odoc>
  */
-IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc) {
+IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc, aDefaultMap) {
+	aDefaultMap = _$(aDefaultMap, "aDefaultMap").isMap().default({ lastModified: new Date() })
+
 	io.writeFileTAR4Stream(aTARFile, isGzip, _os => {
 		if (_os != "null") {
-			aFunc((aFilePath, aStream) => {
+			aFunc((aFilePath, aStream, aInfoMap) => {
+				aInfoMap = _$(aInfoMap, "aInfoMap").isMap().default(aDefaultMap)
+				if (isNumber(aInfoMap.lastModified)) aInfoMap.lastModified = new Date(aInfoMap.lastModified)
+
 				var f = new java.io.File(aFilePath)
 				var _e = _os.createArchiveEntry(f, aFilePath)
 				_e.setSize(aStream.available())
+				_e.setModTime(aInfoMap.lastModified)
+				if (isNumber(aInfoMap.uid)) _e.setUserId(aInfoMap.uid)
+				if (isNumber(aInfoMap.gid)) _e.setGroupId(aInfoMap.gid)
+				if (isNumber(aInfoMap.mode)) _e.setMode(aInfoMap.mode)
 				_os.putArchiveEntry(_e)
 				Packages.org.apache.commons.io.IOUtils.copyLarge(aStream, _os)
 				_os.closeArchiveEntry()
@@ -10103,6 +10226,7 @@ const $ssh = function(aMap) {
  * Provides a shortcut to access CSV functionality. Optionally you can provide options through aMap.\
  * \
  * Examples:\
+ *   $cvs().fromInArray(anArray)\
  *   $csv().fromInFile("test.csv").toOutArray()\
  *   $csv().fromInFile("test.csv").toOutFn(m => print( af.toSLON(m) ))\
  *   $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray()
@@ -10126,7 +10250,25 @@ const $csv = function(aMap) {
 				wasUnDef = true
 			}
 			csv.setStreamFormat(_s)
-			csv.toStream(_to, function() { return fn() })
+			csv.toStream(_to, function() { 
+				var res = fn() 
+				if (isMap(res)) {
+					Object.keys(res).forEach(k => {
+						switch(descType(res[k])) {
+						case "undefined":
+							res[k] = null
+							break
+						case "date" :
+							res[k] = res[k].toISOString()
+							break
+						case "map"  :
+						case "array":
+							res[k] = stringify(res, __, "")
+						}
+					})
+					return res
+				}
+			})
 			_to.close()
 			return (wasUnDef ? _to.toString() : true)
 		},

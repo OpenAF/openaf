@@ -769,6 +769,33 @@ jobs:
     - name: __format
       desc: Can be json, yaml, table (default) or any other ow.oJob.output format
 
+# OJOB FINAL DEPS REPORT
+# ------------------------------------
+- name        : ojob final deps report
+  to          : ojob deps report
+  type        : shutdown
+  help        :
+    text: Outputs a tree list for each defined job (excluding "ojob *") and a comma delimited list of dependencies with a status flag
+
+# OJOB DEPS REPORT
+# ------------------------------
+- name        : ojob deps report
+  help        :
+    text: Outputs a tree list for each defined job (excluding "ojob *") and a comma delimited list of dependencies with a status flag
+  exec        : |
+    var runs = {}
+    $from( $ch("oJob::log").getAll() )
+    .notStarts("name", "ojob ")
+    .select(r => {
+      runs[r.name] = (r.start ? (r.success ? ansiColor("GREEN", "\u2713") : (r.deps ? (r.error ? ansiColor("RED", "\u2715") : ansiColor("BLUE", "\u25B7") ) : ansiColor("RED", "\u2715") )) : ansiColor("YELLOW", "\u23F8"))
+    })
+
+    var out = {}
+    $from($ch("oJob::jobs").getAll()).notStarts("name", "ojob ").select(r => {
+      out[r.name] = r.deps.map(s => runs[s]+" "+s).join(", ")
+    })
+    ow.oJob.output(out, { __format: "tree" } )
+
 # OJOB REPORT
 # -------------------------
 - name        : ojob report

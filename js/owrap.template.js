@@ -62,6 +62,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $toYAML          -- returns the YAML version of the parameter\
  *   - $env             -- returns the current environment variable identified by the parameter\
  *   - $escape          -- returns an escaped version of the parameter\
+ *   - $acolor          -- returns an ansi color (first argument) escape sequence of the string parameter (second argument)\
  *   - $f               -- uses the $f format function\
  *   - $ft              -- uses the $ft format function\
  *   - $path            -- uses the $path function to query objects\
@@ -103,6 +104,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		toYAML: af.toYAML,
 		env: getEnv,
 		escape: s => { return s.replace(/['"]/g, "\\$1"); },
+		acolor: (c, s) => { return ansiColor(c, s) },
 		f: $f,
 		ft: $ft,
 		get: (o, p) => $get(o),
