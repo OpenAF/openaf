@@ -908,8 +908,13 @@ OpenWrap.format.prototype.string = {
 	 * <odoc>
 	 * <key>ow.format.string.grid(aMatrix, aX, aY, aBgPattern, shouldReturn) : String</key>
 	 * Will generate a aX per aY grid to be displayed with aBgPattern (defaults to " "). Each grid cell with use the contents on aMatrix
-	 * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in cell spacing, a type (either map, table, func or string) 
-	 * and a title. If shouldReturn = true it will just return the string content instead of trying to print it.
+	 * array of an array. Each cell content can be a map with obj (a Map), a xspan/yspan for in cell spacing, a type (either map, table, chart, area, bar, func or string) 
+	 * and a title. If shouldReturn = true it will just return the string content instead of trying to print it.\
+	 * Extra options per type:\
+	 * \
+	 *  chart: the 'obj' check printChart format string\
+	 *  bar  : the 'obj' check printBar format stirng; 'max'; 'min'; 'indicator'; 'space'\
+	 * \
 	 * </odoc>
 	 */
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
@@ -944,7 +949,9 @@ OpenWrap.format.prototype.string = {
 					case "map"  : p = printMap(col.obj, cs-1, "utf", true); break
 					case "tree" : p = printTreeOrS(col.obj, cs-1); break
 					case "table": p = printTable(col.obj, cs-1, __, true, "utf"); break
-					case "chart": p = printChart(col.obj, my, mx-2); break;
+					case "chart": p = printChart(col.obj, cs-1, (aX * yspan)-1); break;
+					case "area" : p = ow.format.string.chart(col.title, col.obj, cs-1, (aX * yspan)-1); break;
+					case "bar"  : p = printBar(col.obj, cs-1, col.max, col.min, col.indicator, col.space); break;
 					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)); break
 					default: p = String(col.obj)
 					}
