@@ -1924,23 +1924,24 @@ for(let i in verbs) {
 		params.splice(0, 1);
 
 		verb = i;
+		var fnDone = () => log("Done.")
 
 		switch(verb) {
 			case 'info'           : __opack_info(params); break;
-			case 'install'        : install(params); break;
-			case 'erase'          : erase(params); break;
+			case 'install'        : install(params); fnDone(); break;
+			case 'erase'          : erase(params); fnDone(); break;
 			case 'list'           : __opack_list(params); break;
-			case 'genpack'        : genpack(params); break;
-			case 'pack'           : pack(params); break;
-			case 'add2db'         : add(params); break;
-			case 'remove4db'      : remove(params); break;
-			case 'add2remotedb'   : addCentral(params); break;
-			case 'remove4remotedb': removeCentral(params); break;
+			case 'genpack'        : genpack(params); fnDone(); break;
+			case 'pack'           : pack(params); fnDone(); break;
+			case 'add2db'         : add(params); fnDone(); break;
+			case 'remove4db'      : remove(params); fnDone(); break;
+			case 'add2remotedb'   : addCentral(params); fnDone(); break;
+			case 'remove4remotedb': removeCentral(params); fnDone(); break;
 			case 'script'         : __opack_script(params); break;
 			case 'daemon'         : __opack_script(params, true); break;
 			case 'ojob'           : __opack_script(params, false, true); break;
 			case 'search'         : __opack_search(params); break;
-			case 'update'         : update(params); break;
+			case 'update'         : update(params); fnDone(); break;
 			case 'exec'           : __opack_exec(params); break;
 			case 'help'           : showhelp = 1; showHelp(); break;
 		}
@@ -1949,5 +1950,5 @@ for(let i in verbs) {
 	}
 }
 
-if (showhelp) showHelp();
+if (showhelp) showHelp()
 if (isDef(__opackParams)) __opackParams = undefined;
