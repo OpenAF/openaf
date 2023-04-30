@@ -439,7 +439,7 @@ const tprintErr = function(aTemplateString, someData) {
 
 /**
  * <odoc>
- * <key>printChart(aFormatString, hSize, vSize, aMax, aMin) : String</key>
+ * <key>printChart(aFormatString, hSize, vSize, aMax, aMin, dColor) : String</key>
  * Produces a line chart given aFormatString, a hSize (horizontal max size), a vSize (vertical max size), aMax (the axis max value) and aMin 
  * (the axis min value). The aFormatString should be composed of "&lt;dataset&gt; &lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
  * \
@@ -451,17 +451,18 @@ const tprintErr = function(aTemplateString, someData) {
  * \
  * </odoc>
  */
-const printChart = function(as, hSize, vSize, aMax, aMin) {
+const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 	_$(as, "aFormatString").isString().$_()
 	
     var _d = as.trim().split(/ +/)
     var name = _$(_d.shift(), "name").isString().$_()
     var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si", "clean"]).$_()
 
-    aMax  = _$(aMax, "aMax").isNumber().default(__)
-	aMin  = _$(aMin, "aMin").isNumber().default(__)
-    hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
-	vSize = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
+    aMax    = _$(aMax, "aMax").isNumber().default(__)
+	aMin    = _$(aMin, "aMin").isNumber().default(__)
+    hSize   = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+	vSize   = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
+	options = _$(options, "options").isMap().default({})
 
     if (type == "clean") {
         ow.format.string.dataClean(name)
@@ -491,7 +492,7 @@ const printChart = function(as, hSize, vSize, aMax, aMin) {
     }).filter(r => isDef(r))
 
     //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
-    var options = { max: aMax, min: aMin }
+    var options = merge(options, { max: aMax, min: aMin })
     if (useColor) options.colors = colors
 
     switch(type) {
