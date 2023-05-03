@@ -1,4 +1,4 @@
-// Version: 0.1.1
+// Version: 0.1.2
 // Author : Nuno Aguiar
 
 var nLinq_USE_CASE = false;
@@ -493,13 +493,30 @@ var nLinq = function(anObject, aK) {
             aCountKey = _$(aCountKey).isString().default("_count")
             aAltKey   = _$(aAltKey).isString().default(aKey)
 
-            var _res = code.group(aKey)
-            return Object.keys(_res).map(k => {
-                var _m = {}
-                _m[aAltKey] = k
-                _m[aCountKey] = _res[k].length
-                return _m
-            })
+            var ks = aKey.split(",")
+            var aks = aAltKey.split(",")
+            var _fr = []
+
+            var fn = (_r, _i, m) => {
+                var _vs = Object.keys(_r)
+                _vs.forEach((v, _j) => {
+                    m[aks[_i]] = v
+                    if (_i + 1 < ks.length) {
+                        fn(nLinq(_r[v]).group(ks[_i + 1]), _i + 1, m)
+                    }
+                    if (ks.length == _i + 1) {
+                        m[aCountKey] = _r[v].length
+                        _fr.push(clone(m))
+                    }
+                })
+            }
+
+            if (ks.length > 0) {
+                fn(code.group(ks[0]), 0, {})
+                return _fr
+            } else {
+                return []
+            }
         },
         at     : aParam => {
             _$(aParam, "index").isNumber().$_();
