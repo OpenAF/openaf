@@ -221,14 +221,19 @@ function ojob_global() {
 				.match("filename", "(\.ya?ml|\.json)$")
 	            .sort("filename")
 				.select(r => { 
-					var oj = (r.filepath.endsWith(".json") ? io.readFileJSON(r.filepath) : io.readFileYAML(r.filepath))
-					return {
-						oJob: r.filename,
-						description: (isMap(oj) && isMap(oj.help) ? oj.help.text : "n/a"),
-						"# todo": (isMap(oj) && isArray(oj.todo)) ? oj.todo.length : "n/a"
-					} 
+					try {
+						var oj = (r.filepath.endsWith(".json") ? io.readFileJSON(r.filepath) : io.readFileYAML(r.filepath))
+						return {
+							oJob: r.filename,
+							description: (isMap(oj) && isMap(oj.help) ? oj.help.text : "n/a"),
+							"# todo": (isMap(oj) && isArray(oj.todo)) ? oj.todo.length : "n/a"
+						} 
+					} catch(e) {
+						logErr("Problem reading from '" + r.filepath + "': " + e)
+						return {}
+					}
 				})
-	print(printTable(lst))
+	if (lst.length > 0) print(printTable(lst)); else logWarn("No jobs found in '" + __flags.OJOB_LOCALPATH + "'")
 	ojob_shouldRun = false
 }
 

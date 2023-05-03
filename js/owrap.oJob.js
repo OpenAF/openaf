@@ -2859,7 +2859,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	});
 
  	var format = (isDef(global.__format) ? global.__format : "human")
-	var path   = __, csv = __
+	var path   = __, csv = __, from = __
 
  	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
  	if (isDef(args.__format)) format = String(args.__format).toLowerCase()
@@ -2867,10 +2867,14 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 	if (isDef(args.__PATH)) path = String(args.__PATH).toLowerCase()
  	if (isDef(args.__path)) path = String(args.__path).toLowerCase()
 
+	if (isDef(args.__FROM)) from = String(args.__FROM).toLowerCase()
+	if (isDef(args.__from)) from = String(args.__from).toLowerCase()
+
 	if (isDef(args.__CSV)) csv = jsonParse(args.__CSV, true)
 	if (isDef(args.__csv)) csv = jsonParse(args.__csv, true)
 
 	var res = isDef(path) ? $path(aObj, path) : aObj
+	var res = isDef(from) ? $from(aObj).query(jsonParse(from, true)) : aObj
 
  	switch (format) {
  		case "json":
