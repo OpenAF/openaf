@@ -3929,7 +3929,7 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   count_by(arr, 'field'), group(arr, 'field'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field')\
+ *   count_by(arr, 'field'), group(arr, 'field'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -3957,6 +3957,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		to_map: {
 			_func: ar => $from(ar[0]).mselect(__, ar[1]),
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		substring: {
+			_func: ar => String(ar[0]).substring(ar[1], ar[2]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types:  [ jmespath.types.number ] }, { types:  [ jmespath.types.number ] } ]
 		},
 		flat_map: {
 			_func: ar => ow.loadObj().flatMap(ar[0]),
