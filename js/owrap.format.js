@@ -685,13 +685,14 @@ OpenWrap.format.prototype.string = {
 	updateLine: function(aPrintNLFn) {
 		aPrintNLFn = _$(aPrintNLFn, "aPrintNLFn").isFunction().default(printnl)
 		var _r = {
-			lsize: 0,
+			lsize: $atomic(0),
 			line : l => {
-				aPrintNLFn(repeat(this.lsize, " ") + "\r" + l + "\r")
-				this.lsize = l.length
+				sync(() => (_r.lsize.get() < l.length) ? _r.lsize.set(l.length) : l.length, _r.lsize)
+				var s = _r.lsize.get() - l.length
+				aPrintNLFn(l + (s > 0 ? repeat(s, " ") : "") + "\r")
 			},
 			end  : () => {
-				aPrintNLFn(repeat(this.lsize, " ") + "\r")
+				aPrintNLFn(repeat(_r.lsize.get(), " ") + "\r")
 			}
 		} 
 		return _r
