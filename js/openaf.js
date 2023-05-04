@@ -9834,6 +9834,29 @@ const $sh = function(aString, aIn) {
 
 	/**
 	 * <odoc>
+	 * <key>$sh.getYaml(aIdx) : Object</key>
+	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh) trying to parse it as yaml.
+	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
+	 * </odoc>
+	 */
+	__sh.prototype.getYaml = function(aIdx) {
+		var res = this.get(aIdx)
+
+		if (isArray(res)) {
+			for(var ii in res) {
+				res[ii].stdout = af.fromYAML(res[ii].stdout)
+				res[ii].stderr = af.fromYAML(res[ii].stderr)
+			}
+		} else {
+			res.stdout = af.fromYAML(res.stdout)
+			res.stderr = af.fromYAML(res.stderr)
+		}
+
+		return res
+	}
+
+	/**
+	 * <odoc>
 	 * <key>$sh.exec(aIdx) : Object</key>
 	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh).
 	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
