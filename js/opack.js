@@ -578,11 +578,13 @@ function listFilesWithHash(startPath, excludingList) {
 	var files = listFiles(startPath, undefined, excludingList);
     var c = 0, cmax = 0;
 	
+	var _ul = ow.format.string.updateLine(lognl)
 	for (let i in files) {
 		c++;
 		try {
-			var str = "Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r";
-			lognl(str);
+			var str = "Checking (" + ow.format.round((c * 100) / files.length) + "%) " + ow.format.addNumberSeparator(c) + " files"
+			_ul.line(str)
+			//lognl(str);
 			if (str.length > cmax) cmax = str.length;
 			if (!(files[i].match(new RegExp(PACKAGEJSON + "$", ""))) && !(files[i].match(new RegExp(PACKAGEYAML + "$", "")))) {
 				filesHash[files[i]] = generateHash(startPath + "/" + files[i]);
@@ -591,7 +593,8 @@ function listFilesWithHash(startPath, excludingList) {
 		}
 	}
 	if (c > 0) {
-		lognl(repeat(cmax, " ") + "\r");
+		//lognl(repeat(cmax, " ") + "\r");
+		_ul.end()
 		log("All files checked.");
 	}
 
@@ -626,10 +629,11 @@ function verifyHashList(startPath, filesHash) {
 	}
 	
 	var c = 0;
+	var _ul = ow.format.string.updateLine(lognl)
 	for(let file in filesHash) {
 		c++;
 		
-		printnl("Verifying (" + ow.format.round((c * 100) / Object.keys(filesHash).length) + "%) " + ow.format.addNumberSeparator(c) + " files\r");
+		_ul.line("Verifying (" + ow.format.round((c * 100) / Object.keys(filesHash).length) + "%) " + ow.format.addNumberSeparator(c) + " files");
 		results[file] = false;
 		var hash;
 
@@ -658,7 +662,8 @@ function verifyHashList(startPath, filesHash) {
 		if (hash == filesHash[file])
 			results[file] = true;
 	}
-	if (c > 0) print("");
+	_ul.end()
+	//if (c > 0) print("");
 
 	zip.close();
 
@@ -1272,15 +1277,17 @@ function install(args) {
 			var opack = getHTTPOPack(args[0]);
 			if(typeof opack == 'undefined') return;
 
-			biggestMessage = 0;
-			for(var i in packag.files) {
-				var str = "Unpacking " + packag.files[i] + "...\r";
+			//biggestMessage = 0;
+			var _ul = ow.format.string.updateLine(lognl)
+			/*for(var i in packag.files) {
+				var str = "Unpacking " + packag.files[i] + "..."
 				if (str.length > biggestMessage) biggestMessage = str.length;
-			}
+			}*/
 			parallel4Array(packag.files, function(apackfile) {
 				mkdir(outputPath);
-				var message = "Unpacking " + apackfile + "...\r";
-				lognl(message);
+				var message = "Unpacking " + apackfile + "..."
+				//lognl(message)
+				_ul.line(message)
 
 				try {
 					io.writeFileBytes(outputPath + "/" + apackfile, opack.getFile(apackfile));
@@ -1290,37 +1297,43 @@ function install(args) {
 				}
 				return 1;
 			});
-			lognl(repeat(biggestMessage, " ") + "\r");
+			//lognl(repeat(biggestMessage, " ") + "\r");
+			_ul.end()
 			log("All files unpacked.");
 		    break;
 		case "local": {
 			log("Copying files");
-			biggestMessage = 0;
+			//biggestMessage = 0;
+			var _ul = ow.format.string.updateLine(lognl)
 			outputPath = outputPath.replace(/\/{2,}/g, "/");
 			//for(i in packag.files) {
 			parallel4Array(packag.files, function(apackfile) {
 				try {
 					mkdir(outputPath);
 					var message = "Copying " + apackfile.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "") + "...";
-					log(message);
+					//log(message);
+					_ul.line(message)
 					copyFile(args[0] + "/" + apackfile, outputPath + "/" + apackfile.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", ""));
 				} catch(e) {
 					logErr(e);
 				}
 				return 1;
 			});
+			_ul.end()
 			log("All files copied.");
 			break;
 		}
 		case "opacklocal": {
 			log("Copying files");
-			biggestMessage = 0;
+			//biggestMessage = 0;
+			var _ul = ow.format.string.updateLine(lognl)
 			outputPath = outputPath.replace(/\/{2,}/g, "/");
 			//for(i in packag.files) {
 			parallel4Array(packag.files, function(apackfile) {
 				mkdir(outputPath);
 				var message = "Copying " + apackfile.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "") + "...";
-				log(message);
+				//log(message);
+				log(message)
 
 				try {
 					if (!useunzip) {
@@ -1339,6 +1352,7 @@ function install(args) {
 				}
 				return 1;
 			});
+			_ul.end()
 			log("All files copied.");
 			break;
 		}
@@ -1680,13 +1694,16 @@ function erase(args, dontRemoveDir) {
 
 			if (io.fileExists(packag.__target) && io.fileInfo(packag.__target).permissions.indexOf("w") < 0) throw "No write permissions over '" + packag.__target + "'";
 
-			biggestMessage = 0;
+			//biggestMessage = 0;
+			var _ul = ow.format.string.updateLine(lognl)
 			for(var i in packag.files) {
-				var message = "Removing " + packag.files[i].replace(/^\/*/, "") + "...\r";
-				if (message.length > biggestMessage) biggestMessage = message.length;
-				lognl(message);
+				var message = "Removing " + packag.files[i].replace(/^\/*/, "") + "..."
+				//if (message.length > biggestMessage) biggestMessage = message.length;
+				//lognl(message);
+				_ul.line(message)
 				deleteFile(packag.__target + "/" + packag.files[i].replace(/^\/*/, ""));
 			}
+            _ul.end()
 
 			// Remove precompiled
 			var list = listFilesRecursive(packag.__target);
@@ -1701,9 +1718,9 @@ function erase(args, dontRemoveDir) {
 			}
 			if (!dontRemoveDir) rmdir(packag.__target, true);
 			if (!(io.fileExists(packag.__target) && io.listFiles(packag.__target).files.length > 0)) 
-				log("Package " + packag.name + " erased." + repeat(biggestMessage, " "));
+				log("Package " + packag.name + " erased.")
 			else
-				logWarn("Package " + packag.name + " could not be erased." + repeat(biggestMessage, " "));
+				logWarn("Package " + packag.name + " could not be erased.")
 			removeLocalDB(packag, packag.__target);
 			break;
 		}
@@ -1825,19 +1842,21 @@ function pack(args) {
 	io.rm(packName);
 	
 	var c = 0, cmax = 0;
-	
+	var _ul = ow.format.string.updateLine(lognl)
+
 	for(let i in packag.files) {
 		c++;
 		file = packag.files[i];
-		var str = "Packing (" + ow.format.round((c * 100) / packag.files.length) + "%) " + ow.format.addNumberSeparator(c) + " files\r";
-		lognl(str);
+		var str = "Packing (" + ow.format.round((c * 100) / packag.files.length) + "%) " + ow.format.addNumberSeparator(c) + " files";
+		_ul.line(str)
 		if (str.length > cmax) cmax = str.length;
 		var rfs = io.readFileStream(args[0] + "/" + file);
 		zip.streamPutFileStream(packName, file, rfs);
 		rfs.close();
 	}
 	if (c > 0) {
-		lognl(repeat(cmax, " "));
+		//lognl(repeat(cmax, " "));
+		_ul.end()
 		log("All files packed.");
 	}
 
