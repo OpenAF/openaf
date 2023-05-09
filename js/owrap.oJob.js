@@ -2864,17 +2864,17 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
  	if (isDef(args.__format)) format = String(args.__format).toLowerCase()
 
-	if (isDef(args.__PATH)) path = String(args.__PATH).toLowerCase()
- 	if (isDef(args.__path)) path = String(args.__path).toLowerCase()
+	if (isDef(args.__PATH)) path = String(args.__PATH)
+ 	if (isDef(args.__path)) path = String(args.__path)
 
-	if (isDef(args.__FROM)) from = String(args.__FROM).toLowerCase()
-	if (isDef(args.__from)) from = String(args.__from).toLowerCase()
+	if (isDef(args.__FROM)) from = String(args.__FROM)
+	if (isDef(args.__from)) from = String(args.__from)
 
 	if (isDef(args.__CSV)) csv = jsonParse(args.__CSV, true)
 	if (isDef(args.__csv)) csv = jsonParse(args.__csv, true)
 
 	var res = isDef(path) ? $path(aObj, path) : aObj
-	var res = isDef(from) ? $from(aObj).query(jsonParse(from, true)) : aObj
+	res = isDef(from) ? $from(res).query(jsonParse(from, true)) : res
 
  	switch (format) {
  		case "json":
@@ -2917,8 +2917,9 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 					args.result = res
 			break
 		case "jsmap":
-			var res = ow.template.html.parseMap(res, true);
-			return "<html><style>" + res.css + "</style><body>" + res.out + "</body></html>";
+		case "html":
+			var _res = ow.loadTemplate().html.parseMap(res, true)
+			print("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
  		case "pm":
  			var _p;
  			if (isArray(res)) _p = {
