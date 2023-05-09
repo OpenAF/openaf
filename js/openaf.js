@@ -7543,6 +7543,17 @@ AF.prototype.toSLON = function(aObject, aTheme) {
 
 /**
  * <odoc>
+ * <key>AF.fromSLON(aString) : Map</key>
+ * Converts a SLON (https://github.com/nmaguiar/slon) string representation into the original map.
+ * </odoc>
+ */
+AF.prototype.fromSLON = function(aString) {
+	var _sp = loadCompiledRequire("slonParse_js")
+	return _sp.parse(aString)
+}
+
+/**
+ * <odoc>
  * <key>af.fromXML2Obj(xml, ignored) : Object</key>
  * Tries to convert a XML object into a javascript object. Tag attributes will be ignored unless the corresponding tag name is included
  * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
@@ -9137,7 +9148,7 @@ const includeOPack = function(aOPackName, aMinVersion) {
  *    boolean.get         - Get the current boolean\
  *    boolean.set         - Set the current boolean\
  *    boolean.getSet      - Get and Set the current boolean\
- *    boolean.setIf(t, n) - Set the current boolean to n if current value is t\\
+ *    boolean.setIf(t, n) - Set the current boolean to n if current value is t\
  * \
  * </odoc>
  */

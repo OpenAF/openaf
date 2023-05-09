@@ -1602,19 +1602,20 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	if (isMap(aObj)) {
 	   var pairs = [];
 	   Object.keys(aObj).forEach(r => {
-		  pairs.push(r + dTheme.sepKV + ow.format.toSLON(aObj[r])); 
+		  pairs.push(r + dTheme.sepKV + ow.format.toSLON(aObj[r], dTheme))
 	   });
 	   return dTheme.startMap + pairs.join(dTheme.sepMap) + dTheme.endMap; 
 	}
 	if (isArray(aObj)) {
 	   return dTheme.startArr + aObj.map(r => {
-		  return ow.format.toSLON(r);
+		  return ow.format.toSLON(r, dTheme)
 	   }).join(dTheme.sepArr) + dTheme.endArr;
 	}
 	if (isDate(aObj)) {
 		return ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS');
 	}
-	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) ? dTheme.strQuote + aObj + dTheme.strQuote : String(aObj));
+	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
+	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && (aObj.indexOf(dTheme.sepMap) >= 0 || aObj.indexOf(dTheme.strQuote) >= 0)) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
   }
 
 /**
