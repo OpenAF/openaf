@@ -7558,6 +7558,17 @@ AF.prototype.fromSLON = function(aString) {
 
 /**
  * <odoc>
+ * <key>AF.fromNLinq(aString) : Map</key>
+ * Converts a nLinq chained command line string representation into a suitable map to be used with $from.query.
+ * </odoc>
+ */
+AF.prototype.fromNLinq = function(aString) {
+	var _np = loadCompiledRequire("nlinqParse_js")
+	return _np.parse(aString)
+}
+
+/**
+ * <odoc>
  * <key>af.fromXML2Obj(xml, ignored) : Object</key>
  * Tries to convert a XML object into a javascript object. Tag attributes will be ignored unless the corresponding tag name is included
  * on the ignored array and attributes will be added to the corresponding map with a prefix "_".

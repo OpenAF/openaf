@@ -2874,7 +2874,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 	if (isDef(args.__csv)) csv = jsonParse(args.__csv, true)
 
 	var res = isDef(path) ? $path(aObj, path) : aObj
-	res = isDef(from) ? $from(res).query(jsonParse(from, true)) : res
+	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
 
  	switch (format) {
  		case "json":
