@@ -4,6 +4,7 @@
 plugin("ZIP");
 ow.loadObj()
 ow.loadFormat()
+ow.loadNet()
 __logFormat.async = false
 
 var createTmp = false;
