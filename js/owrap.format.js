@@ -2613,14 +2613,14 @@ OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, ti
 
 /**
  * <odoc>
- * <key>ow.format.printWithWaiting(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme)</key>
+ * <key>ow.format.printWithWaiting(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme, printNLFn, useAsSuffix)</key>
  * Executes aMainFunc while priting aPrefixMsg with a waiting aTheme (defaults to a sequence of chars with a rotating bar).
  * When aMainFunc ends it will replace the priting with aCompleteMsg or aErrorMsg in case an exception is thrown.
  * Optionally you can provide a different aWaitSpeed while cycling between the aTheme sequence of chars increasing/decreasing
  * the "animation" effect.
  * </odoc>
  */
-OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme, pnlfn) {
+OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme, pnlfn, useAsSuffix) {
 	_$(aMainFunc, "Main function").isFunction().$_();
 
 	aWaitSpeed   = _$(aWaitSpeed, "aWaitSpeed").isNumber().default(150);
@@ -2629,6 +2629,7 @@ OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCo
 	aErrorMsg    = _$(aErrorMsg, "aErrorMsg").isString().default("!");
 	aTheme       = _$(aTheme, "aTheme").isString().default("-\\|/");
 	pnlfn        = _$(pnlfn).default(printnl);
+	useAsSuffix  = _$(useAsSuffix).isBoolean().default(false)
 
 	var e, p = $do(() => {
 		aMainFunc();
@@ -2638,9 +2639,12 @@ OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCo
 
 	$tb(() => {
 		var ii = 0;
-		while(isUnDef(e) && p.state <= 0) {
+		while(isUnDef(e) && p.state.get() <= 0) {
 			if (ii >= aTheme.length) ii = 0;
-			pnlfn(aPrefixMsg + aTheme[ii] + "\r");
+			if (useAsSuffix) 
+				pnlfn(aTheme[ii] + aPrefixMsg + "\r")
+			else
+				pnlfn(aPrefixMsg + aTheme[ii] + "\r")
 			ii++;
 			sleep(aWaitSpeed, true);
 		}
