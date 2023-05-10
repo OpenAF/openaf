@@ -2,7 +2,9 @@
 // Author: Nuno Aguiar
 
 plugin("ZIP");
-ow.loadObj();
+ow.loadObj()
+ow.loadFormat()
+__logFormat.async = false
 
 var createTmp = false;
 
@@ -117,9 +119,19 @@ try {
 // PreRepack actions
 $from(ow.obj.fromObj2Array(getOPackLocalDB(), "path")).notEmpty("scripts.prerepack").select(function(r) {
 	if (r.name == "OpenCli" && r.version != af.getVersion()) {
-		logWarn("Please update OpenCli to match the version " + af.getVersion());
+		logWarn("OpenCli needs to be updated to match the version " + af.getVersion());
 		if (io.fileExists(r.path + "/.url")) {
-			logWarn("by executing 'opack install " + eval( io.readFileYAML(r.path + "/.url").c ) + "'" );
+			var _url = io.readFileYAML(r.path + "/.url")
+			var _c = ""
+			if (isDef(_url.c2)) _c = $t(_url.c2, {version: getVersion(), distribution: getDistribution() }); _c = String(eval(_url.c))
+			var [host,port] = ow.net.host4URL(_c).split(":")
+			if (!noHomeComms && ow.net.testPort(host,port)) {
+				logWarn("Trying to execute 'opack install " + _c + "'...")
+				restartOpenAF(["--opack", "-e", "install " + _c], __, true)
+				exit(0, true)
+			} else {
+				logWarn("Please execute --> 'opack install " + _c + "' or equivalent. <--" )
+			}
 		}
 	} else {
 		log("Executing prepack actions from oPack '" + r.name + "'");
@@ -237,8 +249,9 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 				.select((r)=>{ return r.name.substr(0, r.name.length -1); })
 				.join("\n");
 	zipNew.putFile("META-INF/INDEX.LIST", af.fromString2Bytes(ilist));
-	log("Writing new repacked openaf.jar...");
-	zipNew.generate2File(classPath + ".tmp", {"compressionLevel": 9}, true);
+	ow.format.printWithWaiting(() => {
+		zipNew.generate2File(classPath + ".tmp", {"compressionLevel": 9}, true)
+	}, "Writing new repacked openaf.jar ", "Repacked openaf.jar done.", "Problem with repacking openaf.jar!", __, __, lognl)
 	createTmp = true;
 	zip.close();
 	zipNew.close();
@@ -252,6 +265,6 @@ if (createTmp) {
 }
 
 log("Done repacking OpenAF.jar");
-// We need to stop (but no longer needed)
-//java.lang.System.exit(0);
+// We need to stop
+exit(0, true)
 } catch(e) { printErr(e); if (isDef(e.javaException)) se.javaException.printStackTrace(); }

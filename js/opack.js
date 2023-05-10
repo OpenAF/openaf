@@ -1054,7 +1054,7 @@ function __opack_info(args) {
 		}
 	}
 
-	ansiStart(); print( "\n" + ansiColor("bold", "Files:") + "\n"); ansiStop();
+	ansiStart(); print( "\n\n" + ansiColor("bold", "Files:") + "\n"); ansiStop();
 	print( printTable(iFiles) );
 }
 
