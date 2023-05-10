@@ -1280,7 +1280,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
 					if (existing.start && existing.error) { 
-						var __f = ansis ? "\u2716 " : "!! "
+						var __f = ansis ? "\u2715 " : "!! "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "ERROR", __m2 = __d.replace(/(T|Z)/g, " ").trim();
 						if (this.__ojob.logToConsole) { syncFn(() => { printErr("\n" + _e(__f) + _g(aa) + _b(__m1) + " " + _e(se.substr(0, ansiLength(se) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn) + af.toYAML(existing.log) + "\n" + _e(se)); }, this); }
@@ -1288,7 +1288,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m1 + "\n" + stringify(existing.log) });
 					}
 					if (existing.start && existing.success) { 
-						var __f = ansis ? "\u2714 " : "<< "
+						var __f = ansis ? "\u2713 " : "<< "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "SUCCESS", __m2 = __d.replace(/(T|Z)/g, " ").trim();
 						if (this.__ojob.logToConsole) { syncFn(() => { printnl("\n" + _g(aa) + _c(__f) + _b(__m1) + " " + _c(ss.substr(0, ansiLength(ss) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
