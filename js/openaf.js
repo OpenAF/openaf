@@ -3610,14 +3610,18 @@ const extend = function() {
 
 /**
  * <odoc>
- * <key>exit(anExitCode)</key>
- * Immediately exits execution with the provided exit code
+ * <key>exit(anExitCode, force)</key>
+ * Immediately exits execution with the provided exit code. 
+ * Optionally force=true can be provided but no shutdown triggers will be executed (use only as a last option)
  * </odoc>
  */
-const exit = function(exitCode) {
-	if(isUnDef(exitCode)) exitCode = 0;
+const exit = function(exitCode, force) {
+	if(isUnDef(exitCode)) exitCode = 0
 
-	java.lang.System.exit(exitCode);
+	if (force)
+		java.lang.Runtime.getRuntime().halt(exitCode)
+	else
+		java.lang.System.exit(exitCode)
 }
 
 /**
