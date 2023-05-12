@@ -896,7 +896,10 @@ jobs:
     delete iargs.__optionOn
     delete iargs.__async
 
-    var rj = job => (isMap(job) ? $job(job.name, merge(job.args, merge(iargs, res))) : $job(job, merge(iargs, res)))
+    var rj = job => {
+      job = ow.oJob.parseTodo(job)
+      return (isMap(job) ? $job(job.name, merge(job.args, merge(iargs, res))) : $job(job, merge(iargs, res)))
+    }
     if (isDef(args.__todos[todoValue]) && isString(args.__todos[todoValue])) args.__todos[todoValue] = [ args.__todos[todoValue] ]
     if (isDef(args.__todos[todoValue]) && isArray(args.__todos[todoValue])) {
       args.__todos[todoValue].forEach(j => {
@@ -1019,7 +1022,7 @@ jobs:
     text: Performs a query (using ow.obj.filter) to the existing args.
     expects:
     - name: __query
-      desc: The query map for ow.obj.filter
+      desc: The query map for ow.obj.filter or af.fromNLinq
     - name: __from
       desc: The path to the args key to perform the query
     - name: __to
@@ -1035,7 +1038,7 @@ jobs:
     var f = isDef(args.__from) ? $path(args, args.__from) : $get(args.__key)
    
     ow.loadObj()
-    var res = ow.obj.filter(f, args.__query)
+    var res = ( isString(args.__query) ? af.fromNLinq(args.__query) : ow.obj.filter(f, args.__query) )
     if (isUnDef(args.__from) && isDef(args.__key)) { 
       $set(args.__key, res)
     } else { 
@@ -1113,6 +1116,7 @@ jobs:
     if (d) log(" DEBUG | " + af.toSLON({ origCondition: " "+c+" ", result: res }))
 
     var fn = j => {
+      j = ow.oJob.parseTodo(j)
       if (isString(j))               $job(j, args)
       if (isMap(j) && isDef(j.name)) $job(j.name, j.args)
     }
@@ -1176,7 +1180,10 @@ jobs:
     var arr = ak == "args" ? $path(args, ap) : $path($get(ak), ap)
     if (!isArray(arr)) throw "The key/path '" + ak + "' is not an array/list."
     arr.forEach(elem => {
-      njobs.forEach(j => $job(j, merge(args, elem)))
+      njobs.forEach(j => {
+        j = ow.oJob.parseTodo(j)
+        $job(j, merge(args, elem))
+      })
     })
 
 # OJOB JOB
@@ -1440,10 +1447,94 @@ jobs:
       }
     }
 
+    args.job = ow.oJob.parseTodo(args.job)
     var _j = {
       name: args.job.name,
       args: args.job.isolateArgs ? args.job.args : merge(args.args, args.job.args),
       id  : args.job.isolateJob ? __ : args.id
     }
+
     if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(_j, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
     return $job(_j.name, _j.args, _j.id)
+
+# --------------------
+- name : ojob parallel
+  help: 
+    text: "Executes an ojob sub-todo in parallel.\nNOTE: doesn't perform any checks for recursive behaviour!"
+    expects:
+    - name: todo
+      desc: A string or array of todo' maps 
+    - name: todo[].name
+      desc: Name of the job to execute
+    - name: todo[].args
+      desc: Arguments to merge (if isolateArgs is not true) with the main job arguments
+    - name: todo[].isolateArgs
+      desc: Boolean to indicate, for a specific todo, that args should be isolated from all others
+    - name: todo[].isolateJob
+      desc: Boolean to indicate, for a specific todo, that the job should run in a different scope (e.g. deps will not work)
+    - name: todo[].templateArgs
+      desc: Boolean to indicate, for a specific todo, to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+    - name: isolateArgs
+      desc: Boolean, false by default, to indicate that args should be isolated from all others
+    - name: isolateJob
+      desc: Boolean, false by default, to indicate that the job should run in a different scope (e.g. deps will not work)
+    - name: templateArgs
+      desc: Boolean, true by default, to indicate to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+    - name: shareArgs
+      desc: Boolean, false by default, to indicate that args should be shared between all todo's jobs sequentially.
+    - name: __debug
+      desc: Boolean to indicate that each job execution parameters should be printed before executing
+  check: 
+    in:
+      isolateArgs : toBoolean.isBoolean.default(false)
+      isolateJob  : toBoolean.isBoolean.default(false)
+      templateArgs: toBoolean.isBoolean.default(true)
+      shareArgs   : toBoolean.isBoolean.default(false)
+      __debug     : toBoolean.isBoolean.default(false)
+  exec : |
+    if (!isString(args.todo) && !isArray(args.todo)) throw "todo needs to be a string or an array"
+
+    if (isString(args.todo)) args.todo = [ args.todo ]
+    var ires = clone(args), ar = []
+    args.todo.forEach(j => {
+      if (!isMap(j) && !isString(j)) throw "todo entry needs to be a map or a string (" + af.toSLON(j) + ")"
+      ar.push($do(() => $job("ojob run", {
+        job         : j,
+        id          : ow.oJob.__id,
+        isolateArgs : args.isolateArgs,
+        isolateJob  : args.isolateJob,
+        templateArgs: args.templateArgs,
+        __debug     : args.__debug,
+        args        : ires
+      })))
+    })
+    $doWait($doAll(ar))
+
+# ----------------
+- name : ojob wait
+  help : 
+    text: "Waits for a specific amount of time"
+    expects:
+    - name: time
+      desc: The amount of time, in ms, to pause execution
+  check:
+    in:
+      time: toNumber.isNumber
+  exec : |
+    sleep(args.time, true)
+
+# ----------------
+- name : ojob exit
+  help : 
+    text: "Ends all processing with an exit code"
+    expects:
+    - name: code
+      desc: The exit code number to use
+    - name: force
+      desc: A boolean indicating if instead of exit the processing should halt
+  check:
+    in:
+      code : toNumber.isNumber.default(0)
+      force: toBoolean.isBoolean.default(false)
+  exec : |
+    exit(args.code, args.force)

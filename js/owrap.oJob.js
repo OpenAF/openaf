@@ -565,10 +565,23 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			}
 		}
 
-		var _includeLoaded = {};
-		if (isDef(res.ojob) && res.ojob.includeOJob) {
-			if (isUnDef(res.jobsInclude)) res.jobsInclude = []
-			res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
+		var _includeLoaded = {}
+		if (isDef(res.ojob)) {
+			res.ojob.includeOJob = _$(res.ojob.includeOJob).isBoolean().default(true)
+			//if (isUnDef(res.jobsInclude)) res.jobsInclude = []
+			//res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
+			if (res.ojob.includeOJob) {
+				try {
+					$ch("oJob::jobs").setAll(["name"], io.readFileJSON(getOpenAFJar() + "::ojob.saved.json"))
+				} catch(ee) {
+					/*try {
+						if (isUnDef(res.jobsInclude)) res.jobsInclude = []
+						res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
+					} catch(ee2) {*/
+						logWarn("Problem including oJobs: " + ee)
+					//}
+				}
+			}
 		}
 		if (isDef(res.include) && isArray(res.include)) {
 			for (var i in res.include) {
@@ -1082,6 +1095,8 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 			todoList[i].args = this.__processArgs(todoList[i].args, aJobArgs, aId);
 
 		if (isMap(todoList[i])) {
+			todoList[i] = this.parseTodo(todoList[i])
+
 			if (isDef(todoList[i].job) && isUnDef(todoList[i].name)) todoList[i].name = todoList[i].job;
 			if (isUnDef(todoList[i].typeArgs)) todoList[i].typeArgs = {};
 			if (isDef(todoList[i].when))       todoList[i].typeArgs.when = todoList[i].when;
@@ -2839,6 +2854,95 @@ OpenWrap.oJob.prototype.outputParse = function(aObj) {
 	if (isMap(p._map))    return p._map
 	if (isDef(p.result))  return p.result
 	return p
+}
+
+OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
+	if (!isMap(aTodo)) return aTodo
+  
+	// Get only relevant entries
+	var entries = Object.keys(aTodo).filter(r => r.startsWith("("))
+	
+	// Aux func to replace a source key with a target args
+	var fnA = (s,t) => {
+	  aTodo.args[t] = aTodo[s]
+	  delete aTodo[s]
+	}
+  
+	// Ensures that the args entry is a Map for correct processing
+	var ensureMapTodo = () => {
+	  aTodo.args = _$(aTodo.args).default({})
+	  if (!isMap(aTodo.args)) aTodo.args = {}
+	}
+  
+	// (if
+	if (entries.indexOf("(if") >= 0) {
+	  aTodo.name = "ojob if"
+  
+	  ensureMapTodo()
+  
+	  fnA("(if", "__condition")
+	  fnA("(then", "__then")
+	  fnA("(else", "__else")
+	  fnA("(debug", "__debug")
+	  return aTodo
+	}
+  
+	// (parallel
+	if (entries.indexOf("(parallel") >= 0) {
+		aTodo.name = "ojob parallel"
+
+		ensureMapTodo()
+
+		fnA("(parallel", "todo")
+		return aTodo
+	}
+
+	// (for
+
+	// (pass
+	if (entries.indexOf("(pass") >= 0) {
+		aTodo.name = "ojob placeholder"
+
+		ensureMapTodo()
+
+		return aTodo
+	}
+
+	// (wait
+    if (entries.indexOf("(wait") >= 0) {
+		aTodo.name = "ojob wait"
+
+		ensureMapTodo()
+
+		fnA("(wait", "time")
+
+		return aTodo
+	}
+
+	// (optionOn
+	if (entries.indexOf("(optionOn") >= 0) {
+	  aTodo.name = "ojob options"
+  
+	  ensureMapTodo()
+  
+	  fnA("(optionOn", "__optionOn")
+	  fnA("(lowercase", "__lowerCase")
+	  fnA("(upperCase", "__upperCase")
+	  fnA("(todos", "__todos")
+	  fnA("(default", "__default")
+	  fnA("(async", "__async")
+  
+	  return aTodo
+	}
+  
+	// (success
+	// (fail
+	// (fn
+	// (repeat
+	// (secGet
+	// (check  // ojob job
+
+	return aTodo
 }
 
 /**
