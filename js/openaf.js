@@ -7583,6 +7583,8 @@ AF.prototype.toSLON = function(aObject, aTheme) {
  * </odoc>
  */
 AF.prototype.fromSLON = function(aString) {
+	if (!isString(aString) || aString == "" || isNull(aString)) return ""
+
 	var _sp = loadCompiledRequire("slonParse_js")
 	return _sp.parse(aString)
 }
@@ -7594,6 +7596,8 @@ AF.prototype.fromSLON = function(aString) {
  * </odoc>
  */
 AF.prototype.fromNLinq = function(aString) {
+	if (!isString(aString) || aString == "" || isNull(aString)) return {}
+
 	var _np = loadCompiledRequire("nlinqParse_js")
 	return _np.parse(aString)
 }
