@@ -1117,6 +1117,7 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 OpenWrap.oJob.prototype.add2Todo = function(aTodo, aId) {
 	aId = _$(aId).default("");
 
+	aTodo = this.parseTodo(aTodo)
 	if (isMap(aTodo)) {
 		if (isDef(aTodo.job) && isUnDef(aTodo.name)) aTodo.name = aTodo.job;
 		this.addTodo(this.getID() + aId, this.getJobsCh(), this.getTodoCh(), aTodo.name, aTodo.args, aTodo.type, aTodo.typeArgs);
@@ -2861,6 +2862,17 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
   
 	// Get only relevant entries
 	var entries = Object.keys(aTodo).filter(r => r.startsWith("("))
+	// Allow for closing ) 
+	entries = entries.map(entry => {
+		if (entry.endsWith(")")) {
+			var nentry = entry.replace(/\s*\)+$/, "")
+			aTodo[nentry] = aTodo[entry]
+			delete aTodo[entry]
+			return nentry
+		} else {
+			return entry
+		}
+	})
 	
 	// Aux func to replace a source key with a target args
 	var fnA = (s,t) => {
@@ -2874,73 +2886,217 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 	  if (!isMap(aTodo.args)) aTodo.args = {}
 	}
   
-	// (if
-	if (entries.indexOf("(if") >= 0) {
-	  aTodo.name = "ojob if"
-  
-	  ensureMapTodo()
-  
-	  fnA("(if", "__condition")
-	  fnA("(then", "__then")
-	  fnA("(else", "__else")
-	  fnA("(debug", "__debug")
-	  return aTodo
-	}
-  
-	// (parallel
-	if (entries.indexOf("(parallel") >= 0) {
-		aTodo.name = "ojob parallel"
+	var processEntry = entry => {
+		_$(entry.name, "name").isString().$_()
+		_$(entry.job, "job").isString().$_()
+		entry.map   = _$(entry.map, "map").isBoolean().default(true)
+		entry.attrs = _$(entry.attrs, "attrs").isMap().default({})
 
-		ensureMapTodo()
+		if (entries.indexOf(entry.name) >= 0) {
+			aTodo.name = entry.job
+			if (entry.map) ensureMapTodo()
+			Object.keys(entry.attrs).forEach(atr => {
+				fnA(atr, entry.attrs[atr])
+			})
 
-		fnA("(parallel", "todo")
-		return aTodo
+			return aTodo
+		}
 	}
 
-	// (for
+	var oJobShortcuts = [{
+		name : "(if",
+		job  : "ojob if",
+		map  : true,
+		attrs: {
+			"(if"    : "__condition",
+			"((then" : "__then",
+			"((else" : "__else",
+			"((debug": "__debug"
+		}
+	}, {
+		name : "(parallel",
+        job  : "ojob parallel",
+		map  : true,
+		attrs: {
+			"(parallel": "todo"
+		}		
+	}, {
+		name : "(pass",
+		job  : "ojob placeholder",
+		map  : true,
+		attrs: {}
+	}, {
+		name : "(wait",
+		job  : "ojob wait",
+		map  : true,
+		attrs: {
+			"(wait": "time"
+		}
+	}, {
+		name : "(optionOn",
+		job  : "ojob options",
+		map  : true,
+		attrs: {
+			"(optionOn"  : "__optionOn",
+			"((lowerCase": "__lowerCase",
+			"((upperCase": "__upperCase",
+			"((todos"    : "__todos",
+			"((default"  : "__default",
+			"((async"    : "__async"
+		}
+	}, {
+		name : "(fail",
+		job  : "ojob exit",
+		map  : true,
+		attrs: {
+			"(fail"  : "code",
+			"((force": "force"
+		}
+	}, {
+		name : "(fn",
+		job  : "ojob function",
+		map  : true,
+		attrs: {
+			"(fn"     : "__fn",
+			"((key"   : "__key",
+			"((path"  : "__path",
+			"((fnPath": "__fnPath"
+		}
+	}, {
+		name : "(check",
+		job  : "ojob check",
+		map  : true,
+		attrs: {
+			"(check"   : "_checks",
+			"((actions": "_actions"
+		}
+	}, {
+		name : "(query",
+		job  : "ojob query",
+		map  : true,
+		attrs: {
+			"(query": "__query",
+			"((type": "__type",
+			"((from": "__from",
+			"((to"  : "__to",
+			"((key" : "__key"
+		}
+	}, {
+		name : "(output",
+		job  : "ojob output",
+		map  : true,
+		attrs: {
+			"(output"   : "__key",
+			"((path"    : "__path",
+			"((format"  : "__format",
+			"((title"   : "__title",
+			"((internal": "__internal",
+			"((query"   : "__query",
+			"((csv"     : "__csv"
+		}
+	}, {
+		name : "(repeat",
+		job  : "ojob repeat",
+		map  : true,
+		attrs: {
+			"(repeat": "__times",
+			"((todo" : "__jobs"
+		}
+	}, {
+		name : "(secget",
+		job  : "ojob sec get",
+		map  : true,
+		attrs: {
+			"(secget"      : "secKey",
+			"((secRepo"    : "secRepo",
+			"((secBucket"  : "secBucket",
+			"((secPass"    : "secPass",
+			"((secOut"     : "secOut",
+			"((secMainPass": "secMainPass",
+			"((secFile"    : "secFile",
+			"((secDontAsk" : "secDontAsk",
+			"((secIgnore"  : "secIgnore"
+		}
+	}, {
+		name : "(each",
+		job  : "ojob repeat with each",
+		map  : true,
+		attrs: {
+			"(each" : "__path",
+			"((key" : "__key",
+			"((todo": "__jobs"
+		}
+	}, {
+		name : "(state",
+		job  : "ojob set state",
+		map  : true,
+		attrs: {
+			"(state": "__state"
+		}
+	}, {
+		name : "(template",
+		job  : "ojob template",
+		map  : true,
+		attrs: {
+			"(template"     : "template",
+			"((templateFile": "templateFile",
+			"((data"        : "data",
+			"((dataFile"    : "dataFile",
+			"((outputFile"  : "outputFile",
+			"((key"         : "__key",
+			"((tpath"       : "__tpath",
+			"((dpath"       : "__dpath",
+			"((out"         : "__out"
+		}
+	}, {
+		name : "(templateFolder",
+		job  : "ojob template folder",
+		map  : true,
+		attrs: {
+			"(templateFoder": "templateFolder",
+			"((templatePath": "__templatePath",
+			"((data"        : "data",
+			"((dataFile"    : "dataFile",
+			"((outputFolder": "outputFolder",
+			"((key"         : "__key",
+			"((dpath"       : "__dpath",
+			"((logJob"      : "logJob",
+			"((metaTemplate": "metaTemplate"
+		}
+	}, {
+		name : "(jobdebug",
+		job  : "ojob job debug",
+		map  : true,
+		attrs: {
+			"(jobdebug"    : "job",
+			"((lineColor"  : "lineColor",
+			"((textColor"  : "textColor",
+			"((theme"      : "theme",
+			"((emoticons"  : "emoticons",
+			"((signs"      : "signs",
+			"((includeTime": "includeTime"
+		}
+	}, {
+		name : "(jobsdebug",
+		job  : "ojob job debug",
+		map  : true,
+		attrs: {
+			"(jobsdebug"   : "jobs",
+			"((lineColor"  : "lineColor",
+			"((textColor"  : "textColor",
+			"((theme"      : "theme",
+			"((emoticons"  : "emoticons",
+			"((signs"      : "signs",
+			"((includeTime": "includeTime"
+		}
+	}]
 
-	// (pass
-	if (entries.indexOf("(pass") >= 0) {
-		aTodo.name = "ojob placeholder"
-
-		ensureMapTodo()
-
-		return aTodo
-	}
-
-	// (wait
-    if (entries.indexOf("(wait") >= 0) {
-		aTodo.name = "ojob wait"
-
-		ensureMapTodo()
-
-		fnA("(wait", "time")
-
-		return aTodo
-	}
-
-	// (optionOn
-	if (entries.indexOf("(optionOn") >= 0) {
-	  aTodo.name = "ojob options"
-  
-	  ensureMapTodo()
-  
-	  fnA("(optionOn", "__optionOn")
-	  fnA("(lowercase", "__lowerCase")
-	  fnA("(upperCase", "__upperCase")
-	  fnA("(todos", "__todos")
-	  fnA("(default", "__default")
-	  fnA("(async", "__async")
-  
-	  return aTodo
-	}
-  
 	// (success
-	// (fail
-	// (fn
-	// (repeat
-	// (secGet
-	// (check  // ojob job
+
+	for (var entry of oJobShortcuts) {
+		var _r = processEntry(entry)
+		if (isDef(_r)) return _r
+	}
 
 	return aTodo
 }
@@ -2965,17 +3121,17 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	var format = (isDef(global.__format) ? global.__format : "human")
 	var path   = __, csv = __, from = __
 
- 	if (isDef(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
- 	if (isDef(args.__format)) format = String(args.__format).toLowerCase()
+ 	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
+ 	if (isDef(args.__format) && !isNull(args.__format)) format = String(args.__format).toLowerCase()
 
-	if (isDef(args.__PATH)) path = String(args.__PATH)
- 	if (isDef(args.__path)) path = String(args.__path)
+	if (isDef(args.__PATH) && !isNull(args.__PATH)) path = String(args.__PATH)
+ 	if (isDef(args.__path) && !isNull(args.__path)) path = String(args.__path)
 
-	if (isDef(args.__FROM)) from = String(args.__FROM)
-	if (isDef(args.__from)) from = String(args.__from)
+	if (isDef(args.__FROM) && !isNull(args.__FROM)) from = String(args.__FROM)
+	if (isDef(args.__from) && !isNull(args.__from)) from = String(args.__from)
 
-	if (isDef(args.__CSV)) csv = jsonParse(args.__CSV, true)
-	if (isDef(args.__csv)) csv = jsonParse(args.__csv, true)
+	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = jsonParse(args.__CSV, true)
+	if (isDef(args.__csv) && !isNull(args.__csv)) csv = jsonParse(args.__csv, true)
 
 	var res = isDef(path) ? $path(aObj, path) : aObj
 	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
@@ -3003,6 +3159,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			yprint(res);
  			break;
  		case "table":
+			if (isMap(res)) res = [ res ]
  			if (isArray(res)) print(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)));
  			break;
 		case "tree":
@@ -3038,6 +3195,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			__pm = merge(__pm, _p);
  			break;
  		case "csv":
+			if (isMap(res)) res = [ res ]
  			if (isArray(res)) {
 				print($csv(csv).fromInArray(res))
  			}
