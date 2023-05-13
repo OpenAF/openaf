@@ -738,9 +738,10 @@ jobs:
     if (isUnDef(args.__internal) && isDef(args.internal)) args.__internal = args.internal
 
     args.__key = _$(args.__key, "key").isString().default("res");
+    if (args.__key == "") args.__key = "res"
     var res    = args.__key == "args" ? args : $get(args.__key)
     if (isUnDef(res)) res = args;
-    if (isDef(res) && !toBoolean(args.__internal)) {
+    if (isDef(res) && !isNull(res) && !toBoolean(args.__internal)) {
        delete res.objId;
        delete res.execid;
        delete res.id;
@@ -896,10 +897,27 @@ jobs:
     delete iargs.__optionOn
     delete iargs.__async
 
-    var rj = job => {
+    /*var rj = job => {
       job = ow.oJob.parseTodo(job)
       return (isMap(job) ? $job(job.name, merge(job.args, merge(iargs, res))) : $job(job, merge(iargs, res)))
+    }*/
+
+    if (isDef(args.__todos[todoValue]) && isString(args.__todos[todoValue])) args.__todos[todoValue] = [ args.__todos[todoValue] ]
+    // Prepare data
+    args.__todos[todoValue].forEach(job => {
+      if (isMap(job))
+        job.args = merge(job.args, iargs)
+      else
+        job.args = iargs
+    })
+
+    if (args.__async) {
+      $job("ojob parallel", { todo: args.__todos[todoValue] })
+    } else {
+      $job("ojob todo", { todo: args.__todos[todoValue] })
     }
+
+    /*
     if (isDef(args.__todos[todoValue]) && isString(args.__todos[todoValue])) args.__todos[todoValue] = [ args.__todos[todoValue] ]
     if (isDef(args.__todos[todoValue]) && isArray(args.__todos[todoValue])) {
       args.__todos[todoValue].forEach(j => {
@@ -915,7 +933,7 @@ jobs:
         else 
           res = rj(j)
       })
-    }
+    }*/
     
 # OJOB SEC GET
 # -------------------
@@ -1023,6 +1041,8 @@ jobs:
     expects:
     - name: __query
       desc: The query map for ow.obj.filter or af.fromNLinq
+    - name: __type
+      desc: The type of query to perform (e.g. path, ow.obj.filter, af.fromNLinq)
     - name: __from
       desc: The path to the args key to perform the query
     - name: __to
@@ -1034,22 +1054,24 @@ jobs:
     if (isUnDef(args.__key) && isDef(args.key)) args.__key = args.key
     if (isUnDef(args.__query)) args.__query = {}
 
-    if (isUnDef(args.__from) && isUnDef(args.__key)) args.__key = "res"
-    var f = isDef(args.__from) ? $path(args, args.__from) : $get(args.__key)
+    if (isUnDef(args.__key)) args.__key = "res"
+    var f = (args.__key == "args" ? args : $get(args.__key) )
+    if (isDef(args.__from)) f = $path(f, args.__from)
    
     ow.loadObj()
-    var res = ( isString(args.__query) ? af.fromNLinq(args.__query) : ow.obj.filter(f, args.__query) )
-    if (isUnDef(args.__from) && isDef(args.__key)) { 
-      $set(args.__key, res)
+    if (isDef(args.__type) && args.__type == "path") {
+      f = $path(f, args.__query)
+    } else {
+      f = ( isString(args.__query) ? $from(f).query(af.fromNLinq(args.__query)) : $from(f).query(args.__query) )
+    }
+
+    if (args.__key != "args") { 
+      $set(args.__key, f)
     } else { 
       if (isDef(args.__to)) {
-        $$(args).set(args.__to, res)
+        $$(args).set(args.__to, f)
       } else {
-        if (isDef(args.__from)) {
-          $$(args).set(args.__from, res)
-        } else {
-          return isArray(res) ? { _list: res } : res 
-        }
+        $$(args).set(args.__from, f)
       }
     }
 
@@ -1146,7 +1168,7 @@ jobs:
     delete args.__times
 
     for(var n = 0; n < ntimes; n++) {
-      njobs.forEach(j => $job(j, args))
+      $job("ojob todo", { todo: njobs })
     }
 
 # ----------------------------
@@ -1188,6 +1210,10 @@ jobs:
 
 # OJOB JOB
 # --------
+
+# -----------------
+- name : ojob check
+  to   : ojob job
 
 # ---------------
 - name : ojob job
@@ -1385,6 +1411,13 @@ jobs:
 
     if (isString(args.todo)) args.todo = [ args.todo ]
     var ires = clone(args)
+
+    delete ires.todo
+    delete ires.isolateArgs
+    delete ires.templateArgs
+    delete ires.shareArgs
+    delete ires.__debug
+
     args.todo.forEach(j => {
       if (!isMap(j) && !isString(j)) throw "todo entry needs to be a map or a string (" + af.toSLON(j) + ")"
       var ores = $job("ojob run", {
@@ -1493,9 +1526,15 @@ jobs:
       __debug     : toBoolean.isBoolean.default(false)
   exec : |
     if (!isString(args.todo) && !isArray(args.todo)) throw "todo needs to be a string or an array"
-
     if (isString(args.todo)) args.todo = [ args.todo ]
     var ires = clone(args), ar = []
+    
+    delete ires.todo
+    delete ires.isolateArgs
+    delete ires.templateArgs
+    delete ires.shareArgs
+    delete ires.__debug
+
     args.todo.forEach(j => {
       if (!isMap(j) && !isString(j)) throw "todo entry needs to be a map or a string (" + af.toSLON(j) + ")"
       ar.push($do(() => $job("ojob run", {
