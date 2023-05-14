@@ -128,8 +128,8 @@
     };
 
     exports.testSLON = function() {
-        var orig   = { s: "abc", num: -1.23456, bol: true, subMap: { x: 1, y: -1 }, subArr: [ 1, 2, 3 ], dt: ow.format.toDate("2020-01-01 12:34:56", "yyyy-MM-dd HH:mm:ss"), subArr2: [ { n: 1, b: true, s: "abc", p: { x: 1, y: -1} }, { n: 2, b: false, s: "xyz", a: [ 4,5,6 ] }, { n: 3, b: false, s: "axZ" } ] };
-        var target = "(s: 'abc', num: -1.23456, bol: true, subMap: (x: 1, y: -1), subArr: [1 | 2 | 3], dt: 2020-01-01/12:34:56.000, subArr2: [(n: 1, b: true, s: 'abc', p: (x: 1, y: -1)) | (n: 2, b: false, s: 'xyz', a: [4 | 5 | 6]) | (n: 3, b: false, s: 'axZ')])";
+        var orig   = { s: "abc", num: -1.23456, bol: true, subMap: { x: 1, y: -1 }, subArr: [ 1, 2, 3 ], dt: ow.format.toDate("2020-01-01 12:34:56", "yyyy-MM-dd HH:mm:ss"), subArr2: [ { n: 1, b: true, s: "abc", p: { x: 1, y: -1} }, { n: 2, b: false, s: "xyz 'a'", a: [ 4,5,6 ] }, { n: 3, b: false, s: "axZ xyz" } ] };
+        var target = "(s: abc, num: -1.23456, bol: true, subMap: (x: 1, y: -1), subArr: [1 | 2 | 3], dt: 2020-01-01/12:34:56.000, subArr2: [(n: 1, b: true, s: abc, p: (x: 1, y: -1)) | (n: 2, b: false, s: 'xyz \\'a\\'', a: [4 | 5 | 6]) | (n: 3, b: false, s: axZ xyz)])";
 
         ow.test.assert(ow.format.toSLON(orig), target, "Problem with toSLON.");
     };
