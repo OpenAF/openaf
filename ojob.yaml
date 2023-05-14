@@ -4,12 +4,16 @@ jobs:
 # OJOB PLACEHOLDER
 # -----------------------
 - name : ojob placeholder
+  typeArgs:
+    noLog: true
   help :
     text: Placeholder job to allow for arguments injection
 
 # OJOB DEBUG
 # ----------------
 - name : ojob debug
+  typeArgs:
+      noLog: true
   help :
     text: Outputs the current args and res values to help debug an ojob flow.
   exec : |
@@ -22,6 +26,8 @@ jobs:
 
 # --------------------
 - name: ojob job debug
+  typeArgs:
+      noLog: true
   help: 
     text   : | 
       Provides an alternative to print based debug.
@@ -629,6 +635,8 @@ jobs:
 
 # -----------------
 - name : ojob print
+  typeArgs:
+      noLog: true
   help :
     text: Prints a message line given an OpenAF template
     expects:
@@ -657,6 +665,8 @@ jobs:
 
 # ---------------
 - name : ojob log
+  typeArgs:
+      noLog: true
   help :
     text: Logs a message line given an OpenAF template
     expects:
@@ -690,6 +700,8 @@ jobs:
 # OJOB FUNCTION
 # --------------------
 - name : ojob function
+  typeArgs:
+      noLog: true
   help :
     text : |
       Executes the provided function mapping any args to the function arguments using the odoc help available for the provided function.
@@ -717,6 +729,8 @@ jobs:
 # OJOB OUTPUT
 # -----------------
 - name: ojob output
+  typeArgs:
+      noLog: true
   help: 
     text   : Prints the current arguments to the console.
     expects:
@@ -836,6 +850,8 @@ jobs:
 # OJOB SWITCH
 # ------------------
 - name: ojob options
+  typeArgs:
+      noLog: true
   help: 
     text: |
       Adds new "todo" entries depending on the value of a provided args variable.
@@ -938,6 +954,8 @@ jobs:
 # OJOB SEC GET
 # -------------------
 - name : ojob sec get
+  typeArgs:
+      noLog: true
   help : 
     text   : This job will get a SBucket secret and map it to oJob's args
     expects:
@@ -1036,6 +1054,8 @@ jobs:
 # OJOB QUERY
 # -----------------
 - name : ojob query
+  typeArgs:
+      noLog: true
   help : 
     text: Performs a query (using ow.obj.filter) to the existing args.
     expects:
@@ -1098,6 +1118,8 @@ jobs:
 
 # --------------
 - name : ojob if
+  typeArgs:
+      noLog: true
   help :
     text: If the provided "condition" is evaluated as true it will execute the "then" jobs otherwise it will execute the "else" jobs
     expects:
@@ -1146,6 +1168,8 @@ jobs:
 
 # ------------------
 - name : ojob repeat
+  typeArgs:
+      noLog: true
   help : 
     text: Repeats sequentially, for a specific number of "times", the provided list of "jobs" (one or more)
     expects:
@@ -1173,6 +1197,8 @@ jobs:
 
 # ----------------------------
 - name : ojob repeat with each
+  typeArgs:
+      noLog: true
   help : 
     text: Repeats the configured "jobs" (one or more jobs) sequentially for each element of the provided "key" list.
     expects:
@@ -1213,10 +1239,14 @@ jobs:
 
 # -----------------
 - name : ojob check
+  typeArgs:
+      noLog: true
   to   : ojob job
 
 # ---------------
 - name : ojob job
+  typeArgs:
+      noLog: true
   help : 
     text: |
       Provides a way to organize idempotent jobs. One or more "checks" jobs will be called to determine an args._action.
@@ -1311,6 +1341,8 @@ jobs:
 # OJOB STATE
 # --------------------
 - name: ojob set state
+  typeArgs:
+      noLog: true
   help: 
     text: Changes the current state.
     expects:
@@ -1334,6 +1366,8 @@ jobs:
 
 # ----------------
 - name: ojob state
+  typeArgs:
+      noLog: true
   help: 
     text: | 
       Changes the current state depending on the value of a provided args variable.
@@ -1374,6 +1408,8 @@ jobs:
 
 # ----------------
 - name : ojob todo
+  typeArgs:
+      noLog: true
   help: 
     text: "Executes an ojob sub-todo.\nNOTE: doesn't perform any checks for recursive behaviour!"
     expects:
@@ -1434,6 +1470,8 @@ jobs:
 
 # ---------------
 - name : ojob run
+  typeArgs:
+      noLog: true
   check:
     in:
       job         : default(__)
@@ -1492,6 +1530,8 @@ jobs:
 
 # --------------------
 - name : ojob parallel
+  typeArgs:
+      noLog: true
   help: 
     text: "Executes an ojob sub-todo in parallel.\nNOTE: doesn't perform any checks for recursive behaviour!"
     expects:
@@ -1551,6 +1591,8 @@ jobs:
 
 # ----------------
 - name : ojob wait
+  typeArgs:
+      noLog: true
   help : 
     text: "Waits for a specific amount of time"
     expects:
@@ -1564,6 +1606,8 @@ jobs:
 
 # ----------------
 - name : ojob exit
+  typeArgs:
+      noLog: true
   help : 
     text: "Ends all processing with an exit code"
     expects:

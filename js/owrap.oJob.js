@@ -294,6 +294,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	if (isDef(ojob.debug)) this.__ojob.debug = ojob.debug;
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
 	if (isDef(ojob.logToConsole)) this.__ojob.logToConsole = ojob.logToConsole;
+	if (isDef(ojob.ignoreNoLog)) this.__ojob.ignoreNoLog = ojob.ignoreNoLog
 	if (isDef(ojob.logLimit)) this.__logLimit = ojob.logLimit;
 	if (isDef(ojob.conAnsi)) { __conAnsi = ojob.conAnsi; __conStatus = Boolean(__conAnsi); }
 	if (isDef(ojob.conWidth)) this.__conWidth = ojob.conWidth;
@@ -1130,7 +1131,7 @@ OpenWrap.oJob.prototype.add2Todo = function(aTodo, aId) {
 
 /**
  * <odoc>
- * <key>oJob.__addLog(aOperation, aJobName, aJobExecId, args, anErrorMessage, aId) : String</key>
+ * <key>oJob.__addLog(aOperation, aJobName, aJobExecId, args, anErrorMessage, aId, aTypeArgs) : String</key>
  * Adds a new log entry to the channel oJob::log for the aJobName provided for the following operations:\
  * \
  * - start (start of a job)\
@@ -1142,8 +1143,9 @@ OpenWrap.oJob.prototype.add2Todo = function(aTodo, aId) {
  * Returns the current aJobExecId (or the created one for the operation start).
  * </odoc>
  */
-OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anException, aId) {
-	var aId = (isDef(aId) ? aId : ""); 
+OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anException, aId, aTypeArgs) {
+	var aId = (isDef(aId) ? aId : "");
+	var itsAnError = false
 		
 	var info = {
 			"ojobId"      : this.__id + aId,
@@ -1191,6 +1193,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 		}
 		break;
 	case "error"   :
+		itsAnError = true
 		existing.error   = true;
 		existing.count++;
 		try {
@@ -1284,6 +1287,9 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 							: m); 
 				};
 
+				var showLogs = true
+				if (isDef(aTypeArgs) && aTypeArgs.noLog && !this.__ojob.ignoreNoLog) showLogs = false
+				
 				if (__flags.OJOB_JOBSIGNORELOG.indexOf(existing.name) < 0) {
 					var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
 					var msg = "[" + existing.name + "]" + sep + this.__pid + sep;
@@ -1291,24 +1297,27 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 						var __f = ansis ? "\u25B7 " : ">> "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "STARTED", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (this.__ojob.logToConsole) { syncFn(() => { printnl(_g(aa) + _s(__f) + _b(__m1) + " " + _s(s.substr(0, ansiLength(s) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
-						if (this.__ojob.logOJob)      { log(__m1) }
+						if (showLogs && this.__ojob.logToConsole) { syncFn(() => { printnl(_g(aa) + _s(__f) + _b(__m1) + " " + _s(s.substr(0, ansiLength(s) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
+						if (showLogs && this.__ojob.logOJob)      { log(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
 					if (existing.start && existing.error) { 
 						var __f = ansis ? "\u2715 " : "!! "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "ERROR", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (this.__ojob.logToConsole) { syncFn(() => { printErr("\n" + _e(__f) + _g(aa) + _b(__m1) + " " + _e(se.substr(0, ansiLength(se) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn) + af.toYAML(existing.log) + "\n" + _e(se)); }, this); }
-						if (this.__ojob.logOJob)      { logErr(__m1) }
+						if (showLogs && this.__ojob.logToConsole) { syncFn(() => { printErr("\n" + _e(__f) + _g(aa) + _b(__m1) + " " + _e(se.substr(0, ansiLength(se) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn) + af.toYAML(existing.log) + "\n" + _e(se)); }, this); }
+						if (!this.__ojob.logToConsole) { 
+							// Errors should be always logged and catch is available
+							logErr(__m1 + ": " + af.toSLON(existing.log)) 
+						}
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "ERROR" }, { n: nowNano(), d: __d, t: "ERROR", m: __m1 + "\n" + stringify(existing.log) });
 					}
 					if (existing.start && existing.success) { 
 						var __f = ansis ? "\u2713 " : "<< "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
 						var __m1 = msg + "SUCCESS", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (this.__ojob.logToConsole) { syncFn(() => { printnl("\n" + _g(aa) + _c(__f) + _b(__m1) + " " + _c(ss.substr(0, ansiLength(ss) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
-						if (this.__ojob.logOJob)      { log(__m1) }
+						if (showLogs && this.__ojob.logToConsole) { syncFn(() => { printnl("\n" + _g(aa) + _c(__f) + _b(__m1) + " " + _c(ss.substr(0, ansiLength(ss) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
+						if (showLogs && this.__ojob.logOJob)      { log(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
 				}
@@ -2035,7 +2044,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 							return true;
 						} else {
 							canContinue = false;
-							this.__addLog("depsFail", aJob.name, undefined, provideArgs, undefined, aId);
+							this.__addLog("depsFail", aJob.name, __, provideArgs, __, aId, aJob.typeArgs)
 							if (isDef(aJob.deps[j].onFail) && isDef(depInf) && depInf.error) {
 								var res = (newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onFail))(provideArgs, aJob, aId);
 								canContinue = res;
@@ -2219,24 +2228,24 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 		switch(aJob.type) {
 		case "simple":
 			try {
-				var uuid = this.__addLog("start", aJob.name, undefined, args, undefined, aId);
+				var uuid = this.__addLog("start", aJob.name, __, args, __, aId, aJob.typeArgs)
 				args.execid = uuid;			
 				args = this.__mergeArgs(args, aJob.args);
 				
 				if (noAsync || (isDef(aJob.typeArgs.async) && !aJob.typeArgs.async)) {
 					_run(aJob.exec, args, aJob, aId);
-					this.__addLog("success", aJob.name, uuid, args, undefined, aId);
+					this.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 				} else {
 					parent.__promises.push($do(() => {
 						_run(aJob.exec, args, aJob, aId); 
 					}).then(() => {
-						parent.__addLog("success", aJob.name, uuid, args, __, aId);
+						parent.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 					}).catch((e) => {
-						parent.__addLog("error", aJob.name, uuid, args, e, aId);
+						parent.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
 					}));
 				}
 			} catch(e) {
-				this.__addLog("error", aJob.name, uuid, args, e, aId);
+				this.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
 			}
 			
 			//return true;
@@ -2246,21 +2255,21 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 				aJob.typeArgs.file = this.__processTypeArg(aJob.typeArgs.file);
 				aJob.typeArgs.url  = this.__processTypeArg(aJob.typeArgs.url);
 				try {
-					var uuid = parent.__addLog("start", aJob.name, __, args, __, aId);
+					var uuid = parent.__addLog("start", aJob.name, __, args, __, aId, aJob.typeArgs)
 					args.execid = uuid;
 					if (isUnDef(args.__oJobRepeat)) args = this.__mergeArgs(args, aJob.args);
 
 					var f = isDef(aJob.typeArgs.file) ? aJob.typeArgs.file : aJob.typeArgs.url;
 					parent.runFile(f, args, f, true);
-					this.__addLog("success", aJob.name, uuid, args, __, aId);
+					this.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 
 					//return true;
 				} catch(e) {
-					this.__addLog("error", aJob.name, uuid, args, e, aId);
+					this.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
 					//return true;
 				}
 			} else {
-				this.__addLog("error", aJob.name, uuid, args, "No typeArgs.file or typeArgs.url provided.", aId);
+				this.__addLog("error", aJob.name, uuid, args, "No typeArgs.file or typeArgs.url provided.", aId, aJob.typeArgs)
 				//return true;
 			}
 			break;
@@ -2268,27 +2277,27 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			//addOnOpenAFShutdown(function() {
 			this.shutdownFuncs.push(function() {
 				try {
-					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId);
+					var uuid = parent.__addLog("start", aJob.name, undefined, args, undefined, aId, aJob.typeArgs)
 					args.execid = uuid;
 					args = parent.__mergeArgs(args, aJob.args);
 
 					_run(aJob.exec, args, aJob, aId);
-					parent.__addLog("success", aJob.name, uuid, undefined, aId);
+					parent.__addLog("success", aJob.name, uuid, undefined, aId, aJob.typeArgs)
 				} catch(e) {
-					parent.__addLog("error", aJob.name, uuid, args, e, aId);
+					parent.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
 				}
 			});
 			break;
 		case "subscribe":
 			var subs = function() { 
 				return function(aCh, aOp, aK, aV) {	
-					uuid = parent.__addLog("start", aJob.name, undefined, args, __, aId);
+					uuid = parent.__addLog("start", aJob.name, undefined, args, __, aId, aJob.typeArgs)
 					args.execid = uuid;
 					try {
 						_run(aJob.exec, parent.__mergeArgs(args, { ch: aCh, op: aOp, k: aK, v: aV }), aJob, aId);
-						parent.__addLog("success", aJob.name, uuid, args, undefined, aId);
+						parent.__addLog("success", aJob.name, uuid, args, undefined, aId, aJob.typeArgs)
 					} catch(e) {
-						parent.__addLog("error", aJob.name, uuid, args, e, aId);
+						parent.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
 					}
 
 					return true;
@@ -2303,15 +2312,15 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			break;
 		case "periodic":
 			var f = function(__uuid, isRetry) {
-				uuid = parent.__addLog("start", aJob.name, __, args, __, aId);
+				uuid = parent.__addLog("start", aJob.name, __, args, __, aId, aJob.typeArgs)
 				if (isDef(aJob.typeArgs.cronCheck)) parent.__touchCronCheck(aJob.typeArgs.cronCheck.ch, aJob.name, "start");
 				args.execid = uuid;
 				try {
 					_run(aJob.exec, args, aJob, aId);
-					parent.__addLog("success", aJob.name, uuid, args, __, aId);
+					parent.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 					if (isDef(aJob.typeArgs.cronCheck)) parent.__touchCronCheck(aJob.typeArgs.cronCheck.ch, aJob.name, "success");
 				} catch(e) {
-					parent.__addLog("error", aJob.name, uuid, args, e, aId);
+					parent.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
 					if (isDef(aJob.typeArgs.cronCheck)) {
 						var rets = parent.__touchCronCheck(aJob.typeArgs.cronCheck.ch, aJob.name, "error", isRetry);
 						if (isDef(aJob.typeArgs.cronCheck.retryWait)) {
@@ -2899,6 +2908,11 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 				fnA(atr, entry.attrs[atr])
 			})
 
+			if (isDef(entry.noLog) && entry.noLog) {
+				if (isUnDef(aTodo.typeArgs)) aTodo.typeArgs = {}
+				aTodo.typeArgs.noLog = true
+			}
+
 			return aTodo
 		}
 	}
@@ -2907,6 +2921,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(if",
 		job  : "ojob if",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(if"    : "__condition",
 			"((then" : "__then",
@@ -2917,6 +2932,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(parallel",
         job  : "ojob parallel",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(parallel": "todo"
 		}		
@@ -2924,11 +2940,13 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(pass",
 		job  : "ojob placeholder",
 		map  : true,
+		noLog: true,
 		attrs: {}
 	}, {
 		name : "(wait",
 		job  : "ojob wait",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(wait": "time"
 		}
@@ -2936,6 +2954,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(optionOn",
 		job  : "ojob options",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(optionOn"  : "__optionOn",
 			"((lowerCase": "__lowerCase",
@@ -2948,6 +2967,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(fail",
 		job  : "ojob exit",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(fail"  : "code",
 			"((force": "force"
@@ -2956,6 +2976,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(fn",
 		job  : "ojob function",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(fn"     : "__fn",
 			"((key"   : "__key",
@@ -2966,6 +2987,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(check",
 		job  : "ojob check",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(check"   : "_checks",
 			"((actions": "_actions"
@@ -2974,6 +2996,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(query",
 		job  : "ojob query",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(query": "__query",
 			"((type": "__type",
@@ -2985,6 +3008,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(output",
 		job  : "ojob output",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(output"   : "__key",
 			"((path"    : "__path",
@@ -2998,6 +3022,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(repeat",
 		job  : "ojob repeat",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(repeat": "__times",
 			"((todo" : "__jobs"
@@ -3006,6 +3031,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(secget",
 		job  : "ojob sec get",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(secget"      : "secKey",
 			"((secRepo"    : "secRepo",
@@ -3021,6 +3047,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(each",
 		job  : "ojob repeat with each",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(each" : "__path",
 			"((key" : "__key",
@@ -3030,6 +3057,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(state",
 		job  : "ojob set state",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(state": "__state"
 		}
@@ -3037,6 +3065,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(template",
 		job  : "ojob template",
 		map  : true,
+		noLog: false,
 		attrs: {
 			"(template"     : "template",
 			"((templateFile": "templateFile",
@@ -3052,6 +3081,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(templateFolder",
 		job  : "ojob template folder",
 		map  : true,
+		noLog: false,
 		attrs: {
 			"(templateFoder": "templateFolder",
 			"((templatePath": "__templatePath",
@@ -3067,6 +3097,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(jobdebug",
 		job  : "ojob job debug",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(jobdebug"    : "job",
 			"((lineColor"  : "lineColor",
@@ -3080,6 +3111,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 		name : "(jobsdebug",
 		job  : "ojob job debug",
 		map  : true,
+		noLog: true,
 		attrs: {
 			"(jobsdebug"   : "jobs",
 			"((lineColor"  : "lineColor",
@@ -3088,6 +3120,46 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 			"((emoticons"  : "emoticons",
 			"((signs"      : "signs",
 			"((includeTime": "includeTime"
+		}
+	}, {
+		name : "(log",
+		job  : "ojob log",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(log"     : "msg",
+			"((key"    : "__key",
+			"((path"   : "__path",
+			"((level"  : "level",
+			"((options": "options"
+		}
+	}, {
+		name : "(print",
+		job  : "ojob print",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(print"   : "msg",
+			"((key"    : "__key",
+			"((path"   : "__path",
+			"((level"  : "level"
+		}
+	}, {
+		name : "(ch",
+		job  : "ojob channel",
+		map  : true,
+		noLog: false,
+		attrs: {
+			"(ch"    : "__name",
+			"((op"   : "__op",
+			"((key"  : "__key",
+			"((kpath": "__kpath",
+			"((k"    : "key",
+			"((ks"   : "keys",
+			"((v"    : "value",
+			"((vs"   : "values",
+			"((vpath": "__vpath",
+			"((extra": "extra"
 		}
 	}]
 
