@@ -73,6 +73,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testSignObj;
 
+   - name: Obj::DB ResultSet to object
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDBRS2ObjPG
+
 todo:
 # Obj tests
 # ------------
@@ -90,3 +95,4 @@ todo:
 - Obj::Generate One of
 - Obj::Generate One of Fn
 - Obj::Sign object
+- Obj::DB ResultSet to object

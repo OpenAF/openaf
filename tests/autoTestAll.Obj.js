@@ -352,4 +352,19 @@
         // Verify changed
         ow.test.assert(ow.obj.signVerify(keypair.publicKey, ndata), false, "Problem on verify of signed object (2)");
     };
+
+    exports.testDBRS2ObjPG = function() {
+        var db = new DB("jdbc:postgresql://hh-pgsql-public.ebi.ac.uk:5432/pfmegrnargs", "reader", "NWDMCE5xdipIjRrp")
+
+        var rs = db.qsRS("select 2+2 a, CURRENT_TIMESTAMP t")
+        var ro = rs.next() // get first result
+        ow.test.assert(ro, true, "Problem with DBRS2Obj when trying to use DB.qsRS")
+
+        var r = ow.obj.fromDBRS2Obj(rs, true)
+        ow.test.assert(r.a, 4, "Problem with DBRS2Obj simple conversion")
+        ow.test.assert(isDate(r.t), true, "Problem with DBRS2Obj date conversion")
+
+        rs.close()
+        db.close()
+    }
 })();

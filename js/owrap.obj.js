@@ -23,6 +23,11 @@ OpenWrap.obj.prototype.fromDBRS2Obj = function (aDBRS, doDates) {
 			case java.sql.Types.NUMERIC: 
 			case java.sql.Types.DOUBLE:
 			case java.sql.Types.FLOAT:
+			case java.sql.Types.TINYINT:
+			case java.sql.Types.SMALLINT:
+			case java.sql.Types.INTEGER:
+			case java.sql.Types.REAL:
+			//case java.sql.Types.BIGINT:
 			case java.sql.Types.DECIMAL: res[aDBRS.getMetaData().getColumnName(i)] = Number(aDBRS.getDouble(i)); break;
 			case java.sql.Types.CLOB: res[aDBRS.getMetaData().getColumnName(i)] = Packages.org.apache.commons.io.IOUtils.copy(aDBRS.getClob(i).getAsciiStream()); break;
 			case java.sql.Types.BINARY:
