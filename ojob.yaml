@@ -919,8 +919,15 @@ jobs:
     }*/
 
     if (isDef(args.__todos[todoValue]) && isString(args.__todos[todoValue])) args.__todos[todoValue] = [ args.__todos[todoValue] ]
+    var _l
+    if (isDef(args.__todos[todoValue]) && isArray(args.__todos[todoValue])) {
+      _l = { todo: args.__todos[todoValue] }
+    } else {
+      _l = { todo: args.__default }
+    }
+
     // Prepare data
-    args.__todos[todoValue].forEach(job => {
+    _l.todo.forEach(job => {
       if (isMap(job))
         job.args = merge(job.args, iargs)
       else
@@ -928,9 +935,9 @@ jobs:
     })
 
     if (args.__async) {
-      $job("ojob parallel", { todo: args.__todos[todoValue] })
+      $job("ojob parallel", _l)
     } else {
-      $job("ojob todo", { todo: args.__todos[todoValue] })
+      $job("ojob todo", _l)
     }
 
     /*
