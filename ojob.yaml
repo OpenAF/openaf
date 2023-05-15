@@ -949,9 +949,9 @@ jobs:
     })
 
     if (args.__async) {
-      $job("ojob parallel", _l)
+      $job("ojob parallel", merge(iargs, _l))
     } else {
-      $job("ojob todo", _l)
+      $job("ojob todo", merge(iargs, _l))
     }
 
     /*
@@ -1212,8 +1212,12 @@ jobs:
     var ntimes = Number(args.__times)
     delete args.__times
 
+    var iargs = clone(args)
+    delete iargs.__jobs
+    delete iargs.__time
+
     for(var n = 0; n < ntimes; n++) {
-      $job("ojob todo", { todo: njobs })
+      $job("ojob todo", merge(iargs, { todo: njobs }))
     }
 
 # ----------------------------
