@@ -272,7 +272,13 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		}
 	};
 
-	jobs.forEach((v) => { mdeps[v.name] = 0; });
+	jobs.forEach((v, i) => { 
+		mdeps[v.name] = 0
+		if (isArray(jobs[i].from))    jobs[i].from    = jobs[i].from.map(ow.oJob.parseTodo)
+		if (isArray(jobs[i].to))      jobs[i].to      = jobs[i].to.map(ow.oJob.parseTodo)
+		if (isArray(jobs[i].earlier)) jobs[i].earlier = jobs[i].earlier.map(ow.oJob.parseTodo)
+		if (isArray(jobs[i].then))    jobs[i].then    = jobs[i].then.map(ow.oJob.parseTodo)
+	})
 	jobs.forEach(depsScore);
 
 	var sjobs = jobs.sort((a, b) => {
@@ -2741,6 +2747,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
 			for(var jfi in jobFrom) {
 				var f
+				//jobFrom[jfi] = ow.oJob.parseTodo(jobFrom[jfi])
 				if (isDef(jobFrom[jfi]) && isMap(jobFrom[jfi])) {
 					var _a = aJobsCh.get({ "name": jobFrom[jfi].name })
 					var _b = procJob(jobFrom[jfi].name, jobFrom[jfi].deps, jobFrom[jfi].type, jobFrom[jfi].typeArgs, jobFrom[jfi].args, jobFrom[jfi].exec, jobFrom[jfi].from, jobFrom[jfi].to, jobFrom[jfi].help, jobFrom[jfi].catch, jobFrom[jfi].each, jobFrom[jfi].lang, jobFrom[jfi].file, jobFrom[jfi].check)
@@ -2750,6 +2757,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 				if (isDef(f)) {
 					//j.type = _$(j.type).isString().default(f.type);
+					if (isDef(f.typeArgs)) delete f.typeArgs.noLog
 					j.typeArgs = (isDef(j.typeArgs) ? merge(j.typeArgs, f.typeArgs) : f.typeArgs);
 					if (isMap(f.args) && Object.keys(f.args).length > 0) j.exec += "\nargs = ow.oJob.__processArgs(args, " + stringify(f.args,__,"") + ")\n"
 					j.deps = (isDef(j.deps) && j.deps != null ? j.deps.concat(f.deps) : f.deps);
@@ -2787,6 +2795,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 
 			for(var jfi in jobTo) {
 				var f
+				//jobTo[jfi] = ow.oJob.parseTodo(jobTo[jfi])
 				if (isDef(jobTo[jfi]) && isMap(jobTo[jfi])) {
 					var _a = aJobsCh.get({ "name": jobTo[jfi].name })
 					var _b = procJob(jobTo[jfi].name, jobTo[jfi].deps, jobTo[jfi].type, jobTo[jfi].typeArgs, jobTo[jfi].args, jobTo[jfi].exec, jobTo[jfi].from, jobTo[jfi].to, jobTo[jfi].help, jobTo[jfi].catch, jobTo[jfi].each, jobTo[jfi].lang, jobTo[jfi].file, jobTo[jfi].check)
@@ -2796,6 +2805,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 				if (isDef(f)) {
 					//j.type = (isDef(f.type) ? f.type : j.type);
+					if (isDef(f.typeArgs)) delete f.typeArgs.noLog
 					j.typeArgs = (isDef(f.typeArgs) ? merge(j.typeArgs, f.typeArgs) : j.typeArgs);
 					//j.lang = f.lang;
 					if (isMap(f.args) && Object.keys(f.args).length > 0) j.exec += "\nargs = ow.oJob.__processArgs(args, " + stringify(f.args,__,"") + ")\n"
@@ -2866,57 +2876,9 @@ OpenWrap.oJob.prototype.outputParse = function(aObj) {
 	return p
 }
 
-OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
+OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 	if (!isMap(aTodo)) return aTodo
   
-	// Get only relevant entries
-	var entries = Object.keys(aTodo).filter(r => r.startsWith("("))
-	// Allow for closing ) 
-	entries = entries.map(entry => {
-		if (entry.endsWith(")")) {
-			var nentry = entry.replace(/\s*\)+$/, "")
-			aTodo[nentry] = aTodo[entry]
-			delete aTodo[entry]
-			return nentry
-		} else {
-			return entry
-		}
-	})
-	
-	// Aux func to replace a source key with a target args
-	var fnA = (s,t) => {
-	  aTodo.args[t] = aTodo[s]
-	  delete aTodo[s]
-	}
-  
-	// Ensures that the args entry is a Map for correct processing
-	var ensureMapTodo = () => {
-	  aTodo.args = _$(aTodo.args).default({})
-	  if (!isMap(aTodo.args)) aTodo.args = {}
-	}
-  
-	var processEntry = entry => {
-		_$(entry.name, "name").isString().$_()
-		_$(entry.job, "job").isString().$_()
-		entry.map   = _$(entry.map, "map").isBoolean().default(true)
-		entry.attrs = _$(entry.attrs, "attrs").isMap().default({})
-
-		if (entries.indexOf(entry.name) >= 0) {
-			aTodo.name = entry.job
-			if (entry.map) ensureMapTodo()
-			Object.keys(entry.attrs).forEach(atr => {
-				fnA(atr, entry.attrs[atr])
-			})
-
-			if (isDef(entry.noLog) && entry.noLog) {
-				if (isUnDef(aTodo.typeArgs)) aTodo.typeArgs = {}
-				aTodo.typeArgs.noLog = true
-			}
-
-			return aTodo
-		}
-	}
-
 	var oJobShortcuts = [{
 		name : "(if",
 		job  : "ojob if",
@@ -3161,7 +3123,70 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
 			"((vpath": "__vpath",
 			"((extra": "extra"
 		}
+	}, {
+		name : "(runfile",
+		job  : "ojob run file",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(runfile"      : "__job",
+			"((args"        : "__args",
+			"((out"         : "__out",
+			"((key"         : "__key",
+			"((templateArgs": "__templateArgs",
+			"((debug"       : "__debug"
+		}
 	}]
+
+	if (_getlist) return oJobShortcuts
+
+	// Get only relevant entries
+	var entries = Object.keys(aTodo).filter(r => r.startsWith("("))
+	// Allow for closing ) 
+	entries = entries.map(entry => {
+		if (entry.endsWith(")")) {
+			var nentry = entry.replace(/\s*\)+$/, "")
+			aTodo[nentry] = aTodo[entry]
+			delete aTodo[entry]
+			return nentry
+		} else {
+			return entry
+		}
+	})
+	
+	// Aux func to replace a source key with a target args
+	var fnA = (s,t) => {
+	  aTodo.args[t] = aTodo[s]
+	  delete aTodo[s]
+	}
+  
+	// Ensures that the args entry is a Map for correct processing
+	var ensureMapTodo = () => {
+	  aTodo.args = _$(aTodo.args).default({})
+	  if (!isMap(aTodo.args)) aTodo.args = {}
+	}
+  
+	var processEntry = entry => {
+		_$(entry.name, "name").isString().$_()
+		_$(entry.job, "job").isString().$_()
+		entry.map   = _$(entry.map, "map").isBoolean().default(true)
+		entry.attrs = _$(entry.attrs, "attrs").isMap().default({})
+
+		if (entries.indexOf(entry.name) >= 0) {
+			aTodo.name = entry.job
+			if (entry.map) ensureMapTodo()
+			Object.keys(entry.attrs).forEach(atr => {
+				fnA(atr, entry.attrs[atr])
+			})
+
+			if (isDef(entry.noLog) && entry.noLog) {
+				if (isUnDef(aTodo.typeArgs)) aTodo.typeArgs = {}
+				aTodo.typeArgs.noLog = true
+			}
+
+			return aTodo
+		}
+	}
 
 	// (success
 
@@ -3177,7 +3202,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo) {
  * <ojob>
  * <key>ow.oJob.output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "tree", "map", "res", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
@@ -3191,7 +3216,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	});
 
  	var format = (isDef(global.__format) ? global.__format : "human")
-	var path   = __, csv = __, from = __
+	var path   = __, csv = __, from = __, key = "res"
 
  	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
  	if (isDef(args.__format) && !isNull(args.__format)) format = String(args.__format).toLowerCase()
@@ -3204,6 +3229,9 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 
 	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = jsonParse(args.__CSV, true)
 	if (isDef(args.__csv) && !isNull(args.__csv)) csv = jsonParse(args.__csv, true)
+
+	if (isDef(args.__KEY) && !isNull(args.__KEY)) key = String(args.__KEY)
+	if (isDef(args.__key) && !isNull(args.__key)) key = String(args.__key)
 
 	var res = isDef(path) ? $path(aObj, path) : aObj
 	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
@@ -3239,6 +3267,9 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 			break;
 		case "res":
 			$set("res", res)
+			break
+		case "key":
+			$set(key, res)
 			break
 		case "args":
 			if (isArray(res)) 

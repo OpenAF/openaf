@@ -224,6 +224,20 @@ jobs:
   
     if (isDef(r) && args.__key != "args") $set(args.__key, r)
 
+# OJOB UNSET
+# -----------------
+- name : ojob unset
+  help :
+    text   : Unsets a "key" using $unset
+    expects:
+    - name: __key
+      desc: Map key
+    check  :
+      in:
+        __key: isString.default("res")
+  exec : |
+    $unset(args.__key)
+
 # OJOB FILE GET
 # --------------------
 - name : ojob file get
@@ -1534,6 +1548,58 @@ jobs:
 
     if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(_j, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
     return $job(_j.name, _j.args, _j.id)
+
+# --------------------
+- name : ojob run file
+  typeArgs:
+      noLog: true
+  help :
+    text   : Executes an external YAML/JSON ojob file or a remote URL with the provided args.
+    expects:
+    - name: __job
+      desc: The YAML/JSON ojob file or remote URL to run
+    - name: __args
+      desc: The args to provide to the external ojob file/url
+    - name: __out
+      desc: The path on args to set the map key/path contents
+    - name: __key
+      desc: If __out is not defined will set the content into the provided key
+    - name: __templateArgs
+      desc: Boolean to indicate to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+    - name: __debug
+      desc: Boolean to indicate that the job execution parameters should be printed before executing
+  check:
+    in:
+      __job         : isString
+      __args        : isMap.default({})
+      __out         : isString.default(__)
+      __key         : isString.default("res")
+      __templateArgs: toBoolean.isBoolean.default(false)
+      __debug       : toBoolean.isBoolean.default(false)
+  exec : |
+    var id = args.__key == "args" ? "r" + nowNano() : args.__key
+
+    if (args.__templateArgs && isDef(args.__args)) {
+      traverse(args.__args, (aK, aV, aP, aO) => {
+        if (isString(aV)) {
+          aO[aK] = templify(aV, args)
+        }
+      })
+    }
+
+    var inputArgs = merge(args.__args, { __format: "key", __key: id })
+    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(inputArgs, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
+    ow.oJob.runFile(args.__job, inputArgs, id, true, { shareArgs: false })
+    
+    var _t = $get(id)
+    delete _t.__format
+    delete _t.__key
+
+    if (args.__key == "args") {
+      args = merge(args, _t)
+      $unset(id)
+    }
+    if (args.__key == "res") return _t
 
 # --------------------
 - name : ojob parallel
