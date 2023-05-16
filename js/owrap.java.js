@@ -1429,6 +1429,27 @@ OpenWrap.java.prototype.getCMemory = function(shouldFormat, aReadFileFn) {
 
 /**
  * <odoc>
+ * <key>ow.java.getLinuxUptime(aReadFileFn) : Array</key>
+ * Parses a Linux uptme info. Optionally you can provide a aReadFileFn that should expect the full path on a
+ * linux /proc root filesystem and return a string with the corresponding contents.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getLinuxUptime = function(aReadFileFn) {
+    aReadFileFn = _$(aReadFileFn, "aReadFileFn").isFunction().default(io.readFileString)
+
+    var _ar = aReadFileFn("/proc/uptime").trim().split(" ")
+    var val = {
+        uptime: _ar[0],
+        idle  : _ar[1]
+    }
+
+    // Calc perc 
+    val["idle%"] = parseFloat(Number(val.idle / val.uptime)).toFixed(2)
+    return val
+}
+
+/**
+ * <odoc>
  * <key>ow.java.getCCPU(aReadFileFn) : Map</key>
  * Returns a map with the current cgroup cpu stats. Optionally you can provide a aReadFileFn that should expect the full path on a linux cgroup root filesystem
  * and return a string with the corresponding contents.
@@ -1492,7 +1513,7 @@ OpenWrap.java.prototype.getCCPU = function(aReadFileFn) {
  * <odoc>
  * <key>ow.java.getLinuxCPUInfo(aReadFileFn) : Array</key>
  * Parses a Linux CPU info. Optionally you can provide a aReadFileFn that should expect the full path on a
- * linux cgroup root filesystem and return a string with the corresponding contents.
+ * linux /proc root filesystem and return a string with the corresponding contents.
  * </odoc>
  */
 OpenWrap.java.prototype.getLinuxCPUInfo = function(aReadFileFn) {
