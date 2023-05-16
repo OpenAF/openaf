@@ -1488,10 +1488,20 @@ OpenWrap.java.prototype.getCCPU = function(aReadFileFn) {
     }
 }
 
+/**
+ * <odoc>
+ * <key>ow.java.getLinuxCPUInfo(aReadFileFn) : Array</key>
+ * Parses a Linux CPU info. Optionally you can provide a aReadFileFn that should expect the full path on a
+ * linux cgroup root filesystem and return a string with the corresponding contents.
+ * </odoc>
+ */
 OpenWrap.java.prototype.getLinuxCPUInfo = function(aReadFileFn) {
     aReadFileFn = _$(aReadFileFn, "aReadFileFn").isFunction().default(io.readFileString)
 
-    return af.fromYAML(aReadFileFn("/proc/cpuinfo").trim().replace(/^$/mg, "---"))
+    var vals = af.fromYAML(aReadFileFn("/proc/cpuinfo").trim().replace(/^$/mg, "---"))
+    if (isDef(vals.flags)) vals.flags = vals.flags.trim().split(" ")
+    if (isDef(vals.bugs)) vals.bugs = vals.bugs.trim().split(" ")
+    return vals
 }
 
 /**
