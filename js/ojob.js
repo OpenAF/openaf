@@ -19,6 +19,11 @@ if (kparams.indexOf("-global") >= 0 && params["-global"] == "") {
 	ojob_global()
 }
 
+if (kparams.indexOf("-shortcuts") >= 0 && params["-shortcuts"] == "") {
+	delete params["-shortcuts"]
+	ojob_shortcuts()
+}
+
 if (kparams.indexOf("-compile") >= 0 && params["-compile"] == "") {
 	delete params["-compile"];
 	ojob_compile();
@@ -79,6 +84,7 @@ function ojob_showHelp() {
 	print("  -jobhelp (job) Display any available help information for a job.");
 	print("  -which         Determines from where an oJob will be loaded from.")
 	print("  -global        List global jobs for this installation.")
+	print("  -shortcuts     Lists the included ojob shortcuts.")
 	print("");
 	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE + ")");
 	ojob_shouldRun = false;
@@ -340,6 +346,29 @@ function ojob_todo() {
 		print(af.toYAML(r));
 	}
 	ojob_shouldRun = false;
+}
+
+function ojob_shortcuts() {
+	var tab = [], _lst = ow.loadOJob().parseTodo({}, true)
+	var _max  = $from(_lst).attach("_len", r => r.job.length).max("_len")._len
+	var _maxJ = $from(_lst).attach("_len", r => $from(Object.keys(r.attrs).map(s=>s.length)).max()).max("_len")._len
+	_maxJ = Math.max(_maxJ, $from(_lst).attach("_len", r => r.name.length).max("_len")._len)
+	var _maxA = $from(_lst).attach("_len", r => $from(Object.values(r.attrs).map(s=>s.length)).max()).max("_len")._len
+	$from(_lst)
+	.sort("job")
+	.select(r => {
+		var _l = Object.keys(r.attrs)
+		tab.push({ ojob: r.job, job: r.name, arg: isDef(r.attrs[r.name]) ? r.attrs[r.name] : "" })
+		_l.forEach((rr, i) => {
+			if (i != 0) {
+				tab.push({ ojob: "", job: rr, arg: isDef(r.attrs[rr]) ? r.attrs[rr] : "" })
+			}
+		})
+		tab.push({ ojob: ansiColor("FAINT", repeat(_max, "-")), job: ansiColor("FAINT", repeat(_maxJ, "-")), arg: ansiColor("FAINT", repeat(_maxA, "-")) })
+	})
+	print(printTable(tab))
+
+	ojob_shouldRun = false
 }
 
 function ojob_runFile() {

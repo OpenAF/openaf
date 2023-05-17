@@ -505,10 +505,12 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
  * </odoc>
  */
 OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
-	if (!isObject(aJSON)) return {};
+	if (!isMap(aJSON)) return {};
 	var res = aJSON;
 
 	if (isDef(res)) {
+		res.ojob = _$(res.ojob, "ojob").isMap().default({})
+
 		var _o2a = m => {
 			var res = [];
 			Object.keys(m).forEach(r => {
@@ -519,77 +521,74 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			return res;
 		};
 
-
-		if (isDef(res.ojob)) {
-			if (isDef(res.ojob.opacks) && isMap(res.ojob.opacks)) res.ojob.opacks = _o2a(res.ojob.opacks);
-			if (isDef(res.ojob.opacks) && isArray(res.ojob.opacks)) {
-				for(var ii in res.ojob.opacks) {
-					if (isString(res.ojob.opacks[ii])) includeOPack(res.ojob.opacks[ii]);
-					if (isMap(res.ojob.opacks[ii])) includeOPack(Object.keys(res.ojob.opacks[ii])[0], res.ojob.opacks[ii][Object.keys(res.ojob.opacks[ii])[0]]);
-				}
+		if (isDef(res.ojob.opacks) && isMap(res.ojob.opacks)) res.ojob.opacks = _o2a(res.ojob.opacks);
+		if (isDef(res.ojob.opacks) && isArray(res.ojob.opacks)) {
+			for(var ii in res.ojob.opacks) {
+				if (isString(res.ojob.opacks[ii])) includeOPack(res.ojob.opacks[ii]);
+				if (isMap(res.ojob.opacks[ii])) includeOPack(Object.keys(res.ojob.opacks[ii])[0], res.ojob.opacks[ii][Object.keys(res.ojob.opacks[ii])[0]]);
 			}
+		}
 
-			if (isDef(res.ojob.owraps) && isArray(res.ojob.owraps)) {
-				for(var ii in res.ojob.owraps) {
-					if (isString(res.ojob.owraps[ii])) {
-						if (isDef(ow["load" + res.ojob.owraps[ii]])) {
-							ow["load" + res.ojob.owraps[ii]]()
-						} else {
-							logErr("owrap '" + res.ojob.owraps[ii] + "' not found!")
-						}
+		if (isDef(res.ojob.owraps) && isArray(res.ojob.owraps)) {
+			for(var ii in res.ojob.owraps) {
+				if (isString(res.ojob.owraps[ii])) {
+					if (isDef(ow["load" + res.ojob.owraps[ii]])) {
+						ow["load" + res.ojob.owraps[ii]]()
+					} else {
+						logErr("owrap '" + res.ojob.owraps[ii] + "' not found!")
 					}
 				}
 			}
-		
-			if (isDef(res.ojob.loadLibs) && isArray(res.ojob.loadLibs)) {
-				for(var ii in res.ojob.loadLibs) {
-					if (isString(res.ojob.loadLibs[ii])) {
-						loadLib(res.ojob.loadLibs[ii]);
-					}
+		}
+	
+		if (isDef(res.ojob.loadLibs) && isArray(res.ojob.loadLibs)) {
+			for(var ii in res.ojob.loadLibs) {
+				if (isString(res.ojob.loadLibs[ii])) {
+					loadLib(res.ojob.loadLibs[ii]);
 				}
 			}
-		
-			if (isDef(res.ojob.loads) && isArray(res.ojob.loads)) {
-				for(var ii in res.ojob.loads) {
-					if (isString(res.ojob.loads[ii])) {
-						loadLib(res.ojob.loads[ii]);
-					}
+		}
+	
+		if (isDef(res.ojob.loads) && isArray(res.ojob.loads)) {
+			for(var ii in res.ojob.loads) {
+				if (isString(res.ojob.loads[ii])) {
+					loadLib(res.ojob.loads[ii]);
 				}
 			}
+		}
 
-			// Integrity
-			if (isDef(res.ojob.integrity)) {
-				if (isArray(res.ojob.integrity.list)) {
-					res.ojob.integrity.list.forEach(entry => {
-						if (isMap(entry) && Object.keys(entry).length > 0) {
-							var k = Object.keys(entry)[0]
-							if (isUnDef(OJOB_INTEGRITY[k])) OJOB_INTEGRITY[k] = entry[k]
-						}
-					})
-				}
-				if (isBoolean(res.ojob.integrity.strict)) OJOB_INTEGRITY_STRICT = res.ojob.integrity.strict
-				if (isBoolean(res.ojob.integrity.warn))   OJOB_INTEGRITY_WARN   = res.ojob.integrity.warn
+		// Integrity
+		if (isDef(res.ojob.integrity)) {
+			if (isArray(res.ojob.integrity.list)) {
+				res.ojob.integrity.list.forEach(entry => {
+					if (isMap(entry) && Object.keys(entry).length > 0) {
+						var k = Object.keys(entry)[0]
+						if (isUnDef(OJOB_INTEGRITY[k])) OJOB_INTEGRITY[k] = entry[k]
+					}
+				})
 			}
+			if (isBoolean(res.ojob.integrity.strict)) OJOB_INTEGRITY_STRICT = res.ojob.integrity.strict
+			if (isBoolean(res.ojob.integrity.warn))   OJOB_INTEGRITY_WARN   = res.ojob.integrity.warn
 		}
 
 		var _includeLoaded = {}
-		if (isDef(res.ojob)) {
-			res.ojob.includeOJob = _$(res.ojob.includeOJob).isBoolean().default(true)
-			//if (isUnDef(res.jobsInclude)) res.jobsInclude = []
-			//res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
-			if (res.ojob.includeOJob) {
-				try {
-					$ch("oJob::jobs").setAll(["name"], io.readFileJSON(getOpenAFJar() + "::ojob.saved.json"))
-				} catch(ee) {
-					/*try {
-						if (isUnDef(res.jobsInclude)) res.jobsInclude = []
-						res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
-					} catch(ee2) {*/
-						logWarn("Problem including oJobs: " + ee)
-					//}
-				}
+		
+		res.ojob.includeOJob = _$(res.ojob.includeOJob).isBoolean().default(true)
+		//if (isUnDef(res.jobsInclude)) res.jobsInclude = []
+		//res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
+		if (res.ojob.includeOJob) {
+			try {
+				$ch("oJob::jobs").setAll(["name"], io.readFileJSON(getOpenAFJar() + "::ojob.saved.json"))
+			} catch(ee) {
+				/*try {
+					if (isUnDef(res.jobsInclude)) res.jobsInclude = []
+					res.jobsInclude = [ getOpenAFJar() + "::ojob.json" ]
+				} catch(ee2) {*/
+					logWarn("Problem including oJobs: " + ee)
+				//}
 			}
 		}
+		
 		if (isDef(res.include) && isArray(res.include)) {
 			for (var i in res.include) {
 				if (isUnDef(_includeLoaded[res.include[i]])) {
