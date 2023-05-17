@@ -2052,9 +2052,17 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						} else {
 							canContinue = false;
 							this.__addLog("depsFail", aJob.name, __, provideArgs, __, aId, aJob.typeArgs)
-							if (isDef(aJob.deps[j].onFail) && isDef(depInf) && depInf.error) {
-								var res = (newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onFail))(provideArgs, aJob, aId);
-								canContinue = res;
+							if (isDef(depInf) && depInf.error) {
+								var res
+								if (isDef(aJob.deps[j].onFail)) {
+									res = (newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2];" + aJob.deps[j].onFail))(provideArgs, aJob, aId)
+									canContinue = res
+								} else {
+									if (isDef(parent.__ojob.depsOnFail)) {
+										res = (newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2];" + parent.__ojob.depsOnFail))(provideArgs, aJob, aId)
+										canContinue = res
+									}
+								}
 							}
 							depInfo[dep].result = false;
 						}
