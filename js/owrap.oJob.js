@@ -613,6 +613,8 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 
 		if (!dontLoadTodos && !(isArray(res.jobs)) && !(isArray(res.todo))) {
 			throw("jobs and todo entries need to be defined as arrays.");
+		} else {
+			if (isArray(res.todo)) res.todo = res.todo.map(r => this.parseTodo(r))
 		}
 
 		if (dontLoadTodos && !(isArray(res.jobs))) {

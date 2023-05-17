@@ -287,6 +287,7 @@ function ojob_jobhelp() {
 
 	if (isDef(file)) {
 		var oj = ow.loadOJob().previewFile(file);
+		oj.jobs = oj.jobs.concat($ch("oJob::jobs").getAll())  // Add included ojobs
 		var hh = $from(oj.jobs).equals("name", job).select({ "name": "n/a", "help": "n/a" })[0];
 		if (isDef(hh) && hh.name == "Help" && isMap(hh.help) && isUnDef(hh.exec) && isDef(oj.help)) hh = __;
 		if (isDef(hh)) {
@@ -335,7 +336,7 @@ function ojob_todo() {
 	var file = ojob__getFile();
 
 	if (isDef(file)) {
-		var l = ow.loadOJob().previewFile(file).todo;
+		var l = ow.loadOJob().previewFile(file).todo.map(r => ow.oJob.parseTodo(r))
 		var r = [];
 		for(var i in l) {
 			if (isObject(l[i]))
@@ -354,17 +355,25 @@ function ojob_shortcuts() {
 	var _maxJ = $from(_lst).attach("_len", r => $from(Object.keys(r.attrs).map(s=>s.length)).max()).max("_len")._len
 	_maxJ = Math.max(_maxJ, $from(_lst).attach("_len", r => r.name.length).max("_len")._len)
 	var _maxA = $from(_lst).attach("_len", r => $from(Object.values(r.attrs).map(s=>s.length)).max()).max("_len")._len
+
+	var job = String(__expr).replace(/.*-shortcuts */i, "")
+
 	$from(_lst)
 	.sort("job")
 	.select(r => {
-		var _l = Object.keys(r.attrs)
-		tab.push({ ojob: r.job, job: r.name, arg: isDef(r.attrs[r.name]) ? r.attrs[r.name] : "" })
-		_l.forEach((rr, i) => {
-			if (i != 0) {
-				tab.push({ ojob: "", job: rr, arg: isDef(r.attrs[rr]) ? r.attrs[rr] : "" })
-			}
-		})
-		tab.push({ ojob: ansiColor("FAINT", repeat(_max, "-")), job: ansiColor("FAINT", repeat(_maxJ, "-")), arg: ansiColor("FAINT", repeat(_maxA, "-")) })
+		var _go = true
+		if (job.trim().length > 0 && (r.job.indexOf(job) < 0 && r.name.indexOf(job) < 0 )) _go = false
+
+		if (_go) {
+			var _l = Object.keys(r.attrs)
+			tab.push({ ojob: r.job, job: r.name, arg: isDef(r.attrs[r.name]) ? r.attrs[r.name] : "" })
+			_l.forEach((rr, i) => {
+				if (i != 0) {
+					tab.push({ ojob: "", job: rr, arg: isDef(r.attrs[rr]) ? r.attrs[rr] : "" })
+				}
+			})
+			tab.push({ ojob: ansiColor("FAINT", repeat(_max, "-")), job: ansiColor("FAINT", repeat(_maxJ, "-")), arg: ansiColor("FAINT", repeat(_maxA, "-")) })
+		}
 	})
 	print(printTable(tab))
 
