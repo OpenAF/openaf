@@ -184,6 +184,26 @@ jobs:
       })
     }
 
+# OJOB GET PM
+# ------------------
+- name : ojob get pm
+  args :
+    __key: args
+  check:
+    in:
+      __key: isString.default("res")
+  exec : |
+    var out = __pm
+
+    if (isDef(__pm._map))  out = __pm._map
+    if (isDef(__pm._list)) out = __pm._list
+
+    if (args.__key == "args") {
+      args = merge(args, out)
+    } else {
+      $set(args.__key, out)
+    }
+
 # OJOB GET
 # ---------------
 - name : ojob get
@@ -203,7 +223,7 @@ jobs:
   
     var res = args.__key == "args" ? $path(args, args.__path) : $path($get(args.__key), args.__path)
     if (isArray(res)) res = { _list: res }
-    return res
+    args = merge(args, res)
 
 # OJOB SET
 # ---------------
@@ -325,6 +345,8 @@ jobs:
       desc: The path in __key where a map/array data to use can be found.
     - name: __out
       desc: The output will be stored into the provided key (defaults to 'res')
+    - name: __outPath
+      desc: If defined the $set path where __out will be set in the provided key.
     - name: template
       desc: If defined, will be used as template
     - name: templateFile
@@ -344,6 +366,7 @@ jobs:
       __tpath     : isString.default("@")
       __dpath     : isString.default("@")
       __out       : isString.default("res")
+      __outPath   : isString.default("")
       templateFile: isString.default(__)
       dataFile    : isString.default(__)
       outputFile  : isString.default(__)
@@ -387,9 +410,11 @@ jobs:
       io.writeFileString(args.outputFile, _r)
     } else {
       if (args.__out == "args") {
-        args.output = _r
+        if (isDef(args.__outPath)) $$(args).set(args.__outPath, _r); else args.output = _r
       } else {
-        $set(args.__out, { output: _r })
+        var __r = {}
+        if (isDef(args.__outPath)) $$(__r).set(args.__outPath, _r); __r.output = _r
+        $set(args.__out, __r)
       }
     }
 
@@ -1551,7 +1576,7 @@ jobs:
     }
 
     if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(_j, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
-    return $job(_j.name, _j.args, _j.id)
+    args = merge(args, $job(_j.name, _j.args, _j.id))
 
 # --------------------
 - name : ojob run file
@@ -1568,16 +1593,22 @@ jobs:
       desc: The path on args to set the map key/path contents
     - name: __key
       desc: If __out is not defined will set the content into the provided key
+    - name: __inKey
+      desc: If defined, args will be merged with the content from the provided key
+    - name: __usePM
+      desc: Output to __pm
     - name: __templateArgs
       desc: Boolean to indicate to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
     - name: __debug
       desc: Boolean to indicate that the job execution parameters should be printed before executing
   check:
-    in:
+    in: 
       __job         : isString
       __args        : isMap.default({})
       __out         : isString.default(__)
       __key         : isString.default("res")
+      __inKey       : isString.default(__)
+      __usePM       : toBoolean.isBoolean.default(false)
       __templateArgs: toBoolean.isBoolean.default(false)
       __debug       : toBoolean.isBoolean.default(false)
   exec : |
@@ -1591,19 +1622,36 @@ jobs:
       })
     }
 
-    var inputArgs = merge(args.__args, { __format: "key", __key: id })
+    var inputArgs, _f
+    if (args.__usePM) {
+      _f = { __format: "pm" }
+      args.__key = __
+      args.__usePM = __
+    } else {
+      _f = { __format: "key", __key: id }
+    }
+
+    if (isDef(args.__inKey)) {
+      var _i = $get(args.__inKey)
+      inputArgs = merge((isDef(_i) ? merge(args.__args, _i) : args.__args), _f)
+    } else {
+      inputArgs  = merge(args.__args, _f)
+    }
     if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(inputArgs, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
     ow.oJob.runFile(args.__job, inputArgs, id, true, { shareArgs: false })
-    
-    var _t = $get(id)
-    delete _t.__format
-    delete _t.__key
 
-    if (args.__key == "args") {
-      args = merge(args, _t)
-      $unset(id)
+    if (args.__key == "args" || args.__key == "res") {
+      var _t = $get(id)
+      if (isDef(_t)) {
+        delete _t.__format
+        delete _t.__key
+
+        args = merge(args, _t)
+        if (args.__key == "args") {
+          $unset(id)
+        }
+      }
     }
-    if (args.__key == "res") return _t
 
 # --------------------
 - name : ojob parallel
