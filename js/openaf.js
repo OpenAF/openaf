@@ -7368,6 +7368,7 @@ var __flags = _$(__flags).isMap().default({
 	OJOB_HELPSIMPLEUI          : false,
 	OJOB_LOCALPATH             : getOpenAFPath() + "ojobs",
 	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
+	OJOB_CONSOLE_STDERR        : true,
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
