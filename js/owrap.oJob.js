@@ -3049,6 +3049,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((key"         : "__key",
 			"((tpath"       : "__tpath",
 			"((dpath"       : "__dpath",
+			"((outPath"     : "__outPath",
 			"((out"         : "__out"
 		}
 	}, {
@@ -3145,12 +3146,53 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((args"        : "__args",
 			"((out"         : "__out",
 			"((key"         : "__key",
+			"((inKey"       : "__inKey",
+			"((usePM"       : "__usePM",
 			"((templateArgs": "__templateArgs",
 			"((debug"       : "__debug"
 		}
+	}, {
+		name : "(get",
+		job  : "ojob get",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(get"  : "__key",
+			"((path": "__path"
+		}
+	}, {
+		name : "(set",
+		job  : "ojob set",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(set"  : "__key",
+			"((path": "__path"
+		}
+	}, {
+		name : "(unset",
+		job  : "ojob unset",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(set"  : "__key"
+		}
+	}, {
+		name : "(fileget",
+		job  : "ojob file get",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(fileget"  : "__file",
+			"((path"    : "__path",
+			"((cache"   : "__cache",
+			"((ttl"     : "__ttl",
+			"((out"     : "__out",
+			"((key"     : "__key"
+		}
 	}]
 
-	if (_getlist) return oJobShortcuts
+	if (isUnDef(aTodo) && _getlist) return oJobShortcuts
 
 	// Get only relevant entries
 	var entries = Object.keys(aTodo).filter(r => r.startsWith("("))
@@ -3278,10 +3320,10 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 			print(printTreeOrS(res, __, { noansi: !__conAnsi }))
 			break;
 		case "res":
-			$set("res", res)
+			if (isDef(res)) $set("res", res)
 			break
 		case "key":
-			$set(key, res)
+			if (isDef(res)) $set(key, res)
 			break
 		case "args":
 			if (isArray(res)) 
