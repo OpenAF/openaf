@@ -685,13 +685,14 @@ OpenWrap.format.prototype.string = {
 	updateLine: function(aPrintNLFn) {
 		aPrintNLFn = _$(aPrintNLFn, "aPrintNLFn").isFunction().default(printnl)
 		var _r = {
-			lsize: 0,
+			lsize: $atomic(0),
 			line : l => {
-				aPrintNLFn(repeat(this.lsize, " ") + "\r" + l + "\r")
-				this.lsize = l.length
+				sync(() => (_r.lsize.get() < l.length) ? _r.lsize.set(l.length) : l.length, _r.lsize)
+				var s = _r.lsize.get() - l.length
+				aPrintNLFn(l + (s > 0 ? repeat(s, " ") : "") + "\r")
 			},
 			end  : () => {
-				aPrintNLFn(repeat(this.lsize, " ") + "\r")
+				aPrintNLFn(repeat(_r.lsize.get(), " ") + "\r")
 			}
 		} 
 		return _r
@@ -1601,19 +1602,20 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	if (isMap(aObj)) {
 	   var pairs = [];
 	   Object.keys(aObj).forEach(r => {
-		  pairs.push(r + dTheme.sepKV + ow.format.toSLON(aObj[r])); 
+		  pairs.push(r + dTheme.sepKV + ow.format.toSLON(aObj[r], dTheme))
 	   });
 	   return dTheme.startMap + pairs.join(dTheme.sepMap) + dTheme.endMap; 
 	}
 	if (isArray(aObj)) {
 	   return dTheme.startArr + aObj.map(r => {
-		  return ow.format.toSLON(r);
+		  return ow.format.toSLON(r, dTheme)
 	   }).join(dTheme.sepArr) + dTheme.endArr;
 	}
 	if (isDate(aObj)) {
 		return ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS');
 	}
-	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) ? dTheme.strQuote + aObj + dTheme.strQuote : String(aObj));
+	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
+	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && (aObj.indexOf(dTheme.sepMap) >= 0 || aObj.indexOf(dTheme.strQuote) >= 0)) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
   }
 
 /**
@@ -2611,14 +2613,14 @@ OpenWrap.format.prototype.progressReport = function(aMainFunc, aProgressFunc, ti
 
 /**
  * <odoc>
- * <key>ow.format.printWithWaiting(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme)</key>
+ * <key>ow.format.printWithWaiting(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme, printNLFn, useAsSuffix)</key>
  * Executes aMainFunc while priting aPrefixMsg with a waiting aTheme (defaults to a sequence of chars with a rotating bar).
  * When aMainFunc ends it will replace the priting with aCompleteMsg or aErrorMsg in case an exception is thrown.
  * Optionally you can provide a different aWaitSpeed while cycling between the aTheme sequence of chars increasing/decreasing
  * the "animation" effect.
  * </odoc>
  */
-OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme, pnlfn) {
+OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCompleteMsg, aErrorMsg, aWaitSpeed, aTheme, pnlfn, useAsSuffix) {
 	_$(aMainFunc, "Main function").isFunction().$_();
 
 	aWaitSpeed   = _$(aWaitSpeed, "aWaitSpeed").isNumber().default(150);
@@ -2627,6 +2629,7 @@ OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCo
 	aErrorMsg    = _$(aErrorMsg, "aErrorMsg").isString().default("!");
 	aTheme       = _$(aTheme, "aTheme").isString().default("-\\|/");
 	pnlfn        = _$(pnlfn).default(printnl);
+	useAsSuffix  = _$(useAsSuffix).isBoolean().default(false)
 
 	var e, p = $do(() => {
 		aMainFunc();
@@ -2636,9 +2639,12 @@ OpenWrap.format.prototype.printWithWaiting = function(aMainFunc, aPrefixMsg, aCo
 
 	$tb(() => {
 		var ii = 0;
-		while(isUnDef(e) && p.state <= 0) {
+		while(isUnDef(e) && p.state.get() <= 0) {
 			if (ii >= aTheme.length) ii = 0;
-			pnlfn(aPrefixMsg + aTheme[ii] + "\r");
+			if (useAsSuffix) 
+				pnlfn(aTheme[ii] + aPrefixMsg + "\r")
+			else
+				pnlfn(aPrefixMsg + aTheme[ii] + "\r")
 			ii++;
 			sleep(aWaitSpeed, true);
 		}

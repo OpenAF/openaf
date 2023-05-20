@@ -223,6 +223,15 @@ const bfprintErr = function(str, codePage) {
  * </odoc>
  */
 const sprint = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return print(stringify(str, undefined, delim)); }
+
+/**
+ * <odoc>
+ * <key>lprint(aStr)</key>
+ * "SLONs" and prints the aStr to the stdout (with a new line on the end)
+ * </odoc>
+ */
+const lprint = function(str) { return print(af.toSLON(str)) }
+
 /**
  * <odoc>
  * <key>bprint(aStr)</key>
@@ -268,6 +277,13 @@ const printnl = function(str) {
  * </odoc>
  */
 const sprintnl = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printnl(stringify(str, undefined, delim)); }
+/**
+ * <odoc>
+ * <key>lprintnl(aStr)</key>
+ * "SLONs" and prints the aStr to the stdout (without adding a new line on the end)
+ * </odoc>
+ */
+const lprintnl = function(str) { return printnl(af.toSLON(str)) }
 /**
  * <odoc>
  * <key>bprintnl(aStr)</key>
@@ -342,6 +358,14 @@ const printErr = function(str) {
 const sprintErr = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printErr(stringify(str, undefined, delim)); }
 /**
  * <odoc>
+ * <key>lprintErr(aStr)</key>
+ * "SLONs" and prints the aStr to the stderr (with a new line on the end)
+ * </odoc>
+ */
+const lprintErr = function(str) { return printErr(af.toSLON(str)) }
+
+/**
+ * <odoc>
  * <key>bprintErr(aStr)</key>
  * "Beautifies" and prints the aStr to the stderr (with a new line on the end) (example: bprintErr("Hupps!! A problem!"))
  * </odoc>
@@ -385,6 +409,13 @@ const printErrnl = function(str) {
  * </odoc>
  */
 const sprintErrnl = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printErrnl(stringify(str, undefined, delim)); }
+/**
+ * <odoc>
+ * <key>lprintErrnl(aStr)</key>
+ * "SLONs" and prints the aStr to the stderr (without adding a new line on the end)
+ * </odoc>
+ */
+const lprintErrnl = function(str) { return printErrnl(af.toSLON(str)) }
 
 /**
  * <odoc>
@@ -3610,14 +3641,18 @@ const extend = function() {
 
 /**
  * <odoc>
- * <key>exit(anExitCode)</key>
- * Immediately exits execution with the provided exit code
+ * <key>exit(anExitCode, force)</key>
+ * Immediately exits execution with the provided exit code. 
+ * Optionally force=true can be provided but no shutdown triggers will be executed (use only as a last option)
  * </odoc>
  */
-const exit = function(exitCode) {
-	if(isUnDef(exitCode)) exitCode = 0;
+const exit = function(exitCode, force) {
+	if(isUnDef(exitCode)) exitCode = 0
 
-	java.lang.System.exit(exitCode);
+	if (force)
+		java.lang.Runtime.getRuntime().halt(exitCode)
+	else
+		java.lang.System.exit(exitCode)
 }
 
 /**
@@ -3929,7 +3964,7 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   count_by(arr, 'field'), group(arr, 'field'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field')\
+ *   count_by(arr, 'field'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -3950,6 +3985,10 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => $from(ar[0]).group(ar[1]),
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
 		},
+		group_by: {
+			_func: ar => $from(ar[0]).groupBy(ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
 		unique: {
 			_func: ar => uniqArray(ar[0]),
 			_signature: [ { types: [ jmespath.types.array ] } ]
@@ -3957,6 +3996,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		to_map: {
 			_func: ar => $from(ar[0]).mselect(__, ar[1]),
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		substring: {
+			_func: ar => String(ar[0]).substring(ar[1], ar[2]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types:  [ jmespath.types.number ] }, { types:  [ jmespath.types.number ] } ]
 		},
 		flat_map: {
 			_func: ar => ow.loadObj().flatMap(ar[0]),
@@ -7325,6 +7368,7 @@ var __flags = _$(__flags).isMap().default({
 	OJOB_HELPSIMPLEUI          : false,
 	OJOB_LOCALPATH             : getOpenAFPath() + "ojobs",
 	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
+	OJOB_CONSOLE_STDERR        : true,
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
@@ -7531,6 +7575,32 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
 AF.prototype.toSLON = function(aObject, aTheme) {
 	ow.loadFormat();
 	return ow.format.toSLON(aObject, aTheme);
+}
+
+/**
+ * <odoc>
+ * <key>AF.fromSLON(aString) : Map</key>
+ * Converts a SLON (https://github.com/nmaguiar/slon) string representation into the original map.
+ * </odoc>
+ */
+AF.prototype.fromSLON = function(aString) {
+	if (!isString(aString) || aString == "" || isNull(aString)) return ""
+
+	var _sp = loadCompiledRequire("slonParse_js")
+	return _sp.parse(aString)
+}
+
+/**
+ * <odoc>
+ * <key>AF.fromNLinq(aString) : Map</key>
+ * Converts a nLinq chained command line string representation into a suitable map to be used with $from.query.
+ * </odoc>
+ */
+AF.prototype.fromNLinq = function(aString) {
+	if (!isString(aString) || aString == "" || isNull(aString)) return {}
+
+	var _np = loadCompiledRequire("nlinqParse_js")
+	return _np.parse(aString)
 }
 
 /**
@@ -9129,7 +9199,7 @@ const includeOPack = function(aOPackName, aMinVersion) {
  *    boolean.get         - Get the current boolean\
  *    boolean.set         - Set the current boolean\
  *    boolean.getSet      - Get and Set the current boolean\
- *    boolean.setIf(t, n) - Set the current boolean to n if current value is t\\
+ *    boolean.setIf(t, n) - Set the current boolean to n if current value is t\
  * \
  * </odoc>
  */
@@ -9823,6 +9893,29 @@ const $sh = function(aString, aIn) {
 
 		return res;
 	};
+
+	/**
+	 * <odoc>
+	 * <key>$sh.getYaml(aIdx) : Object</key>
+	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh) trying to parse it as yaml.
+	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
+	 * </odoc>
+	 */
+	__sh.prototype.getYaml = function(aIdx) {
+		var res = this.get(aIdx)
+
+		if (isArray(res)) {
+			for(var ii in res) {
+				res[ii].stdout = af.fromYAML(res[ii].stdout)
+				res[ii].stderr = af.fromYAML(res[ii].stderr)
+			}
+		} else {
+			res.stdout = af.fromYAML(res.stdout)
+			res.stderr = af.fromYAML(res.stderr)
+		}
+
+		return res
+	}
 
 	/**
 	 * <odoc>

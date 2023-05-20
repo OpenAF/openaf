@@ -1390,17 +1390,21 @@ OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivK
 
 /**
  * <odoc>
- * <key>ow.java.getCMemory(shouldFormat) : Map</key>
+ * <key>ow.java.getCMemory(shouldFormat, aReadFileFn) : Map</key>
  * Returns a map with the current cgroup runtime max, total, used and free memory. If shouldFormat = true ow.format.toBytesAbbreviation will be used.
+ * Optionally you can provide a aReadFileFn that should expect the full path on a linux cgroup root filesystem
+ * and return a string with the corresponding contents.
  * </odoc>
  */
-OpenWrap.java.prototype.getCMemory = function(shouldFormat) {
+OpenWrap.java.prototype.getCMemory = function(shouldFormat, aReadFileFn) {
+    aReadFileFn = _$(aReadFileFn, "aReadFileFn").isFunction().default(io.readFileString)
+    
     if (io.fileExists("/sys/fs/cgroup/memory")) {
         var vals = {
-            m: Number(io.readFileString("/sys/fs/cgroup/memory/memory.limit_in_bytes")),
-            t: Number(io.readFileString("/sys/fs/cgroup/memory/memory.max_usage_in_bytes")),
+            m: Number(aReadFileFn("/sys/fs/cgroup/memory/memory.limit_in_bytes")),
+            t: Number(aReadFileFn("/sys/fs/cgroup/memory/memory.max_usage_in_bytes")),
             f: -1,
-            u: Number(io.readFileString("/sys/fs/cgroup/memory/memory.usage_in_bytes"))
+            u: Number(aReadFileFn("/sys/fs/cgroup/memory/memory.usage_in_bytes"))
         };
         vals.f = vals.t - vals.u;
     
@@ -1421,6 +1425,104 @@ OpenWrap.java.prototype.getCMemory = function(shouldFormat) {
             };
         }
     }
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.getLinuxUptime(aReadFileFn) : Array</key>
+ * Parses a Linux uptme info. Optionally you can provide a aReadFileFn that should expect the full path on a
+ * linux /proc root filesystem and return a string with the corresponding contents.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getLinuxUptime = function(aReadFileFn) {
+    aReadFileFn = _$(aReadFileFn, "aReadFileFn").isFunction().default(io.readFileString)
+
+    var _ar = aReadFileFn("/proc/uptime").trim().split(" ")
+    var val = {
+        uptime: _ar[0],
+        idle  : _ar[1]
+    }
+
+    // Calc perc 
+    val["idle%"] = parseFloat(Number(val.idle / val.uptime)).toFixed(2)
+    return val
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.getCCPU(aReadFileFn) : Map</key>
+ * Returns a map with the current cgroup cpu stats. Optionally you can provide a aReadFileFn that should expect the full path on a linux cgroup root filesystem
+ * and return a string with the corresponding contents.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getCCPU = function(aReadFileFn) {
+    aReadFileFn = _$(aReadFileFn, "aReadFileFn").isFunction().default(io.readFileString)
+    
+    if (io.fileExists("/sys/fs/cgroup/cpu")) {
+        var vals = {
+            usage: {
+                allSystem: Number(aReadFileFn("/sys/fs/cgroup/cpu/cpuacct.usage_sys")),
+                allUser: Number(aReadFileFn("/sys/fs/cgroup/cpu/cpuacct.usage_user")),
+                perCpu: aReadFileFn("/sys/fs/cgroup/cpu/cpuacct.usage_percpu").trim().split(" ").map(r=>Number(r)),
+                perCpuSystem: aReadFileFn("/sys/fs/cgroup/cpu/cpuacct.usage_percpu_sys").trim().split(" ").map(r=>Number(r)),
+                perCpuUser: aReadFileFn("/sys/fs/cgroup/cpu/cpuacct.usage_percpu_user").trim().split(" ").map(r=>Number(r))
+            },
+            taskStats: af.fromYAML(aReadFileFn("/sys/fs/cgroup/cpu/cpuacct.stat").trim().replace(/^(\w+)/mg,"$1:")),
+            throttling: af.fromYAML(aReadFileFn("/sys/fs/cgroup/cpu/cpu.stat").trim().replace(/^(\w+)/mg,"$1:")),
+            quota: {
+                quota: Number(aReadFileFn("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")),
+                period: Number(aReadFileFn("/sys/fs/cgroup/cpu/cpu.cfs_period_us")),
+            }
+        }
+
+        // quota
+        if (vals.quota.quota == -1) {
+            vals.quota.limit = "unlimited"
+        } else {
+            vals.quota.limit = vals.quota.quota / vals.quota.period
+        }
+
+        // correct name in stat
+        if (isDef(vals.taskStats.system)) {
+            vals.taskStats.kernel = vals.taskStats.system
+            delete vals.taskStats.system
+        }
+
+        // calculate perc
+        var _p = n => parseFloat(Number(n)).toFixed(2)
+        if (isDef(vals.taskStats)) {
+            var _t = vals.taskStats.user + vals.taskStats.kernel
+            vals.taskStats["user%"] = _p( (vals.taskStats.user * 100) / _t )
+            vals.taskStats["kernel%"] = _p( (vals.taskStats.kernel * 100) / _t )
+        }
+        if (isArray(vals.usage.perCpu)) {
+            vals.usage["perCpu%"] = vals.usage.perCpu.map(r => _p((r * 100) / vals.usage.allUser))
+        }
+        if (isArray(vals.usage.perCpuSystem)) {
+            vals.usage["perCpuSystem%"] = vals.usage.perCpuSystem.map(r => _p((r * 100) / vals.usage.allUser))
+        }
+        if (isArray(vals.usage.perCpuUser)) {
+            vals.usage["perCpuUser%"] = vals.usage.perCpuUser.map(r => _p((r * 100) / vals.usage.allUser))
+        }
+
+        return vals
+    }
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.getLinuxCPUInfo(aReadFileFn) : Array</key>
+ * Parses a Linux CPU info. Optionally you can provide a aReadFileFn that should expect the full path on a
+ * linux /proc root filesystem and return a string with the corresponding contents.
+ * </odoc>
+ */
+OpenWrap.java.prototype.getLinuxCPUInfo = function(aReadFileFn) {
+    aReadFileFn = _$(aReadFileFn, "aReadFileFn").isFunction().default(io.readFileString)
+
+    var vals = af.fromYAML(aReadFileFn("/proc/cpuinfo").trim().replace(/^$/mg, "---"))
+    if (isDef(vals.flags)) vals.flags = vals.flags.trim().split(" ")
+    if (isDef(vals.bugs)) vals.bugs = vals.bugs.trim().split(" ")
+    return vals
 }
 
 /**

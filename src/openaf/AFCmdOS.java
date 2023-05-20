@@ -57,6 +57,7 @@ public class AFCmdOS extends AFCmdBase {
 			+ "   --sb               - generates or pre-appends openaf shebang to a js script\n"
 			+ "\n"
 			+ "   -h                 - show this help information\n"
+			+ "   -v                 - show the version\n"
 			+ "   -helpscript (term) - show help on a search term on scripting\n"
 			+ "\n(version " + VERSION + " (" + DISTRIBUTION + "), " + LICENSE + ")";
 	final protected static String OPTION_OUTPUT_MODE = "-o";
@@ -79,6 +80,7 @@ public class AFCmdOS extends AFCmdBase {
 	final protected static String OPTION_PIPE = "-p";
 	final protected static String OPTION_CODE = "-c";
 	final protected static String OPTION_SCRIPTFILE = "-f";
+	final protected static String OPTION_VERSION = "-v";
 	final protected static String OPTION_SB = "--sb";
 	final protected static String OPTION_INTERPRET = "--i";
 	final protected static String PREFIX_SCRIPT = "script:";
@@ -169,6 +171,10 @@ public class AFCmdOS extends AFCmdBase {
 		showHelp(argHelp);
 	}	
 		
+	protected void showVersion() {
+		showHelp("version: " + VERSION + "\ndistribution: " + DISTRIBUTION);
+	}
+
 	/**
 	 * 
 	 */
@@ -348,6 +354,9 @@ public class AFCmdOS extends AFCmdBase {
 				continue;
 			case OPTION_HELP:
 				showHelp();
+				continue;
+			case OPTION_VERSION:
+			    showVersion();
 				continue;
 			case OPTION_INSTALL:
 				//install();

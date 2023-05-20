@@ -15,23 +15,46 @@ jobs:
    # Repack the recently build openaf
    - name  : Repack OpenAFOS
      deps  :
-        - Build OpenAFOS
+     - Build OpenAFOS
      exec  : >
         log("Repacking...");
-        sh(ow.format.getJavaHome() + "/bin/java -jar " + global.path + "/openaf.jar --repack", "", undefined, true);
+        $sh(ow.format.getJavaHome() + "/bin/java -jar " + global.path + "/openaf.jar --repack")
+        .exec()
 
    # Copy OpenAF to the right place for use
    - name  : Copy OpenAF
      deps  :
-        - Build OpenAFOS
-        - Repack OpenAFOS
+     - Prepare ojob saved 
+     - Build OpenAFOS
+     - Repack OpenAFOS
      exec  : >
         log("Copying...");
         //sh("cp " + global.path + "/openaf.jar " + global.path + "/dist/openaf.jar", "", undefined, true);
         io.mkdir(global.path + "/dist");
         io.cp(global.path + "/openaf.jar", global.path + "/dist/openaf.jar");
 
+   # -------------------------
+   - name : Prepare ojob saved
+     deps :
+     - Repack OpenAFOS
+     exec : |
+       sleep(1000, true)
+
+       $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "-c", "ow.loadOJob();oJobRunFile('" + global.path + "/ojob.json');io.writeFileJSON('" + global.path + "/ojob.saved.json',$ch('oJob::jobs').getAll(), '')"])
+       .exec()
+       
+       plugin("ZIP")
+       var zip = new ZIP()
+       var is = io.readFileStream(global.path + "/ojob.saved.json")
+       zip.streamPutFileStream(global.path + "/openaf.jar", "ojob.saved.json", is)
+       is.close()
+
+       is = io.readFileStream(global.path + "/ojob.saved.json")
+       zip.streamPutFileStream(global.path + "/openaf.jar.orig", "ojob.saved.json", is)
+       is.close()
+
 todo:
-   - Build OpenAFOS
-   - Repack OpenAFOS
-   - Copy OpenAF
+- Prepare ojob saved
+- Build OpenAFOS
+- Repack OpenAFOS
+- Copy OpenAF
