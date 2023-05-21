@@ -2496,6 +2496,7 @@ OpenWrap.server.prototype.httpd = {
 	__routes: {},
 	__defaultRoutes: {},
 	__preRoutes: {},
+	customLibs: {},
 
 	/**
 	 * <odoc>
@@ -2683,6 +2684,13 @@ OpenWrap.server.prototype.httpd = {
 	 */
 	mapRoutesWithLibs: function(aHTTPd, aMapOfRoutes) {
 		if (isUnDef(aMapOfRoutes)) aMapOfRoutes = {};
+		var parent = this
+
+		if (isDef(getOPackPath("Mermaid"))) loadLib("mermaid.js")
+
+		Object.keys(this.customLibs).forEach(lib => {
+			aMapOfRoutes["/js/" + lib] = function() { return parent.customLibs[lib](aHTTPd) }
+		})
 		aMapOfRoutes["/js/jquery.js"] = function() { return ow.server.httpd.replyJQuery(aHTTPd); };
 		aMapOfRoutes["/js/handlebars.js"] = function() { return ow.server.httpd.replyHandlebars(aHTTPd); };
 		aMapOfRoutes["/js/stream.js"] = function() { return ow.server.httpd.replyStream(aHTTPd); };

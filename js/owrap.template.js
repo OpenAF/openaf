@@ -14,6 +14,8 @@ OpenWrap.template = function() {
 	return ow.template;
 };
 
+OpenWrap.template.prototype.__mdHTMLExtras = []
+
 OpenWrap.template.prototype.__requireHB = function() {
 	var hb = loadCompiledRequire("handlebars_js");
 	this.__addHelpers(hb);
@@ -739,12 +741,14 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 
 	if (isFull) {
 		if (isUnDef(this.__templatemd)) {
-			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs");
+			if (isDef(getOPackPath("Mermaid"))) loadLib("mermaid.js")
+			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
 		}
 		
 		return this.parse(this.__templatemd, {
 			markdown: converter.makeHtml(aMarkdownString),
-			noMaxWidth: removeMaxWidth
+			noMaxWidth: removeMaxWidth,
+			extras: ow.template.__mdHTMLExtras
 		});
 	} else {
 		return converter.makeHtml(aMarkdownString);

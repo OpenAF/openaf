@@ -247,7 +247,8 @@ function addLocalDB(aPackage, aTarget) {
 		var cop = getOpenAFPath().replace(/\/$/, "")
 		//aTarget = String((new java.io.File(aTarget)).getCanonicalPath())
 		if (aTarget.length > cop.length &&
-		    aTarget.substring(0, cop.length) == cop) {
+		    aTarget.substring(0, cop.length) == cop &&
+			aTarget[cop.length] == "/") {
 			aTarget = "$DIR" + aTarget.substring(cop.length)
 		}
 	} catch(e) {
