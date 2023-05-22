@@ -530,7 +530,7 @@ function listFiles(startPath, relPath, excludingList) {
 		}
 	}
 
-	return files;
+	return files.sort()
 }
 
 function generateHash(aObject) {
