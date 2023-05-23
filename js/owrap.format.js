@@ -1616,7 +1616,49 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	}
 	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
 	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && (aObj.indexOf(dTheme.sepMap) >= 0 || aObj.indexOf(dTheme.strQuote) >= 0)) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
-  }
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.toCSLON(aObj, cTheme) : String</key>
+ * Equivalent to ow.fornat.toSLON but includes ansi color.
+ * </odoc>
+ */
+OpenWrap.format.prototype.toCSLON = function(aObj, cTheme) {
+	var dTheme = {
+	   startMap: "(",
+	   sepMap  : ", ",
+	   endMap  : ")",
+	   sepKV   : ": ",
+	   startArr: "[",
+	   sepArr  : " | ",
+	   endArr  : "]",
+	   strQuote: "'"
+	}
+  
+	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
+  
+	if (isNull(aObj)) {
+        return null;
+    }
+	if (isMap(aObj)) {
+	   var pairs = [];
+	   Object.keys(aObj).forEach(r => {
+		  pairs.push(ansiColor("bold",r) + ansiColor("faint", dTheme.sepKV) + ow.format.toCSLON(aObj[r], dTheme))
+	   })
+	   return ansiColor("faint", dTheme.startMap) + pairs.join(ansiColor("faint", dTheme.sepMap)) + ansiColor("faint", dTheme.endMap) 
+	}
+	if (isArray(aObj)) {
+	   return ansiColor("faint", dTheme.startArr) + aObj.map(r => {
+		  return ow.format.toCSLON(r, dTheme)
+	   }).join(ansiColor("faint", dTheme.sepArr)) + ansiColor("faint", dTheme.endArr)
+	}
+	if (isDate(aObj)) {
+		return ansiColor("reset", ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS'))
+	}
+	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
+	if (!isMap(aObj) && !isArray(aObj)) return ansiColor("reset", (isString(aObj) && (aObj.indexOf(dTheme.sepMap) >= 0 || aObj.indexOf(dTheme.strQuote) >= 0)) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj))
+}
 
 /**
  * <odoc>
