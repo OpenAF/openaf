@@ -16,7 +16,7 @@
         var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/");
         var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/");
         io.writeFileString(tmpOJob, af.toYAML(testOJob));
-        io.writeFileString(tmpOAF, "oJob(\"" + tmpOJob + "\", { token: \"" + tk + "\" })");
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJob + "\", { token: \"" + tk + "\" })");
 
         var r = $openaf(tmpOAF);
 
