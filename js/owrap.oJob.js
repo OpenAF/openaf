@@ -3311,6 +3311,9 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 		case "slon":
 			print(ow.format.toSLON(res));
 			break;
+		case "cslon":
+			print(ow.format.toCSLON(res))
+			break
 		case "ndjson":
 			if (isArray(res)) res.forEach(e => print(stringify(e, __, "")))
 			break
