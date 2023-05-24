@@ -2888,9 +2888,7 @@ OpenWrap.oJob.prototype.outputParse = function(aObj) {
 	return p
 }
 
-OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
-	if (!isMap(aTodo)) return aTodo
-  
+OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {  
 	var oJobShortcuts = [{
 		name : "(if",
 		job  : "ojob if",
@@ -3201,6 +3199,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 	}]
 
 	if (isUnDef(aTodo) && _getlist) return oJobShortcuts
+	if (!isMap(aTodo)) return aTodo
 
 	// Get only relevant entries
 	var entries = Object.keys(aTodo).filter(r => r.startsWith("("))
