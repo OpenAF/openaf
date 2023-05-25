@@ -52,7 +52,7 @@ jobs:
       #    cd $GITHUB_WORKSPACE && ./o/ojob build.yaml
       
       - name: Build
-        uses: openaf/ojob-action@v2
+        uses: openaf/ojob-action@v3
         with:
           ojob: build.yaml
           
