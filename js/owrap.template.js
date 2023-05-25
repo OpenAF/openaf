@@ -69,7 +69,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $f               -- uses the $f format function\
  *   - $ft              -- uses the $ft format function\
  *   - $path            -- uses the $path function to query objects\
- *   - $from            -- uses the $from & fromNLinq to query objects\
+ *   - $from            -- uses the $from &amp; fromNLinq to query objects\
  *   - $toSLON          -- returns the ow.format.toSLON version of an object\
  *   - $get             -- returns the corresponding value for a key on $get\
  *   - $getObj          -- equivalent to $get with the extra parameter for $$.get path\

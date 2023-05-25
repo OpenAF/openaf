@@ -81,6 +81,39 @@ const isDef = function(aObject)   { return (isJavaObject(aObject) || !(typeof aO
  */
 const isUnDef = function(aObject) { return (!isJavaObject(aObject) && typeof aObject == 'undefined') ? true : false; }
 
+/**
+ * <odoc>
+ * <key>getEnvs() : Map</key>
+ * Returns a map of key and values with the operating system environment variables.
+ * </odoc>
+ */
+const getEnvs = function() {
+	return af.fromJavaMap(java.lang.System.getenv());
+}
+
+const __envs = getEnvs()
+
+/**
+ * <odoc>
+ * <key>getEnvsDef(aEnv, aVar, aDefault, isJson) : Object</key>
+ * Given an environment variable aEnv name will check if a value is provided and return it if so. Otherwise it will check
+ * the value of aVar and return it if defined. If aVar is also not defined it will return aDefault. Optionally if isJson=true
+ * the value of the provided aEnv will be parsed from JSON.
+ * </odoc>
+ */
+const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
+	if (isDef(aVar)) return aVar
+	if (isDef(__envs[aEnv])) {
+		if (isJson) {
+			return jsonParse(__envs[aEnv], true)
+		} else {
+			return __envs[aEnv]
+		}
+	} else {
+		return aDefault
+	}
+}
+
 var __openaf;
 if (isUnDef(__openaf)) __openaf =
 // BEGIN_SET__OPENAF
@@ -121,17 +154,17 @@ var __odoc = (isDef(__openaf.odoc)) ? __openaf.odoc : [
 const __separator = String(java.lang.System.lineSeparator());
 
 // Hash list of oaf scripts (each key value is a filepath; value is [hash-alg]-[hash])
-var OAF_INTEGRITY = {};
+var OAF_INTEGRITY = getEnvsDef("OAF_INTEGRITY", OAF_INTEGRITY, {}, true)
 // If OAF_INTEGRITY_WARN is false OAF execution is halted if any integrity hash is found to be different
-var OAF_INTEGRITY_WARN = true; 
+var OAF_INTEGRITY_WARN = getEnvsDef("OAF_INTEGRITY_WARN", OAF_INTEGRITY_WARN, true)
 // If OAF_INTEGRITY_STRICT is true no OAF will execute if it's integrity is not verified.
-var OAF_INTEGRITY_STRICT = false;
+var OAF_INTEGRITY_STRICT = getEnvsDef("OAF_INTEGRITY_STRICT", OAF_INTEGRITY_STRICT, false)
 // If OAF_SIGNATURE_STRICT is true no OAF will execute if it's signature is not valid.
-var OAF_SIGNATURE_STRICT = false;
+var OAF_SIGNATURE_STRICT = getEnvsDef("OAF_SIGNATURE_STRICT", OAF_SIGNATURE_STRICT, false)
 // Use OAF_SIGNATURE_KEY key java object to validate OAF signatures;
-var OAF_SIGNATURE_KEY = __;
+var OAF_SIGNATURE_KEY = getEnvsDef("OAF_SIGNATURE_KEY", OAF_SIGNATURE_KEY, __)
 // If OAF_VALIDATION_STRICT = true no OAF will execute if the signature doesn't exist or is not valid or if it's integrity wasn't checked & passed.
-var OAF_VALIDATION_STRICT = false;
+var OAF_VALIDATION_STRICT = getEnvsDef("OAF_VALIDATION_STRICT", OAF_VALIDATION_STRICT, false)
 
 // -------
 
@@ -7199,21 +7232,21 @@ const deleteFromArray = function(anArray, anIndex) {
 // oJob
 
 // List of authorized domains from which to run ojobs
-var OJOB_AUTHORIZEDDOMAINS = [ "ojob.io" ];
+var OJOB_AUTHORIZEDDOMAINS = getEnvsDef("OJOB_AUTHORIZEDDOMAINS", OJOB_AUTHORIZEDDOMAINS, [ "ojob.io" ], true)
 
 // Hash list of oJob urls and filepaths (each key value is a the url/canonical filepath; value is [hash-alg]-[hash])
 // Do note that ojob.io urls need to be converted: ojob.io/echo -> https://ojob.io/echo.json
-var OJOB_INTEGRITY = {};
+var OJOB_INTEGRITY = getEnvsDef("OJOB_INTEGRITY", OJOB_INTEGRITY, {}, true)
 // If OJOB_INTEGRITY_WARN is false oJob execution is halted if any integrity hash is found to be different
-var OJOB_INTEGRITY_WARN = true; 
+var OJOB_INTEGRITY_WARN = getEnvsDef("OJOB_INTEGRITY_WARN", OJOB_INTEGRITY_WARN, true) 
 // If OJOB_INTEGRITY_STRICT is true no oJob will execute if it's integrity is not verified.
-var OJOB_INTEGRITY_STRICT = false;
+var OJOB_INTEGRITY_STRICT = getEnvsDef("OJOB_INTEGRITY_STRICT", OJOB_INTEGRITY_STRICT, false)
 // If OJOB_SIGNATURE_STRICT is true no oJob will execute if it's signature is not valid.
-var OJOB_SIGNATURE_STRICT = false;
+var OJOB_SIGNATURE_STRICT = getEnvsDef("OJOB_SIGNATURE_STRICT", OJOB_SIGNATURE_STRICT, false)
 // Use OJOB_SIGNATURE_KEY key java object to validate oJob signatures;
-var OJOB_SIGNATURE_KEY = __;
+var OJOB_SIGNATURE_KEY = getEnvsDef("OJOB_SIGNATURE_KEY", OJOB_SIGNATURE_KEY, __)
 // If OJOB_VALIDATION_STRICT = true no oJob will execute if the signature doesn't exist or is not valid or if it's integrity wasn't checked & passed.
-var OJOB_VALIDATION_STRICT = false;
+var OJOB_VALIDATION_STRICT = getEnvsDef("OJOB_VALIDATION_STRICT", OJOB_VALIDATION_STRICT, false)
 
 /**
  * <odoc>
@@ -7342,16 +7375,6 @@ const getEnv = function(anEnvironmentVariable) {
 
 /**
  * <odoc>
- * <key>getEnvs() : Map</key>
- * Returns a map of key and values with the operating system environment variables.
- * </odoc>
- */
-const getEnvs = function() {
-	return af.fromJavaMap(java.lang.System.getenv());
-}
-
-/**
- * <odoc>
  * <key>loadJSYAML()</key>
  * Loads the JS-YAML library.
  * </odoc>
@@ -7360,7 +7383,7 @@ const loadJSYAML = function() {
 	loadCompiledLib("js-yaml_js");
 }
 
-loadCompiledLib("openafsigil_js");
+loadCompiledLib("openafsigil_js")
 
 var __flags = _$(__flags).isMap().default({
 	OJOB_SEQUENTIAL            : true,
@@ -7368,7 +7391,7 @@ var __flags = _$(__flags).isMap().default({
 	OJOB_HELPSIMPLEUI          : false,
 	OJOB_LOCALPATH             : getOpenAFPath() + "ojobs",
 	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
-	OJOB_CONSOLE_STDERR        : true,
+	OJOB_CONSOLE_STDERR        : getEnvsDef("OJOB_CONSOLE_STDERR", __, true),
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
