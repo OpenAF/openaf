@@ -1006,7 +1006,7 @@ jobs:
           res = rj(j)
       })
     } else {
-      args.__default.map(j => {
+      args.__default.forEach(j => {
         if (args.__async) 
           $do(() => res = rj(j) )
         else 

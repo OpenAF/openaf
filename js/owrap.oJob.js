@@ -2726,7 +2726,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			var fnDef = "";
 			fnDef += "var _oji = " + stringify(aEach, __, "") + "; ";
 			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
-			fnDef += "$doA2B(each => { " + res + " }, (_r, _n) => { _oj.map(_aJob => { ";
+			fnDef += "$doA2B(each => { " + res + " }, (_r, _n) => { _oj.forEach(_aJob => { ";
 			fnDef += "  var _canDo = true; if(isDef(_n) && _n != _aJob.name) _canDo = false;"
 			fnDef += "  try { if (isDef(_aJob) && _canDo) { var fn = newFn(\"var args = arguments[0]; var job = {name:'" + _aName + "'}; \" + _aJob.exec); ";
 			fnDef += "  return fn( merge(_r, { init: args.init }) ); } else { return __; }";
