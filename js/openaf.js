@@ -223,22 +223,23 @@ const print = function(str) {
 	}
 }
 
-var __bfprint = {};
-var __bfprintCodePage = io.getDefaultEncoding();
+var __bfprint = {}
+var __bfprintErr = {}
+var __bfprintCodePage = io.getDefaultEncoding()
 const bfprintnl = function(str, codePage) {
-	if (isUnDef(codePage)) codePage = __bfprintCodePage;
-	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), 512);
+	if (isUnDef(codePage)) codePage = __bfprintCodePage
+	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), 512)
 
-	__bfprint[codePage].write(str);
-	__bfprint[codePage].flush();
+	__bfprint[codePage].write(str)
+	__bfprint[codePage].flush()
 }
 
 const bfprintErrnl = function(str, codePage) {
-	if (isUnDef(codePage)) codePage = __bfprintCodePage;
-	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), 512);
+	if (isUnDef(codePage)) codePage = __bfprintCodePage
+	if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), 512)
 
-	__bfprint[codePage].write(str);
-	__bfprint[codePage].flush();
+	__bfprintErr[codePage].write(str)
+	__bfprintErr[codePage].flush()
 }
 
 const bfprint = function(str, codePage) {
