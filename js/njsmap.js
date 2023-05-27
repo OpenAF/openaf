@@ -20,13 +20,26 @@ function nJSMap(aValue, aType) {
             // if date
             if ("undefined" !== typeof (aValue).getDate) return String(aValue);
         }
+
+        var _determineKeys = ar => {
+            return ar.reduce((keys, map) => {
+                if ("[object Object]" == Object.prototype.toString.call(map)) {
+                    for (var key in map) {
+                        keys.add(key)
+                    }
+                }
+                return keys
+            }, new Set())
+        }
+
         var out = "";
         if ($$(aValue).isArray() && aValue.length > 0) {
+            var _keys = Array.from(_determineKeys(aValue))
             var out = "";
             if ($$(aValue[0]).isMap()) {
                 out += "<table class=\"njsmap_table\"><tr>";
-                for(var i in aValue[0]) {
-                    out += "<td class=\"njsmap_tablehead\" style=\"text-align: center\"><span style=\"color: darkblue;font-weight: bold;\">" + i + "</span></td>";
+                for(var i in _keys) {
+                    out += "<td class=\"njsmap_tablehead\" style=\"text-align: center\"><span style=\"color: darkblue;font-weight: bold;\">" + _keys[i] + "</span></td>";
                 }
                 out += "</tr>";
             } else {
@@ -37,8 +50,13 @@ function nJSMap(aValue, aType) {
                 if (!($$(aValue[x]).isMap()) && !($$(aValue[x]).isArray())) {
                     out += "<td class=\"njsmap_tablecell\" style=\"text-align: center\"><span style=\"color: darkblue;font-weight: bold;\">" + aValue[x] + "</span></td>";
                 } else {
-                    for(var y in aValue[x]) {
-                        out += "<td class=\"njsmap_tablecell\" style=\"text-align: center\">" + _render(aValue[x][y]) + "</td>";
+                    for (var y in _keys) {
+                        var _v = ""
+                        if (aValue[x] != null && aValue[x][_keys[y]] != null) {
+                            if ("undefined" != aValue[x][_keys[y]]) _v = aValue[x][_keys[y]]
+                            if ("undefined" == typeof _v) _v = ""
+                        }
+                        out += "<td class=\"njsmap_tablecell\" style=\"text-align: center\">" + _render(_v) + "</td>";
                     }
                 }
                 out += "</tr>";
@@ -46,8 +64,13 @@ function nJSMap(aValue, aType) {
             out += "</table>";
         } else {
             var out = "<table class=\"njsmap_table\">";
-            for(var i in aValue) {
-                out += "<tr><td class=\"njsmap_tablecell\" style=\"text-align: right; vertical-align: top\"><span style=\"color: darkblue;font-weight: bold;\">" + i + "</span></td><td class=\"njsmap_tablecell\">" + _render(aValue[i]) + "</td></tr>";
+            for (var i in aValue) {
+                var _v = ""
+                if (aValue[i] != null) {
+                    if ("undefined" != aValue[i]) _v = aValue[i]
+                    if ("undefined" == typeof _v) _v = ""
+                }
+                out += "<tr><td class=\"njsmap_tablecell\" style=\"text-align: right; vertical-align: top\"><span style=\"color: darkblue;font-weight: bold;\">" + i + "</span></td><td class=\"njsmap_tablecell\">" + _render(_v) + "</td></tr>";
             }
             out += "</table>";
         }
