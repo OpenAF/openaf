@@ -5691,7 +5691,7 @@ const ioStreamWrite = function(aStream, aString, aBufferSize, useNIO) {
 	if (useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aString, aStream, "utf-8");
 	} else {
-		var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
+		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -5722,7 +5722,7 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 	if (useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aArrayBytes, aStream);
 	} else {
-		var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
+		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -5752,7 +5752,7 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 const ioStreamRead = function(aStream, aFunction, aBufferSize, useNIO, encoding) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	encoding = _$(encoding).isString().default(io.getDefaultEncoding());
-	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
+	var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 
 	if (useNIO) {
 		var channel;
@@ -5865,7 +5865,7 @@ const ioStreamCopy = function(aOutputStream, aInputStream) {
  */
 const ioStreamReadBytes = function(aStream, aFunction, aBufferSize, useNIO) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
-	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
+	var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 
 	if (useNIO) {
 		var channel;
@@ -7408,6 +7408,9 @@ var __flags = _$(__flags).isMap().default({
 	CONSOLE: {
 		view: "tree"
 	},
+	IO: {
+		bufferSize: 1024
+	},
 	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR    : true,
 	HTTP_TIMEOUT               : __,
@@ -7533,8 +7536,8 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 	if (isString(aBytesOrString)) aBytesOrString = af.fromString2Bytes(aBytesOrString);
 
 	var detector = new Packages.org.mozilla.universalchardet.UniversalDetector(null);
-	for(var ii = 0; ii < aBytesOrString.length && !detector.isDone(); ii = ii + 1024) { 
-		detector.handleData(aBytesOrString, ii, ((aBytesOrString.length - ii) >= 1024 ? 1024 : (aBytesOrString.length - 1024)));
+	for(var ii = 0; ii < aBytesOrString.length && !detector.isDone(); ii = ii + __flags.IO.bufferSize) { 
+		detector.handleData(aBytesOrString, ii, ((aBytesOrString.length - ii) >= __flags.IO.bufferSize ? __flags.IO.bufferSize : (aBytesOrString.length - __flags.IO.bufferSize)));
 	}
 	detector.dataEnd();
 	res = detector.getDetectedCharset();
@@ -8052,13 +8055,13 @@ IO.prototype.writeLineNDJSON = function(aNDJSONFile, aObj, aEncode) {
 
 /**
  * <odoc>
- * <key>io.readLinesNDJSON(aNDJSONFile, aFuncCallback, aErrorCallback)</key>
+ * <key>io.readLinesNDJSON(aNDJSONFile, aFuncCallback, aErrorCallback, anEncoding)</key>
  * Opens aNDJSONFile (a newline delimited JSON) (a filename or an input stream) as a stream call aFuncCallback with each parse JSON. If
  * aFuncCallback returns true the cycle will be interrupted. For any parse error it calls the aErrorCallback 
  * with each exception.
  * </odoc>
  */
-IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallback) {
+IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallback, anEncoding) {
 	var rfs
 	if (!isJavaObject(aNDJSONFile)) {
 		rfs = io.readFileStream(aNDJSONFile)
@@ -8071,7 +8074,7 @@ IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallba
 		} catch(e) {
 			aErrorCallback(e);
 		}
-	});
+	}, __, __, anEncoding)
 };
 
 /**
