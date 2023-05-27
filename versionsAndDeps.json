@@ -45,15 +45,6 @@
 			"deps": []
 		},
 		{
-			"description": "JLinq",
-			"path": ["js/jlinq.js"],
-			"version": "3.0.1",
-			"changes": true,
-			"type": ["js"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/cc_by_nc_sa.txt",
-			"deps": []
-		},
-		{
 			"description": "ajv",
 			"path": ["js/ajv.js"],
 			"version": "6.12.4",
@@ -83,7 +74,7 @@
 		{
 			"description": "jQuery minified",
 			"path": ["js/jquery.js"],
-			"version": "3.6.1",
+			"version": "3.7.0",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/jquery/jquery/master/LICENSE.txt",
