@@ -145,6 +145,13 @@ jobs:
      - Format::Load Format
      exec: args.func = args.tests.testSLON;
 
+   - name: Format::TimeAbbreviation
+     from: Format::Init
+     to  : oJob Test
+     deps:
+     - Format::Load Format
+     exec: args.func = args.tests.timeAbbreviation
+     
 todo:
    # Format tests
    # ------------
@@ -168,3 +175,4 @@ todo:
    - Format::Cron How Many Ago
    - Format::Escape/Unescape HTML4
    - Format::SLON
+   - Format::TimeAbbreviation
