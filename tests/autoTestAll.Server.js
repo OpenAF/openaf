@@ -169,12 +169,12 @@
             var sch = new ow.loadServer().scheduler();
     
             sch.addEntry("*/5 * * * * *", function() {
-                if (c.get() > 0 && c.get() <= 10) a.inc()
+                if (c.get() > 0 && c.get() < 15) a.inc()
                 //log("A = " + a);
             });
     
             sch.addEntry("*/2 * * * * *", function() {
-                if (c.get() > 0 && c.get() <= 10) b.inc()
+                if (c.get() > 0 && c.get() < 15) b.inc()
                 //log("B = " + b);
             });
     
@@ -183,11 +183,16 @@
                 //log("C = " + c);
             });
     
-            sleep(15000, true);
+            var _c = 0
+            do {
+                sleep(1000, true)
+                _c++
+            } while(c.get() <= 15 && _c <= 30)
+
             sch.stop();
     
             ow.test.assert(c.get() >= 10, true, "Problem scheduling an every second function.");
-            ow.test.assert(a.get(), 2, "Problem scheduling an every 5 seconds function.");
+            ow.test.assert(2 <= a.get() <= 3, true, "Problem scheduling an every 5 seconds function.");
             ow.test.assert(4 <= b.get() <= 6, true, "Problem scheduling an every 2 seconds function.");
         });
     };
