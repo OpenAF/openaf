@@ -56,19 +56,19 @@ jobs:
       with:
         ojob: build.yaml
           
-    # ----------------------------
-    - name: Update openaf.jar.orig
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: openaf.jar.orig
-        path: openaf.jar.orig
-
     # -----------------------
-    - name: Upload openaf.jar
+    - name: Update openaf.jar
       uses: actions/upload-artifact@v3.1.2
       with:
         name: openaf.jar
         path: openaf.jar
+
+    # ----------------------------
+    - name: Upload openaf.jar.orig
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: openaf.jar.orig
+        path: openaf.jar.orig
 
   tests:
     needs: build
