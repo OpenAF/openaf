@@ -14,14 +14,14 @@ jobs:
     steps:
     # --------------------------
     - name: Cache OpenAF runtime
-      uses: actions/cache@v3
+      uses: actions/cache@v1.2.1
       with:
         key : oaf
         path: /tmp/oaf
 
     # --------------
     - name: Checkouta,e
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3.5.2
 
     # -----------------------
     - name: Compile ojob yaml
@@ -39,7 +39,7 @@ jobs:
 
     # --------------------
     - name: Setup Java JDK
-      uses: actions/setup-java@v1.4.3
+      uses: actions/setup-java@v2.5.1
       with:
         java-version: 1.8
         java-package: jdk
@@ -53,14 +53,14 @@ jobs:
           
     # ----------------------------
     - name: Update openaf.jar.orig
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3.1.2
       with:
         name: openaf.jar.orig
         path: openaf.jar.orig
 
     # -----------------------
     - name: Upload openaf.jar
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3.1.2
       with:
         name: openaf.jar
         path: openaf.jar
