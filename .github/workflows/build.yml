@@ -69,3 +69,86 @@ jobs:
       with:
         name: openaf.jar
         path: openaf.jar
+
+  tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    # --------------------------
+    - name: Cache OpenAF runtime
+      uses: actions/cache@v1.2.1
+      with:
+        key : oaf-t8
+        path: /tmp/oaf
+
+    # --------------
+    - name: Checkout
+      uses: actions/checkout@v3.5.2
+      
+    # -------------------------
+    - name: Download openaf.jar
+      uses: actions/download-artifact@v2.1.1
+      with:
+        name: openaf.jar
+        path: openaf.jar
+        
+    # -------------------
+    - name: Execute tests
+      run : |
+        cd tests
+        java -jar ../openaf.jar --ojob -e "autoTestAll.yaml"
+        
+    # --------------------
+    - name: Generate badge
+      uses: openaf/ojob-action@v3
+      with:
+        dist: t8
+        def : |
+          todo:
+          - Create badge
+          
+          ojob:
+            opacks      :
+            - openaf: 20230520
+            - Badgen
+            catch       : printErrnl("[" + job.name + "] "); if (isDef(exception.javaException)) exception.javaException.printStackTrace(); else printErr(exception)
+            logToConsole: true   # to change when finished
+            templateArgs: true
+
+          jobs:
+          # ------------------
+          - name: Create badge
+            to  :
+            - (template): "(failed: {{fail}}, pass: {{pass}}, total: {{count}})"
+              ((outPath): status
+              ((key    ): args
+              ((out    ): args
+
+            - (log     ): "Generating badge file '{{file}}'..."
+            - name      : Badgen generate file
+              args      :
+                labelColor: grey2
+                icon      : "openaf.svg"
+                file      : tests/results.svg
+            exec    : |
+              var data = io.readFileJSON("tests/autoTestAll.results.json")
+              args.fail = data.fail
+              args.pass = data.pass
+              args.count = data.count
+              
+              args.label = "OpenAF tests"
+
+              args.color = "green"
+              if (args.fail > 0) args.color = "red"
+    
+    # --------------
+    - name: Check in
+      uses: openaf/ojob-action@v3
+      with:
+        ojob: ojob.io/git/hub/checkIn
+        args: "message='Test results badge' path=tests/results.svg"
+        dist: t8
+      
