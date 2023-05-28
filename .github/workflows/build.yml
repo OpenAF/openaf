@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
     # --------------------------
@@ -33,6 +36,8 @@ jobs:
     # -------------
     - name: Checkin
       uses: openaf/ojob-action@v3
+      env :
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         ojob: ojob.io/git/hub/checkIn
         args: 'message="Update\ ojob.json"'
