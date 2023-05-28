@@ -4,7 +4,7 @@ include:
 ojob:
    sequential: false
    async     : true
-   ojob      :
+   opacks    :
    - oJob-common
    channels  :
      expose : true
