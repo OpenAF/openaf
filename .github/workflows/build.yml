@@ -133,6 +133,8 @@ jobs:
     # --------------
     - name: Check in
       uses: openaf/ojob-action@v3
+      env :
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         ojob: ojob.io/git/hub/checkIn
         args: "message='Test results badge' paths=tests/results.svg"
