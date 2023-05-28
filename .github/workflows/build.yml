@@ -110,6 +110,7 @@ jobs:
                 labelColor: grey2
                 icon      : "openaf_grey.svg"
                 file      : "tests/results.svg"
+            - ojob debug
             - (log     ): "Done"
             exec    : |
               var data = io.readFileJSON("tests/autoTestAll.results.json")
