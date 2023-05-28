@@ -1,4 +1,4 @@
-name: Build T8
+name: Build and Test T8
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -19,7 +19,7 @@ jobs:
     - name: Cache OpenAF runtime
       uses: actions/cache@v1.2.1
       with:
-        key : oaf
+        key : oaf-t8
         path: /tmp/oaf
 
     # --------------
@@ -32,6 +32,7 @@ jobs:
       with:
         ojob: ojob.io/ojob/compile
         args: "source=ojob.yaml target=ojob.json"
+        dist: t8
 
     # -------------
     - name: Checkin
@@ -41,6 +42,7 @@ jobs:
       with:
         ojob: ojob.io/git/hub/checkIn
         args: 'message="Update\ ojob.json"'
+        dist: t8
 
     # --------------------
     - name: Setup Java JDK
@@ -69,32 +71,6 @@ jobs:
       with:
         name: openaf.jar.orig
         path: openaf.jar.orig
-
-  tests:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-
-    steps:
-    # --------------------------
-    - name: Cache OpenAF runtime
-      uses: actions/cache@v1.2.1
-      with:
-        key : oaf-t8
-        path: /tmp/oaf
-
-    # --------------
-    - name: Checkout
-      uses: actions/checkout@v3.5.2
-      
-    # -------------------------
-    - name: Download openaf.jar
-      uses: actions/download-artifact@v2.1.1
-      with:
-        name: openaf.jar
-        path: openaf.jar
         
     # -------------------
     - name: Execute tests
