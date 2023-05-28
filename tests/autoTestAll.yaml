@@ -4,6 +4,8 @@ include:
 ojob:
    sequential: false
    async     : true
+   ojob      :
+   - oJob-common
    channels  :
      expose : true
      port   : 17878
