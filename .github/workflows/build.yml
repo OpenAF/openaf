@@ -71,6 +71,7 @@ jobs:
         path: openaf.jar
 
   tests:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
