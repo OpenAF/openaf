@@ -20,7 +20,7 @@ jobs:
         path: /tmp/oaf
 
     # --------------
-    - name: Checkouta,e
+    - name: Checkout
       uses: actions/checkout@v3.5.2
 
     # -----------------------
