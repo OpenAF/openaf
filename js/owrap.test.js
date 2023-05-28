@@ -9,18 +9,32 @@ OpenWrap.test = function() {
 	return ow.test;
 }
 
-OpenWrap.test.prototype.getCountTest = function() { return this.__countTest; };
-OpenWrap.test.prototype.getCountPass = function() { return this.__countPass; };
-OpenWrap.test.prototype.getCountFail = function() { return this.__countFail; };
-OpenWrap.test.prototype.getProfileHits = function(aProfileKey) { return this.__profile[aProfileKey].hits; };
-OpenWrap.test.prototype.getProfileAvg  = function(aProfileKey) { return this.__profile[aProfileKey].sum / this.__profile[aProfileKey].hits; };
-OpenWrap.test.prototype.getProfileLast = function(aProfileKey) { return this.__profile[aProfileKey].last; };
+OpenWrap.test.prototype.getCountTest = function() { return this.__countTest.get() };
+OpenWrap.test.prototype.getCountPass = function() { return this.__countPass.get() };
+OpenWrap.test.prototype.getCountFail = function() { return this.__countFail.get() };
+OpenWrap.test.prototype.getCountAssert = function() { return this.__countAssert.get() }
+OpenWrap.test.prototype.getProfileHits = function(aProfileKey) { return this.__profile[aProfileKey].hits.get() };
+OpenWrap.test.prototype.getProfileAvg  = function(aProfileKey) { return this.__profile[aProfileKey].sum.get() / this.__profile[aProfileKey].hits.get() };
+OpenWrap.test.prototype.getProfileLast = function(aProfileKey) { return this.__profile[aProfileKey].last.get() };
 OpenWrap.test.prototype.getProfileMax  = (aProfileKey) => { return this.__profile[aProfileKey].max; };
 OpenWrap.test.prototype.getProfileMin  = (aProfileKey) => { return this.__profile[aProfileKey].min; };
 OpenWrap.test.prototype.profileReset   = function(aProfileKey) { this.__profile[aProfileKey] = {
-		hits: 0, sum: 0, last: 0, start: 0
+		hits: $atomic(), sum: $atomic(), last: $atomic(), start: $atomic()
 }};
-OpenWrap.test.prototype.getProfile = function() { return this.__profile; };
+OpenWrap.test.prototype.getProfile = function() { 
+	var _r = {} 
+	var parent = this.__profile
+	Object.keys(parent).forEach(k => {
+		_r[k] = {}
+		_r[k].hits = parent[k].hits.get()
+		_r[k].sum = parent[k].sum.get()
+		_r[k].last = parent[k].last.get()
+		_r[k].start = parent[k].start
+		_r[k].max = parent[k].max
+		_r[k].min = parent[k].min
+	})
+	return _r
+}
 OpenWrap.test.prototype.getAllProfileHits = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileHits(i)}; return r; };
 OpenWrap.test.prototype.getAllProfileAvg  = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileAvg(i)}; return r; };
 OpenWrap.test.prototype.getAllProfileLast = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileLast(i)}; return r; };
@@ -63,9 +77,10 @@ OpenWrap.test.prototype.setOutput         = function(aValue) { this.__showOutput
 OpenWrap.test.prototype.reset = function() {
 	this.getChannel().destroy()
 	this.getChannel().create()
-	this.__countTest = 0
-	this.__countPass = 0
-	this.__countFail = 0
+	this.__countTest = $atomic()
+	this.__countPass = $atomic()
+	this.__countFail = $atomic()
+	this.__countAssert = $atomic()
 	this.__profile = {}
 	this.__showStackTrace = true
 	this.__memoryprofile  = false
@@ -82,6 +97,7 @@ OpenWrap.test.prototype.reset = function() {
  * </odoc>
  */
 OpenWrap.test.prototype.assert = function(aResult, checkValue, errorMessage, notShowDiff) {
+	this.__countAssert.inc()
 	if (!compare(aResult, checkValue)) {
 		throw errorMessage + ((notShowDiff) ? "" : " (got " + stringify(aResult) + " but expected " + stringify(checkValue, undefined, "") + ")");
 	}
@@ -97,10 +113,10 @@ OpenWrap.test.prototype.assert = function(aResult, checkValue, errorMessage, not
 OpenWrap.test.prototype.start = function(aKey) {
 	if (isUnDef(this.__profile[aKey])) {
 		this.__profile[aKey] = {
-			hits: 0,
-			sum: 0,
-			last: 0,
-			start: 0
+			hits: $atomic(),
+			sum: $atomic(),
+			last: $atomic(),
+			start: $atomic()
 		}
 	}
 	
@@ -128,9 +144,9 @@ OpenWrap.test.prototype.stop = function(aKey) {
 		this.__profile[aKey].stopFreeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
 	}
 	
-	this.__profile[aKey].last = elapsed;
-	this.__profile[aKey].hits++;
-	this.__profile[aKey].sum = this.__profile[aKey].sum + elapsed;
+	this.__profile[aKey].last.getSet(elapsed)
+	this.__profile[aKey].hits.inc()
+	this.__profile[aKey].sum.getSet(this.__profile[aKey].sum.get() + elapsed)
 	if (isUnDef(this.__profile[aKey].max) ||  elapsed > this.__profile[aKey].max)
 		this.__profile[aKey].max = elapsed;
 	if (isUnDef(this.__profile[aKey].min) ||  elapsed < this.__profile[aKey].min)
@@ -151,14 +167,14 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 	if (isUnDef(info)) info = {
 		"test" : aMessage.replace(/.+::/, ""),
 		"suite": (aMessage.indexOf("::") > 0) ? aMessage.replace(/::.+/, "") : "Test suite", 
-		"hits": 0,
-		"pass": 0,
-		"fail": 0,
+		"hits": $atomic(),
+		"pass": $atomic(),
+		"fail": $atomic(),
 		"executions": []
 	};
 	
 	if (this.__showOutput) log("TEST | " + aMessage);
-	this.__countTest++;
+	this.__countTest.inc()
 	
 	var execInfo = {};
 	this.start(aMessage);
@@ -171,7 +187,7 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 	execInfo.start = this.__profile[aMessage].start;
 	
 	try {
-		info.hits++;
+		info.hits.inc()
 		
 		if (this.__showOutput) log("Running " + aCommand);
  		var res = sh(aCommand, "", aTimeout);
@@ -186,9 +202,9 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 		
 		if (__exitcode != 0) throw "exit code " + __exitcode;
 		if (this.__showOutput) log("PASS | " + aMessage);
-		this.__countPass++;
+		this.__countPass.inc()
 		execInfo.status = "PASS";
-		info.pass++;
+		info.pass.inc()
 		
 		info.executions.push(execInfo);
 		this.getChannel().set(aMessage, info);
@@ -204,9 +220,9 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 		if (this.__showOutput) logErr("FAIL | " + aMessage);
 		execInfo.status = "FAIL";
 		execInfo.exception = String(e);
-		info.fail++;
+		info.fail.inc()
 		
- 		this.__countFail++;
+ 		this.__countFail.inc()
  		
 		info.executions.push(execInfo);
 		this.getChannel().set(aMessage, info);
@@ -226,15 +242,15 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 	if (isUnDef(info)) info = {
 		"test" : aMessage.replace(/.+::/, ""),
 		"suite": (aMessage.indexOf("::") > 0) ? aMessage.replace(/::.+/, "") : "Test suite", 
-		"hits" : 0,
-		"pass" : 0,
-		"fail" : 0,
+		"hits" : $atomic(),
+		"pass" : $atomic(),
+		"fail" : $atomic(),
 		"start": now(),
 		"executions": []
 	};
 	
 	if (this.__showOutput) log(aMessage + " | TEST");
-	this.__countTest++;
+	this.__countTest.inc()
 	
 	var execInfo = {};
 	this.start(aMessage);
@@ -253,7 +269,7 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 	}
 
 	try {
-		info.hits++;
+		info.hits.inc()
 		var res = aFunction(setResult);
 		
 		execInfo.elapsedTime = this.stop(aMessage);
@@ -263,10 +279,10 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem);
 		}
 		execInfo.status = "PASS";
-		info.pass++;
+		info.pass.inc()
 		
 		if (this.__showOutput) log(aMessage + " | PASS");
-		this.__countPass++;
+		this.__countPass.inc()
 		
 		info.executions.push(execInfo);
 		this.getChannel().set(aMessage, info);
@@ -282,8 +298,8 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 		if (this.__showOutput) log(aMessage + " | FAIL | " + e);
 		execInfo.status = "FAIL";
 		execInfo.exception = String(e);
-		info.fail++;
-		this.__countFail++;
+		info.fail.inc()
+		this.__countFail.inc()
 		
 		try {
 			if (this.__showStackTrace) e.javaException.printStackTrace()
@@ -313,7 +329,12 @@ OpenWrap.test.prototype.getChannel = function() {
  * </odoc>
  */
 OpenWrap.test.prototype.getExecHistory = function() {
-	return this.getChannel().getAll()
+	return this.getChannel().getAll().map(r => {
+		r.hits = r.hits.get()
+		r.pass = r.pass.get()
+		r.fail = r.fail.get()
+		return r
+	})
 }
 
 OpenWrap.test.prototype.toMarkdown = function() {
@@ -321,9 +342,9 @@ OpenWrap.test.prototype.toMarkdown = function() {
 
 	md += "## Summary\n\n";
 
-	md += "* Number of tests performed: " + this.__countTest + "\n";
-	md += "* Number of tests passed: " + this.__countPass + "\n";
-	md += "* Number of tests failed: " + this.__countFail + "\n";
+	md += "* Number of tests performed: " + this.__countTest.get() + "\n";
+	md += "* Number of tests passed: " + this.__countPass.get() + "\n";
+	md += "* Number of tests failed: " + this.__countFail.get() + "\n";
 
     md += "## Result details\n\n";
 
@@ -379,9 +400,9 @@ OpenWrap.test.prototype.toJUnitXML = function(testSuitesId, testSuitesName) {
 		var testSuite = {
 			"id"        : (isDef(v.suite)) ? v.suite : v.test,
 			"name"      : (isDef(v.suite)) ? v.suite : v.test,
-			"tests"     : v.hits,
-			"pass"      : v.pass,
-			"fail"      : v.fail,
+			"tests"     : v.hits.get(),
+			"pass"      : v.pass.get(),
+			"fail"      : v.fail.get(),
 			"start"     : $from(v.executions).min("start").start,
 			"time"      : $from(v.executions).sum("elapsedTime"),
 			"testSuite" : v.executions.map(function(ex) {
