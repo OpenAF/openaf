@@ -108,8 +108,9 @@ jobs:
             - name      : Badgen generate file
               args      :
                 labelColor: grey2
-                icon      : "openaf.svg"
-                file      : tests/results.svg
+                icon      : "openaf_grey.svg"
+                file      : "tests/results.svg"
+            - (log     ): "Done"
             exec    : |
               var data = io.readFileJSON("tests/autoTestAll.results.json")
               args.fail = data.fail
@@ -122,10 +123,17 @@ jobs:
               if (args.fail > 0) args.color = "red"
     
     # --------------
+    - name: Clean up
+      run : |
+        rm tests/autoTestAll.results.json
+        rm tests/autoTestAll.gz
+        rm tests/autoTestAllResults.xml
+    
+    # --------------
     - name: Check in
       uses: openaf/ojob-action@v3
       with:
         ojob: ojob.io/git/hub/checkIn
-        args: "message='Test results badge' path=tests/results.svg"
+        args: "message='Test results badge' paths=tests/results.svg"
         dist: t8
       
