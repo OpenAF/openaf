@@ -95,6 +95,9 @@ jobs:
             logToConsole: true   # to change when finished
             templateArgs: true
 
+          include:
+          - badgen.yaml
+
           jobs:
           # ------------------
           - name: Create badge
