@@ -1,4 +1,4 @@
-name: Build and Test T8
+name: Build and Test
 
 on:
   #push:
