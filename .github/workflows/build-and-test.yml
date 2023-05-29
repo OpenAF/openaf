@@ -1,0 +1,161 @@
+name: Build and Test
+
+on:
+  #push:
+  #  branches: [ t8 ]
+  pull_request:
+    branches: [ t8, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    # --------------------------
+    - name: Cache OpenAF runtime
+      uses: actions/cache@v1.2.1
+      with:
+        key : oaf-t8
+        path: /tmp/oaf
+
+    # --------------
+    - name: Checkout
+      uses: actions/checkout@v3.5.2
+
+    # -----------------------
+    - name: Compile ojob yaml
+      uses: openaf/ojob-action@v3
+      with:
+        ojob: ojob.io/ojob/compile
+        args: "source=ojob.yaml target=ojob.json"
+        dist: t8
+
+    # -------------
+    - name: Checkin
+      uses: openaf/ojob-action@v3
+      env :
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        ojob: ojob.io/git/hub/checkIn
+        args: 'message="Update\ ojob.json"'
+        dist: t8
+
+    # --------------------
+    - name: Setup Java JDK
+      uses: actions/setup-java@v1.4.4
+      with:
+        java-version: 1.8
+        java-package: jdk
+        architecture: x64
+
+    # -----------
+    - name: Build
+      uses: openaf/ojob-action@v3
+      with:
+        ojob: build.yaml
+          
+    # -----------------------
+    - name: Update openaf.jar
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: openaf.jar
+        path: openaf.jar
+
+    # ----------------------------
+    - name: Upload openaf.jar.orig
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: openaf.jar.orig
+        path: openaf.jar.orig
+        
+    # -------------------
+    - name: Execute tests
+      run : |
+        cd tests
+        java -jar ../openaf.jar --ojob -e "autoTestAll.yaml"
+        
+    # ---------------------
+    - name: Generate badges
+      uses: openaf/ojob-action@v3
+      with:
+        dist: t8
+        def : |
+          todo:
+          - Create badge results
+          - Create badge asserts
+          
+          ojob:
+            opacks      :
+            - openaf: 20230520
+            - Badgen
+            catch       : printErrnl("[" + job.name + "] "); if (isDef(exception.javaException)) exception.javaException.printStackTrace(); else printErr(exception)
+            logToConsole: true   # to change when finished
+            templateArgs: true
+
+          include:
+          - badgen.yaml
+
+          jobs:
+          # --------------------------
+          - name: Create badge asserts
+            to  :
+            - (template): "{{asserts}})"
+              ((outPath): status
+              ((key    ): args
+              ((out    ): args
+
+            - (log     ): "Generating badge file '{{file}}'..."
+            - name      : Badgen generate file
+              args      :
+                labelColor: grey2
+                icon      : "openaf_grey.svg"
+                file      : "tests/asserts.svg"
+            exec    : |
+              var data = io.readFileJSON("tests/autoTestAll.results.json")
+              args.asserts = data.asserts
+              args.label = "OpenAF tests asserts"
+              args.color = "blue"
+
+          # --------------------------
+          - name: Create badge results
+            to  :
+            - (template): "(FAIL: {{fail}}, PASS: {{pass}}, TOTAL: {{count}})"
+              ((outPath): status
+              ((key    ): args
+              ((out    ): args
+
+            - (log     ): "Generating badge file '{{file}}'..."
+            - name      : Badgen generate file
+              args      :
+                labelColor: grey2
+                icon      : "openaf_grey.svg"
+                file      : "tests/results.svg"
+            exec    : |
+              var data = io.readFileJSON("tests/autoTestAll.results.json")
+              args.fail = data.fail
+              args.pass = data.pass
+              args.count = data.count
+              
+              args.label = "OpenAF tests"
+
+              args.color = "green"
+              if (args.fail > 0) args.color = "red"
+     
+    # --------------
+    - name: Check in
+      uses: openaf/ojob-action@v3
+      env :
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        ojob: ojob.io/git/hub/checkIn
+        args: "message='Test results badge' paths=tests/results.svg,tests/asserts.svg,tests/autoTestAll.md"
+        dist: t8
+    
+    # ------------------
+    - name: Test results
+      run : |
+        grep -q '"fail":0' tests/autoTestAll.results.json || exit -1
