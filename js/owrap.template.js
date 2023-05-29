@@ -14,6 +14,8 @@ OpenWrap.template = function() {
 	return ow.template;
 };
 
+OpenWrap.template.prototype.__mdHTMLExtras = []
+
 OpenWrap.template.prototype.__requireHB = function() {
 	var hb = loadCompiledRequire("handlebars_js");
 	this.__addHelpers(hb);
@@ -60,19 +62,28 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $stringify       -- stringify the parameter\
  *   - $stringifyInLine -- stringify in the same line the parameter\
  *   - $toYAML          -- returns the YAML version of the parameter\
+ *   - $toJSON          -- returns the JSON version of the parameter\
  *   - $env             -- returns the current environment variable identified by the parameter\
  *   - $escape          -- returns an escaped version of the parameter\
  *   - $acolor          -- returns an ansi color (first argument) escape sequence of the string parameter (second argument)\
  *   - $f               -- uses the $f format function\
  *   - $ft              -- uses the $ft format function\
  *   - $path            -- uses the $path function to query objects\
+ *   - $from            -- uses the $from &amp; fromNLinq to query objects\
  *   - $toSLON          -- returns the ow.format.toSLON version of an object\
  *   - $get             -- returns the corresponding value for a key on $get\
  *   - $getObj          -- equivalent to $get with the extra parameter for $$.get path\
  *   - $dateDiff        -- returns a number of seconds for a provided date optionally (second argument) with minutes, hours, days, months, weeks or years and (third argument) a default value\
  *   - $switch          -- equivalent to a javascript switch\
  *   - $case            -- to be used with $switch for each case\
- *   - $default         -- to be used with $switch for each case
+ *   - $default         -- to be used with $switch for each case\
+ *   - $ptable          -- returns an ansi ascii printTable representation of an object\
+ *   - $ptree           -- returns an ansi ascii printTree representation of an object\
+ *   - $cjson           -- returns an ansi ascii colority representation fo an object\
+ *   - $cslon           -- returns an ansi ascii colored SLON representation of an object\
+ *   - $pmap            -- returns an ansi ascii printMap representation of an object\
+ *   - $jsmap           -- returns a HTML representation of an object\
+ * 
  * </odoc>
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
@@ -102,6 +113,16 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		stringify: stringify,
 		stringifyInLine: s => { return stringify(s, __, "") },
 		toYAML: af.toYAML,
+		toJSON: stringify,
+		ptree: r => printTree(r),
+		pmap: r => printMap(r),
+		ptable: printTable,
+		cjson: colorify,
+		cslon: ow.loadFormat().toCSLON,
+		jsmap: (res, isFull) => {
+			var _res = ow.template.html.parseMap(res, true)
+			return (isFull ? "<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>" : _res.out)
+		},	
 		env: getEnv,
 		escape: s => { return s.replace(/['"]/g, "\\$1"); },
 		acolor: (c, s) => { return ansiColor(c, s) },
@@ -109,6 +130,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		ft: $ft,
 		get: (o, p) => $get(o),
 		path: (o, p) => $path(o, p),
+		from: (o, p) => $from(o).query(af.fromNLinq(p)),
 		toSLON: ow.format.toSLON,
 		getObj: (o, p) => $$($get(o)).get(p),
 		dateDiff: (a, p, isN) => {
@@ -739,12 +761,14 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 
 	if (isFull) {
 		if (isUnDef(this.__templatemd)) {
-			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs");
+			if (isDef(getOPackPath("Mermaid"))) loadLib("mermaid.js")
+			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
 		}
 		
 		return this.parse(this.__templatemd, {
 			markdown: converter.makeHtml(aMarkdownString),
-			noMaxWidth: removeMaxWidth
+			noMaxWidth: removeMaxWidth,
+			extras: ow.template.__mdHTMLExtras
 		});
 	} else {
 		return converter.makeHtml(aMarkdownString);

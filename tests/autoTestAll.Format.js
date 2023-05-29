@@ -133,4 +133,15 @@
 
         ow.test.assert(ow.format.toSLON(orig), target, "Problem with toSLON.");
     };
+
+    exports.timeAbbreviation = function() {
+        ow.test.assert( ow.format.fromTimeAbbreviation( ow.format.elapsedTime4ms(1000, { abrev: true }) ), 1000, "Problem with seconds abbreviation" )
+        ow.test.assert( ow.format.fromTimeAbbreviation( ow.format.elapsedTime4ms(60*1000, { abrev: true }) ), 60000, "Problem with minutes abbreviation" )
+        ow.test.assert( ow.format.fromTimeAbbreviation( ow.format.elapsedTime4ms(60*60*1000, { abrev: true }) ), 3600000, "Problem with hours abbreviation" )
+        ow.test.assert( ow.format.fromTimeAbbreviation( ow.format.elapsedTime4ms(24*60*60*1000, { abrev: true }) ), 86400000, "Problem with days abbreviation" )
+        ow.test.assert( ow.format.fromTimeAbbreviation( ow.format.elapsedTime4ms(7*24*60*60*1000, { abrev: true }) ), 604800000, "Problem with weeks and days abbreviation" )
+        ow.test.assert( ow.format.fromTimeAbbreviation( ow.format.elapsedTime4ms(5*7*24*60*60*1000, { abrev: true }) ), 3024000000, "Problem with months abbreviation" )
+        ow.test.assert( ow.format.fromTimeAbbreviation( ow.format.elapsedTime4ms(365*24*60*60*1000, { abrev: true }) ), 31968000000, "Problem with years abbreviation" )
+        ow.test.assert( ow.format.fromTimeAbbreviation( "1w" ) / 7 / 24 / 60 / 60 / 1000, 1, "Problem with weeks abbreviation ")
+    }
 })();

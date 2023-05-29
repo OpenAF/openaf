@@ -5,6 +5,9 @@
 <script src="/js/highlight.js"></script>
 <script>hljs.initHighlightingOnLoad();</script>
 <style>.markdown-body { box-sizing: border-box; min-width: 200px; {{#if noMaxWidth}}{{else}}max-width: 980px;{{/if}} margin: 0 auto; padding: 45px; } @media (max-width: 767px) { .markdown-body { padding: 15px; } }</style>
+{{#each extras}}
+{{{this}}}
+{{/each}}
 <body class="markdown-body">
 {{{markdown}}}
 </body>

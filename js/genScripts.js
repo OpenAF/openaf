@@ -100,7 +100,7 @@ function generateWinUpdateBat() {
   s = s + "chcp 65001 > NUL\n";
   s += "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --update\n";
   if (isDef(__genScriptsUpdate) && isArray(__genScriptsUpdate)) {
-    __genScriptsUpdate.map(r => {
+    __genScriptsUpdate.forEach(r => {
       s += "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% " + r + "\n";
     });
   }
@@ -173,7 +173,7 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "\n";
   s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + options + "\n";
   if (isDef(extraOptions) && isArray(extraOptions)) {
-    extraOptions.map(r => {
+    extraOptions.forEach(r => {
       s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + r + "\n";
     });
   }
@@ -321,7 +321,7 @@ _.uniq(ow.obj.fromObj2Array(getOPackLocalDB(), "path").map(r => {
 log("Removing old paths...");
 var o = getOPackLocalDB(); 
 var p = {}; 
-Object.keys(o).map(r => { 
+Object.keys(o).forEach(r => { 
   if (r != "OpenAF" && (io.fileExists(r + "/" + PACKAGEYAML) || io.fileExists(r + "/" + PACKAGEJSON))) p[r] = o[r]; 
 }); 
 log("Rewriting local oPacks db...");

@@ -193,7 +193,7 @@ function ojob_draw() {
 
 	ansiStart();
 	print(ansiColor("bold,underline", "\nDependencies:"));
-	oj.todo.map(function(v) {
+	oj.todo.forEach(function(v) {
 		if (isDef(v.job) && isUnDef(v.name)) v.name = v.job;
 		var nn = (isDef(v.name) ? v.name : v);
 		printnl("[" + ansiColor("bold", nn) + "]");
@@ -202,7 +202,7 @@ function ojob_draw() {
 	});
 
 	print(ansiColor("bold,underline", "\nPaths:"));
-	oj.todo.map(function(v) {
+	oj.todo.forEach(function(v) {
 		if (isDef(v.job) && isUnDef(v.name)) v.name = v.job;
 		var nn = (isDef(v.name) ? v.name : v);
 		var paths = getPaths(nn);
@@ -350,7 +350,7 @@ function ojob_todo() {
 }
 
 function ojob_shortcuts() {
-	var tab = [], _lst = ow.loadOJob().parseTodo({}, true)
+	var tab = [], _lst = ow.loadOJob().parseTodo(__, true)
 	var _max  = $from(_lst).attach("_len", r => r.job.length).max("_len")._len
 	var _maxJ = $from(_lst).attach("_len", r => $from(Object.keys(r.attrs).map(s=>s.length)).max()).max("_len")._len
 	_maxJ = Math.max(_maxJ, $from(_lst).attach("_len", r => r.name.length).max("_len")._len)

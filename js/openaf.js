@@ -81,6 +81,39 @@ const isDef = function(aObject)   { return (isJavaObject(aObject) || !(typeof aO
  */
 const isUnDef = function(aObject) { return (!isJavaObject(aObject) && typeof aObject == 'undefined') ? true : false; }
 
+/**
+ * <odoc>
+ * <key>getEnvs() : Map</key>
+ * Returns a map of key and values with the operating system environment variables.
+ * </odoc>
+ */
+const getEnvs = function() {
+	return af.fromJavaMap(java.lang.System.getenv());
+}
+
+const __envs = getEnvs()
+
+/**
+ * <odoc>
+ * <key>getEnvsDef(aEnv, aVar, aDefault, isJson) : Object</key>
+ * Given an environment variable aEnv name will check if a value is provided and return it if so. Otherwise it will check
+ * the value of aVar and return it if defined. If aVar is also not defined it will return aDefault. Optionally if isJson=true
+ * the value of the provided aEnv will be parsed from JSON.
+ * </odoc>
+ */
+const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
+	if (isDef(aVar)) return aVar
+	if (isDef(__envs[aEnv])) {
+		if (isJson) {
+			return jsonParse(__envs[aEnv], true)
+		} else {
+			return __envs[aEnv]
+		}
+	} else {
+		return aDefault
+	}
+}
+
 var __openaf;
 if (isUnDef(__openaf)) __openaf =
 // BEGIN_SET__OPENAF
@@ -121,17 +154,17 @@ var __odoc = (isDef(__openaf.odoc)) ? __openaf.odoc : [
 const __separator = String(java.lang.System.lineSeparator());
 
 // Hash list of oaf scripts (each key value is a filepath; value is [hash-alg]-[hash])
-var OAF_INTEGRITY = {};
+var OAF_INTEGRITY = getEnvsDef("OAF_INTEGRITY", OAF_INTEGRITY, {}, true)
 // If OAF_INTEGRITY_WARN is false OAF execution is halted if any integrity hash is found to be different
-var OAF_INTEGRITY_WARN = true; 
+var OAF_INTEGRITY_WARN = getEnvsDef("OAF_INTEGRITY_WARN", OAF_INTEGRITY_WARN, true)
 // If OAF_INTEGRITY_STRICT is true no OAF will execute if it's integrity is not verified.
-var OAF_INTEGRITY_STRICT = false;
+var OAF_INTEGRITY_STRICT = getEnvsDef("OAF_INTEGRITY_STRICT", OAF_INTEGRITY_STRICT, false)
 // If OAF_SIGNATURE_STRICT is true no OAF will execute if it's signature is not valid.
-var OAF_SIGNATURE_STRICT = false;
+var OAF_SIGNATURE_STRICT = getEnvsDef("OAF_SIGNATURE_STRICT", OAF_SIGNATURE_STRICT, false)
 // Use OAF_SIGNATURE_KEY key java object to validate OAF signatures;
-var OAF_SIGNATURE_KEY = __;
+var OAF_SIGNATURE_KEY = getEnvsDef("OAF_SIGNATURE_KEY", OAF_SIGNATURE_KEY, __)
 // If OAF_VALIDATION_STRICT = true no OAF will execute if the signature doesn't exist or is not valid or if it's integrity wasn't checked & passed.
-var OAF_VALIDATION_STRICT = false;
+var OAF_VALIDATION_STRICT = getEnvsDef("OAF_VALIDATION_STRICT", OAF_VALIDATION_STRICT, false)
 
 // -------
 
@@ -190,22 +223,23 @@ const print = function(str) {
 	}
 }
 
-var __bfprint = {};
-var __bfprintCodePage = io.getDefaultEncoding();
+var __bfprint = {}
+var __bfprintErr = {}
+var __bfprintCodePage = io.getDefaultEncoding()
 const bfprintnl = function(str, codePage) {
-	if (isUnDef(codePage)) codePage = __bfprintCodePage;
-	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), 512);
+	if (isUnDef(codePage)) codePage = __bfprintCodePage
+	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), 512)
 
-	__bfprint[codePage].write(str);
-	__bfprint[codePage].flush();
+	__bfprint[codePage].write(str)
+	__bfprint[codePage].flush()
 }
 
 const bfprintErrnl = function(str, codePage) {
-	if (isUnDef(codePage)) codePage = __bfprintCodePage;
-	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), 512);
+	if (isUnDef(codePage)) codePage = __bfprintCodePage
+	if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), 512)
 
-	__bfprint[codePage].write(str);
-	__bfprint[codePage].flush();
+	__bfprintErr[codePage].write(str)
+	__bfprintErr[codePage].flush()
 }
 
 const bfprint = function(str, codePage) {
@@ -5658,7 +5692,7 @@ const ioStreamWrite = function(aStream, aString, aBufferSize, useNIO) {
 	if (useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aString, aStream, "utf-8");
 	} else {
-		var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
+		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -5689,7 +5723,7 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 	if (useNIO) {
 		Packages.org.apache.commons.io.IOUtils.write(aArrayBytes, aStream);
 	} else {
-		var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
+		var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 		var channel;
 		try {
 			channel = aStream.getChannel();
@@ -5719,7 +5753,7 @@ const ioStreamWriteBytes = function(aStream, aArrayBytes, aBufferSize, useNIO) {
 const ioStreamRead = function(aStream, aFunction, aBufferSize, useNIO, encoding) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
 	encoding = _$(encoding).isString().default(io.getDefaultEncoding());
-	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
+	var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 
 	if (useNIO) {
 		var channel;
@@ -5832,7 +5866,7 @@ const ioStreamCopy = function(aOutputStream, aInputStream) {
  */
 const ioStreamReadBytes = function(aStream, aFunction, aBufferSize, useNIO) {
 	if (isUnDef(useNIO) && isDef(__ioNIO)) useNIO = __ioNIO;
-	var bufferSize = (isUnDef(aBufferSize)) ? 1024 : aBufferSize;
+	var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 
 	if (useNIO) {
 		var channel;
@@ -7199,21 +7233,21 @@ const deleteFromArray = function(anArray, anIndex) {
 // oJob
 
 // List of authorized domains from which to run ojobs
-var OJOB_AUTHORIZEDDOMAINS = [ "ojob.io" ];
+var OJOB_AUTHORIZEDDOMAINS = getEnvsDef("OJOB_AUTHORIZEDDOMAINS", OJOB_AUTHORIZEDDOMAINS, [ "ojob.io" ], true)
 
 // Hash list of oJob urls and filepaths (each key value is a the url/canonical filepath; value is [hash-alg]-[hash])
 // Do note that ojob.io urls need to be converted: ojob.io/echo -> https://ojob.io/echo.json
-var OJOB_INTEGRITY = {};
+var OJOB_INTEGRITY = getEnvsDef("OJOB_INTEGRITY", OJOB_INTEGRITY, {}, true)
 // If OJOB_INTEGRITY_WARN is false oJob execution is halted if any integrity hash is found to be different
-var OJOB_INTEGRITY_WARN = true; 
+var OJOB_INTEGRITY_WARN = getEnvsDef("OJOB_INTEGRITY_WARN", OJOB_INTEGRITY_WARN, true) 
 // If OJOB_INTEGRITY_STRICT is true no oJob will execute if it's integrity is not verified.
-var OJOB_INTEGRITY_STRICT = false;
+var OJOB_INTEGRITY_STRICT = getEnvsDef("OJOB_INTEGRITY_STRICT", OJOB_INTEGRITY_STRICT, false)
 // If OJOB_SIGNATURE_STRICT is true no oJob will execute if it's signature is not valid.
-var OJOB_SIGNATURE_STRICT = false;
+var OJOB_SIGNATURE_STRICT = getEnvsDef("OJOB_SIGNATURE_STRICT", OJOB_SIGNATURE_STRICT, false)
 // Use OJOB_SIGNATURE_KEY key java object to validate oJob signatures;
-var OJOB_SIGNATURE_KEY = __;
+var OJOB_SIGNATURE_KEY = getEnvsDef("OJOB_SIGNATURE_KEY", OJOB_SIGNATURE_KEY, __)
 // If OJOB_VALIDATION_STRICT = true no oJob will execute if the signature doesn't exist or is not valid or if it's integrity wasn't checked & passed.
-var OJOB_VALIDATION_STRICT = false;
+var OJOB_VALIDATION_STRICT = getEnvsDef("OJOB_VALIDATION_STRICT", OJOB_VALIDATION_STRICT, false)
 
 /**
  * <odoc>
@@ -7342,16 +7376,6 @@ const getEnv = function(anEnvironmentVariable) {
 
 /**
  * <odoc>
- * <key>getEnvs() : Map</key>
- * Returns a map of key and values with the operating system environment variables.
- * </odoc>
- */
-const getEnvs = function() {
-	return af.fromJavaMap(java.lang.System.getenv());
-}
-
-/**
- * <odoc>
  * <key>loadJSYAML()</key>
  * Loads the JS-YAML library.
  * </odoc>
@@ -7360,7 +7384,7 @@ const loadJSYAML = function() {
 	loadCompiledLib("js-yaml_js");
 }
 
-loadCompiledLib("openafsigil_js");
+loadCompiledLib("openafsigil_js")
 
 var __flags = _$(__flags).isMap().default({
 	OJOB_SEQUENTIAL            : true,
@@ -7368,7 +7392,7 @@ var __flags = _$(__flags).isMap().default({
 	OJOB_HELPSIMPLEUI          : false,
 	OJOB_LOCALPATH             : getOpenAFPath() + "ojobs",
 	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
-	OJOB_CONSOLE_STDERR        : true,
+	OJOB_CONSOLE_STDERR        : getEnvsDef("OJOB_CONSOLE_STDERR", __, true),
 	OAF_CLOSED                 : false,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
@@ -7384,6 +7408,9 @@ var __flags = _$(__flags).isMap().default({
 	},
 	CONSOLE: {
 		view: "tree"
+	},
+	IO: {
+		bufferSize: 1024
 	},
 	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR    : true,
@@ -7510,8 +7537,8 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 	if (isString(aBytesOrString)) aBytesOrString = af.fromString2Bytes(aBytesOrString);
 
 	var detector = new Packages.org.mozilla.universalchardet.UniversalDetector(null);
-	for(var ii = 0; ii < aBytesOrString.length && !detector.isDone(); ii = ii + 1024) { 
-		detector.handleData(aBytesOrString, ii, ((aBytesOrString.length - ii) >= 1024 ? 1024 : (aBytesOrString.length - 1024)));
+	for(var ii = 0; ii < aBytesOrString.length && !detector.isDone(); ii = ii + __flags.IO.bufferSize) { 
+		detector.handleData(aBytesOrString, ii, ((aBytesOrString.length - ii) >= __flags.IO.bufferSize ? __flags.IO.bufferSize : (aBytesOrString.length - __flags.IO.bufferSize)));
 	}
 	detector.dataEnd();
 	res = detector.getDetectedCharset();
@@ -8029,13 +8056,13 @@ IO.prototype.writeLineNDJSON = function(aNDJSONFile, aObj, aEncode) {
 
 /**
  * <odoc>
- * <key>io.readLinesNDJSON(aNDJSONFile, aFuncCallback, aErrorCallback)</key>
+ * <key>io.readLinesNDJSON(aNDJSONFile, aFuncCallback, aErrorCallback, anEncoding)</key>
  * Opens aNDJSONFile (a newline delimited JSON) (a filename or an input stream) as a stream call aFuncCallback with each parse JSON. If
  * aFuncCallback returns true the cycle will be interrupted. For any parse error it calls the aErrorCallback 
  * with each exception.
  * </odoc>
  */
-IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallback) {
+IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallback, anEncoding) {
 	var rfs
 	if (!isJavaObject(aNDJSONFile)) {
 		rfs = io.readFileStream(aNDJSONFile)
@@ -8048,7 +8075,7 @@ IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallba
 		} catch(e) {
 			aErrorCallback(e);
 		}
-	});
+	}, __, __, anEncoding)
 };
 
 /**

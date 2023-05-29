@@ -702,6 +702,23 @@ jobs:
     case "info" : tprint(args.msg, data)   ; break
     }
 
+# -----------------------
+- name    : ojob print md
+  typeArgs:
+    noLog: true
+  help    :
+    text   : Parses an input text as simple ascii markdown
+    expects:
+    - name: __text
+      desc: The text template to parse.
+  check   :
+    in:
+      __text: isString
+  exec    : |
+    var cargs = clone(args)
+    delete cargs.__text
+    print(ow.format.withMD($t(args.__text, cargs)))
+
 # ---------------
 - name : ojob log
   typeArgs:
@@ -989,7 +1006,7 @@ jobs:
           res = rj(j)
       })
     } else {
-      args.__default.map(j => {
+      args.__default.forEach(j => {
         if (args.__async) 
           $do(() => res = rj(j) )
         else 

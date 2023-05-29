@@ -4,6 +4,8 @@ include:
 ojob:
    sequential: false
    async     : true
+   opacks    :
+   - oJob-common
    channels  :
      expose : true
      port   : 17878
@@ -32,15 +34,18 @@ jobs:
      args: 
        quiet: true
      exec: |
-       tprint("Tests PASSED: {{pass}}/{{count}}", args.results);
-       tprint("Tests FAILED: {{fail}}/{{count}}", args.results);
+       args.results.asserts = ow.test.getCountAssert()
+       tprint("Tests PASSED : {{pass}}/{{count}}", args.results);
+       tprint("Tests FAILED : {{fail}}/{{count}}", args.results);
+       tprint("Count asserts: {{asserts}}", args.results)
        if (args.results.fail > 0) printErr("There are failed tests");
 
        // Write a simple json result file
        io.writeFile("autoTestAll.results.json", {
          pass: args.results.pass,
          fail: args.results.fail,
-         count: args.results.count
+         count: args.results.count,
+         asserts: args.results.asserts
        })
 
    - name: JUnit results

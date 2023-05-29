@@ -2726,7 +2726,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			var fnDef = "";
 			fnDef += "var _oji = " + stringify(aEach, __, "") + "; ";
 			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
-			fnDef += "$doA2B(each => { " + res + " }, (_r, _n) => { _oj.map(_aJob => { ";
+			fnDef += "$doA2B(each => { " + res + " }, (_r, _n) => { _oj.forEach(_aJob => { ";
 			fnDef += "  var _canDo = true; if(isDef(_n) && _n != _aJob.name) _canDo = false;"
 			fnDef += "  try { if (isDef(_aJob) && _canDo) { var fn = newFn(\"var args = arguments[0]; var job = {name:'" + _aName + "'}; \" + _aJob.exec); ";
 			fnDef += "  return fn( merge(_r, { init: args.init }) ); } else { return __; }";
@@ -2888,9 +2888,7 @@ OpenWrap.oJob.prototype.outputParse = function(aObj) {
 	return p
 }
 
-OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
-	if (!isMap(aTodo)) return aTodo
-  
+OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {  
 	var oJobShortcuts = [{
 		name : "(if",
 		job  : "ojob if",
@@ -3109,6 +3107,14 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((options": "options"
 		}
 	}, {
+		name : "(printmd",
+		job  : "ojob print md",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(printmd" : "__text"
+		}
+	}, {
 		name : "(print",
 		job  : "ojob print",
 		map  : true,
@@ -3193,6 +3199,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 	}]
 
 	if (isUnDef(aTodo) && _getlist) return oJobShortcuts
+	if (!isMap(aTodo)) return aTodo
 
 	// Get only relevant entries
 	var entries = Object.keys(aTodo).filter(r => r.startsWith("("))
@@ -3303,6 +3310,9 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 		case "slon":
 			print(ow.format.toSLON(res));
 			break;
+		case "cslon":
+			print(ow.format.toCSLON(res))
+			break
 		case "ndjson":
 			if (isArray(res)) res.forEach(e => print(stringify(e, __, "")))
 			break
