@@ -1,10 +1,10 @@
 name: Build and Test T8
 
 on:
-  push:
-    branches: [ t8 ]
+  #push:
+  #  branches: [ t8 ]
   pull_request:
-    branches: [ t8 ]
+    branches: [ t8, master ]
   workflow_dispatch:
 
 jobs:
@@ -123,7 +123,7 @@ jobs:
           # --------------------------
           - name: Create badge results
             to  :
-            - (template): "(failed: {{fail}}, pass: {{pass}}, total: {{count}})"
+            - (template): "(FAIL: {{fail}}, PASS: {{pass}}, TOTAL: {{count}})"
               ((outPath): status
               ((key    ): args
               ((out    ): args
@@ -152,7 +152,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         ojob: ojob.io/git/hub/checkIn
-        args: "message='Test results badge' paths=tests/results.svg,tests/autoTestAll.md"
+        args: "message='Test results badge' paths=tests/results.svg,tests/asserts.svg,tests/autoTestAll.md"
         dist: t8
     
     # ------------------
