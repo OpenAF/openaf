@@ -44,7 +44,8 @@ jobs:
        io.writeFile("autoTestAll.results.json", {
          pass: args.results.pass,
          fail: args.results.fail,
-         count: args.results.count
+         count: args.results.count,
+         asserts: args.results.asserts
        })
 
    - name: JUnit results
