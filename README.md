@@ -1,5 +1,9 @@
 # OpenAF
 
+[![Build and Test](https://github.com/OpenAF/openaf/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/OpenAF/openaf/actions/workflows/build-and-test.yml)
+![asserts](tests/asserts.svg)
+[![tests](tests/results.svg)](tests/autoTestAll.md)
+
 ## Installing
 
 ### Operating system install

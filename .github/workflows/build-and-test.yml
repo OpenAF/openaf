@@ -103,7 +103,7 @@ jobs:
           # --------------------------
           - name: Create badge asserts
             to  :
-            - (template): "{{asserts}})"
+            - (template): "{{asserts}}"
               ((outPath): status
               ((key    ): args
               ((out    ): args
