@@ -78,14 +78,15 @@ jobs:
         cd tests
         java -jar ../openaf.jar --ojob -e "autoTestAll.yaml"
         
-    # --------------------
-    - name: Generate badge
+    # ---------------------
+    - name: Generate badges
       uses: openaf/ojob-action@v3
       with:
         dist: t8
         def : |
           todo:
-          - Create badge
+          - Create badge results
+          - Create badge asserts
           
           ojob:
             opacks      :
@@ -99,8 +100,28 @@ jobs:
           - badgen.yaml
 
           jobs:
-          # ------------------
-          - name: Create badge
+          # --------------------------
+          - name: Create badge asserts
+            to  :
+            - (template): "{{asserts}})"
+              ((outPath): status
+              ((key    ): args
+              ((out    ): args
+
+            - (log     ): "Generating badge file '{{file}}'..."
+            - name      : Badgen generate file
+              args      :
+                labelColor: grey2
+                icon      : "openaf_grey.svg"
+                file      : "tests/asserts.svg"
+            exec    : |
+              var data = io.readFileJSON("tests/autoTestAll.results.json")
+              args.asserts = data.asserts
+              args.label = "OpenAF tests asserts"
+              args.color = "blue"
+
+          # --------------------------
+          - name: Create badge results
             to  :
             - (template): "(failed: {{fail}}, pass: {{pass}}, total: {{count}})"
               ((outPath): status
@@ -113,8 +134,6 @@ jobs:
                 labelColor: grey2
                 icon      : "openaf_grey.svg"
                 file      : "tests/results.svg"
-            - ojob debug
-            - (log     ): "Done"
             exec    : |
               var data = io.readFileJSON("tests/autoTestAll.results.json")
               args.fail = data.fail
