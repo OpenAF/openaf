@@ -32,8 +32,10 @@ jobs:
      args: 
        quiet: true
      exec: |
-       tprint("Tests PASSED: {{pass}}/{{count}}", args.results);
-       tprint("Tests FAILED: {{fail}}/{{count}}", args.results);
+       args.results.asserts = ow.test.getCountAssert()
+       tprint("Tests PASSED : {{pass}}/{{count}}", args.results);
+       tprint("Tests FAILED : {{fail}}/{{count}}", args.results);
+       tprint("Count asserts: {{asserts}}", args.results)
        if (args.results.fail > 0) printErr("There are failed tests");
 
        // Write a simple json result file
