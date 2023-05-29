@@ -159,6 +159,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         ojob: ojob.io/git/hub/checkIn
-        args: "message='Test results badge' paths=tests/results.svg"
+        args: "message='Test results badge' paths=tests/results.svg,tests/autoTestAll.md"
         dist: t8
       
