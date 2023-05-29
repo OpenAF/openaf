@@ -144,14 +144,7 @@ jobs:
 
               args.color = "green"
               if (args.fail > 0) args.color = "red"
-    
-    # --------------
-    - name: Clean up
-      run : |
-        rm tests/autoTestAll.results.json
-        rm tests/autoTestAll.gz
-        rm tests/autoTestAllResults.xml
-    
+     
     # --------------
     - name: Check in
       uses: openaf/ojob-action@v3
@@ -161,4 +154,8 @@ jobs:
         ojob: ojob.io/git/hub/checkIn
         args: "message='Test results badge' paths=tests/results.svg,tests/autoTestAll.md"
         dist: t8
-      
+    
+    # ------------------
+    - name: Test results
+      run : |
+        grep -q '"fail":0' tests/autoTestAll.results.json || exit -1
