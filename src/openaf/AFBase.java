@@ -1063,7 +1063,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void compileToClasses(String classfile, String script, String path) {
+	public void compileToClasses(String classfile, String script, String path) throws IOException {
 		ClassCompiler cc = new ClassCompiler(new CompilerEnvirons());
 		Object compiled[] = cc.compileToClassFiles(script, classfile, 1, classfile);
 		if (path == null || path.equals("undefined"))
@@ -1083,7 +1083,8 @@ public class AFBase extends ScriptableObject {
 					os.close();
 				}
 			} catch (IOException ioe) {
-				SimpleLog.log(logtype.ERROR, ioe.getMessage(), ioe);
+				throw ioe;
+				//SimpleLog.log(logtype.ERROR, ioe.getMessage(), ioe);
 			}
 		} 
 	}
