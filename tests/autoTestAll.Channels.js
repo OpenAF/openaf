@@ -42,20 +42,20 @@
     };
 
     exports.testSettingData = function() {
-        var l = listFilesRecursive(".");
+        var l = io.listFiles(getOpenAFPath()).files
         $ch(this.chType).unsetAll(["filepath"], $ch(this.chType).getKeys());
         $ch(this.chType).setAll(["filepath"], l);
         ow.test.assert(l.length, $ch(this.chType).size(), "Channel didn't store all values.");
     };
 
     exports.testUnsettingData = function() {
-        var l1 = listFilesRecursive(".");
-        var l2 = listFilesRecursive("..");
+        var l1 = io.listFiles(getOpenAFPath()).files
+        var l2 = listFilesRecursive(getOpenAFPath())
         $ch(this.chType).setAll(["filepath"], l1);
         $ch(this.chType).setAll(["filepath"], l2);
-        ow.test.assert(Number(l1.length) + Number(l2.length), $ch(this.chType).size(), "Channel didn't store all values for unset test.");
-        $ch(this.chType).unsetAll(["filepath"], l2);
-        ow.test.assert(Number(l1.length), $ch(this.chType).size(), "Channel didn't unset all values correclty.");
+        ow.test.assert(l2.length, $ch(this.chType).size(), "Channel didn't store all values for unset test.");
+        $ch(this.chType).unsetAll(["filepath"], l1);
+        ow.test.assert(l2.length - l1.length, $ch(this.chType).size(), "Channel didn't unset all values correclty.");
     };
 
     exports.testDestroyChannel = function() {
@@ -71,7 +71,7 @@
         $ch("_t1_").subscribe(ow.ch.utils.getMirrorSubscriber("_t2_"));
         $ch("_t1_").subscribe(ow.ch.utils.getMirrorSubscriber("_t3_"));
 
-        $ch("_t1_").setAll(["filepath"], listFilesRecursive("..")); 
+        $ch("_t1_").setAll(["filepath"], listFilesRecursive(getOpenAFPath())); 
         $ch("_t1_").waitForJobs(); sleep(100);
 
         ow.test.assert($ch("_t1_").size(), $ch("_t2_").size(), "Differences between channel 1 and 2");
