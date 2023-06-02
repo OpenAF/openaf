@@ -2112,6 +2112,11 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					aO[aK] = templify(aV, args)
 				}
 			})
+			traverse(aJob.typeArgs, (aK, aV, aP, aO) => {
+				if (isString(aV) && aV.indexOf("{{") >= 0) {
+					aO[aK] = templify(aV, args)
+				}
+			})
 		}
 
 		var f = newFn("var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
