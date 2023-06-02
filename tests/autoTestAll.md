@@ -54,7 +54,7 @@
 |Format | Add number separator | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
 |Format | Conversions | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
 |Format | Cron | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
-|Format | Cron How Many Ago | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 9 ms | n/a |
+|Format | Cron How Many Ago | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 15 ms | n/a |
 |Format | Date diff | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 4 ms | n/a |
 |Format | Date to/from | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 9 ms | n/a |
 |Format | Escape strings | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
