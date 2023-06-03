@@ -78,6 +78,13 @@ jobs:
         cd tests
         java -jar ../openaf.jar --ojob -e "autoTestAll.yaml"
         
+    # ----------------------------
+    - name: Upload autoTestAll.md
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: autoTestAll.md
+        path: tests/autoTestAll.md
+        
     # ---------------------
     - name: Generate badges
       uses: openaf/ojob-action@v3
