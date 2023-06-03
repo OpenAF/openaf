@@ -242,7 +242,7 @@
 		},
 		{
 			"description": "OkHTTP Client",
-			"path": ["okhttp-4.10.0.jar", "okio-2.8.0.jar", "kotlin-stdlib-1.8.10.jar"],
+			"path": ["okhttp-4.10.0.jar", "okio-2.8.0.jar", "kotlin-stdlib-1.8.21.jar"],
 			"version": "4.10.0",
 			"changes": false,
 			"type": ["java"],
