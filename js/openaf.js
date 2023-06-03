@@ -3033,13 +3033,15 @@ const load = function(aScript, loadPrecompiled) {
 				}
 			}
 		}
-		if (!res && isUnDef(err)) {
+		if (!res || isDef(err)) {
 			try {
 				__codeVerify(aS, aScript)
 				if (__flags.OAF_CLOSED) af.load(aS); else af.load(aS, __loadPreParser);
+				err = __
 			} catch(e2) {
 				if (e2.message == "\"exports\" is not defined.") {
 					var exp = require(aS);
+					err = __
 					global[io.fileInfo(aS).filename.replace(/\.js$/, "")] = exp;
 					return aS;
 				} else {

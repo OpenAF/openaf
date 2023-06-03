@@ -62,12 +62,12 @@
 
     exports.testBasicAuth = function() {
         ow.loadObj();
-        var res1 = ow.obj.rest.jsonGet("https://httpbin.org/basic-auth/admin/noadmin", {}, "admin", "noadmin");
-        var res2 = ow.obj.rest.jsonGet("https://httpbin.org/basic-auth/admin/no2admin", {}, "admin", "no2admin");
+        var res1 = ow.obj.rest.jsonGet("https://postman-echo.com/basic-auth", {}, "postman", "password");
+        var res2 = ow.obj.rest.jsonGet("https://postman-echo.com/basic-auth", {}, "postman", "password");
         
         var h = new HTTP();
-        h.login("admin", "2noadminno");
-        var res3 = jsonParse(h.exec("https://httpbin.org/basic-auth/admin/2noadminno").response, false);
+        h.login("postman", "password");
+        var res3 = jsonParse(h.exec("https://postman-echo.com/basic-auth").response, false);
 
         ow.test.assert(res1.authenticated, true, "Problem with basic auth.");
         ow.test.assert(res2.authenticated, true, "Problem with a second basic auth.");
@@ -78,23 +78,23 @@
         ow.loadObj();
         plugin("HTTP");
 
-        var res1= ow.obj.rest.jsonGet("https://httpbin.org/headers");
-        ow.test.assert(res1.headers["User-Agent"], __OpenAFUserAgent, "User agent using ow.obj.http is incorrect.");
+        var res1= ow.obj.rest.jsonGet("https://postman-echo.com/headers");
+        ow.test.assert(res1.headers["user-agent"], __OpenAFUserAgent, "User agent using ow.obj.http is incorrect.");
         
         var h = new HTTP();
-        var res2 = jsonParse(h.get("https://httpbin.org/headers").response, false);
-        ow.test.assert(res2.headers["User-Agent"].startsWith(__OpenAFUserAgent), true, "User agent using HTTP plugin is incorrect.");
+        var res2 = jsonParse(h.get("https://postman-echo.com/headers").response, false);
+        ow.test.assert(res2.headers["user-agent"].startsWith(__OpenAFUserAgent), true, "User agent using HTTP plugin is incorrect.");
 
         // Changing user agent
         var old = __OpenAFUserAgent;
         __setUserAgent("OpenAF");
 
-        var res3= ow.obj.rest.jsonGet("https://httpbin.org/headers");
-        ow.test.assert(res3.headers["User-Agent"], __OpenAFUserAgent, "User agent using ow.obj.http, after change, is incorrect.");
+        var res3= ow.obj.rest.jsonGet("https://postman-echo.com/headers");
+        ow.test.assert(res3.headers["user-agent"], __OpenAFUserAgent, "User agent using ow.obj.http, after change, is incorrect.");
 
         var h2 = new HTTP();
-        var res4 = jsonParse(h2.get("https://httpbin.org/headers", "", { "User-Agent": __OpenAFUserAgent }).response, false);
-        ow.test.assert(res4.headers["User-Agent"], __OpenAFUserAgent, "User agent using HTTP plugin, after change, is incorrect.");
+        var res4 = jsonParse(h2.get("https://postman-echo.com/headers", "", { "User-Agent": __OpenAFUserAgent }).response, false);
+        ow.test.assert(res4.headers["user-agent"], __OpenAFUserAgent, "User agent using HTTP plugin, after change, is incorrect.");
 
         __setUserAgent(old);
     };

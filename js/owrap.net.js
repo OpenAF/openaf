@@ -37,7 +37,7 @@ OpenWrap.net.prototype.getActualTime = function(useAlternative) {
 
 	if (useAlternative) {
 		//var h = ow.loadObj();
-		//return new Date(ow.obj.rest.jsonGet("http://now.httpbin.org").now.epoch * 1000);
+		//return new Date(ow.obj.rest.jsonGet("http://now.postman-echo.com").now.epoch * 1000);
 		return new Date((1000 * ($rest().get("http://worldclockapi.com/api/json/utc/now").currentFileTime / 10000000 - 11644473600)));
 	} else {
 		//plugin("XML");

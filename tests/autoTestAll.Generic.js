@@ -270,8 +270,8 @@
                 };
                 return m;
             }
-        }).get("https://httpbin.org/get");
-        ow.test.assert(res.headers.Openaf, "true", "Problem with preAction.");
+        }).get("https://postman-echo.com/get");
+        ow.test.assert(res.headers.openaf, "true", "Problem with preAction.");
     };
 
     exports.testRest2Stream = function() {
@@ -748,11 +748,11 @@
         var fnargs = $fnDef4Help("ow.obj.rest.jsonGet");
         ow.test.assert(fnargs, ["aBaseURI","aIndexMap","aLoginOrFunction","aPassword","aTimeout","aRequestMap","aHTTP", "retBytes", "options"], "Problem with getting arguments from help using $fnDef4Help.");
 
-        var res = $fnM2A(ow.obj.rest.jsonGet, ow.obj.rest, fnargs, { aBaseURI: "https://httpbin.org/get" });
-        ow.test.assert(res.url, "https://httpbin.org/get", "Problem with $fnM2A.");
+        var res = $fnM2A(ow.obj.rest.jsonGet, ow.obj.rest, fnargs, { aBaseURI: "https://postman-echo.com/get" });
+        ow.test.assert(res.url, "https://postman-echo.com/get", "Problem with $fnM2A.");
 
-        res = $fnM("ow.obj.rest.jsonGet", { aBaseURI: "https://httpbin.org/get" });
-        ow.test.assert(res.url, "https://httpbin.org/get", "Problem with $fnM.");
+        res = $fnM("ow.obj.rest.jsonGet", { aBaseURI: "https://postman-echo.com/get" });
+        ow.test.assert(res.url, "https://postman-echo.com/get", "Problem with $fnM.");
     };
 
     exports.testVoidShortcut = function() {
