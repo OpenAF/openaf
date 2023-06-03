@@ -156,8 +156,8 @@
 		},
 		{
 			"description": "jjwt",
-			"path": ["lib/jjwat-api-0.11.2.jar", "lib/jjwat-gson-0.11.2.jar", "lib/jjwat-impl-0.11.2.jar"],
-			"version": "0.11.2",
+			"path": ["lib/jjwat-api-0.11.5.jar", "lib/jjwat-gson-0.11.5.jar", "lib/jjwat-impl-0.11.5.jar"],
+			"version": "0.11.5",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",
@@ -269,8 +269,8 @@
 		},
 		{
 			"description": "DNS Java",
-			"path": ["lib/dnsjava-3.5.0.jar"],
-			"version": "3.5.0",
+			"path": ["lib/dnsjava-3.5.2.jar"],
+			"version": "3.5.2",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://github.com/dnsjava/dnsjava/blob/master/LICENSE",
