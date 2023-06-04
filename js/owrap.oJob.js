@@ -1571,7 +1571,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob) {
-	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, this.__expr, aId) : this.__expr;
+	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, (isSubJob ? {} : this.__expr), aId) : this.__expr;
 
 	var localStop = false
 	if (!isSubJob) this.running = true
@@ -3159,6 +3159,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((key"         : "__key",
 			"((inKey"       : "__inKey",
 			"((usePM"       : "__usePM",
+			"((inPM"        : "__inPM",
 			"((templateArgs": "__templateArgs",
 			"((debug"       : "__debug"
 		}
@@ -3200,6 +3201,19 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((ttl"     : "__ttl",
 			"((out"     : "__out",
 			"((key"     : "__key"
+		}
+	}, {
+		name : "(todo",
+		job  : "ojob todo",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(todo"         : "todo",
+			"((isolateArgs" : "isolateArgs",
+			"((isolateJob"  : "isolateJob",
+			"((templateArgs": "templateArgs",
+			"((shareArgs"   : "shareArgs",
+			"((debug"       : "__debug"
 		}
 	}]
 
