@@ -126,7 +126,7 @@ jobs:
             - (log     ): "Generating badge file '{{file}}'..."
             - name      : Badgen generate file
               args      :
-                labelColor: grey2
+                labelColor: grey3
                 icon      : "openaf_grey.svg"
                 file      : "tests/asserts.svg"
             exec    : |
@@ -146,7 +146,7 @@ jobs:
             - (log     ): "Generating badge file '{{file}}'..."
             - name      : Badgen generate file
               args      :
-                labelColor: grey2
+                labelColor: grey3
                 icon      : "openaf_grey.svg"
                 file      : "tests/results.svg"
             exec    : |
