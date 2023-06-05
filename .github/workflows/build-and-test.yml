@@ -91,19 +91,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3.5.2
       
-    # -------------------------
-    - name: Download openaf.jar
+    # ------------------------
+    - name: Download artifacts
       uses: actions/download-artifact@v3
-      with:
-        name: openaf.jar
-        path: openaf.jar
-    
-    # ------------------------------
-    - name: Download openaf.jar.orig
-      uses: actions/download-artifact@v3
-      with:
-        name: openaf.jar.orig
-        path: openaf.jar.orig
     
     # -------------------
     - name: Execute tests
