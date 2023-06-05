@@ -1751,7 +1751,7 @@ const sleep = function(millis, shouldCheck, alternative) {
 
 /**
  * <odoc>
- * <key>getUUID() : String</key>
+ * <key>genUUID() : String</key>
  * Generates and returns an UUID using a javascript algorithm (if needed you can refer to the 
  * AF operation AF.KeyGenerator.GenerateUUID).
  * </odoc>
