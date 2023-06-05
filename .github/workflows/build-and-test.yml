@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -60,18 +60,41 @@ jobs:
           
     # -----------------------
     - name: Update openaf.jar
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v1
       with:
         name: openaf.jar
         path: openaf.jar
 
     # ----------------------------
     - name: Upload openaf.jar.orig
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v1
       with:
         name: openaf.jar.orig
         path: openaf.jar.orig
         
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    # --------------------------
+    - name: Cache OpenAF runtime
+      uses: actions/cache@v1.2.1
+      with:
+        key : oaf-t8
+        path: /tmp/oaf
+
+    # --------------
+    - name: Checkout
+      uses: actions/checkout@v3.5.2
+      
+    # ------------------------
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+    
     # -------------------
     - name: Execute tests
       run : |
