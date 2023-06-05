@@ -100,8 +100,12 @@ jobs:
         dist: t8
         def : |
           todo:
-          - Create badge results
-          - Create badge asserts
+          - (if    ): "'{{$env 'GITHUB_EVENT_NAME'}}' != 'pull_request'"
+            ((then)):
+            - Create badge results
+            - Create badge asserts
+            ((else)):
+            - (log): Ignoring badge generation on pull request
           
           ojob:
             opacks      :
@@ -166,8 +170,16 @@ jobs:
       env :
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        ojob: ojob.io/git/hub/contentIn
-        args: "message='Test results badge' paths=tests/results.svg,tests/asserts.svg,tests/autoTestAll.md"
+        def : |
+          todo:
+          - (if    ): "'{{$env 'GITHUB_EVENT_NAME'}}' != 'pull_request'"
+            ((then)):
+            - (runfile): ojob.io/git/hub/contentIn
+              ((args )):
+                message: "Test results badge"
+                paths  : "tests/results.svg,tests/asserts.svg,tests/autoTestAll.md"
+            ((else)):
+            - (log): Ignoring check in on pull request
         dist: t8
     
     # ------------------
