@@ -133,7 +133,7 @@ jobs:
         dist: t8
         def : |
           todo:
-          - (if    ): "'{{$env \'GITHUB_EVENT_NAME\'}}' != 'pull_request'"
+          - (if    ): "'{{$env 'GITHUB_EVENT_NAME'}}' != 'pull_request'"
             ((then)):
             - Create badge results
             - Create badge asserts
