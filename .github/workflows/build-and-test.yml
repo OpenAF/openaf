@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       pull-requests: write
@@ -28,7 +29,7 @@ jobs:
 
     # -----------------------
     - name: Compile ojob yaml
-      uses: openaf/ojob-action@v3
+      uses: openaf/ojob-action@v4 
       with:
         ojob: ojob.io/ojob/compile
         args: "source=ojob.yaml target=ojob.json"
@@ -36,7 +37,7 @@ jobs:
 
     # -------------
     - name: Checkin
-      uses: openaf/ojob-action@v3
+      uses: openaf/ojob-action@v4
       env :
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -54,7 +55,7 @@ jobs:
 
     # -----------
     - name: Build
-      uses: openaf/ojob-action@v3
+      uses: openaf/ojob-action@v4
       with:
         ojob: build.yaml
           
@@ -75,6 +76,7 @@ jobs:
   test:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       pull-requests: write
@@ -113,7 +115,7 @@ jobs:
         
     # ------------------------------------
     - name: Convert autoTestAll.md to html
-      uses: openaf/ojob-action@v3
+      uses: openaf/ojob-action@v4
       with:
         dist: t8
         ojob: ojob.io/formats/md2html
@@ -128,7 +130,7 @@ jobs:
         
     # ---------------------
     - name: Generate badges
-      uses: openaf/ojob-action@v3
+      uses: openaf/ojob-action@v4
       with:
         dist: t8
         def : |
@@ -199,7 +201,7 @@ jobs:
      
     # --------------
     - name: Check in
-      uses: openaf/ojob-action@v3
+      uses: openaf/ojob-action@v4
       env :
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
