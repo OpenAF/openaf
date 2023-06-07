@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -60,18 +60,51 @@ jobs:
           
     # -----------------------
     - name: Update openaf.jar
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v3
       with:
         name: openaf.jar
         path: openaf.jar
 
     # ----------------------------
     - name: Upload openaf.jar.orig
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v3
       with:
         name: openaf.jar.orig
         path: openaf.jar.orig
         
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    # --------------------------
+    - name: Cache OpenAF runtime
+      uses: actions/cache@v1.2.1
+      with:
+        key : oaf-t8
+        path: /tmp/oaf
+
+    # --------------
+    - name: Checkout
+      uses: actions/checkout@v3.5.2
+      
+    # ----------------------------------
+    - name: Download artifact openaf.jar
+      uses: actions/download-artifact@v3
+      with:
+        name: openaf.jar
+        path: .
+    
+    # ---------------------------------------
+    - name: Download artifact openaf.jar.orig
+      uses: actions/download-artifact@v3
+      with:
+        name: openaf.jar.orig
+        path: .
+    
     # -------------------
     - name: Execute tests
       run : |
@@ -100,8 +133,12 @@ jobs:
         dist: t8
         def : |
           todo:
-          - Create badge results
-          - Create badge asserts
+          - (if    ): "'{{$env 'GITHUB_EVENT_NAME'}}' != 'pull_request'"
+            ((then)):
+            - Create badge results
+            - Create badge asserts
+            ((else)):
+            - (log): Ignoring badge generation on pull request
           
           ojob:
             opacks      :
@@ -166,8 +203,16 @@ jobs:
       env :
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        ojob: ojob.io/git/hub/contentIn
-        args: "message='Test results badge' paths=tests/results.svg,tests/asserts.svg,tests/autoTestAll.md"
+        def : |
+          todo:
+          - (if    ): "'{{$env 'GITHUB_EVENT_NAME'}}' != 'pull_request'"
+            ((then)):
+            - (runfile): ojob.io/git/hub/contentIn
+              ((args )):
+                message: "Test results badge"
+                paths  : "tests/results.svg,tests/asserts.svg,tests/autoTestAll.md"
+            ((else)):
+            - (log): Ignoring check in on pull request
         dist: t8
     
     # ------------------
