@@ -91,9 +91,19 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3.5.2
       
-    # ------------------------
-    - name: Download artifacts
-      uses: actions/download-artifact@v2.1.1
+    # ----------------------------------
+    - name: Download artifact openaf.jar
+      uses: actions/download-artifact@v3
+      with:
+        name: openaf.jar
+        path: .
+    
+    # ---------------------------------------
+    - name: Download artifact openaf.jar.orig
+      uses: actions/download-artifact@v3
+      with:
+        name: openaf.jar.orig
+        path: .
     
     # -------------------
     - name: Execute tests
@@ -123,7 +133,7 @@ jobs:
         dist: t8
         def : |
           todo:
-          - (if    ): "'{{$env \'GITHUB_EVENT_NAME\'}}' != 'pull_request'"
+          - (if    ): "'{{$env 'GITHUB_EVENT_NAME'}}' != 'pull_request'"
             ((then)):
             - Create badge results
             - Create badge asserts
@@ -195,7 +205,7 @@ jobs:
       with:
         def : |
           todo:
-          - (if    ): "'{{$env \'GITHUB_EVENT_NAME\'}}' != 'pull_request'"
+          - (if    ): "'{{$env 'GITHUB_EVENT_NAME'}}' != 'pull_request'"
             ((then)):
             - (runfile): ojob.io/git/hub/contentIn
               ((args )):
