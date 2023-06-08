@@ -769,7 +769,8 @@ function __readProfile(aProfile) {
 		});
 		af.compile(prof);
 	} catch(e) {
-		if (!String(e).match(/java\.io\.FileNotFoundException/)) throw e;
+		if (String(e).indexOf("java.io.FileNotFoundException") < 0 && 
+		    String(e).indexOf("java.nio.file.NoSuchFileException") < 0) throw e
 	}
 }
 

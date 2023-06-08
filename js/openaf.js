@@ -3065,6 +3065,7 @@ const load = function(aScript, loadPrecompiled) {
 				if (io.fileExists(paths[i] + "/" + aScript)) return fn(paths[i] + "/" + aScript, 1);
 			} catch(_e) {
 				if (_e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+				    _e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
 				    _e.message.indexOf("java.lang.NullPointerException: entry") < 0) {
 						error.push(_e);
 						inErr = true;
@@ -10603,7 +10604,8 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 			loadCompiled(fprof);
 		}
 	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
+		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+		    e.message.indexOf("java.nio.file.NoSuchFileException") < 0) throw e;
 	}
 
 	try {
@@ -10613,9 +10615,10 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 			af.compile(prof);
 		}
 	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/) &&
-		    !e.message.match(/java\.io\.IOException/) &&
-		    !e.message.match(/java\.lang\.NullPointerException: entry/)) throw e;
+		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+		    e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
+		    e.message.indexOf("java.io.IOException") < 0 &&
+		    e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
 	}
 })();
 

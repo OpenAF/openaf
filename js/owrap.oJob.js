@@ -774,7 +774,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		try {
 			res = aFn(aFile, true);
 		} catch(e1) {
-			if (isDef(e1.message) && e1.message.match(/FileNotFoundException/)) {
+			if (isDef(e1.message) && e1.message.match(/FileNotFoundException|NoSuchFileException/)) {
 				var paths = getOPackPaths(), found = false;
 				if (io.fileExists(__flags.OJOB_LOCALPATH)) paths["__ojobs_local"] = __flags.OJOB_LOCALPATH
 				
@@ -786,7 +786,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 						found = true;
 						break;
 					} catch(e2) {
-						if (!e2.message.match(/FileNotFoundException/)) {
+						if (!e2.message.match(/FileNotFoundException|NoSuchFileException/)) {
 							throw e2;
 						}
 					}

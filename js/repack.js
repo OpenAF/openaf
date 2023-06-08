@@ -101,7 +101,7 @@ var zipdb = new ZIP();
 try {
 	packages = af.fromJson(af.fromBytes2String(zipdb.streamGetFile(fileDB, PACKAGESJSON)));
 } catch(e) {
-	 if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
+	 if (!(e.message.match(/FileNotFoundException|NoSuchFileException/))) logErr(e.message);
 }
 
 if (!isUndefined(packages)) {
