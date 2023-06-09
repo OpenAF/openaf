@@ -1634,7 +1634,10 @@ var __colorFormat = {
 	number: "GREEN",
 	string: "CYAN",
 	boolean: "RED",
-	default: "YELLOW"
+	default: "YELLOW",
+	askPre: "BLUE",
+	askQuestion: "BOLD",
+	askPos: "BLUE"
 };
 const colorify = function(json) {
 	if (typeof json != 'string') {
@@ -7401,6 +7404,7 @@ var __flags = _$(__flags).isMap().default({
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
 	ANSICOLOR_CACHE            : true,
+	ANSICOLOR_ASK              : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
 	TREE: {
 		fullKeySize: true,
@@ -8480,10 +8484,17 @@ ow.loadSec();
  * Returns the user input.
  * </odoc>
  */
-const ask = (aPrompt, aMask, _con) => {
+const ask = (aPrompt, aMask, _con, noAnsi) => {
     aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
  	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
-	return _con.readLinePrompt(aPrompt, aMask);
+	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
+		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
+		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
+		print("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + _m + "]")
+		return _v
+	} else {
+		return _con.readLinePrompt(aPrompt, aMask)
+	}
 }
 
 /**
