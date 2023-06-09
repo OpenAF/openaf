@@ -22,4 +22,57 @@
 
         ow.test.assert(r.t, tk, "Problem with oJob function.");
     };
-})();
+
+    exports.testOJobShortcuts = function() {
+        var testOJob = {
+            todo: [
+                { "(sample": 1, "((y": -1 }
+            ],
+            jobs: [
+                {
+                    name: "test",
+                    typeArgs: {
+                        shortcut: {
+                            name  : "sample",
+                            keyArg: "x",
+                            args  : { y: "y" }
+                        }
+                    },
+                    exec: "__pm.x = args.x; __pm.y = args.y;"
+                }
+            ]
+        }
+
+        var tk = genUUID()
+        var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/")
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/")
+        io.writeFileString(tmpOJob, af.toYAML(testOJob))
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJob + "\", { })")
+
+        var r = $openaf(tmpOAF)
+
+        ow.test.assert(Number(r.x), 1, "Problem with oJob shortcut keyArg.")
+        ow.test.assert(Number(r.y), -1, "Problem with oJob shortcut args.")
+    }
+
+    exports.testOJobShortcutOutput = function() {
+        var testOJob = {
+            todo: [
+                { "(set     )": "test",
+                  "((path  ))": "x" },
+                { "(output  )": "test", 
+                  "((format))": "pm" }
+            ]
+        }
+
+        var tk = genUUID()
+        var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/")
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/")
+        io.writeFileString(tmpOJob, af.toYAML(testOJob))
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJob + "\", { x: 123 })")
+
+        var r = $openaf(tmpOAF)
+
+        ow.test.assert(Number(r.result), 123, "Problem with oJob shortcut output.")
+    }
+})()
