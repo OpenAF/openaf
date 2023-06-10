@@ -267,5 +267,5 @@ if (createTmp) {
 
 log("Done repacking OpenAF.jar");
 // We need to stop
-exit(0, true)
+//exit(0, true)
 } catch(e) { printErr(e); if (isDef(e.javaException)) se.javaException.printStackTrace(); }
