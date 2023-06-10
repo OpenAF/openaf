@@ -1830,7 +1830,8 @@ OpenWrap.server.prototype.cluster = function(aHost, aPort, nodeTimeout, aNumberO
 						return false;
 					}
 				} catch(e) {
-					if (String(e).indexOf("FileNotFoundException") > 0) {
+					if (String(e).indexOf("FileNotFoundException") > 0 ||
+					    String(e).indexOf("NoSuchFileException") > 0) {
 						io.writeFile(aOptions.CLUSTERFILELOCK, { lock: now() });
 						return true;
 					} else {

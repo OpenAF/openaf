@@ -284,7 +284,8 @@ OpenWrap.java.prototype.maven.prototype.getDependencies = function(artifactId, a
             });
         }
     } catch(e) {
-        if (String(e).indexOf("FileNotFoundException") < 0) throw e; 
+        if (String(e).indexOf("FileNotFoundException") < 0 &&
+            String(e).indexOf("NoSuchFileException") < 0) throw e
     }
 
     return _.uniqBy(info.toArray(), v => { return v.groupId + "." + v.artifactId; });
