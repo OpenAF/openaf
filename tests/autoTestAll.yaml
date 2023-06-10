@@ -1,5 +1,5 @@
 include:
-   - oJobTest.yaml
+- oJobTest.yaml
 
 ojob:
    sequential: false

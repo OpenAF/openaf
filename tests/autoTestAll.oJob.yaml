@@ -11,9 +11,21 @@ jobs:
 - name: oJob::oJob
   from: oJob::Init
   to  : oJob Test
-  exec: args.func = args.tests.testOJob;                   
+  exec: args.func = args.tests.testOJob               
+
+- name: oJob::oJobShortcuts
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobShortcuts
+
+- name: oJob::oJobShortcutOutput
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobShortcutOutput
 
 todo:
 # oJob tests
 # --------------
 - oJob::oJob
+- oJob::oJobShortcuts
+- oJob::oJobShortcutOutput
