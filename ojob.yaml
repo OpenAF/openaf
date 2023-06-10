@@ -717,7 +717,7 @@ jobs:
   exec    : |
     var cargs = clone(args)
     delete cargs.__text
-    print(ow.format.withMD($t(args.__text, cargs)))
+    printnl(ow.format.withMD($t(args.__text, cargs)))
 
 # ---------------
 - name : ojob log

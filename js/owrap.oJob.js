@@ -36,6 +36,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.running = false;
 
 	this.shutdownFuncs = [];
+	this.shortcuts = []
 	var ead = getEnv("OJOB_AUTHORIZEDDOMAINS");
 	if (isDef(ead) && ead != "null") 
 		this.authorizedDomains = String(ead).split(",");
@@ -290,6 +291,32 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		if (isUnDef(sjobs[i].from)  && isDef(sjobs[i].earlier)) sjobs[i].from    = sjobs[i].earlier;
 		if (isUnDef(sjobs[i].to)    && isDef(sjobs[i].then))    sjobs[i].to      = sjobs[i].then;
 		if (isUnDef(sjobs[i].catch) && isDef(sjobs[i].onerror)) sjobs[i].catch   = sjobs[i].onerror;
+
+		// Add custom shortcuts
+		if (isDef(sjobs[i].typeArgs) && isDef(sjobs[i].typeArgs.shortcut)) {
+			var _s   = sjobs[i].typeArgs.shortcut
+			_s.job   = sjobs[i].name
+			_s.nolog = _$(_s.nolog, "typeArgs.shortcut.nolog").isBoolean().default(false)
+			_s.map   = true
+			_s.name  = _$(_s.name, "typeArgs.shortcut.name").isString().default(_s.job)
+			_s.attrs = _$(_s.args, "typeArgs.shortcut.args").isMap().default({})
+
+			_s.name    = "(" + _s.name.replace(/[\(\)]/g, "")
+			var keyArg = _$(_s.keyArg, "typeArgs.shortcut.keyArg").isString().default(__)
+
+			var _sa = {}
+			if (isDef(keyArg)) _sa[_s.name] = keyArg
+			Object.keys(_s.attrs).forEach(k => {
+				_sa["((" + k.replace(/[\(\)]/g, "")] = _s.attrs[k].replace(/[\(\)]/g, "")
+			})
+			_s.attrs = _sa
+			if ($from(this.shortcuts).equals("name", _s.name).none()) {
+				this.shortcuts.push(_s)
+			} else {
+				logWarn("Already existing shortcut '" + _s.name + "' definition. Ignoring.")
+			}
+		}
+
 		this.addJob(this.getJobsCh(), sjobs[i].name, sjobs[i].deps, sjobs[i].type, sjobs[i].typeArgs, sjobs[i].args, sjobs[i].exec, sjobs[i].from, sjobs[i].to, sjobs[i].help, sjobs[i].catch, sjobs[i].each, sjobs[i].lang, sjobs[i].file, sjobs[i].check);
 	}
 
@@ -774,7 +801,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		try {
 			res = aFn(aFile, true);
 		} catch(e1) {
-			if (isDef(e1.message) && e1.message.match(/FileNotFoundException/)) {
+			if (isDef(e1.message) && e1.message.match(/FileNotFoundException|NoSuchFileException/)) {
 				var paths = getOPackPaths(), found = false;
 				if (io.fileExists(__flags.OJOB_LOCALPATH)) paths["__ojobs_local"] = __flags.OJOB_LOCALPATH
 				
@@ -786,7 +813,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 						found = true;
 						break;
 					} catch(e2) {
-						if (!e2.message.match(/FileNotFoundException/)) {
+						if (!e2.message.match(/FileNotFoundException|NoSuchFileException/)) {
 							throw e2;
 						}
 					}
@@ -3216,6 +3243,10 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((debug"       : "__debug"
 		}
 	}]
+
+	if (isArray(this.shortcuts)) {
+		oJobShortcuts = oJobShortcuts.concat( $from(this.shortcuts).except(oJobShortcuts).select() )
+	}
 
 	if (isUnDef(aTodo) && _getlist) return oJobShortcuts
 	if (!isMap(aTodo)) return aTodo
