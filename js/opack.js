@@ -261,7 +261,8 @@ function addLocalDB(aPackage, aTarget) {
 	try {
 		packages = fromJsonYaml(af.fromBytes2String(zip.streamGetFile(fileDB, PACKAGESJSON)));
 	} catch(e) {
-		if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
+		if (e.message.indexOf("FileNotFoundException") < 0 &&
+		    e.message.indexOf("NoSuchFileException") < 0) logErr(e.message);
 	}
 	if (homeDBCheck) {
 		try {
@@ -271,7 +272,8 @@ function addLocalDB(aPackage, aTarget) {
 			}
 			packages = merge(p, packages)
 		} catch(e) {
-			if (!(e.message.match(/FileNotFoundException/))) logErr(e.message);
+			if (e.message.indexOf("FileNotFoundException") < 0 &&
+		        e.message.indexOf("NoSuchFileException") < 0) logErr(e.message);
 		}
 	}
 
