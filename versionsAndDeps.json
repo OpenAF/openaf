@@ -188,7 +188,7 @@
 		},
 		{
 			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.10.0.jar"],
+			"path": ["lib/commons-io-2.12.0.jar"],
 			"version": "2.10.0",
 			"changes": false,
 			"type": ["java"],
@@ -197,8 +197,8 @@
 		},
 		{
 			"description": "Apache Commons CSV",
-			"path": ["lib/commons-csv-1.8.jar"],
-			"version": "1.8",
+			"path": ["lib/commons-csv-1.10.jar"],
+			"version": "1.10",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -323,8 +323,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.14.1.jar"],
-			"version": "2.12.5",
+			"path": ["lib/jackson-core-2.15.2.jar"],
+			"version": "2.15.2",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
@@ -439,8 +439,8 @@
 			"name": "SNMP",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-2.8.15.jar",
-				"lib/snmp4j-agent-2.7.8.jar"
+				"lib/snmp4j-2.8.18.jar",
+				"lib/snmp4j-agent-2.7.9.jar"
 			]
 		},
 		{

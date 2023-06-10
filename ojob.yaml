@@ -717,7 +717,7 @@ jobs:
   exec    : |
     var cargs = clone(args)
     delete cargs.__text
-    print(ow.format.withMD($t(args.__text, cargs)))
+    printnl(ow.format.withMD($t(args.__text, cargs)))
 
 # ---------------
 - name : ojob log
@@ -1614,6 +1614,8 @@ jobs:
       desc: If defined, args will be merged with the content from the provided key
     - name: __usePM
       desc: Output to __pm
+    - name: __inPM
+      desc: Input from provided key to __pm
     - name: __templateArgs
       desc: Boolean to indicate to apply template to each string of the provided args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
     - name: __debug
@@ -1626,6 +1628,7 @@ jobs:
       __key         : isString.default("res")
       __inKey       : isString.default(__)
       __usePM       : toBoolean.isBoolean.default(false)
+      __inPM        : isString.default(__)
       __templateArgs: toBoolean.isBoolean.default(false)
       __debug       : toBoolean.isBoolean.default(false)
   exec : |
@@ -1653,6 +1656,9 @@ jobs:
       inputArgs = merge((isDef(_i) ? merge(args.__args, _i) : args.__args), _f)
     } else {
       inputArgs  = merge(args.__args, _f)
+    }
+    if (isDef(args.__inPM)) {
+      ow.oJob.output($get(args.__inPM), { __format: "pm" })
     }
     if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(inputArgs, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
     ow.oJob.runFile(args.__job, inputArgs, id, true, { shareArgs: false })

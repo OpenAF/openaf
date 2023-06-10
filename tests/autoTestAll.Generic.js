@@ -310,32 +310,36 @@
     };
 
     exports.testAwait = function() {
-        var state = 0, err1, err2;
-        var p1 = $do(() => {
-            $await("testF").wait(5000);
-            ow.test.assert(state, 1, "Problem with await (1)");
-            //sleep(150, true);
-            $await("test1").notify();
-            $await("testF2").wait(5000);
-            ow.test.assert(state, 2, "Problem with await (2)");
-        }).catch(e => {
-            err1 = e;
+        sync(() => {
+            var state = 0, err1, err2;
+            var p1 = $do(() => {
+                $await("testF").wait()
+                ow.test.assert(state, 1, "Problem with await (1)")
+                //sleep(150, true);
+                $await("test1").notify()
+                $await("testF2").wait()
+                ow.test.assert(state, 2, "Problem with await (2)")
+            }).catch(e => {
+                err1 = e;
+            })
+            
+            while(p1 == 0 && !p1.executing) sleep(50, true)
+    
+            var p2 = $do(() => {
+                state = 1
+                $await("testF").notify()
+                $await("test1").wait(5000)
+                state = 2
+                $await("testF2").notify()
+            }).catch(e => {
+                err2 = e;
+            });
+    
+    
+            $doWait($doAll([p1, p2]));
+            if (isDef(err1)) throw err1;
+            if (isDef(err2)) throw err2;
         })
-        var p2 = $do(() => {
-            state = 1;
-            while(p1 == 0 && !p1.executing) sleep(50, true);
-            $await("testF").notify();
-            $await("test1").wait(5000);
-            state = 2;
-            $await("testF2").notify();
-        }).catch(e => {
-            err2 = e;
-        });
-
-
-        $doWait($doAll([p1, p2]));
-        if (isDef(err1)) throw err1;
-        if (isDef(err2)) throw err2;
     };
 
     exports.testRetry = function() {

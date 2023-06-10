@@ -1634,7 +1634,10 @@ var __colorFormat = {
 	number: "GREEN",
 	string: "CYAN",
 	boolean: "RED",
-	default: "YELLOW"
+	default: "YELLOW",
+	askPre: "BLUE",
+	askQuestion: "BOLD",
+	askPos: "BLUE"
 };
 const colorify = function(json) {
 	if (typeof json != 'string') {
@@ -1751,7 +1754,7 @@ const sleep = function(millis, shouldCheck, alternative) {
 
 /**
  * <odoc>
- * <key>getUUID() : String</key>
+ * <key>genUUID() : String</key>
  * Generates and returns an UUID using a javascript algorithm (if needed you can refer to the 
  * AF operation AF.KeyGenerator.GenerateUUID).
  * </odoc>
@@ -3065,6 +3068,7 @@ const load = function(aScript, loadPrecompiled) {
 				if (io.fileExists(paths[i] + "/" + aScript)) return fn(paths[i] + "/" + aScript, 1);
 			} catch(_e) {
 				if (_e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+				    _e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
 				    _e.message.indexOf("java.lang.NullPointerException: entry") < 0) {
 						error.push(_e);
 						inErr = true;
@@ -7400,6 +7404,7 @@ var __flags = _$(__flags).isMap().default({
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
 	ANSICOLOR_CACHE            : true,
+	ANSICOLOR_ASK              : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
 	TREE: {
 		fullKeySize: true,
@@ -8479,10 +8484,17 @@ ow.loadSec();
  * Returns the user input.
  * </odoc>
  */
-const ask = (aPrompt, aMask, _con) => {
+const ask = (aPrompt, aMask, _con, noAnsi) => {
     aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
  	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
-	return _con.readLinePrompt(aPrompt, aMask);
+	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
+		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
+		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
+		print("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + _m + "]")
+		return _v
+	} else {
+		return _con.readLinePrompt(aPrompt, aMask)
+	}
 }
 
 /**
@@ -10603,7 +10615,8 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 			loadCompiled(fprof);
 		}
 	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/)) throw e;
+		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+		    e.message.indexOf("java.nio.file.NoSuchFileException") < 0) throw e;
 	}
 
 	try {
@@ -10613,9 +10626,10 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 			af.compile(prof);
 		}
 	} catch(e) {
-		if (!e.message.match(/java\.io\.FileNotFoundException/) &&
-		    !e.message.match(/java\.io\.IOException/) &&
-		    !e.message.match(/java\.lang\.NullPointerException: entry/)) throw e;
+		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+		    e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
+		    e.message.indexOf("java.io.IOException") < 0 &&
+		    e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
 	}
 })();
 
