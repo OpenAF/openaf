@@ -1224,8 +1224,9 @@ jobs:
 
     var fn = j => {
       j = ow.oJob.parseTodo(j)
-      if (isString(j))               $job(j, args)
-      if (isMap(j) && isDef(j.name)) $job(j.name, j.args)
+      /*if (isString(j))               $job(j, args)
+      if (isMap(j) && isDef(j.name)) $job(j.name, j.args)*/
+      $job(j, args)
     }
     if (res) t.forEach(fn); else e.forEach(fn)
 

@@ -7338,7 +7338,12 @@ const oJobRunJob = function(aJob, args, aId, rArgs) {
 			throw "Job '" + aJob + "' not found.";
 		}
 	} else {
-		return oo.runJob(aJob, args, aId);
+		var job = oo.getJobsCh().get({ name: aJob.name })
+		if (isDef(job)) {
+			return oo.runJob(merge(job, aJob), args, aId, rArgs, rArgs)
+		} else {
+			return oo.runJob(aJob, args, aId, rArgs, rArgs)
+		}
 	}
 }
 
