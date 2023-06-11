@@ -2281,7 +2281,7 @@ const getJavaStackTrace = function(anException) {
 
 		return res;
 	} else {
-		return v0;
+		return anException;
 	}
 }
 

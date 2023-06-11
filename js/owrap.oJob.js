@@ -1562,7 +1562,8 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 			example += param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "...");
 			pargs   += $f(" *   %" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
 		  } else {
-			example += ansiColor("GREEN", param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "..."));
+			var sp = isDef(param.example) && param.example.indexOf(" ") >= 0 ? "\"" : ""
+			example += ansiColor("GREEN", param.name + "=" + sp + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + sp + " " : "... "));
 			pargs   += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
 		  }
 		} else {
