@@ -7329,9 +7329,11 @@ const oJobRunJob = function(aJob, args, aId, rArgs) {
 	} else {
 		oo = ow.loadOJob();
 	}
+	aJob = oo.parseTodo(aJob)
 	if (isString(aJob)) {
 		if (isUnDef(aId)) aId = "";
-		var job = oo.getJobsCh().get({ name: aJob });
+		var job = oo.getJobsCh().get({ name: aJob })
+		
 		if (isDef(job)) {
 			return oo.runJob(job, args, aId, rArgs, rArgs);
 		} else {
