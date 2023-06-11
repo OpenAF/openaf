@@ -2369,7 +2369,7 @@ APPENDIX: How to apply the Apache License to your work
 Third-party name      : Apache Commons Lang
 Version               : 3.11
 Changed from original : No
-Location in openaf.jar: lib/commons-lang3-3.11.jar
+Location in openaf.jar: lib/commons-lang3-3.12.jar
 License               : 
 
 Apache License
@@ -2797,9 +2797,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons Compress
-Version               : 1.20
+Version               : 1.23
 Changed from original : No
-Location in openaf.jar: lib/commons-compress-1.20.jar
+Location in openaf.jar: lib/commons-compress-1.23.jar
 License               : 
 
 Apache License
@@ -3227,9 +3227,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : OkHTTP Client
-Version               : 4.10.0
+Version               : 4.11.0
 Changed from original : No
-Location in openaf.jar: okhttp-4.10.0.jar, okio-2.8.0.jar, kotlin-stdlib-1.8.21.jar
+Location in openaf.jar: okhttp-4.11.0.jar, okio-3.3.0.jar, okio-jvm-3.3.0.jar, kotlin-stdlib-1.8.22.jar
 License               : 
 
 
@@ -3313,7 +3313,7 @@ License               :
   <meta name="current-catalog-service-hash" content="82c569b93da5c18ed649ebd4c2c79437db4611a6a1373e805a3cb001c64130b7">
 
 
-  <meta name="request-id" content="DDBA:F3A1:10C1D783:1100355D:6484BF99" data-pjax-transient="true"/><meta name="html-safe-nonce" content="82d9e1c2db90c6bf7e14f6bda10adec01db7e567f90bcae9e520c8358b800284" data-pjax-transient="true"/><meta name="visitor-payload" content="eyJyZWZlcnJlciI6IiIsInJlcXVlc3RfaWQiOiJEREJBOkYzQTE6MTBDMUQ3ODM6MTEwMDM1NUQ6NjQ4NEJGOTkiLCJ2aXNpdG9yX2lkIjoiMzcyODc5NjE3MDMzMjcxNjk1MyIsInJlZ2lvbl9lZGdlIjoiZnJhIiwicmVnaW9uX3JlbmRlciI6ImZyYSJ9" data-pjax-transient="true"/><meta name="visitor-hmac" content="495284e04e573556235f627dd727a68849330c2720e1b1b736ff9fa38c3521bd" data-pjax-transient="true"/>
+  <meta name="request-id" content="C0F8:3A47:C92802:CC467A:64861616" data-pjax-transient="true"/><meta name="html-safe-nonce" content="3a17deacce2c54e94d179093260a2177ddb8bee840b4d50e50aa158c7a563da1" data-pjax-transient="true"/><meta name="visitor-payload" content="eyJyZWZlcnJlciI6IiIsInJlcXVlc3RfaWQiOiJDMEY4OjNBNDc6QzkyODAyOkNDNDY3QTo2NDg2MTYxNiIsInZpc2l0b3JfaWQiOiIyNjQ3ODIyMTYyNTcyMjE5OTI2IiwicmVnaW9uX2VkZ2UiOiJmcmEiLCJyZWdpb25fcmVuZGVyIjoiZnJhIn0=" data-pjax-transient="true"/><meta name="visitor-hmac" content="e9bcb0cc59604dae7d825033a0bfb5c4ebbd9f8eed92bd7c49372026e321c4fc" data-pjax-transient="true"/>
 
 
     <meta name="hovercard-subject-tag" content="repository:5152285" data-turbo-transient>
@@ -3353,8 +3353,8 @@ License               :
     <link rel="fluid-icon" href="https://github.com/fluidicon.png" title="GitHub">
     <meta property="fb:app_id" content="1401488693436528">
     <meta name="apple-itunes-app" content="app-id=1477376905" />
-      <meta name="twitter:image:src" content="https://opengraph.githubassets.com/8b77c50c3444e0195fc596c224d83f62fd94e12a64be84c9aedbe8f41fbba74f/square/okhttp" /><meta name="twitter:site" content="@github" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="okhttp/LICENSE.txt at master · square/okhttp" /><meta name="twitter:description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - okhttp/LICENSE.txt at master · square/okhttp" />
-      <meta property="og:image" content="https://opengraph.githubassets.com/8b77c50c3444e0195fc596c224d83f62fd94e12a64be84c9aedbe8f41fbba74f/square/okhttp" /><meta property="og:image:alt" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - okhttp/LICENSE.txt at master · square/okhttp" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="600" /><meta property="og:site_name" content="GitHub" /><meta property="og:type" content="object" /><meta property="og:title" content="okhttp/LICENSE.txt at master · square/okhttp" /><meta property="og:url" content="https://github.com/square/okhttp" /><meta property="og:description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - okhttp/LICENSE.txt at master · square/okhttp" />
+      <meta name="twitter:image:src" content="https://opengraph.githubassets.com/442b9c4f77ca89ef13547a9bde6a0ba2923f81359303d407c98c629b98acddfb/square/okhttp" /><meta name="twitter:site" content="@github" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="okhttp/LICENSE.txt at master · square/okhttp" /><meta name="twitter:description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - okhttp/LICENSE.txt at master · square/okhttp" />
+      <meta property="og:image" content="https://opengraph.githubassets.com/442b9c4f77ca89ef13547a9bde6a0ba2923f81359303d407c98c629b98acddfb/square/okhttp" /><meta property="og:image:alt" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - okhttp/LICENSE.txt at master · square/okhttp" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="600" /><meta property="og:site_name" content="GitHub" /><meta property="og:type" content="object" /><meta property="og:title" content="okhttp/LICENSE.txt at master · square/okhttp" /><meta property="og:url" content="https://github.com/square/okhttp" /><meta property="og:description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - okhttp/LICENSE.txt at master · square/okhttp" />
       
 
 
@@ -3821,7 +3821,7 @@ License               :
           spellcheck="false"
           autocomplete="off"
         >
-        <input type="hidden" data-csrf="true" class="js-data-jump-to-suggestions-path-csrf" value="VZhnCn/gA11DefkpCVQEIi1/hz4jkLmKgmGMQpy2hPH9TR+ElkZZhIMU0gV2j3k6NFuat40/hafW0GE9zDCUUA==" />
+        <input type="hidden" data-csrf="true" class="js-data-jump-to-suggestions-path-csrf" value="+8T/MRHGHfIowP9rSx8k+osXqZ5xNdVVB1+UUKi8CH4vUqqS2ZpFBH3EFUQ0znK1wX0bnVF6Pk0z3az1bteLmA==" />
         <input type="hidden" class="js-site-search-type-field" name="type" >
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="20" aria-hidden="true" class="mr-1 header-search-key-slash"><path fill="none" stroke="#979A9C" opacity=".4" d="M3.5.5h12c1.7 0 3 1.3 3 3v13c0 1.7-1.3 3-3 3h-12c-1.7 0-3-1.3-3-3v-13c0-1.7 1.3-3 3-3z"></path><path fill="#979A9C" d="M11.8 6L8 15.1h-.9L10.8 6h1z"></path></svg>
 
@@ -4147,7 +4147,7 @@ License               :
           <a icon="repo-forked" id="fork-button" href="/login?return_to=%2Fsquare%2Fokhttp" rel="nofollow" data-hydro-click="{&quot;event_type&quot;:&quot;authentication.click&quot;,&quot;payload&quot;:{&quot;location_in_page&quot;:&quot;repo details fork button&quot;,&quot;repository_id&quot;:5152285,&quot;auth_type&quot;:&quot;LOG_IN&quot;,&quot;originating_url&quot;:&quot;https://github.com/square/okhttp/blob/master/LICENSE.txt&quot;,&quot;user_id&quot;:null}}" data-hydro-click-hmac="85dcbf6172fe62d3dda44fb82cb1294f15e5ad20c41a53efc21ca7aeb2d6524e" data-view-component="true" class="btn-sm btn">    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-repo-forked mr-2">
     <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"></path>
 </svg>Fork
-    <span id="repo-network-counter" data-pjax-replace="true" data-turbo-replace="true" title="9,117" data-view-component="true" class="Counter">9.1k</span>
+    <span id="repo-network-counter" data-pjax-replace="true" data-turbo-replace="true" title="9,119" data-view-component="true" class="Counter">9.1k</span>
 </a>
   </li>
 
@@ -4157,7 +4157,7 @@ License               :
     <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z"></path>
 </svg><span data-view-component="true" class="d-inline">
           Star
-</span>          <span id="repo-stars-counter-star" aria-label="44085 users starred this repository" data-singular-suffix="user starred this repository" data-plural-suffix="users starred this repository" data-turbo-replace="true" title="44,085" data-view-component="true" class="Counter js-social-count">44.1k</span>
+</span>          <span id="repo-stars-counter-star" aria-label="44086 users starred this repository" data-singular-suffix="user starred this repository" data-plural-suffix="users starred this repository" data-turbo-replace="true" title="44,086" data-view-component="true" class="Counter js-social-count">44.1k</span>
 </a>        <button disabled="disabled" aria-label="You must be signed in to add this repository to a list" type="button" data-view-component="true" class="btn-sm btn BtnGroup-item px-2">    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-triangle-down">
     <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"></path>
 </svg>
@@ -4802,7 +4802,7 @@ on an ongoing basis.</pre></div>
     <div class="d-flex">
         
 <div class="ml-1" >
-  <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="BtnGroup-parent js-update-url-with-hash " data-turbo="false" action="/square/okhttp/edit/master/LICENSE.txt" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="Tu3azgmBYFzDbGFUHkKsS8-Sl1DE0P3lkLqmQ7bh1EtLYokJNIrlzNlPHM5LjZIjtdCXe-ItCBk7HDfDKAdBwQ" autocomplete="off" />
+  <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="BtnGroup-parent js-update-url-with-hash " data-turbo="false" action="/square/okhttp/edit/master/LICENSE.txt" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="r29VTvbcRAOtDK4G_gkm0V02Lv7IEIxCsqmVCSv-MXmn2jEc7QFxJPyitq3uq3-2QWLsywiY8HaTdKca6hjc9w" autocomplete="off" />
       <button disabled="disabled" title="You must be signed in to make or propose changes" data-hotkey="e" data-disable-with="" type="submit" data-view-component="true" class="btn-sm BtnGroup-item btn">    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-pencil">
     <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"></path>
 </svg>
@@ -4812,7 +4812,7 @@ on an ongoing basis.</pre></div>
 </summary>    <div class="SelectMenu right-0">
       <div class="SelectMenu-modal width-full">
         <div class="SelectMenu-list SelectMenu-list--borderless py-2">
-          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="SelectMenu-item js-update-url-with-hash " data-turbo="false" action="/square/okhttp/edit/master/LICENSE.txt" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="z7vQDQxShW9dToune5Ad0WYiox1pGFQD8BcL_ZEkdHrKNIPKMVkA_0dt9j0uXyO5HGCjNk_lof9bsZp9D8Lh8A" autocomplete="off" />
+          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="SelectMenu-item js-update-url-with-hash " data-turbo="false" action="/square/okhttp/edit/master/LICENSE.txt" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="RJOHO-U6cYsJX2zgcJEPzmj5oyf1TBr8PE23qM6c2qJMJuNp_udErFjxdEtgM1apdK1hEjXEZsgdkIW7D3o3LA" autocomplete="off" />
               <button disabled="disabled" title="You must be signed in to make or propose changes" type="submit" data-view-component="true" class="btn-invisible btn width-full d-flex flex-justify-between color-fg-muted text-normal p-0">    <div class="mr-5">Edit this file</div>
               <div class="color-fg-muted">E</div>
 </button></form>
@@ -5924,8 +5924,8 @@ on an ongoing basis.</pre></div>
 
 
 -----------------------
-Third-party name      : Oracle JDBC 21
-Version               : 21.5
+Third-party name      : Oracle JDBC 23
+Version               : 23.2.0.0
 Changed from original : No
 Location in openaf.jar: lib/ojdbc8.jar
 License               : 
@@ -5933,9 +5933,9 @@ License               :
 Check https://www.oracle.com/webapps/maven/register/license.html
 -----------------------
 Third-party name      : PostgreSQL JDBC
-Version               : 42.2.23
+Version               : 42.6.0
 Changed from original : No
-Location in openaf.jar: lib/postgresql-42.5.0.jar
+Location in openaf.jar: lib/postgresql-42.6.0.jar
 License               : 
 
 Check https://www.postgresql.org/about/licence/
