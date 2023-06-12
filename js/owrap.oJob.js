@@ -3046,7 +3046,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((secMainPass": "secMainPass",
 			"((secFile"    : "secFile",
 			"((secDontAsk" : "secDontAsk",
-			"((secIgnore"  : "secIgnore"
+			"((secIgnore"  : "secIgnore",
+			"((secEnv"     : "secEnv"
 		}
 	}, {
 		name : "(each",

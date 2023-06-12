@@ -1040,6 +1040,8 @@ jobs:
       desc: Optional provide a specific sbucket file
     - name: "[secIn].secDontAsk"
       desc: Determine if passwords should be asked from the user (default=false)
+    - name: "[secIn].secEnv"
+      desc: If true will set everything to retrieve the secret from an env variable
     - name: "[secIn].secIgnore"
       desc: If true will ignore errors of sec parameters not being provided (default=false)
     returns:
@@ -1063,6 +1065,14 @@ jobs:
     var secFile     = _$($$(args).get(secIn + "secFile"), "secFile").default(__);
     var secRepo     = _$($$(args).get(secIn + "secRepo"), "secRepo").default(__);
     var secMainPass = _$($$(args).get(secIn + "secMainPass"), "secMainPass").default(__);
+    var secEnv      = toBoolean( _$($$(args).get(secIn + "secEnv"), "secEnv").isBoolean().default(false) )
+
+    // Set to env variable
+    if (secEnv) {
+      secRepo = "system"
+      secBucket = "envs"
+      secDontAsk = true
+    }
 
     if (!secDontAsk && isDef(secKey)) {
        secBucket = askDef(secBucket, "Sec bucket: ");
