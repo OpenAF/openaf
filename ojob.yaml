@@ -1,13 +1,41 @@
 # Author: Nuno Aguiar
 
 jobs:
-# OJOB PLACEHOLDER
-# -----------------------
-- name : ojob placeholder
+# OJOB PASS
+# ----------------
+- name : ojob pass
   typeArgs:
     noLog: true
   help :
-    text: Placeholder job to allow for arguments injection
+    text   : Placeholder/pass job to allow for arguments injection
+    expects:
+    - name: __args
+      desc: The args to inject
+    - name: __debug
+      desc: Boolean to indicate that args to be inject should be printed before
+    - name: __templateArgs
+      desc: Boolean, true by default, to indicate to apply template to each string in args (use only if typeArgs.noTemplateArgs = false OR job.templateArgs = true)
+  check: 
+    in:
+      __args        : isMap.default({})
+      __debug       : toBoolean.isBoolean.default(false)
+      __templateArgs: toBoolean.isBoolean.default(true)
+  exec : |
+    var ar = clone(args.__args)
+    if (args.__templateArgs) {
+      traverse(ar, (aK, aV, aP, aO) => {
+        if (isString(aV) && aV.indexOf("{{") >= 0) {
+          aO[aK] = templify(aV, args)
+        }
+      })
+    }
+
+    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(ar, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
+
+    delete args.__args
+    delete args.__debug
+    delete args.__templateArgs
+    args = merge(args, ar)
 
 # OJOB DEBUG
 # ----------------

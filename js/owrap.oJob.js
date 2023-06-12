@@ -2943,10 +2943,14 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		}		
 	}, {
 		name : "(pass",
-		job  : "ojob placeholder",
+		job  : "ojob pass",
 		map  : true,
 		noLog: true,
-		attrs: {}
+		attrs: {
+			"(pass"         : "__args",
+			"((debug"       : "__debug",
+			"((templateArgs": "__templateArgs"
+		}
 	}, {
 		name : "(wait",
 		job  : "ojob wait",

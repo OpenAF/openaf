@@ -108,4 +108,33 @@
         ow.test.assert(r.a, true, "Problem with oJob args multiple levels (1).")
         ow.test.assert(r.b, true, "Problem with oJob args multiple levels (2).")
     }
+
+    exports.testOJobPass = function() {
+        var testOJob = {
+            "todo": [ "a" ],
+            "jobs": [
+              {
+                "name": "a",
+                "from": [ {
+                    "(pass)": {
+                      "test1": "{{outside}}",
+                      "test2": "ok"
+                    }
+                  }
+                ],
+                "exec": "if (args.test1 == 'yes') __pm.test = true; else __pm.test = false"
+              }
+            ]
+          }
+
+        var tk = genUUID()
+        var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/")
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/")
+        io.writeFileString(tmpOJob, af.toYAML(testOJob))
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJob + "\", { outside: 'yes' })")
+
+        var r = $openaf(tmpOAF)
+
+        ow.test.assert(r.test, true, "Problem with oJob pass.")
+    }
 })()
