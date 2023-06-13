@@ -23,9 +23,15 @@ jobs:
   to  : oJob Test
   exec: args.func = args.tests.testOJobShortcutOutput
 
+- name: oJob::oJobArgsMultipleLevels
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobArgsMultipleLevels
+
 todo:
 # oJob tests
 # --------------
 - oJob::oJob
 - oJob::oJobShortcuts
 - oJob::oJobShortcutOutput
+- oJob::oJobArgsMultipleLevels
