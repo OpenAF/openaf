@@ -368,6 +368,19 @@ OpenWrap.java.prototype.maven.prototype.getFile = function(artifactId, aFilename
 
 /**
  * <odoc>
+ * <key>ow.java.maven.getLatestVersionString(artifactId) : String</key>
+ * Given the artifactId (prefixed with the group id using ".") will try to determine the latest version and return 
+ * the corresponding string.
+ * </odoc>
+ */
+OpenWrap.java.prototype.maven.prototype.getLatestVersionString = function(artifactId) {
+    var aURI = this._translateArtifact(artifactId)
+    var version = this.getLatestVersion(aURI)
+    return version
+}
+
+/**
+ * <odoc>
  * <key>ow.java.maven.removeOldVersions(artifactId, aFilenameTemplate, aVersion, aOutputDir, aFunction)</key>
  * Given the artifactId (prefixed with the group id using ".") will try to delete from aOutputDir all versions that aren't the specific aVersion 
  * of the aFilenameTemplate (where version will translate to the specific version). Optionally you can provide aFunction that receives

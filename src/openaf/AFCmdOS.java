@@ -777,6 +777,7 @@ public class AFCmdOS extends AFCmdBase {
 			try {
 				// Issue #125
 				Class.forName("com.google.gson.Gson");
+				Class.forName("com.google.gson.internal.Primitives");
 				Gson gson = new Gson();
 				pmOut = gson.fromJson(stringify.toString(), JsonObject.class);
 			} catch(Exception e) {

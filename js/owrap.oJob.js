@@ -1562,7 +1562,8 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 			example += param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "...");
 			pargs   += $f(" *   %" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
 		  } else {
-			example += ansiColor("GREEN", param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "..."));
+			var sp = isDef(param.example) && param.example.indexOf(" ") >= 0 ? "\"" : ""
+			example += ansiColor("GREEN", param.name + "=" + sp + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + sp + " " : "... "));
 			pargs   += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
 		  }
 		} else {
@@ -2942,10 +2943,14 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		}		
 	}, {
 		name : "(pass",
-		job  : "ojob placeholder",
+		job  : "ojob pass",
 		map  : true,
 		noLog: true,
-		attrs: {}
+		attrs: {
+			"(pass"         : "__args",
+			"((debug"       : "__debug",
+			"((templateArgs": "__templateArgs"
+		}
 	}, {
 		name : "(wait",
 		job  : "ojob wait",
@@ -3045,7 +3050,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((secMainPass": "secMainPass",
 			"((secFile"    : "secFile",
 			"((secDontAsk" : "secDontAsk",
-			"((secIgnore"  : "secIgnore"
+			"((secIgnore"  : "secIgnore",
+			"((secEnv"     : "secEnv"
 		}
 	}, {
 		name : "(each",
