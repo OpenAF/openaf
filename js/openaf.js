@@ -2281,7 +2281,7 @@ const getJavaStackTrace = function(anException) {
 
 		return res;
 	} else {
-		return v0;
+		return anException;
 	}
 }
 
@@ -7329,16 +7329,23 @@ const oJobRunJob = function(aJob, args, aId, rArgs) {
 	} else {
 		oo = ow.loadOJob();
 	}
+	aJob = oo.parseTodo(aJob)
 	if (isString(aJob)) {
 		if (isUnDef(aId)) aId = "";
-		var job = oo.getJobsCh().get({ name: aJob });
+		var job = oo.getJobsCh().get({ name: aJob })
+		
 		if (isDef(job)) {
 			return oo.runJob(job, args, aId, rArgs, rArgs);
 		} else {
 			throw "Job '" + aJob + "' not found.";
 		}
 	} else {
-		return oo.runJob(aJob, args, aId);
+		var job = oo.getJobsCh().get({ name: aJob.name })
+		if (isDef(job)) {
+			return oo.runJob(merge(job, aJob), args, aId, rArgs, rArgs)
+		} else {
+			return oo.runJob(aJob, args, aId, rArgs, rArgs)
+		}
 	}
 }
 

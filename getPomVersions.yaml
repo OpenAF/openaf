@@ -1,0 +1,37 @@
+# Author: Nuno Aguiar
+help:
+  text   : Retrieve the latest versions of each entry on a pom.xml file.
+  expects: 
+  - name     : pomFile
+    desc     : A pom.xml file
+    example  : pom.xml
+    mandatory: true
+
+todo:
+- Get POM Versions
+
+ojob:
+  opacks      :
+  - openaf: 20230611
+  catch       : printErrnl("[" + job.name + "] "); if (isDef(exception.javaException)) exception.javaException.printStackTrace(); else printErr(exception)
+  logToConsole: true   # to change when finished
+        
+
+jobs:
+# -----------------------
+- name : Get POM Versions
+  check:
+    in:
+      pomFile: isString
+  exec : |
+    ow.loadJava()
+    var m = new ow.java.maven()
+
+    var lst = af.fromXML2Obj(io.readFileXML(args.pomFile)).dependencies.dependency
+    lst.forEach(r => {
+      r.latest = m.getLatestVersionString(r.groupId+"."+r.artifactId)
+      r.isOld  = r.version != r.latest
+    })
+
+    args.__format = _$(args.__format).isString().default("table")
+    ow.oJob.output(lst, args)
