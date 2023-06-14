@@ -172,6 +172,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_HELPSIMPLEUI          : false,
 	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
 	OJOB_CONSOLE_STDERR        : getEnvsDef("OJOB_CONSOLE_STDERR", __, true),
+	OJOB_INIT_ARRAY_ARGS_LIST  : true,
 	OAF_CLOSED                 : false,
 	OAF_PRECOMPILE_LEVEL       : 2,
 	VISIBLELENGTH              : true,

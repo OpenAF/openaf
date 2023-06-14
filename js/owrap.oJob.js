@@ -236,6 +236,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		});
 	}
 
+	if (isArray(args) && __flags.OJOB_INIT_ARRAY_ARGS_LIST) args = { _list: args }
+
 	this.__execRequire = _$(ojob.execRequire, "execRequire").isString().default(void 0);
 
 	if (isDef(init)) this.init = init;
@@ -1602,6 +1604,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob) {
+	if (isArray(provideArgs) && __flags.OJOB_INIT_ARRAY_ARGS_LIST) provideArgs = { _list: provideArgs }
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, (isSubJob ? {} : this.__expr), aId) : this.__expr;
 
 	var localStop = false

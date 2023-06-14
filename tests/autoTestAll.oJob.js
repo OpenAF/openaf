@@ -137,4 +137,30 @@
 
         ow.test.assert(r.test, true, "Problem with oJob pass.")
     }
+
+    exports.testOJobInitArray = function() {
+        var testOJob = {
+            "jobs": [ {
+                "name": "a",
+                "exec": "__pm = args"
+            } ],
+            "todo": [ {
+                "name": "a",
+                "args": [ { "x": 1, "y": -1 }, { "x": 2, "y": -2 } ]
+            } ]
+          }
+
+        var tk = genUUID()
+        var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/")
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/")
+        io.writeFileString(tmpOJob, af.toYAML(testOJob))
+
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;__flags.OJOB_INIT_ARRAY_ARGS_LIST = true;oJob(\"" + tmpOJob + "\", [{ a: 1 }, { b: 2 }])")
+        var r = $openaf(tmpOAF)
+        ow.test.assert(isMap(r) && isDef(r._list), true, "Problem with oJob init array (1).")
+
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;__flags.OJOB_INIT_ARRAY_ARGS_LIST = false;oJob(\"" + tmpOJob + "\", [{ a: 1 }, { b: 2 }])")
+        var r = $openaf(tmpOAF)
+        ow.test.assert(isArray(r), true, "Problem with oJob init array (2).")
+    }
 })()
