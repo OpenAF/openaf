@@ -21,7 +21,7 @@ OpenWrap.debug.prototype.register = function() {
           var _fn = eval(global.__debugLoadPreParser)
           return _fn(ow.debug.debug(code, __, true))
         }
-        __preCompileLevel = 0
+        __flags.OAF_PRECOMPILE_LEVEL = 0
     }
     
     return this
@@ -37,7 +37,7 @@ OpenWrap.debug.prototype.unregister = function() {
     if (isDef(global.__debugLoadPreParser)) {
         __loadPreParser = eval(global.__debugLoadPreParser)
         delete global.__debugLoadPreParser
-        __preCompileLevel = 2
+        __flags.OAF_PRECOMPILE_LEVEL = 2
     }
 }
 
