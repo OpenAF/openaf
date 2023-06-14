@@ -323,6 +323,9 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	// Add todos
 	this.addTodos(todo, args, aId);
 
+    // Flags change
+	if (isDef(ojob.flags) && isMap(ojob.flags)) __flags = merge(__flags, ojob.flags)
+
 	// Check ojob settings
 	if (isDef(ojob.debug)) this.__ojob.debug = ojob.debug;
 	if (isDef(ojob.numThreads)) this.__ojob.numThreads = ojob.numThreads;
