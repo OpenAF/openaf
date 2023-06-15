@@ -1670,7 +1670,7 @@ var __colorFormat = {
 	string: "CYAN",
 	boolean: "RED",
 	default: "YELLOW",
-	askPre: "BLUE",
+	askPre: "BLUE,BOLD",
 	askQuestion: "BOLD",
 	askPos: "BLUE"
 };
