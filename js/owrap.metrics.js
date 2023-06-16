@@ -43,7 +43,7 @@ OpenWrap.metrics.prototype.__m = {
             libs : __loadedLibs,
             nlibs: Object.keys(__loadedLibs).length,
             nscopes: af.getScopeIds().length,
-            preCompileLevel: __preCompileLevel,
+            preCompileLevel: __flags.OAF_PRECOMPILE_LEVEL,
             version: getVersion(),
             dist   : getDistribution(),
             path   : getOpenAFPath(),

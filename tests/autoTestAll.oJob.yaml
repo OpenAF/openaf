@@ -28,6 +28,11 @@ jobs:
   to  : oJob Test
   exec: args.func = args.tests.testOJobArgsMultipleLevels
 
+- name: oJob::oJobInitArray
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobInitArray
+
 todo:
 # oJob tests
 # --------------
@@ -35,3 +40,4 @@ todo:
 - oJob::oJobShortcuts
 - oJob::oJobShortcutOutput
 - oJob::oJobArgsMultipleLevels
+- oJob::oJobInitArray
