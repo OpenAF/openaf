@@ -206,7 +206,7 @@
 		},
 		{
 			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.11.jar"],
+			"path": ["lib/commons-lang3-3.12.jar"],
 			"version": "3.11",
 			"changes": false,
 			"type": ["java"],
@@ -224,8 +224,8 @@
 		},
 		{
 			"description": "Apache Commons Compress",
-			"path": ["lib/commons-compress-1.20.jar"],
-			"version": "1.20",
+			"path": ["lib/commons-compress-1.23.jar"],
+			"version": "1.23",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -242,17 +242,17 @@
 		},
 		{
 			"description": "OkHTTP Client",
-			"path": ["okhttp-4.10.0.jar", "okio-2.8.0.jar", "kotlin-stdlib-1.8.21.jar"],
-			"version": "4.10.0",
+			"path": ["okhttp-4.11.0.jar", "okio-3.3.0.jar", "okio-jvm-3.3.0.jar", "kotlin-stdlib-1.8.22.jar"],
+			"version": "4.11.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",
 			"deps": []
 		},
 		{
-			"description": "Oracle JDBC 21",
+			"description": "Oracle JDBC 23",
 			"path": ["lib/ojdbc8.jar"],
-			"version": "21.5",
+			"version": "23.2.0.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.oracle.com/webapps/maven/register/license.html",
@@ -260,8 +260,8 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.5.0.jar"],
-			"version": "42.2.23",
+			"path": ["lib/postgresql-42.6.0.jar"],
+			"version": "42.6.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -296,7 +296,7 @@
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/malensek/jbsdiff/master/LICENSE.txt",
 			"deps": [
-				"lib/commons-compress-1.20.jar"
+				"lib/commons-compress-1.23.jar"
 			]
 		},
 		{
@@ -487,8 +487,8 @@
 			"name": "ZIP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.8.0.jar",
-				"lib/commons-compress-1.20.jar"
+				"lib/commons-io-2.15.0.jar",
+				"lib/commons-compress-1.23.jar"
 			],
 			"deps": []
 		},
@@ -496,7 +496,7 @@
 			"name": "BSDiff",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-compress-1.20.jar"
+				"lib/commons-compress-1.23.jar"
 			],
 			"deps": [
 				"lib/jbsdiff-1.0.jar"
