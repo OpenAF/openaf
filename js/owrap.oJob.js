@@ -236,6 +236,8 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		});
 	}
 
+	if (isArray(args) && __flags.OJOB_INIT_ARRAY_ARGS_LIST) args = { _list: args }
+
 	this.__execRequire = _$(ojob.execRequire, "execRequire").isString().default(void 0);
 
 	if (isDef(init)) this.init = init;
@@ -322,6 +324,9 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 
 	// Add todos
 	this.addTodos(todo, args, aId);
+
+    // Flags change
+	if (isDef(ojob.flags) && isMap(ojob.flags)) __flags = merge(__flags, ojob.flags)
 
 	// Check ojob settings
 	if (isDef(ojob.debug)) this.__ojob.debug = ojob.debug;
@@ -1562,7 +1567,8 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
 			example += param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "...");
 			pargs   += $f(" *   %" + maxSize + "s: %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
 		  } else {
-			example += ansiColor("GREEN", param.name + "=" + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + " " : "..."));
+			var sp = isDef(param.example) && param.example.indexOf(" ") >= 0 ? "\"" : ""
+			example += ansiColor("GREEN", param.name + "=" + sp + (isDef(param.example) ? String(param.example).replace(/ /g, "\\ ") + sp + " " : "... "));
 			pargs   += $f(ansiColor("BOLD", "%" + maxSize + "s:") + " %s\n", param.name, (isDef(param.desc) ? param.desc : ""));
 		  }
 		} else {
@@ -1598,6 +1604,7 @@ OpenWrap.oJob.prototype.showHelp = function(aHelpMap, aArgs, showAnyway) {
  * </odoc>
  */
 OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob) {
+	if (isArray(provideArgs) && __flags.OJOB_INIT_ARRAY_ARGS_LIST) provideArgs = { _list: provideArgs }
 	var args = isDef(provideArgs) ? this.__processArgs(provideArgs, (isSubJob ? {} : this.__expr), aId) : this.__expr;
 
 	var localStop = false
@@ -2942,10 +2949,14 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		}		
 	}, {
 		name : "(pass",
-		job  : "ojob placeholder",
+		job  : "ojob pass",
 		map  : true,
 		noLog: true,
-		attrs: {}
+		attrs: {
+			"(pass"         : "__args",
+			"((debug"       : "__debug",
+			"((templateArgs": "__templateArgs"
+		}
 	}, {
 		name : "(wait",
 		job  : "ojob wait",
@@ -3045,7 +3056,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((secMainPass": "secMainPass",
 			"((secFile"    : "secFile",
 			"((secDontAsk" : "secDontAsk",
-			"((secIgnore"  : "secIgnore"
+			"((secIgnore"  : "secIgnore",
+			"((secEnv"     : "secEnv"
 		}
 	}, {
 		name : "(each",

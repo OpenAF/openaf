@@ -166,6 +166,41 @@ var OAF_SIGNATURE_KEY = getEnvsDef("OAF_SIGNATURE_KEY", OAF_SIGNATURE_KEY, __)
 // If OAF_VALIDATION_STRICT = true no OAF will execute if the signature doesn't exist or is not valid or if it's integrity wasn't checked & passed.
 var OAF_VALIDATION_STRICT = getEnvsDef("OAF_VALIDATION_STRICT", OAF_VALIDATION_STRICT, false)
 
+var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.prototype.toString.call(__flags) ? __flags : {
+	OJOB_SEQUENTIAL            : true,
+	OJOB_SHAREARGS             : true,
+	OJOB_HELPSIMPLEUI          : false,
+	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
+	OJOB_CONSOLE_STDERR        : getEnvsDef("OJOB_CONSOLE_STDERR", __, true),
+	OJOB_INIT_ARRAY_ARGS_LIST  : true,
+	OAF_CLOSED                 : false,
+	OAF_PRECOMPILE_LEVEL       : 2,
+	VISIBLELENGTH              : true,
+	MD_NOMAXWIDTH              : true,
+	MD_SHOWDOWN_OPTIONS        : {},
+	ANSICOLOR_CACHE            : true,
+	ANSICOLOR_ASK              : true,
+	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
+	TREE: {
+		fullKeySize: true,
+		fullValSize: false,
+		withValues : true,
+		wordWrap   : true,
+		compact    : true
+	},
+	CONSOLE: {
+		view: "tree"
+	},
+	IO: {
+		bufferSize: 1024
+	},
+	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
+	ALTERNATIVE_PROCESSEXPR    : true,
+	HTTP_TIMEOUT               : __,
+    HTTP_CON_TIMEOUT           : __,
+	DOH_PROVIDER               : "cloudflare"
+})
+
 // -------
 
 /**
@@ -1635,7 +1670,7 @@ var __colorFormat = {
 	string: "CYAN",
 	boolean: "RED",
 	default: "YELLOW",
-	askPre: "BLUE",
+	askPre: "BLUE,BOLD",
 	askQuestion: "BOLD",
 	askPos: "BLUE"
 };
@@ -2281,7 +2316,7 @@ const getJavaStackTrace = function(anException) {
 
 		return res;
 	} else {
-		return v0;
+		return anException;
 	}
 }
 
@@ -2716,6 +2751,8 @@ const getOpenAFPath = function() {
 	return __OpenAFJar;
 }
 
+__flags.OJOB_LOCALPATH = getOpenAFPath() + "ojobs"
+
 //------------------------------------------
 //OPACK functions
 //------------------------------------------
@@ -2936,7 +2973,7 @@ const loadExternalJars = function(aPath, dontCheck) {
  * 2 - pre-compilation of opacks and loadLibs
  * 3 - pre-compilation of all scripts
  */
-var __preCompileLevel = 2;
+var __preCompileLevel = __flags.OAF_PRECOMPILE_LEVEL
 
 var __loadPreParser = function(s) { return s }
 const __codeVerify = function(aCode, aFile) {
@@ -3015,7 +3052,7 @@ const load = function(aScript, loadPrecompiled) {
 	var error = [], inErr = false;
 	var fn = function(aS, aLevel) {
 		var res = false, err;
-		if (aS.indexOf("::") < 0 && (loadPrecompiled || __preCompileLevel >= aLevel) && io.fileExists(aS)) {
+		if (aS.indexOf("::") < 0 && (loadPrecompiled || __flags.OAF_PRECOMPILE_LEVEL >= aLevel) && io.fileExists(aS)) {
 			try {
 				var cl = io.fileInfo(aS).filename.replace(/\.js$/, "_js");
 				res = loadCompiled(aS);
@@ -4671,7 +4708,7 @@ const loadLib = function(aLib, forceReload, aFunction) {
 	if (forceReload ||
 		isUnDef(__loadedLibs[aLib.toLowerCase()]) || 
 		__loadedLibs[aLib.toLowerCase()] == false) {
-		load(aLib, (__preCompileLevel >= 2 ? true : false));
+		load(aLib, (__flags.OAF_PRECOMPILE_LEVEL >= 2 ? true : false));
 		__loadedLibs[aLib.toLowerCase()] = true;
 		if (isDef(aFunction)) aFunction();
 		return true;
@@ -7329,16 +7366,23 @@ const oJobRunJob = function(aJob, args, aId, rArgs) {
 	} else {
 		oo = ow.loadOJob();
 	}
+	aJob = oo.parseTodo(aJob)
 	if (isString(aJob)) {
 		if (isUnDef(aId)) aId = "";
-		var job = oo.getJobsCh().get({ name: aJob });
+		var job = oo.getJobsCh().get({ name: aJob })
+		
 		if (isDef(job)) {
 			return oo.runJob(job, args, aId, rArgs, rArgs);
 		} else {
 			throw "Job '" + aJob + "' not found.";
 		}
 	} else {
-		return oo.runJob(aJob, args, aId);
+		var job = oo.getJobsCh().get({ name: aJob.name })
+		if (isDef(job)) {
+			return oo.runJob(merge(job, aJob), args, aId, rArgs, rArgs)
+		} else {
+			return oo.runJob(aJob, args, aId, rArgs, rArgs)
+		}
 	}
 }
 
@@ -7391,40 +7435,6 @@ const loadJSYAML = function() {
 }
 
 loadCompiledLib("openafsigil_js")
-
-var __flags = _$(__flags).isMap().default({
-	OJOB_SEQUENTIAL            : true,
-	OJOB_SHAREARGS             : true,
-	OJOB_HELPSIMPLEUI          : false,
-	OJOB_LOCALPATH             : getOpenAFPath() + "ojobs",
-	OJOB_JOBSIGNORELOG         : ["oJob Log", "ojob run"],
-	OJOB_CONSOLE_STDERR        : getEnvsDef("OJOB_CONSOLE_STDERR", __, true),
-	OAF_CLOSED                 : false,
-	VISIBLELENGTH              : true,
-	MD_NOMAXWIDTH              : true,
-	MD_SHOWDOWN_OPTIONS        : {},
-	ANSICOLOR_CACHE            : true,
-	ANSICOLOR_ASK              : true,
-	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
-	TREE: {
-		fullKeySize: true,
-		fullValSize: false,
-		withValues : true,
-		wordWrap   : true,
-		compact    : true
-	},
-	CONSOLE: {
-		view: "tree"
-	},
-	IO: {
-		bufferSize: 1024
-	},
-	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
-	ALTERNATIVE_PROCESSEXPR    : true,
-	HTTP_TIMEOUT               : __,
-    HTTP_CON_TIMEOUT           : __,
-	DOH_PROVIDER               : "cloudflare"
-})
 
 /**
  * <odoc>
