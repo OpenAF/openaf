@@ -13,6 +13,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testCSV;
 
+   - name: CSV::Generic $CSV
+     from: CSV::Init
+     to  : oJob Test
+     exec: args.func = args.tests.test$CSV
+
    - name: CSV::Stream CSV
      from: CSV::Init
      to  : oJob Test
@@ -23,9 +28,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testToFromArrayCSV;
 
+   - name: CSV::ToFrom $CSV
+     from: CSV::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testToFromArray$CSV
+
 todo:
    # CSV tests
    # ---------
    - CSV::Generic CSV
+   - CSV::Generic $CSV
    - CSV::Stream CSV
    - CSV::ToFrom CSV
+   - CSV::ToFrom $CSV
