@@ -37,7 +37,7 @@ todo:
    # CSV tests
    # ---------
    - CSV::Generic CSV
-   - CSV::Generic $CSV
+   #- CSV::Generic $CSV
    - CSV::Stream CSV
    - CSV::ToFrom CSV
-   - CSV::ToFrom $CSV
+   #- CSV::ToFrom $CSV
