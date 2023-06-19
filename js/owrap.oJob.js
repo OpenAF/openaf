@@ -2550,7 +2550,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 			})
 			if (!hasDefault) _c += ".$_()"
-			return "args[\"" + a + "\"]=_$(args[\"" + a + "\"], \"Job (" + aName + "), args [" + a + "]\")" + _c
+			return "$$(args).set(\"" + a + "\", _$($$(args).get(\"" + a + "\"), \"Job (" + aName + "), args [" + a + "]\")" + _c + ")"
 		}).join(";")
 
 		return code.trim()

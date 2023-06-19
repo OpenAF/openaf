@@ -163,4 +163,36 @@
         var r = $openaf(tmpOAF)
         ow.test.assert(isArray(r), true, "Problem with oJob init array (2).")
     }
+
+    exports.testOJobChecks = function() {
+        var testOJob = {
+            todo: ["a"],
+            jobs: [
+                { name:"a",
+                  to  :["b"],
+                  exec: "args.data = { ns  : \"test\" }"},
+                { name : "b",
+                  check: {
+                    in: { 
+                      data     : "isMap",
+                      "data.ns": "isString.default(\"n/a\")",
+                      "data.n2": "isString.default(\"n/a\")"
+                    }
+                  },
+                  exec :"__pm.data = args.data"
+                }
+            ]
+        }
+
+        var tk = genUUID()
+        var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/")
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/")
+        io.writeFileString(tmpOJob, af.toYAML(testOJob))
+
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;__flags.OJOB_INIT_ARRAY_ARGS_LIST = true;oJob(\"" + tmpOJob + "\", { })")
+        var r = $openaf(tmpOAF)
+        
+        ow.test.assert(r.data.ns, "test", "Problem with oJob simple check.")
+        ow.test.assert(r.data.n2, "n/a", "Problem with oJob path check.")
+    }
 })()
