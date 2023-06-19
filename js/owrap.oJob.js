@@ -3254,6 +3254,22 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((shareArgs"   : "shareArgs",
 			"((debug"       : "__debug"
 		}
+	}, {
+		name : "(findReplace",
+		job  : "ojob find/replace",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(findReplace" : "__key",
+			"((path"       : "__path",
+			"((inputKey"   : "inputKey",
+			"((inputPath"  : "inputPath",
+			"((inputFile"  : "inputFile",
+			"((outputFile" : "outputFile",
+			"((useRegExp"  : "useRegExp",
+			"((flagsRegExp": "flagsRegExp",
+			"((logJob"     : "logJob"
+		}
 	}]
 
 	if (isArray(this.shortcuts)) {
