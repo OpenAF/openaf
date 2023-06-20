@@ -5,6 +5,7 @@
 * Number of tests performed: 166
 * Number of tests passed: 166
 * Number of tests failed: 0
+
 ## Result details
 
 | Suite | Test | Status | Time | Result       |
