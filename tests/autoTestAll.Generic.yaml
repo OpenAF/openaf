@@ -233,6 +233,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testEnvs;
 
+   - name: OpenAF::Test AF Parse
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAFParse
+
+   - name: OpenAF::Test Scope Ids
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAFScopeIds
+
 todo:
    # Generic Tests
    # -------------
@@ -279,3 +289,5 @@ todo:
    - OpenAF::Test Rest
    - OpenAF::Test Void shortcut
    - OpenAF::Test Envs
+   - OpenAF::Test AF Parse
+   - OpenAF::Test Scope Ids

@@ -2550,7 +2550,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 			})
 			if (!hasDefault) _c += ".$_()"
-			return "args[\"" + a + "\"]=_$(args[\"" + a + "\"], \"Job (" + aName + "), args [" + a + "]\")" + _c
+			return "$$(args).set(\"" + a + "\", _$($$(args).get(\"" + a + "\"), \"Job (" + aName + "), args [" + a + "]\")" + _c + ")"
 		}).join(";")
 
 		return code.trim()
@@ -3031,7 +3031,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((title"   : "__title",
 			"((internal": "__internal",
 			"((query"   : "__query",
-			"((csv"     : "__csv"
+			"((csv"     : "__csv",
+			"((function": "__function"
 		}
 	}, {
 		name : "(repeat",
@@ -3253,6 +3254,22 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((templateArgs": "templateArgs",
 			"((shareArgs"   : "shareArgs",
 			"((debug"       : "__debug"
+		}
+	}, {
+		name : "(findReplace",
+		job  : "ojob find/replace",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(findReplace" : "__key",
+			"((path"       : "__path",
+			"((inputKey"   : "inputKey",
+			"((inputPath"  : "inputPath",
+			"((inputFile"  : "inputFile",
+			"((outputFile" : "outputFile",
+			"((useRegExp"  : "useRegExp",
+			"((flagsRegExp": "flagsRegExp",
+			"((logJob"     : "logJob"
 		}
 	}]
 

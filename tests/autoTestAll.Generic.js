@@ -874,6 +874,22 @@
         ow.test.assert(descType(null), "null", "(descType) Failed to identify a null.");        
     };
 
+    exports.testAFParse = function() {
+        var ar = af.parse("(function() { a = a + 1; return a })()", "test")
+        ow.test.assert(ar.length, 1, "Problem with simple AF JS parse.")
+
+        ar = af.parse("test1 = () => 123\ntest4 = () => 456\ntest7 = () => 789")
+        ow.test.assert(ar.length, 3, "Problem with multiple lines AF JS parse.")
+        ow.test.assert(ar[0].indexOf("123") > 0 && ar[2].indexOf("789") > 0, true, "Problem with AF parsing")
+    }
+
+    exports.testAFScopeIds = function() {
+        var ar = af.fromJavaArray( af.getScopeIds() ).map(s=>String(s))
+
+        ow.test.assert(ar.length > 0, true, "Problem on get scope ids (1).")
+        ow.test.assert(ar.indexOf("print") > 0, true, "Problem on get scope ids (2).")
+    }
+
     exports.testSigil = function() {
         var res;
 

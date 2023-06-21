@@ -552,6 +552,8 @@ jobs:
       desc: If defined will output of the content replacement to the defined file.
     - name: useRegExp
       desc: Boolean value to determine if the map of replacements will be interpreted as a regexp or text.
+    - name: flagsRegExp
+      desc: If useRegExp=true the JavaScript reg exp flags to use (defaults to 'g')
     - name: logJob
       desc: Optionally provide a logging job with the current args and __op with 'read' or 'write'
     returns:
@@ -559,16 +561,22 @@ jobs:
       desc: If outputFile is not defined the output will contain the content replacement 
   check: 
     in:
-      __key     : isString.default("res")
-      __path    : isString.default("@")
-      inputKey  : isString.default(__)
-      inputPath : isString.default(__)
-      inputFile : isString.default(__)
-      outputFile: isString.default(__)
-      useRegExp : toBoolean.isBoolean.default(false)
-      logJob    : default(__)
+      __key      : default("res")
+      __path     : isString.default("@")
+      inputKey   : isString.default(__)
+      inputPath  : isString.default(__)
+      inputFile  : isString.default(__)
+      outputFile : isString.default(__)
+      useRegExp  : toBoolean.isBoolean.default(false)
+      flagsRegExp: isString.default("g")
+      logJob     : default(__)
   exec : |
-    var data = $path((args.__key == "args" ? args : $get(args.__key), args.__path)
+    var data
+    if (isMap(args.__key)) {
+      data = args.__key
+    } else {
+      data = $path(args.__key == "args" ? args : $get(args.__key), args.__path)
+    }
     _$(data, "__key data").isMap().$_()
 
     if (isUnDef(args.inputKey) && isUnDef(args.inputFile)) throw "Need args inputKey or inputFile"
@@ -580,13 +588,13 @@ jobs:
 
     var content
     if (isDef(args.inputKey)) {
-      content = $path((args.__key == "args" ? args : $get(args.__key), args.__path)
+      content = $path(args.inputKey == "args" ? args : $get(args.inputKey), args.inputPath)
     } else {
       content = io.readFileString(args.inputFile)
     }
 
     Object.keys(data).forEach(k => {
-      content = content.replace(new RegExp(args.useRegExp ? k : escapeRegExp(k), "g"), data[k])
+      content = content.replace(new RegExp(args.useRegExp ? k : escapeRegExp(k), (args.useRegExp ? args.flagsRegExp : "g")), data[k])
     })
 
     args.__op = "write"
@@ -828,12 +836,26 @@ jobs:
       desc: Encapsulates the output map/array with a title key.
     - name: __internal
       desc: Boolean value that if true it will display the internal oJob entries on the arguments (default false)
+    - name: __function
+      desc: One of the OpenAF's print or log functions available 
   exec: |
     if (isUnDef(args.__key) && isDef(args.key)) args.__key = args.key
     if (isUnDef(args.__path) && isDef(args.path)) args.__path = args.path
     if (isUnDef(args.__format) && isDef(args.format)) args.__format = args.format
     if (isUnDef(args.__title) && isDef(args.title)) args.__title = args.title
     if (isUnDef(args.__internal) && isDef(args.internal)) args.__internal = args.internal
+    if (isString(args.__function)) {
+      if (args.__function.indexOf("print") >= 0 || args.__function.indexOf("log") >= 0) {
+        if (!(af.fromJavaArray(af.getScopeIds()).map(r => String(r)).indexOf(args.__function) >= 0)) {
+          throw "__function '" + args.__function + "' not found."
+        }
+        args.__function = global[args.__function]
+      } else {
+        throw "__function needs to be a 'print' or 'log' function"
+      }
+    } else {
+      args.__function = __
+    }
 
     args.__key = _$(args.__key, "key").isString().default("res");
     if (args.__key == "") args.__key = "res"
@@ -852,9 +874,9 @@ jobs:
 
     if (isDef(args.__title)) {
       var r = {}; r[args.__title] = res;
-      ow.oJob.output(r, args);
+      ow.oJob.output(r, args, args.__function)
     } else {
-      ow.oJob.output(res, args);
+      ow.oJob.output(res, args, args.__function)
     }
 
 # OJOB FINAL REPORT
