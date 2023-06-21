@@ -3031,7 +3031,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((title"   : "__title",
 			"((internal": "__internal",
 			"((query"   : "__query",
-			"((csv"     : "__csv"
+			"((csv"     : "__csv",
+			"((function": "__function"
 		}
 	}, {
 		name : "(repeat",
