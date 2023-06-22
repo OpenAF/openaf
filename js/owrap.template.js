@@ -83,6 +83,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $cslon           -- returns an ansi ascii colored SLON representation of an object\
  *   - $pmap            -- returns an ansi ascii printMap representation of an object\
  *   - $jsmap           -- returns a HTML representation of an object\
+ *   - $t               -- given a template and an object instance, as arguments, will process and return the template\
  * 
  * </odoc>
  */
@@ -128,6 +129,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		acolor: (c, s) => { return ansiColor(c, s) },
 		f: $f,
 		ft: $ft,
+		t: (t, a) => $t(t, a),
 		get: (o, p) => $get(o),
 		path: (o, p) => $path(o, p),
 		from: (o, p) => $from(o).query(af.fromNLinq(p)),

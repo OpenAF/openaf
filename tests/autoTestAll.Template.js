@@ -49,6 +49,9 @@
         ow.test.assert(templify("{{#$switch 'a'}}{{#$case 'a'}}A{{/$case}}{{#$case 'b'}}B{{/$case}}{{#$default 'D'}}{{/$default}}{{/$switch}}"), "A", "Problem with switch case 1")
         ow.test.assert(templify("{{#$switch 'b'}}{{#$case 'a'}}A{{/$case}}{{#$case 'b'}}B{{/$case}}{{#$default 'D'}}{{/$default}}{{/$switch}}"), "B", "Problem with switch case 2")
         ow.test.assert(templify("{{#$switch 'x'}}{{#$case 'a'}}A{{/$case}}{{#$case 'b'}}B{{/$case}}{{#$default 'D'}}{{/$default}}{{/$switch}}"), "D", "Problem with switch default")
+
+        ow.test.assert($t("-{{$t ($get 'testOpenAFHelpers') this}}-"), "-123-", "Problem with $t using another helper.")
+        ow.test.assert($t("-{{$t '{{x}}{{y}}' this}}-", $get("testOpenAFHelpers2")), "-1-1-", "Problem with $t using data.")
     }
 
     exports.testConditionalHelpers = function() {
