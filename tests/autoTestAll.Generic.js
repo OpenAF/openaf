@@ -311,19 +311,19 @@
 
     exports.testAwait = function() {
         sync(() => {
-            var state = 0, err1, err2;
+            var state = 0, err1, err2, ini = now()
             var p1 = $do(() => {
-                $await("testF").wait()
+                $await("testF").wait(30000)
                 ow.test.assert(state, 1, "Problem with await (1)")
                 //sleep(150, true);
                 $await("test1").notify()
-                $await("testF2").wait()
+                $await("testF2").wait(30000)
                 ow.test.assert(state, 2, "Problem with await (2)")
             }).catch(e => {
                 err1 = e;
             })
             
-            while(p1 == 0 && !p1.executing) sleep(50, true)
+            while(p1 == 0 && !p1.executing && now() - ini < 60000) sleep(50, true)
     
             var p2 = $do(() => {
                 state = 1
