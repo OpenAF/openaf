@@ -22,11 +22,18 @@ jobs:
       __templateArgs: toBoolean.isBoolean.default(true)
   exec : |
     var ar = clone(args.__args)
+    // Process templateArgs
     if (args.__templateArgs) {
       traverse(ar, (aK, aV, aP, aO) => {
+        if (isNull(aV)) aO[aK] = __
         if (isString(aV) && aV.indexOf("{{") >= 0) {
           aO[aK] = templify(aV, args)
         }
+      })
+    } else {
+      // Process nulls
+      traverse(ar, (aK, aV, aP, aO) => {
+        if (isNull(aV)) aO[aK] = __
       })
     }
 

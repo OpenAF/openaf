@@ -38,6 +38,11 @@ jobs:
   to  : oJob Test
   exec: args.func = args.tests.testOJobChecks
 
+- name: oJob::oJobPass
+  from: oJob::Init
+  to  : oJob Test
+  exec: args.func = args.tests.testOJobPass
+
 todo:
 # oJob tests
 # --------------
@@ -47,3 +52,4 @@ todo:
 - oJob::oJobArgsMultipleLevels
 - oJob::oJobInitArray
 - oJob::oJobChecks
+- oJob::oJobPass
