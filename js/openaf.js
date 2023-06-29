@@ -178,6 +178,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
+	USE_JAVA_GENUUID           : true,
 	ANSICOLOR_CACHE            : true,
 	ANSICOLOR_ASK              : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
@@ -1789,20 +1790,24 @@ const sleep = function(millis, shouldCheck, alternative) {
 
 /**
  * <odoc>
- * <key>genUUID() : String</key>
+ * <key>genUUID(useSecureRandom) : String</key>
  * Generates and returns an UUID using a javascript algorithm (if needed you can refer to the 
  * AF operation AF.KeyGenerator.GenerateUUID).
  * </odoc>
  */
-const genUUID = function() {
-	// Internal generate UUID
-	function s4() {
-		return Math.floor((1 + Math.random()) * 0x10000)
-		.toString(16)
-		.substring(1);
-	};
-	return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-	s4() + '-' + s4() + s4() + s4();
+const genUUID = function(useSecureRandom) {
+	if (useSecureRandom || __flags.USE_JAVA_GENUUID) 
+		return String(java.util.UUID.randomUUID())
+	else {
+		// Internal generate UUID
+		function s4() {
+			return Math.floor((1 + Math.random()) * 0x10000)
+			.toString(16)
+			.substring(1)
+		};
+		return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+		s4() + '-' + s4() + s4() + s4()
+	}
 }
 
 /**
