@@ -195,4 +195,26 @@
         ow.test.assert(r.data.ns, "test", "Problem with oJob simple check.")
         ow.test.assert(r.data.n2, "n/a", "Problem with oJob path check.")
     }
+
+    exports.testOJobPass = function() {
+        var testOJob = {
+            todo: [ { name: "a", args: { a: 1, b: -1, c: 5 } } ],
+            jobs: [
+                { name: "a",
+                  from: [ { "(pass)": { a: 2, c: null } } ],
+                  exec: "__pm.a = args.a; __pm.b = args.b; __pm.c = args.c"}
+            ]
+        }
+
+        var tk = genUUID()
+        var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/")
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/")
+        io.writeFileString(tmpOJob, af.toYAML(testOJob))
+
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJob + "\", { })")
+        var r = $openaf(tmpOAF)
+        
+        ow.test.assert(r.a, 2, "Problem with oJob pass normal argument.")
+        ow.test.assert(r.c, __, "Problem with oJob pass undefined/null argument.")
+    }
 })()
