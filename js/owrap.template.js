@@ -257,18 +257,10 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 			return s.inverse(this);
 		},
 		gt: (a, b, s) => {
-			if (isDef(a) && isDef(b)) {
-				s = b;
-				b = s.hash.compare;
-			}
 			if (a > b) return s.fn(this);
 			return s.inverse(this);
 		},
 		gte: (a, b, s) => {
-			if (isDef(a) && isDef(b)) {
-				s = b;
-				b = s.hash.compare;
-			}
 			if (a >= b) return s.fn(this);
 			return s.inverse(this);
 		},
