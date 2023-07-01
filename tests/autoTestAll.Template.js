@@ -83,12 +83,12 @@
             "Problem with template conditional helper $gte"
         )
         ow.test.assert(
-            $t("{{#$has foo}}ok{{else}}nok{{/$has}}", { foo: "bar" }),
+            $t("{{#$has this 'foo'}}ok{{else}}nok{{/$has}}", { foo: "bar" }),
             "ok",
             "Problem with template conditional helper $has"
         ),
         ow.test.assert(
-            $t("{{#$eq foo 'bar'}}ok{{else}}nok{{/$has}}", { foo: "bar" }),
+            $t("{{#$eq foo 'bar'}}ok{{else}}nok{{/$eq}}", { foo: "bar" }),
             "ok",
             "Problem with template conditional helper $eq"
         ),

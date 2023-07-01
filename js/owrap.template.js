@@ -265,9 +265,9 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 			return s.inverse(this);
 		},
 		has: (v, p, s) => {
-			//if (isDef(p)) return p.inverse(this)
-			//if (isUnDef(p) && isDef(v)) return v.inverse(this)
-			if ((Array.isArray(v) || isString(v)) && isString(p)) {
+			if (isUnDef(s) && isDef(p)) return p.inverse(this)
+			if (isUnDef(p) && isDef(v)) return v.inverse(this)
+			if ((Array.isArray(v) || isString(v)) && isDef(p)) {
 				if (v.indexOf(p) > -1) return s.fn(this)
 			}
 			if (isMap(v) && isString(p) && p in v) return s.fn(this)
