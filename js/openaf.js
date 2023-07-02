@@ -1760,6 +1760,7 @@ const jsonParse = function(astring, alternative, unsafe) {
 const templify = function(aTemplateString, someData) {
 	someData = (isUnDef(someData)) ? this : someData;
 	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
+	if (isUnDef(aTemplateString) || aTemplateString == "") return ""
 	return String(ow.template.parse(aTemplateString, someData));
 }
 

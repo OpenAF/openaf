@@ -84,7 +84,22 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $pmap            -- returns an ansi ascii printMap representation of an object\
  *   - $jsmap           -- returns a HTML representation of an object\
  *   - $t               -- given a template and an object instance, as arguments, will process and return the template\
- * 
+ *   - $date            -- converts the argument provided to date\
+ *   - $isoDate         -- converts the argument provided to an ISO date string\
+ *   - $number          -- casts the argument provided to number\
+ *   - $boolean         -- casts the argument provided to boolean\
+ *   - $string          -- casts the argument provided to string\
+ *   - $keys            -- returns an array of keys of the provided map\
+ *   - $values          -- returns an array of values of the provided map\
+ *   - $__              -- returns a undefined value\
+ *   - $alen            -- returns the ansi length of the argument provided\
+ *   - $len             -- returns the string length of the argument provided\
+ *   - $repeat          -- shortcut to the OpenAF's repeat function\
+ *   - $range           -- shortcut to the OpenAF's range function\
+ *   - $a2m             -- shortcut to the OpenAF's $a2m function\
+ *   - $a4m             -- shortcut to the OpenAF's $a4m function\
+ *   - $m2a             -- shortcut to the OpenAF's $m2a function\
+ *   - $m4a             -- shortcut to the OpenAF's $m4a function
  * </odoc>
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
@@ -135,6 +150,22 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		from: (o, p) => $from(o).query(af.fromNLinq(p)),
 		toSLON: ow.format.toSLON,
 		getObj: (o, p) => $$($get(o)).get(p),
+		date: (s) => (new Date(s)),
+		isoDate: s => (new Date(s)).toISOString(),
+		number: s => Number(s),
+		boolean: s => toBoolean(s),
+		string: s => String(s),
+		__: s => __,
+		alen: s => ansiLength(s),
+		len: s => s.length,
+		repeat: (t, s) => repeat(t, s),
+		range: (c, s, t) => range(c, s, t),
+		a2m: (d, a) => $a2m(d, a),
+		a4m: (a, k, d) => $a4m(a, k, d),
+		m2a: (d, m) => $m2a(d, m),
+		m4a: (m, k) => $m4a(m, k),
+		keys: (o) => Object.keys(o),
+		values: (o) => Object.values(o),
 		dateDiff: (a, p, isN) => {
 			if (isDef(a) && a != null) {
 					var res = "seconds"
@@ -160,44 +191,6 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		}
 	}
 	ow.template.addHelpers("$", obj)
-	/*
-	ow.template.addHelper("$debug", sprint);
-	ow.template.addHelper("$stringify", stringify);
-	ow.template.addHelper("$stringifyInLine", (s) => { return stringify(s, __, ""); });
-	ow.template.addHelper("$toYAML", af.toYAML);
-	ow.template.addHelper("$env", getEnv);
-	ow.template.addHelper("$escape", (s) => { return s.replace(/['"]/g, "\\$1"); });	
-	ow.template.addHelper("$f", $f);
-	ow.template.addHelper("$ft", $ft);
-	ow.template.addHelper("$get", (o, p) => $$(o).get(p));
-	ow.template.addHelper("$path", (o, p) => $path(o, p));
-	ow.template.addHelper("$toSLON", ow.format.toSLON);
-	ow.template.addHelper("$get", $get)
-	ow.template.addHelper("$getObj", (o, p) => $$($get(o)).get(p))
-
-	ow.template.addHelper("$dateDiff", (a, p, isN) => {
-		if (isDef(a) && a != null) {
-				var res = "seconds"
-				if (isDef(p) && p != null && isString(p)) res = p
-				try {
-						switch(res) {
-						case "minutes": return ow.format.dateDiff.inMinutes(new Date(a))
-						case "hours"  : return ow.format.dateDiff.inHours(new Date(a))
-						case "days"   : return ow.format.dateDiff.inDays(new Date(a))
-						case "months" : return ow.format.dateDiff.inMonths(new Date(a))
-						case "weeks"  : return ow.format.dateDiff.inWeeks(new Date(a))
-						case "years"  : return ow.format.dateDiff.inYears(new Date(a))
-						case "seconds":
-						default:
-								return ow.format.dateDiff.inSeconds(new Date(a))
-						}
-				} catch(e) {
-						return (isString(isN) ? isN : null)
-				}
-		} else {
-				return (isString(isN) ? isN : null)
-		}
-	})*/
 
 	this.__helperOpenAF = true
 };
@@ -233,7 +226,10 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 	var obj = {
 		and: (a, b, s) => (a && b) ? s.fn(this) : s.inverse(this),
 		compare: (a, op, b, s) => {
-			if (arguments.length < 4) { throw 'Compare helper expects 4 arguments' }
+			_$(a, "a").$_()
+			_$(op, "op").$_()
+			_$(b, "b").$_()
+
 			var result
 			switch(op) {
 			case '==' : result = a == b; break
@@ -261,36 +257,27 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 			return s.inverse(this);
 		},
 		gt: (a, b, s) => {
-			if (arguments.length === 2) {
-				s = b;
-				b = s.hash.compare;
-			}
 			if (a > b) return s.fn(this);
 			return s.inverse(this);
 		},
 		gte: (a, b, s) => {
-			if (arguments.length === 2) {
-				s = b;
-				b = s.hash.compare;
-			}
 			if (a >= b) return s.fn(this);
 			return s.inverse(this);
 		},
 		has: (v, p, s) => {
-			loadUnderscore();
-			if (arguments.length === 2) return p.inverse(this);
-			if (arguments.length === 1) return v.inverse(this);
-			if ((Array.isArray(v) || _.isString(v)) && _.isString(p)) {
-				if (v.indexOf(p) > -1) return s.fn(this);
+			if (isUnDef(s) && isDef(p)) return p.inverse(this)
+			if (isUnDef(p) && isDef(v)) return v.inverse(this)
+			if ((Array.isArray(v) || isString(v)) && isDef(p)) {
+				if (v.indexOf(p) > -1) return s.fn(this)
 			}
-			if (isObject(v) && _.isString(p) && p in v) return s.fn(this);
-			s.inverse(this);
+			if (isMap(v) && isString(p) && p in v) return s.fn(this)
+			return s.inverse(this)
 		},
 		eq: (a, b, s) => {
-			if (arguments.length === 2) {
+			/*if (isDef(a) && isDef(b)) {
 				s = b;
 				b = s.hash.compare;
-			}
+			}*/
 			if (a === b) return s.fn(this);
 			return s.inverse(this);
 		},
@@ -298,34 +285,18 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		ifNth: (a, b, s) => (++b % a === 0) ? s.fn(this) : s.inverse(this),
 		ifOdd: (n, s) => (n % 2 == 1) ? s.fn(this) : s.inverse(this),
 		is: (a, b, s) => {
-			if (arguments.length === 2) {
-				s = b;
-				b = s.hash.compare;
-			}
 			if (a === b) return s.fn(this);
 			return s.inverse(this);
 		},
 		isnt: (a, b, s) => {
-			if (arguments.length === 2) {
-				s = b;
-				b = s.hash.compare;
-			}
 			if (a !== b) return s.fn(this);
 			return s.inverse(this);	
 		},
 		lt: (a, b, s) => {
-			if (arguments.length === 2) {
-				s = b;
-				b = s.hash.compare;
-			}
 			if (a < b) return s.fn(this);
 			return s.inverse(this);
 		},
 		lte: (a, b, s) => {
-			if (arguments.length === 2) {
-				s = b;
-				b = s.hash.compare;
-			}
 			if (a <= b) return s.fn(this);
 			return s.inverse(this);
 		},
@@ -337,113 +308,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 		unlessGteq: (ctx, s) => (ctx >= s.hash.compare) ? s.fn(this) : s.inverse(this),
 		unlessLteq: (ctx, s) => (ctx <= s.hash.compare) ? s.fn(this) : s.inverse(this)
 	}
-	/*
-	ow.template.addHelper("$and", function(a, b, s) { return (a && b) ? s.fn(this) : s.inverse(this); });
-	ow.template.addHelper("$compare", function(a, op, b, s) {
-		if (arguments.length < 4) { throw 'Compare helper expects 4 arguments'; }
-		var result;	
-		switch(op) {
-		case '==' : result = a == b; break;
-		case '===': result = a === b; break;
-		case '!=' : result = a != b; break;
-		case '!==': result = a !== b; break;
-		case '<'  : result = a < b; break;
-		case '>'  : result = a > b; break;
-		case '<=' : result = a <= b; break;
-		case '>=' : result = a >= b; break;
-		case 'typeof': result = typeof a === b; break;
-		default: throw 'Invalid operator: `' + op + '`';
-		}
-		
-		if (result === false) return s.inverse(this); 
-		return s.fn(this);
-	});
-	ow.template.addHelper("$contains", function(collec, value, sIdx, s) {
-		loadUnderscore();
-		if (typeof sIdx === 'object') {
-			s = sIdx; sIdx = undefined;
-		}
-		if(_.isString(collec) && collec.indexOf(value, sIdx) > -1) return s.fn(this);
-		if(_.contains(collec, value, sIdx)) return s.fn(this); 
-		return s.inverse(this);
-	});
-	ow.template.addHelper("$gt", function(a, b, s) {
-		if (arguments.length === 2) {
-			s = b;
-			b = s.hash.compare;
-		}
-		if (a > b) return s.fn(this);
-		return s.inverse(this);
-	});
-	ow.template.addHelper("$gte", function(a, b, s) {
-		if (arguments.length === 2) {
-			s = b;
-			b = s.hash.compare;
-		}
-		if (a >= b) return s.fn(this);
-		return s.inverse(this);
-	});
-	ow.template.addHelper("$has", function(v, p, s) {
-		loadUnderscore();
-		if (arguments.length === 2) return p.inverse(this);
-		if (arguments.length === 1) return v.inverse(this);
-		if ((Array.isArray(v) || _.isString(v)) && _.isString(p)) {
-			if (v.indexOf(p) > -1) return s.fn(this);
-		}
-		if (isObject(v) && _.isString(p) && p in v) return s.fn(this);
-		s.inverse(this);
-	});
-	ow.template.addHelper("$eq", function(a, b, s) {
-		if (arguments.length === 2) {
-			s = b;
-			b = s.hash.compare;
-		}
-		if (a === b) return s.fn(this);
-		return s.inverse(this);
-	});	
-	ow.template.addHelper("$ifEven", function(n, s) { return (n % 2 == 0) ? s.fn(this) : s.inverse(this); });
-	ow.template.addHelper("$ifNth", function(a, b, s) { return (++b % a === 0) ? s.fn(this) : s.inverse(this); });
-	ow.template.addHelper("$ifOdd", function(n, s) { return (n % 2 == 1) ? s.fn(this) : s.inverse(this); });
-	ow.template.addHelper("$is", function(a, b, s) {
-		if (arguments.length === 2) {
-			s = b;
-			b = s.hash.compare;
-		}
-		if (a === b) return s.fn(this);
-		return s.inverse(this);
-	});	
-	ow.template.addHelper("$isnt", function(a, b, s) {
-		if (arguments.length === 2) {
-			s = b;
-			b = s.hash.compare;
-		}
-		if (a !== b) return s.fn(this);
-		return s.inverse(this);
-	});
-	ow.template.addHelper("$lt", function(a, b, s) {
-		if (arguments.length === 2) {
-			s = b;
-			b = s.hash.compare;
-		}
-		if (a < b) return s.fn(this);
-		return s.inverse(this);
-	});		
-	ow.template.addHelper("$lte", function(a, b, s) {
-		if (arguments.length === 2) {
-			s = b;
-			b = s.hash.compare;
-		}
-		if (a <= b) return s.fn(this);
-		return s.inverse(this);
-	});		
-	ow.template.addHelper("$neither", function(a, b, s) { return (!a && !b) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("$or", function(a, b, s) { return (a === true || b === true) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("$unlessEq", function(ctx, s) { return (ctx === s.hash.compare) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("$unlessGt", function(ctx, s) { return (ctx > s.hash.compare) ? s.fn(this) : s.inverse(this); });	
-	ow.template.addHelper("$unlessLt", function(ctx, s) { return (ctx < s.hash.compare) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("$unlessGteq", function(ctx, s) { return (ctx >= s.hash.compare) ? s.fn(this) : s.inverse(this); });		
-	ow.template.addHelper("$unlessLteq", function(ctx, s) { return (ctx <= s.hash.compare) ? s.fn(this) : s.inverse(this); });	
-	*/
+
 	ow.template.addHelpers("$", obj)
 
 	this.__helperCond = true
