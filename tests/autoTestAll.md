@@ -65,7 +65,7 @@
 |Format | Load Format | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
 |Format | Number abbreviation | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
 |Format | Number rounding | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
-|Format | SLON | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 3 ms | n/a |
+|Format | SLON | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 2 ms | n/a |
 |Format | String pad | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
 |Format | Time ago | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
 |Format | TimeAbbreviation | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 5 ms | n/a |
