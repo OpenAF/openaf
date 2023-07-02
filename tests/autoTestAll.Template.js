@@ -67,6 +67,41 @@
             "Never mind :(",
             "Problem with template conditional helper $gt."
         );        
+        ow.test.assert(
+            $t("{{#$compare M '==' 'M2'}}ok{{else}}nok{{/$compare}}", { M: 'M2' }),
+            "ok",
+            "Problem with template conditional helper $compare."
+        )
+        ow.test.assert(
+            $t("{{#$gt M 2}}ok{{else}}nok{{/$gt}}", { M: 5 }),
+            "ok",
+            "Problem with template conditional helper $gt"
+        )
+        ow.test.assert(
+            $t("{{#$gte M 2}}ok{{else}}nok{{/$gte}}", { M: 2 }),
+            "ok",
+            "Problem with template conditional helper $gte"
+        )
+        ow.test.assert(
+            $t("{{#$has this 'foo'}}ok{{else}}nok{{/$has}}", { foo: "bar" }),
+            "ok",
+            "Problem with template conditional helper $has"
+        ),
+        ow.test.assert(
+            $t("{{#$eq foo 'bar'}}ok{{else}}nok{{/$eq}}", { foo: "bar" }),
+            "ok",
+            "Problem with template conditional helper $eq"
+        ),
+        ow.test.assert(
+            $t("{{#$ifEven 24}}ok{{else}}nok{{/$ifEven}}"),
+            "ok",
+            "Problem with template conditional helper $ifEven"
+        ),
+        ow.test.assert(
+            $t("{{#$ifOdd 25}}ok{{else}}nok{{/$ifOdd}}"),
+            "ok",
+            "Problem with template conditional helper $ifOdd"
+        )
     };
 
     exports.testPartialHelpers = function() {
