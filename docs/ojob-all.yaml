@@ -1,0 +1,110 @@
+# This is a documentation YAML that tries to capture a large part of all available options and combinations
+# that you could have on an oJob. The intention is to serve as a reference.
+
+# This section contains information to be display to humans regarding what the oJob does and which args it expects
+help:
+
+# This section is intended to provide initialization values and all jobs receive it's values as args.init
+init: 
+  # any map combination you want
+
+# This is a flags and main options to run the ojob
+ojob:
+  # Boolean flag that indicates that the passive collecting of metrics should be started (see more in ow.server.telemetry.passive)
+  #metrics    : true
+  # In alternative a map can be provided to add specific custom metrics
+  metrics    :
+    # Map to indicate if the oJob should send the metrics to another system and which
+    #active :
+    #  openmetrics:
+    #    url    : http://some.push.metrics.service:9091/metrics/job/test
+    #    prefix : openmetrics-prefix
+    #    metrics:
+    #    - custom-metric
+    #    - mem
+    #  nattrmon   :
+    #    url       : http://change:me@nattrmon.service:7777/remote
+    #    attrPrefix: oJob test/
+    #    metrics   :
+    #    - custom-metric
+    #    - mem
+    #  fn         : |
+    #    // custom javascript OpenAF code to collect and send metrics to another system     
+    #  periodInMs  : 1000   # period of time to wait before trying to send metrics again
+    # Boolean flag to indicate that metrics will be exposed at an endpoint for other systems to collect
+    passive          : true
+    port             : 8080      # Port to expose passive metrics
+    uri              : /metrics  # Default URI where metrics will be exposed
+    openMetrics      : true      # Boolean flag to indicate if metrics should be exposed in OpenMetrics/Prometheus format or JSON
+    openMetricsPrefix: test      # The OpenMetrics/Prometheus metric prefix
+    #openMetricsHelp  :          # Provide specific Prometheus help (see more in ow.server.telemetry.passive)           
+    # Collects metrics to an OpenAF channel
+    collect          :
+      ch    : aChName
+      period: 5000  # period of time in ms
+      # An array to limit the collecting to specifc metrics (see more in ow.metrics.startCollecting)
+      #some  :
+      #- mem
+      # Boolean flag (see more in ow.metrics.startCollecting)
+      #noDate: true
+    # Adds custom emtrics
+    add              :
+      custom-metric: |
+        // some code that returns a map (see "help ow.metrics.add" for more information)
+  integrity  :
+    list  : 
+    - anotherOJob.yaml  : sha1:abc123def4567890
+    - ojob.io/some/thing: md5:abc123def4567890
+    strict: false  # Boolean flag to indicate that oJobs in "include:" or "jobsInclude:" should be rejected if the integrity hash is not correct
+    warn  : true   # Boolean flag to indicate that a warning will be logged for oJobs in "include:" or "jobsInclude:" which the integritry hash is not correct
+  includeOJob: true   # indicates if the "ojob *" should be included (defaults to true)
+  # A list of oPacks name of map where the corresponding value is a fixed version or ">=" version to verify before running. If a certain oPack is not present if will
+  # try to download it from the oPacks repositories defined. If there is a folder, on the OpenAF path, containing the oPack with the correct version it will be automatically
+  # added without installation (usefull for self-extracting & running cases).
+  opacks     :
+  - openaf: ">=20230601"
+  - S3    : ">=20230401"
+  - oJob-common
+  # List of OpenAF's owrap libraries to load (equivalent to ow.loadSomething()) 
+  owraps     :
+  - Server
+  - Java
+  # Loads the code of an external javascript OpenAF library (equivalent to "loadLibs:")
+  loads      :
+  - anotherJS.js
+  - anOpackJS.js
+  # Loads the code of an external javascript OpenAF library (equivalent to "loads:")
+  loadLibs   :
+  - anotherJS.js
+  - anOpackJS.js
+
+# This is the main control list of what gets executed
+todo:
+
+# This list allows to include other oJob files merging their functionalites.
+# The files can be relative to the current path, existing on the main folder of installed oPacks or in remote authorized domains (such as ojob.io)
+include:
+- anotherOJob.yaml
+- anOPackOJob.yaml
+- ojob.io/some/thing
+
+# Similar to the "include:" list but it will only merge the "jobs:" section of the provided files or urls
+jobsInclude:
+- anotherOJob.yaml
+- anOPackOJob.yaml
+- ojob.io/some/thing
+
+# The definition of each job that gets listed on the "todo:" section
+jobs:
+
+# Map used to separate javascript OpenAF code from the "jobs:" section. 
+# Each map entry corresponds to a javascript libray (via the require function) filename which each job, on "jobs:" section, can include using the
+# "jobs[].typeArgs.execRequire" option. The contents should include a "exports.nameOfJob" function that will be called with the job's execution args.
+# If the filename entry exists in the "code:" it will be prefered from the local filesystem version.
+code:
+  codeFileA.js: |
+    (function() {
+      exports["Example Job"] = function(args) {
+          // TODO: code for example
+      }
+    })()
