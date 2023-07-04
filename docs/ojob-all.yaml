@@ -10,6 +10,87 @@ init:
 
 # This is a flags and main options to run the ojob
 ojob:
+  # Force the way this oJob would identify with other peers when connected to other
+  #id: someId
+  # An array of custom job execution languages beyond the included
+  langs      :
+  - lang    : my-language
+    langFn  : |
+      // handle "code" variable
+      // with "job", "job.typeArgs" and "args" variables
+  - lang    : cmd-language
+    shell   : "my-cmd run -"   # A command that receives input through stdin
+    #withFile: ".cmdlang"      # If a command needs a file with a specific extension
+  # Allows changing prior to execution some OpenAF __flags values
+  flags      :
+    SOME_OPENAF_FLAG: false
+  debug      : true   # Boolean to determine if ow.debug should be applied to the code of javascript OpenAF jobs[].exec
+  #numThreads : 2      # forces to use a specific number of threads
+  #poolThreadFactor: 2 # Factor to multiply the detected of forced number of cores to determin the threads to use
+  conAnsi     : true  # if false disables the detection of ansi terminals for faster startup execution
+  #conWidth    : 128   # forces the width size for start/stop/error job execution messages
+  async       : false  # if true all jobs in "todo:" will be executed async instead of sequentially
+  #sequential  : true   # the reverse of the "ojob.async"
+  # List of tags to identify category of capacities of peered ojobs
+  tags        :
+  - do coffee
+  - do beer
+  depsWait    : false  # If set to true it indicates that it should wait for jobs[].deps success even if there are failed executions
+  checkStall  :
+    everySeconds    : 60  # Executes every 60 seconds a check function
+    killAfterSeconds: 120 # Kills the execution if checkFunc returns true for more than 120 seconds
+    checkFunc       : |
+      // javascript OpenAF code to check for stalls. Should return true if stalled and false otherwise
+  logToConsole: true  # controls if start/stop/error job execution messages should be output to stderr
+  logOJob     : false # If true the start/stop/error job execution will be log with OpenAF's log
+  ignoreNoLog : false # if true will ignore the value of jobs[].typeArgs.shortcut.nolog and log everything
+  logLimit    : 3     # Number of job executions to keep in the ojob::log internally
+  logHistory  : 10    # Factor of number of job logs to keep by the number of defined jobs 
+  logJobs     : true  # Should log job execution or not
+  logArgs     : false # If true prior to each job execution the corresponding args will be output
+  logToFile   : 
+    # map equivalent to ow.ch.utils.setLogToFile
+  log         :
+    # map equivalent to setLog function
+    format: json  # If not defined the value will be infered from the env variable OJOB_JSONLOG
+  shareArgs   : false # Boolean to determine if jobs should "pass" changes on args to others (only works if "async: false")
+  daemon      : false # Boolean to indicate if oJob should keep running as a "daemon" without ending executiong (server)
+  timeInterval: 50    # If defined will execute a ojob.daemonFunc every 50ms
+  daemonFunc  : |
+    // Javascript OpenAF code to execute every timeInterval if daemon = true
+  unique      : # if defined looks for args.stop, args.restart and args.forcestop to control execution. Aslo accepts args.status
+    pidFile     : somejob.pid  # Creates a pid (process id) file to ensure that no more than one ojob execution happens at a time
+    killPrevious: false        # If false will died and let the previous run; if true will try to kill the previous pid and continue execution
+  channels    :
+    create:
+    - name   : OpenAFChannelToCreate
+      type   : typeOfChannel
+      options:
+        # map of settings for typeOfChannel
+    expose: # Boolean to indicate if channels should be HTTP(s) expose
+    list  :
+    # List of channels to expose (if not defined all will be exposed)
+    - OpenAFChannelToCreate
+    port  : # HTTP(s) port where to expose channels
+    host  : # HTTP(s) host where to expose channels
+    keyStorePath: # HTTPs key to use
+    keyPassword : # encrypted HTTPs key to use
+    auth        : # Authentication for expose channels
+    permissions : # Default permissions for the expose channels
+    - login      : someBasicUser
+      pass       : someBasisPass
+      permissions: "rw" # Permissions for the expose channels when authenticated with login
+    audit       : # Audit template to log any access through HTTP(s)
+    # Establishes a peer OpenAF channel connection
+    peers       :
+    - https://some.other.ojob.peer:port/chs/channelName
+    clusters    : # tbc
+  catch      : |
+    // Javascript OpenAF code to handle the "exception" variable by default for all jobs[] that don't have their own jobs[].catch
+  depsOnFail : |
+    // Javascript OpenAF code to execute by default, with variables 'args', 'job' and 'id', if a job dependency failed it's execution
+  depsTimeout: 300000  # If defined, represents the maximum elapsed time, in ms, from the first point in time a jobs[].deps was evaluated to determine if all deps had successfully executed
+  templateArgs: true   # Boolean that if defined will process "{{ }}" handlebars entries on args using the "args" before the actual processing starts
   # Boolean flag that indicates that the passive collecting of metrics should be started (see more in ow.server.telemetry.passive)
   #metrics    : true
   # In alternative a map can be provided to add specific custom metrics
@@ -80,6 +161,18 @@ ojob:
 
 # This is the main control list of what gets executed
 todo:
+- A job to execute
+- name: Another job to execute
+  args:
+    # a map of provided arguments
+  when: someState # if defined will only execute if ow.oJob.setState equals "someState" (initially set to 'init')
+- name: A job to execute mutiple args
+  args:
+  # array of args where each will be executed in parallel (unless jobs[].typeArgs.single = true)
+  - arg0: true
+    arg1: 123
+  - arg0: false
+    arg1: 456
 
 # This list allows to include other oJob files merging their functionalites.
 # The files can be relative to the current path, existing on the main folder of installed oPacks or in remote authorized domains (such as ojob.io)
@@ -96,11 +189,85 @@ jobsInclude:
 
 # The definition of each job that gets listed on the "todo:" section
 jobs:
+- name    : Some job
+  deps    :
+  - Another job that needs to end successfully for this to run
+  - name     : A job that has a dependency with Some job
+    onSuccess: |
+      // Javascript OpenAF code to execute with variables 'job', 'id' and 'args' if dependency has executed successfully
+    onFail   : |
+      // Javascript OpenAF code to execute with varaibles 'job', 'id' and 'args' if dependency has failed it's execution
+  each    :
+  - Job to be called in parallel by executing the "each" function taking some args map as an argument
+  from    : 
+  - Other job execution before
+  to      :
+  - Other job execution after
+  catch   : |
+    // code to handle an "exception" variable
+  help    :
+  type    : simple  # either simple, jobs, shutdown, subscribe and periodic (see more in typeArgs)
+  typeArgs:
+    noTemplateArgs: true # Boolean to indicate that any "{{ }}" handlebars entry on args should be or processed before the actual processing starts (defaults to ojob.templateArgs) 
+    timeout : 300000 # If defined the maximum time, in ms, that each execution can take before being forced to end
+    stopWhen: |
+      // Javascript OpenAF code, using 'args', 'job', 'id' and 'deps' variables, that if returns true the job execution will be halted. 
+      // The function will be executed when the defined timeout is reached.
+    single  : false # Boolean that if true won't process an array of args in parallel but rather sequentially 
+    lock    : aLockName   # If defined ensures that all jobs[].typeArgs.lock with the same name won't be executed async and will wait for each other
+    lockCh  : oJob::locks # If defined, changes the default locks OpenAF channel to use with "jobs[].typeArgs.lock"
+    shortcut:
+      name  : somejob   # defined a shortcut "(somejob)"
+      #nolog: true      # boolean to indicate if the execution shouldn't be logged 
+      keyArg: arg0      # defined the argument associated with "(somejob)"
+      args  : # mapping of shortcut args to job args
+        arg1: _arg1    # defined as shortcut "((arg1))"
+    execJs  : "some.js"        # sets lang='oaf' and exec to the contents of the defined execJs
+    execRequire: "some.js"     # sets lang='oaf' and exec to execute the function with the job name by laoding with 'require' some.js
+    execPy  : "some.py"        # sets lang='python' and exec to the contents of the defined execPy
+    execJs 
+    file    : "some.exec.code" # sets exec to the contents of the provided file
+    # -- type=simple (the basic default type)
+    async: false # if true this specific job will always be executed async
+    # -- type=jobs (executes other external ojobs)
+    file : aLocalFile.yaml
+    #url  : ojob.io/external/url
+    # -- type=shutdown (executes on the ojob process shutdown if not killed)
+    # -- type=subscribe (executes when there is a change on the provided OpenAF channel)
+    chSubscribe: theOpenAFChannelToSubscribe
+    # -- type=periodic (executes periodically on the provided interval / cron expression)
+    #timeInterval : # an interval of time in ms between executions in alternative to cron
+    cron         : "*/5 * * * * *" # a cron expression
+    waitForFinish: true # Boolean to indicate if a new execution should not be started if the previous is still executing
+    cronCheck    : 
+      active   : false         # Boolean to indicate if it should track miss executions (e.g. when the ojob wasn't executing)
+      ch       : oJob::cron    # OpenAF channel where to persist missing executions (should handle persistance somehow)
+      retries  : 5             # Number of times the job execution is retried if fails
+      retryWait: 1000          # Time, in ms, to wait for the next job execution if previous failed
+      cron     : "*/1 * * * *" # Cron expression determining when it should check for missing executions
 
+  #lang    : my-language  (built-in: winssh, ssh, js, oaf, python (requires python), shell, sh, powershell (requires powershell), go (requires go), ruby (requires ruby), perl (requires perl))
+  #file    : fileWithCode.cmdlang  # see "code:"
+  check   :
+    # Checks the input provided in args before execution
+    in :
+      arg0 : isString  # forces to be a string with a value
+      _arg1: toNumber.isNumber.default(-1) # converts from string to number, checks it's a number and defaults to -1 if no value is provided
+      _arg2: toBoolean.isBoolean.default(false) # converts from string to boolean, checks it's a boolean and defaults to false if no value is provided
+    # Checks the output args (that will be stored with $set("res") or passed to another job if "shareArgs: true")
+    out:
+      res0 : isBoolean # forces to have a res0 with a boolean value
+      res1 : isString.oneOf(['ok', 'nok']).default('nok') # ensures that res1 is a string with the value 'ok' or 'nok' and defaults to 'nok' if no value is provided
+  exec    : |
+    // A piece of code on the specified language (defaults to javascript OpenAF)
+    // Using "args" variable and "job" variable
+  
+  
 # Map used to separate javascript OpenAF code from the "jobs:" section. 
 # Each map entry corresponds to a javascript libray (via the require function) filename which each job, on "jobs:" section, can include using the
 # "jobs[].typeArgs.execRequire" option. The contents should include a "exports.nameOfJob" function that will be called with the job's execution args.
 # If the filename entry exists in the "code:" it will be prefered from the local filesystem version.
+# If the entry does not end with ".js" it won't be parsed and will be used to replace any jobs[].typeArgs.file for jobs[].typeArgs.type != 'jobs'
 code:
   codeFileA.js: |
     (function() {
