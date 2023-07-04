@@ -37,6 +37,7 @@ OpenWrap.oJob = function(isNonLocal) {
 
 	this.shutdownFuncs = [];
 	this.shortcuts = []
+	this._code = {}
 	var ead = getEnv("OJOB_AUTHORIZEDDOMAINS");
 	if (isDef(ead) && ead != "null") 
 		this.authorizedDomains = String(ead).split(",");
@@ -358,7 +359,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	}
 
 	ojob.logJobs = _$(ojob.logJobs).default(true);
-        this.__ojob.logJobs = ojob.logJobs;
+    this.__ojob.logJobs = ojob.logJobs;
 	if (isDef(ojob.logToFile) && isMap(ojob.logToFile)) {
 		ow.ch.utils.setLogToFile(ojob.logToFile);
 	}
@@ -620,6 +621,37 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 				//}
 			}
 		}
+
+		this._ejob = __flags.OJOB_CHECK_JOB_CHANGES ? $ch("oJob::jobs").getKeys() : []
+		var parent = this
+
+		// Place auditor on ojob::jobs
+		this.getJobsCh().subscribe((aCh, aOp, aK, aV) => {
+			if (aOp == "unset" || aOp == "unsetall") {
+				if (__flags.OJOB_CHECK_JOB_REMOVAL)
+					logWarn("oJobs definitions are being removed: " + af.toSLON(aK))
+				else {
+					if (isUnDef(ow.oJob.__ojob_warn_ojob_removal_notify)) ow.oJob.__ojob_warn_ojob_removal_notify = false
+					if (!ow.oJob.__ojob_warn_ojob_removal_notify) logWarn("oJobs definitions removal audit is disabled.")
+					ow.oJob.__ojob_warn_ojob_removal_notify = true
+				}
+			}
+
+			if ((aOp == "set" || aOp == "setall")) {
+				if (__flags.OJOB_CHECK_JOB_CHANGES) {
+					if (!isArray(aK)) aK = [ aK ]
+					var _keys = parent._ejob
+					$from(aK).intersect(_keys).select(k => {
+						logWarn("oJob '" + k.name + "' is being changed! ")
+					})
+					parent._ejob = parent._ejob.concat(aK)
+				} else {
+					if (isUnDef(ow.oJob.__ojob_warn_ojob_changes_notify)) ow.oJob.__ojob_warn_ojob_changes_notify = false
+					if (!ow.oJob.__ojob_warn_ojob_changes_notify) logWarn("oJobs definitions changes audit is disabled.")
+					ow.oJob.__ojob_warn_ojob_changes_notify = true
+				}
+			}
+		}, true)
 		
 		if (isDef(res.include) && isArray(res.include)) {
 			for (var i in res.include) {
@@ -663,10 +695,14 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 		if (isMap(res.code)) {
 			if (isUnDef(require.cache)) require.cache = {};
 			Object.keys(res.code).forEach(k => {
-				try {
-					require.cache[k] = newFn('require', 'exports', 'module', res.code[k]);
-				} catch(e) {
-					logErr("Problem with code '" + k + "': " + e.message + " (#" + e.lineNumber + ")");
+				if (k.endsWith(".js")) {
+					try {
+						require.cache[k] = newFn('require', 'exports', 'module', res.code[k]);
+					} catch(e) {
+						logErr("Problem with code '" + k + "': " + e.message + " (#" + e.lineNumber + ")");
+					}
+				} else {
+					this._code[k] = res.code[k]
 				}
 			});
 		}
@@ -2621,11 +2657,15 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		}
 
 		if (isDef(aJobTypeArgs.file)) {
-			if (io.fileExists(aJobTypeArgs.file)) {
-				origRes = io.readFileString(aJobTypeArgs.file);
+			if (isDef(parent._code[aJobTypeArgs.file])) {
+				origRes = parent._code[aJobTypeArgs.file]
 			} else {
-				logErr("File '" + aJobTypeArgs.file + " not found!");
-				origRes = "";
+				if (io.fileExists(aJobTypeArgs.file)) {
+					origRes = io.readFileString(aJobTypeArgs.file);
+				} else {
+					logErr("File '" + aJobTypeArgs.file + " not found!");
+					origRes = "";
+				}
 			}
 		}
 
