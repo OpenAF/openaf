@@ -626,33 +626,35 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 		var parent = this
 
 		// Place auditor on ojob::jobs
-		this.getJobsCh().subscribe((aCh, aOp, aK, aV) => {
-			if (aOp == "unset" || aOp == "unsetall") {
-				if (__flags.OJOB_CHECK_JOB_REMOVAL)
-					logWarn("oJobs definitions are being removed: " + af.toSLON(aK))
-				else {
-					if (isUnDef(ow.oJob.__ojob_warn_ojob_removal_notify)) ow.oJob.__ojob_warn_ojob_removal_notify = false
-					if (!ow.oJob.__ojob_warn_ojob_removal_notify) logWarn("oJobs definitions removal audit is disabled.")
-					ow.oJob.__ojob_warn_ojob_removal_notify = true
+		if (__flags.OJOB_CHECK_JOB_CHANGES || __flags.OJOB_CHECK_JOB_REMOVAL) {
+			this.getJobsCh().subscribe((aCh, aOp, aK, aV) => {
+				if (aOp == "unset" || aOp == "unsetall") {
+					if (__flags.OJOB_CHECK_JOB_REMOVAL)
+						logWarn("oJobs definitions are being removed: " + af.toSLON(aK))
+					else {
+						if (isUnDef(ow.oJob.__ojob_warn_ojob_removal_notify)) ow.oJob.__ojob_warn_ojob_removal_notify = false
+						//if (!ow.oJob.__ojob_warn_ojob_removal_notify) logWarn("oJobs definitions removal audit is disabled.")
+						ow.oJob.__ojob_warn_ojob_removal_notify = true
+					}
 				}
-			}
+	
+				if ((aOp == "set" || aOp == "setall")) {
+					if (__flags.OJOB_CHECK_JOB_CHANGES) {
+						if (!isArray(aK)) aK = [ aK ]
+						var _keys = parent._ejob
+						$from(aK).intersect(_keys).select(k => {
+							logWarn("oJob '" + k.name + "' is being changed! ")
+						})
+						parent._ejob = parent._ejob.concat(aK)
+					} else {
+						if (isUnDef(ow.oJob.__ojob_warn_ojob_changes_notify)) ow.oJob.__ojob_warn_ojob_changes_notify = false
+						//if (!ow.oJob.__ojob_warn_ojob_changes_notify) logWarn("oJobs definitions changes audit is disabled.")
+						ow.oJob.__ojob_warn_ojob_changes_notify = true
+					}
+				}
+			}, true)
+		}
 
-			if ((aOp == "set" || aOp == "setall")) {
-				if (__flags.OJOB_CHECK_JOB_CHANGES) {
-					if (!isArray(aK)) aK = [ aK ]
-					var _keys = parent._ejob
-					$from(aK).intersect(_keys).select(k => {
-						logWarn("oJob '" + k.name + "' is being changed! ")
-					})
-					parent._ejob = parent._ejob.concat(aK)
-				} else {
-					if (isUnDef(ow.oJob.__ojob_warn_ojob_changes_notify)) ow.oJob.__ojob_warn_ojob_changes_notify = false
-					if (!ow.oJob.__ojob_warn_ojob_changes_notify) logWarn("oJobs definitions changes audit is disabled.")
-					ow.oJob.__ojob_warn_ojob_changes_notify = true
-				}
-			}
-		}, true)
-		
 		if (isDef(res.include) && isArray(res.include)) {
 			for (var i in res.include) {
 				if (isUnDef(_includeLoaded[res.include[i]])) {
