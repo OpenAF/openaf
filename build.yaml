@@ -40,7 +40,7 @@ jobs:
      exec : |
        sleep(1000, true)
 
-       $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "-c", "ow.loadOJob();oJobRunFile('" + global.path + "/ojob.json');io.writeFileJSON('" + global.path + "/ojob.saved.json',$ch('oJob::jobs').getAll(), '')"])
+       $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "-c", "ow.loadOJob();__flags.OJOB_CHECK_JOB_CHANGES=false;oJobRunFile('" + global.path + "/ojob.json');io.writeFileJSON('" + global.path + "/ojob.saved.json',$ch('oJob::jobs').getAll(), '')"])
        .exec()
        
        plugin("ZIP")
