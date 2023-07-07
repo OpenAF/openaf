@@ -276,29 +276,14 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		}
 	};
 
+	var parent = this
 	jobs.forEach((v, i) => { 
 		mdeps[v.name] = 0
-		if (isArray(jobs[i].from))    jobs[i].from    = jobs[i].from.map(ow.oJob.parseTodo)
-		if (isArray(jobs[i].to))      jobs[i].to      = jobs[i].to.map(ow.oJob.parseTodo)
-		if (isArray(jobs[i].earlier)) jobs[i].earlier = jobs[i].earlier.map(ow.oJob.parseTodo)
-		if (isArray(jobs[i].then))    jobs[i].then    = jobs[i].then.map(ow.oJob.parseTodo)
-	})
-	jobs.forEach(depsScore);
-
-	var sjobs = jobs.sort((a, b) => {
-		return mdeps[b.name] - mdeps[a.name];
-	});
-
-	// Add jobs
-	for(var i in sjobs) {
-		if (isUnDef(sjobs[i].from)  && isDef(sjobs[i].earlier)) sjobs[i].from    = sjobs[i].earlier;
-		if (isUnDef(sjobs[i].to)    && isDef(sjobs[i].then))    sjobs[i].to      = sjobs[i].then;
-		if (isUnDef(sjobs[i].catch) && isDef(sjobs[i].onerror)) sjobs[i].catch   = sjobs[i].onerror;
 
 		// Add custom shortcuts
-		if (isDef(sjobs[i].typeArgs) && isDef(sjobs[i].typeArgs.shortcut)) {
-			var _s   = sjobs[i].typeArgs.shortcut
-			_s.job   = sjobs[i].name
+		if (isDef(v.typeArgs) && isDef(v.typeArgs.shortcut)) {
+			var _s   = v.typeArgs.shortcut
+			_s.job   = v.name
 			_s.nolog = _$(_s.nolog, "typeArgs.shortcut.nolog").isBoolean().default(false)
 			_s.map   = true
 			_s.name  = _$(_s.name, "typeArgs.shortcut.name").isString().default(_s.job)
@@ -313,12 +298,25 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 				_sa["((" + k.replace(/[\(\)]/g, "")] = _s.attrs[k].replace(/[\(\)]/g, "")
 			})
 			_s.attrs = _sa
-			if ($from(this.shortcuts).equals("name", _s.name).none()) {
-				this.shortcuts.push(_s)
-			} else {
-				logWarn("Already existing shortcut '" + _s.name + "' definition. Ignoring.")
-			}
+			parent.addShortcut(_s)
 		}
+
+		if (isArray(jobs[i].from))    jobs[i].from    = jobs[i].from.map(r => parent.parseTodo(r))
+		if (isArray(jobs[i].to))      jobs[i].to      = jobs[i].to.map(r => parent.parseTodo(r))
+		if (isArray(jobs[i].earlier)) jobs[i].earlier = jobs[i].earlier.map(r => parent.parseTodo(r))
+		if (isArray(jobs[i].then))    jobs[i].then    = jobs[i].then.map(r => parent.parseTodo(r))
+	})
+	jobs.forEach(depsScore);
+
+	var sjobs = jobs.sort((a, b) => {
+		return mdeps[b.name] - mdeps[a.name];
+	});
+
+	// Add jobs
+	for(var i in sjobs) {
+		if (isUnDef(sjobs[i].from)  && isDef(sjobs[i].earlier)) sjobs[i].from    = sjobs[i].earlier;
+		if (isUnDef(sjobs[i].to)    && isDef(sjobs[i].then))    sjobs[i].to      = sjobs[i].then;
+		if (isUnDef(sjobs[i].catch) && isDef(sjobs[i].onerror)) sjobs[i].catch   = sjobs[i].onerror;
 
 		this.addJob(this.getJobsCh(), sjobs[i].name, sjobs[i].deps, sjobs[i].type, sjobs[i].typeArgs, sjobs[i].args, sjobs[i].exec, sjobs[i].from, sjobs[i].to, sjobs[i].help, sjobs[i].catch, sjobs[i].each, sjobs[i].lang, sjobs[i].file, sjobs[i].check);
 	}
@@ -2541,6 +2539,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 	var parent = this;
 
 	function addSigil(aName, aCheck) {
+
+		
 		_$(aName, "job name").isString().$_()
 		aCheck = _$(aCheck, "check for '" + aName + "'").isMap().default({})
 		var lstFns = Object.keys(_$())
@@ -2967,6 +2967,17 @@ OpenWrap.oJob.prototype.outputParse = function(aObj) {
 	if (isMap(p._map))    return p._map
 	if (isDef(p.result))  return p.result
 	return p
+}
+
+OpenWrap.oJob.prototype.addShortcut = function(addShortcut) {
+	_$(addShortcut, "addShortcut").isMap().$_()
+
+	if (isUnDef(this.shortcuts)) this.shortcuts = []
+	if ($from(this.shortcuts).equals("name", addShortcut.name).none()) {
+		this.shortcuts.push(addShortcut)
+	} else {
+		logWarn("Already existing shortcut '" + addShortcut.name + "' definition. Ignoring.")
+	}
 }
 
 OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {  
