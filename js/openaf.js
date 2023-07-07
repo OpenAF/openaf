@@ -7631,6 +7631,17 @@ AF.prototype.toSLON = function(aObject, aTheme) {
 
 /**
  * <odoc>
+ * <key>AF.toCSLON(aObject, aTheme) : String</key>
+ * Converts aObject map/array into SLON representation with ansi colors (see more in help for ow.format.toCSLON)
+ * </odoc>
+ */
+AF.prototype.toCSLON = function(aObject, aTheme) {
+	ow.loadFormat
+	return ow.format.toCSLON(aObject, aTheme)
+}
+
+/**
+ * <odoc>
  * <key>AF.fromSLON(aString) : Map</key>
  * Converts a SLON (https://github.com/nmaguiar/slon) string representation into the original map.
  * </odoc>

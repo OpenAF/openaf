@@ -2497,6 +2497,7 @@ OpenWrap.server.prototype.httpd = {
 	__routes: {},
 	__defaultRoutes: {},
 	__preRoutes: {},
+	__servers: {},
 	customLibs: {},
 
 	/**
@@ -2517,6 +2518,8 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	start: function(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout) {
+		if (isNumber(aPort) && isDef(this.__servers[aPort])) return this.__servers[aPort]
+
 		plugin("HTTPServer");
 		
 		if (isUnDef(aPort)) {
@@ -2536,8 +2539,19 @@ OpenWrap.server.prototype.httpd = {
 			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction);
 		
 		this.resetRoutes(hs);
+		this.__servers[Number(hs.getPort())] = hs
 
 		return hs;
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.getHS(aPort) : HTTPd</key>
+	 * Returns the HTTPd object created, if any, for aPort.
+	 * </odoc>
+	 */
+	getHS: function(aPort) {
+		return this.__servers[aPort]
 	},
 
 	/**
@@ -2557,12 +2571,12 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	resetRoutes: function(aHTTPd) {
-		this.__routes[aHTTPd.getPort()] = {};
-		this.__defaultRoutes[aHTTPd.getPort()] = {};
-		this.__preRoutes[aHTTPd.getPort()] = {};
+		this.__routes[Number(aHTTPd.getPort())] = {}
+		this.__defaultRoutes[Number(aHTTPd.getPort())] = {}
+		this.__preRoutes[Number(aHTTPd.getPort())] = {}
 
 		var nullFunc = function(r) { return aHTTPd.reply("", "", 401, {}); };
-		this.route(aHTTPd, { "/": nullFunc }, nullFunc);
+		this.route(aHTTPd, { }, nullFunc)
 
 		return aHTTPd;
 	},
@@ -2613,15 +2627,22 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	route: function(aHTTPd, aMapOfRoutes, aDefaultRoute, aPath, aPreRouteFunc) {
+		aMapOfRoutes  = _$(aMapOfRoutes, "aMapOfRoutes").isMap().default({})
+		aDefaultRoute = _$(aDefaultRoute, "aDefaultRoute").isFunction().default(function(r) { return aHTTPd.reply("", "", 401, {}) })
+
 		if (isUnDef(aPath)) aPath = "/r/";
 		if (isUnDef(aMapOfRoutes)) aMapOfRoutes = {};
 		ow.loadFormat();
 		
 		var parent = this;
-		var aPort = aHTTPd.getPort() + 0;
+		var aPort = Number(aHTTPd.getPort())
 		var aP    = String(aPath);
 		
-		this.__routes[aPort] = aMapOfRoutes;
+		if (isUnDef(this.__routes[aPort])) this.__routes[aPort] = {}
+		Object.keys(aMapOfRoutes).forEach(uri => {
+			parent.__routes[aPort][uri] = aMapOfRoutes[uri]
+		})
+		//this.__routes[aPort] = aMapOfRoutes;
 		if (isDef(aDefaultRoute)) this.__defaultRoutes[aPort] = aDefaultRoute;
 		if (isDef(aPreRouteFunc)) this.__preRoutes[aPort] = aPreRouteFunc;
 		
@@ -2652,14 +2673,14 @@ OpenWrap.server.prototype.httpd = {
 	mapWithExistingRoutes: function(aHTTPd, aMapOfRoutes) {
 		if (isUnDef(aMapOfRoutes)) aMapOfRoutes = {};
 		var res = {};
-		for(var i in this.__routes[aHTTPd.getPort()]) { res[i] = this.__routes[aHTTPd.getPort()][i]; }
+		for(var i in this.__routes[Number(aHTTPd.getPort())]) { res[i] = this.__routes[Number(aHTTPd.getPort())][i] }
 		for(var i in aMapOfRoutes) { res[i] = aMapOfRoutes[i]; }
 		return res;
 	},
 	
 	getDefaultRoute: function(aHTTPd) {
-		if (isUndefined(this.__defaultRoutes[aHTTPd.getPort()])) return undefined;
-		return this.__defaultRoutes[aHTTPd.getPort()];
+		if (isUnDef(this.__defaultRoutes[Number(aHTTPd.getPort())])) return __
+		return this.__defaultRoutes[Number(aHTTPd.getPort())]
 	},
 
 	/**
@@ -2671,9 +2692,9 @@ OpenWrap.server.prototype.httpd = {
 	 */
 	stop: function(aHTTPd) {
 		aHTTPd.stop();
-		delete this.__routes[aHTTPd.getPort()];
-		delete this.__defaultRoutes[aHTTPd.getPort()];
-		delete this.__preRoutes[aHTTPd.getPort()];
+		delete this.__routes[Number(aHTTPd.getPort())]
+		delete this.__defaultRoutes[Number(aHTTPd.getPort())]
+		delete this.__preRoutes[Number(aHTTPd.getPort())]
 	},
 	
 	/**
