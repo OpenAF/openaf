@@ -2171,7 +2171,7 @@ OpenWrap.ch.prototype.__types = {
 			}
 
 			//this.__s[aName].setVersionsToKeep(2);
-			this.__s[aName].setReuseSpace(true);
+			if (isDef(options.file)) this.__s[aName].setReuseSpace(true)
 
 			if (isUnDef(options.map)) {
 				options.map = function() { return "default"; };
@@ -2183,8 +2183,8 @@ OpenWrap.ch.prototype.__types = {
 
 			this.__m[aName] = options.map;
 
-			if (isDef(options.compact) && options.compact) {
-				this.__s[aName].compactMoveChunks();
+			if (isDef(options.file) && isDef(options.compact) && options.compact) {
+				this.__s[aName].compactFile(2500)
 			}
 
 			this.__o[aName] = options;
@@ -2196,8 +2196,8 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},
 		destroy      : function(aName) {
-			if (isDef(this.__o[aName].compact) && this.__o[aName].compact) {
-				this.__s[aName].compactMoveChunks();
+			if (isDef(this.__o[aName].absFile) && isDef(this.__o[aName].compact) && this.__o[aName].compact) {
+				this.__s[aName].compactFile(2500)
 			}			
 
 			var found = false;

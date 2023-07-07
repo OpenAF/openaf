@@ -1584,14 +1584,15 @@ OpenWrap.format.prototype.fromTimeAbbreviation = function(aStr) {
  */
 OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	var dTheme = {
-	   startMap: "(",
-	   sepMap  : ", ",
-	   endMap  : ")",
-	   sepKV   : ": ",
-	   startArr: "[",
-	   sepArr  : " | ",
-	   endArr  : "]",
-	   strQuote: "'"
+	   startMap : "(",
+	   sepMap   : ", ",
+	   endMap   : ")",
+	   sepKV    : ": ",
+	   startArr : "[",
+	   sepArr   : " | ",
+	   endArr   : "]",
+	   strQuote : "'",
+	   specialRE: "[\(\,\)\:\[\]\|\']"
 	}
   
 	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
@@ -1615,7 +1616,7 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 		return ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS');
 	}
 	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
-	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && (aObj.indexOf(dTheme.sepMap) >= 0 || aObj.indexOf(dTheme.strQuote) >= 0)) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
+	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && aObj.match(dTheme.specialRE)) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
 }
 
 /**
@@ -1633,7 +1634,8 @@ OpenWrap.format.prototype.toCSLON = function(aObj, cTheme) {
 	   startArr: "[",
 	   sepArr  : " | ",
 	   endArr  : "]",
-	   strQuote: "'"
+	   strQuote: "'",
+	   specialRE: "[\(\,\)\:\[\]\|\']"
 	}
   
 	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
@@ -1657,7 +1659,7 @@ OpenWrap.format.prototype.toCSLON = function(aObj, cTheme) {
 		return ansiColor("reset", ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS'))
 	}
 	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
-	if (!isMap(aObj) && !isArray(aObj)) return ansiColor("reset", (isString(aObj) && (aObj.indexOf(dTheme.sepMap) >= 0 || aObj.indexOf(dTheme.strQuote) >= 0)) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj))
+	if (!isMap(aObj) && !isArray(aObj)) return ansiColor("reset", (isString(aObj) && aObj.match(dTheme.specialRE)) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj))
 }
 
 /**
