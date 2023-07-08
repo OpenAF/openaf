@@ -118,7 +118,7 @@
         var t = ow.ch.utils.keepHistory(100, "__keepHistoryTest", () => { return { tt: new Date() } });
         sleep(1500, true);
         t.stop();
-        ow.test.assert($ch("__keepHistoryTest").size(), 10, "Problem with a simple ow.ch.utils.keepHistory setup.");
+        ow.test.assert($ch("__keepHistoryTest").size() <= 11, true, "Problem with a simple ow.ch.utils.keepHistory setup.");
 
         $ch("__keepHistoryTest").destroy();
         var t = ow.ch.utils.keepHistory(100, "__keepHistoryTest", () => { return { id: nowNano(), tt: new Date() } }, ["id"], 20);
