@@ -1692,8 +1692,17 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 
 	var clt = new Packages.okhttp3.OkHttpClient.Builder()
 
-	if (isDef(aTimeout)) clt = clt.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
-	if (isNumber(options.timeout)) clt = clt.callTimeout(options.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isDef(aTimeout)) 
+		clt = clt.connectTimeout(aTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isNumber(options.timeout) && isUnDef(options.callTimeout)) 
+		clt = clt.callTimeout(options.timeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	options.readTimeout = _$(options.readTimeout, "options.readTimeout").isNumber().default(options.timeout)
+	options.writeTimeout = _$(options.writeTimeout, "options.writeTimeout").isNumber().default(options.timeout)
+    options.callTimeout = _$(options.callTimeout, "options.callTimeout").isNumber().default(__)
+
+	if (isDef(options.callTimeout)) clt = clt.callTimeout(options.callTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isDef(options.readTimeout)) clt = clt.readTimeout(options.readTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
+	if (isDef(options.writeTimeout)) clt = clt.readTimeout(options.writeTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 
 	this.client = clt.build()
 
