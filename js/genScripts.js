@@ -243,11 +243,12 @@ var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
 //var winConsolePSBat = generateWinConsolePSBat();
 
-var unixScript, unixSB, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
+var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
 
 //if (windows == 0) {
   unixScript = generateUnixScript("\"$@\"");
   unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
+  unixSBoJob = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixPackScript = generateUnixScript("--opack -e \"$*\"");
   unixJobScript = generateUnixScript("--ojob -e \"$*\"");
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true);
@@ -270,6 +271,7 @@ try {
   io.writeFileString(curDir + "/oaf", unixScript);
   io.writeFileString(curDir + "/openaf-sb", unixSB);
   io.writeFileString(curDir + "/oaf-sb", unixSB);
+  io.writeFileString(curDir + "/ojob-sb", unixSBoJob);
   io.writeFileString(curDir + "/opack", unixPackScript);
   io.writeFileString(curDir + "/ojob", unixJobScript);
   io.writeFileString(curDir + "/openaf-console", unixConsoleScript);
@@ -285,6 +287,7 @@ if (windows == 0) {
 	  sh("chmod u+x " + curDir + "/oaf", "", null, false);
     sh("chmod u+x " + curDir + "/openaf-sb", "", null, false);
     sh("chmod u+x " + curDir + "/oaf-sb", "", null, false);
+    sh("chmod u+x " + curDir + "/ojob-sb", "", null, false);
 	  sh("chmod u+x " + curDir + "/opack", "", null, false);
 	  sh("chmod u+x " + curDir + "/ojob", "", null, false);
 	  sh("chmod u+x " + curDir + "/openaf-console", "", null, false);
