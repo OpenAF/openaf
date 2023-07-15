@@ -10,6 +10,7 @@ dependencies.json
 /tests/autoTestAll.test
 /tests/autoTestAll.xlsx
 /tests/autoTestAll.xml
+/tests/autoTestAll.md
 /oJob-common/*
 /oJob-commons/*
 /jslib/*
