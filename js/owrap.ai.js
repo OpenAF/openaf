@@ -263,7 +263,7 @@ OpenWrap.ai.prototype.normalize = {
 
     /**
      * <odoc>
-     * <key>ow.ai.normalize.withSchema(aSimpleMapOfData, aMapSchema) : Array</key>
+     * <key>ow.ai.normalize.withSchema(aSimpleMapOfData, aMapSchema, convertBools) : Array</key>
      * Tries to normalize and return aSimpleMapOfData normalized according with aMapSchema provided. Each element of aMapSchema
      * should be a map describing how to normalize aSimpleMapOfData. Example:\
      * \
@@ -288,7 +288,11 @@ OpenWrap.ai.prototype.normalize = {
      * \
      * </odoc>
      */
-    withSchema: function(aAR, sAR) {
+    withSchema: function(aAR, sAR, convertBools) {
+        _$(aAR, "aSimpleMapOfData").isMap().$_()
+        _$(sAR, "aMapSchema").isMap().$_()
+        convertBools = _$(convertBools, "convertBools").isBoolean().default(false)
+    
         var res = [];
         loadLodash();
     
@@ -324,16 +328,16 @@ OpenWrap.ai.prototype.normalize = {
                     if (isArray(aAR[s])) {
                         var subres = [];
                         for(var ss in aAR[s]) {
-                            subres[ss] = $stream(sAR[s].scaleOf).filter({ val: aAR[s][ss] }).toArray()[0].weight;
+                            subres[ss] = $from(sAR[s].scaleOf).equals("val", aAR[s][ss]).at(0).weight
                         }
                         res[sAR[s].col] = subres;
                     } else {
-                        res[sAR[s].col] = $stream(sAR[s].scaleOf).filter({ val: aAR[s] }).toArray()[0].weight;
+                        res[sAR[s].col] = $from(sAR[s].scaleOf).equals("val", aAR[s]).at(0).weight
                     }
                     continue;
                 }
                 // Else assume it's boolean
-                res[sAR[s].col] =  (aAR[s]) ? true : false;
+                res[sAR[s].col] =  (aAR[s]) ? (convertBools ? 1 : true) : (convertBools ? 0 : false)
             }
         }
     
@@ -389,25 +393,24 @@ OpenWrap.ai.prototype.normalize = {
  * Provides a wrapper to access the existing decision tree algorithms included:\
  * \
  * ID3:\
- *   type              'id3'
+ *   type              'id3'\
  *   trainingSet       (array of maps)   The training data\
  *   categoryAttr      (key name)        The map key to build the decision tree on\
  *   ignoredAttributes (array of keys)   The list of keys to be ignored in each map\
  * \
  * RandomForest:\
- *   type              'randomforest'
+ *   type              'randomforest'\
  *   trainingSet       (array of maps)   The training data\
  *   categoryAttr      (key name)        The map key to build the decision tree on\
  *   ignoredAttributes (array of keys)   The list of keys to be ignored in each map\
  *   treesNumber       (number)          The number of decision trees to use\
  * \
  * C45:\
- *   type              'c45' 
+ *   type              'c45'\
  *   data              (array of arrays) The training data\
  *   features          (arrays of keys)  The keys name by order of each array data value\
  *   featureTypes      (arrays of types) Categorization of each attribute between 'category' and 'number'\
- *   target            (key)             The target key name (the last of each array data value)\
- * \
+ *   target            (key)             The target key name (the last of each array data value)
  * </odoc>
  */
 OpenWrap.ai.prototype.decisionTree = function(args) {
