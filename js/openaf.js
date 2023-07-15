@@ -298,11 +298,11 @@ const sprint = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); r
 
 /**
  * <odoc>
- * <key>lprint(aStr)</key>
+ * <key>lprint(aStr, withColor)</key>
  * "SLONs" and prints the aStr to the stdout (with a new line on the end)
  * </odoc>
  */
-const lprint = function(str) { return print(af.toSLON(str)) }
+const lprint = function(str, c) { return print(c ? af.toCSLON(str) : af.toSLON(str)) }
 
 /**
  * <odoc>
@@ -351,11 +351,11 @@ const printnl = function(str) {
 const sprintnl = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printnl(stringify(str, undefined, delim)); }
 /**
  * <odoc>
- * <key>lprintnl(aStr)</key>
+ * <key>lprintnl(aStr, withColor)</key>
  * "SLONs" and prints the aStr to the stdout (without adding a new line on the end)
  * </odoc>
  */
-const lprintnl = function(str) { return printnl(af.toSLON(str)) }
+const lprintnl = function(str, c) { return printnl(c ? af.toCSLON(str) : af.toSLON(str)) }
 /**
  * <odoc>
  * <key>bprintnl(aStr)</key>
@@ -430,11 +430,11 @@ const printErr = function(str) {
 const sprintErr = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printErr(stringify(str, undefined, delim)); }
 /**
  * <odoc>
- * <key>lprintErr(aStr)</key>
+ * <key>lprintErr(aStr, withColor)</key>
  * "SLONs" and prints the aStr to the stderr (with a new line on the end)
  * </odoc>
  */
-const lprintErr = function(str) { return printErr(af.toSLON(str)) }
+const lprintErr = function(str, c) { return printErr(c ? af.toCSLON(str) : af.toSLON(str)) }
 
 /**
  * <odoc>
@@ -483,11 +483,11 @@ const printErrnl = function(str) {
 const sprintErrnl = function(str, delim) { delim = (isUnDef(delim) ? "  " : delim); return printErrnl(stringify(str, undefined, delim)); }
 /**
  * <odoc>
- * <key>lprintErrnl(aStr)</key>
+ * <key>lprintErrnl(aStr, withColor)</key>
  * "SLONs" and prints the aStr to the stderr (without adding a new line on the end)
  * </odoc>
  */
-const lprintErrnl = function(str) { return printErrnl(af.toSLON(str)) }
+const lprintErrnl = function(str, c) { return printErrnl(c ? af.toCSLON(str) : af.toSLON(str)) }
 
 /**
  * <odoc>

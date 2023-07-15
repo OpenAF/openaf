@@ -5,7 +5,13 @@ jobs:
 # ----------------
 - name : ojob pass
   typeArgs:
-    noLog: true
+    noLog: true 
+    shortcut:
+      name  : pass
+      keyArg: __args
+      args  :
+        debug       : __debug
+        templateArgs: __templateArgs
   help :
     text   : Placeholder/pass job to allow for arguments injection
     expects:
@@ -48,7 +54,17 @@ jobs:
 # ----------------
 - name : ojob debug
   typeArgs:
-      noLog: true
+    noLog   : true
+    shortcut:
+      name  : jobdebug
+      keyArg: job
+      args  :
+        lineColor  : lineColor
+        textColor  : textColor
+        theme      : theme
+        emoticons  : emoticons
+        signs      : signs
+        includeTime: includeTime
   help :
     text: Outputs the current args and res values to help debug an ojob flow.
   exec : |
@@ -62,7 +78,17 @@ jobs:
 # --------------------
 - name: ojob job debug
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : jobsdebug
+      keyArg: jobs
+      args  :
+        lineColor  : lineColor
+        textColor  : textColor
+        theme      : theme
+        emoticons  : emoticons
+        signs      : signs
+        includeTime: includeTime
   help: 
     text   : | 
       Provides an alternative to print based debug.
@@ -242,6 +268,12 @@ jobs:
 # OJOB GET
 # ---------------
 - name : ojob get
+  typeArgs:
+    shortcut:
+      name  : get
+      keyArg: __key
+      args  :
+        path: __path
   help : 
     text   : Retrieves a specific map key (or path) using $get
     expects:
@@ -263,6 +295,12 @@ jobs:
 # OJOB SET
 # ---------------
 - name : ojob set
+  typeArgs:
+    shortcut:
+      name  : set
+      keyArg: __key
+      args  :
+        path: __path
   help : 
     text   : Sets a "key" with the current value on a "path" using $set
     expects:
@@ -282,6 +320,10 @@ jobs:
 # OJOB UNSET
 # -----------------
 - name : ojob unset
+  typeArgs:
+    shortcut:
+      name  : unset
+      keyArg: __key
   help :
     text   : Unsets a "key" using $unset
     expects:
@@ -296,6 +338,17 @@ jobs:
 # OJOB FILE GET
 # --------------------
 - name : ojob file get
+  typeArgs:
+    noLog   : true
+    shortcut:
+      name  : fileget
+      keyArg: __file
+      args  :
+        path : __path
+        cache: __cache
+        ttl  : __ttl
+        out  : __out
+        key  : __key
   help :
     text   : "Retrieves a specific map key (or path) from an YAML or JSON file provided."
     expects:
@@ -369,6 +422,20 @@ jobs:
 # OJOB TEMPLATE
 # --------------------
 - name : ojob template
+  typeArgs:
+    shortcut:
+      name  : template
+      keyArg: template
+      args  :
+        templateFile: templateFile
+        data        : data
+        dataFile    : dataFile
+        outputFile  : outputFile
+        key         : __key
+        tpath       : __tpath
+        dpath       : __dpath
+        outPath     : __outPath
+        out         : __out
   help :
     text: Applies the OpenAF template over the provided data producing an output.
     expects:
@@ -455,6 +522,19 @@ jobs:
 
 # ---------------------------
 - name : ojob template folder
+  typeArgs:
+    shortcut:
+      name  : templateFolder
+      keyArg: templateFolder
+      args  :
+        templatePath: __templatePath
+        data        : data
+        dataFile    : dataFile
+        outputFolder: outputFolder
+        key         : __key
+        dpath       : __dpath
+        logJob      : logJob
+        metaTemplate: metaTemplate
   help :
     text: >
       Given a templateFolder it will execute 'ojob template' for each (recursively), with the provided data, to output to outputFolder.
@@ -542,6 +622,20 @@ jobs:
 
 # ------------------------
 - name : ojob find/replace
+  typeArgs:
+    noLog   : true
+    shortcut:
+      name  : findReplace
+      keyArg: __key
+      args  :
+        path       : __path
+        inputKey   : inputKey
+        inputPath  : inputPath
+        inputFile  : inputFile
+        outputFile : outputFile
+        useRegExp  : useRegExp
+        flagsRegExp: flagsRegExp
+        logJob     : logJob
   help :
     text   : Performs an in-memory find/replace on a provided string or file and outputs to args.output or, optionally, to a file.
     expects:
@@ -615,7 +709,20 @@ jobs:
 # OJOB CHANNEL
 # ------------
 - name : ojob channel
-  help :
+  typeArgs:
+    shortcut:
+      name  : ch
+      keyArg: __name
+      args  :
+        op   : __op
+        key  : __key
+        kpath: __kpath
+        k    : key
+        ks   : keys
+        v    : value
+        vs   : values
+        vpath: __vpath
+        extra: extra
     text: Provides a set of operations over an OpenAF channel
     expects:
     - name: __name
@@ -718,7 +825,14 @@ jobs:
 # -----------------
 - name : ojob print
   typeArgs:
-      noLog: true
+    noLog   : true
+    shortcut:
+      name  : print
+      keyArg: msg
+      args  :
+        key  : __key
+        path : __path
+        level: level
   help :
     text: Prints a message line given an OpenAF template
     expects:
@@ -749,6 +863,9 @@ jobs:
 - name    : ojob print md
   typeArgs:
     noLog: true
+    shortcut:
+      name  : printmd
+      keyArg: __text
   help    :
     text   : Parses an input text as simple ascii markdown
     expects:
@@ -765,7 +882,15 @@ jobs:
 # ---------------
 - name : ojob log
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : log
+      keyArg: msg
+      args  :
+        key    : __key
+        path   : __path
+        level  : level
+        options: options
   help :
     text: Logs a message line given an OpenAF template
     expects:
@@ -800,7 +925,14 @@ jobs:
 # --------------------
 - name : ojob function
   typeArgs:
-      noLog: true
+    noLog   : true
+    shortcut:
+      name  : fn
+      keyArg: __fn
+      args  :
+        key   : __key
+        path  : __path
+        fnPath: __fnPath
   help :
     text : |
       Executes the provided function mapping any args to the function arguments using the odoc help available for the provided function.
@@ -829,7 +961,18 @@ jobs:
 # -----------------
 - name: ojob output
   typeArgs:
-      noLog: true
+    noLog   : true
+    shortcut:
+      name  : output
+      keyArg: __key
+      args  :
+        path    : __path
+        format  : __format
+        title   : __title
+        internal: __internal
+        query   : __query
+        csv     : __csv
+        function: __function
   help: 
     text   : Prints the current arguments to the console.
     expects:
@@ -964,7 +1107,16 @@ jobs:
 # ------------------
 - name: ojob options
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : optionOn
+      keyArg: __optionOn
+      args  :
+        lowerCase: __lowerCase
+        upperCase: __upperCase
+        todos    : __todos
+        default  : __default
+        async    : __async
   help: 
     text: |
       Adds new "todo" entries depending on the value of a provided args variable.
@@ -1075,7 +1227,20 @@ jobs:
 # -------------------
 - name : ojob sec get
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : secget
+      keyArg: secKey
+      args  :
+        secRepo    : secRepo
+        secBucket  : secBucket
+        secPass    : secPass
+        secOut     : secOut
+        secMainPass: secMainPass
+        secFile    : secFile
+        secDontAsk : secDontAsk
+        secIgnore  : secIgnore
+        secEnv     : secEnv
   help : 
     text   : This job will get a SBucket secret and map it to oJob's args
     expects:
@@ -1185,7 +1350,15 @@ jobs:
 # -----------------
 - name : ojob query
   typeArgs:
-      noLog: true
+    noLog   : true
+    shortcut:
+      name  : query
+      keyArg: __query
+      args  :
+        type: __type
+        from: __from
+        to  : __to
+        key : __key
   help : 
     text: Performs a query (using ow.obj.filter) to the existing args.
     expects:
@@ -1249,7 +1422,14 @@ jobs:
 # --------------
 - name : ojob if
   typeArgs:
-      noLog: true
+    noLog   : true
+    shortcut:
+      name  : if
+      keyArg: __condition
+      args  :
+        then : __then
+        else : __else
+        debug: __debug
   help :
     text: If the provided "condition" is evaluated as true it will execute the "then" jobs otherwise it will execute the "else" jobs
     expects:
@@ -1300,7 +1480,12 @@ jobs:
 # ------------------
 - name : ojob repeat
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : repeat
+      keyArg: __time
+      args  :
+        todo: __jobs
   help : 
     text: Repeats sequentially, for a specific number of "times", the provided list of "jobs" (one or more)
     expects:
@@ -1333,7 +1518,13 @@ jobs:
 # ----------------------------
 - name : ojob repeat with each
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : each
+      keyArg: __path
+      args  :
+        key : __key
+        todo: __jbos
   help : 
     text: Repeats the configured "jobs" (one or more jobs) sequentially for each element of the provided "key" list.
     expects:
@@ -1375,7 +1566,12 @@ jobs:
 # -----------------
 - name : ojob check
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : check
+      keyArg: _checks
+      args  :
+        actions: _actions
   to   : ojob job
 
 # ---------------
@@ -1477,7 +1673,10 @@ jobs:
 # --------------------
 - name: ojob set state
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : state
+      keyArg: __state
   help: 
     text: Changes the current state.
     expects:
@@ -1544,7 +1743,16 @@ jobs:
 # ----------------
 - name : ojob todo
   typeArgs:
-      noLog: true
+    noLog   : true
+    shortcut:
+      name  : todo
+      keyArg: todo
+      args  :
+        isolateArgs : isolateArgs
+        isolateJob  : isolateJob
+        templateArgs: templateArgs
+        shareArgs   : shareArgs
+        debug       : __debug
   help: 
     text: "Executes an ojob sub-todo.\nNOTE: doesn't perform any checks for recursive behaviour!"
     expects:
@@ -1666,7 +1874,19 @@ jobs:
 # --------------------
 - name : ojob run file
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : runfile
+      keyArg: __job
+      args  :
+        args        : __args
+        out         : __out
+        key         : __key
+        inKey       : __inKey
+        usePM       : __usePM
+        inPM        : __inPM
+        templateArgs: __templateArgs
+        debug       : __debug
   help :
     text   : Executes an external YAML/JSON ojob file or a remote URL with the provided args.
     expects:
@@ -1747,7 +1967,10 @@ jobs:
 # --------------------
 - name : ojob parallel
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : parallel
+      keyArg: todo
   help: 
     text: "Executes an ojob sub-todo in parallel.\nNOTE: doesn't perform any checks for recursive behaviour!"
     expects:
@@ -1808,7 +2031,10 @@ jobs:
 # ----------------
 - name : ojob wait
   typeArgs:
-      noLog: true
+    noLog   : true
+    shortcut:
+      name  : wait
+      keyArg: time
   help : 
     text: "Waits for a specific amount of time"
     expects:
@@ -1823,7 +2049,12 @@ jobs:
 # ----------------
 - name : ojob exit
   typeArgs:
-      noLog: true
+    noLog: true
+    shortcut:
+      name  : fail
+      keyArg: code
+      args  :
+        force: force
   help : 
     text: "Ends all processing with an exit code"
     expects:

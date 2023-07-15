@@ -54,7 +54,7 @@ public class AFCmdOS extends AFCmdBase {
 			+ "   --repack           - repack OpenAF.jar for faster startup times\n"
 			+ "   --daemon           - executes a script/opack as a daemon\n"
 			+ "   --script           - executes a script/opack\n"
-			+ "   --sb               - generates or pre-appends openaf shebang to a js script\n"
+			+ "   --sb               - generates or pre-appends openaf/ojob shebang to a js script or ojob yaml/json\n"
 			+ "\n"
 			+ "   -h                 - show this help information\n"
 			+ "   -v                 - show the version\n"
