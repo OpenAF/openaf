@@ -14,6 +14,11 @@ if (kparams.indexOf("-h") >= 0 && params["-h"] == "") {
 	ojob_showHelp();
 }
 
+if (kparams.indexOf("-syntax") >= 0 && params["-syntax"] == "") {
+	delete params["-syntax"]
+	ojob_showSyntax()
+}
+
 if (kparams.indexOf("-global") >= 0 && params["-global"] == "") {
 	delete params["-global"]
 	ojob_global()
@@ -82,12 +87,26 @@ function ojob_showHelp() {
 	print("  -todo          List the final todo list.");
 	print("  -deps          Draws a list of dependencies of todo jobs on a file.");
 	print("  -jobhelp (job) Display any available help information for a job.");
+	print("  -syntax        Display the ojob syntax in yaml.")
 	print("  -which         Determines from where an oJob will be loaded from.")
 	print("  -global        List global jobs for this installation.")
 	print("  -shortcuts     Lists the included ojob shortcuts.")
 	print("");
 	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE + ")");
 	ojob_shouldRun = false;
+}
+
+function ojob_showSyntax() {
+	var _r = io.readFileString(getOpenAFJar() + "::" + "docs/.ojob-all.yaml")
+	__initializeCon()
+	if (__conAnsi) {
+		_r = _r.split("\n").map(_s => {
+			//return _s.replace(/^([^\:]+\:) /, ansiColor("green", "$1"))).join("\n")
+			return _s.replace(/^([^(\#|\/\/|\:)]+)\:/, ansiColor("green", "$1:")).replace(/((\#|\/\/)+.+)$/, ansiColor("faint,italic", "$1"))
+		}).join("\n")
+	}
+	print( _r )
+	ojob_shouldRun = false
 }
 
 function ojob__getFile() {
@@ -285,7 +304,7 @@ function ojob_jobhelp() {
 		job = "help";
 	}
 
-	if (isDef(file)) {
+	if (isDef(file) && file != "") {
 		var oj = ow.loadOJob().previewFile(file);
 		oj.jobs = oj.jobs.concat($ch("oJob::jobs").getAll())  // Add included ojobs
 		var hh = $from(oj.jobs).equals("name", job).select({ "name": "n/a", "help": "n/a" })[0];

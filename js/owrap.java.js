@@ -2056,7 +2056,8 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
             res2.sun.gc.generation[i].__totalUsed = $from(res2.sun.gc.generation[i].space).sum("used")
         }
 
-        res2.sun.rt.__percAppTime       = 100 - ((accTime / res2.sun.rt.__totalRunningTime) * 100)
+        res2.sun.rt.__percAppTime         = 100 - ((accTime / res2.sun.rt.__totalRunningTime) * 100)
+        res2.sun.gc.__collectorsAccTimeMs = accTime
 
         return res2
     } else {
