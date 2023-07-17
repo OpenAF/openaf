@@ -283,7 +283,6 @@ jobs:
     execJs  : "some.js"        # sets lang='oaf' and exec to the contents of the defined execJs
     execRequire: "some.js"     # sets lang='oaf' and exec to execute the function with the job name by laoding with 'require' some.js
     execPy  : "some.py"        # sets lang='python' and exec to the contents of the defined execPy
-    execJs 
     file    : "some.exec.code" # sets exec to the contents of the provided file
     # -- type=simple (the basic default type)
     async: false # if true this specific job will always be executed async

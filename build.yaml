@@ -25,6 +25,7 @@ jobs:
    - name  : Copy OpenAF
      deps  :
      - Prepare ojob saved 
+     - Prepare ojob doc
      - Build OpenAFOS
      - Repack OpenAFOS
      exec  : >
@@ -32,6 +33,23 @@ jobs:
         //sh("cp " + global.path + "/openaf.jar " + global.path + "/dist/openaf.jar", "", undefined, true);
         io.mkdir(global.path + "/dist");
         io.cp(global.path + "/openaf.jar", global.path + "/dist/openaf.jar");
+
+   # -----------------------
+   - name : Prepare ojob doc
+     deps :
+     - Repack OpenAFOS
+     exec : |
+       sleep(1000, true)
+
+       plugin("ZIP")
+       var zip = new ZIP()
+       var is = io.readFileStream(global.path + "/docs/ojob-all.yaml")
+       zip.streamPutFileStream(global.path + "/openaf.jar", "docs/.ojob-all.yaml", is)
+       is.close()
+
+       is = io.readFileStream(global.path + "/docs/ojob-all.yaml")
+       zip.streamPutFileStream(global.path + "/openaf.jar.orig", "docs/.ojob-all.yaml", is)
+       is.close()
 
    # -------------------------
    - name : Prepare ojob saved
@@ -55,6 +73,7 @@ jobs:
 
 todo:
 - Prepare ojob saved
+- Prepare ojob doc
 - Build OpenAFOS
 - Repack OpenAFOS
 - Copy OpenAF
