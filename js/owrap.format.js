@@ -2977,13 +2977,29 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	res = res.replace(/^## (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)
 	res = res.replace(/^###+ (.+)/mg, ansiColor("BOLD", "$1") + da)
 	
-	var isTab = false, fields = [], data = []
+	var isTab = false, fields = [], data = [], sepProc = false, insep = false
 	if (res.indexOf("|") >= 0) {
 		res = res.split("\n").map(l => {
 			if ((/^(\|[^\|]+)+\|$/).test(l)) {
 				if (isTab) {
 					if ((/^(\|[-: ]+)+\|$/).test(l)) {
 						// Separator
+						if (!sepProc) {
+							sepProc = true
+						} else {
+							insep = true
+							if (l.trim().indexOf("|") == 0) {
+								var m = {}
+								l.split("|").forEach((s, i) => {
+									if (i == 0) return
+			
+									if (isDef(fields[i-1])) {
+										m[fields[i-1]] = s
+									}
+								})
+								data.push(m)
+							} 	
+						}
 						return null
 					} else {
 						if (l.trim().indexOf("|") == 0) {
@@ -3010,7 +3026,25 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 					isTab = false
 					fields = []
 					var cdata = clone(data)
-					data = []
+					data = [], ssizes = {}
+					if (insep) {
+						// Gather sizes
+						cdata.forEach(row => {
+							Object.keys(row).forEach(k => {
+								if (isUnDef(ssizes[k])) ssizes[k] = 0
+								var l = ansiLength(row[k])
+								if (l > ssizes[k]) ssizes[k] = l
+							})
+						})
+						// Rewriting seps
+						cdata.forEach(row => {
+							Object.keys(row).forEach(k => {
+								if ((/^[-:]+$/).test(row[k])) {
+									row[k] = ansiColor("FAINT", repeat(ssizes[k], "-"))
+								}
+							})
+						})
+					}
 					return printTable(cdata)
 				}
 				return l
