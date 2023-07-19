@@ -267,6 +267,10 @@ jobs:
   type    : simple  # either simple, jobs, shutdown, subscribe and periodic (see more in typeArgs)
   typeArgs:
     noTemplateArgs: true # Boolean to indicate that any "{{ }}" handlebars entry on args should be or processed before the actual processing starts (defaults to ojob.templateArgs) 
+    noTemplate: false # Boolean to indicate if the "exec" contents should or not be parsed as a template with the current execution args (helpfull for shell or ssh langs)
+    shellPrefix: myprefix # When "lang: shell" or "lang: ssh" it will prefix all stdout lines immediatelly
+    langFn  : # The same as ojob.langs.langFn
+    shell   : # The same as ojob.langs.shell
     timeout : 300000 # If defined the maximum time, in ms, that each execution can take before being forced to end
     stopWhen: |
       // Javascript OpenAF code, using 'args', 'job', 'id' and 'deps' variables, that if returns true the job execution will be halted. 
