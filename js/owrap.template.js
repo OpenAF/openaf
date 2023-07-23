@@ -112,12 +112,12 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		switch: (value, options) => {
 			this.switch_value = value
 			this.switch_break = false
-			return options.fn(this)
+			return option(isDef(s.fn) ? s.fn(this) : true)
 		},
 		case: (value, options) => {
 			if (value == this.switch_value) {
 			  this.switch_break = true
-			  return options.fn(this)
+			  return option(isDef(s.fn) ? s.fn(this) : true)
 			}
 		},
 		default: (value, options) => {
@@ -224,7 +224,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 
 	// Based on assemble.io handlebars helpers https://github.com/assemble/handlebars-helpers
 	var obj = {
-		and: (a, b, s) => (a && b) ? s.fn(this) : s.inverse(this),
+		and: (a, b, s) => (a && b) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
 		compare: (a, op, b, s) => {
 			_$(a, "a").$_()
 			_$(op, "op").$_()
@@ -244,69 +244,69 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 			default: throw 'Invalid operator: `' + op + '`'
 			}
 			
-			if (result === false) return s.inverse(this)
-			return s.fn(this)
+			if (result === false) return (isDef(s.inverse) ? s.inverse(this) : false)
+			return (isDef(s.fn) ? s.fn(this) : true)
 		},
 		contains: (collec, value, sIdx, s) => {
 			loadUnderscore();
 			if (typeof sIdx === 'object') {
 				s = sIdx; sIdx = undefined;
 			}
-			if(_.isString(collec) && collec.indexOf(value, sIdx) > -1) return s.fn(this);
-			if(_.contains(collec, value, sIdx)) return s.fn(this); 
-			return s.inverse(this);
+			if(_.isString(collec) && collec.indexOf(value, sIdx) > -1) return (isDef(s.fn) ? s.fn(this) : true);
+			if(_.contains(collec, value, sIdx)) return (isDef(s.fn) ? s.fn(this) : true); 
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		gt: (a, b, s) => {
-			if (a > b) return s.fn(this);
-			return s.inverse(this);
+			if (a > b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		gte: (a, b, s) => {
-			if (a >= b) return s.fn(this);
-			return s.inverse(this);
+			if (a >= b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		has: (v, p, s) => {
 			if (isUnDef(s) && isDef(p)) return p.inverse(this)
 			if (isUnDef(p) && isDef(v)) return v.inverse(this)
 			if ((Array.isArray(v) || isString(v)) && isDef(p)) {
-				if (v.indexOf(p) > -1) return s.fn(this)
+				if (v.indexOf(p) > -1) return (isDef(s.fn) ? s.fn(this) : true)
 			}
-			if (isMap(v) && isString(p) && p in v) return s.fn(this)
-			return s.inverse(this)
+			if (isMap(v) && isString(p) && p in v) return (isDef(s.fn) ? s.fn(this) : true)
+			return (isDef(s.inverse) ? s.inverse(this) : false)
 		},
 		eq: (a, b, s) => {
 			/*if (isDef(a) && isDef(b)) {
 				s = b;
 				b = s.hash.compare;
 			}*/
-			if (a === b) return s.fn(this);
-			return s.inverse(this);
+			if (a === b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
-		ifEven: (n, s) => (n % 2 == 0) ? s.fn(this) : s.inverse(this),
-		ifNth: (a, b, s) => (++b % a === 0) ? s.fn(this) : s.inverse(this),
-		ifOdd: (n, s) => (n % 2 == 1) ? s.fn(this) : s.inverse(this),
+		ifEven: (n, s) => (n % 2 == 0) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		ifNth: (a, b, s) => (++b % a === 0) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		ifOdd: (n, s) => (n % 2 == 1) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
 		is: (a, b, s) => {
-			if (a === b) return s.fn(this);
-			return s.inverse(this);
+			if (a === b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		isnt: (a, b, s) => {
-			if (a !== b) return s.fn(this);
-			return s.inverse(this);	
+			if (a !== b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);	
 		},
 		lt: (a, b, s) => {
-			if (a < b) return s.fn(this);
-			return s.inverse(this);
+			if (a < b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		lte: (a, b, s) => {
-			if (a <= b) return s.fn(this);
-			return s.inverse(this);
+			if (a <= b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
-		neither: (a, b, s) => (!a && !b) ? s.fn(this) : s.inverse(this),
-		or: (a, b, s) => (a === true || b === true) ? s.fn(this) : s.inverse(this),
-		unlessEq: (ctx, s) => (ctx === s.hash.compare) ? s.fn(this) : s.inverse(this),
-		unlessGt: (ctx, s) => (ctx > s.hash.compare) ? s.fn(this) : s.inverse(this),
-		unlessLt: (ctx, s) => (ctx < s.hash.compare) ? s.fn(this) : s.inverse(this),
-		unlessGteq: (ctx, s) => (ctx >= s.hash.compare) ? s.fn(this) : s.inverse(this),
-		unlessLteq: (ctx, s) => (ctx <= s.hash.compare) ? s.fn(this) : s.inverse(this)
+		neither: (a, b, s) => (!a && !b) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		or: (a, b, s) => (a === true || b === true) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessEq: (ctx, s) => (ctx === s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessGt: (ctx, s) => (ctx > s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessLt: (ctx, s) => (ctx < s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessGteq: (ctx, s) => (ctx >= s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessLteq: (ctx, s) => (ctx <= s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false)
 	}
 
 	ow.template.addHelpers("$", obj)
