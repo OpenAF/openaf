@@ -1,5 +1,4 @@
-var _fparam = __expr.split(/ +/).filter(r => !r.startsWith("-"))
-var fparam = (isArray(_fparam) && _fparam.length > 0) ? _fparam[0] : "";
+var fparam;
 var params = processExpr(" ");
 var ojob_shouldRun = true;
 var ojob_args = {};
@@ -110,6 +109,8 @@ function ojob_showSyntax() {
 }
 
 function ojob__getFile() {
+	_fparam = __expr.split(/ +/).filter(r => !r.startsWith("-"))
+	fparam = (isArray(_fparam) && _fparam.length > 0) ? _fparam[0] : ""
 	if (isDef(fparam)) {
 		return fparam;
 	} else {
@@ -221,17 +222,24 @@ function ojob_draw() {
 	});
 
 	print(ansiColor("bold,underline", "\nPaths:"));
+	var _trans = job => {
+		job = ow.oJob.parseTodo(job)
+		if (isMap(job) && isDef(job.name))
+			return job.name
+		else
+			return job
+	}
 	oj.todo.forEach(function(v) {
 		if (isDef(v.job) && isUnDef(v.name)) v.name = v.job;
 		var nn = (isDef(v.name) ? v.name : v);
 		var paths = getPaths(nn);
 		var msg = "";
 		for (var i in paths.from) {
-			msg += (isDef(paths.from[i]) ? paths.from[i] + " -> " : "");
+			msg += (isDef(paths.from[i]) ? _trans(paths.from[i]) + " -> " : "");
 		}
 		msg += "[" + ansiColor("bold", nn) + "]";
 		for (var i in paths.to) {
-			msg += (isDef(paths.to[i]) ? " -> " + paths.to[i] : "");
+			msg += (isDef(paths.to[i]) ? " -> " + _trans(paths.to[i]) : "");
 		}
 		print(msg);
 	});
@@ -369,13 +377,19 @@ function ojob_todo() {
 }
 
 function ojob_shortcuts() {
+	var job = String(__expr).replace(/.*-shortcuts */i, "")
+	__expr = String(__expr).replace(job, "")
+	var file = ojob__getFile()
+
+	if (isDef(file) && file.trim() != "") {
+		var o = ow.loadOJob().parseTodo(ow.loadOJob().previewFile(file), true)
+	}
+
 	var tab = [], _lst = ow.loadOJob().parseTodo(__, true)
 	var _max  = $from(_lst).attach("_len", r => r.job.length).max("_len")._len
 	var _maxJ = $from(_lst).attach("_len", r => $from(Object.keys(r.attrs).map(s=>s.length)).max()).max("_len")._len
 	_maxJ = Math.max(_maxJ, $from(_lst).attach("_len", r => r.name.length).max("_len")._len)
 	var _maxA = $from(_lst).attach("_len", r => $from(Object.values(r.attrs).map(s=>s.length)).max()).max("_len")._len
-
-	var job = String(__expr).replace(/.*-shortcuts */i, "")
 
 	$from(_lst)
 	.sort("job")

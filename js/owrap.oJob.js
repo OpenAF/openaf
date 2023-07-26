@@ -281,25 +281,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 		mdeps[v.name] = 0
 
 		// Add custom shortcuts
-		if (isDef(v.typeArgs) && isDef(v.typeArgs.shortcut)) {
-			var _s   = v.typeArgs.shortcut
-			_s.job   = v.name
-			_s.nolog = _$(_s.nolog, "typeArgs.shortcut.nolog").isBoolean().default(false)
-			_s.map   = true
-			_s.name  = _$(_s.name, "typeArgs.shortcut.name").isString().default(_s.job)
-			_s.attrs = _$(_s.args, "typeArgs.shortcut.args").isMap().default({})
-
-			_s.name    = "(" + _s.name.replace(/[\(\)]/g, "")
-			var keyArg = _$(_s.keyArg, "typeArgs.shortcut.keyArg").isString().default(__)
-
-			var _sa = {}
-			if (isDef(keyArg)) _sa[_s.name] = keyArg
-			Object.keys(_s.attrs).forEach(k => {
-				_sa["((" + k.replace(/[\(\)]/g, "")] = _s.attrs[k].replace(/[\(\)]/g, "")
-			})
-			_s.attrs = _sa
-			parent.addShortcut(_s)
-		}
+		// v = parent.addShortcuts(v) // already done in loadJSON
 
 		if (isArray(jobs[i].from))    jobs[i].from    = jobs[i].from.map(r => parent.parseTodo(r))
 		if (isArray(jobs[i].to))      jobs[i].to      = jobs[i].to.map(r => parent.parseTodo(r))
@@ -538,6 +520,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 	if (!isMap(aJSON)) return {};
 	var res = aJSON;
+	var parent = this
 
 	if (isDef(res)) {
 		res.ojob = _$(res.ojob, "ojob").isMap().default({})
@@ -690,6 +673,11 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			delete res.help
 		}
 		if (isUnDef(res.ojob)) res.ojob = {};
+
+		// Add custom shortcuts
+		if (isArray(res.jobs)) {
+			res.jobs = res.jobs.map(j => parent.addShortcuts(j))
+		}
 
 		// Set code in the require cache
 		if (isMap(res.code)) {
@@ -2978,6 +2966,33 @@ OpenWrap.oJob.prototype.addShortcut = function(addShortcut) {
 	} else {
 		logWarn("Already existing shortcut '" + addShortcut.name + "' definition. Ignoring.")
 	}
+}
+
+OpenWrap.oJob.prototype.addShortcuts = function(v) {
+	var parent = this
+
+	// Add custom shortcuts
+	if (isDef(v.typeArgs) && isDef(v.typeArgs.shortcut)) {
+		var _s   = v.typeArgs.shortcut
+		_s.job   = v.name
+		_s.nolog = _$(_s.nolog, "typeArgs.shortcut.nolog").isBoolean().default(false)
+		_s.map   = true
+		_s.name  = _$(_s.name, "typeArgs.shortcut.name").isString().default(_s.job)
+		_s.attrs = _$(_s.args, "typeArgs.shortcut.args").isMap().default({})
+
+		_s.name    = "(" + _s.name.replace(/[\(\)]/g, "")
+		var keyArg = _$(_s.keyArg, "typeArgs.shortcut.keyArg").isString().default(__)
+
+		var _sa = {}
+		if (isDef(keyArg)) _sa[_s.name] = keyArg
+		Object.keys(_s.attrs).forEach(k => {
+			_sa["((" + k.replace(/[\(\)]/g, "")] = _s.attrs[k].replace(/[\(\)]/g, "")
+		})
+		_s.attrs = _sa
+		parent.addShortcut(_s)
+	}
+
+	return v
 }
 
 OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {  
