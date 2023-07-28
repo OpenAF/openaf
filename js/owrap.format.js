@@ -2978,6 +2978,36 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	res = res.replace(/^###+ (.+)/mg, ansiColor("BOLD", "$1") + da)
 	
 	var isTab = false, fields = [], data = [], sepProc = false, insep = false
+	// line rule
+	if (res.indexOf("---") >= 0) {
+		var _aSize
+		__conStatus || __initializeCon()
+
+		if (isDef(__con)) {
+			_aSize = __con.getTerminal().getWidth()
+		} else {
+			_aSize = 80
+		}
+	
+		res = res.split("\n").map(l => {
+			if (l == "---") {
+				return repeat(_aSize, ansiColor("faint", (isDef(__con) ?  "─" : "-")))
+			} else {
+				return l
+			}
+		}).join("\n")
+	}
+	// side line render
+	if (res.indexOf(">") >= 0) {
+		res = res.split("\n").map(l => {
+			if (/^(\> .+)$/.test(l)) {
+				return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, "FAINT")))
+			} else {
+				return l
+			}
+		}).join("\n")
+	}
+	// table render
 	if (res.indexOf("|") >= 0) {
 		res = res.split("\n").map(l => {
 			if ((/^(\|[^\|]+)+\|$/).test(l)) {
@@ -3045,7 +3075,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 							})
 						})
 					}
-					return printTable(cdata)
+					return printTable(cdata).replace(/\n$/m, "")
 				}
 				return l
 			}

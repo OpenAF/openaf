@@ -99,7 +99,10 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $a2m             -- shortcut to the OpenAF's $a2m function\
  *   - $a4m             -- shortcut to the OpenAF's $a4m function\
  *   - $m2a             -- shortcut to the OpenAF's $m2a function\
- *   - $m4a             -- shortcut to the OpenAF's $m4a function
+ *   - $m4a             -- shortcut to the OpenAF's $m4a function\
+ *   - $pass            -- returns an empty string\
+ *   - $sline           -- shortcut to the OpenAF's format withSideLine\
+ *   - $set             -- block set of a provided key
  * </odoc>
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
@@ -160,6 +163,22 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		len: s => s.length,
 		repeat: (t, s) => repeat(t, s),
 		range: (c, s, t) => range(c, s, t),
+		pass: () => "",
+		set: (aK, o) => {
+			if (isString(aK) && isMap(o) && isMap(o.data)) {
+				$$(o.data.root).set(aK, o.fn(this) )
+			}
+		},
+		sline: (aStr, aSize, ansiLine, ansiText, aTheme) => {
+			if (isMap(aSize)) aSize = __
+			if (isMap(ansiLine)) ansiLine = __
+			if (isMap(ansiText)) ansiText = __
+			if (isMap(aTheme)) aTheme = __
+
+			aTheme = ow.format.withSideLineThemes()[String(aTheme)]
+			
+			return ow.format.withSideLine(aStr, aSize, ansiLine, ansiText, aTheme)
+		},
 		a2m: (d, a) => $a2m(d, a),
 		a4m: (a, k, d) => $a4m(a, k, d),
 		m2a: (d, m) => $m2a(d, m),
