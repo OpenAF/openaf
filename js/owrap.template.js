@@ -144,7 +144,13 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		},	
 		env: getEnv,
 		escape: s => { return s.replace(/['"]/g, "\\$1"); },
-		acolor: (c, s) => { return ansiColor(c, s) },
+		acolor: (c, s) => { 
+			if (isMap(s)) {
+				return ansiColor(c, s.fn(this))
+			} else {
+				return ansiColor(c, s) 
+			}
+		},
 		f: $f,
 		ft: $ft,
 		t: (t, a) => $t(t, a),
@@ -165,11 +171,11 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		range: (c, s, t) => range(c, s, t),
 		pass: () => "",
 		set: (aK, o) => {
-			if (isString(aK) && isMap(o) && isMap(o.data)) {
+			if (__flags.TEMPLATE_SET && isString(aK) && isMap(o) && isMap(o.data)) {
 				$$(o.data.root).set(aK, o.fn(this) )
 			}
 		},
-		sline: (aStr, aSize, ansiLine, ansiText, aTheme) => {
+		sline: (aStr, aSize, ansiLine, ansiText, aTheme, s) => {
 			if (isMap(aSize)) aSize = __
 			if (isMap(ansiLine)) ansiLine = __
 			if (isMap(ansiText)) ansiText = __
@@ -177,7 +183,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 
 			aTheme = ow.format.withSideLineThemes()[String(aTheme)]
 			
-			return ow.format.withSideLine(aStr, aSize, ansiLine, ansiText, aTheme)
+			return ow.format.withSideLine(isMap(s) && isDef(s.fn) ? s.fn(this) : aStr, aSize, ansiLine, ansiText, aTheme)
 		},
 		a2m: (d, a) => $a2m(d, a),
 		a4m: (a, k, d) => $a4m(a, k, d),

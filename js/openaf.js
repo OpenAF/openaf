@@ -177,6 +177,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_CHECK_JOB_CHANGES     : false,
 	OAF_CLOSED                 : false,
 	OAF_PRECOMPILE_LEVEL       : 2,
+	TEMPLATE_SET               : true,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
