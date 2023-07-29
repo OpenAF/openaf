@@ -2961,13 +2961,24 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
  * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
- * Currently supports only: bold, italic.
+ * Currently supports only: bold, italic, tables, simple code blocks, line rule and blocks.
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
-    _$(aString, "aString").isString().$_();
-    defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
-	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "");
+    _$(aString, "aString").isString().$_()
+    defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("")
+	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "")
+
+	// pre process code blocks
+
+	//  single line
+	res = res.replace(/```+(.+?)```+/mg, ansiColor("NEGATIVE_ON", "$1"))
+
+	//  multi line
+	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
+	cblocks.forEach((b, i) => {
+		res = res.replace(b, "```$$" + i + "```")
+	})
 
  	res = res.replace(/(\*{3}|_{3})([^\*_\n]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
  	res = res.replace(/(\*{2}|_{2})([^\*_\n]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
@@ -3006,6 +3017,12 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 				return l
 			}
 		}).join("\n")
+	}
+	// code block
+	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
+		cblocks.forEach((b, i) => {
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BLUE,BOLD", "NEGATIVE_ON", ow.format.withSideLineThemes().openCurvedRect))
+		})
 	}
 	// table render
 	if (res.indexOf("|") >= 0) {
@@ -3075,14 +3092,14 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 							})
 						})
 					}
-					return printTable(cdata).replace(/\n$/m, "")
+					return printTable(cdata)
 				}
 				return l
 			}
-		}).filter(isString).join("\n")
+		}).filter(isString).join("\n").replace(/\n$/m, "")
 	}
 
-	return res;
+	return res
 };
 
 OpenWrap.format.prototype.withSideLineThemes = function() {
