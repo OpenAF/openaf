@@ -2976,9 +2976,10 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 
 	//  multi line
 	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
-	cblocks.forEach((b, i) => {
-		res = res.replace(b, "```$$" + i + "```")
-	})
+	if (cblocks != null) 
+		cblocks.forEach((b, i) => {
+			res = res.replace(b, "```$$" + i + "```")
+		})
 
  	res = res.replace(/(\*{3}|_{3})([^\*_\n]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
  	res = res.replace(/(\*{2}|_{2})([^\*_\n]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
