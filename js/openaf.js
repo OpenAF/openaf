@@ -757,11 +757,12 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	var maxsize = {};
 	var output = "";
 	aBgColor = _$(aBgColor, "aBgColor").isString().default(__)
-	var colorMap = { lines: "RESET", value: "CYAN" };
+	var colorMap = __colorFormat.table
 
 	if (isDef(aBgColor)) {
 		colorMap.lines = aBgColor + "," + colorMap.lines
 		colorMap.value = aBgColor + "," + colorMap.value
+		colorMap.title = aBgColor + "," + colorMap.title
 	}
 
 	ow.loadFormat();
@@ -818,17 +819,17 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		var cols = Object.keys(row);
 		if (count == 0) {
 			//output += (useAnsi ? ansiColor("bold", "|") : "|"); 
-			output += (useAnsi ? ansiColor(colorMap.lines, "") : ""); 
+			output += (useAnsi ? ansiColor(colorMap.title, "") : ""); 
 			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(function(col) {
 				if (outOfWidth) return;
 				lineSize += maxsize[String(col)] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
+					output += (useAnsi ? ansiColor(colorMap.title, "...") : "..."); outOfWidth = true;
 				} else {
 					var _ps = repeat(Math.floor((maxsize[String(col)] - ansiLength(String(col)))/2), ' ')
 					var _pe = repeat(Math.round((maxsize[String(col)] - ansiLength(String(col))) / 2), ' ')
-					output += (useAnsi ? ansiColor(colorMap.lines, _ps + String(col) + _pe) : _ps + String(col) + _pe)
+					output += (useAnsi ? ansiColor(colorMap.title, _ps + String(col) + _pe) : _ps + String(col) + _pe)
 					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 				}
 				colNum++;
@@ -1676,7 +1677,8 @@ var __colorFormat = {
 	default: "YELLOW",
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
-	askPos: "BLUE"
+	askPos: "BLUE",
+	table: { lines: "RESET", value: "RESET", title: "BOLD" }
 };
 const colorify = function(json) {
 	if (typeof json != 'string') {
