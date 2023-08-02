@@ -116,12 +116,12 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		switch: (value, options) => {
 			this.switch_value = value
 			this.switch_break = false
-			return option(isDef(s.fn) ? s.fn(this) : true)
+			return isDef(options.fn) ? options.fn(this) : true
 		},
 		case: (value, options) => {
 			if (value == this.switch_value) {
 			  this.switch_break = true
-			  return option(isDef(s.fn) ? s.fn(this) : true)
+			  return isDef(options.fn) ? options.fn(this) : true
 			}
 		},
 		default: (value, options) => {
