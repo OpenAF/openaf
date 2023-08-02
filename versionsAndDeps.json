@@ -38,7 +38,7 @@
 		{
 			"description": "Handlebars",
 			"path": ["js/handlebars.js"],
-			"version": "4.7.7",
+			"version": "4.7.8",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/wycats/handlebars.js/master/LICENSE",
@@ -395,7 +395,7 @@
 			"removable": true,
 			"deps": [
 				"lib/org-eclipse-jgit-5.8.1.jar",
-				"lib/jsch-0.2.9.jar",
+				"lib/jsch-0.2.10.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -458,7 +458,7 @@
 				"lib/commons-io-2.8.0.jar"
 			],
 			"deps": [
-				"lib/jsch-0.2.9.jar",
+				"lib/jsch-0.2.10.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
