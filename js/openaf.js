@@ -192,6 +192,11 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		wordWrap   : true,
 		compact    : true
 	},
+	TABLE: {
+		wordWrap           : true,
+		wordWrapUseSep     : false,
+		wordWrapLimitFactor: 2
+	},
 	CONSOLE: {
 		view: "tree"
 	},
@@ -746,17 +751,20 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 
 /**
  * <odoc>
- * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor) : String</key>
+ * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
  * Optionally you can specify aWidthLimit, useAnsi and/or aBgColor.
  * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf" or "plain")
  * </odoc>
  */
-const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor) {
+const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep) {
 	var count = 0;
 	var maxsize = {};
 	var output = "";
-	aBgColor = _$(aBgColor, "aBgColor").isString().default(__)
+	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
+	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
+	useRowSep = _$(useRowSep, "useRowSep").isBoolean().default(__flags.TABLE.wordWrapUseSep)
+
 	var colorMap = __colorFormat.table
 
 	if (isDef(aBgColor)) {
@@ -801,7 +809,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
 	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
-	
+
+	// If wordwrap generate new array
+	anArrayOfEntries = (aWidthLimit <= 0 ? anArrayOfEntries : ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", repeat(s, "-")) : __))
+
 	// Find sizes
 	anArrayOfEntries.forEach(function(row) {
 		var cols = Object.keys(row);
