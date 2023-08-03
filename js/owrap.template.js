@@ -297,6 +297,28 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 			if (a >= b) return (isDef(s.fn) ? s.fn(this) : true);
 			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
+		// Custom helper additional to http://assemble.io/helpers/helpers-comparison.html
+		startsWith: (a, b, s) => {
+			if (isString(a) && isString(b)) {
+				if (a.startsWith(b)) return (isDef(s.fn) ? s.fn(this) : true)
+				return (isDef(s.inverse) ? s.inverse(this) : false) 
+			}
+		},
+		// Custom helper additional to http://assemble.io/helpers/helpers-comparison.html
+		endsWith: (a, b, s) => {
+			if (isString(a) && isString(b)) {
+				if (a.endsWith(b)) return (isDef(s.fn) ? s.fn(this) : true)
+				return (isDef(s.inverse) ? s.inverse(this) : false) 
+			}
+		},
+		// Custom helper additional to http://assemble.io/helpers/helpers-comparison.html
+		match: (a, re, flags, s) => {
+			if (isUnDef(s)) { s = flags; flags = "" }
+			if (isString(a) && isString(re) && isString(flags)) {
+				if (a.match(new RegExp(re, flags))) return (isDef(s.fn) ? s.fn(this) : true)
+				return (isDef(s.inverse) ? s.inverse(this) : false) 
+			}
+		},
 		has: (v, p, s) => {
 			if (isUnDef(s) && isDef(p)) return p.inverse(this)
 			if (isUnDef(p) && isDef(v)) return v.inverse(this)

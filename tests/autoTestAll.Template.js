@@ -102,6 +102,46 @@
             "ok",
             "Problem with template conditional helper $ifOdd"
         )
+        ow.test.assert(
+            $t("{{#$startsWith 'something' 'some'}}ok{{else}}nok{{/$startsWith}}"),
+            "ok",
+            "Problem with ttemplate conditional helper $startsWith"
+        )
+        ow.test.assert(
+            $t("{{#if ($startsWith 'something' 'some')}}ok{{else}}nok{{/if}}"),
+            "ok",
+            "Problem with ttemplate conditional helper $startsWith inline"
+        )
+        ow.test.assert(
+            $t("{{#$endsWith 'something' 'thing'}}ok{{else}}nok{{/$endsWith}}"),
+            "ok",
+            "Problem with ttemplate conditional helper $endsWith"
+        )
+        ow.test.assert(
+            $t("{{#if ($endsWith 'something' 'thing')}}ok{{else}}nok{{/if}}"),
+            "ok",
+            "Problem with ttemplate conditional helper $endsWith inline"
+        )
+        ow.test.assert(
+            $t("{{#$match 'something' 's?ome'}}ok{{else}}nok{{/$match}}"),
+            "ok",
+            "Problem with ttemplate conditional helper $match"
+        )
+        ow.test.assert(
+            $t("{{#if ($match 'something' 's?ome')}}ok{{else}}nok{{/if}}"),
+            "ok",
+            "Problem with ttemplate conditional helper $match inline"
+        )
+        ow.test.assert(
+            $t("{{#$match 'something' 'S?OME' 'i'}}ok{{else}}nok{{/$match}}"),
+            "ok",
+            "Problem with ttemplate conditional helper $match"
+        )
+        ow.test.assert(
+            $t("{{#if ($match 'something' 'S?OME' 'i')}}ok{{else}}nok{{/if}}"),
+            "ok",
+            "Problem with ttemplate conditional helper $match inline"
+        )
     };
 
     exports.testPartialHelpers = function() {
