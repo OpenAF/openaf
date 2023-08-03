@@ -8755,7 +8755,7 @@ const $channels = function(a) {
 const $ch = $channels;
 
 var __threadPool;
-var __threadPoolFactor = 1;
+var __threadPoolFactor = 2
 
 const __resetThreadPool = function(poolFactor) {
 	__threadPoolFactor = poolFactor;
