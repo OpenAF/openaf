@@ -98,6 +98,90 @@ OpenWrap.format.prototype.string = {
 	},
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc) : Array</key>
+	 * Given anArray of maps will return an array suitable to use with printTable for a maxTableSize, a separator length
+	 * (sepLen (which defaults to 1)) and an optional line separator function (sepFunc that receives the max length of a 
+	 * column). Word-wrap is achieved by creating new map array entries whenever the calculated max size of each line 
+	 * with sepLen is achieved. Example of usage:\
+	 * \
+	 *   __initializeCon()\
+     *   var maxS = __con.getTerminal().getWidth()\
+	 *   print(printTable(ow.format.string.wordWrapArray(io.listFiles("js").files, maxS, 1, s => ansiColor("FAINT", repeat(s, "-"))), maxS))\
+	 * 
+	 * </odoc>
+	 */
+	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc) => {
+		_$(ar, "ar").isArray().$_()
+		_$(maxTableSize, "maxTableSize").isNumber().$_()
+		sepFunc = _$(sepFunc, "sepFunc").isFunction().default(__)
+		sepLen = _$(sepLen, "sepLen").isNumber().default(1)
+	  
+		// Finding max sizes
+		var maxSizes = [], fixedMinSize = []
+		ar.forEach(row => {
+		  var _keys = Object.keys(row)
+		  Object.values(row).forEach((column, i) => {
+			if (isUnDef(maxSizes[i])) maxSizes[i] = 0
+			if (isUnDef(fixedMinSize[i])) fixedMinSize[i] = 0
+			fixedMinSize[i] = Math.max(fixedMinSize[i], ansiLength(String(_keys[i])))
+			maxSizes[i] = Math.max(maxSizes[i], ansiLength(String(column)))
+		  })
+		})
+	  
+		maxSizes = maxSizes.map((r, i) => Math.max(r, fixedMinSize[i]))
+	  
+		var numOfCols = maxSizes.length
+		var curMaxSize = $from(maxSizes).sum() + (sepLen * numOfCols) // (numOfCols - 1) = num of separators and new line
+		var chgCols = []
+		if (curMaxSize > maxTableSize) {
+		  var fd = Math.ceil((curMaxSize - maxTableSize) / numOfCols)
+		  maxSizes.forEach((s, i) => {
+			if (fixedMinSize[i] < (s - fd)) chgCols.push(i)
+		  })
+		}
+	
+		// Pass math
+		var diffPerCol = (curMaxSize > maxTableSize ? Math.ceil((curMaxSize - maxTableSize) / chgCols.length) : 0)
+		var maxSubLines = 0
+	  
+		var _lines = []
+		ar.forEach(_ar => {
+		  // Processing line
+		  var _keys = Object.keys(_ar)
+		  var lines = Object.values(_ar).map((v, i) => {
+			var _ar = String((chgCols.indexOf(i) >= 0 ? ow.format.string.wordWrap(String(v), Math.max(fixedMinSize[i], maxSizes[i] - diffPerCol)) : v)).split("\n")
+			maxSubLines = Math.max(maxSubLines, _ar.length)
+			return _ar
+		  })
+		  // Prepare lines
+		  var _s = []
+		  for (var _lx = 0; _lx < maxSubLines; _lx++) {
+			var _m = {}
+			lines.forEach((r, i) => {
+			  if (isUnDef(_s[i]))
+			  	_s[i] = (chgCols.indexOf(i) >= 0 ? Math.max(fixedMinSize[i], maxSizes[i] - diffPerCol) : Math.max(fixedMinSize[i], maxSizes[i]))
+			  if (isDef(r[_lx]))
+				_m[_keys[i]] = r[_lx] + (_s[i] > ansiLength(r[_lx]) ? repeat(_s[i] - ansiLength(r[_lx]), ' ') : "")
+			  else
+				_m[_keys[i]] = repeat(_s[i], ' ')
+			})
+			_lines.push(_m)
+		  }
+	  
+		  if (isDef(sepFunc)) {
+			var _m = {}, _ds = 0
+			_keys.forEach((k, i) => {
+			  _m[k] = sepFunc(_s[i])
+			  _ds += _s[i]
+			})
+			_lines.push(_m)
+		  }
+		})
+	  
+		return _lines
+	},
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.wordWrap(aString, maxWidth, newLineSeparator, tabDefault) : String</key>
 	 * Given aString word wraps the text on it given the maxWidth length per line. Optionally you can provide
 	 * a newLineSeparator otherwise '\n' will be used. Optionally tabDefault determines how many spaces a tab represents (default 4)
