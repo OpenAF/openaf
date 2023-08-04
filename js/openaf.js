@@ -758,7 +758,7 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
  * </odoc>
  */
 const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep) {
-	var count = 0;
+	var count = 0, inCount = anArrayOfEntries.length
 	var maxsize = {};
 	var output = "";
 	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
@@ -882,7 +882,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	});
 
 	if (displayCount) {
-		var summary = "[#" + count + " " + ((count <= 1) ? "row" : "rows") + "]";
+		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]";
 		output += (useAnsi ? ansiColor(colorMap.lines, summary) : summary);
 	}
 	
@@ -7650,7 +7650,7 @@ AF.prototype.toSLON = function(aObject, aTheme) {
  * </odoc>
  */
 AF.prototype.toCSLON = function(aObject, aTheme) {
-	ow.loadFormat
+	ow.loadFormat()
 	return ow.format.toCSLON(aObject, aTheme)
 }
 
