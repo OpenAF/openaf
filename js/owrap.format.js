@@ -131,17 +131,21 @@ OpenWrap.format.prototype.string = {
 		maxSizes = maxSizes.map((r, i) => Math.max(r, fixedMinSize[i]))
 	  
 		var numOfCols = maxSizes.length
-		var curMaxSize = $from(maxSizes).sum() + (sepLen * numOfCols) // (numOfCols - 1) = num of separators and new line
+		var fixedSize = (sepLen * (numOfCols-1))
+		var curMaxSize = $from(maxSizes).sum() + (sepLen * (numOfCols-1)) + 1 // (numOfCols-1) = num of separators and new line
 		var chgCols = []
 		if (curMaxSize > maxTableSize) {
 		  var fd = Math.ceil((curMaxSize - maxTableSize) / numOfCols)
 		  maxSizes.forEach((s, i) => {
-			if (fixedMinSize[i] < (s - fd)) chgCols.push(i)
+			if (fixedMinSize[i] < (s - fd)) 
+				chgCols.push(i)
+			else
+				fixedSize += s
 		  })
 		}
-	
+
 		// Pass math
-		var diffPerCol = (curMaxSize > maxTableSize ? Math.ceil((curMaxSize - maxTableSize) / chgCols.length) : 0)
+		//var diffPerCol = (curMaxSize > maxTableSize ? Math.ceil((curMaxSize - maxTableSize) / chgCols.length) : 0)
 		var maxSubLines = 0
 		var maxCol = maxTableSize * __flags.TABLE.wordWrapLimitFactor
 
@@ -149,7 +153,7 @@ OpenWrap.format.prototype.string = {
 		var rowLimitFn = s => {
 			if (isString(s)) {
 				if (__flags.TABLE.wordWrapLimitFactor > 0 && ansiLength(s) > maxCol) {
-					return s.substr(0, maxCol)
+					return s.substr(0, maxCol) + "..."
 				} else {
 					return s
 				}
@@ -158,12 +162,20 @@ OpenWrap.format.prototype.string = {
 			}
 		}
 	  
-		var _lines = []
+		//print(`curMaxSize=${curMaxSize} | maxTableSize=${maxTableSize} | chgCols.len=${chgCols.length} | fixedSize=${fixedSize}`)
+
+		var _lines = [], _newSize = []
 		ar.forEach(_ar => {
 		  // Processing line
 		  var _keys = Object.keys(_ar)
 		  var lines = Object.values(_ar).map((v, i) => {
-			var _ar = String((chgCols.indexOf(i) >= 0 ? rowLimitFn(ow.format.string.wordWrap(String(v), Math.max(fixedMinSize[i], maxSizes[i] - diffPerCol))) : rowLimitFn(v) )).split("\n")
+			if (chgCols.indexOf(i) >= 0) {
+				_newSize[i] = Math.max(fixedMinSize[i], Math.round((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
+			} else {
+				_newSize[i] = Math.max(fixedMinSize[i], maxSizes[i])
+			}
+			
+			var _ar = String((chgCols.indexOf(i) >= 0 ? rowLimitFn(ow.format.string.wordWrap(String(v), _newSize[i] )) : rowLimitFn(v) )).split("\n")
 			maxSubLines = Math.max(maxSubLines, _ar.length)
 			return _ar
 		  })
@@ -173,8 +185,11 @@ OpenWrap.format.prototype.string = {
 			var _m = {}
 			lines.forEach((r, i) => {
 			  if (isUnDef(_s[i])) {
-			  	_s[i] = (chgCols.indexOf(i) >= 0 ? Math.max(fixedMinSize[i], maxSizes[i] - diffPerCol) : Math.max(fixedMinSize[i], maxSizes[i]))
-				_s[i] = __flags.TABLE.wordWrapLimitFactor > 0 && _s[i] > maxCol ? maxCol : _s[i] 
+				if (__flags.TABLE.wordWrapLimitFactor > 0 && _newSize[i] > maxCol) {
+					_s[i] = maxCol
+				} else {
+					_s[i] = _newSize[i]
+				}
 			  }
 			  if (isDef(r[_lx]))
 				_m[_keys[i]] = r[_lx] + (_s[i] > ansiLength(r[_lx]) ? repeat(_s[i] - ansiLength(r[_lx]), ' ') : "")
@@ -184,6 +199,7 @@ OpenWrap.format.prototype.string = {
 			_lines.push(_m)
 		  }
 	  
+		  // Preparing sep
 		  if (isDef(sepFunc)) {
 			var _m = {}, _ds = 0
 			_keys.forEach((k, i) => {
@@ -3197,7 +3213,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 				}
 				return l
 			}
-		}).filter(isString).join("\n").replace(/\n$/m, "")
+		}).filter(isString).join("\n")
 	}
 
 	return res
