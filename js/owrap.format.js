@@ -135,7 +135,7 @@ OpenWrap.format.prototype.string = {
 		var curMaxSize = $from(maxSizes).sum() + (sepLen * (numOfCols-1)) + 1 // (numOfCols-1) = num of separators and new line
 		var chgCols = []
 		if (curMaxSize > maxTableSize) {
-		  var fd = Math.ceil((curMaxSize - maxTableSize) / numOfCols)
+		  var fd = Math.ceil(maxTableSize / numOfCols)
 		  maxSizes.forEach((s, i) => {
 			if (fixedMinSize[i] < (s - fd)) 
 				chgCols.push(i)
@@ -162,7 +162,7 @@ OpenWrap.format.prototype.string = {
 			}
 		}
 	  
-		//print(`curMaxSize=${curMaxSize} | maxTableSize=${maxTableSize} | chgCols.len=${chgCols.length} | fixedSize=${fixedSize}`)
+		//print(`curMaxSize=${curMaxSize} | maxTableSize=${maxTableSize} | chgCols.len=${af.toCSLON(chgCols)} | fixedSize=${fixedSize}`)
 
 		var _lines = [], _newSize = []
 		ar.forEach(_ar => {
