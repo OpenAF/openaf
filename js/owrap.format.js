@@ -3077,7 +3077,7 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
  * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
- * Currently supports only: bold, italic, tables, simple code blocks, line rule and blocks.
+ * Currently supports only: bold, italic, tables, simple code blocks, line rule, bullets, numbered lines and blocks.
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
@@ -3125,6 +3125,36 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			}
 		}).join("\n")
 	}
+	// bullets
+	if (res.indexOf("* ") >= 0) {
+		res = res.split("\n").map(l => {
+			var ar = l.match(/^(\s*)\*(\s+)(.+)$/)
+			if (ar) {
+				var lsize = ar[1].length + 1 + ar[2].length
+
+				return ow.format.string.wordWrap(ar[3], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
+					return (i == 0 ? ar[1] + ansiColor("BOLD", "\u2022") + ar[2] : repeat(lsize, ' ')) + l
+				}).join("\n")
+			} else {
+				return l
+			}
+		}).join("\n")
+	}
+	// numbered list
+	if (res.match(/^\s*\d+\.\s+/m)) {
+		res = res.split("\n").map(l => {
+			var ar = l.match(/^(\s*)(\d+)\.(\s+)(.+)$/)
+			if (ar) {
+				var lsize = ar[1].length + ar[2].length + 1 + ar[3].length
+
+				return ow.format.string.wordWrap(ar[4], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
+					return (i == 0 ? ar[1] + ansiColor("BOLD", ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
+				}).join("\n")
+			} else {
+				return l
+			}
+		}).join("\n")
+	}
 	// side line render
 	if (res.indexOf(">") >= 0) {
 		res = res.split("\n").map(l => {
@@ -3158,7 +3188,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 									if (i == 0) return
 			
 									if (isDef(fields[i-1])) {
-										m[fields[i-1]] = s
+										m[fields[i-1]] = s.trim()
 									}
 								})
 								data.push(m)
@@ -3172,7 +3202,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 								if (i == 0) return
 		
 								if (isDef(fields[i-1])) {
-									m[fields[i-1]] = s
+									m[fields[i-1]] = s.trim()
 								}
 							})
 							data.push(m)
@@ -3209,7 +3239,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 							})
 						})
 					}
-					return printTable(cdata)
+					return printTable(cdata, __con.getTerminal().getWidth(), __, __, __, __, true, true)
 				}
 				return l
 			}
