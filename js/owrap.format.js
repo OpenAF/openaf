@@ -3083,7 +3083,7 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
  * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
- * Currently supports only: bold, italic, tables, simple code blocks, line rule, bullets, numbered lines and blocks.
+ * Currently supports only: bold, italic, tables, simple code blocks, line rule, bullets, numbered lines, links and blocks.
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
@@ -3125,6 +3125,11 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 		// line rule
 		if (l.trim().match(/^---+/)) {
 			return repeat(_aSize, ansiColor("faint", (isDef(__con) ?  "─" : "-")))
+		}
+
+        // Links
+		if (/\[[^\]\[]+\]\([^\)\()]+\)/.test(l)) {
+			l = l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, ansiColor("underline", "$1") + " " + ansiColor("faint","($2)"))
 		}
 
 		// bullets
