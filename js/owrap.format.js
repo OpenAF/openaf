@@ -3397,12 +3397,12 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
  			rbottom: _s.curveTLeft
 		},
 		blockCurvedSpace: {
-			ltop   : _s.curveBRight,
+			ltop   : _s.curveTLeft,
 			lmiddle: " ",
-			rtop   : _s.curveBLeft,
+			rtop   : _s.curveTRight,
 			rmiddle: " ",
- 			lbottom: _s.curveTRight,
- 			rbottom: _s.curveTLeft,
+ 			lbottom: _s.curveBLeft,
+ 			rbottom: _s.curveBRight,
 			tmiddle: "▄",
 			bmiddle: "▀",
 		}
