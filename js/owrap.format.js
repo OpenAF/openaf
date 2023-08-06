@@ -3164,7 +3164,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
-			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BLUE,BOLD", "NEGATIVE_ON,FAINT", ow.format.withSideLineThemes().openCurvedRect))
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BOLD", "NEGATIVE_ON,FAINT", ow.format.withSideLineThemes().openCurvedSpace))
 		})
 	}
 
@@ -3239,8 +3239,25 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 OpenWrap.format.prototype.withSideLineThemes = function() {
 	var _s = ow.format.syms();
 	return {
+		closedOneSpace: {
+			ltop   : " ",
+			lbottom: " ",
+			tmiddle: " ",
+			bmiddle: " ",
+			lmiddle: " ",
+			rmiddle: " ",
+			rtop   : " ",
+			rbottom: " "
+		},
+		simpleOneSpace: {
+			lmiddle: " "
+		},
 		simpleLine: {
 			lmiddle: _s.lineV
+		},
+		doubleOneSpace: {
+			lmiddle: " ",
+			rmiddle: " "
 		},
 		doubleLine: {
 			lmiddle: _s.lineV,
@@ -3368,6 +3385,14 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			lmiddle: _s.lineV,
 			rtop   : _s.curveBLeft,
 			rmiddle: _s.lineV,
+ 			lbottom: _s.curveTRight,
+ 			rbottom: _s.curveTLeft
+		},
+		openCurvedSpace: {
+			ltop   : _s.curveBRight,
+			lmiddle: " ",
+			rtop   : _s.curveBLeft,
+			rmiddle: " ",
  			lbottom: _s.curveTRight,
  			rbottom: _s.curveTLeft
 		}
