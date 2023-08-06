@@ -3164,7 +3164,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
-			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BOLD", "NEGATIVE_ON,FAINT", ow.format.withSideLineThemes().openCurvedSpace))
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BOLD", "NEGATIVE_ON,FAINT", ow.format.withSideLineThemes().blockCurvedSpace))
 		})
 	}
 
@@ -3395,6 +3395,16 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			rmiddle: " ",
  			lbottom: _s.curveTRight,
  			rbottom: _s.curveTLeft
+		},
+		blockCurvedSpace: {
+			ltop   : _s.curveBRight,
+			lmiddle: " ",
+			rtop   : _s.curveBLeft,
+			rmiddle: " ",
+ 			lbottom: _s.curveTRight,
+ 			rbottom: _s.curveTLeft,
+			tmiddle: "▄",
+			bmiddle: "▀",
 		}
 	}
 };
