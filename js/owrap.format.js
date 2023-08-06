@@ -3094,7 +3094,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// pre process code blocks
 
 	//  single line
-	res = res.replace(/```+(.+?)```+/mg, ansiColor("NEGATIVE_ON,FAINT", "$1"))
+	res = res.replace(/```+(.+?)```+/mg, ansiColor("NEGATIVE_ON,FAINT", " $1 "))
 
 	//  multi line
 	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
