@@ -234,9 +234,15 @@ OpenWrap.format.prototype.string = {
 		   var lines = str.split(newLineStr), lid;
 		   found = false;
 		   for(lid = 0; lid < lines.length && !found; lid++) {
-			  if (ansiLength(lines[lid]) > maxWidth) {
+			  var _ansiLen = ansiLength(lines[lid])
+			  if (_ansiLen > maxWidth) {
+				 // Calculate how much to compensate for ansi
+				 var extra = 0
+				 if (__conAnsi) {
+					extra = lines[lid].length - _ansiLen
+				 }
 				 // Inserts new line at first whitespace of the line
-				 for (var i = maxWidth - 1; i >= 0; i--) {
+				 for (var i = (maxWidth + extra) - 1; i >= 0; i--) {
 					if (lines[lid].charAt(i) == " ") {
 					   lines[lid] = lines[lid].slice(0, i) + newLineStr + lines[lid].slice(i+1).trim();
 					   found = true;
@@ -3105,75 +3111,69 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	res = res.replace(/^## (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)
 	res = res.replace(/^###+ (.+)/mg, ansiColor("BOLD", "$1") + da)
 	
-	var isTab = false, fields = [], data = [], sepProc = false, insep = false
-	// line rule
-	if (res.indexOf("---") >= 0) {
-		var _aSize
-		__conStatus || __initializeCon()
+	__conStatus || __initializeCon()
+	var _aSize
 
-		if (isDef(__con)) {
-			_aSize = __con.getTerminal().getWidth()
-		} else {
-			_aSize = 80
+	if (isDef(__con)) {
+		_aSize = __con.getTerminal().getWidth()
+	} else {
+		_aSize = 80
+	}
+
+	// Single line transformers
+	res = res.split("\n").map(l => {
+		// line rule
+		if (l.trim().match(/^---+/)) {
+			return repeat(_aSize, ansiColor("faint", (isDef(__con) ?  "─" : "-")))
 		}
-	
-		res = res.split("\n").map(l => {
-			if (l == "---") {
-				return repeat(_aSize, ansiColor("faint", (isDef(__con) ?  "─" : "-")))
-			} else {
-				return l
-			}
-		}).join("\n")
-	}
-	// bullets
-	if (res.indexOf("* ") >= 0) {
-		res = res.split("\n").map(l => {
-			var ar = l.match(/^(\s*)\*(\s+)(.+)$/)
-			if (ar) {
-				var lsize = ar[1].length + 1 + ar[2].length
 
-				return ow.format.string.wordWrap(ar[3], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
-					return (i == 0 ? ar[1] + ansiColor("BOLD", "\u2022") + ar[2] : repeat(lsize, ' ')) + l
-				}).join("\n")
-			} else {
-				return l
-			}
-		}).join("\n")
-	}
-	// numbered list
-	if (res.match(/^\s*\d+\.\s+/m)) {
-		res = res.split("\n").map(l => {
-			var ar = l.match(/^(\s*)(\d+)\.(\s+)(.+)$/)
-			if (ar) {
-				var lsize = ar[1].length + ar[2].length + 1 + ar[3].length
+		// bullets
+		var ar = l.match(/^(\s*)\*(\s+)(.+)$/)
+		if (ar) {
+			var lsize = ar[1].length + 1 + ar[2].length
 
-				return ow.format.string.wordWrap(ar[4], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
-					return (i == 0 ? ar[1] + ansiColor("BOLD", ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
-				}).join("\n")
-			} else {
-				return l
-			}
-		}).join("\n")
-	}
-	// side line render
-	if (res.indexOf(">") >= 0) {
-		res = res.split("\n").map(l => {
-			if (/^(\> .+)$/.test(l)) {
-				return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, "FAINT")))
-			} else {
-				return l
-			}
-		}).join("\n")
-	}
+			return ow.format.string.wordWrap(ar[3], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
+				return (i == 0 ? ar[1] + ansiColor("BOLD", "\u2022") + ar[2] : repeat(lsize, ' ')) + l
+			}).join("\n")
+		}
+
+		// numbered list
+		var ar = l.match(/^(\s*)(\d+)\.(\s+)(.+)$/)
+		if (ar) {
+			var lsize = ar[1].length + ar[2].length + 1 + ar[3].length
+
+			return ow.format.string.wordWrap(ar[4], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
+				return (i == 0 ? ar[1] + ansiColor("BOLD", ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
+			}).join("\n")
+		}
+
+		// side line render
+		if (/^(\> .+)$/.test(l)) {
+			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, "FAINT")))
+		} 
+
+		// if not a code block or a table then it should be paragraph
+		if (!/^\|.+\|$/.test(l.trim()) && !/^```/.test(l.trim()) && l.trim().length > 0) {
+			if (l.length > _aSize) l = ow.format.string.wordWrap(l, _aSize)
+		}
+
+		return l
+	}).join("\n")
+
+	// Multi line transformers
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
 			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BLUE,BOLD", "NEGATIVE_ON,FAINT", ow.format.withSideLineThemes().openCurvedRect))
 		})
 	}
+
 	// table render
 	if (res.indexOf("|") >= 0) {
+		var isTab = false, fields = [], data = [], sepProc = false, insep = false
 		res = res.split("\n").map(l => {
+			var _lorig = l
+			l = l.trim()
 			if ((/^(\|[^\|]+)+\|$/).test(l)) {
 				if (isTab) {
 					if ((/^(\|[-: ]+)+\|$/).test(l)) {
@@ -3182,7 +3182,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 							sepProc = true
 						} else {
 							insep = true
-							if (l.trim().indexOf("|") == 0) {
+							/*if (l.indexOf("|") == 0) {
 								var m = {}
 								l.split("|").forEach((s, i) => {
 									if (i == 0) return
@@ -3192,11 +3192,11 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 									}
 								})
 								data.push(m)
-							} 	
+							}*/
 						}
 						return null
 					} else {
-						if (l.trim().indexOf("|") == 0) {
+						if (l.indexOf("|") == 0) {
 							var m = {}
 							l.split("|").forEach((s, i) => {
 								if (i == 0) return
@@ -3218,36 +3218,23 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			} else {
 				if (isTab) {
 					isTab = false
-					fields = []
 					var cdata = clone(data)
 					data = [], ssizes = {}
-					if (insep) {
-						// Gather sizes
-						cdata.forEach(row => {
-							Object.keys(row).forEach(k => {
-								if (isUnDef(ssizes[k])) ssizes[k] = 0
-								var l = ansiLength(row[k])
-								if (l > ssizes[k]) ssizes[k] = l
-							})
-						})
-						// Rewriting seps
-						cdata.forEach(row => {
-							Object.keys(row).forEach(k => {
-								if ((/^[-:]+$/).test(row[k])) {
-									row[k] = ansiColor("FAINT", repeat(ssizes[k], "-"))
-								}
-							})
-						})
-					}
-					return printTable(cdata, __con.getTerminal().getWidth(), __, __, __, __, true, true)
+
+					var _insep = insep
+					insep = false
+					sepProc = false
+					fields = []
+					return printTable(cdata, _aSize, __, __, __, __, true, _insep)
+				} else {
+					return _lorig
 				}
-				return l
 			}
 		}).filter(isString).join("\n")
 	}
 
 	return res
-};
+}
 
 OpenWrap.format.prototype.withSideLineThemes = function() {
 	var _s = ow.format.syms();
