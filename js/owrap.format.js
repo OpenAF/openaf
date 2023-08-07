@@ -3094,7 +3094,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// pre process code blocks
 
 	//  single line
-	res = res.replace(/```+(.+?)```+/mg, ansiColor("NEGATIVE_ON,FAINT", " $1 "))
+	res = res.replace(/```+(.+?)```+/mg, ansiColor("NEGATIVE_ON", " $1 "))
 
 	//  multi line
 	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
@@ -3169,7 +3169,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
-			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BOLD", "NEGATIVE_ON,FAINT", ow.format.withSideLineThemes().blockCurvedSpace))
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BOLD", "NEGATIVE_ON", ow.format.withSideLineThemes().openCurvedSpace))
 		})
 	}
 
