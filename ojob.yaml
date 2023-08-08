@@ -1178,11 +1178,6 @@ jobs:
     delete iargs.__optionOn
     delete iargs.__async
 
-    /*var rj = job => {
-      job = ow.oJob.parseTodo(job)
-      return (isMap(job) ? $job(job.name, merge(job.args, merge(iargs, res))) : $job(job, merge(iargs, res)))
-    }*/
-
     if (isDef(args.__todos[todoValue]) && isString(args.__todos[todoValue])) args.__todos[todoValue] = [ args.__todos[todoValue] ]
     var _l
     if (isDef(args.__todos[todoValue]) && isArray(args.__todos[todoValue])) {
@@ -1193,6 +1188,7 @@ jobs:
 
     // Prepare data
     _l.todo.forEach(job => {
+      if (isString(job.args)) job.args = ow.oJob.__processArgs(job.args)
       if (isMap(job))
         job.args = merge(job.args, iargs)
       else
@@ -1204,24 +1200,6 @@ jobs:
     } else {
       $job("ojob todo", merge(iargs, _l))
     }
-
-    /*
-    if (isDef(args.__todos[todoValue]) && isString(args.__todos[todoValue])) args.__todos[todoValue] = [ args.__todos[todoValue] ]
-    if (isDef(args.__todos[todoValue]) && isArray(args.__todos[todoValue])) {
-      args.__todos[todoValue].forEach(j => {
-        if (args.__async) 
-          $do(() => res = rj(j) )
-        else 
-          res = rj(j)
-      })
-    } else {
-      args.__default.forEach(j => {
-        if (args.__async) 
-          $do(() => res = rj(j) )
-        else 
-          res = rj(j)
-      })
-    }*/
     
 # OJOB SEC GET
 # -------------------
@@ -1853,6 +1831,7 @@ jobs:
 
     if (args.job.templateArgs && isDef(args.args)) {
       if (args.job.templateArgs && isDef(args.job.args)) {
+        if (isString(args.job.args)) args.job.args = ow.oJob.__processArgs(args.job.args)
         traverse(args.job.args, (aK, aV, aP, aO) => {
           if (isString(aV)) {
             aO[aK] = templify(aV, args)
