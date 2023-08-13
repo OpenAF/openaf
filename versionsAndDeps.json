@@ -38,7 +38,7 @@
 		{
 			"description": "Handlebars",
 			"path": ["js/handlebars.js"],
-			"version": "4.7.7",
+			"version": "4.7.8",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/wycats/handlebars.js/master/LICENSE",
@@ -206,8 +206,8 @@
 		},
 		{
 			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.12.jar"],
-			"version": "3.11",
+			"path": ["lib/commons-lang3-3.13.0.jar"],
+			"version": "3.13.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -242,7 +242,7 @@
 		},
 		{
 			"description": "OkHTTP Client",
-			"path": ["okhttp-4.11.0.jar", "okio-3.4.0.jar", "okio-jvm-3.4.0.jar", "kotlin-stdlib-1.9.0.jar"],
+			"path": ["okhttp-4.11.0.jar", "okio-3.5.0.jar", "okio-jvm-3.5.0.jar", "kotlin-stdlib-1.9.0.jar"],
 			"version": "4.11.0",
 			"changes": false,
 			"type": ["java"],
@@ -395,7 +395,7 @@
 			"removable": true,
 			"deps": [
 				"lib/org-eclipse-jgit-5.8.1.jar",
-				"lib/jsch-0.2.9.jar",
+				"lib/jsch-0.2.11.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -458,7 +458,7 @@
 				"lib/commons-io-2.8.0.jar"
 			],
 			"deps": [
-				"lib/jsch-0.2.9.jar",
+				"lib/jsch-0.2.11.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
