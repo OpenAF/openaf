@@ -177,6 +177,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_CHECK_JOB_CHANGES     : false,
 	OAF_CLOSED                 : false,
 	OAF_PRECOMPILE_LEVEL       : 2,
+	TEMPLATE_SET               : true,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
@@ -190,6 +191,11 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		withValues : true,
 		wordWrap   : true,
 		compact    : true
+	},
+	TABLE: {
+		wordWrap           : true,
+		wordWrapUseSep     : false,
+		wordWrapLimitFactor: 2
 	},
 	CONSOLE: {
 		view: "tree"
@@ -745,22 +751,26 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 
 /**
  * <odoc>
- * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor) : String</key>
+ * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
  * Optionally you can specify aWidthLimit, useAnsi and/or aBgColor.
  * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf" or "plain")
  * </odoc>
  */
-const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor) {
-	var count = 0;
+const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep) {
+	var count = 0, inCount = anArrayOfEntries.length
 	var maxsize = {};
 	var output = "";
-	aBgColor = _$(aBgColor, "aBgColor").isString().default(__)
-	var colorMap = { lines: "RESET", value: "CYAN" };
+	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
+	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
+	useRowSep = _$(useRowSep, "useRowSep").isBoolean().default(__flags.TABLE.wordWrapUseSep)
+
+	var colorMap = __colorFormat.table
 
 	if (isDef(aBgColor)) {
 		colorMap.lines = aBgColor + "," + colorMap.lines
 		colorMap.value = aBgColor + "," + colorMap.value
+		colorMap.title = aBgColor + "," + colorMap.title
 	}
 
 	ow.loadFormat();
@@ -799,7 +809,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
 	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
-	
+
+	// If wordwrap generate new array
+	anArrayOfEntries = (aWidthLimit <= 0 ? anArrayOfEntries : ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", repeat(s, "-")) : __))
+
 	// Find sizes
 	anArrayOfEntries.forEach(function(row) {
 		var cols = Object.keys(row);
@@ -817,17 +830,17 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		var cols = Object.keys(row);
 		if (count == 0) {
 			//output += (useAnsi ? ansiColor("bold", "|") : "|"); 
-			output += (useAnsi ? ansiColor(colorMap.lines, "") : ""); 
+			output += (useAnsi ? ansiColor(colorMap.title, "") : ""); 
 			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(function(col) {
 				if (outOfWidth) return;
 				lineSize += maxsize[String(col)] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
+					output += (useAnsi ? ansiColor(colorMap.title, "...") : "..."); outOfWidth = true;
 				} else {
 					var _ps = repeat(Math.floor((maxsize[String(col)] - ansiLength(String(col)))/2), ' ')
 					var _pe = repeat(Math.round((maxsize[String(col)] - ansiLength(String(col))) / 2), ' ')
-					output += (useAnsi ? ansiColor(colorMap.lines, _ps + String(col) + _pe) : _ps + String(col) + _pe)
+					output += (useAnsi ? ansiColor(colorMap.title, _ps + String(col) + _pe) : _ps + String(col) + _pe)
 					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 				}
 				colNum++;
@@ -869,7 +882,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	});
 
 	if (displayCount) {
-		var summary = "[#" + count + " " + ((count <= 1) ? "row" : "rows") + "]";
+		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]";
 		output += (useAnsi ? ansiColor(colorMap.lines, summary) : summary);
 	}
 	
@@ -1675,7 +1688,8 @@ var __colorFormat = {
 	default: "YELLOW",
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
-	askPos: "BLUE"
+	askPos: "BLUE",
+	table: { lines: "RESET", value: "RESET", title: "BOLD" }
 };
 const colorify = function(json) {
 	if (typeof json != 'string') {
@@ -7636,7 +7650,7 @@ AF.prototype.toSLON = function(aObject, aTheme) {
  * </odoc>
  */
 AF.prototype.toCSLON = function(aObject, aTheme) {
-	ow.loadFormat
+	ow.loadFormat()
 	return ow.format.toCSLON(aObject, aTheme)
 }
 
@@ -8752,7 +8766,7 @@ const $channels = function(a) {
 const $ch = $channels;
 
 var __threadPool;
-var __threadPoolFactor = 1;
+var __threadPoolFactor = 2
 
 const __resetThreadPool = function(poolFactor) {
 	__threadPoolFactor = poolFactor;

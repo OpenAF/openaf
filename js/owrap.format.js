@@ -98,6 +98,122 @@ OpenWrap.format.prototype.string = {
 	},
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc) : Array</key>
+	 * Given anArray of maps will return an array suitable to use with printTable for a maxTableSize, a separator length
+	 * (sepLen (which defaults to 1)) and an optional line separator function (sepFunc that receives the max length of a 
+	 * column). Word-wrap is achieved by creating new map array entries whenever the calculated max size of each line 
+	 * with sepLen is achieved. Example of usage:\
+	 * \
+	 *   __initializeCon()\
+     *   var maxS = __con.getTerminal().getWidth()\
+	 *   print(printTable(ow.format.string.wordWrapArray(io.listFiles("js").files, maxS, 1, s => ansiColor("FAINT", repeat(s, "-"))), maxS))\
+	 * 
+	 * </odoc>
+	 */
+	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc) => {
+		_$(ar, "ar").isArray().$_()
+		_$(maxTableSize, "maxTableSize").isNumber().$_()
+		sepFunc = _$(sepFunc, "sepFunc").isFunction().default(__)
+		sepLen = _$(sepLen, "sepLen").isNumber().default(1)
+	  
+		// Finding max sizes
+		var maxSizes = [], fixedMinSize = []
+		ar.forEach(row => {
+		  var _keys = Object.keys(row)
+		  Object.values(row).forEach((column, i) => {
+			if (isUnDef(maxSizes[i])) maxSizes[i] = 0
+			if (isUnDef(fixedMinSize[i])) fixedMinSize[i] = 0
+			fixedMinSize[i] = Math.max(fixedMinSize[i], ansiLength(String(_keys[i])))
+			maxSizes[i] = Math.max(maxSizes[i], ansiLength(String(column)))
+		  })
+		})
+	  
+		maxSizes = maxSizes.map((r, i) => Math.max(r, fixedMinSize[i]))
+	  
+		var numOfCols = maxSizes.length
+		var fixedSize = (sepLen * (numOfCols-1))
+		var curMaxSize = $from(maxSizes).sum() + (sepLen * (numOfCols-1)) + 1 // (numOfCols-1) = num of separators and new line
+		var chgCols = []
+		if (curMaxSize > maxTableSize) {
+		  var fd = Math.ceil(maxTableSize / numOfCols)
+		  maxSizes.forEach((s, i) => {
+			if (fixedMinSize[i] < (s - fd)) 
+				chgCols.push(i)
+			else
+				fixedSize += s
+		  })
+		}
+
+		// Pass math
+		//var diffPerCol = (curMaxSize > maxTableSize ? Math.ceil((curMaxSize - maxTableSize) / chgCols.length) : 0)
+		var maxSubLines = 0
+		var maxCol = maxTableSize * __flags.TABLE.wordWrapLimitFactor
+
+		// Limiting function
+		var rowLimitFn = s => {
+			if (isString(s)) {
+				if (__flags.TABLE.wordWrapLimitFactor > 0 && ansiLength(s) > maxCol) {
+					return s.substr(0, maxCol) + "..."
+				} else {
+					return s
+				}
+			} else {
+				return s
+			}
+		}
+	  
+		//print(`curMaxSize=${curMaxSize} | maxTableSize=${maxTableSize} | chgCols.len=${af.toCSLON(chgCols)} | fixedSize=${fixedSize}`)
+
+		var _lines = [], _newSize = []
+		ar.forEach(_ar => {
+		  // Processing line
+		  var _keys = Object.keys(_ar)
+		  var lines = Object.values(_ar).map((v, i) => {
+			if (chgCols.indexOf(i) >= 0) {
+				_newSize[i] = Math.max(fixedMinSize[i], Math.round((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
+			} else {
+				_newSize[i] = Math.max(fixedMinSize[i], maxSizes[i])
+			}
+			
+			var _ar = String((chgCols.indexOf(i) >= 0 ? rowLimitFn(ow.format.string.wordWrap(String(v), _newSize[i] )) : rowLimitFn(v) )).split("\n")
+			maxSubLines = Math.max(maxSubLines, _ar.length)
+			return _ar
+		  })
+		  // Prepare lines
+		  var _s = []
+		  for (var _lx = 0; _lx < maxSubLines; _lx++) {
+			var _m = {}
+			lines.forEach((r, i) => {
+			  if (isUnDef(_s[i])) {
+				if (__flags.TABLE.wordWrapLimitFactor > 0 && _newSize[i] > maxCol) {
+					_s[i] = maxCol
+				} else {
+					_s[i] = _newSize[i]
+				}
+			  }
+			  if (isDef(r[_lx]))
+				_m[_keys[i]] = r[_lx] + (_s[i] > ansiLength(r[_lx]) ? repeat(_s[i] - ansiLength(r[_lx]), ' ') : "")
+			  else
+				_m[_keys[i]] = repeat(_s[i], ' ')
+			})
+			_lines.push(_m)
+		  }
+	  
+		  // Preparing sep
+		  if (isDef(sepFunc)) {
+			var _m = {}, _ds = 0
+			_keys.forEach((k, i) => {
+			  _m[k] = sepFunc(_s[i])
+			  _ds += _s[i]
+			})
+			_lines.push(_m)
+		  }
+		})
+	  
+		return _lines
+	},
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.wordWrap(aString, maxWidth, newLineSeparator, tabDefault) : String</key>
 	 * Given aString word wraps the text on it given the maxWidth length per line. Optionally you can provide
 	 * a newLineSeparator otherwise '\n' will be used. Optionally tabDefault determines how many spaces a tab represents (default 4)
@@ -118,9 +234,15 @@ OpenWrap.format.prototype.string = {
 		   var lines = str.split(newLineStr), lid;
 		   found = false;
 		   for(lid = 0; lid < lines.length && !found; lid++) {
-			  if (ansiLength(lines[lid]) > maxWidth) {
+			  var _ansiLen = ansiLength(lines[lid])
+			  if (_ansiLen > maxWidth) {
+				 // Calculate how much to compensate for ansi
+				 var extra = 0
+				 if (__conAnsi) {
+					extra = lines[lid].length - _ansiLen
+				 }
 				 // Inserts new line at first whitespace of the line
-				 for (var i = maxWidth - 1; i >= 0; i--) {
+				 for (var i = (maxWidth + extra) - 1; i >= 0; i--) {
 					if (lines[lid].charAt(i) == " ") {
 					   lines[lid] = lines[lid].slice(0, i) + newLineStr + lines[lid].slice(i+1).trim();
 					   found = true;
@@ -2961,13 +3083,25 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
  * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
- * Currently supports only: bold, italic.
+ * Currently supports only: bold, italic, tables, simple code blocks, line rule, bullets, numbered lines, links and blocks.
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
-    _$(aString, "aString").isString().$_();
-    defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("");
-	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "");
+    _$(aString, "aString").isString().$_()
+    defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("")
+	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "")
+
+	// pre process code blocks
+
+	//  single line
+	res = res.replace(/```+(.+?)```+/mg, ansiColor("NEGATIVE_ON", " $1 "))
+
+	//  multi line
+	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
+	if (cblocks != null) 
+		cblocks.forEach((b, i) => {
+			res = res.replace(b, "```$$" + i + "```")
+		})
 
  	res = res.replace(/(\*{3}|_{3})([^\*_\n]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
  	res = res.replace(/(\*{2}|_{2})([^\*_\n]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
@@ -2977,9 +3111,74 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	res = res.replace(/^## (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)
 	res = res.replace(/^###+ (.+)/mg, ansiColor("BOLD", "$1") + da)
 	
-	var isTab = false, fields = [], data = [], sepProc = false, insep = false
+	__conStatus || __initializeCon()
+	var _aSize
+
+	if (isDef(__con)) {
+		_aSize = __con.getTerminal().getWidth()
+	} else {
+		_aSize = 80
+	}
+
+	// Single line transformers
+	res = res.split("\n").map(l => {
+		// line rule
+		if (l.trim().match(/^---+/)) {
+			return repeat(_aSize, ansiColor("faint", (isDef(__con) ?  "─" : "-")))
+		}
+
+        // Links
+		if (/\[[^\]\[]+\]\([^\)\()]+\)/.test(l)) {
+			l = l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, ansiColor("underline", "$1") + " " + ansiColor("faint","($2)"))
+		}
+
+		// bullets
+		var ar = l.match(/^(\s*)\*(\s+)(.+)$/)
+		if (ar) {
+			var lsize = ar[1].length + 1 + ar[2].length
+
+			return ow.format.string.wordWrap(ar[3], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
+				return (i == 0 ? ar[1] + ansiColor("BOLD", "\u2022") + ar[2] : repeat(lsize, ' ')) + l
+			}).join("\n")
+		}
+
+		// numbered list
+		var ar = l.match(/^(\s*)(\d+)\.(\s+)(.+)$/)
+		if (ar) {
+			var lsize = ar[1].length + ar[2].length + 1 + ar[3].length
+
+			return ow.format.string.wordWrap(ar[4], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
+				return (i == 0 ? ar[1] + ansiColor("BOLD", ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
+			}).join("\n")
+		}
+
+		// side line render
+		if (/^(\> .+)$/.test(l)) {
+			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, "FAINT")))
+		} 
+
+		// if not a code block or a table then it should be paragraph
+		if (!/^\|.+\|$/.test(l.trim()) && !/^```/.test(l.trim()) && l.trim().length > 0) {
+			if (l.length > _aSize) l = ow.format.string.wordWrap(l, _aSize)
+		}
+
+		return l
+	}).join("\n")
+
+	// Multi line transformers
+	// code block
+	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
+		cblocks.forEach((b, i) => {
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BOLD", "NEGATIVE_ON", ow.format.withSideLineThemes().openCurvedSpace))
+		})
+	}
+
+	// table render
 	if (res.indexOf("|") >= 0) {
+		var isTab = false, fields = [], data = [], sepProc = false, insep = false
 		res = res.split("\n").map(l => {
+			var _lorig = l
+			l = l.trim()
 			if ((/^(\|[^\|]+)+\|$/).test(l)) {
 				if (isTab) {
 					if ((/^(\|[-: ]+)+\|$/).test(l)) {
@@ -2988,27 +3187,27 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 							sepProc = true
 						} else {
 							insep = true
-							if (l.trim().indexOf("|") == 0) {
+							/*if (l.indexOf("|") == 0) {
 								var m = {}
 								l.split("|").forEach((s, i) => {
 									if (i == 0) return
 			
 									if (isDef(fields[i-1])) {
-										m[fields[i-1]] = s
+										m[fields[i-1]] = s.trim()
 									}
 								})
 								data.push(m)
-							} 	
+							}*/
 						}
 						return null
 					} else {
-						if (l.trim().indexOf("|") == 0) {
+						if (l.indexOf("|") == 0) {
 							var m = {}
 							l.split("|").forEach((s, i) => {
 								if (i == 0) return
 		
 								if (isDef(fields[i-1])) {
-									m[fields[i-1]] = s
+									m[fields[i-1]] = s.trim()
 								}
 							})
 							data.push(m)
@@ -3024,42 +3223,46 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			} else {
 				if (isTab) {
 					isTab = false
-					fields = []
 					var cdata = clone(data)
 					data = [], ssizes = {}
-					if (insep) {
-						// Gather sizes
-						cdata.forEach(row => {
-							Object.keys(row).forEach(k => {
-								if (isUnDef(ssizes[k])) ssizes[k] = 0
-								var l = ansiLength(row[k])
-								if (l > ssizes[k]) ssizes[k] = l
-							})
-						})
-						// Rewriting seps
-						cdata.forEach(row => {
-							Object.keys(row).forEach(k => {
-								if ((/^[-:]+$/).test(row[k])) {
-									row[k] = ansiColor("FAINT", repeat(ssizes[k], "-"))
-								}
-							})
-						})
-					}
-					return printTable(cdata)
+
+					var _insep = insep
+					insep = false
+					sepProc = false
+					fields = []
+					return printTable(cdata, _aSize, __, __, __, __, true, _insep)
+				} else {
+					return _lorig
 				}
-				return l
 			}
 		}).filter(isString).join("\n")
 	}
 
-	return res;
-};
+	return res
+}
 
 OpenWrap.format.prototype.withSideLineThemes = function() {
 	var _s = ow.format.syms();
 	return {
+		closedOneSpace: {
+			ltop   : " ",
+			lbottom: " ",
+			tmiddle: " ",
+			bmiddle: " ",
+			lmiddle: " ",
+			rmiddle: " ",
+			rtop   : " ",
+			rbottom: " "
+		},
+		simpleOneSpace: {
+			lmiddle: " "
+		},
 		simpleLine: {
 			lmiddle: _s.lineV
+		},
+		doubleOneSpace: {
+			lmiddle: " ",
+			rmiddle: " "
 		},
 		doubleLine: {
 			lmiddle: _s.lineV,
@@ -3189,6 +3392,24 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			rmiddle: _s.lineV,
  			lbottom: _s.curveTRight,
  			rbottom: _s.curveTLeft
+		},
+		openCurvedSpace: {
+			ltop   : _s.curveBRight,
+			lmiddle: " ",
+			rtop   : _s.curveBLeft,
+			rmiddle: " ",
+ 			lbottom: _s.curveTRight,
+ 			rbottom: _s.curveTLeft
+		},
+		blockCurvedSpace: {
+			ltop   : _s.curveTLeft,
+			lmiddle: " ",
+			rtop   : _s.curveTRight,
+			rmiddle: " ",
+ 			lbottom: _s.curveBLeft,
+ 			rbottom: _s.curveBRight,
+			tmiddle: "▄",
+			bmiddle: "▀",
 		}
 	}
 };

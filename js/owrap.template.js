@@ -99,7 +99,11 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $a2m             -- shortcut to the OpenAF's $a2m function\
  *   - $a4m             -- shortcut to the OpenAF's $a4m function\
  *   - $m2a             -- shortcut to the OpenAF's $m2a function\
- *   - $m4a             -- shortcut to the OpenAF's $m4a function
+ *   - $m4a             -- shortcut to the OpenAF's $m4a function\
+ *   - $pass            -- returns an empty string\
+ *   - $sline           -- shortcut to the OpenAF's format withSideLine\
+ *   - $set             -- block set of a provided key\
+ *   - $concat          -- concatenates all arguments as a single value
  * </odoc>
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
@@ -112,12 +116,12 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		switch: (value, options) => {
 			this.switch_value = value
 			this.switch_break = false
-			return options.fn(this)
+			return isDef(options.fn) ? options.fn(this) : true
 		},
 		case: (value, options) => {
 			if (value == this.switch_value) {
 			  this.switch_break = true
-			  return options.fn(this)
+			  return isDef(options.fn) ? options.fn(this) : true
 			}
 		},
 		default: (value, options) => {
@@ -141,7 +145,13 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		},	
 		env: getEnv,
 		escape: s => { return s.replace(/['"]/g, "\\$1"); },
-		acolor: (c, s) => { return ansiColor(c, s) },
+		acolor: (c, s) => { 
+			if (isMap(s)) {
+				return ansiColor(c, s.fn(this))
+			} else {
+				return ansiColor(c, s) 
+			}
+		},
 		f: $f,
 		ft: $ft,
 		t: (t, a) => $t(t, a),
@@ -160,6 +170,29 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		len: s => s.length,
 		repeat: (t, s) => repeat(t, s),
 		range: (c, s, t) => range(c, s, t),
+		concat: function() {
+			var ar = []
+			for(var i = 0; i < arguments.length; i++) {
+				if (isString(arguments[i])) ar.push(String(arguments[i]))
+			}
+			return ar.join("")
+		},
+		pass: () => "",
+		set: (aK, o) => {
+			if (__flags.TEMPLATE_SET && isString(aK) && isMap(o) && isMap(o.data)) {
+				$$(o.data.root).set(aK, o.fn(this) )
+			}
+		},
+		sline: (aStr, aSize, ansiLine, ansiText, aTheme, s) => {
+			if (isMap(aSize)) aSize = __
+			if (isMap(ansiLine)) ansiLine = __
+			if (isMap(ansiText)) ansiText = __
+			if (isMap(aTheme)) aTheme = __
+
+			aTheme = ow.format.withSideLineThemes()[String(aTheme)]
+			
+			return ow.format.withSideLine(isMap(s) && isDef(s.fn) ? s.fn(this) : aStr, aSize, ansiLine, ansiText, aTheme)
+		},
 		a2m: (d, a) => $a2m(d, a),
 		a4m: (a, k, d) => $a4m(a, k, d),
 		m2a: (d, m) => $m2a(d, m),
@@ -224,7 +257,7 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 
 	// Based on assemble.io handlebars helpers https://github.com/assemble/handlebars-helpers
 	var obj = {
-		and: (a, b, s) => (a && b) ? s.fn(this) : s.inverse(this),
+		and: (a, b, s) => (a && b) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
 		compare: (a, op, b, s) => {
 			_$(a, "a").$_()
 			_$(op, "op").$_()
@@ -244,69 +277,91 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
 			default: throw 'Invalid operator: `' + op + '`'
 			}
 			
-			if (result === false) return s.inverse(this)
-			return s.fn(this)
+			if (result === false) return (isDef(s.inverse) ? s.inverse(this) : false)
+			return (isDef(s.fn) ? s.fn(this) : true)
 		},
 		contains: (collec, value, sIdx, s) => {
 			loadUnderscore();
 			if (typeof sIdx === 'object') {
 				s = sIdx; sIdx = undefined;
 			}
-			if(_.isString(collec) && collec.indexOf(value, sIdx) > -1) return s.fn(this);
-			if(_.contains(collec, value, sIdx)) return s.fn(this); 
-			return s.inverse(this);
+			if(_.isString(collec) && collec.indexOf(value, sIdx) > -1) return (isDef(s.fn) ? s.fn(this) : true);
+			if(_.contains(collec, value, sIdx)) return (isDef(s.fn) ? s.fn(this) : true); 
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		gt: (a, b, s) => {
-			if (a > b) return s.fn(this);
-			return s.inverse(this);
+			if (a > b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		gte: (a, b, s) => {
-			if (a >= b) return s.fn(this);
-			return s.inverse(this);
+			if (a >= b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
+		},
+		// Custom helper additional to http://assemble.io/helpers/helpers-comparison.html
+		startsWith: (a, b, s) => {
+			if (isString(a) && isString(b)) {
+				if (a.startsWith(b)) return (isDef(s.fn) ? s.fn(this) : true)
+				return (isDef(s.inverse) ? s.inverse(this) : false) 
+			}
+		},
+		// Custom helper additional to http://assemble.io/helpers/helpers-comparison.html
+		endsWith: (a, b, s) => {
+			if (isString(a) && isString(b)) {
+				if (a.endsWith(b)) return (isDef(s.fn) ? s.fn(this) : true)
+				return (isDef(s.inverse) ? s.inverse(this) : false) 
+			}
+		},
+		// Custom helper additional to http://assemble.io/helpers/helpers-comparison.html
+		match: (a, re, flags, s) => {
+			if (isUnDef(s)) { s = flags; flags = "" }
+			if (isString(a) && isString(re) && isString(flags)) {
+				if (a.match(new RegExp(re, flags))) return (isDef(s.fn) ? s.fn(this) : true)
+				return (isDef(s.inverse) ? s.inverse(this) : false) 
+			}
 		},
 		has: (v, p, s) => {
 			if (isUnDef(s) && isDef(p)) return p.inverse(this)
 			if (isUnDef(p) && isDef(v)) return v.inverse(this)
 			if ((Array.isArray(v) || isString(v)) && isDef(p)) {
-				if (v.indexOf(p) > -1) return s.fn(this)
+				if (v.indexOf(p) > -1) return (isDef(s.fn) ? s.fn(this) : true)
 			}
-			if (isMap(v) && isString(p) && p in v) return s.fn(this)
-			return s.inverse(this)
+			if (isMap(v) && isString(p) && p in v) return (isDef(s.fn) ? s.fn(this) : true)
+			return (isDef(s.inverse) ? s.inverse(this) : false)
 		},
 		eq: (a, b, s) => {
 			/*if (isDef(a) && isDef(b)) {
 				s = b;
 				b = s.hash.compare;
 			}*/
-			if (a === b) return s.fn(this);
-			return s.inverse(this);
+			if (a === b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
-		ifEven: (n, s) => (n % 2 == 0) ? s.fn(this) : s.inverse(this),
-		ifNth: (a, b, s) => (++b % a === 0) ? s.fn(this) : s.inverse(this),
-		ifOdd: (n, s) => (n % 2 == 1) ? s.fn(this) : s.inverse(this),
+		ifEven: (n, s) => (n % 2 == 0) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		ifNth: (a, b, s) => (++b % a === 0) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		ifOdd: (n, s) => (n % 2 == 1) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
 		is: (a, b, s) => {
-			if (a === b) return s.fn(this);
-			return s.inverse(this);
+			if (a === b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		isnt: (a, b, s) => {
-			if (a !== b) return s.fn(this);
-			return s.inverse(this);	
+			if (a !== b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);	
 		},
 		lt: (a, b, s) => {
-			if (a < b) return s.fn(this);
-			return s.inverse(this);
+			if (a < b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
 		lte: (a, b, s) => {
-			if (a <= b) return s.fn(this);
-			return s.inverse(this);
+			if (a <= b) return (isDef(s.fn) ? s.fn(this) : true);
+			return (isDef(s.inverse) ? s.inverse(this) : false);
 		},
-		neither: (a, b, s) => (!a && !b) ? s.fn(this) : s.inverse(this),
-		or: (a, b, s) => (a === true || b === true) ? s.fn(this) : s.inverse(this),
-		unlessEq: (ctx, s) => (ctx === s.hash.compare) ? s.fn(this) : s.inverse(this),
-		unlessGt: (ctx, s) => (ctx > s.hash.compare) ? s.fn(this) : s.inverse(this),
-		unlessLt: (ctx, s) => (ctx < s.hash.compare) ? s.fn(this) : s.inverse(this),
-		unlessGteq: (ctx, s) => (ctx >= s.hash.compare) ? s.fn(this) : s.inverse(this),
-		unlessLteq: (ctx, s) => (ctx <= s.hash.compare) ? s.fn(this) : s.inverse(this)
+		neither: (a, b, s) => (!a && !b) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		or: (a, b, s) => (a === true || b === true) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessEq: (ctx, s) => (ctx === s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessGt: (ctx, s) => (ctx > s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessLt: (ctx, s) => (ctx < s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessGteq: (ctx, s) => (ctx >= s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false),
+		unlessLteq: (ctx, s) => (ctx <= s.hash.compare) ? (isDef(s.fn) ? s.fn(this) : true) : (isDef(s.inverse) ? s.inverse(this) : false)
 	}
 
 	ow.template.addHelpers("$", obj)
