@@ -3761,8 +3761,9 @@ const exit = function(exitCode, force) {
  * </odoc>
  */
 const clone = function(aObject) {
-	if (Array.isArray(aObject)) return aObject.slice(0);
- 	return extend(true, {}, aObject);
+	//if (Array.isArray(aObject)) return aObject.slice(0);
+	if (Array.isArray(aObject)) return aObject.map(clone)
+ 	return extend(true, {}, aObject)
 }
 
 /**
