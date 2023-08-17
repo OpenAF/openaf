@@ -76,11 +76,11 @@ const $$ = function(aObj) {
 		/**
 		 * <odoc>
 		 * <key>$$.set(aPath, aNewValue) : Object</key>
-		 * Given aObject it will try to parse the aPath a set the corresponding object under that path to aNewValue. Example:\
+		 * Given aObject it will try to parse the aPath and set the corresponding object under that path to aNewValue. Example:\
 		 * \
 		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
 		 * \
-		 * sprint($$(a).set("b.c", 123); // { a : 1, b : { c: 123, d: [0, 1] } }\
+		 * sprint($$(a).set("b.c", 123)); // { a : 1, b : { c: 123, d: [0, 1] } }\
 		 * \
 		 * </odoc>
 		 */		
@@ -106,6 +106,40 @@ const $$ = function(aObj) {
 			}
 			prev[prevK] = aValue;
 			return orig;
+        },
+		/**
+		 * <odoc>
+		 * <key>$$.unset(aPath) : Object</key>
+		 * Given aObject it will try to parse the aPath and unset the corresponding object under that path. Example:\
+		 * \
+		 * var a = { a : 1, b : { c: 2, d: [0, 1] } };\
+		 * \
+		 * sprint($$(a).set("b.c")); // { a : 1, b : { d: [0, 1] } }\
+		 * \
+		 * </odoc>
+		 */		
+        unset: aPath => {
+            if (!$$(aObj).isObject()) return void 0
+            var orig = aObj
+
+            aPath = aPath.replace(/\[(\w+)\]/g, '.$1')
+			aPath = aPath.replace(/^\./, '')
+
+            var a = aPath.split('.')
+            var prev, prevK
+            for (var i = 0, n = a.length; i < n; ++i) {
+				var k = a[i]
+				prev = aObj
+				prevK = k
+				if (k in aObj) {
+					aObj = aObj[k]
+				} else {
+					aObj[k] = {}
+					aObj = aObj[k]
+				}
+			}
+			delete prev[prevK]
+			return orig
         },
         isDef: () => { return (isJavaObject(aObj) || !(typeof aObj == 'undefined')) ? true : false },
         isUnDef: () => { return (isJavaObject(aObj) || !(typeof aObj == 'undefined')) ? false : true },
