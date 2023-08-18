@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 var countTests = 0;
 var countSuccess = 0;
 var countFail = 0;

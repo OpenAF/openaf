@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 (function() {
     exports.testDBInMemory = function() {
         var db = createDBInMem("test", false);

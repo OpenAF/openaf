@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 (function() {
     exports.testIOJSON = function() {
         var a = { "a" : "123€áä" };

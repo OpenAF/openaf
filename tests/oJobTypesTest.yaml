@@ -1,3 +1,5 @@
+# Copyright 2023 Nuno Aguiar
+
 init:
   hello: world
 

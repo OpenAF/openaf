@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 (function() {
 
     exports.testGetSet = function() {
