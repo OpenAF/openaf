@@ -102,11 +102,15 @@ OpenWrap.oJob = function(isNonLocal) {
 		"go": {
 			lang: "go",
 			shell: "go run ",
+			pre: "package main\nimport (\"encoding/json\"; \"fmt\")\nfunc main(){var args map[string]interface{}\njson.Unmarshal([]byte(`{{{args}}}`), &args)\n",
+			pos: "\n_args, _err := json.Marshal(args); if _err != nil { return }; fmt.Println(string(_args))}",
 			withFile: ".go"
 		},
 		"ruby": {
 			lang : "ruby",
-			shell: "ruby -"
+			shell: "ruby -",
+			pre  : "require 'json'\nargs = JSON.parse('{{{args}}}')\n",
+			pos  : "\nputs JSON.generate(args)"
 		},
 		"perl": {
 			lang: "perl",
@@ -2785,8 +2789,16 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					if (isDef(m) && isDef(m.argsFn)) {
 						aJobTypeArgs.argsFn = m.argsFn
 					}
+					if (isDef(m) && isString(m.pre)) {
+						aJobTypeArgs.pre = m.pre
+					}
+					if (isDef(m) && isString(m.pos)) {
+						aJobTypeArgs.pos = m.pos
+					}
 					if (isDef(m) && isString(m.withFile) && isUnDef(aJobTypeArgs.langFn)) {
-						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, code, 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
+						if (isUnDef(aJobTypeArgs.pre)) aJobTypeArgs.pre = ""
+						if (isUnDef(aJobTypeArgs.pos)) aJobTypeArgs.pos = ""
+						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, $t(" + stringify(aJobTypeArgs.pre) + ",{args:stringify(args,__,'')}) + code + " + stringify(aJobTypeArgs.pos) + ", 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
 						aJobTypeArgs.shell = __;
 					}
 				}
@@ -2800,10 +2812,16 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 								prefix = ".prefix(objOrStr(args, \"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 							}
                             res = "/* __oaf_ojob shell */ " + res + "\n";
-							if (aJobTypeArgs.noTemplate) {
-								res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
+							if (isDef(aJobTypeArgs.pre) || isDef(aJobTypeArgs.pos)) {
+								if (isUnDef(aJobTypeArgs.pre)) aJobTypeArgs.pre = ""
+								if (isUnDef(aJobTypeArgs.pos)) aJobTypeArgs.pos = ""
+								res = res + ";var __res = $sh().sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", $t(" + stringify(aJobTypeArgs.pre) + ", { args: stringify(args,__,'') }) + " + stringify(origRes) + " + " + stringify(aJobTypeArgs.pos) + ")" + prefix + ".get(0);\n"
 							} else {
-								res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
+								if (aJobTypeArgs.noTemplate) {
+									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
+								} else {
+									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
+								}
 							}
 							res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 							res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
