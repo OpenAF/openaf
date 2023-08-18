@@ -1,3 +1,6 @@
+// oJob core functionality
+// Copyright 2023 Nuno Aguiar
+
 /**
  * <odoc>
  * <key>oJob.oJob() : oJob</key>

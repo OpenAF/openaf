@@ -1,5 +1,5 @@
-//OPENAF common functions
-//Author: Nuno Aguiar
+// OPENAF common functions
+// Copyright 2023 Nuno Aguiar
 
 af.eval("const self = this; const global = self; const __ = void 0; const __oafInit = Number(java.lang.System.currentTimeMillis());");
 

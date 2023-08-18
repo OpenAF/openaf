@@ -44,7 +44,7 @@ import java.lang.String;
 /**
  * Core IO plugin
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class IO extends ScriptableObject {

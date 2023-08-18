@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 package de.vandermeer.asciitable.v2.themes;
 
 public enum OpenAFTableThemes {

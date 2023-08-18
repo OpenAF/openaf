@@ -39,7 +39,7 @@ import java.lang.String;
 /**
  * The HTTPd server. Creates a thread to run the httpd server.
  * 
- * @author Nuno Aguiar <nuno@aguiar.name>
+ * Copyright 2023 Nuno Aguiar
  * 
  */
 public class HTTPWSd extends NanoWSD implements IHTTPd {

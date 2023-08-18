@@ -14,7 +14,7 @@ import biz.source_code.utils.RawConsoleInput;
  * Core Console plugin
  * OpenAF plugin to provide console features (based on jline)
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class Console extends ScriptableObject {

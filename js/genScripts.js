@@ -1,5 +1,5 @@
-//
-// Author: Nuno Aguiar
+// Generate OpenAF scripts
+// Copyright 2023 Nuno Aguiar
 
 // VARIABLES
 // ---------

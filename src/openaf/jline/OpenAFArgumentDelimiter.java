@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 package openaf.jline;
 
 import jline.console.completer.ArgumentCompleter.AbstractArgumentDelimiter;

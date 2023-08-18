@@ -1,3 +1,6 @@
+// OpenAF Sigil
+// Copyright 2023 Nuno Aguiar
+
 if (!(typeof isJavaObject == 'defined')) isJavaObject = () => false
 const $$ = function(aObj) {
 	const _r = {

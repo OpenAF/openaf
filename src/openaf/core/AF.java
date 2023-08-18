@@ -5,7 +5,7 @@ import java.net.URL;
 /**
  * Core AF plugin
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class AF {

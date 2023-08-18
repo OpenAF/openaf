@@ -1,4 +1,4 @@
-// Author: Nuno Aguiar
+// Copyright 2023 Nuno Aguiar
 package openaf;
 
 import org.fusesource.jansi.Ansi;

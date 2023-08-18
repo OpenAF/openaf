@@ -1,5 +1,5 @@
 // OpenWrap
-// Author: Nuno Aguiar
+// Copyright 2023 Nuno Aguiar
 // Dev
 
 OpenWrap.dev = function() {

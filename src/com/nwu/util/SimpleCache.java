@@ -23,7 +23,7 @@ import java.util.HashMap;
 /**
  * This is a simple cache implementation to hold objects between counter cycles
  * 
- * @author Nuno Aguiar <nuno@aguiar.name>
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class SimpleCache {

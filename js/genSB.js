@@ -1,3 +1,6 @@
+// Generate she-bang scripts/ojobs
+// Copyright 2023 Nuno Aguiar
+
 var tmpl = "#!/usr/bin/env {{openAFPath}}oaf-sb\n\nvar params = processExpr(\" \");\n// sprint(params)\n\n";
 var tmplJ = "#!/usr/bin/env {{openAFPath}}ojob-sb\n\n"
 

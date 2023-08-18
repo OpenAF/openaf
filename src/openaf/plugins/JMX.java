@@ -47,7 +47,7 @@ import openaf.SimpleLog.logtype;
 /**
  * OpenAF plugin to access remote beans through JMX
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class JMX extends ScriptableObject {
