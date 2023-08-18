@@ -97,7 +97,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__langs = {
 		"powershell": {
 			lang : "powershell",
-			shell: "powershell -" 
+			shell: "powershell -"
 		},
 		"go": {
 			lang: "go",
@@ -110,13 +110,38 @@ OpenWrap.oJob = function(isNonLocal) {
 		},
 		"perl": {
 			lang: "perl",
-			shell: "perl"
+			shell: "perl",
+			// should use JSON CPAN module when available
+			argsFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"print \" + stringify(stringify(_j,__,'')) + \";\" "
 		},
 		"sh" : { 
 			lang: "sh",
 			langFn: "var s = $sh(); code.split('\\n').forEach(l => s = s.sh(templify(l, args)) ); if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.shellPrefix)) { s = s.prefix(job.typeArgs.shellPrefix); s.get(); } else { s.exec(); }"
+			// argsFn: doesn't make sense
+		},
+		"shell": {
+			lang: "shell",
+			// special type / langFn handled internally 
+			argsFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"echo \" + stringify(stringify(_j,__,'')) + \"\" "
+		},
+		"ssh": {
+			lang: "ssh",
+			// special type / langFn handled internally 
+			argsFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"echo \" + stringify(stringify(_j,__,'')) + \"\" "
 		}
 	};
+
+	ow.template.addHelper("_args", (_lang, _args) => {
+		_$(_lang, "_lang").isString().$_()
+		_$(_args, "_args").isString().$_()
+
+		_lang = _lang.trim()
+		if (isDef(this.__langs[_lang]) && isDef(this.__langs[_lang])) {
+			return af.eval("_args => { " + this.__langs[_lang].argsFn + " }")(_args)
+		} else {
+			throw "Lang " + _lang + " argsFn not found " + af.toSLON(Object.keys(this.__langs))
+		}
+	})
 
 	this.periodicFuncs = [];
 	this.__periodicFunc = () => {
@@ -2756,6 +2781,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 					if (isDef(m) && isDef(m.langFn)) {
 						aJobTypeArgs.langFn = m.langFn;
+					}
+					if (isDef(m) && isDef(m.argsFn)) {
+						aJobTypeArgs.argsFn = m.argsFn
 					}
 					if (isDef(m) && isString(m.withFile) && isUnDef(aJobTypeArgs.langFn)) {
 						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, code, 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";

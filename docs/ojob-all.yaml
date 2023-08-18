@@ -14,7 +14,7 @@ init:
 # This is a flags and main options to run the ojob
 ojob:
   ## --- OPENAF FLAGS ---
-
+  # Allows changing prior to execution some OpenAF __flags values
   flags      :
     SOME_OPENAF_FLAG: false
 
@@ -101,11 +101,13 @@ ojob:
   - lang    : my-language
     langFn  : |
       // handle "code" variable
-      // with "job", "job.typeArgs" and "args" variables
+      // with "job", "job.typeArgs" and "args" input variables
+    argsFn  : |
+      // function to print to stdout the "args" output to pass on to other jobs based on language specific variables
+      // use with "{{{_args 'my-language' 'varA, varB, varC'}}}", the second argument is provided as _args to the function
   - lang    : cmd-language
     shell   : "my-cmd run -"   # A command that receives input through stdin
     #withFile: ".cmdlang"      # If a command needs a file with a specific extension
-  # Allows changing prior to execution some OpenAF __flags values
 
   ## --- DEBUG ---
 
@@ -270,6 +272,7 @@ jobs:
     noTemplate: false # Boolean to indicate if the "exec" contents should or not be parsed as a template with the current execution args (helpfull for shell or ssh langs)
     shellPrefix: myprefix # When "lang: shell" or "lang: ssh" it will prefix all stdout lines immediatelly
     langFn  : # The same as ojob.langs.langFn
+    argsFn  : # The same as objo.langs.argsFn
     shell   : # The same as ojob.langs.shell
     timeout : 300000 # If defined the maximum time, in ms, that each execution can take before being forced to end
     stopWhen: |
