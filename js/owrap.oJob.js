@@ -97,7 +97,9 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__langs = {
 		"powershell": {
 			lang : "powershell",
-			shell: "powershell -"
+			shell: "powershell -",
+			pre  : "$_args = ConvertFrom-Json '{{{args}}}'\n",
+			pos  : "\n(ConvertTo-Json $_args -Compress)\n"
 		},
 		"go": {
 			lang: "go",
@@ -116,36 +118,30 @@ OpenWrap.oJob = function(isNonLocal) {
 			lang: "perl",
 			shell: "perl",
 			// should use JSON CPAN module when available
-			argsFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"print \" + stringify(stringify(_j,__,'')) + \";\" "
+			pre     : "if (eval { require JSON; 1 }) { $args = JSON::decode_json('{{{args}}}'); };\n",
+			pos     : "\nif (eval { require JSON; 1 }) { print JSON::encode_json($args).'\n'; };",
+			returnRE: "\\s*#\\s+return (.+)[\\s\\n]+",
+			returnFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"print \" + stringify(stringify(_j,__,'')) + \";\" "
 		},
 		"sh" : { 
 			lang: "sh",
 			langFn: "var s = $sh(); code.split('\\n').forEach(l => s = s.sh(templify(l, args)) ); if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.shellPrefix)) { s = s.prefix(job.typeArgs.shellPrefix); s.get(); } else { s.exec(); }"
-			// argsFn: doesn't make sense
+			// returnFn: doesn't make sense
 		},
 		"shell": {
 			lang: "shell",
 			// special type / langFn handled internally 
-			argsFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"echo \" + stringify(stringify(_j,__,'')) + \"\" "
+			returnFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"echo \" + stringify(stringify(_j,__,'')) + \"\" ",
+			returnRE: "\\s*#\\s+return (.+)[\\s\\n]*$"
 		},
 		"ssh": {
 			lang: "ssh",
 			// special type / langFn handled internally 
-			argsFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"echo \" + stringify(stringify(_j,__,'')) + \"\" "
+			returnFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"echo \" + stringify(stringify(_j,__,'')) + \"\" ",
+			returnRE: "\\s*#\\s+return (.+)[\\s\\n]*$"
 		}
 	};
 
-	ow.template.addHelper("_args", (_lang, _args) => {
-		_$(_lang, "_lang").isString().$_()
-		_$(_args, "_args").isString().$_()
-
-		_lang = _lang.trim()
-		if (isDef(this.__langs[_lang]) && isDef(this.__langs[_lang])) {
-			return af.eval("_args => { " + this.__langs[_lang].argsFn + " }")(_args)
-		} else {
-			throw "Lang " + _lang + " argsFn not found " + af.toSLON(Object.keys(this.__langs))
-		}
-	})
 
 	this.periodicFuncs = [];
 	this.__periodicFunc = () => {
@@ -2707,6 +2703,26 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				aJobTypeArgs.lang = "ssh";
 				aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("powershell");
 			}
+			var m = parent.__langs[aJobTypeArgs.lang]
+			if (isDef(m) && isUnDef(aJobTypeArgs.returnRE) && isDef(m.returnRE)) aJobTypeArgs.returnRE = m.returnRE
+			if (isDef(m) && isUnDef(aJobTypeArgs.returnFn) && isDef(m.returnFn)) aJobTypeArgs.returnFn = m.returnFn
+
+			if (isDef(aJobTypeArgs.returnRE) || isDef(aJobTypeArgs.returnFn)) {
+				// If returnRE and returnFn are defined for this language
+				if (isDef(aJobTypeArgs.returnRE) && isDef(aJobTypeArgs.returnFn)) {
+					// Find the comment with returnRE
+					var _ar = origRes.match(new RegExp(aJobTypeArgs.returnRE))
+					if (isArray(_ar) && _ar.length > 1) {
+						// Run the returnFN to get the content to replace it
+						if (isDef(aJobTypeArgs.returnFn)) {
+							var _res = af.eval("_args => { " + aJobTypeArgs.returnFn + " }")(_ar[1])
+							origRes = origRes.replace(new RegExp("(" + aJobTypeArgs.returnRE + ")"), "\n"+_res+"\n")
+						} else {
+							throw "Lang " + aJobTypeArgs.lang + " returnFn not found "
+						}
+					}
+				}
+			}
 			switch(aJobTypeArgs.lang) {
 			case "js":
 				res = res + "\n" + origRes
@@ -2779,15 +2795,17 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				break;
 			default:
 				if (isString(aJobTypeArgs.lang) && isDef(parent.__langs[aJobTypeArgs.lang])) {
-					var m = parent.__langs[aJobTypeArgs.lang];
 					if (isDef(m) && isDef(m.shell)) {
 						aJobTypeArgs.shell = m.shell;
 					}
 					if (isDef(m) && isDef(m.langFn)) {
 						aJobTypeArgs.langFn = m.langFn;
 					}
-					if (isDef(m) && isDef(m.argsFn)) {
-						aJobTypeArgs.argsFn = m.argsFn
+					if (isDef(m) && isDef(m.returnFn)) {
+						aJobTypeArgs.returnFn = m.returnFn
+					}
+					if (isDef(m) && isDef(m.returnRE)) {
+						aJobTypeArgs.returnRE = m.returnRE
 					}
 					if (isDef(m) && isString(m.pre)) {
 						aJobTypeArgs.pre = m.pre
