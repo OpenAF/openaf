@@ -2504,6 +2504,16 @@ OpenWrap.format.prototype.unescapeHTML4 = function(string) {
 
 /**
  * <odoc>
+ * <key>ow.format.escapeRE(aString) : String</key>
+ * Tries to escape in aString all characters that make up a RegExp.
+ * </odoc>
+ */
+OpenWrap.format.prototype.escapeRE = function(aString) {
+	return aString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * <odoc>
  * <key>ow.format.transposeArrayLines(anLineArray) : Array</key>
  * Given anLineArray transposes into a new array of lines. 
  * </odoc>

@@ -1107,7 +1107,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 /**
  * <odoc>
  * <key>printTreeOrS(aObj, aWidth, aOptions) : String</key>
- * Tries to use printTree with the provided arguments. In case printTree throws an exception (like insuffisance width)
+ * Tries to use printTree with the provided arguments. In case printTree throws an exception (like insufficient width)
  * if will fallback to colorify or stringify (if the noansi option is true).
  * </odoc>
  */
@@ -1125,7 +1125,7 @@ const printTreeOrS = function(aM, aWidth, aOptions) {
 				if (aOptions.noansi) {
 					return stringify(aM)
 				} else {
-					return colorify(aM)
+					return colorify(aM, aOptions)
 				}
 			}
 		} else {
@@ -1133,7 +1133,7 @@ const printTreeOrS = function(aM, aWidth, aOptions) {
 			if (aOptions.noansi) {
 				return stringify(aM)
 			} else {
-				return colorify(aM)
+				return colorify(aM, aOptions)
 			}
 		}
 	}
@@ -1691,16 +1691,20 @@ var __colorFormat = {
 	askPos: "BLUE",
 	table: { lines: "RESET", value: "RESET", title: "BOLD" }
 };
-const colorify = function(json) {
+const colorify = function(json, aOptions) {
 	if (typeof json != 'string') {
 		//json = JSON.stringify(json, undefined, 2);
-		json = stringify(json, undefined, 2);
+		json = stringify(json, __, 2)
 	} else {
-		return json;
+		return json
+	}
+	aOptions = _$(aOptions).isMap().default({})
+	var _ac = c => {
+		return c + (isDef(aOptions.bgcolor) ? (c.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")
 	}
 	
 	//json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-	return String(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+	var _r = String(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
 		var cls = 'number';
 		if (/^"/.test(match)) {
 			if (/:$/.test(match)) {
@@ -1716,18 +1720,20 @@ const colorify = function(json) {
 		var res = ""; 
 		switch(cls) {
 		case "key"    : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.key)) res = ansiColor(__colorFormat.key, match); else res = match; break;
+		   if (isDef(__colorFormat) && isDef(__colorFormat.key)) res = ansiColor(_ac(__colorFormat.key), match); else res = match; break;
 		case "number" : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.number)) res = ansiColor(__colorFormat.number, match); else res = match; break;
+		   if (isDef(__colorFormat) && isDef(__colorFormat.number)) res = ansiColor(_ac(__colorFormat.number), match); else res = match; break;
 		case "string" : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.string)) res = ansiColor(__colorFormat.string, match); else res = match; break;
+		   if (isDef(__colorFormat) && isDef(__colorFormat.string)) res = ansiColor(_ac(__colorFormat.string), match); else res = match; break;
 		case "boolean": 
-	       if (isDef(__colorFormat) && isDef(__colorFormat.boolean)) res = ansiColor(__colorFormat.boolean, match); else res = match; break;
+	       if (isDef(__colorFormat) && isDef(__colorFormat.boolean)) res = ansiColor(_ac(__colorFormat.boolean), match); else res = match; break;
 		default: 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.default)) res = ansiColor(__colorFormat.default, match); else res = match;
+		   if (isDef(__colorFormat) && isDef(__colorFormat.default)) res = ansiColor(_ac(__colorFormat.default), match); else res = match;
 		}
 		return res;
-	});
+	})
+
+	return (isDef(aOptions.bgcolor) ? _r.replace(/\u001b\[m([ ,\{\}\[\]]+)/g, ansiColor(_ac("RESET"), "$1")) : _r)
 };
 
 __JSONformat = {
