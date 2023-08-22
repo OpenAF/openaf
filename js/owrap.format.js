@@ -820,6 +820,50 @@ OpenWrap.format.prototype.string = {
 		return _r
 	},
 
+    /**
+	 * <odoc>
+	 * <key>ow.format.string.ansiMoveUp(nLines)</key>
+	 * Moves the cursor nLines up.
+	 * </odoc>
+	 */
+	ansiMoveUp: nLines => {
+		nLines = _$(nLines, "nLines").isNumber().default(1)
+		printnl("\x1B[" + nLines + "A")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiMoveDown(nLines)</key>
+	 * Moves the cursor nLines down.
+	 * </odoc>
+	 */
+	ansiMoveDown: nLines => {
+		nLines = _$(nLines, "nLines").isNumber().default(1)
+		printnl("\x1B[" + nLines + "B")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiMoveRight(nChars)</key>
+	 * Moves the cursor right chars.
+	 * </odoc>
+	 */
+	ansiMoveRight: nChars => {
+		nChars = _$(nChars, "nChars").isNumber().default(1)
+		printnl("\x1B[" + nChars + "C")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiMoveLeft(nChars)</key>
+	 * Moves the cursor left chars.
+	 * </odoc>
+	 */
+	ansiMoveLeft: nChars => {
+		nChars = _$(nChars, "nChars").isNumber().default(1)
+		printnl("\x1B[" + nChars + "D")
+	},
+
 	/** 
 	 * <odoc>
 	 * <key>ow.format.string.bool(aBoolValue, isLight, anExtra) : String</key>
