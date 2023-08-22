@@ -3113,9 +3113,15 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			res = res.replace(b, "```$$" + i + "```")
 		})
 
- 	res = res.replace(/(\*{3}|_{3})([^\*_\n]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
- 	res = res.replace(/(\*{2}|_{2})([^\*_\n]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
- 	res = res.replace(/(\*|_)([^\*_\n]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})", ansiColor("BOLD,ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(_{3})(^ _][ _\n]*)(?<!\\\\)(_{3})", ansiColor("BOLD,ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})", ansiColor("BOLD", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(_{2})([^ _][^_\n]*)(?<!\\\\)(_{2})", ansiColor("BOLD", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*)([^ \\*][^\\*\n]*)(?<!\\\\)(\\*)", ansiColor("ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(_)([^ _][^_\n]*)(?<!\\\\)(_)", ansiColor("ITALIC", "$2")+da)
+
+    // escape
+    res = res.replace(/\\([_\*])/g, "$1")
 
 	res = res.replace(/^# (.+)/mg, ansiColor("WHITE,BOLD,UNDERLINE", "$1") + da)
 	res = res.replace(/^## (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)
