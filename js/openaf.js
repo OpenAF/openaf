@@ -3768,7 +3768,7 @@ const exit = function(exitCode, force) {
  */
 const clone = function(aObject) {
 	//if (Array.isArray(aObject)) return aObject.slice(0);
-	if (Array.isArray(aObject)) return aObject.map(clone)
+	if (Array.isArray(aObject)) return aObject.map(r=>isObject(r) ? clone(r) : r)
  	return extend(true, {}, aObject)
 }
 
