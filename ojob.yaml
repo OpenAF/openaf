@@ -867,18 +867,26 @@ jobs:
     shortcut:
       name  : printmd
       keyArg: __text
+      args  :
+        outputMD: __outputMD
   help    :
     text   : Parses an input text as simple ascii markdown
     expects:
     - name: __text
       desc: The text template to parse.
+    - name: __outputMD
+      desc: A boolean flag that if true will no parse the input text
   check   :
     in:
-      __text: isString
+      __text    : isString
+      __outputMD: toBoolean.isBoolean.default(false)
   exec    : |
     var cargs = clone(args)
     delete cargs.__text
-    printnl(ow.format.withMD($t(args.__text, cargs)))
+    if (args.__outputMD)
+      printnl($t(args.__text, cargs))
+    else
+      printnl(ow.format.withMD($t(args.__text, cargs)))
 
 # ---------------
 - name : ojob log
