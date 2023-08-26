@@ -5,6 +5,33 @@
         print(getVersion());
     };
 
+    exports.testClone = function() {
+        ow.test.assert(123, clone(123), "Problem with clone of a number")
+        ow.test.assert(true, clone(true), "Problem with clone of a boolean")
+        ow.test.assert("abc", clone("abc"), "Problem with clone of a string")
+        ow.test.assert(__, clone(null), "Problem with clone of a null")
+        ow.test.assert(__, clone(__), "Problem with clone of a undefined")
+        ow.test.assert({ x: 1, y: "a" }, clone({ x: 1, y: "a" }), "Problem with clone of a map")
+        ow.test.assert([1, 2, 3], clone([1, 2, 3]), "Problem with clone of an array")
+
+        var test = {
+            n: 123,
+            s: "test",
+            nl: null,
+            vd: __,
+            mp: {
+                n: 123,
+                s: "test",
+                nl: null,
+                vd: __,
+                mp2: { x: 1, y: -1 },
+                ar: [ 1, 2, { x: 1, y: -1 }, [1, "t", { a: 1, b: 2 }]]
+            },
+            ar: [ 1, 2, { x: 1, y: -1 }, [1, "t", { a: 1, b: 2 }]]
+        }
+        ow.test.assert(stringify(test,__,""), stringify(clone(test),__,""), "Problem with mutiple types object")
+    }
+
     exports.testPrints = function() {
         print("Hello World!");
         printErr("Bye World!"); printErrnl("?");

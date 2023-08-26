@@ -125,6 +125,11 @@ jobs:
      then: oJob Test
      exec: args.func = args.tests.testDoFirst;     
 
+   - name: OpenAF::Test clone
+     from: OpenAF::Init
+     then: oJob Test
+     exec: args.func = args.tests.testClone
+
    - name: OpenAF::Basic Parallel processing
      from: OpenAF::Init
      to  : oJob Test
@@ -269,6 +274,7 @@ todo:
    - OpenAF::Test $do
    - OpenAF::Test $doAll
    - OpenAF::Test $doFirst
+   - OpenAF::Test clone
    - OpenAF::Basic Parallel processing
    - OpenAF::Crypt
    - OpenAF::Encrypt/Decrypt
