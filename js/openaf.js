@@ -9253,7 +9253,7 @@ const includeOPack = function(aOPackName, aMinVersion) {
 		}
 	}
 	if (isUnDef(getOPackPath(aOPackName))) {
-        oPack("install " + aOPackName);
+        oPack("install " + aOPackName + " -deps");
         if (isUnDef(getOPackPath(aOPackName))) throw "Couldn't install opack '" + aOPackName + "'.";
     }
     if (isDef(aMinVersion)) {
