@@ -724,6 +724,7 @@ jobs:
         vs   : values
         vpath: __vpath
         extra: extra
+  help:
     text: Provides a set of operations over an OpenAF channel
     expects:
     - name: __name
