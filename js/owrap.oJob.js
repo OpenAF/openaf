@@ -3292,7 +3292,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: true,
 		attrs: {
-			"(printmd" : "__text"
+			"(printmd"  : "__text",
+			"((outputMD": "__outputMD"
 		}
 	}, {
 		name : "(print",
