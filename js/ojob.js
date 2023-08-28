@@ -1,3 +1,6 @@
+// oJob cli script
+// Copyright 2023 Nuno Aguiar
+
 var fparam;
 var params = processExpr(" ");
 var ojob_shouldRun = true;

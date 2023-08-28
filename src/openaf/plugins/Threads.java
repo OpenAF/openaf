@@ -26,7 +26,7 @@ import openaf.SimpleLog;
 /**
  * Core Threads plugin
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class Threads extends ScriptableObject {

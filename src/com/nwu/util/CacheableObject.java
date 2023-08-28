@@ -21,7 +21,7 @@ package com.nwu.util;
 /**
  * This class is the basis for CacheableObject to be use with the SimpleCache
  * 
- * @author Nuno Aguiar <nuno@aguiar.name>
+ * Copyright 2023 Nuno Aguiar
  * @see com.attrmon.core.SimpleCache
  */
 public abstract class CacheableObject {

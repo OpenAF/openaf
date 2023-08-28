@@ -30,7 +30,7 @@ import openaf.AFCmdBase;
 /**
  * GIT plugin
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  * 
  */
 public class GIT extends ScriptableObject {

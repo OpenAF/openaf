@@ -1,3 +1,6 @@
+// oJob core functionality
+// Copyright 2023 Nuno Aguiar
+
 /**
  * <odoc>
  * <key>oJob.oJob() : oJob</key>
@@ -94,26 +97,51 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__langs = {
 		"powershell": {
 			lang : "powershell",
-			shell: "powershell -" 
+			shell: "powershell -",
+			pre  : "$_args = ConvertFrom-Json '{{{args}}}'\n",
+			pos  : "\n(ConvertTo-Json $_args -Compress)\n"
 		},
 		"go": {
 			lang: "go",
 			shell: "go run ",
+			pre: "package main\nimport (\"encoding/json\"; \"fmt\")\nfunc main(){var args map[string]interface{}\njson.Unmarshal([]byte(`{{{args}}}`), &args)\n",
+			pos: "\n_args, _err := json.Marshal(args); if _err != nil { return }; fmt.Println(string(_args))}",
 			withFile: ".go"
 		},
 		"ruby": {
 			lang : "ruby",
-			shell: "ruby -"
+			shell: "ruby -",
+			pre  : "require 'json'\nargs = JSON.parse('{{{args}}}')\n",
+			pos  : "\nputs JSON.generate(args)"
 		},
 		"perl": {
 			lang: "perl",
-			shell: "perl"
+			shell: "perl",
+			// should use JSON CPAN module when available
+			pre     : "if (eval { require JSON; 1 }) { $args = JSON::decode_json('{{{args}}}'); };\n",
+			pos     : "\nif (eval { require JSON; 1 }) { print JSON::encode_json($args).'\n'; };",
+			returnRE: "\\s*#\\s+return (.+)[\\s\\n]+",
+			returnFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"print \" + stringify(stringify(_j,__,'')) + \";\" "
 		},
 		"sh" : { 
 			lang: "sh",
 			langFn: "var s = $sh(); code.split('\\n').forEach(l => s = s.sh(templify(l, args)) ); if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.shellPrefix)) { s = s.prefix(job.typeArgs.shellPrefix); s.get(); } else { s.exec(); }"
+			// returnFn: doesn't make sense
+		},
+		"shell": {
+			lang: "shell",
+			// special type / langFn handled internally 
+			returnFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"echo \" + stringify(stringify(_j,__,'')) + \"\" ",
+			returnRE: "\\s*#\\s+return (.+)[\\s\\n]*$"
+		},
+		"ssh": {
+			lang: "ssh",
+			// special type / langFn handled internally 
+			returnFn: "var _j = {};_args.split(',').forEach(k => { _j[k.trim()] = \"$\" + k.trim() }); return \"echo \" + stringify(stringify(_j,__,'')) + \"\" ",
+			returnRE: "\\s*#\\s+return (.+)[\\s\\n]*$"
 		}
 	};
+
 
 	this.periodicFuncs = [];
 	this.__periodicFunc = () => {
@@ -2675,6 +2703,26 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				aJobTypeArgs.lang = "ssh";
 				aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("powershell");
 			}
+			var m = parent.__langs[aJobTypeArgs.lang]
+			if (isDef(m) && isUnDef(aJobTypeArgs.returnRE) && isDef(m.returnRE)) aJobTypeArgs.returnRE = m.returnRE
+			if (isDef(m) && isUnDef(aJobTypeArgs.returnFn) && isDef(m.returnFn)) aJobTypeArgs.returnFn = m.returnFn
+
+			if (isDef(aJobTypeArgs.returnRE) || isDef(aJobTypeArgs.returnFn)) {
+				// If returnRE and returnFn are defined for this language
+				if (isDef(aJobTypeArgs.returnRE) && isDef(aJobTypeArgs.returnFn)) {
+					// Find the comment with returnRE
+					var _ar = origRes.match(new RegExp(aJobTypeArgs.returnRE))
+					if (isArray(_ar) && _ar.length > 1) {
+						// Run the returnFN to get the content to replace it
+						if (isDef(aJobTypeArgs.returnFn)) {
+							var _res = af.eval("_args => { " + aJobTypeArgs.returnFn + " }")(_ar[1])
+							origRes = origRes.replace(new RegExp("(" + aJobTypeArgs.returnRE + ")"), "\n"+_res+"\n")
+						} else {
+							throw "Lang " + aJobTypeArgs.lang + " returnFn not found "
+						}
+					}
+				}
+			}
 			switch(aJobTypeArgs.lang) {
 			case "js":
 				res = res + "\n" + origRes
@@ -2747,15 +2795,28 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				break;
 			default:
 				if (isString(aJobTypeArgs.lang) && isDef(parent.__langs[aJobTypeArgs.lang])) {
-					var m = parent.__langs[aJobTypeArgs.lang];
 					if (isDef(m) && isDef(m.shell)) {
 						aJobTypeArgs.shell = m.shell;
 					}
 					if (isDef(m) && isDef(m.langFn)) {
 						aJobTypeArgs.langFn = m.langFn;
 					}
+					if (isDef(m) && isDef(m.returnFn)) {
+						aJobTypeArgs.returnFn = m.returnFn
+					}
+					if (isDef(m) && isDef(m.returnRE)) {
+						aJobTypeArgs.returnRE = m.returnRE
+					}
+					if (isDef(m) && isString(m.pre)) {
+						aJobTypeArgs.pre = m.pre
+					}
+					if (isDef(m) && isString(m.pos)) {
+						aJobTypeArgs.pos = m.pos
+					}
 					if (isDef(m) && isString(m.withFile) && isUnDef(aJobTypeArgs.langFn)) {
-						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, code, 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
+						if (isUnDef(aJobTypeArgs.pre)) aJobTypeArgs.pre = ""
+						if (isUnDef(aJobTypeArgs.pos)) aJobTypeArgs.pos = ""
+						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, $t(" + stringify(aJobTypeArgs.pre) + ",{args:stringify(args,__,'')}) + code + " + stringify(aJobTypeArgs.pos) + ", 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
 						aJobTypeArgs.shell = __;
 					}
 				}
@@ -2769,10 +2830,16 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 								prefix = ".prefix(objOrStr(args, \"" + parent.__processTypeArg(aJobTypeArgs.shellPrefix) + "\"))";
 							}
                             res = "/* __oaf_ojob shell */ " + res + "\n";
-							if (aJobTypeArgs.noTemplate) {
-								res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
+							if (isDef(aJobTypeArgs.pre) || isDef(aJobTypeArgs.pos)) {
+								if (isUnDef(aJobTypeArgs.pre)) aJobTypeArgs.pre = ""
+								if (isUnDef(aJobTypeArgs.pos)) aJobTypeArgs.pos = ""
+								res = res + ";var __res = $sh().sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", $t(" + stringify(aJobTypeArgs.pre) + ", { args: stringify(args,__,'') }) + " + stringify(origRes) + " + " + stringify(aJobTypeArgs.pos) + ")" + prefix + ".get(0);\n"
 							} else {
-								res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
+								if (aJobTypeArgs.noTemplate) {
+									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
+								} else {
+									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
+								}
 							}
 							res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 							res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
@@ -3225,7 +3292,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: true,
 		attrs: {
-			"(printmd" : "__text"
+			"(printmd"  : "__text",
+			"((outputMD": "__outputMD"
 		}
 	}, {
 		name : "(print",

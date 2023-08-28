@@ -1,3 +1,6 @@
+// OpenAF oDoc
+// Copyright 2023 Nuno Aguiar
+
 /**
  * <odoc>
  * <key>ODoc(aoDoc)</key>

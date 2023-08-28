@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 (function() {
     exports.testCSV = function() {
         var csvString = "A;B;C\r\n1;a;\"b\"\n2;1;\"2\"";

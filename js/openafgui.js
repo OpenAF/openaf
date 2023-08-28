@@ -1,3 +1,6 @@
+// OpenAF GUI
+// Copyright 2023 Nuno Aguiar
+
 log("Starting OpenAF GUI");
 
 ow.loadServer();

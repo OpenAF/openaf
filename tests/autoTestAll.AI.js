@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 (function() {
     exports.testAIPerceptronXOR = function() {
         ow.loadAI();

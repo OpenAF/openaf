@@ -1,5 +1,5 @@
 //
-// Author: Nuno Aguiar
+// Copyright 2023 Nuno Aguiar
 
 // Update to the latest version
 //

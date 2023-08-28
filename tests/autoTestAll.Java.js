@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 (function() {
     exports.testCipher = function() {
         var c = new ow.java.cipher();

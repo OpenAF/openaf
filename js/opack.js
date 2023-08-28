@@ -1,5 +1,5 @@
-// OPack
-//
+// OPack cli
+// Copyright 2023 Nuno Aguiar
 
 // ****
 // DATA

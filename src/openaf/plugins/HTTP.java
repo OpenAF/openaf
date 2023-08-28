@@ -2,7 +2,7 @@ package openaf.plugins;
 
 /**
  * Core HTTP plugin
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 import java.io.IOException;

@@ -1,5 +1,5 @@
 // OpenWrap v2
-// Author: Nuno Aguiar
+// Copyright 2023 Nuno Aguiar
 // Format
 // (parts from assemble.io)
  
@@ -818,6 +818,50 @@ OpenWrap.format.prototype.string = {
 			}
 		} 
 		return _r
+	},
+
+    /**
+	 * <odoc>
+	 * <key>ow.format.string.ansiMoveUp(nLines)</key>
+	 * Moves the cursor nLines up.
+	 * </odoc>
+	 */
+	ansiMoveUp: nLines => {
+		nLines = _$(nLines, "nLines").isNumber().default(1)
+		printnl("\x1B[" + nLines + "A")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiMoveDown(nLines)</key>
+	 * Moves the cursor nLines down.
+	 * </odoc>
+	 */
+	ansiMoveDown: nLines => {
+		nLines = _$(nLines, "nLines").isNumber().default(1)
+		printnl("\x1B[" + nLines + "B")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiMoveRight(nChars)</key>
+	 * Moves the cursor right chars.
+	 * </odoc>
+	 */
+	ansiMoveRight: nChars => {
+		nChars = _$(nChars, "nChars").isNumber().default(1)
+		printnl("\x1B[" + nChars + "C")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiMoveLeft(nChars)</key>
+	 * Moves the cursor left chars.
+	 * </odoc>
+	 */
+	ansiMoveLeft: nChars => {
+		nChars = _$(nChars, "nChars").isNumber().default(1)
+		printnl("\x1B[" + nChars + "D")
 	},
 
 	/** 
@@ -2504,6 +2548,16 @@ OpenWrap.format.prototype.unescapeHTML4 = function(string) {
 
 /**
  * <odoc>
+ * <key>ow.format.escapeRE(aString) : String</key>
+ * Tries to escape in aString all characters that make up a RegExp.
+ * </odoc>
+ */
+OpenWrap.format.prototype.escapeRE = function(aString) {
+	return aString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * <odoc>
  * <key>ow.format.transposeArrayLines(anLineArray) : Array</key>
  * Given anLineArray transposes into a new array of lines. 
  * </odoc>
@@ -3103,9 +3157,15 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			res = res.replace(b, "```$$" + i + "```")
 		})
 
- 	res = res.replace(/(\*{3}|_{3})([^\*_\n]+)(  \*{3}|_{3})/g, ansiColor("BOLD,ITALIC", "$2")+da)
- 	res = res.replace(/(\*{2}|_{2})([^\*_\n]+)(\*{2}|_{2})/g, ansiColor("BOLD", "$2")+da)
- 	res = res.replace(/(\*|_)([^\*_\n]+)(\*|_)/g, ansiColor("ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})", ansiColor("BOLD,ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(_{3})(^ _][ _\n]*)(?<!\\\\)(_{3})", ansiColor("BOLD,ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})", ansiColor("BOLD", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(_{2})([^ _][^_\n]*)(?<!\\\\)(_{2})", ansiColor("BOLD", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*)([^ \\*][^\\*\n]*)(?<!\\\\)(\\*)", ansiColor("ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll("(?<!\\\\)(_)([^ _][^_\n]*)(?<!\\\\)(_)", ansiColor("ITALIC", "$2")+da)
+
+    // escape
+    res = res.replace(/\\([_\*])/g, "$1")
 
 	res = res.replace(/^# (.+)/mg, ansiColor("WHITE,BOLD,UNDERLINE", "$1") + da)
 	res = res.replace(/^## (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)

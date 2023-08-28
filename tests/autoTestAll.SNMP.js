@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 (function() {
     exports.testSNMP2ClientGet = function() {
         plugin("SNMP");

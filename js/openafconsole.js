@@ -1,3 +1,5 @@
+// OpenAF console script
+// Copyright 2023 Nuno Aguiar
 
 plugin("Console");
 

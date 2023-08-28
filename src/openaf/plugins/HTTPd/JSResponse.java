@@ -24,7 +24,7 @@ import com.nwu.httpd.responses.Response;
 
 /**
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class JSResponse extends Response {

@@ -1,5 +1,5 @@
-// OpenWrap
-// Author: nmaguiar@gmail.com
+// OpenWrap AI
+// Copyright 2023 Nuno Aguiar
 
 OpenWrap.ai = function() {
     if (isUnDef(this.synaptic)) {

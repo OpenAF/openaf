@@ -1,5 +1,5 @@
-//
-// Author: Nuno Aguiar
+// Generate OpenAF scripts
+// Copyright 2023 Nuno Aguiar
 
 // VARIABLES
 // ---------
@@ -10,7 +10,7 @@ var extraArgsForJava9 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED 
 var extraArgsForJava10 = extraArgsForJava9 + " ";
 var extraArgsForJava11 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit -Xshare:off";
 var extraArgsForJava12 = extraArgsForJava11 + " ";
-var extraArgsForJava17 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED  -Xshare:off";
+var extraArgsForJava17 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED -Xshare:off";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 

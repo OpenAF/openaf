@@ -31,7 +31,7 @@ import com.nwu.httpd.NanoHTTPD.Response.IStatus;
  *  <li>MIME types</li>
  * </ul>
  * 
- * @author Nuno Aguiar <nuno@aguiar.name>
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class Codes {
