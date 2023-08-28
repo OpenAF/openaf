@@ -10,7 +10,7 @@ import java.io.IOException;
 
 /**
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  * 
  */
 public class CompileJS2Java {

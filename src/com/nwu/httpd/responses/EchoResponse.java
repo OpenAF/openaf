@@ -32,7 +32,7 @@ import java.lang.String;
  * the request info (URI, method, header and params) for debugging and testing
  * proposes. 
  * 
- * @author Nuno Aguiar <nuno@aguiar.name>
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class EchoResponse extends Response {

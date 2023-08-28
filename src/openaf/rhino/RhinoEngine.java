@@ -16,7 +16,7 @@ import openaf.OpenRhinoErrorReporter;
 /**
  * Rhino JSEngine implementation
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class RhinoEngine implements JSEngine {

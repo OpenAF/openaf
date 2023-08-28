@@ -1,3 +1,5 @@
+# Copyright 2023 Nuno Aguiar
+
 include:
 - oJobTest.yaml
 - autoTestAll.Generic.yaml

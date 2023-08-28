@@ -34,7 +34,7 @@ import java.lang.String;
 
 /**
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  * 
  */
 public class AFCmdOS extends AFCmdBase {

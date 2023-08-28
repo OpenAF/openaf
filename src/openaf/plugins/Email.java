@@ -30,7 +30,7 @@ import org.apache.commons.net.smtp.AuthenticatingSMTPClient;
 
 /**
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class Email extends ScriptableObject {

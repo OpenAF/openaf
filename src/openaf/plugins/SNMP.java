@@ -49,7 +49,7 @@ import openaf.SimpleLog.logtype;
 
 /**
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class SNMP extends ScriptableObject {

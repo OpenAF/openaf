@@ -31,7 +31,7 @@ import openaf.SimpleLog;
 /**
  * Core DB plugin
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class DB {

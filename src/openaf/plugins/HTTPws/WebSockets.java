@@ -17,7 +17,7 @@ import org.mozilla.javascript.Undefined;
 /**
  * HTTP plugin websockets extension
  * debug with -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog -Dorg.eclipse.jetty.client.LEVEL=DEBUG
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  */
 
 public class WebSockets {

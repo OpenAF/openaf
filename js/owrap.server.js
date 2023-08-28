@@ -1,5 +1,5 @@
 // OpenWrap v2
-// Author: Nuno Aguiar
+// Copyright 2023 Nuno Aguiar
 // Server
 
 OpenWrap.server = function() {
@@ -932,48 +932,42 @@ OpenWrap.server.prototype.rest = {
 	replyData: function(aBaseURI, aReq, aData) {
 		return ow.server.rest.reply(aBaseURI, aReq,
 			function(idxs, data) {
-				if ($stream(clone(aData)).filter(idxs).count() <= 0) {
-					var newData = merge(idxs, data);
-					aData.push(newData);
-					return newData;
+				if ($from(clone(aData)).filter(idxs).count() <= 0) {
+					var newData = merge(idxs, data)
+					aData.push(newData)
+					return newData
 				} else {
-					return {};
+					return {}
 				}
 			},
 			function(idxs) {
-				if ($stream(clone(aData)).filter(idxs).count() > 0) {
-					return $stream(clone(aData)).filter(idxs).toArray()[0];
+				if ($from(clone(aData)).filter(idxs).count() > 0) {
+					return $from(aData).filter(idxs).at(0)
 				} else {
-					return {};
-				}				
+					return {}
+				}					
 			},
 			function(idxs, data) {
-				var newData;
+				var newData
 				
-				//if (isDefined(aReq.files.content)) {
-					//newData = io.readFile(aReq.files.content);
-					newData = data;
-
-					if ($stream(clone(aData)).filter(idxs).count() > 0) {
-						aData[aData.indexOf($stream(clone(aData)).filter(idxs).toArray()[0])] = newData;
-					} else {
-						aData.push(newData);
-					}
-					
-					//return newData;
-				//}
-
-				return {};
+				newData = data
+				if ($from(clone(aData)).filter(idxs).count() > 0) {
+					aData[aData.indexOf($from(aData).filter(idxs).at(0))] = newData
+				} else {
+					aData.push(newData)
+				}
+			
+				return {}
 			},
 			function(idxs) {
-				if ($stream(clone(aData)).filter(idxs).count() > 0) {
-					deleteFromArray(aData, aData.indexOf($stream(clone(aData)).filter(idxs).toArray()[0]) );
-					return idxs;
+				if ($from(clone(aData)).filter(idxs).count() > 0) {
+					deleteFromArray(aData, aData.indexOf($from(aData).filter(idxs).at(0)) )
+					return idxs
 				} else {
-					return {};
+					return {}
 				}
 			}
-		);
+		)
 	},
 		
 	/**

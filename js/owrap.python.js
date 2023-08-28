@@ -1,5 +1,5 @@
 // OpenWrap v2
-// Author: Nuno Aguiar
+// Copyright 2023 Nuno Aguiar
 // Python
 
 OpenWrap.python = function() {

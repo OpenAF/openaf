@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 (function() {
     exports.testHTTP = function() {
         plugin("HTTPServer");

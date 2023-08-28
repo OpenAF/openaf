@@ -40,7 +40,7 @@ import com.nwu.httpd.IHTTPd;
  *  <li>URI responses number - The current number of assigned URI responses registered.<li>
  * </ul>
  * 
- * @author Nuno Aguiar <nuno@aguiar.name>
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class StatusResponse extends JsonResponse {

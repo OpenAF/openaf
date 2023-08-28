@@ -7,7 +7,7 @@ import java.lang.String;
 /**
  * Generic JS Engine interface
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public interface JSEngine {

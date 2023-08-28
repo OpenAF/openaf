@@ -1,7 +1,7 @@
 /**
  * Custom asciitable render 
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  * based on de.vandermeer.asciitable.v2.render.V2_AsciiTableRenderer
  *
  */

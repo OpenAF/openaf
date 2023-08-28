@@ -1,3 +1,5 @@
+// Copyright 2023 Nuno Aguiar
+
 package openaf;
 
 import java.io.File;

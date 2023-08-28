@@ -14,7 +14,7 @@ import java.lang.String;
  * 
  * With static methods allows for a very simple and straightforward logging 
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  * 
  */ 
 public class SimpleLog {

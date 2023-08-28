@@ -24,14 +24,14 @@ import java.lang.String;
 /**
  * General logging using log4j
  * 
- * @author Nuno Aguiar <nuno@aguiar.name>
+ * Copyright 2023 Nuno Aguiar
  * 
  */
 public class Log {
 	/**
 	 * Classifies the type of log message
 	 * 
-	 * @author Nuno Aguiar <nuno@aguiar.name>
+	 * Copyright 2023 Nuno Aguiar
 	 */
 	public enum Type {
 		FINE, INFO, ERROR, DEBUG, OFF

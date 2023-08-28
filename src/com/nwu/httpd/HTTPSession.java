@@ -31,7 +31,7 @@ import java.lang.String;
  * 
  * <i>Note: Code for customizing NanoHTTPd</i>
  * 
- * @author Nuno Aguiar <nuno@aguiar.name>
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class HTTPSession {

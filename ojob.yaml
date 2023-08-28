@@ -1,4 +1,5 @@
-# Author: Nuno Aguiar
+# oJob common jobs
+# Copyright 2023 Nuno Aguiar
 
 jobs:
 # OJOB PASS
@@ -43,9 +44,9 @@ jobs:
       })
     }
 
-    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(ar, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
+    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(ar, __, { bgcolor: "BG(235)" }), __, "FG(240)", "BG(235)", ow.format.withSideLineThemes().openBottomCurvedRect) )
 
-    delete args.__args
+    delete args.__argsp
     delete args.__debug
     delete args.__templateArgs
     args = merge(args, ar)
@@ -70,10 +71,10 @@ jobs:
   exec : |
     ow.loadFormat()
     print("")
-    cprint( ow.format.withSideLine("ARGS:", __, "YELLOW", "BOLD", ow.format.withSideLineThemes().openBottomCurvedRect) )
-    cprint( ow.format.withSideLine(colorify(args), __, "YELLOW", __, ow.format.withSideLineThemes().openTopCurvedRect) )
-    cprint( ow.format.withSideLine("RES:", __, "YELLOW,BOLD", "BOLD", ow.format.withSideLineThemes().openBottomCurvedRect) )
-    cprint( ow.format.withSideLine(colorify($get("res")), __, "YELLOW,BOLD", __, ow.format.withSideLineThemes().openTopCurvedRect) )
+    cprint( ow.format.withSideLine("ARGS:", __, "FG(240)", "BG(240),BOLD", ow.format.withSideLineThemes().openBottomCurvedRect) )
+    cprint( ow.format.withSideLine(colorify(args, {bgcolor:"BG(235)"}), __, "FG(240)", "BG(235)", ow.format.withSideLineThemes().openTopCurvedRect) )
+    cprint( ow.format.withSideLine("RES:", __, "FG(240),BOLD", "BG(240),BOLD", ow.format.withSideLineThemes().openBottomCurvedRect) )
+    cprint( ow.format.withSideLine(colorify($get("res"), {bgcolor:"BG(235)"}), __, "FG(240)", "BG(235)", ow.format.withSideLineThemes().openTopCurvedRect) )
 
 # --------------------
 - name: ojob job debug
@@ -867,18 +868,26 @@ jobs:
     shortcut:
       name  : printmd
       keyArg: __text
+      args  :
+        outputMD: __outputMD
   help    :
     text   : Parses an input text as simple ascii markdown
     expects:
     - name: __text
       desc: The text template to parse.
+    - name: __outputMD
+      desc: A boolean flag that if true will no parse the input text
   check   :
     in:
-      __text: isString
+      __text    : isString
+      __outputMD: toBoolean.isBoolean.default(false)
   exec    : |
     var cargs = clone(args)
     delete cargs.__text
-    printnl(ow.format.withMD($t(args.__text, cargs)))
+    if (args.__outputMD)
+      printnl($t(args.__text, cargs))
+    else
+      printnl(ow.format.withMD($t(args.__text, cargs)))
 
 # ---------------
 - name : ojob log
@@ -1848,7 +1857,7 @@ jobs:
       id  : args.job.isolateJob ? __ : args.id
     }
 
-    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(_j, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
+    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(_j, __, { bgcolor: "BG(235)" }), __, "FG(240)", "BG(235)", ow.format.withSideLineThemes().openBottomCurvedRect) )
     args = merge(args, $job(_j.name, _j.args, _j.id))
 
 # --------------------
@@ -1928,7 +1937,7 @@ jobs:
     if (isDef(args.__inPM)) {
       ow.oJob.output($get(args.__inPM), { __format: "pm" })
     }
-    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(inputArgs, __, { bgcolor: "BG(230)" }), __, "YELLOW", "BG(230)", ow.format.withSideLineThemes().openBottomCurvedRect) )
+    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(inputArgs, __, { bgcolor: "BG(235)" }), __, "FG(235)", "BG(235)", ow.format.withSideLineThemes().openBottomCurvedRect) )
     ow.oJob.runFile(args.__job, inputArgs, id, true, { shareArgs: false })
 
     if (args.__key == "args" || args.__key == "res") {

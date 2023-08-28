@@ -49,7 +49,7 @@ import com.jcraft.jsch.SftpProgressMonitor;
 
 /**
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class SSH extends ScriptableObject {

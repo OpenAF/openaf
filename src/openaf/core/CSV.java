@@ -19,7 +19,7 @@ import openaf.SimpleLog;
 /**
  * Core CSV plugin
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  */
 public class CSV {
 	protected enum valuetypes { STRING, NUMBER };

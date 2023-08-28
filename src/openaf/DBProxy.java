@@ -4,7 +4,7 @@ import java.sql.Connection;
 
 /**
  * 
- * @author Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 

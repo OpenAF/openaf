@@ -1,4 +1,4 @@
-// Author: Nuno Aguiar
+// Copyright 2023 Nuno Aguiar
 // Requires openafsigil.js
 // CSS: nJSMap.css
 
