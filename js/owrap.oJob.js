@@ -40,6 +40,7 @@ OpenWrap.oJob = function(isNonLocal) {
 
 	this.shutdownFuncs = [];
 	this.shortcuts = []
+	this.fileList = []
 	this._code = {}
 	var ead = getEnv("OJOB_AUTHORIZEDDOMAINS");
 	if (isDef(ead) && ead != "null") 
@@ -664,6 +665,11 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			}, true)
 		}
 
+		// Add custom shortcuts
+		if (isArray(res.jobs)) {
+			res.jobs = res.jobs.map(j => parent.addShortcuts(j))
+		}
+
 		if (isDef(res.include) && isArray(res.include)) {
 			for (var i in res.include) {
 				if (isUnDef(_includeLoaded[res.include[i]])) {
@@ -701,11 +707,6 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 			delete res.help
 		}
 		if (isUnDef(res.ojob)) res.ojob = {};
-
-		// Add custom shortcuts
-		if (isArray(res.jobs)) {
-			res.jobs = res.jobs.map(j => parent.addShortcuts(j))
-		}
 
 		// Set code in the require cache
 		if (isMap(res.code)) {
@@ -959,8 +960,14 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 	}
 
 	if (!isInclude) this.__file = aOrigFile;
+	if (this.fileList.indexOf(aOrigFile) < 0) {
+		this.fileList.push(aOrigFile)
 
-	return this.loadJSON(res, removeTodos)
+		return this.loadJSON(res, removeTodos)
+	} else {
+		//throw "The oJob '" + aOrigFile + "' is included more than once!"
+		return {}
+	}
 };
 
 /**
@@ -3406,6 +3413,28 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((useRegExp"  : "useRegExp",
 			"((flagsRegExp": "flagsRegExp",
 			"((logJob"     : "logJob"
+		}
+	}, {
+		name : "(debug",
+		job  : "ojob debug",
+		map  : true,
+		noLog: false,
+		attrs: {}
+	}, {
+		name : "(run",
+		job  : "ojob run file",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(run"      : "__job",
+			"((args"        : "__args",
+			"((out"         : "__out",
+			"((key"         : "__key",
+			"((inKey"       : "__inKey",
+			"((usePM"       : "__usePM",
+			"((inPM"        : "__inPM",
+			"((templateArgs": "__templateArgs",
+			"((debug"       : "__debug"
 		}
 	}]
 
