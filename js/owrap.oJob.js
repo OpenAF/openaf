@@ -3426,7 +3426,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: true,
 		attrs: {
-			"(run"      : "__job",
+			"(run"          : "__job",
 			"((args"        : "__args",
 			"((out"         : "__out",
 			"((key"         : "__key",
@@ -3435,6 +3435,18 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((inPM"        : "__inPM",
 			"((templateArgs": "__templateArgs",
 			"((debug"       : "__debug"
+		}
+	}, {
+		name : "(convert",
+		job  : "ojob convert",
+		map  : true,
+		noLog: false,
+		attrs: {
+			"((inPath"  : "__inPath", 
+			"((inKey"   : "__inKey",
+			"((inFormat": "__inFormat",
+			"((outPath" : "__outPath",
+			"((outKey"  : "__outKey"
 		}
 	}]
 
