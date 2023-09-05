@@ -266,6 +266,10 @@ jobs:
       $set(args.__key, out)
     }
 
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # OJOB GET
 # ---------------
 - name : ojob get
@@ -293,6 +297,9 @@ jobs:
     if (isArray(res)) res = { _list: res }
     args = merge(args, res)
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # OJOB SET
 # ---------------
 - name : ojob set
@@ -318,6 +325,9 @@ jobs:
   
     if (isDef(r) && args.__key != "args") $set(args.__key, r)
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # OJOB UNSET
 # -----------------
 - name : ojob unset
@@ -335,6 +345,9 @@ jobs:
         __key: isString.default("res")
   exec : |
     $unset(args.__key)
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
 # OJOB FILE GET
 # --------------------
@@ -419,6 +432,9 @@ jobs:
         Object.keys(res).forEach(r => $$(args).set(r, res[r]))
       }
     }
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
 # OJOB TEMPLATE
 # --------------------
@@ -889,6 +905,9 @@ jobs:
     else
       printnl(ow.format.withMD($t(args.__text, cargs)))
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # ---------------
 - name : ojob log
   typeArgs:
@@ -967,6 +986,9 @@ jobs:
     if (isString(args.__fnPath)) res = $$({}).set(args.__fnPath, res);
     if (isString(args.__key)) $set(args.__key, res); else args = merge(args, res)
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # OJOB OUTPUT
 # -----------------
 - name: ojob output
@@ -1038,6 +1060,9 @@ jobs:
     } else {
       ow.oJob.output(res, args, args.__function)
     }
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
 # OJOB FINAL REPORT
 # -------------------------------
@@ -1385,6 +1410,9 @@ jobs:
         $$(args).set(args.__from, f)
       }
     }
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
 # OJOB ENV
 # --------
@@ -1953,6 +1981,9 @@ jobs:
       }
     }
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # --------------------
 - name : ojob parallel
   typeArgs:
@@ -2133,3 +2164,6 @@ jobs:
       $$(o).set(args.outPath, _r)
       $set(args.outKey, o)
     }
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
