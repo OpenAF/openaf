@@ -266,6 +266,10 @@ jobs:
       $set(args.__key, out)
     }
 
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # OJOB GET
 # ---------------
 - name : ojob get
@@ -293,6 +297,9 @@ jobs:
     if (isArray(res)) res = { _list: res }
     args = merge(args, res)
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # OJOB SET
 # ---------------
 - name : ojob set
@@ -318,6 +325,9 @@ jobs:
   
     if (isDef(r) && args.__key != "args") $set(args.__key, r)
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # OJOB UNSET
 # -----------------
 - name : ojob unset
@@ -335,6 +345,9 @@ jobs:
         __key: isString.default("res")
   exec : |
     $unset(args.__key)
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
 # OJOB FILE GET
 # --------------------
@@ -419,6 +432,9 @@ jobs:
         Object.keys(res).forEach(r => $$(args).set(r, res[r]))
       }
     }
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
 # OJOB TEMPLATE
 # --------------------
@@ -889,6 +905,9 @@ jobs:
     else
       printnl(ow.format.withMD($t(args.__text, cargs)))
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # ---------------
 - name : ojob log
   typeArgs:
@@ -967,6 +986,9 @@ jobs:
     if (isString(args.__fnPath)) res = $$({}).set(args.__fnPath, res);
     if (isString(args.__key)) $set(args.__key, res); else args = merge(args, res)
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # OJOB OUTPUT
 # -----------------
 - name: ojob output
@@ -1038,6 +1060,9 @@ jobs:
     } else {
       ow.oJob.output(res, args, args.__function)
     }
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
 # OJOB FINAL REPORT
 # -------------------------------
@@ -1385,6 +1410,9 @@ jobs:
         $$(args).set(args.__from, f)
       }
     }
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
 # OJOB ENV
 # --------
@@ -1953,6 +1981,9 @@ jobs:
       }
     }
 
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
 # --------------------
 - name : ojob parallel
   typeArgs:
@@ -2057,3 +2088,82 @@ jobs:
       force: toBoolean.isBoolean.default(false)
   exec : |
     exit(args.code, args.force)
+
+# ----------------------
+- name    : ojob convert
+  typeArgs:
+    noLog   : false
+    shortcut:
+      name  : convert
+      keyArg: __inKey
+      args  :
+        inPath  : __inPath
+        inFormat: __inFormat
+        outPath : __outPath
+        outKey  : __outKey
+  check   :
+    in:
+      __inPath  : isString.default("")
+      __inKey   : isString.default("res")
+      __inFormat: isString.oneOf(['yaml','json','xml','ndjson','slon'])
+      __outPath : isString.default(__)
+      __outKey  : isString.default(__)
+  help :
+    text   : Converts string content into an internal object (map/array)
+    expects:
+    - name: __inKey
+      desc: Where to find the input contents to convert (if 'args' will default to the current args)
+    - name: __inPath
+      desc: The path on the input contents for the string to convert
+    - name: __inFormat
+      desc: The format of the input contents (yaml, json, xml, ndjson, slon)
+    - name: __outKey
+      desc: Where the converted output object should be placed (if 'args' with default to the current args)
+    - name: __outPath
+      desc: The path on the output contents to store the converted object
+  exec    : |
+    var c
+    // Check input
+    if (args.__inKey != "args") {
+      c = String( $$(args).get(args.__inPath) )
+    } else {
+      c = String( $$($get(args.__inKey)).get(args.__inPath) )
+    }
+
+    if (isUnDef(args.__outKey))  args.__outKey = args.__inKey
+    if (isUnDef(args.__outPath)) args.__outPath = args.__inPath
+
+    // Converting
+    var _r
+    switch(args.__inFormat) {
+    case "yaml":
+      _$(c, "yaml input").isString().$_()
+      _r = af.fromYAML(c)
+      break
+    case "json":
+      _r = jsonParse(c, true)
+      break
+    case "ndjson":
+      _r = c.split("\n").map(l => jsonParse(l, true)).filter(l => isDef(l) && !isNull(l))
+      break
+    case "xml":
+      _r = af.fromXML2Obj(_r)
+      break
+    case "slon":
+      _r = af.fromSLON(_r)
+      break
+    default:
+      throw "No inFormat provided."
+    }
+
+    // Output
+    if (args.__outKey != "args") {
+      $$(args).set(args.__outPath, _r)
+    } else {
+      var _o = $get(args.outKey)
+      $$(o).set(args.outPath, _r)
+      $set(args.outKey, o)
+    }
+
+    // Delete all __ args
+    Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
