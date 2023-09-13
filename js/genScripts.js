@@ -160,7 +160,7 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   s += "CDIR=`pwd`\n"
   s += "cd `dirname $0`\n"
   s += "DIR=`pwd`\n"
-  s += "cd $CDIR\n"
+  s += "cd \"$CDIR\"\n"
   if (isCon) s += "stty -icanon min 1 -echo 2>/dev/null\n";
   s += "#if [ -z \"${JAVA_HOME}\" ]; then \nJAVA_HOME=\"" + javaHome + "\"\n#fi\n";
   s += "OAF_DIR=\"" + classPath + "\"\n";
