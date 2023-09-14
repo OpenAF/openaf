@@ -8390,13 +8390,19 @@ const $m2a = (aDef, aMap) => {
 
 /**
  * <odoc>
- * <key>sortMapKeys(aMap) : Map</key>
- * Tries to sort the first level map keys returning the rewritten map.
+ * <key>sortMapKeys(aMap, moreLevels) : Map</key>
+ * Tries to sort the first level map keys returning the rewritten map. 
+ * If moreLevels=true it will try to recursively map sub maps.
  * </odoc>
  */
-const sortMapKeys = (aMap) => {
-	aMap = _$(aMap).isMap().default({});
-	return $a2m(Object.keys(aMap).sort(), $m2a(Object.keys(aMap).sort(), aMap))
+const sortMapKeys = (aMap, moreLevels) => {
+	if (!isMap(aMap)) return aMap
+	
+	var r = {}
+	Object.keys(aMap).sort().forEach(k => {
+		r[k] = moreLevels && isMap(m[k]) ? sortMapKeys(aMap[k]) : aMap[k]
+	})
+	return r
 }
 
 /**
