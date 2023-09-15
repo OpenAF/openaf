@@ -168,7 +168,23 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   if (shouldSep) {
     s += "SCRIPT=$1\n";
     s += "shift\n";
-    s += "ARGS=$@\n";
+  }
+  if (options.indexOf("$ARGS") >= 0) {
+    s += `
+if command -v sed > /dev/null 2>&1; then
+  escape_space() {
+      echo "$1" | sed 's/\\([^\\\\]\\) /\\1\\\\ /g'
+  }
+
+  escaped_args=""
+  for arg in "$@"; do
+      escaped_arg=$(escape_space "$arg")
+      ARGS="$ARGS $escaped_arg"
+  done
+else
+  ARGS=$@
+fi
+`
   }
   s += "\n";
   s += "\"$JAVA_HOME\"/bin/java $OAF_JARGS " + javaargs + " -D\"file.encoding=UTF-8\" -Djava.system.class.loader=openaf.OAFdCL -Djline.terminal=jline.UnixTerminal -jar $OAF_DIR " + options + "\n";
@@ -246,12 +262,12 @@ var winConsoleBat = generateWinConsoleBat();
 var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
 
 //if (windows == 0) {
-  unixScript = generateUnixScript("\"$@\"");
+  unixScript = generateUnixScript("\"$@\"")
   unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
   unixSBoJob = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
-  unixPackScript = generateUnixScript("--opack -e \"$*\"");
-  unixJobScript = generateUnixScript("--ojob -e \"$*\"");
-  unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true);
+  unixPackScript = generateUnixScript("--opack -e \"$@\"")
+  unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
+  unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 //}
 
