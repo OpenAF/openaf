@@ -265,7 +265,7 @@ var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleSc
   unixScript = generateUnixScript("\"$@\"")
   unixSB = generateUnixScript("-f \"$SCRIPT\" -e \"$ARGS\"", true);
   unixSBoJob = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
-  unixPackScript = generateUnixScript("--opack -e \"$@\"")
+  unixPackScript = generateUnixScript("--opack -e \"$*\"")
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
