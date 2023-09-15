@@ -1945,6 +1945,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 				//listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 			}
 			listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
+			//listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]")
 		}
 	} else {
 		t.addSingleThread(function() {
