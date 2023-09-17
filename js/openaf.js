@@ -7717,6 +7717,10 @@ AF.prototype.fromSQL2NLinq = function(sql) {
   
 	  // SELECT
 	  if (_ast.type == "select") {
+		// from
+		if (isArray(_ast.from)) {
+			_r.from = _ast.from[0].table
+		}
 		// columns
 		if (isArray(_ast.columns)) {
 		  var everything = false
@@ -7816,7 +7820,8 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 }
 
 const $sql = function(aObj, aSQL) {
-	return $from(aObj).query(af.fromSQL2NLinq(aSQL))
+	var _r = af.fromSQL2NLinq(aSQL)
+	return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
 }
 
 /**
