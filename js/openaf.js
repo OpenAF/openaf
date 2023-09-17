@@ -7743,9 +7743,11 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 			case ">" : _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reater', args: [ _a.column, _b.value ]}); break
 			case "<=": _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'essEquals', args: [ _a.column, _b.value ]}); break
 			case ">=": _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reaterEquals', args: [ _a.column, _b.value ]}); break
+			case "!=": _p = isOr ? (!isNot ? "orNotE" : "orE") : (!isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
 			case "=" : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
   
-			case "LIKE": 
+			case "RLIKE":
+			case "LIKE" : 
 				_p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m")
 				var _re = "^" + _b.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[%_]|\\[[^]]*\\]|[^%_[]+/g, function(match) {
 					if (match === "%") {
@@ -7757,7 +7759,7 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 					if (match.startsWith("[") && match.endsWith("]")) {
 						return match
 					}
-					return "\\" + match
+					return match
 				}) + "$"
 
 				_r.where.push({ cond: _p + "atch", args: [ _a.column, _re ] })
@@ -7767,8 +7769,14 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 			case "OR" : _process(_a, false, isNot); _process(_b, true, isNot); break
   
 			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
-			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: "atch", args: [ _a.column, _b.value ] }); break
+			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ _a.column, _b.value ] }); break
 			case "BETWEEN": _p = isOr ? (isNot ? "orNotB" : "orB") : (isNot ? "notB" : "b"); _r.where.push({ cond: _p + "etweenEquals", args: [ _a.column, _b.value[0].value, _b.value[1].value ] }); break
+
+			case "IN":
+				_p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m")
+				var _vs = "^(" + _b.value.map(r => r.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join("|") + ")$"
+				_r.where.push({ cond: _p + "atch", args: [ _a.column, _vs ] });
+				break
 			}
 		  }
   
