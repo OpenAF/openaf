@@ -7737,6 +7737,9 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 		if (isMap(_ast.where)) {
 		  _r.where = []
   
+		  var _begin = (p) => _r.where.push({ cond: (p ? "or" : "and") + "Begin", args: [] })
+		  var _end   = () => _r.where.push({ cond: "end", args: [] })
+
 		  var _operator = (op, isOr, isNot) => {
 			var _a = op.left
 			var _b = op.right
@@ -7769,8 +7772,8 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 				_r.where.push({ cond: _p + "atch", args: [ _a.column, _re ] })
 				break
 
-			case "AND": _process(_a, false, isNot); _process(_b, false, isNot); break
-			case "OR" : _process(_a, false, isNot); _process(_b, true, isNot); break
+			case "AND": _begin(op, false); _process(_a, false, isNot); _process(_b, false, isNot); _end(); break
+			case "OR" : _begin(op, true); _process(_a, false, isNot); _process(_b, true, isNot); _end(); break
   
 			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
 			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ _a.column, _b.value ] }); break
@@ -7786,7 +7789,9 @@ AF.prototype.fromSQL2NLinq = function(sql) {
   
 		  var _process = (op, isOr, isNot) => {
 			switch(op.type) {
-			case "binary_expr": _operator(op, isOr, isNot); break
+			case "binary_expr": 
+				_operator(op, isOr, isNot)
+				break
 			case "function"   : _operator(op.args.value[0], isOr, true); break;
 			}
 		  }
