@@ -1105,13 +1105,13 @@ OpenWrap.ch.prototype.__types = {
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) {
 			ow.loadObj();
-			for(var i in aVs) {
+			for(var i = 0; i < aVs.length; i++) {
 				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
 			}
 		},
 		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
 			ow.loadObj();
-			for(var i in aVs) {
+			for(var i = 0; i < aVs.length; i++) {
 				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp);
 			}
 		},		

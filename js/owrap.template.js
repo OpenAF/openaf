@@ -15,6 +15,7 @@ OpenWrap.template = function() {
 };
 
 OpenWrap.template.prototype.__mdHTMLExtras = []
+OpenWrap.template.prototype.__srcPath = {}
 
 OpenWrap.template.prototype.__requireHB = function() {
 	var hb = loadCompiledRequire("handlebars_js");
@@ -952,10 +953,11 @@ OpenWrap.template.prototype.html = {
 						return ow.template.html.inlineSrc(aURL).replace(/\; charset=utf-8\;/, "\;");
 				} catch(e2) {
 					try {
+						var _path = isDef(ow.template.__srcPath[aURL]) ? ow.template.__srcPath[aURL] : getOpenAFJar() + "::" + aURL.replace(/^\//, "")
 						if (withContents)
-							return io.readFileString(getOpenAFJar() + "::" + aURL.replace(/^\//, ""));
+							return io.readFileString(_path)
 						else
-							return ow.template.html.inlineSrc(getOpenAFJar() + "::" + aURL.replace(/^\//, "")).replace(/\; charset=utf-8\;/, "\;");
+							return ow.template.html.inlineSrc(_path).replace(/\; charset=utf-8\;/, "\;");
 					} catch(e3) {
 						return aURL;
 					}
