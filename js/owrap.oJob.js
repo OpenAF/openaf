@@ -1945,6 +1945,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 				//listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
 			}
 			listTodos = $from(this.getTodoCh().getSortedKeys()).useCase(true).equals("ojobId", (this.getID() + altId)).select();
+			//listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]")
 		}
 	} else {
 		t.addSingleThread(function() {
@@ -3541,7 +3542,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  	});
 
  	var format = (isDef(global.__format) ? global.__format : "human")
-	var path   = __, csv = __, from = __, key = "res"
+	var path   = __, csv = __, from = __, key = "res", sql = __
 
  	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
  	if (isDef(args.__format) && !isNull(args.__format)) format = String(args.__format).toLowerCase()
@@ -3552,6 +3553,9 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 	if (isDef(args.__FROM) && !isNull(args.__FROM)) from = String(args.__FROM)
 	if (isDef(args.__from) && !isNull(args.__from)) from = String(args.__from)
 
+	if (isDef(args.__SQL) && !isNull(args.__SQL)) sql = String(args.__SQL)
+	if (isDef(args.__sql) && !isNull(args.__sql)) sql = String(args.__sql)
+
 	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = jsonParse(args.__CSV, true)
 	if (isDef(args.__csv) && !isNull(args.__csv)) csv = jsonParse(args.__csv, true)
 
@@ -3560,6 +3564,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 
 	var res = isDef(path) ? $path(aObj, path) : aObj
 	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
+	res = isDef(sql) ? $sql(res, sql) : res
 
  	switch (format) {
  		case "json":

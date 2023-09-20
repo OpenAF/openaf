@@ -1,5 +1,5 @@
-// Version: 0.1.5
-// Author : Nuno Aguiar
+// Version: 0.1.5b
+// Copyright 2023 Nuno Aguiar
 
 var nLinq_USE_CASE = false;
 var nLinq = function(anObject, aK) {
@@ -13,7 +13,7 @@ var nLinq = function(anObject, aK) {
     }
 
     //_$(anObject).isArray().$_(); 
-    var res = anObject, where = "", useCase = nLinq_USE_CASE, useOr = false, useNot = false, alimit = 0, askip = 0, negative = false, whereFn = [];
+    var res = anObject, where = "", useCase = nLinq_USE_CASE, useOr = false, useNot = false, alimit = 0, askip = 0, negative = false, whereFn = [], block = 0;
 
     // Auxiliary functions
 
@@ -82,10 +82,20 @@ var nLinq = function(anObject, aK) {
     }
 
     // Auxiliary functions - apply query conditions
-    var applyConditions = (aOrig, aFunc) => {
+    var applyConditions = (aOrig, aFunc, isEnd) => {
         if ($$(aOrig).isFunction()) aOrig = aOrig();
         if (!$$(aOrig).isArray()) aOrig = [ aOrig ];
         if ($$(aOrig).isUnDef()) return void 0;
+
+        if (block > 0) {
+            if (isEnd) {
+                for(var i = 0; i < block; i++) {
+                    where += ")"
+                }
+            } else {
+                return aOrig
+            }
+        }
 
         if (where.length == 0) {
             if (negative) return [];
@@ -216,7 +226,7 @@ var nLinq = function(anObject, aK) {
     var applyWhereTmpl = (aTmpl, isOr) => {
         isOr = _$(isOr).default(useOr);
 
-        if (where.length > 0) {
+        if (where.trim().length > 0 && !where.trim().endsWith("(")) {
             if (!isOr) {
                 where += " && ";
             } else {
@@ -297,6 +307,30 @@ var nLinq = function(anObject, aK) {
             whereFn.push(aFn);
             applyWhereTmpl("!whereFn[" + (whereFn.length-1) + "](r)", true);
             return code;
+        },
+
+        begin: () => {
+            where += (where.trim().length > 0 && !where.trim().endsWith("(") ? " && " : "") + "("
+            block++
+            return code
+        },
+
+        orBegin: () => {
+            where += (where.trim().length > 0 && !where.trim().endsWith("(") ? " || " : "") + "("
+            block++
+            return code
+        },
+
+        andBegin: () => {
+            return this.begin()
+        },
+
+        end  : () => {
+            if (block > 0) {
+                where += ")"
+                block--
+            }
+            return code
         },
 
         // Main queries
@@ -593,16 +627,16 @@ var nLinq = function(anObject, aK) {
         at     : aParam => {
             _$(aParam, "index").isNumber().$_();
 
-            res = applyConditions(res);
+            res = applyConditions(res, __, true);
             return res[Number(aParam)];
         },
-        all    : (aFallback) => { res = applyConditions(res); return $$(res).isArray() ? res.length == anObject.length : aFallback; },
-        count  : () => { res = applyConditions(res); return res.length; },
-        first  : (aFallback) => { res = applyConditions(res); return (res.length > 0 ? res[0] : aFallback); },
-        last   : (aFallback) => { res = applyConditions(res); return (res.length > 0 ? res[res.length-1] : aFallback); },
-        any    : () => { res = applyConditions(res); return (res.length > 0); },
-        none   : () => { res = applyConditions(res); return (res.length == 0); },
-        reverse: () => { res = applyConditions(res); return res.reverse(); },
+        all    : (aFallback) => { res = applyConditions(res, __, true); return $$(res).isArray() ? res.length == anObject.length : aFallback; },
+        count  : () => { res = applyConditions(res, __, true); return res.length; },
+        first  : (aFallback) => { res = applyConditions(res, __, true); return (res.length > 0 ? res[0] : aFallback); },
+        last   : (aFallback) => { res = applyConditions(res, __, true); return (res.length > 0 ? res[res.length-1] : aFallback); },
+        any    : () => { res = applyConditions(res, __, true); return (res.length > 0); },
+        none   : () => { res = applyConditions(res, __, true); return (res.length == 0); },
+        reverse: () => { res = applyConditions(res, __, true); return res.reverse(); },
 
         // Applying to current result set
         each   : aFn => {
@@ -813,7 +847,7 @@ var nLinq = function(anObject, aK) {
         },
         // Main selector
         select : aParam => {
-            res = applyConditions(res);
+            res = applyConditions(res, __, true);
             // no parameters
             if ($$(aParam).isUnDef()) {
                 return res;

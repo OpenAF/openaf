@@ -228,8 +228,8 @@ io.mkdir(OPENAF_BUILD_HOME + "/jsmin");
 io.mkdir(OPENAF_BUILD_HOME + "/jslib");
 
 var zipJSlib = new ZIP();
-var validationForCompile = (filename) => { return (filename != "synaptic.js" && filename != "nlinqParse.js" && filename != "slonParse.js" && filename != "materialize.js" && filename != "handlebars.js" && filename != "jquery.js" && filename != "highlight.js"); };
-var validationForRequireCompile = (filename) => { return (filename == "regression.js" || filename == "handlebars.js" || filename == "showdown.js" || filename == "synaptic.js" || filename == "nlinqParse.js" || filename == "slonParse.js"); };
+var validationForCompile = (filename) => { return (filename != "synaptic.js" && filename != "nlinqParse.js" && filename != "sqlParse.js" && filename != "slonParse.js" && filename != "materialize.js" && filename != "handlebars.js" && filename != "jquery.js" && filename != "highlight.js"); };
+var validationForRequireCompile = (filename) => { return (filename == "regression.js" || filename == "handlebars.js" || filename == "showdown.js" || filename == "synaptic.js" || filename == "nlinqParse.js" || filename == "sqlParse.js" || filename == "slonParse.js"); };
 
 var ojson = (isDef(OPENAF_JSON) ? OPENAF_JSON : OPENAF_BUILD_HOME + "/openaf.json");
 if (io.fileExists(ojson)) {
@@ -271,6 +271,9 @@ try {
 			file.filename !== 'handlebars.js' &&
 			file.filename !== 'lodash.js' &&
 			file.filename !== 'nlinq.js' &&
+			file.filename !== 'sqlParse.js' &&
+			file.filename !== 'nlinqParse.js' &&
+			file.filename !== 'slonParse.js' &&
  			file.filename !== 'jquery.js') {
 
 			var doIt = true;

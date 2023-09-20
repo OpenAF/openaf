@@ -7691,6 +7691,146 @@ AF.prototype.fromNLinq = function(aString) {
 
 /**
  * <odoc>
+ * <key>AF.fromSQL(aString) : Map</key>
+ * Converts a SQL expression into an ASP map.
+ * </odoc>
+ */
+AF.prototype.fromSQL = function(aString) {
+	if (!isString(aString) || aString == "" || isNull(aString)) return {}
+
+	var _np = loadCompiledRequire("sqlParse_js")
+	return _np.parse(aString)
+}
+
+/**
+ * <odoc>
+ * <key>AF.fromSQL2NLinq(aSQL) : Map</key>
+ * Converts a SQL expression into a suitable map to be used with $from.query.
+ * </odoc>
+ */
+AF.prototype.fromSQL2NLinq = function(sql) {
+	var ast = af.fromSQL(sql)
+
+	var _r = { transform: [] }
+	if (isDef(ast) && isArray(ast.ast)) {
+	  var _ast = ast.ast[0]
+  
+	  // SELECT
+	  if (_ast.type == "select") {
+		// from
+		if (isArray(_ast.from)) {
+			_r.from = _ast.from[0].table
+		}
+		// columns
+		if (isArray(_ast.columns)) {
+		  var everything = false
+		  _r.select = {}
+		  _ast.columns.forEach(c => {
+			if (c.expr.column == "*") everything = true
+			if (isDef(c.expr) && c.expr.type == "column_ref" && c.expr.column != "*") {
+			  _r.select[c.expr.column] = ""
+			}
+		  })
+		  if (everything) delete _r.select
+		}
+		// where
+		if (isMap(_ast.where)) {
+		  _r.where = []
+  
+		  var _begin = (p) => _r.where.push({ cond: (p ? "or" : "and") + "Begin", args: [] })
+		  var _end   = () => _r.where.push({ cond: "end", args: [] })
+
+		  var _operator = (op, isOr, isNot) => {
+			var _a = op.left
+			var _b = op.right
+			var _p
+  
+			switch(op.operator) {
+			case "<" : _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'ess', args: [ _a.column, _b.value ]}); break
+			case ">" : _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reater', args: [ _a.column, _b.value ]}); break
+			case "<=": _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'essEquals', args: [ _a.column, _b.value ]}); break
+			case ">=": _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reaterEquals', args: [ _a.column, _b.value ]}); break
+			case "!=": _p = isOr ? (!isNot ? "orNotE" : "orE") : (!isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
+			case "=" : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
+  
+			case "RLIKE":
+			case "LIKE" : 
+				_p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m")
+				var _re = "^" + _b.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[%_]|\\[[^]]*\\]|[^%_[]+/g, function(match) {
+					if (match === "%") {
+						return ".*"
+					}
+					if (match === "_") {
+						return "."
+					}
+					if (match.startsWith("[") && match.endsWith("]")) {
+						return match
+					}
+					return match
+				}) + "$"
+
+				_r.where.push({ cond: _p + "atch", args: [ _a.column, _re ] })
+				break
+
+			case "AND": _begin(op, false); _process(_a, false, isNot); _process(_b, false, isNot); _end(); break
+			case "OR" : _begin(op, true); _process(_a, false, isNot); _process(_b, true, isNot); _end(); break
+  
+			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
+			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ _a.column, _b.value ] }); break
+			case "BETWEEN": _p = isOr ? (isNot ? "orNotB" : "orB") : (isNot ? "notB" : "b"); _r.where.push({ cond: _p + "etweenEquals", args: [ _a.column, _b.value[0].value, _b.value[1].value ] }); break
+
+			case "IN":
+				_p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m")
+				var _vs = "^(" + _b.value.map(r => r.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join("|") + ")$"
+				_r.where.push({ cond: _p + "atch", args: [ _a.column, _vs ] });
+				break
+			}
+		  }
+  
+		  var _process = (op, isOr, isNot) => {
+			switch(op.type) {
+			case "binary_expr": 
+				_operator(op, isOr, isNot)
+				break
+			case "function"   : _operator(op.args.value[0], isOr, true); break;
+			}
+		  }
+		  
+		  _process(_ast.where)
+		}
+		// order by
+		if (isArray(_ast.orderby)) {
+		  var _args = []
+		  _ast.orderby.forEach(k => {
+			if (k.expr.type == "column_ref") {
+			  if (k.type == "DESC") {
+				_args.push("-" + k.expr.column)
+			  } else {
+				_args.push(k.expr.column)
+			  }
+			}
+		  })
+		  _r.transform.push({ func: "sort", args: _args })
+		}
+		// limit
+		if (isMap(_ast.limit)) {
+		  if (isArray(_ast.limit.value)) {
+			if (_ast.limit.value[0].type == "number") _r.transform.push({ func: "limit", args: [ _ast.limit.value[0].value ] })
+		  }
+		}
+	  }
+	}
+  
+	return _r
+}
+
+const $sql = function(aObj, aSQL) {
+	var _r = af.fromSQL2NLinq(aSQL)
+	return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
+}
+
+/**
+ * <odoc>
  * <key>af.fromXML2Obj(xml, ignored) : Object</key>
  * Tries to convert a XML object into a javascript object. Tag attributes will be ignored unless the corresponding tag name is included
  * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
@@ -8390,13 +8530,19 @@ const $m2a = (aDef, aMap) => {
 
 /**
  * <odoc>
- * <key>sortMapKeys(aMap) : Map</key>
- * Tries to sort the first level map keys returning the rewritten map.
+ * <key>sortMapKeys(aMap, moreLevels) : Map</key>
+ * Tries to sort the first level map keys returning the rewritten map. 
+ * If moreLevels=true it will try to recursively map sub maps.
  * </odoc>
  */
-const sortMapKeys = (aMap) => {
-	aMap = _$(aMap).isMap().default({});
-	return $a2m(Object.keys(aMap).sort(), $m2a(Object.keys(aMap).sort(), aMap))
+const sortMapKeys = (aMap, moreLevels) => {
+	if (!isMap(aMap)) return aMap
+	
+	var r = {}
+	Object.keys(aMap).sort().forEach(k => {
+		r[k] = moreLevels && isMap(m[k]) ? sortMapKeys(aMap[k]) : aMap[k]
+	})
+	return r
 }
 
 /**
