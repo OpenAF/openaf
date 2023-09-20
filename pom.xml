@@ -286,7 +286,12 @@
       <groupId>com.github.mwiede</groupId>
       <artifactId>jsch</artifactId>
       <version>0.2.11</version>
-    </dependency> 
+    </dependency>
+    <dependency>
+        <groupId>org.eclipse.jgit</groupId>
+        <artifactId>org.eclipse.jgit</artifactId>
+        <version>5.13.2.202306221912-r</version>
+    </dependency>
   </dependencies>
   
 </project>
