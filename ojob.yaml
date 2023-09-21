@@ -1395,10 +1395,11 @@ jobs:
     if (isDef(args.__from)) f = $path(f, args.__from)
    
     ow.loadObj()
-    if (isDef(args.__type) && args.__type == "path") {
-      f = $path(f, args.__query)
-    } else {
-      f = ( isString(args.__query) ? $from(f).query(af.fromNLinq(args.__query)) : $from(f).query(args.__query) )
+    switch(args.__type) {
+    case "path" : f = $path(f, args.__query); break 
+    case "sql"  : f = $sql(f, args.__query); break
+    case "nlinq": 
+    default     : f = ( isString(args.__query) ? $from(f).query(af.fromNLinq(args.__query)) : $from(f).query(args.__query) )
     }
 
     if (args.__key != "args") { 
