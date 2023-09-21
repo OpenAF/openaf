@@ -398,7 +398,7 @@ try {
 		"xml": OPENAF_BUILD_HOME + "/src/openaf/plugins/XML.java",
 		//"xls": OPENAF_BUILD_HOME + "/src/openaf/plugins/XLS.java",
 		//"svn": OPENAF_BUILD_HOME + "/src/openaf/plugins/SVN.java",
-		"git": OPENAF_BUILD_HOME + "/src/openaf/plugins/GIT.java",
+		//"git": OPENAF_BUILD_HOME + "/src/openaf/plugins/GIT.java",
 		//"smb": OPENAF_BUILD_HOME + "/src/openaf/plugins/SMB.java",
 		"zip": OPENAF_BUILD_HOME + "/src/openaf/plugins/ZIP.java",
 		//"ignite": OPENAF_BUILD_HOME + "/src/openaf/plugins/Ignite.java",
