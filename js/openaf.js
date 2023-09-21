@@ -3365,6 +3365,9 @@ const plugin = function(aPlugin, aClass) {
 		if (String(e).indexOf("java.lang.ClassNotFoundException: DOC") >= 0) {
 			throw("The DOC plugin is no longer included. Please install the XLS oPack (\"opack install plugin-xls\").");
 		}
+		if (String(e).indexOf("java.lang.ClassNotFoundException: GIT") >= 0) {
+			throw("The GIT plugin is no longer included. Please install the GIT oPack (\"opack install plugin-git\").");
+		}
 	}
 }
 
