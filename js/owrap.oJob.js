@@ -3589,7 +3589,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 			print(af.fromObj2XML(res))
 			break
  		case "yaml":
- 			yprint(res);
+ 			yprint(res, __, true);
  			break;
  		case "table":
 			if (isMap(res)) res = [ res ]

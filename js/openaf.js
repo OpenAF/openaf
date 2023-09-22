@@ -331,7 +331,7 @@ const cprint = function(str, delim) { ansiStart(); print(colorify(str)); ansiSto
  * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document.
  * </odoc>
  */
-const yprint = function(str, multidoc) { return print(af.toYAML(str, multidoc)); }
+const yprint = function(str, multidoc, sanitize) { return print(af.toYAML(str, multidoc, sanitize)); }
 
 /**
  * <odoc>
@@ -7610,13 +7610,18 @@ __YAMLformat = {
  * Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array the output will be multi-document.
  * </odoc>
  */
-AF.prototype.toYAML = function(aJson, multiDoc) { 
-	loadJSYAML(); 
-        var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth };
+AF.prototype.toYAML = function(aJson, multiDoc, sanitize) { 
+	loadJSYAML()
+	if (sanitize) {
+		traverse(aJson, (aK, aV, aP, aO) => {
+			if (isJavaObject(aV)) aO[aK] = String(aV)
+		})
+	}
+    var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth }
 	if (isArray(aJson) && multiDoc) {
-		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n");
+		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n")
 	} else {
-		return jsyaml.dump(aJson, o); 
+		return jsyaml.dump(aJson, o)
 	}
 }
 
