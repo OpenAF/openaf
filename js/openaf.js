@@ -327,8 +327,8 @@ const cprint = function(str, delim) { ansiStart(); print(colorify(str)); ansiSto
 
 /**
  * <odoc>
- * <key>yprint(aObj, multidoc)</key>
- * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document.
+ * <key>yprint(aObj, multidoc, sanitize)</key>
+ * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document. If sanitize = true all Java objects will be converted to avoid parsing errors.
  * </odoc>
  */
 const yprint = function(str, multidoc, sanitize) { return print(af.toYAML(str, multidoc, sanitize)); }
@@ -7606,8 +7606,8 @@ __YAMLformat = {
 };
 /**
  * <odoc>
- * <key>AF.toYAML(aJson, multiDoc) : String</key>
- * Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array the output will be multi-document.
+ * <key>AF.toYAML(aJson, multiDoc, sanitize) : String</key>
+ * Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array the output will be multi-document. If sanitize = true all Java objects will be converted to avoid parsing errors.
  * </odoc>
  */
 AF.prototype.toYAML = function(aJson, multiDoc, sanitize) { 
