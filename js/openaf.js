@@ -7613,6 +7613,7 @@ __YAMLformat = {
 AF.prototype.toYAML = function(aJson, multiDoc, sanitize) { 
 	loadJSYAML()
 	if (sanitize) {
+		aJson = clone(aJson)
 		traverse(aJson, (aK, aV, aP, aO) => {
 			if (isJavaObject(aV)) aO[aK] = String(aV)
 		})
@@ -7910,13 +7911,19 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
 
 /**
  * <odoc>
- * <key>af.fromObj2XML(aMap) : String</key>
+ * <key>af.fromObj2XML(aMap, sanitize) : String</key>
  * Tries to convert aMap into a similiar XML strucuture returned as string.
  * Note that no validation of XML strucuture is performed. 
  * Tips: ensure each map is under a map key.
  * </odoc>
  */
-AF.prototype.fromObj2XML = function (obj) {
+AF.prototype.fromObj2XML = function (obj, sanitize) {
+	if (sanitize) {
+		obj = clone(obj)
+		traverse(obj, (aK, aV, aP, aO) => {
+			if (isJavaObject(aV)) aO[aK] = String(aV)
+		})
+	}
 	var xml = '';
 	for (var prop in obj) {
 		if (obj[prop] instanceof Array) {

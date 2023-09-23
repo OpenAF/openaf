@@ -3586,7 +3586,7 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
 			if (isArray(res)) res.forEach(e => print(stringify(e, __, "")))
 			break
 		case "xml":
-			print(af.fromObj2XML(res))
+			print(af.fromObj2XML(res, true))
 			break
  		case "yaml":
  			yprint(res, __, true);
