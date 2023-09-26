@@ -109,6 +109,12 @@ OpenWrap.oJob = function(isNonLocal) {
 			pos: "\n_args, _err := json.Marshal(args); if _err != nil { return }; fmt.Println(string(_args))}",
 			withFile: ".go"
 		},
+		"node": {
+			lang : "node",
+			shell: "node",
+			pre  : "var args = {{{args}}};",
+			pos  : ";console.log(JSON.stringify(args, void 0, ''))"
+		},
 		"ruby": {
 			lang : "ruby",
 			shell: "ruby -",
