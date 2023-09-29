@@ -7759,6 +7759,7 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 			case ">" : _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reater', args: [ _a.column, _b.value ]}); break
 			case "<=": _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'essEquals', args: [ _a.column, _b.value ]}); break
 			case ">=": _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reaterEquals', args: [ _a.column, _b.value ]}); break
+			case "<>":
 			case "!=": _p = isOr ? (!isNot ? "orNotE" : "orE") : (!isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
 			case "=" : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
   
