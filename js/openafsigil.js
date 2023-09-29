@@ -4,6 +4,30 @@
 if (!(typeof isJavaObject == 'defined')) isJavaObject = () => false
 const $$ = function(aObj) {
 	const _r = {
+        _ss: aString => {
+            let result = []
+            let word = ""
+            let inQuotes = false
+            for (let i = 0; i < aString.length; i++) {
+                let char = aString[i]
+                if (char === "." && !inQuotes) {
+                    result.push(word)
+                    word = ""
+                } else if (char === "'") {
+                    inQuotes = !inQuotes
+                    if (!inQuotes) {
+                        result.push(word)
+                        word = ""
+                    }
+                } else {
+                    word += char
+                }
+            }
+            if (word) {
+                result.push(word)
+            }
+            return result
+        },
 		/**
 		 * <odoc>
 		 * <key>$$.get(aPath) : Object</key>
@@ -23,7 +47,7 @@ const $$ = function(aObj) {
 			aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
 			aPath = aPath.replace(/^\./, '');       
 
-			var a = aPath.split('.');
+			var a = _r._ss(aPath).filter(r => r.length > 0)
 			for (var i = 0, n = a.length; i < n; ++i) {
 				var k = a[i];
 				if (k in aObj) {
@@ -53,7 +77,7 @@ const $$ = function(aObj) {
 			aPath = aPath.replace(/\[(\w+)\]/g, '.$1')
 			aPath = aPath.replace(/^\./, '')
 
-			var a = aPath.split('.')
+			var a = _r._ss(aPath).filter(r => r.length > 0)
 			for (var i = 0, n = a.length; i < n; ++i) {
 				var k = a[i]
 
@@ -94,7 +118,7 @@ const $$ = function(aObj) {
 			aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
 			aPath = aPath.replace(/^\./, '');       
 			
-			var a = aPath.split('.');
+			var a = _r._ss(aPath).filter(r => r.length > 0)
 			var prev, prevK;
 			for (var i = 0, n = a.length; i < n; ++i) {
 				var k = a[i];
@@ -128,7 +152,7 @@ const $$ = function(aObj) {
             aPath = aPath.replace(/\[(\w+)\]/g, '.$1')
 			aPath = aPath.replace(/^\./, '')
 
-            var a = aPath.split('.')
+            var a = _r._ss(aPath).filter(r => r.length > 0)
             var prev, prevK
             for (var i = 0, n = a.length; i < n; ++i) {
 				var k = a[i]
