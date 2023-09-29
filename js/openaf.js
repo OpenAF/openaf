@@ -327,11 +327,11 @@ const cprint = function(str, delim) { ansiStart(); print(colorify(str)); ansiSto
 
 /**
  * <odoc>
- * <key>yprint(aObj, multidoc)</key>
- * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document.
+ * <key>yprint(aObj, multidoc, sanitize)</key>
+ * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document. If sanitize = true all Java objects will be converted to avoid parsing errors.
  * </odoc>
  */
-const yprint = function(str, multidoc) { return print(af.toYAML(str, multidoc)); }
+const yprint = function(str, multidoc, sanitize) { return print(af.toYAML(str, multidoc, sanitize)); }
 
 /**
  * <odoc>
@@ -7606,17 +7606,23 @@ __YAMLformat = {
 };
 /**
  * <odoc>
- * <key>AF.toYAML(aJson, multiDoc) : String</key>
- * Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array the output will be multi-document.
+ * <key>AF.toYAML(aJson, multiDoc, sanitize) : String</key>
+ * Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array the output will be multi-document. If sanitize = true all Java objects will be converted to avoid parsing errors.
  * </odoc>
  */
-AF.prototype.toYAML = function(aJson, multiDoc) { 
-	loadJSYAML(); 
-        var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth };
+AF.prototype.toYAML = function(aJson, multiDoc, sanitize) { 
+	loadJSYAML()
+	if (sanitize) {
+		aJson = clone(aJson)
+		traverse(aJson, (aK, aV, aP, aO) => {
+			if (isJavaObject(aV)) aO[aK] = String(aV)
+		})
+	}
+    var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth }
 	if (isArray(aJson) && multiDoc) {
-		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n");
+		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n")
 	} else {
-		return jsyaml.dump(aJson, o); 
+		return jsyaml.dump(aJson, o)
 	}
 }
 
@@ -7905,13 +7911,19 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
 
 /**
  * <odoc>
- * <key>af.fromObj2XML(aMap) : String</key>
+ * <key>af.fromObj2XML(aMap, sanitize) : String</key>
  * Tries to convert aMap into a similiar XML strucuture returned as string.
  * Note that no validation of XML strucuture is performed. 
  * Tips: ensure each map is under a map key.
  * </odoc>
  */
-AF.prototype.fromObj2XML = function (obj) {
+AF.prototype.fromObj2XML = function (obj, sanitize) {
+	if (sanitize) {
+		obj = clone(obj)
+		traverse(obj, (aK, aV, aP, aO) => {
+			if (isJavaObject(aV)) aO[aK] = String(aV)
+		})
+	}
 	var xml = '';
 	for (var prop in obj) {
 		if (obj[prop] instanceof Array) {
