@@ -1967,7 +1967,7 @@ jobs:
       ow.oJob.output($get(args.__inPM), { __format: "pm" })
     }
     if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(inputArgs, __, { bgcolor: "BG(235)" }), __, "FG(235)", "BG(235)", ow.format.withSideLineThemes().openBottomCurvedRect) )
-    ow.oJob.runFile(args.__job, inputArgs, id, true, { shareArgs: false })
+    oJobRunFile(args.__job, inputArgs, nowNano(), { shareArgs: false }, true)
 
     if (args.__key == "args" || args.__key == "res") {
       var _t = $get(id)

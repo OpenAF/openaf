@@ -552,7 +552,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
  * Loads aJSON oJob configuration and returns the processed map (with all includes processed).
  * </odoc>
  */
-OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
+OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos, dontLoadJobs) {
 	if (!isMap(aJSON)) return {};
 	var res = aJSON;
 	var parent = this
@@ -643,36 +643,39 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 
 		// Place auditor on ojob::jobs
 		if (__flags.OJOB_CHECK_JOB_CHANGES || __flags.OJOB_CHECK_JOB_REMOVAL) {
-			this.getJobsCh().subscribe((aCh, aOp, aK, aV) => {
-				if (aOp == "unset" || aOp == "unsetall") {
-					if (__flags.OJOB_CHECK_JOB_REMOVAL)
-						logWarn("oJobs definitions are being removed: " + af.toSLON(aK))
-					else {
-						if (isUnDef(ow.oJob.__ojob_warn_ojob_removal_notify)) ow.oJob.__ojob_warn_ojob_removal_notify = false
-						//if (!ow.oJob.__ojob_warn_ojob_removal_notify) logWarn("oJobs definitions removal audit is disabled.")
-						ow.oJob.__ojob_warn_ojob_removal_notify = true
+			if (isUnDef(parent.__jobauditor)) {
+				this.getJobsCh().subscribe((aCh, aOp, aK, aV) => {
+					if (aOp == "unset" || aOp == "unsetall") {
+						if (__flags.OJOB_CHECK_JOB_REMOVAL)
+							logWarn("oJobs definitions are being removed: " + af.toSLON(aK))
+						else {
+							if (isUnDef(ow.oJob.__ojob_warn_ojob_removal_notify)) ow.oJob.__ojob_warn_ojob_removal_notify = false
+							//if (!ow.oJob.__ojob_warn_ojob_removal_notify) logWarn("oJobs definitions removal audit is disabled.")
+							ow.oJob.__ojob_warn_ojob_removal_notify = true
+						}
 					}
-				}
-	
-				if ((aOp == "set" || aOp == "setall")) {
-					if (__flags.OJOB_CHECK_JOB_CHANGES) {
-						if (!isArray(aK)) aK = [ aK ]
-						var _keys = parent._ejob
-						$from(aK).intersect(_keys).select(k => {
-							logWarn("oJob '" + k.name + "' is being changed! ")
-						})
-						parent._ejob = parent._ejob.concat(aK)
-					} else {
-						if (isUnDef(ow.oJob.__ojob_warn_ojob_changes_notify)) ow.oJob.__ojob_warn_ojob_changes_notify = false
-						//if (!ow.oJob.__ojob_warn_ojob_changes_notify) logWarn("oJobs definitions changes audit is disabled.")
-						ow.oJob.__ojob_warn_ojob_changes_notify = true
+		
+					if ((aOp == "set" || aOp == "setall")) {
+						if (__flags.OJOB_CHECK_JOB_CHANGES) {
+							if (!isArray(aK)) aK = [ aK ]
+							var _keys = parent._ejob
+							$from(aK).intersect(_keys).select(k => {
+								logWarn("oJob '" + k.name + "' is being changed! ")
+							})
+							parent._ejob = parent._ejob.concat(aK)
+						} else {
+							if (isUnDef(ow.oJob.__ojob_warn_ojob_changes_notify)) ow.oJob.__ojob_warn_ojob_changes_notify = false
+							//if (!ow.oJob.__ojob_warn_ojob_changes_notify) logWarn("oJobs definitions changes audit is disabled.")
+							ow.oJob.__ojob_warn_ojob_changes_notify = true
+						}
 					}
-				}
-			}, true)
+				}, true)
+			}
+			parent.__jobauditor = true
 		}
 
 		// Add custom shortcuts
-		if (isArray(res.jobs)) {
+		if (!dontLoadJobs && isArray(res.jobs)) {
 			res.jobs = res.jobs.map(j => parent.addShortcuts(j))
 		}
 
@@ -686,7 +689,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 				}
 			}
 		}
-		if (isDef(res.jobsInclude) && isArray(res.jobsInclude)) {
+		if (!dontLoadJobs && isDef(res.jobsInclude) && isArray(res.jobsInclude)) {
 			for (var i in res.jobsInclude) {
 				if (isUnDef(_includeLoaded[res.jobsInclude[i]])) {
 					_includeLoaded[res.jobsInclude[i]] = 1;
@@ -699,7 +702,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 		
 
 		if (!dontLoadTodos && !(isArray(res.jobs)) && !(isArray(res.todo))) {
-			throw("jobs and todo entries need to be defined as arrays.");
+			if (!dontLoadJobs) throw("jobs and todo entries need to be defined as arrays.");
 		} else {
 			if (isArray(res.todo)) res.todo = res.todo.map(r => this.parseTodo(r))
 		}
@@ -707,15 +710,22 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 		if (dontLoadTodos && !(isArray(res.jobs))) {
 			throw("jobs entries need to be defined as arrays.");
 		}
+		if (dontLoadJobs && !(isArray(res.todo))) {
+			throw("todo entries need to be defined as arrays.")
+		}
 
 		if (dontLoadTodos) {
 			delete res.todo
 			delete res.help
 		}
+		if (dontLoadJobs) {
+			delete res.jobs
+			delete res.help
+		}
 		if (isUnDef(res.ojob)) res.ojob = {};
 
 		// Set code in the require cache
-		if (isMap(res.code)) {
+		if (!dontLoadJobs && isMap(res.code)) {
 			if (isUnDef(require.cache)) require.cache = {};
 			Object.keys(res.code).forEach(k => {
 				if (k.endsWith(".js")) {
@@ -972,7 +982,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		return this.loadJSON(res, removeTodos)
 	} else {
 		//throw "The oJob '" + aOrigFile + "' is included more than once!"
-		return {}
+		return this.loadJSON(res, removeTodos, true)
 	}
 };
 
