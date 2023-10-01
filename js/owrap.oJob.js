@@ -3467,8 +3467,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: false,
 		attrs: {
+			"(convert"  : "__inKey",
 			"((inPath"  : "__inPath", 
-			"((inKey"   : "__inKey",
 			"((inFormat": "__inFormat",
 			"((outPath" : "__outPath",
 			"((outKey"  : "__outKey"
