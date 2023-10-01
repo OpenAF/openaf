@@ -1709,7 +1709,7 @@ var __colorFormat = {
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
 	askPos: "BLUE",
-	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "FAINT" }
+	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" }
 };
 const colorify = function(json, aOptions) {
 	if (typeof json != 'string') {
