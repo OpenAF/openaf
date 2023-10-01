@@ -195,7 +195,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	TABLE: {
 		wordWrap           : true,
 		wordWrapUseSep     : false,
-		wordWrapLimitFactor: 2
+		wordWrapLimitFactor: 2,
+		bandRows           : true
 	},
 	CONSOLE: {
 		view: "tree"
@@ -751,19 +752,21 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 
 /**
  * <odoc>
- * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep) : String</key>
+ * <key>printTable(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) : String</key>
  * Returns a ASCII table representation of anArrayOfEntries where each entry is a Map with the same keys.
- * Optionally you can specify aWidthLimit, useAnsi and/or aBgColor.
+ * Optionally you can specify aWidthLimit, useAnsi, bandRows and/or aBgColor.
  * If you want to include a count of rows just use displayCount = true. If useAnsi = true you can provide a theme (e.g. "utf" or "plain")
  * </odoc>
  */
-const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep) {
+const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) {
 	var count = 0, inCount = anArrayOfEntries.length
 	var maxsize = {};
 	var output = "";
+	var anArrayOfIdxs = []
 	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
 	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
 	useRowSep = _$(useRowSep, "useRowSep").isBoolean().default(__flags.TABLE.wordWrapUseSep)
+	bandRows  = _$(bandRows, "bandRows").isBoolean().default(__flags.TABLE.bandRows)
 
 	var colorMap = __colorFormat.table
 
@@ -799,8 +802,20 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		hvJoin = "┼";
 	}
 
-	var _getColor = (aValue) => {
-		var _bg = isDef(aBgColor) ? aBgColor + "," : ""
+	var pShouldBand = false
+	var _getColor = (aValue, ii) => {
+		var shouldBand
+		if (bandRows) {
+			if (anArrayOfIdxs.indexOf(ii) >= 0) {
+				shouldBand = anArrayOfIdxs.indexOf(ii) % 2 == 0
+				pShouldBand = shouldBand
+			} else {
+				shouldBand = pShouldBand
+			}
+		} else {
+			shouldBand = false
+		}
+		var _bg = isDef(aBgColor) ? aBgColor + "," + (shouldBand ? __colorFormat.table.bandRow+"," : "") : (shouldBand ? __colorFormat.table.bandRow+"," : "") + ""
 		if (isNumber(aValue)) return _bg + __colorFormat.number
 		if (isString(aValue)) return _bg + __colorFormat.string
 		if (isBoolean(aValue)) return _bg + __colorFormat.boolean
@@ -811,8 +826,12 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
 
 	// If wordwrap generate new array
-	anArrayOfEntries = (aWidthLimit <= 0 ? anArrayOfEntries : ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", repeat(s, "-")) : __))
-
+	if (aWidthLimit > 0) {
+		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", repeat(s, "-")) : __, true)
+		anArrayOfEntries = _t.lines
+		anArrayOfIdxs = _t.idx
+	}
+	
 	// Find sizes
 	anArrayOfEntries.forEach(function(row) {
 		var cols = Object.keys(row);
@@ -824,7 +843,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	});
 
 	// Produce table
-	anArrayOfEntries.forEach(function(row) {
+	anArrayOfEntries.forEach(function(row, ii) {
 		var lineSize = 0;
 		var outOfWidth = false;
 		var cols = Object.keys(row);
@@ -864,7 +883,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 		//output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine); 
 		lineSize = 1; outOfWidth = false; colNum = 0;
-		cols.forEach(function(col) {
+		cols.forEach(function(col, jj) {
 			if (outOfWidth) return;
 			lineSize += maxsize[String(col)] + 1;
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
@@ -872,7 +891,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			} else {	
 				var value = String(row[String(col)]).replace(/\n/g, " ");
 				var _pe = repeat(maxsize[String(col)] - ansiLength(String(row[String(col)])), ' ')
-				output += (useAnsi ? ansiColor(_getColor(row[String(col)]), value + _pe) : value + _pe)
+				output += (useAnsi ? ansiColor(_getColor(row[String(col)], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
 				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 			}
 			colNum++;
@@ -1452,9 +1471,10 @@ const __ansiColorPrep = function(aAnsi) {
 }
 /**
  * <odoc>
- * <key>ansiColor(aAnsi, aString, force, noCache) : String</key>
+ * <key>ansiColor(aAnsi, aString, force, noCache, noReset) : String</key>
  * Returns the ANSI codes together with aString, if determined that the current terminal can handle ANSI codes (overridden
  * by force = true), with the attributes defined in aAnsi. Please use with ansiStart() and ansiStop().
+ * The optional noReset boolean flag will remove ansi reset as part of the string returned.
  * The attributes separated by commas can be:\
  * \
  * BLACK; RED; GREEN; YELLOW; BLUE; MAGENTA; CYAN; WHITE;\
@@ -1464,7 +1484,7 @@ const __ansiColorPrep = function(aAnsi) {
  * \
  * </odoc>
  */
-const ansiColor = function(aAnsi, aString, force, noCache) {
+const ansiColor = function(aAnsi, aString, force, noCache, noReset) {
 	if (!force && !__initializeCon()) return aString;
 	aAnsi = _$(aAnsi, "aAnsi").isString().default("");
 	aString = _$(aString, "aString").isString().default("");
@@ -1476,11 +1496,11 @@ const ansiColor = function(aAnsi, aString, force, noCache) {
 	var res = "";
 	
 	if (ansis && aAnsi.length > 0) {
-		if (noCache) return __ansiColorPrep(aAnsi) + aString + __ansiColorCache["RESET"]
-		if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
+		if (noCache) return __ansiColorPrep(aAnsi) + aString + (noReset ? "" : __ansiColorCache["RESET"])
+		if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString + (noReset ? "" : __ansiColorCache["RESET"])
 
 		__ansiColorCache[aAnsi] = __ansiColorPrep(aAnsi)
-		return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
+		return __ansiColorCache[aAnsi] + aString + (noReset ? "" : __ansiColorCache["RESET"])
 	} else {
 		return aString;
 	}
@@ -1689,7 +1709,7 @@ var __colorFormat = {
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
 	askPos: "BLUE",
-	table: { lines: "RESET", value: "RESET", title: "BOLD" }
+	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "FAINT" }
 };
 const colorify = function(json, aOptions) {
 	if (typeof json != 'string') {
