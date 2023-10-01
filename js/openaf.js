@@ -1000,8 +1000,8 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		_ac  = (aAnsi, aString) => {
 			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
 			if (aAnsi.length == 0) return aString
-			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString + __ansiColorCache["RESET"]
-			var res = ansiColor(aAnsi, aString, true)
+			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString// + __ansiColorCache["RESET"]
+			var res = ansiColor(aAnsi, aString, true, true)
 			return res
 		}
 		_al  = m => {
