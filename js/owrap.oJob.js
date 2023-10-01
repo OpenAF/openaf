@@ -3544,7 +3544,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
  * <ojob>
  * <key>ow.oJob.output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
@@ -3613,7 +3613,11 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			break;
 		case "stable":
 		    if (isMap(res)) res = [ res ]
-			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true));
+			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true));
+			break;
+		case "ctable":
+			if (isMap(res)) res = [ res ]
+			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true));
 			break;
 		case "tree":
 			print(printTreeOrS(res, __, { noansi: !__conAnsi }))
