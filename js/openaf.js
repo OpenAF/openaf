@@ -8190,7 +8190,7 @@ IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc, aDefaultMap)
 
 				var f = new java.io.File(aFilePath)
 				var _e = _os.createArchiveEntry(f, aFilePath)
-				_e.setSize(aStream.available())
+				if (isNumber(aInfoMap.size)) _e.setSize(aInfoMap.size); else _e.setSize(aStream.available())
 				_e.setModTime(aInfoMap.lastModified)
 				if (isNumber(aInfoMap.uid)) _e.setUserId(aInfoMap.uid)
 				if (isNumber(aInfoMap.gid)) _e.setGroupId(aInfoMap.gid)
