@@ -3399,15 +3399,19 @@ OpenWrap.server.prototype.jwt = {
 			aSecret1 = Packages.io.jsonwebtoken.security.Keys.hmacShaKeyFor(af.fromString2Bytes(aSecret1));
 		}
 
-		var res = Packages.io.jsonwebtoken.Jwts.parserBuilder()
+		Packages.io.jsonwebtoken.Jwts.parser()
 		                             .setSigningKey(aSecret1)
+									 .unsecured()
 									 .build()
-									 .parseClaimsJws(aToken);
+									 .isSigned(aToken);
 
-		var gson = com.google.gson.GsonBuilder().create();
+		var res = af.fromBytes2String(af.fromBase64(aToken))
+		//var gson = com.google.gson.GsonBuilder().create();
 		return {
-			headers: jsonParse(gson.toJson(res.getHeader())),
-			claims : jsonParse(gson.toJson(res.getBody()))
+			//headers: jsonParse(gson.toJson(res.getHeader())),
+			//claims : jsonParse(gson.toJson(res.getBody()))
+			headers: jsonParse(res.substring(0, res.indexOf("}{") + 1)),
+			claims : jsonParse(res.substring(res.indexOf("}{")+1, res.lastIndexOf("}")+1))
 		}
 	},
 

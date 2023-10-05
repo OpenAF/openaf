@@ -529,10 +529,10 @@ jobs:
       io.writeFileString(args.outputFile, _r)
     } else {
       if (args.__out == "args") {
-        if (isDef(args.__outPath)) $$(args).set(args.__outPath, _r); else args.output = _r
+        if (isDef(args.__outPath) && args.__outPath.length > 0) $$(args).set(args.__outPath, _r); else args.output = _r
       } else {
         var __r = {}
-        if (isDef(args.__outPath)) $$(__r).set(args.__outPath, _r); __r.output = _r
+        if (isDef(args.__outPath) && args.__outPath.length > 0) $$(__r).set(args.__outPath, _r); __r.output = _r
         $set(args.__out, __r)
       }
     }
