@@ -1761,12 +1761,16 @@ __JSONformat = {
 };
 /**
  * <odoc>
- * <key>jsonParse(aString) : Map</key>
+ * <key>jsonParse(aString, alternative, unsafe, ignoreNonJson) : Map</key>
  * Shorcut for the native JSON.parse that returns an empty map if aString is not defined, empty or unparsable.
  * </odoc>
  */
-const jsonParse = function(astring, alternative, unsafe) {
+const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
 	if (isDef(astring) && String(astring).length > 0) {
+		if (ignoreNonJson) {
+			astring = astring.substring(astring.indexOf("{"))
+			astring = astring.substring(0, astring.lastIndexOf("}")+1)
+		}
 		try {
 			var a;
 			if (alternative) {
@@ -10050,9 +10054,13 @@ const $sh = function(aString, aIn) {
 	 * </odoc>
 	 */
 	__sh.prototype.prefix = function(aPrefix, aTemplate) {
-		aPrefix = _$(aPrefix, "prefix").isString().default("sh");
-		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, __, aTemplate) };
-		return this;
+		aPrefix = _$(aPrefix, "prefix").isString().default("sh")
+		var parent = this
+		var aFn = (s, isE) => {
+			if (isE) parent._fcbE += s+"\n"; else parent._fcbO += s+"\n"
+		}
+		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, __, aTemplate, aFn) }
+		return this
 	};
 
 	/**
@@ -10132,8 +10140,14 @@ const $sh = function(aString, aIn) {
         var res = [];
         for(var ii in this.q) {
             if (isDef(this.q[ii].cmd)) {
+				this._fcbE = ""
+				this._fcbO = ""
 				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs), this.q[ii]);
-                res.push(_res);
+				if (isDef(this.fcb)) {
+					_res.stdout = this._fcbO.slice(0,-1)
+					_res.stderr = this._fcbE.slice(0,-1)
+				}
+				res.push(_res);
                 if (isDef(this.fe)) {
                     var rfe = this.fe(_res);
                     if (isDef(rfe) && rfe == false) {
