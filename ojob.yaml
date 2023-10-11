@@ -529,10 +529,10 @@ jobs:
       io.writeFileString(args.outputFile, _r)
     } else {
       if (args.__out == "args") {
-        if (isDef(args.__outPath)) $$(args).set(args.__outPath, _r); else args.output = _r
+        if (isDef(args.__outPath) && args.__outPath.length > 0) $$(args).set(args.__outPath, _r); else args.output = _r
       } else {
         var __r = {}
-        if (isDef(args.__outPath)) $$(__r).set(args.__outPath, _r); __r.output = _r
+        if (isDef(args.__outPath) && args.__outPath.length > 0) $$(__r).set(args.__outPath, _r); __r.output = _r
         $set(args.__out, __r)
       }
     }
@@ -1967,7 +1967,7 @@ jobs:
       ow.oJob.output($get(args.__inPM), { __format: "pm" })
     }
     if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(inputArgs, __, { bgcolor: "BG(235)" }), __, "FG(235)", "BG(235)", ow.format.withSideLineThemes().openBottomCurvedRect) )
-    ow.oJob.runFile(args.__job, inputArgs, id, true, { shareArgs: false })
+    oJobRunFile(args.__job, inputArgs, nowNano(), { shareArgs: false }, true)
 
     if (args.__key == "args" || args.__key == "res") {
       var _t = $get(id)

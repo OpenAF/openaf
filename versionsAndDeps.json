@@ -156,7 +156,7 @@
 		},
 		{
 			"description": "jjwt",
-			"path": ["lib/jjwat-api-0.11.5.jar", "lib/jjwat-gson-0.11.5.jar", "lib/jjwat-impl-0.11.5.jar"],
+			"path": ["lib/jjwat-api-0.12.0.jar", "lib/jjwat-gson-0.12.0.jar", "lib/jjwat-impl-0.12.0.jar"],
 			"version": "0.11.5",
 			"changes": false,
 			"type": ["java"],
@@ -188,7 +188,7 @@
 		},
 		{
 			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.12.0.jar"],
+			"path": ["lib/commons-io-2.14.0.jar"],
 			"version": "2.10.0",
 			"changes": false,
 			"type": ["java"],
@@ -394,7 +394,7 @@
 			"name": "HTTP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.8.0.jar",
+				"lib/commons-io-2.14.0.jar",
 				"lib/jetty-io-9.4.52.v20230823.jar",
 				"lib/jetty-util-9.4.52.v20230823.jar",
 				"lib/jetty-client-9.4.52.v20230823.jar",
@@ -439,7 +439,7 @@
 			"name": "SSH",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.8.0.jar"
+				"lib/commons-io-2.14.0.jar"
 			],
 			"deps": [
 				"lib/jsch-0.2.11.jar",
@@ -471,7 +471,7 @@
 			"name": "ZIP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.15.0.jar",
+				"lib/commons-io-2.14.0.jar",
 				"lib/commons-compress-1.23.jar"
 			],
 			"deps": []
