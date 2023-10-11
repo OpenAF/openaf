@@ -98,11 +98,12 @@ OpenWrap.format.prototype.string = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc) : Array</key>
+	 * <key>ow.format.string.wordWrapArray(anArray, maxTableSize, sepLen, sepFunc, useIndex) : Array</key>
 	 * Given anArray of maps will return an array suitable to use with printTable for a maxTableSize, a separator length
 	 * (sepLen (which defaults to 1)) and an optional line separator function (sepFunc that receives the max length of a 
 	 * column). Word-wrap is achieved by creating new map array entries whenever the calculated max size of each line 
-	 * with sepLen is achieved. Example of usage:\
+	 * with sepLen is achieved. The boolean flag useIndex changes the result to a map with lines and idx (array of the positions
+	 * on the lines array that are a new anArray entry). Example of usage:\
 	 * \
 	 *   __initializeCon()\
      *   var maxS = __con.getTerminal().getWidth()\
@@ -110,12 +111,12 @@ OpenWrap.format.prototype.string = {
 	 * 
 	 * </odoc>
 	 */
-	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc) => {
+	wordWrapArray: (ar, maxTableSize, sepLen, sepFunc, useIndex) => {
 		_$(ar, "ar").isArray().$_()
 		_$(maxTableSize, "maxTableSize").isNumber().$_()
 		sepFunc = _$(sepFunc, "sepFunc").isFunction().default(__)
 		sepLen = _$(sepLen, "sepLen").isNumber().default(1)
-	  
+
 		// Finding max sizes
 		var maxSizes = [], fixedMinSize = []
 		ar.forEach(row => {
@@ -164,7 +165,7 @@ OpenWrap.format.prototype.string = {
 	  
 		//print(`curMaxSize=${curMaxSize} | maxTableSize=${maxTableSize} | chgCols.len=${af.toCSLON(chgCols)} | fixedSize=${fixedSize}`)
 
-		var _lines = [], _newSize = []
+		var _lines = [], _idx = [], _newSize = []
 		ar.forEach(_ar => {
 		  // Processing line
 		  var _keys = Object.keys(_ar)
@@ -191,10 +192,11 @@ OpenWrap.format.prototype.string = {
 					_s[i] = _newSize[i]
 				}
 			  }
-			  if (isDef(r[_lx]))
+			  if (isDef(r[_lx])) {
 				_m[_keys[i]] = r[_lx] + (_s[i] > ansiLength(r[_lx]) ? repeat(_s[i] - ansiLength(r[_lx]), ' ') : "")
-			  else
+			  } else {
 				_m[_keys[i]] = repeat(_s[i], ' ')
+			  }
 			})
 			_lines.push(_m)
 		  }
@@ -208,9 +210,11 @@ OpenWrap.format.prototype.string = {
 			})
 			_lines.push(_m)
 		  }
+
+		  _idx.push(_lines.length)
 		})
 	  
-		return _lines
+		return useIndex ? { lines: _lines, idx: _idx } : _lines
 	},
 	/**
 	 * <odoc>
@@ -1297,20 +1301,32 @@ OpenWrap.format.prototype.streamSH = function(aFunc, anEncoding) {
 
 /**
  * <odoc>
- * <key>ow.format.streamSHPrefix(aPrefix, anEncoding, aSeparator, aTemplate) : Function</key>
+ * <key>ow.format.streamSHPrefix(aPrefix, anEncoding, aSeparator, aTemplate, aFnHandler) : Function</key>
  * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will prefix each line with aPrefix
- * and used the returned string with print and printErr. Optionally you can provide aTemplate to add "prefix" (defaults to "[{{prefix}}]")
+ * and used the returned string with print and printErr. Optionally you can provide aTemplate to add "prefix" (defaults to "[{{prefix}}]") and/or
+ * provide aFnHandler to chain another streaming handling function (receives a stream and a boolean to indicate if its stdout or stderr)
  * </odoc>
  */
-OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSeparator, aTemplate) {
+OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSeparator, aTemplate, aFnHandler) {
 	aPrefix   = _$(aPrefix, "aPrefix").isString().default("");
 	aTemplate = _$(aTemplate, "aTemplate").isString().default("[{{prefix}}] ");
 
+	var callFn = isFunction(aFnHandler)
 	return function(o, e) {
 		$doWait(
 			$doAll([
-				$do(() => { ioStreamReadLines(o, (f) => { ansiStart(); print(ansiColor("BOLD,BLACK", templify(aTemplate, { prefix: aPrefix })) + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, aSeparator, false, __); }), 
-				$do(() => { ioStreamReadLines(e, (f) => { ansiStart(); printErr(ansiColor("RED", templify(aTemplate, { prefix: aPrefix })) + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding)); ansiStop(); }, aSeparator, false, anEncoding); })
+				$do(() => { ioStreamReadLines(o, (f) => { 
+					ansiStart()
+					print(ansiColor("BOLD,BLACK", templify(aTemplate, { prefix: aPrefix })) + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding))
+					ansiStop()
+					if (callFn) aFnHandler( af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding), false )
+				}, aSeparator, false, __); }), 
+				$do(() => { ioStreamReadLines(e, (f) => { 
+					ansiStart()
+					printErr(ansiColor("RED", templify(aTemplate, { prefix: aPrefix })) + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding))
+					ansiStop()
+					if (callFn) aFnHandler( af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding), true )
+				}, aSeparator, false, anEncoding); })
 			])
 		);
 	};

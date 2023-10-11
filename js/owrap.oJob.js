@@ -552,7 +552,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
  * Loads aJSON oJob configuration and returns the processed map (with all includes processed).
  * </odoc>
  */
-OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
+OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos, dontLoadJobs) {
 	if (!isMap(aJSON)) return {};
 	var res = aJSON;
 	var parent = this
@@ -643,36 +643,39 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 
 		// Place auditor on ojob::jobs
 		if (__flags.OJOB_CHECK_JOB_CHANGES || __flags.OJOB_CHECK_JOB_REMOVAL) {
-			this.getJobsCh().subscribe((aCh, aOp, aK, aV) => {
-				if (aOp == "unset" || aOp == "unsetall") {
-					if (__flags.OJOB_CHECK_JOB_REMOVAL)
-						logWarn("oJobs definitions are being removed: " + af.toSLON(aK))
-					else {
-						if (isUnDef(ow.oJob.__ojob_warn_ojob_removal_notify)) ow.oJob.__ojob_warn_ojob_removal_notify = false
-						//if (!ow.oJob.__ojob_warn_ojob_removal_notify) logWarn("oJobs definitions removal audit is disabled.")
-						ow.oJob.__ojob_warn_ojob_removal_notify = true
+			if (isUnDef(parent.__jobauditor)) {
+				this.getJobsCh().subscribe((aCh, aOp, aK, aV) => {
+					if (aOp == "unset" || aOp == "unsetall") {
+						if (__flags.OJOB_CHECK_JOB_REMOVAL)
+							logWarn("oJobs definitions are being removed: " + af.toSLON(aK))
+						else {
+							if (isUnDef(ow.oJob.__ojob_warn_ojob_removal_notify)) ow.oJob.__ojob_warn_ojob_removal_notify = false
+							//if (!ow.oJob.__ojob_warn_ojob_removal_notify) logWarn("oJobs definitions removal audit is disabled.")
+							ow.oJob.__ojob_warn_ojob_removal_notify = true
+						}
 					}
-				}
-	
-				if ((aOp == "set" || aOp == "setall")) {
-					if (__flags.OJOB_CHECK_JOB_CHANGES) {
-						if (!isArray(aK)) aK = [ aK ]
-						var _keys = parent._ejob
-						$from(aK).intersect(_keys).select(k => {
-							logWarn("oJob '" + k.name + "' is being changed! ")
-						})
-						parent._ejob = parent._ejob.concat(aK)
-					} else {
-						if (isUnDef(ow.oJob.__ojob_warn_ojob_changes_notify)) ow.oJob.__ojob_warn_ojob_changes_notify = false
-						//if (!ow.oJob.__ojob_warn_ojob_changes_notify) logWarn("oJobs definitions changes audit is disabled.")
-						ow.oJob.__ojob_warn_ojob_changes_notify = true
+		
+					if ((aOp == "set" || aOp == "setall")) {
+						if (__flags.OJOB_CHECK_JOB_CHANGES) {
+							if (!isArray(aK)) aK = [ aK ]
+							var _keys = parent._ejob
+							$from(aK).intersect(_keys).select(k => {
+								logWarn("oJob '" + k.name + "' is being changed! ")
+							})
+							parent._ejob = parent._ejob.concat(aK)
+						} else {
+							if (isUnDef(ow.oJob.__ojob_warn_ojob_changes_notify)) ow.oJob.__ojob_warn_ojob_changes_notify = false
+							//if (!ow.oJob.__ojob_warn_ojob_changes_notify) logWarn("oJobs definitions changes audit is disabled.")
+							ow.oJob.__ojob_warn_ojob_changes_notify = true
+						}
 					}
-				}
-			}, true)
+				}, true)
+			}
+			parent.__jobauditor = true
 		}
 
 		// Add custom shortcuts
-		if (isArray(res.jobs)) {
+		if (!dontLoadJobs && isArray(res.jobs)) {
 			res.jobs = res.jobs.map(j => parent.addShortcuts(j))
 		}
 
@@ -686,7 +689,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 				}
 			}
 		}
-		if (isDef(res.jobsInclude) && isArray(res.jobsInclude)) {
+		if (!dontLoadJobs && isDef(res.jobsInclude) && isArray(res.jobsInclude)) {
 			for (var i in res.jobsInclude) {
 				if (isUnDef(_includeLoaded[res.jobsInclude[i]])) {
 					_includeLoaded[res.jobsInclude[i]] = 1;
@@ -699,7 +702,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 		
 
 		if (!dontLoadTodos && !(isArray(res.jobs)) && !(isArray(res.todo))) {
-			throw("jobs and todo entries need to be defined as arrays.");
+			if (!dontLoadJobs) throw("jobs and todo entries need to be defined as arrays.");
 		} else {
 			if (isArray(res.todo)) res.todo = res.todo.map(r => this.parseTodo(r))
 		}
@@ -707,15 +710,22 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos) {
 		if (dontLoadTodos && !(isArray(res.jobs))) {
 			throw("jobs entries need to be defined as arrays.");
 		}
+		if (dontLoadJobs && !(isArray(res.todo))) {
+			throw("todo entries need to be defined as arrays.")
+		}
 
 		if (dontLoadTodos) {
 			delete res.todo
 			delete res.help
 		}
+		if (dontLoadJobs) {
+			delete res.jobs
+			delete res.help
+		}
 		if (isUnDef(res.ojob)) res.ojob = {};
 
 		// Set code in the require cache
-		if (isMap(res.code)) {
+		if (!dontLoadJobs && isMap(res.code)) {
 			if (isUnDef(require.cache)) require.cache = {};
 			Object.keys(res.code).forEach(k => {
 				if (k.endsWith(".js")) {
@@ -972,7 +982,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		return this.loadJSON(res, removeTodos)
 	} else {
 		//throw "The oJob '" + aOrigFile + "' is included more than once!"
-		return {}
+		return this.loadJSON(res, removeTodos, true)
 	}
 };
 
@@ -2773,7 +2783,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					}
 					res += "var __uuid = '.' + genUUID() + '.bat'; _$(args.ssh, 'ssh').isMap().$_(); var __res = $ssh(args.ssh).putFile(ft, __uuid).sh(" + stringify(aJobTypeArgs.shell) + " + ' ' + __uuid)" + prefix + ".exit((r, s)=>s.rm(__uuid)).get(0); io.rm(ft);\n";
 					res += "if (!isNull(__res.stdout)) __res.stdout = __res.stdout.replace(/\\\"/g, '\\\\\\\"');"
-					res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+					res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true,__,true))) { args = merge(args, jsonParse(__res.stdout, true,__,true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 					res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 				}
 				break;
@@ -2793,7 +2803,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 						}
 						res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(ft.replace(/\\\\/g, '/')).sh('del ' + ft)" + prefix + ".get(0);\n";
 						res += "if (!isNull(__res.stdout)) __res.stdout = __res.stdout.replace(/\\\"/g, '\\\\\\\"');"
-						res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+						res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true,__,true))) { args = merge(args, jsonParse(__res.stdout, true,__,true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 					} else {
 						aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("/bin/sh -s");
@@ -2805,7 +2815,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 							res += orig + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
 						}
 						res += "if (!isNull(__res.stdout)) __res.stdout = __res.stdout.replace(/\\\"/g, '\\\\\\\"');"
-						res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+						res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true,__,true))) { args = merge(args, jsonParse(__res.stdout, true,__,true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 					}
 				}
@@ -2863,7 +2873,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
 								}
 							}
-							res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true))) { args = merge(args, jsonParse(__res.stdout, true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
+							res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true,__,true))) { args = merge(args, jsonParse(__res.stdout, true,__,true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 							res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
 						}
 					} else if (isDef(aJobTypeArgs.langFn)) {
@@ -3457,8 +3467,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: false,
 		attrs: {
+			"(convert"  : "__inKey",
 			"((inPath"  : "__inPath", 
-			"((inKey"   : "__inKey",
 			"((inFormat": "__inFormat",
 			"((outPath" : "__outPath",
 			"((outKey"  : "__outKey"
@@ -3534,7 +3544,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
  * <ojob>
  * <key>ow.oJob.output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
@@ -3603,7 +3613,11 @@ OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
  			break;
 		case "stable":
 		    if (isMap(res)) res = [ res ]
-			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true));
+			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true));
+			break;
+		case "ctable":
+			if (isMap(res)) res = [ res ]
+			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true));
 			break;
 		case "tree":
 			print(printTreeOrS(res, __, { noansi: !__conAnsi }))
