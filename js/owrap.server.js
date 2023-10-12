@@ -3399,19 +3399,23 @@ OpenWrap.server.prototype.jwt = {
 			aSecret1 = Packages.io.jsonwebtoken.security.Keys.hmacShaKeyFor(af.fromString2Bytes(aSecret1));
 		}
 
-		Packages.io.jsonwebtoken.Jwts.parser()
-		                             .setSigningKey(aSecret1)
+		var res = Packages.io.jsonwebtoken.Jwts.parser()
+		                             .verifyWith(aSecret1)
 									 .unsecured()
+									 .unsecuredDecompression()
 									 .build()
-									 .isSigned(aToken);
 
-		var res = af.fromBytes2String(af.fromBase64(aToken))
-		//var gson = com.google.gson.GsonBuilder().create();
+	
+		res.isSigned(aToken)
+		res = res.parseClaimsJws(aToken)
+
+		//var res = af.fromBytes2String(af.fromBase64(aToken))
+		var gson = com.google.gson.GsonBuilder().create()
 		return {
-			//headers: jsonParse(gson.toJson(res.getHeader())),
-			//claims : jsonParse(gson.toJson(res.getBody()))
-			headers: jsonParse(res.substring(0, res.indexOf("}{") + 1)),
-			claims : jsonParse(res.substring(res.indexOf("}{")+1, res.lastIndexOf("}")+1))
+			headers: jsonParse(gson.toJson(res.getHeader())),
+			claims : jsonParse(gson.toJson(res.getBody()))
+			//headers: jsonParse(res.substring(0, res.indexOf("}{") + 1)),
+			//claims : jsonParse(res.substring(res.indexOf("}{")+1, res.lastIndexOf("}")+1))
 		}
 	},
 
