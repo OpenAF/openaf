@@ -6,11 +6,12 @@
 var requirements = {
   "javaversion": [ "^1.7" ]
 };
-var extraArgsForJava9 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+var extraArgsForJava8 = " --add-opens java.base/java.io=ALL-UNNAMED"
+var extraArgsForJava9 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
 var extraArgsForJava10 = extraArgsForJava9 + " ";
-var extraArgsForJava11 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit -Xshare:off";
+var extraArgsForJava11 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit -Xshare:off";
 var extraArgsForJava12 = extraArgsForJava11 + " ";
-var extraArgsForJava17 = " --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
+var extraArgsForJava17 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -247,6 +248,7 @@ log("Current classpath = '" + classPath + "'");
 log("Java home = '" + javaHome + "'");
 log("Checking requirements");
 
+if (Number(javaVer) != null && Number(javaVer) == 8) javaargs += " " + extraArgsForJava8
 if (Number(javaVer) != null && Number(javaVer) == 9) javaargs += " " + extraArgsForJava9;  
 if (Number(javaVer) != null && Number(javaVer) == 10) javaargs += " " + extraArgsForJava10;
 if (Number(javaVer) != null && Number(javaVer) == 11) javaargs += " " + extraArgsForJava11;
