@@ -323,8 +323,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.15.2.jar"],
-			"version": "2.15.2",
+			"path": ["lib/jackson-core-2.15.3.jar"],
+			"version": "2.15.3",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
