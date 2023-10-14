@@ -206,7 +206,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	},
 	ALTERNATIVES: {
 		traverse: true,
-		extend  : true
+		extend  : true,
+		merge   : true
 	},
 	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR    : true,
@@ -3859,42 +3860,43 @@ const clone = function(aObject) {
  * Merges a JavaScript object A with a JavaScript object B a returns the result as a new object.
  * </odoc>
  */
-var __merge_alternative = true;
-const merge = function(aObjectA, aObjectB, alternative, deDup) {
-	if (isObject(aObjectA) && isArray(aObjectB)) {
-		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA), alternative, deDup); }
-		return aObjectB;
+const merge = function(objA, objB, alternative, deDup) {
+	if (isObject(objA) && isArray(objB)) {
+		for(let i in objB) { objB[i] = merge(objB[i], clone(objA), alternative, deDup); }
+		return objB;
 	}
-	if (isObject(aObjectB) && isArray(aObjectA)) {
-		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB), alternative, deDup); }
-		return aObjectA;
+	if (isObject(objB) && isArray(objA)) {
+		for(let i in objA) { objA[i] = merge(objA[i], clone(objB), alternative, deDup); }
+		return objA;
 	}
-	if (__merge_alternative || alternative) {
-		var r = Object.assign({}, aObjectA);
-		if (isDef(aObjectB) && isMap(aObjectB) && !isNull(aObjectB)) {
-		  Object.keys(aObjectB).forEach(k => {
-			if (!isMap(aObjectB[k]) && !isArray(aObjectB[k])) {
-			  r[k] = aObjectB[k];
-			} else {
-			  if (isArray(aObjectB[k])) {
-				if (isUnDef(r[k])) r[k] = [];
-				
-				if (deDup) {
-				  r[k] = r[k].concat(aObjectB[k].filter(s => arrayContains(r[k], s) < 0));
-				} else {
-				  r[k] = r[k].concat(aObjectB[k]);
-				}
-			  } else if (isMap(aObjectB[k])) {
-				if (isUnDef(r[k])) r[k] = {};
-				r[k] = merge(r[k], aObjectB[k], alternative, deDup);
-			  }
+	if (__flags.ALTERNATIVES.merge || alternative) {
+		var mergedObj = {}
+
+		for (let prop in objA) {
+			if (prop in objA) {
+				mergedObj[prop] = objA[prop]
 			}
-		  });
 		}
-	  
-		return r;
+
+		for (let prop in objB) {
+			if (prop in objB) {
+				if (prop in mergedObj) {
+					if (Array.isArray(mergedObj[prop]) && Array.isArray(objB[prop])) {
+						mergedObj[prop] = deDup
+							? mergedObj[prop].concat(objB[prop].filter(item => mergedObj[prop].indexOf(item) < 0 ))
+							: mergedObj[prop].concat(objB[prop])
+					} else {
+						mergedObj[prop] = objB[prop]
+					}
+				} else {
+					mergedObj[prop] = objB[prop]
+				}
+			}
+		}
+	
+		return mergedObj
 	} else {
-		return extend(true, clone(aObjectA), aObjectB);
+		return extend(true, clone(aObjectA), aObjectB)
 	}
 }
 
