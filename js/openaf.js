@@ -204,6 +204,10 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	IO: {
 		bufferSize: 1024
 	},
+	ALTERNATIVES: {
+		traverse: true,
+		extend  : true
+	},
 	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR    : true,
 	HTTP_TIMEOUT               : __,
@@ -3645,7 +3649,7 @@ const quickSort = function(items, aCompareFunction) {
 
 
 /**
- * (extracted from)
+ * (extracted and chnaged from)
  * jQuery JavaScript Library v2.0.3
  * http://jquery.com/
  *
@@ -3663,7 +3667,54 @@ const quickSort = function(items, aCompareFunction) {
  * </odoc>
  */
 const extend = function() {
-	var class2type = {
+	if (__flags.ALTERNATIVES.extend) {
+		let deep = false
+		let target = arguments[0] || {}
+
+		let _sources = []
+		for (var i = 1; i < arguments.length; i++) { _sources[i - 1] = arguments[i] }
+
+		if (typeof target === "boolean") {
+			deep = target
+			target = _sources.shift()
+		}
+		if (typeof target !== "object" && typeof target !== "function") {
+			target = {}
+		}
+
+		let stack = [{ target, sources: _sources }]
+		while (stack.length > 0) {
+			let { target, sources } = stack.pop()
+			for (let source of sources) {
+				if (source != null) {
+					for (let key of Object.keys(source)) {
+						let src = target[key]
+						let copy = source[key]
+						if (target === copy) {
+							continue
+						}
+						let copyIsArray = false
+						let _clone
+						if (deep && copy && (typeof copy === "object" || typeof copy === "function")) {
+
+							if (Array.isArray(copy)) {
+								copyIsArray = true
+								_clone = src && Array.isArray(src) ? src : []
+							} else {
+								_clone = src && typeof src === "object" ? src : {}
+							}
+							target[key] = _clone
+							stack.push({ target: _clone, sources: [copy] })
+						} else if (copy !== undefined) {
+							target[key] = copy
+						}
+					}
+				}
+			}
+		}
+		return target
+	} else {
+		var class2type = {
 			"[object Boolean]":   "boolean",
 			"[object Number]":    "number",
 			"[object String]":    "string",
@@ -3673,103 +3724,104 @@ const extend = function() {
 			"[object RegExp]":    "regexp",
 			"[object Object]":    "object",
 			"[object Error]":     "error"
-	};
+		};
 
-	var core_toString = class2type.toString,
-	core_hasOwn   = class2type.hasOwnProperty;
+		var core_toString = class2type.toString,
+		core_hasOwn   = class2type.hasOwnProperty;
 
-	var jQuery = {};
+		var jQuery = {};
 
-	jQuery.isFunction = function( obj ) {
-		return jQuery.type(obj) === "function";
-	};
+		jQuery.isFunction = function( obj ) {
+			return jQuery.type(obj) === "function";
+		};
 
-	jQuery.isArray = Array.isArray;
+		jQuery.isArray = Array.isArray;
 
-	jQuery.type = function( obj ) {
-		if ( obj == null ) {
-			return String( obj );
-		}
-		return typeof obj === "object" || typeof obj === "function" ?
-				class2type[ core_toString.call(obj) ] || "object" :
-					typeof obj;
-	};
+		jQuery.type = function( obj ) {
+			if ( obj == null ) {
+				return String( obj );
+			}
+			return typeof obj === "object" || typeof obj === "function" ?
+					class2type[ core_toString.call(obj) ] || "object" :
+						typeof obj;
+		};
 
-	jQuery.isPlainObject = function( obj ) {
-		if (isJavaObject(obj)) return false;
-		
-		if ( jQuery.type( obj ) !== "object" || obj.nodeType ) {
-			return false;
-		}
-
-		try {
-			if ( obj.constructor && !core_hasOwn.call( obj.constructor.prototype, "isPrototypeOf" ) ) {
+		jQuery.isPlainObject = function( obj ) {
+			if (isJavaObject(obj)) return false;
+			
+			if ( jQuery.type( obj ) !== "object" || obj.nodeType ) {
 				return false;
 			}
-		} catch ( e ) {
-			return false;
+
+			try {
+				if ( obj.constructor && !core_hasOwn.call( obj.constructor.prototype, "isPrototypeOf" ) ) {
+					return false;
+				}
+			} catch ( e ) {
+				return false;
+			}
+
+			return true;
+		};
+
+
+		var options,
+		name,
+		src,
+		copy,
+		copyIsArray,
+		clone,
+		target = arguments[0] || {},
+		i = 1,
+		length = arguments.length,
+		deep = false;
+
+		if ( typeof target === "boolean" ) {
+			deep = target;
+			target = arguments[1] || {};
+			i = 2;
 		}
 
-		return true;
-	};
+		if ( typeof target !== "object" && !jQuery.isFunction(target) ) {
+			target = {};
+		}
 
+		if ( length === i ) {
+			target = this;
+			--i;
+		}
 
-	var options,
-	name,
-	src,
-	copy,
-	copyIsArray,
-	clone,
-	target = arguments[0] || {},
-	i = 1,
-	length = arguments.length,
-	deep = false;
+		for ( ; i < length; i++ ) {
+			if ( (options = arguments[ i ]) != null ) {
+				for ( name in options ) {
+					src = target[ name ];
+					copy = options[ name ];
 
-	if ( typeof target === "boolean" ) {
-		deep = target;
-		target = arguments[1] || {};
-		i = 2;
-	}
-
-	if ( typeof target !== "object" && !jQuery.isFunction(target) ) {
-		target = {};
-	}
-
-	if ( length === i ) {
-		target = this;
-		--i;
-	}
-
-	for ( ; i < length; i++ ) {
-		if ( (options = arguments[ i ]) != null ) {
-			for ( name in options ) {
-				src = target[ name ];
-				copy = options[ name ];
-
-				if ( target === copy ) {
-					continue;
-				}
-
-				if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)) ) ) {
-					if ( copyIsArray ) {
-						copyIsArray = false;
-						clone = src && jQuery.isArray(src) ? src : [];
-
-					} else {
-						clone = src && jQuery.isPlainObject(src) ? src : {};
+					if ( target === copy ) {
+						continue;
 					}
 
-					target[ name ] = extend( deep, clone, copy );
+					if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)) ) ) {
+						if ( copyIsArray ) {
+							copyIsArray = false;
+							clone = src && jQuery.isArray(src) ? src : [];
 
-				} else if ( copy !== undefined ) {
-					target[ name ] = copy;
+						} else {
+							clone = src && jQuery.isPlainObject(src) ? src : {};
+						}
+
+						target[ name ] = extend( deep, clone, copy );
+
+					} else if ( copy !== undefined ) {
+						target[ name ] = copy;
+					}
 				}
 			}
 		}
-	}
 
-	return target;
-};
+		return target;
+	}
+}
 
 /**
  * <odoc>
@@ -5535,18 +5587,34 @@ const loadDBInMem = function(aDB, aFilename) {
  * </odoc>
  */
 const traverse = function(aObject, aFunction, aParent) {
-	var keys = (isJavaObject(aObject)) ? [] : Object.keys(aObject);
-	var parent = isUnDef(aParent) ? "" : aParent;
+	if (__flags.ALTERNATIVES.traverse) {
+		let stack = [{ obj: aObject, keys: (isJavaObject(aObject)) ? [] : Object.keys(aObject), parent: "" }]
 
-	for(var i in keys) {
-		if (isObject(aObject[keys[i]])) {
-			var newParent = parent + ((isNaN(Number(keys[i]))) ? 
-							"." + keys[i] : 
-							(isNumber(keys[i]) ? "[" + keys[i] + "]" : "[\"" + keys[i] + "\"]"));
-			traverse(aObject[keys[i]], aFunction, newParent, aObject);
+		while (stack.length > 0) {
+		  var _d = stack.pop()
+		  for(var _key in _d.keys) {
+			var value = _d.obj[_d.keys[_key]]
+			if (isArray(value) || isMap(value)) {
+			  var newParent = _d.parent + (isNaN(Number(_key)) ? `.${_key}` : (isNumber(_key) ? `[${_key}]` : `["${_key}"]`))
+			  stack.push({ obj: value, keys: (isJavaObject(value)) ? [] : Object.keys(value), parent: newParent })
+			}
+			aFunction(_d.keys[_key], value, _d.parent, _d.obj)
+		  }
 		}
-		
-		aFunction(keys[i], aObject[keys[i]], parent, aObject);
+	} else {
+		var keys = (isJavaObject(aObject)) ? [] : Object.keys(aObject);
+		var parent = isUnDef(aParent) ? "" : aParent;
+
+		for(var i in keys) {
+			if (isObject(aObject[keys[i]])) {
+				var newParent = parent + ((isNaN(Number(keys[i]))) ? 
+								"." + keys[i] : 
+								(isNumber(keys[i]) ? "[" + keys[i] + "]" : "[\"" + keys[i] + "\"]"));
+				traverse(aObject[keys[i]], aFunction, newParent, aObject);
+			}
+			
+			aFunction(keys[i], aObject[keys[i]], parent, aObject);
+		}
 	}
 }
 
