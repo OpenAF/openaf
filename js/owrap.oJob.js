@@ -748,7 +748,7 @@ OpenWrap.oJob.prototype.__toEnvs = function(aMap) {
 	var res = getEnvs();
 	traverse(aMap, (aK, aV, aP, aO) => {
 		if (!isMap(aV) && !isArray(aV)) {
-     			aP = aP.replace(/\./g, "_");
+     		aP = aP.replace(/\./g, "_");
 			if (isNumber(aK)) {
 				res[aP.substr(1, aP.length) + "_" + (Number(aK) +1) ] = String(aV);
 			} else {
@@ -2258,9 +2258,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						if (isDef(fint)) {
 							if (!fint(aValue, job, id, depInfo, e)) {
 								if (parent.__ojob.logArgs) 
-   									errors.push(stringify({ args: aValue, exception: e}));
+   									errors.push(stringify({ args: aValue, exception: String(e)}));
 								else
-									errors.push(stringify({ exception: e }));
+									errors.push(stringify({ exception: String(e) }));
 							}
 							recordError = false;
 							useExt = false;
@@ -2268,17 +2268,17 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						if (isDef(fe) && useExt) {
 							if (!fe(aValue, job, id, depInfo, e)) {
 								if (parent.__ojob.logArgs) 
-									errors.push(stringify({ args: aValue, exception: e}));
+									errors.push(stringify({ args: aValue, exception: String(e)}));
 								else
-									errors.push(stringify({ exception: e}));
+									errors.push(stringify({ exception: String(e)}));
 							}
 							recordError = false;
 						}
 						if (recordError) {
 							if (parent.__ojob.logArgs)
-								errors.push(stringify({ args: aValue, exception: e}));
+								errors.push(stringify({ args: aValue, exception: String(e)}));
 							else	
-								errors.push(stringify({ exception: e}));
+								errors.push(stringify({ exception: String(e)}));
 						}
 					} finally {
 						return true;

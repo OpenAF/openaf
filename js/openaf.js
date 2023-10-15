@@ -3896,7 +3896,7 @@ const merge = function(objA, objB, alternative, deDup) {
 	
 		return mergedObj
 	} else {
-		return extend(true, clone(aObjectA), aObjectB)
+		return extend(true, clone(objA), objB)
 	}
 }
 
@@ -5593,14 +5593,14 @@ const traverse = function(aObject, aFunction, aParent) {
 		let stack = [{ obj: aObject, keys: (isJavaObject(aObject)) ? [] : Object.keys(aObject), parent: "" }]
 
 		while (stack.length > 0) {
-		  var _d = stack.pop()
-		  for(var _key in _d.keys) {
-			var value = _d.obj[_d.keys[_key]]
-			if (isArray(value) || isMap(value)) {
-			  var newParent = _d.parent + (isNaN(Number(_key)) ? `.${_key}` : (isNumber(_key) ? `[${_key}]` : `["${_key}"]`))
+		  let _d = stack.pop()
+		  for(let _key in _d.keys) {
+			let value = _d.obj[_d.keys[_key]]
+			if (isDef(value) && (isArray(value) || isMap(value))) {
+			  let newParent = _d.parent + (isNaN(Number(_key)) ? `.${_key}` : (isNumber(_key) ? `[${_key}]` : `["${_key}"]`))
 			  stack.push({ obj: value, keys: (isJavaObject(value)) ? [] : Object.keys(value), parent: newParent })
 			}
-			aFunction(_d.keys[_key], value, _d.parent, _d.obj)
+			aFunction(_d.keys[_key], value, _d.parent, _d.obj) 
 		  }
 		}
 	} else {
