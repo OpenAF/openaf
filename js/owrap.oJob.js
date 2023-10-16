@@ -3548,7 +3548,8 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
-OpenWrap.oJob.prototype.output = function(aObj, args, aFunc) {
+OpenWrap.oJob.prototype.output = $output
+OpenWrap.oJob.prototype.oldOutput = function(aObj, args, aFunc) {
  	args = _$(args).default({});
  	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
  		if (isArray(obj) || isMap(obj))

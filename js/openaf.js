@@ -10874,6 +10874,138 @@ const $unset = function(aK) {
     $ch("oaf::global").unset({ k: aK });
 }
 
+/**
+ * <ojob>
+ * <key>$output(aObj, args, aFunc) : Map</key>
+ * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
+ * </ojob>
+ */
+const $output = function (aObj, args, aFunc) {
+	args = _$(args).default({});
+	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
+		if (isArray(obj) || isMap(obj))
+			print(printTreeOrS(obj, __, { noansi: !__conAnsi }))
+		else
+			sprint(obj)
+	});
+
+	var format = (isDef(global.__format) ? global.__format : "human")
+	var path = __, csv = __, from = __, key = "res", sql = __
+
+	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
+	if (isDef(args.__format) && !isNull(args.__format)) format = String(args.__format).toLowerCase()
+
+	if (isDef(args.__PATH) && !isNull(args.__PATH)) path = String(args.__PATH)
+	if (isDef(args.__path) && !isNull(args.__path)) path = String(args.__path)
+
+	if (isDef(args.__FROM) && !isNull(args.__FROM)) from = String(args.__FROM)
+	if (isDef(args.__from) && !isNull(args.__from)) from = String(args.__from)
+
+	if (isDef(args.__SQL) && !isNull(args.__SQL)) sql = String(args.__SQL)
+	if (isDef(args.__sql) && !isNull(args.__sql)) sql = String(args.__sql)
+
+	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = jsonParse(args.__CSV, true)
+	if (isDef(args.__csv) && !isNull(args.__csv)) csv = jsonParse(args.__csv, true)
+
+	if (isDef(args.__KEY) && !isNull(args.__KEY)) key = String(args.__KEY)
+	if (isDef(args.__key) && !isNull(args.__key)) key = String(args.__key)
+
+	var res = isDef(path) ? $path(aObj, path) : aObj
+	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
+	res = isDef(sql) ? $sql(res, sql) : res
+
+	switch (format) {
+		case "json":
+			sprint(res, "")
+			break
+		case "prettyjson":
+			sprint(res)
+			break
+		case "cjson":
+			cprint(res)
+			break
+		case "slon":
+			print(ow.format.toSLON(res))
+			break
+		case "cslon":
+			print(ow.format.toCSLON(res))
+			break
+		case "ndjson":
+			if (isArray(res)) res.forEach(e => print(stringify(e, __, "")))
+			break
+		case "xml":
+			print(af.fromObj2XML(res, true))
+			break
+		case "yaml":
+			yprint(res, __, true)
+			break
+		case "table":
+			if (isMap(res)) res = [res]
+			if (isArray(res)) print(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)))
+			break
+		case "stable":
+			if (isMap(res)) res = [res]
+			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true))
+			break
+		case "ctable":
+			if (isMap(res)) res = [res]
+			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true))
+			break
+		case "tree":
+			print(printTreeOrS(res, __, { noansi: !__conAnsi }))
+			break
+		case "res":
+			if (isDef(res)) $set("res", res)
+			break
+		case "key":
+			if (isDef(res)) $set(key, res)
+			break
+		case "args":
+			if (isArray(res))
+				args._list = res
+			else
+				if (isMap(res))
+					args._map = res
+				else
+					args.result = res
+			break
+		case "jsmap":
+		case "html":
+			var _res = ow.loadTemplate().html.parseMap(res, true)
+			print("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
+		case "pm":
+			var _p;
+			if (isArray(res)) _p = {
+				_list: res
+			}
+			if (isMap(res)) _p = {
+				_map: res
+			}
+			if (isUnDef(_p)) _p = {
+				result: res
+			}
+			__pm = merge(__pm, _p)
+			break;
+		case "csv":
+			if (isMap(res)) res = [res]
+			if (isArray(res)) {
+				print($csv(csv).fromInArray(res))
+			}
+			break
+		case "map":
+			print(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
+			break
+		default:
+			if (format.startsWith("set_")) {
+				$set(format.substring(4), res)
+			} else {
+				aFunc(res)
+			}
+	}
+}
+
 var __OpenAFUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)";
 const __setUserAgent = function(aNewAgent) {
 	__OpenAFUserAgent = _$(aNewAgent).isString().default(__OpenAFUserAgent);
