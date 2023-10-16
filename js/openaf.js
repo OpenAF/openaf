@@ -3851,7 +3851,7 @@ const clone = function(aObject) {
 	if (isNull(aObject) || isUnDef(aObject)) return __
 	if (!isObject(aObject)) return aObject
 	if (Array.isArray(aObject)) return aObject.map(r=>isObject(r) ? clone(r) : r)
- 	return extend(true, {}, aObject)
+ 	return aObject.__proto__ instanceof Object ? extend(true, aObject) : extend(true, {}, aObject)
 }
 
 /**
