@@ -10935,6 +10935,7 @@ const $output = function (aObj, args, aFunc) {
 			}
 	}
 }
+const $o = $output
 
 var __OpenAFUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)";
 const __setUserAgent = function(aNewAgent) {
