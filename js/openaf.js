@@ -3866,9 +3866,12 @@ const merge = function(objA, objB, alternative, deDup) {
 	if (alternative) {
 		let stack = []
 		let result = Object.assign({}, objA)
-		if (isArray(objA) && isObject(objB)) result = Object.assign([], objA)
-		if (isObject(objA) && isArray(objB)) {
+		if (isArray(objA) && !isArray(objB)) result = Object.assign([], objA)
+		if (!isArray(objA) && isArray(objB)) {
 			return merge(objB, objA, alternative, deDup)
+		}
+		if (isArray(objA) && isArray(objB)) {
+			return objB.map(b => merge(objA, b, alternative, deDup))
 		}
 		stack.push({ objA, objB, result })
 
@@ -3915,11 +3918,11 @@ const merge = function(objA, objB, alternative, deDup) {
 		}*/
 		return result
 	} else {
-		if (isObject(objA) && isArray(objB)) {
+		if (!isArray(objA) && isArray(objB)) {
 			for(var i in objB) { objB[i] = merge(objB[i], clone(objA), alternative, deDup); }
 			return objB;
 		}
-		if (isObject(objB) && isArray(objA)) {
+		if (!isArray(objB) && isArray(objA)) {
 			for(var i in objA) { objA[i] = merge(objA[i], clone(objB), alternative, deDup); }
 			return objA;
 		}
