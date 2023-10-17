@@ -3861,41 +3861,68 @@ const clone = function(aObject) {
  * </odoc>
  */
 const merge = function(objA, objB, alternative, deDup) {
-	if (isObject(objA) && isArray(objB)) {
-		for(let i in objB) { objB[i] = merge(objB[i], clone(objA), alternative, deDup); }
-		return objB;
-	}
-	if (isObject(objB) && isArray(objA)) {
-		for(let i in objA) { objA[i] = merge(objA[i], clone(objB), alternative, deDup); }
-		return objA;
-	}
-	if (__flags.ALTERNATIVES.merge || alternative) {
-		var mergedObj = {}
-
-		for (let prop in objA) {
-			if (prop in objA) {
-				mergedObj[prop] = objA[prop]
-			}
+	if (isUnDef(alternative)) alternative = __flags.ALTERNATIVES.merge
+	
+	if (alternative) {
+		let stack = []
+		let result = Object.assign({}, objA)
+		if (isArray(objA) && isObject(objB)) result = Object.assign([], objA)
+		if (isObject(objA) && isArray(objB)) {
+			return merge(objB, objA, alternative, deDup)
 		}
+		stack.push({ objA, objB, result })
 
-		for (let prop in objB) {
-			if (prop in objB) {
-				if (prop in mergedObj) {
-					if (Array.isArray(mergedObj[prop]) && Array.isArray(objB[prop])) {
-						mergedObj[prop] = deDup
-							? mergedObj[prop].concat(objB[prop].filter(item => mergedObj[prop].indexOf(item) < 0 ))
-							: mergedObj[prop].concat(objB[prop])
-					} else {
-						mergedObj[prop] = objB[prop]
-					}
-				} else {
-					mergedObj[prop] = objB[prop]
+		while (stack.length > 0) {
+			let { objA, objB, result } = stack.pop()
+
+			if (isObject(objA) && isArray(objB)) {
+				for (let i in objB) {
+					stack.push({ objA: clone(objA), objB: objB[i], result: objB[i] })
+				}
+			} else if (isObject(objB) && isArray(objA)) {
+				for (let i in objA) {
+					stack.push({ objA: objA[i], objB: clone(objB), result: objA[i] })
+				}
+			} else {
+				if (isDef(objB) && isMap(objB) && !isNull(objB)) {
+					Object.keys(objB).forEach(k => {
+						if (!isMap(objB[k]) && !isArray(objB[k])) {
+							result[k] = objB[k]
+						} else {
+							if (isArray(objB[k])) {
+								if (isUnDef(result[k])) result[k] = []
+
+								if (deDup) {
+									result[k] = result[k].concat(objB[k].filter(s => arrayContains(result[k], s) < 0))
+								} else {
+									result[k] = result[k].concat(objB[k])
+								}
+							} else if (isMap(objB[k])) {
+								if (isUnDef(result[k])) result[k] = {}
+								stack.push({ objA: result[k], objB: objB[k], result: result[k] })
+							}
+						}
+					})
 				}
 			}
 		}
-	
-		return mergedObj
+
+		/*var _r0 = merge(_objA, _objB, false, deDup)
+		if (!compare(result, _r0)) {
+			sprint(_r0)
+			print("-----")
+			sprint(result)
+		}*/
+		return result
 	} else {
+		if (isObject(objA) && isArray(objB)) {
+			for(var i in objB) { objB[i] = merge(objB[i], clone(objA), alternative, deDup); }
+			return objB;
+		}
+		if (isObject(objB) && isArray(objA)) {
+			for(var i in objA) { objA[i] = merge(objA[i], clone(objB), alternative, deDup); }
+			return objA;
+		}
 		return extend(true, clone(objA), objB)
 	}
 }
