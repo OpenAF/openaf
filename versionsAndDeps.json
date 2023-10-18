@@ -242,13 +242,8 @@
 		},
 		{
 			"description": "OkHTTP Client",
-<<<<<<< HEAD
-			"path": ["okhttp-4.11.0.jar", "okio-3.6.0.jar", "okio-jvm-3.6.0.jar", "kotlin-stdlib-1.9.10.jar"],
-			"version": "4.11.0",
-=======
 			"path": ["okhttp-4.12.0.jar", "okio-3.5.0.jar", "okio-jvm-3.5.0.jar", "kotlin-stdlib-1.9.10.jar"],
 			"version": "4.12.0",
->>>>>>> d97eb83... bump okhttp
 			"changes": false,
 			"type": ["java"],
 			"license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",
