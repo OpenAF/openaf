@@ -10909,7 +10909,7 @@ const $unset = function(aK) {
  * <ojob>
  * <key>$output(aObj, args, aFunc) : Map</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
  * </ojob>
  */
@@ -11006,6 +11006,13 @@ const $output = function (aObj, args, aFunc) {
 		case "html":
 			var _res = ow.loadTemplate().html.parseMap(res, true)
 			print("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
+			break
+		case "text":
+			print(String(res))
+			break
+		case "md":
+			print(ow.format.withMD(String(res)))
+			break
 		case "pm":
 			var _p;
 			if (isArray(res)) _p = {
