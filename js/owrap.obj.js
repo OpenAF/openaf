@@ -127,6 +127,13 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMap, aOverr
 	aOverrideMap = _$(aOverrideMap, "override map").isMap().default({});
 	enforceCase = _$(enforceCase, "enforce case").isBoolean().default(false);
  
+	const detType = aO => {
+		if (isBoolean(aO)) return "BOOLEAN"
+		if (isNumber(aO)) return "NUMBER"
+		if (isDate(aO)) return "DATE"
+		return "VARCHAR"
+	}
+
 	var m = [];
 	var keys = Object.keys(aMap);
 	for(var ii in keys) {
@@ -134,7 +141,7 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMap, aOverr
  
 	   m.push({
 		  f: key,
-		  s: (isDef(aOverrideMap[key]) ? aOverrideMap[key] : (isNumber(aMap[key]) ? "NUMBER" : "VARCHAR"))
+		  s: (isDef(aOverrideMap[key]) ? aOverrideMap[key] : detType(aMap[key]))
 	   });
 	}
  
