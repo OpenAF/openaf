@@ -213,6 +213,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	ALTERNATIVE_PROCESSEXPR    : true,
 	HTTP_TIMEOUT               : __,
     HTTP_CON_TIMEOUT           : __,
+	SQL_QUERY_METHOD           : "auto",
+	SQL_QUERY_H2_INMEM         : false,
 	DOH_PROVIDER               : "cloudflare"
 })
 
@@ -7842,8 +7844,8 @@ AF.prototype.fromSQL = function(aString) {
  * Converts a SQL expression into a suitable map to be used with $from.query.
  * </odoc>
  */
-AF.prototype.fromSQL2NLinq = function(sql) {
-	var ast = af.fromSQL(sql)
+AF.prototype.fromSQL2NLinq = function(sql, preParse) {
+	var ast = (isDef(preParse) ? preParse : af.fromSQL(sql))
 
 	var _r = { transform: [] }
 	if (isDef(ast) && isArray(ast.ast)) {
@@ -7959,9 +7961,83 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 	return _r
 }
 
-const $sql = function(aObj, aSQL) {
-	var _r = af.fromSQL2NLinq(aSQL)
-	return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
+/**
+ * <odoc>
+ * <key>$sql(aObject, aSQL, aMethod) : Array</key>
+ * Given an aObject (map or array) will try to execute aSQL (SQL expression) and return the corresponding results.
+ * Optionally you can provide aMethod to be used (e.g. "auto" (default) or "nlinq" or "h2"). "nlinq" it's the fastest but doesn't
+ * support aggregations or multi-field combinations; "h2" is the more complete but will require a lot more resources, it's slower.\
+ * \
+ * NOTE: In "h2" you can use the table _tmp for your queries.
+ * </odoc>
+ */
+const $sql = function(aObj, aSQL, aMethod) {
+	var _sql = af.fromSQL(aSQL)
+
+	if (isUnDef(aMethod)) {
+		if (__flags.SQL_QUERY_METHOD == "auto") {
+			if (isDef(_sql) && isArray(_sql.ast) && _sql.ast.length > 0) {
+				if (_sql.ast[0].groupby != null ||
+					aSQL.match(/FROM +_tmp(,|$| )/i) ||
+					$from(_sql.ast[0].columns)
+					.notEquals("expr.type", "column_ref")
+					.notEquals("expr.type", "double_quote_string")
+					.any()) {
+						aMethod = "h2"
+				}
+			}
+		} else {
+			aMethod = __flags.SQL_QUERY_METHOD
+		}
+	}
+
+	if (aMethod == "h2") {
+		var _n = nowNano()
+		var db, tf
+		if (__flags.SQL_QUERY_H2_INMEM) {
+			db = createDBInMem("t" + _n)
+		} else {
+			tf = io.createTempFile("openaf_query")
+			db = new DB("jdbc:h2:" + tf, "sa", "sa")
+		}
+		if (isMap(aObj)) aObj = $from(aObj).select()
+		if (isArray(aObj)) {
+			ow.loadObj()
+
+			// Create table and dump data
+			if (aObj.length == 0) return []
+			var _r
+			try {
+				db.u(ow.obj.fromObj2DBTableCreate("_tmp", aObj[0]))
+				ow.obj.fromArray2DB(aObj, db, "_tmp")
+				
+				// Remove from of aSQL			
+				if (!aSQL.match(/FROM _tmp(,|$| )/i)) 
+					aSQL = aSQL.trim().replace(/(FROM .+?)?( +GROUP| +LIMIT| +ORDER| +WHERE|$)/i, " FROM _tmp$2")
+
+				// Execute the query
+				_r = db.q(aSQL)
+			} catch(e) {
+				throw e
+			} finally {
+				db.close()
+				if (isDef(tf)) io.rm(tf)
+			}
+			if (isDef(_r) && isDef(_r.results)) {
+				traverse(_r.results, (aK, aV, aP, aO) => {
+					if (aV == "TRUE" || aV == "FALSE") aO[aK] = Boolean(aV.toLowerCase())
+				})
+				return _r.results
+			} else {
+				return __
+			}
+		} else {
+			return __
+		}
+	} else {
+		var _r = af.fromSQL2NLinq(aSQL, _sql)
+		return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
+	}
 }
 
 /**
