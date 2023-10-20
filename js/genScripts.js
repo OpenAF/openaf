@@ -174,7 +174,7 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
     s += `
 if command -v sed > /dev/null 2>&1; then
   escape_space() {
-      echo "$1" | sed 's/\\([^\\\\]\\) /\\1\\\\ /g'
+      echo "$1" | sed 's/\\([^\\\\]\\) /\\1\\\\ /g' | sed 's/"/\\\\"/g'
   }
 
   escaped_args=""
