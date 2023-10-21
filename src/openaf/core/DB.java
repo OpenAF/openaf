@@ -21,6 +21,8 @@ import java.lang.String;
 
 import org.apache.commons.io.IOUtils;
 import org.h2.tools.Server;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.IdScriptableObject;
 import org.mozilla.javascript.Scriptable;
 
 import openaf.AFCmdBase;
@@ -228,6 +230,15 @@ public class DB {
 								} catch(Exception e) {
 									SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting blob", e);
 									record.put(rs.getMetaData().getColumnName(i), null);
+								}
+								continue;
+							}
+
+							if (rs.getMetaData().getColumnType(i) == java.sql.Types.BOOLEAN) {
+								if (rs.getBoolean(i)) {
+									record.put(rs.getMetaData().getColumnName(i), true);
+								} else {
+									record.put(rs.getMetaData().getColumnName(i), false);
 								}
 								continue;
 							}
@@ -534,7 +545,18 @@ public class DB {
 					int i = 0;
 					for (Object obj : objs ) {
 						i++;
-						ps.setObject(i, obj);
+						if (obj instanceof org.mozilla.javascript.IdScriptableObject) {
+							if (((org.mozilla.javascript.IdScriptableObject) obj).getClassName().equals("Date")) {
+								obj = Context.jsToJava(obj, java.util.Date.class);
+							}
+						}
+
+						try {
+							ps.setObject(i, obj);
+						} catch(Exception e) {
+							System.err.println("ERROR: " + e.getMessage());
+							e.printStackTrace();
+						}
 					}
 				//}
 				int res = ps.executeUpdate();

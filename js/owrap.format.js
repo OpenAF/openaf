@@ -122,10 +122,11 @@ OpenWrap.format.prototype.string = {
 		ar.forEach(row => {
 		  var _keys = Object.keys(row)
 		  Object.values(row).forEach((column, i) => {
+			let _v = isDate(column) ? column.toISOString().replace("Z","").replace("T"," ") : String(column)
 			if (isUnDef(maxSizes[i])) maxSizes[i] = 0
 			if (isUnDef(fixedMinSize[i])) fixedMinSize[i] = 0
 			fixedMinSize[i] = Math.max(fixedMinSize[i], ansiLength(String(_keys[i])))
-			maxSizes[i] = Math.max(maxSizes[i], ansiLength(String(column)))
+			maxSizes[i] = Math.max(maxSizes[i], ansiLength(_v))
 		  })
 		})
 	  
@@ -170,13 +171,15 @@ OpenWrap.format.prototype.string = {
 		  // Processing line
 		  var _keys = Object.keys(_ar)
 		  var lines = Object.values(_ar).map((v, i) => {
+			let _v
+			if (isDate(v)) _v = v.toISOString().replace("Z","").replace("T"," "); else _v = String(v)
 			if (chgCols.indexOf(i) >= 0) {
 				_newSize[i] = Math.max(fixedMinSize[i], Math.round((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
 			} else {
 				_newSize[i] = Math.max(fixedMinSize[i], maxSizes[i])
 			}
 			
-			var _ar = String((chgCols.indexOf(i) >= 0 ? rowLimitFn(ow.format.string.wordWrap(String(v), _newSize[i] )) : rowLimitFn(v) )).split("\n")
+			var _ar = String((chgCols.indexOf(i) >= 0 ? rowLimitFn(ow.format.string.wordWrap(_v, _newSize[i] )) : rowLimitFn(_v) )).split("\n")
 			maxSubLines = Math.max(maxSubLines, _ar.length)
 			return _ar
 		  })

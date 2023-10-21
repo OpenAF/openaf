@@ -826,6 +826,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		if (isNumber(aValue)) return _bg + __colorFormat.number
 		if (isString(aValue)) return _bg + __colorFormat.string
 		if (isBoolean(aValue)) return _bg + __colorFormat.boolean
+		if (isDate(aValue)) return _bg + __colorFormat.date
 		return _bg + __colorFormat.default
 	};
 
@@ -843,9 +844,14 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	anArrayOfEntries.forEach(function(row) {
 		var cols = Object.keys(row);
 		cols.forEach(function(col) {
+			let _v = row[String(col)]
+			if (isDate(_v)) 
+				_v = _v.toISOString().replace("Z","").replace("T"," ");
+			else 
+				_v = String(_v)
 			if (isUnDef(maxsize[col])) 
 				maxsize[String(col)] = ansiLength(col);
-			if (maxsize[String(col)] < ansiLength(String(row[String(col)]))) maxsize[String(col)] = ansiLength(String(row[String(col)]));
+			if (maxsize[String(col)] < ansiLength(_v)) maxsize[String(col)] = ansiLength(_v);
 		});
 	});
 
@@ -896,8 +902,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 				output += "..."; outOfWidth = true;
 			} else {	
-				var value = String(row[String(col)]).replace(/\n/g, " ");
-				var _pe = repeat(maxsize[String(col)] - ansiLength(String(row[String(col)])), ' ')
+				var value = isDate(row[String(col)]) ? row[String(col)].toISOString().replace("Z","").replace("T"," ") : String(row[String(col)]).replace(/\n/g, " ");
+				var _pe = repeat(maxsize[String(col)] - ansiLength(value), ' ')
 				output += (useAnsi ? ansiColor(_getColor(row[String(col)], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
 				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 			}
@@ -993,6 +999,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			if (isBoolean(aO)) return "boolean"
 			if (isNumber(aO)) return "number"
 			if (isString(aO)) return "string"
+			if (isDate(aO)) return "date"
 		}
 		_acr = () => _ac("RESET","")
 		_clr = aO => {
@@ -1000,6 +1007,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			case "number" : return _ac(__colorFormat.number, String(aO)) + _acr()
 			case "string" : return _ac(__colorFormat.string, String(aO)) + _acr()
 			case "boolean": return _ac(__colorFormat.boolean, String(aO)) + _acr()
+			case "date"   : return _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr()
 			case "java"   : return _ac(__colorFormat.string, String(aO.toString())) + _acr()
 			default       : return _ac(__colorFormat.default, String(aO)) + _acr()
 			}
@@ -1712,6 +1720,7 @@ var __colorFormat = {
 	number: "GREEN",
 	string: "CYAN",
 	boolean: "RED",
+	date: "MAGENTA",
 	default: "YELLOW",
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
@@ -3698,7 +3707,7 @@ const extend = function() {
 						}
 						let copyIsArray = false
 						let _clone
-						if (deep && copy && (typeof copy === "object" || typeof copy === "function")) {
+						if (deep && copy && (("undefined" === typeof copy.getDate && typeof copy === "object") || typeof copy === "function")) {
 
 							if (Array.isArray(copy)) {
 								copyIsArray = true
@@ -8000,6 +8009,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 			tf = io.createTempFile("openaf_query")
 			db = new DB("jdbc:h2:" + tf, "sa", "sa")
 		}
+		db.convertDates(true)
 		if (isMap(aObj)) aObj = $from(aObj).select()
 		if (isArray(aObj)) {
 			ow.loadObj()
@@ -8132,6 +8142,8 @@ AF.prototype.fromObj2XML = function (obj, sanitize) {
 			for (var array in obj[prop]) {
 				xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop][array])) + "</" + prop + ">";
 			}
+		} else if (isDate(obj[prop])) {
+			xml += "<" + prop + ">" + obj[prop].toISOString() + "</" + prop + ">"
 		} else if (typeof obj[prop] == "object") {
 			xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop])) + "</" + prop + ">";
 		} else {
@@ -10834,7 +10846,7 @@ const $csv = function(aMap) {
 		fromInArray: (ar, fn) => {
 			ar = _$(ar, "array").isArray().default([])
 			var ari = ar.length
-			fn = _$(fn, "fn").isFunction().default(() => (ari >= 0 ? ar[ar.length - ari--] : __))
+			fn = _$(fn, "fn").isFunction().default(() => (ari >= 0 ? clone(ar[ar.length - ari--]) : __))
 
 			if (ari <= 0) return ""
 			
