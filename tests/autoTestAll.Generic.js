@@ -840,6 +840,24 @@
         ow.test.assert(a.o, 456, "Problem with function on searchValues.");
     };
 
+    exports.testSQL = function() {
+        var a = [
+            { id: 1, f: true,  t: "even" },
+            { id: 2, f: false, t: "odd"  },
+            { id: 3, f: true,  t: "even" },
+            { id: 4, f: false, t: "odd"  }
+        ]
+
+        ow.test.assert($sql(a, "select id", "nlinq").length, 4, "Problem with nlinq $sql (1)")
+        ow.test.assert($sql(a, "select id where t = 'even'", "nlinq").length, 2, "Problem with nlinq $sql (2)")
+
+        ow.test.assert($sql(a, "select count(1) \"C\"")[0].C, "4", "Problem with h2 $sql (1)")
+        ow.test.assert($sql(a, "select count(1) \"C\" where t = 'even'")[0].C, "2", "Problem with h2 $sql (2)")
+
+        ow.test.assert($sql().sql("select count(1) \"A\", true \"B\", 'test' \"C\", 123 \"D\""), [{A: "1", B: true, C: "test", D: 123}], "Problem with h2 $sql (3)")
+        ow.test.assert($sql().table("a", a).table("b", $from(a).equals("t", "even").select()).sql("select CNTE, CNTO from (select count(1) cntE from a where t = 'even') E, (select count(1) cntO from b where t= 'odd') O"), [{CNTE: "2", CNTO: "0"}], "Problem with h2 $sql (4)")
+    }
+
     exports.testNDJSON = function() {
         var o = [];
         var filename = "autoTest.ndjson";

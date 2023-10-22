@@ -7981,8 +7981,13 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
  * </odoc>
  */
 const $sql = function(aObj, aSQL, aMethod) {
-	var _sql = af.fromSQL(aSQL)
+	var _sql, chain = false
+	
+	if (isUnDef(aObj)) chain = true
+	if (!chain && isDef(aSQL)) _sql = af.fromSQL(aSQL)
 
+	// Determine method ot use
+	if (chain) aMethod = "h2"
 	if (isUnDef(aMethod)) {
 		if (__flags.SQL_QUERY_METHOD == "auto") {
 			if (isDef(_sql) && isArray(_sql.ast) && _sql.ast.length > 0) {
@@ -8000,53 +8005,81 @@ const $sql = function(aObj, aSQL, aMethod) {
 		}
 	}
 
-	if (aMethod == "h2") {
-		var _n = nowNano()
-		var db, tf
-		if (__flags.SQL_QUERY_H2_INMEM) {
-			db = createDBInMem("t" + _n)
-		} else {
-			tf = io.createTempFile("openaf_query")
-			db = new DB("jdbc:h2:" + tf, "sa", "sa")
-		}
-		db.convertDates(true)
-		if (isMap(aObj)) aObj = $from(aObj).select()
-		if (isArray(aObj)) {
-			ow.loadObj()
-
-			// Create table and dump data
-			if (aObj.length == 0) return []
-			var _r
-			try {
-				db.u(ow.obj.fromObj2DBTableCreate("_tmp", aObj[0]))
-				ow.obj.fromArray2DB(aObj, db, "_tmp")
-				
-				// Remove from of aSQL			
-				if (!aSQL.match(/FROM _tmp(,|$| )/i)) 
-					aSQL = aSQL.trim().replace(/(FROM .+?)?( +GROUP| +LIMIT| +ORDER| +WHERE|$)/i, " FROM _tmp$2")
-
-				// Execute the query
-				_r = db.q(aSQL)
-			} catch(e) {
-				throw e
-			} finally {
-				db.close()
-				if (isDef(tf)) io.rm(tf)
-			}
-			if (isDef(_r) && isDef(_r.results)) {
-				traverse(_r.results, (aK, aV, aP, aO) => {
-					if (aV == "TRUE" || aV == "FALSE") aO[aK] = Boolean(aV.toLowerCase())
-				})
-				return _r.results
-			} else {
-				return __
-			}
-		} else {
-			return __
-		}
-	} else {
+	if (aMethod != "h2") {
 		var _r = af.fromSQL2NLinq(aSQL, _sql)
 		return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
+	} else {
+		let db, tf
+		ow.loadObj()
+
+		let createDB = () => {
+			var _n = nowNano()
+			if (__flags.SQL_QUERY_H2_INMEM) {
+				db = createDBInMem("t" + _n)
+			} else {
+				tf = io.createTempFile("openaf_query")
+				db = new DB("jdbc:h2:" + tf, "sa", "sa")
+			}
+			db.convertDates(true)
+		}
+
+		let __sql = {
+			close: () => {
+				db.close()
+				if (isDef(tf)) io.rm(tf)
+			},
+			table: (aTable, _obj) => {
+				aTable = _$(aTable, "aTable").isString().default("_tmp")
+				
+				// Convert map to array
+				if (isUnDef(_obj)) _obj = [{}]
+				if (isMap(_obj)) _obj = $from(_obj).select()
+				if (isArray(_obj)) {
+					if (_obj.length != 0) {
+						try {
+							db.u(ow.obj.fromObj2DBTableCreate(aTable, _obj[0]))
+							ow.obj.fromArray2DB(_obj, db, aTable)
+							db.commit()
+						} catch(e) {
+							db.rollback()
+							throw e
+						}
+					}
+				}
+
+				return __sql
+			},
+			sql: (_sql) => {
+				// Remove from of aSQL			
+				if (!chain && !_sql.match(/FROM _tmp(,|$| )/i)) 
+					_sql = _sql.trim().replace(/(FROM .+?)?( +GROUP| +LIMIT| +ORDER| +WHERE|$)/i, " FROM _tmp$2")
+
+				// Execute the query
+				var _r
+				try {
+					_r = db.q(_sql)
+				} catch(e) {
+					throw e
+				} finally {
+					__sql.close()
+				}
+
+				if (isDef(_r) && isDef(_r.results)) {
+					traverse(_r.results, (aK, aV, aP, aO) => {
+						if (aV == "TRUE" || aV == "FALSE") aO[aK] = Boolean(aV.toLowerCase())
+					})
+					return _r.results
+				} else {
+					return __
+				}
+			}	
+		}
+
+		createDB()
+		if (isDef(aObj))
+			return __sql.table("_tmp", aObj).sql(aSQL)
+		else
+			return __sql
 	}
 }
 
