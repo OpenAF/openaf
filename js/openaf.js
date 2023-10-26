@@ -7875,6 +7875,9 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 			if (isDef(c.expr) && c.expr.type == "column_ref" && c.expr.column != "*") {
 			  _r.select[c.expr.column] = ""
 			}
+			if (isDef(c.expr) && c.expr.type == "double_quote_string") {
+			  _r.select[c.expr.value] = ""
+			}
 		  })
 		  if (everything) delete _r.select
 		}
@@ -7891,13 +7894,13 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 			var _p
   
 			switch(op.operator) {
-			case "<" : _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'ess', args: [ _a.column, _b.value ]}); break
-			case ">" : _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reater', args: [ _a.column, _b.value ]}); break
-			case "<=": _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'essEquals', args: [ _a.column, _b.value ]}); break
-			case ">=": _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reaterEquals', args: [ _a.column, _b.value ]}); break
+			case "<" : _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'ess', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case ">" : _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reater', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case "<=": _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'essEquals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case ">=": _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reaterEquals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
 			case "<>":
-			case "!=": _p = isOr ? (!isNot ? "orNotE" : "orE") : (!isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
-			case "=" : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
+			case "!=": _p = isOr ? (!isNot ? "orNotE" : "orE") : (!isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case "=" : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
   
 			case "RLIKE":
 			case "LIKE" : 
@@ -7915,20 +7918,20 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 					return match
 				}) + "$"
 
-				_r.where.push({ cond: _p + "atch", args: [ _a.column, _re ] })
+				_r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _re ] })
 				break
 
 			case "AND": _begin(op, false); _process(_a, false, isNot); _process(_b, false, isNot); _end(); break
 			case "OR" : _begin(op, true); _process(_a, false, isNot); _process(_b, true, isNot); _end(); break
   
-			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
-			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ _a.column, _b.value ] }); break
-			case "BETWEEN": _p = isOr ? (isNot ? "orNotB" : "orB") : (isNot ? "notB" : "b"); _r.where.push({ cond: _p + "etweenEquals", args: [ _a.column, _b.value[0].value, _b.value[1].value ] }); break
+			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ] }); break
+			case "BETWEEN": _p = isOr ? (isNot ? "orNotB" : "orB") : (isNot ? "notB" : "b"); _r.where.push({ cond: _p + "etweenEquals", args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value[0].value, _b.value[1].value ] }); break
 
 			case "IN":
 				_p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m")
 				var _vs = "^(" + _b.value.map(r => r.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join("|") + ")$"
-				_r.where.push({ cond: _p + "atch", args: [ _a.column, _vs ] });
+				_r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _vs ] });
 				break
 			}
 		  }
@@ -7950,9 +7953,9 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 		  _ast.orderby.forEach(k => {
 			if (k.expr.type == "column_ref") {
 			  if (k.type == "DESC") {
-				_args.push("-" + k.expr.column)
+				_args.push("-" + (isDef(k.expr.value) ? k.expr.value : k.expr.column))
 			  } else {
-				_args.push(k.expr.column)
+				_args.push((isDef(k.expr.value) ? k.expr.value : k.expr.column))
 			  }
 			}
 		  })
@@ -7977,7 +7980,7 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
  * Optionally you can provide aMethod to be used (e.g. "auto" (default) or "nlinq" or "h2"). "nlinq" it's the fastest but doesn't
  * support aggregations or multi-field combinations; "h2" is the more complete but will require a lot more resources, it's slower.\
  * \
- * NOTE: In "h2" you can use the table _tmp for your queries.
+ * NOTE: In "h2" you can use the table _TMP for your queries.
  * </odoc>
  */
 const $sql = function(aObj, aSQL, aMethod) {
@@ -7992,7 +7995,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 		if (__flags.SQL_QUERY_METHOD == "auto") {
 			if (isDef(_sql) && isArray(_sql.ast) && _sql.ast.length > 0) {
 				if (_sql.ast[0].groupby != null ||
-					aSQL.match(/FROM +_tmp(,|$| )/i) ||
+					aSQL.match(/FROM +_TMP(,|$| )/i) ||
 					$from(_sql.ast[0].columns)
 					.notEquals("expr.type", "column_ref")
 					.notEquals("expr.type", "double_quote_string")
@@ -8029,7 +8032,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 				if (isDef(tf)) io.rm(tf)
 			},
 			table: (aTable, _obj) => {
-				aTable = _$(aTable, "aTable").isString().default("_tmp")
+				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				
 				// Convert map to array
 				if (isUnDef(_obj)) _obj = [{}]
@@ -8037,8 +8040,8 @@ const $sql = function(aObj, aSQL, aMethod) {
 				if (isArray(_obj)) {
 					if (_obj.length != 0) {
 						try {
-							db.u(ow.obj.fromObj2DBTableCreate(aTable, _obj[0]))
-							ow.obj.fromArray2DB(_obj, db, aTable)
+							db.u(ow.obj.fromObj2DBTableCreate(aTable, _obj[0], __, true))
+							ow.obj.fromArray2DB(_obj, db, aTable, __, true)
 							db.commit()
 						} catch(e) {
 							db.rollback()
@@ -8051,8 +8054,8 @@ const $sql = function(aObj, aSQL, aMethod) {
 			},
 			sql: (_sql) => {
 				// Remove from of aSQL			
-				if (!chain && !_sql.match(/FROM _tmp(,|$| )/i)) 
-					_sql = _sql.trim().replace(/(FROM .+?)?( +GROUP| +LIMIT| +ORDER| +WHERE|$)/i, " FROM _tmp$2")
+				if (!chain && !_sql.match(/FROM _TMP(,|$| )/i)) 
+					_sql = _sql.trim().replace(/(FROM .+?)?( +GROUP| +LIMIT| +ORDER| +WHERE|$)/i, " FROM _TMP$2")
 
 				// Execute the query
 				var _r
@@ -8077,7 +8080,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 
 		createDB()
 		if (isDef(aObj))
-			return __sql.table("_tmp", aObj).sql(aSQL)
+			return __sql.table("_TMP", aObj).sql(aSQL)
 		else
 			return __sql
 	}
