@@ -67,6 +67,157 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
     }
 }
 
+OpenWrap.ai.prototype.__gpttypes = {
+    openai: {
+        create: (aOptions) => {
+            ow.loadObj()
+            aOptions = _$(aOptions, "aOptions").isMap().$_()
+            aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
+
+            ow.loadObj()
+            var _key = aOptions.key
+            var _timeout = aOptions.timeout
+            var _r = {
+                conversation: [],
+                prompt: (aPrompt, aModel, aTemperature) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature)
+                    if (isArray(__r.choices) && __r.choices.length > 0) {
+                        if (__r.choices[0].finish_reason == "stop") {
+                           return __r.choices[0].message.content
+                        }
+                     }
+                     return __r
+                },
+                rawPrompt: (aPrompt, aModel, aTemperature) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(0.7)
+                    aModel       = _$(aModel, "aModel").isString().default("gpt-3.5-turbo")
+                 
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                 
+                    return _r._request("/v1/chat/completions", {
+                       model: aModel,
+                       temperature: aTemperature,
+                       messages: msgs
+                    })   
+                },
+                addPrompt: (aRole, aPrompt) => {
+                    if (isUnDef(aPrompt)) {
+                        aPrompt = aRole
+                        aRole = "user"
+                     }
+                     if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
+                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
+                     return _r
+                },
+                addUserPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "user", content: aPrompt })
+                    return _r
+                },
+                addSystemPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "system", content: aPrompt })
+                    return _r
+                },
+                cleanPrompt: () => {
+                    _r.conversation = []
+                    return _r
+                },
+                _request: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __r = $rest({ 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                       requestHeaders: { 
+                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key) 
+                       } 
+                    })
+                    _h.close()
+                 
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return __r.get("https://api.openai.com/" + aURI)
+                    case "POST": return __r.post("https://api.openai.com/" + aURI, aData)
+                    }
+                }
+            }
+            return _r
+        }
+    }
+}
+OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
+    if (isUnDef(ow.ai.__gpttypes[aType])) {
+        throw "Unrecognized GPT type '" + aType + "'."
+    } else {
+        this.model = ow.ai.__gpttypes[aType].create(aOptions)
+    }
+}
+
+OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature) {
+    return this.model.prompt(aPrompt, aRole, aModel, aTemperature)
+}
+
+OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature) {
+    return this.model.rawPrompt(aPrompt, aRole, aModel, aTemperature)
+}
+
+OpenWrap.ai.prototype.gpt.prototype.addPrompt = function(aPrompt, aRole) {
+    this.model = this.model.addPrompt(aPrompt, aRole)
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.addUserPrompt = function(aPrompt, aRole) {
+    this.model = this.model.addUserPrompt(aPrompt)
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.addSystemPrompt = function(aPrompt, aRole) {
+    this.model = this.model.addSystemPrompt(aPrompt)
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
+    this.model = this.model.cleanPrompt()
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
+    this.addSystemPrompt("You can only output answers in JSON format")
+
+    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    return isString(out) ? jsonParse(out, __, __, true) : out 
+}
+
+OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemperature, aCommentChars) {
+    aCommentChars = _$(aCommentChars, "aCommentChars").isString().default("#")
+
+    var aResponse = this.model.prompt(aPrompt, aModel, aTemperature)
+
+    if (aResponse.indexOf("```") >= 0) {
+       var code = false
+       return aResponse.split("\n").map(line => {
+          if (line.indexOf("```") >= 0) {
+             var _t = aCommentChars + " ---" + (code ? "^^^" : "vvv") + "---"
+             code = !code
+             return _t
+          }
+          if (code) {
+             return line
+          } else {
+             return (line.length > 0) ? aCommentChars + " " + line : ""
+          }
+       }).filter(isDef).join("\n")
+    } else {
+       return aResponse
+    }
+}
+
 /**
  * <odoc>
  * <key>ow.ai.network(aMap) : ow.ai.network</key>
