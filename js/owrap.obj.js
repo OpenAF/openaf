@@ -101,7 +101,7 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 
 	var t = parallel4Array(anArray,
 		function(aValue) {
-			var _value = ow.obj.flatMap(aValue)java
+			var _value = ow.obj.flatMap(aValue)
 			var values = [];
 			for(var k in ookeys) {
 				values.push(_value[ookeys[k]]);
