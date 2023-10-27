@@ -8012,7 +8012,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 		var _r = af.fromSQL2NLinq(aSQL, _sql)
 		return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
 	} else {
-		let db, tf
+		let db, tf, defs = {}
 		ow.loadObj()
 
 		let createDB = () => {
@@ -8031,6 +8031,9 @@ const $sql = function(aObj, aSQL, aMethod) {
 				db.close()
 				if (isDef(tf)) io.rm(tf)
 			},
+		    getTableDef: (aTable) => {
+				return defs[aTable]
+			},
 			table: (aTable, _obj) => {
 				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				
@@ -8040,7 +8043,8 @@ const $sql = function(aObj, aSQL, aMethod) {
 				if (isArray(_obj)) {
 					if (_obj.length != 0) {
 						try {
-							db.u(ow.obj.fromObj2DBTableCreate(aTable, _obj[0], __, true))
+							defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _obj[0], __, true)
+							db.u(defs[aTable])
 							ow.obj.fromArray2DB(_obj, db, aTable, __, true)
 							db.commit()
 						} catch(e) {
