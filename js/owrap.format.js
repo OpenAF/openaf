@@ -3160,7 +3160,7 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
-    _$(aString, "aString").isString().$_()
+    aString = String(aString)
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("")
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "")
 

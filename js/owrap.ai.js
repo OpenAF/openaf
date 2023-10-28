@@ -80,6 +80,13 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _timeout = aOptions.timeout
             var _r = {
                 conversation: [],
+                getConversation: () => {
+                    return _r.conversation
+                },
+                setConversation: (aConversation) => {
+                    if (isArray(aConversation)) _r.conversation = aConversation
+                    return _r
+                },
                 prompt: (aPrompt, aModel, aTemperature) => {
                     var __r = _r.rawPrompt(aPrompt, aModel, aTemperature)
                     if (isArray(__r.choices) && __r.choices.length > 0) {
@@ -163,6 +170,15 @@ OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aT
     return this.model.prompt(aPrompt, aRole, aModel, aTemperature)
 }
 
+OpenWrap.ai.prototype.gpt.prototype.getConversation = function() {
+    return this.model.getConversation()
+}
+
+OpenWrap.ai.prototype.gpt.prototype.setConversation = function(aConversation) {
+    this.model.setConversation(aConversation)
+    return this
+}
+
 OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature) {
     return this.model.rawPrompt(aPrompt, aRole, aModel, aTemperature)
 }
@@ -192,6 +208,15 @@ OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemp
 
     var out = this.model.prompt(aPrompt, aModel, aTemperature)
     return isString(out) ? jsonParse(out, __, __, true) : out 
+}
+
+OpenWrap.ai.prototype.gpt.prototype.sqlPrompt = function(aPrompt, aTableDefs, aDBName, aModel, aTemperature) {
+    aDBName = _$(aDBName, "aDBName").isString().default("H2")
+    aTableDefs = _$(aTableDefs, "aTableDefs").isArray().$_()
+
+    this.addSystemPrompt("You can only output an answer as a single " + aDBName + " database SQL query, where all column names are double-quoted, considering the table '" + aTableDefs.join("' and the table '") + "'")
+    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    return out
 }
 
 OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemperature, aCommentChars) {

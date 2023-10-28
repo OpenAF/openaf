@@ -143,7 +143,7 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMap, aOverr
  
 	   m.push({
 		  f: key,
-		  s: (isDef(aOverrideMap[key]) ? aOverrideMap[key] : detType(aMap[key]))
+		  s: (isDef(aOverrideMap[keys[ii]]) ? aOverrideMap[keys[ii]] : detType(aMap[keys[ii]]))
 	   });
 	}
  

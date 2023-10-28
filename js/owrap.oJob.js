@@ -2578,9 +2578,7 @@ OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRe
 OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch, _jobEach, _jobLang, _jobFile, _jobCheck) {
 	var parent = this;
 
-	function addSigil(aName, aCheck) {
-
-		
+	function addSigil(aName, aCheck) {		
 		_$(aName, "job name").isString().$_()
 		aCheck = _$(aCheck, "check for '" + aName + "'").isMap().default({})
 		var lstFns = Object.keys(_$())
