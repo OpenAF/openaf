@@ -74,8 +74,8 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions = _$(aOptions, "aOptions").isMap().$_()
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
-            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default(0.7)
-            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default("gpt-3.5-turbo")
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
+            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
 
             ow.loadObj()
             var _key = aOptions.key
@@ -155,6 +155,99 @@ OpenWrap.ai.prototype.__gpttypes = {
                     switch(aVerb.toUpperCase()) {
                     case "GET" : return __r.get("https://api.openai.com/" + aURI)
                     case "POST": return __r.post("https://api.openai.com/" + aURI, aData)
+                    }
+                }
+            }
+            return _r
+        }
+    },
+    ollama: {
+        create: (aOptions) => {
+            ow.loadObj()
+            aOptions = _$(aOptions, "aOptions").isMap().$_()
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("llama2:latest")
+            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+            aOptions.url = _$(aOptions.url, "aOptions.url").isString().$_()
+
+            ow.loadObj()
+            var _timeout = aOptions.timeout
+            var _model = aOptions.model
+            var _temperature = aOptions.temperature
+            var _url = aOptions.url
+
+            var _r = {
+                conversation: [],
+                getConversation: () => {
+                    return _r.conversation
+                },
+                setConversation: (aConversation) => {
+                    if (isArray(aConversation)) _r.conversation = aConversation
+                    return _r
+                },
+                prompt: (aPrompt, aModel, aTemperature) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature)
+                    if (isString(__r.response)) return __r.response
+                    return __r
+                },
+                rawPrompt: (aPrompt, aModel, aTemperature) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                 
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                 
+                    return _r._request("/api/generate", {
+                       model: aModel,
+                       options: {
+                        temperature: aTemperature,
+                       },
+                       stream: false,
+                       prompt: $from(msgs).equals("role", "user").select(r => r.content).join(";\n"),
+                       system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
+                    })   
+                },
+                addPrompt: (aRole, aPrompt) => {
+                    if (isUnDef(aPrompt)) {
+                        aPrompt = aRole
+                        aRole = "user"
+                     }
+                     if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
+                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
+                     return _r
+                },
+                addUserPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "user", content: aPrompt })
+                    return _r
+                },
+                addSystemPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "system", content: aPrompt })
+                    return _r
+                },
+                cleanPrompt: () => {
+                    _r.conversation = []
+                    return _r
+                },
+                _request: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    if (!aURI.startsWith("/")) aURI = "/" + aURI
+
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __r = $rest({ 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                    })
+                    _h.close()
+                 
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return __r.get(_url + aURI)
+                    case "POST": return __r.post(_url + aURI, aData)
                     }
                 }
             }
