@@ -74,10 +74,14 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions = _$(aOptions, "aOptions").isMap().$_()
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default(0.7)
+            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default("gpt-3.5-turbo")
 
             ow.loadObj()
             var _key = aOptions.key
             var _timeout = aOptions.timeout
+            var _model = aOptions.model
+            var _temperature = aOptions.temperature
             var _r = {
                 conversation: [],
                 getConversation: () => {
@@ -98,8 +102,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 rawPrompt: (aPrompt, aModel, aTemperature) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
-                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(0.7)
-                    aModel       = _$(aModel, "aModel").isString().default("gpt-3.5-turbo")
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
@@ -217,6 +221,36 @@ OpenWrap.ai.prototype.gpt.prototype.sqlPrompt = function(aPrompt, aTableDefs, aD
     this.addSystemPrompt("You can only output an answer as a single " + aDBName + " database SQL query, where all column names are double-quoted, considering the table '" + aTableDefs.join("' and the table '") + "'")
     var out = this.model.prompt(aPrompt, aModel, aTemperature)
     return out
+}
+
+OpenWrap.ai.prototype.gpt.prototype.pathPrompt = function(aPrompt, aJSONSchemaDef, aModel, aTemperature) {
+    this.addSystemPrompt("you can only output an answer as a single JMESPath query string to use as argument for JMESPath")
+    this.addSystemPrompt("consider the array to be queried is composed of maps with the following json schema " + stringify(aJSONSchemaDef,__,""))
+    
+    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    return out
+}
+
+OpenWrap.ai.prototype.gpt.prototype.parseCode = function(anAnswer) {
+	var code = "", codeLines = false
+	anAnswer.split("\n").forEach(line => {
+		if (line.indexOf("```") >= 0) {
+			if (codeLines) {
+				codeLines = false
+			} else {
+				codeLines = true
+			}
+			if (/`{3,}[^`]+`{3,}/.test(line)) {
+				code += line.match(/`{3,}([^`]+)`{3,}/)[1]
+				codeLines = false
+			}
+		} else {
+			if (codeLines) {
+				code += line + "\n"
+			}
+		}
+	})
+	return code
 }
 
 OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemperature, aCommentChars) {
