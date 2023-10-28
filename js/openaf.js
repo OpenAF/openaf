@@ -1823,7 +1823,7 @@ const templify = function(aTemplateString, someData) {
 	someData = (isUnDef(someData)) ? this : someData;
 	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
 	if (isUnDef(aTemplateString) || aTemplateString == "") return ""
-	return String(ow.template.parse(aTemplateString, someData));
+	return String(ow.template.parse(String(aTemplateString), someData));
 }
 
 const $t = templify
@@ -7986,7 +7986,7 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 const $sql = function(aObj, aSQL, aMethod) {
 	var _sql, chain = false
 	
-	if (isUnDef(aObj)) chain = true
+	if (isUnDef(aObj) || (isDef(aObj) && isUnDef(aSQL))) chain = true
 	if (!chain && isDef(aSQL)) _sql = af.fromSQL(aSQL)
 
 	// Determine method ot use
@@ -8016,12 +8016,16 @@ const $sql = function(aObj, aSQL, aMethod) {
 		ow.loadObj()
 
 		let createDB = () => {
-			var _n = nowNano()
-			if (__flags.SQL_QUERY_H2_INMEM) {
-				db = createDBInMem("t" + _n)
+			if (isMap(aObj) && isDef(aObj.db)) {
+				db = aObj.db
 			} else {
-				tf = io.createTempFile("openaf_query")
-				db = new DB("jdbc:h2:" + tf, "sa", "sa")
+				var _n = nowNano()
+				if (__flags.SQL_QUERY_H2_INMEM) {
+					db = createDBInMem("t" + _n)
+				} else {
+					tf = io.createTempFile("openaf_query")
+					db = new DB("jdbc:h2:" + tf, "sa", "sa")
+				}
 			}
 			db.convertDates(true)
 		}
@@ -8033,6 +8037,54 @@ const $sql = function(aObj, aSQL, aMethod) {
 			},
 		    getTableDef: (aTable) => {
 				return defs[aTable]
+			},
+			streamTable: (aTable, aStreamReadFn, aErrFn, aBufferSize) => {
+				aTable = _$(aTable, "aTable").isString().default("_TMP")
+				aStreamReadFn = _$(aStreamReadFn, "aStreamReadFn").isFunction().$_()
+				aBufferSize = _$(aBufferSize, "aBufferSize").isNumber().default(__flags.IO.bufferSize)
+				aErrFn = _$(aErrFn, "aErrFn").isFunction().default(logErr)
+
+				var dumpFn = arrData => {
+					try {
+						ow.obj.fromArray2DB(arrData, db, aTable, __, true)
+					} catch(e) {
+						db.rollback()
+						aErrFn("Error while dumping data: " + e)
+					}
+				}
+
+				var c = 0, _bufData = []
+				do {
+					var _d = aStreamReadFn()
+					if (isUnDef(defs[aTable]) && isMap(_d)) {
+						// Create the table
+						defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _d, __, true)
+						try {
+							db.u(defs[aTable])
+							db.commit()
+						} catch(e) {
+							db.rollback()
+							aErrFn("Error while creating table: " + e)
+						}
+					}
+					// Buffer data
+					_bufData.push(_d)
+					c++
+
+					// Dump data if necessary (buffer size)
+					if (c % aBufferSize == 0) {
+						dumpFn(_bufData)
+						_bufData = []
+					}
+				} while(isDef(_d))
+
+				// Dump remaining data
+				if (_bufData.length > 0) {
+					dumpFn(_bufData)
+					_bufData = []
+				}
+				
+				return __sql
 			},
 			table: (aTable, _obj) => {
 				aTable = _$(aTable, "aTable").isString().default("_TMP")
@@ -8056,7 +8108,9 @@ const $sql = function(aObj, aSQL, aMethod) {
 
 				return __sql
 			},
-			sql: (_sql) => {
+			query: (_sql, dontClose) => {
+				dontClose = _$(dontClose, "dontClose").isBoolean().default(true)
+
 				// Remove from of aSQL			
 				if (!chain && !_sql.match(/FROM _TMP(,|$| )/i)) 
 					_sql = _sql.trim().replace(/(FROM .+?)?( +GROUP| +LIMIT| +ORDER| +WHERE|$)/i, " FROM _TMP$2")
@@ -8068,23 +8122,26 @@ const $sql = function(aObj, aSQL, aMethod) {
 				} catch(e) {
 					throw e
 				} finally {
-					__sql.close()
+					if (!dontClose) {
+						__sql.close()
+					}
 				}
 
 				if (isDef(_r) && isDef(_r.results)) {
 					traverse(_r.results, (aK, aV, aP, aO) => {
-						if (aV == "TRUE" || aV == "FALSE") aO[aK] = Boolean(aV.toLowerCase())
+						if (aV == "TRUE" || aV == "FALSE") aO[aK] = toBoolean(aV)
 					})
 					return _r.results
 				} else {
 					return __
 				}
-			}	
+			},
+			closeQuery: (_sql) => __sql.query(_sql, false)
 		}
 
 		createDB()
 		if (isDef(aObj))
-			return __sql.table("_TMP", aObj).sql(aSQL)
+			return __sql.table("_TMP", aObj).closeQuery(aSQL)
 		else
 			return __sql
 	}
@@ -11035,14 +11092,22 @@ const $unset = function(aK) {
 
 /**
  * <ojob>
- * <key>$output(aObj, args, aFunc) : Map</key>
+ * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
  * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
+ * If shouldReturn = true the string output will be returned
  * </ojob>
  */
-const $output = function (aObj, args, aFunc) {
-	args = _$(args).default({});
+const $output = function (aObj, args, aFunc, shouldReturn) {
+	args = _$(args).default({})
+	var fnP = _s => {
+		if (shouldReturn)
+			return _s
+		else
+			print(_s)
+	}
+
 	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
 		if (isArray(obj) || isMap(obj))
 			print(printTreeOrS(obj, __, { noansi: !__conAnsi }))
@@ -11077,44 +11142,35 @@ const $output = function (aObj, args, aFunc) {
 
 	switch (format) {
 		case "json":
-			sprint(res, "")
-			break
+			return fnP(stringify(res, __, ""))
 		case "prettyjson":
-			sprint(res)
-			break
+			return fnP(stringify(res))
 		case "cjson":
-			cprint(res)
-			break
+			return fnP(colorify(res))
 		case "slon":
-			print(ow.format.toSLON(res))
-			break
+			return fnP(ow.format.toSLON(res))
 		case "cslon":
-			print(ow.format.toCSLON(res))
-			break
+			return fnP(ow.format.toCSLON(res))
 		case "ndjson":
-			if (isArray(res)) res.forEach(e => print(stringify(e, __, "")))
-			break
+			if (isArray(res)) res.forEach(e => fnP(stringify(e, __, "")))
 		case "xml":
-			print(af.fromObj2XML(res, true))
-			break
+			return fnP(af.fromObj2XML(res, true))
 		case "yaml":
-			yprint(res, __, true)
-			break
+			return fnP(af.toYAML(res, __, true))
 		case "table":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) print(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)))
+			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)))
 			break
 		case "stable":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
 		case "ctable":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true))
 			break
 		case "tree":
-			print(printTreeOrS(res, __, { noansi: !__conAnsi }))
-			break
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
 		case "res":
 			if (isDef(res)) $set("res", res)
 			break
@@ -11133,14 +11189,11 @@ const $output = function (aObj, args, aFunc) {
 		case "jsmap":
 		case "html":
 			var _res = ow.loadTemplate().html.parseMap(res, true)
-			print("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
-			break
+			return fnP("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
 		case "text":
-			print(String(res))
-			break
+			return fnP(String(res))
 		case "md":
-			print(ow.format.withMD(String(res)))
-			break
+			return fnP(ow.format.withMD(String(res)))
 		case "pm":
 			var _p;
 			if (isArray(res)) _p = {
@@ -11157,12 +11210,11 @@ const $output = function (aObj, args, aFunc) {
 		case "csv":
 			if (isMap(res)) res = [res]
 			if (isArray(res)) {
-				print($csv(csv).fromInArray(res))
+				return fnP($csv(csv).fromInArray(res))
 			}
 			break
 		case "map":
-			print(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
-			break
+			return fnP(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
 		default:
 			if (format.startsWith("set_")) {
 				$set(format.substring(4), res)
