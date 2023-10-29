@@ -2618,7 +2618,7 @@ OpenWrap.format.prototype.dateTimeTransition = function(aZone, aDate) {
 	aZone = _$(aZone, "aZone").isString().default("Europe/London")
 	aDate = _$(aDate, "aDate").isDate().default(__)
   
-	var info = { zone: aZone, previousTransition: {}, nextTransition: {} }
+	var info = { zone: aZone, previousTransition: __, nextTransition: __ }
 	var zone = java.time.ZoneId.of(aZone)
   
 	var zdt
@@ -2631,25 +2631,31 @@ OpenWrap.format.prototype.dateTimeTransition = function(aZone, aDate) {
 	var instPrev = zone.getRules().previousTransition(zdt.toInstant())
 	var instNext = zone.getRules().nextTransition(zdt.toInstant())
   
-	info.previousTransition.previousDate = String(instPrev.getDateTimeBefore().toLocalDate())
-	info.previousTransition.previousTime = String(instPrev.getDateTimeBefore().toLocalTime())
-	info.previousTransition.afterDate = String(instPrev.getDateTimeAfter().toLocalDate())
-	info.previousTransition.afterTime = String(instPrev.getDateTimeAfter().toLocalTime())
-	info.previousTransition.isGap = Boolean(instPrev.isGap())
-	info.previousTransition.isOverlap = Boolean(instPrev.isOverlap())
-	info.previousTransition.duration = Number(instPrev.getDuration().toMillis())
-	info.previousTransition.epoch = Number(instPrev.getInstant().toEpochMilli())
-	info.previousTransition.date = new Date(instPrev.getInstant().toEpochMilli())
+	if (!isNull(instPrev)) {
+		info.previousTransition = {}
+		info.previousTransition.previousDate = String(instPrev.getDateTimeBefore().toLocalDate())
+		info.previousTransition.previousTime = String(instPrev.getDateTimeBefore().toLocalTime())
+		info.previousTransition.afterDate = String(instPrev.getDateTimeAfter().toLocalDate())
+		info.previousTransition.afterTime = String(instPrev.getDateTimeAfter().toLocalTime())
+		info.previousTransition.isGap = Boolean(instPrev.isGap())
+		info.previousTransition.isOverlap = Boolean(instPrev.isOverlap())
+		info.previousTransition.duration = Number(instPrev.getDuration().toMillis())
+		info.previousTransition.epoch = Number(instPrev.getInstant().toEpochMilli())
+		info.previousTransition.date = new Date(instPrev.getInstant().toEpochMilli())
+	}
   
-	info.nextTransition.previousDate = String(instNext.getDateTimeBefore().toLocalDate())
-	info.nextTransition.previousTime = String(instNext.getDateTimeBefore().toLocalTime())
-	info.nextTransition.afterDate = String(instNext.getDateTimeAfter().toLocalDate())
-	info.nextTransition.afterTime = String(instNext.getDateTimeAfter().toLocalTime())
-	info.nextTransition.isGap = Boolean(instNext.isGap())
-	info.nextTransition.isOverlap = Boolean(instNext.isOverlap())
-	info.nextTransition.duration = Number(instNext.getDuration().toMillis())
-	info.nextTransition.epoch = Number(instNext.getInstant().toEpochMilli())
-	info.nextTransition.date = new Date(instNext.getInstant().toEpochMilli())
+	if (!isNull(instNext)) {
+		info.nextTransition = {}
+		info.nextTransition.previousDate = String(instNext.getDateTimeBefore().toLocalDate())
+		info.nextTransition.previousTime = String(instNext.getDateTimeBefore().toLocalTime())
+		info.nextTransition.afterDate = String(instNext.getDateTimeAfter().toLocalDate())
+		info.nextTransition.afterTime = String(instNext.getDateTimeAfter().toLocalTime())
+		info.nextTransition.isGap = Boolean(instNext.isGap())
+		info.nextTransition.isOverlap = Boolean(instNext.isOverlap())
+		info.nextTransition.duration = Number(instNext.getDuration().toMillis())
+		info.nextTransition.epoch = Number(instNext.getInstant().toEpochMilli())
+		info.nextTransition.date = new Date(instNext.getInstant().toEpochMilli())
+	}
   
 	return info
 }
