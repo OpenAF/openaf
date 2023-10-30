@@ -301,17 +301,34 @@ OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
 }
 
 OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
-    this.addSystemPrompt("You can only output answers in JSON format")
+    this.addSystemPrompt("You only output answers as a JSON map string")
 
     var out = this.model.prompt(aPrompt, aModel, aTemperature)
     return isString(out) ? jsonParse(out, __, __, true) : out 
+}
+
+OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
+    if (isArray(aType)) {
+        this.addSystemPrompt(aType.join("\n"))
+    } else {
+        if (isString(aType)) {
+            switch(aType.toLowerCase()) {
+            case "json"   : this.addSystemPrompt("You only output answers as a JSON map string"); break;
+            case "boolean": this.addSystemPrompt("Acting as an assistant you can only answer with the most correct of only three possible answers: 'true', 'false', 'undefined'."); break;
+            case "sql"    : this.addSystemPrompt("Acting as a powerfull SQL assistant you can only output an answer as a single SQL query."); break;
+            case "js"     : this.addSystemPrompt("Acting as a powerfull Javascript assistant you can only output an answer as a single Javascript function."); break;
+            }
+        }
+    }
+
+    return this
 }
 
 OpenWrap.ai.prototype.gpt.prototype.sqlPrompt = function(aPrompt, aTableDefs, aDBName, aModel, aTemperature) {
     aDBName = _$(aDBName, "aDBName").isString().default("H2")
     aTableDefs = _$(aTableDefs, "aTableDefs").isArray().$_()
 
-    this.addSystemPrompt("You can only output an answer as a single " + aDBName + " database SQL query, where all column names are double-quoted, considering the table '" + aTableDefs.join("' and the table '") + "'")
+    this.addSystemPrompt("Acting as a powerfull SQL assistant you can only output an answer as a single " + aDBName + " database SQL query, where all column names are double-quoted, considering the table '" + aTableDefs.join("' and the table '") + "'")
     var out = this.model.prompt(aPrompt, aModel, aTemperature)
     return out
 }
@@ -325,24 +342,33 @@ OpenWrap.ai.prototype.gpt.prototype.pathPrompt = function(aPrompt, aJSONSchemaDe
 }
 
 OpenWrap.ai.prototype.gpt.prototype.parseCode = function(anAnswer) {
+    _$(anAnswer, "anAnswer").isString().$_()
+
+    if (anAnswer.indexOf("```") < 0) return anAnswer
+
 	var code = "", codeLines = false
-	anAnswer.split("\n").forEach(line => {
+	var ar = anAnswer.split("\n")
+    for(var i = 0; i < ar.length; i++) {
+        var line = ar[i]
+
 		if (line.indexOf("```") >= 0) {
 			if (codeLines) {
 				codeLines = false
+                return code
 			} else {
 				codeLines = true
 			}
 			if (/`{3,}[^`]+`{3,}/.test(line)) {
 				code += line.match(/`{3,}([^`]+)`{3,}/)[1]
 				codeLines = false
+                return code
 			}
 		} else {
 			if (codeLines) {
 				code += line + "\n"
 			}
 		}
-	})
+	}
 	return code
 }
 
