@@ -1253,6 +1253,14 @@ OpenWrap.format.prototype.syms = function() {
 	}
 }
 
+/** 
+ * <odoc>
+ * <key>ow.format.bool(aBoolValue, isLight, anExtra) : String</key>
+ * Given aBoolValue will return a green checkmark or a red cross character. If necessary anExtra ansiColor attributes can be added.
+ * </odoc>
+ */
+OpenWrap.format.prototype.bool = (aValue, isLight, anExtra) => ow.format.string.bool(aValue, isLight, anExtra)
+
 /**
  * <odoc>
  * <key>ow.format.streamSHLog(aFunction) : Function</key>
