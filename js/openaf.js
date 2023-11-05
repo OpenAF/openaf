@@ -566,6 +566,9 @@ const tprintErr = function(aTemplateString, someData) {
  *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
  *    Optionally each legend, if used, will be included in a bottom legend;\
  * \
+ *    If function "-min" it will overwrite the aMin\
+ *    If function "-max" it will overwrite the aMax\
+ * \
  * </odoc>
  */
 const printChart = function(as, hSize, vSize, aMax, aMin, options) {
@@ -588,12 +591,12 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
     var useColor = false
     var colors = [], titles = []
 
-    if (_d.filter(r => r.indexOf(":") > 0).length > 0) {
+    if (_d.filter(r => !r.startsWith("-")).filter(r => r.indexOf(":") > 0).length > 0) {
         if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
         useColor = true
     }
 
-    var data = _d.map(r => {
+    var data = _d.filter(r => !r.startsWith("-")).map(r => {
 		try {
 			if (useColor) {
 				var _ar = r.split(":")
@@ -607,6 +610,14 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 			throw "Error on '" + r + "': " + dme
 		}
     }).filter(r => isDef(r))
+
+	_d.filter(r => r.startsWith("-")).forEach(r => {
+		var _ar = r.split(":")
+		switch(_ar[0]) {
+		case "-max": aMax = Number(_ar[1]); break
+		case "-min": aMin = Number(_ar[1]); break
+		}
+	})
 
     //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
     var options = merge(options, { max: aMax, min: aMin })
