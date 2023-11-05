@@ -122,10 +122,11 @@ OpenWrap.format.prototype.string = {
 		ar.forEach(row => {
 		  var _keys = Object.keys(row)
 		  Object.values(row).forEach((column, i) => {
+			let _v = isDate(column) ? column.toISOString().replace("Z","").replace("T"," ") : String(column)
 			if (isUnDef(maxSizes[i])) maxSizes[i] = 0
 			if (isUnDef(fixedMinSize[i])) fixedMinSize[i] = 0
 			fixedMinSize[i] = Math.max(fixedMinSize[i], ansiLength(String(_keys[i])))
-			maxSizes[i] = Math.max(maxSizes[i], ansiLength(String(column)))
+			maxSizes[i] = Math.max(maxSizes[i], ansiLength(_v))
 		  })
 		})
 	  
@@ -170,13 +171,15 @@ OpenWrap.format.prototype.string = {
 		  // Processing line
 		  var _keys = Object.keys(_ar)
 		  var lines = Object.values(_ar).map((v, i) => {
+			let _v
+			if (isDate(v)) _v = v.toISOString().replace("Z","").replace("T"," "); else _v = String(v)
 			if (chgCols.indexOf(i) >= 0) {
 				_newSize[i] = Math.max(fixedMinSize[i], Math.round((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
 			} else {
 				_newSize[i] = Math.max(fixedMinSize[i], maxSizes[i])
 			}
 			
-			var _ar = String((chgCols.indexOf(i) >= 0 ? rowLimitFn(ow.format.string.wordWrap(String(v), _newSize[i] )) : rowLimitFn(v) )).split("\n")
+			var _ar = String((chgCols.indexOf(i) >= 0 ? rowLimitFn(ow.format.string.wordWrap(_v, _newSize[i] )) : rowLimitFn(_v) )).split("\n")
 			maxSubLines = Math.max(maxSubLines, _ar.length)
 			return _ar
 		  })
@@ -1091,14 +1094,15 @@ OpenWrap.format.prototype.string = {
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
 		plugin("Console")
 		var _con_ = new Console()
-		aY = _$(aY, "width").isNumber().default(Number(_con_.getConsoleReader().getTerminal().getWidth()))
-		aX = _$(aX, "height").isNumber().default(Number(Math.floor(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)))
+		aY = Number(_$(aY, "width").isNumber().default(_con_.getConsoleReader().getTerminal().getWidth()))
+		aX = Number(_$(aX, "height").isNumber().default(Math.round(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)))
 	
 		var elems = [], l = 0, ignore = []
 		aElems.forEach(line => {
-			var c = 0
+			var c = 0, totalC = 0
+			var eline = line.map(col => isDef(col.xspan) ? col.xspan : 1).reduce((aC,cR) => aC+cR)
 
-			line.forEach(col => {
+			line.forEach((col, icol) => {
 				if (ignore.indexOf("Y:" + c + "X:" + l) < 0) {
 					if (isUnDef(col)) col = ""
 					if (!isMap(col)) col = { obj: col }
@@ -1112,10 +1116,13 @@ OpenWrap.format.prototype.string = {
 
 					var xspan = _$(col.xspan, "xspan").isNumber().default(1)
 					var yspan = _$(col.yspan, "yspan").isNumber().default(1)
-					if (xspan > 1) for(var ii = c + 1; ii < c + xspan; ii++) { ignore.push("Y:" + ii + "X:" + l) }
+					if (xspan > 1) for(var ii = 0; ii < xspan; ii++) { ignore.push("Y:" + (c+ii+1) + "X:" + l) }
 					if (yspan > 1) for(var ii = l + (aX + 1); ii < l + ((aX + 1) * yspan); ii += aX + 1) { ignore.push("Y:" + c + "X:" + ii) }
-					var p = "", cs = Math.floor((aY / line.length) * xspan)
-			
+					//var p = "", cs = Math.round((aY / eline) * xspan)
+					var p = "", cs0 = Math.round(aY / eline); cs = cs0 * xspan
+					totalC += cs
+					if (line.length -1 == icol) cs += (aY > (totalC-1) ? aY - (totalC-1) : 0)
+
 					switch(col.type) {
 					case "map"  : p = printMap(col.obj, cs-1, "utf", true); break
 					case "tree" : p = printTreeOrS(col.obj, cs-1); break
@@ -1142,13 +1149,13 @@ OpenWrap.format.prototype.string = {
 					} else {
 						po = p.join("\n")
 					}
-					
-					elems.push({ x: l, y: cs * c, t: po })
+
+					elems.push({ x: l, y: cs0 * c, t: po })
 				}
 				c++
 			})
 
-			l += aX + 1
+			l += aX
 		})
 	
 		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn)
@@ -1249,6 +1256,14 @@ OpenWrap.format.prototype.syms = function() {
 		patternDark  : '▓'
 	}
 }
+
+/** 
+ * <odoc>
+ * <key>ow.format.bool(aBoolValue, isLight, anExtra) : String</key>
+ * Given aBoolValue will return a green checkmark or a red cross character. If necessary anExtra ansiColor attributes can be added.
+ * </odoc>
+ */
+OpenWrap.format.prototype.bool = (aValue, isLight, anExtra) => ow.format.string.bool(aValue, isLight, anExtra)
 
 /**
  * <odoc>
@@ -2594,6 +2609,69 @@ OpenWrap.format.prototype.transposeArrayLines = function(anLineArray) {
 	return newArray;
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.dateTimeZones() : Array</key>
+ * List all available Java zone ids.
+ * </odoc>
+ */
+OpenWrap.format.prototype.dateTimeZones = function() {
+	return af.fromJavaArray( java.time.ZoneId.getAvailableZoneIds().toArray() ).sort()
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.dateTimeTransition(aZone, aDate) : Map</key>
+ * Given aZone (defaults to Europe/London) and aDate (defaults to now) will return a map with the previous 
+ * and next date/time transition.
+ * </odoc>
+ */
+OpenWrap.format.prototype.dateTimeTransition = function(aZone, aDate) {
+	aZone = _$(aZone, "aZone").isString().default("Europe/London")
+	aDate = _$(aDate, "aDate").isDate().default(__)
+  
+	var info = { zone: aZone, previousTransition: __, nextTransition: __ }
+	var zone = java.time.ZoneId.of(aZone)
+  
+	var zdt
+	if (isDate(aDate)) {
+	  zdt = java.time.ZonedDateTime.of(java.time.LocalDateTime.parse(aDate.toISOString().replace(/Z$/, "") ), zone)
+	} else {
+	  zdt = java.time.ZonedDateTime.now(zone)
+	}
+  
+	var instPrev = zone.getRules().previousTransition(zdt.toInstant())
+	var instNext = zone.getRules().nextTransition(zdt.toInstant())
+  
+	if (!isNull(instPrev)) {
+		info.previousTransition = {}
+		info.previousTransition.previousDate = String(instPrev.getDateTimeBefore().toLocalDate())
+		info.previousTransition.previousTime = String(instPrev.getDateTimeBefore().toLocalTime())
+		info.previousTransition.afterDate = String(instPrev.getDateTimeAfter().toLocalDate())
+		info.previousTransition.afterTime = String(instPrev.getDateTimeAfter().toLocalTime())
+		info.previousTransition.isGap = Boolean(instPrev.isGap())
+		info.previousTransition.isOverlap = Boolean(instPrev.isOverlap())
+		info.previousTransition.duration = Number(instPrev.getDuration().toMillis())
+		info.previousTransition.epoch = Number(instPrev.getInstant().toEpochMilli())
+		info.previousTransition.date = new Date(instPrev.getInstant().toEpochMilli())
+	}
+  
+	if (!isNull(instNext)) {
+		info.nextTransition = {}
+		info.nextTransition.previousDate = String(instNext.getDateTimeBefore().toLocalDate())
+		info.nextTransition.previousTime = String(instNext.getDateTimeBefore().toLocalTime())
+		info.nextTransition.afterDate = String(instNext.getDateTimeAfter().toLocalDate())
+		info.nextTransition.afterTime = String(instNext.getDateTimeAfter().toLocalTime())
+		info.nextTransition.isGap = Boolean(instNext.isGap())
+		info.nextTransition.isOverlap = Boolean(instNext.isOverlap())
+		info.nextTransition.duration = Number(instNext.getDuration().toMillis())
+		info.nextTransition.epoch = Number(instNext.getInstant().toEpochMilli())
+		info.nextTransition.date = new Date(instNext.getInstant().toEpochMilli())
+	}
+  
+	return info
+}
+
 OpenWrap.format.prototype.dateDiff = {
     /**
      * <odoc>
@@ -3157,7 +3235,7 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
-    _$(aString, "aString").isString().$_()
+    aString = String(aString)
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("")
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "")
 

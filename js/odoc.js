@@ -380,11 +380,11 @@ ODocsGen.prototype.genODocs = function() {
  * </odoc>
  */
 ODocsGen.prototype.getODoc = function() {
-	var ret = clone(this.odoc);
+	var ret = {}
 	for(var i in this.odoc) {
-		ret[i] = ret[i].getAll();
+		ret[i] = this.odoc[i].getAll()
 	}
-	return ret;
+	return ret
 }
 
 /**

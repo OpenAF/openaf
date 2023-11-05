@@ -123,7 +123,12 @@ jobs:
    - name: OpenAF::Test $doFirst
      from: OpenAF::Init
      then: oJob Test
-     exec: args.func = args.tests.testDoFirst;     
+     exec: args.func = args.tests.testDoFirst;
+
+   - name: OpenAF::Test $sql
+     from: OpenAF::Init
+     then: oJob Test
+     exec: args.func = args.test.testSQL     
 
    - name: OpenAF::Test clone
      from: OpenAF::Init

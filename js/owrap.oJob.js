@@ -748,7 +748,7 @@ OpenWrap.oJob.prototype.__toEnvs = function(aMap) {
 	var res = getEnvs();
 	traverse(aMap, (aK, aV, aP, aO) => {
 		if (!isMap(aV) && !isArray(aV)) {
-     			aP = aP.replace(/\./g, "_");
+     		aP = aP.replace(/\./g, "_");
 			if (isNumber(aK)) {
 				res[aP.substr(1, aP.length) + "_" + (Number(aK) +1) ] = String(aV);
 			} else {
@@ -2258,9 +2258,9 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						if (isDef(fint)) {
 							if (!fint(aValue, job, id, depInfo, e)) {
 								if (parent.__ojob.logArgs) 
-   									errors.push(stringify({ args: aValue, exception: e}));
+   									errors.push(stringify({ args: aValue, exception: String(e)}));
 								else
-									errors.push(stringify({ exception: e }));
+									errors.push(stringify({ exception: String(e) }));
 							}
 							recordError = false;
 							useExt = false;
@@ -2268,17 +2268,17 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						if (isDef(fe) && useExt) {
 							if (!fe(aValue, job, id, depInfo, e)) {
 								if (parent.__ojob.logArgs) 
-									errors.push(stringify({ args: aValue, exception: e}));
+									errors.push(stringify({ args: aValue, exception: String(e)}));
 								else
-									errors.push(stringify({ exception: e}));
+									errors.push(stringify({ exception: String(e)}));
 							}
 							recordError = false;
 						}
 						if (recordError) {
 							if (parent.__ojob.logArgs)
-								errors.push(stringify({ args: aValue, exception: e}));
+								errors.push(stringify({ args: aValue, exception: String(e)}));
 							else	
-								errors.push(stringify({ exception: e}));
+								errors.push(stringify({ exception: String(e)}));
 						}
 					} finally {
 						return true;
@@ -2578,9 +2578,7 @@ OpenWrap.oJob.prototype.__touchCronCheck = function(aCh, aJobName, aStatus, isRe
 OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _jobTypeArgs, _jobArgs, _jobFunc, _jobFrom, _jobTo, _jobHelp, _jobCatch, _jobEach, _jobLang, _jobFile, _jobCheck) {
 	var parent = this;
 
-	function addSigil(aName, aCheck) {
-
-		
+	function addSigil(aName, aCheck) {		
 		_$(aName, "job name").isString().$_()
 		aCheck = _$(aCheck, "check for '" + aName + "'").isMap().default({})
 		var lstFns = Object.keys(_$())
@@ -3549,128 +3547,5 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
  * </ojob>
  */
 OpenWrap.oJob.prototype.output = $output
-OpenWrap.oJob.prototype.oldOutput = function(aObj, args, aFunc) {
- 	args = _$(args).default({});
- 	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
- 		if (isArray(obj) || isMap(obj))
-			print(printTreeOrS(obj, __, { noansi: !__conAnsi }))
- 		else
- 			sprint(obj);
- 	});
-
- 	var format = (isDef(global.__format) ? global.__format : "human")
-	var path   = __, csv = __, from = __, key = "res", sql = __
-
- 	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
- 	if (isDef(args.__format) && !isNull(args.__format)) format = String(args.__format).toLowerCase()
-
-	if (isDef(args.__PATH) && !isNull(args.__PATH)) path = String(args.__PATH)
- 	if (isDef(args.__path) && !isNull(args.__path)) path = String(args.__path)
-
-	if (isDef(args.__FROM) && !isNull(args.__FROM)) from = String(args.__FROM)
-	if (isDef(args.__from) && !isNull(args.__from)) from = String(args.__from)
-
-	if (isDef(args.__SQL) && !isNull(args.__SQL)) sql = String(args.__SQL)
-	if (isDef(args.__sql) && !isNull(args.__sql)) sql = String(args.__sql)
-
-	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = jsonParse(args.__CSV, true)
-	if (isDef(args.__csv) && !isNull(args.__csv)) csv = jsonParse(args.__csv, true)
-
-	if (isDef(args.__KEY) && !isNull(args.__KEY)) key = String(args.__KEY)
-	if (isDef(args.__key) && !isNull(args.__key)) key = String(args.__key)
-
-	var res = isDef(path) ? $path(aObj, path) : aObj
-	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
-	res = isDef(sql) ? $sql(res, sql) : res
-
- 	switch (format) {
- 		case "json":
- 			sprint(res, "");
- 			break;
-		case "prettyjson":
-			sprint(res);
-			break;
-		case "cjson":
-			cprint(res)
-			break
-		case "slon":
-			print(ow.format.toSLON(res));
-			break;
-		case "cslon":
-			print(ow.format.toCSLON(res))
-			break
-		case "ndjson":
-			if (isArray(res)) res.forEach(e => print(stringify(e, __, "")))
-			break
-		case "xml":
-			print(af.fromObj2XML(res, true))
-			break
- 		case "yaml":
- 			yprint(res, __, true);
- 			break;
- 		case "table":
-			if (isMap(res)) res = [ res ]
- 			if (isArray(res)) print(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)));
- 			break;
-		case "stable":
-		    if (isMap(res)) res = [ res ]
-			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true));
-			break;
-		case "ctable":
-			if (isMap(res)) res = [ res ]
-			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true));
-			break;
-		case "tree":
-			print(printTreeOrS(res, __, { noansi: !__conAnsi }))
-			break;
-		case "res":
-			if (isDef(res)) $set("res", res)
-			break
-		case "key":
-			if (isDef(res)) $set(key, res)
-			break
-		case "args":
-			if (isArray(res)) 
-				args._list = res
-			else
-				if (isMap(res))
-					args._map = res
-				else
-					args.result = res
-			break
-		case "jsmap":
-		case "html":
-			var _res = ow.loadTemplate().html.parseMap(res, true)
-			print("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
- 		case "pm":
- 			var _p;
- 			if (isArray(res)) _p = {
- 				_list: res
- 			};
- 			if (isMap(res)) _p = {
- 				_map: res
- 			};
- 			if (isUnDef(_p)) _p = {
- 				result: res
- 			};
- 			__pm = merge(__pm, _p);
- 			break;
- 		case "csv":
-			if (isMap(res)) res = [ res ]
- 			if (isArray(res)) {
-				print($csv(csv).fromInArray(res))
- 			}
- 			break;
- 		case "map":
-			print(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
-			break
-		default   :
-			if (format.startsWith("set_")) {
-				$set(format.substring(4), res)
-			} else {
-				aFunc(res)
-			}
- 	}
-}
 
 //ow.oJob = new OpenWrap.oJob();

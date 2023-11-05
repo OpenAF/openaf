@@ -163,7 +163,7 @@
 
         io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;__flags.OJOB_INIT_ARRAY_ARGS_LIST = false;oJob(\"" + tmpOJob + "\", [{ a: 1 }, { b: 2 }])")
         var r = $openaf(tmpOAF)
-        ow.test.assert(isArray(r), true, "Problem with oJob init array (2).")
+        ow.test.assert(isMap(r) && r.b == 2 && r.a == 1, true, "Problem with oJob init array (2).")
     }
 
     exports.testOJobChecks = function() {
