@@ -1100,10 +1100,10 @@ OpenWrap.format.prototype.string = {
 		var elems = [], l = 0, ignore = []
 		aElems.forEach(line => {
 			var c = 0, totalC = 0
-			var eline = line.map(col => isDef(col.xspan) ? col.xspan : 1).reduce((aC,cR) => aC+cR)
+			var eline = line.map(col => (isDef(col) && isDef(col.xspan)) ? col.xspan : 1).reduce((aC,cR) => aC+cR)
 
 			line.forEach((col, icol) => {
-				if (ignore.indexOf("Y:" + c + "X:" + l) < 0) {
+				if (isDef(col) && ignore.indexOf("Y:" + c + "X:" + l) < 0) {
 					if (isUnDef(col)) col = ""
 					if (!isMap(col)) col = { obj: col }
 	
