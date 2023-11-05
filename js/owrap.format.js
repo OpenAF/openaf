@@ -1155,7 +1155,7 @@ OpenWrap.format.prototype.string = {
 				c++
 			})
 
-			l += aX + 1
+			l += aX
 		})
 	
 		return ow.format.string.renderLines(elems, aX * aElems.length, aY, aPattern, shouldReturn)
