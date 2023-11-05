@@ -87,7 +87,7 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 	if (isUnDef(anArray) || anArray.length < 1) return 0;
 	if (useParallel < 1) useParallel = 1;
 
-	var okeys, ookeys = Object.keys(anArray[0]);
+	var okeys, ookeys = Object.keys(ow.obj.flatMap(anArray[0]))
 	if (caseSensitive) 
 		okeys = "\"" + ookeys.join("\", \"") + "\"";
 	else 
@@ -101,9 +101,10 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 
 	var t = parallel4Array(anArray,
 		function(aValue) {
+			var _value = ow.obj.flatMap(aValue)
 			var values = [];
 			for(var k in ookeys) {
-				values.push(aValue[ookeys[k]]);
+				values.push(_value[ookeys[k]]);
 			}
 			return aDB.us("insert into " + (caseSensitive ? "\"" + aTableName + "\"" : aTableName) + "(" + okeys + ") values (" + binds.join(",") + ")", values);
 		},
@@ -127,14 +128,22 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMap, aOverr
 	aOverrideMap = _$(aOverrideMap, "override map").isMap().default({});
 	enforceCase = _$(enforceCase, "enforce case").isBoolean().default(false);
  
+	const detType = aO => {
+		if (isBoolean(aO)) return "BOOLEAN"
+		if (isNumber(aO)) return "NUMBER"
+		if (isDate(aO)) return "TIMESTAMP"
+		return "VARCHAR"
+	}
+
 	var m = [];
+	aMap = ow.obj.flatMap(aMap)
 	var keys = Object.keys(aMap);
 	for(var ii in keys) {
 	   var key = (enforceCase ? "\"" + keys[ii] + "\"" : keys[ii]);
  
 	   m.push({
 		  f: key,
-		  s: (isDef(aOverrideMap[key]) ? aOverrideMap[key] : (isNumber(aMap[key]) ? "NUMBER" : "VARCHAR"))
+		  s: (isDef(aOverrideMap[keys[ii]]) ? aOverrideMap[keys[ii]] : detType(aMap[keys[ii]]))
 	   });
 	}
  

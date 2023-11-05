@@ -21,6 +21,8 @@ import java.lang.String;
 
 import org.apache.commons.io.IOUtils;
 import org.h2.tools.Server;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.IdScriptableObject;
 import org.mozilla.javascript.Scriptable;
 
 import openaf.AFCmdBase;
@@ -190,11 +192,11 @@ public class DB {
 							// TODO: Need to change for more performance
 							
 							if (rs.getObject(i) != null) {
-								//jsong.writeNumberField(rs.getMetaData().getColumnName(i), new BigDecimal(rs.getObject(i).toString()));
-								record.put(rs.getMetaData().getColumnName(i), Double.valueOf(rs.getObject(i).toString()) );
+								//jsong.writeNumberField(rs.getMetaData().getColumnLabel(i), new BigDecimal(rs.getObject(i).toString()));
+								record.put(rs.getMetaData().getColumnLabel(i), Double.valueOf(rs.getObject(i).toString()) );
 							} else {
-								//jsong.writeNumberField(rs.getMetaData().getColumnName(i), null);
-								record.put(rs.getMetaData().getColumnName(i), null);
+								//jsong.writeNumberField(rs.getMetaData().getColumnLabel(i), null);
+								record.put(rs.getMetaData().getColumnLabel(i), null);
 							}
 						} else {
 							if((rs.getMetaData().getColumnType(i) == java.sql.Types.CLOB) ||
@@ -207,10 +209,10 @@ public class DB {
 											in = rs.getAsciiStream(i);
 									StringWriter w = new StringWriter();
 									IOUtils.copy(in, w, (Charset) null);
-									record.put(rs.getMetaData().getColumnName(i), w.toString());
+									record.put(rs.getMetaData().getColumnLabel(i), w.toString());
 								} catch(Exception e) {
 									SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting clob", e);
-									record.put(rs.getMetaData().getColumnName(i),  null);
+									record.put(rs.getMetaData().getColumnLabel(i),  null);
 								}
 								continue;
 							}
@@ -224,10 +226,19 @@ public class DB {
 											in = rs.getBlob(i).getBinaryStream();
 									else
 											in = rs.getBinaryStream(i);
-									record.put(rs.getMetaData().getColumnName(i), IOUtils.toByteArray(in));
+									record.put(rs.getMetaData().getColumnLabel(i), IOUtils.toByteArray(in));
 								} catch(Exception e) {
 									SimpleLog.log(SimpleLog.logtype.DEBUG, "Problem getting blob", e);
-									record.put(rs.getMetaData().getColumnName(i), null);
+									record.put(rs.getMetaData().getColumnLabel(i), null);
+								}
+								continue;
+							}
+
+							if (rs.getMetaData().getColumnType(i) == java.sql.Types.BOOLEAN) {
+								if (rs.getBoolean(i)) {
+									record.put(rs.getMetaData().getColumnLabel(i), true);
+								} else {
+									record.put(rs.getMetaData().getColumnLabel(i), false);
 								}
 								continue;
 							}
@@ -235,9 +246,9 @@ public class DB {
 							if (convertDates) {
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.DATE)) {
 									if (rs.getDate(i) != null)
-										record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
+										record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
 									else
-										record.put(rs.getMetaData().getColumnName(i), null);
+										record.put(rs.getMetaData().getColumnLabel(i), null);
 									continue;
 								}
 
@@ -245,28 +256,28 @@ public class DB {
 								   (rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE) ||
 								   (rs.getMetaData().getColumnTypeName(i).equals("TIMESTAMP WITH TIME ZONE"))) {
 									if (rs.getTimestamp(i) != null)
-										record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
+										record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
 									else
-										record.put(rs.getMetaData().getColumnName(i), null);
+										record.put(rs.getMetaData().getColumnLabel(i), null);
 									continue;
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIME) ||
 								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIME_WITH_TIMEZONE)) {
 									if (rs.getTime(i) != null)
-										record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
+										record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
 									else  
-										record.put(rs.getMetaData().getColumnName(i), null);
+										record.put(rs.getMetaData().getColumnLabel(i), null);
 									continue;
 								}
 							}
 
 							if (rs.getObject(i) != null) {
-								//jsong.writeStringField(rs.getMetaData().getColumnName(i), rs.getObject(i).toString());
-								record.put(rs.getMetaData().getColumnName(i), rs.getObject(i).toString());
+								//jsong.writeStringField(rs.getMetaData().getColumnLabel(i), rs.getObject(i).toString());
+								record.put(rs.getMetaData().getColumnLabel(i), rs.getObject(i).toString());
 							} else {
-								//jsong.writeStringField(rs.getMetaData().getColumnName(i), null);
-								record.put(rs.getMetaData().getColumnName(i), null);
+								//jsong.writeStringField(rs.getMetaData().getColumnLabel(i), null);
+								record.put(rs.getMetaData().getColumnLabel(i), null);
 							}
 						}
 					}
@@ -362,11 +373,11 @@ public class DB {
 							// TODO: Need to change for more performance
 							
 							if (rs.getObject(i) != null) {
-								//jsong.writeNumberField(rs.getMetaData().getColumnName(i), new BigDecimal(rs.getObject(i).toString()));
-								record.put(rs.getMetaData().getColumnName(i), Double.valueOf(rs.getObject(i).toString()) );
+								//jsong.writeNumberField(rs.getMetaData().getColumnLabel(i), new BigDecimal(rs.getObject(i).toString()));
+								record.put(rs.getMetaData().getColumnLabel(i), Double.valueOf(rs.getObject(i).toString()) );
 							} else {
-								//jsong.writeNumberField(rs.getMetaData().getColumnName(i), null);
-								record.put(rs.getMetaData().getColumnName(i), null);
+								//jsong.writeNumberField(rs.getMetaData().getColumnLabel(i), null);
+								record.put(rs.getMetaData().getColumnLabel(i), null);
 							}
 						} else {
 							if((rs.getMetaData().getColumnType(i) == java.sql.Types.CLOB) ||
@@ -379,7 +390,7 @@ public class DB {
 								
 								StringWriter w = new StringWriter();
 								IOUtils.copy(in, w, (Charset) null);
-								record.put(rs.getMetaData().getColumnName(i), w.toString());
+								record.put(rs.getMetaData().getColumnLabel(i), w.toString());
 								continue;
 							}
 							
@@ -391,36 +402,36 @@ public class DB {
 										in = rs.getBlob(i).getBinaryStream();
 								else
 										in = rs.getBinaryStream(i);
-								record.put(rs.getMetaData().getColumnName(i), IOUtils.toByteArray(in));
+								record.put(rs.getMetaData().getColumnLabel(i), IOUtils.toByteArray(in));
 								continue;
 							}
 
 							if (convertDates) {
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.DATE)) {
-									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
+									record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getDate(i).getTime() }));
 									continue;
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP) || 
 								   (rs.getMetaData().getColumnType(i) == java.sql.Types.TIMESTAMP_WITH_TIMEZONE) ||
 								   (rs.getMetaData().getColumnTypeName(i).equals("TIMESTAMP WITH TIME ZONE"))) {
-									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
+									record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTimestamp(i).getTime() }));
 									continue;
 								}
 
 								if((rs.getMetaData().getColumnType(i) == java.sql.Types.TIME) ||
 								(rs.getMetaData().getColumnType(i) == java.sql.Types.TIME_WITH_TIMEZONE)) {
-									record.put(rs.getMetaData().getColumnName(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
+									record.put(rs.getMetaData().getColumnLabel(i), AFCmdBase.jse.newObject((Scriptable) AFCmdBase.jse.getGlobalscope(), "Date", new Object[] { rs.getTime(i).getTime() }));
 									continue;
 								}
 							}
 
 							if (rs.getObject(i) != null) {
-								//jsong.writeStringField(rs.getMetaData().getColumnName(i), rs.getObject(i).toString());
-								record.put(rs.getMetaData().getColumnName(i), rs.getObject(i).toString());
+								//jsong.writeStringField(rs.getMetaData().getColumnLabel(i), rs.getObject(i).toString());
+								record.put(rs.getMetaData().getColumnLabel(i), rs.getObject(i).toString());
 							} else {
-								//jsong.writeStringField(rs.getMetaData().getColumnName(i), null);
-								record.put(rs.getMetaData().getColumnName(i), null);
+								//jsong.writeStringField(rs.getMetaData().getColumnLabel(i), null);
+								record.put(rs.getMetaData().getColumnLabel(i), null);
 							}
 						}
 					}
@@ -534,7 +545,18 @@ public class DB {
 					int i = 0;
 					for (Object obj : objs ) {
 						i++;
-						ps.setObject(i, obj);
+						if (obj instanceof org.mozilla.javascript.IdScriptableObject) {
+							if (((org.mozilla.javascript.IdScriptableObject) obj).getClassName().equals("Date")) {
+								obj = Context.jsToJava(obj, java.util.Date.class);
+							}
+						}
+
+						try {
+							ps.setObject(i, obj);
+						} catch(Exception e) {
+							System.err.println("ERROR: " + e.getMessage());
+							e.printStackTrace();
+						}
 					}
 				//}
 				int res = ps.executeUpdate();

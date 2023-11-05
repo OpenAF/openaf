@@ -67,6 +67,335 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
     }
 }
 
+OpenWrap.ai.prototype.__gpttypes = {
+    openai: {
+        create: (aOptions) => {
+            ow.loadObj()
+            aOptions = _$(aOptions, "aOptions").isMap().$_()
+            aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
+            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+
+            ow.loadObj()
+            var _key = aOptions.key
+            var _timeout = aOptions.timeout
+            var _model = aOptions.model
+            var _temperature = aOptions.temperature
+            var _r = {
+                conversation: [],
+                getConversation: () => {
+                    return _r.conversation
+                },
+                setConversation: (aConversation) => {
+                    if (isArray(aConversation)) _r.conversation = aConversation
+                    return _r
+                },
+                prompt: (aPrompt, aModel, aTemperature) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature)
+                    if (isArray(__r.choices) && __r.choices.length > 0) {
+                        if (__r.choices[0].finish_reason == "stop") {
+                           return __r.choices[0].message.content
+                        }
+                     }
+                     return __r
+                },
+                rawPrompt: (aPrompt, aModel, aTemperature) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                 
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                 
+                    return _r._request("/v1/chat/completions", {
+                       model: aModel,
+                       temperature: aTemperature,
+                       messages: msgs
+                    })   
+                },
+                addPrompt: (aRole, aPrompt) => {
+                    if (isUnDef(aPrompt)) {
+                        aPrompt = aRole
+                        aRole = "user"
+                     }
+                     if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
+                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
+                     return _r
+                },
+                addUserPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "user", content: aPrompt })
+                    return _r
+                },
+                addSystemPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "system", content: aPrompt })
+                    return _r
+                },
+                cleanPrompt: () => {
+                    _r.conversation = []
+                    return _r
+                },
+                _request: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __r = $rest({ 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                       requestHeaders: { 
+                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key) 
+                       } 
+                    })
+                    _h.close()
+                 
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return __r.get("https://api.openai.com/" + aURI)
+                    case "POST": return __r.post("https://api.openai.com/" + aURI, aData)
+                    }
+                }
+            }
+            return _r
+        }
+    },
+    ollama: {
+        create: (aOptions) => {
+            ow.loadObj()
+            aOptions = _$(aOptions, "aOptions").isMap().$_()
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("llama2:latest")
+            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+            aOptions.url = _$(aOptions.url, "aOptions.url").isString().$_()
+
+            ow.loadObj()
+            var _timeout = aOptions.timeout
+            var _model = aOptions.model
+            var _temperature = aOptions.temperature
+            var _url = aOptions.url
+
+            var _r = {
+                conversation: [],
+                getConversation: () => {
+                    return _r.conversation
+                },
+                setConversation: (aConversation) => {
+                    if (isArray(aConversation)) _r.conversation = aConversation
+                    return _r
+                },
+                prompt: (aPrompt, aModel, aTemperature) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature)
+                    if (isString(__r.response)) return __r.response
+                    return __r
+                },
+                rawPrompt: (aPrompt, aModel, aTemperature) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                 
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                 
+                    return _r._request("/api/generate", {
+                       model: aModel,
+                       options: {
+                        temperature: aTemperature,
+                       },
+                       stream: false,
+                       prompt: $from(msgs).equals("role", "user").select(r => r.content).join(";\n"),
+                       system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
+                    })   
+                },
+                addPrompt: (aRole, aPrompt) => {
+                    if (isUnDef(aPrompt)) {
+                        aPrompt = aRole
+                        aRole = "user"
+                     }
+                     if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
+                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
+                     return _r
+                },
+                addUserPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "user", content: aPrompt })
+                    return _r
+                },
+                addSystemPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "system", content: aPrompt })
+                    return _r
+                },
+                cleanPrompt: () => {
+                    _r.conversation = []
+                    return _r
+                },
+                _request: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    if (!aURI.startsWith("/")) aURI = "/" + aURI
+
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __r = $rest({ 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                    })
+                    _h.close()
+                 
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return __r.get(_url + aURI)
+                    case "POST": return __r.post(_url + aURI, aData)
+                    }
+                }
+            }
+            return _r
+        }
+    }
+}
+OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
+    if (isUnDef(ow.ai.__gpttypes[aType])) {
+        throw "Unrecognized GPT type '" + aType + "'."
+    } else {
+        this.model = ow.ai.__gpttypes[aType].create(aOptions)
+    }
+}
+
+OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature) {
+    return this.model.prompt(aPrompt, aRole, aModel, aTemperature)
+}
+
+OpenWrap.ai.prototype.gpt.prototype.getConversation = function() {
+    return this.model.getConversation()
+}
+
+OpenWrap.ai.prototype.gpt.prototype.setConversation = function(aConversation) {
+    this.model.setConversation(aConversation)
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature) {
+    return this.model.rawPrompt(aPrompt, aRole, aModel, aTemperature)
+}
+
+OpenWrap.ai.prototype.gpt.prototype.addPrompt = function(aPrompt, aRole) {
+    this.model = this.model.addPrompt(aPrompt, aRole)
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.addUserPrompt = function(aPrompt, aRole) {
+    this.model = this.model.addUserPrompt(aPrompt)
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.addSystemPrompt = function(aPrompt, aRole) {
+    this.model = this.model.addSystemPrompt(aPrompt)
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
+    this.model = this.model.cleanPrompt()
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
+    this.addSystemPrompt("You only output answers as a JSON map string")
+
+    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    return isString(out) ? jsonParse(out, __, __, true) : out 
+}
+
+OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
+    if (isArray(aType)) {
+        this.addSystemPrompt(aType.join("\n"))
+    } else {
+        if (isString(aType)) {
+            switch(aType.toLowerCase()) {
+            case "json"   : this.addSystemPrompt("You only output answers as a JSON map string"); break;
+            case "boolean": this.addSystemPrompt("Acting as an assistant you can only answer with the most correct of only three possible answers: 'true', 'false', 'undefined'."); break;
+            case "sql"    : this.addSystemPrompt("Acting as a powerfull SQL assistant you can only output an answer as a single SQL query."); break;
+            case "js"     : this.addSystemPrompt("Acting as a powerfull Javascript assistant you can only output an answer as a single Javascript function."); break;
+            }
+        }
+    }
+
+    return this
+}
+
+OpenWrap.ai.prototype.gpt.prototype.sqlPrompt = function(aPrompt, aTableDefs, aDBName, aModel, aTemperature) {
+    aDBName = _$(aDBName, "aDBName").isString().default("H2")
+    aTableDefs = _$(aTableDefs, "aTableDefs").isArray().$_()
+
+    this.addSystemPrompt("Acting as a powerfull SQL assistant you can only output an answer as a single " + aDBName + " database SQL query, where all column names are double-quoted, considering the table '" + aTableDefs.join("' and the table '") + "'")
+    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    return out
+}
+
+OpenWrap.ai.prototype.gpt.prototype.pathPrompt = function(aPrompt, aJSONSchemaDef, aModel, aTemperature) {
+    this.addSystemPrompt("you can only output an answer as a single JMESPath query string to use as argument for JMESPath")
+    this.addSystemPrompt("consider the array to be queried is composed of maps with the following json schema " + stringify(aJSONSchemaDef,__,""))
+    
+    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    return out
+}
+
+OpenWrap.ai.prototype.gpt.prototype.parseCode = function(anAnswer) {
+    _$(anAnswer, "anAnswer").isString().$_()
+
+    if (anAnswer.indexOf("```") < 0) return anAnswer
+
+	var code = "", codeLines = false
+	var ar = anAnswer.split("\n")
+    for(var i = 0; i < ar.length; i++) {
+        var line = ar[i]
+
+		if (line.indexOf("```") >= 0) {
+			if (codeLines) {
+				codeLines = false
+                return code
+			} else {
+				codeLines = true
+			}
+			if (/`{3,}[^`]+`{3,}/.test(line)) {
+				code += line.match(/`{3,}([^`]+)`{3,}/)[1]
+				codeLines = false
+                return code
+			}
+		} else {
+			if (codeLines) {
+				code += line + "\n"
+			}
+		}
+	}
+	return code
+}
+
+OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemperature, aCommentChars) {
+    aCommentChars = _$(aCommentChars, "aCommentChars").isString().default("#")
+
+    var aResponse = this.model.prompt(aPrompt, aModel, aTemperature)
+
+    if (aResponse.indexOf("```") >= 0) {
+       var code = false
+       return aResponse.split("\n").map(line => {
+          if (line.indexOf("```") >= 0) {
+             var _t = aCommentChars + " ---" + (code ? "^^^" : "vvv") + "---"
+             code = !code
+             return _t
+          }
+          if (code) {
+             return line
+          } else {
+             return (line.length > 0) ? aCommentChars + " " + line : ""
+          }
+       }).filter(isDef).join("\n")
+    } else {
+       return aResponse
+    }
+}
+
 /**
  * <odoc>
  * <key>ow.ai.network(aMap) : ow.ai.network</key>

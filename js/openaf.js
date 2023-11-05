@@ -204,10 +204,17 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	IO: {
 		bufferSize: 1024
 	},
+	ALTERNATIVES: {
+		traverse: true,
+		extend  : true,
+		merge   : true
+	},
 	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR    : true,
 	HTTP_TIMEOUT               : __,
     HTTP_CON_TIMEOUT           : __,
+	SQL_QUERY_METHOD           : "auto",
+	SQL_QUERY_H2_INMEM         : false,
 	DOH_PROVIDER               : "cloudflare"
 })
 
@@ -559,6 +566,9 @@ const tprintErr = function(aTemplateString, someData) {
  *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
  *    Optionally each legend, if used, will be included in a bottom legend;\
  * \
+ *    If function "-min" it will overwrite the aMin\
+ *    If function "-max" it will overwrite the aMax\
+ * \
  * </odoc>
  */
 const printChart = function(as, hSize, vSize, aMax, aMin, options) {
@@ -581,12 +591,12 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
     var useColor = false
     var colors = [], titles = []
 
-    if (_d.filter(r => r.indexOf(":") > 0).length > 0) {
+    if (_d.filter(r => !r.startsWith("-")).filter(r => r.indexOf(":") > 0).length > 0) {
         if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
         useColor = true
     }
 
-    var data = _d.map(r => {
+    var data = _d.filter(r => !r.startsWith("-")).map(r => {
 		try {
 			if (useColor) {
 				var _ar = r.split(":")
@@ -600,6 +610,14 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 			throw "Error on '" + r + "': " + dme
 		}
     }).filter(r => isDef(r))
+
+	_d.filter(r => r.startsWith("-")).forEach(r => {
+		var _ar = r.split(":")
+		switch(_ar[0]) {
+		case "-max": aMax = Number(_ar[1]); break
+		case "-min": aMin = Number(_ar[1]); break
+		}
+	})
 
     //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
     var options = merge(options, { max: aMax, min: aMin })
@@ -819,6 +837,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		if (isNumber(aValue)) return _bg + __colorFormat.number
 		if (isString(aValue)) return _bg + __colorFormat.string
 		if (isBoolean(aValue)) return _bg + __colorFormat.boolean
+		if (isDate(aValue)) return _bg + __colorFormat.date
 		return _bg + __colorFormat.default
 	};
 
@@ -836,9 +855,14 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	anArrayOfEntries.forEach(function(row) {
 		var cols = Object.keys(row);
 		cols.forEach(function(col) {
+			let _v = row[String(col)]
+			if (isDate(_v)) 
+				_v = _v.toISOString().replace("Z","").replace("T"," ");
+			else 
+				_v = String(_v)
 			if (isUnDef(maxsize[col])) 
 				maxsize[String(col)] = ansiLength(col);
-			if (maxsize[String(col)] < ansiLength(String(row[String(col)]))) maxsize[String(col)] = ansiLength(String(row[String(col)]));
+			if (maxsize[String(col)] < ansiLength(_v)) maxsize[String(col)] = ansiLength(_v);
 		});
 	});
 
@@ -889,8 +913,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 				output += "..."; outOfWidth = true;
 			} else {	
-				var value = String(row[String(col)]).replace(/\n/g, " ");
-				var _pe = repeat(maxsize[String(col)] - ansiLength(String(row[String(col)])), ' ')
+				var value = isDate(row[String(col)]) ? row[String(col)].toISOString().replace("Z","").replace("T"," ") : String(row[String(col)]).replace(/\n/g, " ");
+				var _pe = repeat(maxsize[String(col)] - ansiLength(value), ' ')
 				output += (useAnsi ? ansiColor(_getColor(row[String(col)], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
 				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
 			}
@@ -986,6 +1010,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			if (isBoolean(aO)) return "boolean"
 			if (isNumber(aO)) return "number"
 			if (isString(aO)) return "string"
+			if (isDate(aO)) return "date"
 		}
 		_acr = () => _ac("RESET","")
 		_clr = aO => {
@@ -993,6 +1018,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			case "number" : return _ac(__colorFormat.number, String(aO)) + _acr()
 			case "string" : return _ac(__colorFormat.string, String(aO)) + _acr()
 			case "boolean": return _ac(__colorFormat.boolean, String(aO)) + _acr()
+			case "date"   : return _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr()
 			case "java"   : return _ac(__colorFormat.string, String(aO.toString())) + _acr()
 			default       : return _ac(__colorFormat.default, String(aO)) + _acr()
 			}
@@ -1705,6 +1731,7 @@ var __colorFormat = {
 	number: "GREEN",
 	string: "CYAN",
 	boolean: "RED",
+	date: "MAGENTA",
 	default: "YELLOW",
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
@@ -1807,7 +1834,7 @@ const templify = function(aTemplateString, someData) {
 	someData = (isUnDef(someData)) ? this : someData;
 	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
 	if (isUnDef(aTemplateString) || aTemplateString == "") return ""
-	return String(ow.template.parse(aTemplateString, someData));
+	return String(ow.template.parse(String(aTemplateString), someData));
 }
 
 const $t = templify
@@ -3645,7 +3672,7 @@ const quickSort = function(items, aCompareFunction) {
 
 
 /**
- * (extracted from)
+ * (extracted and chnaged from)
  * jQuery JavaScript Library v2.0.3
  * http://jquery.com/
  *
@@ -3663,7 +3690,54 @@ const quickSort = function(items, aCompareFunction) {
  * </odoc>
  */
 const extend = function() {
-	var class2type = {
+	if (__flags.ALTERNATIVES.extend) {
+		let deep = false
+		let target = arguments[0] || {}
+
+		let _sources = []
+		for (var i = 1; i < arguments.length; i++) { _sources[i - 1] = arguments[i] }
+
+		if (typeof target === "boolean") {
+			deep = target
+			target = _sources.shift()
+		}
+		if (typeof target !== "object" && typeof target !== "function") {
+			target = {}
+		}
+
+		let stack = [{ target, sources: _sources }]
+		while (stack.length > 0) {
+			let { target, sources } = stack.pop()
+			for (let source of sources) {
+				if (source != null) {
+					for (let key of Object.keys(source)) {
+						let src = target[key]
+						let copy = source[key]
+						if (target === copy) {
+							continue
+						}
+						let copyIsArray = false
+						let _clone
+						if (deep && copy && (("undefined" === typeof copy.getDate && typeof copy === "object") || typeof copy === "function")) {
+
+							if (Array.isArray(copy)) {
+								copyIsArray = true
+								_clone = src && Array.isArray(src) ? src : []
+							} else {
+								_clone = src && typeof src === "object" ? src : {}
+							}
+							target[key] = _clone
+							stack.push({ target: _clone, sources: [copy] })
+						} else if (copy !== undefined) {
+							target[key] = copy
+						}
+					}
+				}
+			}
+		}
+		return target
+	} else {
+		var class2type = {
 			"[object Boolean]":   "boolean",
 			"[object Number]":    "number",
 			"[object String]":    "string",
@@ -3673,103 +3747,104 @@ const extend = function() {
 			"[object RegExp]":    "regexp",
 			"[object Object]":    "object",
 			"[object Error]":     "error"
-	};
+		};
 
-	var core_toString = class2type.toString,
-	core_hasOwn   = class2type.hasOwnProperty;
+		var core_toString = class2type.toString,
+		core_hasOwn   = class2type.hasOwnProperty;
 
-	var jQuery = {};
+		var jQuery = {};
 
-	jQuery.isFunction = function( obj ) {
-		return jQuery.type(obj) === "function";
-	};
+		jQuery.isFunction = function( obj ) {
+			return jQuery.type(obj) === "function";
+		};
 
-	jQuery.isArray = Array.isArray;
+		jQuery.isArray = Array.isArray;
 
-	jQuery.type = function( obj ) {
-		if ( obj == null ) {
-			return String( obj );
-		}
-		return typeof obj === "object" || typeof obj === "function" ?
-				class2type[ core_toString.call(obj) ] || "object" :
-					typeof obj;
-	};
+		jQuery.type = function( obj ) {
+			if ( obj == null ) {
+				return String( obj );
+			}
+			return typeof obj === "object" || typeof obj === "function" ?
+					class2type[ core_toString.call(obj) ] || "object" :
+						typeof obj;
+		};
 
-	jQuery.isPlainObject = function( obj ) {
-		if (isJavaObject(obj)) return false;
-		
-		if ( jQuery.type( obj ) !== "object" || obj.nodeType ) {
-			return false;
-		}
-
-		try {
-			if ( obj.constructor && !core_hasOwn.call( obj.constructor.prototype, "isPrototypeOf" ) ) {
+		jQuery.isPlainObject = function( obj ) {
+			if (isJavaObject(obj)) return false;
+			
+			if ( jQuery.type( obj ) !== "object" || obj.nodeType ) {
 				return false;
 			}
-		} catch ( e ) {
-			return false;
+
+			try {
+				if ( obj.constructor && !core_hasOwn.call( obj.constructor.prototype, "isPrototypeOf" ) ) {
+					return false;
+				}
+			} catch ( e ) {
+				return false;
+			}
+
+			return true;
+		};
+
+
+		var options,
+		name,
+		src,
+		copy,
+		copyIsArray,
+		clone,
+		target = arguments[0] || {},
+		i = 1,
+		length = arguments.length,
+		deep = false;
+
+		if ( typeof target === "boolean" ) {
+			deep = target;
+			target = arguments[1] || {};
+			i = 2;
 		}
 
-		return true;
-	};
+		if ( typeof target !== "object" && !jQuery.isFunction(target) ) {
+			target = {};
+		}
 
+		if ( length === i ) {
+			target = this;
+			--i;
+		}
 
-	var options,
-	name,
-	src,
-	copy,
-	copyIsArray,
-	clone,
-	target = arguments[0] || {},
-	i = 1,
-	length = arguments.length,
-	deep = false;
+		for ( ; i < length; i++ ) {
+			if ( (options = arguments[ i ]) != null ) {
+				for ( name in options ) {
+					src = target[ name ];
+					copy = options[ name ];
 
-	if ( typeof target === "boolean" ) {
-		deep = target;
-		target = arguments[1] || {};
-		i = 2;
-	}
-
-	if ( typeof target !== "object" && !jQuery.isFunction(target) ) {
-		target = {};
-	}
-
-	if ( length === i ) {
-		target = this;
-		--i;
-	}
-
-	for ( ; i < length; i++ ) {
-		if ( (options = arguments[ i ]) != null ) {
-			for ( name in options ) {
-				src = target[ name ];
-				copy = options[ name ];
-
-				if ( target === copy ) {
-					continue;
-				}
-
-				if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)) ) ) {
-					if ( copyIsArray ) {
-						copyIsArray = false;
-						clone = src && jQuery.isArray(src) ? src : [];
-
-					} else {
-						clone = src && jQuery.isPlainObject(src) ? src : {};
+					if ( target === copy ) {
+						continue;
 					}
 
-					target[ name ] = extend( deep, clone, copy );
+					if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)) ) ) {
+						if ( copyIsArray ) {
+							copyIsArray = false;
+							clone = src && jQuery.isArray(src) ? src : [];
 
-				} else if ( copy !== undefined ) {
-					target[ name ] = copy;
+						} else {
+							clone = src && jQuery.isPlainObject(src) ? src : {};
+						}
+
+						target[ name ] = extend( deep, clone, copy );
+
+					} else if ( copy !== undefined ) {
+						target[ name ] = copy;
+					}
 				}
 			}
 		}
-	}
 
-	return target;
-};
+		return target;
+	}
+}
 
 /**
  * <odoc>
@@ -3798,7 +3873,7 @@ const clone = function(aObject) {
 	if (isNull(aObject) || isUnDef(aObject)) return __
 	if (!isObject(aObject)) return aObject
 	if (Array.isArray(aObject)) return aObject.map(r=>isObject(r) ? clone(r) : r)
- 	return extend(true, {}, aObject)
+ 	return aObject.__proto__ instanceof Object ? extend(true, aObject) : extend(true, {}, aObject)
 }
 
 /**
@@ -3807,42 +3882,73 @@ const clone = function(aObject) {
  * Merges a JavaScript object A with a JavaScript object B a returns the result as a new object.
  * </odoc>
  */
-var __merge_alternative = true;
-const merge = function(aObjectA, aObjectB, alternative, deDup) {
-	if (isObject(aObjectA) && isArray(aObjectB)) {
-		for(var i in aObjectB) { aObjectB[i] = merge(aObjectB[i], clone(aObjectA), alternative, deDup); }
-		return aObjectB;
-	}
-	if (isObject(aObjectB) && isArray(aObjectA)) {
-		for(var i in aObjectA) { aObjectA[i] = merge(aObjectA[i], clone(aObjectB), alternative, deDup); }
-		return aObjectA;
-	}
-	if (__merge_alternative || alternative) {
-		var r = Object.assign({}, aObjectA);
-		if (isDef(aObjectB) && isMap(aObjectB) && !isNull(aObjectB)) {
-		  Object.keys(aObjectB).forEach(k => {
-			if (!isMap(aObjectB[k]) && !isArray(aObjectB[k])) {
-			  r[k] = aObjectB[k];
-			} else {
-			  if (isArray(aObjectB[k])) {
-				if (isUnDef(r[k])) r[k] = [];
-				
-				if (deDup) {
-				  r[k] = r[k].concat(aObjectB[k].filter(s => arrayContains(r[k], s) < 0));
-				} else {
-				  r[k] = r[k].concat(aObjectB[k]);
-				}
-			  } else if (isMap(aObjectB[k])) {
-				if (isUnDef(r[k])) r[k] = {};
-				r[k] = merge(r[k], aObjectB[k], alternative, deDup);
-			  }
-			}
-		  });
+const merge = function(objA, objB, alternative, deDup) {
+	if (isUnDef(alternative)) alternative = __flags.ALTERNATIVES.merge
+	
+	if (alternative) {
+		let stack = []
+		let result = Object.assign({}, objA)
+		if (isArray(objA) && !isArray(objB)) result = Object.assign([], objA)
+		if (!isArray(objA) && isArray(objB)) {
+			return merge(objB, objA, alternative, deDup)
 		}
-	  
-		return r;
+		if (isArray(objA) && isArray(objB)) {
+			return objB.map(b => merge(objA, b, alternative, deDup))
+		}
+		stack.push({ objA, objB, result })
+
+		while (stack.length > 0) {
+			let { objA, objB, result } = stack.pop()
+
+			if (isObject(objA) && isArray(objB)) {
+				for (let i in objB) {
+					stack.push({ objA: clone(objA), objB: objB[i], result: objB[i] })
+				}
+			} else if (isObject(objB) && isArray(objA)) {
+				for (let i in objA) {
+					stack.push({ objA: objA[i], objB: clone(objB), result: objA[i] })
+				}
+			} else {
+				if (isDef(objB) && isMap(objB) && !isNull(objB)) {
+					Object.keys(objB).forEach(k => {
+						if (!isMap(objB[k]) && !isArray(objB[k])) {
+							result[k] = objB[k]
+						} else {
+							if (isArray(objB[k])) {
+								if (isUnDef(result[k])) result[k] = []
+
+								if (deDup) {
+									result[k] = result[k].concat(objB[k].filter(s => arrayContains(result[k], s) < 0))
+								} else {
+									result[k] = result[k].concat(objB[k])
+								}
+							} else if (isMap(objB[k])) {
+								if (isUnDef(result[k])) result[k] = {}
+								stack.push({ objA: result[k], objB: objB[k], result: result[k] })
+							}
+						}
+					})
+				}
+			}
+		}
+
+		/*var _r0 = merge(_objA, _objB, false, deDup)
+		if (!compare(result, _r0)) {
+			sprint(_r0)
+			print("-----")
+			sprint(result)
+		}*/
+		return result
 	} else {
-		return extend(true, clone(aObjectA), aObjectB);
+		if (!isArray(objA) && isArray(objB)) {
+			for(var i in objB) { objB[i] = merge(objB[i], clone(objA), alternative, deDup); }
+			return objB;
+		}
+		if (!isArray(objB) && isArray(objA)) {
+			for(var i in objA) { objA[i] = merge(objA[i], clone(objB), alternative, deDup); }
+			return objA;
+		}
+		return extend(true, clone(objA), objB)
 	}
 }
 
@@ -5535,18 +5641,35 @@ const loadDBInMem = function(aDB, aFilename) {
  * </odoc>
  */
 const traverse = function(aObject, aFunction, aParent) {
-	var keys = (isJavaObject(aObject)) ? [] : Object.keys(aObject);
-	var parent = isUnDef(aParent) ? "" : aParent;
+	if (__flags.ALTERNATIVES.traverse) {
+		let stack = [{ obj: aObject, keys: (isJavaObject(aObject)) ? [] : Object.keys(aObject), parent: "" }]
 
-	for(var i in keys) {
-		if (isObject(aObject[keys[i]])) {
-			var newParent = parent + ((isNaN(Number(keys[i]))) ? 
-							"." + keys[i] : 
-							(isNumber(keys[i]) ? "[" + keys[i] + "]" : "[\"" + keys[i] + "\"]"));
-			traverse(aObject[keys[i]], aFunction, newParent, aObject);
+		while (stack.length > 0) {
+		  let _d = stack.pop()
+		  for(let _key in _d.keys) {
+			var __k = _d.keys[_key]
+			let value = _d.obj[__k]
+			if (isDef(value) && (isArray(value) || isMap(value))) {
+			  let newParent = _d.parent + (isNaN(Number(__k)) ? `.${__k}` : (isNumber(__k) ? `[${__k}]` : `["${__k}"]`))
+			  stack.push({ obj: value, keys: (isJavaObject(value)) ? [] : Object.keys(value), parent: newParent })
+			}
+			aFunction(__k, value, _d.parent, _d.obj) 
+		  }
 		}
-		
-		aFunction(keys[i], aObject[keys[i]], parent, aObject);
+	} else {
+		var keys = (isJavaObject(aObject)) ? [] : Object.keys(aObject);
+		var parent = isUnDef(aParent) ? "" : aParent;
+
+		for(var i in keys) {
+			if (isObject(aObject[keys[i]])) {
+				var newParent = parent + ((isNaN(Number(keys[i]))) ? 
+								"." + keys[i] : 
+								(isNumber(keys[i]) ? "[" + keys[i] + "]" : "[\"" + keys[i] + "\"]"));
+				traverse(aObject[keys[i]], aFunction, newParent, aObject);
+			}
+			
+			aFunction(keys[i], aObject[keys[i]], parent, aObject);
+		}
 	}
 }
 
@@ -7741,8 +7864,8 @@ AF.prototype.fromSQL = function(aString) {
  * Converts a SQL expression into a suitable map to be used with $from.query.
  * </odoc>
  */
-AF.prototype.fromSQL2NLinq = function(sql) {
-	var ast = af.fromSQL(sql)
+AF.prototype.fromSQL2NLinq = function(sql, preParse) {
+	var ast = (isDef(preParse) ? preParse : af.fromSQL(sql))
 
 	var _r = { transform: [] }
 	if (isDef(ast) && isArray(ast.ast)) {
@@ -7763,6 +7886,9 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 			if (isDef(c.expr) && c.expr.type == "column_ref" && c.expr.column != "*") {
 			  _r.select[c.expr.column] = ""
 			}
+			if (isDef(c.expr) && c.expr.type == "double_quote_string") {
+			  _r.select[c.expr.value] = ""
+			}
 		  })
 		  if (everything) delete _r.select
 		}
@@ -7779,13 +7905,13 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 			var _p
   
 			switch(op.operator) {
-			case "<" : _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'ess', args: [ _a.column, _b.value ]}); break
-			case ">" : _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reater', args: [ _a.column, _b.value ]}); break
-			case "<=": _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'essEquals', args: [ _a.column, _b.value ]}); break
-			case ">=": _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reaterEquals', args: [ _a.column, _b.value ]}); break
+			case "<" : _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'ess', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case ">" : _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reater', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case "<=": _p = isOr ? (isNot ? "orNotL" : "orL") : (isNot ? "notL" : "l"); _r.where.push({ cond: _p + 'essEquals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case ">=": _p = isOr ? (isNot ? "orNotG" : "orG") : (isNot ? "notG" : "g"); _r.where.push({ cond: _p + 'reaterEquals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
 			case "<>":
-			case "!=": _p = isOr ? (!isNot ? "orNotE" : "orE") : (!isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
-			case "=" : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
+			case "!=": _p = isOr ? (!isNot ? "orNotE" : "orE") : (!isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case "=" : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
   
 			case "RLIKE":
 			case "LIKE" : 
@@ -7803,20 +7929,20 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 					return match
 				}) + "$"
 
-				_r.where.push({ cond: _p + "atch", args: [ _a.column, _re ] })
+				_r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _re ] })
 				break
 
 			case "AND": _begin(op, false); _process(_a, false, isNot); _process(_b, false, isNot); _end(); break
 			case "OR" : _begin(op, true); _process(_a, false, isNot); _process(_b, true, isNot); _end(); break
   
-			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ _a.column, _b.value ]}); break
-			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ _a.column, _b.value ] }); break
-			case "BETWEEN": _p = isOr ? (isNot ? "orNotB" : "orB") : (isNot ? "notB" : "b"); _r.where.push({ cond: _p + "etweenEquals", args: [ _a.column, _b.value[0].value, _b.value[1].value ] }); break
+			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ] }); break
+			case "BETWEEN": _p = isOr ? (isNot ? "orNotB" : "orB") : (isNot ? "notB" : "b"); _r.where.push({ cond: _p + "etweenEquals", args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value[0].value, _b.value[1].value ] }); break
 
 			case "IN":
 				_p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m")
 				var _vs = "^(" + _b.value.map(r => r.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join("|") + ")$"
-				_r.where.push({ cond: _p + "atch", args: [ _a.column, _vs ] });
+				_r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _vs ] });
 				break
 			}
 		  }
@@ -7838,9 +7964,9 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 		  _ast.orderby.forEach(k => {
 			if (k.expr.type == "column_ref") {
 			  if (k.type == "DESC") {
-				_args.push("-" + k.expr.column)
+				_args.push("-" + (isDef(k.expr.value) ? k.expr.value : k.expr.column))
 			  } else {
-				_args.push(k.expr.column)
+				_args.push((isDef(k.expr.value) ? k.expr.value : k.expr.column))
 			  }
 			}
 		  })
@@ -7858,9 +7984,178 @@ AF.prototype.fromSQL2NLinq = function(sql) {
 	return _r
 }
 
-const $sql = function(aObj, aSQL) {
-	var _r = af.fromSQL2NLinq(aSQL)
-	return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
+/**
+ * <odoc>
+ * <key>$sql(aObject, aSQL, aMethod) : Array</key>
+ * Given an aObject (map or array) will try to execute aSQL (SQL expression) and return the corresponding results.
+ * Optionally you can provide aMethod to be used (e.g. "auto" (default) or "nlinq" or "h2"). "nlinq" it's the fastest but doesn't
+ * support aggregations or multi-field combinations; "h2" is the more complete but will require a lot more resources, it's slower.\
+ * \
+ * NOTE: In "h2" you can use the table _TMP for your queries.
+ * </odoc>
+ */
+const $sql = function(aObj, aSQL, aMethod) {
+	var _sql, chain = false
+	
+	if (isUnDef(aObj) || (isDef(aObj) && isUnDef(aSQL))) chain = true
+	if (!chain && isDef(aSQL)) _sql = af.fromSQL(aSQL)
+
+	// Determine method ot use
+	if (chain) aMethod = "h2"
+	if (isUnDef(aMethod)) {
+		if (__flags.SQL_QUERY_METHOD == "auto") {
+			if (isDef(_sql) && isArray(_sql.ast) && _sql.ast.length > 0) {
+				if (_sql.ast[0].groupby != null ||
+					aSQL.match(/FROM +_TMP(,|$| )/i) ||
+					$from(_sql.ast[0].columns)
+					.notEquals("expr.type", "column_ref")
+					.notEquals("expr.type", "double_quote_string")
+					.any()) {
+						aMethod = "h2"
+				}
+			}
+		} else {
+			aMethod = __flags.SQL_QUERY_METHOD
+		}
+	}
+
+	if (aMethod != "h2") {
+		var _r = af.fromSQL2NLinq(aSQL, _sql)
+		return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
+	} else {
+		let db, tf, defs = {}
+		ow.loadObj()
+
+		let createDB = () => {
+			if (isMap(aObj) && isDef(aObj.db)) {
+				db = aObj.db
+			} else {
+				var _n = nowNano()
+				if (__flags.SQL_QUERY_H2_INMEM) {
+					db = createDBInMem("t" + _n)
+				} else {
+					tf = io.createTempFile("openaf_query")
+					db = new DB("jdbc:h2:" + tf, "sa", "sa")
+				}
+			}
+			db.convertDates(true)
+		}
+
+		let __sql = {
+			close: () => {
+				db.close()
+				if (isDef(tf)) io.rm(tf)
+			},
+		    getTableDef: (aTable) => {
+				return defs[aTable]
+			},
+			streamTable: (aTable, aStreamReadFn, aErrFn, aBufferSize) => {
+				aTable = _$(aTable, "aTable").isString().default("_TMP")
+				aStreamReadFn = _$(aStreamReadFn, "aStreamReadFn").isFunction().$_()
+				aBufferSize = _$(aBufferSize, "aBufferSize").isNumber().default(__flags.IO.bufferSize)
+				aErrFn = _$(aErrFn, "aErrFn").isFunction().default(logErr)
+
+				var dumpFn = arrData => {
+					try {
+						ow.obj.fromArray2DB(arrData, db, aTable, __, true)
+					} catch(e) {
+						db.rollback()
+						aErrFn("Error while dumping data: " + e)
+					}
+				}
+
+				var c = 0, _bufData = []
+				do {
+					var _d = aStreamReadFn()
+					if (isUnDef(defs[aTable]) && isMap(_d)) {
+						// Create the table
+						defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _d, __, true)
+						try {
+							db.u(defs[aTable])
+							db.commit()
+						} catch(e) {
+							db.rollback()
+							aErrFn("Error while creating table: " + e)
+						}
+					}
+					// Buffer data
+					_bufData.push(_d)
+					c++
+
+					// Dump data if necessary (buffer size)
+					if (c % aBufferSize == 0) {
+						dumpFn(_bufData)
+						_bufData = []
+					}
+				} while(isDef(_d))
+
+				// Dump remaining data
+				if (_bufData.length > 0) {
+					dumpFn(_bufData)
+					_bufData = []
+				}
+				
+				return __sql
+			},
+			table: (aTable, _obj) => {
+				aTable = _$(aTable, "aTable").isString().default("_TMP")
+				
+				// Convert map to array
+				if (isUnDef(_obj)) _obj = [{}]
+				if (isMap(_obj)) _obj = $from(_obj).select()
+				if (isArray(_obj)) {
+					if (_obj.length != 0) {
+						try {
+							defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _obj[0], __, true)
+							db.u(defs[aTable])
+							ow.obj.fromArray2DB(_obj, db, aTable, __, true)
+							db.commit()
+						} catch(e) {
+							db.rollback()
+							throw e
+						}
+					}
+				}
+
+				return __sql
+			},
+			query: (_sql, dontClose) => {
+				dontClose = _$(dontClose, "dontClose").isBoolean().default(true)
+
+				// Remove from of aSQL			
+				if (!chain && !_sql.match(/FROM _TMP(,|$| )/i)) 
+					_sql = _sql.trim().replace(/(FROM .+?)?( +GROUP| +LIMIT| +ORDER| +WHERE|$)/i, " FROM _TMP$2")
+
+				// Execute the query
+				var _r
+				try {
+					_r = db.q(_sql)
+				} catch(e) {
+					throw e
+				} finally {
+					if (!dontClose) {
+						__sql.close()
+					}
+				}
+
+				if (isDef(_r) && isDef(_r.results)) {
+					traverse(_r.results, (aK, aV, aP, aO) => {
+						if (aV == "TRUE" || aV == "FALSE") aO[aK] = toBoolean(aV)
+					})
+					return _r.results
+				} else {
+					return __
+				}
+			},
+			closeQuery: (_sql) => __sql.query(_sql, false)
+		}
+
+		createDB()
+		if (isDef(aObj))
+			return __sql.table("_TMP", aObj).closeQuery(aSQL)
+		else
+			return __sql
+	}
 }
 
 /**
@@ -7955,6 +8250,8 @@ AF.prototype.fromObj2XML = function (obj, sanitize) {
 			for (var array in obj[prop]) {
 				xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop][array])) + "</" + prop + ">";
 			}
+		} else if (isDate(obj[prop])) {
+			xml += "<" + prop + ">" + obj[prop].toISOString() + "</" + prop + ">"
 		} else if (typeof obj[prop] == "object") {
 			xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop])) + "</" + prop + ">";
 		} else {
@@ -10038,6 +10335,17 @@ const $sh = function(aString, aIn) {
 
 	/**
 	 * <odoc>
+	 * <key>$sh.wd(aWd) : $sh</key>
+	 * When executing aCmd (with .exec) use aWd as the current working directory.
+	 * </odoc>
+	 */
+    __sh.prototype.wd = function(aWd) {
+        this.wd = aWd
+        return this
+    }
+
+	/**
+	 * <odoc>
 	 * <key>$sh.cb(aCallbackFunc) : $sh</key>
 	 * When executing aCmd (with .get) use aCallbackFunc function.
 	 * </odoc>
@@ -10657,7 +10965,7 @@ const $csv = function(aMap) {
 		fromInArray: (ar, fn) => {
 			ar = _$(ar, "array").isArray().default([])
 			var ari = ar.length
-			fn = _$(fn, "fn").isFunction().default(() => (ari >= 0 ? ar[ar.length - ari--] : __))
+			fn = _$(fn, "fn").isFunction().default(() => (ari >= 0 ? clone(ar[ar.length - ari--]) : __))
 
 			if (ari <= 0) return ""
 			
@@ -10806,14 +11114,22 @@ const $unset = function(aK) {
 
 /**
  * <ojob>
- * <key>$output(aObj, args, aFunc) : Map</key>
+ * <key>$output(aObj, args, aFunc, shouldReturn) : String</key>
  * Tries to output aObj in different ways give the args provided. If args.__format or args.__FORMAT is provided it will force 
- * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
+ * displaying values as "json", "prettyjson", "slon", "ndjson", "xml", "yaml", "table", "stable", "ctable", "tree", "html", "text", "md", "map", "res", "key", "args", "jsmap", "csv", "pm" (on the __pm variable with _list, _map or result) or "human". In "human" it will use the aFunc
  * provided or a default that tries printMap or sprint. If a format isn't provided it defaults to human or global.__format if defined. 
+ * If shouldReturn = true the string output will be returned
  * </ojob>
  */
-const $output = function (aObj, args, aFunc) {
-	args = _$(args).default({});
+const $output = function (aObj, args, aFunc, shouldReturn) {
+	args = _$(args).default({})
+	var fnP = _s => {
+		if (shouldReturn)
+			return _s
+		else
+			print(_s)
+	}
+
 	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
 		if (isArray(obj) || isMap(obj))
 			print(printTreeOrS(obj, __, { noansi: !__conAnsi }))
@@ -10848,44 +11164,35 @@ const $output = function (aObj, args, aFunc) {
 
 	switch (format) {
 		case "json":
-			sprint(res, "")
-			break
+			return fnP(stringify(res, __, ""))
 		case "prettyjson":
-			sprint(res)
-			break
+			return fnP(stringify(res))
 		case "cjson":
-			cprint(res)
-			break
+			return fnP(colorify(res))
 		case "slon":
-			print(ow.format.toSLON(res))
-			break
+			return fnP(ow.format.toSLON(res))
 		case "cslon":
-			print(ow.format.toCSLON(res))
-			break
+			return fnP(ow.format.toCSLON(res))
 		case "ndjson":
-			if (isArray(res)) res.forEach(e => print(stringify(e, __, "")))
-			break
+			if (isArray(res)) res.forEach(e => fnP(stringify(e, __, "")))
 		case "xml":
-			print(af.fromObj2XML(res, true))
-			break
+			return fnP(af.fromObj2XML(res, true))
 		case "yaml":
-			yprint(res, __, true)
-			break
+			return fnP(af.toYAML(res, __, true))
 		case "table":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) print(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)))
+			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)))
 			break
 		case "stable":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
 		case "ctable":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) print(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true))
 			break
 		case "tree":
-			print(printTreeOrS(res, __, { noansi: !__conAnsi }))
-			break
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
 		case "res":
 			if (isDef(res)) $set("res", res)
 			break
@@ -10904,7 +11211,11 @@ const $output = function (aObj, args, aFunc) {
 		case "jsmap":
 		case "html":
 			var _res = ow.loadTemplate().html.parseMap(res, true)
-			print("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
+			return fnP("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
+		case "text":
+			return fnP(String(res))
+		case "md":
+			return fnP(ow.format.withMD(String(res)))
 		case "pm":
 			var _p;
 			if (isArray(res)) _p = {
@@ -10921,12 +11232,11 @@ const $output = function (aObj, args, aFunc) {
 		case "csv":
 			if (isMap(res)) res = [res]
 			if (isArray(res)) {
-				print($csv(csv).fromInArray(res))
+				return fnP($csv(csv).fromInArray(res))
 			}
 			break
 		case "map":
-			print(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
-			break
+			return fnP(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
 		default:
 			if (format.startsWith("set_")) {
 				$set(format.substring(4), res)
