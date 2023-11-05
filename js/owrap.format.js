@@ -1094,14 +1094,15 @@ OpenWrap.format.prototype.string = {
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
 		plugin("Console")
 		var _con_ = new Console()
-		aY = _$(aY, "width").isNumber().default(Number(_con_.getConsoleReader().getTerminal().getWidth()))
-		aX = _$(aX, "height").isNumber().default(Number(Math.floor(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)))
+		aY = Number(_$(aY, "width").isNumber().default(_con_.getConsoleReader().getTerminal().getWidth()))
+		aX = Number(_$(aX, "height").isNumber().default(Math.round(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)))
 	
 		var elems = [], l = 0, ignore = []
 		aElems.forEach(line => {
-			var c = 0
+			var c = 0, totalC = 0
+			var eline = line.map(col => isDef(col.xspan) ? col.xspan : 1).reduce((aC,cR) => aC+cR)
 
-			line.forEach(col => {
+			line.forEach((col, icol) => {
 				if (ignore.indexOf("Y:" + c + "X:" + l) < 0) {
 					if (isUnDef(col)) col = ""
 					if (!isMap(col)) col = { obj: col }
@@ -1115,10 +1116,13 @@ OpenWrap.format.prototype.string = {
 
 					var xspan = _$(col.xspan, "xspan").isNumber().default(1)
 					var yspan = _$(col.yspan, "yspan").isNumber().default(1)
-					if (xspan > 1) for(var ii = c + 1; ii < c + xspan; ii++) { ignore.push("Y:" + ii + "X:" + l) }
+					if (xspan > 1) for(var ii = 0; ii < xspan; ii++) { ignore.push("Y:" + (c+ii+1) + "X:" + l) }
 					if (yspan > 1) for(var ii = l + (aX + 1); ii < l + ((aX + 1) * yspan); ii += aX + 1) { ignore.push("Y:" + c + "X:" + ii) }
-					var p = "", cs = Math.floor((aY / line.length) * xspan)
-			
+					//var p = "", cs = Math.round((aY / eline) * xspan)
+					var p = "", cs0 = Math.round(aY / eline); cs = cs0 * xspan
+					totalC += cs
+					if (line.length -1 == icol) cs += (aY > (totalC-1) ? aY - (totalC-1) : 0)
+
 					switch(col.type) {
 					case "map"  : p = printMap(col.obj, cs-1, "utf", true); break
 					case "tree" : p = printTreeOrS(col.obj, cs-1); break
@@ -1145,8 +1149,8 @@ OpenWrap.format.prototype.string = {
 					} else {
 						po = p.join("\n")
 					}
-					
-					elems.push({ x: l, y: cs * c, t: po })
+
+					elems.push({ x: l, y: cs0 * c, t: po })
 				}
 				c++
 			})
