@@ -11174,7 +11174,7 @@ const $output = function (aObj, args, aFunc, shouldReturn) {
 		case "cslon":
 			return fnP(ow.format.toCSLON(res))
 		case "ndjson":
-			if (isArray(res)) res.forEach(e => fnP(stringify(res, __, "")))
+			if (isArray(res)) return res.map(line => fnP(stringify(line, __, "")))
 		case "xml":
 			return fnP(af.fromObj2XML(res, true))
 		case "yaml":
