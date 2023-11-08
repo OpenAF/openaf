@@ -72,6 +72,7 @@ OpenWrap.ai.prototype.__gpttypes = {
         create: (aOptions) => {
             ow.loadObj()
             aOptions = _$(aOptions, "aOptions").isMap().$_()
+            aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
@@ -110,11 +111,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
-                    return _r._request("/v1/chat/completions", {
+                    return _r._request("/v1/chat/completions", merge({
                        model: aModel,
                        temperature: aTemperature,
                        messages: msgs
-                    })   
+                    }, aOptions.params))   
                 },
                 addPrompt: (aRole, aPrompt) => {
                     if (isUnDef(aPrompt)) {
@@ -147,7 +148,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                        conTimeout    : 60000,
                        httpClient    : _h,
                        requestHeaders: { 
-                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key) 
+                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key)
                        } 
                     })
                     _h.close()
@@ -165,6 +166,7 @@ OpenWrap.ai.prototype.__gpttypes = {
         create: (aOptions) => {
             ow.loadObj()
             aOptions = _$(aOptions, "aOptions").isMap().$_()
+            aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("llama2:latest")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
