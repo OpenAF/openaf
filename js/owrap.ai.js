@@ -144,18 +144,26 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aVerb = _$(aVerb, "aVerb").isString().default("POST")
                  
                     var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
-                    var __r = $rest({ 
+                    var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
                        requestHeaders: { 
                           Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key)
                        } 
-                    })
+                    }
                     _h.close()
                  
+                    var _fnh = r => {
+                        if (isMap(r)) {
+                            return (isDef(r.error) ? jsonParse(r.error, true, __, true) : r)
+                        } else {
+                            return jsonParse(af.fromBytes2String(r.readAllBytes()), true)
+                        }
+                    }
+
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return __r.get("https://api.openai.com/" + aURI)
-                    case "POST": return __r.post("https://api.openai.com/" + aURI, aData)
+                    case "GET" : return _fnh($rest(__m).get2Stream("https://api.openai.com/" + aURI))
+                    case "POST": return _fnh($rest(__m).post2Stream("https://api.openai.com/" + aURI, aData))
                     }
                 }
             }
@@ -303,10 +311,17 @@ OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
 }
 
 OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
-    this.addSystemPrompt("You only output answers as a JSON map string")
+    this.setInstructions("json")
 
     var out = this.model.prompt(aPrompt, aModel, aTemperature)
     return isString(out) ? jsonParse(out, __, __, true) : out 
+}
+
+OpenWrap.ai.prototype.gpt.prototype.booleanPrompt = function(aPrompt, aModel, aTemperature) {
+    this.setInstructions("boolean")
+
+    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    return isString(out) ? (out.toLowerCase() == "true") : out 
 }
 
 OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
