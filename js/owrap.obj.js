@@ -1942,8 +1942,10 @@ OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, is
 OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) { 
 	if (parseJson) {
 		var res = this.outputObj
-		if (isDef(res.response)) res.response = jsonParse(res.response)
-		if (isDef(res.responseBytes)) res.response = jsonParse(af.fromBytes2String(res.responseBytes))
+		if (isDef(res)) {
+			if (isDef(res.response)) res.response = jsonParse(res.response)
+			if (isDef(res.responseBytes)) res.response = jsonParse(af.fromBytes2String(res.responseBytes))
+		}
 		return res
 	} else {
 		var _r = this.outputObj
@@ -2249,8 +2251,10 @@ OpenWrap.obj.prototype.http0.prototype.post = function(aUrl, aIn, aRequestMap, i
 OpenWrap.obj.prototype.http0.prototype.getErrorResponse = function(parseJson) {
 	if (parseJson) {
 		var res = this.outputObj
-		if (isDef(res.response)) res.response = jsonParse(res.response)
-		if (isDef(res.responseBytes)) res.response = jsonParse(res.responseBytes)
+		if (isDef(res)) {
+			if (isDef(res.response)) res.response = jsonParse(res.response)
+			if (isDef(res.responseBytes)) res.response = jsonParse(res.responseBytes)
+		}
 		return res
 	} else {
 		var _r = this.outputObj
