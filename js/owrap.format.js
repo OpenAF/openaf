@@ -3251,6 +3251,8 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			res = res.replace(b, "```$$" + i + "```")
 		})
 
+    res = javaRegExp(res).replaceAll("(?<!\\\\)<!--(.|\n)*?--(?<!\\\\)>", "")
+    res = javaRegExp(res).replaceAll("(?<=[^\\W_*\\\\])([*_])+(?=[^\\W_*\\\\])", "\\\\$1")
 	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})", ansiColor("BOLD,ITALIC", "$2")+da)
 	res = javaRegExp(res).replaceAll("(?<!\\\\)(_{3})(^ _][ _\n]*)(?<!\\\\)(_{3})", ansiColor("BOLD,ITALIC", "$2")+da)
 	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})", ansiColor("BOLD", "$2")+da)
