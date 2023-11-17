@@ -265,6 +265,13 @@ OpenWrap.ai.prototype.__gpttypes = {
         }
     }
 }
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt(aType, aOptions) : ow.ai.gpt</key>
+ * Creates a GPT AI model of aType (e.g. "openai" or "ollama") with aOptions.\
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
     if (isUnDef(ow.ai.__gpttypes[aType])) {
         throw "Unrecognized GPT type '" + aType + "'."
@@ -273,43 +280,97 @@ OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
     }
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.prompt(aPrompt, aRole, aModel, aTemperature) : String</key>
+ * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature) {
     return this.model.prompt(aPrompt, aRole, aModel, aTemperature)
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.getConversation() : Array</key>
+ * Returns the current conversation.
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.getConversation = function() {
     return this.model.getConversation()
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.setConversation(aConversation) : ow.ai.gpt</key>
+ * Sets the current conversation to aConversation.
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.setConversation = function(aConversation) {
     this.model.setConversation(aConversation)
     return this
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.rawPrompt(aPrompt, aRole, aModel, aTemperature) : String</key>
+ * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature) {
     return this.model.rawPrompt(aPrompt, aRole, aModel, aTemperature)
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.addPrompt(aPrompt, aRole) : ow.ai.gpt</key>
+ * Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") to the current conversation.
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.addPrompt = function(aPrompt, aRole) {
     this.model = this.model.addPrompt(aPrompt, aRole)
     return this
 }
 
-OpenWrap.ai.prototype.gpt.prototype.addUserPrompt = function(aPrompt, aRole) {
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.addUserPrompt(aPrompt) : ow.ai.gpt</key>
+ * Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") to the current conversation.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.addUserPrompt = function(aPrompt) {
     this.model = this.model.addUserPrompt(aPrompt)
     return this
 }
 
-OpenWrap.ai.prototype.gpt.prototype.addSystemPrompt = function(aPrompt, aRole) {
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.addSystemPrompt(aPrompt) : ow.ai.gpt</key>
+ * Adds aPrompt (a string or an array of strings) with aRole (defaults to "user") to the current conversation.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.addSystemPrompt = function(aPrompt) {
     this.model = this.model.addSystemPrompt(aPrompt)
     return this
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.cleanPrompt() : ow.ai.gpt</key>
+ * Cleans the current conversation.
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
     this.model = this.model.cleanPrompt()
     return this
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.jsonPrompt(aPrompt, aModel, aTemperature) : Object</key>
+ * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
     this.setInstructions("json")
 
@@ -317,6 +378,12 @@ OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemp
     return isString(out) ? jsonParse(out, __, __, true) : out 
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.booleanPrompt(aPrompt, aModel, aTemperature) : boolean</key>
+ * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.booleanPrompt = function(aPrompt, aModel, aTemperature) {
     this.setInstructions("boolean")
 
@@ -324,6 +391,12 @@ OpenWrap.ai.prototype.gpt.prototype.booleanPrompt = function(aPrompt, aModel, aT
     return isString(out) ? (out.toLowerCase() == "true") : out 
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.setInstructions(aType) : ow.ai.gpt</key>
+ * Sets the instructions for the current conversation. aType can be a string (e.g. json, boolean, sql, js and path) or an array of strings.
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
     if (isArray(aType)) {
         this.addSystemPrompt(aType.join("\n"))
@@ -334,6 +407,7 @@ OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
             case "boolean": this.addSystemPrompt("Acting as an assistant you can only answer with the most correct of only three possible answers: 'true', 'false', 'undefined'."); break;
             case "sql"    : this.addSystemPrompt("Acting as a powerfull SQL assistant you can only output an answer as a single SQL query."); break;
             case "js"     : this.addSystemPrompt("Acting as a powerfull Javascript assistant you can only output an answer as a single Javascript function."); break;
+            case "path"   : this.addSystemPrompt("Acting as a powerfull JMESPath assistant you can only output an answer as a single JMESPath query string."); break;
             }
         }
     }
@@ -341,6 +415,12 @@ OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
     return this
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.sqlPrompt(aPrompt, aTableDefs, aDBName, aModel, aTemperature) : String</key>
+ * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.sqlPrompt = function(aPrompt, aTableDefs, aDBName, aModel, aTemperature) {
     aDBName = _$(aDBName, "aDBName").isString().default("H2")
     aTableDefs = _$(aTableDefs, "aTableDefs").isArray().$_()
@@ -350,6 +430,12 @@ OpenWrap.ai.prototype.gpt.prototype.sqlPrompt = function(aPrompt, aTableDefs, aD
     return out
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.pathPrompt(aPrompt, aJSONSchemaDef, aModel, aTemperature) : String</key>
+ * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.pathPrompt = function(aPrompt, aJSONSchemaDef, aModel, aTemperature) {
     this.addSystemPrompt("you can only output an answer as a single JMESPath query string to use as argument for JMESPath")
     this.addSystemPrompt("consider the array to be queried is composed of maps with the following json schema " + stringify(aJSONSchemaDef,__,""))
@@ -358,6 +444,12 @@ OpenWrap.ai.prototype.gpt.prototype.pathPrompt = function(aPrompt, aJSONSchemaDe
     return out
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.parseCode(anAnswer) : String</key>
+ * Tries to parse anAnswer and return the code between \``` and \```.
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.parseCode = function(anAnswer) {
     _$(anAnswer, "anAnswer").isString().$_()
 
@@ -389,6 +481,12 @@ OpenWrap.ai.prototype.gpt.prototype.parseCode = function(anAnswer) {
 	return code
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.codePrompt(aPrompt, aModel, aTemperature, aCommentChars) : String</key>
+ * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * </odoc>
+ */
 OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemperature, aCommentChars) {
     aCommentChars = _$(aCommentChars, "aCommentChars").isString().default("#")
 
@@ -411,6 +509,152 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
     } else {
        return aResponse
     }
+}
+
+/**
+ * <odoc>
+ * <key>$gpt(aModel) : $gpt</key>
+ * Creates a GPT AI model of aType (e.g. "openai" or "ollama") with aOptions.
+ * </odoc>
+ */
+global.$gpt = function(aModel) {
+    _$(aModel, "options").isMap().$_()
+    var type = _$(aModel.type, "type").isString().$_()
+
+    var _dbtbls = [], _dbname
+    var _g = new ow.ai.gpt(type, aModel)
+    var _r = {
+        getGPT: () => _g,
+        /**
+         * <odoc>
+         * <key>$gpt.prompt(aPrompt, aRole, aModel, aTemperature) : String</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor).
+         * </odoc>
+         */
+        prompt: (aPrompt, aRole, aModel, aTemperature) => {
+            return _g.prompt(aPrompt, aRole, aModel, aTemperature)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptMD(aPrompt, aRole, aModel, aTemperature) : String</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a markdown string.
+         * </odoc>
+         */
+        promptMD: (aPrompt, aRole, aModel, aTemperature) => {
+            return ow.loadFormat().withMD(_g.prompt(aPrompt, aRole, aModel, aTemperature))
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptBool(aPrompt, aRole, aModel, aTemperature) : boolean</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a boolean.
+         * </odoc>
+         */
+        promptBool: (aPrompt, aRole, aModel, aTemperature) => {
+            return _g.booleanPrompt(aPrompt, aRole, aModel, aTemperature)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptSQL(aPrompt, aTableDefs, aDBName, aModel, aTemperature)</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a SQL query.
+         * </odoc>
+         */
+        promptSQL: (aPrompt, aTableDefs, aDBName, aModel, aTemperature) => {
+            return _g.sqlPrompt(aPrompt, _dbtbls, _dbname, aModel, aTemperature)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptPath(aPrompt, aJSONSchemaDef, aModel, aTemperature)</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a JMESPath query.
+         * </odoc>
+         */
+        promptPath: (aPrompt, aJSONSchemaDef, aModel, aTemperature) => {
+            return _g.pathPrompt(aPrompt, aJSONSchemaDef, aModel, aTemperature)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptJSON(aPrompt, aModel, aTemperature)</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a Javascript function.
+         * </odoc>
+         */
+        promptJSON: (aPrompt, aModel, aTemperature) => {
+            return _g.jsonPrompt(aPrompt, aModel, aTemperature)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.iniPrompt(aPrompt, aRole, aModel, aTemperature) : String</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) after cleaning the current conversation.
+         * </odoc>
+         */
+        iniPrompt: (aPrompt, aRole, aModel, aTemperature) => {
+            return _g.cleanPrompt().prompt(aPrompt, aRole, aModel, aTemperature)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.sysPrompt(aPrompt, aModel, aTemperature) : String</key>
+         * Tries to prompt system aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor).
+         * </odoc>
+         */
+        sysPrompt: (aPrompt, aModel, aTemperature) => { 
+            return _g.addSystemPrompt(aPrompt).prompt(__, aModel, aTemperature)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.withContext(anObject, aContext) : ow.ai.gpt</key>
+         * Adds a context to the current conversation.
+         * </odoc>
+         */
+        withContext: (anObject, aContext) => {
+            _$(anObject, "anObject").$_()
+            _$(aContext, "aContext").isString().$_()
+
+            _g.addSystemPrompt("with " + aContext + ": " + stringify(anObject, __, ""))
+
+            return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.withSQLTables(aDBName, aTablesDefs) : ow.ai.gpt</key>
+         * Adds aDBName with aTableDefs to be used with promptSQL.
+         * </odoc>
+         */
+        withSQLTables: (aDBName, aTableDefs) => {
+            _$(aDBName, "aDBName").isString().$_()
+            _$(aTableDefs, "aTableDefs").isArray().$_()
+
+            _dbtbls = aTableDefs
+            _dbname = aDBName
+
+            return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.withJSONAssert(aPath, anAssert) : ow.ai.gpt</key>
+         * Adds a JSON path aPath to be asserted with anAssert (e.g. isArray or isMap).
+         * </odoc>
+         */
+        withJSONAssert: (aPath, anAssert) => {
+            _$(aPath, "aPath").isString().$_()
+            _$(anAssert, "anAssert").isString().$_()
+
+            switch(anAssert.toLowerCase()) {
+            case "isArray": _g.addSystemPrompt("The JSON result should have '" + aPath + "' as an array."); break
+            case "isMap"  : _g.addSystemPrompt("The JSON result should have '" + aPath + "' as a map."); break
+            }
+
+            return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.close()</key>
+         * Closes the current GPT model.
+         * </odoc>
+         */
+        close: () => { 
+            _g = __
+        }
+    }
+
+    return _r
 }
 
 /**
