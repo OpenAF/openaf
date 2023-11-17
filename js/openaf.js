@@ -1795,8 +1795,31 @@ __JSONformat = {
 const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
 	if (isDef(astring) && String(astring).length > 0) {
 		if (ignoreNonJson) {
-			astring = astring.substring(astring.indexOf("{"))
-			astring = astring.substring(0, astring.lastIndexOf("}")+1)
+			let startIndex, endIndex
+			let startIndexA = astring.indexOf("[")
+			let endIndexA   = astring.lastIndexOf("]")
+			let startIndexM = astring.indexOf("{")
+			let endIndexM   = astring.lastIndexOf("}")
+			// No map but array exists
+			if (startIndexM < 0 && endIndexM < 0 && startIndexA > -1 && endIndexA > -1) {
+				startIndex = startIndexA
+				endIndex   = endIndexA
+			}
+			// Map exists and array exists
+			if (startIndexM > -1 && endIndexM > -1 && startIndexA > -1 && endIndexA > -1) {
+				startIndex = startIndexA < startIndexM ? startIndexA : startIndexM
+				endIndex   = startIndexA < startIndexM ? endIndexA : endIndexM
+			}
+			// Map exists but array doesn't
+			if (startIndexM > -1 && endIndexM > -1 && startIndexA < 0 && endIndexA < 0) {
+				startIndex = startIndexM
+				endIndex   = endIndexM
+			}
+
+			if (startIndex >= 0 && endIndex >= 0 && startIndex < endIndex) {
+				astring = astring.substring(startIndex)
+				astring = astring.substring(0, (endIndex - startIndex) + 1)
+			}
 		}
 		try {
 			var a;
