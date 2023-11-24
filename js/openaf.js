@@ -5655,7 +5655,7 @@ const traverse = function(aObject, aFunction, aParent) {
 		  for(let _key in _d.keys) {
 			var __k = _d.keys[_key]
 			let value = _d.obj[__k]
-			if (isDef(value) && (isArray(value) || isMap(value))) {
+			if (isDef(value) && !isNull(value) && (isArray(value) || isMap(value))) {
 			  let newParent = _d.parent + (isNaN(Number(__k)) ? `.${__k}` : (isNumber(__k) ? `[${__k}]` : `["${__k}"]`))
 			  stack.push({ obj: value, keys: (isJavaObject(value)) ? [] : Object.keys(value), parent: newParent })
 			}
