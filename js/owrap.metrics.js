@@ -512,147 +512,137 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
 OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap) {
     var handled = false
     aPrefix = _$(aPrefix, "prefix").isString().default("metric")
-    aPrefix = aPrefix.replace(/[^a-zA-Z0-9]/g, "_")
+    const _reInitTxt = new RegExp("[^a-zA-Z0-9]", "g")
+    aPrefix = aPrefix.replace(_reInitTxt, "_")
     if (/^\d.+/.test(aPrefix)) aPrefix = "_" + aPrefix
 
     aConvMap = _$(aConvMap, "aConvMap").isMap().default({})
-  
+
     // https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md
-  
+
     var _help = aMetric => {
-        if (isDef(aHelpMap) && isMap(aHelpMap)) {
-            var far = ""
+        if (isMap(aHelpMap)) {
+            var far = []
             if (isDef(aMetric) && isDef(aHelpMap[aMetric])) {
                 var h = aHelpMap[aMetric];
-                if (isDef(h.text)) far += "# " + h.text + "\n"
-                if (isDef(h.help)) far += "# HELP " + aMetric + " " + h.help + "\n"
-                if (isDef(h.type)) far += "# TYPE " + aMetric + " " + h.type + "\n"
+                if (isDef(h.text)) far.push("# " + h.text)
+                if (isDef(h.help)) far.push("# HELP " + aMetric + " " + h.help)
+                if (isDef(h.type)) far.push("# TYPE " + aMetric + " " + h.type)
             }
-            return far
+            return far.filter(l=>l.length > 0).join("\n")
         } else {
             return ""
         }
     }
-  
-    var _map = (obj, prefix, lbs, suf) => { 
+
+    var _map = (obj, prefix, lbs, suf) => {
         suf = _$(suf).default("")
-        suf = suf.replace(/[^a-zA-Z0-9]/g, "_")
-        var ar = ""
+        suf = suf.replace(_reInitTxt, "_")
+        var ar = []
         if (isMap(obj)) {
-            var keys = Object.keys(obj)
             // build labels
             lbs = _$(lbs).default({})
-            keys.forEach(key => {
-                if (!isNumber(obj[key]) && !isBoolean(obj[key]) && isDef(obj[key]) && !isArray(obj[key]) && !isMap(obj[key]) ) {
-                    var _key   = String(key)
-                    var _value = String(obj[key])
+            var _kLbs = Object.keys(lbs)
+            for (var key in obj) {
+                var _v = obj[key]
+
+                if (!isNumber(_v) && !isBoolean(_v) && isDef(_v) && !isArray(_v) && !isMap(_v)) {
+                    var _key = String(key)
+                    var _value = String(_v)
                     // Handling limits
                     if (__flags.OPENMETRICS_LABEL_MAX) {
-                        if (_key.length > 128)   _key = _key.substring(0, 128)
+                        if (_key.length > 128) _key = _key.substring(0, 128)
                         if (_value.length > 128) _value = _value.substring(0, 128)
                     }
-                    
+
                     // Escaping
                     if (/\d.+/.test(_key)) _key = "_" + _key
-                    _key = _key.replace(/[^a-zA-Z0-9]/g, "_")
+                    _key = _key.replace(_reInitTxt, "_")
                     _value = _value.replace(/\n/g, "\\\\n").replace(/\\/g, "\\\\").replace(/\"/g, "\\\"")
-                    
+
                     // Adding
                     if (_key[0] == "_") _key = aPrefix + _key
                     lbs[_key] = "\"" + _value + "\""
                 }
-            })
-            var lprefix = (Object.keys(lbs).length > 0 ? "{" + Object.keys(lbs).map(k => k + "=" + lbs[k]).join(",") + "}" : "")
-  
+            }
+
+            var lprefix = (_kLbs.length > 0 ? "{" + _kLbs.map(k => k + "=" + lbs[k]).join(",") + "}" : "")
+
             // build each map metric entry
-            keys.forEach(key => {
-                if (isDef(obj[key])) {
-                    var k = key.replace(/[^a-zA-Z0-9]/g, "_")
-                    if (isMap(aConvMap) && isString(obj[key]) && isDef(aConvMap[key])) {
-                        if (isMap(aConvMap[key]) && isNumber(aConvMap[key][obj[key]])) {
-                            ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[key][obj[key]]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
-                            return 1
+            for (var key in obj) {
+                var _v = obj[key]
+                if (isDef(_v)) {
+                    var k = key.replace(_reInitTxt, "_")
+                    if (isMap(aConvMap) && isString(_v) && isDef(aConvMap[key])) {
+                        if (isMap(aConvMap[key]) && isNumber(aConvMap[key][_v])) {
+                            ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[key][_v]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : ""))
+                            continue
                         }
-                        if (isMap(aConvMap[prefix + "_" + k + suf]) && isNumber(aConvMap[prefix + "_" + k + suf][obj[key]])) {
-                            ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[prefix + "_" + k + suf][obj[key]]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
-                            return 1
-                        }     
-                    } 
-                    if (isBoolean(obj[key])) ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (obj[key] ? "1" : "0") + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
-                    if (isNumber(obj[key]))  ar += _help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + Number(obj[key]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
-                    if (isMap(obj[key]))     ar += _map(obj[key], prefix + "_" + k, clone(lbs), suf)
-                    if (isArray(obj[key]))   ar += _arr(obj[key], prefix + "_" + k, clone(lbs), suf)
-                }
-            })
-        }
-        return ar;
-    }
-    var _arr = (obj, prefix, lbs, suf) => { 
-        suf = _$(suf).default("")
-        var ar = ""
-        if (isArray(obj)) {
-            lbs = _$(lbs).default({})
-            var orig = String(suf)
-            for(var i in obj) {
-                if (isDef(obj[i])) {
-                    var tlbs = clone(lbs)
-                    if (isDef(tlbs["_id"])) tlbs["_id"] = "\"" + tlbs["_id"].replace(/"/g, "") + "." + String(i) + "\""; else tlbs["_id"] = "\"" + String(i) + "\""
-                    //var tlbs = clone(lbs)
-                    //try to identify key
-                    /*var addSuf = false
-                    if (isMap(obj[i])) {
-                        if (isDef(obj[i].key))  { suf = orig + "_" + obj[i].keyb; addSuf = true }
-                        if (isDef(obj[i].name)) { suf = orig + "_" + obj[i].name; addSuf = true }
-                        if (isDef(obj[i].id))   { suf = orig + "_" + obj[i].id; addSuf = true }
-                        if (isDef(obj[i].uuid)) { suf = orig + "_" + obj[i].uuid; addSuf = true }
-                        if (isDef(obj[i].UUID)) { suf = orig + "_" + obj[i].UUID; addSuf = true }
-  
-                        if (!addSuf) suf = orig + "_row" + String(i)
-                    } else {
-                        suf = orig + "_row" + String(i)
-                    }*/
-  
-                    if (isMap(obj[i]))                         ar += _map(obj[i], prefix, tlbs, suf)
-                    if (isArray(obj[i]))                       ar += _arr(obj[i], prefix, tlbs, suf)
-                    if (isNumber(obj[i]) || isBoolean(obj[i])) ar += _sim(obj[i], prefix, tlbs, suf)
+                        if (isMap(aConvMap[prefix + "_" + k + suf]) && isNumber(aConvMap[prefix + "_" + k + suf][_v])) {
+                            ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[prefix + "_" + k + suf][_v]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : ""))
+                            continue
+                        }
+                    }
+                    if (isBoolean(_v)) ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (_v ? "1" : "0") + (isDef(aTimestamp) ? " " + Number(aTimestamp) : ""))
+                    if (isNumber(_v)) ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + Number(_v) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : ""))
+                    if (isMap(_v)) ar.push(_map(_v, prefix + "_" + k, clone(lbs), suf))
+                    if (isArray(_v)) ar.push(_arr(_v, prefix + "_" + k, clone(lbs), suf))
                 }
             }
         }
-        return ar
+        return ar.filter(l=>l.length > 0).join("\n")
     }
-    var _sim = (obj, prefix, tlbs, suf) => { 
+    var _arr = (obj, prefix, lbs, suf) => {
         suf = _$(suf).default("")
-        suf = suf.replace(/[^a-zA-Z0-9]/g, "_")
+        var ar = []
+        if (isArray(obj)) {
+            lbs = _$(lbs).default({})
+            var orig = String(suf)
+            for (var i in obj) {
+                if (isDef(obj[i])) {
+                    var tlbs = clone(lbs)
+                    if (isDef(tlbs["_id"])) tlbs["_id"] = "\"" + tlbs["_id"].replace(/"/g, "") + "." + String(i) + "\""; else tlbs["_id"] = "\"" + String(i) + "\""
+
+                    if (isMap(obj[i])) ar.push(_map(obj[i], prefix, tlbs, suf))
+                    if (isArray(obj[i])) ar.push(_arr(obj[i], prefix, tlbs, suf))
+                    if (isNumber(obj[i]) || isBoolean(obj[i])) ar.push(_sim(obj[i], prefix, tlbs, suf))
+                }
+            }
+        }
+        return ar.filter(l=>l.length > 0).join("\n")
+    }
+    var _sim = (obj, prefix, tlbs, suf) => {
+        suf = _$(suf).default("")
+        suf = suf.replace(_reInitTxt, "_")
         var ar = ""
         if (isBoolean(obj)) {
             obj = (obj ? 1 : 0);
         }
-  
+
         tlbs = _$(tlbs).default({})
         var lprefix = (Object.keys(tlbs).length > 0 ? "{" + Object.keys(tlbs).map(k => k + "=" + tlbs[k]).join(",") + "}" : "")
-  
+
         if (isNumber(obj)) {
-            ar += _help(prefix) + prefix + suf + lprefix + " " + Number(aObj) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "") + "\n"
+            ar = _help(prefix) + prefix + suf + lprefix + " " + Number(aObj) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "")
         }
         return ar
     }
-  
-    var ar = ""
+
+    var ar = []
     if (isMap(aObj)) {
         handled = true;
-        ar += _map(aObj, aPrefix)
+        ar.push(_map(aObj, aPrefix))
     }
-  
+
     if (isArray(aObj)) {
         handled = true;
-        ar += _arr(aObj, aPrefix)
+        ar.push(_arr(aObj, aPrefix))
     }
-  
+
     if (!handled) {
-        ar += _sim(aObj, aPrefix)
+        ar.push(_sim(aObj, aPrefix))
     }
-  
-    //return ar.map(r => r.replace(/\\{1}/g, "/").trim()).join("\n") + "\n";
-    //return ar.replace(/\\{1}/g, "/").trim() + "\n"
-    return ar.trim() + "\n"
-  }
+
+    return ar.filter(l=>l.length > 0).join("\n").trim() + "\n"
+}
+
