@@ -168,11 +168,11 @@ const $$ = function(aObj) {
 			delete prev[prevK]
 			return orig
         },
-        isDef: () => { return (isJavaObject(aObj) || !(typeof aObj == 'undefined')) ? true : false },
-        isUnDef: () => { return (isJavaObject(aObj) || !(typeof aObj == 'undefined')) ? false : true },
-        isJavaObject: () => { return isJavaObjecta(aObj) },
-        isArray: () => { return Array.isArray(aObj); },
-        isMap: () => { return (Object.prototype.toString.call(aObj) == "[object Object]"); },
+        isDef: () => isJavaObject(aObj) || typeof aObj !== 'undefined',
+        isUnDef: () => !isJavaObject(aObj) && typeof aObj == 'undefined',
+        isJavaObject: () => isJavaObject(aObj),
+        isArray: () => Array.isArray(aObj),
+        isMap: () => Object.prototype.toString.call(aObj) == "[object Object]",
         isObject: () => { var type = typeof aObj; return type === 'function' || type === 'object' && !!aObj; },
         isFunction: () => { return typeof aObj == 'function' || false; },
         isString: () => { return typeof aObj == 'string' || false; },

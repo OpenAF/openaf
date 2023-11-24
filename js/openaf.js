@@ -71,7 +71,8 @@ const isJavaClass = function(obj) {
  * (see also isUnDef). Shortcut for the isDefined function.
  * </odoc>
  */
-const isDef = function(aObject)   { return (isJavaObject(aObject) || !(typeof aObject == 'undefined')) ? true : false; }
+const isDef = aObject => isJavaObject(aObject) || typeof aObject !== 'undefined'
+
 /**
  * <odoc>
  * <key>isUnDef(aObject) : boolean</key>
@@ -79,7 +80,7 @@ const isDef = function(aObject)   { return (isJavaObject(aObject) || !(typeof aO
  * (see also isDef). Shortcut for the isUndefined function.
  * </odoc>
  */
-const isUnDef = function(aObject) { return (!isJavaObject(aObject) && typeof aObject == 'undefined') ? true : false; }
+const isUnDef = aObject => !isJavaObject(aObject) && typeof aObject == 'undefined'
 
 /**
  * <odoc>
@@ -205,9 +206,10 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		bufferSize: 1024
 	},
 	ALTERNATIVES: {
-		traverse: true,
-		extend  : true,
-		merge   : true
+		traverse : true,
+		extend   : true,
+		merge    : true,
+		jsonParse: true
 	},
 	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR    : true,
@@ -1800,14 +1802,14 @@ const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
 		}
 		try {
 			var a;
-			if (alternative) {
-				a = af.jsonParse(astring, alternative);
+			if (_$(alternative).default(__flags.ALTERNATIVES.jsonParse)) {
+				a = af.jsonParse(astring, true);
 			} else {
 				a = JSON.parse(astring);
 			}
-                        if (__JSONformat.unsafe && unsafe) {
-                     		traverse(a, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
-                        }
+			if (__JSONformat.unsafe && unsafe) {
+				traverse(a, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+			}
 			return a;
 		} catch(e) {
 			return astring;
@@ -4683,7 +4685,7 @@ const uncompress = function(aCompressedObject) {
  * Returns true if aObj is an array, false otherwise.
  * </odoc>
  */
-const isArray = Array.isArray;
+const isArray = Array.isArray
 
 /**
  * <odoc>
@@ -4691,7 +4693,7 @@ const isArray = Array.isArray;
  * Returns true if aObj is a map, false otherwise.
  * </odoc>
  */
-const isMap = (a) => { return (Object.prototype.toString.call(a) == "[object Object]"); };
+const isMap = a => (Object.prototype.toString.call(a) == "[object Object]")
 
 /**
  * <odoc>
@@ -4699,9 +4701,9 @@ const isMap = (a) => { return (Object.prototype.toString.call(a) == "[object Obj
  * Returns true if aObj is an object, false otherwise;
  * </odoc>
  */
-const isObject = function(obj) {
-    var type = typeof obj;
-    return type === 'function' || type === 'object' && !!obj;
+const isObject = obj => {
+    var type = typeof obj
+    return type === 'function' || type === 'object' && !!obj
 }
 
 /**
@@ -4710,9 +4712,7 @@ const isObject = function(obj) {
  * Returns true if aObj is a function, false otherwise;
  * </odoc>
  */
-const isFunction = function(obj) {
-    return typeof obj == 'function' || false;
-}
+const isFunction = obj => typeof obj == 'function' || false
 
 /**
  * <odoc>
@@ -4720,9 +4720,7 @@ const isFunction = function(obj) {
  * Returns true if aObj is a string, false otherwise
  * </odoc>
  */
-const isString = function(obj) {
-	return typeof obj == 'string' || false;
-}
+const isString = obj => typeof obj == 'string' || false
 
 /**
  * <odoc>
@@ -4730,9 +4728,7 @@ const isString = function(obj) {
  * Returns true if aObj can be a number, false otherwise
  * </odoc>
  */
-const isNumber = function(obj) {
-	return !isNaN(parseFloat(obj)) && isFinite(obj);
-}
+const isNumber = obj => !isNaN(parseFloat(obj)) && isFinite(obj)
 
 /**
  * <odoc>
@@ -4740,9 +4736,7 @@ const isNumber = function(obj) {
  * Returns true if aObj doesn't have a decimal component.
  * </odoc>
  */
-const isInteger = function(obj) {
-	return isNumber(obj) && Number.isSafeInteger(obj);
-}
+const isInteger = obj => isNumber(obj) && Number.isSafeInteger(obj)
 
 /**
  * <odoc>
@@ -4750,9 +4744,7 @@ const isInteger = function(obj) {
  * Returns true if aObj has a decimal component.
  * </odoc>
  */
-const isDecimal = function(obj) {
-	return isNumber(obj) && !isInteger(obj);
-}
+const isDecimal = obj => isNumber(obj) && !isInteger(obj)
 
 /**
  * <odoc>
@@ -4760,9 +4752,7 @@ const isDecimal = function(obj) {
  * Returns true if aObj is of type number, false otherwise
  * </odoc>
  */
-const isTNumber = function(obj) {
-	return typeof obj === "number";
-}
+const isTNumber = obj => typeof obj === "number"
 
 /**
  * <odoc>
@@ -4770,19 +4760,14 @@ const isTNumber = function(obj) {
  * Returns true if aObj is a date, false otherwise
  * </odoc>
  */
-const isDate = function(obj) { 
-	return (null != obj) && !isNaN(obj) && ("undefined" !== typeof obj.getDate); 
-}
-
+const isDate = obj => (null != obj) && !isNaN(obj) && ("undefined" !== typeof obj.getDate)
 /**
  * <odoc>
  * <key>isBoolean(aObj) : boolean</key>
  * Returns true if aObj is boolean, false otherwise
  * </odoc>
  */
-const isBoolean = function(obj) {
-	return typeof obj == 'boolean' || false;
-}
+const isBoolean = obj => typeof obj == 'boolean' || false
 
 /**
  * <odoc>
@@ -4790,9 +4775,7 @@ const isBoolean = function(obj) {
  * Returns true if aObj is null, false otherwise
  * </odoc>
  */
-const isNull = function(obj) {
-	return obj == null || false;
-}
+const isNull = obj => obj == null || false
 
 /**
  * <odoc>
@@ -8607,7 +8590,7 @@ IO.prototype.readLinesNDJSON = function(aNDJSONFile, aFuncCallback, aErrorCallba
 	}
 	ioStreamReadLines(rfs, (line) => {
 		try {
-			return aFuncCallback(jsonParse(line));
+			return aFuncCallback(jsonParse(line, true));
 		} catch(e) {
 			aErrorCallback(e);
 		}
