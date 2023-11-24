@@ -510,7 +510,7 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
  * </odoc>
  */
 OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap) {
-    var handled = false
+    let handled = false
     aPrefix = _$(aPrefix, "prefix").isString().default("metric")
     const _reInitTxt = new RegExp("[^a-zA-Z0-9]", "g")
     aPrefix = aPrefix.replace(_reInitTxt, "_")
@@ -520,11 +520,12 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
 
     // https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md
 
-    var _help = aMetric => {
-        if (isMap(aHelpMap)) {
-            var far = []
+    let _help = aMetric => {
+        // NOTE: In rare cases isMap will return true despite aHelpMap is not defined
+        if (isDef(aHelpMap) && isMap(aHelpMap)) {
+            let far = []
             if (isDef(aMetric) && isDef(aHelpMap[aMetric])) {
-                var h = aHelpMap[aMetric];
+                let h = aHelpMap[aMetric];
                 if (isDef(h.text)) far.push("# " + h.text)
                 if (isDef(h.help)) far.push("# HELP " + aMetric + " " + h.help)
                 if (isDef(h.type)) far.push("# TYPE " + aMetric + " " + h.type)
@@ -535,7 +536,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         }
     }
 
-    var _map = (obj, prefix, lbs, suf) => {
+    let _map = (obj, prefix, lbs, suf) => {
         suf = _$(suf).default("")
         suf = suf.replace(_reInitTxt, "_")
         var ar = []
@@ -592,7 +593,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         }
         return ar.filter(l=>l.length > 0).join("\n")
     }
-    var _arr = (obj, prefix, lbs, suf) => {
+    let _arr = (obj, prefix, lbs, suf) => {
         suf = _$(suf).default("")
         var ar = []
         if (isArray(obj)) {
@@ -611,7 +612,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         }
         return ar.filter(l=>l.length > 0).join("\n")
     }
-    var _sim = (obj, prefix, tlbs, suf) => {
+    let _sim = (obj, prefix, tlbs, suf) => {
         suf = _$(suf).default("")
         suf = suf.replace(_reInitTxt, "_")
         var ar = ""
@@ -628,7 +629,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         return ar
     }
 
-    var ar = []
+    let ar = []
     if (isMap(aObj)) {
         handled = true;
         ar.push(_map(aObj, aPrefix))
