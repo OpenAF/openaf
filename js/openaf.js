@@ -946,7 +946,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
     isSub = _$(isSub, "isSub").isBoolean().default(false)
 	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
 
-	var out  = ""
+	var out  = []
 	aPrefix  = _$(aPrefix, "aPrefix").isString().default("")
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
     aWidth   = _$(aWidth, "aWidth").isNumber().default(__)
@@ -1015,15 +1015,22 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			if (isDate(aO)) return "date"
 		}
 		_acr = () => _ac("RESET","")
+		var _clrCache = {}
 		_clr = aO => {
+			var dt = _dt(aO)
+			if (_clrCache[dt]) return _clrCache[dt]
+
+			let result
 			switch(_dt(aO)) {
-			case "number" : return _ac(__colorFormat.number, String(aO)) + _acr()
-			case "string" : return _ac(__colorFormat.string, String(aO)) + _acr()
-			case "boolean": return _ac(__colorFormat.boolean, String(aO)) + _acr()
-			case "date"   : return _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr()
-			case "java"   : return _ac(__colorFormat.string, String(aO.toString())) + _acr()
-			default       : return _ac(__colorFormat.default, String(aO)) + _acr()
+			case "number" : result = _ac(__colorFormat.number, String(aO)) + _acr(); break
+			case "string" : result = _ac(__colorFormat.string, String(aO)) + _acr(); break
+			case "boolean": result = _ac(__colorFormat.boolean, String(aO)) + _acr(); break
+			case "date"   : result = _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr(); break
+			case "java"   : result = _ac(__colorFormat.string, String(aO.toString())) + _acr(); break
+			default       : result = _ac(__colorFormat.default, String(aO)) + _acr(); break
 			}
+			_clrCache[dt] = result
+			return result
 		}
 		_ac  = (aAnsi, aString) => {
 			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
@@ -1135,20 +1142,20 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		suffix = printTree(aM[k], aWidth, aOptions, aPrefix +  _ac("", (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " ")), true)
 	  }
   
-	  if (i > 0 && size <= (i+1)) {
-		out += aPrefix + _ac("", endc) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ")) + suffix
-	  } else {
-		if (i == 0) {
-		  out += _ac("", (size == 1 ? ssrc : strc)) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix) + _ac("RESET", "") + _ac("","\n")
-		} else {
-		  out += aPrefix + _ac("", midc) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ")) + suffix + _ac("RESET", "") +  _ac("","\n")
-		}
-	  }
+	  var wfResult = _wf(v, aPrefix + aPrefix2)
+	  var repeatResult = _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " "))
+
+	  var prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac("", endc) : (i == 0) ? _ac("", (size == 1 ? ssrc : strc)) : aPrefix + _ac("", midc)
+	  var reset = (i == 0 || i > 0) ? _ac("RESET", "") : ""
+  
+	  out.push(prefix + wfResult + repeatResult + suffix + reset)
 	})
   
-	out = (out.endsWith("\n") ? out.substring(0, out.length - _al(_ac("RESET", "") + _ac("","\n"))) : out)
-  	
-	return out
+	if (out.length > 0) {
+		out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
+	}
+	
+	return out.join("\n")
 }
 
 /**
