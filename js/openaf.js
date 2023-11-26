@@ -1021,11 +1021,11 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		_acr = () => _ac("RESET","")
 		var _clrCache = {}
 		_clr = aO => {
-			var dt = _dt(aO)
-			if (_clrCache[dt]) return _clrCache[dt]
+			if (_clrCache[String(aO)]) return _clrCache[String(aO)]
 
 			let result
-			switch(_dt(aO)) {
+			let dt = _dt(aO)
+			switch(dt) {
 			case "number" : result = _ac(__colorFormat.number, String(aO)) + _acr(); break
 			case "string" : result = _ac(__colorFormat.string, String(aO)) + _acr(); break
 			case "boolean": result = _ac(__colorFormat.boolean, String(aO)) + _acr(); break
@@ -1033,7 +1033,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			case "java"   : result = _ac(__colorFormat.string, String(aO.toString())) + _acr(); break
 			default       : result = _ac(__colorFormat.default, String(aO)) + _acr(); break
 			}
-			_clrCache[dt] = result
+			_clrCache[String(aO)] = result
 			return result
 		}
 		_ac  = (aAnsi, aString) => {
