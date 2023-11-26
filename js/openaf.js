@@ -780,8 +780,11 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
  */
 const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) {
 	var count = 0, inCount = anArrayOfEntries.length
+
+	if (inCount == 0) return ""
+
 	var maxsize = {};
-	var output = "";
+	var output = []
 	var anArrayOfIdxs = []
 	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
 	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
@@ -798,7 +801,6 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	ow.loadFormat();
 	if (isUnDef(aTheme)) {
-        ow.loadFormat();
 		if (!ow.format.isWindows()) {
 			aTheme = (__conAnsi ? "utf" : "plain");
 			if (isUnDef(useAnsi) && __initializeCon()) {
@@ -848,90 +850,92 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	// If wordwrap generate new array
 	if (aWidthLimit > 0) {
-		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", repeat(s, "-")) : __, true)
+		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
 		anArrayOfEntries = _t.lines
 		anArrayOfIdxs = _t.idx
 	}
 	
 	// Find sizes
-	anArrayOfEntries.forEach(function(row) {
-		var cols = Object.keys(row);
-		cols.forEach(function(col) {
-			let _v = row[String(col)]
+	var cols = Object.keys(anArrayOfEntries[0])
+	anArrayOfEntries.forEach(row => {
+		//var cols = Object.keys(row)
+		cols.forEach(col => {
+			let _v = row[col]
 			if (isDate(_v)) 
-				_v = _v.toISOString().replace("Z","").replace("T"," ");
+				_v = _v.toISOString().replace("Z","").replace("T"," ")
 			else 
 				_v = String(_v)
+			let ansiLength_v = ansiLength(_v)
 			if (isUnDef(maxsize[col])) 
-				maxsize[String(col)] = ansiLength(col);
-			if (maxsize[String(col)] < ansiLength(_v)) maxsize[String(col)] = ansiLength(_v);
-		});
-	});
+				maxsize[col] = ansiLength(col)
+			if (maxsize[col] < ansiLength_v) maxsize[col] = ansiLength_v
+		})
+	})
 
 	// Produce table
-	anArrayOfEntries.forEach(function(row, ii) {
-		var lineSize = 0;
-		var outOfWidth = false;
-		var cols = Object.keys(row);
-		if (count == 0) {
-			//output += (useAnsi ? ansiColor("bold", "|") : "|"); 
-			output += (useAnsi ? ansiColor(colorMap.title, "") : ""); 
+	anArrayOfEntries.forEach((row, ii) => {
+		var lineSize = 0
+		var outOfWidth = false
+		var colsLengthMinusOne = cols.length - 1;
+	
+		if (ii == 0) {
+			output.push(useAnsi ? ansiColor(colorMap.title, "") : "")
 			lineSize = 1; outOfWidth = false; colNum = 0;
-			cols.forEach(function(col) {
-				if (outOfWidth) return;
-				lineSize += maxsize[String(col)] + 1;
+			cols.forEach(col => {
+				if (outOfWidth) return
+				lineSize += maxsize[col] + 1
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor(colorMap.title, "...") : "..."); outOfWidth = true;
+					output.push((useAnsi ? ansiColor(colorMap.title, "...") : "...")); outOfWidth = true
 				} else {
-					var _ps = repeat(Math.floor((maxsize[String(col)] - ansiLength(String(col)))/2), ' ')
-					var _pe = repeat(Math.round((maxsize[String(col)] - ansiLength(String(col))) / 2), ' ')
-					output += (useAnsi ? ansiColor(colorMap.title, _ps + String(col) + _pe) : _ps + String(col) + _pe)
-					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
+					var ansiLengthCol = ansiLength(col);
+					var _ps = ' '.repeat(Math.floor((maxsize[col] - ansiLengthCol)/2))
+					var _pe = ' '.repeat(Math.round((maxsize[col] - ansiLengthCol) / 2))
+					output.push(useAnsi ? ansiColor(colorMap.title, _ps + col + _pe) : _ps + col + _pe)
+					if (colNum < colsLengthMinusOne) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
 				}
-				colNum++;
-			});
-			output += __separator;
-			//output += (useAnsi ? ansiColor(colorMap.lines, "+") : "+"); 
+				colNum++
+			})
+			output.push(__separator)
 			lineSize = 1; outOfWidth = false; colNum = 0;
-			cols.forEach(function(col) {
+			cols.forEach(col => {
 				if (outOfWidth) return;
-				lineSize += maxsize[String(col)] + 1;
+				lineSize += maxsize[col] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
+					output.push(useAnsi ? ansiColor(colorMap.lines, "...") : "...")
+					outOfWidth = true
 				} else {
-					output += (useAnsi ? ansiColor(colorMap.lines, repeat(maxsize[String(col)], hLine)) : repeat(maxsize[String(col)], hLine));
-					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, hvJoin) : hvJoin);
+					output.push((useAnsi ? ansiColor(colorMap.lines, hLine.repeat(maxsize[col])) : hLine.repeat(maxsize[col])))
+					if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, hvJoin) : hvJoin)
 				}
-				colNum++;
-			});
-			output += __separator;
-		};
+				colNum++
+			})
+			output.push(__separator)
+		}
 
-		//output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine); 
 		lineSize = 1; outOfWidth = false; colNum = 0;
-		cols.forEach(function(col, jj) {
+		cols.forEach((col, jj) => {
 			if (outOfWidth) return;
-			lineSize += maxsize[String(col)] + 1;
+			lineSize += maxsize[col] + 1
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-				output += "..."; outOfWidth = true;
+				output.push("..."); outOfWidth = true
 			} else {	
-				var value = isDate(row[String(col)]) ? row[String(col)].toISOString().replace("Z","").replace("T"," ") : String(row[String(col)]).replace(/\n/g, " ");
-				var _pe = repeat(maxsize[String(col)] - ansiLength(value), ' ')
-				output += (useAnsi ? ansiColor(_getColor(row[String(col)], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
-				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
+				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
+				var _pe = ' '.repeat(maxsize[col] - ansiLength(value))
+				output.push(useAnsi ? ansiColor(_getColor(row[col], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
+				if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
 			}
-			colNum++;
-		});
-		output += __separator;
-		count++;
-	});
+			colNum++
+		})
+		output.push(__separator)
+		count++
+	})
 
 	if (displayCount) {
-		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]";
-		output += (useAnsi ? ansiColor(colorMap.lines, summary) : summary);
+		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]"
+		output.push(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
 	}
 	
-	return output;
+	return output.join("")
 }
 
 /**
@@ -2437,9 +2441,7 @@ const getJavaStackTrace = function(anException) {
  * Will build a string composed of aStr repeated nTimes.
  * </odoc>
  */
-const repeat = function(nTimes, aStr) {
-	return aStr.repeat(nTimes);
-}
+const repeat = (nTimes, aStr) => aStr.repeat(nTimes)
 
 /**
  * <odoc>
