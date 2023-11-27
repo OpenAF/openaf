@@ -4319,17 +4319,20 @@ var __cpucores;
 
 /**
  * <odoc>
- * <key>getNumberOfCores() : Number</key>
+ * <key>getNumberOfCores(realValue) : Number</key>
  * Try to identify the current number of cores on the system where the script is being executed.
  * </odoc>
  */
-const getNumberOfCores = function() {
-  	plugin("Threads");
+const getNumberOfCores = function(realValue) {
+	if (isDef(__cpucores) && !realValue) return __cpucores
+  	plugin("Threads")
 
-  	var t = new Threads();
-  	__cpucores = Number(t.getNumberOfCores());
+  	var t = new Threads()
+  	var _cc = Number(t.getNumberOfCores())
 
- 	return __cpucores;
+	if (isUnDef(__cpucores)) __cpucores = _cc
+
+ 	return _cc
 }
 
 /**
@@ -4342,10 +4345,10 @@ const getNumberOfCores = function() {
  */
 const getCPULoad = function(useAlternative) {
         if (useAlternative) {
-        	return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores());
+        	return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores(true));
         } else {
 		var res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
- 		if (res < 0) res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores());
+ 		if (res < 0) res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores(true));
 		return res;
  	}
 }
@@ -4486,7 +4489,7 @@ const pidCheckOut = function(aFilename) {
  */
 const splitArray = function(anArray, numberOfParts) {
     var res = [];
-    if (isUnDef(numberOfParts)) numberOfParts = getNumberOfCores();
+    if (isUnDef(numberOfParts)) numberOfParts = getNumberOfCores()
     
 	if (numberOfParts >= anArray.length) {
 		for(var i in anArray) { res.push([anArray[i]]); }
@@ -4515,10 +4518,10 @@ const splitArray = function(anArray, numberOfParts) {
 const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 	plugin("Threads");
 
-	var __threads = new Threads();
-	if (isUnDef(__cpucores)) __cpucores = __threads.getNumberOfCores();
+	var __threads = new Threads(), _cpucores
+	_cpucores = getNumberOfCores()
 	if (isUnDef(numThreads)) {
-		numThreads = __cpucores + 1;
+		numThreads = _cpucores + 1;
 		balance = true;
 	}
 
@@ -4605,9 +4608,9 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
 	
 	var results = [];
 	var __threads = new Threads();
-	if (isUnDef(__cpucores)) __cpucores = __threads.getNumberOfCores();
+	_cpucores = getNumberOfCores()
 	if (isUnDef(numThreads)) {
-		numThreads = __cpucores + 1;
+		numThreads = _cpucores + 1;
 		balance = true;
 	}
 
@@ -9283,7 +9286,7 @@ const __resetThreadPool = function(poolFactor) {
 
 const __getThreadPool = function() {
 	if (isUnDef(__threadPool)) {
-		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores();
+		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores()
 		__threadPool = new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
 	}
 

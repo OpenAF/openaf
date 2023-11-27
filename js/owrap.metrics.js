@@ -34,8 +34,9 @@ OpenWrap.metrics.prototype.__m = {
     cpu: () => ({
         load1 : java.lang.System.getProperty("os.name").indexOf("Windows") < 0 ? getCPULoad() : "n/a",
         load2 : java.lang.System.getProperty("os.name").indexOf("Windows") < 0 ? getCPULoad(true) : "n/a",
-        cores : getNumberOfCores(),
+        cores : getNumberOfCores(true),
         _cores: __cpucores,
+        _threadPoolFactor: __threadPoolFactor,
         arch  : String(java.lang.System.getProperty("os.arch"))
     }),
     oaf: () => {

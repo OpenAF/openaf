@@ -82,7 +82,7 @@ OpenWrap.obj.prototype.fromDBRS = function(aDB, aSQL, aBinds, aFunction, aErrorF
  * </odoc>
  */
 OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, useParallel, caseSensitive) {
-	if (isUnDef(useParallel)) useParallel = getNumberOfCores();
+	if (isUnDef(useParallel)) useParallel = getNumberOfCores()
 
 	if (isUnDef(anArray) || anArray.length < 1) return 0;
 	if (useParallel < 1) useParallel = 1;
@@ -425,7 +425,7 @@ OpenWrap.obj.prototype.fuzzySearch = function(anArrayOfKeys, anArrayOfObjects, s
  * </odoc>
  */
 OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) {
-	if (isUnDef(useParallel)) useParallel = getNumberOfCores();
+	if (isUnDef(useParallel)) useParallel = getNumberOfCores()
 	if (useParallel < 1) useParallel = 1;
 
 	var ctrl = {};
