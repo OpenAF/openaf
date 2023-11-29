@@ -8004,6 +8004,18 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 
 /**
  * <odoc>
+ * <key>$llm(aModel) : $llm</key>
+ * Shortcut for $gpt on the owrap.AI library.
+ * </odoc>
+ */
+const $llm = function(aModel) {
+	if (global.$gpt) return $gpt(aModel)
+	ow.loadAI()
+	return $gpt(aModel)
+}
+
+/**
+ * <odoc>
  * <key>$sql(aObject, aSQL, aMethod) : Array</key>
  * Given an aObject (map or array) will try to execute aSQL (SQL expression) and return the corresponding results.
  * Optionally you can provide aMethod to be used (e.g. "auto" (default) or "nlinq" or "h2"). "nlinq" it's the fastest but doesn't
