@@ -1150,7 +1150,7 @@ OpenWrap.format.prototype.string = {
 					case "table": p = printTable(col.obj, cs-1, __, true, "utf"); break
 					case "chart": p = printChart(col.obj, cs-1, (aX * yspan)-1); break;
 					case "area" : p = ow.format.string.chart(col.title, col.obj, cs-1, (aX * yspan)-1); break;
-					case "bar"  : p = printBar(col.obj, cs-1, col.max, col.min, col.indicator, col.space); break;
+					case "bar"  : p = printBars(col.obj, cs-1, col.max, col.min, col.indicator ? col.indicator : "━", col.space); break;
 					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)); break
 					default: p = String(col.obj)
 					}
