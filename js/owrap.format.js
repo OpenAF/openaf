@@ -1274,7 +1274,8 @@ OpenWrap.format.prototype.syms = function() {
 		lCross       : '╳',
 		patternLight : '░',
 		patternMedium: '▒',
-		patternDark  : '▓'
+		patternDark  : '▓',
+		blockH       : '━'
 	}
 }
 

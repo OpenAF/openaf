@@ -379,6 +379,47 @@ public class ZIP extends ScriptableObject {
 
 	/**
 	 * <odoc>
+	 * <key>ZIP.streamCreate(aFilePath)</key>
+	 * Creates an empty ZIP file on aFilePath.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void streamCreate(String aFilePath) throws IOException {
+		ZIP z = new ZIP();
+		z.generate2File(aFilePath, null, true);
+		z.close();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>ZIP.streamCreateFolder(aFilePath, aFolder) : boolean</key>
+	 * Creates aFolder on aFilePath ZIP file. Returns true if the folder was created or false if it already existed.
+	 * </odoc>
+	 */
+	@JSFunction
+	public boolean streamCreateFolder(String aFilePath, String aFolder) throws IOException {
+		URI uri = URI.create("jar:" + Paths.get(aFilePath).toUri());
+		Map<String, String> env = new HashMap<>();
+		env.put("create", "true");
+		FileSystem fs = null;
+		try {
+			fs = FileSystems.newFileSystem(uri, env);
+			Path nf = fs.getPath(aFolder);
+			if (Files.notExists(nf)) {
+				Files.createDirectory(nf);
+				return true;
+			} else {
+				return false;
+			}
+		} finally {
+			if (fs != null) {
+				fs.close();
+			}
+		}
+	}
+
+	/**
+	 * <odoc>
 	 * <key>ZIP.generate(aMapOfOptions, dontReload) : anArrayOfBytes</key>
 	 * Will generate a ZIP anArrayOfBytes contents (that can then by saved into a file) given the provided options (a map
 	 * where you can specify the compressionLevel as a number). If dontReload = true then the internal ZIP object contents
