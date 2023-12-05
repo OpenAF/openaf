@@ -269,8 +269,8 @@
 		},
 		{
 			"description": "DNS Java",
-			"path": ["lib/dnsjava-3.5.2.jar"],
-			"version": "3.5.2",
+			"path": ["lib/dnsjava-3.5.3.jar"],
+			"version": "3.5.3",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://github.com/dnsjava/dnsjava/blob/master/LICENSE",
