@@ -301,7 +301,7 @@ jobs:
     # -- type=simple (the basic default type)
     async: false # if true this specific job will always be executed async
     # -- type=jobs (executes other external ojobs)
-    file : aLocalFile.yaml
+    #file : aLocalFile.yaml
     #url  : ojob.io/external/url
     # -- type=shutdown (executes on the ojob process shutdown if not killed)
     # -- type=subscribe (executes when there is a change on the provided OpenAF channel)
@@ -310,6 +310,7 @@ jobs:
     #timeInterval : # an interval of time in ms between executions in alternative to cron
     cron         : "*/5 * * * * *" # a cron expression
     waitForFinish: true # Boolean to indicate if a new execution should not be started if the previous is still executing
+    eachThreads  : 50% # Percentage or number of threads to use for each execution (defaults to number of cores)
     cronCheck    : 
       active   : false         # Boolean to indicate if it should track miss executions (e.g. when the ojob wasn't executing)
       ch       : oJob::cron    # OpenAF channel where to persist missing executions (should handle persistance somehow)

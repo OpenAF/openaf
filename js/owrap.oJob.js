@@ -2888,18 +2888,36 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		}
 
 		if (isDef(aEach) && isArray(aEach) && aEach.length > 0) {
-			//var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
-			var fnDef = "";
-			fnDef += "var _oji = " + stringify(aEach, __, "") + "; ";
-			fnDef += "var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ";
-			fnDef += "$doA2B(each => { " + res + " }, (_r, _n) => { _oj.forEach(_aJob => { ";
-			fnDef += "  var _canDo = true; if(isDef(_n) && _n != _aJob.name) _canDo = false;"
-			fnDef += "  try { if (isDef(_aJob) && _canDo) { var fn = newFn(\"var args = arguments[0]; var job = {name:'" + _aName + "'}; \" + _aJob.exec); ";
-			fnDef += "  return fn( merge(_r, { init: args.init }) ); } else { return __; }";
-			fnDef += "} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (newFn(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, __, \"\") + \"); \" + _aJob.catch))(ea2b); }";
-			fnDef += "}); }, __, __, " + (isUnDef(_jobCatch) ? "__" : "newFn(\"var args = arguments[1], job = {name:'" + _aName + "'}, exception = arguments[0]; " + _jobCatch.replace(/"/g, "\\\"") + "\")" ) + "); ";
+			// Process typeArgs.eachThreads
+			let _eachThreads = "__"
+			if (isDef(aJobTypeArgs) && isDef(aJobTypeArgs.eachThreads)) {
+				if (isString(aJobTypeArgs.eachThreads)) {
+					var _t = aJobTypeArgs.eachThreads.trim()
+					if (_t.endsWith("%")) {
+						_t = _t.replace("%", "")
+						try {
+							_eachThreads = String( Math.max(1, Math.round((Number(_t) * getNumberOfCores()) / 100)) )
+						} catch(e) {}
+					}
+				} else {
+					if (isNumber(aJobTypeArgs.eachThreads)) {
+						_eachThreads = String( Math.max(1, Math.round(aJobTypeArgs.eachThreads)) )
+					}
+				}
+			}
 
-			res = fnDef;
+			//var fnDef = "var args = arguments[0]; var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; ";
+			var fnDef = []
+			fnDef.push("var _oji = " + stringify(aEach, __, "") + "; ")
+			fnDef.push("var _oj = _oji.map(_r => ow.oJob.getJobsCh().get({ name: _r })); ")
+			fnDef.push("$doA2B(each => { " + res + " }, (_r, _n) => { _oj.forEach(_aJob => { ")
+			fnDef.push("  var _canDo = true; if(isDef(_n) && _n != _aJob.name) _canDo = false;")
+			fnDef.push("  try { if (isDef(_aJob) && _canDo) { var fn = newFn(\"var args = arguments[0]; var job = {name:'" + _aName + "'}; \" + _aJob.exec); ")
+			fnDef.push("  return fn( merge(_r, { init: args.init }) ); } else { return __; }")
+			fnDef.push("} catch(ea2b) { if (isUnDef(_aJob.catch)) throw ea2b; else (newFn(\"var exception = arguments[0]; args = merge(args, \" + stringify(_r, __, \"\") + \"); \" + _aJob.catch))(ea2b); }")
+			fnDef.push("}); }, " + _eachThreads + ", __, " + (isUnDef(_jobCatch) ? "__" : "newFn(\"var args = arguments[1], job = {name:'" + _aName + "'}, exception = arguments[0]; " + _jobCatch.replace(/\n/g, "\\\n").replace(/"/g, "\\\"") + "\")" ) + "); ")
+
+			res = fnDef.join("")
 		}
 
 	    //sprint({ e: aExec, l: aLang, r: res });

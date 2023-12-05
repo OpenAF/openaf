@@ -684,9 +684,12 @@ public class AFCmdOS extends AFCmdBase {
 			if (__noSLF4JErrorOnly) {
 				// Set logging to ERROR 
 				try {
-					for(ch.qos.logback.classic.Logger logger : ((ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME)).getLoggerContext().getLoggerList()) {
-						if (logger.getLevel() != ch.qos.logback.classic.Level.ERROR) logger.setLevel(ch.qos.logback.classic.Level.ERROR);
-					}	
+					ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+					for (ch.qos.logback.classic.Logger logger : rootLogger.getLoggerContext().getLoggerList()) {
+						if (logger.getLevel() != ch.qos.logback.classic.Level.ERROR) {
+							logger.setLevel(ch.qos.logback.classic.Level.ERROR);
+						}
+					}
 				} catch (Exception e) {
 				}
 			}

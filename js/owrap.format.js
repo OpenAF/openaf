@@ -116,18 +116,27 @@ OpenWrap.format.prototype.string = {
 		_$(maxTableSize, "maxTableSize").isNumber().$_()
 		sepFunc = _$(sepFunc, "sepFunc").isFunction().default(__)
 		sepLen = _$(sepLen, "sepLen").isNumber().default(1)
-
+	
+		if (ar.length == 0) return []
+	
 		// Finding max sizes
 		var maxSizes = [], fixedMinSize = []
+		var _keys = Object.keys(ar[0])
+		var _alKeys = _keys.map(k => ansiLength(k))
+		maxSizes = _keys.map(k => 0)
+		fixedMinSize = _keys.map(k => 0)
 		ar.forEach(row => {
-		  var _keys = Object.keys(row)
-		  Object.values(row).forEach((column, i) => {
-			let _v = isDate(column) ? column.toISOString().replace("Z","").replace("T"," ") : String(column)
-			if (isUnDef(maxSizes[i])) maxSizes[i] = 0
-			if (isUnDef(fixedMinSize[i])) fixedMinSize[i] = 0
-			fixedMinSize[i] = Math.max(fixedMinSize[i], ansiLength(String(_keys[i])))
-			maxSizes[i] = Math.max(maxSizes[i], ansiLength(_v))
-		  })
+			for(let i = 0; i < _keys.length; i++) {
+				let column = row[_keys[i]]
+				let _v
+				if (column != null && !isNaN(_v) && typeof _v.getDate !== "undefined") {
+					_v = column.toISOString().replace("Z","").replace("T"," ")
+				} else {
+					_v = column == null ? "" : (isDef(column) ? String(column) : "")
+				}
+				fixedMinSize[i] = Math.max(fixedMinSize[i], _alKeys[i])
+				maxSizes[i] = Math.max(maxSizes[i], ansiLength(_v))
+			}
 		})
 	  
 		maxSizes = maxSizes.map((r, i) => Math.max(r, fixedMinSize[i]))
@@ -135,22 +144,22 @@ OpenWrap.format.prototype.string = {
 		var numOfCols = maxSizes.length
 		var fixedSize = (sepLen * (numOfCols-1))
 		var curMaxSize = $from(maxSizes).sum() + (sepLen * (numOfCols-1)) + 1 // (numOfCols-1) = num of separators and new line
-		var chgCols = []
+		var chgCols = new Set()
 		if (curMaxSize > maxTableSize) {
-		  var fd = Math.ceil(maxTableSize / numOfCols)
-		  maxSizes.forEach((s, i) => {
-			if (fixedMinSize[i] < (s - fd)) 
-				chgCols.push(i)
-			else
-				fixedSize += s
-		  })
+			var fd = Math.ceil(maxTableSize / numOfCols)
+			maxSizes.forEach((s, i) => {
+				if (fixedMinSize[i] < (s - fd)) 
+					chgCols.add(i)
+				else
+					fixedSize += s
+			})
 		}
-
+	
 		// Pass math
 		//var diffPerCol = (curMaxSize > maxTableSize ? Math.ceil((curMaxSize - maxTableSize) / chgCols.length) : 0)
 		var maxSubLines = 0
 		var maxCol = maxTableSize * __flags.TABLE.wordWrapLimitFactor
-
+	
 		// Limiting function
 		var rowLimitFn = s => {
 			if (isString(s)) {
@@ -165,45 +174,50 @@ OpenWrap.format.prototype.string = {
 		}
 	  
 		//print(`curMaxSize=${curMaxSize} | maxTableSize=${maxTableSize} | chgCols.len=${af.toCSLON(chgCols)} | fixedSize=${fixedSize}`)
-
+	
 		var _lines = [], _idx = [], _newSize = []
+		var _keys = Object.keys(ar[0])
 		ar.forEach(_ar => {
 		  // Processing line
-		  var _keys = Object.keys(_ar)
-		  var lines = Object.values(_ar).map((v, i) => {
+		  let lines = []
+		  for(var i = 0; i < _keys.length; i++) {
+			v = _ar[_keys[i]]
+	
 			let _v
-			if (isDate(v)) _v = v.toISOString().replace("Z","").replace("T"," "); else _v = String(v)
-			if (chgCols.indexOf(i) >= 0) {
+			if (isDate(v)) _v = v.toISOString().replace("Z","").replace("T"," "); else _v = v
+			if (chgCols.has(i)) {
 				_newSize[i] = Math.max(fixedMinSize[i], Math.round((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
 			} else {
 				_newSize[i] = Math.max(fixedMinSize[i], maxSizes[i])
 			}
 			
-			var _ar = String((chgCols.indexOf(i) >= 0 ? rowLimitFn(ow.format.string.wordWrap(_v, _newSize[i] )) : rowLimitFn(_v) )).split("\n")
-			maxSubLines = Math.max(maxSubLines, _ar.length)
-			return _ar
-		  })
+			var _sar = String((chgCols.has(i) ? rowLimitFn(ow.format.string.wordWrap(_v, _newSize[i] )) : rowLimitFn(_v) )).split("\n")
+			maxSubLines = Math.max(maxSubLines, _sar.length)
+			lines.push(_sar)
+		  }
+	
 		  // Prepare lines
 		  var _s = []
 		  for (var _lx = 0; _lx < maxSubLines; _lx++) {
 			var _m = {}
-			lines.forEach((r, i) => {
-			  if (isUnDef(_s[i])) {
-				if (__flags.TABLE.wordWrapLimitFactor > 0 && _newSize[i] > maxCol) {
-					_s[i] = maxCol
-				} else {
-					_s[i] = _newSize[i]
-				}
-			  }
-			  if (isDef(r[_lx])) {
-				_m[_keys[i]] = r[_lx] + (_s[i] > ansiLength(r[_lx]) ? repeat(_s[i] - ansiLength(r[_lx]), ' ') : "")
-			  } else {
-				_m[_keys[i]] = repeat(_s[i], ' ')
-			  }
-			})
+			for(var i = 0; i < lines.length; i++) {
+				let r = lines[i]
+				if (isUnDef(_s[i])) {
+					if (__flags.TABLE.wordWrapLimitFactor > 0 && _newSize[i] > maxCol) {
+						_s[i] = maxCol
+					} else {
+						_s[i] = _newSize[i]
+					}
+				  }
+				  if (isDef(r[_lx])) {
+					_m[_keys[i]] = r[_lx] + (_s[i] > ansiLength(r[_lx]) ? repeat(_s[i] - ansiLength(r[_lx]), ' ') : "")
+				  } else {
+					_m[_keys[i]] = repeat(_s[i], ' ')
+				  }
+			}
 			_lines.push(_m)
 		  }
-	  
+	
 		  // Preparing sep
 		  if (isDef(sepFunc)) {
 			var _m = {}, _ds = 0
@@ -213,7 +227,7 @@ OpenWrap.format.prototype.string = {
 			})
 			_lines.push(_m)
 		  }
-
+	
 		  _idx.push(_lines.length)
 		})
 	  
@@ -228,46 +242,53 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	wordWrap: function(str, maxWidth, newLine, tabDefault) {
-		str = _$(str, "str").isString().default("");
-		tabDefault = _$(tabDefault, "tabDefault").isNumber().default(4);
-		_$(maxWidth, "maxWidth").isNumber().$_();
-	 
-		if (ansiLength(str) <= maxWidth) return str;
-	 
-		str = str.replace(/\t/g, repeat(tabDefault, " "));
-		 
-		 var newLineStr = (isUnDef(newLine)) ? "\n" : newLine; done = false, res = "";
-		 do {
-		   var lines = str.split(newLineStr), lid;
-		   found = false;
-		   for(lid = 0; lid < lines.length && !found; lid++) {
-			  var _ansiLen = ansiLength(lines[lid])
-			  if (_ansiLen > maxWidth) {
-				 // Calculate how much to compensate for ansi
-				 var extra = 0
-				 if (__conAnsi) {
-					extra = lines[lid].length - _ansiLen
-				 }
-				 // Inserts new line at first whitespace of the line
-				 for (var i = (maxWidth + extra) - 1; i >= 0; i--) {
-					if (lines[lid].charAt(i) == " ") {
-					   lines[lid] = lines[lid].slice(0, i) + newLineStr + lines[lid].slice(i+1).trim();
-					   found = true;
-					   break;
+		str = _$(str, "str").isString().default("")
+		tabDefault = _$(tabDefault, "tabDefault").isNumber().default(4)
+		_$(maxWidth, "maxWidth").isNumber().$_()
+
+		if (ansiLength(str) <= maxWidth) return str
+
+		str = str.replace(/\t/g, " ".repeat(tabDefault))
+
+		var newLineStr = (isUnDef(newLine)) ? "\n" : newLine
+		var done = false
+
+		while (!done) {
+			var lines = str.split(newLineStr)
+			var found = false
+			var lid = 0
+
+			while (lid < lines.length && !found) {
+				var _ansiLen = ansiLength(lines[lid])
+
+				if (_ansiLen > maxWidth) {
+					var extra = (__conAnsi) ? lines[lid].length - _ansiLen : 0
+					var i = (maxWidth + extra) - 1
+
+					while (i >= 0 && !found) {
+						if (lines[lid].charAt(i) == " ") {
+							var slicedLine = lines[lid].slice(i+1)
+							lines[lid] = lines[lid].slice(0, i) + newLineStr + slicedLine.trim()
+							found = true
+						}
+						i--
 					}
-				 }
-	 
-				 // Inserts new line at maxWidth position, the word is too long to wrap
-				 if (!found) {
-					lines[lid] = lines[lid].slice(0, maxWidth) + newLineStr + lines[lid].slice(maxWidth).trim();
-					found = true;
-				 }
-			  }
-		   }
-		   str = lines.join(newLineStr);
-		 } while (found);
-	 
-		 return str;
+
+					if (!found) {
+						var slicedLine = lines[lid].slice(maxWidth)
+						lines[lid] = lines[lid].slice(0, maxWidth) + newLineStr + slicedLine.trim()
+						found = true
+					}
+				}
+
+				lid++
+			}
+
+			str = lines.join(newLineStr)
+			done = !found
+		}
+
+		return str
 	},
 
 	/**
@@ -1129,7 +1150,7 @@ OpenWrap.format.prototype.string = {
 					case "table": p = printTable(col.obj, cs-1, __, true, "utf"); break
 					case "chart": p = printChart(col.obj, cs-1, (aX * yspan)-1); break;
 					case "area" : p = ow.format.string.chart(col.title, col.obj, cs-1, (aX * yspan)-1); break;
-					case "bar"  : p = printBar(col.obj, cs-1, col.max, col.min, col.indicator, col.space); break;
+					case "bar"  : p = printBars(col.obj, cs-1, col.max, col.min, col.indicator ? col.indicator : "━", col.space); break;
 					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)); break
 					default: p = String(col.obj)
 					}
@@ -3252,6 +3273,8 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			res = res.replace(b, "```$$" + i + "```")
 		})
 
+    res = javaRegExp(res).replaceAll("(?<!\\\\)<!--(.|\n)*?--(?<!\\\\)>", "")
+    res = javaRegExp(res).replaceAll("(?<=[^\\W_*\\\\])([*_])+(?=[^\\W_*\\\\])", "\\\\$1")
 	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})", ansiColor("BOLD,ITALIC", "$2")+da)
 	res = javaRegExp(res).replaceAll("(?<!\\\\)(_{3})(^ _][ _\n]*)(?<!\\\\)(_{3})", ansiColor("BOLD,ITALIC", "$2")+da)
 	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})", ansiColor("BOLD", "$2")+da)

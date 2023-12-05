@@ -82,7 +82,7 @@ OpenWrap.obj.prototype.fromDBRS = function(aDB, aSQL, aBinds, aFunction, aErrorF
  * </odoc>
  */
 OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, useParallel, caseSensitive) {
-	if (isUnDef(useParallel)) useParallel = getNumberOfCores();
+	if (isUnDef(useParallel)) useParallel = getNumberOfCores()
 
 	if (isUnDef(anArray) || anArray.length < 1) return 0;
 	if (useParallel < 1) useParallel = 1;
@@ -425,7 +425,7 @@ OpenWrap.obj.prototype.fuzzySearch = function(anArrayOfKeys, anArrayOfObjects, s
  * </odoc>
  */
 OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ignoreCase, useParallel) {
-	if (isUnDef(useParallel)) useParallel = getNumberOfCores();
+	if (isUnDef(useParallel)) useParallel = getNumberOfCores()
 	if (useParallel < 1) useParallel = 1;
 
 	var ctrl = {};
@@ -1942,10 +1942,16 @@ OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, is
 OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) { 
 	if (parseJson) {
 		var res = this.outputObj
-		if (isDef(res) && isDef(res.response)) res.response = jsonParse(res.response)
-		return res;	
-	} else
-		return this.outputObj
+		if (isDef(res)) {
+			if (isDef(res.response)) res.response = jsonParse(res.response)
+			if (isDef(res.responseBytes)) res.response = jsonParse(af.fromBytes2String(res.responseBytes))
+		}
+		return res
+	} else {
+		var _r = this.outputObj
+		if (isJavaObject(_r)) _r = af.fromBytes2String(_r.readAllBytes())
+		return _r
+	}
 }
 OpenWrap.obj.prototype.http.prototype.getResponse = function()  { 
 	return this.outputObj
@@ -2244,11 +2250,17 @@ OpenWrap.obj.prototype.http0.prototype.post = function(aUrl, aIn, aRequestMap, i
 
 OpenWrap.obj.prototype.http0.prototype.getErrorResponse = function(parseJson) {
 	if (parseJson) {
-		var res = this.outputObj;
-		if (isDef(res.response)) res.response = jsonParse(res.response);
-		return res;	
-	} else
-		return this.outputObj;
+		var res = this.outputObj
+		if (isDef(res)) {
+			if (isDef(res.response)) res.response = jsonParse(res.response)
+			if (isDef(res.responseBytes)) res.response = jsonParse(res.responseBytes)
+		}
+		return res
+	} else {
+		var _r = this.outputObj
+		if (isJavaObject(_r)) _r = af.fromBytes2String(_r.readAllBytes())
+		return _r
+	}
 };
 
 OpenWrap.obj.prototype.http0.prototype.getResponse = function() {
@@ -2353,7 +2365,7 @@ OpenWrap.obj.prototype.rest = {
 	exceptionParse: function(anException) {
 		var er = jsonParse(String(anException).replace(/.+response =/, ""));
 		if (isDef(er) && isDef(er.contentType) && String(er.contentType).toLowerCase().match(/application\/json/))
-			er.response = jsonParse(er.response);
+			er.response = jsonParse(isDef(er.response) ? er.response : er.responseBytes)
 		return er;
 	},
 

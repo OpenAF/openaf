@@ -780,8 +780,11 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
  */
 const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) {
 	var count = 0, inCount = anArrayOfEntries.length
+
+	if (inCount == 0) return ""
+
 	var maxsize = {};
-	var output = "";
+	var output = []
 	var anArrayOfIdxs = []
 	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
 	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
@@ -798,7 +801,6 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	ow.loadFormat();
 	if (isUnDef(aTheme)) {
-        ow.loadFormat();
 		if (!ow.format.isWindows()) {
 			aTheme = (__conAnsi ? "utf" : "plain");
 			if (isUnDef(useAnsi) && __initializeCon()) {
@@ -848,90 +850,92 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	// If wordwrap generate new array
 	if (aWidthLimit > 0) {
-		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", repeat(s, "-")) : __, true)
+		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
 		anArrayOfEntries = _t.lines
 		anArrayOfIdxs = _t.idx
 	}
 	
 	// Find sizes
-	anArrayOfEntries.forEach(function(row) {
-		var cols = Object.keys(row);
-		cols.forEach(function(col) {
-			let _v = row[String(col)]
+	var cols = Object.keys(anArrayOfEntries[0])
+	anArrayOfEntries.forEach(row => {
+		//var cols = Object.keys(row)
+		cols.forEach(col => {
+			let _v = row[col]
 			if (isDate(_v)) 
-				_v = _v.toISOString().replace("Z","").replace("T"," ");
+				_v = _v.toISOString().replace("Z","").replace("T"," ")
 			else 
 				_v = String(_v)
+			let ansiLength_v = ansiLength(_v)
 			if (isUnDef(maxsize[col])) 
-				maxsize[String(col)] = ansiLength(col);
-			if (maxsize[String(col)] < ansiLength(_v)) maxsize[String(col)] = ansiLength(_v);
-		});
-	});
+				maxsize[col] = ansiLength(col)
+			if (maxsize[col] < ansiLength_v) maxsize[col] = ansiLength_v
+		})
+	})
 
 	// Produce table
-	anArrayOfEntries.forEach(function(row, ii) {
-		var lineSize = 0;
-		var outOfWidth = false;
-		var cols = Object.keys(row);
-		if (count == 0) {
-			//output += (useAnsi ? ansiColor("bold", "|") : "|"); 
-			output += (useAnsi ? ansiColor(colorMap.title, "") : ""); 
+	anArrayOfEntries.forEach((row, ii) => {
+		var lineSize = 0
+		var outOfWidth = false
+		var colsLengthMinusOne = cols.length - 1;
+	
+		if (ii == 0) {
+			output.push(useAnsi ? ansiColor(colorMap.title, "") : "")
 			lineSize = 1; outOfWidth = false; colNum = 0;
-			cols.forEach(function(col) {
-				if (outOfWidth) return;
-				lineSize += maxsize[String(col)] + 1;
+			cols.forEach(col => {
+				if (outOfWidth) return
+				lineSize += maxsize[col] + 1
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor(colorMap.title, "...") : "..."); outOfWidth = true;
+					output.push((useAnsi ? ansiColor(colorMap.title, "...") : "...")); outOfWidth = true
 				} else {
-					var _ps = repeat(Math.floor((maxsize[String(col)] - ansiLength(String(col)))/2), ' ')
-					var _pe = repeat(Math.round((maxsize[String(col)] - ansiLength(String(col))) / 2), ' ')
-					output += (useAnsi ? ansiColor(colorMap.title, _ps + String(col) + _pe) : _ps + String(col) + _pe)
-					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
+					var ansiLengthCol = ansiLength(col);
+					var _ps = ' '.repeat(Math.floor((maxsize[col] - ansiLengthCol)/2))
+					var _pe = ' '.repeat(Math.round((maxsize[col] - ansiLengthCol) / 2))
+					output.push(useAnsi ? ansiColor(colorMap.title, _ps + col + _pe) : _ps + col + _pe)
+					if (colNum < colsLengthMinusOne) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
 				}
-				colNum++;
-			});
-			output += __separator;
-			//output += (useAnsi ? ansiColor(colorMap.lines, "+") : "+"); 
+				colNum++
+			})
+			output.push(__separator)
 			lineSize = 1; outOfWidth = false; colNum = 0;
-			cols.forEach(function(col) {
+			cols.forEach(col => {
 				if (outOfWidth) return;
-				lineSize += maxsize[String(col)] + 1;
+				lineSize += maxsize[col] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output += (useAnsi ? ansiColor(colorMap.lines, "...") : "..."); outOfWidth = true;
+					output.push(useAnsi ? ansiColor(colorMap.lines, "...") : "...")
+					outOfWidth = true
 				} else {
-					output += (useAnsi ? ansiColor(colorMap.lines, repeat(maxsize[String(col)], hLine)) : repeat(maxsize[String(col)], hLine));
-					if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, hvJoin) : hvJoin);
+					output.push((useAnsi ? ansiColor(colorMap.lines, hLine.repeat(maxsize[col])) : hLine.repeat(maxsize[col])))
+					if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, hvJoin) : hvJoin)
 				}
-				colNum++;
-			});
-			output += __separator;
-		};
+				colNum++
+			})
+			output.push(__separator)
+		}
 
-		//output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine); 
 		lineSize = 1; outOfWidth = false; colNum = 0;
-		cols.forEach(function(col, jj) {
+		cols.forEach((col, jj) => {
 			if (outOfWidth) return;
-			lineSize += maxsize[String(col)] + 1;
+			lineSize += maxsize[col] + 1
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-				output += "..."; outOfWidth = true;
+				output.push("..."); outOfWidth = true
 			} else {	
-				var value = isDate(row[String(col)]) ? row[String(col)].toISOString().replace("Z","").replace("T"," ") : String(row[String(col)]).replace(/\n/g, " ");
-				var _pe = repeat(maxsize[String(col)] - ansiLength(value), ' ')
-				output += (useAnsi ? ansiColor(_getColor(row[String(col)], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
-				if (colNum < (cols.length-1)) output += (useAnsi ? ansiColor(colorMap.lines, vLine) : vLine);
+				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
+				var _pe = ' '.repeat(maxsize[col] - ansiLength(value))
+				output.push(useAnsi ? ansiColor(_getColor(row[col], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
+				if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
 			}
-			colNum++;
-		});
-		output += __separator;
-		count++;
-	});
+			colNum++
+		})
+		output.push(__separator)
+		count++
+	})
 
 	if (displayCount) {
-		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]";
-		output += (useAnsi ? ansiColor(colorMap.lines, summary) : summary);
+		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]"
+		output.push(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
 	}
 	
-	return output;
+	return output.join("")
 }
 
 /**
@@ -946,7 +950,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
     isSub = _$(isSub, "isSub").isBoolean().default(false)
 	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
 
-	var out  = ""
+	var out  = []
 	aPrefix  = _$(aPrefix, "aPrefix").isString().default("")
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
     aWidth   = _$(aWidth, "aWidth").isNumber().default(__)
@@ -1015,15 +1019,22 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			if (isDate(aO)) return "date"
 		}
 		_acr = () => _ac("RESET","")
+		var _clrCache = {}
 		_clr = aO => {
-			switch(_dt(aO)) {
-			case "number" : return _ac(__colorFormat.number, String(aO)) + _acr()
-			case "string" : return _ac(__colorFormat.string, String(aO)) + _acr()
-			case "boolean": return _ac(__colorFormat.boolean, String(aO)) + _acr()
-			case "date"   : return _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr()
-			case "java"   : return _ac(__colorFormat.string, String(aO.toString())) + _acr()
-			default       : return _ac(__colorFormat.default, String(aO)) + _acr()
+			if (_clrCache[String(aO)]) return _clrCache[String(aO)]
+
+			let result
+			let dt = _dt(aO)
+			switch(dt) {
+			case "number" : result = _ac(__colorFormat.number, String(aO)) + _acr(); break
+			case "string" : result = _ac(__colorFormat.string, String(aO)) + _acr(); break
+			case "boolean": result = _ac(__colorFormat.boolean, String(aO)) + _acr(); break
+			case "date"   : result = _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr(); break
+			case "java"   : result = _ac(__colorFormat.string, String(aO.toString())) + _acr(); break
+			default       : result = _ac(__colorFormat.default, String(aO)) + _acr(); break
 			}
+			_clrCache[String(aO)] = result
+			return result
 		}
 		_ac  = (aAnsi, aString) => {
 			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
@@ -1135,20 +1146,20 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		suffix = printTree(aM[k], aWidth, aOptions, aPrefix +  _ac("", (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " ")), true)
 	  }
   
-	  if (i > 0 && size <= (i+1)) {
-		out += aPrefix + _ac("", endc) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ")) + suffix
-	  } else {
-		if (i == 0) {
-		  out += _ac("", (size == 1 ? ssrc : strc)) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ") + suffix) + _ac("RESET", "") + _ac("","\n")
-		} else {
-		  out += aPrefix + _ac("", midc) + _wf(v, aPrefix + aPrefix2) + _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " ")) + suffix + _ac("RESET", "") +  _ac("","\n")
-		}
-	  }
+	  var wfResult = _wf(v, aPrefix + aPrefix2)
+	  var repeatResult = _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " "))
+
+	  var prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac("", endc) : (i == 0) ? _ac("", (size == 1 ? ssrc : strc)) : aPrefix + _ac("", midc)
+	  var reset = (i == 0 || i > 0) ? _ac("RESET", "") : ""
+  
+	  out.push(prefix + wfResult + repeatResult + suffix + reset)
 	})
   
-	out = (out.endsWith("\n") ? out.substring(0, out.length - _al(_ac("RESET", "") + _ac("","\n"))) : out)
-  	
-	return out
+	if (out.length > 0) {
+		out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
+	}
+	
+	return out.join("\n")
 }
 
 /**
@@ -1797,8 +1808,31 @@ __JSONformat = {
 const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
 	if (isDef(astring) && String(astring).length > 0) {
 		if (ignoreNonJson) {
-			astring = astring.substring(astring.indexOf("{"))
-			astring = astring.substring(0, astring.lastIndexOf("}")+1)
+			let startIndex, endIndex
+			let startIndexA = astring.indexOf("[")
+			let endIndexA   = astring.lastIndexOf("]")
+			let startIndexM = astring.indexOf("{")
+			let endIndexM   = astring.lastIndexOf("}")
+			// No map but array exists
+			if (startIndexM < 0 && endIndexM < 0 && startIndexA > -1 && endIndexA > -1) {
+				startIndex = startIndexA
+				endIndex   = endIndexA
+			}
+			// Map exists and array exists
+			if (startIndexM > -1 && endIndexM > -1 && startIndexA > -1 && endIndexA > -1) {
+				startIndex = startIndexA < startIndexM ? startIndexA : startIndexM
+				endIndex   = startIndexA < startIndexM ? endIndexA : endIndexM
+			}
+			// Map exists but array doesn't
+			if (startIndexM > -1 && endIndexM > -1 && startIndexA < 0 && endIndexA < 0) {
+				startIndex = startIndexM
+				endIndex   = endIndexM
+			}
+
+			if (startIndex >= 0 && endIndex >= 0 && startIndex < endIndex) {
+				astring = astring.substring(startIndex)
+				astring = astring.substring(0, (endIndex - startIndex) + 1)
+			}
 		}
 		try {
 			var a;
@@ -2407,9 +2441,7 @@ const getJavaStackTrace = function(anException) {
  * Will build a string composed of aStr repeated nTimes.
  * </odoc>
  */
-const repeat = function(nTimes, aStr) {
-	return aStr.repeat(nTimes);
-}
+const repeat = (nTimes, aStr) => aStr.repeat(nTimes)
 
 /**
  * <odoc>
@@ -4287,17 +4319,20 @@ var __cpucores;
 
 /**
  * <odoc>
- * <key>getNumberOfCores() : Number</key>
+ * <key>getNumberOfCores(realValue) : Number</key>
  * Try to identify the current number of cores on the system where the script is being executed.
  * </odoc>
  */
-const getNumberOfCores = function() {
-  	plugin("Threads");
+const getNumberOfCores = function(realValue) {
+	if (isDef(__cpucores) && !realValue) return __cpucores
+  	plugin("Threads")
 
-  	var t = new Threads();
-  	__cpucores = Number(t.getNumberOfCores());
+  	var t = new Threads()
+  	var _cc = Number(t.getNumberOfCores())
 
- 	return __cpucores;
+	if (isUnDef(__cpucores)) __cpucores = _cc
+
+ 	return _cc
 }
 
 /**
@@ -4310,10 +4345,10 @@ const getNumberOfCores = function() {
  */
 const getCPULoad = function(useAlternative) {
         if (useAlternative) {
-        	return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores());
+        	return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores(true));
         } else {
 		var res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
- 		if (res < 0) res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores());
+ 		if (res < 0) res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores(true));
 		return res;
  	}
 }
@@ -4454,7 +4489,7 @@ const pidCheckOut = function(aFilename) {
  */
 const splitArray = function(anArray, numberOfParts) {
     var res = [];
-    if (isUnDef(numberOfParts)) numberOfParts = getNumberOfCores();
+    if (isUnDef(numberOfParts)) numberOfParts = getNumberOfCores()
     
 	if (numberOfParts >= anArray.length) {
 		for(var i in anArray) { res.push([anArray[i]]); }
@@ -4483,10 +4518,10 @@ const splitArray = function(anArray, numberOfParts) {
 const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 	plugin("Threads");
 
-	var __threads = new Threads();
-	if (isUnDef(__cpucores)) __cpucores = __threads.getNumberOfCores();
+	var __threads = new Threads(), _cpucores
+	_cpucores = getNumberOfCores()
 	if (isUnDef(numThreads)) {
-		numThreads = __cpucores + 1;
+		numThreads = _cpucores + 1;
 		balance = true;
 	}
 
@@ -4573,9 +4608,9 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
 	
 	var results = [];
 	var __threads = new Threads();
-	if (isUnDef(__cpucores)) __cpucores = __threads.getNumberOfCores();
+	_cpucores = getNumberOfCores()
 	if (isUnDef(numThreads)) {
-		numThreads = __cpucores + 1;
+		numThreads = _cpucores + 1;
 		balance = true;
 	}
 
@@ -5632,7 +5667,7 @@ const traverse = function(aObject, aFunction, aParent) {
 		  for(let _key in _d.keys) {
 			var __k = _d.keys[_key]
 			let value = _d.obj[__k]
-			if (isDef(value) && (isArray(value) || isMap(value))) {
+			if (isDef(value) && !isNull(value) && (isArray(value) || isMap(value))) {
 			  let newParent = _d.parent + (isNaN(Number(__k)) ? `.${__k}` : (isNumber(__k) ? `[${__k}]` : `["${__k}"]`))
 			  stack.push({ obj: value, keys: (isJavaObject(value)) ? [] : Object.keys(value), parent: newParent })
 			}
@@ -7969,6 +8004,18 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 
 /**
  * <odoc>
+ * <key>$llm(aModel) : $llm</key>
+ * Shortcut for $gpt on the owrap.AI library.
+ * </odoc>
+ */
+const $llm = function(aModel) {
+	if (global.$gpt) return $gpt(aModel)
+	ow.loadAI()
+	return $gpt(aModel)
+}
+
+/**
+ * <odoc>
  * <key>$sql(aObject, aSQL, aMethod) : Array</key>
  * Given an aObject (map or array) will try to execute aSQL (SQL expression) and return the corresponding results.
  * Optionally you can provide aMethod to be used (e.g. "auto" (default) or "nlinq" or "h2"). "nlinq" it's the fastest but doesn't
@@ -9251,7 +9298,7 @@ const __resetThreadPool = function(poolFactor) {
 
 const __getThreadPool = function() {
 	if (isUnDef(__threadPool)) {
-		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores();
+		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores()
 		__threadPool = new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
 	}
 
