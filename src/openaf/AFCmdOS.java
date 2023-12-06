@@ -681,7 +681,7 @@ public class AFCmdOS extends AFCmdBase {
 			if (System.getProperty("java.util.logging.config.file") == null) {
 				System.setProperty("java.util.logging.config.file", "");
 			}
-			if (__noSLF4JErrorOnly) {
+			/*if (__noSLF4JErrorOnly) {
 				// Set logging to ERROR 
 				try {
 					ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
@@ -692,7 +692,7 @@ public class AFCmdOS extends AFCmdBase {
 					}
 				} catch (Exception e) {
 				}
-			}
+			}*/
 
 			if (pmIn != null) {
 				opmIn = AFBase.jsonParse(pmIn.toString(), false);
