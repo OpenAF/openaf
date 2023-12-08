@@ -188,7 +188,7 @@
 		},
 		{
 			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.14.0.jar"],
+			"path": ["lib/commons-io-2.15.1.jar"],
 			"version": "2.10.0",
 			"changes": false,
 			"type": ["java"],
@@ -206,7 +206,7 @@
 		},
 		{
 			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.13.0.jar"],
+			"path": ["lib/commons-lang3-3.14.0.jar"],
 			"version": "3.13.0",
 			"changes": false,
 			"type": ["java"],
@@ -224,7 +224,7 @@
 		},
 		{
 			"description": "Apache Commons Compress",
-			"path": ["lib/commons-compress-1.23.jar"],
+			"path": ["lib/commons-compress-1.25.0.jar"],
 			"version": "1.23",
 			"changes": false,
 			"type": ["java"],
@@ -296,7 +296,7 @@
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/malensek/jbsdiff/master/LICENSE.txt",
 			"deps": [
-				"lib/commons-compress-1.23.jar"
+				"lib/commons-compress-1.25.0.jar"
 			]
 		},
 		{
@@ -323,7 +323,7 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.15.3.jar"],
+			"path": ["lib/jackson-core-2.16.0.jar"],
 			"version": "2.15.3",
 			"changes": false,
 			"type": ["java"],
@@ -394,7 +394,7 @@
 			"name": "HTTP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.14.0.jar",
+				"lib/commons-io-2.15.1.jar",
 				"lib/jetty-io-9.4.53.jar",
 				"lib/jetty-util-9.4.53.jar",
 				"lib/jetty-client-9.4.53.jar",
@@ -439,7 +439,7 @@
 			"name": "SSH",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.14.0.jar"
+				"lib/commons-io-2.15.1.jar"
 			],
 			"deps": [
 				"lib/jsch-0.2.11.jar",
@@ -471,8 +471,8 @@
 			"name": "ZIP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.14.0.jar",
-				"lib/commons-compress-1.23.jar"
+				"lib/commons-io-2.15.1.jar",
+				"lib/commons-compress-1.25.0.jar"
 			],
 			"deps": []
 		},
@@ -480,7 +480,7 @@
 			"name": "BSDiff",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-compress-1.23.jar"
+				"lib/commons-compress-1.25.0.jar"
 			],
 			"deps": [
 				"lib/jbsdiff-1.0.jar"
