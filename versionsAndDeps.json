@@ -260,8 +260,8 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.6.0.jar"],
-			"version": "42.6.0",
+			"path": ["lib/postgresql-42.7.1.jar"],
+			"version": "42.7.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
