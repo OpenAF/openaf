@@ -101,6 +101,27 @@ OpenWrap.ai.prototype.__gpttypes = {
                      }
                      return __r
                 },
+                promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
+                    aRole        = _$(aRole, "aRole").isString().default("user")
+                    aDetailLevel = _$(aDetailLevel, "aDetailLevel").isString().default("low")
+
+                    var __r = _r.prompt([
+                        {
+                            role: aRole,
+                            content: [
+                                { type: "text", text: aPrompt },
+                                { type: "image_url", image_url: { url: "data:image/jpeg;base64," + af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage))), detail: aDetailLevel } } 
+                            ]
+                        }
+                    ], aModel, aTemperature)
+
+                    if (isArray(__r.choices) && __r.choices.length > 0) {
+                        if (__r.choices[0].finish_reason == "stop") {
+                           return __r.choices[0].message.content
+                        }
+                    }
+                    return __r
+                },
                 rawPrompt: (aPrompt, aModel, aTemperature) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
@@ -197,6 +218,20 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 prompt: (aPrompt, aModel, aTemperature) => {
                     var __r = _r.rawPrompt(aPrompt, aModel, aTemperature)
+                    if (isMap(__r.message)) {
+                        return __r.message.content
+                     }
+                     return __r
+                },
+                promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
+                    aRole   = _$(aRole, "aRole").isString().default("user")
+                    var __r = _r.rawPrompt([
+                        {
+                            role: aRole,
+                            content: aPrompt,
+                            images: [ af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage))) ]
+                        }
+                    ], aModel, aTemperature)
                     if (isString(__r.response)) return __r.response
                     return __r
                 },
@@ -210,14 +245,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
-                    return _r._request("/api/generate", {
+                    return _r._request("/api/chat", {
                        model: aModel,
+                       messages: msgs,
                        options: {
                         temperature: aTemperature,
                        },
-                       stream: false,
-                       prompt: $from(msgs).equals("role", "user").select(r => r.content).join(";\n"),
-                       system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
+                       stream: false
+                       //prompt: $from(msgs).equals("role", "user").select(r => r.content).join(";\n"),
+                       //system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
                     })   
                 },
                 addPrompt: (aRole, aPrompt) => {
@@ -288,6 +324,16 @@ OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
  */
 OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature) {
     return this.model.prompt(aPrompt, aRole, aModel, aTemperature)
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) : String</key>
+ * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptImage = function(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) {
+    return this.model.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature)
 }
 
 /**
@@ -534,6 +580,9 @@ global.$gpt = function(aModel) {
         prompt: (aPrompt, aRole, aModel, aTemperature) => {
             return _g.prompt(aPrompt, aRole, aModel, aTemperature)
         },
+        promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
+            return _g.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature)
+        },
         /**
          * <odoc>
          * <key>$gpt.promptMD(aPrompt, aRole, aModel, aTemperature) : String</key>
@@ -596,6 +645,10 @@ global.$gpt = function(aModel) {
          */
         sysPrompt: (aPrompt, aModel, aTemperature) => { 
             return _g.addSystemPrompt(aPrompt).prompt(__, aModel, aTemperature)
+        },
+        withInstructions: (aPrompt, aModel, aTemperature) => {
+            _g.addSystemPrompt(aPrompt).prompt(__, aModel, aTemperature)
+            return _r
         },
         /**
          * <odoc>
