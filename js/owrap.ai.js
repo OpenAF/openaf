@@ -580,6 +580,12 @@ global.$gpt = function(aModel) {
         prompt: (aPrompt, aRole, aModel, aTemperature) => {
             return _g.prompt(aPrompt, aRole, aModel, aTemperature)
         },
+        /**
+         * <odoc>
+         * <key>$gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) : String</key>
+         * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+         * </odoc>
+         */
         promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
             return _g.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature)
         },
