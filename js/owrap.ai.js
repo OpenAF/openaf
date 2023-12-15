@@ -116,9 +116,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     ], aModel, aTemperature)
 
                     if (isArray(__r.choices) && __r.choices.length > 0) {
-                        if (__r.choices[0].finish_reason == "stop") {
-                           return __r.choices[0].message.content
-                        }
+                        return __r.choices[0].message.content
                     }
                     return __r
                 },
