@@ -105,12 +105,21 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aRole        = _$(aRole, "aRole").isString().default("user")
                     aDetailLevel = _$(aDetailLevel, "aDetailLevel").isString().default("low")
 
+                    var base64 = ""
+                    if (io.fileExists(aImage)) {
+                        base64 = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage)))
+                    } else {
+                        if (isString(aImage)) {
+                            base64 = aImage
+                        }
+                    }
+
                     var __r = _r.prompt([
                         {
                             role: aRole,
                             content: [
                                 { type: "text", text: aPrompt },
-                                { type: "image_url", image_url: { url: "data:image/jpeg;base64," + af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage))), detail: aDetailLevel } } 
+                                { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64, detail: aDetailLevel } } 
                             ]
                         }
                     ], aModel, aTemperature)
@@ -223,14 +232,25 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
                     aRole   = _$(aRole, "aRole").isString().default("user")
+
+                    var base64 = ""
+                    if (io.fileExists(aImage)) {
+                        base64 = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage)))
+                    } else {
+                        if (isString(aImage)) {
+                            base64 = aImage
+                        }
+                    }
+
                     var __r = _r.rawPrompt([
                         {
                             role: aRole,
                             content: aPrompt,
-                            images: [ af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage))) ]
+                            images: [ base64 ]
                         }
                     ], aModel, aTemperature)
                     if (isString(__r.response)) return __r.response
+                    if (isMap(__r.message) && isString(__r.message.content)) return __r.message.content.trim()
                     return __r
                 },
                 rawPrompt: (aPrompt, aModel, aTemperature) => {
@@ -327,7 +347,7 @@ OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aT
 /**
  * <odoc>
  * <key>ow.ai.gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) : String</key>
- * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+ * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.promptImage = function(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) {
@@ -581,7 +601,7 @@ global.$gpt = function(aModel) {
         /**
          * <odoc>
          * <key>$gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) : String</key>
-         * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
+         * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
          * </odoc>
          */
         promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
