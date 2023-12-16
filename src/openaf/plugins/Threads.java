@@ -239,7 +239,7 @@ public class Threads extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>Threads.initScheduledThreadPool(numberOfThreads)</key>
-	 * Uses a thread pool situable for scheduled threads where you can specify the numberOfThreads to use (by defauly the number of cores).
+	 * Uses a thread pool situable for scheduled threads where you can specify the numberOfThreads to use (by default the number of cores).
 	 * Note: it ignores any previous thread added using addThread; It won't work if any of the other start* or init* methods has been used.
 	 * </odoc>
 	 */
@@ -258,7 +258,7 @@ public class Threads extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>Threads.initFixedThreadPool(numberOfThreads)</key>
-	 * Uses a thread pool situable for fixed threads where you can specify the numberOfThreads to use (by defauly the number of cores).
+	 * Uses a thread pool situable for fixed threads where you can specify the numberOfThreads to use (by default the number of cores).
 	 * Note: it ignores any previous thread added using addThread; It won't work if any of the other start* or init* methods has been used.
 	 * </odoc>
 	 */
@@ -277,7 +277,7 @@ public class Threads extends ScriptableObject {
 	/**
 	 * <odoc>
 	 * <key>Threads.initSingleThreadPool(numberOfThreads)</key>
-	 * Uses a thread pool situable for single threads where you can specify the numberOfThreads to use (by defauly the number of cores).
+	 * Uses a thread pool situable for single threads where you can specify the numberOfThreads to use (by default the number of cores).
 	 * Note: it ignores any previous thread added using addThread; It won't work if any of the other start* or init* methods has been used.
 	 * </odoc>
 	 */
