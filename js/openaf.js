@@ -10145,8 +10145,8 @@ const $lock = function(aName) {
  * <odoc>
  * <key>$await(aName) : Object</key>
  * Wrapper around the Java wait/notify mechanism. For the provided name will returen an object with the following 
- * functions wait (will block until a notify is invoked), notify (will notify and unblock all wait invocations) and
- * destroy existing references to aName.
+ * functions wait (will block until a notify is invoked), notify (will notify and unblock one of the wait invocations), 
+ * notifyAll (will notify and unblock all wait invocations) and destroy existing references to aName.
  * </odoc>
  */
 const $await = function(aName) {
@@ -10167,8 +10167,13 @@ const $await = function(aName) {
             global.__await[this.n].notify();
         }, global.__await[this.n]);
     };
+    _f.prototype.notifyAll = function() {
+        syncFn(() => {
+            global.__await[this.n].notifyAll()
+        }, global.__await[this.n])
+    }
     _f.prototype.destroy = function() {
-		this.notify();
+		this.notifyAll();
         delete global.__await[this.n];
     };
 
