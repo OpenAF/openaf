@@ -19,7 +19,7 @@ var RESERVEDWORDS = "help|exit|time|output|beautify|desc|scope|alias|color|watch
 var __alias = {
 	"opack": "oPack(__aliasparam);",
 	"encryptText": "print(\"Encrypted text: \" + askEncrypt(\"Enter text: \"));",
-	"sh": "sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/sh \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")+(!ow.format.isWindows()?\" && stty -icanon min 1 -echo 2>/dev/null\":\"\"),__,__,true);__;",
+	"sh": "$sh((!ow.loadFormat().isWindows()?\"stty icanon echo 2>/dev/null && /bin/sh \":\"cmd \")+(__aliasparam.trim().length>0?(ow.format.isWindows()?\" /c \":\" -c \\\"\")+__aliasparam+\"\\\"\":\"\")).exec(); if (!ow.format.isWindows()) $sh(\"stty -icanon min 1 -echo 2>/dev/null\").exec();__;",
     "ojob": "(()=>{var f = __aliasparam.split(\" \"); var o = processExpr(\" \", false, __aliasparam); delete o[f[0]]; oJobRunFile(f[0], o);})()",
 	"ojobio": "oJobRunFile(\"ojob.io\")"
 };
