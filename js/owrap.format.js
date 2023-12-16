@@ -1895,6 +1895,28 @@ OpenWrap.format.prototype.round = function(number, digits) {
     return number.toFixed(digits)
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.percentile(aArray, aPercentile) : Number</key>
+ * Will return the percentile (aPercentile between 0 and 1) for the provided aArray of numbers.
+ * </odoc>
+ */
+OpenWrap.format.prototype.percentile = function(aArray, aPercentile) {
+	_$(aArray, "aArray").isArray().$_()
+	_$(aPercentile, "aPercentile").isNumber().$_()
+
+	var sorted = aArray.sort((a,b) => a - b)
+	var pos = (sorted.length - 1) * aPercentile
+	var base = Math.floor(pos)
+	var rest = pos - base
+
+	if ((sorted[base + 1] !== undefined)) {
+		return sorted[base] + rest * (sorted[base + 1] - sorted[base])
+	} else {
+		return sorted[base]
+	}
+}
+
 OpenWrap.format.prototype.toBase64 = function(aString) { return af.fromBytes2String(af.toBase64Bytes(aString)); }
 OpenWrap.format.prototype.fromBase64 = function(aString) { return af.fromBytes2String(af.fromBase64(aString)); }
 OpenWrap.format.prototype.md2  = md2;
