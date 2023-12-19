@@ -1748,6 +1748,7 @@ var __colorFormat = {
 	default: "YELLOW",
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
+	askChoose: "BOLD,CYAN",
 	askPos: "BLUE",
 	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" }
 };
@@ -9128,6 +9129,73 @@ const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
 	} else {
 		return aInit;
 	}
+}
+
+/**
+ * <odoc>
+ * <key>askChoose(aPrompt, anArray, aMaxDisplay) : Number</key>
+ * Stops for user interaction prompting aPrompt waiting for a single character to choose from the provided anArray of options. Optionally
+ * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.
+ * </odoc>
+ */
+const askChoose = (aPrompt, anArray, aMaxDisplay) => {
+    _$(aPrompt, "aPrompt").isString().$_()
+    _$(anArray, "anArray").isArray().$_()
+    aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
+
+    if (__flags.ANSICOLOR_ASK) {
+        if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
+		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt)
+        print("\x1B[?25l" + _v)
+
+        let option = 0, firstTime = true, span = 0
+        let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
+        let _print = () => {
+            if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
+            var _o = anArray
+                     .map((l, i) => {
+                        if (i >= span && i - span < aMaxDisplay) {
+                            if (i == option) {
+                                return ansiColor(__colorFormat.askChoose, "> " + l + repeat(maxSpace - l.length + 2, " "))
+                            } else {
+                                var s = ((span > 0 && i == span) ? "^" : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? "v" : " "))
+                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + 2, " "))
+                            }
+                        }
+                        return ""
+                     })
+                     .filter(l => l.length > 0)
+                     .join("\n")
+            if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
+            print(_o)
+        }
+
+        plugin("Console")
+        let c = 0, _con = new Console()
+        do {
+            _print()
+            c = String(_con.readChar("")).charCodeAt(0)
+            if (c == 27) {
+                c = String(_con.readChar("")).charCodeAt(0)
+                if (c == 91) {
+                    c = String(_con.readChar("")).charCodeAt(0)
+                    if (c == 66 && option < anArray.length - 1) option++
+                    if (c == 65 && option > 0) option--
+                }
+            }
+        } while (c != 13)
+        ow.format.string.ansiMoveUp(aMaxDisplay+1)
+		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + anArray[option] + "]")
+        print(anArray.map(r => repeat(r.length + 2, " ")).join("\n"))
+        ow.format.string.ansiMoveUp(aMaxDisplay*2)
+		print("\x1B[?25h\n")
+
+        return option
+    } else {
+        throw "Choose options not supported on the current terminal."
+    }
+
+    return __
 }
 
 /**
