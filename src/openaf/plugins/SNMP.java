@@ -308,14 +308,14 @@ public class SNMP extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>SNMP.trap(aOID, aDataArray, shouldInform)</key>
-	 * Tries to send a trap based on aOID and using aDataArray where each element should be a map with
+	 * <key>SNMP.trap(aOID,aSysUpTime,  aDataArray, shouldInform)</key>
+	 * Tries to send a trap based on aOID, an aSysUpTime and using aDataArray where each element should be a map with
 	 * oid, type (i - integer, u - unsigned, c - counter32, s - string, x - hex string, d - decimal string, n - nullobj, o - objid, t - timeticks, a - ipaddress,) and value.
 	 * Optionally you can determine if shouldInform instead of sending the trap.
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object trap(String oid, Object data, boolean inform) throws IOException {
+	public Object trap(String oid, double sysUpTime,  Object data, boolean inform) throws IOException {
 		PDU trap;
 		if (this.version >= 3) {
 			trap = new ScopedPDU();
@@ -329,7 +329,11 @@ public class SNMP extends ScriptableObject {
 
 		if (data instanceof NativeJavaObject)
 			data = ((NativeJavaObject) data).unwrap();
-
+		
+		
+		
+        trap.add(new VariableBinding(SnmpConstants.sysUpTime, new TimeTicks((long)sysUpTime)));   
+		
 		OID ooid = new OID(oid);
 		trap.add(new VariableBinding(SnmpConstants.snmpTrapOID, ooid));
 		if (data instanceof NativeArray) {
@@ -398,6 +402,9 @@ public class SNMP extends ScriptableObject {
 
 		return this.snmp.send(trap, getTarget());
 	}
+	
+	
+
 
 	/** <odoc>
 	 * <key>SNMP.inform(aOID, aDataArray)</key>
@@ -407,7 +414,7 @@ public class SNMP extends ScriptableObject {
 	 **/
 	@JSFunction
 	public Object inform(String oid, Object data) throws IOException {
-		return this.trap(oid, data, true);
+		return this.trap(oid,0, data, true);
 	}
 }
 
