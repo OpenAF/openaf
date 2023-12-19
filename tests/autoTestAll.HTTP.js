@@ -4,8 +4,9 @@
     exports.testHTTP = function() {
         plugin("HTTPServer");
         
-        log("Creating HTTP server on port 12345");
-        var httpd = new HTTPd(12345);
+        var port = findRandomOpenPort()
+        log("Creating HTTP server on port " + port);
+        var httpd = new HTTPd(port);
         try {
             httpd.setDefault("/abc");
             httpd.add("/abc", function(aReq) {
@@ -22,12 +23,12 @@
         
             plugin("HTTP");
             log("Accessing HTTP server with HTTP client");
-            var http = new HTTP("http://127.0.0.1:12345?abc=123");
+            var http = new HTTP("http://127.0.0.1:" + port + "?abc=123");
             if (http.getResponse().responseCode != 200 ||
                 http.getResponse().response != "ALLOK")
                     throw "Failed to receive response from server correctly!";
         
-            http = new HTTP("http://127.0.0.1:12345/stream?abc=123");
+            http = new HTTP("http://127.0.0.1:" + port + "/stream?abc=123");
             if (http.getResponse().responseCode != 200 ||
                 http.getResponse().response != "ALLOK")
                     throw "Failed to receive response from the server correctly (for /stream)";

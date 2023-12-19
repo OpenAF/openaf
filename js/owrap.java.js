@@ -1404,16 +1404,18 @@ OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivK
 
 /**
  * <odoc>
- * <key>ow.java.getCMemory(shouldFormat, aReadFileFn) : Map</key>
+ * <key>ow.java.getCMemory(shouldFormat, aReadFileFn, aFileExistsFn) : Map</key>
  * Returns a map with the current cgroup runtime max, total, used and free memory. If shouldFormat = true ow.format.toBytesAbbreviation will be used.
  * Optionally you can provide a aReadFileFn that should expect the full path on a linux cgroup root filesystem
  * and return a string with the corresponding contents.
  * </odoc>
  */
-OpenWrap.java.prototype.getCMemory = function(shouldFormat, aReadFileFn) {
-    aReadFileFn = _$(aReadFileFn, "aReadFileFn").isFunction().default(io.readFileString)
-    
-    if (io.fileExists("/sys/fs/cgroup/memory")) {
+OpenWrap.java.prototype.getCMemory = function(shouldFormat, aReadFileFn, aFileExistsFn) {
+    aReadFileFn   = _$(aReadFileFn, "aReadFileFn").isFunction().default(io.readFileString)
+    aFileExistsFn = _$(aFileExistsFn, "aFileExistsFn").isFunction().default(io.fileExists)
+
+    // CGroupsV1
+    if (aFileExistsFn("/sys/fs/cgroup/memory")) {
         var vals = {
             m: Number(aReadFileFn("/sys/fs/cgroup/memory/memory.limit_in_bytes")),
             t: Number(aReadFileFn("/sys/fs/cgroup/memory/memory.max_usage_in_bytes")),
@@ -1421,7 +1423,7 @@ OpenWrap.java.prototype.getCMemory = function(shouldFormat, aReadFileFn) {
             u: Number(aReadFileFn("/sys/fs/cgroup/memory/memory.usage_in_bytes"))
         };
         vals.f = vals.t - vals.u;
-    
+
         if (shouldFormat) {
             ow.loadFormat();
             return {
@@ -1437,6 +1439,56 @@ OpenWrap.java.prototype.getCMemory = function(shouldFormat, aReadFileFn) {
                 used: vals.u,
                 free: vals.f
             };
+        }
+    }
+    
+    // CGroupsV2
+    if (aFileExistsFn("/sys/fs/cgroup/memory.stat")) {
+        var _fnR = aFile => {
+            var data = {}
+            io.readFileAsArray(aFile).forEach(r => {
+                var _ar = r.split(" ")
+                data[_ar[0]] = _ar[1]
+            })
+        }
+
+        let limit = aReadFileFn("/sys/fs/cgroup/memory.max").trim()
+        let usage = aReadFileFn("/sys/fs/cgroup/memory.current").trim()
+
+        var memTotal
+
+        aReadFileFn("/proc/meminfo")
+        .split("\n")
+        .filter(r => r.startsWith("MemTotal:"))
+        .forEach(r => {
+            var _ar = r.split(":")
+            memTotal = ow.format.fromBytesAbbreviation( _ar[1].trim() )
+        })
+
+        if (limit == "max") limit = memTotal
+
+        var vals = {
+            m: memTotal,
+            t: limit,
+            u: usage,
+            f: limit - usage
+        }
+
+        if (shouldFormat) {
+            ow.loadFormat()
+            return {
+                max: ow.format.toBytesAbbreviation(vals.m),
+                total: ow.format.toBytesAbbreviation(vals.t),
+                used: ow.format.toBytesAbbreviation(vals.u),
+                free: ow.format.toBytesAbbreviation(vals.f)
+            };
+        } else {
+            return {
+                max: vals.m,
+                total: vals.t,
+                used: vals.u,
+                free: vals.f
+            }
         }
     }
 }
