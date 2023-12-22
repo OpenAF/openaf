@@ -9186,8 +9186,8 @@ const askChoose = (aPrompt, anArray, aMaxDisplay) => {
         } while (c != 13)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + anArray[option] + "]")
-        print(anArray.map(r => repeat(r.length + 2, " ")).join("\n"))
-        ow.format.string.ansiMoveUp(aMaxDisplay*2)
+        print(range(aMaxDisplay).map(r => repeat(maxSpace + 2, " ")).join("\n"))
+        ow.format.string.ansiMoveUp(aMaxDisplay+2)
 		print("\x1B[?25h\n")
 
         return option
