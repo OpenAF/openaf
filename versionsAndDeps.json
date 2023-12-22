@@ -215,8 +215,8 @@
 		},		
 		{
 			"description": "Apache Commons Email",
-			"path": ["lib/commons-email-1.5.jar"],
-			"version": "1.5",
+			"path": ["lib/commons-email-1.6.0.jar"],
+			"version": "1.6.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
