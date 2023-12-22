@@ -230,6 +230,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAwait;    
 
+   - name: OpenAF::AwaitAll
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAwaitAll;    
+
    - name: OpenAF::Test Rest
      from: OpenAF::Init
      to  : oJob Test
@@ -287,6 +292,7 @@ todo:
    - OpenAF::Cache
    - OpenAF::Retry
    - OpenAF::Await
+   - OpenAF::AwaitAll
    - OpenAF::NDJSON
    - OpenAF::XML2And4Obj
    - OpenAF::Map22Array
