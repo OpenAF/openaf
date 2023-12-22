@@ -303,15 +303,23 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (!aURI.startsWith("/")) aURI = "/" + aURI
 
                     var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
-                    var __r = $rest({ 
+                    var __r = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
-                    })
+                    }
                     _h.close()
                  
+                    var _fnh = r => {
+                        if (isMap(r)) {
+                            return (isDef(r.error) ? jsonParse(r.error, true, __, true) : r)
+                        } else {
+                            return jsonParse(af.fromBytes2String(r.readAllBytes()), true)
+                        }
+                    }
+
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return __r.get(_url + aURI)
-                    case "POST": return __r.post(_url + aURI, aData)
+                    case "GET" : return _fnh($rest(__r).get2Stream(_url + aURI))
+                    case "POST": return _fnh($rest(__r).post2Stream(_url + aURI, aData))
                     }
                 }
             }
