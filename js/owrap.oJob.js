@@ -132,7 +132,7 @@ OpenWrap.oJob = function(isNonLocal) {
 		},
 		"sh" : { 
 			lang: "sh",
-			langFn: "var s = $sh(); code.split('\\n').forEach(l => s = s.sh(templify(l, args)) ); if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.shellPrefix)) { s = s.prefix(job.typeArgs.shellPrefix); s.get(); } else { s.exec(); }"
+			langFn: "var s = $sh(); code.split('\\n').forEach(l => s = s.sh(templify(l, args)) ); if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.pwd)) { s = s.pwd(job.typeArgs.pwd) }; if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.shellPrefix)) { s = s.prefix(job.typeArgs.shellPrefix); s.get(); } else { s.exec(); }"
 			// returnFn: doesn't make sense
 		},
 		"shell": {
@@ -2799,7 +2799,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 						} else {
 							res += orig + ";io.writeFileString(ft.replace(/\\\\/g, '/'), templify(io.readFileString(ft.replace(/\\\\/g, '/')), args));\n";
 						}
-						res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(ft.replace(/\\\\/g, '/')).sh('del ' + ft)" + prefix + ".get(0);\n";
+						res += "var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(ft.replace(/\\\\/g, '/')).sh('del ' + ft)" + prefix + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".get(0);\n";
 						res += "if (!isNull(__res.stdout)) __res.stdout = __res.stdout.replace(/\\\"/g, '\\\\\\\"');"
 						res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true,__,true))) { args = merge(args, jsonParse(__res.stdout, true,__,true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
 						res += "if (__res.exitcode != 0) { throw \"exit: \" + __res.exitcode + \" | \" + __res.stderr; };\n";
@@ -2808,9 +2808,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 						var orig = String(res);
                         res = "/* __oaf_ojob shell */ " + res + "\n"
 						if (aJobTypeArgs.noTemplate) {
-							res += orig + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
+							res += orig + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".get(0);\n";
 						} else {
-							res += orig + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
+							res += orig + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".get(0);\n";
 						}
 						res += "if (!isNull(__res.stdout)) __res.stdout = __res.stdout.replace(/\\\"/g, '\\\\\\\"');"
 						res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true,__,true))) { args = merge(args, jsonParse(__res.stdout, true,__,true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
@@ -2841,7 +2841,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					if (isDef(m) && isString(m.withFile) && isUnDef(aJobTypeArgs.langFn)) {
 						if (isUnDef(aJobTypeArgs.pre)) aJobTypeArgs.pre = ""
 						if (isUnDef(aJobTypeArgs.pos)) aJobTypeArgs.pos = ""
-						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, $t(" + stringify(aJobTypeArgs.pre) + ",{args:stringify(args,__,'')}) + code + " + stringify(aJobTypeArgs.pos) + ", 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp).getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
+						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, $t(" + stringify(aJobTypeArgs.pre) + ",{args:stringify(args,__,'')}) + code + " + stringify(aJobTypeArgs.pos) + ", 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp)" + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
 						aJobTypeArgs.shell = __;
 					}
 				}
@@ -2859,16 +2859,16 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 								if (isUnDef(aJobTypeArgs.pre)) aJobTypeArgs.pre = ""
 								if (isUnDef(aJobTypeArgs.pos)) aJobTypeArgs.pos = ""
 								if (aJobTypeArgs.noTemplate) {
-									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", $t(" + stringify(aJobTypeArgs.pre) + ", { args: stringify(args,__,'') }) + " + stringify(origRes) + " + " + stringify(aJobTypeArgs.pos) + ")" + prefix + ".get(0);\n"
+									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", $t(" + stringify(aJobTypeArgs.pre) + ", { args: stringify(args,__,'') }) + " + stringify(origRes) + " + " + stringify(aJobTypeArgs.pos) + ")" + prefix + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".get(0);\n"
 								} else {
-									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", $t(" + stringify(aJobTypeArgs.pre) + ", { args: stringify(args,__,'') }) + $t(" + stringify(origRes) + ", args) + " + stringify(aJobTypeArgs.pos) + ")" + prefix + ".get(0);\n"
+									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", $t(" + stringify(aJobTypeArgs.pre) + ", { args: stringify(args,__,'') }) + $t(" + stringify(origRes) + ", args) + " + stringify(aJobTypeArgs.pos) + ")" + prefix + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".get(0);\n"
 								}
 								
 							} else {
 								if (aJobTypeArgs.noTemplate) {
-									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + ".get(0);\n";
+									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", " + stringify(origRes) + ")" + prefix + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".get(0);\n";
 								} else {
-									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + ".get(0);\n";
+									res = res + ";var __res = $sh().envs(ow.oJob.__toEnvs(args)).sh(" + stringify(aJobTypeArgs.shell.split(/ +/), __, "") + ", templify(" + stringify(origRes) + ", args))" + prefix + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".get(0);\n";
 								}
 							}
 							res += "if (!isNull(__res.stdout)) if (isMap(jsonParse(__res.stdout, true,__,true))) { args = merge(args, jsonParse(__res.stdout, true,__,true)) } else { if (__res.stdout.length > 0) { printnl(__res.stdout) }; if (__res.stderr.length > 0) { printErrnl(__res.stderr); } }";
@@ -3087,6 +3087,7 @@ OpenWrap.oJob.prototype.addShortcuts = function(v) {
 	var parent = this
 
 	// Add custom shortcuts
+	if (isDef(v.typeArgs) && !isMap(v.typeArgs)) v.typeArgs = {}
 	if (isDef(v.typeArgs) && isDef(v.typeArgs.shortcut)) {
 		var _s   = v.typeArgs.shortcut
 		_s.job   = v.name

@@ -1159,7 +1159,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
 	}
 	
-	return out.join("\n")
+	return out.join("\n") + __ansiColorCache["RESET"]
 }
 
 /**
@@ -10435,17 +10435,6 @@ const $sh = function(aString, aIn) {
         this.wd = aPwd;
         return this;
     };
-
-	/**
-	 * <odoc>
-	 * <key>$sh.wd(aWd) : $sh</key>
-	 * When executing aCmd (with .exec) use aWd as the current working directory.
-	 * </odoc>
-	 */
-    __sh.prototype.wd = function(aWd) {
-        this.wd = aWd
-        return this
-    }
 
 	/**
 	 * <odoc>
