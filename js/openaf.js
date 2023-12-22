@@ -10438,17 +10438,6 @@ const $sh = function(aString, aIn) {
 
 	/**
 	 * <odoc>
-	 * <key>$sh.wd(aWd) : $sh</key>
-	 * When executing aCmd (with .exec) use aWd as the current working directory.
-	 * </odoc>
-	 */
-    __sh.prototype.wd = function(aWd) {
-        this.wd = aWd
-        return this
-    }
-
-	/**
-	 * <odoc>
 	 * <key>$sh.cb(aCallbackFunc) : $sh</key>
 	 * When executing aCmd (with .get) use aCallbackFunc function.
 	 * </odoc>
