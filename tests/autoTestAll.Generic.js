@@ -338,6 +338,23 @@
         ow.test.assert(ab.get(), 550, "Problem with do A2B.");
     };
 
+    exports.testAwaitAll = function() {
+        var p = [], c = $atomic(), r = $atomic()
+        for(var i = 0; i < 2; i++) {
+            p.push($do(() => {
+                c.inc()
+                $await("test").wait()
+                r.inc()
+            }))
+        }
+
+        do { sleep(50, true) } while(c.get() < 2)
+        $await("test").notifyAll()
+        $doWait($doAll(p))
+   
+        ow.test.assert(r.get(), 2, "Problem with await notifyAll.")
+    }
+
     exports.testAwait = function() {
         sync(() => {
             var state = 0, err1, err2, ini = now()
