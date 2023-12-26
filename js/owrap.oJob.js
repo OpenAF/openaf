@@ -3129,7 +3129,12 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: true,
 		attrs: {
-			"(parallel": "todo"
+			"(parallel"     : "todo",
+			"((isolateArgs" : "isolateArgs",
+			"((isolateJob"  : "isolateJob",
+			"((templateArgs": "templateArgs",
+			"((shareArgs"   : "shareArgs",
+			"((debug"       : "__debug"
 		}		
 	}, {
 		name : "(pass",
