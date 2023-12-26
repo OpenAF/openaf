@@ -3520,8 +3520,10 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 	
 	// Aux func to replace a source key with a target args
 	var fnA = (s,t) => {
-	  aTodo.args[t] = aTodo[s]
-	  delete aTodo[s]
+	  if (isDef(aTodo[s])) {
+		aTodo.args[t] = aTodo[s]
+	  	delete aTodo[s]
+	  }
 	}
   
 	// Ensures that the args entry is a Map for correct processing
