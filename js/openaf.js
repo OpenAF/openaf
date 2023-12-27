@@ -8041,7 +8041,10 @@ const $sql = function(aObj, aSQL, aMethod) {
 					$from(_sql.ast[0].columns)
 					.notEquals("expr.type", "column_ref")
 					.notEquals("expr.type", "double_quote_string")
-					.any()) {
+					.any() ||
+					Object.keys(searchValues(_sql.ast[0], "function"))
+					.filter(r => r.endsWith(".type"))
+					.length > 0) {
 						aMethod = "h2"
 				}
 			}
