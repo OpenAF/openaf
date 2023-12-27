@@ -3922,26 +3922,33 @@ const merge = function(objA, objB, alternative, deDup) {
 	
 	if (alternative) {
 		let stack = []
-		let result = Object.assign({}, objA)
-		if (isArray(objA) && !isArray(objB)) result = Object.assign([], objA)
+		let result
+
 		if (!isArray(objA) && isArray(objB)) {
 			return merge(objB, objA, alternative, deDup)
 		}
 		if (isArray(objA) && isArray(objB)) {
 			return objB.map(b => merge(objA, b, alternative, deDup))
 		}
+
+		if (isArray(objA) && !isArray(objB)) {
+			objA = clone(objA)
+			result = objA 
+		} else {
+			result = Object.assign({}, objA)
+		}
 		stack.push({ objA, objB, result })
 
 		while (stack.length > 0) {
 			let { objA, objB, result } = stack.pop()
 
-			if (isObject(objA) && isArray(objB)) {
+			if (isMap(objA) && isArray(objB)) {
 				for (let i in objB) {
-					stack.push({ objA: clone(objA), objB: objB[i], result: objB[i] })
+					stack.push({ objA: Object.assign({}, objA), objB: objB[i], result: objB[i] })
 				}
-			} else if (isObject(objB) && isArray(objA)) {
+			} else if (isMap(objB) && isArray(objA)) {
 				for (let i in objA) {
-					stack.push({ objA: objA[i], objB: clone(objB), result: objA[i] })
+					stack.push({ objA: objA[i], objB: Object.assign({}, objB), result: objA[i] })
 				}
 			} else {
 				if (isDef(objB) && isMap(objB) && !isNull(objB)) {
@@ -3966,13 +3973,6 @@ const merge = function(objA, objB, alternative, deDup) {
 				}
 			}
 		}
-
-		/*var _r0 = merge(_objA, _objB, false, deDup)
-		if (!compare(result, _r0)) {
-			sprint(_r0)
-			print("-----")
-			sprint(result)
-		}*/
 		return result
 	} else {
 		if (!isArray(objA) && isArray(objB)) {

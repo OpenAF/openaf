@@ -216,33 +216,33 @@ OpenWrap.obj.prototype.__getObj4Path = function(anObj, aPath) {
  * </odoc>
  */
 OpenWrap.obj.prototype.flatMap = function(data, separator) {
-	if (!isArray(data) && !isMap(data)) throw "data argument needs to be an array or a map";
-	separator = _$(separator, "separator").isString().default(".");
+	if (!isArray(data) && !isMap(data)) throw "data argument needs to be an array or a map"
+	separator = _$(separator, "separator").isString().default(".")
 
-	var keys = [];
+	let keys = []
 
-	var anArray = (isArray(data) ? data : [ data ]);
-	if (anArray.length == 0) throw "need at least one element in data";
-	var res1 = anArray.map(v => {
-		var r = {};
+	let anArray = (isArray(data) ? data : [ data ])
+	if (anArray.length == 0) throw "need at least one element in data"
+	let res1 = anArray.map(v => {
+		let r = {}
 		traverse(v, (aK, aV, aP, aO) => {
-			if (aP.startsWith(".")) aP = aP.slice(1);
-			if (!isMap(aV) && !isArray(aV)) r[aP + (aP.length > 0 ? separator : "") + aK] = aV;
-		});
-		keys = $from(Object.keys(r)).union(keys).select();
-		return r;
-	});
+			if (aP.startsWith(".")) aP = aP.slice(1)
+			if (!isMap(aV) && !isArray(aV)) r[aP + (aP.length > 0 ? separator : "") + aK] = aV
+		})
+		keys = $from(Object.keys(r)).union(keys).select()
+		return r
+	})
 
-	var res2 = res1.map(v => {
-		var r = {};
+	let res2 = res1.map(v => {
+		let r = {}
 		keys.forEach(k => {
-			r[k] = v[k];
-		});
-		return r;
-	});
+			r[k] = v[k]
+		})
+		return r
+	})
 
-	if (isArray(data)) return res2; else return res2[0];
-};
+	if (isArray(data)) return res2; else return res2[0]
+}
 
 /**
  * <odoc>
