@@ -9059,7 +9059,7 @@ const ask = (aPrompt, aMask, _con, noAnsi) => {
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
 		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
-		print("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + _m + "]")
+		print("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
 		return _con.readLinePrompt(aPrompt, aMask)
@@ -9188,7 +9188,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay) => {
             }
         } while (c != 13)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + anArray[option] + "]")
+		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
         print(range(aMaxDisplay).map(r => repeat(maxSpace + 2, " ")).join("\n"))
         ow.format.string.ansiMoveUp(aMaxDisplay+2)
 		print("\x1B[?25h\n")
