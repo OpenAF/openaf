@@ -3219,8 +3219,6 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((format"  : "__format",
 			"((title"   : "__title",
 			"((internal": "__internal",
-			"((query"   : "__query",
-			"((csv"     : "__csv",
 			"((function": "__function"
 		}
 	}, {
@@ -3266,6 +3264,18 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		noLog: true,
 		attrs: {
 			"(state": "__state"
+		}
+	}, {
+		name : "(stateOn",
+		job  : "ojob state",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(stateOn"     : "stateOn",
+			"((lowerCase"  : "lowerCase",
+			"((upperCase"  : "upperCase",
+			"((validStates": "validStates",
+			"((default"    : "default"
 		}
 	}, {
 		name : "(template",
@@ -3417,7 +3427,7 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: true,
 		attrs: {
-			"(set"  : "__key"
+			"(unset"  : "__key"
 		}
 	}, {
 		name : "(fileget",
