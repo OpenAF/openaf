@@ -5354,6 +5354,13 @@ OpenWrap.prototype.loadCh = function() { loadCompiledLib("owrap_ch_js"); if (isU
 OpenWrap.prototype.loadOJob = function() { loadCompiledLib("owrap_oJob_js"); if (isUnDef(ow.oJob)) { ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); }; return ow.oJob; };
 /**
  * <odoc>
+ * <key>ow.loadOBook()</key>
+ * Loads OpenWrap oBook functionality. 
+ * </odoc>
+ */
+OpenWrap.prototype.loadOBook = function() { loadCompiledLib("owrap_oBook_js"); if (isUnDef(ow.oBook)) { ow.oBook = new OpenWrap.oBook(); pods.declare("ow.oBook", ow.oBook) }; return ow.oBook }
+/**
+ * <odoc>
  * <key>ow.loadJava()</key>
  * Loads OpenWrap Java functionality. 
  * </odoc>
