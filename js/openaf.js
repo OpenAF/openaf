@@ -3922,26 +3922,33 @@ const merge = function(objA, objB, alternative, deDup) {
 	
 	if (alternative) {
 		let stack = []
-		let result = Object.assign({}, objA)
-		if (isArray(objA) && !isArray(objB)) result = Object.assign([], objA)
+		let result
+
 		if (!isArray(objA) && isArray(objB)) {
 			return merge(objB, objA, alternative, deDup)
 		}
 		if (isArray(objA) && isArray(objB)) {
 			return objB.map(b => merge(objA, b, alternative, deDup))
 		}
+
+		if (isArray(objA) && !isArray(objB)) {
+			objA = clone(objA)
+			result = objA 
+		} else {
+			result = Object.assign({}, objA)
+		}
 		stack.push({ objA, objB, result })
 
 		while (stack.length > 0) {
 			let { objA, objB, result } = stack.pop()
 
-			if (isObject(objA) && isArray(objB)) {
+			if (isMap(objA) && isArray(objB)) {
 				for (let i in objB) {
-					stack.push({ objA: clone(objA), objB: objB[i], result: objB[i] })
+					stack.push({ objA: Object.assign({}, objA), objB: objB[i], result: objB[i] })
 				}
-			} else if (isObject(objB) && isArray(objA)) {
+			} else if (isMap(objB) && isArray(objA)) {
 				for (let i in objA) {
-					stack.push({ objA: objA[i], objB: clone(objB), result: objA[i] })
+					stack.push({ objA: objA[i], objB: Object.assign({}, objB), result: objA[i] })
 				}
 			} else {
 				if (isDef(objB) && isMap(objB) && !isNull(objB)) {
@@ -3966,13 +3973,6 @@ const merge = function(objA, objB, alternative, deDup) {
 				}
 			}
 		}
-
-		/*var _r0 = merge(_objA, _objB, false, deDup)
-		if (!compare(result, _r0)) {
-			sprint(_r0)
-			print("-----")
-			sprint(result)
-		}*/
 		return result
 	} else {
 		if (!isArray(objA) && isArray(objB)) {
@@ -5352,6 +5352,13 @@ OpenWrap.prototype.loadCh = function() { loadCompiledLib("owrap_ch_js"); if (isU
  */
 //OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
 OpenWrap.prototype.loadOJob = function() { loadCompiledLib("owrap_oJob_js"); if (isUnDef(ow.oJob)) { ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); }; return ow.oJob; };
+/**
+ * <odoc>
+ * <key>ow.loadOBook()</key>
+ * Loads OpenWrap oBook functionality. 
+ * </odoc>
+ */
+OpenWrap.prototype.loadOBook = function() { loadCompiledLib("owrap_oBook_js"); if (isUnDef(ow.oBook)) { ow.oBook = new OpenWrap.oBook(); pods.declare("ow.oBook", ow.oBook) }; return ow.oBook }
 /**
  * <odoc>
  * <key>ow.loadJava()</key>
@@ -8041,7 +8048,10 @@ const $sql = function(aObj, aSQL, aMethod) {
 					$from(_sql.ast[0].columns)
 					.notEquals("expr.type", "column_ref")
 					.notEquals("expr.type", "double_quote_string")
-					.any()) {
+					.any() ||
+					Object.keys(searchValues(_sql.ast[0], "function"))
+					.filter(r => r.endsWith(".type"))
+					.length > 0) {
 						aMethod = "h2"
 				}
 			}
@@ -9056,7 +9066,7 @@ const ask = (aPrompt, aMask, _con, noAnsi) => {
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
 		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
-		print("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + _m + "]")
+		print("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
 		return _con.readLinePrompt(aPrompt, aMask)
@@ -9185,7 +9195,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay) => {
             }
         } while (c != 13)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + anArray[option] + "]")
+		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
         print(range(aMaxDisplay).map(r => repeat(maxSpace + 2, " ")).join("\n"))
         ow.format.string.ansiMoveUp(aMaxDisplay+2)
 		print("\x1B[?25h\n")

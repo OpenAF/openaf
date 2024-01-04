@@ -381,6 +381,7 @@ try {
 		"ow.metrics": OPENAF_BUILD_HOME + "/js/owrap.metrics.js",
 		"ow.python": OPENAF_BUILD_HOME + "/js/owrap.python.js",
 		"ow.debug": OPENAF_BUILD_HOME + "/js/owrap.debug.js",
+		"ow.obook": OPENAF_BUILD_HOME + "/js/owrap.oBook.js",
 		"afbase": OPENAF_BUILD_HOME + "/src/openaf/AFBase.java",
 		"io": OPENAF_BUILD_HOME + "/src/openaf/IOBase.java",
 		"iocore": OPENAF_BUILD_HOME + "/src/openaf/core/IO.java",

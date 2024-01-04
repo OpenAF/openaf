@@ -1300,7 +1300,7 @@ jobs:
     var secFile     = _$($$(args).get(secIn + "secFile"), "secFile").default(__);
     var secRepo     = _$($$(args).get(secIn + "secRepo"), "secRepo").default(__);
     var secMainPass = _$($$(args).get(secIn + "secMainPass"), "secMainPass").default(__);
-    var secEnv      = toBoolean( _$($$(args).get(secIn + "secEnv"), "secEnv").isBoolean().default(false) )
+    var secEnv      = _$(toBoolean($$(args).get(secIn + "secEnv")), "secEnv").isBoolean().default(false)
 
     // Set to env variable
     if (secEnv) {
