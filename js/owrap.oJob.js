@@ -2684,13 +2684,6 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 			origRes = "var __r = require('" + aJobTypeArgs.execRequire + "'); if (isDef(__r['" + _aName + "'])) __r['" + _aName + "'](args); else throw \"Code for '" + _aName + "' not found!\";";
 		}
-		if (isDef(aCheck) && isMap(aCheck)) {
-			var _in = addSigil(aName, aCheck.in)
-			var _out = addSigil(aName, aCheck.out)
-
-			if (_in != "") res = _in + "\n" + res
-			if (_out != "") res = res + "\n" + _out
-		}
 		if (isDef(aJobTypeArgs.execPy))      {
 			aJobTypeArgs.lang = "python";
 			origRes = io.readFileString(aJobTypeArgs.execPy);
@@ -2921,7 +2914,17 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 		}
 
 	    //sprint({ e: aExec, l: aLang, r: res });
-		return res;
+
+		// Process check.in and check.out without from and to
+		if (isDef(aCheck) && isMap(aCheck)) {
+			var _in = addSigil(aName, aCheck.in)
+			var _out = addSigil(aName, aCheck.out)
+
+			if (_in != "") res = _in + "\n" + res
+			if (_out != "") res = res + "\n" + _out
+		}
+
+		return res
 	}
 
 	function procJob(aName, jobDeps, jobType, jobTypeArgs, jobArgs, jobFunc, jobFrom, jobTo, jobHelp, jobCatch, jobEach, jobLang, jobFile, jobCheck) {
@@ -3016,7 +3019,14 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			}
 		}
 
-		return j;
+		// Process check._in and check._out outside from and to
+		var _in = addSigil(aName, jobCheck._in)
+		var _out = addSigil(aName, jobCheck._out)
+
+		if (_in != "") j.exec = _in + "\n" + j.exec
+		if (_out != "") j.exec = j.exec + "\n" + _out
+
+		return j
 	}
 
 	aJobsCh.set({
