@@ -442,7 +442,7 @@
 				"lib/commons-io-2.15.1.jar"
 			],
 			"deps": [
-				"lib/jsch-0.2.11.jar",
+				"lib/jsch-0.2.16.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",

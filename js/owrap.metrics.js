@@ -544,7 +544,6 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         if (isMap(obj)) {
             // build labels
             lbs = _$(lbs).default({})
-            var _kLbs = Object.keys(lbs)
             for (var key in obj) {
                 var _v = obj[key]
 
@@ -567,6 +566,7 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
                     lbs[_key] = "\"" + _value + "\""
                 }
             }
+            let _kLbs = Object.keys(lbs)
 
             var lprefix = (_kLbs.length > 0 ? "{" + _kLbs.map(k => k + "=" + lbs[k]).join(",") + "}" : "")
 

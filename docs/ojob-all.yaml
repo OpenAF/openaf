@@ -322,16 +322,20 @@ jobs:
   ## --- CHECKS ---
 
   check   :
-    # Checks the input provided in args before execution
-    in :
+    # Checks the input provided in args before execution after processing all job.from if any
+    in  :
       arg0 : isString  # forces to be a string with a value
       _arg1: toNumber.isNumber.default(-1) # converts from string to number, checks it's a number and defaults to -1 if no value is provided
       _arg2: toBoolean.isBoolean.default(false) # converts from string to boolean, checks it's a boolean and defaults to false if no value is provided
-    # Checks the output args (that will be stored with $set("res") or passed to another job if "shareArgs: true")
-    out:
+    _in :
+      # Same as "in" but will be executed before processing all job.from
+    # Checks the output args before processing all ojob.to if any. Output will be stored with $set("res") or passed to another job if "shareArgs: true".
+    out :
       res0 : isBoolean # forces to have a res0 with a boolean value
       res1 : isString.oneOf(['ok', 'nok']).default('nok') # ensures that res1 is a string with the value 'ok' or 'nok' and defaults to 'nok' if no value is provided
-  
+    _out:
+      # Same as "out" but will be executed after processing all ojob.to
+
   ## --- CODE EXECUTION ---
 
   #lang    : my-language  (built-in: winssh, ssh, js, oaf, python (requires python), shell, sh, powershell (requires powershell), go (requires go), ruby (requires ruby), perl (requires perl))
