@@ -7507,17 +7507,21 @@ var OJOB_VALIDATION_STRICT = getEnvsDef("OJOB_VALIDATION_STRICT", OJOB_VALIDATIO
  * </odoc>
  */ 
 const oJobRunFile = function(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
-	var oo;
+	var oo
 	if (isDef(aId)) {
-		loadCompiledLib("owrap_oJob_js");
-		oo = new OpenWrap.oJob();
+		loadCompiledLib("owrap_oJob_js")
+		oo = new OpenWrap.oJob()
 	} else {
-		oo = ow.loadOJob();
+		oo = ow.loadOJob()
 	}
 
 	aOptionsMap = _$(aOptionsMap, "aOptionsMap").isMap().default({ shareArgs: false })
 
-	oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap);
+	$set("res", {})
+    var _h = oo.__help
+	oo.__help = {}
+	oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap)
+	oo.__help = _h
 }
 
 /**
@@ -7595,14 +7599,28 @@ const oJobRunJob = function(aJob, args, aId, rArgs) {
 
 /**
  * <odoc>
- * <key>$job(aJob, args, aId) : Object</key>
+ * <key>$job(aJob, args, aId, isolate) : Object</key>
  * Shortcut to oJobRunJob and ow.oJob.runJob to execute aJob with args and returned the changed arguments.
- * Optionally aId can be also provided.
+ * Optionally aId can be also provided. If isolate=true it will also clean the key 'res' and try to return the result of ow.oJob.output.
  * </odoc>
  */
-const $job = function(aJob, args, aId) {
-	if (isUnDef(aId)) aId = "|" + genUUID();
-	return oJobRunJob(aJob, args, aId, true);
+const $job = function(aJob, args, aId, isolate) {
+	isolate = _$(isolate, "isolate").isBoolean().default(false)
+
+	if (isUnDef(aId)) aId = "|" + genUUID()
+	if (isolate) {
+		$set("res", {})
+		var _b = oJobRunJob(aJob, merge(args, { __format: "key", __key: aId}), aId, true)
+		if (_b) {
+			var _r = $get(aId)
+			$unset(aId)
+			return _r
+		} else {
+			return __
+		}
+	} else {
+		return oJobRunJob(aJob, args, aId, true)
+	}
 }
 
 /**
