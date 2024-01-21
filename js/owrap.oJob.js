@@ -1066,8 +1066,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
  * \
  * </odoc>
  */
-OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptionsMap) {
-	var s = this.__loadFile(aFile);
+OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptionsMap, dontLoadTodos) {
+	var s = this.__loadFile(aFile, dontLoadTodos)
 	if (isDef(s)) {
 		if (isSubJob && isDef(s.ojob)) {
 			s.ojob.__subjob = true;
@@ -1076,6 +1076,20 @@ OpenWrap.oJob.prototype.loadFile = function(aFile, args, aId, isSubJob, aOptions
 		this.load(s.jobs, s.todo, merge(aOptionsMap, s.ojob), args, aId, s.init, s.help);
 	}
 };
+
+/**
+ * <odoc>
+ * <key>ow.oJob.loadJobs(aFile, args, noReturn) : Array</key>
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.loadJobs = function(aFile, _args, noReturn) {
+	noReturn = _$(noReturn, "noReturn").isBoolean().default(false)
+  
+	this.loadFile(aFile, _args, __, __, __, true)
+	if (!noReturn) return this.previewFile(aFile).todo
+  
+	return __
+}
 
 /**
  * <odoc>
