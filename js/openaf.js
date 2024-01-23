@@ -8226,9 +8226,10 @@ const $sql = function(aObj, aSQL, aMethod) {
 
 /**
  * <odoc>
- * <key>af.fromXML2Obj(xml, ignored, aPrefix) : Object</key>
+ * <key>af.fromXML2Obj(xml, ignored, aPrefix, reverseIgnored) : Object</key>
  * Tries to convert a XML object into a javascript object. Tag attributes will be ignored unless the corresponding tag name is included
- * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
+ * on the ignored array and attributes will be added to the corresponding map with a prefix "_" (or aPrefix).
+ * Optionally if reverseIgnored = true the ignored array will be used to not include the tag name in the ignored array.
  * </odoc>
  */
 AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
