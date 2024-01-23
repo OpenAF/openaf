@@ -8226,14 +8226,15 @@ const $sql = function(aObj, aSQL, aMethod) {
 
 /**
  * <odoc>
- * <key>af.fromXML2Obj(xml, ignored) : Object</key>
+ * <key>af.fromXML2Obj(xml, ignored, aPrefix) : Object</key>
  * Tries to convert a XML object into a javascript object. Tag attributes will be ignored unless the corresponding tag name is included
  * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
  * </odoc>
  */
-AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
+AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 	ignored = _$(ignored).isArray().default(__);
 	aPrefix = _$(aPrefix).isString().default("_");
+	reverseIgnored = _$(reverseIgnored).isBoolean().default(false)
 
 	if (typeof xml != "xml") {
 		if (isString(xml)) {
@@ -8258,7 +8259,7 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
 		for (var ichild in children) {
 			var child = children[ichild];
 			var name = child.localName();
-			var json = af.fromXML2Obj(child, ignored, aPrefix);
+			var json = af.fromXML2Obj(child, ignored, aPrefix, reverseIgnored)
 			var value = r[name];
 			if (isDef(value)) {
 				if (isString(value)) {
@@ -8281,7 +8282,8 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
 		for (var iattribute in attributes) {
 			var attribute = attributes[iattribute];
 			var name = attribute.localName();
-			if (ignored && ignored.indexOf(name) == -1) {
+			var _go = ignored && ignored.indexOf(name) == -1
+			if ((!reverseIgnored && _go) || (reverseIgnored && !_go)) {
 				a[aPrefix + name] = attribute.toString();
 				c++;
 			}
