@@ -11251,8 +11251,10 @@ const $unset = function(aK) {
  * If shouldReturn = true the string output will be returned
  * </ojob>
  */
-const $output = function (aObj, args, aFunc, shouldReturn) {
+const $output = function(aObj, args, aFunc, shouldReturn) {
 	args = _$(args).default({})
+	ow.loadFormat()
+
 	var fnP = _s => {
 		if (shouldReturn)
 			return _s
@@ -11291,7 +11293,6 @@ const $output = function (aObj, args, aFunc, shouldReturn) {
 	var res = isDef(path) ? $path(aObj, path) : aObj
 	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
 	res = isDef(sql) ? $sql(res, sql) : res
-
 	switch (format) {
 		case "json":
 			return fnP(stringify(res, __, ""))
