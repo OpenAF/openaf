@@ -8259,7 +8259,7 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 		r = {};
 		for (var ichild in children) {
 			var child = children[ichild];
-			var name = child.localName();
+			var name = String(child.localName())
 			var json = af.fromXML2Obj(child, ignored, aPrefix, reverseIgnored)
 			var value = r[name];
 			if (isDef(value)) {
@@ -8281,16 +8281,16 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 	if (attributes.length()) {
 		var a = {}, c = 0;
 		for (var iattribute in attributes) {
-			var attribute = attributes[iattribute];
-			var name = attribute.localName();
+			var attribute = attributes[iattribute]
+			var name = String(attribute.localName())
 			var _go = ignored && ignored.indexOf(name) == -1
 			if ((!reverseIgnored && _go) || (reverseIgnored && !_go)) {
-				a[aPrefix + name] = attribute.toString();
-				c++;
+				a[aPrefix + name] = attribute.toString()
+				c++
 			}
 		}
 		if (c > 0) {
-			if (isMap(r)) a = merge(a, r); else a[aPrefix] = r;
+			if (isMap(r)) a = merge(a, r); else (isString(r) && r.length > 0 ? a[aPrefix] = r : __);
 			return a;
 		}
 	}
