@@ -802,10 +802,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	ow.loadFormat();
 	if (isUnDef(aTheme)) {
 		if (!ow.format.isWindows()) {
-			aTheme = (__conAnsi ? "utf" : "plain");
 			if (isUnDef(useAnsi) && __initializeCon()) {
 				useAnsi = __conAnsi;
 			}
+			aTheme = (__conAnsi ? "utf" : "plain")
 		} else {
 			if (__initializeCon()) {
 				if (!ansiWinTermCap()) ansiStart();
@@ -1037,6 +1037,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			return result
 		}
 		_ac  = (aAnsi, aString) => {
+			if (!__conConsole) return aString
 			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
 			if (aAnsi.length == 0) return aString
 			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString// + __ansiColorCache["RESET"]
@@ -1159,7 +1160,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
 	}
 	
-	return out.join("\n") + __ansiColorCache["RESET"]
+	return out.join("\n") + (!__conConsole ? "" : __ansiColorCache["RESET"])
 }
 
 /**
@@ -1437,10 +1438,17 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 	return o;
 }
 
-var __con, __conStatus, __conAnsi;
+var __con, __conStatus, __conAnsi, __conConsole;
+if (isUnDef(__conAnsi) && isDef(java.lang.System.getenv().get("TERM"))) {
+	__conAnsi = true
+}
 if (isUnDef(__conAnsi) && String(java.lang.System.getProperty("file.encoding")) != "UTF-8") {
 	__conAnsi = false;
 }
+if (isUnDef(__conConsole)) {
+	__conConsole = java.lang.System.console() != null
+}
+
 function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;
 
@@ -1524,15 +1532,13 @@ const __ansiColorPrep = function(aAnsi) {
  * </odoc>
  */
 const ansiColor = function(aAnsi, aString, force, noCache, noReset) {
-	if (!force && !__initializeCon()) return aString;
+	if (!force && !__ansiColorFlag) return aString
 	aAnsi = _$(aAnsi, "aAnsi").isString().default("");
 	aString = _$(aString, "aString").isString().default("");
 	force = _$(force, "force").isBoolean().default(false);
 	noCache = _$(noCache, "noCache").isBoolean().default(!__flags.ANSICOLOR_CACHE)
 
-	var con = __con;
-	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
-	var res = "";
+	var ansis = force || __conConsole
 	
 	if (ansis && aAnsi.length > 0) {
 		if (noCache) return __ansiColorPrep(aAnsi) + aString + (noReset ? "" : __ansiColorCache["RESET"])
@@ -8372,7 +8378,8 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
  * </odoc>
  */
 IO.prototype.pipeLn = function(aFunc) {
-	var br = new java.io.BufferedReader(new java.io.InputStreamReader(java.lang.System.in))
+	var is = new java.io.InputStreamReader(java.lang.System.in)
+	var br = new java.io.BufferedReader(is)
 
 	var cont = true
 	while(cont) {
@@ -11258,19 +11265,20 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 	var fnP = _s => {
 		if (shouldReturn)
 			return _s
-		else
-			print(_s)
+		else {
+			if (pause) ow.format.string.pauseString(_s); else print(_s)
+		}
 	}
 
 	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
 		if (isArray(obj) || isMap(obj))
-			print(printTreeOrS(obj, __, { noansi: !__conAnsi }))
+			fnP(printTreeOrS(obj, __, { noansi: !__conAnsi }))
 		else
-			sprint(obj)
+			fnP(stringify(obj))
 	});
 
 	var format = (isDef(global.__format) ? global.__format : "human")
-	var path = __, csv = __, from = __, key = "res", sql = __
+	var path = __, csv = __, from = __, key = "res", sql = __, pause = false
 
 	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
 	if (isDef(args.__format) && !isNull(args.__format)) format = String(args.__format).toLowerCase()
@@ -11290,6 +11298,9 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 	if (isDef(args.__KEY) && !isNull(args.__KEY)) key = String(args.__KEY)
 	if (isDef(args.__key) && !isNull(args.__key)) key = String(args.__key)
 
+	if (isDef(args.__PAUSE) && !isNull(args.__PAUSE)) pause = toBoolean(args.__PAUSE)
+	if (isDef(args.__pause) && !isNull(args.__pause)) pause = toBoolean(args.__pause)
+
 	var res = isDef(path) ? $path(aObj, path) : aObj
 	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
 	res = isDef(sql) ? $sql(res, sql) : res
@@ -11299,10 +11310,14 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "prettyjson":
 			return fnP(stringify(res))
 		case "cjson":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(colorify(res))
 		case "slon":
 			return fnP(ow.format.toSLON(res))
 		case "cslon":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(ow.format.toCSLON(res))
 		case "ndjson":
 			if (isArray(res)) return res.map(line => fnP(stringify(line, __, "")))
@@ -11312,17 +11327,23 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			return fnP(af.toYAML(res, __, true))
 		case "table":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)))
+			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __)))
 			break
 		case "stable":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
 		case "ctable":
+			__ansiColorFlag = true
+			__conConsole = true
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, false, true))
 			break
 		case "tree":
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
+		case "ctree":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
 		case "res":
 			if (isDef(res)) $set("res", res)
@@ -11367,7 +11388,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			}
 			break
 		case "map":
-			return fnP(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
+			return fnP(printMap(res, __, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __conAnsi))
 		default:
 			if (format.startsWith("set_")) {
 				$set(format.substring(4), res)
