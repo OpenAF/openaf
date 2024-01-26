@@ -1209,6 +1209,109 @@ OpenWrap.format.prototype.string = {
 		scase = _$(scase, "scase").isBoolean().default(false)
 
 		return new RegExp("^" + pattern.replace(/([.+^${}()|[\]\\])/g, '\\$1').replace(/\*/g, '.*').replace(/\?/g, '.') + "$", (scase ? __ : 'i'))
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.pauseString(aString, aMsg)</key>
+	 * Given aString starts an interactive paging of the contents of aString. 
+	 * Optionally aMsg can be provided to be displayed with the paging percentage (use \{{percentage}} to be replaced by the percentage).
+	 * </odoc>
+	 */
+	pauseString: (aString, aMsg) => {
+		_$(aString, "aString").isString().$_()
+		aMsg = _$(aMsg, "aMsg").isString().default("{{percentage}}% (Press any key to paginate or use arrow keys or 'q' to quit)")
+
+		//__initializeCon()
+		plugin("Console")
+		_c = new Console()
+
+		var __pauseArray = (aText, aStart) => {
+			_$(aText, "aText").isArray().$_()
+	
+			var height = _c.getConsoleReader().getTerminal().getHeight() 
+			var lines = aText.length
+	
+			if (lines <= (height - 1)) {
+				print(aText.join("\n"))
+				return -1
+			}
+	
+			if (isUnDef(aStart) || aStart < 0) {
+				aStart = 0
+			} else {
+				if (aStart > (lines - height + 1)) aStart = (lines - height + 1)
+			}
+	
+			print(aText.slice(aStart, aStart + height - 1).join("\n"))
+	
+			if ((aStart + height -1) < lines) {
+				tprintnl(aMsg, { percentage: Math.floor(( ((aStart + height -1)*100 / lines))) })
+				var c
+				c = String(_c.readChar(""))
+				printnl("\r" + repeat(_c.getConsoleReader().getTerminal().getWidth(), ' ') + "\r")
+				if (c.charCodeAt(0) != 113 && c.charCodeAt(0) != 81) {
+					if (c.charCodeAt(0) == 27) {
+						c = String(_c.readChar(""))
+						if (c.charCodeAt(0) == 27) {
+							// get out
+						}
+						if (c.charCodeAt(0) == 91) {
+							c = String(_c.readChar(""))
+							// home
+							if (c.charCodeAt(0) == 49) {
+								c = String(_c.readChar(""))
+								if (c.charCodeAt(0) == 126) {
+									return 0
+								}
+							}
+							// end
+							if (c.charCodeAt(0) == 52) {
+								c = String(_c.readChar(""))
+								if (c.charCodeAt(0) == 126) {
+									return lines - height - 1
+								}
+							}
+							// pgup
+							if (c.charCodeAt(0) == 53) {
+								c = String(_c.readChar(""))
+								if (c.charCodeAt(0) == 126) {
+									if (aStart - height -1 < 0)
+										return 0
+									else
+										return aStart - height + 1
+								}
+							}
+							// pgdw
+							if (c.charCodeAt(0) == 54) {
+								c = String(_c.readChar(""))
+								if (c.charCodeAt(0) == 126) {
+									return aStart + height - 1
+								}
+							}
+							// up
+							if (c.charCodeAt(0) == 65) {
+								if (aStart - 1 < 0)
+									return 0
+								else
+									return aStart - 1
+							}
+							// down
+							if (c.charCodeAt(0) == 66) {
+								return aStart + 1
+							}
+						}
+					}
+					return aStart + height - 1
+				} else {
+					return -1
+				}
+			}
+		}
+		
+		var pres = 0
+		var lines = aString.split("\n")
+		while(pres >= 0) pres = __pauseArray(lines, pres)
 	}
 };
 
