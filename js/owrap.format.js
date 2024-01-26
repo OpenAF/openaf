@@ -892,6 +892,28 @@ OpenWrap.format.prototype.string = {
 		printnl("\x1B[" + nChars + "D")
 	},
 
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiScrollUp(nLines)</key>
+	 * Scrolls the screen up by nLines.
+	 * </odoc>
+	 */
+    ansiScrollUp: nLines => {
+		nLines = _$(nLines, "nLines").isNumber().default(1)
+		printnl("\x1B[" + nLines + "S")
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.format.string.ansiScrollDown(nLines)</key>
+	 * Scrolls the screen down by nLines.
+	 * </odoc>
+	 */
+	ansiScrollDown: nLines => {
+		nLines = _$(nLines, "nLines").isNumber().default(1)
+		printnl("\x1B[" + nLines + "T")
+	},
+
 	/** 
 	 * <odoc>
 	 * <key>ow.format.string.bool(aBoolValue, isLight, anExtra) : String</key>
