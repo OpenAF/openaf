@@ -11057,7 +11057,7 @@ const $ssh = function(aMap) {
  * Provides a shortcut to access CSV functionality. Optionally you can provide options through aMap.\
  * \
  * Examples:\
- *   $cvs().fromInArray(anArray)\
+ *   $csv().fromInArray(anArray)\
  *   $csv().fromInFile("test.csv").toOutArray()\
  *   $csv().fromInFile("test.csv").toOutFn(m => print( af.toSLON(m) ))\
  *   $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray()
@@ -11296,8 +11296,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 	if (isDef(args.__SQL) && !isNull(args.__SQL)) sql = String(args.__SQL)
 	if (isDef(args.__sql) && !isNull(args.__sql)) sql = String(args.__sql)
 
-	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = jsonParse(args.__CSV, true)
-	if (isDef(args.__csv) && !isNull(args.__csv)) csv = jsonParse(args.__csv, true)
+	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = args.__CSV.trim().startsWith("{") ? jsonParse(args.__CSV, true) : af.fromSLON(args.__CSV)
+	if (isDef(args.__csv) && !isNull(args.__csv)) csv = args.__csv.trim().startsWith("{") ? jsonParse(args.__csv, true) : af.fromSLON(args.__csv)
 
 	if (isDef(args.__KEY) && !isNull(args.__KEY)) key = String(args.__KEY)
 	if (isDef(args.__key) && !isNull(args.__key)) key = String(args.__key)
@@ -11371,6 +11371,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "text":
 			return fnP(String(res))
 		case "md":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(ow.format.withMD(String(res)))
 		case "pm":
 			var _p;
