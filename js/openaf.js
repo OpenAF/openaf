@@ -3533,29 +3533,33 @@ const isBinaryArray = function(anArrayOfChars, confirmLimit) {
 
 /**
  * <odoc>
- * <key>listFilesRecursive(aPath) : Map</key>
+ * <key>listFilesRecursive(aPath, usePosix) : Map</key>
  * Performs the io.listFiles function recursively given aPath. The returned map will be equivalent to
  * the io.listFiles function (see more in io.listFiles). Alternatively you can specify
  * to usePosix=true and it will add to the map the owner, group and full permissions of each file and folder.
  * </odoc>
  */
 const listFilesRecursive = function(aPath, usePosix) {
-	if (isUnDef(aPath)) return [];
+	if (isUnDef(aPath)) return []
 
-	var files = io.listFiles(aPath, usePosix)
-	if(isUnDef(files)) return [];
-	var ret = [];
-	files = files.files;
-	if (isUnDef(files)) return [];
-	ret = files.concat(ret);
+	var ret = new Set(), stack = [aPath], visited = new Set()
 
-	for(var ii in files) {
-		if (files[ii].isDirectory) {
-			ret = ret.concat(listFilesRecursive(files[ii].filepath, usePosix))
-		}
+	while (stack.length > 0) {
+		var currentPath = stack.pop()
+		var files = io.listFiles(currentPath, usePosix)
+
+		if (isUnDef(files) || isUnDef(files.files)) continue
+
+        for (var file of files.files) {
+            ret.add(file)
+            if (file.isDirectory && !visited.has(file.filepath)) {
+                stack.push(file.filepath)
+                visited.add(file.filepath)
+            }
+        }
 	}
 
-	return ret;
+	return Array.from(ret)
 }
 
 /**

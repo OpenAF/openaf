@@ -143,17 +143,21 @@ public class IO extends ScriptableObject {
                 if (files != null) {
                         for(File file : files) {
                                 if (file != null) {
-                                		BasicFileAttributes attr;
-                                		if (posix) {
-                                			try {
-                                				attr = Files.readAttributes(file.toPath(), PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
-                                			} catch(Exception e) {
-                                				posix = false;
-                                				attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
-                                			}
-                                		} else {
-                                			attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
-                                		}
+                                		BasicFileAttributes attr = null;
+										try {
+											if (posix) {
+												try {
+													attr = Files.readAttributes(file.toPath(), PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+												} catch(Exception e) {
+													posix = false;
+													attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+												}
+											} else {
+												attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+											}
+										} catch(IOException e) {
+											// don't assign attr
+										}
                                 		
                                         JSEngine.JSMap fileMap = AFCmdBase.jse.getNewMap(no.getMap());
                                         
@@ -162,16 +166,20 @@ public class IO extends ScriptableObject {
                                                 fileMap.put("isFile", file.isFile());
                                                 fileMap.put("filename", file.getName());
 												fileMap.put("filepath", file.getPath().replaceAll("\\\\", "/"));
-												fileMap.put("canonicalPath", file.getCanonicalPath().replaceAll("\\\\", "/"));
+												try {
+													fileMap.put("canonicalPath", file.getCanonicalPath().replaceAll("\\\\", "/"));
+												} catch(IOException e) {
+													// don't add canonicalPath
+												}
                                                 fileMap.put("lastModified", file.lastModified());
-                                                fileMap.put("createTime", attr.creationTime().toMillis());
-                                                fileMap.put("lastAccess", attr.lastAccessTime().toMillis());
+                                                if (attr != null) fileMap.put("createTime", attr.creationTime().toMillis());
+                                                if (attr != null) fileMap.put("lastAccess", attr.lastAccessTime().toMillis());
                                                 fileMap.put("size", file.length());
                                                 if (file.canExecute()) sb.append("x");
                                                 if (file.canRead())    sb.append("r");
                                                 if (file.canWrite())   sb.append("w");
                                                 fileMap.put("permissions", sb.toString());
-                                                if (posix) {
+                                                if (posix && attr != null) {
                                                 	fileMap.put("group", ((PosixFileAttributes) attr).group().getName());
                                                 	fileMap.put("user", ((PosixFileAttributes) attr).owner().getName());
                                                 	fileMap.put("gid", ((PosixFileAttributes) attr).group().hashCode());
@@ -212,18 +220,23 @@ public class IO extends ScriptableObject {
 	@JSFunction
 	public static Object fileInfo(String filepath, boolean posix) throws IOException {
 		JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
+		
 		File file = new File(filepath);
 		if (file != null) {
-			BasicFileAttributes attr;
-			if (posix) {
-				try {
-					attr = Files.readAttributes(file.toPath(), PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
-				} catch(Exception e) {
-					posix = false;
+			BasicFileAttributes attr = null;
+			try {
+				if (posix) {
+					try {
+						attr = Files.readAttributes(file.toPath(), PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+					} catch(Exception e) {
+						posix = false;
+						attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+					}
+				} else {
 					attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
 				}
-			} else {
-				attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+			} catch(IOException e) {
+				// don't assign attr
 			}
 			
 			StringBuilder sb = new StringBuilder();
@@ -231,16 +244,21 @@ public class IO extends ScriptableObject {
 			no.put("isFile", file.isFile());
 			no.put("filename", file.getName());
 			no.put("filepath", file.getPath().replaceAll("\\\\", "/"));
-			no.put("canonicalPath", file.getCanonicalPath().replaceAll("\\\\", "/"));
+			try {
+				no.put("canonicalPath", file.getCanonicalPath().replaceAll("\\\\", "/"));
+			} catch(IOException e) {
+				// don't add canonicalPath
+			}
+
 			no.put("lastModified", file.lastModified());
-			no.put("createTime", attr.creationTime().toMillis());
-			no.put("lastAccess", attr.lastAccessTime().toMillis());
+			if (attr != null) no.put("createTime", attr.creationTime().toMillis());
+			if (attr != null) no.put("lastAccess", attr.lastAccessTime().toMillis());
 			no.put("size", file.length());
 			if (file.canExecute()) sb.append("x");
 			if (file.canRead())    sb.append("r");
 			if (file.canWrite())   sb.append("w");
 			no.put("permissions", sb.toString());
-			if (posix) {
+			if (posix && attr != null) {
 				no.put("group", ((PosixFileAttributes) attr).group().getName());
 				no.put("user", ((PosixFileAttributes) attr).owner().getName());
 				no.put("gid", ((PosixFileAttributes) attr).group().hashCode());
