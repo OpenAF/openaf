@@ -11278,7 +11278,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		if (isArray(obj) || isMap(obj))
 			fnP(printTreeOrS(obj, __, { noansi: !__conAnsi }))
 		else
-			fnP(stringify(obj))
+			fnP(isString(obj) ? obj : stringify(obj))
 	});
 
 	var format = (isDef(global.__format) ? global.__format : "human")
