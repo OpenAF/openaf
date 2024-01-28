@@ -73,15 +73,16 @@ OpenWrap.obj.prototype.fromDBRS = function(aDB, aSQL, aBinds, aFunction, aErrorF
 
 /**
  * <odoc>
- * <key>ow.obj.fromArray2DB(anArray, aDB, aDBTable, useParallel,caseSensitive) : Number</key>
+ * <key>ow.obj.fromArray2DB(anArray, aDB, aDBTable, useParallel, caseSensitive, errorFn) : Number</key>
  * Given anArray composed of maps where each key is a field name tries to insert into the aDBTable
  * for a provided aDB. Optionally you can specify how many threads should be used with useParallel
  * and use the case sensitive name of fields with caseSensitive = true.
+ * The errorFn, if defined, will be called with the exception, the sql statement and the value that caused the exception.
  * This function doesn't perform any database commit. Returns the number of records inserted.
  * (available after ow.loadObj())
  * </odoc>
  */
-OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, useParallel, caseSensitive) {
+OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, useParallel, caseSensitive, errorFn) {
 	if (isUnDef(useParallel)) useParallel = getNumberOfCores()
 
 	if (isUnDef(anArray) || anArray.length < 1) return 0;
@@ -106,7 +107,13 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 			for(var k in ookeys) {
 				values.push(_value[ookeys[k]]);
 			}
-			return aDB.us("insert into " + (caseSensitive ? "\"" + aTableName + "\"" : aTableName) + "(" + okeys + ") values (" + binds.join(",") + ")", values);
+			var _sql = "insert into " + (caseSensitive ? "\"" + aTableName + "\"" : aTableName) + "(" + okeys + ") values (" + binds.join(",") + ")"
+			try {	
+				return aDB.us(_sql, values)
+			} catch(ee) {
+				if (isDef(errorFn)) errorFn(ee, _sql, value)
+				return 0
+			}
 		},
 		useParallel,
 		ctrl
@@ -116,18 +123,22 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 
 /**
  * <odoc>
- * <key>ow.obj.fromObj2DBTableCreate(aTableName, aMap, aOverrideMap, enforceCase) : String</key>
- * Returns a DB table create, for aTableName, from the provided aMap key entries. To override the default field type guessing a aOverrideMap can 
+ * <key>ow.obj.fromObj2DBTableCreate(aTableName, aMapOrArray, aOverrideMap, enforceCase) : String</key>
+ * Returns a DB table create, for aTableName, from the provided aMapOrArray (only a few entries) key entries. To override the default field type guessing a aOverrideMap can 
  * be provided with field entries and the corresponding type as value. Optionally if enforceCase = true table name and fields names will be enforced case
  * by using double quotes.
  * </odoc>
  */
-OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMap, aOverrideMap, enforceCase) {
-	aTableName = _$(aTableName, "table name").isString().$_();
-	aMap = _$(aMap, "map").isMap().$_();
-	aOverrideMap = _$(aOverrideMap, "override map").isMap().default({});
-	enforceCase = _$(enforceCase, "enforce case").isBoolean().default(false);
+OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray, aOverrideMap, enforceCase) {
+	aTableName = _$(aTableName, "table name").isString().$_()
+	aOverrideMap = _$(aOverrideMap, "override map").isMap().default({})
+	enforceCase = _$(enforceCase, "enforce case").isBoolean().default(false)
  
+	// Convert to array if needed
+	if (isMap(aMapOrArray)) {
+		aMapOrArray = [ aMapOrArray ]
+	}
+
 	const detType = aO => {
 		if (isBoolean(aO)) return "BOOLEAN"
 		if (isNumber(aO)) return "NUMBER"
@@ -135,23 +146,46 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMap, aOverr
 		return "VARCHAR"
 	}
 
-	var m = [];
-	aMap = ow.obj.flatMap(aMap)
-	var keys = Object.keys(aMap);
-	for(var ii in keys) {
-	   var key = (enforceCase ? "\"" + keys[ii] + "\"" : keys[ii]);
- 
-	   m.push({
-		  f: key,
-		  s: (isDef(aOverrideMap[keys[ii]]) ? aOverrideMap[keys[ii]] : detType(aMap[keys[ii]]))
-	   });
+	var tries = new Set(), override = new Set()
+	for(var i in aMapOrArray) {
+		var m = []
+		aMap = ow.obj.flatMap(aMapOrArray[i])
+		var keys = Object.keys(aMap)
+		for(var ii in keys) {
+			var key = (enforceCase ? "\"" + keys[ii] + "\"" : keys[ii])
+		
+			var s 
+			if (isDef(aOverrideMap[keys[ii]])) {
+				s = aOverrideMap[keys[ii]]
+				override.add(ii)
+			} else {
+				s = detType(aMap[keys[ii]])
+			}
+			m.push({
+				f: key,
+				s: s
+			})
+		}
+		tries.add(m)
+	}
+
+	let finalM = Array.from(tries)[0]
+	tries = Array.from(tries)
+	if (tries.length > 1) {
+		for(var i = 1; i < tries.length; i++) {
+			for(var j = 0; j < tries[i].length; j++) {
+				if (tries[i][j].s != finalM[j].s && !override.has(j)) {
+					finalM[j].s = "VARCHAR"
+				}
+			}
+		}
 	}
  
 	return templify("CREATE TABLE {{{table}}} ({{{fields}}})", { 
 		table: (enforceCase ? "\""+ aTableName + "\"" : aTableName), 
-		fields: (m.map(r => r.f + " " + r.s).join(", ")) 
-	});
-};
+		fields: (finalM.map(r => r.f + " " + r.s).join(", ")) 
+	})
+}
 
 /**
  * <odoc>
