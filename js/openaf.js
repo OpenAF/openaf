@@ -211,13 +211,14 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true
 	},
-	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
-	ALTERNATIVE_PROCESSEXPR    : true,
-	HTTP_TIMEOUT               : __,
-    HTTP_CON_TIMEOUT           : __,
-	SQL_QUERY_METHOD           : "auto",
-	SQL_QUERY_H2_INMEM         : false,
-	DOH_PROVIDER               : "cloudflare"
+	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
+	ALTERNATIVE_PROCESSEXPR     : true,
+	HTTP_TIMEOUT                : __,
+    HTTP_CON_TIMEOUT            : __,
+	SQL_QUERY_METHOD            : "auto",
+	SQL_QUERY_H2_INMEM          : false,
+	SQL_QUERY_COLS_DETECT_SAMPLE: 5,
+  	DOH_PROVIDER                : "cloudflare"
 })
 
 // -------
@@ -8117,15 +8118,29 @@ const $sql = function(aObj, aSQL, aMethod) {
 			db.convertDates(true)
 		}
 
+		let __objGetSamples = aObj => {
+			var r = new Set()
+			if (isArray(aObj)) {
+				if (aObj.length > 0) {
+					var s = Math.min(__flags.SQL_QUERY_COLS_DETECT_SAMPLE, aObj.length)
+					for(var i = 0; i < s; i++) {
+						r.add(aObj[Math.floor(Math.random() * aObj.length)])
+					}
+				}
+			}
+			return Array.from(r)
+		}
+
 		let __sql = {
 			close: () => {
 				db.close()
 				if (isDef(tf)) io.rm(tf)
 			},
 		    getTableDef: (aTable) => {
+				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				return defs[aTable]
 			},
-			streamTable: (aTable, aStreamReadFn, aErrFn, aBufferSize) => {
+			streamTable: (aTable, aStreamReadFn, aErrFn, aBufferSize, aFieldOveride) => {
 				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				aStreamReadFn = _$(aStreamReadFn, "aStreamReadFn").isFunction().$_()
 				aBufferSize = _$(aBufferSize, "aBufferSize").isNumber().default(__flags.IO.bufferSize)
@@ -8145,7 +8160,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 					var _d = aStreamReadFn()
 					if (isUnDef(defs[aTable]) && isMap(_d)) {
 						// Create the table
-						defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _d, __, true)
+						defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _d, aFieldOveride, true)
 						try {
 							db.u(defs[aTable])
 							db.commit()
@@ -8173,7 +8188,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 				
 				return __sql
 			},
-			table: (aTable, _obj) => {
+			table: (aTable, _obj, aFieldOveride) => {
 				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				
 				// Convert map to array
@@ -8182,7 +8197,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 				if (isArray(_obj)) {
 					if (_obj.length != 0) {
 						try {
-							defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _obj[0], __, true)
+							defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, __objGetSamples(_obj), aFieldOveride, true)
 							db.u(defs[aTable])
 							ow.obj.fromArray2DB(_obj, db, aTable, __, true)
 							db.commit()
