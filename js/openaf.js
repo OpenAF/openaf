@@ -4251,7 +4251,7 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   count_by(arr, 'field'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end)\
+ *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template')\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4302,6 +4302,46 @@ const $path = function(aObj, aPath, customFunctions) {
 		},
 		delete: {
 			_func: ar => { delete ar[0][ar[1]]; return ar[0] },
+			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
+		},
+		format: {
+			_func: ar => $ft(ar[1], ar[0]),
+			_signature: [ { types: [ jmespath.types.string, jmespath.types.number ] }, { types: [ jmespath.types.string ] } ] 
+		},
+		formatn: {
+			_func: ar => $f(ar[1], ar[0]),
+			_signature: [ { types: [ jmespath.types.string, jmespath.types.number ] }, { types: [ jmespath.types.string ] } ] 
+		},
+		template: {
+			_func: ar => $t(ar[1], ar[0]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		templateF: {
+			_func: ar => { ow.loadTemplate(); ow.template.addConditionalHelpers(); ow.template.addFormatHelpers(); return $t(ar[1], ar[0]) },
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		to_isoDate: {
+			_func: ar => (new Date(ar[0])).toISOString(),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		to_date: {
+			_func: ar => (new Date(ar[0])),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		a2m: {
+			_func: ar => $a2m(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.array ] } ]
+		},
+		a4m: {
+			_func: ar => $a4m(ar[0], ar[1], ar[2]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.boolean ] } ]
+		},
+		m2a: {
+			_func: ar => $m2a(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.object ] } ]
+		},
+		m4a: {
+			_func: ar => $m4a(ar[0], ar[1]),
 			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
