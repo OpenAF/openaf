@@ -156,8 +156,8 @@
 		},
 		{
 			"description": "jjwt",
-			"path": ["lib/jjwat-api-0.12.3.jar", "lib/jjwat-gson-0.12.3.jar", "lib/jjwat-impl-0.12.3.jar"],
-			"version": "0.11.5",
+			"path": ["lib/jjwat-api-0.12.4.jar", "lib/jjwat-gson-0.12.4.jar", "lib/jjwat-impl-0.12.4.jar"],
+			"version": "0.12.4",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",

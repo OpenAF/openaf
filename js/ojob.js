@@ -252,6 +252,7 @@ function ojob_draw() {
 }
 
 function ojob_global() {
+	__initializeCon()
 	var lst = $from(io.listFiles(__flags.OJOB_LOCALPATH).files)
 			    .equals("isFile", true)
 				.match("filename", "(\.ya?ml|\.json)$")
@@ -261,15 +262,14 @@ function ojob_global() {
 						var oj = (r.filepath.endsWith(".json") ? io.readFileJSON(r.filepath) : io.readFileYAML(r.filepath))
 						return {
 							oJob: r.filename,
-							description: (isMap(oj) && isMap(oj.help) ? oj.help.text : "n/a"),
-							"# todo": (isMap(oj) && isArray(oj.todo)) ? oj.todo.length : "n/a"
+							description: (isMap(oj) && isMap(oj.help) ? oj.help.text : "n/a")
 						} 
 					} catch(e) {
 						logErr("Problem reading from '" + r.filepath + "': " + e)
 						return {}
 					}
 				})
-	if (lst.length > 0) print(printTable(lst)); else logWarn("No jobs found in '" + __flags.OJOB_LOCALPATH + "'")
+	if (lst.length > 0) $o(lst, {__format:"ctable"}); else logWarn("No jobs found in '" + __flags.OJOB_LOCALPATH + "'")
 	ojob_shouldRun = false
 }
 

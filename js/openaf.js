@@ -211,13 +211,14 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true
 	},
-	ALTERNATIVE_HOME           : String(java.lang.System.getProperty("java.io.tmpdir")),
-	ALTERNATIVE_PROCESSEXPR    : true,
-	HTTP_TIMEOUT               : __,
-    HTTP_CON_TIMEOUT           : __,
-	SQL_QUERY_METHOD           : "auto",
-	SQL_QUERY_H2_INMEM         : false,
-	DOH_PROVIDER               : "cloudflare"
+	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
+	ALTERNATIVE_PROCESSEXPR     : true,
+	HTTP_TIMEOUT                : __,
+    HTTP_CON_TIMEOUT            : __,
+	SQL_QUERY_METHOD            : "auto",
+	SQL_QUERY_H2_INMEM          : false,
+	SQL_QUERY_COLS_DETECT_SAMPLE: 5,
+  	DOH_PROVIDER                : "cloudflare"
 })
 
 // -------
@@ -802,10 +803,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	ow.loadFormat();
 	if (isUnDef(aTheme)) {
 		if (!ow.format.isWindows()) {
-			aTheme = (__conAnsi ? "utf" : "plain");
 			if (isUnDef(useAnsi) && __initializeCon()) {
 				useAnsi = __conAnsi;
 			}
+			aTheme = (__conAnsi ? "utf" : "plain")
 		} else {
 			if (__initializeCon()) {
 				if (!ansiWinTermCap()) ansiStart();
@@ -1037,6 +1038,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 			return result
 		}
 		_ac  = (aAnsi, aString) => {
+			if (!__conConsole) return aString
 			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
 			if (aAnsi.length == 0) return aString
 			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString// + __ansiColorCache["RESET"]
@@ -1159,7 +1161,7 @@ const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
 		out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
 	}
 	
-	return out.join("\n") + __ansiColorCache["RESET"]
+	return out.join("\n") + (!__conConsole ? "" : __ansiColorCache["RESET"])
 }
 
 /**
@@ -1437,10 +1439,17 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 	return o;
 }
 
-var __con, __conStatus, __conAnsi;
+var __con, __conStatus, __conAnsi, __conConsole;
+if (isUnDef(__conAnsi) && isDef(java.lang.System.getenv().get("TERM"))) {
+	__conAnsi = true
+}
 if (isUnDef(__conAnsi) && String(java.lang.System.getProperty("file.encoding")) != "UTF-8") {
 	__conAnsi = false;
 }
+if (isUnDef(__conConsole)) {
+	__conConsole = java.lang.System.console() != null
+}
+
 function __initializeCon() {
 	if (isDef(__conStatus)) return __conStatus;
 
@@ -1524,15 +1533,13 @@ const __ansiColorPrep = function(aAnsi) {
  * </odoc>
  */
 const ansiColor = function(aAnsi, aString, force, noCache, noReset) {
-	if (!force && !__initializeCon()) return aString;
+	if (!force && !__ansiColorFlag) return aString
 	aAnsi = _$(aAnsi, "aAnsi").isString().default("");
 	aString = _$(aString, "aString").isString().default("");
 	force = _$(force, "force").isBoolean().default(false);
 	noCache = _$(noCache, "noCache").isBoolean().default(!__flags.ANSICOLOR_CACHE)
 
-	var con = __con;
-	var ansis = force || (__conAnsi && (java.lang.System.console() != null));
-	var res = "";
+	var ansis = force || __conConsole
 	
 	if (ansis && aAnsi.length > 0) {
 		if (noCache) return __ansiColorPrep(aAnsi) + aString + (noReset ? "" : __ansiColorCache["RESET"])
@@ -3527,29 +3534,33 @@ const isBinaryArray = function(anArrayOfChars, confirmLimit) {
 
 /**
  * <odoc>
- * <key>listFilesRecursive(aPath) : Map</key>
+ * <key>listFilesRecursive(aPath, usePosix) : Map</key>
  * Performs the io.listFiles function recursively given aPath. The returned map will be equivalent to
  * the io.listFiles function (see more in io.listFiles). Alternatively you can specify
  * to usePosix=true and it will add to the map the owner, group and full permissions of each file and folder.
  * </odoc>
  */
 const listFilesRecursive = function(aPath, usePosix) {
-	if (isUnDef(aPath)) return [];
+	if (isUnDef(aPath)) return []
 
-	var files = io.listFiles(aPath, usePosix)
-	if(isUnDef(files)) return [];
-	var ret = [];
-	files = files.files;
-	if (isUnDef(files)) return [];
-	ret = files.concat(ret);
+	var ret = new Set(), stack = [aPath], visited = new Set()
 
-	for(var ii in files) {
-		if (files[ii].isDirectory) {
-			ret = ret.concat(listFilesRecursive(files[ii].filepath, usePosix))
-		}
+	while (stack.length > 0) {
+		var currentPath = stack.pop()
+		var files = io.listFiles(currentPath, usePosix)
+
+		if (isUnDef(files) || isUnDef(files.files)) continue
+
+        for (var file of files.files) {
+            ret.add(file)
+            if (file.isDirectory && !visited.has(file.filepath)) {
+                stack.push(file.filepath)
+                visited.add(file.filepath)
+            }
+        }
 	}
 
-	return ret;
+	return Array.from(ret)
 }
 
 /**
@@ -4240,7 +4251,7 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   count_by(arr, 'field'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end)\
+ *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template')\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4291,6 +4302,46 @@ const $path = function(aObj, aPath, customFunctions) {
 		},
 		delete: {
 			_func: ar => { delete ar[0][ar[1]]; return ar[0] },
+			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
+		},
+		format: {
+			_func: ar => $ft(ar[1], ar[0]),
+			_signature: [ { types: [ jmespath.types.string, jmespath.types.number ] }, { types: [ jmespath.types.string ] } ] 
+		},
+		formatn: {
+			_func: ar => $f(ar[1], ar[0]),
+			_signature: [ { types: [ jmespath.types.string, jmespath.types.number ] }, { types: [ jmespath.types.string ] } ] 
+		},
+		template: {
+			_func: ar => $t(ar[1], ar[0]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		templateF: {
+			_func: ar => { ow.loadTemplate(); ow.template.addConditionalHelpers(); ow.template.addFormatHelpers(); return $t(ar[1], ar[0]) },
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		to_isoDate: {
+			_func: ar => (new Date(ar[0])).toISOString(),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		to_date: {
+			_func: ar => (new Date(ar[0])),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		a2m: {
+			_func: ar => $a2m(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.array ] } ]
+		},
+		a4m: {
+			_func: ar => $a4m(ar[0], ar[1], ar[2]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.boolean ] } ]
+		},
+		m2a: {
+			_func: ar => $m2a(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.object ] } ]
+		},
+		m4a: {
+			_func: ar => $m4a(ar[0], ar[1]),
 			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
@@ -8107,15 +8158,29 @@ const $sql = function(aObj, aSQL, aMethod) {
 			db.convertDates(true)
 		}
 
+		let __objGetSamples = aObj => {
+			var r = new Set()
+			if (isArray(aObj)) {
+				if (aObj.length > 0) {
+					var s = Math.min(__flags.SQL_QUERY_COLS_DETECT_SAMPLE, aObj.length)
+					for(var i = 0; i < s; i++) {
+						r.add(aObj[Math.floor(Math.random() * aObj.length)])
+					}
+				}
+			}
+			return Array.from(r)
+		}
+
 		let __sql = {
 			close: () => {
 				db.close()
 				if (isDef(tf)) io.rm(tf)
 			},
 		    getTableDef: (aTable) => {
+				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				return defs[aTable]
 			},
-			streamTable: (aTable, aStreamReadFn, aErrFn, aBufferSize) => {
+			streamTable: (aTable, aStreamReadFn, aErrFn, aBufferSize, aFieldOveride) => {
 				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				aStreamReadFn = _$(aStreamReadFn, "aStreamReadFn").isFunction().$_()
 				aBufferSize = _$(aBufferSize, "aBufferSize").isNumber().default(__flags.IO.bufferSize)
@@ -8135,7 +8200,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 					var _d = aStreamReadFn()
 					if (isUnDef(defs[aTable]) && isMap(_d)) {
 						// Create the table
-						defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _d, __, true)
+						defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _d, aFieldOveride, true)
 						try {
 							db.u(defs[aTable])
 							db.commit()
@@ -8163,7 +8228,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 				
 				return __sql
 			},
-			table: (aTable, _obj) => {
+			table: (aTable, _obj, aFieldOveride) => {
 				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				
 				// Convert map to array
@@ -8172,7 +8237,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 				if (isArray(_obj)) {
 					if (_obj.length != 0) {
 						try {
-							defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, _obj[0], __, true)
+							defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, __objGetSamples(_obj), aFieldOveride, true)
 							db.u(defs[aTable])
 							ow.obj.fromArray2DB(_obj, db, aTable, __, true)
 							db.commit()
@@ -8226,14 +8291,16 @@ const $sql = function(aObj, aSQL, aMethod) {
 
 /**
  * <odoc>
- * <key>af.fromXML2Obj(xml, ignored) : Object</key>
+ * <key>af.fromXML2Obj(xml, ignored, aPrefix, reverseIgnored) : Object</key>
  * Tries to convert a XML object into a javascript object. Tag attributes will be ignored unless the corresponding tag name is included
- * on the ignored array and attributes will be added to the corresponding map with a prefix "_".
+ * on the ignored array and attributes will be added to the corresponding map with a prefix "_" (or aPrefix).
+ * Optionally if reverseIgnored = true the ignored array will be used to not include the tag name in the ignored array.
  * </odoc>
  */
-AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
+AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 	ignored = _$(ignored).isArray().default(__);
 	aPrefix = _$(aPrefix).isString().default("_");
+	reverseIgnored = _$(reverseIgnored).isBoolean().default(false)
 
 	if (typeof xml != "xml") {
 		if (isString(xml)) {
@@ -8257,8 +8324,8 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
 		r = {};
 		for (var ichild in children) {
 			var child = children[ichild];
-			var name = child.localName();
-			var json = af.fromXML2Obj(child, ignored, aPrefix);
+			var name = String(child.localName())
+			var json = af.fromXML2Obj(child, ignored, aPrefix, reverseIgnored)
 			var value = r[name];
 			if (isDef(value)) {
 				if (isString(value)) {
@@ -8279,15 +8346,16 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix) {
 	if (attributes.length()) {
 		var a = {}, c = 0;
 		for (var iattribute in attributes) {
-			var attribute = attributes[iattribute];
-			var name = attribute.localName();
-			if (ignored && ignored.indexOf(name) == -1) {
-				a[aPrefix + name] = attribute.toString();
-				c++;
+			var attribute = attributes[iattribute]
+			var name = String(attribute.localName())
+			var _go = ignored && ignored.indexOf(name) == -1
+			if ((!reverseIgnored && _go) || (reverseIgnored && !_go)) {
+				a[aPrefix + name] = attribute.toString()
+				c++
 			}
 		}
 		if (c > 0) {
-			if (isMap(r)) a = merge(a, r); else a[aPrefix] = r;
+			if (isMap(r)) a = merge(a, r); else (isString(r) && r.length > 0 ? a[aPrefix] = r : __);
 			return a;
 		}
 	}
@@ -8369,7 +8437,8 @@ AF.prototype.protectSystemExit = function(shouldProtect, aMessage) {
  * </odoc>
  */
 IO.prototype.pipeLn = function(aFunc) {
-	var br = new java.io.BufferedReader(new java.io.InputStreamReader(java.lang.System.in))
+	var is = new java.io.InputStreamReader(java.lang.System.in)
+	var br = new java.io.BufferedReader(is)
 
 	var cont = true
 	while(cont) {
@@ -11043,7 +11112,7 @@ const $ssh = function(aMap) {
  * Provides a shortcut to access CSV functionality. Optionally you can provide options through aMap.\
  * \
  * Examples:\
- *   $cvs().fromInArray(anArray)\
+ *   $csv().fromInArray(anArray)\
  *   $csv().fromInFile("test.csv").toOutArray()\
  *   $csv().fromInFile("test.csv").toOutFn(m => print( af.toSLON(m) ))\
  *   $csv().fromInString( $csv().fromInArray( io.listFiles(".").files ) ).toOutArray()
@@ -11248,24 +11317,27 @@ const $unset = function(aK) {
  * If shouldReturn = true the string output will be returned
  * </ojob>
  */
-const $output = function (aObj, args, aFunc, shouldReturn) {
+const $output = function(aObj, args, aFunc, shouldReturn) {
 	args = _$(args).default({})
+	ow.loadFormat()
+
 	var fnP = _s => {
 		if (shouldReturn)
 			return _s
-		else
-			print(_s)
+		else {
+			if (pause) ow.format.string.pauseString(_s); else print(_s)
+		}
 	}
 
 	aFunc = _$(aFunc, "aFunction").isFunction().default((obj) => {
 		if (isArray(obj) || isMap(obj))
-			print(printTreeOrS(obj, __, { noansi: !__conAnsi }))
+			fnP(printTreeOrS(obj, __, { noansi: !__conAnsi }))
 		else
-			sprint(obj)
+			fnP(isString(obj) ? obj : stringify(obj))
 	});
 
 	var format = (isDef(global.__format) ? global.__format : "human")
-	var path = __, csv = __, from = __, key = "res", sql = __
+	var path = __, csv = __, from = __, key = "res", sql = __, pause = false
 
 	if (isDef(args.__FORMAT) && !isNull(args.__FORMAT)) format = String(args.__FORMAT).toLowerCase()
 	if (isDef(args.__format) && !isNull(args.__format)) format = String(args.__format).toLowerCase()
@@ -11279,26 +11351,32 @@ const $output = function (aObj, args, aFunc, shouldReturn) {
 	if (isDef(args.__SQL) && !isNull(args.__SQL)) sql = String(args.__SQL)
 	if (isDef(args.__sql) && !isNull(args.__sql)) sql = String(args.__sql)
 
-	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = jsonParse(args.__CSV, true)
-	if (isDef(args.__csv) && !isNull(args.__csv)) csv = jsonParse(args.__csv, true)
+	if (isDef(args.__CSV) && !isNull(args.__CSV)) csv = args.__CSV.trim().startsWith("{") ? jsonParse(args.__CSV, true) : af.fromSLON(args.__CSV)
+	if (isDef(args.__csv) && !isNull(args.__csv)) csv = args.__csv.trim().startsWith("{") ? jsonParse(args.__csv, true) : af.fromSLON(args.__csv)
 
 	if (isDef(args.__KEY) && !isNull(args.__KEY)) key = String(args.__KEY)
 	if (isDef(args.__key) && !isNull(args.__key)) key = String(args.__key)
 
+	if (isDef(args.__PAUSE) && !isNull(args.__PAUSE)) pause = toBoolean(args.__PAUSE)
+	if (isDef(args.__pause) && !isNull(args.__pause)) pause = toBoolean(args.__pause)
+
 	var res = isDef(path) ? $path(aObj, path) : aObj
 	res = isDef(from) ? $from(res).query(af.fromNLinq(from)) : res
 	res = isDef(sql) ? $sql(res, sql) : res
-
 	switch (format) {
 		case "json":
 			return fnP(stringify(res, __, ""))
 		case "prettyjson":
 			return fnP(stringify(res))
 		case "cjson":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(colorify(res))
 		case "slon":
 			return fnP(ow.format.toSLON(res))
 		case "cslon":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(ow.format.toCSLON(res))
 		case "ndjson":
 			if (isArray(res)) return res.map(line => fnP(stringify(line, __, "")))
@@ -11308,17 +11386,23 @@ const $output = function (aObj, args, aFunc, shouldReturn) {
 			return fnP(af.toYAML(res, __, true))
 		case "table":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (isDef(this.__codepage) ? "utf" : __)))
+			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __)))
 			break
 		case "stable":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, true, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
 		case "ctable":
+			__ansiColorFlag = true
+			__conConsole = true
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (isDef(this.__codepage) ? "utf" : __), __, true, false, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, false, true))
 			break
 		case "tree":
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
+		case "ctree":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
 		case "res":
 			if (isDef(res)) $set("res", res)
@@ -11342,6 +11426,8 @@ const $output = function (aObj, args, aFunc, shouldReturn) {
 		case "text":
 			return fnP(String(res))
 		case "md":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(ow.format.withMD(String(res)))
 		case "pm":
 			var _p;
@@ -11363,7 +11449,7 @@ const $output = function (aObj, args, aFunc, shouldReturn) {
 			}
 			break
 		case "map":
-			return fnP(printMap(res, __, (isDef(this.__codepage) ? "utf" : __), __conAnsi))
+			return fnP(printMap(res, __, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __conAnsi))
 		default:
 			if (format.startsWith("set_")) {
 				$set(format.substring(4), res)
