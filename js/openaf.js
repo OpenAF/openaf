@@ -8331,22 +8331,25 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 		r = {};
 		for (var ichild in children) {
 			var child = children[ichild];
-			var name = String(child.localName())
-			var json = af.fromXML2Obj(child, ignored, aPrefix, reverseIgnored)
-			var value = r[name];
-			if (isDef(value)) {
-				if (isString(value)) {
-					r[name] = [value]
-					r[name].push(json);
-				} else {
-					if (!isArray(value)) {
-						value = [ value ];
-						r[name] = value;
+			var name
+			if (!isNull(child.localName())) {
+				name = String(child.localName())
+				var json = af.fromXML2Obj(child, ignored, aPrefix, reverseIgnored)
+				var value = r[name];
+				if (isDef(value)) {
+					if (isString(value)) {
+						r[name] = [value]
+						r[name].push(json);
+					} else {
+						if (!isArray(value)) {
+							value = [ value ];
+							r[name] = value;
+						}
+						value.push(json);
 					}
-					value.push(json);
+				} else {
+					r[name] = json;
 				}
-			} else {
-				r[name] = json;
 			}
 		}
 	}
