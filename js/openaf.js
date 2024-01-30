@@ -218,7 +218,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 5,
-  	DOH_PROVIDER                : "cloudflare"
+  	DOH_PROVIDER                : "cloudflare",
+	PRINT_BUFFER_STREAM         : 8192
 })
 
 // -------
@@ -283,7 +284,7 @@ var __bfprintErr = {}
 var __bfprintCodePage = io.getDefaultEncoding()
 const bfprintnl = function(str, codePage) {
 	if (isUnDef(codePage)) codePage = __bfprintCodePage
-	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), 512)
+	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), __flags.PRINT_BUFFER_STREAM)
 
 	__bfprint[codePage].write(str)
 	__bfprint[codePage].flush()
@@ -291,10 +292,16 @@ const bfprintnl = function(str, codePage) {
 
 const bfprintErrnl = function(str, codePage) {
 	if (isUnDef(codePage)) codePage = __bfprintCodePage
-	if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), 512)
+	if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), __flags.PRINT_BUFFER_STREAM)
 
 	__bfprintErr[codePage].write(str)
 	__bfprintErr[codePage].flush()
+}
+
+const bfprintSetStreamSize = function(aStreamSize) {
+	__flags.PRINT_BUFFER_STREAM = aStreamSize
+	__bfprint = {}
+    __bfprintErr = {}
 }
 
 const bfprint = function(str, codePage) {
