@@ -9018,13 +9018,21 @@ const $m2a = (aDef, aMap) => {
  * </odoc>
  */
 const sortMapKeys = (aMap, moreLevels) => {
-	if (!isMap(aMap)) return aMap
-	
-	var r = {}
-	Object.keys(aMap).sort().forEach(k => {
-		r[k] = moreLevels && isMap(m[k]) ? sortMapKeys(aMap[k]) : aMap[k]
-	})
-	return r
+	let keys = Object.keys(aMap).sort()
+	let result = {}
+
+	for(let i = 0; i < keys.length; i++) {
+		let key = keys[i]
+		let value = aMap[key]
+
+		if (moreLevels && typeof value === 'object' && value !== null && value !== undefined) {
+			result[key] = sortMapKeys(value, moreLevels)
+		} else {
+			result[key] = value
+		}
+	}
+
+	return result
 }
 
 /**
