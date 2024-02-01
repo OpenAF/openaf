@@ -9025,7 +9025,15 @@ const sortMapKeys = (aMap, moreLevels) => {
 		let key = keys[i]
 		let value = aMap[key]
 
-		if (moreLevels && typeof value === 'object' && value !== null && value !== undefined) {
+		if (Array.isArray(value)) {
+			result[key] = value.map(item => {
+				if (typeof item === 'object' && item !== null && item !== undefined) {
+					return sortMapKeys(item, moreLevels)
+				} else {
+					return item
+				}
+			})
+		} else if (moreLevels && typeof value === 'object' && value !== null && value !== undefined) {
 			result[key] = sortMapKeys(value, moreLevels)
 		} else {
 			result[key] = value
