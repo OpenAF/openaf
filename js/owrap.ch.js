@@ -1043,7 +1043,7 @@ OpenWrap.ch.prototype.__types = {
 	},
 	// Simple implementation
 	//
-	simple: {
+	simpleold: {
 		__channels: {},
 		create       : function(aName, shouldCompress, options) {
 			this.__channels[aName] = {};
@@ -1142,6 +1142,87 @@ OpenWrap.ch.prototype.__types = {
 			delete this.__channels[aName][id];
 		}
 	},	
+	simple: {
+		__channels: {},
+		create       : function(aName, shouldCompress, options) {
+			this.__channels[aName] = new Map()
+		},
+		destroy      : function(aName) {
+			delete this.__channels[aName];
+		},
+		size         : function(aName) {
+
+			return this.__channels[aName].size
+		},
+		forEach      : function(aName, aFunction) {
+			this.__channels[aName].forEach((v, k) => {
+				try { aFunction(v.k, v.v) } catch(e) {}
+			})
+		},
+		getAll      : function(aName, full) {
+			return Array.from(this.__channels[aName].values()).map(e => e.v)
+		},
+		getKeys      : function(aName, full) {
+			return Array.from(this.__channels[aName].values()).map(e => e.k)
+		},
+		getSortedKeys: function(aName, full) {
+			return $path(Array.from(this.__channels[aName].values()), "sort_by([], &t)[*].k")
+		},
+		getSet       : function getSet(aName, aMatch, aK, aV, aTimestamp)  {
+			var res
+			res = this.get(aName, aK)
+			if ($stream([res]).anyMatch(aMatch)) {
+				return this.set(aName, aK, aV, aTimestamp)
+			}
+			return __
+		},
+		set          : function(aName, aK, aV, aTimestamp) {
+			var id = stringify(sortMapKeys(aK, true), __, "")
+			var old = this.__channels[aName].get(id)
+			if (isUnDef(old)) {
+				this.__channels[aName].set(id, { k: aK, v: aV, t: aTimestamp })
+			} else {
+				old.v = aV
+				old.t = aTimestamp
+				this.__channels[aName].set(id, old)
+			}
+			return aK
+		},
+		setAll       : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			for(var i = 0; i < aVs.length; i++) {
+				this.set(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp)
+			}
+		},
+		unsetAll     : function(aName, aKs, aVs, aTimestamp) {
+			ow.loadObj()
+			for(var i = 0; i < aVs.length; i++) {
+				this.unset(aName, ow.obj.filterKeys(aKs, aVs[i]), aVs[i], aTimestamp)
+			}
+		},		
+		get          : function(aName, aK) {
+			var id = stringify(sortMapKeys(aK, true), __, "")
+			var res = this.__channels[aName].get(id)
+			if (isDef(res)) 
+				return res.v
+			else
+				return __
+		},
+		pop          : function(aName) {
+			var elems = this.getSortedKeys(aName)
+			var elem = elems[elems.length - 1]
+			return elem
+		},
+		shift        : function(aName) {
+			var elems = this.getSortedKeys(aName)
+			var elem = elems[0]
+			return elem
+		},
+		unset        : function(aName, aK, aTimestamp) {
+			var id = stringify(sortMapKeys(aK, true), __, "")
+			this.__channels[aName].delete(id)
+		}
+	},
 	// File implementation
 	/**
 	 * <odoc>
