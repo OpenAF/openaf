@@ -1065,7 +1065,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
     _ac("RESET", "")
 
     var _tw = (ps, s, mx) => {
-        if ((ps.length + aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + aOptions.minSize) + "; max = " + mx + ")"
+        if ((ps.length + _aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + _aOptions.minSize) + "; max = " + mx + ")"
         var ar = []
         var i = 0, mxp = Math.floor(mx * 0.25)
         var sub, ni
