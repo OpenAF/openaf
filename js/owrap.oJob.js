@@ -1363,7 +1363,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				aa = "[" + existing.name + "] | " + JSON.stringify(temp) + "\n";
 			}
 
-			if (isUnDef(__conAnsi)) __initializeCon();
+			if (isUnDef(__conStatus)) __initializeCon();
 			ansis = Boolean(__conAnsi && (java.lang.System.console() != null));
 			try {
 				var s = "", ss = "", sn = "", se = "";
