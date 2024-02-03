@@ -347,7 +347,7 @@ OpenWrap.test.prototype.toMarkdown = function() {
 	md += "* Number of tests failed: " + this.__countFail.get() + "\n";
 	md += "* Number of asserts: " + this.__countAssert.get() + "\n";
 
-    md += "## Result details\n\n";
+    md += "\n---\n## Result details\n\n";
 
 	md += "| Suite | Test | Status | Time | Result       |\n";
 	md += "|-------|------|--------|------|--------------|\n";
