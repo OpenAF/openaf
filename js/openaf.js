@@ -8386,7 +8386,7 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 	var r, children = xml.children(), attributes = xml.attributes(), length = children.length();
 	if (length == 0) {
 		r = xml.toString();
-	} else if (length == 1 && children[0].hasSimpleContent()) {
+	} else if (length == 1 && isNull(children[0].localName())) {
 		var text = String(children[0].toString())
 		if (text) {
 			r = text;
