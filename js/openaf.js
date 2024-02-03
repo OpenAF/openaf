@@ -43,10 +43,10 @@ const isJavaClass = function(obj) {
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
  */
- const isJavaObject = function(obj) {
+const isJavaObject = obj => obj instanceof java.lang.Object
 	//var s = Object.prototype.toString.call(obj);
 	//return (s === '[object JavaObject]' || s === '[object JavaArray]');
-	try {
+	/*try {
 		if (obj.getClass() instanceof java.lang.Object)
 			return true
 		else
@@ -61,8 +61,7 @@ const isJavaClass = function(obj) {
 			}
 		}
 		return false
-	}
-}
+	}*/
 
 /**
  * <odoc>
@@ -71,7 +70,7 @@ const isJavaClass = function(obj) {
  * (see also isUnDef). Shortcut for the isDefined function.
  * </odoc>
  */
-const isDef = aObject => isJavaObject(aObject) || typeof aObject !== 'undefined'
+const isDef = aObject => (aObject instanceof java.lang.Object) || typeof aObject !== 'undefined'
 
 /**
  * <odoc>
@@ -80,7 +79,7 @@ const isDef = aObject => isJavaObject(aObject) || typeof aObject !== 'undefined'
  * (see also isDef). Shortcut for the isUndefined function.
  * </odoc>
  */
-const isUnDef = aObject => !isJavaObject(aObject) && typeof aObject == 'undefined'
+const isUnDef = aObject => !(aObject instanceof java.lang.Object) && typeof aObject == 'undefined'
 
 /**
  * <odoc>
@@ -1905,10 +1904,10 @@ const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
  * </odoc>
  */
 const templify = function(aTemplateString, someData) {
-	someData = (isUnDef(someData)) ? this : someData;
-	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
+	someData = (isUnDef(someData)) ? this : someData
+	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers() }
 	if (isUnDef(aTemplateString) || aTemplateString == "") return ""
-	return String(ow.template.parse(String(aTemplateString), someData));
+	return String(ow.template.parse(String(aTemplateString), someData))
 }
 
 const $t = templify
@@ -3794,7 +3793,7 @@ const extend = function() {
 						}
 						let copyIsArray = false
 						let _clone
-						if (deep && copy && (("undefined" === typeof copy.getDate && typeof copy === "object") || typeof copy === "function")) {
+						if (deep && copy && ((!(copy instanceof java.lang.Object) && "undefined" === typeof copy.getDate && typeof copy === "object") || typeof copy === "function")) {
 
 							if (Array.isArray(copy)) {
 								copyIsArray = true
@@ -8372,8 +8371,8 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 	var r, children = xml.children(), attributes = xml.attributes(), length = children.length();
 	if (length == 0) {
 		r = xml.toString();
-	} else if (length == 1) {
-		var text = xml.text().toString();
+	} else if (length == 1 && children[0].hasSimpleContent()) {
+		var text = String(children[0].toString())
 		if (text) {
 			r = text;
 		}

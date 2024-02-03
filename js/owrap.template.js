@@ -18,10 +18,10 @@ OpenWrap.template.prototype.__mdHTMLExtras = []
 OpenWrap.template.prototype.__srcPath = {}
 
 OpenWrap.template.prototype.__requireHB = function() {
-	var hb = loadCompiledRequire("handlebars_js");
-	this.__addHelpers(hb);
-	this.__addPartials(hb);
-	return hb;
+	var hb = loadCompiledRequire("handlebars_js")
+	this.__addHelpers(hb)
+	this.__addPartials(hb)
+	return hb
 };
 
 /**
@@ -443,15 +443,15 @@ OpenWrap.template.prototype.delPartial = function(aPartial) {
  * </odoc>
  */
 OpenWrap.template.prototype.getTemplate = function(aSource) {
-	var res;
-	var e;
+	var res
+	var e
 	//sync(function() {
 	try {
-		res = this.__requireHB().compile(aSource);
-	} catch(ee) { e = ee; }
+		res = this.__requireHB().compile(aSource)
+	} catch(ee) { e = ee }
 	//}, ow.loadTemplate());
-	if (isDef(e)) throw e;
-	return res;
+	if (isDef(e)) throw e
+	return res
 }
 
 /**
@@ -462,17 +462,17 @@ OpenWrap.template.prototype.getTemplate = function(aSource) {
  * </odoc>
  */
 OpenWrap.template.prototype.parse = function(aSource, someData) {
-	someData = (isUnDef(someData)) ? this : someData;
-	var res;
-	var e;
-	var parent = this;
+	someData = (isUnDef(someData)) ? this : someData
+	var res
+	var e
+	var parent = this
 	//sync(function() {
-		try {
-			res = (parent.getTemplate(aSource))(someData);
-		} catch(ee) { e = ee; }
+	try {
+		res = (parent.getTemplate(aSource))(someData)
+	} catch(ee) { e = ee }
 	//}, ow.loadTemplate());
-	if (isDef(e)) throw e;
-	return res;
+	if (isDef(e)) throw e
+	return res
 }
 
 /**
