@@ -210,6 +210,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true
 	},
+	WITHMD: {
+		htmlFilter: true
+	},
 	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR     : true,
 	HTTP_TIMEOUT                : __,
@@ -3608,6 +3611,18 @@ const cls = function() {
 		printnl(jansi.Ansi.ansi().eraseScreen().cursor(0,0).reset());
 		jansi.AnsiConsole.systemUninstall();
 	}
+}
+
+/**
+ * <odoc>
+ * <key>conReset() : boolean</key>
+ * Tries to reset the console to its original state. Returns true if successful.
+ * </odoc>
+ */
+const conReset = function() {
+	if (!__initializeCon() || isUnDef(__con)) return false
+	__con.getTerminal().settings.set("sane")
+	return true
 }
 
 /**
