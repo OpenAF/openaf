@@ -43,7 +43,7 @@ const isJavaClass = function(obj) {
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
  */
-const isJavaObject = obj => obj instanceof java.lang.Object
+const isJavaObject = obj => {
 	//var s = Object.prototype.toString.call(obj);
 	//return (s === '[object JavaObject]' || s === '[object JavaArray]');
 	/*try {
@@ -62,6 +62,16 @@ const isJavaObject = obj => obj instanceof java.lang.Object
 		}
 		return false
 	}*/
+	try {
+		if (typeof obj === 'object' && typeof obj.getClass === 'function' && obj.getClass() instanceof java.lang.Object) {
+			return true
+		} else {
+			return false
+		}
+	} catch(e) {
+		return obj.getClass() instanceof java.lang.Object
+	}
+}
 
 /**
  * <odoc>
@@ -70,7 +80,7 @@ const isJavaObject = obj => obj instanceof java.lang.Object
  * (see also isUnDef). Shortcut for the isDefined function.
  * </odoc>
  */
-const isDef = aObject => (aObject instanceof java.lang.Object) || typeof aObject !== 'undefined'
+const isDef = aObject => isJavaObject(aObject) || typeof aObject !== 'undefined'
 
 /**
  * <odoc>
@@ -79,7 +89,7 @@ const isDef = aObject => (aObject instanceof java.lang.Object) || typeof aObject
  * (see also isDef). Shortcut for the isUndefined function.
  * </odoc>
  */
-const isUnDef = aObject => !(aObject instanceof java.lang.Object) && typeof aObject == 'undefined'
+const isUnDef = aObject => !isJavaObject(aObject) && typeof aObject == 'undefined'
 
 /**
  * <odoc>
