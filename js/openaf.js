@@ -4306,7 +4306,7 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format')\
+ *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags')\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4426,6 +4426,42 @@ const $path = function(aObj, aPath, customFunctions) {
 		from_ms: {
 			_func: ar => ow.loadFormat().elapsedTime4ms(ar[0], (ar[1].trim().startsWith("{") ? jsonParse(ar[1],__,__,true) : (ar[1].trim().startsWith("(") ? af.fromSLON(ar[1]) : __))),
 			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.string ]} ]
+		},
+		replace: {
+			_func: ar => ar[0].replace(new RegExp(ar[1], ar[2]), ar[3]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		trim: {
+			_func: ar => ar[0].trim(),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		split: {
+			_func: ar => ar[0].split(ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		index_of: {
+			_func: ar => ar[0].indexOf(ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		last_index_of: {
+			_func: ar => ar[0].lastIndexOf(ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		upper_case: {
+			_func: ar => ar[0].toUpperCase(),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		lower_case: {
+			_func: ar => ar[0].toLowerCase(),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		concat: {
+			_func: ar => ar[0].concat(ar[1]),
+			_signature: [ { types: [ jmespath.types.string, jmespath.types.array ] }, { types: [ jmespath.types.string, jmespath.types.array ] } ]
+		},
+		match: {
+			_func: ar => (new RegExp(ar[1], ar[2])).test(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
