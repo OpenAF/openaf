@@ -5,6 +5,7 @@ var tmpl = "#!/usr/bin/env {{openAFPath}}oaf-sb\n\nvar params = processExpr(\" \
 var tmplJ = "#!/usr/bin/env {{openAFPath}}ojob-sb\n\n"
 
 var isoJob = false
+var isWin = String(java.lang.System.getProperty("os.name")).match(/Windows/)
 if (io.fileExists(expr)) {
     if (!expr.endsWith(".js")) isoJob = true
     if (io.readFileString(expr).replace(/\n/g, "").trim().substring(0, 2) == "#!") 
@@ -13,9 +14,9 @@ if (io.fileExists(expr)) {
         io.writeFileString(expr, templify((isoJob ? tmplJ : tmpl), {
             openAFPath: getOpenAFPath()
         }) + io.readFileString(expr));
-        $sh("chmod u+x " + expr)
-        .prefix("chmod")
-        .get(0);
+        if (!isWin) $sh("chmod u+x " + expr)
+                    .prefix("chmod")
+                    .get(0)
         log("Pre-appended " + (isoJob ? "oJob" : "OpenAF") + " shebang instructions to file: " + expr);
         if (!isoJob) log("On OpenAF use the 'params' variable to access any parameter you pass executing the script like: " + io.fileInfo(expr).canonicalPath + " abc=123 xzy=aaa");
     }
@@ -24,9 +25,9 @@ if (io.fileExists(expr)) {
     io.writeFileString(expr, templify((isoJob ? tmplJ : tmpl), {
         openAFPath: getOpenAFPath()
     }));
-    $sh("chmod u+x " + expr)
-    .prefix("chmod")
-    .get(0);
+    if (!isWin) $sh("chmod u+x " + expr)
+                .prefix("chmod")
+                .get(0)
     log("Generated " + (isoJob ? "oJob" : "OpenAF") + " shebang file: " + expr);
     if (!isoJob) log("On OpenAF use the 'params' variable to access any parameter you pass executing the script like: " + io.fileInfo(expr).canonicalPath + " abc=123 xzy=aaa");
 }

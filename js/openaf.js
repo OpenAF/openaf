@@ -3620,6 +3620,7 @@ const cls = function() {
  * </odoc>
  */
 const conReset = function() {
+	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) return true
 	if (!__initializeCon() || isUnDef(__con)) return false
 	__con.getTerminal().settings.set("sane")
 	return true
