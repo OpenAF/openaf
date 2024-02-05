@@ -63,7 +63,7 @@ const isJavaObject = obj => {
 		return false
 	}*/
 	try {
-		if (typeof obj === 'object' && typeof obj.getClass === 'function' && obj.getClass() instanceof java.lang.Object) {
+		if (obj != null && typeof obj === 'object' && typeof obj.getClass === 'function' && obj.getClass() instanceof java.lang.Object) {
 			return true
 		} else {
 			return false
