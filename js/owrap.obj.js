@@ -613,12 +613,16 @@ OpenWrap.obj.prototype.filter = function(aObj, aMap) {
  * </odoc>
  */
 OpenWrap.obj.prototype.filterKeys = function(anArrayKeyNames, aRow) {
-	var keys = {};
+	return anArrayKeyNames.reduce((keys, key) => {
+		keys[key] = aRow[key]
+		return keys
+    }, {})
+	/*var keys = {};
 	for(var i = 0; i < anArrayKeyNames.length; i++) {
 		keys[anArrayKeyNames[i]] = aRow[anArrayKeyNames[i]];
 	}
-	return keys;
-};
+	return keys;*/
+}
 
 /**
  * <odoc>

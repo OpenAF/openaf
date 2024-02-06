@@ -3410,6 +3410,11 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 
 	// pre process code blocks
 
+	// remove html
+	// TODO: .replace(/<\/?(code|pre>)[^>]*>/g, "```"). ?
+	if (__flags.WITHMD.htmlFilter) 
+		res = res.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script\s*>/gi, "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ")
+
 	//  single line
 	res = res.replace(/```+(.+?)```+/mg, ansiColor("NEGATIVE_ON", " $1 "))
 

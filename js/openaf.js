@@ -43,10 +43,10 @@ const isJavaClass = function(obj) {
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
  */
- const isJavaObject = function(obj) {
+const isJavaObject = obj => {
 	//var s = Object.prototype.toString.call(obj);
 	//return (s === '[object JavaObject]' || s === '[object JavaArray]');
-	try {
+	/*try {
 		if (obj.getClass() instanceof java.lang.Object)
 			return true
 		else
@@ -61,6 +61,15 @@ const isJavaClass = function(obj) {
 			}
 		}
 		return false
+	}*/
+	try {
+		if (obj != null && typeof obj === 'object' && typeof obj.getClass === 'function' && obj.getClass() instanceof java.lang.Object) {
+			return true
+		} else {
+			return false
+		}
+	} catch(e) {
+		return obj.getClass() instanceof java.lang.Object
 	}
 }
 
@@ -211,6 +220,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true
 	},
+	WITHMD: {
+		htmlFilter: true
+	},
 	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR     : true,
 	HTTP_TIMEOUT                : __,
@@ -218,7 +230,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 5,
-  	DOH_PROVIDER                : "cloudflare"
+  	DOH_PROVIDER                : "cloudflare",
+	PRINT_BUFFER_STREAM         : 8192
 })
 
 // -------
@@ -283,7 +296,7 @@ var __bfprintErr = {}
 var __bfprintCodePage = io.getDefaultEncoding()
 const bfprintnl = function(str, codePage) {
 	if (isUnDef(codePage)) codePage = __bfprintCodePage
-	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), 512)
+	if (isUnDef(__bfprint[codePage])) __bfprint[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.out), codePage), __flags.PRINT_BUFFER_STREAM)
 
 	__bfprint[codePage].write(str)
 	__bfprint[codePage].flush()
@@ -291,10 +304,16 @@ const bfprintnl = function(str, codePage) {
 
 const bfprintErrnl = function(str, codePage) {
 	if (isUnDef(codePage)) codePage = __bfprintCodePage
-	if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), 512)
+	if (isUnDef(__bfprintErr[codePage])) __bfprintErr[codePage] = new java.io.BufferedWriter(new java.io.OutputStreamWriter(new java.io.FileOutputStream(java.io.FileDescriptor.err), codePage), __flags.PRINT_BUFFER_STREAM)
 
 	__bfprintErr[codePage].write(str)
 	__bfprintErr[codePage].flush()
+}
+
+const bfprintSetStreamSize = function(aStreamSize) {
+	__flags.PRINT_BUFFER_STREAM = aStreamSize
+	__bfprint = {}
+    __bfprintErr = {}
 }
 
 const bfprint = function(str, codePage) {
@@ -947,221 +966,244 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
  * pad the each entry key, fullValSize (boolean) to pad the entire key and value and withValues (boolean) to include or not each key values
  * </odoc>
  */
-const printTree = function(aM, aWidth, aOptions, aPrefix, isSub) {
-    isSub = _$(isSub, "isSub").isBoolean().default(false)
-	if (!isMap(aM) && !isArray(aM)) throw "Not a map or array"
+const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
+    let slines, line, endc, strc, ssrc, midc
+    _aOptions = _$(_aOptions, "aOptions").isMap().default({})
 
-	var out  = []
-	aPrefix  = _$(aPrefix, "aPrefix").isString().default("")
-	aOptions = _$(aOptions, "aOptions").isMap().default({})
-    aWidth   = _$(aWidth, "aWidth").isNumber().default(__)
+    // Merge with default options
+    _aOptions = merge(merge({
+        noansi: false,
+        curved: true,
+        fullKeySize: true,
+        fullValSize: false,
+        withValues: true,
+        wordWrap: true,
+        compact: true,
+        minSize: 5
+    }, __flags.TREE), _aOptions)
+
+    // Decide on decorations to use
+    if (_aOptions.compact) {
+        slines = 2
+        line = (_aOptions.noansi ? "|" : "│") 
+        endc = (_aOptions.noansi ? "\\ " : (_aOptions.curved ? "╰ " : "└ "))
+        //strc = (_aOptions.noansi ? "/ " : "┬ ")
+        strc = (_aOptions.noansi ? "/ " :  (_aOptions.curved ? "╭ " : "┌ "))
+        ssrc = (_aOptions.noansi ? "- " : "─ ")
+        midc = (_aOptions.noansi ? "| " : "├ ")
+    } else {
+        slines = 3
+        line = (_aOptions.noansi ? "|" : "│") 
+        endc = (_aOptions.noansi ? "\\- " : (_aOptions.curved ? "╰─ " : "└─ "))
+        strc = (_aOptions.noansi ? "/- " :  (_aOptions.curved ? "╭─ " : "┌─ "))
+        ssrc = (_aOptions.noansi ? "-- " : "── ")
+        midc = (_aOptions.noansi ? "|- " : "├─ ")
+    }
 
     // Don't repeat options if already done as a sub-call
-    if (!isSub) {
-        ow.loadFormat();
-        if (!ow.format.isWindows()) {
-            if (isUnDef(aOptions.noansi) && __initializeCon()) {
-                aOptions.noansi = !__conAnsi
-            }
-        } else {
-            if (__initializeCon()) {
-                if (!ansiWinTermCap()) ansiStart()
-                if (isUnDef(aOptions.noansi)) aOptions.noansi = !__conAnsi
-            }
+    ow.loadFormat()
+    if (!ow.format.isWindows()) {
+        if (isUnDef(_aOptions.noansi) && __initializeCon()) {
+            _aOptions.noansi = !__conAnsi
         }
-
-        // Merge with default options
-        aOptions = merge(merge({
-            noansi: false,
-            curved: true,
-            fullKeySize: true,
-            fullValSize: false,
-            withValues: true,
-            wordWrap: true,
-            compact: true,
-            minSize: 5
-          }, __flags.TREE), aOptions)
+    } else {
+        if (__initializeCon()) {
+            if (!ansiWinTermCap()) ansiStart()
+            if (isUnDef(_aOptions.noansi)) _aOptions.noansi = !__conAnsi
+        }
     }
-  
-    // Decide on decorations to use
-	var slines, line, endc, strc, ssrc, midc
-	if (aOptions.compact) {
-		slines = 2
-		line = (aOptions.noansi ? "|" : "│") 
-		endc = (aOptions.noansi ? "\\ " : (aOptions.curved ? "╰ " : "└ "))
-		//strc = (aOptions.noansi ? "/ " : "┬ ")
-		strc = (aOptions.noansi ? "/ " :  (aOptions.curved ? "╭ " : "┌ "))
-		ssrc = (aOptions.noansi ? "- " : "─ ")
-		midc = (aOptions.noansi ? "| " : "├ ")
-	} else {
-		slines = 3
-		line = (aOptions.noansi ? "|" : "│") 
-		endc = (aOptions.noansi ? "\\- " : (aOptions.curved ? "╰─ " : "└─ "))
-		strc = (aOptions.noansi ? "/- " :  (aOptions.curved ? "╭─ " : "┌─ "))
-		ssrc = (aOptions.noansi ? "-- " : "── ")
-		midc = (aOptions.noansi ? "|- " : "├─ ")
-	}
 
-	if (isUnDef(aWidth)) aWidth = Number(__con.getTerminal().getWidth())
-  
-	var aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
-	var miniCache = {}
+    _aPrefix  = _$(_aPrefix, "aPrefix").isString().default("")
+    _aWidth   = _$(_aWidth, "aWidth").isNumber().default(__)
+    if (isUnDef(_aWidth)) _aWidth = Number(__con.getTerminal().getWidth())
 
     // Prepare aux functions
-	var _clr = __, _ac = __, _al = __
-	if (!aOptions.noansi) {
-		_dt = aO => {
-			if (isUnDef(aO)) return "undefined"
-			if (isJavaClass(aO)) return "java"
-			if (isJavaObject(aO)) return "java"
-			if (isBoolean(aO)) return "boolean"
-			if (isNumber(aO)) return "number"
-			if (isString(aO)) return "string"
-			if (isDate(aO)) return "date"
-		}
-		_acr = () => _ac("RESET","")
-		var _clrCache = {}
-		_clr = aO => {
-			if (_clrCache[String(aO)]) return _clrCache[String(aO)]
+    var _clr = __, _ac = __, _al = __
+    if (!_aOptions.noansi) {
+        _dt = aO => {
+            if (isJavaObject(aO) || isJavaClass(aO)) return "java"
+            if (isUnDef(aO)) return "undefined"
+            if (isBoolean(aO)) return "boolean"
+            if (isNumber(aO)) return "number"
+            if (isString(aO)) return "string"
+            if (isDate(aO)) return "date"
+        }
+        _acr = () => _ac("RESET","")
+        var _clrCache = {}
+        _clr = aO => {
+            if (_clrCache[String(aO)]) return _clrCache[String(aO)]
 
-			let result
-			let dt = _dt(aO)
-			switch(dt) {
-			case "number" : result = _ac(__colorFormat.number, String(aO)) + _acr(); break
-			case "string" : result = _ac(__colorFormat.string, String(aO)) + _acr(); break
-			case "boolean": result = _ac(__colorFormat.boolean, String(aO)) + _acr(); break
-			case "date"   : result = _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr(); break
-			case "java"   : result = _ac(__colorFormat.string, String(aO.toString())) + _acr(); break
-			default       : result = _ac(__colorFormat.default, String(aO)) + _acr(); break
-			}
-			_clrCache[String(aO)] = result
-			return result
-		}
-		_ac  = (aAnsi, aString) => {
-			if (!__conConsole) return aString
-			aAnsi = (aAnsi + (isDef(aOptions.bgcolor) ? (aAnsi.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")).trim()
-			if (aAnsi.length == 0) return aString
-			if (isDef(__ansiColorCache[aAnsi])) return __ansiColorCache[aAnsi] + aString// + __ansiColorCache["RESET"]
-			var res = ansiColor(aAnsi, aString, true, true)
-			return res
-		}
-		_al  = m => {
-			//var l = ansiLength(m, true)
-			var s = m.replace(/\033\[[0-9;]*m/g, "")
-			if (__flags.VISIBLELENGTH)
-				return Number(visibleLength(s))
-			else
-				return Number(s.length)
-		}
-	} else {
-		_clr = s => s
-		_ac  = (o, s) => s
-		_al  = s => s.length
-	}
+            let result
+            let dt = _dt(aO)
+            switch(dt) {
+            case "number" : result = _ac(__colorFormat.number, String(aO)) + _acr(); break
+            case "string" : result = _ac(__colorFormat.string, String(aO)) + _acr(); break
+            case "boolean": result = _ac(__colorFormat.boolean, String(aO)) + _acr(); break
+            case "date"   : result = _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr(); break
+            case "java"   : result = _ac(__colorFormat.string, String(aO.toString())) + _acr(); break
+            default       : result = _ac(__colorFormat.default, String(aO)) + _acr(); break
+            }
+            _clrCache[String(aO)] = result
+            return result
+        }
+        _ac  = (aAnsi, aString) => {
+            if (!__conConsole) return aString
 
-    // Render key and value
-	var _get = (k, v) => {
-	  if (isDef(miniCache[k])) return miniCache[k]
-  
-	  var _k = (isNumber(k) ? "[" + k + "]" : k) 
-	  if (aOptions.withValues) {
-		miniCache[k] = _ac(__colorFormat.key, _k) + 
-                       _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")) + 
-                       _ac("", (!(isMap(v) || isArray(v)) ? ": " + _clr(v) : ""))
-	  } else {
-		miniCache[k] = _k
-	  }
-	  return miniCache[k]
-	}
-  
-    // Determine max sizes of keys and values
-    if (aOptions.fullKeySize || aOptions.fullValSize) {
-        if (aOptions.fullKeySize) ksize = 0
-        if (aOptions.fullValSize) vsize = 0
-        aMKeys.forEach(k => {
-            if (aOptions.fullKeySize) {
-                var _k = (isNumber(k) ? "[" + k + "]" : k) 
-                if (_k.length > ksize) ksize = _k.length
+            aAnsi = aAnsi.trim()
+            if (_aOptions.bgcolor && aAnsi.length > 0) {
+                aAnsi += "," + _aOptions.bgcolor
             }
-            if (aOptions.fullValSize) {
-                var lv = _al(_get(k, aM[k]))
-                if (lv > vsize) vsize = lv
-            }
-        }) 
+        
+            if (aAnsi.length == 0) return aString
+        
+            if (__ansiColorCache[aAnsi]) return __ansiColorCache[aAnsi] + aString
+        
+            const res = ansiColor(aAnsi, aString, true, true)
+            return res
+        }
+        _al  = m => {
+            //var l = ansiLength(m, true)
+            var s = m.replace(/\033\[[0-9;]*m/g, "")
+            if (__flags.VISIBLELENGTH)
+                return Number(visibleLength(s))
+            else
+                return Number(s.length)
+        }
+    } else {
+        _clr = s => s
+        _ac  = (o, s) => s
+        _al  = s => s.length
     }
+    _ac("RESET", "")
 
     var _tw = (ps, s, mx) => {
-        if ((ps.length + aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + aOptions.minSize) + "; max = " + mx + ")"
+        if ((ps.length + _aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + _aOptions.minSize) + "; max = " + mx + ")"
         var ar = []
         var i = 0, mxp = Math.floor(mx * 0.25)
+        var sub, ni
         do {
-			var sub = s.substr(i, mx)
-            if (sub.indexOf("\n") >= 0) {
-				var ni = sub.indexOf("\n")
-				ar.push(s.substr(i, ni))
-				i += ni + 1
-			} else {
-				if (s.length > i+mx+1 && s.substr(i, mx+1).match(/ [^ ]+$/)) {
-					var mxp = sub.lastIndexOf(" ")
-					ar.push(s.substr(i, mxp))
-					i += mxp + 1
-				} else {
-					ar.push(sub)
-					i += mx
-				}
-			}
+            sub = s.substr(i, mx)
+            if ((ni = sub.indexOf("\n")) >= 0) {
+                //var ni = sub.indexOf("\n")
+                ar.push(s.substr(i, ni))
+                i += ni + 1
+            } else {
+                if (s.length > i+mx+1 && s.substr(i, mx+1).match(/ [^ ]+$/)) {
+                    var mxp = sub.lastIndexOf(" ")
+                    ar.push(s.substr(i, mxp))
+                    i += mxp + 1
+                } else {
+                    ar.push(sub)
+                    i += mx
+                }
+            }
         } while(i < s.length)
         return ar
     }
-	
-    // Text wrap function
-	var _wf = (m, p) => {
-		if (!aOptions.wordWrap) {
-            return m
+
+    let _pt = (aM, aWidth, aOptions, aPrefix, isSub) => {
+        isSub = _$(isSub, "isSub").isBoolean().default(false)
+        var isAr = Array.isArray(aM)
+        if ("[object Object]" != Object.prototype.toString.call(aM) && !isAr) throw "Not a map or array"
+    
+        var out  = []
+        var aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
+        
+        // Render key and value
+        var _get = (k, v) => {          
+          var _k = (isAr ? "[" + k + "]" : k), _r
+          if (aOptions.withValues) {
+            _r = _ac(__colorFormat.key, _k) + 
+                           _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")) + 
+                           _ac("", (!(isMap(v) || Array.isArray(v)) ? ": " + _clr(v) : ""))
+          } else {
+            _r = _k
+          }
+          return _r
         }
-
-		p = _$(p).isString().default("") + " "
-		if (!isString(m)) return m
-		var ss = aWidth
-		var ps = _al(p)
-		var ms = _al(m.substring(m.indexOf(": ")))
-
-		if (m.indexOf("\n") < 0) {
-			//if (ts <= 0 || m.substring(m.indexOf(": ")).length <= ts) { return m }
-			if (m.indexOf(": ") < 0 || ps + ms - 2 < ss) return m
-		}
-
-		var _res = m.substring(0, m.indexOf(": ") + 2) + 
-                _tw(m.substring(0, m.indexOf(": ") + 2), m.substring(m.indexOf(": ") + 2), ss-ps-1).map((_l, ii) => {
-                    if (ii == 0) return _l
-                    return _ac("RESET", p) + _ac(__colorFormat.string, _l)
-                }).join("\n")
-
+      
+        // Determine max sizes of keys and values
+        var _getCache = new Map()
+        if (aOptions.fullKeySize || aOptions.fullValSize) {
+            if (aOptions.fullKeySize) ksize = 0
+            if (aOptions.fullValSize) vsize = 0
+            aMKeys.forEach(k => {
+                if (aOptions.fullKeySize) {
+                    var _k = (isAr ? "[" + k + "]" : k) 
+                    var _kl = _k.length 
+                    if (_kl > ksize) ksize = _kl
+                }
+                if (aOptions.fullValSize) {
+                    var _gR = _get(k, aM[k])
+                    var lv = _al(_gR)
+                    _getCache.set(k, _gR)
+                    if (lv > vsize) vsize = lv
+                }
+            }) 
+        }
+        
+        // Text wrap function
+        var _wf = (m, p) => {
+            if (!aOptions.wordWrap) {
+                return m
+            }
+        
+            if (!isString(m)) return m
+        
+            if (isString(p)) {
+                p = _$(p).default("") + " "
+            }
+        
+            let mIO = m.indexOf(": ")
+            let mSub = m.substring(mIO + 2)
+        
+            var ss = aWidth
+            var ps = _al(p)
+            var ms = _al(mSub)
+        
+            if (m.indexOf("\n") < 0) {
+                if (mIO < 0 || ps + ms - 2 < ss) return m
+            }
+        
+            const mIO0 = m.substring(0, mIO + 2)
+            const _res = mIO0 + 
+                    _tw(mIO0, mSub, ss-ps-1).map((_l, ii) => {
+                        if (ii == 0) return _l
+                        return _ac("RESET", p) + _ac(__colorFormat.string, _l)
+                    }).join("\n")
+        
+            return _res
+        }
+      
+        aMKeys.forEach((k, i) => {
+            let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
+            let ksizeOrAlKPlusSline = (isDef(ksize) ? ksize : _al(k)) + slines
+            let vsizeOrLvPlusSline = (isDef(vsize) ? vsize : lv) + slines
+            let aPrefix2 = _ac("", (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
+          
+            let wfResult = _wf(v, aPrefix + aPrefix2)
+            let repeatResult = _ac("", (isDef(vsize) ? " ".repeat(vsize - lv+1) : " "))
+          
+            let prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac("", endc) : (i == 0) ? _ac("", (size == 1 ? ssrc : strc)) : aPrefix + _ac("", midc)
+            let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
+            let suffix
+          
+            if (isMap(aM[k]) || Array.isArray(aM[k])) {
+                suffix = _pt(aM[k], aWidth, aOptions, aPrefix + _ac("", (i < (size-1) ? line : " ") + " ".repeat(vsizeOrLvPlusSline)), true)
+            }
+          
+            out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
+        })
+      
+        if (out.length > 0) {
+            out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
+        }
+        
+        var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
         return _res
-	}
-  
-	aMKeys.forEach((k, i) => {
-	  var suffix = "", v = _get(k, aM[k]), lv = _al(v)
-	  var aPrefix2 = _ac("", (i < (size-1) ? line : " ") + repeat((isDef(ksize) ? ksize : _al(k)) + slines, " "))
-
-	  if (isMap(aM[k]) || isArray(aM[k])) {
-		suffix = printTree(aM[k], aWidth, aOptions, aPrefix +  _ac("", (i < (size-1) ? line : " ") + repeat((isDef(vsize) ? vsize : lv) + slines, " ")), true)
-	  }
-  
-	  var wfResult = _wf(v, aPrefix + aPrefix2)
-	  var repeatResult = _ac("", (isDef(vsize) ? repeat(vsize - lv+1, " ") : " "))
-
-	  var prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac("", endc) : (i == 0) ? _ac("", (size == 1 ? ssrc : strc)) : aPrefix + _ac("", midc)
-	  var reset = (i == 0 || i > 0) ? _ac("RESET", "") : ""
-  
-	  out.push(prefix + wfResult + repeatResult + suffix + reset)
-	})
-  
-	if (out.length > 0) {
-		out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
-	}
-	
-	return out.join("\n") + (!__conConsole ? "" : __ansiColorCache["RESET"])
+    }
+    var res = _pt(_aM, _aWidth, _aOptions, _aPrefix, _isSub)
+    return res
 }
 
 /**
@@ -1875,10 +1917,10 @@ const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
  * </odoc>
  */
 const templify = function(aTemplateString, someData) {
-	someData = (isUnDef(someData)) ? this : someData;
-	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers(); }
+	someData = (isUnDef(someData)) ? this : someData
+	if (isUnDef(ow.template)) { ow.loadTemplate(); ow.template.addOpenAFHelpers() }
 	if (isUnDef(aTemplateString) || aTemplateString == "") return ""
-	return String(ow.template.parse(String(aTemplateString), someData));
+	return String(ow.template.parse(String(aTemplateString), someData))
 }
 
 const $t = templify
@@ -3583,6 +3625,19 @@ const cls = function() {
 
 /**
  * <odoc>
+ * <key>conReset() : boolean</key>
+ * Tries to reset the console to its original state. Returns true if successful.
+ * </odoc>
+ */
+const conReset = function() {
+	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) return true
+	if (!__initializeCon() || isUnDef(__con)) return false
+	__con.getTerminal().settings.set("sane")
+	return true
+}
+
+/**
+ * <odoc>
  * <key>beep()</key>
  * Tries to produce a beep sound.
  * </odoc>
@@ -3764,7 +3819,7 @@ const extend = function() {
 						}
 						let copyIsArray = false
 						let _clone
-						if (deep && copy && (("undefined" === typeof copy.getDate && typeof copy === "object") || typeof copy === "function")) {
+						if (deep && copy && ((!(copy instanceof java.lang.Object) && "undefined" === typeof copy.getDate && typeof copy === "object") || typeof copy === "function")) {
 
 							if (Array.isArray(copy)) {
 								copyIsArray = true
@@ -4251,7 +4306,7 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template')\
+ *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags')\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4343,6 +4398,70 @@ const $path = function(aObj, aPath, customFunctions) {
 		m4a: {
 			_func: ar => $m4a(ar[0], ar[1]),
 			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
+		},
+		to_bytesAbbr: {
+			_func: ar => ow.loadFormat().toBytesAbbreviation(ar[0]),
+			_signature: [ { types: [ jmespath.types.number ] } ]
+		},
+		to_numAbbr: {
+			_func: ar => ow.loadFormat().toAbbreviation(ar[0]),
+			_signature: [ { types: [ jmespath.types.number ] } ]
+		},
+		from_bytesAbbr: {
+			_func: ar => ow.loadFormat().fromBytesAbbreviation(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		from_siAbbr: {
+			_func: ar => ow.loadFormat().fromSIAbbreviation(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		from_timeAbbr: {
+			_func: ar => ow.loadFormat().fromTimeAbbreviation(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		timeago: {
+			_func: ar => ow.loadFormat().timeago(ar[0]),
+			_signature: [ { types: [ jmespath.types.number, jmespath.types.string ] } ]
+		},
+		from_ms: {
+			_func: ar => ow.loadFormat().elapsedTime4ms(ar[0], (ar[1].trim().startsWith("{") ? jsonParse(ar[1],__,__,true) : (ar[1].trim().startsWith("(") ? af.fromSLON(ar[1]) : __))),
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.string ]} ]
+		},
+		replace: {
+			_func: ar => ar[0].replace(new RegExp(ar[1], ar[2]), ar[3]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		trim: {
+			_func: ar => ar[0].trim(),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		split: {
+			_func: ar => ar[0].split(ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		index_of: {
+			_func: ar => ar[0].indexOf(ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		last_index_of: {
+			_func: ar => ar[0].lastIndexOf(ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		upper_case: {
+			_func: ar => ar[0].toUpperCase(),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		lower_case: {
+			_func: ar => ar[0].toLowerCase(),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		concat: {
+			_func: ar => ar[0].concat(ar[1]),
+			_signature: [ { types: [ jmespath.types.string, jmespath.types.array ] }, { types: [ jmespath.types.string, jmespath.types.array ] } ]
+		},
+		match: {
+			_func: ar => (new RegExp(ar[1], ar[2])).test(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
@@ -8314,8 +8433,8 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 	var r, children = xml.children(), attributes = xml.attributes(), length = children.length();
 	if (length == 0) {
 		r = xml.toString();
-	} else if (length == 1) {
-		var text = xml.text().toString();
+	} else if (length == 1 && isNull(children[0].localName())) {
+		var text = String(children[0].toString())
 		if (text) {
 			r = text;
 		}
@@ -8324,22 +8443,25 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 		r = {};
 		for (var ichild in children) {
 			var child = children[ichild];
-			var name = String(child.localName())
-			var json = af.fromXML2Obj(child, ignored, aPrefix, reverseIgnored)
-			var value = r[name];
-			if (isDef(value)) {
-				if (isString(value)) {
-					r[name] = [value]
-					r[name].push(json);
-				} else {
-					if (!isArray(value)) {
-						value = [ value ];
-						r[name] = value;
+			var name
+			if (!isNull(child.localName())) {
+				name = String(child.localName())
+				var json = af.fromXML2Obj(child, ignored, aPrefix, reverseIgnored)
+				var value = r[name];
+				if (isDef(value)) {
+					if (isString(value)) {
+						r[name] = [value]
+						r[name].push(json);
+					} else {
+						if (!isArray(value)) {
+							value = [ value ];
+							r[name] = value;
+						}
+						value.push(json);
 					}
-					value.push(json);
+				} else {
+					r[name] = json;
 				}
-			} else {
-				r[name] = json;
 			}
 		}
 	}
@@ -9008,13 +9130,29 @@ const $m2a = (aDef, aMap) => {
  * </odoc>
  */
 const sortMapKeys = (aMap, moreLevels) => {
-	if (!isMap(aMap)) return aMap
-	
-	var r = {}
-	Object.keys(aMap).sort().forEach(k => {
-		r[k] = moreLevels && isMap(m[k]) ? sortMapKeys(aMap[k]) : aMap[k]
-	})
-	return r
+	let keys = Object.keys(aMap).sort()
+	let result = {}
+
+	for(let i = 0; i < keys.length; i++) {
+		let key = keys[i]
+		let value = aMap[key]
+
+		if (Array.isArray(value)) {
+			result[key] = value.map(item => {
+				if (typeof item === 'object' && item !== null && item !== undefined) {
+					return sortMapKeys(item, moreLevels)
+				} else {
+					return item
+				}
+			})
+		} else if (moreLevels && typeof value === 'object' && value !== null && value !== undefined) {
+			result[key] = sortMapKeys(value, moreLevels)
+		} else {
+			result[key] = value
+		}
+	}
+
+	return result
 }
 
 /**
