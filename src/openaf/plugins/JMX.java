@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,6 +30,8 @@ import javax.management.remote.JMXServiceURL;
 
 import jodd.util.ClassLoaderUtil;
 
+import org.apache.commons.math3.ode.UnknownParameterException;
+import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizer;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
@@ -41,6 +44,7 @@ import com.sun.tools.attach.VirtualMachineDescriptor;
 
 import openaf.AFBase;
 import openaf.AFCmdBase;
+import openaf.JSEngine;
 import openaf.SimpleLog;
 import openaf.SimpleLog.logtype;
 
@@ -138,23 +142,29 @@ public class JMX extends ScriptableObject {
 		 * @throws UnknownParameterException
 		 */
 		public Object getAttributes() throws InstanceNotFoundException, IntrospectionException, ReflectionException, IOException {
-			HashMap<String, Object> pm = new HashMap<String, Object>();
+			JSEngine.JSMap pm = AFCmdBase.jse.getNewMap(null);
 			if (mbeanCon != null) {
 				MBeanInfo mbi = mbeanCon.getMBeanInfo(obj);
-				pm.put("operations", Arrays.asList(mbi.getOperations()));
-				pm.put("attributes", Arrays.asList(mbi.getAttributes()));
+				JSEngine.JSList lOps = AFCmdBase.jse.getNewList(pm.getMap());
+				JSEngine.JSList lAttrs = AFCmdBase.jse.getNewList(pm.getMap());
+
+				lOps.addAll(Arrays.asList(mbi.getOperations()));
+				lAttrs.addAll(Arrays.asList(mbi.getAttributes()));
+
+				pm.put("operations", lOps.getList());
+				pm.put("attributes", lAttrs.getList());
 			}
 		
-			Object out;
+			//Object out;
 			//try {
-				out = AFCmdBase.jse.convertObject(pm);
+			//out = AFCmdBase.jse.convertObject(pm);
 			//} catch (IOException e) {
 			//	SimpleLog.log(SimpleLog.logtype.DEBUG,
 			//			"Exception: " + e.getMessage(), e);
 			//	throw e;
 			//}
 
-			return out;
+			return pm.getMap();
 		}
 		
 		/**
@@ -292,23 +302,25 @@ public class JMX extends ScriptableObject {
 	@JSFunction
 	public static Object getLocals() throws IOException {
 		File toolsFile = ClassLoaderUtil.findToolsJar();
-		if (toolsFile == null) return null;
-		ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
-	
+		if (toolsFile != null) {
+			// Default to the tools.jar
+			ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
+		}
+
 		List<VirtualMachineDescriptor> vms = VirtualMachine.list();
-		HashMap<String, Object> pmap = new HashMap<String, Object>();
-		ArrayList<HashMap<String, Object>> list = new ArrayList<HashMap<String, Object>>();
+		JSEngine.JSMap pmap = AFCmdBase.jse.getNewMap(null);
+		JSEngine.JSList list = AFCmdBase.jse.getNewList(pmap.getMap());
 		
 		for(VirtualMachineDescriptor vm : vms) {
-			HashMap<String, Object> p = new HashMap<String, Object>();
+			JSEngine.JSMap p = AFCmdBase.jse.getNewMap(list.getList());
 			p.put("id", vm.id());
 			p.put("name", vm.displayName());
-			list.add(p);
+			list.add(p.getMap());
 		}
-		pmap.put("Locals", list);
+		pmap.put("Locals", list.getList());
 		
 		//return AF.jsonParse(PMStringConvert.toJSON4NativeProcessing(pmap));
-		return pmap;
+		return pmap.getMap();
 	}
 	/**
 	 * <odoc>
@@ -321,35 +333,51 @@ public class JMX extends ScriptableObject {
 	@JSFunction
 	public static Object attach2Local(String id) throws IOException, AgentLoadException, AgentInitializationException, AttachNotSupportedException {
 		File toolsFile = ClassLoaderUtil.findToolsJar();
-		if (toolsFile == null) return null;
-		ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
+		VirtualMachine vm;
+		if (toolsFile != null) {
+			ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
+		}
+		vm = VirtualMachine.attach(id);
 		
-		HashMap<String, Object> local = new HashMap<String, Object>();
-	    VirtualMachine vm;
+		JSEngine.JSMap local = AFCmdBase.jse.getNewMap(null);
+		JMXServiceURL url;
+		Properties props;
+		String _url;
 
-        vm = VirtualMachine.attach(id);
+		if (toolsFile != null) {
+			vm.loadAgent(vm.getSystemProperties().getProperty("java.home") + File.separator + "lib" + File.separator + "management-agent.jar");
+			props = vm.getAgentProperties();
+			_url = props.getProperty("com.sun.management.jmxremote.localConnectorAddress");
 
-	    vm.loadAgent(vm.getSystemProperties().getProperty("java.home") + File.separator + "lib" + File.separator + "management-agent.jar");
-	    Properties props = vm.getAgentProperties();
-	    String connectorAddress = props.getProperty("com.sun.management.jmxremote.localConnectorAddress");
+			url = new JMXServiceURL(_url);
+		} else {
+			// Assume JRE
+			props = vm.getSystemProperties();
+			_url = vm.getAgentProperties().getProperty("com.sun.management.jmxremote.localConnectorAddress");
+			if (_url != null) {
+				url = new JMXServiceURL(_url.toString());
+			} else {
+				props.put("com.sun.management.jmxremote", (new ServerSocket(0)).getLocalPort());
+				vm.startLocalManagementAgent();
+				_url = vm.getAgentProperties().getProperty("com.sun.management.jmxremote.localConnectorAddress");
+			}
+		}
 
-	    JMXServiceURL url = new JMXServiceURL(connectorAddress);
+		JSEngine.JSMap map = AFCmdBase.jse.getNewMap(local.getMap());
 	    
-	    HashMap<String, String> map = new HashMap<String, String>();
-	    
-	    local.put("URL", url.toString());
+	    local.put("URL", _url);
 	    for (final String name: vm.getSystemProperties().stringPropertyNames())
 	        map.put(name, vm.getSystemProperties().getProperty(name));
 	    
-	    local.put("System", new HashMap<String, Object>(map));
-	    map = new HashMap<String, String>();
+	    local.put("System", map);
+	    map = AFCmdBase.jse.getNewMap(local.getMap());
 	    
 	    for (final String name: vm.getAgentProperties().stringPropertyNames())
 	        map.put(name, vm.getAgentProperties().getProperty(name));
 	    
-	    local.put("Agent", new HashMap<String, Object>(map));
+	    local.put("Agent", map);
 
 		//return AF.jsonParse(PMStringConvert.toJSON4NativeProcessing(local));
-	    return local;
+	    return local.getMap();
 	}
 }
