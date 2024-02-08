@@ -424,6 +424,48 @@ OpenWrap.java.prototype.maven.prototype.removeOldVersions = function(artifactId,
 
 /**
  * <odoc>
+ * <key>ow.java.jcmd(aPid, aJCmd) : String</key>
+ * Tries to attach to local JVM with aPid and execute aJCmd returning the output.
+ * </odoc>
+ */
+OpenWrap.java.prototype.jcmd = function(aPid, aCmd) {
+    aCmd = _$(aCmd, "aCmd").isString().default("help")
+    var vm = Packages.com.sun.tools.attach.VirtualMachine.attach(aPid)
+ 
+    var oo = vm.executeJCmd(aCmd)
+    var os = af.newOutputStream()
+    ioStreamCopy(os, oo)
+
+    vm.detach()
+    return String(os.toString())
+}
+
+OpenWrap.java.prototype.pidSystemProperties = function(aPid) {
+    var vm = Packages.com.sun.tools.attach.VirtualMachine.attach(aPid)
+    var props = vm.getSystemProperties()
+    vm.detach()
+    return af.fromJavaMap(props)
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.pidThreadDump(aPid) : String</key>
+ * Tries to attach to local JVM with aPid and execute a thread dump returning the output.
+ * </odoc>
+ */
+OpenWrap.java.prototype.pidThreadDump = function(aPid) {
+    var vm = Packages.com.sun.tools.attach.VirtualMachine.attach(aPid)
+ 
+    var oo = vm.executeCommand("threaddump")
+    var os = af.newOutputStream()
+    ioStreamCopy(os, oo)
+
+    vm.detach()
+    return String(os.toString())
+}
+
+/**
+ * <odoc>
  * <key>ow.java.JMX(aURL, aUser, aPass, aProvider) : JMX</key>
  * Creates a JMX connection to the provided URL (similar to service:jmx:rmi:///jndi/rmi://1.2.3.4:1234/jmxrmi or a map with a host and a port).
  * Optionally, if necessary, aUser and aPass. To customize the JMX provider use aProvider.
@@ -481,7 +523,8 @@ OpenWrap.java.prototype.JMX.prototype.getAll = function() {
  * </odoc>
  */
 OpenWrap.java.prototype.JMX.prototype.getDomains = function() {
-    return af.fromJavaArray(this._jmx.getJavaServerConnection().getDomains()).map(d => String(d))
+    //return af.fromJavaArray(this._jmx.getJavaServerConnection().getDomains()).map(d => String(d))
+    return this._jmx.getJavaServerConnection().getDomains().map(d => String(d))
 }
 
 /**
@@ -583,12 +626,13 @@ OpenWrap.java.prototype.JMX.prototype.getObject = function(aObj) {
     }
 
     var obj = this._jmx.getObject(aObj)
-    var _map = af.fromJavaMap(obj.getAttributes())
+    //var _map = af.fromJavaMap(obj.getAttributes())
+    var _map = obj.getAttributes()
     if (isArray(_map.attributes)) {
         var data = {}
         _map.attributes.forEach(attr => {
             try {
-                _tt(obj.get(attr.name), attr.name)
+                _tt(obj.get(String(attr.name)), String(attr.name))
             } catch(afe) {
                 if (String(afe).indexOf("java.lang.UnsupportedOperationException") < 0) errors.push(attr.name + " | " + afe)
             }
