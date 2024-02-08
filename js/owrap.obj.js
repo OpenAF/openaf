@@ -149,6 +149,10 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray,
 	var tries = new Set(), override = new Set()
 	for(var i in aMapOrArray) {
 		var m = []
+		// Remove sub-arrays
+		traverse(aMapOrArray[i], (aK, aV, aP, aO) => {
+			if (isArray(aV)) delete aO[aK]
+		})
 		aMap = ow.obj.flatMap(aMapOrArray[i])
 		var keys = Object.keys(aMap)
 		for(var ii in keys) {
@@ -174,8 +178,12 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray,
 	if (tries.length > 1) {
 		for(var i = 1; i < tries.length; i++) {
 			for(var j = 0; j < tries[i].length; j++) {
-				if (tries[i][j].s != finalM[j].s && !override.has(j)) {
-					finalM[j].s = "VARCHAR"
+				if (isUnDef(finalM[j])) {
+					finalM[j] = tries[i][j]
+				} else {
+					if (isDef(tries[i][j]) && tries[i][j].s != finalM[j].s && !override.has(j)) {
+						finalM[j].s = "VARCHAR"
+					}
 				}
 			}
 		}
