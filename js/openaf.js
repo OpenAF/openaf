@@ -229,7 +229,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
     HTTP_CON_TIMEOUT            : __,
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
-	SQL_QUERY_COLS_DETECT_SAMPLE: 5,
+	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
   	DOH_PROVIDER                : "cloudflare",
 	PRINT_BUFFER_STREAM         : 8192
 })
@@ -8307,7 +8307,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 
 				var dumpFn = arrData => {
 					try {
-						ow.obj.fromArray2DB(arrData, db, aTable, __, true)
+						ow.obj.fromArray2DB(arrData, db, aTable, __, true, (_e, sql, value) => printErr("Error while dumping data for sql query: " + _e))
 					} catch(e) {
 						db.rollback()
 						aErrFn("Error while dumping data: " + e)
@@ -8358,7 +8358,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 						try {
 							defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, __objGetSamples(_obj), aFieldOveride, true)
 							db.u(defs[aTable])
-							ow.obj.fromArray2DB(_obj, db, aTable, __, true)
+							ow.obj.fromArray2DB(_obj, db, aTable, __, true, (_e, sql, value) => printErr("Error while dumping data for sql query: " + _e))
 							db.commit()
 						} catch(e) {
 							db.rollback()
