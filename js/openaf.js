@@ -1857,7 +1857,7 @@ __JSONformat = {
  */
 const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
 	if (isDef(astring) && String(astring).length > 0) {
-		if (ignoreNonJson) {
+		if (ignoreNonJson && isString(astring)) {
 			let startIndex, endIndex
 			let startIndexA = astring.indexOf("[")
 			let endIndexA   = astring.lastIndexOf("]")
