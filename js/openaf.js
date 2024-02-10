@@ -63,7 +63,7 @@ const isJavaObject = obj => {
 		return false
 	}*/
 	try {
-		if (obj != null && typeof obj === 'object' && typeof obj.getClass === 'function' && obj.getClass() instanceof java.lang.Object) {
+		if (obj != null && typeof obj.getClass === 'function' && Object.prototype.toString.call(obj) === '[object JavaObject]') {
 			return true
 		} else {
 			return false
@@ -1024,7 +1024,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if (isJavaObject(aO) || isJavaClass(aO)) return "java"
             if (isUnDef(aO)) return "undefined"
             if (isBoolean(aO)) return "boolean"
-            if (isNumber(aO)) return "number"
+            if (isTNumber(aO)) return "number"
             if (isString(aO)) return "string"
             if (isDate(aO)) return "date"
         }
@@ -1769,7 +1769,7 @@ const beautifier = function(aobj) {
 const stringify = function(aobj, replacer, space) {
 	if (aobj instanceof java.lang.Object) aobj = String(aobj);
 	if (isUnDef(space)) space = "  ";
-	if (isUnDef(replacer)) replacer = (k, v) => { return isJavaObject(v) ? String(v) : v; };
+	if (isUnDef(replacer)) replacer = (k,v) => (v != null && typeof v.getClass === 'function' && Object.prototype.toString.call(v) === '[object JavaObject]' ? (String(v).startsWith("org.mozilla.javascript.UniqueTag") ? __ : String(v.toString()) ) : v)
 	try {
 		return JSON.stringify(aobj, replacer, space);
 	} catch(e) {
@@ -8894,7 +8894,7 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 	var jr = Packages.com.google.gson.stream.JsonReader(is)
 	
 	try {
-		var pending = 0, nam, res = {}, tmp = []
+		var pending = 0, nam, res = new Set()
 
 		do {
 			var val = __, hasVal = false, path = String(jr.getPath())
@@ -8918,7 +8918,7 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 			}
 		
 			if (hasVal && aValFunc(path) > 0) {
-				tmp.push({ k: path, v: val })
+				res.add({ k: path, v: val })
 			}
 		} while(pending > 0)
 	} catch(e) {
@@ -8928,9 +8928,11 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 		is.close()
 	}
 
-	tmp.forEach(r => $$(res).set(r.k.substring(2), r.v))
+	var tmp = Array.from(res)
+	var result = {}
+	tmp.forEach(r => $$(result).set(r.k.substring(2), r.v))
 	
-	return res
+	return result
 }
 
 /**
