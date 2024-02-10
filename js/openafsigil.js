@@ -7,24 +7,27 @@ const $$ = function(aObj) {
         _ss: aString => {
             let result = []
             let word = ""
-            let inQuotes = false
+            let inQuotes = false, wasQuotes = false
             for (let i = 0; i < aString.length; i++) {
                 let char = aString[i]
                 if (char === "." && !inQuotes) {
-                    result.push(word)
+                    result.push(isNumber(word) && !wasQuotes ? Number(word) : word)
+                    wasQuotes = false
                     word = ""
                 } else if (char === "'") {
+                    wasQuotes = true
                     inQuotes = !inQuotes
                     if (!inQuotes) {
-                        result.push(word)
+                        result.push(String(word))
                         word = ""
+                        wasQuotes = false
                     }
                 } else {
                     word += char
                 }
             }
             if (word) {
-                result.push(word)
+                result.push(isNumber(word) && !wasQuotes ? Number(word) : word)
             }
             return result
         },
@@ -47,7 +50,7 @@ const $$ = function(aObj) {
 			aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
 			aPath = aPath.replace(/^\./, '');       
 
-			var a = _r._ss(aPath).filter(r => r.length > 0)
+			var a = _r._ss(aPath).filter(r => isNumber(r) || r.length > 0)
 			for (var i = 0, n = a.length; i < n; ++i) {
 				var k = a[i];
 				if (k in aObj) {
@@ -77,7 +80,7 @@ const $$ = function(aObj) {
 			aPath = aPath.replace(/\[(\w+)\]/g, '.$1')
 			aPath = aPath.replace(/^\./, '')
 
-			var a = _r._ss(aPath).filter(r => r.length > 0)
+			var a = _r._ss(aPath).filter(r => isNumber(r) || r.length > 0)
 			for (var i = 0, n = a.length; i < n; ++i) {
 				var k = a[i]
 
@@ -111,28 +114,33 @@ const $$ = function(aObj) {
 		 * \
 		 * </odoc>
 		 */		
-		set: (aPath, aValue) => {
-			if (!$$(aObj).isObject()) return void 0;
-			var orig = aObj;
-		
-			aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
-			aPath = aPath.replace(/^\./, '');       
-			
-			var a = _r._ss(aPath).filter(r => r.length > 0)
-			var prev, prevK;
-			for (var i = 0, n = a.length; i < n; ++i) {
-				var k = a[i];
-				prev = aObj;
-				prevK = k;
-				if (k in aObj) {
-					aObj = aObj[k];
-				} else {
-					aObj[k] = {};
-					aObj = aObj[k];
-				}
-			}
-			prev[prevK] = aValue;
-			return orig;
+        set: (aPath, aValue) => {
+            if (!$$(aObj).isObject()) return void 0;
+            var orig = aObj;
+
+            aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
+            aPath = aPath.replace(/^\./, '');
+
+            var a = _r._ss(aPath).filter(r => isNumber(r) || r.length > 0);
+            var prev, prevK;
+            for (var i = 0, n = a.length; i < n; ++i) {
+                var k = a[i];
+                prev = aObj;
+                prevK = k;
+                if (k in aObj) {
+                    aObj = aObj[k];
+                } else {
+                    if (isTNumber(k)) {
+                        aObj[k] = []
+                        aObj = aObj[k]
+                    } else {
+                        aObj[k] = {}
+                        aObj = aObj[k]
+                    }
+                }
+            }
+            prev[prevK] = aValue;
+            return orig;
         },
 		/**
 		 * <odoc>
