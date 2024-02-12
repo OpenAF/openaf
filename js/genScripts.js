@@ -4,14 +4,49 @@
 // VARIABLES
 // ---------
 var requirements = {
-  "javaversion": [ "^1.7" ]
+  "javaversion": [ "^1.8" ]
 };
+var modulesOpens = new Set([
+  "java.base/java.io",
+
+])
+var modulesExports = new Set([
+  "jdk.attach/sun.tools.attach",
+  "jdk.internal.jvmstat/sun.jvmstat.monitor",
+  "jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local",
+  "java.base/sun.security.util",
+  "java.base/jdk.internal.misc",
+  "java.base/sun.nio.ch",
+  "java.management/com.sun.jmx.mbeanserver",
+  "java.base/sun.reflect.generics.reflectiveObjects",
+  "java.management/sun.management",
+  "java.base/sun.security.x509",
+  "java.base/sun.security.util"
+])
+
+const determineIfModuleExists = (javaVer, module) => {
+  if (javaVer < 9) return false
+
+  var [ _m, _e ] = module.split("/")
+
+  let finder = java.lang.module.ModuleFinder.ofSystem()
+  let moduleRef = finder.find(_m)
+  if (moduleRef.isPresent()) {
+    return true
+  } else {
+    return false
+  }
+}
+
 var extraArgsForJava8 = ""
-var extraArgsForJava9 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+//var extraArgsForJava9 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+var extraArgsForJava9 = " --illegal-access=permit "
 var extraArgsForJava10 = extraArgsForJava9 + " ";
-var extraArgsForJava11 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit -Xshare:off";
+//var extraArgsForJava11 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit -Xshare:off";
+var extraArgsForJava11 = " --illegal-access=permit -Xshare:off "
 var extraArgsForJava12 = extraArgsForJava11 + " ";
-var extraArgsForJava17 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
+//var extraArgsForJava17 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
+var extraArgsForJava17 = " -Xshare:off "
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -247,6 +282,29 @@ log("Running java version = '" + javaVer + "'");
 log("Current classpath = '" + classPath + "'");
 log("Java home = '" + javaHome + "'");
 log("Checking requirements");
+
+if (!isNull(Number(javaVer))) {
+  // modules opens
+  if (Number(javaVer) >= 9) {
+    javaargs += " " + Array.from(modulesOpens.values()).map(mod => {
+      if (determineIfModuleExists(javaVer, mod)) {
+        return "--add-opens " + mod + "=ALL-UNNAMED"
+      } else {
+        logWarn("Module " + mod + " doesn't exist in the current JVM. Ignoring it.")
+      }
+    }).join(" ").trim() + " "
+    // modules exports
+    javaargs += " " + Array.from(modulesExports.values()).map(mod => {
+      if (determineIfModuleExists(javaVer, mod)) {
+        return " --add-exports " + mod + "=ALL-UNNAMED "
+      } else {
+        logWarn("Module " + mod + " doesn't exist in the current JVM. Ignoring it.")
+      }
+    }).join(" ").trim() + " "
+
+    javaargs = javaargs.replace(/ +/g, " ").trim()
+  }
+}
 
 if (Number(javaVer) != null && Number(javaVer) == 8) javaargs += " " + extraArgsForJava8
 if (Number(javaVer) != null && Number(javaVer) == 9) javaargs += " " + extraArgsForJava9;  
