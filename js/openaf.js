@@ -4475,11 +4475,11 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => af.fromSLON(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
-		to_json: {
+		from_json: {
 			_func: ar => jsonParse(ar[0], __, __, true),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
-		from_json: {
+		to_json: {
 			_func: ar => stringify(ar[0], __, ar[1]),
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		},
