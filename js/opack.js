@@ -1365,7 +1365,7 @@ function install(args) {
 
 	// Delete old files
 	if (isDef(origPack)) {
-		$from(origPack.files).except(packag.files).forEach(file => {
+		$from(origPack.files).except(packag.files).select(file => {
 			log("Deleting " + file + "...")
 			io.rm(outputPath + "/" + file)
 		})
