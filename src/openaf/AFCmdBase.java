@@ -16,7 +16,7 @@ import java.lang.String;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20230528";
+	public static String VERSION = "20240216";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 	
@@ -86,7 +86,7 @@ public class AFCmdBase {
 	
 	public static void restartEngine() {
 		jse = new RhinoEngine();
-		jse.start(optLevel);
+		jse.start((System.getenv().get("OAF_LEVEL") != null ? Integer.parseInt(System.getenv("OAF_LEVEL")) : optLevel));
 	}
 	
 	protected void showHelp(String argHelp) {
