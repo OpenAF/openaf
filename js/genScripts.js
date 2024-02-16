@@ -109,6 +109,21 @@ function generateWinPackBat() {
   return s;
 }
 
+function generateWinOAFPBat() {
+  var s;
+
+  s = "@echo off\n\n";
+  s = s + "set thispath=%~dp0\n"
+  s = s + "set DIR=%thispath:~0,-1%\n"
+  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
+  s = s + "\n";
+  s = s + "chcp 65001 > NUL\n";
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% -c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"%*\"";
+  return s;
+}
+
 function generateWinJobBat() {
   var s;
 
@@ -319,7 +334,7 @@ var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
 //var winConsolePSBat = generateWinConsolePSBat();
 
-var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
+var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript, unixOAFPScript
 
 //if (windows == 0) {
   unixScript = generateUnixScript("\"$@\"")
@@ -328,6 +343,7 @@ var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleSc
   unixPackScript = generateUnixScript("--opack -e \"$*\"")
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
+  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$*\"")
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 //}
 
@@ -338,6 +354,7 @@ try {
   if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\oafc.bat", winConsoleBat);
+  if (windows == 1) io.writeFileString(curDir + "\\oafp.bat", generateWinOAFPBat())
   //if (windows == 1) io.writeFileString(curDir + "\\openaf-console-ps.bat", winConsolePSBat);
   if (windows == 1) {
     io.writeFileBytes(curDir + "\\openaf.ico", io.readFileBytes(getOpenAFJar() + "::fonts/openaf.ico"));
@@ -352,6 +369,7 @@ try {
   io.writeFileString(curDir + "/ojob", unixJobScript);
   io.writeFileString(curDir + "/openaf-console", unixConsoleScript);
   io.writeFileString(curDir + "/oafc", unixConsoleScript);
+  io.writeFileString(curDir + "/oafp", unixOAFPScript)
 } catch (e) {
   logErr("Couldn't write file: " + e.message);
   java.lang.System.exit(0);
@@ -359,15 +377,16 @@ try {
 
 if (windows == 0) {
   try {
-	  sh("chmod u+x " + curDir + "/openaf", "", null, false);
-	  sh("chmod u+x " + curDir + "/oaf", "", null, false);
-    sh("chmod u+x " + curDir + "/openaf-sb", "", null, false);
-    sh("chmod u+x " + curDir + "/oaf-sb", "", null, false);
-    sh("chmod u+x " + curDir + "/ojob-sb", "", null, false);
-	  sh("chmod u+x " + curDir + "/opack", "", null, false);
-	  sh("chmod u+x " + curDir + "/ojob", "", null, false);
-	  sh("chmod u+x " + curDir + "/openaf-console", "", null, false);
-	  sh("chmod u+x " + curDir + "/oafc", "", null, false);
+	  sh("chmod a+x " + curDir + "/openaf", "", null, false);
+	  sh("chmod a+x " + curDir + "/oaf", "", null, false);
+    sh("chmod a+x " + curDir + "/openaf-sb", "", null, false);
+    sh("chmod a+x " + curDir + "/oaf-sb", "", null, false);
+    sh("chmod a+x " + curDir + "/ojob-sb", "", null, false);
+	  sh("chmod a+x " + curDir + "/opack", "", null, false);
+	  sh("chmod a+x " + curDir + "/ojob", "", null, false);
+	  sh("chmod a+x " + curDir + "/openaf-console", "", null, false);
+	  sh("chmod a+x " + curDir + "/oafc", "", null, false);
+    sh("chmod a+x " + curDir + "/oafp", "", null, false)
   }	catch(e) {
 	  logErr("Couldn't change permissions: " + e.message);
   }
