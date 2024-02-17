@@ -4357,6 +4357,7 @@ var $from = function(a) {
  * [OpenAF custom functions]: \
  *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags'), amerge(x, y), to_slon(x), from_slon(x), to_json(x), from_json(x, str), to_yaml(x, isMultiDoc), from_yaml(x), trim(x), nvl(x, v)
  * add(x, y), sub(x, y), mul(x, y), div(x, y), mod(x, y)\
+ * split_sep(x, sepRE, encls)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4568,6 +4569,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		mod: {
 			_func: ar => ar[0] % ar[1],
 			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		split_sep: {
+			_func: ar => splitBySepWithEnc(ar[0], ar[1], ar[2], false),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.array ] } ]
 		}
 	}, customFunctions)
 
