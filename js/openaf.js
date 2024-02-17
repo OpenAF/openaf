@@ -2726,6 +2726,55 @@ const splitBySeparator = function(aString, aSep) {
 
 /**
  * <odoc>
+ * <key>splitBySepWithEnc(text, separator, enclosures, includeEnclosures) : array</key>
+ * Given a text, a separator, a list of enclosures and a flag includeEnclosures, this function will split the text by the separator
+ * while ignoring the separator inside the enclosures. If includeEnclosures is true, the enclosures will be included in the result.
+ * If includeEnclosures is false, the enclosures will be removed from the result.
+ * </odoc>
+ */
+function splitBySepWithEnc(text, separator, enclosures, includeEnclosures) {
+    _$(text, "text").isString().$_
+    separator  = _$(separator, "separator").isString().default("\\s+")
+    enclosures = _$(enclosures, "enclosures").isArray().default([])
+    includeEnclosures = _$(includeEnclosures, "includeEnclosures").isBoolean().default(false)
+
+    // If the text is empty, return an empty array
+    if (text.length === 0) {
+        return []
+    }
+    // Create a regular expression that matches any of the enclosures
+    let enclosureRegex = new RegExp(`(${enclosures.map(([start, end]) => `\\${start}[^\\${end}]*\\${end}`).join('|')})`, 'g')
+    // Find all the enclosures in the text
+    let matches = text.match(enclosureRegex) || []
+    // Replace the separator with a null character if it is inside an enclosure
+    let splitText = text
+    // Replace the separator with a colon if it is not inside an enclosure
+    matches.forEach(match => {
+        // Replace the separator with a colon
+        splitText = splitText.replace(match, match.replace(new RegExp(separator, 'g'), '\0'));
+    })
+    // Split the text by the separator
+    return splitText.split(new RegExp(separator)).map(part => {
+        // Remove the enclosures from the result if includeEnclosures is false
+        let trimmedPart = part.replace(/\0/g, ':').trim()
+        // Include the enclosures in the result if includeEnclosures is true
+        if (includeEnclosures) {
+            return trimmedPart
+        } else {
+            // Remove the enclosures from the result
+            for (let [start, end] of enclosures) {
+                // If the part starts with the start enclosure and ends with the end enclosure, remove the enclosures
+                if (trimmedPart.startsWith(start) && trimmedPart.endsWith(end)) {
+                    return trimmedPart.slice(1, -1)
+                }
+            }
+        }
+        return trimmedPart
+    })
+}
+
+/**
+ * <odoc>
  * <key>splitKVBySeparator(aString, aOptions) : Map</key>
  * Given aString with multiple key/value entries will return a map with the same. Optionally you can provide aOptions:\
  * \
