@@ -100,16 +100,17 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 	});
 	var ctrl = {};
 
+	var _sql = "insert into " + (caseSensitive ? "\"" + aTableName + "\"" : aTableName) + "(" + okeys + ") values (" + binds.join(",") + ")"
 	var t = parallel4Array(anArray,
 		function(aValue) {
 			var _value = ow.obj.flatMap(aValue)
-			var values = [];
+			var values = new Map()
 			for(var k in ookeys) {
-				values.push(_value[ookeys[k]]);
+				values.set(ookeys[k], _value[ookeys[k]])
 			}
-			var _sql = "insert into " + (caseSensitive ? "\"" + aTableName + "\"" : aTableName) + "(" + okeys + ") values (" + binds.join(",") + ")"
+			
 			try {	
-				return aDB.us(_sql, values)
+				return aDB.us(_sql, Array.from(values.values()))
 			} catch(ee) {
 				if (isDef(errorFn)) errorFn(ee, _sql, value)
 				return 0
@@ -138,6 +139,7 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray,
 	if (isMap(aMapOrArray)) {
 		aMapOrArray = [ aMapOrArray ]
 	}
+	if (isUnDef(aMapOrArray) || aMapOrArray.length < 1) return __
 
 	const detType = aO => {
 		if (isBoolean(aO)) return "BOOLEAN"
@@ -148,7 +150,11 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray,
 
 	var tries = new Set(), override = new Set()
 	for(var i in aMapOrArray) {
-		var m = []
+		let m = new Map()
+		// Remove sub-arrays
+		traverse(aMapOrArray[i], (aK, aV, aP, aO) => {
+			if (isArray(aV)) delete aO[aK]
+		})
 		aMap = ow.obj.flatMap(aMapOrArray[i])
 		var keys = Object.keys(aMap)
 		for(var ii in keys) {
@@ -161,30 +167,38 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray,
 			} else {
 				s = detType(aMap[keys[ii]])
 			}
-			m.push({
+			/*m.push({
 				f: key,
 				s: s
-			})
+			})*/
+			m.set(key, { f: key, s: s })
 		}
-		tries.add(m)
+		tries.add(Array.from(m.values()))
 	}
-
-	let finalM = Array.from(tries)[0]
+	
 	tries = Array.from(tries)
-	if (tries.length > 1) {
-		for(var i = 1; i < tries.length; i++) {
+	let finalM = new Map()
+	if (tries.length > 0) {
+		for(var i = 0; i < tries.length; i++) {
 			for(var j = 0; j < tries[i].length; j++) {
-				if (tries[i][j].s != finalM[j].s && !override.has(j)) {
-					finalM[j].s = "VARCHAR"
+				if (!finalM.has(tries[i][j].f)) {
+					//finalM[j] = tries[i][j]
+					finalM.set(tries[i][j].f, tries[i][j])
+				} else {
+					if (tries[i][j].s != finalM.get(tries[i][j].f).s && !override.has(j)) {
+						finalM.set(tries[i][j].f, { f: tries[i][j].f, s: "VARCHAR" })
+					}
 				}
 			}
 		}
 	}
  
-	return templify("CREATE TABLE {{{table}}} ({{{fields}}})", { 
+	finalM = Array.from(finalM.values())
+	var __r = templify("CREATE TABLE {{{table}}} ({{{fields}}})", { 
 		table: (enforceCase ? "\""+ aTableName + "\"" : aTableName), 
 		fields: (finalM.map(r => r.f + " " + r.s).join(", ")) 
 	})
+	return __r
 }
 
 /**

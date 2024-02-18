@@ -1,26 +1,26 @@
 // OpenWrap v2
-// Copyright 2023 Nuno Aguiar
+// Copyright 2024 Nuno Aguiar
 // Test
 
 OpenWrap.test = function() {
 	if (isUnDef(ow.test)) {
-		this.reset();
+		this.reset()
 	}
-	return ow.test;
+	return ow.test
 }
 
-OpenWrap.test.prototype.getCountTest = function() { return this.__countTest.get() };
-OpenWrap.test.prototype.getCountPass = function() { return this.__countPass.get() };
-OpenWrap.test.prototype.getCountFail = function() { return this.__countFail.get() };
+OpenWrap.test.prototype.getCountTest = function() { return this.__countTest.get() }
+OpenWrap.test.prototype.getCountPass = function() { return this.__countPass.get() }
+OpenWrap.test.prototype.getCountFail = function() { return this.__countFail.get() }
 OpenWrap.test.prototype.getCountAssert = function() { return this.__countAssert.get() }
-OpenWrap.test.prototype.getProfileHits = function(aProfileKey) { return this.__profile[aProfileKey].hits.get() };
-OpenWrap.test.prototype.getProfileAvg  = function(aProfileKey) { return this.__profile[aProfileKey].sum.get() / this.__profile[aProfileKey].hits.get() };
-OpenWrap.test.prototype.getProfileLast = function(aProfileKey) { return this.__profile[aProfileKey].last.get() };
-OpenWrap.test.prototype.getProfileMax  = (aProfileKey) => { return this.__profile[aProfileKey].max; };
-OpenWrap.test.prototype.getProfileMin  = (aProfileKey) => { return this.__profile[aProfileKey].min; };
+OpenWrap.test.prototype.getProfileHits = function(aProfileKey) { return this.__profile[aProfileKey].hits.get() }
+OpenWrap.test.prototype.getProfileAvg  = function(aProfileKey) { return this.__profile[aProfileKey].sum.get() / this.__profile[aProfileKey].hits.get() }
+OpenWrap.test.prototype.getProfileLast = function(aProfileKey) { return this.__profile[aProfileKey].last.get() }
+OpenWrap.test.prototype.getProfileMax  = (aProfileKey) => { return this.__profile[aProfileKey].max }
+OpenWrap.test.prototype.getProfileMin  = (aProfileKey) => { return this.__profile[aProfileKey].min }
 OpenWrap.test.prototype.profileReset   = function(aProfileKey) { this.__profile[aProfileKey] = {
 		hits: $atomic(), sum: $atomic(), last: $atomic(), start: $atomic()
-}};
+}}
 OpenWrap.test.prototype.getProfile = function() { 
 	var _r = {} 
 	var parent = this.__profile
@@ -35,9 +35,9 @@ OpenWrap.test.prototype.getProfile = function() {
 	})
 	return _r
 }
-OpenWrap.test.prototype.getAllProfileHits = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileHits(i)}; return r; };
-OpenWrap.test.prototype.getAllProfileAvg  = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileAvg(i)}; return r; };
-OpenWrap.test.prototype.getAllProfileLast = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileLast(i)}; return r; };
+OpenWrap.test.prototype.getAllProfileHits = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileHits(i)}; return r }
+OpenWrap.test.prototype.getAllProfileAvg  = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileAvg(i)}; return r }
+OpenWrap.test.prototype.getAllProfileLast = function() { var r = {}; for(var i in this.__profile) { r[i] = ow.test.getProfileLast(i)}; return r }
 /**
  * <odoc>
  * <key>ow.test.setShowStackTrace(aBooleanSetting)</key>
@@ -58,14 +58,14 @@ OpenWrap.test.prototype.setKeepStackTrace = function(aValue) { this.__keepStackT
  * Turns on (off by default) the gathering of memory differences if aBooleanSetting = true.
  * </odoc>
  */
-OpenWrap.test.prototype.setMemoryProfile  = function(aValue) { this.__memoryprofile  = aValue; };
+OpenWrap.test.prototype.setMemoryProfile  = function(aValue) { this.__memoryprofile  = aValue };
 /**
  * <odoc>
  * <key>ow.test.setOutput(aBooleanSetting)</key>
  * Turns off (on by default) the output of the result of each test.
  * </odoc>
  */
-OpenWrap.test.prototype.setOutput         = function(aValue) { this.__showOutput = aValue; };
+OpenWrap.test.prototype.setOutput         = function(aValue) { this.__showOutput = aValue };
 
 /**
  * <odoc>
@@ -99,7 +99,7 @@ OpenWrap.test.prototype.reset = function() {
 OpenWrap.test.prototype.assert = function(aResult, checkValue, errorMessage, notShowDiff) {
 	this.__countAssert.inc()
 	if (!compare(aResult, checkValue)) {
-		throw errorMessage + ((notShowDiff) ? "" : " (got " + stringify(aResult) + " but expected " + stringify(checkValue, undefined, "") + ")");
+		throw errorMessage + ((notShowDiff) ? "" : " (got " + stringify(aResult) + " but expected " + stringify(checkValue, undefined, "") + ")")
 	}
 }
 
@@ -122,11 +122,11 @@ OpenWrap.test.prototype.start = function(aKey) {
 	
 	this.__profile[aKey].start = now();
 	if (this.__memoryprofile) {
-		java.lang.Runtime.getRuntime().gc();
-		this.__profile[aKey].startTotalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
-		this.__profile[aKey].startFreeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+		java.lang.Runtime.getRuntime().gc()
+		this.__profile[aKey].startTotalMem = Number(java.lang.Runtime.getRuntime().totalMemory())
+		this.__profile[aKey].startFreeMem = Number(java.lang.Runtime.getRuntime().freeMemory())
 	}
-	return aKey;
+	return aKey
 }
 
 /**
@@ -136,22 +136,22 @@ OpenWrap.test.prototype.start = function(aKey) {
  * </odoc>
  */
 OpenWrap.test.prototype.stop = function(aKey) {
-	var elapsed = now() - this.__profile[aKey].start;
+	var elapsed = now() - this.__profile[aKey].start
 	
 	if (this.__memoryprofile) {
-		java.lang.Runtime.getRuntime().gc();
-		this.__profile[aKey].stopTotalMem = Number(java.lang.Runtime.getRuntime().totalMemory());
-		this.__profile[aKey].stopFreeMem = Number(java.lang.Runtime.getRuntime().freeMemory());
+		java.lang.Runtime.getRuntime().gc()
+		this.__profile[aKey].stopTotalMem = Number(java.lang.Runtime.getRuntime().totalMemory())
+		this.__profile[aKey].stopFreeMem = Number(java.lang.Runtime.getRuntime().freeMemory())
 	}
 	
 	this.__profile[aKey].last.getSet(elapsed)
 	this.__profile[aKey].hits.inc()
 	this.__profile[aKey].sum.getSet(this.__profile[aKey].sum.get() + elapsed)
 	if (isUnDef(this.__profile[aKey].max) ||  elapsed > this.__profile[aKey].max)
-		this.__profile[aKey].max = elapsed;
+		this.__profile[aKey].max = elapsed
 	if (isUnDef(this.__profile[aKey].min) ||  elapsed < this.__profile[aKey].min)
-		this.__profile[aKey].min = elapsed;
-	return elapsed;
+		this.__profile[aKey].min = elapsed
+	return elapsed
 }
 
 /**
@@ -163,7 +163,7 @@ OpenWrap.test.prototype.stop = function(aKey) {
  * </odoc>
  */
 OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) {
-	var info = this.getChannel().get(aMessage);
+	var info = this.getChannel().get(aMessage)
 	if (isUnDef(info)) info = {
 		"test" : aMessage.replace(/.+::/, ""),
 		"suite": (aMessage.indexOf("::") > 0) ? aMessage.replace(/::.+/, "") : "Test suite", 
@@ -173,72 +173,75 @@ OpenWrap.test.prototype.testExternally = function(aMessage, aCommand, aTimeout) 
 		"executions": []
 	};
 	
-	if (this.__showOutput) log("TEST | " + aMessage);
+	if (this.__showOutput) log("TEST | " + aMessage)
 	this.__countTest.inc()
 	
-	var execInfo = {};
-	this.start(aMessage);
+	var execInfo = {}
+	this.start(aMessage)
 	
 	if (this.__memoryprofile) {
-		execInfo.startTotalMem = this.__profile[aMessage].startTotalMem;
-		execInfo.startFreeMem  = this.__profile[aMessage].startFreeMem;
+		execInfo.startTotalMem = this.__profile[aMessage].startTotalMem
+		execInfo.startFreeMem  = this.__profile[aMessage].startFreeMem
 	};
 	
-	execInfo.start = this.__profile[aMessage].start;
+	execInfo.start = this.__profile[aMessage].start
 	
 	try {
 		info.hits.inc()
 		
-		if (this.__showOutput) log("Running " + aCommand);
- 		var res = sh(aCommand, "", aTimeout);
+		if (this.__showOutput) log("Running " + aCommand)
+ 		var res = sh(aCommand, "", aTimeout)
  		
-		execInfo.elapsedTime = this.stop(aMessage);
+		execInfo.elapsedTime = this.stop(aMessage)
 		if (this.__memoryprofile) {
-			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem;
-			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem;
-			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem); 
+			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem
+			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem
+			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem)
 		}
-		info.exitCode = __exitcode;
+		info.exitCode = __exitcode
 		
-		if (__exitcode != 0) throw "exit code " + __exitcode;
-		if (this.__showOutput) log("PASS | " + aMessage);
+		if (__exitcode != 0) throw "exit code " + __exitcode
+		if (this.__showOutput) log("PASS | " + aMessage)
 		this.__countPass.inc()
-		execInfo.status = "PASS";
+		execInfo.status = "PASS"
 		info.pass.inc()
 		
-		info.executions.push(execInfo);
-		this.getChannel().set(aMessage, info);
+		info.executions.push(execInfo)
+		this.getChannel().set(aMessage, info)
 		
  		return res;
  	} catch(e) {
- 		execInfo.elapsedTime = this.stop(aMessage);
+ 		execInfo.elapsedTime = this.stop(aMessage)
 		if (this.__memoryprofile) {
-			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem;
-			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem;
-			execInfo.diffMem = Math.abs((execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem)); 
+			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem
+			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem
+			execInfo.diffMem = Math.abs((execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem))
 		}
-		if (this.__showOutput) logErr("FAIL | " + aMessage);
-		execInfo.status = "FAIL";
-		execInfo.exception = String(e);
+		if (this.__showOutput) logErr("FAIL | " + aMessage)
+		execInfo.status = "FAIL"
+		execInfo.exception = String(e)
 		info.fail.inc()
 		
  		this.__countFail.inc()
  		
-		info.executions.push(execInfo);
-		this.getChannel().set(aMessage, info);
+		info.executions.push(execInfo)
+		this.getChannel().set(aMessage, info)
  	}
 }
 
 /**
  * <odoc>
- * <key>ow.test.test(aTest, aFunction) : Object</key>
+ * <key>ow.test.test(aTest, aFunction, aArgMap) : Object</key>
  * Test aFunction for a test named aTest.  If aTest is divided
- * with "::" the first part sill be consider to be a test suite name. Will return whatever the function returns.\
+ * with "::" the first part sill be consider to be a test suite name. Will return whatever the function returns.
+ * Optionally you can provide aArgMap with a map of arguments to be used by aFunction.
+ * The aFunction will receive two arguments: (1) a function that will output/log any map, array or string provided; 
+ * (2) the aArgMap if provided.\
  * (available after ow.loadTest())
  * </odoc>
  */
-OpenWrap.test.prototype.test = function(aMessage, aFunction) {
-	var info = this.getChannel().get(aMessage);
+OpenWrap.test.prototype.test = function(aMessage, aFunction, aArgMap) {
+	var info = this.getChannel().get(aMessage)
 	if (isUnDef(info)) info = {
 		"test" : aMessage.replace(/.+::/, ""),
 		"suite": (aMessage.indexOf("::") > 0) ? aMessage.replace(/::.+/, "") : "Test suite", 
@@ -252,15 +255,15 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 	if (this.__showOutput) log(aMessage + " | TEST");
 	this.__countTest.inc()
 	
-	var execInfo = {};
-	this.start(aMessage);
+	var execInfo = {}
+	this.start(aMessage)
 
 	if (this.__memoryprofile) {
-		execInfo.startTotalMem = this.__profile[aMessage].startTotalMem;
-		execInfo.startFreeMem  = this.__profile[aMessage].startFreeMem;
+		execInfo.startTotalMem = this.__profile[aMessage].startTotalMem
+		execInfo.startFreeMem  = this.__profile[aMessage].startFreeMem
 	};
 	
-	execInfo.start = this.__profile[aMessage].start;
+	execInfo.start = this.__profile[aMessage].start
 	
 	var setResult = result => {
 		if (isMap(result) || isArray(result)) result = af.toSLON(result)
@@ -270,34 +273,34 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 
 	try {
 		info.hits.inc()
-		var res = aFunction(setResult);
+		var res = aFunction(setResult, aArgMap)
 		
-		execInfo.elapsedTime = this.stop(aMessage);
+		execInfo.elapsedTime = this.stop(aMessage)
 		if (this.__memoryprofile) {
-			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem;
-			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem;
-			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem);
+			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem
+			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem
+			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem)
 		}
-		execInfo.status = "PASS";
+		execInfo.status = "PASS"
 		info.pass.inc()
 		
-		if (this.__showOutput) log(aMessage + " | PASS");
+		if (this.__showOutput) log(aMessage + " | PASS")
 		this.__countPass.inc()
 		
-		info.executions.push(execInfo);
-		this.getChannel().set(aMessage, info);
+		info.executions.push(execInfo)
+		this.getChannel().set(aMessage, info)
 		
-		return res;
+		return res
 	} catch(e) {
-		execInfo.elapsedTime = this.stop(aMessage);
+		execInfo.elapsedTime = this.stop(aMessage)
 		if (this.__memoryprofile) {
-			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem;
-			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem;
-			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem); 
+			execInfo.stopFreeMem  = this.__profile[aMessage].stopFreeMem
+			execInfo.stopTotalMem = this.__profile[aMessage].stopTotalMem
+			execInfo.diffMem = (execInfo.stopTotalMem - execInfo.stopFreeMem) - (execInfo.startTotalMem - execInfo.startFreeMem)
 		}
-		if (this.__showOutput) log(aMessage + " | FAIL | " + e);
-		execInfo.status = "FAIL";
-		execInfo.exception = String(e);
+		if (this.__showOutput) log(aMessage + " | FAIL | " + e)
+		execInfo.status = "FAIL"
+		execInfo.exception = String(e)
 		info.fail.inc()
 		this.__countFail.inc()
 		
@@ -308,8 +311,8 @@ OpenWrap.test.prototype.test = function(aMessage, aFunction) {
 			if (this.__keepStackTrace) execInfo.stackTrace = getJavaStackTrace(e)
 		} catch(e1) { }
 		
-		info.executions.push(execInfo);
-		this.getChannel().set(aMessage, info);
+		info.executions.push(execInfo)
+		this.getChannel().set(aMessage, info)
 	}
 }
 
@@ -338,21 +341,21 @@ OpenWrap.test.prototype.getExecHistory = function() {
 }
 
 OpenWrap.test.prototype.toMarkdown = function() {
-	var md = "# Test results\n\n";
+	var md = "# Test results\n\n"
 
-	md += "## Summary\n\n";
+	md += "## Summary\n\n"
 
-	md += "* Number of tests performed: " + this.__countTest.get() + "\n";
-	md += "* Number of tests passed: " + this.__countPass.get() + "\n";
-	md += "* Number of tests failed: " + this.__countFail.get() + "\n";
-	md += "* Number of asserts: " + this.__countAssert.get() + "\n";
+	md += "* Number of tests performed: " + this.__countTest.get() + "\n"
+	md += "* Number of tests passed: " + this.__countPass.get() + "\n"
+	md += "* Number of tests failed: " + this.__countFail.get() + "\n"
+	md += "* Number of asserts: " + this.__countAssert.get() + "\n"
 
-    md += "## Result details\n\n";
+    md += "## Result details\n\n"
 
-	md += "| Suite | Test | Status | Time | Result       |\n";
-	md += "|-------|------|--------|------|--------------|\n";
+	md += "| Suite | Test | Status | Time | Result       |\n"
+	md += "|-------|------|--------|------|--------------|\n"
 
-	var data = [];
+	var data = []
 	this.getChannel().forEach((k, v) => {
 		if (v != null)
 			for(let i in v.executions) {
@@ -363,20 +366,20 @@ OpenWrap.test.prototype.toMarkdown = function() {
 					time     : v.executions[i].elapsedTime,
 					exception: v.executions[i].exception,
 					result   : v.executions[i].result
-				});
+				})
 			}
-	});
+	})
 
 	$from(data).sort("suite", "test").select(d => {
-		md += "|" + d.suite;
-		md += " | " + d.test;
-		md += " | <span style=\"background-color: " + (d.status == "PASS" ? "green" : "red") + "; color: white\">&nbsp;&nbsp;" + d.status + "&nbsp;&nbsp;</span>";
-		md += " | " + ow.loadFormat().elapsedTime4ms(d.time);
-		md += " | " + (isDef(d.exception) ? d.exception.replace(/\n/mg, " ") : (isDef(d.result) ? d.result : "n/a"));
-		md += " |\n"; 
-	});
+		md += "|" + d.suite
+		md += " | " + d.test
+		md += " | <span style=\"background-color: " + (d.status == "PASS" ? "green" : "red") + "; color: white\">&nbsp;&nbsp;" + d.status + "&nbsp;&nbsp;</span>"
+		md += " | " + ow.loadFormat().elapsedTime4ms(d.time)
+		md += " | " + (isDef(d.exception) ? d.exception.replace(/\n/mg, " ") : (isDef(d.result) ? d.result : "n/a"))
+		md += " |\n"
+	})
 
-	return md;
+	return md
 }
 
 /**
@@ -394,7 +397,7 @@ OpenWrap.test.prototype.toJUnitXML = function(testSuitesId, testSuitesName) {
 		"fails"   : 0,
 		"time"    : 0,
 		"testSuites": []
-	};
+	}
 
 	// Assigning values from channel
 	this.getChannel().forEach(function(k, v) {
@@ -408,10 +411,10 @@ OpenWrap.test.prototype.toJUnitXML = function(testSuitesId, testSuitesName) {
 			"time"      : $from(v.executions).sum("elapsedTime"),
 			"testSuite" : v.executions.map(function(ex) {
 				if (ex.status == 'FAIL') {
-					xmlInfo.fails++;
+					xmlInfo.fails++
 				}
 
-				xmlInfo.time += ex.elapsedTime;
+				xmlInfo.time += ex.elapsedTime
 
 				return {
 					"id"         : ex.start,
@@ -422,39 +425,39 @@ OpenWrap.test.prototype.toJUnitXML = function(testSuitesId, testSuitesName) {
 					"failed"     : (isDef(ex.exception))
 				}
 			})
-		};
+		}
 		
-		var previous = $from(xmlInfo.testSuites).equals("name", (isDef(v.suite)) ? v.suite : v.test).at(0);
+		var previous = $from(xmlInfo.testSuites).equals("name", (isDef(v.suite)) ? v.suite : v.test).at(0)
 		
 		if (isUnDef(previous)) {
-			xmlInfo.tests++;
-			xmlInfo.testSuites.push(testSuite);
+			xmlInfo.tests++
+			xmlInfo.testSuites.push(testSuite)
 		} else {
-			previous.tests += testSuite.tests;
-			previous.pass  += testSuite.pass;
-			previous.fail  += testSuite.fail;
-			previous.time  += testSuite.time;
-			previous.testSuite = previous.testSuite.concat(testSuite.testSuite);
+			previous.tests += testSuite.tests
+			previous.pass  += testSuite.pass
+			previous.fail  += testSuite.fail
+			previous.time  += testSuite.time
+			previous.testSuite = previous.testSuite.concat(testSuite.testSuite)
 		}
-	});
-	xmlInfo.start = $from(xmlInfo.testSuites).min("start").start;
+	})
+	xmlInfo.start = $from(xmlInfo.testSuites).min("start").start
 
-	plugin("XML");
-	var xml = new XML();
-	var xmlPart = xml.x("testsuites").a("id", xmlInfo.id).a("name", xmlInfo.name).a("tests", xmlInfo.tests).a("failures", xmlInfo.fails).a("time", xmlInfo.time / 1000);
+	plugin("XML")
+	var xml = new XML()
+	var xmlPart = xml.x("testsuites").a("id", xmlInfo.id).a("name", xmlInfo.name).a("tests", xmlInfo.tests).a("failures", xmlInfo.fails).a("time", xmlInfo.time / 1000)
 	for(var i in xmlInfo.testSuites) {
-		var testSuite = xmlInfo.testSuites[i];
-		xmlPart = xmlPart.e("testsuite").a("id", testSuite.id).a("name", testSuite.name).a("tests", testSuite.testSuite.length).a("failures", testSuite.fail).a("time", testSuite.time / 1000).a("timestamp", new Date(testSuite.start).toISOString());
+		var testSuite = xmlInfo.testSuites[i]
+		xmlPart = xmlPart.e("testsuite").a("id", testSuite.id).a("name", testSuite.name).a("tests", testSuite.testSuite.length).a("failures", testSuite.fail).a("time", testSuite.time / 1000).a("timestamp", new Date(testSuite.start).toISOString())
 		for(var j in testSuite.testSuite) {
-			var testExec = testSuite.testSuite[j];
-			xmlPart = xmlPart.e("testcase").a("id", testExec.id).a("name", testExec.name).a("time", testExec.time / 1000);
+			var testExec = testSuite.testSuite[j]
+			xmlPart = xmlPart.e("testcase").a("id", testExec.id).a("name", testExec.name).a("time", testExec.time / 1000)
 			if (testExec.failed) {
-				xmlPart = xmlPart.e("failure").a("message", testExec.failMessage).a("type", "ERROR").t(testExec.failMessage).up();
+				xmlPart = xmlPart.e("failure").a("message", testExec.failMessage).a("type", "ERROR").t(testExec.failMessage).up()
 			}
-			xmlPart= xmlPart.up();
+			xmlPart= xmlPart.up()
 		}
-		xmlPart = xmlPart.up();
+		xmlPart = xmlPart.up()
 	}
 
-	return xml.w();
+	return xml.w()
 }

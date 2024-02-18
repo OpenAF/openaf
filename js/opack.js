@@ -1199,8 +1199,10 @@ function install(args) {
 
 
 	// Verify version
+	var origPack
 	if (checkVersion(packag, force) || justCopy) {
 		log((justCopy ? "COPYING" : "INSTALLING") + " -- " + packag.name + " version " + packag.version);
+		origPack = findLocalDBByName(packag.name)
 	} else {
 		log("No need to install/update " + args[0]);
 		return;
@@ -1359,6 +1361,14 @@ function install(args) {
 			log("All files copied.");
 			break;
 		}
+	}
+
+	// Delete old files
+	if (isDef(origPack)) {
+		$from(origPack.files).except(packag.files).select(file => {
+			log("Deleting " + file + "...")
+			io.rm(outputPath + "/" + file)
+		})
 	}
 
 	if (!nohash) {

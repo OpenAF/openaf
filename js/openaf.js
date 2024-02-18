@@ -63,7 +63,7 @@ const isJavaObject = obj => {
 		return false
 	}*/
 	try {
-		if (obj != null && typeof obj === 'object' && typeof obj.getClass === 'function' && obj.getClass() instanceof java.lang.Object) {
+		if (obj != null && typeof obj.getClass === 'function' && Object.prototype.toString.call(obj) === '[object JavaObject]') {
 			return true
 		} else {
 			return false
@@ -229,7 +229,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
     HTTP_CON_TIMEOUT            : __,
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
-	SQL_QUERY_COLS_DETECT_SAMPLE: 5,
+	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
   	DOH_PROVIDER                : "cloudflare",
 	PRINT_BUFFER_STREAM         : 8192
 })
@@ -1024,7 +1024,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if (isJavaObject(aO) || isJavaClass(aO)) return "java"
             if (isUnDef(aO)) return "undefined"
             if (isBoolean(aO)) return "boolean"
-            if (isNumber(aO)) return "number"
+            if (isTNumber(aO)) return "number"
             if (isString(aO)) return "string"
             if (isDate(aO)) return "date"
         }
@@ -1769,7 +1769,7 @@ const beautifier = function(aobj) {
 const stringify = function(aobj, replacer, space) {
 	if (aobj instanceof java.lang.Object) aobj = String(aobj);
 	if (isUnDef(space)) space = "  ";
-	if (isUnDef(replacer)) replacer = (k, v) => { return isJavaObject(v) ? String(v) : v; };
+	if (isUnDef(replacer)) replacer = (k,v) => (v != null && typeof v.getClass === 'function' && Object.prototype.toString.call(v) === '[object JavaObject]' ? (String(v).startsWith("org.mozilla.javascript.UniqueTag") ? __ : String(v.toString()) ) : v)
 	try {
 		return JSON.stringify(aobj, replacer, space);
 	} catch(e) {
@@ -1857,7 +1857,7 @@ __JSONformat = {
  */
 const jsonParse = function(astring, alternative, unsafe, ignoreNonJson) {
 	if (isDef(astring) && String(astring).length > 0) {
-		if (ignoreNonJson) {
+		if (ignoreNonJson && isString(astring)) {
 			let startIndex, endIndex
 			let startIndexA = astring.indexOf("[")
 			let endIndexA   = astring.lastIndexOf("]")
@@ -2726,6 +2726,55 @@ const splitBySeparator = function(aString, aSep) {
 
 /**
  * <odoc>
+ * <key>splitBySepWithEnc(text, separator, enclosures, includeEnclosures) : array</key>
+ * Given a text, a separator, a list of enclosures and a flag includeEnclosures, this function will split the text by the separator
+ * while ignoring the separator inside the enclosures. If includeEnclosures is true, the enclosures will be included in the result.
+ * If includeEnclosures is false, the enclosures will be removed from the result.
+ * </odoc>
+ */
+const splitBySepWithEnc = function(text, separator, enclosures, includeEnclosures) {
+    _$(text, "text").isString().$_
+    separator  = _$(separator, "separator").isString().default("\\s+")
+    enclosures = _$(enclosures, "enclosures").isArray().default([])
+    includeEnclosures = _$(includeEnclosures, "includeEnclosures").isBoolean().default(false)
+
+    // If the text is empty, return an empty array
+    if (text.length === 0) {
+        return []
+    }
+    // Create a regular expression that matches any of the enclosures
+    let enclosureRegex = new RegExp(`(${enclosures.map(([start, end]) => `\\${start}[^\\${end}]*\\${end}`).join('|')})`, 'g')
+    // Find all the enclosures in the text
+    let matches = text.match(enclosureRegex) || []
+    // Replace the separator with a null character if it is inside an enclosure
+    let splitText = text
+    // Replace the separator with a colon if it is not inside an enclosure
+    matches.forEach(match => {
+        // Replace the separator with a colon
+        splitText = splitText.replace(match, match.replace(new RegExp(separator, 'g'), '\0'));
+    })
+    // Split the text by the separator
+    return splitText.split(new RegExp(separator)).map(part => {
+        // Remove the enclosures from the result if includeEnclosures is false
+        let trimmedPart = part.replace(/\0/g, separator).trim()
+        // Include the enclosures in the result if includeEnclosures is true
+        if (includeEnclosures) {
+            return trimmedPart
+        } else {
+            // Remove the enclosures from the result
+            for (let [start, end] of enclosures) {
+                // If the part starts with the start enclosure and ends with the end enclosure, remove the enclosures
+                if (trimmedPart.startsWith(start) && trimmedPart.endsWith(end)) {
+                    return trimmedPart.slice(1, -1)
+                }
+            }
+        }
+        return trimmedPart
+    })
+}
+
+/**
+ * <odoc>
  * <key>splitKVBySeparator(aString, aOptions) : Map</key>
  * Given aString with multiple key/value entries will return a map with the same. Optionally you can provide aOptions:\
  * \
@@ -2804,7 +2853,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 			buf += aEsc
 		} else {
 			// Unless it's escape keep it
-			if (aString[i] != aEsc) buf += aString[i]
+			if (aString[i] != aEsc || (i < aString.length && aString[i+1] != aSep)) buf += aString[i]
 		}
 	}
 	if (buf.length > 0) {
@@ -4306,7 +4355,9 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags')\
+ *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags'), amerge(x, y), to_slon(x), from_slon(x), to_json(x), from_json(x, str), to_yaml(x, isMultiDoc), from_yaml(x), trim(x), nvl(x, v)
+ * add(x, y), sub(x, y), mul(x, y), div(x, y), mod(x, y)\
+ * split_sep(x, sepRE, encls)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4462,6 +4513,66 @@ const $path = function(aObj, aPath, customFunctions) {
 		match: {
 			_func: ar => (new RegExp(ar[1], ar[2])).test(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		amerge: {
+			_func: ar => merge(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.array, jmespath.types.object ] }, { types: [ jmespath.types.array, jmespath.types.object ] } ]
+		},
+		to_slon: {
+			_func: ar => af.toSLON(ar[0]),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		from_slon: {
+			_func: ar => af.fromSLON(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		from_json: {
+			_func: ar => jsonParse(ar[0], __, __, true),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		to_json: {
+			_func: ar => stringify(ar[0], __, ar[1]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		to_yaml: {
+			_func: ar => af.toYAML(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.boolean ] } ]
+		},
+		from_yaml: {
+			_func: ar => af.fromYAML(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		trim: {
+			_func: ar => ar[0].trim(),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		nvl: {
+			_func: ar => (isNull(ar[0]) || isUnDef(ar[0]) ? ar[1] : ar[0]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
+		},
+		add: {
+			_func: ar => ar[0] + ar[1],
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		sub: {
+			_func: ar => ar[0] - ar[1],
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		mul: {
+			_func: ar => ar[0] * ar[1],
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		div: {
+			_func: ar => ar[0] / ar[1],
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		mod: {
+			_func: ar => ar[0] % ar[1],
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		split_sep: {
+			_func: ar => splitBySepWithEnc(ar[0], ar[1], ar[2], false),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.array ] } ]
 		}
 	}, customFunctions)
 
@@ -8307,7 +8418,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 
 				var dumpFn = arrData => {
 					try {
-						ow.obj.fromArray2DB(arrData, db, aTable, __, true)
+						ow.obj.fromArray2DB(arrData, db, aTable, __, true, (_e, sql, value) => printErr("Error while dumping data for sql query: " + _e))
 					} catch(e) {
 						db.rollback()
 						aErrFn("Error while dumping data: " + e)
@@ -8358,7 +8469,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 						try {
 							defs[aTable] = ow.obj.fromObj2DBTableCreate(aTable, __objGetSamples(_obj), aFieldOveride, true)
 							db.u(defs[aTable])
-							ow.obj.fromArray2DB(_obj, db, aTable, __, true)
+							ow.obj.fromArray2DB(_obj, db, aTable, __, true, (_e, sql, value) => printErr("Error while dumping data for sql query: " + _e))
 							db.commit()
 						} catch(e) {
 							db.rollback()
@@ -8894,7 +9005,7 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 	var jr = Packages.com.google.gson.stream.JsonReader(is)
 	
 	try {
-		var pending = 0, nam, res = {}, tmp = []
+		var pending = 0, nam, res = new Set()
 
 		do {
 			var val = __, hasVal = false, path = String(jr.getPath())
@@ -8918,7 +9029,7 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 			}
 		
 			if (hasVal && aValFunc(path) > 0) {
-				tmp.push({ k: path, v: val })
+				res.add({ k: path, v: val })
 			}
 		} while(pending > 0)
 	} catch(e) {
@@ -8928,9 +9039,11 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 		is.close()
 	}
 
-	tmp.forEach(r => $$(res).set(r.k.substring(2), r.v))
+	var tmp = Array.from(res)
+	var result = {}
+	tmp.forEach(r => $$(result).set(r.k.substring(2), r.v))
 	
-	return res
+	return result
 }
 
 /**
@@ -11463,7 +11576,11 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		if (shouldReturn)
 			return _s
 		else {
-			if (pause) ow.format.string.pauseString(_s); else print(_s)
+			if (isUnDef(_s)) {
+				print("")
+			} else {
+				if (pause) ow.format.string.pauseString(_s); else print(_s)
+			}
 		}
 	}
 
@@ -11595,6 +11712,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 				aFunc(res)
 			}
 	}
+	return fnP(__)
 }
 const $o = $output
 

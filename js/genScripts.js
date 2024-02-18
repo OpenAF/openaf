@@ -4,14 +4,49 @@
 // VARIABLES
 // ---------
 var requirements = {
-  "javaversion": [ "^1.7" ]
+  "javaversion": [ "^1.8" ]
 };
+var modulesOpens = new Set([
+  "java.base/java.io",
+
+])
+var modulesExports = new Set([
+  "jdk.attach/sun.tools.attach",
+  "jdk.internal.jvmstat/sun.jvmstat.monitor",
+  "jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local",
+  "java.base/sun.security.util",
+  "java.base/jdk.internal.misc",
+  "java.base/sun.nio.ch",
+  "java.management/com.sun.jmx.mbeanserver",
+  "java.base/sun.reflect.generics.reflectiveObjects",
+  "java.management/sun.management",
+  "java.base/sun.security.x509",
+  "java.base/sun.security.util"
+])
+
+const determineIfModuleExists = (javaVer, module) => {
+  if (javaVer < 9) return false
+
+  var [ _m, _e ] = module.split("/")
+
+  let finder = java.lang.module.ModuleFinder.ofSystem()
+  let moduleRef = finder.find(_m)
+  if (moduleRef.isPresent()) {
+    return true
+  } else {
+    return false
+  }
+}
+
 var extraArgsForJava8 = ""
-var extraArgsForJava9 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+//var extraArgsForJava9 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --illegal-access=permit";
+var extraArgsForJava9 = " --illegal-access=permit "
 var extraArgsForJava10 = extraArgsForJava9 + " ";
-var extraArgsForJava11 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit -Xshare:off";
+//var extraArgsForJava11 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --illegal-access=permit -Xshare:off";
+var extraArgsForJava11 = " --illegal-access=permit -Xshare:off "
 var extraArgsForJava12 = extraArgsForJava11 + " ";
-var extraArgsForJava17 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
+//var extraArgsForJava17 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
+var extraArgsForJava17 = " -Xshare:off "
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -71,6 +106,21 @@ function generateWinPackBat() {
   s = s + "\n";
   s = s + "chcp 65001 > NUL\n";
   s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% --opack -e \"%*\"";
+  return s;
+}
+
+function generateWinOAFPBat() {
+  var s;
+
+  s = "@echo off\n\n";
+  s = s + "set thispath=%~dp0\n"
+  s = s + "set DIR=%thispath:~0,-1%\n"
+  s = s + "rem if not %JAVA_HOME% == \"\" set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set JAVA_HOME=\"" + javaHome + "\"\n";
+  s = s + "set OAF_DIR=\"" + classPath + "\"\n";
+  s = s + "\n";
+  s = s + "chcp 65001 > NUL\n";
+  s = s + "%JAVA_HOME%\\bin\\java %OAF_JARGS% " + javaargs + " -D\"file.encoding=UTF-8\" -D\"java.system.class.loader=openaf.OAFdCL\" -jar %OAF_DIR% -c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"%*\"";
   return s;
 }
 
@@ -248,6 +298,29 @@ log("Current classpath = '" + classPath + "'");
 log("Java home = '" + javaHome + "'");
 log("Checking requirements");
 
+if (!isNull(Number(javaVer))) {
+  // modules opens
+  if (Number(javaVer) >= 9) {
+    javaargs += " " + Array.from(modulesOpens.values()).map(mod => {
+      if (determineIfModuleExists(javaVer, mod)) {
+        return "--add-opens " + mod + "=ALL-UNNAMED"
+      } else {
+        logWarn("Module " + mod + " doesn't exist in the current JVM. Ignoring it.")
+      }
+    }).join(" ").trim() + " "
+    // modules exports
+    javaargs += " " + Array.from(modulesExports.values()).map(mod => {
+      if (determineIfModuleExists(javaVer, mod)) {
+        return " --add-exports " + mod + "=ALL-UNNAMED "
+      } else {
+        logWarn("Module " + mod + " doesn't exist in the current JVM. Ignoring it.")
+      }
+    }).join(" ").trim() + " "
+
+    javaargs = javaargs.replace(/ +/g, " ").trim()
+  }
+}
+
 if (Number(javaVer) != null && Number(javaVer) == 8) javaargs += " " + extraArgsForJava8
 if (Number(javaVer) != null && Number(javaVer) == 9) javaargs += " " + extraArgsForJava9;  
 if (Number(javaVer) != null && Number(javaVer) == 10) javaargs += " " + extraArgsForJava10;
@@ -261,7 +334,7 @@ var winJobBat = generateWinJobBat();
 var winConsoleBat = generateWinConsoleBat();
 //var winConsolePSBat = generateWinConsolePSBat();
 
-var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript;
+var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleScript, unixUpdateScript, unixOAFPScript
 
 //if (windows == 0) {
   unixScript = generateUnixScript("\"$@\"")
@@ -270,6 +343,7 @@ var unixScript, unixSB, unixSBoJob, unixPackScript, unixJobScript, unixConsoleSc
   unixPackScript = generateUnixScript("--opack -e \"$*\"")
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
+  unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"")
   unixUpdateScript = generateUnixScript("--update", void 0, __genScriptsUpdate);
 //}
 
@@ -280,6 +354,7 @@ try {
   if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\oafc.bat", winConsoleBat);
+  if (windows == 1 && isUnDef(getOPackPath("oafproc")) ) io.writeFileString(curDir + "\\oafp.bat", generateWinOAFPBat())
   //if (windows == 1) io.writeFileString(curDir + "\\openaf-console-ps.bat", winConsolePSBat);
   if (windows == 1) {
     io.writeFileBytes(curDir + "\\openaf.ico", io.readFileBytes(getOpenAFJar() + "::fonts/openaf.ico"));
@@ -294,6 +369,7 @@ try {
   io.writeFileString(curDir + "/ojob", unixJobScript);
   io.writeFileString(curDir + "/openaf-console", unixConsoleScript);
   io.writeFileString(curDir + "/oafc", unixConsoleScript);
+  if (isUnDef(getOPackPath("oafproc"))) io.writeFileString(curDir + "/oafp", unixOAFPScript)
 } catch (e) {
   logErr("Couldn't write file: " + e.message);
   java.lang.System.exit(0);
@@ -301,15 +377,16 @@ try {
 
 if (windows == 0) {
   try {
-	  sh("chmod u+x " + curDir + "/openaf", "", null, false);
-	  sh("chmod u+x " + curDir + "/oaf", "", null, false);
-    sh("chmod u+x " + curDir + "/openaf-sb", "", null, false);
-    sh("chmod u+x " + curDir + "/oaf-sb", "", null, false);
-    sh("chmod u+x " + curDir + "/ojob-sb", "", null, false);
-	  sh("chmod u+x " + curDir + "/opack", "", null, false);
-	  sh("chmod u+x " + curDir + "/ojob", "", null, false);
-	  sh("chmod u+x " + curDir + "/openaf-console", "", null, false);
-	  sh("chmod u+x " + curDir + "/oafc", "", null, false);
+	  sh("chmod a+x " + curDir + "/openaf", "", null, false);
+	  sh("chmod a+x " + curDir + "/oaf", "", null, false);
+    sh("chmod a+x " + curDir + "/openaf-sb", "", null, false);
+    sh("chmod a+x " + curDir + "/oaf-sb", "", null, false);
+    sh("chmod a+x " + curDir + "/ojob-sb", "", null, false);
+	  sh("chmod a+x " + curDir + "/opack", "", null, false);
+	  sh("chmod a+x " + curDir + "/ojob", "", null, false);
+	  sh("chmod a+x " + curDir + "/openaf-console", "", null, false);
+	  sh("chmod a+x " + curDir + "/oafc", "", null, false);
+    sh("chmod a+x " + curDir + "/oafp", "", null, false)
   }	catch(e) {
 	  logErr("Couldn't change permissions: " + e.message);
   }
