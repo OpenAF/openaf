@@ -2732,7 +2732,7 @@ const splitBySeparator = function(aString, aSep) {
  * If includeEnclosures is false, the enclosures will be removed from the result.
  * </odoc>
  */
-function splitBySepWithEnc(text, separator, enclosures, includeEnclosures) {
+const splitBySepWithEnc = function(text, separator, enclosures, includeEnclosures) {
     _$(text, "text").isString().$_
     separator  = _$(separator, "separator").isString().default("\\s+")
     enclosures = _$(enclosures, "enclosures").isArray().default([])
@@ -2756,7 +2756,7 @@ function splitBySepWithEnc(text, separator, enclosures, includeEnclosures) {
     // Split the text by the separator
     return splitText.split(new RegExp(separator)).map(part => {
         // Remove the enclosures from the result if includeEnclosures is false
-        let trimmedPart = part.replace(/\0/g, ':').trim()
+        let trimmedPart = part.replace(/\0/g, separator).trim()
         // Include the enclosures in the result if includeEnclosures is true
         if (includeEnclosures) {
             return trimmedPart
