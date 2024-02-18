@@ -354,7 +354,7 @@ try {
   if (windows == 1) io.writeFileString(curDir + "\\ojob.bat", winJobBat);
   if (windows == 1) io.writeFileString(curDir + "\\openaf-console.bat", winConsoleBat);
   if (windows == 1) io.writeFileString(curDir + "\\oafc.bat", winConsoleBat);
-  if (windows == 1) io.writeFileString(curDir + "\\oafp.bat", generateWinOAFPBat())
+  if (windows == 1 && isUnDef(getOPackPath("oafproc")) ) io.writeFileString(curDir + "\\oafp.bat", generateWinOAFPBat())
   //if (windows == 1) io.writeFileString(curDir + "\\openaf-console-ps.bat", winConsolePSBat);
   if (windows == 1) {
     io.writeFileBytes(curDir + "\\openaf.ico", io.readFileBytes(getOpenAFJar() + "::fonts/openaf.ico"));
@@ -369,7 +369,7 @@ try {
   io.writeFileString(curDir + "/ojob", unixJobScript);
   io.writeFileString(curDir + "/openaf-console", unixConsoleScript);
   io.writeFileString(curDir + "/oafc", unixConsoleScript);
-  io.writeFileString(curDir + "/oafp", unixOAFPScript)
+  if (isUnDef(getOPackPath("oafproc"))) io.writeFileString(curDir + "/oafp", unixOAFPScript)
 } catch (e) {
   logErr("Couldn't write file: " + e.message);
   java.lang.System.exit(0);
