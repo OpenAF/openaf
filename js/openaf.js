@@ -2853,7 +2853,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 			buf += aEsc
 		} else {
 			// Unless it's escape keep it
-			if (aString[i] != aEsc || (i < aString.length && aString[i+1] != aSep)) buf += aString[i]
+			if (aString[i] != aEsc || (i < aString.length && aString[i+1] != aSep && aString[i+1] != "\"" && aString[i+1] != "'")) buf += aString[i]
 		}
 	}
 	if (buf.length > 0) {
