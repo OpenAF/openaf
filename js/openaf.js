@@ -967,7 +967,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
  * </odoc>
  */
 const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
-    let slines, line, endc, strc, ssrc, midc
+    let slines, line, endc, strc, ssrc, midc, skey
     _aOptions = _$(_aOptions, "aOptions").isMap().default({})
 
     // Merge with default options
@@ -991,6 +991,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         strc = (_aOptions.noansi ? "/ " :  (_aOptions.curved ? "╭ " : "┌ "))
         ssrc = (_aOptions.noansi ? "- " : "─ ")
         midc = (_aOptions.noansi ? "| " : "├ ")
+		skey = ": "
     } else {
         slines = 3
         line = (_aOptions.noansi ? "|" : "│") 
@@ -998,6 +999,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         strc = (_aOptions.noansi ? "/- " :  (_aOptions.curved ? "╭─ " : "┌─ "))
         ssrc = (_aOptions.noansi ? "-- " : "── ")
         midc = (_aOptions.noansi ? "|- " : "├─ ")
+		skey = ": "
     }
 
     // Don't repeat options if already done as a sub-call
@@ -1115,7 +1117,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
           if (aOptions.withValues) {
             _r = _ac(__colorFormat.key, _k) + 
                            _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")) + 
-                           _ac("", (!(isMap(v) || Array.isArray(v)) ? ": " + _clr(v) : ""))
+                           _ac("", (!(isMap(v) || Array.isArray(v)) ? _ac(__colorFormat.tree.lines, skey) + _clr(v) : ""))
           } else {
             _r = _k
           }
