@@ -1179,17 +1179,17 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
             let ksizeOrAlKPlusSline = (isDef(ksize) ? ksize : _al(k)) + slines
             let vsizeOrLvPlusSline = (isDef(vsize) ? vsize : lv) + slines
-            let aPrefix2 = _ac("", (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
+            let aPrefix2 = _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
           
             let wfResult = _wf(v, aPrefix + aPrefix2)
             let repeatResult = _ac("", (isDef(vsize) ? " ".repeat(vsize - lv+1) : " "))
           
-            let prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac("", endc) : (i == 0) ? _ac("", (size == 1 ? ssrc : strc)) : aPrefix + _ac("", midc)
+            let prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac(__colorFormat.tree.lines, endc) : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : aPrefix + _ac(__colorFormat.tree.lines, midc)
             let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
             let suffix
           
             if (isMap(aM[k]) || Array.isArray(aM[k])) {
-                suffix = _pt(aM[k], aWidth, aOptions, aPrefix + _ac("", (i < (size-1) ? line : " ") + " ".repeat(vsizeOrLvPlusSline)), true)
+                suffix = _pt(aM[k], aWidth, aOptions, aPrefix + _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(vsizeOrLvPlusSline)), true)
             }
           
             out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
@@ -1799,7 +1799,8 @@ var __colorFormat = {
 	askQuestion: "BOLD",
 	askChoose: "BOLD,CYAN",
 	askPos: "BLUE",
-	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" }
+	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" },
+	tree: { lines: "" }
 };
 const colorify = function(json, aOptions) {
 	if (typeof json != 'string') {
