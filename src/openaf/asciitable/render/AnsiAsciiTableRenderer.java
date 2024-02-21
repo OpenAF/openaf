@@ -7,6 +7,8 @@
  */
 package openaf.asciitable.render;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.lang.String;
@@ -26,6 +28,8 @@ import de.vandermeer.asciitable.v2.themes.V2_E_TableThemes;
 import de.vandermeer.asciitable.v2.themes.V2_RowTheme;
 import de.vandermeer.asciitable.v2.themes.V2_TableTheme;
 import de.vandermeer.asciitable.v2.render.*;
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.Ansi.Color;
 
 public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 
@@ -38,6 +42,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 	/** Width of the table. */
 	WidthAnsiLongestWordTab width;
 	String[][] colorMap;
+	String lineColor;
 
 	/** List of rows processed and ready to b rendered. */
 	List<ProcessedRow> rows;
@@ -76,8 +81,59 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 		return this;
 	}
 
-	public RenderedTable render(V2_AsciiTable table, String[][] colorMap) {
+	protected String __ansiColorPrep(String aAnsi) {	
+		String aString = "RRR";
+		aAnsi = aAnsi.toUpperCase();		
+		String[] nAnsi = aAnsi.split(",");
+		String fAnsi = "";
+		String o;
+		
+		for (String r : nAnsi) {
+			if (r.startsWith("BG(")) {
+				String bg = r.replaceAll("BG\\((\\d+)\\)", "$1");
+				aString = "\033[48;5;" + bg + "m" + aString;
+			} else if (r.startsWith("FG(")) {
+				String fg = r.replaceAll("FG\\((\\d+)\\)", "$1");
+				aString = "\033[38;5;" + fg + "m" + aString;
+			} else {
+				fAnsi += r + ",";
+			}
+		}
+		
+		// Remove last comma from fAnsi
+		if (fAnsi.length() > 0) fAnsi = fAnsi.substring(0, fAnsi.length() - 1);
+
+		if (fAnsi.length() > 0) {
+			o = Ansi.ansi().render("@|" + fAnsi.toLowerCase() + " " + aString + "|@").toString();
+		} else {
+			o = aString;
+		}
+		
+		return o.substring(0, o.indexOf("RRR"));
+	}
+
+	protected HashMap<String, String> __ansiColorCache = new HashMap<>();
+	protected String __reset = "\u001b[m";
+
+	private String ansiColor(String aAnsi, String aString) {
+		if (aAnsi == null) aAnsi = "";
+		if (aString == null) aString = "";
+
+		if (aAnsi.length() > 0) {
+			if (__ansiColorCache.containsKey(aAnsi)) {
+				return __ansiColorCache.get(aAnsi) + aString + __reset;
+			}
+
+			__ansiColorCache.put(aAnsi, __ansiColorPrep(aAnsi));
+			return __ansiColorCache.get(aAnsi) + aString + __reset;
+		} else {
+			return aString;
+		}
+	}
+
+	public RenderedTable render(V2_AsciiTable table, String[][] colorMap, String lineColor) {
 		this.colorMap = colorMap;
+		this.lineColor = lineColor;
 		return this.render(table);
 	}
 
@@ -233,7 +289,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 							int nw;
 							if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && !((String) this.colorMap[rowi][k]).equals("")) {
 								clr = this.colorMap[rowi][k];
-								t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
+								t = ansiColor(clr.toLowerCase(), columns[i][k]);
 								//t = openaf.JAnsiRender.render(clr.toLowerCase() + " " + columns[i][k]);
 								nw = width + (t.length() - WidthAnsiLongestWordTab.visibleLength(columns[i][k]));
 							} else {
@@ -249,7 +305,7 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 						int nw;
 						if (this.colorMap != null && rowi < this.colorMap.length && k < this.colorMap[rowi].length && this.colorMap[rowi][k] instanceof String && !((String) this.colorMap[rowi][k]).equals("")) {
 							clr = this.colorMap[rowi][k];
-							t = org.fusesource.jansi.Ansi.ansi().render("@|" + clr.toLowerCase() + " " + columns[i][k] + "|@").toString();
+							t = ansiColor(clr.toLowerCase(), columns[i][k]);
 							//t = openaf.JAnsiRender.render(clr.toLowerCase() + " " + columns[i][k]);
 							nw = cols[k] + (t.length() - WidthAnsiLongestWordTab.visibleLength(columns[i][k]));
 						} else {

@@ -1476,7 +1476,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 	rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
 	var o;
 	if (useAnsi)
-		o = String(rt.render(out, cM2));
+		o = String(rt.render(out, cM2, __colorFormat.table.lines));
 	else
 		o = String(rt.render(out));
 
@@ -1530,7 +1530,7 @@ function __initializeCon() {
 		return true;
 	}
 }
-
+ 
 var __ansiColorCache = {
 	RESET: "\x1b[m"
 }
