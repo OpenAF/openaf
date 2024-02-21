@@ -811,7 +811,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	useRowSep = _$(useRowSep, "useRowSep").isBoolean().default(__flags.TABLE.wordWrapUseSep)
 	bandRows  = _$(bandRows, "bandRows").isBoolean().default(__flags.TABLE.bandRows)
 
-	var colorMap = __colorFormat.table
+	var colorMap = __colorFormat.table || {}
 
 	if (isDef(aBgColor)) {
 		colorMap.lines = aBgColor + "," + colorMap.lines
@@ -971,7 +971,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
     _aOptions = _$(_aOptions, "aOptions").isMap().default({})
 
     // Merge with default options
-    _aOptions = merge(merge({
+    _aOptions = merge(merge(merge({
         noansi: false,
         curved: true,
         fullKeySize: true,
@@ -980,7 +980,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         wordWrap: true,
         compact: true,
         minSize: 5
-    }, __flags.TREE), _aOptions)
+    }, __flags.TREE), __colorFormat.tree), _aOptions)
 
     // Decide on decorations to use
     if (_aOptions.compact) {
