@@ -183,6 +183,9 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 			}
 		}
 
+		boolean withColor = false;
+		if (this.colorMap != null && this.lineColor != null) withColor = true;
+
 		List<StrBuilder> ret = new LinkedList<StrBuilder>();
 		for(int i=0; i<this.rows.size(); i++){
 			V2_Row original = this.rows.get(i).getOriginalRow();
@@ -191,13 +194,22 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 			}
 			else if(original instanceof RuleRow){
 				if(i==0){
-					ret.add(this.renderRuleRow(this.rows.get(i), cols, RuleRowType.TOP));
+					if (withColor)
+						ret.add(new StrBuilder(this.ansiColor(this.lineColor, this.renderRuleRow(this.rows.get(i), cols, RuleRowType.TOP).toString())));
+					else
+						ret.add(this.renderRuleRow(this.rows.get(i), cols, RuleRowType.TOP));
 				}
 				else if(i==(this.rows.size()-1)){
-					ret.add(this.renderRuleRow(this.rows.get(i), cols, RuleRowType.BOTTOM));
+					if (withColor)
+						ret.add(new StrBuilder(this.ansiColor(this.lineColor, this.renderRuleRow(this.rows.get(i), cols, RuleRowType.BOTTOM).toString())));
+					else
+					    ret.add(this.renderRuleRow(this.rows.get(i), cols, RuleRowType.BOTTOM));
 				}
-				else{
-					ret.add(this.renderRuleRow(this.rows.get(i), cols, null));
+				else {
+					if (withColor)
+						ret.add(new StrBuilder(this.ansiColor(this.lineColor, this.renderRuleRow(this.rows.get(i), cols, RuleRowType.MID).toString())));
+					else
+						ret.add(this.renderRuleRow(this.rows.get(i), cols, null));
 				}
 			}
 			else{
@@ -223,6 +235,9 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 		char[] alignment = ((ContentRow)row.getOriginalRow()).getAlignment();
 		int[] padding = ((ContentRow)row.getOriginalRow()).getPadding();
 
+		boolean withColor = false;
+		if (this.colorMap != null && this.lineColor != null) withColor = true;
+
 		for (int i=0; i<columns.length; i++) {
 			rt = this.theme.getContent();
 			if(i!=0){
@@ -232,13 +247,22 @@ public class AnsiAsciiTableRenderer implements V2_TableRenderer {
 			for(int k=0; k<borders.length; k++){
 				if(borders[k]!=BorderType.NONE){
 					if(k==0){
-						ret.append(RenderUtilities.getChar(BorderPosition.LEFT, borders[k], rt));
+						if (withColor)
+							ret.append(this.ansiColor(this.lineColor, String.valueOf(RenderUtilities.getChar(BorderPosition.LEFT, borders[k], rt)) ));
+						else
+							ret.append(RenderUtilities.getChar(BorderPosition.LEFT, borders[k], rt));			
 					}
 					else if(k==borders.length-1){
-						ret.append(RenderUtilities.getChar(BorderPosition.RIGHT, borders[k], rt));
+						if (withColor)
+							ret.append(this.ansiColor(this.lineColor, String.valueOf(RenderUtilities.getChar(BorderPosition.RIGHT, borders[k], rt)) ));
+						else
+							ret.append(RenderUtilities.getChar(BorderPosition.RIGHT, borders[k], rt));
 					}
 					else{
-						ret.append(RenderUtilities.getChar(BorderPosition.MIDDLE, borders[k], rt));
+						if (withColor)
+							ret.append(this.ansiColor(this.lineColor, String.valueOf(RenderUtilities.getChar(BorderPosition.MIDDLE, borders[k], rt)) ));
+						else
+							ret.append(RenderUtilities.getChar(BorderPosition.MIDDLE, borders[k], rt));
 					}
 				}
 
