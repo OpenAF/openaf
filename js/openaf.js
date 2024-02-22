@@ -223,6 +223,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	WITHMD: {
 		htmlFilter: true
 	},
+	OAFP: {
+		libs: []
+	},
 	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR     : true,
 	HTTP_TIMEOUT                : __,
