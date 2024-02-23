@@ -224,7 +224,7 @@ OpenWrap.metrics.prototype.__m = {
                     jvmVendor: o.java.property.java.vm.vendor,
                     gcCause: o.sun.gc.cause,
                     gcLastCause: o.sun.gc.lastCause,
-                    appTime: ow.format.round(o.sun.rt.__percAppTime, 2),
+                    appTime: ow.loadFormat().round(o.sun.rt.__percAppTime, 2),
                     vmStart: o.sun.rt.__createVmBeginDate
                 },
                 gcGens: gcGens,

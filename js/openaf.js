@@ -223,6 +223,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	WITHMD: {
 		htmlFilter: true
 	},
+	OAFP: {
+		libs: []
+	},
 	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR     : true,
 	HTTP_TIMEOUT                : __,
@@ -811,7 +814,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	useRowSep = _$(useRowSep, "useRowSep").isBoolean().default(__flags.TABLE.wordWrapUseSep)
 	bandRows  = _$(bandRows, "bandRows").isBoolean().default(__flags.TABLE.bandRows)
 
-	var colorMap = __colorFormat.table
+	var colorMap = __colorFormat.table || {}
 
 	if (isDef(aBgColor)) {
 		colorMap.lines = aBgColor + "," + colorMap.lines
@@ -967,11 +970,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
  * </odoc>
  */
 const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
-    let slines, line, endc, strc, ssrc, midc
+    let slines, line, endc, strc, ssrc, midc, skey
     _aOptions = _$(_aOptions, "aOptions").isMap().default({})
 
     // Merge with default options
-    _aOptions = merge(merge({
+    _aOptions = merge(merge(merge({
         noansi: false,
         curved: true,
         fullKeySize: true,
@@ -980,7 +983,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         wordWrap: true,
         compact: true,
         minSize: 5
-    }, __flags.TREE), _aOptions)
+    }, __flags.TREE), __colorFormat.tree), _aOptions)
 
     // Decide on decorations to use
     if (_aOptions.compact) {
@@ -991,6 +994,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         strc = (_aOptions.noansi ? "/ " :  (_aOptions.curved ? "╭ " : "┌ "))
         ssrc = (_aOptions.noansi ? "- " : "─ ")
         midc = (_aOptions.noansi ? "| " : "├ ")
+		skey = ": "
     } else {
         slines = 3
         line = (_aOptions.noansi ? "|" : "│") 
@@ -998,6 +1002,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         strc = (_aOptions.noansi ? "/- " :  (_aOptions.curved ? "╭─ " : "┌─ "))
         ssrc = (_aOptions.noansi ? "-- " : "── ")
         midc = (_aOptions.noansi ? "|- " : "├─ ")
+		skey = ": "
     }
 
     // Don't repeat options if already done as a sub-call
@@ -1115,7 +1120,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
           if (aOptions.withValues) {
             _r = _ac(__colorFormat.key, _k) + 
                            _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")) + 
-                           _ac("", (!(isMap(v) || Array.isArray(v)) ? ": " + _clr(v) : ""))
+                           _ac("", (!(isMap(v) || Array.isArray(v)) ? _ac(__colorFormat.tree.lines, skey) + _clr(v) : ""))
           } else {
             _r = _k
           }
@@ -1179,17 +1184,17 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
             let ksizeOrAlKPlusSline = (isDef(ksize) ? ksize : _al(k)) + slines
             let vsizeOrLvPlusSline = (isDef(vsize) ? vsize : lv) + slines
-            let aPrefix2 = _ac("", (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
+            let aPrefix2 = _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
           
             let wfResult = _wf(v, aPrefix + aPrefix2)
             let repeatResult = _ac("", (isDef(vsize) ? " ".repeat(vsize - lv+1) : " "))
           
-            let prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac("", endc) : (i == 0) ? _ac("", (size == 1 ? ssrc : strc)) : aPrefix + _ac("", midc)
+            let prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac(__colorFormat.tree.lines, endc) : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : aPrefix + _ac(__colorFormat.tree.lines, midc)
             let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
             let suffix
           
             if (isMap(aM[k]) || Array.isArray(aM[k])) {
-                suffix = _pt(aM[k], aWidth, aOptions, aPrefix + _ac("", (i < (size-1) ? line : " ") + " ".repeat(vsizeOrLvPlusSline)), true)
+                suffix = _pt(aM[k], aWidth, aOptions, aPrefix + _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(vsizeOrLvPlusSline)), true)
             }
           
             out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
@@ -1474,7 +1479,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 	rt.setWidth(new Packages.openaf.asciitable.render.WidthAnsiLongestWordTab(aWidth));
 	var o;
 	if (useAnsi)
-		o = String(rt.render(out, cM2));
+		o = String(rt.render(out, cM2, __colorFormat.table.lines));
 	else
 		o = String(rt.render(out));
 
@@ -1528,7 +1533,7 @@ function __initializeCon() {
 		return true;
 	}
 }
-
+ 
 var __ansiColorCache = {
 	RESET: "\x1b[m"
 }
@@ -1799,7 +1804,8 @@ var __colorFormat = {
 	askQuestion: "BOLD",
 	askChoose: "BOLD,CYAN",
 	askPos: "BLUE",
-	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" }
+	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" },
+	tree: { lines: "" }
 };
 const colorify = function(json, aOptions) {
 	if (typeof json != 'string') {
