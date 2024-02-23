@@ -8348,12 +8348,12 @@ const $sql = function(aObj, aSQL, aMethod) {
 	var _sql, chain = false
 	
 	if (isUnDef(aObj) || (isDef(aObj) && isUnDef(aSQL))) chain = true
-	if (!chain && isDef(aSQL)) _sql = af.fromSQL(aSQL)
 
 	// Determine method ot use
 	if (chain) aMethod = "h2"
 	if (isUnDef(aMethod)) {
 		if (__flags.SQL_QUERY_METHOD == "auto") {
+			_sql = af.fromSQL(aSQL)
 			if (isDef(_sql) && isArray(_sql.ast) && _sql.ast.length > 0) {
 				if (_sql.ast[0].groupby != null ||
 					aSQL.match(/FROM +_TMP(,|$| )/i) ||
@@ -8373,6 +8373,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 	}
 
 	if (aMethod != "h2") {
+		if (isUnDef(_sql)) _sql = af.fromSQL(aSQL)
 		var _r = af.fromSQL2NLinq(aSQL, _sql)
 		return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
 	} else {
