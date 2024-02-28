@@ -2168,3 +2168,64 @@ jobs:
 
     // Delete all __ args
     Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
+
+# ---------------
+- name : ojob ask
+  typeArgs:
+    noLog   : true
+    shortcut:
+      name  : ask
+      keyArg: __answers
+      args  :
+        question: __question
+        force   : __force
+  help : 
+    text: |
+      Asks for user input and stores the result into args if the args value is not yet defined.
+    expects:
+    - name: __question
+      desc: The question to ask.
+    - name: __answers
+      desc: "A map of answers to store into args. Each value should on the form of \"type.slonOptionsArray.siz\" (e.g. text, encrypt, password, char.['y'|'n'], option.['op1'|'op2'|'op3'].3)."
+    - name: __force
+      desc: Boolean flag to force asking for an args value even if not defined.
+  check:
+    in:
+      __question: isString.default(__)
+      __answers : isMap.default({})
+      __force   : toBoolean.isBoolean.default(false)
+  exec : |
+    if (isDef(args.__question)) {
+      args.__question = args.__question.replace(/\n/g, "")
+      if (!args.__question.endsWith(" ")) args.__question += " "
+    }
+
+    traverse(args.__answers, (aK, aV, aP, aO) => {
+      if (isString(aV)) {
+        if (args.__force || isUnDef($$(args).get(aP + "." + aK)) ) {
+          var parts = aV.split(".")
+          var options = _$(options, "options").isArray().default([])
+          if (isDef(parts[1]) && parts[1].startsWith("[") && parts[1].endsWith("]")) options = af.fromSLON(parts[1])
+          if (!isArray(options)) options = [ options ]
+
+          if (isString(parts[0])) {
+            if (isUnDef(args.__question)) args.__question = "args" + aP + "." + aK + " value: "
+            switch(parts[0].toLowerCase()) {
+            case "encrypt" :
+            case "password": $$(args).set(aP + "." + aK, askEncrypt(args.__question)); break
+            case "char"    : 
+              var _o = options.join("")
+              $$(args).set(aP + "." + aK, ask1(args.__question), _o)
+              break
+            case "option"  :
+            case "list"    : 
+              if (isArray(options)) {
+                $$(args).set(aP + "." + aK, options[ askChoose(args.__question, options, (isDef(parts[2]) ? Number(parts[2]) : __) )] ); break
+              }
+            case "text"    :
+            default        : $$(args).set(aP + "." + aK, ask(args.__question))
+            }
+          }
+        }
+      }
+    })
