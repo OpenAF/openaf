@@ -8223,6 +8223,23 @@ AF.prototype.fromSLON = function(aString) {
 
 /**
  * <odoc>
+ * <key>AF.fromJSSLON(aString) : Object</key>
+ * Tries to convert the provided aString into an object. The string might be JSON or SLON.
+ * </odoc>
+ */
+AF.prototype.fromJSSLON = function(aString) {
+	if (!isString(aString) || aString == "" || isNull(aString)) return ""
+
+	aString = aString.trim()
+	if (aString.startsWith("{")) {
+		return jsonParse(aString, __, __, true)
+	} else {
+		return af.fromSLON(aString)
+	}
+}
+
+/**
+ * <odoc>
  * <key>AF.fromNLinq(aString) : Map</key>
  * Converts a nLinq chained command line string representation into a suitable map to be used with $from.query.
  * </odoc>
