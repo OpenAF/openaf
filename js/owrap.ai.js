@@ -92,8 +92,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isArray(aConversation)) _r.conversation = aConversation
                     return _r
                 },
-                prompt: (aPrompt, aModel, aTemperature) => {
-                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature)
+                prompt: (aPrompt, aModel, aTemperature, aJsonFlag) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag)
                     if (isArray(__r.choices) && __r.choices.length > 0) {
                         if (__r.choices[0].finish_reason == "stop") {
                            return __r.choices[0].message.content
@@ -101,7 +101,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                      }
                      return __r
                 },
-                promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
+                promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, aJsonFlag) => {
                     aRole        = _$(aRole, "aRole").isString().default("user")
                     aDetailLevel = _$(aDetailLevel, "aDetailLevel").isString().default("low")
 
@@ -122,27 +122,30 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 { type: "image_url", image_url: { url: "data:image/jpeg;base64," + base64, detail: aDetailLevel } } 
                             ]
                         }
-                    ], aModel, aTemperature)
+                    ], aModel, aTemperature, aJsonFlag)
 
                     if (isArray(__r.choices) && __r.choices.length > 0) {
                         return __r.choices[0].message.content
                     }
                     return __r
                 },
-                rawPrompt: (aPrompt, aModel, aTemperature) => {
+                rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
+                    aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
+                    if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
                     return _r._request("/v1/chat/completions", merge({
                        model: aModel,
                        temperature: aTemperature,
-                       messages: msgs
+                       messages: msgs,
+                       response_format: (aJsonFlag ? { type: "json_object" } : __)
                     }, aOptions.params))   
                 },
                 addPrompt: (aRole, aPrompt) => {
@@ -223,14 +226,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isArray(aConversation)) _r.conversation = aConversation
                     return _r
                 },
-                prompt: (aPrompt, aModel, aTemperature) => {
-                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature)
+                prompt: (aPrompt, aModel, aTemperature, aJsonFlag) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag)
                     if (isMap(__r.message)) {
                         return __r.message.content
                      }
                      return __r
                 },
-                promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
+                promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, aJsonFlag) => {
                     aRole   = _$(aRole, "aRole").isString().default("user")
 
                     var base64 = ""
@@ -248,31 +251,34 @@ OpenWrap.ai.prototype.__gpttypes = {
                             content: aPrompt,
                             images: [ base64 ]
                         }
-                    ], aModel, aTemperature)
+                    ], aModel, aTemperature, aJsonFlag)
                     if (isString(__r.response)) return __r.response
                     if (isMap(__r.message) && isString(__r.message.content)) return __r.message.content.trim()
                     return __r
                 },
-                rawPrompt: (aPrompt, aModel, aTemperature) => {
+                rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
+                    aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
-                    return _r._request("/api/chat", {
-                       model: aModel,
-                       messages: msgs,
-                       options: {
-                        temperature: aTemperature,
-                       },
-                       stream: false
-                       //prompt: $from(msgs).equals("role", "user").select(r => r.content).join(";\n"),
-                       //system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
-                    })   
+                    var body = {
+                        model: aModel,
+                        messages: msgs,
+                        options: {
+                            temperature: aTemperature,
+                        },
+                        stream: false
+                        //prompt: $from(msgs).equals("role", "user").select(r => r.content).join(";\n"),
+                        //system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
+                    }
+                    if (aJsonFlag) body.format = "json"
+                    return _r._request("/api/chat", body)   
                 },
                 addPrompt: (aRole, aPrompt) => {
                     if (isUnDef(aPrompt)) {
@@ -344,12 +350,12 @@ OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.prompt(aPrompt, aRole, aModel, aTemperature) : String</key>
+ * <key>ow.ai.gpt.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag) : String</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature) {
-    return this.model.prompt(aPrompt, aRole, aModel, aTemperature)
+OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag) {
+    return this.model.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag)
 }
 
 /**
@@ -385,12 +391,12 @@ OpenWrap.ai.prototype.gpt.prototype.setConversation = function(aConversation) {
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.rawPrompt(aPrompt, aRole, aModel, aTemperature) : String</key>
+ * <key>ow.ai.gpt.rawPrompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag) : String</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature) {
-    return this.model.rawPrompt(aPrompt, aRole, aModel, aTemperature)
+OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag) {
+    return this.model.rawPrompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag)
 }
 
 /**
@@ -444,9 +450,10 @@ OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
-    this.setInstructions("json")
+    // Replaced by aJsonFlag in prompt
+    //this.setInstructions("json")
 
-    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    var out = this.model.prompt(aPrompt, aModel, aTemperature, true)
     return isString(out) ? jsonParse(out, __, __, true) : out 
 }
 

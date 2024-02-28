@@ -4361,9 +4361,10 @@ var $from = function(a) {
  *   $path(arr, "a[?contains(@, 'b') == `true`]")\
  * \
  * [OpenAF custom functions]: \
- *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end), template(a, 'template'), templateF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags'), amerge(x, y), to_slon(x), from_slon(x), to_json(x), from_json(x, str), to_yaml(x, isMultiDoc), from_yaml(x), trim(x), nvl(x, v)
+ *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_datef(x, format) from_datef(x, format), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end),\
+ *  template(a, 'template'), t(a, 'template'), templateF(x, 'template'), tF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags'), amerge(x, y), to_slon(x), from_slon(x), to_json(x), from_json(x, str), to_yaml(x, isMultiDoc), from_yaml(x), trim(x), nvl(x, v)
  * add(x, y), sub(x, y), mul(x, y), div(x, y), mod(x, y)\
- * split_sep(x, sepRE, encls)\
+ * split(x, sep), split_re(x, sepRE), split_sep(x, sepRE, encls), date_diff(d, unit, nullValue)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4432,6 +4433,14 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => { ow.loadTemplate(); ow.template.addConditionalHelpers(); ow.template.addFormatHelpers(); return $t(ar[1], ar[0]) },
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		},
+		t: {
+			_func: ar => $t(ar[1], ar[0]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		tF: {
+			_func: ar => { ow.loadTemplate(); ow.template.addConditionalHelpers(); ow.template.addFormatHelpers(); return $t(ar[1], ar[0]) },
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
 		to_isoDate: {
 			_func: ar => (new Date(ar[0])).toISOString(),
 			_signature: [ { types: [ jmespath.types.any ] } ]
@@ -4439,6 +4448,43 @@ const $path = function(aObj, aPath, customFunctions) {
 		to_date: {
 			_func: ar => (new Date(ar[0])),
 			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		to_datef: {
+			_func: ar => ow.loadFormat().toDate(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		from_datef: {
+			_func: ar => ow.loadFormat().fromDate(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		date_diff: {
+			_func: ar => {
+				ow.loadFormat()
+				let a = ar[0], p = ar[1], isN = ar[2]
+
+				if (isDef(a) && a != null) {
+					var res = "seconds"
+					if (isDef(p) && p != null && isString(p)) res = p
+					try {
+							switch(res) {
+							case "minutes": return ow.format.dateDiff.inMinutes(new Date(a))
+							case "hours"  : return ow.format.dateDiff.inHours(new Date(a))
+							case "days"   : return ow.format.dateDiff.inDays(new Date(a))
+							case "months" : return ow.format.dateDiff.inMonths(new Date(a))
+							case "weeks"  : return ow.format.dateDiff.inWeeks(new Date(a))
+							case "years"  : return ow.format.dateDiff.inYears(new Date(a))
+							case "seconds":
+							default:
+									return ow.format.dateDiff.inSeconds(new Date(a))
+							}
+					} catch(e) {
+							return (isString(isN) ? isN : null)
+					}
+				} else {
+					return (isString(isN) ? isN : null)
+				}
+			},
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
 		},
 		a2m: {
 			_func: ar => $a2m(ar[0], ar[1]),
@@ -4494,6 +4540,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		},
 		split: {
 			_func: ar => ar[0].split(ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		split_re: {
+			_func: ar => ar[0].split(new RegExp(ar[1])),
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		},
 		index_of: {
@@ -5515,6 +5565,7 @@ const require = function(aScript, force) {
 		}
 		
 		if (isUnDef(o)) throw "Couldn't load '" + aScript + "'"
+		o = ";" + o
 		__codeVerify(o, aScript)
 		if (!__flags.OAF_CLOSED) o = __loadPreParser(o)
 		f = new Function('require', 'exports', 'module', o);
@@ -8348,12 +8399,12 @@ const $sql = function(aObj, aSQL, aMethod) {
 	var _sql, chain = false
 	
 	if (isUnDef(aObj) || (isDef(aObj) && isUnDef(aSQL))) chain = true
-	if (!chain && isDef(aSQL)) _sql = af.fromSQL(aSQL)
 
 	// Determine method ot use
 	if (chain) aMethod = "h2"
 	if (isUnDef(aMethod)) {
 		if (__flags.SQL_QUERY_METHOD == "auto") {
+			_sql = af.fromSQL(aSQL)
 			if (isDef(_sql) && isArray(_sql.ast) && _sql.ast.length > 0) {
 				if (_sql.ast[0].groupby != null ||
 					aSQL.match(/FROM +_TMP(,|$| )/i) ||
@@ -8373,6 +8424,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 	}
 
 	if (aMethod != "h2") {
+		if (isUnDef(_sql)) _sql = af.fromSQL(aSQL)
 		var _r = af.fromSQL2NLinq(aSQL, _sql)
 		return $from(isDef(_r.from) ? $$(aObj).get(_r.from) : aObj).query(_r)
 	} else {
