@@ -924,6 +924,35 @@ OpenWrap.format.prototype.string = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.format.string.tabExpand(aStr, aTabSize) : String</key>
+	 * Given an input aStr and, optionally, aTabSize will expand the tabs in the string to the provided aTabSize (
+	 * similar to the unix expand command). 
+	 * If aTabSize is not provided it will default to 8.
+	 * </odoc>
+	 */
+	tabExpand: (aStr, aTabSize) => {
+		_$(aStr, "aStr").isString().$_()
+		aTabSize = _$(aTabSize, "aTabSize").isNumber().default(8)
+
+		return aStr.split('\n').map(line => {
+			let endL = ''
+			let c = 0
+			for (let i = 0; i < line.length; i++) {
+				if (line[i] === '\t') {
+					let add = aTabSize - (c % aTabSize)
+					endL += ' '.repeat(add)
+					c += add
+				} else {
+					endL += line[i]
+					c++
+				}
+			}
+			return endL
+		}).join('\n')
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.format.string.progress(aNumericValue, aMax, aMin, aSize, aIndicator, aSpace) : String</key>
 	 * Outputs an in-line progress bar given aNumericValue, aMax value, aMin value, the aSize of the bar and the aIndicator
 	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to 5, aIndicator defaults to "#" 
