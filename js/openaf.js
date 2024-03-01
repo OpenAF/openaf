@@ -2739,7 +2739,7 @@ const splitBySeparator = function(aString, aSep) {
  * </odoc>
  */
 const splitBySepWithEnc = function(text, separator, enclosures, includeEnclosures) {
-    _$(text, "text").isString().$_
+    _$(text, "text").isString().$_()
     separator  = _$(separator, "separator").isString().default("\\s+")
     enclosures = _$(enclosures, "enclosures").isArray().default([])
     includeEnclosures = _$(includeEnclosures, "includeEnclosures").isBoolean().default(false)
