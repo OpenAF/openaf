@@ -4365,6 +4365,7 @@ var $from = function(a) {
  *  template(a, 'template'), t(a, 'template'), templateF(x, 'template'), tF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags'), amerge(x, y), to_slon(x), from_slon(x), to_json(x), from_json(x, str), to_yaml(x, isMultiDoc), from_yaml(x), trim(x), nvl(x, v)
  * add(x, y), sub(x, y), mul(x, y), div(x, y), mod(x, y)\
  * split(x, sep), split_re(x, sepRE), split_sep(x, sepRE, encls), date_diff(d, unit, nullValue)\
+ * insert(obj, 'field', value), now(negativeTimeDiff)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4416,6 +4417,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		delete: {
 			_func: ar => { delete ar[0][ar[1]]; return ar[0] },
 			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
+		},
+		insert: {
+			_func: ar => { ar[0][ar[1]] = ar[2]; return ar[0] },
+			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
 		},
 		format: {
 			_func: ar => $ft(ar[1], ar[0]),
@@ -4629,6 +4634,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		split_sep: {
 			_func: ar => splitBySepWithEnc(ar[0], ar[1], ar[2], false),
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.array ] } ]
+		},
+		now: {
+			_func: ar => now() - ar[0],
+			_signature: [ { types: [ jmespath.types.any ] } ]
 		}
 	}, customFunctions)
 
