@@ -2708,6 +2708,7 @@ OpenWrap.server.prototype.httpd = {
 			aMapOfRoutes["/js/" + lib] = function() { return parent.customLibs[lib](aHTTPd) }
 		})
 		aMapOfRoutes["/js/jquery.js"] = function() { return ow.server.httpd.replyJQuery(aHTTPd); };
+		aMapOfRoutes["/js/chart.js"] = function() { return ow.server.httpd.replyChart(aHTTPd) }
 		aMapOfRoutes["/js/handlebars.js"] = function() { return ow.server.httpd.replyHandlebars(aHTTPd); };
 		aMapOfRoutes["/js/stream.js"] = function() { return ow.server.httpd.replyStream(aHTTPd); };
 		aMapOfRoutes["/js/jlinq.js"] = function() { return ow.server.httpd.replyJLinq(aHTTPd); };
@@ -2760,6 +2761,10 @@ OpenWrap.server.prototype.httpd = {
 	
 	replyJQuery: function(aHTTPd) {
 		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/jquery.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public);
+	},
+
+	replyChart: function(aHTTPd) {
+		return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/chart.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public)
 	},
 	
 	replyHandlebars: function(aHTTPd) {
