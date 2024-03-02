@@ -11761,7 +11761,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "jsmap":
 		case "html":
 			var _res = ow.loadTemplate().html.parseMap(res, true)
-			return fnP("<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
+			return fnP("<html><meta charset=\"utf-8\"><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
 		case "text":
 			return fnP(String(res))
 		case "md":
