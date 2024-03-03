@@ -4366,6 +4366,7 @@ var $from = function(a) {
  * add(x, y), sub(x, y), mul(x, y), div(x, y), mod(x, y)\
  * split(x, sep), split_re(x, sepRE), split_sep(x, sepRE, encls), date_diff(d, unit, nullValue)\
  * insert(obj, 'field', value), now(negativeTimeDiff)\
+ * get(nameOrPath), set(obj, path), setp(obj, path, name)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4375,6 +4376,7 @@ var $from = function(a) {
 const $path = function(aObj, aPath, customFunctions) {
 	loadCompiledLib("jmespath_js");
 	
+	let _locals = {}
 	aPath = _$(aPath, "aPath").isString().default("@")
 	customFunctions = _$(customFunctions, "customFunctions").isMap().default({})
 	customFunctions = merge({
@@ -4638,6 +4640,18 @@ const $path = function(aObj, aPath, customFunctions) {
 		now: {
 			_func: ar => now() - ar[0],
 			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		get: {
+			_func: ar => $$(_locals).get(ar[0]) || $$(aObj).get(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		set: {
+			_func: ar => { $$(_locals).set(ar[1], ar[0]); return ar[0] },
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		setp: {
+			_func: ar => { $$(_locals).set(ar[2], $$(ar[0]).get(ar[1])); return ar[0] },
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
