@@ -586,13 +586,15 @@ const tprintErr = function(aTemplateString, someData) {
  * (the axis min value). The aFormatString should be composed of "&lt;dataset&gt; &lt;units&gt; [&lt;function[:color][:legend]&gt; ...]":\
  * \
  *    The dataset should be an unique name (data can be cleaned with ow.format.string.dataClean);\
- *    The units can be: int, dec1, dec2, dec3, dec, bytes and si;\
+ *    The units can be: int, dec1, dec2, dec3, dec4, dec, bytes and si;\
  *    Each function should return the corresponding current value (optionally it can be a number directly);\
  *    Optionally each color should use any combinations similar to ansiColor (check 'help ansiColor');\
  *    Optionally each legend, if used, will be included in a bottom legend;\
  * \
  *    If function "-min" it will overwrite the aMin\
  *    If function "-max" it will overwrite the aMax\
+ *    If function "-hsize" it will overwrite the hSize\
+ *    If function "-vsize" it will overwrite the vSize\
  * \
  * </odoc>
  */
@@ -601,7 +603,7 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 	
     var _d = as.trim().split(/ +/)
     var name = _$(_d.shift(), "name").isString().$_()
-    var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si", "clean"]).$_()
+    var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec4", "dec", "bytes", "si", "clean"]).$_()
 
     aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
@@ -641,6 +643,8 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 		switch(_ar[0]) {
 		case "-max": aMax = Number(_ar[1]); break
 		case "-min": aMin = Number(_ar[1]); break
+		case "-hsize": hSize = Number(_ar[1]); break
+		case "-vsize": vSize = Number(_ar[1]); break
 		}
 	})
 
@@ -664,6 +668,9 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
     case "dec3":
         options.format = x => Number(x).toFixed(3)
         break
+	case "dec4":
+		options.format = x => Number(x).toFixed(4)
+		break
     case "bytes":
         options.format = x => ow.format.toBytesAbbreviation(x)
         break
