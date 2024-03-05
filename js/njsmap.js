@@ -1,4 +1,4 @@
-// Copyright 2023 Nuno Aguiar
+// Copyright 2024 Nuno Aguiar
 // Requires openafsigil.js
 // CSS: nJSMap.css
 
@@ -13,7 +13,13 @@ function nJSMap(aValue, aType) {
     var _render = (aValue) => {
         if (!($$(aValue).isObject())) {
             if ($$(aValue).isNumber()) return "<span style=\"color: midnightblue\">" + aValue + "</span>";
-            if ($$(aValue).isString()) return "<span style=\"color: DarkSlateGray\">" + aValue + "</span>";
+            if ($$(aValue).isString()) {
+                // If url
+                if (aValue.startsWith("http")) 
+                    return "<span style=\"color: DarkSlateGray\"><a href=\"" + aValue + "\" target=\"_blank\">" + aValue + "</a></span>"
+                else
+                    return "<span style=\"color: DarkSlateGray\">" + aValue + "</span>"
+            }
             if (typeof aValue == "boolean") return "<span style=\"color: steelblue\">" + aValue + "</span>";
             return aValue;
         } else {
