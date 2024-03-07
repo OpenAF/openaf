@@ -121,22 +121,21 @@ const $$ = function(aObj) {
             aPath = aPath.replace(/\[(\w+)\]/g, '.$1');
             aPath = aPath.replace(/^\./, '');
 
-            var a = _r._ss(aPath).filter(r => isNumber(r) || r.length > 0);
+            var a = _r._ss(aPath).filter(r => ($$(r).isNumber() || r.length > 0))
             var prev, prevK;
             for (var i = 0, n = a.length; i < n; ++i) {
                 var k = a[i];
                 prev = aObj;
                 prevK = k;
                 if (k in aObj) {
-                    aObj = aObj[k];
+                    aObj = aObj[k]
                 } else {
-                    if (isTNumber(k)) {
+                    if (i + 1 < n - 1 && typeof a[i+1] == 'number') {
                         aObj[k] = []
-                        aObj = aObj[k]
                     } else {
                         aObj[k] = {}
-                        aObj = aObj[k]
                     }
+                    aObj = aObj[k]
                 }
             }
             prev[prevK] = aValue;
