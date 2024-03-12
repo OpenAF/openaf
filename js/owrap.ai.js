@@ -451,8 +451,7 @@ OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
-    // Replaced by aJsonFlag in prompt
-    //this.setInstructions("json")
+    this.setInstructions("json")
 
     var out = this.model.prompt(aPrompt, aModel, aTemperature, true)
     return isString(out) ? jsonParse(out, __, __, true) : out 
@@ -483,7 +482,7 @@ OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
     } else {
         if (isString(aType)) {
             switch(aType.toLowerCase()) {
-            case "json"   : this.addSystemPrompt("You only output answers as a JSON map string"); break;
+            case "json"   : this.addSystemPrompt("Respond in JSON."); break;
             case "boolean": this.addSystemPrompt("Acting as an assistant you can only answer with the most correct of only three possible answers: 'true', 'false', 'undefined'."); break;
             case "sql"    : this.addSystemPrompt("Acting as a powerfull SQL assistant you can only output an answer as a single SQL query."); break;
             case "js"     : this.addSystemPrompt("Acting as a powerfull Javascript assistant you can only output an answer as a single Javascript function."); break;
