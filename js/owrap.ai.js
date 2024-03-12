@@ -77,6 +77,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+            aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.openai.com")
 
             ow.loadObj()
             var _key = aOptions.key
@@ -193,8 +194,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
 
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__m).get2Stream("https://api.openai.com/" + aURI))
-                    case "POST": return _fnh($rest(__m).post2Stream("https://api.openai.com/" + aURI, aData))
+                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + "/" + aURI))
+                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + "/" + aURI, aData))
                     }
                 }
             }
