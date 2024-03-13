@@ -234,7 +234,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
   	DOH_PROVIDER                : "cloudflare",
-	PRINT_BUFFER_STREAM         : 8192
+	PRINT_BUFFER_STREAM         : 8192,
+	JAVA_CERT_BC_PROVIDER       : false
 })
 
 // -------

@@ -1398,6 +1398,11 @@ OpenWrap.java.prototype.cipher.prototype.decodeKey = function(aString, isPrivate
  * </odoc>
  */
 OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType) {
+    // Java 21+ does not support sun.security.x509.X509CertImpl
+    if (__flags.JAVA_CERT_BC_PROVIDER || String(java.lang.System.getProperty("java.version")).startsWith("21.")) {
+        return this.genCertBC(aDn, aPubKey, aPrivKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType)
+    }
+
     aDn = _$(aDn, "dn").regexp(/^cn\=/i).isString().default("cn=openaf");
     aSigAlgName = _$(aSigAlgName, "signature alg name").isString().default("SHA256withRSA");
     aKeyStoreType = _$(aKeyStoreType, "key store type").isString().default(java.security.KeyStore.getDefaultType());
@@ -1445,6 +1450,50 @@ OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivK
 
     return certificate;
 };
+
+// Equivalent to genCert but using BouncyCastle
+OpenWrap.java.prototype.cipher.prototype.genCertBC = function(aDn, aPubKey, aPrivKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType) {
+    aDn = _$(aDn, "dn").regexp(/^cn\=/i).isString().default("cn=openaf")
+    aSigAlgName = _$(aSigAlgName, "signature alg name").isString().default("SHA256withRSA")
+    aKeyStoreType = _$(aKeyStoreType, "key store type").isString().default(java.security.KeyStore.getDefaultType())
+    _$(aPubKey, "public key").$_()
+    _$(aPrivKey, "private key").$_()
+    aValidity = _$(aValidity, "validity").isDate().default(new Date(now() + (1000 * 60 * 60 * 24 * 365)))
+
+    if (af.fromJavaArray(java.security.Security.getProviders()).map(r => String(r)).filter(r => r.startsWith("BC ")).length == 0) {
+        if (isDef(getOPackPath("BouncyCastle"))) {
+            loadExternalJars(getOPackPath("BouncyCastle"))
+        
+            java.security.Security.addProvider(new Packages.org.bouncycastle.jce.provider.BouncyCastleProvider())
+        } else {
+            throw "The BouncyCastle package is required for ow.java.cipher.genCertBC (specially in Java 21)"
+        }
+    }
+
+    var dnName = new Packages.org.bouncycastle.asn1.x500.X500Name(aDn)
+    var certSerialNum = new java.math.BigInteger(String(now()))
+
+    var certBuilder = new Packages.org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder(dnName, certSerialNum, new java.util.Date(), aValidity, dnName, aPubKey)
+    var signer = new Packages.org.bouncycastle.operator.jcajce.JcaContentSignerBuilder(aSigAlgName).setProvider(Packages.org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME).build(aPrivKey)
+    var certHolder = certBuilder.build(signer)
+
+    if (isDef(aKeyStore)) { 
+        aPassword = _$(aPassword).isString().default("changeit")
+
+        var ks = java.security.KeyStore.getInstance(aKeyStoreType)
+        ks.load(null, null)
+        ks.setKeyEntry("main", aPrivKey, (new java.lang.String(aPassword)).toCharArray(), [ certificate ])
+        var fos = io.writeFileStream(aKeyStore)
+        ks.store(fos, (new java.lang.String(aPassword)).toCharArray())
+        fos.close()
+
+        //var protParam = new java.security.KeyStore.PasswordProtection((new String(aPassword)).toCharArray())
+        //var privKeyEntry = new java.security.KeyStore.PrivateKeyEntry(aPrivKey, [ new Packages.org.bouncycastle.cert.jcajce.JcaX509CertificateConverter().getCertificate(certHolder) ])
+        //aKeyStore.setEntry("main", privKeyEntry, protParam)
+    }
+
+    return certHolder
+}
 
 /**
  * <odoc>
