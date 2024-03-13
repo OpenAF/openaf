@@ -142,6 +142,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
                     if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
+                    _r.conversation = aPrompt
                     return _r._request("/v1/chat/completions", merge({
                        model: aModel,
                        temperature: aTemperature,
@@ -279,6 +280,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         //system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
                     }
                     if (aJsonFlag) body.format = "json"
+                    _r.conversation = aPrompt
                     return _r._request("/api/chat", body)   
                 },
                 addPrompt: (aRole, aPrompt) => {
