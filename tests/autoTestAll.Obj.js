@@ -369,4 +369,29 @@
         rs.close()
         db.close()
     }
+
+    exports.testFilter = function() {
+        var data = [
+            { n: "one", w: 1 },
+            { n: "two", w: 99 }
+        ]
+
+        var r = ow.obj.filter(data, {
+            where: [ { cond: "less", args: [ "w", 2 ] } ],
+            selector: { func: "count" } 
+        })
+        ow.test.assert(r.count, 1, "Problem with ow.obj.filter with map selector")
+
+        r = ow.obj.filter(data, {
+            path: "[?w < '99'].{ num: n }"
+        })
+        ow.test.assert(r[0].num, "one", "Problem with ow.obj.filter with JSONPath selector")
+    }
+
+    exports.testFlatMap = function() {
+        var data = __flags
+
+        ow.test.assert(isDef(ow.obj.flatMap(data)["IO.bufferSize"]), true, "Problem with ow.obj.flatMap")
+        ow.test.assert(isDef(ow.obj.flatMap(data, "|")["IO|bufferSize"]), true, "Problem with ow.obj.flatMap with separator")
+    }
 })();
