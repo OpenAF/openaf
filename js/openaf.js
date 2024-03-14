@@ -612,7 +612,7 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 	vSize   = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
 	options = _$(options, "options").isMap().default({})
 
-    if (type == "clean") {
+    if (type == "clean" && name != "__") {
         ow.format.string.dataClean(name)
         return
     }
@@ -684,7 +684,11 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 	var useLegend = useColor & titles.reduce((pV, cV, cI, aR) => { if (cV == "") return 0; return pV + cV.length }, 0 ) > 0
 	try {
 		//io.writeFileString("/tmp/test", name + "; " + stringify(data, __, true) + "; " + hSize + "; " + vSize + "; " + stringify(options, __, true) + "\n", __, true)
-    	_out = ow.format.string.dataLineChart(name, data, hSize, useLegend ? vSize -2 : vSize, options)
+    	if (name != "__") {
+			_out = ow.format.string.dataLineChart(name, data, hSize, useLegend ? vSize -2 : vSize, options)
+		} else {
+			_out = ow.format.string.lineChart(data, merge({ width: hSize, height: useLegend ? vSize -2 : vSize }, options))
+		}
 	} catch(e) {
 		//io.writeFileString("/tmp/test", "ERROR: " + name + " " + stringify(data,__,"") + " " + stringify(options,__,"") + " | " + e + "\n", __, true)
 		throw e

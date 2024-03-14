@@ -80,6 +80,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $default         -- to be used with $switch for each case\
  *   - $ptable          -- returns an ansi ascii printTable representation of an object\
  *   - $ptree           -- returns an ansi ascii printTree representation of an object\
+ *   - $pchart          -- returns an ansi ascii line chart with an object and a format string: "unit path:color:legend... [-min:0] [-max:100] [-hsize:40] [-vsize:10]"\
  *   - $output          -- returns an $output representation of an object (aObj as 1st arg and options in slon as 2nd arg)\
  *   - $cjson           -- returns an ansi ascii colority representation fo an object\
  *   - $cslon           -- returns an ansi ascii colored SLON representation of an object\
@@ -138,6 +139,37 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		toJSON: stringify,
 		ptree: r => printTree(r),
 		pmap: r => printMap(r),
+		pchart: (r, f) => {
+			let parts = splitBySepWithEnc(f, " ", [["\"","\""],["'","'"]])
+			let nparts = [], fns = []
+			if (parts.length > 1) {
+				for(let i = 0; i < parts.length; i++) {
+					if (i == 0) {
+						nparts.push(parts[i])
+					} else {
+						let _n = splitBySepWithEnc(parts[i], ":", [["\"","\""],["'","'"]]).map((_p, j) => {
+							if (j == 0) {
+								if (!_p.startsWith("-")) {
+									fns.push("_oaftemplate_fn_" + i)
+									global["_oaftemplate_fn_" + i] = () => $path(r, _p)
+									return "_oaftemplate_fn_" + i
+								} else {
+									return _p
+								}
+							} else {
+								return _p
+							}
+						}).join(":")
+						nparts.push(_n)
+					}
+				}
+	
+				let _out = printChart("__ " + nparts.join(" "))
+				fns.forEach(f => delete global[f])
+				return _out
+			}
+			return ""
+		},
 		ptable: printTable,
 		cjson: colorify,
 		cslon: ow.loadFormat().toCSLON,
