@@ -77,6 +77,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+            aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.openai.com")
 
             ow.loadObj()
             var _key = aOptions.key
@@ -141,6 +142,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
                     if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
+                    _r.conversation = aPrompt
                     return _r._request("/v1/chat/completions", merge({
                        model: aModel,
                        temperature: aTemperature,
@@ -193,8 +195,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
 
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__m).get2Stream("https://api.openai.com/" + aURI))
-                    case "POST": return _fnh($rest(__m).post2Stream("https://api.openai.com/" + aURI, aData))
+                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + "/" + aURI))
+                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + "/" + aURI, aData))
                     }
                 }
             }
@@ -278,6 +280,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         //system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
                     }
                     if (aJsonFlag) body.format = "json"
+                    _r.conversation = aPrompt
                     return _r._request("/api/chat", body)   
                 },
                 addPrompt: (aRole, aPrompt) => {
@@ -450,8 +453,7 @@ OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
-    // Replaced by aJsonFlag in prompt
-    //this.setInstructions("json")
+    this.setInstructions("json")
 
     var out = this.model.prompt(aPrompt, aModel, aTemperature, true)
     return isString(out) ? jsonParse(out, __, __, true) : out 
@@ -482,7 +484,7 @@ OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
     } else {
         if (isString(aType)) {
             switch(aType.toLowerCase()) {
-            case "json"   : this.addSystemPrompt("You only output answers as a JSON map string"); break;
+            case "json"   : this.addSystemPrompt("Respond in JSON."); break;
             case "boolean": this.addSystemPrompt("Acting as an assistant you can only answer with the most correct of only three possible answers: 'true', 'false', 'undefined'."); break;
             case "sql"    : this.addSystemPrompt("Acting as a powerfull SQL assistant you can only output an answer as a single SQL query."); break;
             case "js"     : this.addSystemPrompt("Acting as a powerfull Javascript assistant you can only output an answer as a single Javascript function."); break;
