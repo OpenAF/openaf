@@ -702,7 +702,7 @@ OpenWrap.format.prototype.string = {
 	 */
 	dataClean: (aName) => {
 		aName = _$(aName, "aName").isString().default(__)
-		if ($ch().list().indexOf("__oaf::chart") >= 0) return
+		if ($ch().list().indexOf("__oaf::chart") < 0) return
 		if (isDef(aName)) {
 			$ch("__oaf::chart").unset({ name: aName })
 		} else {
@@ -1166,6 +1166,8 @@ OpenWrap.format.prototype.string = {
 	grid: function(aElems, aX, aY, aPattern, shouldReturn) {
 		plugin("Console")
 		var _con_ = new Console()
+		_$(aElems, "aElems").isArray().$_()
+
 		aY = Number(_$(aY, "width").isNumber().default(_con_.getConsoleReader().getTerminal().getWidth()))
 		aX = Number(_$(aX, "height").isNumber().default(Math.round(_con_.getConsoleReader().getTerminal().getHeight() / aElems.length - 1)))
 	
@@ -1176,12 +1178,12 @@ OpenWrap.format.prototype.string = {
 
 			line.forEach((col, icol) => {
 				if (isDef(col) && ignore.indexOf("Y:" + c + "X:" + l) < 0) {
-					if (isUnDef(col)) col = ""
+					if (isUnDef(col) || isNull(col)) col = ""
 					if (!isMap(col)) col = { obj: col }
 	
 					if (isUnDef(col.type)) {
 						if (isMap(col.obj) || isArray(col.obj)) 
-							col.type = "map"
+							col.type = "tree"
 						else
 							col.type = "human"
 					}
@@ -1199,16 +1201,18 @@ OpenWrap.format.prototype.string = {
 					case "map"  : p = printMap(col.obj, cs-1, "utf", true); break
 					case "tree" : p = printTreeOrS(col.obj, cs-1); break
 					case "table": p = printTable(col.obj, cs-1, __, true, "utf"); break
-					case "chart": p = printChart(col.obj, cs-1, (aX * yspan)-1); break;
-					case "area" : p = ow.format.string.chart(col.title, col.obj, cs-1, (aX * yspan)-1); break;
-					case "bar"  : p = printBars(col.obj, cs-1, col.max, col.min, col.indicator ? col.indicator : "━", col.space); break;
+					case "chart": p = printChart(col.obj, cs-1, (aX * yspan)-1); break
+					case "area" : p = ow.format.string.chart(col.title, col.obj, cs-1, (aX * yspan)-1); break
+					case "bar"  : p = printBars(col.obj, cs-1, col.max, col.min, col.indicator ? col.indicator : "━", col.space); break
+					case "md"   : p = ow.format.withMD(col.obj); break
+					case "text" : p = String(col.obj); break
 					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)); break
 					default: p = String(col.obj)
 					}
 	
 					p = p.split(/\r?\n/).map(r => r.substring(0, cs-1 + (r.length - visibleLength(r)) ))
 
-					if (isDef(col.title)) {
+					if (isString(col.title)) {
 						p.unshift( ansiColor("RESET,BOLD", "> " + col.title + " " + repeat(cs - 4 - col.title.length, "─")) )
 					}
 					
