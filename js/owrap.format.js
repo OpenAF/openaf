@@ -1,5 +1,5 @@
 // OpenWrap v2
-// Copyright 2023 Nuno Aguiar
+// Copyright 2024 Nuno Aguiar
 // Format
 // (parts from assemble.io)
  
@@ -1127,7 +1127,7 @@ OpenWrap.format.prototype.string = {
 				c++; 
 				if ( (x + c) < numberOfLines) {
 					//var rm = r.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "");
-					var rml = visibleLength(r)
+					var rml = ansiLength(r)
 		
 					orig[x + c] = orig[x + c].substring(0, y + extra[x + c]) + 
 						          r + 
@@ -1210,10 +1210,10 @@ OpenWrap.format.prototype.string = {
 					default: p = String(col.obj)
 					}
 	
-					p = p.split(/\r?\n/).map(r => r.substring(0, cs-1 + (r.length - visibleLength(r)) ))
+					p = p.split(/\r?\n/).map(r => r.substring(0, cs-1 + (r.length - ansiLength(r)) ))
 
 					if (isString(col.title)) {
-						p.unshift( ansiColor("RESET,BOLD", "> " + col.title + " " + repeat(cs - 4 - col.title.length, "─")) )
+						p.unshift( ansiColor("RESET,BOLD", "> " + col.title + " " + repeat(cs - 4 - ansiLength(col.title), "─")) )
 					}
 					
 					var pp = p, po = []
