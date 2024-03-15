@@ -967,17 +967,17 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator, aSpace, aHead) {
-		if (isUnDef(aIndicator)) aIndicator = "#";
-		if (isUnDef(aSpace))     aSpace = " ";
-		if (isUnDef(aSize))      aSize = 5;
-		if (isUnDef(aMax))       aMax = aPos;
-		if (isUnDef(aMin))       aMin = 0;
+		if (isUnDef(aIndicator)) aIndicator = "━"
+		if (isUnDef(aSpace))     aSpace = "─"
+		if (isUnDef(aSize))      aSize = 5
+		if (isUnDef(aMax))       aMax = aPos
+		if (isUnDef(aMin))       aMin = 0
 	
-		var aScale = Math.abs(aMin) + Math.abs(aMax);
-		var aPos = (aOrigPos > aMax) ? aMax : aOrigPos;
-		aPos = (aOrigPos < aMin) ? aMin : aPos;
+		var aScale = Math.abs(aMin) + Math.abs(aMax)
+		var aPos = (aOrigPos > aMax) ? aMax : aOrigPos
+		aPos = (aOrigPos < aMin) ? aMin : aPos
 
-		var res, rpos = Math.round(aPos * aSize / aScale);
+		var res, rpos = Math.round(aPos * aSize / aScale)
 		if (isDef(aHead) && isString(aHead)) {
 		  res = 
 				( (aMin < 0) ?
@@ -989,7 +989,7 @@ OpenWrap.format.prototype.string = {
 				repeat((rpos - aHead.length) > 0 ? (rpos - aHead.length) : 0, aIndicator) + 
 				((rpos - aHead.length) > 0 ? aHead : "") +
 				repeat(aSize - (rpos > 0 ? rpos : 0), aSpace) 
-				: "");
+				: "")
 		} else {
 		  res = 
 				( (aMin < 0) ?
@@ -1000,10 +1000,10 @@ OpenWrap.format.prototype.string = {
 				repeat(((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aIndicator) + 
 				repeat(aSize - ((Math.round(aPos * aSize / aScale)) > 0 ? (Math.round(aPos * aSize / aScale)) : 0), aSpace)
 				: ""
-				);
+				)
 		}
 	
-		return res;
+		return res
 	},
 	/**
 	 * <odoc>
