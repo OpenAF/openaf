@@ -140,7 +140,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		toJSON: stringify,
 		ptree: r => printTree(r),
 		pmap: r => printMap(r),
-		pbar: (v, m, min, size, indicator, space) => ow.format.string.progress(v, m, min, size, indicator, space),
+		pbar: (v, m, min, size, indicator, space) => ow.format.string.progress(v, isMap(m) ? __ : m, isMap(min) ? __ : min, isMap(size) ? __ : size, isMap(indicator) ? __ : indicator, isMap(space) ? __ : space),
 		pchart: (r, f) => {
 			let parts = splitBySepWithEnc(f, " ", [["\"","\""],["'","'"]])
 			let nparts = [], fns = []
