@@ -955,8 +955,10 @@ OpenWrap.format.prototype.string = {
 	 * <odoc>
 	 * <key>ow.format.string.progress(aNumericValue, aMax, aMin, aSize, aIndicator, aSpace) : String</key>
 	 * Outputs an in-line progress bar given aNumericValue, aMax value, aMin value, the aSize of the bar and the aIndicator
-	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to 5, aIndicator defaults to "#" 
-	 * and aSpace defaults to " ". Example:\
+	 * to use. If not provided, aMax defaults to aValue, aMin defaults to 0, aSize defaults to the current screen width (or 5 if 
+	 * if can be determined), aIndicator defaults to "#" 
+	 * and aSpace defaults to " ". If aSize is a negative value and it's possible to determine the current screen width it will
+	 * subtract to the screen width. Example:\
 	 * \
 	 * loadLodash(); ow.loadFormat();\
 	 * var arr = [-30, -25, -10, 0, 3, 5], max = _.max(arr), min = _.min(arr);\
@@ -967,10 +969,10 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	progress: function(aOrigPos, aMax, aMin, aSize, aIndicator, aSpace, aHead) {
-		if (isUnDef(aIndicator)) aIndicator = "━"
-		if (isUnDef(aSpace))     aSpace = "─"
-		if (isUnDef(aSize))      aSize = 5
-		if (isUnDef(aMax))       aMax = aPos
+		if (isUnDef(aIndicator)) aIndicator = ansiColor("BOLD", '━')
+		if (isUnDef(aSpace))     aSpace = ansiColor("FAINT", '─')
+		if (isUnDef(aSize))      aSize = (__conStatus ? __con.getTerminal().getWidth() : 5); else aSize = (aSize < 0 && __conStatus ? __con.getTerminal().getWidth() + aSize : aSize )
+		if (isUnDef(aMax))       aMax = aOrigPos
 		if (isUnDef(aMin))       aMin = 0
 	
 		var aScale = Math.abs(aMin) + Math.abs(aMax)
