@@ -80,6 +80,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testDBRS2ObjPG
 
+   - name: Obj::Filter
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFilter
+
+   - name: Obj::Flat map
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFlatMap
+
 todo:
 # Obj tests
 # ------------
@@ -98,3 +108,5 @@ todo:
 - Obj::Generate One of Fn
 - Obj::Sign object
 - Obj::DB ResultSet to object
+- Obj::Filter
+- Obj::Flat map
