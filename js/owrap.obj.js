@@ -1765,6 +1765,10 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	if (isDef(options.readTimeout)) clt = clt.readTimeout(options.readTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 	if (isDef(options.writeTimeout)) clt = clt.readTimeout(options.writeTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 
+	if (isDef(global.__httpSSLSocketFactory)) {
+		clt = clt.sslSocketFactory(global.__httpSSLSocketFactory, global.__httpX509TrustManager)
+	}
+
 	this.client = clt.build()
 
 	if (isDef(aURL)) {
