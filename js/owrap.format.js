@@ -1206,8 +1206,8 @@ OpenWrap.format.prototype.string = {
 					case "chart": p = printChart(col.obj, cs-1, (aX * yspan)-1); break
 					case "area" : p = ow.format.string.chart(col.title, col.obj, cs-1, (aX * yspan)-1); break
 					case "bar"  : p = printBars(col.obj, cs-1, col.max, col.min, col.indicator ? col.indicator : "━", col.space ? col.space : " "); break
-					case "md"   : p = ow.format.withMD(col.obj); break
-					case "text" : p = String(col.obj); break
+					case "md"   : p = ow.format.string.wordWrap(ow.format.withMD(col.obj), cs-1,ansiColor("RESET","\n")); break
+					case "text" : p = ow.format.string.wordWrap(String(col.obj), cs-1,ansiColor("RESET","\n")); break
 					case "func" : p = String(newFn("mx", "my", col.obj)((aX * yspan)-1, cs-1)); break
 					default: p = String(col.obj)
 					}
