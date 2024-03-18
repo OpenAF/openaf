@@ -82,6 +82,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $ptree           -- returns an ansi ascii printTree representation of an object\
  *   - $pchart          -- returns an ansi ascii line chart with an object and a format string: "unit path:color:legend... [-min:0] [-max:100] [-hsize:40] [-vsize:10]"\
  *   - $pbar            -- returns an ansi ascii progress bar with a value and a max value, a min value, a size, an indicator and space char\
+ *   - $pbars           -- returns an ansi ascii tree of progress bars with a format string: "unit path:color:legend... [-min:0] [-max:100] [-hsize:40]"\
  *   - $output          -- returns an $output representation of an object (aObj as 1st arg and options in slon as 2nd arg)\
  *   - $cjson           -- returns an ansi ascii colority representation fo an object\
  *   - $cslon           -- returns an ansi ascii colored SLON representation of an object\
@@ -140,7 +141,38 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		toJSON: stringify,
 		ptree: r => printTree(r),
 		pmap: r => printMap(r),
-		pbar: (v, m, min, size, indicator, space) => ow.format.string.progress(v, m, min, size, indicator, space),
+		pbar: (v, m, min, size, indicator, space) => ow.format.string.progress(v, isMap(m) ? __ : m, isMap(min) ? __ : min, isMap(size) ? __ : size, isMap(indicator) ? __ : indicator, isMap(space) ? __ : space),
+		pbars: (r, f) => {
+			let parts = splitBySepWithEnc(f, " ", [["\"","\""],["'","'"]])
+			let nparts = [], fns = []
+			if (parts.length > 1) {
+				for(let i = 0; i < parts.length; i++) {
+					if (i == 0) {
+						nparts.push(parts[i])
+					} else {
+						let _n = splitBySepWithEnc(parts[i], ":", [["\"","\""],["'","'"]]).map((_p, j) => {
+							if (j == 0) {
+								if (!_p.startsWith("-")) {
+									fns.push("_oaftemplate_fns_" + i)
+									global["_oaftemplate_fns_" + i] = () => $path(r, _p)
+									return "_oaftemplate_fns_" + i
+								} else {
+									return _p
+								}
+							} else {
+								return _p
+							}
+						}).join(":")
+						nparts.push(_n)
+					}
+				}
+	
+				let _out = printBars(nparts.join(" "))
+				fns.forEach(f => delete global[f])
+				return _out
+			}
+			return ""
+		},
 		pchart: (r, f) => {
 			let parts = splitBySepWithEnc(f, " ", [["\"","\""],["'","'"]])
 			let nparts = [], fns = []

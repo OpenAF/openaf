@@ -2214,13 +2214,14 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
  * <odoc>
  * <key>ow.java.setIgnoreSSLDomains(aList, aPassword)</key>
  * Replaces the current Java SSL socket factory with a version with a custom trust manager that will "ignore" verification
- * of SSL certificates whose domains are part of aList. Optionally aPassword for the key store can be forced.
+ * of SSL certificates whose domains are part of aList (if no aList is provided defaults DANGEROUSLY to all). Optionally 
+ * aPassword for the key store can be forced.\
  * WARNING: this should only be used in advanced setups where you know what are doing since it DISABLES IMPORTANT SECURITY
  * FEATURES.
  * </odoc>
  */
 OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
-    _$(aList, "list").isArray().$_();
+    aList = _$(aList, "list").isArray().default(__)
 
     if (!isNull(java.lang.System.getProperty("javax.net.ssl.trustStorePassword")))
         aPassword = String(java.lang.System.getProperty("javax.net.ssl.trustStorePassword"));
@@ -2252,34 +2253,47 @@ OpenWrap.java.prototype.setIgnoreSSLDomains = function(aList, aPassword) {
     ctx.init(null, [new JavaAdapter(javax.net.ssl.X509TrustManager, {
         __noError: false,
         checkClientTrusted: function(certs, authType) {
-          //print("check client trusted");
-          tmf0.checkClientTrusted(certs, authType);
+            //print("check client trusted");
+            tmf0.checkClientTrusted(certs, authType);
         },
         checkServerTrusted: function(certs, authType) {
-          //print("check server trusted");
-          //print(certs[0].getSubjectDN().getCommonName());
-          for(var ii = 0; ii < aList.length; ii++) {
-              if (String(certs[0].getSubjectDN().getCommonName()).endsWith(aList[ii])) {
-                  this.__noError = true;
-              } else {
-                  this.__noError = false;
-              }
-          }
+            //print("check server trusted certs: " + certs.length + " authType: " + authType);
+            if (isUnDef(aList)) {
+                this.__noError = true
+            } else {
+                var checks = new Set()
+                for(var i = 0; i < certs.length; i++) {
+                    checks.add(certs[i].getSubjectDN().getCommonName())
+                    let _ar = (af.fromJavaArray(certs[i].getSubjectAlternativeNames().toArray()).map(af.fromJavaArray))
+                    _ar.forEach(r => checks.add(r[1]))
+             
+                    checks.forEach(r => {
+                        //print("Checking: " + r)
+                        for(var ii = 0; ii < aList.length; ii++) {
+                            if (String(r).endsWith(aList[ii])) {
+                                this.__noError = true
+                            }
+                        }
+                    })
+                }
+            }
 
-          try {
-             tmf0.checkServerTrusted(certs, authType);
-          } catch(e) {
-             if (!this.__noError) throw e;
-          }
+            try {
+                tmf0.checkServerTrusted(certs, authType);
+            } catch(e) {
+                if (!this.__noError) throw e;
+            }
         },
         getAcceptedIssuers: function() {
-          //print("accept issuer");
-          return tmf0.getAcceptedIssuers();
+            //print("accept issuer");
+            return tmf0.getAcceptedIssuers();
         }
       })], new java.security.SecureRandom());
       
     javax.net.ssl.SSLContext.setDefault(ctx);
     javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(ctx.getSocketFactory());
+    global.__httpSSLSocketFactory = ctx.getSocketFactory()
+    global.__httpX509TrustManager = tmf0
 };
 
 OpenWrap.java.prototype.memComm = function(aFile, aSize) {

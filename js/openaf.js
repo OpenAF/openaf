@@ -723,7 +723,7 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 	aMin  = _$(aMin, "aMin").isNumber().default(__)
     hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
 
-	aIndicatorChar = _$(aIndicatorChar, "aIndicatorChar").isString().default("=")
+	aIndicatorChar = _$(aIndicatorChar, "aIndicatorChar").isString().default("━")
 	aSpaceChar     = _$(aSpaceChar, "aSpaceChar").isString().default(" ")
 
     var useColor = false
@@ -734,7 +734,7 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
         useColor = true
     }
 
-    var data = _d.map(r => {
+    var data = _d.filter(r => !r.startsWith("-")).map(r => {
 		try {
 			if (useColor) {
 				var _ar = r.split(":")
@@ -748,6 +748,15 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 			throw "Error on '" + r + "': " + dme
 		}
     }).filter(r => isDef(r))
+
+	_d.filter(r => r.startsWith("-")).forEach(r => {
+		var _ar = r.split(":")
+		switch(_ar[0]) {
+		case "-max": aMax = Number(_ar[1]); break
+		case "-min": aMin = Number(_ar[1]); break
+		case "-hsize": hSize = Number(_ar[1]); break
+		}
+	})
 
     if (isUnDef(aMax)) aMax = $from(data).max()
     if (isUnDef(aMin)) aMin = $from(data).min()
@@ -782,16 +791,16 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 	var _out = {}, values = []
 	try {
         var maxTitle = titles.reduce((pV,cV,cI,aR) => {
-            return Math.max(Number(pV), (isString(cV) ? cV.length : ("f" + String(cI)).length))
+            return Math.max(Number(pV), (isString(cV) ? ansiLength(cV) : ("f" + ansiLength(String(cI)))))
         }, 0)
         var maxValue = data.reduce((pV,cV,cI,aR) => {
             var _v = fn(cV)
             values.push(_v)
-            return Math.max(pV, String(_v).length)
+            return Math.max(pV, ansiLength(String(_v)))
         }, 0)
 		data.forEach((d, i) => {
             var _vv = $f("%" + maxValue + "s", String(values[i]))
-            var _s = hSize -2 -2 -2 -maxTitle -maxValue
+            var _s = hSize -1 -2 -2 -2 -maxTitle -maxValue
             var _v = ansiColor(colors[i], ow.format.string.progress(Number(d), Number(aMax), Number(aMin), Number(aMax > _s ? _s : aMax), aIndicatorChar, aSpaceChar)) + " :" + _vv
 			if (isDef(titles[i])) {
 				_out[titles[i]] = $f("%" + maxTitle + "s", _v)
@@ -4429,11 +4438,11 @@ const $path = function(aObj, aPath, customFunctions) {
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
 		},
 		delete: {
-			_func: ar => { delete ar[0][ar[1]]; return ar[0] },
+			_func: ar => { $$(ar[0]).unset(ar[1]); return ar[0] },
 			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
 		},
 		insert: {
-			_func: ar => { ar[0][ar[1]] = ar[2]; return ar[0] },
+			_func: ar => { $$(ar[0]).set(ar[1],ar[2]); return ar[0] },
 			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
 		},
 		format: {
