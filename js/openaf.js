@@ -4438,11 +4438,11 @@ const $path = function(aObj, aPath, customFunctions) {
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
 		},
 		delete: {
-			_func: ar => { delete ar[0][ar[1]]; return ar[0] },
+			_func: ar => { $$(ar[0]).unset(ar[1]); return ar[0] },
 			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] } ]
 		},
 		insert: {
-			_func: ar => { ar[0][ar[1]] = ar[2]; return ar[0] },
+			_func: ar => { $$(ar[0]).set(ar[1],ar[2]); return ar[0] },
 			_signature: [ { types: [ jmespath.types.object ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
 		},
 		format: {
