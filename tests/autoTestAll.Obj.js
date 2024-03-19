@@ -377,10 +377,11 @@
         ]
 
         var r = ow.obj.filter(data, {
-            where: [ { cond: "less", args: [ "w", 2 ] } ],
-            selector: { func: "count" } 
+            //selector: { func: "count" },
+            where   : [ { cond: "less", args: [ "w", 2 ] } ]
         })
-        ow.test.assert(r.count, 1, "Problem with ow.obj.filter with map selector")
+        
+        ow.test.assert(r.length, 1, "Problem with ow.obj.filter with map selector")
 
         r = ow.obj.filter(data, {
             path: "[?w < '99'].{ num: n }"
