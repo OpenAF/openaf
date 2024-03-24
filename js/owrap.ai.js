@@ -171,6 +171,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     _r.conversation = []
                     return _r
                 },
+                getModels: () => {
+                    var res = _r._request("/v1/models", {}, "GET")
+                    if (isArray(res.data)) {
+                        return res.data
+                    } else {
+                        return res
+                    }
+                },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
                     aData = _$(aData, "aData").isMap().default({})
@@ -304,6 +312,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     _r.conversation = []
                     return _r
                 },
+                getModels: () => {
+                    var res = _r._request("/api/tags", {}, "GET")
+                    if (isArray(res.models)) {
+                        return res.models
+                    } else {
+                        return res
+                    }
+                },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
                     aData = _$(aData, "aData").isMap().default({})
@@ -350,6 +366,16 @@ OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
         this.model = ow.ai.__gpttypes[aType].create(aOptions)
     }
 }
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.prototype.getModels() : Array</key>
+ * Returns the available models from the GPT AI service.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
+    return this.model.getModels()
+}   
 
 /**
  * <odoc>
@@ -606,6 +632,9 @@ global.$gpt = function(aModel) {
     var _g = new ow.ai.gpt(type, aModel)
     var _r = {
         getGPT: () => _g,
+        getModels: () => {
+            return _g.getModels()
+        },
         /**
          * <odoc>
          * <key>$gpt.prompt(aPrompt, aRole, aModel, aTemperature) : String</key>
