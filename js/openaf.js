@@ -8460,6 +8460,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 	var _sql, chain = false
 	
 	if (isUnDef(aObj) || (isDef(aObj) && isUnDef(aSQL))) chain = true
+	if (isDef(aSQL)) aSQL = aSQL.trim()
 
 	// Determine method ot use
 	if (chain) aMethod = "h2"
