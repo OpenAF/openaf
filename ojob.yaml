@@ -2245,6 +2245,26 @@ jobs:
         options: __llmOptions
         outPath: __llmOutPath
         debug  : __llmDebug
+  help :
+    text: |
+      "Executes a LLM (Local Language Model) prompt using $llm"
+    expects:
+    - name: __llmContext
+      desc: The context of the input data
+    - name: __llmInPath
+      desc: The path to consider from __llmInKey
+    - name: __llmInKey
+      desc: The key for an existing list or 'args'
+    - name: __llmEnv
+      desc: "The environment variable to consider for $llm options"
+    - name: __llmOptions
+      desc: "The options to consider for $llm"
+    - name: __llmOutPath
+      desc: The path to store the result
+    - name: __llmPrompt
+      desc: The prompt to send to the LLM model
+    - name: __llmDebug
+      desc: Boolean to indicate that the job execution parameters should be printed before executing
   check: 
     in:
       __llmContext: isString.default(__)
