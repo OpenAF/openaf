@@ -3539,6 +3539,21 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"((question": "__question",
 			"((force"   : "__force"
 		}
+	}, {
+		name : "(llm",
+		job  : "ojob llm",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(llm": "__llmPrompt",
+			"((context": "__llmContext",
+			"((inPath": "__llmInPath",
+			"((outPath": "__llmOutPath",
+			"((options": "__llmOptions",
+			"((inKey": "__llmInKey",
+			"((env": "__llmEnv",
+			"((debug": "__llmDebug"
+		}
 	}]
 
 	if (isArray(this.shortcuts)) {

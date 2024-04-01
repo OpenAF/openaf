@@ -2229,3 +2229,77 @@ jobs:
         }
       }
     })
+
+# ---------------
+- name : ojob llm
+  typeArgs:
+    noLog   : true
+    shortcut:
+      name  : llm
+      keyArg: __llmPrompt
+      args  :
+        context: __llmContext
+        inPath : __llmInPath
+        inKey  : __llmInKey
+        env    : __llmEnv
+        options: __llmOptions
+        outPath: __llmOutPath
+        debug  : __llmDebug
+  help :
+    text: |
+      "Executes a LLM (Local Language Model) prompt using $llm"
+    expects:
+    - name: __llmContext
+      desc: The context of the input data
+    - name: __llmInPath
+      desc: The path to consider from __llmInKey
+    - name: __llmInKey
+      desc: The key for an existing list or 'args'
+    - name: __llmEnv
+      desc: "The environment variable to consider for $llm options"
+    - name: __llmOptions
+      desc: "The options to consider for $llm"
+    - name: __llmOutPath
+      desc: The path to store the result
+    - name: __llmPrompt
+      desc: The prompt to send to the LLM model
+    - name: __llmDebug
+      desc: Boolean to indicate that the job execution parameters should be printed before executing
+  check: 
+    in:
+      __llmContext: isString.default(__)
+      __llmInKey  : isString.default("args")
+      __llmInPath : isString.default(__)
+      __llmEnv    : isString.default("OJOB_MODEL")
+      __llmOptions: isMap.default(__)
+      __llmOutPath: isString.default(__)
+      __llmPrompt : isString
+      __llmDebug  : isBoolean.default(false)
+  exec : |
+    try {
+    var _lo = isDef(args.__llmOptions) ? args.__llmOptions : __
+    if (isUnDef(_lo) && isDef(args.__llmEnv)) _lo = $sec("system", "envs").get(args.__llmEnv)
+
+    var _l = $llm(_lo)
+    if (isDef(args.__llmInPath)) {
+      if (isUnDef(args.__llmContext)) { args.__llmContext = "a JSON input data" }
+      var _i = args.__llmInKey == "args" ? $$(args).get(args.__llmInPath) : $$($get(args.__llmInKey)).get(args.__llmInPath)
+      if (args.__llmDebug) {
+        print("DEBUG | Input data:")
+        cprint(_i)
+      }
+      if (isDef(_i)) _l = _l.withContext(_i, args.__llmContext) 
+    }
+
+    var _r = _l.promptJSON(args.__llmPrompt)
+    if (args.__llmDebug) {
+      print("DEBUG | Result data:")
+      cprint(_r)
+    }
+    if (isUnDef(args.__llmOutPath)) 
+      $set("res", _r)
+    else
+      $$(args).set(args.__llmOutPath, _r)
+    } catch(e) {
+      throw "Error on LLM: " + e
+    }
