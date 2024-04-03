@@ -20,7 +20,7 @@
 
         var snmp = new SNMP("udp:snmpsim.try.thola.io/161", "public");
 
-        snmp.trap("1.3.6.1.4.1.20408.4.1.1.2", [
+        snmp.trap("1.3.6.1.4.1.20408.4.1.1.2", __, [
             { OID: "1.2.3.4.5.6.7.8", type: "s", value: "My error message." }
         ]);
     };
@@ -78,7 +78,7 @@
             securityName  : "usr-md5-aes"
         });
 
-        snmp.trap("1.3.6.1.4.1.20408.4.1.1.2", [
+        snmp.trap("1.3.6.1.4.1.20408.4.1.1.2", __, [
             { OID: "1.2.3.4.5.6.7.8", type: "s", value: "My error message." }
         ]);
     };
