@@ -8048,6 +8048,36 @@ const loadJSYAML = function() {
 	loadCompiledLib("js-yaml_js", __, __, true)
 }
 
+/**
+ * <odoc>
+ * <key>loadOAFP()</key>
+ * Loads the OpenAF processor that can be used with the function oafp. Example:\
+ * \
+ * # Thread unsafe example\
+ * oafp({ data: "(abc: 123, xyz: 456)", out: "pm" })\
+ * sprint(__pm._map)\
+ * \
+ * # Thread safe example\
+ * oafp({ data: "(abc: 123, xyz: 456)", out: "key", __key: "myresult" })\
+ * sprint($get("myresult"))\
+ * \
+ * </odoc>
+ */
+const loadOAFP = function() {
+	let origExpr = __expr, origParams = global.params
+
+	__expr = "____ojob=true"
+	global.params = { ____ojob: true }
+	if (isDef(getOPackPath("oafproc"))) {
+		loadLib(getOPackPath("oafproc") + "/oafp.js")
+	} else {
+		loadLib(getOpenAFJar() + "::js/oafp.js")
+	}
+
+	__expr = origExpr
+	global.params = origParams
+}
+
 loadCompiledLib("openafsigil_js")
 
 /**
