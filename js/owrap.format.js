@@ -1498,15 +1498,19 @@ OpenWrap.format.prototype.streamSH = function(aFunc, anEncoding) {
 
 /**
  * <odoc>
- * <key>ow.format.streamSHPrefix(aPrefix, anEncoding, aSeparator, aTemplate, aFnHandler) : Function</key>
+ * <key>ow.format.streamSHPrefix(aPrefix, anEncoding, aSeparator, aTemplate, aFnHandler, infoFn, errorFn) : Function</key>
  * To be used with sh, af.sh or ssh.exec as the callbackFunc. Returns a function that will prefix each line with aPrefix
  * and used the returned string with print and printErr. Optionally you can provide aTemplate to add "prefix" (defaults to "[{{prefix}}]") and/or
- * provide aFnHandler to chain another streaming handling function (receives a stream and a boolean to indicate if its stdout or stderr)
+ * provide aFnHandler to chain another streaming handling function (receives a stream and a boolean to indicate if its stdout or stderr).
+ * It's also possible to provide a infoFn and errorFn to handle the output. If infoFn or errorFn are not provided they will default to print and printErr
+ * or to log and logErr if __flags.SH.prefixLog is true.
  * </odoc>
  */
-OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSeparator, aTemplate, aFnHandler) {
+OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSeparator, aTemplate, aFnHandler, infoFn, errorFn) {
 	aPrefix   = _$(aPrefix, "aPrefix").isString().default("");
 	aTemplate = _$(aTemplate, "aTemplate").isString().default("[{{prefix}}] ");
+	infoFn    = _$(infoFn, "infoFn").isFunction().default(__flags.SH.prefixLog ? log : print)
+	errorFn   = _$(errorFn, "errorFn").isFunction().default(__flags.SH.prefixLog ? logErr : printErr)
 
 	var callFn = isFunction(aFnHandler)
 	return function(o, e) {
@@ -1514,13 +1518,13 @@ OpenWrap.format.prototype.streamSHPrefix = function(aPrefix, anEncoding, aSepara
 			$doAll([
 				$do(() => { ioStreamReadLines(o, (f) => { 
 					ansiStart()
-					print(ansiColor("BOLD,BLACK", templify(aTemplate, { prefix: aPrefix })) + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding))
+					infoFn(ansiColor("BOLD,BLACK", templify(aTemplate, { prefix: aPrefix })) + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding))
 					ansiStop()
 					if (callFn) aFnHandler( af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding), false )
 				}, aSeparator, false, __); }), 
 				$do(() => { ioStreamReadLines(e, (f) => { 
 					ansiStart()
-					printErr(ansiColor("RED", templify(aTemplate, { prefix: aPrefix })) + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding))
+					errorFn(ansiColor("RED", templify(aTemplate, { prefix: aPrefix })) + af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding))
 					ansiStop()
 					if (callFn) aFnHandler( af.toEncoding(String(f.replace(/[\n\r]+/g, "")), anEncoding), true )
 				}, aSeparator, false, anEncoding); })
