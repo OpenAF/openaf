@@ -75,6 +75,24 @@ const isJavaObject = obj => {
 
 /**
  * <odoc>
+ * <key>isJavaArray(aObj) : boolean</key>
+ * Returns true if aObj is a Java array, false otherwise
+ * </odoc>
+ */
+const isJavaArray = obj => {
+	try {
+		if (obj != null && typeof obj.getClass === 'function' && Object.prototype.toString.call(obj) === '[object JavaArray]') {
+			return true
+		} else {
+			return false
+		}
+	} catch(e) {
+		return obj.getClass() instanceof java.lang.Object
+	}
+}
+
+/**
+ * <odoc>
  * <key>isDef(aObject) : boolean</key>
  * Returns true if the provided aObject is defined as a javascript variable. It will return false otherwise.
  * (see also isUnDef). Shortcut for the isDefined function.
@@ -225,6 +243,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	},
 	OAFP: {
 		libs: []
+	},
+	SH: {
+		prefixLog: false
 	},
 	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR     : true,
@@ -8046,6 +8067,36 @@ const getEnv = function(anEnvironmentVariable) {
  */
 const loadJSYAML = function() {
 	loadCompiledLib("js-yaml_js", __, __, true)
+}
+
+/**
+ * <odoc>
+ * <key>loadOAFP()</key>
+ * Loads the OpenAF processor that can be used with the function oafp. Example:\
+ * \
+ * # Thread unsafe example\
+ * oafp({ data: "(abc: 123, xyz: 456)", out: "pm" })\
+ * sprint(__pm._map)\
+ * \
+ * # Thread safe example\
+ * oafp({ data: "(abc: 123, xyz: 456)", out: "key", __key: "myresult" })\
+ * sprint($get("myresult"))\
+ * \
+ * </odoc>
+ */
+const loadOAFP = function() {
+	let origExpr = __expr, origParams = global.params
+
+	__expr = "____ojob=true"
+	global.params = { ____ojob: true }
+	if (isDef(getOPackPath("oafproc"))) {
+		loadLib(getOPackPath("oafproc") + "/oafp.js")
+	} else {
+		loadLib(getOpenAFJar() + "::js/oafp.js")
+	}
+
+	__expr = origExpr
+	global.params = origParams
 }
 
 loadCompiledLib("openafsigil_js")
