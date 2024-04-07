@@ -75,6 +75,24 @@ const isJavaObject = obj => {
 
 /**
  * <odoc>
+ * <key>isJavaArray(aObj) : boolean</key>
+ * Returns true if aObj is a Java array, false otherwise
+ * </odoc>
+ */
+const isJavaArray = obj => {
+	try {
+		if (obj != null && typeof obj.getClass === 'function' && Object.prototype.toString.call(obj) === '[object JavaArray]') {
+			return true
+		} else {
+			return false
+		}
+	} catch(e) {
+		return obj.getClass() instanceof java.lang.Object
+	}
+}
+
+/**
+ * <odoc>
  * <key>isDef(aObject) : boolean</key>
  * Returns true if the provided aObject is defined as a javascript variable. It will return false otherwise.
  * (see also isUnDef). Shortcut for the isDefined function.
