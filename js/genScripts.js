@@ -441,13 +441,35 @@ if (jh.substring(0, jh.lastIndexOf("/")+1) == getOpenAFPath()) {
   }
 }*/
 
+const updateJavaSh = 
+`cd $DIR
+./ojob ojob.io/oaf/javaUpdate
+if [ -e "jre.tgz" ]; then
+  rm -rf jre.old 2> /dev/null
+  mv jre jre.old
+  tar xzf jre.tgz 
+fi
+cd $CDIR
+`
+
+const updateJavaBat = 
+`cd /D "%DIR%"
+ojob ojob.io/oaf/javaUpdate
+IF EXIST "jre.zip" (
+    rd /S /Q "jre.old" 2> NUL
+    move /Y "jre" "jre.old"
+    tar -xf jre.zip -C jre
+)
+cd /D "%CDIR%"
+`
+
 if (!noHomeComms) {
   if (windows == 1) {
     log("Generating update.bat...");
     io.writeFileString(curDir + "/update.bat", generateWinUpdateBat());
   } else {
     log("Generating update.sh...");
-    io.writeFileString(curDir + "/update.sh", unixUpdateScript);
+    io.writeFileString(curDir + "/update.sh", unixUpdateScript.replace(/\"\$JAVA_HOME\"/, updateJavaSh + "\n\"$JAVA_HOME\""));
     $sh("chmod u+x " + curDir + "/update.sh").exec();
   }
 }
