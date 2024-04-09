@@ -8283,6 +8283,52 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
 
 /**
  * <odoc>
+ * <key>af.fromTOML(aTOML) : Object</key>
+ * Tries to parse aTOML into a javascript object
+ * </odoc>
+ */
+AF.prototype.fromTOML = function(aTOML) {
+	var tm = new Packages.com.fasterxml.jackson.dataformat.toml.TomlMapper()
+	return jsonParse(tm.readTree(aTOML).toString())
+}
+
+/**
+ * <odoc>
+ * <key>io.readFileTOML(aFile) : Object</key>
+ * Tries to read aFile and parse it as TOML into a javascript object.
+ * </odoc>
+ */
+IO.prototype.readFileTOML = function(aFile) {
+	return af.fromTOML(new java.io.File(aFile))
+}
+
+/**
+ * <odoc>
+ * <key>af.toTOML(aObj) : String</key>
+ * Tries to convert aObj into a TOML string.
+ * </odoc>
+ */
+AF.prototype.toTOML = function(aObj) {
+	var tm = new Packages.com.fasterxml.jackson.dataformat.toml.TomlMapper()
+	if (isMap(aObj)) {
+		return String(tm.writeValueAsString(af.toJavaMap(aObj)))
+	} else {
+		return __
+	}
+}
+
+/**
+ * <odoc>
+ * <key>io.writeFileTOML(aFile, aObj)</key>
+ * Tries to write aObj into aFile as TOML.
+ * </odoc>
+ */
+IO.prototype.writeFileTOML = function(aFile, aObj) {
+	io.writeFileString(aFile, af.toTOML(aObj))
+}
+
+/**
+ * <odoc>
  * <key>AF.toSLON(aObject, aTheme) : String</key>
  * Converts aObject map/array into SLON representation (see more in help for ow.format.toSLON)
  * </odoc>
