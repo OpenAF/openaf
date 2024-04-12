@@ -272,9 +272,9 @@ jobs:
 
   type    : simple  # either simple, jobs, shutdown, subscribe and periodic (see more in typeArgs)
   typeArgs:
-    noTemplateArgs: true # Boolean to indicate that any "{{ }}" handlebars entry on args should be or processed before the actual processing starts (defaults to ojob.templateArgs) 
+    noTemplateArgs: true # Boolean to indicate that any "{{ }}" handlebars entry on args should not be processed before the actual processing starts (defaults to ojob.templateArgs) 
     noTemplate    : false # Boolean to indicate if the "exec" contents should or not be parsed as a template with the current execution args (helpfull for shell or ssh langs)
-    shellPrefix   : myprefix # When "lang: shell" or "lang: ssh" it will prefix all stdout lines immediatelly
+    shellPrefix   : myprefix # When "lang: shell" or "lang: ssh" it will prefix all stdout lines immediatelly (if value equals an args property the property value will be used instead)
     pwd           : '/tmp' # If defined will change the current working directory to the provided path (doesn't apply to langs openaf, js, ssh and python)
     langFn  : # The same as ojob.langs.langFn
     returnFn: # The same as ojob.langs.returnFn

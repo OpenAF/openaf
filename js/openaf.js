@@ -4404,11 +4404,12 @@ var $from = function(a) {
  * \
  * [OpenAF custom functions]: \
  *   a2m(arrFields, arrValues), a4m(arr, 'key', dontRemove), m2a(arrFields, obj), m4a(obj, 'key'), count_by(arr, 'field'), format(x, 'format'), formatn(x, 'format'), group(arr, 'field'), group_by(arr, 'field1,field2'), unique(arr), to_map(arr, 'field'), to_date(x), to_datef(x, format) from_datef(x, format), to_isoDate(x), flat_map(x), search_keys(arr, 'text'), search_values(arr, 'text'), delete(map, 'field'), substring(a, ini, end),\
- *  template(a, 'template'), t(a, 'template'), templateF(x, 'template'), tF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags'), amerge(x, y), to_slon(x), from_slon(x), to_json(x), from_json(x, str), to_yaml(x, isMultiDoc), from_yaml(x), trim(x), nvl(x, v)
+ *  template(a, 'template'), t(a, 'template'), templateF(x, 'template'), tF(x, 'template'), to_bytesAbbr(x), to_numAbbr(x), from_bytesAbbr(x), from_siAbbr(x), from_timeAbbr(x), timeago(x), from_ms(x, 'format'), replace(x, 're', 'flags', 'replaceText'), split(x, 'sep'), trim(x), index_of(x, 'search'), last_index_of(x, 'search'), lower_case(x), upper_case(x), concat(x, y), match(x, 're', 'flags'), amerge(x, y), to_slon(x), from_slon(x), to_json(x), from_json(x, str), to_yaml(x, isMultiDoc), from_yaml(x), trim(x), nvl(x, v), to_toml(x), from_toml(x)
  * add(x, y), sub(x, y), mul(x, y), div(x, y), mod(x, y)\
  * split(x, sep), split_re(x, sepRE), split_sep(x, sepRE, encls), date_diff(d, unit, nullValue)\
  * insert(obj, 'field', value), now(negativeTimeDiff)\
  * get(nameOrPath), set(obj, path), setp(obj, path, name)\
+ * range(count), ranges(count, start, step)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4647,6 +4648,14 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => af.fromYAML(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
+		to_toml: {
+			_func: ar => af.toTOML(ar[0]),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		from_toml: {
+			_func: ar => af.fromTOML(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
 		trim: {
 			_func: ar => ar[0].trim(),
 			_signature: [ { types: [ jmespath.types.string ] } ]
@@ -4694,6 +4703,14 @@ const $path = function(aObj, aPath, customFunctions) {
 		setp: {
 			_func: ar => { $$(_locals).set(ar[2], $$(ar[0]).get(ar[1])); return ar[0] },
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		range: {
+			_func: ar => range(ar[0]),
+			_signature: [ { types: [ jmespath.types.number ] } ]
+		},
+		ranges: {
+			_func: ar => range(ar[0], ar[1], ar[2]),
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
 		}
 	}, customFunctions)
 
@@ -8280,6 +8297,52 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
 		return res;
 	}
 };
+
+/**
+ * <odoc>
+ * <key>af.fromTOML(aTOML) : Object</key>
+ * Tries to parse aTOML into a javascript object
+ * </odoc>
+ */
+AF.prototype.fromTOML = function(aTOML) {
+	var tm = new Packages.com.fasterxml.jackson.dataformat.toml.TomlMapper()
+	return jsonParse(tm.readTree(aTOML).toString())
+}
+
+/**
+ * <odoc>
+ * <key>io.readFileTOML(aFile) : Object</key>
+ * Tries to read aFile and parse it as TOML into a javascript object.
+ * </odoc>
+ */
+IO.prototype.readFileTOML = function(aFile) {
+	return af.fromTOML(new java.io.File(aFile))
+}
+
+/**
+ * <odoc>
+ * <key>af.toTOML(aObj) : String</key>
+ * Tries to convert aObj into a TOML string.
+ * </odoc>
+ */
+AF.prototype.toTOML = function(aObj) {
+	var tm = new Packages.com.fasterxml.jackson.dataformat.toml.TomlMapper()
+	if (isMap(aObj)) {
+		return String(tm.writeValueAsString(af.toJavaMap(aObj)))
+	} else {
+		return __
+	}
+}
+
+/**
+ * <odoc>
+ * <key>io.writeFileTOML(aFile, aObj)</key>
+ * Tries to write aObj into aFile as TOML.
+ * </odoc>
+ */
+IO.prototype.writeFileTOML = function(aFile, aObj) {
+	io.writeFileString(aFile, af.toTOML(aObj))
+}
 
 /**
  * <odoc>
