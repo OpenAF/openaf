@@ -1077,6 +1077,87 @@ OpenWrap.ai.prototype.normalize = {
 
     /**
      * <odoc>
+     * <key>ow.ai.normalize.denormalizeWithSchema(aMapOfNormalizedData, aMapSchema, convertBools) : Map</key>
+     * Tries to denormalize aMapOfNormalizedData (result from ow.ai.normalize.withSchema) according with aMapSchema provided.
+     * </odoc>
+     */
+    denormalizeWithSchema: function(aMapOfNormalizedData, aMapSchema, convertBools) {
+        _$(aMapSchema, "aMapSchema").isMap().$_()
+        convertBools = _$(convertBools, "convertBools").isBoolean().default(false)
+    
+        var res = {}, icol = 0
+        var schema = $m4a(aMapSchema, "key")
+        schema.sort((a, b) => a.col - b.col).forEach(schema => {
+            var key = schema.key
+            var col = schema.col
+            var max = schema.max
+            var min = schema.min ? schema.min : 0
+            var oneOf = schema.oneOf
+            var anyOf = schema.anyOf
+            var scaleOf = schema.scaleOf
+    
+            if (isDef(max)) {
+                res[key] = aMapOfNormalizedData[isDef(col) ? icol : key] * (max - min) + min
+                icol++
+                return
+            }
+            if (isDef(oneOf)) {
+                var _vs
+                if (isDef(col)) 
+                    _vs = aMapOfNormalizedData.slice(icol, icol + oneOf.length)
+                else
+                    _vs = aMapOfNormalizedData[key]
+    
+                res[key] = oneOf[_vs.indexOf(1)]
+                icol += oneOf.length
+                return
+            }
+            if (isDef(anyOf)) {
+                var _vs
+                if (isDef(col)) 
+                    _vs = aMapOfNormalizedData.slice(icol, icol + anyOf.length)
+                else
+                    _vs = aMapOfNormalizedData[key]
+    
+                res[key] = _vs.reduce((p, c, i) => { if (c == 1) p.push(anyOf[i]); return p }, [])
+                icol += anyOf.length
+                return
+            }
+            if (isDef(scaleOf)) {
+                var v = aMapOfNormalizedData[isDef(col) ? icol : key]
+                if (isArray(v)) {
+                    res[key] = v.map(vv => {
+                        var diff = 2, rv
+                        scaleOf.forEach(s => {
+                            if (Math.abs(s.weight - vv) < diff) {
+                                diff = Math.abs(s.weight - vv)
+                                rv = s.val
+                            }
+                        })
+                        return rv
+                    })
+                } else {
+                    var diff = 2, rv
+                    scaleOf.forEach(s => {
+                        if (Math.abs(s.weight - v) < diff) {
+                            diff = Math.abs(s.weight - v)
+                            rv = s.val
+                        }
+                    })
+                    res[key] = rv
+                }
+                icol++
+                return
+            }
+            res[key] = aMapOfNormalizedData[isDef(col) ? icol : key] == 1 ? (convertBools ? true : 1) : (convertBools ? false : 0)
+            icol++
+        })
+    
+        return res
+    },
+
+    /**
+     * <odoc>
      * <key>ow.ai.normalize.withSchema(aSimpleMapOfData, aMapSchema, convertBools) : Array</key>
      * Tries to normalize and return aSimpleMapOfData normalized according with aMapSchema provided. Each element of aMapSchema
      * should be a map describing how to normalize aSimpleMapOfData. Example:\
