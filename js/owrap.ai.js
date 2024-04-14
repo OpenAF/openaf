@@ -1107,55 +1107,80 @@ OpenWrap.ai.prototype.normalize = {
         _$(sAR, "aMapSchema").isMap().$_()
         convertBools = _$(convertBools, "convertBools").isBoolean().default(false)
     
-        var res = [];
-        loadLodash();
+        const _scaleArray = (anArray, aMax, aMin) => {
+            var max = isDef(aMax) ? aMax : anArray.reduce((a,b) => Math.max(a,b) )
+            var min = isDef(aMin) ? aMin : anArray.reduce((a,b) => Math.min(a,b) )
+    
+            return anArray.map(v => { if (v > aMax) v = aMax; if (v < aMin) v = aMin; return (v - min)/(max - min) })
+        }
+        var res = {}
     
         for(var s in sAR) {
+            var schema = sAR[s]
+            var col = schema.col
+            var max = schema.max
+            var min = schema.min ? schema.min : 0
+            var oneOf = schema.oneOf
+            var anyOf = schema.anyOf
+            var scaleOf = schema.scaleOf
+    
             // Ensure it has a col
-            if (isDef(sAR[s].col)) {
-                // If it has a max
-                if (isDef(sAR[s].max)) {
-                    res[sAR[s].col] = ow.ai.normalize.scaleArray([aAR[s]], sAR[s].max, sAR[s].min);
-                    continue;
-                }
-                if (isDef(sAR[s].oneOf) && !isArray(aAR[s])) {
-                    var subres = [];
-                    for(var ss = 0; ss < sAR[s].oneOf.length; ss++) {
-                        subres[ss] = 0;
-                    }
-                    subres[sAR[s].oneOf.indexOf(aAR[s])] = 1;
-                    res[sAR[s].col] = subres;
-                    continue;
-                }
-                if (isDef(sAR[s].anyOf) && isArray(aAR[s])) {
-                    var subres = [];
-                    for(var ss = 0; ss < sAR[s].anyOf.length; ss++) {
-                        subres[ss] = 0;
-                    }        
-                    for(var ss in aAR[s]) {
-                        subres[sAR[s].anyOf.indexOf(aAR[s][ss])] = 1;
-                    }
-                    res[sAR[s].col] = subres;
-                    continue;
-                }
-                if (isDef(sAR[s].scaleOf)) {
-                    if (isArray(aAR[s])) {
-                        var subres = [];
-                        for(var ss in aAR[s]) {
-                            subres[ss] = $from(sAR[s].scaleOf).equals("val", aAR[s][ss]).at(0).weight
-                        }
-                        res[sAR[s].col] = subres;
-                    } else {
-                        res[sAR[s].col] = $from(sAR[s].scaleOf).equals("val", aAR[s]).at(0).weight
-                    }
-                    continue;
-                }
-                // Else assume it's boolean
-                res[sAR[s].col] =  (aAR[s]) ? (convertBools ? 1 : true) : (convertBools ? 0 : false)
+            if (isDef(col) && !isArray(res)) res = []
+            // If it has a max
+            if (isDef(max)) {
+                res[isDef(col) ? col : s] = _scaleArray([aAR[s]], max, min)[0]
+                continue
             }
+            if (isDef(oneOf) && !isArray(aAR[s])) {
+                var subres = []
+                for(var ss = 0; ss < oneOf.length; ss++) {
+                    subres[ss] = 0
+                }
+                subres[oneOf.indexOf(aAR[s])] = 1
+                res[isDef(col) ? col : s] = subres
+                continue
+            }
+            if (isDef(anyOf) && isArray(aAR[s])) {
+                var subres = [];
+                for(var ss = 0; ss < anyOf.length; ss++) {
+                    subres[ss] = 0
+                }        
+                for(var ss in aAR[s]) {
+                    subres[anyOf.indexOf(aAR[s][ss])] = 1
+                }
+                res[isDef(col) ? col : s] = subres
+                continue
+            }
+            if (isDef(scaleOf)) {
+                if (isArray(aAR[s])) {
+                    var subres = []
+                    for(var ss in aAR[s]) {
+                        subres[ss] = scaleOf.reduce((p, c) => (c.val === aAR[s] ? c.weight : (isNumber(p) ? p : p.weight)))
+                    }
+                    res[isDef(col) ? col : s] = subres
+                } else {
+                    res[isDef(col) ? col : s] = scaleOf.reduce((p, c) => (c.val === aAR[s] ? c.weight : (isNumber(p) ? p : p.weight)) )
+                }
+                continue
+            }
+            // Else assume it's boolean
+            res[isDef(col) ? col : s] =  (aAR[s]) ? (convertBools ? 1 : true) : (convertBools ? 0 : false)
+            //}
         }
     
-        return _.flatten(res);
+        if (isArray(res)) {
+            var _res = []
+            res.forEach(r => {
+                if (isArray(r)) {
+                    _res = _res.concat(r)
+                } else {
+                    _res.push(r)
+                }
+            })
+            return _res
+        } else {
+            return res
+        }
     },
 
     /**
