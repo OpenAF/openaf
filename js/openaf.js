@@ -11950,6 +11950,28 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 }
 const $o = $output
 
+Float32Array.from = function(arr) {
+	var _r = new Float32Array(arr.length)
+	for(var i = 0; i < arr.length; i++) {
+		_r[i] = arr[i]
+	}
+	return _r
+}
+Float32Array.prototype.slice = function(start,end) {
+	start = start || 0
+	end = end || this.length
+	var _r = new Float32Array(end - start)
+	for(var i = start; i < end; i++) {
+		_r[i - start] = this[i]
+	}
+	return _r
+}
+Float32Array.prototype.forEach = function(fn) {
+	for(var i = 0; i < this.length; i++) {
+		fn(this[i], i, this)
+	}
+}
+
 var __OpenAFUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)";
 const __setUserAgent = function(aNewAgent) {
 	__OpenAFUserAgent = _$(aNewAgent).isString().default(__OpenAFUserAgent);

@@ -784,7 +784,8 @@ global.$gpt = function(aModel) {
  * <odoc>
  * <key>ow.ai.network(aMap) : ow.ai.network</key>
  * Creates a neural network given the parameters in aMap. aMap should contain a "type" parameter to indicate
- * the type of network (perceptron, lstm, liquid or hopfield). Then aMap should contain a "args" parameter to
+ * the type of network (synaptic: perceptron, lstm, liquid or hopfield; brainjs: neuralnetwork, rnntimestep, lstmtimestep, grutimestep, rnn, lstm or gru). 
+ * Then aMap should contain a "args" parameter to
  * provide each network inialization parameters. Please see "help ow.ai.network.[type of network]" for more details
  * about each one. 
  * </odoc>
@@ -796,9 +797,67 @@ OpenWrap.ai.prototype.network = function(args) {
         case 'lstm'      : this.lstm.apply(this, args.args); break;
         case 'liquid'    : this.liquid.apply(this, args.args); break;
         case 'hopfield'  : this.hopfield.apply(this, args.args); break;
+        // BrainJS
+        case 'neuralnetwork': 
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.NeuralNetwork(args.args) 
+            break
+        case 'rnntimestep'  : 
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.recurrent.RNNTimeStep(args.args)
+            break
+        case 'lstmtimestep' : 
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.recurrent.LSTMTimeStep(args.args)
+            break
+        case 'grutimestep'  : 
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.recurrent.GRUTimeStep(args.args)
+            break
+        case 'rnn'          : 
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.recurrent.RNN(args.args)
+            break
+        case 'lstm'         : 
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.recurrent.LSTM(args.args)
+            break
+        case 'gru'          : 
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.recurrent.GRU(args.args)
+            break
+        case 'feedfoward'   :
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.FeedForward(args.args)
+            break
+        case 'recurrent'    :
+            loadLib(getOpenAFJar() + "::js/brainjs.js")
+            this.__bjnet = new brain.Recurrent(args.args)
+            break 
         }
     }
-};
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.network.prototype.getSynapticObject() : Object</key>
+ * Returns the current Synaptic object.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.network.prototype.getSynapticObject = function() {
+    return this.__net
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.network.prototype.getBrainJSObject() : Object</key>
+ * Returns the current BrainJS object.
+ * </odoc>
+ 
+ */
+OpenWrap.ai.prototype.network.prototype.getBrainJSObject = function() {
+    return this.__bjnet
+}
 
 /**
  * <odoc>
@@ -866,12 +925,29 @@ OpenWrap.ai.prototype.network.prototype.hopfield = function(args) {
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.train = function(trainingData, trainArgs) {
-    if (isUnDef(this.__net)) throw "Network not initialized.";
+    if (isUnDef(this.__net) && isUnDef(this.__bjnet)) throw "Network not initialized."
 
-    var t = new ow.ai.synaptic.Trainer(this.__net);
-    t.train(trainingData, trainArgs);
-    return t;
-};
+    if (isDef(this.__net)) {
+        var t = new ow.ai.synaptic.Trainer(this.__net)
+        t.train(trainingData, trainArgs)
+        return t
+    } else if (isDef(this.__bjnet)) {
+        return this.__bjnet.train(trainingData, trainArgs)
+    }
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.network.forecast(aInput, aCount) : Array</key>
+ * </odoc>
+ */
+OpenWrap.ai.prototype.network.prototype.forecast = function(aInput, aCount) {
+    if (isUnDef(this.__bjnet)) throw "BrainJS network not initialized."
+
+    if (isDef(this.__bjnet)) {
+        return this.__bjnet.forecast(aInput, aCount)
+    }
+}
 
 /**
  * <odoc>
@@ -881,9 +957,14 @@ OpenWrap.ai.prototype.network.prototype.train = function(trainingData, trainArgs
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.get = function(inputData) {
-    if (isUnDef(this.__net)) throw "Network not initialized.";
+    if (isUnDef(this.__net) && isUnDef(this.__bjnet)) throw "Network not initialized.";
 
-    return this.__net.activate(inputData);
+    if (isDef(this.__net)) return this.__net.activate(inputData)
+    if (isDef(this.__bjnet)) {
+        var _d = this.__bjnet.run(inputData)
+        if (Object.prototype.toString.call(_d) === '[object Float32Array]') _d = Array.from(_d)
+        return _d
+    }
 };
 
 /**
@@ -893,13 +974,26 @@ OpenWrap.ai.prototype.network.prototype.get = function(inputData) {
  * the outputArray of decimal values, normalize between 0 and 1, with an optionial learningRate (defaults to 0.3).
  * </odoc>
  */
-OpenWrap.ai.prototype.network.prototype.put = function(inputData, outputData, learningRate) {
-    _$(this.__net).$_("Network not initialized.");
-    learningRate = _$(learningRate).isNumber().default(0.3);
+OpenWrap.ai.prototype.network.prototype.put = function(inputData, outputData, learningRate, bjOptions) {
+    if (isUnDef(this.__net) && isUnDef(this.__bjnet)) throw "Network not initialized."
+    if (isUnDef(this__bjnet)) {
+        learningRate = _$(learningRate).isNumber().default(0.3)
 
-    this.__net.activate(inputData);
-    this.__net.propagate(learningRate, outputData);
-};
+        this.__net.activate(inputData)
+        this.__net.propagate(learningRate, outputData)
+    } else if (isUnDef(this.__bjnet)) {
+        bjOptions = merge({
+            // Defaults values --> expected validation
+            iterations: 1, // the maximum times to iterate the training data --> number greater than 0
+            errorThresh: 0.005, // the acceptable error percentage from training data --> number between 0 and 1
+            logPeriod: 10, // iterations between logging out --> number greater than 0
+            learningRate: 0.3, // scales with delta to effect training rate --> number between 0 and 1
+            momentum: 0.1, // scales with next layer's change value --> number between 0 and 1
+            //timeout: number, // the max number of milliseconds to train for --> number greater than 0. Default --> Infinity
+          }, bjOptions)
+          this.__bjnet.train([{ input: inputData, output: outputData }], bjOptions)
+    }
+}
 
 /**
  * <odoc>
@@ -908,10 +1002,11 @@ OpenWrap.ai.prototype.network.prototype.put = function(inputData, outputData, le
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.toJson = function() {
-    if (isUnDef(this.__net)) throw "Network not initialized.";
+    if (isUnDef(this.__net) && isUnDef(this.__bjnet)) throw "Network not initialized."
 
-    return this.__net.toJSON();
-};
+    if (isDef(this.__net)) return this.__net.toJSON()
+    if (isDef(this.__bjnet)) return this.__bjnet.toJSON()
+}
 
 /**
  * <odoc>
@@ -920,8 +1015,14 @@ OpenWrap.ai.prototype.network.prototype.toJson = function() {
  * </odoc>
  */
 OpenWrap.ai.prototype.network.prototype.fromJson = function(aJSON) {
-    this.__net = ow.ai.synaptic.Network.fromJSON(aJSON);
-};
+    if (isDef(aJSON) && isDef(aJSON.type) && 
+        aJSON.type != "perceptron" && aJSON.type != "lstm" && aJSON.type != "liquid" && aJSON.type != "hopfield") {
+        if (isUnDef(this.__bjnet)) throw "BrainJS network not initialized."
+        this.__bjnet = this.__bjnet.fromJSON(aJSON)
+    } else {
+        this.__net = ow.ai.synaptic.Network.fromJSON(aJSON)
+    }
+}
 
 /**
  * <odoc>
@@ -976,6 +1077,87 @@ OpenWrap.ai.prototype.normalize = {
 
     /**
      * <odoc>
+     * <key>ow.ai.normalize.denormalizeWithSchema(aMapOfNormalizedData, aMapSchema, convertBools) : Map</key>
+     * Tries to denormalize aMapOfNormalizedData (result from ow.ai.normalize.withSchema) according with aMapSchema provided.
+     * </odoc>
+     */
+    denormalizeWithSchema: function(aMapOfNormalizedData, aMapSchema, convertBools) {
+        _$(aMapSchema, "aMapSchema").isMap().$_()
+        convertBools = _$(convertBools, "convertBools").isBoolean().default(false)
+    
+        var res = {}, icol = 0
+        var schema = $m4a(aMapSchema, "key")
+        schema.sort((a, b) => a.col - b.col).forEach(schema => {
+            var key = schema.key
+            var col = schema.col
+            var max = schema.max
+            var min = schema.min ? schema.min : 0
+            var oneOf = schema.oneOf
+            var anyOf = schema.anyOf
+            var scaleOf = schema.scaleOf
+    
+            if (isDef(max)) {
+                res[key] = aMapOfNormalizedData[isDef(col) ? icol : key] * (max - min) + min
+                icol++
+                return
+            }
+            if (isDef(oneOf)) {
+                var _vs
+                if (isDef(col)) 
+                    _vs = aMapOfNormalizedData.slice(icol, icol + oneOf.length)
+                else
+                    _vs = aMapOfNormalizedData[key]
+    
+                res[key] = oneOf[_vs.indexOf(1)]
+                icol += oneOf.length
+                return
+            }
+            if (isDef(anyOf)) {
+                var _vs
+                if (isDef(col)) 
+                    _vs = aMapOfNormalizedData.slice(icol, icol + anyOf.length)
+                else
+                    _vs = aMapOfNormalizedData[key]
+    
+                res[key] = _vs.reduce((p, c, i) => { if (c == 1) p.push(anyOf[i]); return p }, [])
+                icol += anyOf.length
+                return
+            }
+            if (isDef(scaleOf)) {
+                var v = aMapOfNormalizedData[isDef(col) ? icol : key]
+                if (isArray(v)) {
+                    res[key] = v.map(vv => {
+                        var diff = 2, rv
+                        scaleOf.forEach(s => {
+                            if (Math.abs(s.weight - vv) < diff) {
+                                diff = Math.abs(s.weight - vv)
+                                rv = s.val
+                            }
+                        })
+                        return rv
+                    })
+                } else {
+                    var diff = 2, rv
+                    scaleOf.forEach(s => {
+                        if (Math.abs(s.weight - v) < diff) {
+                            diff = Math.abs(s.weight - v)
+                            rv = s.val
+                        }
+                    })
+                    res[key] = rv
+                }
+                icol++
+                return
+            }
+            res[key] = aMapOfNormalizedData[isDef(col) ? icol : key] == 1 ? (convertBools ? true : 1) : (convertBools ? false : 0)
+            icol++
+        })
+    
+        return res
+    },
+
+    /**
+     * <odoc>
      * <key>ow.ai.normalize.withSchema(aSimpleMapOfData, aMapSchema, convertBools) : Array</key>
      * Tries to normalize and return aSimpleMapOfData normalized according with aMapSchema provided. Each element of aMapSchema
      * should be a map describing how to normalize aSimpleMapOfData. Example:\
@@ -1006,55 +1188,80 @@ OpenWrap.ai.prototype.normalize = {
         _$(sAR, "aMapSchema").isMap().$_()
         convertBools = _$(convertBools, "convertBools").isBoolean().default(false)
     
-        var res = [];
-        loadLodash();
+        const _scaleArray = (anArray, aMax, aMin) => {
+            var max = isDef(aMax) ? aMax : anArray.reduce((a,b) => Math.max(a,b) )
+            var min = isDef(aMin) ? aMin : anArray.reduce((a,b) => Math.min(a,b) )
+    
+            return anArray.map(v => { if (v > aMax) v = aMax; if (v < aMin) v = aMin; return (v - min)/(max - min) })
+        }
+        var res = {}
     
         for(var s in sAR) {
+            var schema = sAR[s]
+            var col = schema.col
+            var max = schema.max
+            var min = schema.min ? schema.min : 0
+            var oneOf = schema.oneOf
+            var anyOf = schema.anyOf
+            var scaleOf = schema.scaleOf
+    
             // Ensure it has a col
-            if (isDef(sAR[s].col)) {
-                // If it has a max
-                if (isDef(sAR[s].max)) {
-                    res[sAR[s].col] = ow.ai.normalize.scaleArray([aAR[s]], sAR[s].max, sAR[s].min);
-                    continue;
-                }
-                if (isDef(sAR[s].oneOf) && !isArray(aAR[s])) {
-                    var subres = [];
-                    for(var ss = 0; ss < sAR[s].oneOf.length; ss++) {
-                        subres[ss] = 0;
-                    }
-                    subres[sAR[s].oneOf.indexOf(aAR[s])] = 1;
-                    res[sAR[s].col] = subres;
-                    continue;
-                }
-                if (isDef(sAR[s].anyOf) && isArray(aAR[s])) {
-                    var subres = [];
-                    for(var ss = 0; ss < sAR[s].anyOf.length; ss++) {
-                        subres[ss] = 0;
-                    }        
-                    for(var ss in aAR[s]) {
-                        subres[sAR[s].anyOf.indexOf(aAR[s][ss])] = 1;
-                    }
-                    res[sAR[s].col] = subres;
-                    continue;
-                }
-                if (isDef(sAR[s].scaleOf)) {
-                    if (isArray(aAR[s])) {
-                        var subres = [];
-                        for(var ss in aAR[s]) {
-                            subres[ss] = $from(sAR[s].scaleOf).equals("val", aAR[s][ss]).at(0).weight
-                        }
-                        res[sAR[s].col] = subres;
-                    } else {
-                        res[sAR[s].col] = $from(sAR[s].scaleOf).equals("val", aAR[s]).at(0).weight
-                    }
-                    continue;
-                }
-                // Else assume it's boolean
-                res[sAR[s].col] =  (aAR[s]) ? (convertBools ? 1 : true) : (convertBools ? 0 : false)
+            if (isDef(col) && !isArray(res)) res = []
+            // If it has a max
+            if (isDef(max)) {
+                res[isDef(col) ? col : s] = _scaleArray([aAR[s]], max, min)[0]
+                continue
             }
+            if (isDef(oneOf) && !isArray(aAR[s])) {
+                var subres = []
+                for(var ss = 0; ss < oneOf.length; ss++) {
+                    subres[ss] = 0
+                }
+                subres[oneOf.indexOf(aAR[s])] = 1
+                res[isDef(col) ? col : s] = subres
+                continue
+            }
+            if (isDef(anyOf) && isArray(aAR[s])) {
+                var subres = [];
+                for(var ss = 0; ss < anyOf.length; ss++) {
+                    subres[ss] = 0
+                }        
+                for(var ss in aAR[s]) {
+                    subres[anyOf.indexOf(aAR[s][ss])] = 1
+                }
+                res[isDef(col) ? col : s] = subres
+                continue
+            }
+            if (isDef(scaleOf)) {
+                if (isArray(aAR[s])) {
+                    var subres = []
+                    for(var ss in aAR[s]) {
+                        subres[ss] = scaleOf.reduce((p, c) => (c.val === aAR[s] ? c.weight : (isNumber(p) ? p : p.weight)))
+                    }
+                    res[isDef(col) ? col : s] = subres
+                } else {
+                    res[isDef(col) ? col : s] = scaleOf.reduce((p, c) => (c.val === aAR[s] ? c.weight : (isNumber(p) ? p : p.weight)) )
+                }
+                continue
+            }
+            // Else assume it's boolean
+            res[isDef(col) ? col : s] =  (aAR[s]) ? (convertBools ? 1 : true) : (convertBools ? 0 : false)
+            //}
         }
     
-        return _.flatten(res);
+        if (isArray(res)) {
+            var _res = []
+            res.forEach(r => {
+                if (isArray(r)) {
+                    _res = _res.concat(r)
+                } else {
+                    _res.push(r)
+                }
+            })
+            return _res
+        } else {
+            return res
+        }
     },
 
     /**

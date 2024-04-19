@@ -156,7 +156,7 @@
 		},
 		{
 			"description": "jjwt",
-			"path": ["lib/jjwat-api-0.12.4.jar", "lib/jjwat-gson-0.12.4.jar", "lib/jjwat-impl-0.12.4.jar"],
+			"path": ["lib/jjwt-api-0.12.5.jar", "lib/jjwt-gson-0.12.5.jar", "lib/jjwt-impl-0.12.5.jar"],
 			"version": "0.12.4",
 			"changes": false,
 			"type": ["java"],
