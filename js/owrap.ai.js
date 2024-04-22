@@ -150,6 +150,31 @@ OpenWrap.ai.prototype.__gpttypes = {
                        response_format: (aJsonFlag ? { type: "json_object" } : __)
                     }, aOptions.params))   
                 },
+                rawImgGen: (aPrompt, aModel) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.map(c => isMap(c) ? c.content : c )
+                 
+                    _r.conversation = aPrompt
+                    return _r._request("/v1/images/generations", merge({
+                       model: aModel,
+                       prompt: msgs.join("\n"),
+                       response_format: "b64_json"
+                    }, aOptions.params))   
+                    // data[0].b64_json
+                },
+                promptImgGen: (aPrompt, aModel) => {
+                    var res = _r.rawImgGen(aPrompt, aModel)
+                    if (isArray(res.data) && res.data.length > 0) {
+                        return res.data.map(r => af.fromBase64(r.b64_json))
+                    } else {
+                        return res
+                    }
+                },
                 addPrompt: (aRole, aPrompt) => {
                     if (isUnDef(aPrompt)) {
                         aPrompt = aRole
@@ -291,6 +316,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     _r.conversation = aPrompt
                     return _r._request("/api/chat", body)   
                 },
+                rawImgGen: (aPrompt, aModel) => {
+                    throw "Not implemented for Ollama"
+                },
+                promptImgGen: (aPrompt, aModel) => {
+                    throw "Not implemented for Ollama"
+                },
                 addPrompt: (aRole, aPrompt) => {
                     if (isUnDef(aPrompt)) {
                         aPrompt = aRole
@@ -426,6 +457,39 @@ OpenWrap.ai.prototype.gpt.prototype.setConversation = function(aConversation) {
  */
 OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag) {
     return this.model.rawPrompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag)
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptImgGen(aPrompt, aModel, anOutputPathPrefix) : Array</key>
+ * Tries to prompt aPrompt (a string or an array of strings), aModel (defaults to the one provided on the constructor)
+ * to generate one or more images and anOutputPathPrefix to which the number of the image and ".png" will be appended.
+ * Returns an array of the files generated.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptImgGen = function(aPrompt, aModel, anOutputPath) {
+    anOutputPath = _$(anOutputPath, "anOutputPath").isString().default(String(java.lang.System.getProperty("java.io.tmpdir")) + "/image")
+    var _res = this.model.promptImgGen(aPrompt, aModel)
+    var files = []
+    _res.forEach((r, idx) => {
+        var f = anOutputPath + idx + ".png"
+        var os = io.writeFileStream(f)
+        ioStreamCopy(os, af.fromBytes2InputStream(r))
+        os.close()
+        files.push(f)
+    })
+    return files
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.rawImgGen(aPrompt, aModel) : Map</key>
+ * Tries to generate an image based on aPrompt (a string or an array of strings) with aModel (defaults to the one provided on the constructor).
+ * Returns the raw result.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.rawImgGen = function(aPrompt, aModel) {
+    return this.model.rawImgGen(aPrompt, aModel)
 }
 
 /**
@@ -632,6 +696,7 @@ global.$gpt = function(aModel) {
     var _g = new ow.ai.gpt(type, aModel)
     var _r = {
         getGPT: () => _g,
+        getAPI: () => _g,
         getModels: () => {
             return _g.getModels()
         },
