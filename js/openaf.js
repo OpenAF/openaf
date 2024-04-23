@@ -913,6 +913,9 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	if (!Array.isArray(anArrayOfEntries)) return "";
 	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
 
+	if (anArrayOfEntries.length == 0) return ""
+	anArrayOfEntries = anArrayOfEntries.map(r => "[object Object]" != Object.prototype.toString.call(r) ? { " ": r } : r)
+
 	// If wordwrap generate new array
 	if (aWidthLimit > 0) {
 		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
