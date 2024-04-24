@@ -251,6 +251,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	ALTERNATIVE_PROCESSEXPR     : true,
 	HTTP_TIMEOUT                : __,
     HTTP_CON_TIMEOUT            : __,
+	HTTP_DEFAULT_HEADERS		: true,
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
@@ -6855,7 +6856,7 @@ const $rest = function(ops) {
 		_toptions.login = _$(_toptions.login, "login").default(__);
 		_toptions.pass = _$(_toptions.pass, "pass").default(__);
 		_toptions.options = _$(_toptions.options, "options").isMap().default(__)
-		_toptions.requestHeaders = _$(_toptions.requestHeaders, "requestHeaders").isMap().default({ Accept: "*/*" })
+		_toptions.requestHeaders = _$(_toptions.requestHeaders, "requestHeaders").isMap().default(__flags.HTTP_DEFAULT_HEADERS ? { Accept: "*/*" } : __)
 	};
 
     _rest.prototype.__check = function(aBaseURI) {
