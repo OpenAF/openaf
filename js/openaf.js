@@ -6855,6 +6855,7 @@ const $rest = function(ops) {
 		_toptions.login = _$(_toptions.login, "login").default(__);
 		_toptions.pass = _$(_toptions.pass, "pass").default(__);
 		_toptions.options = _$(_toptions.options, "options").isMap().default(__)
+		_toptions.requestHeaders = _$(_toptions.requestHeaders, "requestHeaders").isMap().default({ Accept: "*/*" })
 	};
 
     _rest.prototype.__check = function(aBaseURI) {

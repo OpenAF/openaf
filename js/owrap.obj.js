@@ -2544,8 +2544,8 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		var rmap = (urlEncode) ?
-				   merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
+				   merge({"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8"} , aRequestMap) :
+				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 
 		try {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes, options)
@@ -2660,8 +2660,8 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		var rmap = (urlEncode) ?
-		           merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
+		           merge({"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8"} , aRequestMap) :
+				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 		
 		try {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes, options)
@@ -2717,8 +2717,8 @@ OpenWrap.obj.prototype.rest = {
  		}
 		
 		var rmap = (urlEncode) ?
-		           merge({"Content-Type":"application/x-www-form-urlencoded"} , aRequestMap) :
-				   merge({"Content-Type":"application/json; charset=utf-8"} , aRequestMap);
+		           merge({"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8"} , aRequestMap) :
+				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 		
 		try {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes, options)
@@ -2819,7 +2819,7 @@ OpenWrap.obj.prototype.rest = {
 		
 		try {
 			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "HEAD", __, aRequestMap, __, _t, __, options)
-			res.contentType = "application/json"
+			res.contentType = "application/json; charset=UTF-8"
 			res.response = h.responseHeaders()
 			if (isUnDef(__h)) h.close()
 			return res
