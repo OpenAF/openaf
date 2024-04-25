@@ -2548,7 +2548,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes, options)
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "POST", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
 			if (isUnDef(__h) && !retBytes) h.close()
 			return res
 		} catch(e) {
@@ -2613,7 +2613,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonUpload: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod, options) {
-		return jsonParse(af.toEncoding(this.upload(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod, options).response, "cp1252"));
+		return jsonParse(this.upload(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, aMethod, options).response);
 	},
 
 	/**
@@ -2626,7 +2626,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonCreate: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
-		return jsonParse(af.toEncoding(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options).response, "cp1252"));
+		return jsonParse(this.create(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options).response);
 	},
 	
 	/**
@@ -2664,7 +2664,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 		
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes, options)
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PUT", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
 			if (isUnDef(__h) && !retBytes) h.close()
 			return res
 		} catch(e) {
@@ -2683,7 +2683,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonSet: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
-		return jsonParse(af.toEncoding(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options).response, "cp1252"));
+		return jsonParse(this.set(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options).response);
 	},
 
 	/**
@@ -2721,7 +2721,7 @@ OpenWrap.obj.prototype.rest = {
 				   merge({"Content-Type":"application/json; charset=UTF-8"} , aRequestMap);
 		
 		try {
-			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : af.toEncoding(stringify(aDataRow, __, ''), "cp1252", "UTF-8")), rmap, retBytes, _t, retBytes, options)
+			var res = h.exec(aURL + ow.obj.rest.writeIndexes(aIdx), "PATCH", (isString(aDataRow) ? aDataRow : (urlEncode) ? ow.obj.rest.writeQuery(aDataRow) : stringify(aDataRow, __, '')), rmap, retBytes, _t, retBytes, options)
 			if (isUnDef(__h) && !retBytes) h.close()
 			return res
 		} catch(e) {
@@ -2739,7 +2739,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonPatch: function(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options) {
-		return jsonParse(af.toEncoding(this.patch(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options).response, "cp1252"));
+		return jsonParse(this.patch(aURL, aIdx, aDataRow, _l, _p, _t, aRequestMap, urlEncode, __h, retBytes, options).response);
 	},	
 	/**
 	 * <odoc>
@@ -2788,7 +2788,7 @@ OpenWrap.obj.prototype.rest = {
 	 * </odoc>
 	 */
 	jsonRemove: function(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes, options) {
-		return jsonParse(af.toEncoding(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes, options).response, "cp1252"));
+		return jsonParse(this.remove(aURL, aIdx, _l, _p, _t, aRequestMap, __h, retBytes, options).response);
 	},
 	/**
 	 * <odoc>
