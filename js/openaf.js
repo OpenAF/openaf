@@ -4414,7 +4414,7 @@ var $from = function(a) {
  * insert(obj, 'field', value), now(negativeTimeDiff)\
  * get(nameOrPath), set(obj, path), setp(obj, path, name)\
  * range(count), ranges(count, start, step)\
- * inc(name), dec(name), unset(obj, name)\
+ * inc(name), dec(name), getc(name), unset(obj, name)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4737,6 +4737,10 @@ const $path = function(aObj, aPath, customFunctions) {
 				}
 				return _prev.dec()
 			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		getc: {
+			_func: ar => $get(ar[0]).get(),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
 		unset: {
