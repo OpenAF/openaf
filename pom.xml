@@ -235,7 +235,7 @@
     <dependency>
       <groupId>org.snmp4j</groupId>
       <artifactId>snmp4j-agent</artifactId>
-      <version>3.8.0</version>
+      <version>3.8.1</version>
     </dependency>
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
