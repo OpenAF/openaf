@@ -4414,6 +4414,7 @@ var $from = function(a) {
  * insert(obj, 'field', value), now(negativeTimeDiff)\
  * get(nameOrPath), set(obj, path), setp(obj, path, name)\
  * range(count), ranges(count, start, step)\
+ * inc(name), dec(name), unset(obj, name)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4715,6 +4716,35 @@ const $path = function(aObj, aPath, customFunctions) {
 		ranges: {
 			_func: ar => range(ar[0], ar[1], ar[2]),
 			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		inc: {
+			_func: ar => {
+				var _prev = $get(ar[0])
+				if (isUnDef(_prev)) { 
+					_prev = $atomic()
+					$set(ar[0], _prev)
+				}
+				return _prev.inc()
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		dec: {
+			_func: ar => {
+				var _prev = $get(ar[0])
+				if (isUnDef(_prev)) {
+					_prev = $atomic()
+					$set(ar[0], _prev)
+				}
+				return _prev.dec()
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		unset: {
+			_func: ar => {
+				$unset(ar[1])
+				return ar[0]
+			},
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
