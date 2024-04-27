@@ -251,6 +251,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	ALTERNATIVE_PROCESSEXPR     : true,
 	HTTP_TIMEOUT                : __,
     HTTP_CON_TIMEOUT            : __,
+	HTTP_DEFAULT_HEADERS		: true,
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
@@ -4413,6 +4414,7 @@ var $from = function(a) {
  * insert(obj, 'field', value), now(negativeTimeDiff)\
  * get(nameOrPath), set(obj, path), setp(obj, path, name)\
  * range(count), ranges(count, start, step)\
+ * inc(name), dec(name), getc(name), unset(obj, name)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4714,6 +4716,39 @@ const $path = function(aObj, aPath, customFunctions) {
 		ranges: {
 			_func: ar => range(ar[0], ar[1], ar[2]),
 			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		inc: {
+			_func: ar => {
+				var _prev = $get(ar[0])
+				if (isUnDef(_prev)) { 
+					_prev = $atomic()
+					$set(ar[0], _prev)
+				}
+				return _prev.inc()
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		dec: {
+			_func: ar => {
+				var _prev = $get(ar[0])
+				if (isUnDef(_prev)) {
+					_prev = $atomic()
+					$set(ar[0], _prev)
+				}
+				return _prev.dec()
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		getc: {
+			_func: ar => $get(ar[0]).get(),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		unset: {
+			_func: ar => {
+				$unset(ar[1])
+				return ar[0]
+			},
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
@@ -6855,6 +6890,7 @@ const $rest = function(ops) {
 		_toptions.login = _$(_toptions.login, "login").default(__);
 		_toptions.pass = _$(_toptions.pass, "pass").default(__);
 		_toptions.options = _$(_toptions.options, "options").isMap().default(__)
+		_toptions.requestHeaders = _$(_toptions.requestHeaders, "requestHeaders").isMap().default(__flags.HTTP_DEFAULT_HEADERS ? { Accept: "*/*" } : __)
 	};
 
     _rest.prototype.__check = function(aBaseURI) {

@@ -214,16 +214,23 @@ OpenWrap.ai.prototype.__gpttypes = {
                        conTimeout    : 60000,
                        httpClient    : _h,
                        requestHeaders: { 
-                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key)
+                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key),
+                          Accept       : "*/*"
                        } 
                     }
                     _h.close()
                  
                     var _fnh = r => {
-                        if (isMap(r)) {
-                            return (isDef(r.error) ? jsonParse(r.error, true, __, true) : r)
+                        var _r 
+                        if ("function" !== typeof r.getClass) {
+                            _r = (isDef(r.error) ? jsonParse(r.error, __, __, true) : r)
                         } else {
-                            return jsonParse(af.fromBytes2String(r.readAllBytes()), true)
+                            _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
+                        }
+                        if (typeof _r.response !== "undefined") {
+                            return jsonParse(_r.response)
+                        } else {
+                            return _r
                         }
                     }
 
@@ -301,9 +308,19 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                    var uri = "/api/chat"
                  
+                    /*var _jsonOptimize = _msgs => {
+                        if ($from(_msgs).equals("role", "system").count() == 1) {
+                            return _msgs.map(_msg => _msg.content).join(" ")
+                        } else {
+                            return _msgs
+                        }
+                    }*/
+
                     var body = {
                         model: aModel,
+                        //messages: aJsonFlag ? _jsonOptimize(msgs) : msgs,
                         messages: msgs,
                         options: {
                             temperature: aTemperature,
@@ -312,9 +329,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                         //prompt: $from(msgs).equals("role", "user").select(r => r.content).join(";\n"),
                         //system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
                     }
-                    if (aJsonFlag) body.format = "json"
-                    _r.conversation = aPrompt
-                    return _r._request("/api/chat", body)   
+                    if (aJsonFlag) {
+                        body.format = "json" 
+                        /*uri = "/api/generate"
+                        body.prompt = body.messages
+                        delete body.messages*/
+                    } //else {
+                        _r.conversation = aPrompt
+                    //}
+                    return _r._request(uri, body)   
                 },
                 rawImgGen: (aPrompt, aModel) => {
                     throw "Not implemented for Ollama"
@@ -358,25 +381,48 @@ OpenWrap.ai.prototype.__gpttypes = {
                  
                     if (!aURI.startsWith("/")) aURI = "/" + aURI
 
-                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var _h
+                    if (isUnDef(this._h)) {
+                        var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                        _h.close()
+                    } else {
+                        _h = this._h
+                    }
+                    
                     var __r = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
+                       requestHeaders: {
+                         Accept: "*/*"
+                       }
                     }
-                    _h.close()
                  
                     var _fnh = r => {
-                        if (isMap(r)) {
-                            return (isDef(r.error) ? jsonParse(r.error, true, __, true) : r)
+                        var _r 
+                        if ("function" !== typeof r.getClass) {
+                            _r = (isDef(r.error) ? jsonParse(r.error, __, __, true) : r)
                         } else {
-                            return jsonParse(af.fromBytes2String(r.readAllBytes()), true)
+                            _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
+                        }
+                        if (typeof _r.response !== "undefined") {
+                            return jsonParse(_r.response)
+                        } else {
+                            return _r
                         }
                     }
 
+                    var _r
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__r).get2Stream(_url + aURI))
-                    case "POST": return _fnh($rest(__r).post2Stream(_url + aURI, aData))
+                    case "GET" :
+                        var _rr = $rest(__r).get2Stream(_url + aURI)
+                        _r = _fnh(_rr)
+                        break
+                    case "POST": 
+                        var _rr = $rest(__r).post2Stream(_url + aURI, aData)
+                        _r = _fnh(_rr)
+                        break
                     }
+                    return _r
                 }
             }
             return _r
