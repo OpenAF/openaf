@@ -110,7 +110,7 @@
 		{
 			"description": "Rhino",
 			"path": ["lib/js.jar"],
-			"version": "1.7.7.2",
+			"version": "1.7.15",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/mozilla/rhino/master/LICENSE.txt",
@@ -197,8 +197,8 @@
 		},
 		{
 			"description": "Apache Commons CSV",
-			"path": ["lib/commons-csv-1.10.jar"],
-			"version": "1.10",
+			"path": ["lib/commons-csv-1.11.jar"],
+			"version": "1.11",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
