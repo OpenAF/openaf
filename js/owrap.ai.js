@@ -766,6 +766,16 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
+         * <key>$gpt.promptImgGen(aPrompt, aModel, aPath) : Array</key>
+         * Tries to prompt aPrompt and aModel (defaults to the one provided on the constructor) to generate one or more images and aPath to which the number of the image and ".png" will be saved to.
+         * Returns an array of the image files generated.
+         * </odoc>
+         */
+        promptImgGen: (aPrompt, aModel, aPath) => {
+            return _g.promptImgGen(aPrompt, aModel, aPath)
+        },
+        /**
+         * <odoc>
          * <key>$gpt.promptMD(aPrompt, aRole, aModel, aTemperature) : String</key>
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a markdown string.
          * </odoc>
