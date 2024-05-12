@@ -4458,11 +4458,11 @@ const $path = function(aObj, aPath, customFunctions) {
 		},
 		search_keys: {
 			_func: ar => searchKeys(ar[0], ar[1]),
-			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		},
 		search_values: {
 			_func: ar => searchValues(ar[0], ar[1]),
-			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		},
 		delete: {
 			_func: ar => { $$(ar[0]).unset(ar[1]); return ar[0] },
