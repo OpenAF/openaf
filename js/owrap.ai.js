@@ -466,12 +466,12 @@ OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aT
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) : String</key>
+ * <key>ow.ai.gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) : String</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.promptImage = function(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) {
-    return this.model.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature)
+OpenWrap.ai.prototype.gpt.prototype.promptImage = function(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) {
+    return this.model.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag)
 }
 
 /**
@@ -757,12 +757,12 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
-         * <key>$gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) : String</key>
+         * <key>$gpt.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) : String</key>
          * Tries to prompt aPrompt (a string or an array of strings) with aImage (a file path or a base64 string representation), aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
          * </odoc>
          */
-        promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature) => {
-            return _g.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature)
+        promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag) => {
+            return _g.promptImage(aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, jsonFlag)
         },
         /**
          * <odoc>
