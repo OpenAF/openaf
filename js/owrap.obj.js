@@ -517,6 +517,41 @@ OpenWrap.obj.prototype.searchArray = function(anArray, aPartialMap, useRegEx, ig
 
 /**
  * <odoc>
+ * <key>ow.obj.key2array(aMap, aREMatch, outkey, removeEmptys) : Object</key>
+ * Given aMap will return an array of values where the keys match the aREMatch regular expression. Optionally
+ * you can provide an outkey to have return map with a key with the resulting array. If removeEmptys is true it will remove
+ * any undefined, null or empty values.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.key2array = function(aMap, aREMatch, outkey, removeEmptys) {
+   _$(aMap, "aMap").isMap().$_()
+   outkey = _$(outkey, "outkey").isString().default(__)
+   removeEmptys = _$(removeEmptys, "removeEmptys").isBoolean().default(false)
+
+   var re = new RegExp(aREMatch)
+   var res = Object.keys(aMap)
+			 .filter(r => r.match(re))
+			 .sort((a,b) => a.replace(re, "") - b.replace(re, ""))
+
+   var _isEmpty = function(a) {
+	   return removeEmptys ? a === undefined || a === null || String(a).trim() === "" : false
+   }
+
+   return res
+		  .map(k => {
+			  if (outkey) {
+				  var v = {}
+				  v[outkey] = aMap[k]
+				  return !_isEmpty(aMap[k]) ? v : undefined
+			  } else {
+				  return aMap[k]
+			  }
+		  })
+		  .filter(e => !_isEmpty(e))
+}
+
+/**
+ * <odoc>
  * <key>ow.obj.fromObj2Array(anObj, aKey) : Array</key>
  * Tries to create an array of maps from the provided anObj map of maps. Optionally if aKey is provided
  * it will be added to each array map with the map key. Example:\
@@ -1858,6 +1893,8 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 			} else {
 				aBody = Packages.okhttp3.MultipartBody.Builder().setType(Packages.okhttp3.MultipartBody.FORM).addFormDataPart(this.__ufn, this.__uf, Packages.okhttp3.RequestBody.create(isNull(mediaType) ? Packages.okhttp3.MediaType.get("application/octet-stream") : Packages.okhttp3.MediaType.get(mediaType), f)).build()
 			}
+		} else {
+			aBody = Packages.okhttp3.RequestBody.create(Packages.okhttp3.MediaType.get("application/json"), "")
 		}
 	}
 

@@ -540,7 +540,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -----------------------
 Third-party name      : Rhino
-Version               : 1.7.7.2
+Version               : 1.7.15
 Changed from original : No
 Location in openaf.jar: lib/js.jar
 License               : 
@@ -2151,9 +2151,9 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : Apache Commons CSV
-Version               : 1.10
+Version               : 1.11
 Changed from original : No
-Location in openaf.jar: lib/commons-csv-1.10.jar
+Location in openaf.jar: lib/commons-csv-1.11.jar
 License               : 
 
 Apache License
@@ -3262,80 +3262,82 @@ License               :
 
   <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/light-f13f84a2af0d.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/dark-1ee85695b584.css" /><link data-color-theme="dark_dimmed" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_dimmed-8c42799cfb52.css" /><link data-color-theme="dark_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_high_contrast-dc99d916bf90.css" /><link data-color-theme="dark_colorblind" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_colorblind-0a83868d0e43.css" /><link data-color-theme="light_colorblind" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_colorblind-3c798f5a8bef.css" /><link data-color-theme="light_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_high_contrast-4c72a7f3b765.css" /><link data-color-theme="light_tritanopia" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_tritanopia-222bf22536c7.css" /><link data-color-theme="dark_tritanopia" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_tritanopia-c1d9496197fa.css" />
     <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-primitives-0b5bee5c70e9.css" />
-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-44fa1513ddd0.css" />
-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/global-2a3cd3230bd6.css" />
-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/github-07f750db5d7c.css" />
-  <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/repository-fa69f138fe8d.css" />
+    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-241a089e9a0a.css" />
+    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/global-32f8814d2265.css" />
+    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/github-da273831c5c7.css" />
+  <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/repository-33a7c32c5a6c.css" />
 <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/code-111be5e4092d.css" />
 
   
 
 
-  <script type="application/json" id="client-env">{"locale":"en","featureFlags":["code_vulnerability_scanning","copilot_conversational_ux_history_refs","copilot_smell_icebreaker_ux","copilot_implicit_context","failbot_handle_non_errors","geojson_azure_maps","image_metric_tracking","marketing_forms_api_integration_contact_request","marketing_pages_search_explore_provider","turbo_experiment_risky","sample_network_conn_type","no_character_key_shortcuts_in_inputs","react_start_transition_for_navigations","custom_inp","remove_child_patch"]}</script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/wp-runtime-03e5158c68fb.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_dompurify_dist_purify_js-6890e890956f.js"></script>
+  <script type="application/json" id="client-env">{"locale":"en","featureFlags":["code_vulnerability_scanning","copilot_conversational_ux_history_refs","copilot_smell_icebreaker_ux","copilot_implicit_context","copilot_stop_response","failbot_handle_non_errors","geojson_azure_maps","image_metric_tracking","marketing_forms_api_integration_contact_request","marketing_pages_search_explore_provider","turbo_experiment_risky","sample_network_conn_type","no_character_key_shortcuts_in_inputs","react_start_transition_for_navigations","custom_inp","remove_child_patch"]}</script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/wp-runtime-cbf820ed770f.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_dompurify_dist_purify_js-13ee51630182.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_oddbird_popover-polyfill_dist_popover_js-7bd350d761f4.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_smoothscroll-polyfill_dist_smoothscroll_js-node_modules_stacktrace-parse-a448e4-bb5415637fe0.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/environment-775215f6b8df.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/environment-5555c6700ada.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_selector-observer_dist_index_esm_js-9f960d9b217c.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_behaviors_dist_esm_focus-zone_js-086f7a27bac0.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_relative-time-element_dist_index_js-c76945c5961a.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_combobox-nav_dist_index_js-node_modules_github_markdown-toolbar-e-820fc0-bc8f02b96749.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_auto-complete-element_dist_index_js-03fc21f4e80c.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_auto-complete-element_dist_index_js-node_modules_github_details-d-ed9a97-3fb8ce186301.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_text-expander-element_dist_index_js-8a621df59e80.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_delegated-events_dist_index_js-node_modules_stacktrace-parser_dist_stack-443cd5-1ba4dbac454f.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_filter-input-element_dist_index_js-node_modules_github_remote-inp-b7d8f4-7dc906febe69.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_file-attachment-element_dist_index_js-node_modules_primer_view-co-27181b-3509ed8075c4.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_onfocus_ts-ui_packages_trusted-types-policies_policy_ts-ui_packages-6fe316-745e8b6794ab.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/github-elements-34cbf079a4f4.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/element-registry-85dfa7d5b4f0.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_file-attachment-element_dist_index_js-node_modules_primer_view-co-3959a9-28f0ee9fece0.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_onfocus_ts-ui_packages_trusted-types-policies_policy_ts-ui_packages-6fe316-d6d20db61005.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/github-elements-f7fe73c93e30.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/element-registry-450bd60214bd.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_catalyst_lib_index_js-node_modules_github_hydro-analytics-client_-4da1df-9de8d527f925.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_mini-throttle_dist_index_js-node_modules_stacktrace-parser_dist_s-1acb1c-a745699a1cfa.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_braintree_browser-detection_dist_browser-detection_js-node_modules_githu-fd5530-6f4d94175afe.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_lit-html_lit-html_js-5b376145beff.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_morphdom_dist_morphdom-esm_js-node_modules_github_memoize_dist_esm_index_js-05801f7ca718.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_turbo_dist_turbo_es2017-esm_js-c91f4ad18b62.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_remote-form_dist_index_js-node_modules_delegated-events_dist_inde-893f9f-a8ec7ed862cf.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_scroll-anchoring_dist_scroll-anchoring_esm_js-node_modules_github_detail-c9d0ba-387cde917623.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_scroll-anchoring_dist_scroll-anchoring_esm_js-node_modules_github_hotkey-1a1d91-49c03ceb2f0c.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_color-convert_index_js-72c9fbde5ad4.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_behaviors_dist_esm_dimensions_js-node_modules_github_jtml_lib_index_js-95b84ee6bc34.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_quote-selection_dist_index_js-node_modules_github_session-resume_-84957b-7b4e472db160.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_alive_alive_ts-b956d50b9283.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_updatable-content_ts-ui_packages_hydro-analytics_hydro-analytics_ts-82813f-960b7c5df16a.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_behaviors_task-list_ts-app_assets_modules_github_onfocus_ts-app_ass-421cec-9de4213015af.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_sticky-scroll-into-view_ts-94209c43e6af.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_session-resume_dist_index_js-node_modules_primer_behaviors_dist_e-da6ec6-3f39339c9d98.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_quote-selection_dist_index_js-node_modules_github_textarea-autosi-9e0349-b0f4de5b992f.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_sudo_sudo_ts-74c0d1051bc3.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_updatable-content_ts-ui_packages_hydro-analytics_hydro-analytics_ts-82813f-05346aa543fe.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_behaviors_task-list_ts-app_assets_modules_github_onfocus_ts-app_ass-421cec-355eb4940fad.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_sticky-scroll-into-view_ts-1390d8d5a0dc.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_behaviors_ajax-error_ts-app_assets_modules_github_behaviors_include-2e2258-05fd80a7ea89.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_behaviors_commenting_edit_ts-app_assets_modules_github_behaviors_ht-83c235-9285faa0e011.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/behaviors-a9123655fa03.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/behaviors-af6aed1ee94e.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_delegated-events_dist_index_js-node_modules_github_catalyst_lib_index_js-06ff531-2ea61fcc9a71.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/notifications-global-6d6db5144cc3.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_repositories_get-repo-element_ts-f6b365a47eda.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/code-menu-67595c3a6d0c.js"></script>
   
   <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/react-lib-1fbfc5be2c18.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_octicons-react_dist_index_esm_js-node_modules_primer_react_lib-es-541a38-6ce7d7c3f9ee.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_octicons-react_dist_index_esm_js-node_modules_primer_react_lib-es-541a38-ade861844008.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Box_Box_js-8f8c5e2a2cbf.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Button_Button_js-95a7748e3c39.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_TooltipV2_Tooltip_js-5c105bd4b6bc.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_node_modules_primer_octicons-react_dist_index_esm_mjs-cb996b1b8e38.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_TooltipV2_Tooltip_js-a1d2cb4ed6ce.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_ActionList_index_js-e55780ce0aba.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Text_Text_js-node_modules_primer_react_lib-esm_Text-7845da-4af5adcf486a.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_FormControl_FormControl_js-2a0ace3735a5.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_AnchoredOverlay_AnchoredOverlay_js-61314bd0d65c.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_ActionList_index_js-f41028bf9254.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Text_Text_js-node_modules_primer_react_lib-esm_Text-85a14b-7813b4d5597b.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_FormControl_FormControl_js-5f6d6fb70bbd.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_AnchoredOverlay_AnchoredOverlay_js-6305545ffa4a.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_react-router-dom_dist_index_js-3b41341d50fe.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Heading_Heading_js-node_modules_primer_react_lib-es-09461f-46d4f0de9a1d.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_ConfirmationDialog_ConfirmationDialog_js-98120b3f8583.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Label_Label_js-node_modules_primer_react_lib-esm_Se-35d2ce-eb91f98e501d.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Dialog_js-node_modules_primer_react_lib-esm_TabNav_-8321f5-8bee569a21c5.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_AvatarStack_AvatarStack_js-node_modules_primer_reac-4256c8-7e2981ac3f9f.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_mini-throttle_dist_index_js-node_modules_primer_react_lib-esm_Bre-ed0fd7-8637a7921e06.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_ConfirmationDialog_ConfirmationDialog_js-0e5bf03de200.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Heading_Heading_js-node_modules_primer_react_lib-es-09461f-2d30446b267e.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Label_Label_js-node_modules_primer_react_lib-esm_Se-443e5e-685ada640c03.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_AvatarStack_AvatarStack_js-node_modules_primer_reac-6dc608-e4063b816185.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Avatar_Avatar_js-node_modules_primer_react_lib-esm_-7f6456-e4e9e26a4e79.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_react-core_create-browser-history_ts-ui_packages_safe-storage_safe-storage_ts-ui_-682c2c-e45e451173ec.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_react-core_register-app_ts-e49454c9fd5c.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_paths_index_ts-ad6a9a567cec.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_react-core_register-app_ts-431888770d93.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_paths_index_ts-922fee1fcbe0.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_ref-selector_RefSelector_tsx-b257014a1aab.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_commit-attribution_index_ts-ui_packages_commit-checks-status_index_ts-ui_packages-c2bab3-1f250a08015f.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_react-shared_hooks_use-canonical-object_ts-ui_packages_code-view-shared_ho-3e492a-1f2f35d06e9f.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_github_blob-anchor_ts-app_assets_modules_github_filter-sort_ts-app_assets_-e50ab6-fd8396d2490b.js"></script>
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/react-code-view-ec2fc83b887f.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_commit-attribution_index_ts-ui_packages_commit-checks-status_index_ts-ui_packages-59a8e3-97e4e17c18e1.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/app_assets_modules_react-shared_hooks_use-canonical-object_ts-ui_packages_code-view-shared_ho-e725dc-7c9b46c9f2b9.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/node_modules_github_mini-throttle_dist_index_js-app_assets_modules_github_blob-anchor_ts-app_-55c012-6f0349cfd4d6.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/ui_packages_code-view-shared_components_files-search_FileResultsList_tsx-dbd52a61902c.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/react-code-view-145a97048319.js"></script>
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/react-code-view.f2d60f636eb02c2001df.module.css" />
 
 
   <title>okhttp/LICENSE.txt at master · square/okhttp · GitHub</title>
@@ -3350,7 +3352,7 @@ License               :
   <meta name="current-catalog-service-hash" content="82c569b93da5c18ed649ebd4c2c79437db4611a6a1373e805a3cb001c64130b7">
 
 
-  <meta name="request-id" content="CA87:14F85:2477478D:24C489A3:6621E6A6" data-pjax-transient="true"/><meta name="html-safe-nonce" content="9f90c159a4639e1da81b71abcc0d56662c8460139ded8c17f59226b2a1b25205" data-pjax-transient="true"/><meta name="visitor-payload" content="eyJyZWZlcnJlciI6IiIsInJlcXVlc3RfaWQiOiJDQTg3OjE0Rjg1OjI0Nzc0NzhEOjI0QzQ4OUEzOjY2MjFFNkE2IiwidmlzaXRvcl9pZCI6IjkxMTA4NDQ4ODc1NTA1MTg5NTAiLCJyZWdpb25fZWRnZSI6ImZyYSIsInJlZ2lvbl9yZW5kZXIiOiJmcmEifQ==" data-pjax-transient="true"/><meta name="visitor-hmac" content="dfd33d13e46b50c62f2b4ee4014ea61806152e28a5f81bdd61851726f2791336" data-pjax-transient="true"/>
+  <meta name="request-id" content="D194:35DED3:1E668B72:1ED9F545:663A1145" data-pjax-transient="true"/><meta name="html-safe-nonce" content="b486186c05a5ac4ab1aeeab764159c00b01aa2df063492ee5407f78ebd8c9989" data-pjax-transient="true"/><meta name="visitor-payload" content="eyJyZWZlcnJlciI6IiIsInJlcXVlc3RfaWQiOiJEMTk0OjM1REVEMzoxRTY2OEI3MjoxRUQ5RjU0NTo2NjNBMTE0NSIsInZpc2l0b3JfaWQiOiI2OTc1NjM4Mjk0NDQ5NDAxMDEiLCJyZWdpb25fZWRnZSI6ImZyYSIsInJlZ2lvbl9yZW5kZXIiOiJmcmEifQ==" data-pjax-transient="true"/><meta name="visitor-hmac" content="3efaad46bf92f290f13fb23adbbffb5d3b938951e0809e90dcd4a9838b579362" data-pjax-transient="true"/>
 
 
     <meta name="hovercard-subject-tag" content="repository:5152285" data-turbo-transient>
@@ -3362,11 +3364,7 @@ License               :
   <meta name="selected-link" value="repo_source" data-turbo-transient>
   <link rel="assets" href="https://github.githubassets.com/">
 
-    <meta name="google-site-verification" content="c1kuD-K2HIVF635lypcsWPoD4kilo5-jA_wBFyT4uMY">
-  <meta name="google-site-verification" content="KT5gs8h0wvaagLKAVWq8bbeNwnZZK1r1XQysX3xurLU">
-  <meta name="google-site-verification" content="ZzhVyEFwb7w3e0-uOTltm8Jsck2F5StVihD0exw2fsA">
-  <meta name="google-site-verification" content="GXs5KoUUkNCoaAZn7wPN-t01Pywp9M3sEjnt_3_ZWPc">
-  <meta name="google-site-verification" content="Apib7-x98H0j5cPqHWwSMm6dNU4GmODRoqxLiDzdx9I">
+    <meta name="google-site-verification" content="Apib7-x98H0j5cPqHWwSMm6dNU4GmODRoqxLiDzdx9I">
 
 <meta name="octolytics-url" content="https://collector.github.com/github/collect" />
 
@@ -3377,21 +3375,26 @@ License               :
 
 
 
-
     <meta name="user-login" content="">
 
   
 
     <meta name="viewport" content="width=device-width">
+
     
+
       <meta name="description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - okhttp/LICENSE.txt at master · square/okhttp">
+
       <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="GitHub">
+
     <link rel="fluid-icon" href="https://github.com/fluidicon.png" title="GitHub">
     <meta property="fb:app_id" content="1401488693436528">
     <meta name="apple-itunes-app" content="app-id=1477376905, app-argument=https://github.com/square/okhttp/blob/master/LICENSE.txt" />
-      <meta name="twitter:image:src" content="https://opengraph.githubassets.com/83a92d26d95d9031fafedd397b2a3ad73831b07a71afac5393dc0d074ef79f09/square/okhttp" /><meta name="twitter:site" content="@github" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="okhttp/LICENSE.txt at master · square/okhttp" /><meta name="twitter:description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - square/okhttp" />
-      <meta property="og:image" content="https://opengraph.githubassets.com/83a92d26d95d9031fafedd397b2a3ad73831b07a71afac5393dc0d074ef79f09/square/okhttp" /><meta property="og:image:alt" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - square/okhttp" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="600" /><meta property="og:site_name" content="GitHub" /><meta property="og:type" content="object" /><meta property="og:title" content="okhttp/LICENSE.txt at master · square/okhttp" /><meta property="og:url" content="https://github.com/square/okhttp/blob/master/LICENSE.txt" /><meta property="og:description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - square/okhttp" />
-      
+
+      <meta name="twitter:image:src" content="https://opengraph.githubassets.com/2f787e134534d61119c3c1b24b6d63a5855c004bf1378607f8dc6fdb3feac3bd/square/okhttp" /><meta name="twitter:site" content="@github" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="okhttp/LICENSE.txt at master · square/okhttp" /><meta name="twitter:description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - square/okhttp" />
+  <meta property="og:image" content="https://opengraph.githubassets.com/2f787e134534d61119c3c1b24b6d63a5855c004bf1378607f8dc6fdb3feac3bd/square/okhttp" /><meta property="og:image:alt" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - square/okhttp" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="600" /><meta property="og:site_name" content="GitHub" /><meta property="og:type" content="object" /><meta property="og:title" content="okhttp/LICENSE.txt at master · square/okhttp" /><meta property="og:url" content="https://github.com/square/okhttp/blob/master/LICENSE.txt" /><meta property="og:description" content="Square’s meticulous HTTP client for the JVM, Android, and GraalVM. - square/okhttp" />
+  
+
 
 
 
@@ -3402,24 +3405,24 @@ License               :
         <meta name="expected-hostname" content="github.com">
 
 
-  <meta http-equiv="x-pjax-version" content="cf6c53c175137332384794685e87bb58251899797fb840752712f2434dae60eb" data-turbo-track="reload">
+  <meta http-equiv="x-pjax-version" content="3d291df433d6dc2420ae88746d5ba31d6ac55cf287d41e36bb0de76fbdb12027" data-turbo-track="reload">
   <meta http-equiv="x-pjax-csp-version" content="f226bf37af9c33162063db3eb018fed7f088f86d0a20ca54c013fda96c7f2e05" data-turbo-track="reload">
-  <meta http-equiv="x-pjax-css-version" content="0c8e2f9c336496d3f8ae4c9b6be1ea4ed7e8b464d68159917fe8005547590e55" data-turbo-track="reload">
-  <meta http-equiv="x-pjax-js-version" content="4a3d9c069dd5987a4fa4ea53e37f8946a7240d8984046a2a6b06fc52077f42f2" data-turbo-track="reload">
+  <meta http-equiv="x-pjax-css-version" content="51091e1689a8e12a5662b5d5d94b9f9bf826e08f5cb723d52baee89230b38376" data-turbo-track="reload">
+  <meta http-equiv="x-pjax-js-version" content="5ea871766c54060eda52d3618dd03dbb97e38c21911d53bad9d7e3a56b339330" data-turbo-track="reload">
 
   <meta name="turbo-cache-control" content="no-preview" data-turbo-transient="">
 
       <meta name="turbo-cache-control" content="no-cache" data-turbo-transient>
     <meta data-hydrostats="publish">
-  <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/react-code-view.959fb0b61e6a1de773e7.module.css" />
-
   <meta name="go-import" content="github.com/square/okhttp git https://github.com/square/okhttp.git">
 
   <meta name="octolytics-dimension-user_id" content="82592" /><meta name="octolytics-dimension-user_login" content="square" /><meta name="octolytics-dimension-repository_id" content="5152285" /><meta name="octolytics-dimension-repository_nwo" content="square/okhttp" /><meta name="octolytics-dimension-repository_public" content="true" /><meta name="octolytics-dimension-repository_is_fork" content="false" /><meta name="octolytics-dimension-repository_network_root_id" content="5152285" /><meta name="octolytics-dimension-repository_network_root_nwo" content="square/okhttp" />
 
 
 
-  <meta name="turbo-body-classes" content="logged-out env-production page-responsive">
+    
+
+    <meta name="turbo-body-classes" content="logged-out env-production page-responsive">
 
 
   <meta name="browser-stats-url" content="https://api.github.com/_private/browser/stats">
@@ -3444,7 +3447,8 @@ License               :
 
 
     <div class="position-relative js-header-wrapper ">
-      <a href="#start-of-content" class="px-2 py-4 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js-skip-to-content">Skip to content</a>
+      <a href="#start-of-content" data-skip-target-assigned="false" class="px-2 py-4 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js-skip-to-content">Skip to content</a>
+      
       <span data-view-component="true" class="progress-pjax-loader Progress position-fixed width-full">
     <span style="width: 0%;" data-view-component="true" class="Progress-item progress-pjax-loader-bar left-0 top-0 color-bg-accent-emphasis"></span>
 </span>      
@@ -3456,11 +3460,9 @@ License               :
 
 
 
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Button_IconButton_js-node_modules_primer_react_lib--b964b4-74797afc8053.js"></script>
 
-
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_primer_react_lib-esm_Button_IconButton_js-node_modules_primer_react_lib--b964b4-6ad237e6932f.js"></script>
-
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/keyboard-shortcuts-dialog-b4a646a773af.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/keyboard-shortcuts-dialog-b4f13290b41c.js"></script>
 
 <react-partial
   partial-name="keyboard-shortcuts-dialog"
@@ -3479,9 +3481,11 @@ License               :
         
 
             
-<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_remote-form_dist_index_js-node_modules_delegated-events_dist_inde-94fd67-9f3636b94e7e.js"></script>
+<script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/vendors-node_modules_github_remote-form_dist_index_js-node_modules_delegated-events_dist_inde-94fd67-674f4853d4fe.js"></script>
 <script crossorigin="anonymous" defer="defer" type="application/javascript" src="https://github.githubassets.com/assets/sessions-ff11af600d3e.js"></script>
 <header class="Header-old header-logged-out js-details-container Details position-relative f4 py-3" role="banner" data-color-mode=light data-light-theme=light data-dark-theme=dark>
+  <h2 class="sr-only">Navigation Menu</h2>
+
   <button type="button" class="Header-backdrop d-lg-none border-0 position-fixed top-0 left-0 width-full height-full js-details-target" aria-label="Toggle navigation">
     <span class="d-none">Toggle navigation</span>
   </button>
@@ -3529,7 +3533,7 @@ License               :
           <div class="px-lg-4 border-lg-right mb-4 mb-lg-0 pr-lg-7">
             <ul class="list-style-none f5" >
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Actions&quot;,&quot;label&quot;:&quot;ref_cta:Actions;&quot;}" href="/features/actions">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Actions&quot;,&quot;label&quot;:&quot;ref_cta:Actions;&quot;}" href="https://github.com/features/actions">
       <svg aria-hidden="true" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-workflow color-fg-subtle mr-3">
     <path d="M1 3a2 2 0 0 1 2-2h6.5a2 2 0 0 1 2 2v6.5a2 2 0 0 1-2 2H7v4.063C7 16.355 7.644 17 8.438 17H12.5v-2.5a2 2 0 0 1 2-2H21a2 2 0 0 1 2 2V21a2 2 0 0 1-2 2h-6.5a2 2 0 0 1-2-2v-2.5H8.437A2.939 2.939 0 0 1 5.5 15.562V11.5H3a2 2 0 0 1-2-2Zm2-.5a.5.5 0 0 0-.5.5v6.5a.5.5 0 0 0 .5.5h6.5a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5ZM14.5 14a.5.5 0 0 0-.5.5V21a.5.5 0 0 0 .5.5H21a.5.5 0 0 0 .5-.5v-6.5a.5.5 0 0 0-.5-.5Z"></path>
 </svg>
@@ -3542,7 +3546,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Packages&quot;,&quot;label&quot;:&quot;ref_cta:Packages;&quot;}" href="/features/packages">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Packages&quot;,&quot;label&quot;:&quot;ref_cta:Packages;&quot;}" href="https://github.com/features/packages">
       <svg aria-hidden="true" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-package color-fg-subtle mr-3">
     <path d="M12.876.64V.639l8.25 4.763c.541.313.875.89.875 1.515v9.525a1.75 1.75 0 0 1-.875 1.516l-8.25 4.762a1.748 1.748 0 0 1-1.75 0l-8.25-4.763a1.75 1.75 0 0 1-.875-1.515V6.917c0-.625.334-1.202.875-1.515L11.126.64a1.748 1.748 0 0 1 1.75 0Zm-1 1.298L4.251 6.34l7.75 4.474 7.75-4.474-7.625-4.402a.248.248 0 0 0-.25 0Zm.875 19.123 7.625-4.402a.25.25 0 0 0 .125-.216V7.639l-7.75 4.474ZM3.501 7.64v8.803c0 .09.048.172.125.216l7.625 4.402v-8.947Z"></path>
 </svg>
@@ -3555,7 +3559,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Security&quot;,&quot;label&quot;:&quot;ref_cta:Security;&quot;}" href="/features/security">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Security&quot;,&quot;label&quot;:&quot;ref_cta:Security;&quot;}" href="https://github.com/features/security">
       <svg aria-hidden="true" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-shield-check color-fg-subtle mr-3">
     <path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path>
 </svg>
@@ -3568,7 +3572,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Codespaces&quot;,&quot;label&quot;:&quot;ref_cta:Codespaces;&quot;}" href="/features/codespaces">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Codespaces&quot;,&quot;label&quot;:&quot;ref_cta:Codespaces;&quot;}" href="https://github.com/features/codespaces">
       <svg aria-hidden="true" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-codespaces color-fg-subtle mr-3">
     <path d="M3.5 3.75C3.5 2.784 4.284 2 5.25 2h13.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 18.75 13H5.25a1.75 1.75 0 0 1-1.75-1.75Zm-2 12c0-.966.784-1.75 1.75-1.75h17.5c.966 0 1.75.784 1.75 1.75v4a1.75 1.75 0 0 1-1.75 1.75H3.25a1.75 1.75 0 0 1-1.75-1.75ZM5.25 3.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h13.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Zm-2 12a.25.25 0 0 0-.25.25v4c0 .138.112.25.25.25h17.5a.25.25 0 0 0 .25-.25v-4a.25.25 0 0 0-.25-.25Z"></path><path d="M10 17.75a.75.75 0 0 1 .75-.75h6.5a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1-.75-.75Zm-4 0a.75.75 0 0 1 .75-.75h.5a.75.75 0 0 1 0 1.5h-.5a.75.75 0 0 1-.75-.75Z"></path>
 </svg>
@@ -3581,7 +3585,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Copilot&quot;,&quot;label&quot;:&quot;ref_cta:Copilot;&quot;}" href="/features/copilot">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Copilot&quot;,&quot;label&quot;:&quot;ref_cta:Copilot;&quot;}" href="https://github.com/features/copilot">
       <svg aria-hidden="true" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-copilot color-fg-subtle mr-3">
     <path d="M23.922 16.992c-.861 1.495-5.859 5.023-11.922 5.023-6.063 0-11.061-3.528-11.922-5.023A.641.641 0 0 1 0 16.736v-2.869a.841.841 0 0 1 .053-.22c.372-.935 1.347-2.292 2.605-2.656.167-.429.414-1.055.644-1.517a10.195 10.195 0 0 1-.052-1.086c0-1.331.282-2.499 1.132-3.368.397-.406.89-.717 1.474-.952 1.399-1.136 3.392-2.093 6.122-2.093 2.731 0 4.767.957 6.166 2.093.584.235 1.077.546 1.474.952.85.869 1.132 2.037 1.132 3.368 0 .368-.014.733-.052 1.086.23.462.477 1.088.644 1.517 1.258.364 2.233 1.721 2.605 2.656a.832.832 0 0 1 .053.22v2.869a.641.641 0 0 1-.078.256ZM12.172 11h-.344a4.323 4.323 0 0 1-.355.508C10.703 12.455 9.555 13 7.965 13c-1.725 0-2.989-.359-3.782-1.259a2.005 2.005 0 0 1-.085-.104L4 11.741v6.585c1.435.779 4.514 2.179 8 2.179 3.486 0 6.565-1.4 8-2.179v-6.585l-.098-.104s-.033.045-.085.104c-.793.9-2.057 1.259-3.782 1.259-1.59 0-2.738-.545-3.508-1.492a4.323 4.323 0 0 1-.355-.508h-.016.016Zm.641-2.935c.136 1.057.403 1.913.878 2.497.442.544 1.134.938 2.344.938 1.573 0 2.292-.337 2.657-.751.384-.435.558-1.15.558-2.361 0-1.14-.243-1.847-.705-2.319-.477-.488-1.319-.862-2.824-1.025-1.487-.161-2.192.138-2.533.529-.269.307-.437.808-.438 1.578v.021c0 .265.021.562.063.893Zm-1.626 0c.042-.331.063-.628.063-.894v-.02c-.001-.77-.169-1.271-.438-1.578-.341-.391-1.046-.69-2.533-.529-1.505.163-2.347.537-2.824 1.025-.462.472-.705 1.179-.705 2.319 0 1.211.175 1.926.558 2.361.365.414 1.084.751 2.657.751 1.21 0 1.902-.394 2.344-.938.475-.584.742-1.44.878-2.497Z"></path><path d="M14.5 14.25a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1Zm-5 0a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1Z"></path>
 </svg>
@@ -3594,7 +3598,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Code review&quot;,&quot;label&quot;:&quot;ref_cta:Code review;&quot;}" href="/features/code-review">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Code review&quot;,&quot;label&quot;:&quot;ref_cta:Code review;&quot;}" href="https://github.com/features/code-review">
       <svg aria-hidden="true" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-code-review color-fg-subtle mr-3">
     <path d="M10.3 6.74a.75.75 0 0 1-.04 1.06l-2.908 2.7 2.908 2.7a.75.75 0 1 1-1.02 1.1l-3.5-3.25a.75.75 0 0 1 0-1.1l3.5-3.25a.75.75 0 0 1 1.06.04Zm3.44 1.06a.75.75 0 1 1 1.02-1.1l3.5 3.25a.75.75 0 0 1 0 1.1l-3.5 3.25a.75.75 0 1 1-1.02-1.1l2.908-2.7-2.908-2.7Z"></path><path d="M1.5 4.25c0-.966.784-1.75 1.75-1.75h17.5c.966 0 1.75.784 1.75 1.75v12.5a1.75 1.75 0 0 1-1.75 1.75h-9.69l-3.573 3.573A1.458 1.458 0 0 1 5 21.043V18.5H3.25a1.75 1.75 0 0 1-1.75-1.75ZM3.25 4a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h2.5a.75.75 0 0 1 .75.75v3.19l3.72-3.72a.749.749 0 0 1 .53-.22h10a.25.25 0 0 0 .25-.25V4.25a.25.25 0 0 0-.25-.25Z"></path>
 </svg>
@@ -3607,7 +3611,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Issues&quot;,&quot;label&quot;:&quot;ref_cta:Issues;&quot;}" href="/features/issues">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center pb-lg-3" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Issues&quot;,&quot;label&quot;:&quot;ref_cta:Issues;&quot;}" href="https://github.com/features/issues">
       <svg aria-hidden="true" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-issue-opened color-fg-subtle mr-3">
     <path d="M12 1c6.075 0 11 4.925 11 11s-4.925 11-11 11S1 18.075 1 12 5.925 1 12 1ZM2.5 12a9.5 9.5 0 0 0 9.5 9.5 9.5 9.5 0 0 0 9.5-9.5A9.5 9.5 0 0 0 12 2.5 9.5 9.5 0 0 0 2.5 12Zm9.5 2a2 2 0 1 1-.001-3.999A2 2 0 0 1 12 14Z"></path>
 </svg>
@@ -3620,7 +3624,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Discussions&quot;,&quot;label&quot;:&quot;ref_cta:Discussions;&quot;}" href="/features/discussions">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to Discussions&quot;,&quot;label&quot;:&quot;ref_cta:Discussions;&quot;}" href="https://github.com/features/discussions">
       <svg aria-hidden="true" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-comment-discussion color-fg-subtle mr-3">
     <path d="M1.75 1h12.5c.966 0 1.75.784 1.75 1.75v9.5A1.75 1.75 0 0 1 14.25 14H8.061l-2.574 2.573A1.458 1.458 0 0 1 3 15.543V14H1.75A1.75 1.75 0 0 1 0 12.25v-9.5C0 1.784.784 1 1.75 1ZM1.5 2.75v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25Z"></path><path d="M22.5 8.75a.25.25 0 0 0-.25-.25h-3.5a.75.75 0 0 1 0-1.5h3.5c.966 0 1.75.784 1.75 1.75v9.5A1.75 1.75 0 0 1 22.25 20H21v1.543a1.457 1.457 0 0 1-2.487 1.03L15.939 20H10.75A1.75 1.75 0 0 1 9 18.25v-1.465a.75.75 0 0 1 1.5 0v1.465c0 .138.112.25.25.25h5.5a.75.75 0 0 1 .53.22l2.72 2.72v-2.19a.75.75 0 0 1 .75-.75h2a.25.25 0 0 0 .25-.25v-9.5Z"></path>
 </svg>
@@ -3638,7 +3642,7 @@ License               :
               <span class="d-block h4 color-fg-default my-1" id="product-explore-heading">Explore</span>
             <ul class="list-style-none f5" aria-labelledby="product-explore-heading">
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to All features&quot;,&quot;label&quot;:&quot;ref_cta:All features;&quot;}" href="/features">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to All features&quot;,&quot;label&quot;:&quot;ref_cta:All features;&quot;}" href="https://github.com/features">
       All features
 
     
@@ -3654,7 +3658,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to GitHub Skills&quot;,&quot;label&quot;:&quot;ref_cta:GitHub Skills;&quot;}" href="https://skills.github.com/">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Product&quot;,&quot;action&quot;:&quot;click to go to GitHub Skills&quot;,&quot;label&quot;:&quot;ref_cta:GitHub Skills;&quot;}" href="https://skills.github.com">
       GitHub Skills
 
     <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-link-external HeaderMenu-external-icon color-fg-subtle">
@@ -3689,21 +3693,21 @@ License               :
               <span class="d-block h4 color-fg-default my-1" id="solutions-for-heading">For</span>
             <ul class="list-style-none f5" aria-labelledby="solutions-for-heading">
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Enterprise&quot;,&quot;label&quot;:&quot;ref_cta:Enterprise;&quot;}" href="/enterprise">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Enterprise&quot;,&quot;label&quot;:&quot;ref_cta:Enterprise;&quot;}" href="https://github.com/enterprise">
       Enterprise
 
     
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Teams&quot;,&quot;label&quot;:&quot;ref_cta:Teams;&quot;}" href="/team">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Teams&quot;,&quot;label&quot;:&quot;ref_cta:Teams;&quot;}" href="https://github.com/team">
       Teams
 
     
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Startups&quot;,&quot;label&quot;:&quot;ref_cta:Startups;&quot;}" href="/enterprise/startups">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Startups&quot;,&quot;label&quot;:&quot;ref_cta:Startups;&quot;}" href="https://github.com/enterprise/startups">
       Startups
 
     
@@ -3724,21 +3728,21 @@ License               :
               <span class="d-block h4 color-fg-default my-1" id="solutions-by-solution-heading">By Solution</span>
             <ul class="list-style-none f5" aria-labelledby="solutions-by-solution-heading">
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to CI/CD &amp;amp; Automation&quot;,&quot;label&quot;:&quot;ref_cta:CI/CD &amp;amp; Automation;&quot;}" href="/solutions/ci-cd/">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to CI/CD &amp;amp; Automation&quot;,&quot;label&quot;:&quot;ref_cta:CI/CD &amp;amp; Automation;&quot;}" href="https://github.com/solutions/ci-cd">
       CI/CD &amp; Automation
 
     
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to DevOps&quot;,&quot;label&quot;:&quot;ref_cta:DevOps;&quot;}" href="/solutions/devops/">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to DevOps&quot;,&quot;label&quot;:&quot;ref_cta:DevOps;&quot;}" href="https://github.com/solutions/devops">
       DevOps
 
     
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to DevSecOps&quot;,&quot;label&quot;:&quot;ref_cta:DevSecOps;&quot;}" href="https://resources.github.com/devops/fundamentals/devsecops/">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to DevSecOps&quot;,&quot;label&quot;:&quot;ref_cta:DevSecOps;&quot;}" href="https://resources.github.com/devops/fundamentals/devsecops">
       DevSecOps
 
     <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-link-external HeaderMenu-external-icon color-fg-subtle">
@@ -3752,7 +3756,7 @@ License               :
               <span class="d-block h4 color-fg-default my-1" id="solutions-resources-heading">Resources</span>
             <ul class="list-style-none f5" aria-labelledby="solutions-resources-heading">
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Learning Pathways&quot;,&quot;label&quot;:&quot;ref_cta:Learning Pathways;&quot;}" href="https://resources.github.com/learn/pathways/">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Learning Pathways&quot;,&quot;label&quot;:&quot;ref_cta:Learning Pathways;&quot;}" href="https://resources.github.com/learn/pathways">
       Learning Pathways
 
     <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-link-external HeaderMenu-external-icon color-fg-subtle">
@@ -3761,7 +3765,7 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to White papers, Ebooks, Webinars&quot;,&quot;label&quot;:&quot;ref_cta:White papers, Ebooks, Webinars;&quot;}" href="https://resources.github.com/">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to White papers, Ebooks, Webinars&quot;,&quot;label&quot;:&quot;ref_cta:White papers, Ebooks, Webinars;&quot;}" href="https://resources.github.com">
       White papers, Ebooks, Webinars
 
     <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-link-external HeaderMenu-external-icon color-fg-subtle">
@@ -3770,14 +3774,14 @@ License               :
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Customer Stories&quot;,&quot;label&quot;:&quot;ref_cta:Customer Stories;&quot;}" href="/customer-stories">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Customer Stories&quot;,&quot;label&quot;:&quot;ref_cta:Customer Stories;&quot;}" href="https://github.com/customer-stories">
       Customer Stories
 
     
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Partners&quot;,&quot;label&quot;:&quot;ref_cta:Partners;&quot;}" href="https://partner.github.com/">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" target="_blank" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Solutions&quot;,&quot;action&quot;:&quot;click to go to Partners&quot;,&quot;label&quot;:&quot;ref_cta:Partners;&quot;}" href="https://partner.github.com">
       Partners
 
     <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-link-external HeaderMenu-external-icon color-fg-subtle">
@@ -3802,7 +3806,7 @@ License               :
           <div class="border-bottom pb-3 mb-3">
             <ul class="list-style-none f5" >
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to GitHub Sponsors&quot;,&quot;label&quot;:&quot;ref_cta:GitHub Sponsors;&quot;}" href="/sponsors">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to GitHub Sponsors&quot;,&quot;label&quot;:&quot;ref_cta:GitHub Sponsors;&quot;}" href="https://github.com/sponsors">
       
       <div>
         <div class="color-fg-default h4">GitHub Sponsors</div>
@@ -3817,7 +3821,7 @@ License               :
           <div class="border-bottom pb-3 mb-3">
             <ul class="list-style-none f5" >
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to The ReadME Project&quot;,&quot;label&quot;:&quot;ref_cta:The ReadME Project;&quot;}" href="/readme">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary d-flex flex-items-center" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to The ReadME Project&quot;,&quot;label&quot;:&quot;ref_cta:The ReadME Project;&quot;}" href="https://github.com/readme">
       
       <div>
         <div class="color-fg-default h4">The ReadME Project</div>
@@ -3833,21 +3837,21 @@ License               :
               <span class="d-block h4 color-fg-default my-1" id="open-source-repositories-heading">Repositories</span>
             <ul class="list-style-none f5" aria-labelledby="open-source-repositories-heading">
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to Topics&quot;,&quot;label&quot;:&quot;ref_cta:Topics;&quot;}" href="/topics">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to Topics&quot;,&quot;label&quot;:&quot;ref_cta:Topics;&quot;}" href="https://github.com/topics">
       Topics
 
     
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to Trending&quot;,&quot;label&quot;:&quot;ref_cta:Trending;&quot;}" href="/trending">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to Trending&quot;,&quot;label&quot;:&quot;ref_cta:Trending;&quot;}" href="https://github.com/trending">
       Trending
 
     
 </a></li>
 
                 <li>
-  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to Collections&quot;,&quot;label&quot;:&quot;ref_cta:Collections;&quot;}" href="/collections">
+  <a class="HeaderMenu-dropdown-link lh-condensed d-block no-underline position-relative py-2 Link--secondary" data-analytics-event="{&quot;category&quot;:&quot;Header dropdown (logged out), Open Source&quot;,&quot;action&quot;:&quot;click to go to Collections&quot;,&quot;label&quot;:&quot;ref_cta:Collections;&quot;}" href="https://github.com/collections">
       Collections
 
     
@@ -3860,7 +3864,7 @@ License               :
 
 
                 <li class="HeaderMenu-item position-relative flex-wrap flex-justify-between flex-items-center d-block d-lg-flex flex-lg-nowrap flex-lg-items-center js-details-container js-header-menu-item">
-    <a class="HeaderMenu-link no-underline px-0 px-lg-2 py-3 py-lg-2 d-block d-lg-inline-block" data-analytics-event="{&quot;category&quot;:&quot;Header menu top item (logged out)&quot;,&quot;action&quot;:&quot;click to go to Pricing&quot;,&quot;label&quot;:&quot;ref_cta:Pricing;&quot;}" href="/pricing">Pricing</a>
+    <a class="HeaderMenu-link no-underline px-0 px-lg-2 py-3 py-lg-2 d-block d-lg-inline-block" data-analytics-event="{&quot;category&quot;:&quot;Header menu top item (logged out)&quot;,&quot;action&quot;:&quot;click to go to Pricing&quot;,&quot;label&quot;:&quot;ref_cta:Pricing;&quot;}" href="https://github.com/pricing">Pricing</a>
 </li>
 
             </ul>
@@ -3870,7 +3874,7 @@ License               :
                 
 
 
-<qbsearch-input class="search-input" data-scope="repo:square/okhttp" data-custom-scopes-path="/search/custom_scopes" data-delete-custom-scopes-csrf="Wn4GWGajufMKMZdUyO_PIGBEqJF_v1abj3LgmnQdUE3Vd3mNrRy8qGptx_v0qyDvbkYhTG4KZZKQstNBx_dzNw" data-max-custom-scopes="10" data-header-redesign-enabled="false" data-initial-value="" data-blackbird-suggestions-path="/search/suggestions" data-jump-to-suggestions-path="/_graphql/GetSuggestedNavigationDestinations" data-current-repository="square/okhttp" data-current-org="square" data-current-owner="" data-logged-in="false" data-copilot-chat-enabled="false" data-blackbird-indexed-repo-csrf="<esi:include src=&quot;/_esi/rails_csrf_token_form_hidden?r=uzaNreNXdkZb7Px2a33XyNdYWZR1Ds0zvonqjLhLiNTyVlfVhFSyok2Gxdx7ESXiEWVqAMAaMyCX5AzPT8D3TK8Ab2%2BP57m%2FAM6WPN8CnCwGd5jL6tRVskkXUG%2FC8fLgxwwf14ntpOYmNDnHIJDJQf%2BaEPla2VO9yuIIcpdgleDtYD%2BgpNr9tvwl8%2FDrNJ3xGOqcAHPXgcfae2%2F3RYvNHIYvsAUzew%2FbkGmm4JLtwYWd5easFSRBxx4kzFWQjI3LDi23NxrJPBe8oljrWWAxgeFvVqAQ8t0%2FbSs9HDEg77bRVN2ZYf6cdJQC%2BnRqshA9IKs8G4jRnRsQMGf8M1NiFwEsF2kSf%2BVR0BeFQV3rwGIHuO6ytORqk0Eee%2Bx85H9NGka3rnXCq6cBvhsLOZulL8EEfK%2FmfZXwkU4hIMuEg04sezqxViT17I35DMUv9weK7VZo7MTWtKFLVr%2BFqyzPPpBtue00JselLxX1fkzv6xdIvPrblVlZO5oCeWXky9FIKX42WCnnXgigD%2F22gdcmtHeqTuTTNscwwRATBmX2pulqVGJ4rybj6RF3--2p0wck%2BR52h0Rc5w--DChqOIH0IyCTYEm4GNnSpg%3D%3D&quot; />">
+<qbsearch-input class="search-input" data-scope="repo:square/okhttp" data-custom-scopes-path="/search/custom_scopes" data-delete-custom-scopes-csrf="gAycyaUTiRzFe3WFZfbtK02WZzbMq4cgNMNoyS0pM7boosCxV8T7t6lrkhPGtbBsKTM3BVf_SUukFObNeBDBMA" data-max-custom-scopes="10" data-header-redesign-enabled="false" data-initial-value="" data-blackbird-suggestions-path="/search/suggestions" data-jump-to-suggestions-path="/_graphql/GetSuggestedNavigationDestinations" data-current-repository="square/okhttp" data-current-org="square" data-current-owner="" data-logged-in="false" data-copilot-chat-enabled="false" data-blackbird-indexed-repo-csrf="<esi:include src=&quot;/_esi/rails_csrf_token_form_hidden?r=02QUdYQdUsYIE%2BLWYwJN%2B7NuvBTxZCP5%2B7rUKXLbNJTT253fq7A2t8niZl%2FFy3dxd2maN7B40TjRywuv9OymQA1BFvQK%2F7dO6Kl%2F4BhsA2fqXtE5vsNRwI9DjGEW8exemc6L3Q3uIYYwDSU9jfSOskCwU%2FWJoZNKGKXjwTT%2FW4ukJlHbEwmBaiQqJC264DxddoumJ8ZK1I5R3QaFZfpaFWFtDOC2VwGfbD9rSG6reDi8cnepQNQEcnbamfKSQKWp7%2Bb2ttIQVwAIcX7oVP7D%2BGOMI5G71OGQFngcaoS1SEP3VYgUJ1BrlLkKlWpnRyFHgO3YoX5YcrZkMt86EPejZPvV0kJo%2FnuVzn36np5JJcYrzYJOp8EMx4R%2FxJvVlGMItM5wy4%2F3j8Fjfy%2Fdx1WGfmZThTsJIAkh07svLP34KcpIrbaE5pfQ1IsnRe1pPpQCpvPAq62mXaHwR2stnHVo7Qu1gT5X1B6AMrNPrhG6cWEL2A0Esu9CwtnP716DVJoThWf6d%2BfMWYxH4zN4NAol01fQam2P4PGKr749a3E4b3fUVhsZWTBgqUrj--RAkcYG%2BGJFEgXVJY--xW3BNe9uyxTVlF83vbG8gw%3D%3D&quot; />">
   <div
     class="search-input-container search-with-dialog position-relative d-flex flex-row flex-items-center mr-4 rounded"
     data-action="click:qbsearch-input#searchInputContainerClicked"
@@ -3932,7 +3936,7 @@ License               :
           ></div>
           <div class="QueryBuilder-InputWrapper">
             <div aria-hidden="true" class="QueryBuilder-Sizer" data-target="query-builder.sizer"></div>
-            <input id="query-builder-test" name="query-builder-test" value="" autocomplete="off" type="text" role="combobox" spellcheck="false" aria-expanded="false" aria-describedby="validation-516d6f3b-a5a4-422d-aa33-a742a1a415f2" data-target="query-builder.input" data-action="
+            <input id="query-builder-test" name="query-builder-test" value="" autocomplete="off" type="text" role="combobox" spellcheck="false" aria-expanded="false" aria-describedby="validation-31fd39a9-fb55-43c1-8923-eca17196b9d1" data-target="query-builder.input" data-action="
           input:query-builder#inputChange
           blur:query-builder#inputBlur
           keydown:query-builder#inputKeydown
@@ -4163,7 +4167,7 @@ License               :
                   id="query-builder-test-results"
                 ></ul>
         </div>
-      <div class="FormControl-inlineValidation" id="validation-516d6f3b-a5a4-422d-aa33-a742a1a415f2" hidden="hidden">
+      <div class="FormControl-inlineValidation" id="validation-31fd39a9-fb55-43c1-8923-eca17196b9d1" hidden="hidden">
         <span class="FormControl-inlineValidation--visual">
           <svg aria-hidden="true" height="12" viewBox="0 0 12 12" version="1.1" width="12" data-view-component="true" class="octicon octicon-alert-fill">
     <path d="M4.855.708c.5-.896 1.79-.896 2.29 0l4.675 8.351a1.312 1.312 0 0 1-1.146 1.954H1.33A1.313 1.313 0 0 1 .183 9.058ZM7 7V3H5v4Zm-1 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"></path>
@@ -4204,7 +4208,7 @@ License               :
   </div>
 </div>
       <scrollable-region data-labelled-by="feedback-dialog-title">
-        <div data-view-component="true" class="Overlay-body">        <!-- '"` --><!-- </textarea></xmp> --></option></form><form id="code-search-feedback-form" data-turbo="false" action="/search/feedback" accept-charset="UTF-8" method="post"><input type="hidden" data-csrf="true" name="authenticity_token" value="zb8l0xRokB3pBbYOgAClbYkeScV490Hcuuro9CUXPR+XrdN8CR40p0wSczEAnYedoMMFZP4Q1HiiksfIDKentQ==" />
+        <div data-view-component="true" class="Overlay-body">        <!-- '"` --><!-- </textarea></xmp> --></option></form><form id="code-search-feedback-form" data-turbo="false" action="/search/feedback" accept-charset="UTF-8" method="post"><input type="hidden" data-csrf="true" name="authenticity_token" value="0ny7r4oI2/hyvBZGIbEYQpsZWgifgYkfqR4zgwlqYBbToIjQPxS/0smP+3i6ppP3lpFCFuxOWbytlI41rMSgeA==" />
           <p>We read every piece of feedback, and take your input very seriously.</p>
           <textarea name="feedback" class="form-control width-full mb-2" style="height: 120px" id="feedback"></textarea>
           <input name="include_email" id="include_email" aria-label="Include my email address so I can be contacted" class="form-control mr-2" type="checkbox">
@@ -4241,7 +4245,7 @@ License               :
         <div data-view-component="true" class="Overlay-body">        <div data-target="custom-scopes.customScopesModalDialogFlash"></div>
 
         <div hidden class="create-custom-scope-form" data-target="custom-scopes.createCustomScopeForm">
-        <!-- '"` --><!-- </textarea></xmp> --></option></form><form id="custom-scopes-dialog-form" data-turbo="false" action="/search/custom_scopes" accept-charset="UTF-8" method="post"><input type="hidden" data-csrf="true" name="authenticity_token" value="w0PXrSUUeGqS0Tcy79+xDOzS01EjbkPsaMWrfpHLcCmyHHgNNB5m5kSdIVnuhBUFzcR3Kn7vE/xQXOgubcKkDA==" />
+        <!-- '"` --><!-- </textarea></xmp> --></option></form><form id="custom-scopes-dialog-form" data-turbo="false" action="/search/custom_scopes" accept-charset="UTF-8" method="post"><input type="hidden" data-csrf="true" name="authenticity_token" value="Q6JyFDyNDsIQJtd+8QTJ3WqZ/AQlJqZM+wE/VEnRuVy9swHbpLhmZiyzU4LxdZaWt5oJZrMVuPhfo1gQ7idYnA==" />
           <div data-target="custom-scopes.customScopesModalDialogFlash"></div>
 
           <input type="hidden" id="custom_scope_id" name="custom_scope_id" data-target="custom-scopes.customScopesIdField">
@@ -4259,7 +4263,7 @@ License               :
                 placeholder="github-ruby"
                 required
                 maxlength="50">
-              <input type="hidden" data-csrf="true" value="gF3npjsZKSwIIGHfphwNlEgOFE0TATGpWt1VqoWDDQitRe6So3uaceyYYv/PV0P7L5SRzyjhll8uF5hLqWrUIg==" />
+              <input type="hidden" data-csrf="true" value="jUx3zyAa5p52TlmJS7fQUUbhwh3D5gP7cHym3R/KqI8IdIBH66C2rqp8gCUs4UhnB1ees4DGCgR8ZV2bFlDOTQ==" />
             </auto-check>
           </div>
 
@@ -4296,7 +4300,7 @@ License               :
 </dialog></dialog-helper>
     </custom-scopes>
   </div>
-</qbsearch-input><input type="hidden" data-csrf="true" class="js-data-jump-to-suggestions-path-csrf" value="dUvjzfhlq6DSD3DC8hEqVR3+RPTRNfwIMKMI4deRsE6swL2qhoEI2NScxfThAm4mg7NS5HJ8g4/ilfb+XGZKew==" />
+</qbsearch-input><input type="hidden" data-csrf="true" class="js-data-jump-to-suggestions-path-csrf" value="wglw1DIus/zzkqK/QFHlbvMkWQjaOuRLu7rCFmUcvryICSybrIcZf3sycojnsTwK/LL1aCCYvH7C+BxV8a5a/A==" />
 
 
           <div class="position-relative mr-lg-3 d-lg-inline-block">
@@ -4330,10 +4334,10 @@ License               :
         <span class="js-stale-session-flash-signed-out" hidden>You signed out in another tab or window. <a class="Link--inTextBlock" href="">Reload</a> to refresh your session.</span>
         <span class="js-stale-session-flash-switched" hidden>You switched accounts on another tab or window. <a class="Link--inTextBlock" href="">Reload</a> to refresh your session.</span>
 
-    <button id="icon-button-dd9bd4ca-a6d8-42d7-a323-8f765f069c01" aria-labelledby="tooltip-679bbad0-6e33-466e-9120-04da2542b6f2" type="button" data-view-component="true" class="Button Button--iconOnly Button--invisible Button--medium flash-close js-flash-close">  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x Button-visual">
+    <button id="icon-button-fbcffbdd-7cc0-4368-941f-71d963605ce3" aria-labelledby="tooltip-fbb2dcf7-ccea-47f4-bca2-029c6cf596f2" type="button" data-view-component="true" class="Button Button--iconOnly Button--invisible Button--medium flash-close js-flash-close">  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x Button-visual">
     <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
 </svg>
-</button><tool-tip id="tooltip-679bbad0-6e33-466e-9120-04da2542b6f2" for="icon-button-dd9bd4ca-a6d8-42d7-a323-8f765f069c01" popover="manual" data-direction="s" data-type="label" data-view-component="true" class="sr-only position-absolute">Dismiss alert</tool-tip>
+</button><tool-tip id="tooltip-fbb2dcf7-ccea-47f4-bca2-029c6cf596f2" for="icon-button-fbcffbdd-7cc0-4368-941f-71d963605ce3" popover="manual" data-direction="s" data-type="label" data-view-component="true" class="sr-only position-absolute">Dismiss alert</tool-tip>
 
 
   
@@ -4349,7 +4353,7 @@ License               :
 
 
 
-    <div id="js-flash-container" data-turbo-replace>
+    <div id="js-flash-container" class="flash-container" data-turbo-replace>
 
 
 
@@ -4444,7 +4448,7 @@ License               :
           <a icon="repo-forked" id="fork-button" href="/login?return_to=%2Fsquare%2Fokhttp" rel="nofollow" data-hydro-click="{&quot;event_type&quot;:&quot;authentication.click&quot;,&quot;payload&quot;:{&quot;location_in_page&quot;:&quot;repo details fork button&quot;,&quot;repository_id&quot;:5152285,&quot;auth_type&quot;:&quot;LOG_IN&quot;,&quot;originating_url&quot;:&quot;https://github.com/square/okhttp/blob/master/LICENSE.txt&quot;,&quot;user_id&quot;:null}}" data-hydro-click-hmac="52cc8809d856262d841eca7a5a022fab786ea7c74cffff262e5a58bbedd0f0e6" data-view-component="true" class="btn-sm btn">    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-repo-forked mr-2">
     <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"></path>
 </svg>Fork
-    <span id="repo-network-counter" data-pjax-replace="true" data-turbo-replace="true" title="9,097" data-view-component="true" class="Counter">9.1k</span>
+    <span id="repo-network-counter" data-pjax-replace="true" data-turbo-replace="true" title="9,094" data-view-component="true" class="Counter">9.1k</span>
 </a>
   </li>
 
@@ -4454,7 +4458,7 @@ License               :
     <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z"></path>
 </svg><span data-view-component="true" class="d-inline">
           Star
-</span>          <span id="repo-stars-counter-star" aria-label="45232 users starred this repository" data-singular-suffix="user starred this repository" data-plural-suffix="users starred this repository" data-turbo-replace="true" title="45,232" data-view-component="true" class="Counter js-social-count">45.2k</span>
+</span>          <span id="repo-stars-counter-star" aria-label="45286 users starred this repository" data-singular-suffix="user starred this repository" data-plural-suffix="users starred this repository" data-turbo-replace="true" title="45,286" data-view-component="true" class="Counter js-social-count">45.3k</span>
 </a>        <button aria-label="You must be signed in to add this repository to a list" type="button" disabled="disabled" data-view-component="true" class="btn-sm btn BtnGroup-item px-2">    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-triangle-down">
     <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"></path>
 </svg>
@@ -4496,7 +4500,7 @@ License               :
     <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"></path>
 </svg>
         <span data-content="Issues">Issues</span>
-          <span id="issues-repo-tab-count" data-pjax-replace="" data-turbo-replace="" title="114" data-view-component="true" class="Counter">114</span>
+          <span id="issues-repo-tab-count" data-pjax-replace="" data-turbo-replace="" title="117" data-view-component="true" class="Counter">117</span>
 
 
     
@@ -4508,7 +4512,7 @@ License               :
     <path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"></path>
 </svg>
         <span data-content="Pull requests">Pull requests</span>
-          <span id="pull-requests-repo-tab-count" data-pjax-replace="" data-turbo-replace="" title="17" data-view-component="true" class="Counter">17</span>
+          <span id="pull-requests-repo-tab-count" data-pjax-replace="" data-turbo-replace="" title="28" data-view-component="true" class="Counter">28</span>
 
 
     
@@ -4551,21 +4555,22 @@ License               :
 </ul>
     <div style="visibility:hidden;" data-view-component="true" class="UnderlineNav-actions js-responsive-underlinenav-overflow position-absolute pr-3 pr-md-4 pr-lg-5 right-0">      <action-menu data-select-variant="none" data-view-component="true">
   <focus-group direction="vertical" mnemonics retain>
-    <button id="action-menu-1c0f4f84-c0cc-4eb4-a89f-ce8e30774592-button" popovertarget="action-menu-1c0f4f84-c0cc-4eb4-a89f-ce8e30774592-overlay" aria-controls="action-menu-1c0f4f84-c0cc-4eb4-a89f-ce8e30774592-list" aria-haspopup="true" aria-labelledby="tooltip-03619d96-fb7c-476c-9371-5a015e7a72c6" type="button" data-view-component="true" class="Button Button--iconOnly Button--secondary Button--medium UnderlineNav-item">  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-kebab-horizontal Button-visual">
+    <button id="action-menu-2bd33120-c655-4bc9-a6ba-24b275ba2462-button" popovertarget="action-menu-2bd33120-c655-4bc9-a6ba-24b275ba2462-overlay" aria-controls="action-menu-2bd33120-c655-4bc9-a6ba-24b275ba2462-list" aria-haspopup="true" aria-labelledby="tooltip-70e51e23-e1f7-4837-b62d-9197f3cdfb93" type="button" data-view-component="true" class="Button Button--iconOnly Button--secondary Button--medium UnderlineNav-item">  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-kebab-horizontal Button-visual">
     <path d="M8 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM1.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm13 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path>
 </svg>
-</button><tool-tip id="tooltip-03619d96-fb7c-476c-9371-5a015e7a72c6" for="action-menu-1c0f4f84-c0cc-4eb4-a89f-ce8e30774592-button" popover="manual" data-direction="s" data-type="label" data-view-component="true" class="sr-only position-absolute">Additional navigation options</tool-tip>
+</button><tool-tip id="tooltip-70e51e23-e1f7-4837-b62d-9197f3cdfb93" for="action-menu-2bd33120-c655-4bc9-a6ba-24b275ba2462-button" popover="manual" data-direction="s" data-type="label" data-view-component="true" class="sr-only position-absolute">Additional navigation options</tool-tip>
 
 
-<anchored-position id="action-menu-1c0f4f84-c0cc-4eb4-a89f-ce8e30774592-overlay" anchor="action-menu-1c0f4f84-c0cc-4eb4-a89f-ce8e30774592-button" align="start" side="outside-bottom" anchor-offset="normal" popover="auto" data-view-component="true">
+<anchored-position id="action-menu-2bd33120-c655-4bc9-a6ba-24b275ba2462-overlay" anchor="action-menu-2bd33120-c655-4bc9-a6ba-24b275ba2462-button" align="start" side="outside-bottom" anchor-offset="normal" popover="auto" data-view-component="true">
   <div data-view-component="true" class="Overlay Overlay--size-auto">
     
       <div data-view-component="true" class="Overlay-body Overlay-body--paddingNone">          <action-list>
   <div data-view-component="true">
-    <ul aria-labelledby="action-menu-1c0f4f84-c0cc-4eb4-a89f-ce8e30774592-button" id="action-menu-1c0f4f84-c0cc-4eb4-a89f-ce8e30774592-list" role="menu" data-view-component="true" class="ActionListWrap--inset ActionListWrap">
+    <ul aria-labelledby="action-menu-2bd33120-c655-4bc9-a6ba-24b275ba2462-button" id="action-menu-2bd33120-c655-4bc9-a6ba-24b275ba2462-list" role="menu" data-view-component="true" class="ActionListWrap--inset ActionListWrap">
         <li hidden="hidden" data-menu-item="i0code-tab" data-targets="action-list.items" role="none" data-view-component="true" class="ActionListItem">
     
-    <a tabindex="-1" id="item-0d8141a8-4704-4589-9fc6-1c2068fdc1b4" href="/square/okhttp" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
+    
+    <a tabindex="-1" id="item-494777b2-d5e8-4d6b-a9a1-a636c28abd29" href="/square/okhttp" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
         <span class="ActionListItem-visual ActionListItem-visual--leading">
           <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-code">
     <path d="m11.28 3.22 4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L13.94 8l-3.72-3.72a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215Zm-6.56 0a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L2.06 8l3.72 3.72a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L.47 8.53a.75.75 0 0 1 0-1.06Z"></path>
@@ -4576,11 +4581,11 @@ License               :
           Code
 </span></a>
   
-  
 </li>
         <li hidden="hidden" data-menu-item="i1issues-tab" data-targets="action-list.items" role="none" data-view-component="true" class="ActionListItem">
     
-    <a tabindex="-1" id="item-a18b0621-8958-4987-bb0d-4b927a99cee7" href="/square/okhttp/issues" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
+    
+    <a tabindex="-1" id="item-f128ab10-c2ea-4f19-898c-43765a870f51" href="/square/okhttp/issues" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
         <span class="ActionListItem-visual ActionListItem-visual--leading">
           <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-issue-opened">
     <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"></path>
@@ -4591,11 +4596,11 @@ License               :
           Issues
 </span></a>
   
-  
 </li>
         <li hidden="hidden" data-menu-item="i2pull-requests-tab" data-targets="action-list.items" role="none" data-view-component="true" class="ActionListItem">
     
-    <a tabindex="-1" id="item-b52f45ab-7f25-457e-890b-29bf49127a10" href="/square/okhttp/pulls" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
+    
+    <a tabindex="-1" id="item-4ccde8ae-cd6e-49b9-90fd-9afeee675741" href="/square/okhttp/pulls" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
         <span class="ActionListItem-visual ActionListItem-visual--leading">
           <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-git-pull-request">
     <path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"></path>
@@ -4606,11 +4611,11 @@ License               :
           Pull requests
 </span></a>
   
-  
 </li>
         <li hidden="hidden" data-menu-item="i3actions-tab" data-targets="action-list.items" role="none" data-view-component="true" class="ActionListItem">
     
-    <a tabindex="-1" id="item-e9372123-72ce-491f-b14c-5b2cb5321e30" href="/square/okhttp/actions" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
+    
+    <a tabindex="-1" id="item-313f7282-c43f-4680-9574-e9eb11eb9944" href="/square/okhttp/actions" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
         <span class="ActionListItem-visual ActionListItem-visual--leading">
           <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-play">
     <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path>
@@ -4621,11 +4626,11 @@ License               :
           Actions
 </span></a>
   
-  
 </li>
         <li hidden="hidden" data-menu-item="i4security-tab" data-targets="action-list.items" role="none" data-view-component="true" class="ActionListItem">
     
-    <a tabindex="-1" id="item-f5a7e82d-eabe-4ac8-af46-e6aa4a44f05d" href="/square/okhttp/security" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
+    
+    <a tabindex="-1" id="item-c18ba67d-c755-44e0-b111-131f7ef40136" href="/square/okhttp/security" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
         <span class="ActionListItem-visual ActionListItem-visual--leading">
           <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-shield">
     <path d="M7.467.133a1.748 1.748 0 0 1 1.066 0l5.25 1.68A1.75 1.75 0 0 1 15 3.48V7c0 1.566-.32 3.182-1.303 4.682-.983 1.498-2.585 2.813-5.032 3.855a1.697 1.697 0 0 1-1.33 0c-2.447-1.042-4.049-2.357-5.032-3.855C1.32 10.182 1 8.566 1 7V3.48a1.75 1.75 0 0 1 1.217-1.667Zm.61 1.429a.25.25 0 0 0-.153 0l-5.25 1.68a.25.25 0 0 0-.174.238V7c0 1.358.275 2.666 1.057 3.86.784 1.194 2.121 2.34 4.366 3.297a.196.196 0 0 0 .154 0c2.245-.956 3.582-2.104 4.366-3.298C13.225 9.666 13.5 8.36 13.5 7V3.48a.251.251 0 0 0-.174-.237l-5.25-1.68ZM8.75 4.75v3a.75.75 0 0 1-1.5 0v-3a.75.75 0 0 1 1.5 0ZM9 10.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
@@ -4636,11 +4641,11 @@ License               :
           Security
 </span></a>
   
-  
 </li>
         <li hidden="hidden" data-menu-item="i5insights-tab" data-targets="action-list.items" role="none" data-view-component="true" class="ActionListItem">
     
-    <a tabindex="-1" id="item-b381d119-c98a-42c8-90e4-de40963b80f0" href="/square/okhttp/pulse" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
+    
+    <a tabindex="-1" id="item-9f944f28-d306-4db5-b8d8-b7eb4f381494" href="/square/okhttp/pulse" role="menuitem" data-view-component="true" class="ActionListContent ActionListContent--visual16">
         <span class="ActionListItem-visual ActionListItem-visual--leading">
           <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-graph">
     <path d="M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 4.28 9.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.25-3.25a.75.75 0 0 1 1.06 0L10 7.94l4.72-4.72a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z"></path>
@@ -4650,7 +4655,6 @@ License               :
         <span data-view-component="true" class="ActionListItem-label">
           Insights
 </span></a>
-  
   
 </li>
 </ul>    
@@ -4683,8 +4687,6 @@ License               :
 
 
 
-
-
 <react-app
   app-name="react-code-view"
   initial-path="/square/okhttp/blob/master/LICENSE.txt"
@@ -4694,7 +4696,7 @@ License               :
   data-alternate="false"
 >
   
-  <script type="application/json" data-target="react-app.embeddedData">{"payload":{"allShortcutsEnabled":false,"fileTree":{"":{"items":[{"name":".devcontainer","path":".devcontainer","contentType":"directory"},{"name":".github","path":".github","contentType":"directory"},{"name":".idea","path":".idea","contentType":"directory"},{"name":".junit.run","path":".junit.run","contentType":"directory"},{"name":".vscode","path":".vscode","contentType":"directory"},{"name":"android-test-app","path":"android-test-app","contentType":"directory"},{"name":"android-test","path":"android-test","contentType":"directory"},{"name":"buildSrc","path":"buildSrc","contentType":"directory"},{"name":"container-tests","path":"container-tests","contentType":"directory"},{"name":"docs","path":"docs","contentType":"directory"},{"name":"fuzzing","path":"fuzzing","contentType":"directory"},{"name":"gradle","path":"gradle","contentType":"directory"},{"name":"kotlin-js-store","path":"kotlin-js-store","contentType":"directory"},{"name":"mockwebserver-deprecated","path":"mockwebserver-deprecated","contentType":"directory"},{"name":"mockwebserver-junit4","path":"mockwebserver-junit4","contentType":"directory"},{"name":"mockwebserver-junit5","path":"mockwebserver-junit5","contentType":"directory"},{"name":"mockwebserver","path":"mockwebserver","contentType":"directory"},{"name":"native-image-tests","path":"native-image-tests","contentType":"directory"},{"name":"okcurl","path":"okcurl","contentType":"directory"},{"name":"okhttp-android","path":"okhttp-android","contentType":"directory"},{"name":"okhttp-bom","path":"okhttp-bom","contentType":"directory"},{"name":"okhttp-brotli","path":"okhttp-brotli","contentType":"directory"},{"name":"okhttp-coroutines","path":"okhttp-coroutines","contentType":"directory"},{"name":"okhttp-dnsoverhttps","path":"okhttp-dnsoverhttps","contentType":"directory"},{"name":"okhttp-hpacktests","path":"okhttp-hpacktests","contentType":"directory"},{"name":"okhttp-idna-mapping-table","path":"okhttp-idna-mapping-table","contentType":"directory"},{"name":"okhttp-java-net-cookiejar","path":"okhttp-java-net-cookiejar","contentType":"directory"},{"name":"okhttp-logging-interceptor","path":"okhttp-logging-interceptor","contentType":"directory"},{"name":"okhttp-sse","path":"okhttp-sse","contentType":"directory"},{"name":"okhttp-testing-support","path":"okhttp-testing-support","contentType":"directory"},{"name":"okhttp-tls","path":"okhttp-tls","contentType":"directory"},{"name":"okhttp-urlconnection","path":"okhttp-urlconnection","contentType":"directory"},{"name":"okhttp","path":"okhttp","contentType":"directory"},{"name":"regression-test","path":"regression-test","contentType":"directory"},{"name":"samples","path":"samples","contentType":"directory"},{"name":".editorconfig","path":".editorconfig","contentType":"file"},{"name":".gitattributes","path":".gitattributes","contentType":"file"},{"name":".gitignore","path":".gitignore","contentType":"file"},{"name":".gitmodules","path":".gitmodules","contentType":"file"},{"name":"BUG-BOUNTY.md","path":"BUG-BOUNTY.md","contentType":"file"},{"name":"CHANGELOG.md","path":"CHANGELOG.md","contentType":"file"},{"name":"CONTRIBUTING.md","path":"CONTRIBUTING.md","contentType":"file"},{"name":"LICENSE.txt","path":"LICENSE.txt","contentType":"file"},{"name":"README.md","path":"README.md","contentType":"file"},{"name":"build.gradle.kts","path":"build.gradle.kts","contentType":"file"},{"name":"deploy_website.sh","path":"deploy_website.sh","contentType":"file"},{"name":"gradle.properties","path":"gradle.properties","contentType":"file"},{"name":"gradlew","path":"gradlew","contentType":"file"},{"name":"gradlew.bat","path":"gradlew.bat","contentType":"file"},{"name":"mkdocs.yml","path":"mkdocs.yml","contentType":"file"},{"name":"settings.gradle.kts","path":"settings.gradle.kts","contentType":"file"},{"name":"test_docs.sh","path":"test_docs.sh","contentType":"file"}],"totalCount":52}},"fileTreeProcessingTime":5.5048140000000005,"foldersToFetch":[],"repo":{"id":5152285,"defaultBranch":"master","name":"okhttp","ownerLogin":"square","currentUserCanPush":false,"isFork":false,"isEmpty":false,"createdAt":"2012-07-23T13:42:55.000Z","ownerAvatar":"https://avatars.githubusercontent.com/u/82592?v=4","public":true,"private":false,"isOrgOwned":true},"codeLineWrapEnabled":false,"symbolsExpanded":false,"treeExpanded":true,"refInfo":{"name":"master","listCacheKey":"v0:1713403901.0","canEdit":false,"refType":"branch","currentOid":"577d621585f7525d3e98a9161bc26d2965686538"},"path":"LICENSE.txt","currentUser":null,"blob":{"rawLines":["","                                 Apache License","                           Version 2.0, January 2004","                        http://www.apache.org/licenses/","","   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION","","   1. Definitions.","","      \"License\" shall mean the terms and conditions for use, reproduction,","      and distribution as defined by Sections 1 through 9 of this document.","","      \"Licensor\" shall mean the copyright owner or entity authorized by","      the copyright owner that is granting the License.","","      \"Legal Entity\" shall mean the union of the acting entity and all","      other entities that control, are controlled by, or are under common","      control with that entity. For the purposes of this definition,","      \"control\" means (i) the power, direct or indirect, to cause the","      direction or management of such entity, whether by contract or","      otherwise, or (ii) ownership of fifty percent (50%) or more of the","      outstanding shares, or (iii) beneficial ownership of such entity.","","      \"You\" (or \"Your\") shall mean an individual or Legal Entity","      exercising permissions granted by this License.","","      \"Source\" form shall mean the preferred form for making modifications,","      including but not limited to software source code, documentation","      source, and configuration files.","","      \"Object\" form shall mean any form resulting from mechanical","      transformation or translation of a Source form, including but","      not limited to compiled object code, generated documentation,","      and conversions to other media types.","","      \"Work\" shall mean the work of authorship, whether in Source or","      Object form, made available under the License, as indicated by a","      copyright notice that is included in or attached to the work","      (an example is provided in the Appendix below).","","      \"Derivative Works\" shall mean any work, whether in Source or Object","      form, that is based on (or derived from) the Work and for which the","      editorial revisions, annotations, elaborations, or other modifications","      represent, as a whole, an original work of authorship. For the purposes","      of this License, Derivative Works shall not include works that remain","      separable from, or merely link (or bind by name) to the interfaces of,","      the Work and Derivative Works thereof.","","      \"Contribution\" shall mean any work of authorship, including","      the original version of the Work and any modifications or additions","      to that Work or Derivative Works thereof, that is intentionally","      submitted to Licensor for inclusion in the Work by the copyright owner","      or by an individual or Legal Entity authorized to submit on behalf of","      the copyright owner. For the purposes of this definition, \"submitted\"","      means any form of electronic, verbal, or written communication sent","      to the Licensor or its representatives, including but not limited to","      communication on electronic mailing lists, source code control systems,","      and issue tracking systems that are managed by, or on behalf of, the","      Licensor for the purpose of discussing and improving the Work, but","      excluding communication that is conspicuously marked or otherwise","      designated in writing by the copyright owner as \"Not a Contribution.\"","","      \"Contributor\" shall mean Licensor and any individual or Legal Entity","      on behalf of whom a Contribution has been received by Licensor and","      subsequently incorporated within the Work.","","   2. Grant of Copyright License. Subject to the terms and conditions of","      this License, each Contributor hereby grants to You a perpetual,","      worldwide, non-exclusive, no-charge, royalty-free, irrevocable","      copyright license to reproduce, prepare Derivative Works of,","      publicly display, publicly perform, sublicense, and distribute the","      Work and such Derivative Works in Source or Object form.","","   3. Grant of Patent License. Subject to the terms and conditions of","      this License, each Contributor hereby grants to You a perpetual,","      worldwide, non-exclusive, no-charge, royalty-free, irrevocable","      (except as stated in this section) patent license to make, have made,","      use, offer to sell, sell, import, and otherwise transfer the Work,","      where such license applies only to those patent claims licensable","      by such Contributor that are necessarily infringed by their","      Contribution(s) alone or by combination of their Contribution(s)","      with the Work to which such Contribution(s) was submitted. If You","      institute patent litigation against any entity (including a","      cross-claim or counterclaim in a lawsuit) alleging that the Work","      or a Contribution incorporated within the Work constitutes direct","      or contributory patent infringement, then any patent licenses","      granted to You under this License for that Work shall terminate","      as of the date such litigation is filed.","","   4. Redistribution. You may reproduce and distribute copies of the","      Work or Derivative Works thereof in any medium, with or without","      modifications, and in Source or Object form, provided that You","      meet the following conditions:","","      (a) You must give any other recipients of the Work or","          Derivative Works a copy of this License; and","","      (b) You must cause any modified files to carry prominent notices","          stating that You changed the files; and","","      (c) You must retain, in the Source form of any Derivative Works","          that You distribute, all copyright, patent, trademark, and","          attribution notices from the Source form of the Work,","          excluding those notices that do not pertain to any part of","          the Derivative Works; and","","      (d) If the Work includes a \"NOTICE\" text file as part of its","          distribution, then any Derivative Works that You distribute must","          include a readable copy of the attribution notices contained","          within such NOTICE file, excluding those notices that do not","          pertain to any part of the Derivative Works, in at least one","          of the following places: within a NOTICE text file distributed","          as part of the Derivative Works; within the Source form or","          documentation, if provided along with the Derivative Works; or,","          within a display generated by the Derivative Works, if and","          wherever such third-party notices normally appear. The contents","          of the NOTICE file are for informational purposes only and","          do not modify the License. You may add Your own attribution","          notices within Derivative Works that You distribute, alongside","          or as an addendum to the NOTICE text from the Work, provided","          that such additional attribution notices cannot be construed","          as modifying the License.","","      You may add Your own copyright statement to Your modifications and","      may provide additional or different license terms and conditions","      for use, reproduction, or distribution of Your modifications, or","      for any such Derivative Works as a whole, provided Your use,","      reproduction, and distribution of the Work otherwise complies with","      the conditions stated in this License.","","   5. Submission of Contributions. Unless You explicitly state otherwise,","      any Contribution intentionally submitted for inclusion in the Work","      by You to the Licensor shall be under the terms and conditions of","      this License, without any additional terms or conditions.","      Notwithstanding the above, nothing herein shall supersede or modify","      the terms of any separate license agreement you may have executed","      with Licensor regarding such Contributions.","","   6. Trademarks. This License does not grant permission to use the trade","      names, trademarks, service marks, or product names of the Licensor,","      except as required for reasonable and customary use in describing the","      origin of the Work and reproducing the content of the NOTICE file.","","   7. Disclaimer of Warranty. Unless required by applicable law or","      agreed to in writing, Licensor provides the Work (and each","      Contributor provides its Contributions) on an \"AS IS\" BASIS,","      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or","      implied, including, without limitation, any warranties or conditions","      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A","      PARTICULAR PURPOSE. You are solely responsible for determining the","      appropriateness of using or redistributing the Work and assume any","      risks associated with Your exercise of permissions under this License.","","   8. Limitation of Liability. In no event and under no legal theory,","      whether in tort (including negligence), contract, or otherwise,","      unless required by applicable law (such as deliberate and grossly","      negligent acts) or agreed to in writing, shall any Contributor be","      liable to You for damages, including any direct, indirect, special,","      incidental, or consequential damages of any character arising as a","      result of this License or out of the use or inability to use the","      Work (including but not limited to damages for loss of goodwill,","      work stoppage, computer failure or malfunction, or any and all","      other commercial damages or losses), even if such Contributor","      has been advised of the possibility of such damages.","","   9. Accepting Warranty or Additional Liability. While redistributing","      the Work or Derivative Works thereof, You may choose to offer,","      and charge a fee for, acceptance of support, warranty, indemnity,","      or other liability obligations and/or rights consistent with this","      License. However, in accepting such obligations, You may act only","      on Your own behalf and on Your sole responsibility, not on behalf","      of any other Contributor, and only if You agree to indemnify,","      defend, and hold each Contributor harmless for any liability","      incurred by, or claims asserted against, such Contributor by reason","      of your accepting any such warranty or additional liability.","","   END OF TERMS AND CONDITIONS","","   APPENDIX: How to apply the Apache License to your work.","","      To apply the Apache License to your work, attach the following","      boilerplate notice, with the fields enclosed by brackets \"[]\"","      replaced with your own identifying information. (Don't include","      the brackets!)  The text should be enclosed in the appropriate","      comment syntax for the file format. We also recommend that a","      file or class name and description of purpose be included on the","      same \"printed page\" as the copyright notice for easier","      identification within third-party archives.","","   Copyright [yyyy] [name of copyright owner]","","   Licensed under the Apache License, Version 2.0 (the \"License\");","   you may not use this file except in compliance with the License.","   You may obtain a copy of the License at","","       http://www.apache.org/licenses/LICENSE-2.0","","   Unless required by applicable law or agreed to in writing, software","   distributed under the License is distributed on an \"AS IS\" BASIS,","   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.","   See the License for the specific language governing permissions and","   limitations under the License."],"stylingDirectives":[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],"colorizedLines":null,"csv":null,"csvError":null,"dependabotInfo":{"showConfigurationBanner":false,"configFilePath":null,"networkDependabotPath":"/square/okhttp/network/updates","dismissConfigurationNoticePath":"/settings/dismiss-notice/dependabot_configuration_notice","configurationNoticeDismissed":null},"displayName":"LICENSE.txt","displayUrl":"https://github.com/square/okhttp/blob/master/LICENSE.txt?raw=true","headerInfo":{"blobSize":"11.1 KB","deleteTooltip":"You must be signed in to make or propose changes","editTooltip":"You must be signed in to make or propose changes","ghDesktopPath":"https://desktop.github.com","isGitLfs":false,"onBranch":true,"shortPath":"d645695","siteNavLoginPath":"/login?return_to=https%3A%2F%2Fgithub.com%2Fsquare%2Fokhttp%2Fblob%2Fmaster%2FLICENSE.txt","isCSV":false,"isRichtext":false,"toc":null,"lineInfo":{"truncatedLoc":"202","truncatedSloc":"169"},"mode":"file"},"image":false,"isCodeownersFile":null,"isPlain":false,"isValidLegacyIssueTemplate":false,"issueTemplate":null,"discussionTemplate":null,"language":"Text","languageID":372,"large":false,"planSupportInfo":{"repoIsFork":null,"repoOwnedByCurrentUser":null,"requestFullPath":"/square/okhttp/blob/master/LICENSE.txt","showFreeOrgGatedFeatureMessage":null,"showPlanSupportBanner":null,"upgradeDataAttributes":null,"upgradePath":null},"publishBannersInfo":{"dismissActionNoticePath":"/settings/dismiss-notice/publish_action_from_dockerfile","releasePath":"/square/okhttp/releases/new?marketplace=true","showPublishActionBanner":false},"rawBlobUrl":"https://github.com/square/okhttp/raw/master/LICENSE.txt","renderImageOrRaw":false,"richText":null,"renderedFileInfo":null,"shortPath":null,"symbolsEnabled":true,"tabSize":2,"topBannersInfo":{"overridingGlobalFundingFile":false,"globalPreferredFundingPath":null,"showInvalidCitationWarning":false,"citationHelpUrl":"https://docs.github.com/github/creating-cloning-and-archiving-repositories/creating-a-repository-on-github/about-citation-files","actionsOnboardingTip":null},"truncated":false,"viewable":true,"workflowRedirectUrl":null,"symbols":{"timed_out":false,"not_analyzed":true,"symbols":[]}},"copilotInfo":null,"copilotAccessAllowed":false,"csrf_tokens":{"/square/okhttp/branches":{"post":"9LmVdl4u0oqa8CMwzGdS01h2XE8TfoecjRgS10GOQpf9yfAiXA6fmK5ouRrkVKfQPuc30JU_wBtfc9hj59IPzg"},"/repos/preferences":{"post":"LJj4Rk1EzGiO-QPXaX_xD6bSYuDbidOh5UQ8lpAB5XJt0xzb6wJ0fnCzrV4xklbErCpVOb03QHpigSlXe9wr1A"}}},"title":"okhttp/LICENSE.txt at master · square/okhttp","appPayload":{"helpUrl":"https://docs.github.com","findFileWorkerPath":"/assets-cdn/worker/find-file-worker-a007d7f370d6.js","findInFileWorkerPath":"/assets-cdn/worker/find-in-file-worker-d0f0ff069004.js","githubDevUrl":null,"enabled_features":{"code_nav_ui_events":false,"copilot_conversational_ux":false,"react_blob_overlay":false,"copilot_conversational_ux_embedding_update":false,"copilot_popover_file_editor_header":true,"copilot_smell_icebreaker_ux":true,"copilot_workspace":false}}}</script>
+  <script type="application/json" data-target="react-app.embeddedData">{"payload":{"allShortcutsEnabled":false,"fileTree":{"":{"items":[{"name":".devcontainer","path":".devcontainer","contentType":"directory"},{"name":".github","path":".github","contentType":"directory"},{"name":".idea","path":".idea","contentType":"directory"},{"name":".junit.run","path":".junit.run","contentType":"directory"},{"name":".vscode","path":".vscode","contentType":"directory"},{"name":"android-test-app","path":"android-test-app","contentType":"directory"},{"name":"android-test","path":"android-test","contentType":"directory"},{"name":"buildSrc","path":"buildSrc","contentType":"directory"},{"name":"container-tests","path":"container-tests","contentType":"directory"},{"name":"docs","path":"docs","contentType":"directory"},{"name":"fuzzing","path":"fuzzing","contentType":"directory"},{"name":"gradle","path":"gradle","contentType":"directory"},{"name":"kotlin-js-store","path":"kotlin-js-store","contentType":"directory"},{"name":"mockwebserver-deprecated","path":"mockwebserver-deprecated","contentType":"directory"},{"name":"mockwebserver-junit4","path":"mockwebserver-junit4","contentType":"directory"},{"name":"mockwebserver-junit5","path":"mockwebserver-junit5","contentType":"directory"},{"name":"mockwebserver","path":"mockwebserver","contentType":"directory"},{"name":"native-image-tests","path":"native-image-tests","contentType":"directory"},{"name":"okcurl","path":"okcurl","contentType":"directory"},{"name":"okhttp-android","path":"okhttp-android","contentType":"directory"},{"name":"okhttp-bom","path":"okhttp-bom","contentType":"directory"},{"name":"okhttp-brotli","path":"okhttp-brotli","contentType":"directory"},{"name":"okhttp-coroutines","path":"okhttp-coroutines","contentType":"directory"},{"name":"okhttp-dnsoverhttps","path":"okhttp-dnsoverhttps","contentType":"directory"},{"name":"okhttp-hpacktests","path":"okhttp-hpacktests","contentType":"directory"},{"name":"okhttp-idna-mapping-table","path":"okhttp-idna-mapping-table","contentType":"directory"},{"name":"okhttp-java-net-cookiejar","path":"okhttp-java-net-cookiejar","contentType":"directory"},{"name":"okhttp-logging-interceptor","path":"okhttp-logging-interceptor","contentType":"directory"},{"name":"okhttp-sse","path":"okhttp-sse","contentType":"directory"},{"name":"okhttp-testing-support","path":"okhttp-testing-support","contentType":"directory"},{"name":"okhttp-tls","path":"okhttp-tls","contentType":"directory"},{"name":"okhttp-urlconnection","path":"okhttp-urlconnection","contentType":"directory"},{"name":"okhttp","path":"okhttp","contentType":"directory"},{"name":"regression-test","path":"regression-test","contentType":"directory"},{"name":"samples","path":"samples","contentType":"directory"},{"name":".editorconfig","path":".editorconfig","contentType":"file"},{"name":".gitattributes","path":".gitattributes","contentType":"file"},{"name":".gitignore","path":".gitignore","contentType":"file"},{"name":".gitmodules","path":".gitmodules","contentType":"file"},{"name":"BUG-BOUNTY.md","path":"BUG-BOUNTY.md","contentType":"file"},{"name":"CHANGELOG.md","path":"CHANGELOG.md","contentType":"file"},{"name":"CONTRIBUTING.md","path":"CONTRIBUTING.md","contentType":"file"},{"name":"LICENSE.txt","path":"LICENSE.txt","contentType":"file"},{"name":"README.md","path":"README.md","contentType":"file"},{"name":"build.gradle.kts","path":"build.gradle.kts","contentType":"file"},{"name":"deploy_website.sh","path":"deploy_website.sh","contentType":"file"},{"name":"gradle.properties","path":"gradle.properties","contentType":"file"},{"name":"gradlew","path":"gradlew","contentType":"file"},{"name":"gradlew.bat","path":"gradlew.bat","contentType":"file"},{"name":"mkdocs.yml","path":"mkdocs.yml","contentType":"file"},{"name":"settings.gradle.kts","path":"settings.gradle.kts","contentType":"file"},{"name":"test_docs.sh","path":"test_docs.sh","contentType":"file"}],"totalCount":52}},"fileTreeProcessingTime":11.6166,"foldersToFetch":[],"repo":{"id":5152285,"defaultBranch":"master","name":"okhttp","ownerLogin":"square","currentUserCanPush":false,"isFork":false,"isEmpty":false,"createdAt":"2012-07-23T13:42:55.000Z","ownerAvatar":"https://avatars.githubusercontent.com/u/82592?v=4","public":true,"private":false,"isOrgOwned":true},"codeLineWrapEnabled":false,"symbolsExpanded":false,"treeExpanded":true,"refInfo":{"name":"master","listCacheKey":"v0:1714972013.0","canEdit":false,"refType":"branch","currentOid":"2f618f76a7ad3864284790edce167ebb309df1bf"},"path":"LICENSE.txt","currentUser":null,"blob":{"rawLines":["","                                 Apache License","                           Version 2.0, January 2004","                        http://www.apache.org/licenses/","","   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION","","   1. Definitions.","","      \"License\" shall mean the terms and conditions for use, reproduction,","      and distribution as defined by Sections 1 through 9 of this document.","","      \"Licensor\" shall mean the copyright owner or entity authorized by","      the copyright owner that is granting the License.","","      \"Legal Entity\" shall mean the union of the acting entity and all","      other entities that control, are controlled by, or are under common","      control with that entity. For the purposes of this definition,","      \"control\" means (i) the power, direct or indirect, to cause the","      direction or management of such entity, whether by contract or","      otherwise, or (ii) ownership of fifty percent (50%) or more of the","      outstanding shares, or (iii) beneficial ownership of such entity.","","      \"You\" (or \"Your\") shall mean an individual or Legal Entity","      exercising permissions granted by this License.","","      \"Source\" form shall mean the preferred form for making modifications,","      including but not limited to software source code, documentation","      source, and configuration files.","","      \"Object\" form shall mean any form resulting from mechanical","      transformation or translation of a Source form, including but","      not limited to compiled object code, generated documentation,","      and conversions to other media types.","","      \"Work\" shall mean the work of authorship, whether in Source or","      Object form, made available under the License, as indicated by a","      copyright notice that is included in or attached to the work","      (an example is provided in the Appendix below).","","      \"Derivative Works\" shall mean any work, whether in Source or Object","      form, that is based on (or derived from) the Work and for which the","      editorial revisions, annotations, elaborations, or other modifications","      represent, as a whole, an original work of authorship. For the purposes","      of this License, Derivative Works shall not include works that remain","      separable from, or merely link (or bind by name) to the interfaces of,","      the Work and Derivative Works thereof.","","      \"Contribution\" shall mean any work of authorship, including","      the original version of the Work and any modifications or additions","      to that Work or Derivative Works thereof, that is intentionally","      submitted to Licensor for inclusion in the Work by the copyright owner","      or by an individual or Legal Entity authorized to submit on behalf of","      the copyright owner. For the purposes of this definition, \"submitted\"","      means any form of electronic, verbal, or written communication sent","      to the Licensor or its representatives, including but not limited to","      communication on electronic mailing lists, source code control systems,","      and issue tracking systems that are managed by, or on behalf of, the","      Licensor for the purpose of discussing and improving the Work, but","      excluding communication that is conspicuously marked or otherwise","      designated in writing by the copyright owner as \"Not a Contribution.\"","","      \"Contributor\" shall mean Licensor and any individual or Legal Entity","      on behalf of whom a Contribution has been received by Licensor and","      subsequently incorporated within the Work.","","   2. Grant of Copyright License. Subject to the terms and conditions of","      this License, each Contributor hereby grants to You a perpetual,","      worldwide, non-exclusive, no-charge, royalty-free, irrevocable","      copyright license to reproduce, prepare Derivative Works of,","      publicly display, publicly perform, sublicense, and distribute the","      Work and such Derivative Works in Source or Object form.","","   3. Grant of Patent License. Subject to the terms and conditions of","      this License, each Contributor hereby grants to You a perpetual,","      worldwide, non-exclusive, no-charge, royalty-free, irrevocable","      (except as stated in this section) patent license to make, have made,","      use, offer to sell, sell, import, and otherwise transfer the Work,","      where such license applies only to those patent claims licensable","      by such Contributor that are necessarily infringed by their","      Contribution(s) alone or by combination of their Contribution(s)","      with the Work to which such Contribution(s) was submitted. If You","      institute patent litigation against any entity (including a","      cross-claim or counterclaim in a lawsuit) alleging that the Work","      or a Contribution incorporated within the Work constitutes direct","      or contributory patent infringement, then any patent licenses","      granted to You under this License for that Work shall terminate","      as of the date such litigation is filed.","","   4. Redistribution. You may reproduce and distribute copies of the","      Work or Derivative Works thereof in any medium, with or without","      modifications, and in Source or Object form, provided that You","      meet the following conditions:","","      (a) You must give any other recipients of the Work or","          Derivative Works a copy of this License; and","","      (b) You must cause any modified files to carry prominent notices","          stating that You changed the files; and","","      (c) You must retain, in the Source form of any Derivative Works","          that You distribute, all copyright, patent, trademark, and","          attribution notices from the Source form of the Work,","          excluding those notices that do not pertain to any part of","          the Derivative Works; and","","      (d) If the Work includes a \"NOTICE\" text file as part of its","          distribution, then any Derivative Works that You distribute must","          include a readable copy of the attribution notices contained","          within such NOTICE file, excluding those notices that do not","          pertain to any part of the Derivative Works, in at least one","          of the following places: within a NOTICE text file distributed","          as part of the Derivative Works; within the Source form or","          documentation, if provided along with the Derivative Works; or,","          within a display generated by the Derivative Works, if and","          wherever such third-party notices normally appear. The contents","          of the NOTICE file are for informational purposes only and","          do not modify the License. You may add Your own attribution","          notices within Derivative Works that You distribute, alongside","          or as an addendum to the NOTICE text from the Work, provided","          that such additional attribution notices cannot be construed","          as modifying the License.","","      You may add Your own copyright statement to Your modifications and","      may provide additional or different license terms and conditions","      for use, reproduction, or distribution of Your modifications, or","      for any such Derivative Works as a whole, provided Your use,","      reproduction, and distribution of the Work otherwise complies with","      the conditions stated in this License.","","   5. Submission of Contributions. Unless You explicitly state otherwise,","      any Contribution intentionally submitted for inclusion in the Work","      by You to the Licensor shall be under the terms and conditions of","      this License, without any additional terms or conditions.","      Notwithstanding the above, nothing herein shall supersede or modify","      the terms of any separate license agreement you may have executed","      with Licensor regarding such Contributions.","","   6. Trademarks. This License does not grant permission to use the trade","      names, trademarks, service marks, or product names of the Licensor,","      except as required for reasonable and customary use in describing the","      origin of the Work and reproducing the content of the NOTICE file.","","   7. Disclaimer of Warranty. Unless required by applicable law or","      agreed to in writing, Licensor provides the Work (and each","      Contributor provides its Contributions) on an \"AS IS\" BASIS,","      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or","      implied, including, without limitation, any warranties or conditions","      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A","      PARTICULAR PURPOSE. You are solely responsible for determining the","      appropriateness of using or redistributing the Work and assume any","      risks associated with Your exercise of permissions under this License.","","   8. Limitation of Liability. In no event and under no legal theory,","      whether in tort (including negligence), contract, or otherwise,","      unless required by applicable law (such as deliberate and grossly","      negligent acts) or agreed to in writing, shall any Contributor be","      liable to You for damages, including any direct, indirect, special,","      incidental, or consequential damages of any character arising as a","      result of this License or out of the use or inability to use the","      Work (including but not limited to damages for loss of goodwill,","      work stoppage, computer failure or malfunction, or any and all","      other commercial damages or losses), even if such Contributor","      has been advised of the possibility of such damages.","","   9. Accepting Warranty or Additional Liability. While redistributing","      the Work or Derivative Works thereof, You may choose to offer,","      and charge a fee for, acceptance of support, warranty, indemnity,","      or other liability obligations and/or rights consistent with this","      License. However, in accepting such obligations, You may act only","      on Your own behalf and on Your sole responsibility, not on behalf","      of any other Contributor, and only if You agree to indemnify,","      defend, and hold each Contributor harmless for any liability","      incurred by, or claims asserted against, such Contributor by reason","      of your accepting any such warranty or additional liability.","","   END OF TERMS AND CONDITIONS","","   APPENDIX: How to apply the Apache License to your work.","","      To apply the Apache License to your work, attach the following","      boilerplate notice, with the fields enclosed by brackets \"[]\"","      replaced with your own identifying information. (Don't include","      the brackets!)  The text should be enclosed in the appropriate","      comment syntax for the file format. We also recommend that a","      file or class name and description of purpose be included on the","      same \"printed page\" as the copyright notice for easier","      identification within third-party archives.","","   Copyright [yyyy] [name of copyright owner]","","   Licensed under the Apache License, Version 2.0 (the \"License\");","   you may not use this file except in compliance with the License.","   You may obtain a copy of the License at","","       http://www.apache.org/licenses/LICENSE-2.0","","   Unless required by applicable law or agreed to in writing, software","   distributed under the License is distributed on an \"AS IS\" BASIS,","   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.","   See the License for the specific language governing permissions and","   limitations under the License."],"stylingDirectives":[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]],"colorizedLines":null,"csv":null,"csvError":null,"dependabotInfo":{"showConfigurationBanner":false,"configFilePath":null,"networkDependabotPath":"/square/okhttp/network/updates","dismissConfigurationNoticePath":"/settings/dismiss-notice/dependabot_configuration_notice","configurationNoticeDismissed":null},"displayName":"LICENSE.txt","displayUrl":"https://github.com/square/okhttp/blob/master/LICENSE.txt?raw=true","headerInfo":{"blobSize":"11.1 KB","deleteTooltip":"You must be signed in to make or propose changes","editTooltip":"You must be signed in to make or propose changes","ghDesktopPath":"https://desktop.github.com","isGitLfs":false,"onBranch":true,"shortPath":"d645695","siteNavLoginPath":"/login?return_to=https%3A%2F%2Fgithub.com%2Fsquare%2Fokhttp%2Fblob%2Fmaster%2FLICENSE.txt","isCSV":false,"isRichtext":false,"toc":null,"lineInfo":{"truncatedLoc":"202","truncatedSloc":"169"},"mode":"file"},"image":false,"isCodeownersFile":null,"isPlain":false,"isValidLegacyIssueTemplate":false,"issueTemplate":null,"discussionTemplate":null,"language":"Text","languageID":372,"large":false,"planSupportInfo":{"repoIsFork":null,"repoOwnedByCurrentUser":null,"requestFullPath":"/square/okhttp/blob/master/LICENSE.txt","showFreeOrgGatedFeatureMessage":null,"showPlanSupportBanner":null,"upgradeDataAttributes":null,"upgradePath":null},"publishBannersInfo":{"dismissActionNoticePath":"/settings/dismiss-notice/publish_action_from_dockerfile","releasePath":"/square/okhttp/releases/new?marketplace=true","showPublishActionBanner":false},"rawBlobUrl":"https://github.com/square/okhttp/raw/master/LICENSE.txt","renderImageOrRaw":false,"richText":null,"renderedFileInfo":null,"shortPath":null,"symbolsEnabled":true,"tabSize":2,"topBannersInfo":{"overridingGlobalFundingFile":false,"globalPreferredFundingPath":null,"showInvalidCitationWarning":false,"citationHelpUrl":"https://docs.github.com/github/creating-cloning-and-archiving-repositories/creating-a-repository-on-github/about-citation-files","actionsOnboardingTip":null},"truncated":false,"viewable":true,"workflowRedirectUrl":null,"symbols":{"timed_out":false,"not_analyzed":true,"symbols":[]}},"copilotInfo":null,"copilotAccessAllowed":false,"csrf_tokens":{"/square/okhttp/branches":{"post":"YGuwe9TxHHr4w7_pP0rQ1RzUaD9y64NMxzB3t6-8vjEuZ-AgRtPBa_WBjz58C294KabaEoQt5JApB7_zG6HNpg"},"/repos/preferences":{"post":"y3zRgQyBdv7i3VsjM9eq3AZZaxgziESYRfC1xOHU9P11Re5eoEktEfss58n4dB7U_bfPTEwrSO2hwnnOPcO7iw"}}},"title":"okhttp/LICENSE.txt at master · square/okhttp","appPayload":{"helpUrl":"https://docs.github.com","findFileWorkerPath":"/assets-cdn/worker/find-file-worker-a007d7f370d6.js","findInFileWorkerPath":"/assets-cdn/worker/find-in-file-worker-d0f0ff069004.js","githubDevUrl":null,"enabled_features":{"code_nav_ui_events":false,"react_blob_overlay":false,"copilot_conversational_ux_embedding_update":false,"copilot_smell_icebreaker_ux":true,"copilot_workspace":false}}}</script>
   <div data-target="react-app.reactRoot"></div>
 </react-app>
 </turbo-frame>
@@ -4742,7 +4744,7 @@ License               :
           </li>
 
           <li class="mx-2">
-            <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to security&quot;,&quot;label&quot;:&quot;text:security&quot;}" href="/security" data-view-component="true" class="Link--secondary Link">Security</a>
+            <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to security&quot;,&quot;label&quot;:&quot;text:security&quot;}" href="https://github.com/security" data-view-component="true" class="Link--secondary Link">Security</a>
           </li>
 
           <li class="mx-2">
@@ -5495,7 +5497,7 @@ License               :
 Third-party name      : Jackson Core
 Version               : 2.16.1
 Changed from original : No
-Location in openaf.jar: lib/jackson-core-2.16.1.jar
+Location in openaf.jar: lib/jackson-core-2.17.1.jar
 License               : 
 
 

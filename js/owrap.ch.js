@@ -1682,7 +1682,7 @@ OpenWrap.ch.prototype.__types = {
 	 *    - size        (Number)          Optionally getAll/getKeys to return more than 10 records (up to 10000).\
 	 *    - stamp       (Map)             Optionally merge with stamp map.\
 	 *    - timeout     (Number)          Optional request timeout in ms.\
-	 * 
+	 *    - preAction   (Function)        Optional function to be called before every request.\
 	 * \
 	 * The getAll/getKeys functions accept an extra argument to provide a ES query map to restrict the results.
 	 * </odoc>
