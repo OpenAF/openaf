@@ -1893,6 +1893,8 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 			} else {
 				aBody = Packages.okhttp3.MultipartBody.Builder().setType(Packages.okhttp3.MultipartBody.FORM).addFormDataPart(this.__ufn, this.__uf, Packages.okhttp3.RequestBody.create(isNull(mediaType) ? Packages.okhttp3.MediaType.get("application/octet-stream") : Packages.okhttp3.MediaType.get(mediaType), f)).build()
 			}
+		} else {
+			aBody = Packages.okhttp3.RequestBody.create(Packages.okhttp3.MediaType.get("application/json"), "")
 		}
 	}
 
