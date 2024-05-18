@@ -41,6 +41,16 @@ if (kparams.indexOf("-tojson") >= 0 && params["-tojson"] == "") {
 	ojob_tojson();
 }
 
+if (kparams.indexOf("-json") >= 0 && params["-json"] == "") {
+	delete params["-json"]
+	ojob_args.__format = "json"
+}
+
+if (kparams.indexOf("-gb64json" >= 0) && params["-gb64json"] == "") {
+	delete params["-gb64json"]
+	ojob_args.__format = "gb64json"
+}
+
 if (kparams.indexOf("-jobs") >= 0 && params["-jobs"] == "") {
 	delete params["-jobs"];
 	ojob_jobs();
@@ -85,6 +95,8 @@ function ojob_showHelp() {
 	print("Usage: ojob aYamlFile.yaml/json [options]\n");
 	print("  -compile       Compile all includes and current file into a single yaml output.");
 	print("  -tojson        Outputs all includes and current file into a single json output.");
+	print("  -json          Sets argument __format to 'json' for used with ow.oJob.output.")
+	print("  -gb64json      Sets argument __format to 'gb64json' for used with ow.oJob.output.")
 	print("  -jobs          List all jobs available.");
 	print("  -todo          List the final todo list.");
 	print("  -deps          Draws a list of dependencies of todo jobs on a file.");

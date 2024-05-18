@@ -11912,6 +11912,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(colorify(res))
+		case "gb64json":
+			return fnP(af.fromBytes2String(af.toBase64Bytes(io.gzip(af.fromString2Bytes(stringify(res, __, ""))))))
 		case "slon":
 			return fnP(ow.format.toSLON(res))
 		case "cslon":
