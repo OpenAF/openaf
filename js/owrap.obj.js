@@ -1872,7 +1872,7 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 	var aBody
 	var mediaType = null
 
-	if (isDef(aRequestMap["Content-Type"])) mediaType = aRequestMap["Content-Type"]
+	if (__flags.HTTP_USE_MEDIA_TYPE) if (isDef(aRequestMap["Content-Type"])) mediaType = aRequestMap["Content-Type"]
 
 	if (isDef(aIn)) {
 		if (isBytes) {
