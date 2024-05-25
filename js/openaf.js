@@ -4417,6 +4417,7 @@ var $from = function(a) {
  * range(count), ranges(count, start, step)\
  * inc(name), dec(name), getc(name), unset(obj, name)\
  * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)\
+ * sql_format(sql, options)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4762,6 +4763,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		geta: {
 			_func: ar => $$(_locals).get(ar[0])[ar[1]] || $$(aObj).get(ar[0])[ar[1]],
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.number ] } ]
+		},
+		sql_format: {
+			_func: ar => ow.loadFormat().sqlFormat(ar[0], af.fromJSSLON(ar[1])),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
