@@ -1851,6 +1851,13 @@ var __colorFormat = {
 	askQuestion: "BOLD",
 	askChoose: "BOLD,CYAN",
 	askPos: "BLUE",
+	askChooseChars: {
+		chooseMultipleSelected: "[x]",
+		chooseMultipleUnselected: "[ ]",
+		chooseUp: "^",
+		chooseDown: "v",
+		chooseLine: ">"
+	},
 	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" },
 	tree: { lines: "" }
 };
@@ -9790,6 +9797,12 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
     aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
 	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, enter to select)"))
 
+	let chooseLine = __colorFormat.askChooseChars.chooseLine
+	let chooseLineSize = visibleLength(chooseLine) + 1
+	let chooseUp = __colorFormat.askChooseChars.chooseUp
+	let chooseDown = __colorFormat.askChooseChars.chooseDown
+	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
+
     if (__flags.ANSICOLOR_ASK) {
         if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
@@ -9803,10 +9816,10 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                      .map((l, i) => {
                         if (i >= span && i - span < aMaxDisplay) {
                             if (i == option) {
-                                return ansiColor(__colorFormat.askChoose, "> " + l + repeat(maxSpace - l.length + 2, " "))
+                                return ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize, " "))
                             } else {
-                                var s = ((span > 0 && i == span) ? "^" : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? "v" : " "))
-                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + 2, " "))
+                                var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
+                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + chooseDirSize, " "))
                             }
                         }
                         return ""
@@ -9834,11 +9847,100 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printnl(repeat(_v.length, " ") + "\r")
 		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
-        print(range(aMaxDisplay).map(r => repeat(maxSpace + 2, " ")).join("\n"))
+        print(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
         ow.format.string.ansiMoveUp(aMaxDisplay+2)
 		print("\x1B[?25h\n")
 
         return option
+    } else {
+        throw "Choose options not supported on the current terminal."
+    }
+
+    return __
+}
+
+/**
+ * <odoc>
+ * <key>askChooseMultiple(aPrompt, anArray, aMaxDisplay, aHelpText) : Array</key>
+ * Stops for user interaction prompting aPrompt waiting for a single character to choose multiple from the provided anArray of options. Optionally
+ * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns an array with the chosen options.
+ * </odoc>
+ */
+const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
+    _$(aPrompt, "aPrompt").isString().$_()
+    _$(anArray, "anArray").isArray().$_()
+    aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
+	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, space to select, enter to submit)"))
+
+	let chooseMultipleSelected = __colorFormat.askChooseChars.chooseMultipleSelected
+	let chooseMultipleEmpty    = __colorFormat.askChooseChars.chooseMultipleUnselected
+	let chooseMultipleSize     = Math.max(visibleLength(chooseMultipleSelected), visibleLength(chooseMultipleEmpty)) + 1
+
+	let chooseLine = __colorFormat.askChooseChars.chooseLine
+	let chooseLineSize = visibleLength(chooseLine) + 1
+	let chooseUp = __colorFormat.askChooseChars.chooseUp
+	let chooseDown = __colorFormat.askChooseChars.chooseDown
+	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
+
+    if (__flags.ANSICOLOR_ASK) {
+		aSelectMap = new Map()
+		anArray.forEach(v => aSelectMap.set(v, false) )
+
+        if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
+		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
+        print("\x1B[?25l" + _v)
+
+        let option = 0, firstTime = true, span = 0
+        let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
+        let _print = () => {
+            if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
+            var _o = anArray
+                     .map((l, i) => {
+                        if (i >= span && i - span < aMaxDisplay) {
+							selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
+                            if (i == option) {
+                                return ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize, " "))
+                            } else {
+                                var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
+                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseDirSize + chooseMultipleSize, " "))
+                            }
+                        }
+                        return ""
+                     })
+                     .filter(l => l.length > 0)
+                     .join("\n")
+            if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
+            print(_o)
+        }
+
+        plugin("Console")
+        let c = 0, _con = new Console()
+        do {
+            _print()
+            c = String(_con.readChar("")).charCodeAt(0)
+            if (c == 27) {
+                c = String(_con.readChar("")).charCodeAt(0)
+                if (c == 91) {
+                    c = String(_con.readChar("")).charCodeAt(0)
+                    if (c == 66 && option < anArray.length - 1) option++
+                    if (c == 65 && option > 0) option--
+                }
+            }
+			if (c == 32) {
+				aSelectMap.set(anArray[option], !aSelectMap.get(anArray[option]))
+			}
+        } while (c != 13)
+        ow.format.string.ansiMoveUp(aMaxDisplay+1)
+		printnl(repeat(_v.length, " ") + "\r")
+
+		let options = []
+		aSelectMap.forEach((v, k) => { if (v) options.push(k) })
+		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
+        print(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
+        ow.format.string.ansiMoveUp(aMaxDisplay+2)
+		print("\x1B[?25h\n")
+
+        return options
     } else {
         throw "Choose options not supported on the current terminal."
     }
