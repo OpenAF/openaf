@@ -1180,6 +1180,51 @@ OpenWrap.ai.prototype.normalize = {
         return anArray.map((v) => { if (v > aMax) v = aMax; if (v < aMin) v = aMin; return (v - min)/(max - min); });
     },
 
+    /** 
+     * <odoc>
+     * <key>ow.ai.normalize.softMax(anArray, aTemperature) : Array</key>
+     * Given anArray of numbers tries to apply a Softmax function returning an array of values between 0 and 1. If
+     * aTemperature is provided it will be used to control the smoothness of the output.
+     * </odoc>
+     */
+    softMax: function(anArray, aTemperature) {
+        _$(anArray, "anArray").isArray().$_()
+        aTemperature = _$(aTemperature, "aTemperature").isNumber().default(1)
+
+        // Ensure all values are numbers
+        anArray = anArray.map(v => Number(v) )
+
+        // Compute exponentials
+        var exps = anArray.map((v) => Math.exp(v / aTemperature) )
+        var sumExps = exps.reduce((a, b) => a + b )
+        return exps.map((v) => { return v / sumExps })
+    },
+
+    /**
+     * <odoc>
+     * <key>ow.ai.normalize.quantitize(anArray, aLevels) : Array</key>
+     * Given anArray of numbers tries to quantitize returning an array of values between 0 and aLevels. If
+     * aLevels is not provided it will default to 10.
+     * </odoc>
+     */
+    quantitize: function(anArray, aLevels) {
+        _$(anArray, "anArray").isArray().$_()
+        aLevels = _$(aLevels, "aLevels").isNumber().default(10)
+
+        // Ensure all values are numbers
+        anArray = anArray.map(v => Number(v) )
+
+        // Compute max and min
+        var max = anArray.reduce((a,b) => Math.max(a,b) )
+        var min = anArray.reduce((a,b) => Math.min(a,b) )
+
+        // Compute step
+        var step = (max - min) / aLevels
+
+        // Quantitize
+        return anArray.map(v => Math.floor((v - min) / step) )
+    },
+    
     /**
      * <odoc>
      * <key>ow.ai.normalize.intArray(anArray) : Array</key>

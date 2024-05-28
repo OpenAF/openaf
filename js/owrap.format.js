@@ -2988,6 +2988,51 @@ OpenWrap.format.prototype.dateDiff = {
 
 /**
  * <odoc>
+ * <key>ow.format.sqlFormat(aSQL, aMap) : String</key>
+ * Will format aSQL using the sql-formatter library. Optionally you can provide aMap with the following options:\
+ * \
+ *   - indent: the indentation string (defaults to "  ")\
+ *   - uppercase: if true will uppercase the SQL (defaults to false)\
+ *   - linesBetweenQueries: number of lines between queries (defaults to 1)\
+ *   - maxColumnLength: maximum column length (defaults to 50)\
+ *   - skipWhitespaceNearBlockParentheses: if true will whitespace near block parentheses (defaults to false)\
+ *   - language: the SQL language dialect (defaults to "StandardSql")\
+ * \
+ * The language can be one of the following:\
+ * \
+ *   - Db2\
+ *   - MariaDb\
+ *   - MySql\
+ *   - N1ql\
+ *   - PlSql\
+ *   - PostgreSql\
+ *   - Redshift\
+ *   - SparkSql\
+ *   - StandardSql\
+ *   - TSql\
+ * \
+ * </odoc>
+ */
+OpenWrap.format.prototype.sqlFormat = function(aSQL, aMap) {
+	_$(aSQL, "aSQL").isString().$_()
+	aMap = _$(aMap, "aMap").isMap().default({})
+
+	var fc = Packages.com.github.vertical_blank.sqlformatter.core.FormatConfig.builder()
+	if (isString(aMap.indent))                              fc = fc.indent(aMap.indent)
+	if (isBoolean(aMap.uppercase))                          fc = fc.uppercase(aMap.uppercase)
+	if (isNumber(aMap.linesBetweenQueries))                 fc = fc.linesBetweenQueries(aMap.linesBetweenQueries)
+	if (isNumber(aMap.maxColumnLength))                     fc = fc.maxColumnLength(aMap.maxColumnLength)
+	if (isBoolean(aMap.skipWhitespaceNearBlockParentheses)) fc = fc.skipWhitespaceNearBlockParentheses(aMap.skipWhitespaceNearBlockParentheses)
+
+	if (isString(aMap.language)) {
+		return String( Packages.com.github.vertical_blank.sqlformatter.SqlFormatter.of(com.github.vertical_blank.sqlformatter.languages.Dialect[aMap.language]).format(aSQL, fc.build()) )
+	} else {
+		return String( Packages.com.github.vertical_blank.sqlformatter.SqlFormatter.format(aSQL, fc.build()) )
+	}
+}
+
+/**
+ * <odoc>
  * <key>ow.format.elapsedTime4ms(aMs, aFormat) : String</key>
  * Given aMs (milleseconds) will convert into a string with the corresponding human-readable time and date components
  * up to years. This is usually helpful when comparing dates (see also ow.format.elapsedTime). You can control the output
