@@ -9779,19 +9779,20 @@ const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
 
 /**
  * <odoc>
- * <key>askChoose(aPrompt, anArray, aMaxDisplay) : Number</key>
+ * <key>askChoose(aPrompt, anArray, aMaxDisplay, aHelpText) : Number</key>
  * Stops for user interaction prompting aPrompt waiting for a single character to choose from the provided anArray of options. Optionally
  * you can provide aMaxDisplay to limit the number of options displayed at a time. Returns the index of the chosen option.
  * </odoc>
  */
-const askChoose = (aPrompt, anArray, aMaxDisplay) => {
+const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
     _$(aPrompt, "aPrompt").isString().$_()
     _$(anArray, "anArray").isArray().$_()
     aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
+	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, enter to select)"))
 
     if (__flags.ANSICOLOR_ASK) {
         if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
-		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt)
+		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
         print("\x1B[?25l" + _v)
 
         let option = 0, firstTime = true, span = 0
@@ -9831,6 +9832,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay) => {
             }
         } while (c != 13)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
+		printnl(repeat(_v.length, " ") + "\r")
 		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
         print(range(aMaxDisplay).map(r => repeat(maxSpace + 2, " ")).join("\n"))
         ow.format.string.ansiMoveUp(aMaxDisplay+2)
