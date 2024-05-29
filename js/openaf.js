@@ -9837,7 +9837,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
             c = String(_con.readChar("")).charCodeAt(0)
             if (c == 27) {
                 c = String(_con.readChar("")).charCodeAt(0)
-                if (c == 91) {
+                if (c == 91 || c == 79) {
                     c = String(_con.readChar("")).charCodeAt(0)
                     if (c == 66 && option < anArray.length - 1) option++
                     if (c == 65 && option > 0) option--
@@ -9920,7 +9920,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
             c = String(_con.readChar("")).charCodeAt(0)
             if (c == 27) {
                 c = String(_con.readChar("")).charCodeAt(0)
-                if (c == 91) {
+                if (c == 91 || c == 79) {
                     c = String(_con.readChar("")).charCodeAt(0)
                     if (c == 66 && option < anArray.length - 1) option++
                     if (c == 65 && option > 0) option--
