@@ -387,7 +387,7 @@
 				"lib/commons-email-1.5.jar"
 			],
 			"hardDeps": [
-				"lib/commons-net-3.10.0.jar"
+				"lib/commons-net-3.11.0.jar"
 			]
 		},
 		{

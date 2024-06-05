@@ -967,6 +967,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			}
 		} else if (aFile.match(/^https?:\/\//)) {
 			res = this.__merge(_load(fnDown), res);
+		} else {
+			res = this.__merge(_load(f => io.readFile(f)), res)
 		}
 
 	}

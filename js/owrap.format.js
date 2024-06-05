@@ -2081,6 +2081,19 @@ OpenWrap.format.prototype.percentile = function(aArray, aPercentile) {
 	}
 }
 
+/**
+ * <odoc>
+ * <key>ow.format.sortSemanticVersions(aArray) : Array</key>
+ * Will sort the provided aArray of semantic versions (e.g. 1.0.0, 1.0.1, 1.1.0, 2.0.0, ...)\
+ * (available after ow.loadFormat())
+ * </odoc>
+ */
+OpenWrap.format.prototype.sortSemanticVersions = function(anArray) {
+    return anArray.sort((a, b) => {
+		return new org.semver4j.Semver(a).isEqualTo(b) ? 0 : new org.semver4j.Semver(a).isGreaterThan(b) ? 1 : -1
+    })
+}
+
 OpenWrap.format.prototype.toBase64 = function(aString) { return af.fromBytes2String(af.toBase64Bytes(aString)); }
 OpenWrap.format.prototype.fromBase64 = function(aString) { return af.fromBytes2String(af.fromBase64(aString)); }
 OpenWrap.format.prototype.md2  = md2;

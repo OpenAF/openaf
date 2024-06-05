@@ -4424,7 +4424,7 @@ var $from = function(a) {
  * range(count), ranges(count, start, step)\
  * inc(name), dec(name), getc(name), unset(obj, name)\
  * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)\
- * sql_format(sql, options)\
+ * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4774,6 +4774,21 @@ const $path = function(aObj, aPath, customFunctions) {
 		sql_format: {
 			_func: ar => ow.loadFormat().sqlFormat(ar[0], af.fromJSSLON(ar[1])),
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		sort_semver: {
+			_func: ar => ow.loadFormat().sortSemanticVersions(ar[0]),
+			_signature: [ { types: [ jmespath.types.array ] } ]
+		},
+		sort_by_semver: {
+			_func: ar => {
+				ow.loadFormat()
+				return ar[0].sort((a, b) => {
+					var aVal = $path(a, ar[1])
+					var bVal = $path(b, ar[1])
+					return new org.semver4j.Semver(aVal).isEqualTo(bVal) ? 0 : new org.semver4j.Semver(aVal).isGreaterThan(bVal) ? 1 : -1
+				})
+			},
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
@@ -9837,7 +9852,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
             c = String(_con.readChar("")).charCodeAt(0)
             if (c == 27) {
                 c = String(_con.readChar("")).charCodeAt(0)
-                if (c == 91) {
+                if (c == 91 || c == 79) {
                     c = String(_con.readChar("")).charCodeAt(0)
                     if (c == 66 && option < anArray.length - 1) option++
                     if (c == 65 && option > 0) option--
@@ -9920,7 +9935,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
             c = String(_con.readChar("")).charCodeAt(0)
             if (c == 27) {
                 c = String(_con.readChar("")).charCodeAt(0)
-                if (c == 91) {
+                if (c == 91 || c == 79) {
                     c = String(_con.readChar("")).charCodeAt(0)
                     if (c == 66 && option < anArray.length - 1) option++
                     if (c == 65 && option > 0) option--
