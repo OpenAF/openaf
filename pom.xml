@@ -120,7 +120,7 @@
     <dependency>
       <groupId>commons-net</groupId>
       <artifactId>commons-net</artifactId>
-      <version>3.11.0</version>
+      <version>3.11.1</version>
     </dependency>
     <dependency>
       <groupId>com.warrenstrange</groupId>
@@ -130,7 +130,7 @@
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>2.10.1</version>
+      <version>2.11.0</version>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
@@ -295,7 +295,7 @@
     <dependency>
       <groupId>com.github.mwiede</groupId>
       <artifactId>jsch</artifactId>
-      <version>0.2.17</version>
+      <version>0.2.18</version>
     </dependency>
     <dependency>
       <groupId>com.github.vertical-blank</groupId>
