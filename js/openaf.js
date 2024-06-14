@@ -1088,12 +1088,12 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             let result
             let dt = _dt(aO)
             switch(dt) {
-            case "number" : result = _ac(__colorFormat.number, String(aO)) + _acr(); break
-            case "string" : result = _ac(__colorFormat.string, String(aO)) + _acr(); break
-            case "boolean": result = _ac(__colorFormat.boolean, String(aO)) + _acr(); break
-            case "date"   : result = _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr(); break
-            case "java"   : result = _ac(__colorFormat.string, String(aO.toString())) + _acr(); break
-            default       : result = _ac(__colorFormat.default, String(aO)) + _acr(); break
+            case "number" : result = [_ac(__colorFormat.number, String(aO)), _acr()].join(""); break
+            case "string" : result = [_ac(__colorFormat.string, String(aO)), _acr()].join(""); break
+            case "boolean": result = [_ac(__colorFormat.boolean, String(aO)), _acr()].join(""); break
+            case "date"   : result = [_ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")), _acr()].join(""); break
+            case "java"   : result = [_ac(__colorFormat.string, String(aO.toString())), _acr()].join(""); break
+            default       : result = [_ac(__colorFormat.default, String(aO)), _acr()].join(""); break
             }
             _clrCache[String(aO)] = result
             return result
@@ -1108,13 +1108,12 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         
             if (aAnsi.length == 0) return aString
         
-            if (__ansiColorCache[aAnsi]) return __ansiColorCache[aAnsi] + aString
+            if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString].join("")
         
             const res = ansiColor(aAnsi, aString, true, true)
             return res
         }
         _al  = m => {
-            //var l = ansiLength(m, true)
             var s = m.replace(/\033\[[0-9;]*m/g, "")
             if (__flags.VISIBLELENGTH)
                 return Number(visibleLength(s))
@@ -1136,7 +1135,6 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         do {
             sub = s.substr(i, mx)
             if ((ni = sub.indexOf("\n")) >= 0) {
-                //var ni = sub.indexOf("\n")
                 ar.push(s.substr(i, ni))
                 i += ni + 1
             } else {
@@ -1158,16 +1156,16 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         var isAr = Array.isArray(aM)
         if ("[object Object]" != Object.prototype.toString.call(aM) && !isAr) throw "Not a map or array"
     
-        var out  = []
+        var out
         var aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
         
         // Render key and value
         var _get = (k, v) => {          
-          var _k = (isAr ? "[" + k + "]" : k), _r
+          var _k = (isAr ? ["[", k, "]"].join("") : k), _r
           if (aOptions.withValues) {
-            _r = _ac(__colorFormat.key, _k) + 
-                           _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")) + 
-                           _ac("", (!(isMap(v) || Array.isArray(v)) ? _ac(__colorFormat.tree.lines, skey) + _clr(v) : ""))
+            _r = [_ac(__colorFormat.key, _k),
+                           _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")),
+                           _ac("", (!(isMap(v) || Array.isArray(v)) ? [_ac(__colorFormat.tree.lines, skey), _clr(v)].join("") : ""))].join("")
           } else {
             _r = _k
           }
@@ -1181,7 +1179,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if (aOptions.fullValSize) vsize = 0
             aMKeys.forEach(k => {
                 if (aOptions.fullKeySize) {
-                    var _k = (isAr ? "[" + k + "]" : k) 
+                    var _k = (isAr ? ["[", k, "]"].join("") : k) 
                     var _kl = _k.length 
                     if (_kl > ksize) ksize = _kl
                 }
@@ -1203,7 +1201,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if (!isString(m)) return m
         
             if (isString(p)) {
-                p = _$(p).default("") + " "
+                p = [_$(p).default(""), " "].join("")
             }
         
             let mIO = m.indexOf(": ")
@@ -1218,34 +1216,43 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             }
         
             const mIO0 = m.substring(0, mIO + 2)
-            const _res = mIO0 + 
+            const _res = [mIO0,
                     _tw(mIO0, mSub, ss-ps-1).map((_l, ii) => {
                         if (ii == 0) return _l
-                        return _ac("RESET", p) + _ac(__colorFormat.string, _l)
-                    }).join("\n")
+                        return [_ac("RESET", p), _ac(__colorFormat.string, _l)].join("")
+                    }).join("\n")].join("")
         
             return _res
         }
       
-        aMKeys.forEach((k, i) => {
+		var _out = {}
+        parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
+			//try {
+			let k = _v.k, i = _v.i
             let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
+
             let ksizeOrAlKPlusSline = (isDef(ksize) ? ksize : _al(k)) + slines
             let vsizeOrLvPlusSline = (isDef(vsize) ? vsize : lv) + slines
             let aPrefix2 = _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
-          
+
             let wfResult = _wf(v, aPrefix + aPrefix2)
             let repeatResult = _ac("", (isDef(vsize) ? " ".repeat(vsize - lv+1) : " "))
-          
-            let prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac(__colorFormat.tree.lines, endc) : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : aPrefix + _ac(__colorFormat.tree.lines, midc)
+
+            let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
             let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
             let suffix
-          
-            if (isMap(aM[k]) || Array.isArray(aM[k])) {
-                suffix = _pt(aM[k], aWidth, aOptions, aPrefix + _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(vsizeOrLvPlusSline)), true)
+
+            if (isDef(aM[k]) && (isMap(aM[k]) || Array.isArray(aM[k]))) {
+                suffix = _pt(aM[k], aWidth, aOptions, [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join(""), true)
             }
-          
-            out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
+
+            _out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
+			//} catch(e) {
+			//	print(e)
+			//	sprint(_v)
+			//}
         })
+		out = Object.keys(_out).sort((a, b) => a - b).map(k => _out[k])
       
         if (out.length > 0) {
             out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
@@ -1254,7 +1261,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
         return _res
     }
-    var res = _pt(_aM, _aWidth, _aOptions, _aPrefix, _isSub)
+	var res = _pt(_aM, _aWidth, _aOptions, _aPrefix, _isSub)
     return res
 }
 
