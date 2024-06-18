@@ -904,7 +904,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 					_found = true
 				}
 				return pos
-			})
+			}, 0)
 		} else {
 			shouldBand = false
 		}
