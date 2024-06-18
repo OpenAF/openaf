@@ -920,7 +920,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	// If wordwrap generate new array
 	if (aWidthLimit > 0) {
-		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
+		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, visibleLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
 		anArrayOfEntries = _t.lines
 		anArrayOfIdxs = _t.idx
 	}
@@ -935,9 +935,9 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				_v = _v.toISOString().replace("Z","").replace("T"," ")
 			else 
 				_v = String(_v)
-			let ansiLength_v = ansiLength(_v)
+			let ansiLength_v = visibleLength(_v)
 			if (isUnDef(maxsize[col])) 
-				maxsize[col] = ansiLength(col)
+				maxsize[col] = visibleLength(col)
 			if (maxsize[col] < ansiLength_v) maxsize[col] = ansiLength_v
 		})
 	})
@@ -946,7 +946,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	anArrayOfEntries.forEach((row, ii) => {
 		var lineSize = 0
 		var outOfWidth = false
-		var colsLengthMinusOne = cols.length - 1;
+		var colsLengthMinusOne = cols.length - 1
 	
 		if (ii == 0) {
 			output.push(useAnsi ? ansiColor(colorMap.title, "") : "")
@@ -957,7 +957,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 					output.push((useAnsi ? ansiColor(colorMap.title, "...") : "...")); outOfWidth = true
 				} else {
-					var ansiLengthCol = ansiLength(col);
+					var ansiLengthCol = visibleLength(col);
 					var _ps = ' '.repeat(Math.floor((maxsize[col] - ansiLengthCol)/2))
 					var _pe = ' '.repeat(Math.round((maxsize[col] - ansiLengthCol) / 2))
 					output.push(useAnsi ? ansiColor(colorMap.title, _ps + col + _pe) : _ps + col + _pe)
@@ -990,7 +990,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				output.push("..."); outOfWidth = true
 			} else {	
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
-				var _pe = ' '.repeat(maxsize[col] - ansiLength(value))
+				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
 				output.push(useAnsi ? ansiColor(_getColor(row[col], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
 				if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
 			}
