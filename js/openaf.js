@@ -846,12 +846,12 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
  * </odoc>
  */
 const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) {
-	var count = 0, inCount = anArrayOfEntries.length
+	var inCount = anArrayOfEntries.length
 
 	if (inCount == 0) return ""
 
 	var maxsize = {};
-	var output = []
+	var _output = []
 	var anArrayOfIdxs = []
 	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
 	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
@@ -891,16 +891,20 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		hvJoin = "┼";
 	}
 
-	var pShouldBand = false
+	//var pShouldBand = false
 	var _getColor = (aValue, ii) => {
 		var shouldBand
 		if (bandRows) {
-			if (anArrayOfIdxs.indexOf(ii) >= 0) {
-				shouldBand = anArrayOfIdxs.indexOf(ii) % 2 == 0
-				pShouldBand = shouldBand
-			} else {
-				shouldBand = pShouldBand
-			}
+			// Given anArrayOfIdxs with a list of intervals, if ii is in one of them, then band
+			shouldBand = false
+			var _found = false
+			anArrayOfIdxs.reduce((acc, pos, _ii) => {
+				if (!_found && acc > ii && ii <= pos) {
+					shouldBand = anArrayOfIdxs.indexOf(pos) % 2 == 0
+					_found = true
+				}
+				return pos
+			})
 		} else {
 			shouldBand = false
 		}
@@ -910,7 +914,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		if (isBoolean(aValue)) return _bg + __colorFormat.boolean
 		if (isDate(aValue)) return _bg + __colorFormat.date
 		return _bg + __colorFormat.default
-	};
+	}
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
 	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
@@ -928,7 +932,6 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	// Find sizes
 	var cols = Object.keys(anArrayOfEntries[0])
 	anArrayOfEntries.forEach(row => {
-		//var cols = Object.keys(row)
 		cols.forEach(col => {
 			let _v = row[col]
 			if (isDate(_v)) 
@@ -943,10 +946,14 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	})
 
 	// Produce table
-	anArrayOfEntries.forEach((row, ii) => {
+	$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
+		var row = _row.row
+		var ii  = _row.ii
+		var output = []
 		var lineSize = 0
 		var outOfWidth = false
 		var colsLengthMinusOne = cols.length - 1
+		var colNum
 	
 		if (ii == 0) {
 			output.push(useAnsi ? ansiColor(colorMap.title, "") : "")
@@ -982,7 +989,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			output.push(__separator)
 		}
 
-		lineSize = 1; outOfWidth = false; colNum = 0;
+		lineSize = 1; outOfWidth = false; colNum = 0
 		cols.forEach((col, jj) => {
 			if (outOfWidth) return;
 			lineSize += maxsize[col] + 1
@@ -997,15 +1004,15 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			colNum++
 		})
 		output.push(__separator)
-		count++
+		_output[ii] = output.join("")
 	})
 
 	if (displayCount) {
 		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]"
-		output.push(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
+		_output.push(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
 	}
 	
-	return output.join("")
+	return _output.join("")
 }
 
 /**
