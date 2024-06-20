@@ -946,9 +946,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	})
 
 	// Produce table
-	$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
-		var row = _row.row
-		var ii  = _row.ii
+	//$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
+	pForEach(anArrayOfEntries, (row, ii) => {
 		var output = []
 		var lineSize = 0
 		var outOfWidth = false
@@ -1233,9 +1232,10 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         }
       
 		var _out = {}
-        parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
+        //parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
+		pForEach(aMKeys, (k, i) => {
 			//try {
-			let k = _v.k, i = _v.i
+			//let k = _v.k, i = _v.i
             let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
 
             let ksizeOrAlKPlusSline = (isDef(ksize) ? ksize : _al(k)) + slines
@@ -5194,16 +5194,71 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
  */
 const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 	var res = parallelArray(anArray,
-		function(p, c, i, a) {
-			var subres = aFunction(c);
-			return [ subres ].concat(p);
+		function(p, c, ii, a) {
+			var subres = aFunction(c, ii)
+			return [ subres ].concat(p)
 		},
 		[],
-		function(arr) { var res = []; for(var i in arr) { res = res.concat(arr[i]); } return res; },
+		function(arr) { var res = []; for(var i in arr) { res = res.concat(arr[i]); } return res },
 		numberOfThreads,
 		threads
-	);
-	return res;
+	)
+	return res
+}
+
+/**
+ * <odoc>
+ * <key>pForEach(anArray, aFn, aErrFn) : Array</key>
+ * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
+ * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
+ * array. If an error occurs during the execution of aFn, aErrFn will be called with the error.\
+ * \
+ * Example:\
+ * \
+ * var res = pForEach(thingsToProcess,\
+ *   function(aValue, index) {\
+ *     return processValue(aValue)\
+ *   },\
+ *   function(e) {\
+ *     printErr(e)\
+ *   }
+ * )\
+ * </odoc>
+ */
+const pForEach = (anArray, aFn, aErrFn) => {
+	_$(anArray, "anArray").isArray().$_()
+	_$(aFn, "aFn").isFunction().$_()
+	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(sprintErr)
+
+	plugin("Threads")
+	var __threads = new Threads()
+
+	ow.loadObj()
+	var pres = splitArray(range(anArray.length))
+    var fRes = new ow.obj.syncArray([])
+
+	__threads.initFixedThreadPool()
+	pres.forEach((part, i) => {
+		__threads.addFixedThread(function(uuid) {
+			try {
+				fRes.add( { i: i, r: part.map(a => aFn(anArray[a-1], a-1)) } )
+			} catch(e) { 
+				aErrFn(e)
+			}
+			return false
+		})
+	})
+
+	__threads.start()
+	while(fRes.length() < pres.length) sleep(2)
+	__threads.stop()
+
+	var res = []
+    fRes.toArray().sort((a, b) => a.i - b.i).forEach(rs => {
+        res = res.concat(rs.r)
+    })
+
+    return res
 }
 
 /** 
