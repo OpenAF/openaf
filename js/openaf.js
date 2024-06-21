@@ -899,8 +899,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			shouldBand = false
 			var _found = false
 			anArrayOfIdxs.reduce((acc, pos, _ii) => {
-				if (!_found && acc > ii && ii <= pos) {
-					shouldBand = anArrayOfIdxs.indexOf(pos) % 2 == 0
+				if (!_found && acc >= ii && ii < pos) {
+					shouldBand = anArrayOfIdxs.indexOf(pos) % 2 != 0
 					_found = true
 				}
 				return pos
