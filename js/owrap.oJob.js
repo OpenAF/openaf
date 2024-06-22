@@ -3228,11 +3228,12 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: true,
 		attrs: {
-			"(query": "__query",
-			"((type": "__type",
-			"((from": "__from",
-			"((to"  : "__to",
-			"((key" : "__key"
+			"(query" : "__query",
+			"((type" : "__type",
+			"((from" : "__from",
+			"((to"   : "__to",
+			"((toKey": "__toKey",
+			"((key"  : "__key"
 		}
 	}, {
 		name : "(output",
@@ -3540,6 +3541,14 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"(ask"      : "__answers",
 			"((question": "__question",
 			"((force"   : "__force"
+		}
+	}, {
+		name : "(oafp",
+		job  : "ojob oafp",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(oafp" : "__params"
 		}
 	}, {
 		name : "(llm",

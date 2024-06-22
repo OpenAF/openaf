@@ -1368,23 +1368,26 @@ jobs:
       name  : query
       keyArg: __query
       args  :
-        type: __type
-        from: __from
-        to  : __to
-        key : __key
+        type : __type
+        from : __from
+        to   : __to
+        toKey: __toKey
+        key  : __key
   help : 
     text: Performs a query (using ow.obj.filter) to the existing args.
     expects:
     - name: __query
       desc: The query map for ow.obj.filter or af.fromNLinq
     - name: __type
-      desc: The type of query to perform (e.g. path, ow.obj.filter, af.fromNLinq)
+      desc: The type of query to perform (e.g. path, sql or nlinq)
     - name: __from
       desc: The path to the args key to perform the query
     - name: __to
-      desc: The path to where the results should be stores
+      desc: The path to where the results should be stored in args
+    - name: __toKey
+      desc: If __to not provided defaults to $set on the provided key
     - name: __key
-      desc: If __from and __to not provided defaults to $get/$set on the provided key
+      desc: If __from and/or __to not provided defaults to $get/$set on the provided key
   exec : |
     if (isUnDef(args.__from) && isDef(args.from)) args.__from = args.from
     if (isUnDef(args.__key) && isDef(args.key)) args.__key = args.key
@@ -1402,13 +1405,13 @@ jobs:
     default     : f = ( isString(args.__query) ? $from(f).query(af.fromNLinq(args.__query)) : $from(f).query(args.__query) )
     }
 
-    if (args.__key != "args") { 
-      $set(args.__key, f)
-    } else { 
-      if (isDef(args.__to)) {
-        $$(args).set(args.__to, f)
+    if (args.__key == "args" && isUnDef(args.__toKey)) {
+      $$(args).set(isDef(args.__to) ? args.__to : args.__from, f)
+    } else {
+      if (isDef(args.__toKey)) {
+        $set(args.__toKey, f)
       } else {
-        $$(args).set(args.__from, f)
+        $set(args.__key, f)
       }
     }
 
@@ -2229,6 +2232,26 @@ jobs:
         }
       }
     })
+
+# ----------------
+- name : ojob oafp
+  typeArgs:
+    noLog   : true
+    shortcut:
+      name  : oafp
+      keyArg: __params
+    help  :
+      text   : |
+        "Executes oafp with the provided params"
+      expects:
+      - name: __params
+        desc: The parameters to provide to oafp
+  check:
+    in:
+      __params: isMap
+  exec : |
+    loadOAFP()
+    oafp(args.__params)
 
 # ---------------
 - name : ojob llm
