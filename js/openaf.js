@@ -258,7 +258,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
   	DOH_PROVIDER                : "cloudflare",
 	PRINT_BUFFER_STREAM         : 8192,
-	JAVA_CERT_BC_PROVIDER       : false
+	JAVA_CERT_BC_PROVIDER       : false,
+	PATH_CFN                    : __             // $path custom functions
 })
 
 // -------
@@ -4455,6 +4456,7 @@ const $path = function(aObj, aPath, customFunctions) {
 	let _locals = {}
 	aPath = _$(aPath, "aPath").isString().default("@")
 	customFunctions = _$(customFunctions, "customFunctions").isMap().default({})
+	customFunctions = merge(__flags.PATH_CFN, customFunctions)
 	customFunctions = merge({
 		count_by: {
 			_func: ar => $from(ar[0]).countBy(ar[1]),
