@@ -898,13 +898,15 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			// Given anArrayOfIdxs with a list of intervals, if ii is in one of them, then band
 			shouldBand = false
 			var _found = false
-			anArrayOfIdxs.reduce((acc, pos, _ii) => {
-				if (!_found && acc > ii && ii <= pos) {
-					shouldBand = anArrayOfIdxs.indexOf(pos) % 2 == 0
-					_found = true
-				}
-				return pos
-			}, 0)
+            var acc = 0
+            for(var _ii = 0; !_found && _ii < anArrayOfIdxs.length; _ii++) {
+                var pos = anArrayOfIdxs[_ii]
+                if (acc <= ii && ii < pos) {
+                    shouldBand = _ii % 2 != 0
+                    _found = true
+                }
+                acc = pos
+            }
 		} else {
 			shouldBand = false
 		}

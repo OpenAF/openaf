@@ -175,7 +175,7 @@ OpenWrap.format.prototype.string = {
 	  
 		//print(`curMaxSize=${curMaxSize} | maxTableSize=${maxTableSize} | chgCols.len=${af.toCSLON(chgCols)} | fixedSize=${fixedSize}`)
 	
-		var _lines = [], _idx = [], _newSize = []
+		var _lines = [], _idx = [ ], _newSize = []
 		var _keys = Object.keys(ar[0])
 		ar.forEach(_ar => {
 		  // Processing line
