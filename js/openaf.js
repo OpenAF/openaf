@@ -259,7 +259,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
   	DOH_PROVIDER                : "cloudflare",
 	PRINT_BUFFER_STREAM         : 8192,
 	JAVA_CERT_BC_PROVIDER       : false,
-	PATH_CFN                    : __             // $path custom functions
+	PATH_CFN                    : __             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
 })
 
 // -------
