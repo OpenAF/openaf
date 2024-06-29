@@ -130,6 +130,12 @@ OpenWrap.oJob = function(isNonLocal) {
 			returnRE: "\\s*#\\s+return (.+)[\\s\\n]+",
 			returnFn: "var _j='{'+_args.split(',').map(k=>\"'\"+k.trim()+\"':\\\\\\\"\$\"+k.trim()+\"\\\\\\\"\").join(',')+'}';return \";print \\\"\" + _j + \"\\\";\" "
 		},
+		"swift": {
+			lang: "swift",
+            shell: "swift -",
+            pre: "import Foundation; let __argsString = \"{{{$path args 'replace(@,`\\\"`,`g`,`\\\\\\\"`)'}}}\"; if let __argsData = __argsString.data(using: .utf8) { do { if var args = try JSONSerialization.jsonObject(with: __argsData, options: []) as? [String: Any] {\n",
+            pos: "if let __argsString = String(data: try JSONSerialization.data(withJSONObject: args, options: []), encoding: .utf8) { print(__argsString) } } } }\n"
+		},
 		"sh" : { 
 			lang: "sh",
 			langFn: "var s = $sh(); code.split('\\n').forEach(l => s = s.sh(templify(l, args)) ); if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.pwd)) { s = s.pwd(job.typeArgs.pwd) }; if (isDef(job) && isDef(job.typeArgs) && isDef(job.typeArgs.shellPrefix)) { s = s.prefix(job.typeArgs.shellPrefix); s.get(); } else { s.exec(); }"
@@ -2929,7 +2935,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			res = fnDef.join("")
 		}
 
-	    //sprint({ e: aExec, l: aLang, r: res });
+	    //yprint({ e: aExec, l: aLang, r: res });
 
 		// Process check.in and check.out without from and to
 		if (isDef(aCheck) && isMap(aCheck)) {
@@ -3228,11 +3234,12 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		map  : true,
 		noLog: true,
 		attrs: {
-			"(query": "__query",
-			"((type": "__type",
-			"((from": "__from",
-			"((to"  : "__to",
-			"((key" : "__key"
+			"(query" : "__query",
+			"((type" : "__type",
+			"((from" : "__from",
+			"((to"   : "__to",
+			"((toKey": "__toKey",
+			"((key"  : "__key"
 		}
 	}, {
 		name : "(output",
@@ -3540,6 +3547,14 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 			"(ask"      : "__answers",
 			"((question": "__question",
 			"((force"   : "__force"
+		}
+	}, {
+		name : "(oafp",
+		job  : "ojob oafp",
+		map  : true,
+		noLog: true,
+		attrs: {
+			"(oafp" : "__params"
 		}
 	}, {
 		name : "(llm",

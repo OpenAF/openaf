@@ -122,7 +122,7 @@ OpenWrap.format.prototype.string = {
 		// Finding max sizes
 		var maxSizes = [], fixedMinSize = []
 		var _keys = Object.keys(ar[0])
-		var _alKeys = _keys.map(k => ansiLength(k))
+		var _alKeys = _keys.map(k => visibleLength(k))
 		maxSizes = _keys.map(k => 0)
 		fixedMinSize = _keys.map(k => 0)
 		ar.forEach(row => {
@@ -135,7 +135,7 @@ OpenWrap.format.prototype.string = {
 					_v = column == null ? "" : (isDef(column) ? String(column) : "")
 				}
 				fixedMinSize[i] = Math.max(fixedMinSize[i], _alKeys[i])
-				maxSizes[i] = Math.max(maxSizes[i], ansiLength(_v))
+				maxSizes[i] = Math.max(maxSizes[i], visibleLength(_v))
 			}
 		})
 	  
@@ -163,7 +163,7 @@ OpenWrap.format.prototype.string = {
 		// Limiting function
 		var rowLimitFn = s => {
 			if (isString(s)) {
-				if (__flags.TABLE.wordWrapLimitFactor > 0 && ansiLength(s) > maxCol) {
+				if (__flags.TABLE.wordWrapLimitFactor > 0 && visibleLength(s) > maxCol) {
 					return s.substr(0, maxCol) + "..."
 				} else {
 					return s
@@ -175,7 +175,7 @@ OpenWrap.format.prototype.string = {
 	  
 		//print(`curMaxSize=${curMaxSize} | maxTableSize=${maxTableSize} | chgCols.len=${af.toCSLON(chgCols)} | fixedSize=${fixedSize}`)
 	
-		var _lines = [], _idx = [], _newSize = []
+		var _lines = [], _idx = [ ], _newSize = []
 		var _keys = Object.keys(ar[0])
 		ar.forEach(_ar => {
 		  // Processing line
@@ -210,7 +210,7 @@ OpenWrap.format.prototype.string = {
 					}
 				  }
 				  if (isDef(r[_lx])) {
-					_m[_keys[i]] = r[_lx] + (_s[i] > ansiLength(r[_lx]) ? repeat(_s[i] - ansiLength(r[_lx]), ' ') : "")
+					_m[_keys[i]] = r[_lx] + (_s[i] > visibleLength(r[_lx]) ? repeat(_s[i] - visibleLength(r[_lx]), ' ') : "")
 				  } else {
 					_m[_keys[i]] = repeat(_s[i], ' ')
 				  }
@@ -231,7 +231,7 @@ OpenWrap.format.prototype.string = {
 		  _idx.push(_lines.length)
 		})
 	  
-		return useIndex ? { lines: _lines, idx: _idx } : _lines
+		return useIndex ? { lines: _lines, idx: _idx } : _lines
 	},
 	/**
 	 * <odoc>

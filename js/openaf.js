@@ -258,7 +258,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
   	DOH_PROVIDER                : "cloudflare",
 	PRINT_BUFFER_STREAM         : 8192,
-	JAVA_CERT_BC_PROVIDER       : false
+	JAVA_CERT_BC_PROVIDER       : false,
+	PATH_CFN                    : __             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
 })
 
 // -------
@@ -846,12 +847,12 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
  * </odoc>
  */
 const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi, aTheme, aBgColor, wordWrap, useRowSep, bandRows) {
-	var count = 0, inCount = anArrayOfEntries.length
+	var inCount = anArrayOfEntries.length
 
 	if (inCount == 0) return ""
 
 	var maxsize = {};
-	var output = []
+	var _output = []
 	var anArrayOfIdxs = []
 	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
 	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
@@ -891,16 +892,22 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		hvJoin = "┼";
 	}
 
-	var pShouldBand = false
+	//var pShouldBand = false
 	var _getColor = (aValue, ii) => {
 		var shouldBand
 		if (bandRows) {
-			if (anArrayOfIdxs.indexOf(ii) >= 0) {
-				shouldBand = anArrayOfIdxs.indexOf(ii) % 2 == 0
-				pShouldBand = shouldBand
-			} else {
-				shouldBand = pShouldBand
-			}
+			// Given anArrayOfIdxs with a list of intervals, if ii is in one of them, then band
+			shouldBand = false
+			var _found = false
+            var acc = 0
+            for(var _ii = 0; !_found && _ii < anArrayOfIdxs.length; _ii++) {
+                var pos = anArrayOfIdxs[_ii]
+                if (acc <= ii && ii < pos) {
+                    shouldBand = _ii % 2 != 0
+                    _found = true
+                }
+                acc = pos
+            }
 		} else {
 			shouldBand = false
 		}
@@ -910,7 +917,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		if (isBoolean(aValue)) return _bg + __colorFormat.boolean
 		if (isDate(aValue)) return _bg + __colorFormat.date
 		return _bg + __colorFormat.default
-	};
+	}
 
 	if (!Array.isArray(anArrayOfEntries)) return "";
 	if (isUnDef(aWidthLimit)) aWidthLimit = -1;
@@ -920,7 +927,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	// If wordwrap generate new array
 	if (aWidthLimit > 0) {
-		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, ansiLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
+		var _t = ow.format.string.wordWrapArray(anArrayOfEntries, aWidthLimit, visibleLength(vLine), useRowSep ? s => ansiColor("FAINT", "-".repeat(s)) : __, true)
 		anArrayOfEntries = _t.lines
 		anArrayOfIdxs = _t.idx
 	}
@@ -928,25 +935,27 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	// Find sizes
 	var cols = Object.keys(anArrayOfEntries[0])
 	anArrayOfEntries.forEach(row => {
-		//var cols = Object.keys(row)
 		cols.forEach(col => {
 			let _v = row[col]
 			if (isDate(_v)) 
 				_v = _v.toISOString().replace("Z","").replace("T"," ")
 			else 
 				_v = String(_v)
-			let ansiLength_v = ansiLength(_v)
+			let ansiLength_v = visibleLength(_v)
 			if (isUnDef(maxsize[col])) 
-				maxsize[col] = ansiLength(col)
+				maxsize[col] = visibleLength(col)
 			if (maxsize[col] < ansiLength_v) maxsize[col] = ansiLength_v
 		})
 	})
 
 	// Produce table
-	anArrayOfEntries.forEach((row, ii) => {
+	//$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
+	pForEach(anArrayOfEntries, (row, ii) => {
+		var output = []
 		var lineSize = 0
 		var outOfWidth = false
-		var colsLengthMinusOne = cols.length - 1;
+		var colsLengthMinusOne = cols.length - 1
+		var colNum
 	
 		if (ii == 0) {
 			output.push(useAnsi ? ansiColor(colorMap.title, "") : "")
@@ -957,7 +966,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 					output.push((useAnsi ? ansiColor(colorMap.title, "...") : "...")); outOfWidth = true
 				} else {
-					var ansiLengthCol = ansiLength(col);
+					var ansiLengthCol = visibleLength(col);
 					var _ps = ' '.repeat(Math.floor((maxsize[col] - ansiLengthCol)/2))
 					var _pe = ' '.repeat(Math.round((maxsize[col] - ansiLengthCol) / 2))
 					output.push(useAnsi ? ansiColor(colorMap.title, _ps + col + _pe) : _ps + col + _pe)
@@ -982,7 +991,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			output.push(__separator)
 		}
 
-		lineSize = 1; outOfWidth = false; colNum = 0;
+		lineSize = 1; outOfWidth = false; colNum = 0
 		cols.forEach((col, jj) => {
 			if (outOfWidth) return;
 			lineSize += maxsize[col] + 1
@@ -990,22 +999,22 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				output.push("..."); outOfWidth = true
 			} else {	
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
-				var _pe = ' '.repeat(maxsize[col] - ansiLength(value))
+				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
 				output.push(useAnsi ? ansiColor(_getColor(row[col], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
 				if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
 			}
 			colNum++
 		})
 		output.push(__separator)
-		count++
+		_output[ii] = output.join("")
 	})
 
 	if (displayCount) {
 		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]"
-		output.push(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
+		_output.push(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
 	}
 	
-	return output.join("")
+	return _output.join("")
 }
 
 /**
@@ -1073,6 +1082,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
     var _clr = __, _ac = __, _al = __
     if (!_aOptions.noansi) {
         _dt = aO => {
+			if (null == aO) return "null"
             if (isJavaObject(aO) || isJavaClass(aO)) return "java"
             if (isUnDef(aO)) return "undefined"
             if (isBoolean(aO)) return "boolean"
@@ -1088,12 +1098,13 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             let result
             let dt = _dt(aO)
             switch(dt) {
-            case "number" : result = _ac(__colorFormat.number, String(aO)) + _acr(); break
-            case "string" : result = _ac(__colorFormat.string, String(aO)) + _acr(); break
-            case "boolean": result = _ac(__colorFormat.boolean, String(aO)) + _acr(); break
-            case "date"   : result = _ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")) + _acr(); break
-            case "java"   : result = _ac(__colorFormat.string, String(aO.toString())) + _acr(); break
-            default       : result = _ac(__colorFormat.default, String(aO)) + _acr(); break
+			case "null"   : result = [_ac(__colorFormat.default, "null"), _acr()].join(""); break
+            case "number" : result = [_ac(__colorFormat.number, String(aO)), _acr()].join(""); break
+            case "string" : result = [_ac(__colorFormat.string, String(aO)), _acr()].join(""); break
+            case "boolean": result = [_ac(__colorFormat.boolean, String(aO)), _acr()].join(""); break
+            case "date"   : result = [_ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")), _acr()].join(""); break
+            case "java"   : result = [_ac(__colorFormat.string, String(aO.toString())), _acr()].join(""); break
+            default       : result = [_ac(__colorFormat.default, String(aO)), _acr()].join(""); break
             }
             _clrCache[String(aO)] = result
             return result
@@ -1108,13 +1119,12 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         
             if (aAnsi.length == 0) return aString
         
-            if (__ansiColorCache[aAnsi]) return __ansiColorCache[aAnsi] + aString
+            if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString].join("")
         
             const res = ansiColor(aAnsi, aString, true, true)
             return res
         }
         _al  = m => {
-            //var l = ansiLength(m, true)
             var s = m.replace(/\033\[[0-9;]*m/g, "")
             if (__flags.VISIBLELENGTH)
                 return Number(visibleLength(s))
@@ -1136,7 +1146,6 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         do {
             sub = s.substr(i, mx)
             if ((ni = sub.indexOf("\n")) >= 0) {
-                //var ni = sub.indexOf("\n")
                 ar.push(s.substr(i, ni))
                 i += ni + 1
             } else {
@@ -1158,16 +1167,16 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         var isAr = Array.isArray(aM)
         if ("[object Object]" != Object.prototype.toString.call(aM) && !isAr) throw "Not a map or array"
     
-        var out  = []
+        var out
         var aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
         
         // Render key and value
         var _get = (k, v) => {          
-          var _k = (isAr ? "[" + k + "]" : k), _r
+          var _k = (isAr ? ["[", k, "]"].join("") : k), _r
           if (aOptions.withValues) {
-            _r = _ac(__colorFormat.key, _k) + 
-                           _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")) + 
-                           _ac("", (!(isMap(v) || Array.isArray(v)) ? _ac(__colorFormat.tree.lines, skey) + _clr(v) : ""))
+            _r = [_ac(__colorFormat.key, _k),
+                           _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")),
+                           _ac("", (!(isMap(v) || Array.isArray(v)) ? [_ac(__colorFormat.tree.lines, skey), _clr(v)].join("") : ""))].join("")
           } else {
             _r = _k
           }
@@ -1181,7 +1190,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if (aOptions.fullValSize) vsize = 0
             aMKeys.forEach(k => {
                 if (aOptions.fullKeySize) {
-                    var _k = (isAr ? "[" + k + "]" : k) 
+                    var _k = (isAr ? ["[", k, "]"].join("") : k) 
                     var _kl = _k.length 
                     if (_kl > ksize) ksize = _kl
                 }
@@ -1203,7 +1212,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if (!isString(m)) return m
         
             if (isString(p)) {
-                p = _$(p).default("") + " "
+                p = [_$(p).default(""), " "].join("")
             }
         
             let mIO = m.indexOf(": ")
@@ -1218,34 +1227,44 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             }
         
             const mIO0 = m.substring(0, mIO + 2)
-            const _res = mIO0 + 
+            const _res = [mIO0,
                     _tw(mIO0, mSub, ss-ps-1).map((_l, ii) => {
                         if (ii == 0) return _l
-                        return _ac("RESET", p) + _ac(__colorFormat.string, _l)
-                    }).join("\n")
+                        return [_ac("RESET", p), _ac(__colorFormat.string, _l)].join("")
+                    }).join("\n")].join("")
         
             return _res
         }
       
-        aMKeys.forEach((k, i) => {
+		var _out = {}
+        //parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
+	pForEach(aMKeys, (k, i) => {
+			//try {
+			//let k = _v.k, i = _v.i
             let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
+			
             let ksizeOrAlKPlusSline = (isDef(ksize) ? ksize : _al(k)) + slines
             let vsizeOrLvPlusSline = (isDef(vsize) ? vsize : lv) + slines
             let aPrefix2 = _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
-          
+
             let wfResult = _wf(v, aPrefix + aPrefix2)
             let repeatResult = _ac("", (isDef(vsize) ? " ".repeat(vsize - lv+1) : " "))
-          
-            let prefix = (i > 0 && size <= (i+1)) ? aPrefix + _ac(__colorFormat.tree.lines, endc) : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : aPrefix + _ac(__colorFormat.tree.lines, midc)
+
+            let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
             let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
             let suffix
-          
-            if (isMap(aM[k]) || Array.isArray(aM[k])) {
-                suffix = _pt(aM[k], aWidth, aOptions, aPrefix + _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(vsizeOrLvPlusSline)), true)
+
+            if (isDef(aM[k]) && aM[k] != null && (isMap(aM[k]) || Array.isArray(aM[k]))) {
+                suffix = _pt(aM[k], aWidth, aOptions, [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join(""), true)
             }
-          
-            out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
+
+            _out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
+			//} catch(e) {
+			//	print(e)
+			//	sprint(_v)
+			//}
         })
+		out = Object.keys(_out).sort((a, b) => a - b).map(k => _out[k])
       
         if (out.length > 0) {
             out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
@@ -1254,7 +1273,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
         return _res
     }
-    var res = _pt(_aM, _aWidth, _aOptions, _aPrefix, _isSub)
+	var res = _pt(_aM, _aWidth, _aOptions, _aPrefix, _isSub)
     return res
 }
 
@@ -4437,6 +4456,7 @@ const $path = function(aObj, aPath, customFunctions) {
 	let _locals = {}
 	aPath = _$(aPath, "aPath").isString().default("@")
 	customFunctions = _$(customFunctions, "customFunctions").isMap().default({})
+	customFunctions = merge(__flags.PATH_CFN, customFunctions)
 	customFunctions = merge({
 		count_by: {
 			_func: ar => $from(ar[0]).countBy(ar[1]),
@@ -5180,16 +5200,71 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
  */
 const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 	var res = parallelArray(anArray,
-		function(p, c, i, a) {
-			var subres = aFunction(c);
-			return [ subres ].concat(p);
+		function(p, c, ii, a) {
+			var subres = aFunction(c, ii)
+			return [ subres ].concat(p)
 		},
 		[],
-		function(arr) { var res = []; for(var i in arr) { res = res.concat(arr[i]); } return res; },
+		function(arr) { var res = []; for(var i in arr) { res = res.concat(arr[i]); } return res },
 		numberOfThreads,
 		threads
-	);
-	return res;
+	)
+	return res
+}
+
+/**
+ * <odoc>
+ * <key>pForEach(anArray, aFn, aErrFn) : Array</key>
+ * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
+ * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
+ * array. If an error occurs during the execution of aFn, aErrFn will be called with the error.\
+ * \
+ * Example:\
+ * \
+ * var res = pForEach(thingsToProcess,\
+ *   function(aValue, index) {\
+ *     return processValue(aValue)\
+ *   },\
+ *   function(e) {\
+ *     printErr(e)\
+ *   }
+ * )\
+ * </odoc>
+ */
+const pForEach = (anArray, aFn, aErrFn) => {
+	_$(anArray, "anArray").isArray().$_()
+	_$(aFn, "aFn").isFunction().$_()
+	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(sprintErr)
+
+	plugin("Threads")
+	var __threads = new Threads()
+
+	ow.loadObj()
+	var pres = splitArray(range(anArray.length))
+    var fRes = new ow.obj.syncArray([])
+
+	__threads.initFixedThreadPool()
+	pres.forEach((part, i) => {
+		__threads.addFixedThread(function(uuid) {
+			try {
+				fRes.add( { i: i, r: part.map(a => aFn(anArray[a-1], a-1)) } )
+			} catch(e) { 
+				aErrFn(e)
+			}
+			return false
+		})
+	})
+
+	__threads.start()
+	while(fRes.length() < pres.length) sleep(2)
+	__threads.stop()
+
+	var res = []
+    fRes.toArray().sort((a, b) => a.i - b.i).forEach(rs => {
+        res = res.concat(rs.r)
+    })
+
+    return res
 }
 
 /** 
@@ -6732,82 +6807,82 @@ const getFromZip = function(aZipFile, aResource, isBy, encoding, notInMemory) {
 
 //Production steps of ECMA-262, Edition 6, 22.1.2.1
 //Reference: https://people.mozilla.org/~jorendorff/es6-draft.html#sec-array.from
-if (!Array.from) {
-	Array.from = (function () {
-		var toStr = Object.prototype.toString;
-		var isCallable = function (fn) {
-			return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
-		};
-		var toInteger = function (value) {
-			var number = Number(value);
-			if (isNaN(number)) { return 0; }
-			if (number === 0 || !isFinite(number)) { return number; }
-			return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
-		};
-		var maxSafeInteger = Math.pow(2, 53) - 1;
-		var toLength = function (value) {
-			var len = toInteger(value);
-			return Math.min(Math.max(len, 0), maxSafeInteger);
-		};
+// if (!Array.from) {
+// 	Array.from = (function () {
+// 		var toStr = Object.prototype.toString;
+// 		var isCallable = function (fn) {
+// 			return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
+// 		};
+// 		var toInteger = function (value) {
+// 			var number = Number(value);
+// 			if (isNaN(number)) { return 0; }
+// 			if (number === 0 || !isFinite(number)) { return number; }
+// 			return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
+// 		};
+// 		var maxSafeInteger = Math.pow(2, 53) - 1;
+// 		var toLength = function (value) {
+// 			var len = toInteger(value);
+// 			return Math.min(Math.max(len, 0), maxSafeInteger);
+// 		};
 
-		// The length property of the from method is 1.
-		return function from(arrayLike/*, mapFn, thisArg */) {
-			// 1. Let C be the this value.
-			var C = this;
+// 		// The length property of the from method is 1.
+// 		return function from(arrayLike/*, mapFn, thisArg */) {
+// 			// 1. Let C be the this value.
+// 			var C = this;
 
-			// 2. Let items be ToObject(arrayLike).
-			var items = Object(arrayLike);
+// 			// 2. Let items be ToObject(arrayLike).
+// 			var items = Object(arrayLike);
 
-			// 3. ReturnIfAbrupt(items).
-			if (arrayLike == null) {
-				throw new TypeError("Array.from requires an array-like object - not null or undefined");
-			}
+// 			// 3. ReturnIfAbrupt(items).
+// 			if (arrayLike == null) {
+// 				throw new TypeError("Array.from requires an array-like object - not null or undefined");
+// 			}
 
-			// 4. If mapfn is undefined, then let mapping be false.
-			var mapFn = arguments.length > 1 ? arguments[1] : void undefined;
-			var T;
-			if (typeof mapFn !== 'undefined') {
-				// 5. else      
-				// 5. a If IsCallable(mapfn) is false, throw a TypeError exception.
-				if (!isCallable(mapFn)) {
-					throw new TypeError('Array.from: when provided, the second argument must be a function');
-				}
+// 			// 4. If mapfn is undefined, then let mapping be false.
+// 			var mapFn = arguments.length > 1 ? arguments[1] : void undefined;
+// 			var T;
+// 			if (typeof mapFn !== 'undefined') {
+// 				// 5. else      
+// 				// 5. a If IsCallable(mapfn) is false, throw a TypeError exception.
+// 				if (!isCallable(mapFn)) {
+// 					throw new TypeError('Array.from: when provided, the second argument must be a function');
+// 				}
 
-				// 5. b. If thisArg was supplied, let T be thisArg; else let T be undefined.
-				if (arguments.length > 2) {
-					T = arguments[2];
-				}
-			}
+// 				// 5. b. If thisArg was supplied, let T be thisArg; else let T be undefined.
+// 				if (arguments.length > 2) {
+// 					T = arguments[2];
+// 				}
+// 			}
 
-			// 10. Let lenValue be Get(items, "length").
-			// 11. Let len be ToLength(lenValue).
-			var len = toLength(items.length);
+// 			// 10. Let lenValue be Get(items, "length").
+// 			// 11. Let len be ToLength(lenValue).
+// 			var len = toLength(items.length);
 
-			// 13. If IsConstructor(C) is true, then
-			// 13. a. Let A be the result of calling the [[Construct]] internal method of C with an argument list containing the single item len.
-			// 14. a. Else, Let A be ArrayCreate(len).
-			var A = isCallable(C) ? Object(new C(len)) : new Array(len);
+// 			// 13. If IsConstructor(C) is true, then
+// 			// 13. a. Let A be the result of calling the [[Construct]] internal method of C with an argument list containing the single item len.
+// 			// 14. a. Else, Let A be ArrayCreate(len).
+// 			var A = isCallable(C) ? Object(new C(len)) : new Array(len);
 
-			// 16. Let k be 0.
-			var k = 0;
-			// 17. Repeat, while k < len… (also steps a - h)
-			var kValue;
-			while (k < len) {
-				kValue = items[k];
-				if (mapFn) {
-					A[k] = typeof T === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
-				} else {
-					A[k] = kValue;
-				}
-				k += 1;
-			}
-			// 18. Let putStatus be Put(A, "length", len, true).
-			A.length = len;
-			// 20. Return A.
-			return A;
-		};
-	}());
-}
+// 			// 16. Let k be 0.
+// 			var k = 0;
+// 			// 17. Repeat, while k < len… (also steps a - h)
+// 			var kValue;
+// 			while (k < len) {
+// 				kValue = items[k];
+// 				if (mapFn) {
+// 					A[k] = typeof T === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
+// 				} else {
+// 					A[k] = kValue;
+// 				}
+// 				k += 1;
+// 			}
+// 			// 18. Let putStatus be Put(A, "length", len, true).
+// 			A.length = len;
+// 			// 20. Return A.
+// 			return A;
+// 		};
+// 	}());
+// }
 
 /**
  * <odoc>
