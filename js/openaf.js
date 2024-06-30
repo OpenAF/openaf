@@ -1267,7 +1267,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		out = Object.keys(_out).sort((a, b) => a - b).map(k => _out[k])
       
         if (out.length > 0) {
-            out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
+            out = ("undefined" !== typeof out[out.length - 1] && out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
         }
         
         var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
@@ -5234,30 +5234,40 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 const pForEach = (anArray, aFn, aErrFn) => {
 	_$(anArray, "anArray").isArray().$_()
 	_$(aFn, "aFn").isFunction().$_()
-	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(sprintErr)
-
-	plugin("Threads")
-	var __threads = new Threads()
+	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(printErr)
 
 	ow.loadObj()
 	var pres = splitArray(range(anArray.length))
-    var fRes = new ow.obj.syncArray([])
-
-	__threads.initFixedThreadPool()
-	pres.forEach((part, i) => {
-		__threads.addFixedThread(function(uuid) {
-			try {
-				fRes.add( { i: i, r: part.map(a => aFn(anArray[a-1], a-1)) } )
-			} catch(e) { 
-				aErrFn(e)
-			}
-			return false
-		})
+    var fRes = new ow.obj.syncArray([]), aPart = new ow.obj.syncArray(), _ts = [], parts = $atomic()
+	pres.forEach((part, _i_) => {
+		aPart.add(part.length)
+		try {
+			_ts.push( $do(() => {
+					try {
+						var ar = part.map(function(a) {
+							try {
+								return aFn(anArray[a-1], a-1)
+							} catch(ee) {
+								aErrFn(ee)
+							}
+							return __
+						} )
+						fRes.add( { i: _i_, r: ar } )
+					} catch(e) { 
+						aErrFn(e)
+					}
+					return true
+				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
+		} catch(eee) {
+			aErrFn(eee)
+		}
+		return part.length
 	})
 
-	__threads.start()
-	while(fRes.length() < pres.length) sleep(2)
-	__threads.stop()
+	do {
+		$doWait($doAll(_ts))
+		if (parts.get() < pres.length) sleep(50, true)
+	} while(parts.get() < pres.length)
 
 	var res = []
     fRes.toArray().sort((a, b) => a.i - b.i).forEach(rs => {
