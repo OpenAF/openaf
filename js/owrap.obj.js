@@ -3241,6 +3241,155 @@ OpenWrap.obj.prototype.signVerify = function(aKey, aMap) {
 
 /**
  * <odoc>
+ * <key>ow.obj.syncMap(aMap) : ow.obj.syncMap</key>
+ * Creates an instance of a thread-safe map. Optionally it can be initialized with aMap.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap = function(aMap) {
+	var jm
+	if (isDef(aMap) && isMap(aMap))
+		jm = new java.util.HashMap(aMap)
+	else
+		jm = new java.util.HashMap()
+
+	this.map = java.util.Collections.synchronizedMap(jm)
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.getJavaObject() : Object</key>
+ * Returns the internal java object.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.getJavaObject = function() {
+	return this.map
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.put(aKey, aValue) : ow.obj.syncMap</key>
+ * Puts aKey with aValue in the internal map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.put = function(aKey, aValue) {
+	this.map.put(aKey, aValue)
+	return this
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.putAll(aMap) : ow.obj.syncMap</key>
+ * Puts all the entries of aMap in the internal map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.putAll = function(aMap) {
+	_$(aMap, "map").isMap().$_()
+	this.map.putAll(new java.util.HashMap(aMap))
+	return this
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.get(aKey) : Object</key>
+ * Returns the value of aKey in the internal map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.get = function(aKey) {
+	return this.map.get(aKey)
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.remove(aKey) : Object</key>
+ * Removes the entry identified by aKey from the internal map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.remove = function(aKey) {
+	return this.map.remove(aKey)
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.clear()</key>
+ * Clears the internal map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.clear = function() {
+	this.map.clear()
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.size() : Number</key>
+ * Returns the current size of the internal map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.size = function() {
+	return this.map.size()
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.entrySet() : Array</key>
+ * Returns an array with the entries of the internal map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.keySet = function() {
+	return af.fromJavaArray(this.map.keySet().toArray())
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.values() : Array</key>
+ * Returns an array with the values of the internal map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.values = function() {
+	return af.fromJavaArray(this.map.values().toArray())
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.containsKey(aKey) : boolean</key>
+ * Returns true if the internal map contains aKey.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.containsKey = function(aKey) {
+	return this.map.containsKey(aKey)
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.containsValue(aValue) : boolean</key>
+ * Returns true if the internal map contains aValue.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.containsValue = function(aValue) {
+	return this.map.containsValue(aValue)
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.isEmpty() : boolean</key>
+ * Returns true if the internal map is empty.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.isEmpty = function() {
+	return this.map.isEmpty()
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncMap.toMap() : Map</key>
+ * Returns the internal map as a javascript map.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.toMap = function() {
+	return af.fromJavaMap(this.map)
+}
+
+/**
+ * <odoc>
  * <key>ow.obj.syncArray(anArray) : ow.obj.syncArray</key>
  * Creates an instance of a thread-safe array/list. Optionally it can be initialized with anArray.
  * </odoc>
