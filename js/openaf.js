@@ -851,8 +851,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	if (inCount == 0) return ""
 
+	ow.loadObj()
 	var maxsize = {};
-	var _output = []
 	var anArrayOfIdxs = []
 	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
 	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
@@ -950,6 +950,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	// Produce table
 	//$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
+	var _output = new ow.obj.syncArray(range(anArrayOfEntries.length))
 	pForEach(anArrayOfEntries, (row, ii) => {
 		var output = []
 		var lineSize = 0
@@ -1006,15 +1007,15 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			colNum++
 		})
 		output.push(__separator)
-		_output[ii] = output.join("")
+		_output.set(ii, output.join(""))
 	})
 
 	if (displayCount) {
 		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]"
-		_output.push(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
+		_output.add(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
 	}
 	
-	return _output.join("")
+	return _output.toArray().join("")
 }
 
 /**
@@ -1236,10 +1237,11 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             return _res
         }
       
-		var _out = {}
+		ow.loadObj()
+		var _out = new ow.obj.syncMap()
         //parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
-	pForEach(aMKeys, (k, i) => {
-			//try {
+		pForEach(aMKeys, (k, i) => {
+			try {
 			//let k = _v.k, i = _v.i
             let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
 			
@@ -1258,13 +1260,15 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
                 suffix = _pt(aM[k], aWidth, aOptions, [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join(""), true)
             }
 
-            _out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
-			//} catch(e) {
-			//	print(e)
+            _out.put(i, [prefix, wfResult, repeatResult, suffix, reset].join(""))
+			} catch(e) {
+				print(e)
 			//	sprint(_v)
-			//}
+			}
         })
-		out = Object.keys(_out).sort((a, b) => a - b).map(k => _out[k])
+		out = _out.getKeys().sort((a, b) => a - b).map(k => _out.get(k))
+		_out.clear()
+		_out = __
       
         if (out.length > 0) {
             out = ("undefined" !== typeof out[out.length - 1] && out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
@@ -5238,9 +5242,8 @@ const pForEach = (anArray, aFn, aErrFn) => {
 
 	ow.loadObj()
 	var pres = splitArray(range(anArray.length))
-    var fRes = new ow.obj.syncArray([]), aPart = new ow.obj.syncArray(), _ts = [], parts = $atomic()
+    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic()
 	pres.forEach((part, _i_) => {
-		aPart.add(part.length)
 		try {
 			_ts.push( $do(() => {
 					try {
@@ -5264,15 +5267,19 @@ const pForEach = (anArray, aFn, aErrFn) => {
 		return part.length
 	})
 
+	var tries = 0
 	do {
 		$doWait($doAll(_ts))
 		if (parts.get() < pres.length) sleep(50, true)
-	} while(parts.get() < pres.length)
+		tries++
+	} while(parts.get() < pres.length && tries < 100)
 
 	var res = []
     fRes.toArray().sort((a, b) => a.i - b.i).forEach(rs => {
         res = res.concat(rs.r)
     })
+	fRes.clear()
+	fRes = __
 
     return res
 }
