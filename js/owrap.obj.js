@@ -3295,7 +3295,9 @@ OpenWrap.obj.prototype.syncMap.prototype.putAll = function(aMap) {
  * </odoc>
  */
 OpenWrap.obj.prototype.syncMap.prototype.get = function(aKey) {
-	return this.map.get(aKey)
+	var _r = this.map.get(aKey)
+	if (isNull(_r)) return __
+	return _r
 }
 
 /**

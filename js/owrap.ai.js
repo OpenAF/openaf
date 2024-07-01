@@ -1097,7 +1097,7 @@ OpenWrap.ai.prototype.network.prototype.get = function(inputData) {
  */
 OpenWrap.ai.prototype.network.prototype.put = function(inputData, outputData, learningRate, bjOptions) {
     if (isUnDef(this.__net) && isUnDef(this.__bjnet)) throw "Network not initialized."
-    if (isUnDef(this__bjnet)) {
+    if (isUnDef(this.__bjnet)) {
         learningRate = _$(learningRate).isNumber().default(0.3)
 
         this.__net.activate(inputData)

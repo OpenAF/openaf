@@ -55,6 +55,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testSyncArray;
 
+   - name: Obj::Thread-safe map
+     from: Obj::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testSyncMap;
+
    - name: Obj::Object fuzzy search
      from: Obj::Init
      to  : oJob Test
@@ -110,3 +115,5 @@ todo:
 - Obj::DB ResultSet to object
 - Obj::Filter
 - Obj::Flat map
+- Obj::Thread-safe array
+- Obj::Thread-safe map
