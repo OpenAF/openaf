@@ -3330,21 +3330,21 @@ OpenWrap.obj.prototype.syncMap.prototype.size = function() {
 
 /**
  * <odoc>
- * <key>ow.obj.syncMap.entrySet() : Array</key>
+ * <key>ow.obj.syncMap.getKeys() : Array</key>
  * Returns an array with the entries of the internal map.
  * </odoc>
  */
-OpenWrap.obj.prototype.syncMap.prototype.keySet = function() {
+OpenWrap.obj.prototype.syncMap.prototype.getKeys = function() {
 	return af.fromJavaArray(this.map.keySet().toArray())
 }
 
 /**
  * <odoc>
- * <key>ow.obj.syncMap.values() : Array</key>
+ * <key>ow.obj.syncMap.getValues() : Array</key>
  * Returns an array with the values of the internal map.
  * </odoc>
  */
-OpenWrap.obj.prototype.syncMap.prototype.values = function() {
+OpenWrap.obj.prototype.syncMap.prototype.getValues = function() {
 	return af.fromJavaArray(this.map.values().toArray())
 }
 
