@@ -236,7 +236,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		traverse : true,
 		extend   : true,
 		merge    : true,
-		jsonParse: true
+		jsonParse: true,
+		listFilesRecursive: true,
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -3668,7 +3669,7 @@ const isDefined = function(aObject) {
  * Tries to determine if the provided anArrayOfChars is binary or text. The detection is performed with the first 1024 chars (
  * that can be changed if confirmLimit is provided). Additionally is possible to link multiple calls providing the last result
  * on previousResult for multiple subsequences of a main array of chars sequence. Should work for utf8, iso-8859-1, iso-8859-7,
-*  windows-1252 and windows-1253. Returns true if file is believed to be binary.
+ *  windows-1252 and windows-1253. Returns true if file is believed to be binary.
  * </odoc>
  */
 const isBinaryArray = function(anArrayOfChars, confirmLimit) {
@@ -3708,33 +3709,83 @@ const isBinaryArray = function(anArrayOfChars, confirmLimit) {
 
 /**
  * <odoc>
- * <key>listFilesRecursive(aPath, usePosix) : Map</key>
+ * <key>listFilesRecursive(aPath, usePosix, aFnErr) : Map</key>
  * Performs the io.listFiles function recursively given aPath. The returned map will be equivalent to
  * the io.listFiles function (see more in io.listFiles). Alternatively you can specify
  * to usePosix=true and it will add to the map the owner, group and full permissions of each file and folder.
+ * When __flags.ALTERNATIVES.listFilesRecursive=true the processing will be done in parallel and aFnErr will be called
+ * in case of an error.
  * </odoc>
  */
-const listFilesRecursive = function(aPath, usePosix) {
+const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 	if (isUnDef(aPath)) return []
 
-	var ret = new Set(), stack = [aPath], visited = new Set()
+	if (__flags.ALTERNATIVES.listFilesRecursive) {
+		aFnErr = _$(aFnErr, "aFnErr").isFunction().default(printErr)
+		ow.loadObj()
+		var ret = new ow.obj.syncArray(), visited = new ow.obj.syncMap(), stack = new ow.obj.syncArray([ aPath ]), _ps = new ow.obj.syncArray()
+		var ini = $atomic(), end = $atomic()
 
-	while (stack.length > 0) {
-		var currentPath = stack.pop()
-		var files = io.listFiles(currentPath, usePosix)
+		var fn = () => {
+			try {
+				ini.inc()
+				if (stack.length() > 0) {
+					var currentPath
+					sync(() => {
+						var i = stack.length() - 1
+						currentPath = stack.get(i)
+						stack.remove(i)
+					}, stack)
+	
+					var files = io.listFiles(currentPath, usePosix)
+					var _ret  = new Set()
+		
+					if (isDef(files) && isDef(files.files)) {
+						for (var file of files.files) {
+							_ret.add(merge({ path: currentPath }, file))
+							if (file.isDirectory && !visited.containsKey(file.filepath)) {
+								stack.add(file.filepath)
+								visited.put(file.filepath, true)
+								_ps.add($do(fn))
+							}
+						}
+					}
+		
+					ret.addAll(Array.from(_ret))
+				}
+			} catch(e) {
+				aFnErr(e)
+			} finally {
+				end.inc()
+			}
+		}
 
-		if (isUnDef(files) || isUnDef(files.files)) continue
+		_ps.add($do(fn))
+		do {
+			$doWait($doAll(_ps.toArray()))
+		} while(ini.get() > end.get())
 
-        for (var file of files.files) {
-            ret.add(file)
-            if (file.isDirectory && !visited.has(file.filepath)) {
-                stack.push(file.filepath)
-                visited.add(file.filepath)
-            }
-        }
+		return ret.toArray()
+	} else {
+		var ret = new Set(), stack = [aPath], visited = new Set()
+
+		while (stack.length > 0) {
+			var currentPath = stack.pop()
+			var files = io.listFiles(currentPath, usePosix)
+	
+			if (isUnDef(files) || isUnDef(files.files)) continue
+	
+			for (var file of files.files) {
+				ret.add(merge({ path: currentPath }, file))
+				if (file.isDirectory && !visited.has(file.filepath)) {
+					stack.push(file.filepath)
+					visited.add(file.filepath)
+				}
+			}
+		}
+	
+		return Array.from(ret)
 	}
-
-	return Array.from(ret)
 }
 
 /**
