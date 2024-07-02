@@ -3742,7 +3742,8 @@ const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 		
 					if (isDef(files) && isDef(files.files)) {
 						for (var file of files.files) {
-							_ret.add(merge({ path: currentPath }, file))
+							file.path = currentPath
+							_ret.add(file)
 							if (file.isDirectory && !visited.containsKey(file.filepath)) {
 								stack.add(file.filepath)
 								visited.put(file.filepath, true)
@@ -3776,7 +3777,8 @@ const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 			if (isUnDef(files) || isUnDef(files.files)) continue
 	
 			for (var file of files.files) {
-				ret.add(merge({ path: currentPath }, file))
+				file.path = currentPath
+				ret.add(file)
 				if (file.isDirectory && !visited.has(file.filepath)) {
 					stack.push(file.filepath)
 					visited.add(file.filepath)
