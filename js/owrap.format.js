@@ -190,7 +190,6 @@ OpenWrap.format.prototype.string = {
 			} else {
 				_newSize[i] = Math.max(fixedMinSize[i], maxSizes[i])
 			}
-			
 			var _sar = String((chgCols.has(i) ? rowLimitFn(ow.format.string.wordWrap(_v, _newSize[i] )) : rowLimitFn(_v) )).split("\n")
 			maxSubLines = Math.max(maxSubLines, _sar.length)
 			lines.push(_sar)
@@ -242,7 +241,7 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	wordWrap: function(str, maxWidth, newLine, tabDefault) {
-		str = _$(str, "str").isString().default("")
+		str = _$(String(str), "str").isString().default("")
 		tabDefault = _$(tabDefault, "tabDefault").isNumber().default(4)
 		_$(maxWidth, "maxWidth").isNumber().$_()
 
