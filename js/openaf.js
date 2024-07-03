@@ -1065,6 +1065,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 
     // Don't repeat options if already done as a sub-call
     ow.loadFormat()
+	ow.loadObj()
     if (!ow.format.isWindows()) {
         if (isUnDef(_aOptions.noansi) && __initializeCon()) {
             _aOptions.noansi = !__conAnsi
@@ -1093,9 +1094,10 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if (isDate(aO)) return "date"
         }
         _acr = () => _ac("RESET","")
-        var _clrCache = {}
+        var _clrCache = new ow.obj.syncMap()
         _clr = aO => {
-            if (_clrCache[String(aO)]) return _clrCache[String(aO)]
+            //if (_clrCache[String(aO)]) return _clrCache[String(aO)]
+			if (_clrCache.containsKey(String(aO))) return _clrCache.get(String(aO))
 
             let result
             let dt = _dt(aO)
@@ -1108,7 +1110,8 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             case "java"   : result = [_ac(__colorFormat.string, String(aO.toString())), _acr()].join(""); break
             default       : result = [_ac(__colorFormat.default, String(aO)), _acr()].join(""); break
             }
-            _clrCache[String(aO)] = result
+            //_clrCache[String(aO)] = result
+			_clrCache.put(String(aO), result)
             return result
         }
         _ac  = (aAnsi, aString) => {
@@ -1238,7 +1241,6 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             return _res
         }
       
-		ow.loadObj()
 		var _out = new ow.obj.syncMap()
         //parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
 		pForEach(aMKeys, (k, i) => {
@@ -1263,7 +1265,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 
             _out.put(i, [prefix, wfResult, repeatResult, suffix, reset].join(""))
 			} catch(e) {
-				print(e)
+				printErr(e)
 			//	sprint(_v)
 			}
         })
@@ -5314,6 +5316,10 @@ const pForEach = (anArray, aFn, aErrFn) => {
 					}
 					return true
 				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
+			// Cool down and go sequential if needed
+			if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / 2) {
+				$doWait(_ts.pop())
+			}
 		} catch(eee) {
 			aErrFn(eee)
 		}
