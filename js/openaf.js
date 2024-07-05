@@ -1566,6 +1566,14 @@ if (isUnDef(__conAnsi) && isDef(java.lang.System.getenv().get("TERM"))) {
 if (isUnDef(__conAnsi) && String(java.lang.System.getProperty("file.encoding")) != "UTF-8") {
 	__conAnsi = false;
 }
+if (java.lang.System.getenv().get("OAF_CONSOLE") != null) {
+	if (String(java.lang.System.getenv().get("OAF_CONSOLE")).toLowerCase().trim() == "true") {
+		__conConsole = true
+	} else {
+		__conAnsi = false
+		__conConsole = false
+	}
+}
 if (isUnDef(__conConsole)) {
 	__conConsole = java.lang.System.console() != null
 }
