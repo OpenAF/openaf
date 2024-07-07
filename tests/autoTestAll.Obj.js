@@ -172,7 +172,31 @@
         ar.set(1, 2);
         ow.test.assert(ar.indexOf(2), 1, "Problem with syncArray set.");
         ow.test.assert(Number(ar.toArray()[2]), Number(4), "Problem with syncArray toArray.");
+
+        ar.clear()
+        ar = __
     };
+
+    exports.testSyncMap = function() {
+        ow.loadObj()
+
+        var mr = new ow.obj.syncMap({ a: 1, b: 2, c: 3 })
+        ow.test.assert(Number(mr.get("b")), 2, "Problem with syncMap.get.")
+        ow.test.assert(mr.size(), 3, "Problem with syncMap size.")
+
+        mr.put("d", 4)
+        ow.test.assert(Number(mr.get("d")), 4, "Problem with syncMap.put.")
+        mr.remove("b")
+        ow.test.assert(mr.get("b"), undefined, "Problem with syncMap.remove.")
+        mr.put("b", 2)
+        ow.test.assert(Number(mr.get("b")), 2, "Problem with syncMap.put.")
+        ow.test.assert(mr.getKeys().length, 4, "Problem with syncMap.keys.")
+        ow.test.assert(mr.getValues().length, 4, "Problem with syncMap.values.")
+        ow.test.assert(mr.containsKey("b"), true, "Problem with syncMap.has.")
+        mr.clear()
+
+        mr = __
+    }
 
     exports.testSchema = function() {
         var schema = {

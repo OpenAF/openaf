@@ -236,7 +236,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		traverse : true,
 		extend   : true,
 		merge    : true,
-		jsonParse: true
+		jsonParse: true,
+		listFilesRecursive: true,
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -851,8 +852,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	if (inCount == 0) return ""
 
+	ow.loadObj()
 	var maxsize = {};
-	var _output = []
 	var anArrayOfIdxs = []
 	aBgColor  = _$(aBgColor, "aBgColor").isString().default(__)
 	wordWrap  = _$(wordWrap, "wordWrap").isBoolean().default(__flags.TABLE.wordWrap)
@@ -950,6 +951,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	// Produce table
 	//$from(anArrayOfEntries.map((row, ii) => ({ row: row, ii: ii }))).pselect(_row => {
+	var _output = new ow.obj.syncArray(range(anArrayOfEntries.length))
 	pForEach(anArrayOfEntries, (row, ii) => {
 		var output = []
 		var lineSize = 0
@@ -1006,15 +1008,15 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			colNum++
 		})
 		output.push(__separator)
-		_output[ii] = output.join("")
+		_output.set(ii, output.join(""))
 	})
 
 	if (displayCount) {
 		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]"
-		_output.push(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
+		_output.add(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
 	}
 	
-	return _output.join("")
+	return _output.toArray().join("")
 }
 
 /**
@@ -1063,6 +1065,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 
     // Don't repeat options if already done as a sub-call
     ow.loadFormat()
+	ow.loadObj()
     if (!ow.format.isWindows()) {
         if (isUnDef(_aOptions.noansi) && __initializeCon()) {
             _aOptions.noansi = !__conAnsi
@@ -1091,9 +1094,10 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if (isDate(aO)) return "date"
         }
         _acr = () => _ac("RESET","")
-        var _clrCache = {}
+        var _clrCache = new ow.obj.syncMap()
         _clr = aO => {
-            if (_clrCache[String(aO)]) return _clrCache[String(aO)]
+            //if (_clrCache[String(aO)]) return _clrCache[String(aO)]
+			if (_clrCache.containsKey(String(aO))) return _clrCache.get(String(aO))
 
             let result
             let dt = _dt(aO)
@@ -1106,7 +1110,8 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             case "java"   : result = [_ac(__colorFormat.string, String(aO.toString())), _acr()].join(""); break
             default       : result = [_ac(__colorFormat.default, String(aO)), _acr()].join(""); break
             }
-            _clrCache[String(aO)] = result
+            //_clrCache[String(aO)] = result
+			_clrCache.put(String(aO), result)
             return result
         }
         _ac  = (aAnsi, aString) => {
@@ -1236,10 +1241,10 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             return _res
         }
       
-		var _out = {}
+		var _out = new ow.obj.syncMap()
         //parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
-	pForEach(aMKeys, (k, i) => {
-			//try {
+		pForEach(aMKeys, (k, i) => {
+			try {
 			//let k = _v.k, i = _v.i
             let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
 			
@@ -1258,16 +1263,18 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
                 suffix = _pt(aM[k], aWidth, aOptions, [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join(""), true)
             }
 
-            _out[i] = [prefix, wfResult, repeatResult, suffix, reset].join("")
-			//} catch(e) {
-			//	print(e)
+            _out.put(i, [prefix, wfResult, repeatResult, suffix, reset].join(""))
+			} catch(e) {
+				printErr(e)
 			//	sprint(_v)
-			//}
+			}
         })
-		out = Object.keys(_out).sort((a, b) => a - b).map(k => _out[k])
+		out = _out.getKeys().sort((a, b) => a - b).map(k => _out.get(k))
+		_out.clear()
+		_out = __
       
         if (out.length > 0) {
-            out = (out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
+            out = ("undefined" !== typeof out[out.length - 1] && out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
         }
         
         var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
@@ -1558,6 +1565,14 @@ if (isUnDef(__conAnsi) && isDef(java.lang.System.getenv().get("TERM"))) {
 }
 if (isUnDef(__conAnsi) && String(java.lang.System.getProperty("file.encoding")) != "UTF-8") {
 	__conAnsi = false;
+}
+if (java.lang.System.getenv().get("OAF_CONSOLE") != null) {
+	if (String(java.lang.System.getenv().get("OAF_CONSOLE")).toLowerCase().trim() == "true") {
+		__conConsole = true
+	} else {
+		__conAnsi = false
+		__conConsole = false
+	}
 }
 if (isUnDef(__conConsole)) {
 	__conConsole = java.lang.System.console() != null
@@ -3664,7 +3679,7 @@ const isDefined = function(aObject) {
  * Tries to determine if the provided anArrayOfChars is binary or text. The detection is performed with the first 1024 chars (
  * that can be changed if confirmLimit is provided). Additionally is possible to link multiple calls providing the last result
  * on previousResult for multiple subsequences of a main array of chars sequence. Should work for utf8, iso-8859-1, iso-8859-7,
-*  windows-1252 and windows-1253. Returns true if file is believed to be binary.
+ *  windows-1252 and windows-1253. Returns true if file is believed to be binary.
  * </odoc>
  */
 const isBinaryArray = function(anArrayOfChars, confirmLimit) {
@@ -3704,33 +3719,85 @@ const isBinaryArray = function(anArrayOfChars, confirmLimit) {
 
 /**
  * <odoc>
- * <key>listFilesRecursive(aPath, usePosix) : Map</key>
+ * <key>listFilesRecursive(aPath, usePosix, aFnErr) : Map</key>
  * Performs the io.listFiles function recursively given aPath. The returned map will be equivalent to
  * the io.listFiles function (see more in io.listFiles). Alternatively you can specify
  * to usePosix=true and it will add to the map the owner, group and full permissions of each file and folder.
+ * When __flags.ALTERNATIVES.listFilesRecursive=true the processing will be done in parallel and aFnErr will be called
+ * in case of an error.
  * </odoc>
  */
-const listFilesRecursive = function(aPath, usePosix) {
+const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 	if (isUnDef(aPath)) return []
 
-	var ret = new Set(), stack = [aPath], visited = new Set()
+	if (__flags.ALTERNATIVES.listFilesRecursive) {
+		aFnErr = _$(aFnErr, "aFnErr").isFunction().default(printErr)
+		ow.loadObj()
+		var ret = new ow.obj.syncArray(), visited = new ow.obj.syncMap(), stack = new ow.obj.syncArray([ aPath ]), _ps = new ow.obj.syncArray()
+		var ini = $atomic(), end = $atomic()
 
-	while (stack.length > 0) {
-		var currentPath = stack.pop()
-		var files = io.listFiles(currentPath, usePosix)
+		var fn = () => {
+			try {
+				ini.inc()
+				if (stack.length() > 0) {
+					var currentPath
+					sync(() => {
+						var i = stack.length() - 1
+						currentPath = stack.get(i)
+						stack.remove(i)
+					}, stack)
+	
+					var files = io.listFiles(currentPath, usePosix)
+					var _ret  = new Set()
+		
+					if (isDef(files) && isDef(files.files)) {
+						for (var file of files.files) {
+							file.path = currentPath
+							_ret.add(file)
+							if (file.isDirectory && !visited.containsKey(file.filepath)) {
+								stack.add(file.filepath)
+								visited.put(file.filepath, true)
+								_ps.add($do(fn))
+							}
+						}
+					}
+		
+					ret.addAll(Array.from(_ret))
+				}
+			} catch(e) {
+				aFnErr(e)
+			} finally {
+				end.inc()
+			}
+		}
 
-		if (isUnDef(files) || isUnDef(files.files)) continue
+		_ps.add($do(fn))
+		do {
+			$doWait($doAll(_ps.toArray()))
+		} while(ini.get() > end.get())
 
-        for (var file of files.files) {
-            ret.add(file)
-            if (file.isDirectory && !visited.has(file.filepath)) {
-                stack.push(file.filepath)
-                visited.add(file.filepath)
-            }
-        }
+		return ret.toArray()
+	} else {
+		var ret = new Set(), stack = [aPath], visited = new Set()
+
+		while (stack.length > 0) {
+			var currentPath = stack.pop()
+			var files = io.listFiles(currentPath, usePosix)
+	
+			if (isUnDef(files) || isUnDef(files.files)) continue
+	
+			for (var file of files.files) {
+				file.path = currentPath
+				ret.add(file)
+				if (file.isDirectory && !visited.has(file.filepath)) {
+					stack.push(file.filepath)
+					visited.add(file.filepath)
+				}
+			}
+		}
+	
+		return Array.from(ret)
 	}
-
-	return Array.from(ret)
 }
 
 /**
@@ -5234,35 +5301,52 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 const pForEach = (anArray, aFn, aErrFn) => {
 	_$(anArray, "anArray").isArray().$_()
 	_$(aFn, "aFn").isFunction().$_()
-	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(sprintErr)
-
-	plugin("Threads")
-	var __threads = new Threads()
+	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(printErr)
 
 	ow.loadObj()
 	var pres = splitArray(range(anArray.length))
-    var fRes = new ow.obj.syncArray([])
-
-	__threads.initFixedThreadPool()
-	pres.forEach((part, i) => {
-		__threads.addFixedThread(function(uuid) {
-			try {
-				fRes.add( { i: i, r: part.map(a => aFn(anArray[a-1], a-1)) } )
-			} catch(e) { 
-				aErrFn(e)
+    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic()
+	pres.forEach((part, _i_) => {
+		try {
+			_ts.push( $do(() => {
+					try {
+						var ar = part.map(function(a) {
+							try {
+								return aFn(anArray[a-1], a-1)
+							} catch(ee) {
+								aErrFn(ee)
+							}
+							return __
+						} )
+						fRes.add( { i: _i_, r: ar } )
+					} catch(e) { 
+						aErrFn(e)
+					}
+					return true
+				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
+			// Cool down and go sequential if needed
+			if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / 2) {
+				$doWait(_ts.pop())
 			}
-			return false
-		})
+		} catch(eee) {
+			aErrFn(eee)
+		}
+		return part.length
 	})
 
-	__threads.start()
-	while(fRes.length() < pres.length) sleep(2)
-	__threads.stop()
+	var tries = 0
+	do {
+		$doWait($doAll(_ts))
+		if (parts.get() < pres.length) sleep(50, true)
+		tries++
+	} while(parts.get() < pres.length && tries < 100)
 
 	var res = []
     fRes.toArray().sort((a, b) => a.i - b.i).forEach(rs => {
         res = res.concat(rs.r)
     })
+	fRes.clear()
+	fRes = __
 
     return res
 }
