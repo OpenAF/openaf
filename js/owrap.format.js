@@ -3504,6 +3504,33 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
     defaultAnsi = _$(defaultAnsi, "defaultAnsi").isString().default("")
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "")
 
+	// Theme set
+	__colorFormat.md = merge({
+		codeBlock: {
+			line: "YELLOW,BOLD",
+			text: "NEGATIVE_ON,ITALIC",
+			theme: "openCurvedSpace"
+		},
+		heads: {
+			h1: "WHITE,BOLD,UNDERLINE",
+			h2: "BOLD,UNDERLINE",
+			h3: "BOLD",
+			h4: "UNDERLINE"
+		},
+		line: "FAINT",
+		link: {
+			text: "UNDERLINE",
+			url: "FAINT"
+		},
+		bullets: "BOLD",
+		list: "BOLD",
+		note: {
+			line: "FAINT",
+			text: __,
+			theme: "simpleLine"
+		}
+	}, __colorFormat.md)
+
 	// pre process code blocks
 
 	// remove html
@@ -3512,7 +3539,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 		res = res.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script\s*>/gi, "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ")
 
 	//  single line
-	res = res.replace(/```+(.+?)```+/mg, ansiColor("NEGATIVE_ON", " $1 "))
+	res = res.replace(/```+(.+?)```+/mg, ansiColor(__colorFormat.md.codeBlock.text, " $1 "))
 
 	//  multi line
 	var cblocks = res.match(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg)
@@ -3533,9 +3560,10 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
     // escape
     res = res.replace(/\\([_\*])/g, "$1")
 
-	res = res.replace(/^# (.+)/mg, ansiColor("WHITE,BOLD,UNDERLINE", "$1") + da)
-	res = res.replace(/^## (.+)/mg, ansiColor("BOLD,UNDERLINE", "$1") + da)
-	res = res.replace(/^###+ (.+)/mg, ansiColor("BOLD", "$1") + da)
+	res = res.replace(/^# (.+)/mg, ansiColor(__colorFormat.md.heads.h1, "$1") + da)
+	res = res.replace(/^## (.+)/mg, ansiColor(__colorFormat.md.heads.h2, "$1") + da)
+	res = res.replace(/^### (.+)/mg, ansiColor(__colorFormat.md.heads.h3, "$1") + da)
+	res = res.replace(/^####+ (.+)/mg, ansiColor(__colorFormat.md.heads.h4, "$1") + da)
 	
 	__conStatus || __initializeCon()
 	var _aSize
@@ -3550,12 +3578,12 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	res = res.split("\n").map(l => {
 		// line rule
 		if (l.trim().match(/^---+/)) {
-			return repeat(_aSize, ansiColor("faint", (isDef(__con) ?  "─" : "-")))
+			return repeat(_aSize, ansiColor(__colorFormat.md.line, (isDef(__con) ?  "─" : "-")))
 		}
 
         // Links
 		if (/\[[^\]\[]+\]\([^\)\()]+\)/.test(l)) {
-			l = l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, ansiColor("underline", "$1") + " " + ansiColor("faint","($2)"))
+			l = l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, ansiColor(__colorFormat.md.link.text, "$1") + " " + ansiColor(__colorFormat.md.link.url,"($2)"))
 		}
 
 		// bullets
@@ -3564,7 +3592,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			var lsize = ar[1].length + 1 + ar[2].length
 
 			return ow.format.string.wordWrap(ar[3], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
-				return (i == 0 ? ar[1] + ansiColor("BOLD", "\u2022") + ar[2] : repeat(lsize, ' ')) + l
+				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.bullets, "\u2022") + ar[2] : repeat(lsize, ' ')) + l
 			}).join("\n")
 		}
 
@@ -3574,13 +3602,13 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			var lsize = ar[1].length + ar[2].length + 1 + ar[3].length
 
 			return ow.format.string.wordWrap(ar[4], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
-				return (i == 0 ? ar[1] + ansiColor("BOLD", ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
+				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.list, ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
 			}).join("\n")
 		}
 
 		// side line render
 		if (/^(\> .+)$/.test(l)) {
-			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, "FAINT")))
+			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, __colorFormat.md.note.line, __colorFormat.md.note.text, ow.format.withSideLineThemes()[__colorFormat.md.note.theme])))
 		} 
 
 		// if not a code block or a table then it should be paragraph
@@ -3595,7 +3623,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
-			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2"), __, "BOLD", "NEGATIVE_ON", ow.format.withSideLineThemes().openCurvedSpace))
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), __, __colorFormat.md.codeBlock.line, __colorFormat.md.codeBlock.text, ow.format.withSideLineThemes()[__colorFormat.md.codeBlock.theme]))
 		})
 	}
 
@@ -3613,17 +3641,6 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 							sepProc = true
 						} else {
 							insep = true
-							/*if (l.indexOf("|") == 0) {
-								var m = {}
-								l.split("|").forEach((s, i) => {
-									if (i == 0) return
-			
-									if (isDef(fields[i-1])) {
-										m[fields[i-1]] = s.trim()
-									}
-								})
-								data.push(m)
-							}*/
 						}
 						return null
 					} else {
@@ -3668,8 +3685,8 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 }
 
 OpenWrap.format.prototype.withSideLineThemes = function() {
-	var _s = ow.format.syms();
-	return {
+	var _s = ow.format.syms()
+	return merge(__flags.sideLineCustomThemes, {
 		closedOneSpace: {
 			ltop   : " ",
 			lbottom: " ",
@@ -3837,8 +3854,8 @@ OpenWrap.format.prototype.withSideLineThemes = function() {
 			tmiddle: "▄",
 			bmiddle: "▀",
 		}
-	}
-};
+	})
+}
 
 /**
  * <odoc>

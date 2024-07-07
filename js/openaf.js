@@ -1893,7 +1893,33 @@ var __colorFormat = {
 		chooseLine: ">"
 	},
 	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" },
-	tree: { lines: "" }
+	tree: { lines: "" },
+	sideLineCustomThemes: {},
+	md: {
+		codeBlock: {
+			line: "YELLOW,BOLD",
+			text: "NEGATIVE_ON,ITALIC",
+			theme: "openCurvedSpace"
+		},
+		heads: {
+			h1: "WHITE,BOLD,UNDERLINE",
+			h2: "BOLD,UNDERLINE",
+			h3: "BOLD",
+			h4: "UNDERLINE"
+		},
+		line: "FAINT",
+		link: {
+			text: "UNDERLINE",
+			url: "FAINT"
+		},
+		bullets: "BOLD",
+		list: "BOLD",
+		note: {
+			line: "FAINT",
+			text: __,
+			theme: "simpleLine"
+		}
+	}
 };
 const colorify = function(json, aOptions) {
 	if (typeof json != 'string') {
