@@ -5332,6 +5332,7 @@ const pForEach = (anArray, aFn, aErrFn) => {
 	ow.loadObj()
 	var pres = splitArray(range(anArray.length))
     var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic()
+	var _nc = getNumberOfCores()
 	pres.forEach((part, _i_) => {
 		try {
 			_ts.push( $do(() => {
@@ -5350,9 +5351,14 @@ const pForEach = (anArray, aFn, aErrFn) => {
 					}
 					return true
 				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
-			// Cool down and go sequential if needed
-			if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / 2) {
+			// If not enough cores then go sequential
+			if (_nc < 3) {
 				$doWait(_ts.pop())
+			} else {
+				// Cool down and go sequential if needed
+				if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / 2) {
+					$doWait(_ts.pop())
+				}
 			}
 		} catch(eee) {
 			aErrFn(eee)
