@@ -3756,7 +3756,7 @@ const isBinaryArray = function(anArrayOfChars, confirmLimit) {
 const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 	if (isUnDef(aPath)) return []
 
-	if (__flags.ALTERNATIVES.listFilesRecursive) {
+	if (__flags.ALTERNATIVES.listFilesRecursive && getNumberOfCores() > 2) {
 		aFnErr = _$(aFnErr, "aFnErr").isFunction().default(printErr)
 		ow.loadObj()
 		var ret = new ow.obj.syncArray(), visited = new ow.obj.syncMap(), stack = new ow.obj.syncArray([ aPath ]), _ps = new ow.obj.syncArray()
