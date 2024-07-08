@@ -4537,6 +4537,7 @@ var $from = function(a) {
  * inc(name), dec(name), getc(name), unset(obj, name)\
  * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)\
  * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
+ * progress(value, max, min, size, indicator, space)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4902,6 +4903,14 @@ const $path = function(aObj, aPath, customFunctions) {
 				})
 			},
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		progress: {
+			_func: ar => {
+				ow.loadFormat()
+				for(var i = 1; i < ar.length; i++) { if (isNull(ar[i])) ar[i] = __ }
+				return ow.format.string.progress(ar[0], ar[1], ar[2], ar[3], ar[4], ar[5])
+			},
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.string ] }, { types: [ jmespath.types.null,jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
