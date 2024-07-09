@@ -1893,7 +1893,33 @@ var __colorFormat = {
 		chooseLine: ">"
 	},
 	table: { lines: "RESET", value: "RESET", title: "BOLD", bandRow: "BOLD" },
-	tree: { lines: "" }
+	tree: { lines: "" },
+	sideLineCustomThemes: {},
+	md: {
+		codeBlock: {
+			line: "YELLOW,BOLD",
+			text: "NEGATIVE_ON,ITALIC",
+			theme: "openCurvedSpace"
+		},
+		heads: {
+			h1: "WHITE,BOLD,UNDERLINE",
+			h2: "BOLD,UNDERLINE",
+			h3: "BOLD",
+			h4: "UNDERLINE"
+		},
+		line: "FAINT",
+		link: {
+			text: "UNDERLINE",
+			url: "FAINT"
+		},
+		bullets: "BOLD",
+		list: "BOLD",
+		note: {
+			line: "FAINT",
+			text: __,
+			theme: "simpleLine"
+		}
+	}
 };
 const colorify = function(json, aOptions) {
 	if (typeof json != 'string') {
@@ -3730,7 +3756,7 @@ const isBinaryArray = function(anArrayOfChars, confirmLimit) {
 const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 	if (isUnDef(aPath)) return []
 
-	if (__flags.ALTERNATIVES.listFilesRecursive) {
+	if (__flags.ALTERNATIVES.listFilesRecursive && getNumberOfCores() > 2) {
 		aFnErr = _$(aFnErr, "aFnErr").isFunction().default(printErr)
 		ow.loadObj()
 		var ret = new ow.obj.syncArray(), visited = new ow.obj.syncMap(), stack = new ow.obj.syncArray([ aPath ]), _ps = new ow.obj.syncArray()
@@ -4511,6 +4537,7 @@ var $from = function(a) {
  * inc(name), dec(name), getc(name), unset(obj, name)\
  * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)\
  * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
+ * progress(value, max, min, size, indicator, space)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4876,6 +4903,14 @@ const $path = function(aObj, aPath, customFunctions) {
 				})
 			},
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		progress: {
+			_func: ar => {
+				ow.loadFormat()
+				for(var i = 1; i < ar.length; i++) { if (isNull(ar[i])) ar[i] = __ }
+				return ow.format.string.progress(ar[0], ar[1], ar[2], ar[3], ar[4], ar[5])
+			},
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.string ] }, { types: [ jmespath.types.null,jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
@@ -5306,6 +5341,7 @@ const pForEach = (anArray, aFn, aErrFn) => {
 	ow.loadObj()
 	var pres = splitArray(range(anArray.length))
     var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic()
+	var _nc = getNumberOfCores()
 	pres.forEach((part, _i_) => {
 		try {
 			_ts.push( $do(() => {
@@ -5324,9 +5360,14 @@ const pForEach = (anArray, aFn, aErrFn) => {
 					}
 					return true
 				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
-			// Cool down and go sequential if needed
-			if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / 2) {
+			// If not enough cores then go sequential
+			if (_nc < 3) {
 				$doWait(_ts.pop())
+			} else {
+				// Cool down and go sequential if needed
+				if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / 2) {
+					$doWait(_ts.pop())
+				}
 			}
 		} catch(eee) {
 			aErrFn(eee)
