@@ -9393,31 +9393,37 @@ IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc, aDefaultMap)
  * </odoc> 
  */
 IO.prototype.listFilesTAR = function(aTARfile, isGzip) {
-	var files = []
+	var files = new Set()
+	var m2l = mode => (mode & 0o400 ? 'r' : '-') + (mode & 0o200 ? 'w' : '-') + (mode & 0o100 ? 'x' : '-') + (mode & 0o040 ? 'r' : '-') + (mode & 0o020 ? 'w' : '-') + (mode & 0o010 ? 'x' : '-') + (mode & 0o004 ? 'r' : '-') + (mode & 0o002 ? 'w' : '-') + (mode & 0o001 ? 'x' : '-')
 	
 	io.readFileTAR2Stream(aTARfile, isGzip, _is => {
 		if (_is != "null") {
-			var _e = _is.getNextTarEntry()
+			var _e = _is.getNextEntry()
 			while(_e != null) {
-				files.push({
+				files.add({
 					isDirectory  : _e.isDirectory(),
 					isFile       : _e.isFile(),
+					isLink       : _e.isLink(),
+					isSymLink    : _e.isSymbolicLink(),
 					canonicalPath: String(_e.getName()),
 					filepath     : String(_e.getName()),
 					filename     : String(_e.getName()).substring(String(_e.getName()).lastIndexOf("/")+1),
 					size         : Number(_e.getSize()),
-					lastModified : new Date(_e.getModTime()),
+					lastModified : (_e.getLastModifiedDate() == null ? __ : new Date(_e.getLastModifiedDate().getTime())),
 					groupId      : Number(_e.getGroupId()),
 					group        : String(_e.getGroupName()),
 					userId       : Number(_e.getUserId()),
-					user         : String(_e.getUserName())
+					user         : String(_e.getUserName()),
+					mode         : Number(_e.getMode()),
+					permissions  : m2l(Number(_e.getMode())),
+					linkName	 : String(_e.getLinkName())
 				})
 				_e = _is.getNextTarEntry()
 			}
 		}
 	})
 
-	return files
+	return Array.from(files)
 }
 /**
  * <odoc>
