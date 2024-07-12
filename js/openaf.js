@@ -238,6 +238,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true,
 		listFilesRecursive: true,
+		colorify: true
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -1921,50 +1922,94 @@ var __colorFormat = {
 		}
 	}
 };
-const colorify = function(json, aOptions) {
-	if (typeof json != 'string') {
-		//json = JSON.stringify(json, undefined, 2);
-		json = stringify(json, __, 2)
-	} else {
-		return json
-	}
-	aOptions = _$(aOptions).isMap().default({})
-	var _ac = c => {
-		return c + (isDef(aOptions.bgcolor) ? (c.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")
-	}
-	
-	//json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-	var _r = String(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-		var cls = 'number';
-		if (/^"/.test(match)) {
-			if (/:$/.test(match)) {
-				cls = 'key';
-			} else {
-				cls = 'string';
-			}
-		} else if (/true|false/.test(match)) {
-			cls = 'boolean';
-		} else if (/null/.test(match)) {
-			cls = 'null';
-		}
-		var res = ""; 
-		switch(cls) {
-		case "key"    : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.key)) res = ansiColor(_ac(__colorFormat.key), match); else res = match; break;
-		case "number" : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.number)) res = ansiColor(_ac(__colorFormat.number), match); else res = match; break;
-		case "string" : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.string)) res = ansiColor(_ac(__colorFormat.string), match); else res = match; break;
-		case "boolean": 
-	       if (isDef(__colorFormat) && isDef(__colorFormat.boolean)) res = ansiColor(_ac(__colorFormat.boolean), match); else res = match; break;
-		default: 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.default)) res = ansiColor(_ac(__colorFormat.default), match); else res = match;
-		}
-		return res;
-	})
+const colorify = function(json, aOptions, spacing) {
+	aOptions = _$(aOptions, "options").isMap().default({})
+	var _ac = c => c + (isDef(aOptions.bgcolor) ? (c.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")
 
-	return (isDef(aOptions.bgcolor) ? _r.replace(/\u001b\[m([ ,\{\}\[\]]+)/g, ansiColor(_ac("RESET"), "$1")) : _r)
-};
+	if (__flags.ALTERNATIVES.colorify) {
+		aOptions.spacing = _$(aOptions.spacing, "options.spacing").isNumber().default(2)
+		spacing = _$(spacing, "spacing").isNumber().default(aOptions.spacing)
+		var _sl = _$(aOptions.simple, "options simple").isBoolean().default(false)
+	
+		var _cl = (value, _t) => {
+			var _v 
+			switch(_t) {
+			case "number"   : _v = ansiColor(_ac(__colorFormat.number), String(value)); break
+			case "boolean"  : _v = ansiColor(_ac(__colorFormat.boolean), String(value)); break
+			case "string"   : _v = ansiColor(_ac(__colorFormat.string), '"' + value + '"'); break
+			case "date"     : _v = ansiColor(_ac(__colorFormat.date), value); break
+			case "undefined": _v = ansiColor(_ac(__colorFormat.default), "undefined"); break
+			default         : _v = ansiColor(_ac(__colorFormat.default), value); break
+			}
+			return _v
+		}
+
+		var ks = Object.keys(json)
+		var ksl = ks.length
+		var pdt = descType(json)
+		var psp = ansiColor(_ac(""),repeat(spacing - aOptions.spacing, " "))
+		var sp = ansiColor(_ac(""),repeat(spacing, " "))
+
+		if (pdt != "object" && pdt != "map" && pdt != "array") return _cl(json, pdt)
+
+		var out = new Set()
+		out.add(ansiColor(_ac(""), pdt == "map" ? "{\n" : "[\n"))
+		out.add(pForEach(ks, (key, i) => {
+			var _pout = new Set()
+			var value = json[key]
+			var _t = descType(value)
+			var _keyp = [sp, (pdt == "map" ? [ansiColor(_ac(""),(_sl ? '' : '"')), ansiColor(_ac(__colorFormat.key), key), (_sl ? '' : ansiColor(_ac(""),'"')), ansiColor(_ac(""),': ')].join("") : "")].join("")
+			var _keys = ((i+1) < ksl ? ansiColor(_ac(""), ",\n") : "\n")
+			if (_t != "object" && _t != "map" && _t != "array") {
+				_pout.add([_keyp, _cl(value, _t), _keys].join(""))
+			} else {
+				if (Object.keys(value).length == 0) _pout.add([_keyp, ansiColor(_ac(""), (pdt == "array" ? "[]" : "{}")), _keys].join(""))
+				else _pout.add(_keyp + colorify(value, aOptions, spacing + aOptions.spacing) + _keys)
+			}
+			return Array.from(_pout).join("")
+		}).join(""))
+		out.add([psp, ansiColor(_ac(""), (pdt == "map" ? "}" : "]"))].join(""))
+	
+		return Array.from(out).join("")
+	} else {
+		if (typeof json != 'string') {
+			json = stringify(json, __, 2)
+		} else {
+			return json
+		}
+
+		var _r = String(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+			var cls = 'number';
+			if (/^"/.test(match)) {
+				if (/:$/.test(match)) {
+					cls = 'key';
+				} else {
+					cls = 'string';
+				}
+			} else if (/true|false/.test(match)) {
+				cls = 'boolean';
+			} else if (/null/.test(match)) {
+				cls = 'null';
+			}
+			var res = ""; 
+			switch(cls) {
+			case "key"    : 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.key)) res = ansiColor(_ac(__colorFormat.key), match); else res = match; break;
+			case "number" : 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.number)) res = ansiColor(_ac(__colorFormat.number), match); else res = match; break;
+			case "string" : 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.string)) res = ansiColor(_ac(__colorFormat.string), match); else res = match; break;
+			case "boolean": 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.boolean)) res = ansiColor(_ac(__colorFormat.boolean), match); else res = match; break;
+			default: 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.default)) res = ansiColor(_ac(__colorFormat.default), match); else res = match;
+			}
+			return res;
+		})
+	
+		return (isDef(aOptions.bgcolor) ? _r.replace(/\u001b\[m([ ,\{\}\[\]]+)/g, ansiColor(_ac("RESET"), "$1")) : _r)
+	}
+}
 
 __JSONformat = {
   unsafe: true
