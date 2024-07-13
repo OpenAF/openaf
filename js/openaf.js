@@ -1939,6 +1939,7 @@ const colorify = function(json, aOptions, spacing) {
 			case "string"   : _v = ansiColor(_ac(__colorFormat.string), '"' + value + '"'); break
 			case "date"     : _v = ansiColor(_ac(__colorFormat.date), value); break
 			case "undefined": _v = ansiColor(_ac(__colorFormat.default), "undefined"); break
+			case "null"     : _v = ansiColor(_ac(__colorFormat.default), "null"); break
 			default         : _v = ansiColor(_ac(__colorFormat.default), value); break
 			}
 			return _v
