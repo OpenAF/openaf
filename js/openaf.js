@@ -261,7 +261,13 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
   	DOH_PROVIDER                : "cloudflare",
 	PRINT_BUFFER_STREAM         : 8192,
 	JAVA_CERT_BC_PROVIDER       : false,
-	PATH_CFN                    : __             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
+	PATH_CFN                    : __,             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
+	PFOREACH                    : {
+		seq_thrs_ms        : 6,
+		threads_thrs       : 2,
+		waitms             : 50,
+		forceSeq           : false
+	}
 })
 
 // -------
@@ -5386,15 +5392,38 @@ const pForEach = (anArray, aFn, aErrFn) => {
 
 	ow.loadObj()
 	var pres = splitArray(range(anArray.length))
-    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic()
+    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic(), times = $atomic(), execs = $atomic()
 	var _nc = getNumberOfCores()
+
+	// If not enough cores or if too many threads in the pool then go sequential
+	var beSeq = _nc < 3 || __flags.PFOREACH.forceSeq
 	pres.forEach((part, _i_) => {
 		try {
-			_ts.push( $do(() => {
+			if (beSeq) {
+				var ar = part.map(a => {
 					try {
-						var ar = part.map(function(a) {
+						var init = nowNano()
+						var _R = aFn(anArray[a-1], a-1)
+						times.getAdd(nowNano() - init)
+						execs.inc()
+						return _R
+					} catch(ee) {
+						aErrFn(ee)
+					}
+					return __
+				} )
+				fRes.add( { i: _i_, r: ar } )
+				parts.inc()
+			} else {
+				_ts.push( $do(() => {
+					try {
+						var ar = part.map(a => {
 							try {
-								return aFn(anArray[a-1], a-1)
+								var init = nowNano()
+								var _R = aFn(anArray[a-1], a-1)
+								times.getAdd(nowNano() - init)
+								execs.inc()
+								return _R
 							} catch(ee) {
 								aErrFn(ee)
 							}
@@ -5406,17 +5435,23 @@ const pForEach = (anArray, aFn, aErrFn) => {
 					}
 					return true
 				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
-			// If not enough cores then go sequential
-			if (_nc < 3) {
-				$doWait(_ts.pop())
-			} else {
-				// Cool down and go sequential if needed
-				if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / 2) {
+				
+				// Cool down and go sequential if too many threads
+				if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / __flags.PFOREACH.threads_thrs) {
 					$doWait(_ts.pop())
 				}
 			}
 		} catch(eee) {
 			aErrFn(eee)
+		} finally {
+			// If execution time per call is too low, go sequential
+			if ( _nc >= 3 ) {
+				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms) {
+					beSeq = true
+				} else {
+					beSeq = false
+				}
+			}
 		}
 		return part.length
 	})
@@ -5424,7 +5459,7 @@ const pForEach = (anArray, aFn, aErrFn) => {
 	var tries = 0
 	do {
 		$doWait($doAll(_ts))
-		if (parts.get() < pres.length) sleep(50, true)
+		if (parts.get() < pres.length) sleep(__getThreadPool().getQueuedTaskCount() * __flags.PFOREACH.waitms, true)
 		tries++
 	} while(parts.get() < pres.length && tries < 100)
 
