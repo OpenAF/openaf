@@ -4591,6 +4591,7 @@ var $from = function(a) {
  * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
  * progress(value, max, min, size, indicator, space),
  * to_csv(array, options), from_csv(str, options)\
+ * ch(name, op, arg1, arg2)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4976,6 +4977,26 @@ const $path = function(aObj, aPath, customFunctions) {
 				return ow.format.string.progress(ar[0], ar[1], ar[2], ar[3], ar[4], ar[5])
 			},
 			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.string ] }, { types: [ jmespath.types.null,jmespath.types.string ] } ]
+		},
+		ch: {
+			_func: ar => {
+				var ar2 = af.fromJSSLON(ar[2]), ar3 = af.fromJSSLON(ar[3])
+				switch(ar[1]) {
+				case "get"     : return $ch(ar[0]).get(ar2)
+				case "set"     : 
+					$ch(ar[0]).set(ar2, ar3)
+					return ar3
+				case "unset"   : 
+					$ch(ar[0]).unset(ar2)
+					return ar2
+				case "size"    : return $ch(ar[0]).size()
+				case "getAll"  : return $ch(ar[0]).getAll(ar2)
+				case "getKeys" : return $ch(ar[0]).getKeys(ar2)
+				case "unsetAll": return $ch(ar[0]).unsetAll(ar2, ar3)
+				}
+				return ar2
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
 		}
 	}, customFunctions)
 
