@@ -4591,7 +4591,7 @@ var $from = function(a) {
  * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
  * progress(value, max, min, size, indicator, space),
  * to_csv(array, options), from_csv(str, options)\
- * ch(name, op, arg1, arg2)\
+ * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4997,6 +4997,16 @@ const $path = function(aObj, aPath, customFunctions) {
 				return ar2
 			},
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
+		}
+	}, customFunctions)
+	customFunctions = merge({
+		path: {
+			_func: (a) => $path(a[0], a[1], customFunctions),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		opath: {
+			_func: (a) => $path(aObj, a[0], customFunctions),
+			_signature: [ { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
