@@ -4589,7 +4589,8 @@ var $from = function(a) {
  * inc(name), dec(name), getc(name), unset(obj, name)\
  * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)\
  * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
- * progress(value, max, min, size, indicator, space)\
+ * progress(value, max, min, size, indicator, space),
+ * to_csv(array, options), from_csv(str, options)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4816,6 +4817,18 @@ const $path = function(aObj, aPath, customFunctions) {
 		from_json: {
 			_func: ar => jsonParse(ar[0], __, __, true),
 			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		from_csv: {
+			_func: ar => $csv(af.fromJSSLON(ar[1])).fromInString(ar[0]).toOutArray(),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		to_csv: {
+			_func: ar => {
+				var os = af.newOutputStream()
+				$csv(af.fromJSSLON(ar[1])).toOutStream(os).fromInArray(ar[0])
+				return String(os.toString())
+			},
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
 		},
 		to_json: {
 			_func: ar => stringify(ar[0], __, ar[1]),
@@ -8746,7 +8759,7 @@ AF.prototype.fromSLON = function(aString) {
  * </odoc>
  */
 AF.prototype.fromJSSLON = function(aString) {
-	if (!isString(aString) || aString == "" || isNull(aString)) return ""
+	if (!isString(aString) || aString == "" || isNull(aString)) return {}
 
 	aString = aString.trim()
 	if (aString.startsWith("{")) {
