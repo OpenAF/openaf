@@ -5416,10 +5416,11 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 
 /**
  * <odoc>
- * <key>pForEach(anArray, aFn, aErrFn) : Array</key>
+ * <key>pForEach(anArray, aFn, aErrFn, aUseSeq) : Array</key>
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
  * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
- * array. If an error occurs during the execution of aFn, aErrFn will be called with the error.\
+ * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true
+ * the sequential execution will be forced.\
  * \
  * Example:\
  * \
@@ -5433,7 +5434,7 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
  * )\
  * </odoc>
  */
-const pForEach = (anArray, aFn, aErrFn) => {
+const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	_$(anArray, "anArray").isArray().$_()
 	_$(aFn, "aFn").isFunction().$_()
 	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(printErr)
@@ -5444,7 +5445,7 @@ const pForEach = (anArray, aFn, aErrFn) => {
 	var _nc = getNumberOfCores()
 
 	// If not enough cores or if too many threads in the pool then go sequential
-	var beSeq = _nc < 3 || __flags.PFOREACH.forceSeq
+	var beSeq = aUseSeq || _nc < 3 || __flags.PFOREACH.forceSeq
 	pres.forEach((part, _i_) => {
 		try {
 			if (beSeq) {
