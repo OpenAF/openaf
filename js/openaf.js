@@ -1957,6 +1957,10 @@ const colorify = function(json, aOptions, spacing) {
 		var psp = ansiColor(_ac(""),repeat(spacing - aOptions.spacing, " "))
 		var sp = ansiColor(_ac(""),repeat(spacing, " "))
 
+		if (ksl == 0) {
+			if (pdt == "array") return ansiColor(_ac(""), "[]")
+			if (pdt == "object" || pdt == "map") return ansiColor(_ac(""), "{}")
+		}
 		if (pdt != "object" && pdt != "map" && pdt != "array") return _cl(json, pdt)
 
 		var out = new Set()
