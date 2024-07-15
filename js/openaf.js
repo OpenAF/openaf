@@ -10300,6 +10300,57 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
 /**
  * <odoc>
+ * <key>askStruct(anArrayOfQuestions) : Array</key>
+ * Given anArrayOfQuestions with a structure like:\
+ * \
+ * [\
+ *  { name: "question1", prompt: "Question 1", type: "question" },\
+ *  { name: "question2", prompt: "Question 2", type: "secret" },\
+ *  { name: "question3", prompt: "Question 3", type: "char", options: "YN" },\
+ *  { name: "question4", prompt: "Question 4", type: "choose", options: ["Option 1", "Option 2", "Option 3"] },\
+ *  { name: "question5", prompt: "Question 5", type: "multiple", options: ["Option 1", "Option 2", "Option 3"], max: 2 }\
+ * ]\
+ * \
+ * Will prompt the user for each question and return an array with the answers.\
+ * \
+ * The type can be:\
+ * \
+ * - "question" (default)\
+ * - "secret"\
+ * - "char" (requires options)\
+ * - "choose" (requires options)\
+ * - "multiple" (requires options)\
+ * \
+ * </odoc>
+ */
+const askStruct = (ar) => {
+	if (isArray(ar)) {
+		var _r = ar.map(t => {
+			_$(t.name, "name").isString().$_()
+			var __r = { name: t.name }
+			
+			t.prompt = _$(t.prompt, 'prompt').isString().default(t.name + ':') 
+			t.type   = _$(t.type, 'type').oneOf(['?', 'question', 'secret', 'char', 'choose', 'multiple']).default('?')
+			if (!t.prompt.endsWith(" ")) t.prompt += " "
+			if (isString(t.help)) t.help = ansiColor("FAINT,ITALIC", t.help)
+
+			switch(t.type) {
+			case 'secret'  : __r.answer = askEncrypt(t.prompt); break
+			case 'char'    : __r.answer = ask1(t.prompt, t.options); break
+			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help)]; break
+			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help); break
+			case "question": 
+			case '?'       : 
+			default        : __r.answer = ask(t.prompt)
+			}
+			return __r
+		})
+		return _r
+	}
+}
+
+/**
+ * <odoc>
  * <key>$channels(aChannel)</key>
  * Please check more details with the help from ow.ch. The available methods are:\
  * \
