@@ -10153,6 +10153,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseUp = __colorFormat.askChooseChars.chooseUp
 	let chooseDown = __colorFormat.askChooseChars.chooseDown
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
+	let filter = ""
 
     if (__flags.ANSICOLOR_ASK) {
         if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
@@ -10167,7 +10168,11 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                      .map((l, i) => {
                         if (i >= span && i - span < aMaxDisplay) {
                             if (i == option) {
-                                return ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize, " "))
+								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize, " "))
+								if (filter.length > 0) {
+									_l = _l.replace(filter, ansiColor("UNDERLINE", filter))
+								}
+                                return _l
                             } else {
                                 var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
                                 return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + chooseDirSize, " "))
@@ -10185,15 +10190,26 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
         let c = 0, _con = new Console()
         do {
             _print()
-            c = String(_con.readChar("")).charCodeAt(0)
+			var _c = _con.readChar("")
+            c = String(_c).charCodeAt(0)
             if (c == 27) {
+				filter = ""
                 c = String(_con.readChar("")).charCodeAt(0)
                 if (c == 91 || c == 79) {
                     c = String(_con.readChar("")).charCodeAt(0)
                     if (c == 66 && option < anArray.length - 1) option++
                     if (c == 65 && option > 0) option--
                 }
-            }
+            } else {
+				if (c == 127) {
+					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
+				} else {
+					if (c > 32 && c < 255) filter += _c
+				}
+				if (filter.length > 0) {
+					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+				}
+			}
         } while (c != 13)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printnl(repeat(_v.length, " ") + "\r")
@@ -10232,6 +10248,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseUp = __colorFormat.askChooseChars.chooseUp
 	let chooseDown = __colorFormat.askChooseChars.chooseDown
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
+	let filter = ""
 
     if (__flags.ANSICOLOR_ASK) {
 		aSelectMap = new Map()
@@ -10250,7 +10267,11 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                         if (i >= span && i - span < aMaxDisplay) {
 							selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
                             if (i == option) {
-                                return ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize, " "))
+								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize, " "))
+								if (filter.length > 0) {
+									_l = _l.replace(filter, ansiColor("UNDERLINE", filter))
+								}
+                                return _l
                             } else {
                                 var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
                                 return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseDirSize + chooseMultipleSize, " "))
@@ -10268,17 +10289,27 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
         let c = 0, _con = new Console()
         do {
             _print()
-            c = String(_con.readChar("")).charCodeAt(0)
+			var _c = _con.readChar("")
+            c = String(_c).charCodeAt(0)
             if (c == 27) {
+				filter = ""
                 c = String(_con.readChar("")).charCodeAt(0)
                 if (c == 91 || c == 79) {
                     c = String(_con.readChar("")).charCodeAt(0)
                     if (c == 66 && option < anArray.length - 1) option++
                     if (c == 65 && option > 0) option--
                 }
-            }
-			if (c == 32) {
+            } else if (c == 32) {
 				aSelectMap.set(anArray[option], !aSelectMap.get(anArray[option]))
+			} else {
+				if (c == 127) {
+					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
+				} else {
+					if (c > 32 && c < 255) filter += _c
+				}
+				if (filter.length > 0) {
+					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+				}
 			}
         } while (c != 13)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
