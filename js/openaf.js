@@ -1891,6 +1891,7 @@ var __colorFormat = {
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
 	askChoose: "BOLD,CYAN",
+	askChooseFilter: "UNDERLINE",
 	askPos: "BLUE",
 	askChooseChars: {
 		chooseMultipleSelected: "[x]",
@@ -10170,7 +10171,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                             if (i == option) {
 								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize, " "))
 								if (filter.length > 0) {
-									_l = _l.replace(filter, ansiColor("UNDERLINE", filter))
+									_l = _l.replace(filter, ansiColor(__colorFormat.askChooseFilter, filter))
 								}
                                 return _l
                             } else {
@@ -10269,7 +10270,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                             if (i == option) {
 								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize, " "))
 								if (filter.length > 0) {
-									_l = _l.replace(filter, ansiColor("UNDERLINE", filter))
+									_l = _l.replace(filter, ansiColor(__colorFormat.askChooseFilter, filter))
 								}
                                 return _l
                             } else {
@@ -10339,7 +10340,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
  *  { name: "question1", prompt: "Question 1", type: "question" },\
  *  { name: "question2", prompt: "Question 2", type: "secret" },\
  *  { name: "question3", prompt: "Question 3", type: "char", options: "YN" },\
- *  { name: "question4", prompt: "Question 4", type: "choose", options: ["Option 1", "Option 2", "Option 3"] },\
+ *  { name: "question4", prompt: "Question 4", type: "choose", options: ["Option 1", "Option 2", "Option 3"], output: "index" },\
  *  { name: "question5", prompt: "Question 5", type: "multiple", options: ["Option 1", "Option 2", "Option 3"], max: 2 }\
  * ]\
  * \
@@ -10351,8 +10352,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
  * - "secret"\
  * - "char" (requires options)\
  * - "choose" (requires options)\
- * - "multiple" (requires options)\
- * \
+ * - "multiple" (requires options)
  * </odoc>
  */
 const askStruct = (ar) => {
@@ -10374,6 +10374,13 @@ const askStruct = (ar) => {
 			case "question": 
 			case '?'       : 
 			default        : __r.answer = ask(t.prompt)
+			}
+			if (isDef(t.output) && t.output == "index") {
+				if (isArray(__r.answer)) {
+					__r.answer = __r.answer.map(a => t.options.indexOf(a))
+				} else {
+					__r.answer = t.options.indexOf(__r.answer)
+				}
 			}
 			return __r
 		})
