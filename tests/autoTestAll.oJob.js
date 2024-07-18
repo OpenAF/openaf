@@ -144,7 +144,7 @@
         var testOJob = {
             "jobs": [ {
                 "name": "a",
-                "exec": "__pm = args"
+                "exec": "sleep(50, true);__pm = args"
             } ],
             "todo": [ {
                 "name": "a",
@@ -162,8 +162,8 @@
         ow.test.assert(isMap(r) && isDef(r._list), true, "Problem with oJob init array (1).")
 
         io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;__flags.OJOB_INIT_ARRAY_ARGS_LIST = false;oJob(\"" + tmpOJob + "\", [{ a: 1 }, { b: 2 }])")
-        var r = $openaf(tmpOAF)
-        ow.test.assert(isMap(r) && r.b == 2 && r.a == 1, true, "Problem with oJob init array (2).")
+        var r2 = $openaf(tmpOAF)
+        ow.test.assert(isMap(r2) && r2.b == 2 && r2.a == 1, true, "Problem with oJob init array (2).")
     }
 
     exports.testOJobChecks = function() {

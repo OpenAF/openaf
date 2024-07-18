@@ -961,7 +961,80 @@ OpenWrap.ai.prototype.network = function(args) {
 
 /**
  * <odoc>
- * <key>ow.ai.network.prototype.getSynapticObject() : Object</key>
+ * <key>ow.ai.network.neuralnetwork(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-neuralnetwork
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+/**
+ * <odoc>
+ * <key>ow.ai.network.rnntimestep(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+/**
+ * <odoc>
+ * <key>ow.ai.network.lstmtimestep(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+/**
+ * <odoc>
+ * <key>ow.ai.network.grutimestep(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnntimestep-lstmtimestep-and-grutimestep
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+/**
+ * <odoc>
+ * <key>ow.ai.network.rnn(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+/**
+ * <odoc>
+ * <key>ow.ai.network.lstm(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+/**
+ * <odoc>
+ * <key>ow.ai.network.gru(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#for-training-with-rnn-lstm-and-gru
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+/**
+ * <odoc>
+ * <key>ow.ai.network.feedfoward(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#neural-network-types
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+/**
+ * <odoc>
+ * <key>ow.ai.network.recurrent(args) : ow.ai.network</key>
+ * Examples: https://github.com/BrainJS/brain.js?tab=readme-ov-file#examples
+ * Data format: https://github.com/BrainJS/brain.js?tab=readme-ov-file#neural-network-types
+ * Train: https://github.com/BrainJS/brain.js?tab=readme-ov-file#training-options
+ * </odoc>
+ */
+
+/**
+ * <odoc>
+ * <key>ow.ai.network.getSynapticObject() : Object</key>
  * Returns the current Synaptic object.
  * </odoc>
  */
@@ -971,7 +1044,7 @@ OpenWrap.ai.prototype.network.prototype.getSynapticObject = function() {
 
 /**
  * <odoc>
- * <key>ow.ai.network.prototype.getBrainJSObject() : Object</key>
+ * <key>ow.ai.network.getBrainJSObject() : Object</key>
  * Returns the current BrainJS object.
  * </odoc>
  
