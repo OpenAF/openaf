@@ -536,6 +536,7 @@ OpenWrap.ch.prototype.__types = {
 			this.__cache[aName].Func = (isDef(options.func) ? function(k) { var res = options.func(k); return (isObject(res) ? res : { result: res }); } : function() { return {}; });
 			this.__cache[aName].TTL = (isDef(options.ttl) ? options.ttl : 5000);
 			this.__cache[aName].Size = (isDef(options.size) ? options.size : -1);
+			this.__cache[aName].Method = (isDef(options.method) && options.method == "p") ? "p" : "t"
 			this.__cache[aName].__t = nowUTC();
 			if (isUnDef(options.ch)) {
 				$ch(aName + "::__cache").create();
@@ -549,6 +550,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(this.__cache[aName].Ch)) delete this.__cache[aName].Ch;
 			if (isDef(this.__cache[aName].TTL)) delete this.__cache[aName].TTL;
 			if (isDef(this.__cache[aName].Size)) delete this.__cache[aName].Size;
+			if (isDef(this.__cache[aName].Method)) delete this.__cache[aName].Method
 			if (isDef(this.__cacheStats[aName])) delete this.__cacheStats[aName];
 			$ch(aName + "::__cache").destroy();
 		},
@@ -571,6 +573,13 @@ OpenWrap.ch.prototype.__types = {
 						}
 					});
 				}).catch((e) => { sprintErr(e) });
+			} else if (this.__cache[aName].Method == "p" && this.__cache[aName].Size > -1 && this.__cache[aName].Ch.size() > this.__cache[aName].Size) {
+				$from(this.getKeys(aName, true))
+				.sort("____t")
+				.limit(this.__cache[aName].Ch.size() - this.__cache[aName].Size)
+				.select(k => {
+					this.__cache[aName].Ch.unset(k)
+				})
 			}
 			this.__cache[aName].__t = nowUTC();
 		},
@@ -608,8 +617,9 @@ OpenWrap.ch.prototype.__types = {
 		set          : function(aName, aK, aV, aTimestamp, x) { 
 			aTimestamp = _$(aTimestamp).default(nowUTC());
 			this.__refresh(aName, 1);
-			if (this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) 
-				this.__cache[aName].Ch.set(merge(aK, { ____t: aTimestamp }), this.__cache[aName].Func(aK), aTimestamp, x);
+			if (this.__cache[aName].Method == "p" || this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) {
+				this.__cache[aName].Ch.set(merge(aK, { ____t: aTimestamp }), this.__cache[aName].Func(aK), aTimestamp, x)
+			}
 			return aK;
 		},
 		setAll       : function(aName, aKs, aVs, aTimestamp) { 
@@ -632,11 +642,11 @@ OpenWrap.ch.prototype.__types = {
 			this.__cache[aName].Ch.unsetAll(aKs, avvs, aTimestamp);
 		},		
 		getAll       : function(aName, full) {
-			var res = [];
+			var res = new ow.loadObj().syncArray()
 			this.__cache[aName].Ch.forEach(function(aKey, aValue) {
-				syncFn(function() { res.push(aValue); }, res);
-			}, full);
-			return res;
+				res.add(aValue)
+			}, full)
+			return res.toArray()
 		},
 		get          : function(aName, aK) { 
 			var aVv = {};
@@ -650,6 +660,11 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(ee)) {
 				if (ee.____t > (nowUTC() - this.__cache[aName].TTL)) {
 					aVv = this.__cache[aName].Ch.get(ee);
+					if (this.__cache[aName].Method == "p") {
+						this.__cache[aName].Ch.unset(ee)
+						ee.____t = nowUTC()
+						this.__cache[aName].Ch.set(ee, aVv)
+					}
 					this.__cacheStats[aName].hits++;
 				} else {
 					var init = nowUTC();
@@ -666,12 +681,13 @@ OpenWrap.ch.prototype.__types = {
 				var aVv = this.__cache[aName].Func(aK);
 				this.__cacheStats[aName].miss++;
 				this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (nowUTC() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
-				this.__refresh(aName, 1);
-				if (this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) {
+				this.__refresh(aName, 1)
+				if (this.__cache[aName].Method == "p" || this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) {
 					var eK = merge(aK, { ____t: nowUTC() });
 					this.__cache[aName].Ch.set(eK, aVv);
 					//aVv = this.__cache[aName].Ch.get(eK);
 				}
+				if (this.__cache[aName].Method == "p") this.__refresh(aName)
 			}
 			return aVv;
 		},
@@ -3933,11 +3949,11 @@ OpenWrap.ch.prototype.utils = {
 	 * \
 	 * </odoc>
 	 */
-	syncCh: function(idxs, source, target, syncFn, logFn) {
+	syncCh: function(idxs, source, target, aSyncFn, logFn) {
 		var sks = $ch(source).getAll();
 		var tks = $ch(target).getAll();
 
-		syncFn = _$(syncFn).isFunction().default(() => { return true; });
+		aSyncFn = _$(aSyncFn).isFunction().default(() => { return true; });
 		idxs = _$(idxs).$_("Please provide a list of field indexes");
 		if (isString(idxs)) idxs = [ idxs ];
 
@@ -3961,7 +3977,7 @@ OpenWrap.ch.prototype.utils = {
 		var addToTarget = [], delFromTarget = [], addToSource = [], delFromSource = [];
 		for(var ik in skis) {
 			if (isUnDef(tkis[ik])) {
-				if (syncFn(skis[ik], __)) {
+				if (aSyncFn(skis[ik], __)) {
 					logFn("adding " + ik + " to target.");
 					addToTarget.push(skis[ik]);
 				} else {
@@ -3970,7 +3986,7 @@ OpenWrap.ch.prototype.utils = {
 				}
 			} else {
 				if (!(compare(skis[ik], tkis[ik]))) {
-					if (syncFn(skis[ik], tkis[ik])) {
+					if (aSyncFn(skis[ik], tkis[ik])) {
 						logFn("updating " + ik + " on target.");
 						addToTarget.push(skis[ik]);
 					} else {
@@ -3982,7 +3998,7 @@ OpenWrap.ch.prototype.utils = {
 		};
 		for(var ik in tkis) {
 			if (isUnDef(skis[ik])) {
-				if (syncFn(__, tkis[ik])) {
+				if (aSyncFn(__, tkis[ik])) {
 					logFn("deleting " + ik + " from target.");
 					delFromTarget.push(tkis[ik]);
 				} else {
@@ -4446,9 +4462,9 @@ OpenWrap.ch.prototype.comms = {
 			$ch("__comm::" + na).create();
 			syncFn(function() { 
 				if (isUnDef(ow.ch.comms.__counter[na])) {
-					ow.ch.comms.__counter[na] = 0; 
+					ow.ch.comms.__counter[na] = $atomic()
 				}
-			}, ow.ch.comms.__counter[na]);
+			}, ow.ch.comms.__counter[na])
 
 			function recordError(_op, _t, _k, _v, _e) {
 				var ct = nowUTC();
@@ -4470,13 +4486,13 @@ OpenWrap.ch.prototype.comms = {
 			try {
 				function shouldReset(aRes) {
 					if ((isDef(aRes.c) && isDef(aRes.l) && isDef(aRes.v)) && 	
-					    (aRes.c != ow.ch.comms.__counter[na] || 
+					    (aRes.c != ow.ch.comms.__counter[na].get() || 
 						 aRes.l != ow.ch.size(na) 
 						 ) && 
 						ow.ch.jobs[na].length < 1 &&
 						ow.ch.size(na) > 0) {
-						
-						syncFn(function() { ow.ch.comms.__counter[na] = 0; }, ow.ch.comms.__counter[na]);
+						//syncFn(function() { ow.ch.comms.__counter[na] = 0; }, ow.ch.comms.__counter[na]);
+						ow.ch.comms.__counter[na].set(0)
 						syncFn(function() {
 							//ow.obj.rest.set(aURL, { "o": "r", "k": Object.keys(ow.ch.getKeys(na)[0]), "t": t }, ow.ch.getAll(na), aL, aP, aT);
 							$rest({
@@ -4495,11 +4511,11 @@ OpenWrap.ch.prototype.comms = {
 				switch(op) {
 				case "setall": 
 					syncFn(function() { 
-						if (ow.ch.comms.__counter[na] != 0)
-							ow.ch.comms.__counter[na]++;
+						if (ow.ch.comms.__counter[na].get() != 0)
+							ow.ch.comms.__counter[na].inc()
 						else
-							ow.ch.comms.__counter[na] = 1;
-					}, ow.ch.comms.__counter[na]);
+							ow.ch.comms.__counter[na].set(1)
+					}, ow.ch.comms.__counter[na])
 					var res;
 					syncFn(function() {
 						//res = ow.obj.rest.jsonSet(aURL, { "o": "a", "k": k, "t": t }, v, aL, aP, aT); 
@@ -4514,11 +4530,11 @@ OpenWrap.ch.prototype.comms = {
 					break;
 				case "unsetall": 
 					syncFn(function() { 
-						if (ow.ch.comms.__counter[na] != 0)
-							ow.ch.comms.__counter[na]++;
+						if (ow.ch.comms.__counter[na].get() != 0)
+							ow.ch.comms.__counter[na].inc()
 						else
-							ow.ch.comms.__counter[na] = 1;
-					}, ow.ch.comms.__counter[na]);
+							ow.ch.comms.__counter[na].set(1)
+					}, ow.ch.comms.__counter[na])
 					var res;
 					syncFn(function() {
 						//res = ow.obj.rest.jsonSet(aURL, { "o": "ua", "k": k, "t": t }, v, aL, aP, aT); 
@@ -4532,7 +4548,7 @@ OpenWrap.ch.prototype.comms = {
 					}, aURL);
 					break;					
 				case "set"   : 
-					syncFn(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
+					ow.ch.comms.__counter[na].inc()
 					var res;
 					syncFn(function() {
 						//res = ow.obj.rest.jsonSet(aURL, { "o": "e", "k": ak, "t": t }, av, aL, aP, aT);
@@ -4546,7 +4562,7 @@ OpenWrap.ch.prototype.comms = {
 					}, aURL);
 					break;
 				case "unset" : 
-					syncFn(function() { ow.ch.comms.__counter[na]++; }, ow.ch.comms.__counter[na]);
+					ow.ch.comms.__counter[na].inc()
 					var res;
 					syncFn(function() {
 						//res = ow.obj.rest.jsonRemove(aURL, { "o": "e", "k": ak, "t": t }, aL, aP, aT); 

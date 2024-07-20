@@ -8079,16 +8079,17 @@ const $bottleneck = function(aName, aFn) {
 };
 
 const $cache = function(aName) {
-	if (isUnDef(global.__$cache)) global.__$cache = {};
+	if (isUnDef(global.__$cache)) global.__$cache = {}
 
     var __c = function(aN) {
-        aN = _$(aN).default("cache");
-        this.name  = aN;
-        this.func  = k => k;
-        this.attl  = __;
-		this.ach   = __;
-		this.msize = __;
-    };
+        aN = _$(aN).default("cache")
+        this.name  = aN
+        this.func  = k => k
+        this.attl  = __
+		this.ach   = __
+		this.msize = __
+		this.method = "t"
+    }
 
 	/**
 	 * <odoc>
@@ -8096,28 +8097,28 @@ const $cache = function(aName) {
 	 * Defines the aFunction use to get aKey. The returned object will be cached.
 	 * </odoc>
 	 */
-	__c.prototype.fn        = function(aFunc) { this.func   = aFunc;    return this; };
+	__c.prototype.fn        = function(aFunc) { this.func   = aFunc;    return this }
 	/**
 	 * <odoc>
 	 * <key>$cache.ttl(aTTL) : Object</key>
 	 * Defines the time-to-live (aTTL) to consider a cached result as valid.
 	 * </odoc>
 	 */
-	__c.prototype.ttl       = function(aTtl)  { this.attl   = aTtl;     return this; };
+	__c.prototype.ttl       = function(aTtl)  { this.attl   = aTtl;     return this }
 	/**
 	 * <odoc>
 	 * <key>$cache.ch(aChannelName) : Object</key>
 	 * Uses a pre-existing channel (e.g. aChannelName) as the cache channel.
 	 * </odoc>
 	 */
-	__c.prototype.ch        = function(aCh)   { this.ach    = aCh;      return this; };
+	__c.prototype.ch        = function(aCh)   { this.ach    = aCh;      return this }
 	/**
 	 * <odoc>
 	 * <key>$cache.maxSize(aSize) : Object</key>
 	 * Establishes the max number of entries cached at any given point in time.
 	 * </odoc>
 	 */
-	__c.prototype.maxSize   = function(asize) { this.msize  = asize;    return this; };
+	__c.prototype.maxSize   = function(asize) { this.msize  = asize;    return this }
 	/**
 	 * <odoc>
 	 * <key>$cache.inFile(aFile) : Object</key>
@@ -8129,12 +8130,23 @@ const $cache = function(aName) {
             file: aFile,
             compact: true,
             map: this.name
-        });
-        this.ach = this.name + "::filecache";
-        return this;
-    };
+        })
+        this.ach = this.name + "::filecache"
+        return this
+    }
+	/**
+	 * <odoc>
+	 * <key>$cache.byPopularity() : Object</key>
+	 * Changes the behaviour of the cache to use the most popular entries and prefer to discard the least popular ones 
+	 * when the cache is full (maxSize is defined).
+	 * </odoc>
+	 */
+	__c.prototype.byPopularity = function() {
+		this.method = "p"
+		return this
+	}
     __c.prototype.create = function() {
-        _$(this.func).isFunction().$_("Please provide a function (fn).");
+        _$(this.func).isFunction().$_("Please provide a function (fn).")
 
 		syncFn(() => {
 			if ($ch().list().indexOf(this.name) < 0) {
@@ -8142,13 +8154,14 @@ const $cache = function(aName) {
 					func: this.func,
 					ttl: this.attl,
 					ch: this.ach,
-					size: this.msize
-				});
+					size: this.msize,
+					method: this.method
+				})
 			}
-		}, this.name);
+		}, this.name)
 
-        return this;
-	};
+        return this
+	}
 	/**
 	 * <odoc>
 	 * <key>$cache.get(aKey) : Object</key>
@@ -8167,71 +8180,71 @@ const $cache = function(aName) {
 	 */
     __c.prototype.get    = function(aK) {
         if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
 
-        return $ch(this.name).get(aK);
-    };
+        return $ch(this.name).get(aK)
+    }
     __c.prototype.destroy = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
 		}
 		
 		if (isDef(this.ach)) {
 			if (isString(this.ach)) 
-				$ch(this.ach).destroy();
+				$ch(this.ach).destroy()
 			else
-				this.ach.destroy();
+				this.ach.destroy()
 		}
-		$ch(this.name).destroy();
-		delete global.__$cache[this.name];
-    };
+		$ch(this.name).destroy()
+		delete global.__$cache[this.name]
+    }
     __c.prototype.unset  = function(aK) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
 		}
 		
-        $ch(this.name).unset(aK);
-        return this;
-    };
+        $ch(this.name).unset(aK)
+        return this
+    }
     __c.prototype.size   = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
 		}
 		
-		return $ch(this.name).size();
-    };
+		return $ch(this.name).size()
+    }
     __c.prototype.set    = function(aK, aV) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
-		$ch(this.name).set(aK, aV);
-        return this;
-    };
+		$ch(this.name).set(aK, aV)
+        return this
+    }
     __c.prototype.setAll = function(aK, aV) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
-        $ch(this.name).setAll(aK, aV);
-        return this;
-	};
+        $ch(this.name).setAll(aK, aV)
+        return this
+	}
 	__c.prototype.getAll = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
-		return $ch(this.name).getAll();
+		return $ch(this.name).getAll()
 	};
 	__c.prototype.getKeys = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
-		return $ch(this.name).getKeys();
-	};
+		return $ch(this.name).getKeys()
+	}
 
-	if (isUnDef(global.__$cache[aName])) global.__$cache[aName] = new __c(aName);
+	if (isUnDef(global.__$cache[aName])) global.__$cache[aName] = new __c(aName)
 
-    return global.__$cache[aName];
-};
+    return global.__$cache[aName]
+}
 
 /**
  * <odoc>
