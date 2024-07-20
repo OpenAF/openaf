@@ -5252,17 +5252,17 @@ const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 		threads.uuids = [];
 	}
 	
-	var __cooldown = 0;
+	var __cooldown = $atomic()
 	var balance = false;
 	function __balance() {
 		var l = getCPULoad();
 		if (l > numThreads) {
-			syncFn(function() { cooldown++; });
-			while (l > numThreads && __cooldown < numThreads) {
+			__cooldown.inc()
+			while (l > numThreads && __cooldown.get() < numThreads) {
 				sleep((l - numThreads) * 2000);
 				l = getCPULoad();
 			}
-			syncFn(function() { cooldown--; });
+			cooldown.dec()
 		}
 	}
 	
