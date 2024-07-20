@@ -1371,6 +1371,39 @@ OpenWrap.format.prototype.string = {
 	}
 };
 
+/**
+ * <odoc>
+ * <key>ow.format.semver(aVersion) : ow.format.semver</key>
+ * Creates a new instance of ow.format.semver for the provided aVersion:\
+ *   - nextMajor\
+ *   - nextMinor\
+ *   - nextPatch\
+ *   - getMajor\
+ *   - getMinor\
+ *   - getPatch\
+ *   - greater(aVersion)\
+ *   - lower(aVersion)\
+ *   - greaterEquals(aVersion)\
+ *   - lowerEquals(aVersion)\
+ *   - equals(aVersion)
+ * </odoc>
+ */
+OpenWrap.format.prototype.semver = function(aVer) {
+	return {
+		nextMajor: () => String(new org.semver4j.Semver(aVer).nextMajor()),
+		nextMinor: () => String(new org.semver4j.Semver(aVer).nextMinor()),
+		nextPatch: () => String(new org.semver4j.Semver(aVer).nextPatch()),
+		getMajor : () => String(new org.semver4j.Semver(aVer).getMajor()),
+		getMinor : () => String(new org.semver4j.Semver(aVer).getMinor()),
+		getPatch : () => String(new org.semver4j.Semver(aVer).getPatch()),
+		greater  : aV => Boolean(new org.semver4j.Semver(aVer).isGreaterThan(aV)),
+		lower    : aV => Boolean(new org.semver4j.Semver(aVer).isLowerThan(aV)),
+		greaterEquals: aV => Boolean(new org.semver4j.Semver(aVer).isGreaterThanOrEqualTo(aV)),
+		lowerEquals  : aV => Boolean(new org.semver4j.Semver(aVer).isLowerThanOrEqualTo(aV)),
+		equals   : aV => Boolean(new org.semver4j.Semver(aVer).isEqualTo(aV))
+	}
+}
+
 OpenWrap.format.prototype.syms = function() {
 	return {
 		check_mark      : "\u2714",
