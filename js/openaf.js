@@ -5318,12 +5318,12 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
 	function __balance() {
 		var l = getCPULoad();
 		if (l > numThreads) {
-			syncFn(function() { cooldown++; });
-			while (l > numThreads && __cooldown < numThreads) {
+			cooldown.inc()
+			while (l > numThreads && cooldown.get() < numThreads) {
 				sleep((l - numThreads) * 2000);
 				l = getCPULoad();
 			}
-			syncFn(function() { cooldown--; });
+			cooldown.dec()
 		}
 	}
 	
