@@ -4895,10 +4895,9 @@ OpenWrap.ch.prototype.server = {
 		ow.loadServer();
 
 		function restSet(k, v) {
-			var cc;
 			syncFn(function() { 	
 				if (isUnDef(ow.ch.server.__counter[aName])) {
-					ow.ch.server.__counter[aName] = 0; cc = 0; 
+					ow.ch.server.__counter[aName] = $atomic()
 				}
 			}, ow.ch.server.__counter[aName]);
 
@@ -4907,7 +4906,7 @@ OpenWrap.ch.prototype.server = {
 				case "a":
 					//if (k.t < $ch(aName).getVersion()) return undefined;
 					if (isArray(k.k) && isArray(v)) {
-						syncFn(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+						var cc = ow.ch.server.__counter[aName].inc()
 						var rt = $ch(aName).setAll(k.k, v, k.t, aaUUID, aRequest);
 						return { "c": cc, "r": rt };
 					} 
@@ -4915,7 +4914,7 @@ OpenWrap.ch.prototype.server = {
 				case "ua":
 					//if (k.t < $ch(aName).getVersion()) return undefined;
 					if (isArray(k.k) && isArray(v)) {
-						syncFn(function() { cc = --ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+						var cc = ow.ch.server.__counter[aName].dec()
 						var rt = $ch(aName).unsetAll(k.k, v, k.t, aaUUID, aRequest);
 						return { "c": cc, "r": rt };
 					} 
@@ -4933,18 +4932,18 @@ OpenWrap.ch.prototype.server = {
 							return ak;
 						});
 
-						syncFn(function() { ow.ch.server.__counter[aName] = 0; cc = 0; }, ow.ch.server.__counter);
+						var cc = ow.ch.server.__counter[aName].set(0)
 						var rt = $ch(aName).setAll(k.k, v, k.t, aaUUID, aRequest);
 						return { "c": cc, "r": rt };
 					} 
 					break;					
 				case "e":		
 					//if (k.t < $ch(aName).getVersion()) return undefined;
-					syncFn(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+					var cc = ow.ch.server.__counter[aName].inc()
 					var rt = $ch(aName).set(k.k, v, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				case "es":
-					syncFn(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+					var cc = ow.ch.server.__counter[aName].inc()
 					var rt = $ch(aName).getSet(k.m, k.k, v, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				}
@@ -4952,19 +4951,18 @@ OpenWrap.ch.prototype.server = {
 		}
 
 		function restUnset(k) {	
-			var cc;
 			//if (k.t < $ch(aName).getVersion()) return undefined;
 
 			syncFn(function() { 
 				if (isUnDef(ow.ch.server.__counter[aName])) {
-					ow.ch.server.__counter[aName] = 0; cc = 0; 
+					ow.ch.server.__counter[aName] = $atomic()
 				}
 			}, ow.ch.server.__counter);
 
 			if (isDef(k.o)) {
 				if (k.o == "e") {
 					//if (k.t < $ch(aName).getVersion()) return undefined;
-					syncFn(function() { cc = ++ow.ch.server.__counter[aName]; }, ow.ch.server.__counter);
+					var cc = ow.ch.server.__counter[aName].inc()
 					var rt = $ch(aName).unset(k.k, k.t, aaUUID, aRequest);
 					return { "c": cc, "r": rt };
 				}
