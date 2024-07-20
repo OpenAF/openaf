@@ -4594,7 +4594,8 @@ var $from = function(a) {
  * inc(name), dec(name), getc(name), unset(obj, name)\
  * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)\
  * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
- * progress(value, max, min, size, indicator, space),
+ * semver(version, operation, argument)\
+ * progress(value, max, min, size, indicator, space),\
  * to_csv(array, options), from_csv(str, options)\
  * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
  * \
@@ -4974,6 +4975,10 @@ const $path = function(aObj, aPath, customFunctions) {
 				})
 			},
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
+		semver: {
+			_func: ar => ow.format.semver(ar[0])[ar[1]](isNull(ar[2]) ? __ : ar[2]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.null, jmespath.types.string ] } ]
 		},
 		progress: {
 			_func: ar => {
