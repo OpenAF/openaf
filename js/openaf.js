@@ -238,6 +238,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true,
 		listFilesRecursive: true,
+		colorify: true
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -260,7 +261,13 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
   	DOH_PROVIDER                : "cloudflare",
 	PRINT_BUFFER_STREAM         : 8192,
 	JAVA_CERT_BC_PROVIDER       : false,
-	PATH_CFN                    : __             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
+	PATH_CFN                    : __,             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
+	PFOREACH                    : {
+		seq_thrs_ms        : 6,
+		threads_thrs       : 2,
+		waitms             : 50,
+		forceSeq           : false
+	}
 })
 
 // -------
@@ -1884,6 +1891,7 @@ var __colorFormat = {
 	askPre: "YELLOW,BOLD",
 	askQuestion: "BOLD",
 	askChoose: "BOLD,CYAN",
+	askChooseFilter: "UNDERLINE",
 	askPos: "BLUE",
 	askChooseChars: {
 		chooseMultipleSelected: "[x]",
@@ -1921,50 +1929,99 @@ var __colorFormat = {
 		}
 	}
 };
-const colorify = function(json, aOptions) {
-	if (typeof json != 'string') {
-		//json = JSON.stringify(json, undefined, 2);
-		json = stringify(json, __, 2)
-	} else {
-		return json
-	}
-	aOptions = _$(aOptions).isMap().default({})
-	var _ac = c => {
-		return c + (isDef(aOptions.bgcolor) ? (c.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")
-	}
-	
-	//json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-	var _r = String(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-		var cls = 'number';
-		if (/^"/.test(match)) {
-			if (/:$/.test(match)) {
-				cls = 'key';
-			} else {
-				cls = 'string';
-			}
-		} else if (/true|false/.test(match)) {
-			cls = 'boolean';
-		} else if (/null/.test(match)) {
-			cls = 'null';
-		}
-		var res = ""; 
-		switch(cls) {
-		case "key"    : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.key)) res = ansiColor(_ac(__colorFormat.key), match); else res = match; break;
-		case "number" : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.number)) res = ansiColor(_ac(__colorFormat.number), match); else res = match; break;
-		case "string" : 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.string)) res = ansiColor(_ac(__colorFormat.string), match); else res = match; break;
-		case "boolean": 
-	       if (isDef(__colorFormat) && isDef(__colorFormat.boolean)) res = ansiColor(_ac(__colorFormat.boolean), match); else res = match; break;
-		default: 
-		   if (isDef(__colorFormat) && isDef(__colorFormat.default)) res = ansiColor(_ac(__colorFormat.default), match); else res = match;
-		}
-		return res;
-	})
+const colorify = function(json, aOptions, spacing) {
+	aOptions = _$(aOptions, "options").isMap().default({})
+	var _ac = c => c + (isDef(aOptions.bgcolor) ? (c.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")
 
-	return (isDef(aOptions.bgcolor) ? _r.replace(/\u001b\[m([ ,\{\}\[\]]+)/g, ansiColor(_ac("RESET"), "$1")) : _r)
-};
+	if (__flags.ALTERNATIVES.colorify) {
+		aOptions.spacing = _$(aOptions.spacing, "options.spacing").isNumber().default(2)
+		spacing = _$(spacing, "spacing").isNumber().default(aOptions.spacing)
+		var _sl = _$(aOptions.simple, "options simple").isBoolean().default(false)
+	
+		var _cl = (value, _t) => {
+			var _v 
+			switch(_t) {
+			case "number"   : _v = ansiColor(_ac(__colorFormat.number), String(value)); break
+			case "boolean"  : _v = ansiColor(_ac(__colorFormat.boolean), String(value)); break
+			case "string"   : _v = ansiColor(_ac(__colorFormat.string), '"' + value + '"'); break
+			case "date"     : _v = ansiColor(_ac(__colorFormat.date), value); break
+			case "undefined": _v = ansiColor(_ac(__colorFormat.default), "undefined"); break
+			case "null"     : _v = ansiColor(_ac(__colorFormat.default), "null"); break
+			default         : _v = ansiColor(_ac(__colorFormat.default), value); break
+			}
+			return _v
+		}
+
+		var ks = Object.keys(json)
+		var ksl = ks.length
+		var pdt = descType(json)
+		var psp = ansiColor(_ac(""),repeat(spacing - aOptions.spacing, " "))
+		var sp = ansiColor(_ac(""),repeat(spacing, " "))
+
+		if (ksl == 0) {
+			if (pdt == "array") return ansiColor(_ac(""), "[]")
+			if (pdt == "object" || pdt == "map") return ansiColor(_ac(""), "{}")
+		}
+		if (pdt != "object" && pdt != "map" && pdt != "array") return _cl(json, pdt)
+
+		var out = new Set()
+		out.add(ansiColor(_ac(""), pdt == "map" ? "{\n" : "[\n"))
+		out.add(pForEach(ks, (key, i) => {
+			var _pout = new Set()
+			var value = json[key]
+			var _t = descType(value)
+			var _keyp = [sp, (pdt == "map" ? [ansiColor(_ac(""),(_sl ? '' : '"')), ansiColor(_ac(__colorFormat.key), key), (_sl ? '' : ansiColor(_ac(""),'"')), ansiColor(_ac(""),': ')].join("") : "")].join("")
+			var _keys = ((i+1) < ksl ? ansiColor(_ac(""), ",\n") : "\n")
+			if (_t != "object" && _t != "map" && _t != "array") {
+				_pout.add([_keyp, _cl(value, _t), _keys].join(""))
+			} else {
+				if (Object.keys(value).length == 0) _pout.add([_keyp, ansiColor(_ac(""), (pdt == "array" ? "[]" : "{}")), _keys].join(""))
+				else _pout.add(_keyp + colorify(value, aOptions, spacing + aOptions.spacing) + _keys)
+			}
+			return Array.from(_pout).join("")
+		}).join(""))
+		out.add([psp, ansiColor(_ac(""), (pdt == "map" ? "}" : "]"))].join(""))
+	
+		return Array.from(out).join("")
+	} else {
+		if (typeof json != 'string') {
+			json = stringify(json, __, 2)
+		} else {
+			return json
+		}
+
+		var _r = String(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+			var cls = 'number';
+			if (/^"/.test(match)) {
+				if (/:$/.test(match)) {
+					cls = 'key';
+				} else {
+					cls = 'string';
+				}
+			} else if (/true|false/.test(match)) {
+				cls = 'boolean';
+			} else if (/null/.test(match)) {
+				cls = 'null';
+			}
+			var res = ""; 
+			switch(cls) {
+			case "key"    : 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.key)) res = ansiColor(_ac(__colorFormat.key), match); else res = match; break;
+			case "number" : 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.number)) res = ansiColor(_ac(__colorFormat.number), match); else res = match; break;
+			case "string" : 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.string)) res = ansiColor(_ac(__colorFormat.string), match); else res = match; break;
+			case "boolean": 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.boolean)) res = ansiColor(_ac(__colorFormat.boolean), match); else res = match; break;
+			default: 
+			   if (isDef(__colorFormat) && isDef(__colorFormat.default)) res = ansiColor(_ac(__colorFormat.default), match); else res = match;
+			}
+			return res;
+		})
+	
+		return (isDef(aOptions.bgcolor) ? _r.replace(/\u001b\[m([ ,\{\}\[\]]+)/g, ansiColor(_ac("RESET"), "$1")) : _r)
+	}
+}
 
 __JSONformat = {
   unsafe: true
@@ -4537,7 +4594,10 @@ var $from = function(a) {
  * inc(name), dec(name), getc(name), unset(obj, name)\
  * k2a(map, keyre, outkey, removeNulls), geta(nameOrPath, arrayIndex)\
  * sql_format(sql, options), sort_semver(arrayVersions), sort_by_semver(arrayMaps, jmespathStringToVersionField)\
- * progress(value, max, min, size, indicator, space)\
+ * semver(version, operation, argument)\
+ * progress(value, max, min, size, indicator, space),\
+ * to_csv(array, options), from_csv(str, options)\
+ * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4765,6 +4825,18 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => jsonParse(ar[0], __, __, true),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
+		from_csv: {
+			_func: ar => $csv(af.fromJSSLON(ar[1])).fromInString(ar[0]).toOutArray(),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		to_csv: {
+			_func: ar => {
+				var os = af.newOutputStream()
+				$csv(af.fromJSSLON(ar[1])).toOutStream(os).fromInArray(ar[0])
+				return String(os.toString())
+			},
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
+		},
 		to_json: {
 			_func: ar => stringify(ar[0], __, ar[1]),
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
@@ -4904,6 +4976,10 @@ const $path = function(aObj, aPath, customFunctions) {
 			},
 			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.string ] } ]
 		},
+		semver: {
+			_func: ar => ow.format.semver(ar[0])[ar[1]](isNull(ar[2]) ? __ : ar[2]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.null, jmespath.types.string ] } ]
+		},
 		progress: {
 			_func: ar => {
 				ow.loadFormat()
@@ -4911,6 +4987,36 @@ const $path = function(aObj, aPath, customFunctions) {
 				return ow.format.string.progress(ar[0], ar[1], ar[2], ar[3], ar[4], ar[5])
 			},
 			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.string ] }, { types: [ jmespath.types.null,jmespath.types.string ] } ]
+		},
+		ch: {
+			_func: ar => {
+				var ar2 = af.fromJSSLON(ar[2]), ar3 = af.fromJSSLON(ar[3])
+				switch(ar[1]) {
+				case "get"     : return $ch(ar[0]).get(ar2)
+				case "set"     : 
+					$ch(ar[0]).set(ar2, ar3)
+					return ar3
+				case "unset"   : 
+					$ch(ar[0]).unset(ar2)
+					return ar2
+				case "size"    : return $ch(ar[0]).size()
+				case "getAll"  : return $ch(ar[0]).getAll(ar2)
+				case "getKeys" : return $ch(ar[0]).getKeys(ar2)
+				case "unsetAll": return $ch(ar[0]).unsetAll(ar2, ar3)
+				}
+				return ar2
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
+		}
+	}, customFunctions)
+	customFunctions = merge({
+		path: {
+			_func: (a) => $path(a[0], a[1], customFunctions),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
+		opath: {
+			_func: (a) => $path(aObj, a[0], customFunctions),
+			_signature: [ { types: [ jmespath.types.string ] } ]
 		}
 	}, customFunctions)
 
@@ -5151,17 +5257,17 @@ const parallel = function(aFunction, numThreads, aAggFunction, threads) {
 		threads.uuids = [];
 	}
 	
-	var __cooldown = 0;
+	var __cooldown = $atomic()
 	var balance = false;
 	function __balance() {
 		var l = getCPULoad();
 		if (l > numThreads) {
-			syncFn(function() { cooldown++; });
-			while (l > numThreads && __cooldown < numThreads) {
+			__cooldown.inc()
+			while (l > numThreads && __cooldown.get() < numThreads) {
 				sleep((l - numThreads) * 2000);
 				l = getCPULoad();
 			}
-			syncFn(function() { cooldown--; });
+			cooldown.dec()
 		}
 	}
 	
@@ -5217,12 +5323,12 @@ const parallelArray = function(anArray, aReduceFunction, initValues, aAggFunctio
 	function __balance() {
 		var l = getCPULoad();
 		if (l > numThreads) {
-			syncFn(function() { cooldown++; });
-			while (l > numThreads && __cooldown < numThreads) {
+			cooldown.inc()
+			while (l > numThreads && cooldown.get() < numThreads) {
 				sleep((l - numThreads) * 2000);
 				l = getCPULoad();
 			}
-			syncFn(function() { cooldown--; });
+			cooldown.dec()
 		}
 	}
 	
@@ -5316,10 +5422,11 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
 
 /**
  * <odoc>
- * <key>pForEach(anArray, aFn, aErrFn) : Array</key>
+ * <key>pForEach(anArray, aFn, aErrFn, aUseSeq) : Array</key>
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
  * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
- * array. If an error occurs during the execution of aFn, aErrFn will be called with the error.\
+ * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true
+ * the sequential execution will be forced.\
  * \
  * Example:\
  * \
@@ -5333,22 +5440,45 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
  * )\
  * </odoc>
  */
-const pForEach = (anArray, aFn, aErrFn) => {
+const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	_$(anArray, "anArray").isArray().$_()
 	_$(aFn, "aFn").isFunction().$_()
 	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(printErr)
 
 	ow.loadObj()
 	var pres = splitArray(range(anArray.length))
-    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic()
+    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic(), times = $atomic(), execs = $atomic()
 	var _nc = getNumberOfCores()
+
+	// If not enough cores or if too many threads in the pool then go sequential
+	var beSeq = aUseSeq || _nc < 3 || __flags.PFOREACH.forceSeq
 	pres.forEach((part, _i_) => {
 		try {
-			_ts.push( $do(() => {
+			if (beSeq) {
+				var ar = part.map(a => {
 					try {
-						var ar = part.map(function(a) {
+						var init = nowNano()
+						var _R = aFn(anArray[a-1], a-1)
+						times.getAdd(nowNano() - init)
+						execs.inc()
+						return _R
+					} catch(ee) {
+						aErrFn(ee)
+					}
+					return __
+				} )
+				fRes.add( { i: _i_, r: ar } )
+				parts.inc()
+			} else {
+				_ts.push( $do(() => {
+					try {
+						var ar = part.map(a => {
 							try {
-								return aFn(anArray[a-1], a-1)
+								var init = nowNano()
+								var _R = aFn(anArray[a-1], a-1)
+								times.getAdd(nowNano() - init)
+								execs.inc()
+								return _R
 							} catch(ee) {
 								aErrFn(ee)
 							}
@@ -5360,17 +5490,23 @@ const pForEach = (anArray, aFn, aErrFn) => {
 					}
 					return true
 				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
-			// If not enough cores then go sequential
-			if (_nc < 3) {
-				$doWait(_ts.pop())
-			} else {
-				// Cool down and go sequential if needed
-				if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / 2) {
+				
+				// Cool down and go sequential if too many threads
+				if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / __flags.PFOREACH.threads_thrs) {
 					$doWait(_ts.pop())
 				}
 			}
 		} catch(eee) {
 			aErrFn(eee)
+		} finally {
+			// If execution time per call is too low, go sequential
+			if ( _nc >= 3 ) {
+				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms) {
+					beSeq = true
+				} else {
+					beSeq = false
+				}
+			}
 		}
 		return part.length
 	})
@@ -5378,7 +5514,7 @@ const pForEach = (anArray, aFn, aErrFn) => {
 	var tries = 0
 	do {
 		$doWait($doAll(_ts))
-		if (parts.get() < pres.length) sleep(50, true)
+		if (parts.get() < pres.length) sleep(__getThreadPool().getQueuedTaskCount() * __flags.PFOREACH.waitms, true)
 		tries++
 	} while(parts.get() < pres.length && tries < 100)
 
@@ -7948,16 +8084,17 @@ const $bottleneck = function(aName, aFn) {
 };
 
 const $cache = function(aName) {
-	if (isUnDef(global.__$cache)) global.__$cache = {};
+	if (isUnDef(global.__$cache)) global.__$cache = {}
 
     var __c = function(aN) {
-        aN = _$(aN).default("cache");
-        this.name  = aN;
-        this.func  = k => k;
-        this.attl  = __;
-		this.ach   = __;
-		this.msize = __;
-    };
+        aN = _$(aN).default("cache")
+        this.name  = aN
+        this.func  = k => k
+        this.attl  = __
+		this.ach   = __
+		this.msize = __
+		this.method = "t"
+    }
 
 	/**
 	 * <odoc>
@@ -7965,28 +8102,28 @@ const $cache = function(aName) {
 	 * Defines the aFunction use to get aKey. The returned object will be cached.
 	 * </odoc>
 	 */
-	__c.prototype.fn        = function(aFunc) { this.func   = aFunc;    return this; };
+	__c.prototype.fn        = function(aFunc) { this.func   = aFunc;    return this }
 	/**
 	 * <odoc>
 	 * <key>$cache.ttl(aTTL) : Object</key>
 	 * Defines the time-to-live (aTTL) to consider a cached result as valid.
 	 * </odoc>
 	 */
-	__c.prototype.ttl       = function(aTtl)  { this.attl   = aTtl;     return this; };
+	__c.prototype.ttl       = function(aTtl)  { this.attl   = aTtl;     return this }
 	/**
 	 * <odoc>
 	 * <key>$cache.ch(aChannelName) : Object</key>
 	 * Uses a pre-existing channel (e.g. aChannelName) as the cache channel.
 	 * </odoc>
 	 */
-	__c.prototype.ch        = function(aCh)   { this.ach    = aCh;      return this; };
+	__c.prototype.ch        = function(aCh)   { this.ach    = aCh;      return this }
 	/**
 	 * <odoc>
 	 * <key>$cache.maxSize(aSize) : Object</key>
 	 * Establishes the max number of entries cached at any given point in time.
 	 * </odoc>
 	 */
-	__c.prototype.maxSize   = function(asize) { this.msize  = asize;    return this; };
+	__c.prototype.maxSize   = function(asize) { this.msize  = asize;    return this }
 	/**
 	 * <odoc>
 	 * <key>$cache.inFile(aFile) : Object</key>
@@ -7998,12 +8135,23 @@ const $cache = function(aName) {
             file: aFile,
             compact: true,
             map: this.name
-        });
-        this.ach = this.name + "::filecache";
-        return this;
-    };
+        })
+        this.ach = this.name + "::filecache"
+        return this
+    }
+	/**
+	 * <odoc>
+	 * <key>$cache.byPopularity() : Object</key>
+	 * Changes the behaviour of the cache to use the most popular entries and prefer to discard the least popular ones 
+	 * when the cache is full (maxSize is defined).
+	 * </odoc>
+	 */
+	__c.prototype.byPopularity = function() {
+		this.method = "p"
+		return this
+	}
     __c.prototype.create = function() {
-        _$(this.func).isFunction().$_("Please provide a function (fn).");
+        _$(this.func).isFunction().$_("Please provide a function (fn).")
 
 		syncFn(() => {
 			if ($ch().list().indexOf(this.name) < 0) {
@@ -8011,13 +8159,14 @@ const $cache = function(aName) {
 					func: this.func,
 					ttl: this.attl,
 					ch: this.ach,
-					size: this.msize
-				});
+					size: this.msize,
+					method: this.method
+				})
 			}
-		}, this.name);
+		}, this.name)
 
-        return this;
-	};
+        return this
+	}
 	/**
 	 * <odoc>
 	 * <key>$cache.get(aKey) : Object</key>
@@ -8036,71 +8185,71 @@ const $cache = function(aName) {
 	 */
     __c.prototype.get    = function(aK) {
         if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
 
-        return $ch(this.name).get(aK);
-    };
+        return $ch(this.name).get(aK)
+    }
     __c.prototype.destroy = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
 		}
 		
 		if (isDef(this.ach)) {
 			if (isString(this.ach)) 
-				$ch(this.ach).destroy();
+				$ch(this.ach).destroy()
 			else
-				this.ach.destroy();
+				this.ach.destroy()
 		}
-		$ch(this.name).destroy();
-		delete global.__$cache[this.name];
-    };
+		$ch(this.name).destroy()
+		delete global.__$cache[this.name]
+    }
     __c.prototype.unset  = function(aK) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
 		}
 		
-        $ch(this.name).unset(aK);
-        return this;
-    };
+        $ch(this.name).unset(aK)
+        return this
+    }
     __c.prototype.size   = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
 		}
 		
-		return $ch(this.name).size();
-    };
+		return $ch(this.name).size()
+    }
     __c.prototype.set    = function(aK, aV) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
-		$ch(this.name).set(aK, aV);
-        return this;
-    };
+		$ch(this.name).set(aK, aV)
+        return this
+    }
     __c.prototype.setAll = function(aK, aV) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
-        $ch(this.name).setAll(aK, aV);
-        return this;
-	};
+        $ch(this.name).setAll(aK, aV)
+        return this
+	}
 	__c.prototype.getAll = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
-		return $ch(this.name).getAll();
+		return $ch(this.name).getAll()
 	};
 	__c.prototype.getKeys = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create();
+            this.create()
         }
-		return $ch(this.name).getKeys();
-	};
+		return $ch(this.name).getKeys()
+	}
 
-	if (isUnDef(global.__$cache[aName])) global.__$cache[aName] = new __c(aName);
+	if (isUnDef(global.__$cache[aName])) global.__$cache[aName] = new __c(aName)
 
-    return global.__$cache[aName];
-};
+    return global.__$cache[aName]
+}
 
 /**
  * <odoc>
@@ -8665,7 +8814,7 @@ AF.prototype.fromSLON = function(aString) {
  * </odoc>
  */
 AF.prototype.fromJSSLON = function(aString) {
-	if (!isString(aString) || aString == "" || isNull(aString)) return ""
+	if (!isString(aString) || aString == "" || isNull(aString)) return {}
 
 	aString = aString.trim()
 	if (aString.startsWith("{")) {
@@ -9393,31 +9542,37 @@ IO.prototype.writeFileTARStream = function(aTARFile, isGzip, aFunc, aDefaultMap)
  * </odoc> 
  */
 IO.prototype.listFilesTAR = function(aTARfile, isGzip) {
-	var files = []
+	var files = new Set()
+	var m2l = mode => (mode & 0o400 ? 'r' : '-') + (mode & 0o200 ? 'w' : '-') + (mode & 0o100 ? 'x' : '-') + (mode & 0o040 ? 'r' : '-') + (mode & 0o020 ? 'w' : '-') + (mode & 0o010 ? 'x' : '-') + (mode & 0o004 ? 'r' : '-') + (mode & 0o002 ? 'w' : '-') + (mode & 0o001 ? 'x' : '-')
 	
 	io.readFileTAR2Stream(aTARfile, isGzip, _is => {
 		if (_is != "null") {
-			var _e = _is.getNextTarEntry()
+			var _e = _is.getNextEntry()
 			while(_e != null) {
-				files.push({
+				files.add({
 					isDirectory  : _e.isDirectory(),
 					isFile       : _e.isFile(),
+					isLink       : _e.isLink(),
+					isSymLink    : _e.isSymbolicLink(),
 					canonicalPath: String(_e.getName()),
 					filepath     : String(_e.getName()),
 					filename     : String(_e.getName()).substring(String(_e.getName()).lastIndexOf("/")+1),
 					size         : Number(_e.getSize()),
-					lastModified : new Date(_e.getModTime()),
+					lastModified : (_e.getLastModifiedDate() == null ? __ : new Date(_e.getLastModifiedDate().getTime())),
 					groupId      : Number(_e.getGroupId()),
 					group        : String(_e.getGroupName()),
 					userId       : Number(_e.getUserId()),
-					user         : String(_e.getUserName())
+					user         : String(_e.getUserName()),
+					mode         : Number(_e.getMode()),
+					permissions  : m2l(Number(_e.getMode())),
+					linkName	 : String(_e.getLinkName())
 				})
 				_e = _is.getNextTarEntry()
 			}
 		}
 	})
 
-	return files
+	return Array.from(files)
 }
 /**
  * <odoc>
@@ -10017,6 +10172,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseUp = __colorFormat.askChooseChars.chooseUp
 	let chooseDown = __colorFormat.askChooseChars.chooseDown
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
+	let filter = ""
 
     if (__flags.ANSICOLOR_ASK) {
         if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
@@ -10031,7 +10187,11 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                      .map((l, i) => {
                         if (i >= span && i - span < aMaxDisplay) {
                             if (i == option) {
-                                return ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize, " "))
+								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize, " "))
+								if (filter.length > 0) {
+									_l = _l.replace(filter, ansiColor(__colorFormat.askChooseFilter, filter))
+								}
+                                return _l
                             } else {
                                 var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
                                 return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + chooseDirSize, " "))
@@ -10049,15 +10209,26 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
         let c = 0, _con = new Console()
         do {
             _print()
-            c = String(_con.readChar("")).charCodeAt(0)
+			var _c = _con.readChar("")
+            c = String(_c).charCodeAt(0)
             if (c == 27) {
+				filter = ""
                 c = String(_con.readChar("")).charCodeAt(0)
                 if (c == 91 || c == 79) {
                     c = String(_con.readChar("")).charCodeAt(0)
                     if (c == 66 && option < anArray.length - 1) option++
                     if (c == 65 && option > 0) option--
                 }
-            }
+            } else {
+				if (c == 127) {
+					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
+				} else {
+					if (c > 32 && c < 255) filter += _c
+				}
+				if (filter.length > 0) {
+					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+				}
+			}
         } while (c != 13)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printnl(repeat(_v.length, " ") + "\r")
@@ -10096,6 +10267,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseUp = __colorFormat.askChooseChars.chooseUp
 	let chooseDown = __colorFormat.askChooseChars.chooseDown
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
+	let filter = ""
 
     if (__flags.ANSICOLOR_ASK) {
 		aSelectMap = new Map()
@@ -10114,7 +10286,11 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                         if (i >= span && i - span < aMaxDisplay) {
 							selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
                             if (i == option) {
-                                return ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize, " "))
+								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize, " "))
+								if (filter.length > 0) {
+									_l = _l.replace(filter, ansiColor(__colorFormat.askChooseFilter, filter))
+								}
+                                return _l
                             } else {
                                 var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
                                 return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseDirSize + chooseMultipleSize, " "))
@@ -10132,17 +10308,27 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
         let c = 0, _con = new Console()
         do {
             _print()
-            c = String(_con.readChar("")).charCodeAt(0)
+			var _c = _con.readChar("")
+            c = String(_c).charCodeAt(0)
             if (c == 27) {
+				filter = ""
                 c = String(_con.readChar("")).charCodeAt(0)
                 if (c == 91 || c == 79) {
                     c = String(_con.readChar("")).charCodeAt(0)
                     if (c == 66 && option < anArray.length - 1) option++
                     if (c == 65 && option > 0) option--
                 }
-            }
-			if (c == 32) {
+            } else if (c == 32) {
 				aSelectMap.set(anArray[option], !aSelectMap.get(anArray[option]))
+			} else {
+				if (c == 127) {
+					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
+				} else {
+					if (c > 32 && c < 255) filter += _c
+				}
+				if (filter.length > 0) {
+					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
+				}
 			}
         } while (c != 13)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
@@ -10161,6 +10347,63 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
     }
 
     return __
+}
+
+/**
+ * <odoc>
+ * <key>askStruct(anArrayOfQuestions) : Array</key>
+ * Given anArrayOfQuestions with a structure like:\
+ * \
+ * [\
+ *  { name: "question1", prompt: "Question 1", type: "question" },\
+ *  { name: "question2", prompt: "Question 2", type: "secret" },\
+ *  { name: "question3", prompt: "Question 3", type: "char", options: "YN" },\
+ *  { name: "question4", prompt: "Question 4", type: "choose", options: ["Option 1", "Option 2", "Option 3"], output: "index" },\
+ *  { name: "question5", prompt: "Question 5", type: "multiple", options: ["Option 1", "Option 2", "Option 3"], max: 2 }\
+ * ]\
+ * \
+ * Will prompt the user for each question and return an array with the answers.\
+ * \
+ * The type can be:\
+ * \
+ * - "question" (default)\
+ * - "secret"\
+ * - "char" (requires options)\
+ * - "choose" (requires options)\
+ * - "multiple" (requires options)
+ * </odoc>
+ */
+const askStruct = (ar) => {
+	if (isArray(ar)) {
+		var _r = ar.map(t => {
+			_$(t.name, "name").isString().$_()
+			var __r = { name: t.name }
+			
+			t.prompt = _$(t.prompt, 'prompt').isString().default(t.name + ':') 
+			t.type   = _$(t.type, 'type').oneOf(['?', 'question', 'secret', 'char', 'choose', 'multiple']).default('?')
+			if (!t.prompt.endsWith(" ")) t.prompt += " "
+			if (isString(t.help)) t.help = ansiColor("FAINT,ITALIC", t.help)
+
+			switch(t.type) {
+			case 'secret'  : __r.answer = askEncrypt(t.prompt); break
+			case 'char'    : __r.answer = ask1(t.prompt, t.options); break
+			case 'choose'  : __r.answer = t.options[askChoose(t.prompt, t.options, t.max, t.help)]; break
+			case 'multiple': __r.answer = askChooseMultiple(t.prompt, t.options, t.max, t.help); break
+			case "question": 
+			case '?'       : 
+			default        : __r.answer = ask(t.prompt)
+			}
+			if (isDef(t.output) && t.output == "index") {
+				if (isArray(__r.answer)) {
+					__r.answer = __r.answer.map(a => t.options.indexOf(a))
+				} else {
+					__r.answer = t.options.indexOf(__r.answer)
+				}
+			}
+			return __r
+		})
+		return _r
+	}
 }
 
 /**

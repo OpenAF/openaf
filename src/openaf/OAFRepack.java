@@ -170,8 +170,11 @@ public class OAFRepack {
                                                 ZipEntry sze;
                     
                                                 while ((sze = szis.getNextEntry()) != null) {
-                                                    if (!al.contains(sze.getName()) && !sze.getName().endsWith("MANIFEST.MF")
-                                                            && !sze.getName().endsWith("ECLIPSE_.RSA")) {
+                                                    if (!al.contains(sze.getName()) && 
+                                                        !sze.getName().endsWith("MANIFEST.MF") && 
+                                                        !sze.getName().endsWith("ECLIPSE_.RSA") &&
+                                                        !sze.getName().equals("META-INF/services/java.net.spi.InetAddressResolverProvider") &&
+                                                        !sze.getName().equals("META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor")) {
                                                         ZipEntry newZe = new ZipEntry(sze.getName());
                                                         zos.putNextEntry(newZe);
                                                         al.add(newZe.getName());

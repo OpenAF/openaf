@@ -101,24 +101,24 @@ OpenWrap.obj.prototype.fromArray2DB = function(anArray, aDB, aTableName, usePara
 	var ctrl = {};
 
 	var _sql = "insert into " + (caseSensitive ? "\"" + aTableName + "\"" : aTableName) + "(" + okeys + ") values (" + binds.join(",") + ")"
-	var t = parallel4Array(anArray,
+	var t = pForEach(anArray,
 		function(aValue) {
 			var _value = ow.obj.flatMap(aValue)
 			var values = new Map()
 			for(var k in ookeys) {
-				values.set(ookeys[k], _value[ookeys[k]])
+				values.set(ookeys[k], isJavaObject(_value[ookeys[k]]) ? String(_value[ookeys[k]]) : _value[ookeys[k]])
 			}
 			
 			try {	
 				return aDB.us(_sql, Array.from(values.values()))
 			} catch(ee) {
-				if (isDef(errorFn)) errorFn(ee, _sql, value)
+				if (isDef(errorFn)) errorFn(ee, _sql, _value)
 				return 0
 			}
 		},
-		useParallel,
-		ctrl
-	);
+		errorFn,
+		useParallel
+	)
 	return t.length;
 };
 

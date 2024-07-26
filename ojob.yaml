@@ -2172,6 +2172,29 @@ jobs:
     // Delete all __ args
     Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])
 
+# ---------------------
+- name : ojob questions
+  typeArgs:
+    noLog   : true
+    shortcut:
+      name  : questions
+      keyArg: __questions
+  help :
+    text: |
+      Asks a list of questions and stores the answers into args.
+    expects:
+    - name: __questions
+      desc: A map structure equivalent to OpenAF's askStruct.
+  check:
+    in:
+      __questions: isArray
+  exec : |
+    askStruct(args.__questions).forEach(r => {
+      if (isDef(r.name)) {
+        $$(args).set(r.name, r.answer)
+      }
+    })
+
 # ---------------
 - name : ojob ask
   typeArgs:
@@ -2189,7 +2212,7 @@ jobs:
     - name: __question
       desc: The question to ask.
     - name: __answers
-      desc: "A map of answers to store into args. Each value should on the form of \"type.slonOptionsArray.siz\" (e.g. text, encrypt, password, char.['y'|'n'], option.['op1'|'op2'|'op3'].3)."
+      desc: "A map of answers to store into args. Each value should on the form of \"type.slonOptionsArray.size\" (e.g. text, encrypt, password, char.['y'|'n'], option.['op1'|'op2'|'op3'].3, moption.['op1'|'op2'|'op3'].3)"
     - name: __force
       desc: Boolean flag to force asking for an args value even if not defined.
   check:
@@ -2224,6 +2247,10 @@ jobs:
             case "list"    : 
               if (isArray(options)) {
                 $$(args).set(aP + "." + aK, options[ askChoose(args.__question, options, (isDef(parts[2]) ? Number(parts[2]) : __) )] ); break
+              }
+            case "moption" :
+              if (isArray(options)) {
+                $$(args).set(aP + "." + aK, options[ askChooseMultiple(args.__question, options, (isDef(parts[2]) ? Number(parts[2]) : __) )] ); break
               }
             case "text"    :
             default        : $$(args).set(aP + "." + aK, ask(args.__question))

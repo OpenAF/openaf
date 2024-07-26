@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Nuno Aguiar
+// Copyright 2024 Nuno Aguiar
 
 plugin("ZIP");
 ow.loadObj()
@@ -232,7 +232,9 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
                 }
 				zipNew.putFile(el.name, af.fromString2Bytes(str));
 			} else {				
-				if (!(el.name.match(/jarinjarloader/))) {
+				if (el.name != "META-INF/services/java.net.spi.InetAddressResolverProvider.class" && 
+					el.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor.class" &&
+					!(el.name.match(/jarinjarloader/))) {
 					if (!el.outside)
 						zipNew.putFile(el.name, zip.getFile(el.name));
 					else
@@ -244,11 +246,11 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 
 	ow.loadObj();
 	var ilist = "JarIndex-Version: 1.0\n\n" + 
-				$from(ow.obj.fromObj2Array(zipNew.list()))
+				$from($m4a(zipNew.list()))
 				.notStarts("name", "META-INF/")
 				.ends("name", "/")
 				.select((r)=>{ return r.name.substr(0, r.name.length -1); })
-				.join("\n");
+				.join("\n")
 	zipNew.putFile("META-INF/INDEX.LIST", af.fromString2Bytes(ilist));
 	ow.format.printWithWaiting(() => {
 		zipNew.generate2File(classPath + ".tmp", {"compressionLevel": 9}, true)
