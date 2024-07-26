@@ -213,7 +213,10 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 							
 			for (let ii in listTemp) {
 				var elTemp = listTemp[ii];
-				if (!(elTemp.name.match(/MANIFEST.MF$/)) && !(elTemp.name.match(/ECLIPSE_.RSA$/))) {
+				if (!(elTemp.name.match(/MANIFEST.MF$/)) && 
+				    !(elTemp.name.match(/ECLIPSE_.RSA$/)) &&
+				    (elTemp.name != "META-INF/services/java.net.spi.InetAddressResolverProvider.class") &&
+					(elTemp.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor.class")) {
 					zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));	
 				}
 			}
