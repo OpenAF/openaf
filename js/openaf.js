@@ -1933,6 +1933,10 @@ const colorify = function(json, aOptions, spacing) {
 	aOptions = _$(aOptions, "options").isMap().default({})
 	var _ac = c => c + (isDef(aOptions.bgcolor) ? (c.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")
 
+	if (typeof json == 'string') {
+		return json
+	}
+
 	if (__flags.ALTERNATIVES.colorify) {
 		aOptions.spacing = _$(aOptions.spacing, "options.spacing").isNumber().default(2)
 		spacing = _$(spacing, "spacing").isNumber().default(aOptions.spacing)
@@ -1986,8 +1990,6 @@ const colorify = function(json, aOptions, spacing) {
 	} else {
 		if (typeof json != 'string') {
 			json = stringify(json, __, 2)
-		} else {
-			return json
 		}
 
 		var _r = String(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
