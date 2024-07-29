@@ -236,12 +236,13 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 				zipNew.putFile(el.name, af.fromString2Bytes(str));
 			} else {				
 				if (el.name != "META-INF/services/java.net.spi.InetAddressResolverProvider.class" && 
-					el.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor.class" &&
-					!(el.name.match(/jarinjarloader/))) {
-					if (!el.outside)
-						zipNew.putFile(el.name, zip.getFile(el.name));
-					else
-						zipNew.putFile(el.name, io.readFileBytes(el.outsideName));
+					el.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor.class") {
+					if (!(el.name.match(/jarinjarloader/))) {
+						if (!el.outside)
+							zipNew.putFile(el.name, zip.getFile(el.name));
+						else
+							zipNew.putFile(el.name, io.readFileBytes(el.outsideName));
+					}
 				}
 			}
 		}
