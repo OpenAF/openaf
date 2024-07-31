@@ -4600,7 +4600,7 @@ var $from = function(a) {
  * progress(value, max, min, size, indicator, space),\
  * to_csv(array, options), from_csv(str, options)\
  * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
- * to_ms(date)\
+ * to_ms(date), timeagoAbbr(x)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4766,6 +4766,10 @@ const $path = function(aObj, aPath, customFunctions) {
 		},
 		timeago: {
 			_func: ar => ow.loadFormat().timeago(isDate(ar[0]) ? ar[0].getTime() : ar[0]),
+			_signature: [ { types: [ jmespath.types.any, jmespath.types.string ] } ]
+		},
+		timeagoAbbr: {
+			_func: ar => ow.loadFormat().timeago(isDate(ar[0]) ? ar[0].getTime() : ar[0], true),
 			_signature: [ { types: [ jmespath.types.any, jmespath.types.string ] } ]
 		},
 		from_ms: {
