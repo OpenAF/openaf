@@ -213,7 +213,10 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 							
 			for (let ii in listTemp) {
 				var elTemp = listTemp[ii];
-				if (!(elTemp.name.match(/MANIFEST.MF$/)) && !(elTemp.name.match(/ECLIPSE_.RSA$/))) {
+				if (!(elTemp.name.match(/MANIFEST.MF$/)) && 
+				    !(elTemp.name.match(/ECLIPSE_.RSA$/)) &&
+				    (elTemp.name != "META-INF/services/java.net.spi.InetAddressResolverProvider") &&
+					(elTemp.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor")) {
 					zipNew.putFile(elTemp.name, zipTemp.getFile(elTemp.name));	
 				}
 			}
@@ -232,13 +235,14 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
                 }
 				zipNew.putFile(el.name, af.fromString2Bytes(str));
 			} else {				
-				if (el.name != "META-INF/services/java.net.spi.InetAddressResolverProvider.class" && 
-					el.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor.class" &&
-					!(el.name.match(/jarinjarloader/))) {
-					if (!el.outside)
-						zipNew.putFile(el.name, zip.getFile(el.name));
-					else
-						zipNew.putFile(el.name, io.readFileBytes(el.outsideName));
+				if (el.name != "META-INF/services/java.net.spi.InetAddressResolverProvider" && 
+					el.name != "META-INF/services/sun.net.spi.nameservice.NameServiceDescriptor") {
+					if (!(el.name.match(/jarinjarloader/))) {
+						if (!el.outside)
+							zipNew.putFile(el.name, zip.getFile(el.name));
+						else
+							zipNew.putFile(el.name, io.readFileBytes(el.outsideName));
+					}
 				}
 			}
 		}
