@@ -4600,6 +4600,7 @@ var $from = function(a) {
  * progress(value, max, min, size, indicator, space),\
  * to_csv(array, options), from_csv(str, options)\
  * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
+ * to_ms(date)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4764,12 +4765,16 @@ const $path = function(aObj, aPath, customFunctions) {
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
 		timeago: {
-			_func: ar => ow.loadFormat().timeago(ar[0]),
-			_signature: [ { types: [ jmespath.types.number, jmespath.types.string ] } ]
+			_func: ar => ow.loadFormat().timeago(isDate(ar[0]) ? ar[0].getTime() : ar[0]),
+			_signature: [ { types: [ jmespath.types.any, jmespath.types.string ] } ]
 		},
 		from_ms: {
 			_func: ar => ow.loadFormat().elapsedTime4ms(ar[0], (ar[1].trim().startsWith("{") ? jsonParse(ar[1],__,__,true) : (ar[1].trim().startsWith("(") ? af.fromSLON(ar[1]) : __))),
 			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.string ]} ]
+		},
+		to_ms: {
+			_func: ar => isDate(ar[0]) ? ar[0].getTime() : ar[0],
+			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
 		replace: {
 			_func: ar => ar[0].replace(new RegExp(ar[1], ar[2]), ar[3]),
