@@ -274,7 +274,25 @@ public class SSH extends ScriptableObject {
 	public Object getJsch() {
 		return this.jsch;
 	}
-	
+
+	@JSFunction
+	public Object getSession() {
+		return this.session;
+	}
+
+	@JSFunction
+	public boolean isConnected() throws Exception {
+		if (session == null) 
+			return false;
+		else
+			return session.isConnected();
+	}
+
+	@JSFunction
+	public void sendKeepAlive() throws Exception {
+		if (session != null) session.sendKeepAliveMsg();
+	}
+
 	/**
 	 * <odoc>
 	 * <key>SSH.tunnelLocal(aLocalPort, aRemoteHost, aRemotePort)</key>
