@@ -1245,15 +1245,19 @@ OpenWrap.ch.prototype.__types = {
 	 * <key>ow.ch.types.file</key>
 	 * This OpenAF implementation implements a simple channel on a single JSON or YAML file. The creation options are:\
 	 * \
-	 *    - file      (String)  The filepath to the JSON or YAML file to use\
+	 *    - file      (String)  The filepath to the JSON or YAML file to use (if multifile is false)\
+	 *    - path      (String)  The path to use to store JSON or YAML objects to use (if multifile is true)\
 	 *    - yaml      (Boolean) Use YAML instead of JSON (defaults to false)\
 	 *    - compact   (Boolean) If JSON and compact = true the JSON format will be compacted (defaults to false or shouldCompress option)\
+	 *    - multifile (Boolean) If true instead of keeping values in one file it will be kept in multiple files (*)\
 	 *    - multipart (Boolean) If YAML and multipart = true the YAML file will be multipart\
 	 *    - key       (String)  If a key contains "key" it will be replaced by the "key" value\
 	 *    - multipath (Boolean) Supports string keys with paths (e.g. ow.obj.setPath) (defaults to false)\
 	 *    - lock      (String)  If defined the filepath to a dummy file for filesystem lock while accessing the file\
 	 *    - gzip      (Boolean) If true the output file will be gzip (defaults to false)\
 	 *    - tmp       (Boolean) If true "file" will be temporary and destroyed upon execution/process end\
+	 * \
+	 * (*) - Be aware that althought there is a very small probability of collision between the unique id (sha-512) for filenames it still exists\
 	 * \
 	 * </odoc>
 	 */
@@ -1302,6 +1306,35 @@ OpenWrap.ch.prototype.__types = {
 			if (!isMap(r)) r = {};
 			return r;
 		},
+		__rf: (m, k) => {
+			var r = {};
+			var _tmpf = io.createTempFile("tmp-", "")
+			var _id = sha512(stringify(sortMapKeys(k, true)))
+
+			if (!io.fileExists(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : ""))) {
+				return __
+			} else {
+				if (m.yaml) {
+					if (m.gzip) {
+						var is = io.readFileGzipStream(m.path + "/" + _id + ".yaml.gz")
+						r = af.fromYAML(af.fromInputStream2String(is))
+						is.close()
+					} else {
+						r = io.readFileYAML(m.path + "/" + _id + ".yaml")
+					}
+				} else {
+					if (m.gzip) {
+						var is = io.readFileGzipStream(m.path + "/" + _id + ".json.gz")
+						r = jsonParse(af.fromInputStream2String(is), true)
+						is.close()
+					} else {
+						r = io.readFileJSON(m.path + "/" + _id + ".json")
+					}
+				}
+				if (!isMap(r)) r = {}
+				return r
+			}
+		},
 		__w: (m, o) => {
 			if (!io.fileExists(m.file)) {
 				if (m.tmp) {
@@ -1326,22 +1359,62 @@ OpenWrap.ch.prototype.__types = {
 				}
 			}
 		},
+		__wf: (m, k, v) => {
+			var _tmpf = io.createTempFile("tmp-", "")
+			var _id = sha512(stringify(sortMapKeys(k, true)))
+
+			if (m.yaml) {
+				if (m.gzip) {
+					var os = io.writeFileGzipStream(m.path + "/" + _id + ".yaml.gz")
+					ioStreamWrite(os, af.toYAML(v, m.multipart))
+					os.close()
+				} else {
+					io.writeFileYAML(m.path + "/" + _id + ".yaml", v, m.multipart)
+				}
+			} else {
+				if (m.gzip) {
+					var os = io.writeFileGzipStream(m.path + "/" + _id + ".json.gz")
+					ioStreamWrite(os, stringify(v, __, m.compact ? "" : __))
+					os.close()
+				} else {
+					io.writeFileJSON(m.path + "/" + _id + ".json", v, m.compact ? "" : __)
+				}
+			}
+
+			return _id
+		},
+		__df: (m, k) => {
+			var _id = sha512(stringify(sortMapKeys(k, true)))
+			try {
+				io.rm(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : ""))
+			} catch(e) {
+				logErr("Error removing file: " + e)
+				throw e
+			}
+		},
 		create       : function(aName, shouldCompress, options) {
 			ow.loadObj();
 			options = _$(options).isMap().default({});
 			this.__channels[aName] = {};
 			this.__channels[aName].compact   = _$(options.compact, "options.compact").isBoolean().default(shouldCompress);
-			this.__channels[aName].file      = _$(options.file, "options.file").isString().$_();
+			this.__channels[aName].file      = _$(options.file, "options.file").isString().default(__)
+			this.__channels[aName].path      = _$(options.path, "options.path").isString().default(__)
 			this.__channels[aName].yaml      = _$(options.yaml, "options.yaml").isBoolean().default(false);
+			this.__channels[aName].multifile = _$(options.multifile, "options.multifile").isBoolean().default(false)
 			this.__channels[aName].multipart = _$(options.multipart, "options.multipart").isBoolean().default(false);
 			this.__channels[aName].multipath = _$(options.multipath, "options.multipath").isBoolean().default(false);
 			this.__channels[aName].key       = _$(options.key, "options.key").isString().default(__);
 			this.__channels[aName].lock      = _$(options.lock, "options.lock").isString().default(__);
 			this.__channels[aName].gzip      = _$(options.gzip, "options.gzip").isBoolean().default(false)
 			this.__channels[aName].tmp       = _$(options.tmp, "options.tmp").isBoolean().default(false)
+
+			if (this.__channels[aName].multifile) {
+				this.__channels[aName].file = this.__channels[aName].path + "/index" + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : "")
+			}
+
 		},
 		destroy      : function(aName) {
-			if (this.__channels[aName].tmp) io.rm(this.__channels[aName].file)
+			if (this.__channels[aName].tmp && io.fileExists(this.__channels[aName].file)) io.rm(this.__channels[aName].file)
 			delete this.__channels[aName];
 		},
 		size         : function(aName) {
@@ -1364,18 +1437,25 @@ OpenWrap.ch.prototype.__types = {
 				this.__ul(this.__channels[aName]);
 			}
 			Object.keys(m).forEach(k => {
-				try { aFunction(k, m[k]) } catch(e) {};
+				if (this.__channels[aName].multifile) {
+					try { aFunction(k, this.__rf(this.__channels[aName], k)) } catch(e) {}
+				} else {
+					try { aFunction(k, m[k]) } catch(e) {}
+				}
 			});
 		},
 		getAll      : function(aName, full) {
-			var m;
+			var m, mv
 			this.__l(this.__channels[aName]);
 			try {
 				m = this.__r(this.__channels[aName]);
+				if (this.__channels[aName].multifile) {
+					mv = Object.keys(m).map(k => this.__rf(this.__ch, jsonParse(k)))
+				} 
 			} finally {
 				this.__ul(this.__channels[aName]);
 			}
-			return Object.values(m);
+			return this.__channels[aName].multifile ? mv : Object.values(m)
 		},
 		getKeys      : function(aName, full) {
 			var m;
@@ -1413,10 +1493,20 @@ OpenWrap.ch.prototype.__types = {
 				m = this.__r(this.__channels[aName]);
 				if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
 				var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
-				if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
-					ow.obj.setPath(m, id, isDef(aV.value) ? aV.value : aV);
+
+				if (this.__channels[aName].multifile) {
+					var __id = this.__wf(this.__channels[aName], aK, aV)
+					if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+						ow.obj.setPath(m, id, _id)
+					} else {
+						m[id] = _id
+					}  
 				} else {
-					m[id]  = isDef(aV.value) ? aV.value : aV;
+					if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+						ow.obj.setPath(m, id, isDef(aV.value) ? aV.value : aV);
+					} else {
+						m[id]  = isDef(aV.value) ? aV.value : aV;
+					}
 				}
 				this.__w(this.__channels[aName], m);
 			} finally {
@@ -1437,10 +1527,20 @@ OpenWrap.ch.prototype.__types = {
 
 					if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
 					var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
-					if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
-						ow.obj.setPath(m, id, isDef(aV.value) ? aV.value : aV);
+
+					if (this.__channels[aName].multifile) {
+						var _id = this.__wf(this.__channels[aName], aK, aV)
+						if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+							ow.obj.setPath(m, id, _id)
+						} else {
+							m[id] = _id
+						}  
 					} else {
-						m[id] = isDef(aV.value) ? aV.value : aV;
+						if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+							ow.obj.setPath(m, id, isDef(aV.value) ? aV.value : aV);
+						} else {
+							m[id] = isDef(aV.value) ? aV.value : aV;
+						}
 					}
 				}
 				this.__w(this.__channels[aName], m);
@@ -1465,6 +1565,10 @@ OpenWrap.ch.prototype.__types = {
 					} else {
 						delete m[id];
 					}
+
+					if (this.__channels[aName].multifile) {
+						this.__df(this.__channels[aName], aK)
+					}
 				}
 				this.__w(this.__channels[aName], m);
 			} finally {
@@ -1472,19 +1576,23 @@ OpenWrap.ch.prototype.__types = {
 			}
 		},		
 		get          : function(aName, aK) {
-			var m;
-			this.__l(this.__channels[aName]);
-			try {
-				m = this.__r(this.__channels[aName]);
-			} finally {
-				this.__ul(this.__channels[aName]);
-			}
-			if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
-			var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
-			if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
-				return ow.obj.getPath(m, id);
-			} else {
-				return m[id];
+			if (this.__channels[aName].multifile) {
+				return this.__rf(this.__channels[aName], aK)
+			} else {
+				var m;
+				this.__l(this.__channels[aName]);
+				try {
+					m = this.__r(this.__channels[aName]);
+				} finally {
+					this.__ul(this.__channels[aName]);
+				}
+				if (isMap(aK) && isDef(aK[this.__channels[aName].key])) aK = { key: aK[this.__channels[aName].key] };
+				var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
+				if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
+					return ow.obj.getPath(m, id);
+				} else {
+					return m[id];
+				}
 			}
 		},
 		pop          : function(aName) {
@@ -1511,6 +1619,7 @@ OpenWrap.ch.prototype.__types = {
 					delete m[id];
 				}
 				this.__w(this.__channels[aName], m);
+				if (this.__channels[aName].multifile) this.__df(this.__channels[aName], aK)
 			} finally {
 				this.__ul(this.__channels[aName]);
 			}
