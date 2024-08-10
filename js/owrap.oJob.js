@@ -1994,7 +1994,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 				try {
 					//var parentOJob = $path(parent.getTodoCh().getKeys(), "[?ojobId==`" + (parent.getID() + altId) + "`]");
 					var parentOJob = $from(parent.getTodoCh().getKeys()).useCase(true).equals("ojobId",  (parent.getID() + altId)).select();
-					var pjobs = [];
+					//var pjobs = [];
 					for (var ipoj = 0; ipoj < parentOJob.length; ipoj++) {
 						var todo = parent.getTodoCh().get(parentOJob[ipoj]);
 						job = parent.getJobsCh().get({ "name": todo.name });
