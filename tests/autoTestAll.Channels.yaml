@@ -80,6 +80,18 @@ jobs:
      args:
        chType: simple
 
+   # File
+   # ----
+   - name: Channels::Test channel (file)
+     to  :
+       - Channels::Creating a channel
+       - Channels::Setting data into a channel
+       - Channels::Unsetting data into a channel
+       - Channels::Destroy a channel 
+       - Channels::Test housekeeping
+     args:
+       chType: file
+
    # Cache
    # -----
    - name: Channels::Test channel (cache)
@@ -129,6 +141,9 @@ todo:
 
    # Simple
    - Channels::Test channel (simple)
+
+   # File simple
+   - Channels::Test channel (file)
 
    # Mvs
    - Channels::Test channel (mvs)

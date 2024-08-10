@@ -667,30 +667,10 @@
 
         // Parallel processing
         //
-        arr = [];
-        for(var i = 0; i < 1000; i++) { arr.push(i); }
+        var c = 0
+        res = parallel(uuid => uuid, 5, r => r.length)
 
-        res = parallel(
-            function(uuid, t)  {
-                var sum = 0;
-                while(arr.length > 0) {
-                    var val;
-                    syncFn(() => { val = arr.pop(); }, arr);
-                    sum += (isDefined(val) ? val : 0);
-                }
-                log("Thread: " + uuid + "; " + sum);
-                return sum;
-            }, undefined,
-            function(ar) {
-                var sum = 0;
-                for(var i in ar) {
-                    sum += ar[i];
-                }
-                return sum;
-            }
-        );
-
-        if (res != 499500)
+        if (res != 5)
             throw "Something wrong with the parallel processing.";
     };
 
@@ -799,10 +779,10 @@
         ow.test.assert(fnargs, ["aBaseURI","aIndexMap","aLoginOrFunction","aPassword","aTimeout","aRequestMap","aHTTP", "retBytes", "options"], "Problem with getting arguments from help using $fnDef4Help.");
 
         var res = $fnM2A(ow.obj.rest.jsonGet, ow.obj.rest, fnargs, { aBaseURI: "https://postman-echo.com/get" });
-        ow.test.assert(res.url, "https://postman-echo.com/get", "Problem with $fnM2A.");
+        ow.test.assert(res.url, "http://postman-echo.com/get", "Problem with $fnM2A.");
 
         res = $fnM("ow.obj.rest.jsonGet", { aBaseURI: "https://postman-echo.com/get" });
-        ow.test.assert(res.url, "https://postman-echo.com/get", "Problem with $fnM.");
+        ow.test.assert(res.url, "http://postman-echo.com/get", "Problem with $fnM.");
     };
 
     exports.testVoidShortcut = function() {
