@@ -1093,12 +1093,16 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
     if (!_aOptions.noansi) {
         _dt = aO => {
 			if (null == aO) return "null"
-            if (isJavaObject(aO) || isJavaClass(aO)) return "java"
-            if (isUnDef(aO)) return "undefined"
-            if (isBoolean(aO)) return "boolean"
-            if (isTNumber(aO)) return "number"
-            if (isString(aO)) return "string"
-            if (isDate(aO)) return "date"
+			try {
+				if ("function" === typeof aO.getClass && "[object JavaObject]" === Object.prototype.toString.call(aO)) return "java"
+			} catch(e) {
+				if (aO.getClass() instanceof java.lang.Object) return "java"
+			}
+            if ("undefined" == typeof aO) return "undefined"
+            if ("boolean" == typeof aO) return "boolean"
+            if ("number" === typeof aO) return "number"
+            if ("string" == typeof aO) return "string"
+            if ("undefined" !== typeof aO.getDate) return "date"
         }
         _acr = () => _ac("RESET","")
         var _clrCache = new ow.obj.syncMap()
@@ -1124,24 +1128,22 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         _ac  = (aAnsi, aString) => {
             if (!__conConsole) return aString
 
-            aAnsi = aAnsi.trim()
+            aAnsi = aAnsi.trim().toUpperCase()
             if (_aOptions.bgcolor && aAnsi.length > 0) {
                 aAnsi += "," + _aOptions.bgcolor
             }
         
             if (aAnsi.length == 0) return aString
-        
+
             if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString].join("")
         
-            const res = ansiColor(aAnsi, aString, true, true)
-            return res
+            return ansiColor(aAnsi, aString, true, true)
         }
         _al  = m => {
-            var s = m.replace(/\033\[[0-9;]*m/g, "")
             if (__flags.VISIBLELENGTH)
-                return Number(visibleLength(s))
+                return Number(visibleLength(m))
             else
-                return Number(s.length)
+                return Number(m.replace(/\033\[[0-9;]*m/g, "").length)
         }
     } else {
         _clr = s => s
@@ -1152,26 +1154,26 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 
     var _tw = (ps, s, mx) => {
         if ((ps.length + _aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + _aOptions.minSize) + "; max = " + mx + ")"
-        var ar = []
+        var ar = new Set()
         var i = 0, mxp = Math.floor(mx * 0.25)
         var sub, ni
         do {
             sub = s.substr(i, mx)
             if ((ni = sub.indexOf("\n")) >= 0) {
-                ar.push(s.substr(i, ni))
+                ar.add(s.substr(i, ni))
                 i += ni + 1
             } else {
                 if (s.length > i+mx+1 && s.substr(i, mx+1).match(/ [^ ]+$/)) {
                     var mxp = sub.lastIndexOf(" ")
-                    ar.push(s.substr(i, mxp))
+                    ar.add(s.substr(i, mxp))
                     i += mxp + 1
                 } else {
-                    ar.push(sub)
+                    ar.add(sub)
                     i += mx
                 }
             }
         } while(i < s.length)
-        return ar
+        return Array.from(ar)
     }
 
     let _pt = (aM, aWidth, aOptions, aPrefix, isSub) => {
@@ -1248,37 +1250,36 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             return _res
         }
       
-		var _out = new ow.obj.syncMap()
+		//var _out = new ow.obj.syncMap()
         //parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
-		pForEach(aMKeys, (k, i) => {
-			try {
-			//let k = _v.k, i = _v.i
+		var out = pForEach(aMKeys, (k, i) => {
+			//try {
             let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
 			
-            let ksizeOrAlKPlusSline = (isDef(ksize) ? ksize : _al(k)) + slines
-            let vsizeOrLvPlusSline = (isDef(vsize) ? vsize : lv) + slines
+            let ksizeOrAlKPlusSline = ("undefined" !== typeof ksize ? ksize : _al(k)) + slines
+            let vsizeOrLvPlusSline = ("undefined" !== typeof vsize ? vsize : lv) + slines
             let aPrefix2 = _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
 
             let wfResult = _wf(v, aPrefix + aPrefix2)
-            let repeatResult = _ac("", (isDef(vsize) ? " ".repeat(vsize - lv+1) : " "))
+            let repeatResult = _ac("", ("undefined" !== typeof vsize ? " ".repeat(vsize - lv+1) : " "))
 
             let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
             let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
             let suffix
 
-            if (isDef(aM[k]) && aM[k] != null && (isMap(aM[k]) || Array.isArray(aM[k]))) {
+            if ("undefined" !== typeof aM[k] && aM[k] != null && ("[object Object]" == Object.prototype.toString.call(aM[k]) || Array.isArray(aM[k]))) {
                 suffix = _pt(aM[k], aWidth, aOptions, [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join(""), true)
             }
 
-            _out.put(i, [prefix, wfResult, repeatResult, suffix, reset].join(""))
-			} catch(e) {
-				printErr(e)
-			//	sprint(_v)
-			}
+            //_out.put(i, [prefix, wfResult, repeatResult, suffix, reset].join(""))
+			return [prefix, wfResult, repeatResult, suffix, reset].join("")
+			//} catch(e) {
+			//	printErr(e)
+			//}
         })
-		out = _out.getKeys().sort((a, b) => a - b).map(k => _out.get(k))
-		_out.clear()
-		_out = __
+		//out = _out.getKeys().sort((a, b) => a - b).map(k => _out.get(k))
+		//_out.clear()
+		//_out = __
       
         if (out.length > 0) {
             out = ("undefined" !== typeof out[out.length - 1] && out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
