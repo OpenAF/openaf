@@ -1139,18 +1139,13 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         
             return ansiColor(aAnsi, aString, true, true)
         }
-        _al  = m => {
-            if (__flags.VISIBLELENGTH)
-                return Number(visibleLength(m))
-            else
-                return Number(m.replace(/\033\[[0-9;]*m/g, "").length)
-        }
+        _al  = m => (__flags.VISIBLELENGTH ? visibleLength(m) : m.replace(/\033\[[0-9;]*m/g, "").length)
     } else {
         _clr = s => s
         _ac  = (o, s) => s
         _al  = s => s.length
     }
-    _ac("RESET", "")
+    //_ac("RESET", "")
 
     var _tw = (ps, s, mx) => {
         if ((ps.length + _aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + _aOptions.minSize) + "; max = " + mx + ")"
@@ -1177,41 +1172,40 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
     }
 
     let _pt = (aM, aWidth, aOptions, aPrefix, isSub) => {
-        isSub = _$(isSub, "isSub").isBoolean().default(false)
+        //isSub = _$(isSub, "isSub").isBoolean().default(false)
         var isAr = Array.isArray(aM)
         if ("[object Object]" != Object.prototype.toString.call(aM) && !isAr) throw "Not a map or array"
     
-        var out
-        var aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
+        var out, aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
         
         // Render key and value
-        var _get = (k, v) => {          
+        var _get = (k, v) => {
           var _k = (isAr ? ["[", k, "]"].join("") : k), _r
           if (aOptions.withValues) {
             _r = [_ac(__colorFormat.key, _k),
-                           _ac("", (isDef(ksize) ? repeat(ksize - _k.length, " ") : "")),
-                           _ac("", (!(isMap(v) || Array.isArray(v)) ? [_ac(__colorFormat.tree.lines, skey), _clr(v)].join("") : ""))].join("")
+                           _ac("", ("undefined" !== typeof ksize ? " ".repeat(ksize - _k.length) : "")),
+                           _ac("", (!("[object Object]" == Object.prototype.toString.call(v) || Array.isArray(v)) ? [_ac(__colorFormat.tree.lines, skey), _clr(v)].join("") : ""))].join("")
           } else {
             _r = _k
           }
-          return _r
+		  return _r
         }
       
         // Determine max sizes of keys and values
-        var _getCache = new Map()
+        var _getCache = {}
         if (aOptions.fullKeySize || aOptions.fullValSize) {
             if (aOptions.fullKeySize) ksize = 0
             if (aOptions.fullValSize) vsize = 0
             aMKeys.forEach(k => {
                 if (aOptions.fullKeySize) {
-                    var _k = (isAr ? ["[", k, "]"].join("") : k) 
-                    var _kl = _k.length 
+                    //var _k = (isAr ? ["[", k, "]"].join("") : k) 
+                    var _kl = isAr ? k.length + 2 : k.length 
                     if (_kl > ksize) ksize = _kl
                 }
                 if (aOptions.fullValSize) {
                     var _gR = _get(k, aM[k])
                     var lv = _al(_gR)
-                    _getCache.set(k, _gR)
+                    _getCache[k] = _gR
                     if (lv > vsize) vsize = lv
                 }
             }) 
@@ -1219,15 +1213,11 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         
         // Text wrap function
         var _wf = (m, p) => {
-            if (!aOptions.wordWrap) {
-                return m
-            }
+            if (!aOptions.wordWrap) return m
         
             if (!isString(m)) return m
         
-            if (isString(p)) {
-                p = [_$(p).default(""), " "].join("")
-            }
+            if (isString(p)) p = ["undefined" !== typeof p ? p : "", " "].join("")
         
             let mIO = m.indexOf(": ")
             let mSub = m.substring(mIO + 2)
@@ -1254,7 +1244,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         //parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
 		var out = pForEach(aMKeys, (k, i) => {
 			//try {
-            let v = aOptions.fullValSize ? _getCache.get(k) : _get(k, aM[k]), lv = _al(v)
+            let v = aOptions.fullValSize ? _getCache[k] : _get(k, aM[k]), lv = _al(v)
 			
             let ksizeOrAlKPlusSline = ("undefined" !== typeof ksize ? ksize : _al(k)) + slines
             let vsizeOrLvPlusSline = ("undefined" !== typeof vsize ? vsize : lv) + slines
