@@ -4592,6 +4592,7 @@ var $from = function(a) {
  * to_csv(array, options), from_csv(str, options)\
  * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
  * to_ms(date), timeagoAbbr(x)\
+ * env(str), envs(regex)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -4989,6 +4990,19 @@ const $path = function(aObj, aPath, customFunctions) {
 				return ow.format.string.progress(ar[0], ar[1], ar[2], ar[3], ar[4], ar[5])
 			},
 			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.number ] }, { types: [ jmespath.types.null,jmespath.types.string ] }, { types: [ jmespath.types.null,jmespath.types.string ] } ]
+		},
+		env: {
+			_func: ar => {
+				return getEnv(ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		envs: {
+			_func: ar => {
+				var _e = getEnvs()
+				return Object.keys(_e).filter(k => k.match(new RegExp(ar[0]))).map(k => ({ name: k, value: _e[k] }))
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
 		ch: {
 			_func: ar => {
