@@ -2300,9 +2300,9 @@ jobs:
       "Executes a LLM (Local Language Model) prompt using $llm"
     expects:
     - name: __llmContext
-      desc: The context of the input data
+      desc: The context of the input data (determined by __llmInPath)
     - name: __llmInPath
-      desc: The path to consider from __llmInKey
+      desc: The path to consider from __llmInKey (mandatory for using context)
     - name: __llmInKey
       desc: The key for an existing list or 'args'
     - name: __llmEnv

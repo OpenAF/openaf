@@ -517,14 +517,19 @@ OpenWrap.ai.prototype.gpt.prototype.promptImgGen = function(aPrompt, aModel, anO
     anOutputPath = _$(anOutputPath, "anOutputPath").isString().default(String(java.lang.System.getProperty("java.io.tmpdir")) + "/image")
     var _res = this.model.promptImgGen(aPrompt, aModel)
     var files = []
-    _res.forEach((r, idx) => {
-        var f = anOutputPath + idx + ".png"
-        var os = io.writeFileStream(f)
-        ioStreamCopy(os, af.fromBytes2InputStream(r))
-        os.close()
-        files.push(f)
-    })
-    return files
+    if (isArray(_res)) {
+        _res.forEach((r, idx) => {
+            var f = anOutputPath + idx + ".png"
+            var os = io.writeFileStream(f)
+            ioStreamCopy(os, af.fromBytes2InputStream(r))
+            os.close()
+            files.push(f)
+        })
+        return files
+    } else {
+        throw af.toSLON(_res)
+    }
+
 }
 
 /**
