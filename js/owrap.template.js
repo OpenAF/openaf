@@ -71,6 +71,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $ft              -- uses the $ft format function\
  *   - $path            -- uses the $path function to query objects\
  *   - $from            -- uses the $from &amp; fromNLinq to query objects\
+ *   - $oafp            -- uses the oafp function to parse the provided JSON/SLON string and return the results\
  *   - $toSLON          -- returns the ow.format.toSLON version of an object\
  *   - $get             -- returns the corresponding value for a key on $get\
  *   - $getObj          -- equivalent to $get with the extra parameter for $$.get path\
@@ -250,6 +251,15 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 			if (__flags.TEMPLATE_SET && isString(aK) && isMap(o) && isMap(o.data)) {
 				$$(o.data.root).set(aK, o.fn(this) )
 			}
+		},
+		oafp: (jsl) => {
+			loadOAFP()
+			var _id = genUUID()
+			var _m = merge({ out: "key", __key: _id }, af.fromJSSLON(jsl))
+			oafp(_m)
+			var _r = $get(_id)
+			$unset(_id)
+			return _r
 		},
 		output: (aObj, aOptions) => {
 			if (isUnDef(aOptions) || !isString(aOptions)) aOptions = "()"
