@@ -1924,7 +1924,7 @@ const colorify = function(json, aOptions, spacing) {
 	aOptions = _$(aOptions, "options").isMap().default({})
 	var _ac = c => c + (isDef(aOptions.bgcolor) ? (c.trim().length > 0 ? "," : "") + aOptions.bgcolor : "")
 
-	if (typeof json == 'string') {
+	if (typeof json == 'string' || null == json) {
 		return json
 	}
 
@@ -1942,7 +1942,7 @@ const colorify = function(json, aOptions, spacing) {
 			case "date"     : _v = ansiColor(_ac(__colorFormat.date), value.toISOString()); break
 			case "undefined": _v = ansiColor(_ac(__colorFormat.default), "undefined"); break
 			case "null"     : _v = ansiColor(_ac(__colorFormat.default), "null"); break
-			default         : _v = ansiColor(_ac(__colorFormat.default), value); break
+			default         : _v = ansiColor(_ac(__colorFormat.default), String(value)); break
 			}
 			return _v
 		}
