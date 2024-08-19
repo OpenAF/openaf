@@ -126,14 +126,14 @@ const __envs = getEnvs()
  * <key>getEnvsDef(aEnv, aVar, aDefault, isJson) : Object</key>
  * Given an environment variable aEnv name will check if a value is provided and return it if so. Otherwise it will check
  * the value of aVar and return it if defined. If aVar is also not defined it will return aDefault. Optionally if isJson=true
- * the value of the provided aEnv will be parsed from JSON.
+ * the value of the provided aEnv will be parsed from JSON or SLON.
  * </odoc>
  */
 const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
 	if (isDef(aVar)) return aVar
 	if (isDef(__envs[aEnv])) {
 		if (isJson) {
-			return jsonParse(__envs[aEnv], true)
+			return af.fromJSSLON(__envs[aEnv], true)
 		} else {
 			return __envs[aEnv]
 		}
@@ -12667,6 +12667,8 @@ var console = { log: log, warn: logWarn, error: logErr };
 // Set __pm
 var __pm = __pmIn;
 __pmOut = __pm;
+
+__flags = merge(__flags, getEnvsDef("OAF_FLAGS", __, {}, true))
 
 // -------------------------------------
 // Profile support (must be always last)
