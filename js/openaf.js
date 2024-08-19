@@ -4256,7 +4256,10 @@ const clone = function(aObject) {
  */
 const merge = function(objA, objB, alternative, deDup) {
 	if (isUnDef(alternative)) alternative = __flags.ALTERNATIVES.merge
-	
+
+	if ("undefined" === typeof objA) return objB
+	if ("undefined" === typeof objB) return objA
+
 	if (alternative) {
 		let stack = []
 		let result
@@ -12668,7 +12671,7 @@ var console = { log: log, warn: logWarn, error: logErr };
 var __pm = __pmIn;
 __pmOut = __pm;
 
-__flags = merge(__flags, getEnvsDef("OAF_FLAGS", __, {}, true))
+__flags = merge(__flags, getEnvsDef("OAF_FLAGS", __, __, true))
 
 // -------------------------------------
 // Profile support (must be always last)
