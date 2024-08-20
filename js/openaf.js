@@ -267,7 +267,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		threads_thrs       : 2,
 		waitms             : 50,
 		forceSeq           : false,
-		seq_ratio          : 0.05
+		seq_ratio          : 1
 	}
 })
 
@@ -5484,8 +5484,9 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	var _nc = getNumberOfCores()
 
 	// If not enough cores or if too many threads in the pool then go sequential
-	//print("Number of cores " + _nc + " | Number of threads: " + __getThreadPool().getParallelism() + " | active = " + __getThreadPool().getActiveThreadCount() + " | queue = " + __getThreadPool().getQueuedTaskCount() + " | parts = " + pres.length)
-	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq || __getThreadPool().getActiveThreadCount() /  __getThreadPool().getParallelism() > __flags.PFOREACH.seq_ratio
+	var _tpstats = __getThreadPools()
+	//lprint(_tpstats)
+	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq || _tpstats.active / getNumberOfCores() > __flags.PFOREACH.seq_ratio
 	pres.forEach((part, _i_) => {
 		try {
 			if (beSeq) {
@@ -5526,7 +5527,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
 				
 				// Cool down and go sequential if too many threads
-				if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / __flags.PFOREACH.threads_thrs) {
+				if (__getThreadPools().queued > __getThreadPools().poolSize / __flags.PFOREACH.threads_thrs) {
 					$doWait(_ts.pop())
 				}
 			}
@@ -5534,7 +5535,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 			aErrFn(eee)
 		} finally {
 			// If execution time per call is too low, go sequential
-			if ( pres.length > 1 && _nc >= 3 && __getThreadPool().getActiveThreadCount() /  __getThreadPool().getParallelism() > __flags.PFOREACH.seq_ratio) {
+			if ( pres.length > 1 && _nc >= 3 ) {
 				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms) {
 					beSeq = true
 				} else {
@@ -5548,7 +5549,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	var tries = 0
 	do {
 		$doWait($doAll(_ts))
-		if (parts.get() < pres.length) sleep(__getThreadPool().getQueuedTaskCount() * __flags.PFOREACH.waitms, true)
+		if (parts.get() < pres.length) sleep(__getThreadPools().queued * __flags.PFOREACH.waitms, true)
 		tries++
 	} while(parts.get() < pres.length && tries < 100)
 
@@ -10598,22 +10599,55 @@ const $channels = function(a) {
  */
 const $ch = $channels;
 
-var __threadPool;
+var __threadPools
 var __threadPoolFactor = 2
 
 const __resetThreadPool = function(poolFactor) {
-	__threadPoolFactor = poolFactor;
-	__threadPool = __;
-	__getThreadPool();
+	__threadPoolFactor = poolFactor
+	if (isDef(__threadPools)) { __threadPools.forEach(r => r.shutdown()); __threadPools.length = 0 }
+	__threadPools = __
+	__getThreadPool()
 }
 
 const __getThreadPool = function() {
-	if (isUnDef(__threadPool)) {
+	if (isUnDef(__threadPools)) {
 		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores()
-		__threadPool = new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+		__threadPools = [ new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) ]
 	}
 
-	return __threadPool;
+	for(let i = 0; i < __threadPools.length; i++) {
+		if (__threadPools[i].getActiveThreadCount() < __threadPools[i].getParallelism()) return __threadPools[i]
+	}
+	__threadPools.push( new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) )
+	return __threadPools[__threadPools.length - 1]
+}
+
+const __getThreadPools = function() {
+	var _r = {
+		pools: 0,
+		active: 0,
+		running: 0,
+		queued: 0,
+		steals: 0,
+		tasks: 0,
+		parallelism: 0,
+		poolSize: 0
+	}
+
+	if (isDef(__threadPools)) {
+		__threadPools.forEach(r => {
+			_r.pools += 1
+			_r.active += r.getActiveThreadCount()
+			_r.running += r.getRunningThreadCount()
+			_r.queued += r.getQueuedSubmissionCount()
+			_r.steals += r.getStealCount()
+			_r.tasks += r.getQueuedTaskCount()
+			_r.parallelism += r.getParallelism()
+			_r.poolSize += Number(r.getPoolSize())
+		})
+	}
+
+	return _r
 }
 
 /**
