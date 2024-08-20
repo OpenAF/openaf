@@ -266,7 +266,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		seq_thrs_ms        : 6,
 		threads_thrs       : 2,
 		waitms             : 50,
-		forceSeq           : false
+		forceSeq           : false,
+		seq_ratio          : 0.05
 	}
 })
 
@@ -5483,8 +5484,8 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	var _nc = getNumberOfCores()
 
 	// If not enough cores or if too many threads in the pool then go sequential
-	//print("Number of cores " + _nc + " | Number of threads: " + __getThreadPool().getPoolSize() + " | parts = " + pres.length)
-	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq || (_nc - __getThreadPool().getPoolSize() - pres.length < 1)
+	//print("Number of cores " + _nc + " | Number of threads: " + __getThreadPool().getParallelism() + " | active = " + __getThreadPool().getActiveThreadCount() + " | queue = " + __getThreadPool().getQueuedTaskCount() + " | parts = " + pres.length)
+	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq || __getThreadPool().getActiveThreadCount() /  __getThreadPool().getParallelism() > __flags.PFOREACH.seq_ratio
 	pres.forEach((part, _i_) => {
 		try {
 			if (beSeq) {
@@ -5533,7 +5534,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 			aErrFn(eee)
 		} finally {
 			// If execution time per call is too low, go sequential
-			if ( pres.length > 1 && _nc >= 3 && (_nc - __getThreadPool().getPoolSize() - pres.length > 0)) {
+			if ( pres.length > 1 && _nc >= 3 && __getThreadPool().getActiveThreadCount() /  __getThreadPool().getParallelism() > __flags.PFOREACH.seq_ratio) {
 				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms) {
 					beSeq = true
 				} else {
