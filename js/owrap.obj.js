@@ -1800,13 +1800,20 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	if (isDef(options.readTimeout)) clt = clt.readTimeout(options.readTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 	if (isDef(options.writeTimeout)) clt = clt.readTimeout(options.writeTimeout, java.util.concurrent.TimeUnit.MILLISECONDS)
 
+	if (isDef(options.followRedirects))    clt = clt.followRedirects(options.followRedirects)
+	if (isDef(options.followSslRedirects)) clt = clt.followSslRedirects(options.followSslRedirects)
+
 	if (isDef(global.__httpSSLSocketFactory)) {
 		clt = clt.sslSocketFactory(global.__httpSSLSocketFactory, global.__httpX509TrustManager)
 	}
 
-	this.client = clt.build()
+	if (!options.delayBuild) {
+		this.client = clt.build()
+	} else {
+		this.client = clt
+	}
 
-	if (isDef(aURL)) {
+	if (!options.delayBuild && isDef(aURL)) {
 		this.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream)
 	}
 }
