@@ -5527,7 +5527,8 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
 				
 				// Cool down and go sequential if too many threads
-				if (__getThreadPools().queued > __getThreadPools().poolSize / __flags.PFOREACH.threads_thrs) {
+				_tpstats = __getThreadPools()
+				if (_tpstats.queued > _tpstats.poolSize / __flags.PFOREACH.threads_thrs) {
 					$doWait(_ts.pop())
 				}
 			}
@@ -5536,7 +5537,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 		} finally {
 			// If execution time per call is too low, go sequential
 			if ( pres.length > 1 && _nc >= 3 ) {
-				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms) {
+				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms || __getThreadPools().active / getNumberOfCores() > __flags.PFOREACH.seq_ratio) {
 					beSeq = true
 				} else {
 					beSeq = false
