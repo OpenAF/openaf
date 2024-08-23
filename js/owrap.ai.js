@@ -249,7 +249,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions = _$(aOptions, "aOptions").isMap().$_()
             aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
             aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
-            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("llama2:latest")
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("llama3.1:latest")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().$_()
 
@@ -258,6 +258,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _model = aOptions.model
             var _temperature = aOptions.temperature
             var _url = aOptions.url
+            var _params = aOptions.params
 
             var _r = {
                 conversation: [],
@@ -309,34 +310,19 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                     var uri = "/api/chat"
-                 
-                    /*var _jsonOptimize = _msgs => {
-                        if ($from(_msgs).equals("role", "system").count() == 1) {
-                            return _msgs.map(_msg => _msg.content).join(" ")
-                        } else {
-                            return _msgs
-                        }
-                    }*/
 
                     var body = {
                         model: aModel,
-                        //messages: aJsonFlag ? _jsonOptimize(msgs) : msgs,
                         messages: msgs,
-                        options: {
+                        options: merge({
                             temperature: aTemperature,
-                        },
+                        }, _params ),
                         stream: false
-                        //prompt: $from(msgs).equals("role", "user").select(r => r.content).join(";\n"),
-                        //system: $from(msgs).equals("role", "system").select(r => r.content).join(";\n"),
                     }
                     if (aJsonFlag) {
-                        body.format = "json" 
-                        /*uri = "/api/generate"
-                        body.prompt = body.messages
-                        delete body.messages*/
-                    } //else {
-                        _r.conversation = aPrompt
-                    //}
+                        body.format = "json"
+                    } 
+                    _r.conversation = aPrompt
                     return _r._request(uri, body)   
                 },
                 rawImgGen: (aPrompt, aModel) => {
