@@ -8854,7 +8854,7 @@ AF.prototype.fromJSSLON = function(aString) {
 	if (!isString(aString) || aString == "" || isNull(aString)) return {}
 
 	aString = aString.trim()
-	if (aString.startsWith("{")) {
+	if (aString.startsWith("{") || /^\[\s*\{.+\}\s*\]$/.test(aString)) {
 		return jsonParse(aString, __, __, true)
 	} else {
 		return af.fromSLON(aString)
