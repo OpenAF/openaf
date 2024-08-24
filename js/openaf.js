@@ -10260,13 +10260,13 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 				if (c == 127) {
 					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
 				} else {
-					if (c > 32 && c < 255) filter += _c
+					if (c >= 32 && c < 255) filter += _c
 				}
 				if (filter.length > 0) {
 					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 				}
 			}
-        } while (c != 13)
+        } while (c != 13 && c != 10)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printnl(repeat(_v.length, " ") + "\r")
 		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
@@ -10367,7 +10367,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 				}
 			}
-        } while (c != 13)
+        } while (c != 13 && c != 10)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printnl(repeat(_v.length, " ") + "\r")
 
