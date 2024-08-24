@@ -4598,6 +4598,7 @@ var $from = function(a) {
  * to_ms(date), timeagoAbbr(x)\
  * env(str), envs(regex)\
  * oafp(json/slon)\
+ * if(cond, then, else)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -5020,6 +5021,16 @@ const $path = function(aObj, aPath, customFunctions) {
 				return _r
 			}, 
 			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		if: {
+			_func: ar => {
+				if (ar[0]) {
+					return ar[1]
+				} else {
+					return ar[2]
+				}
+			},
+			_signature: [ { types: [ jmespath.types.boolean ] }, { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
 		},
 		ch: {
 			_func: ar => {
