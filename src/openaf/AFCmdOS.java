@@ -77,6 +77,8 @@ public class AFCmdOS extends AFCmdBase {
 	final protected static String OPTION_OJOB = "--ojob";
 	final protected static String OPTION_SCRIPTOPTION = "--script";
 	final protected static String OPTION_DAEMON = "--daemon";
+	final protected static String OPTION_BASHCOMPLETION = "--bashcompletion";
+	final protected static String OPTION_ZSHCOMPLETION = "--zshcompletion";
 	final protected static String OPTION_PIPE = "-p";
 	final protected static String OPTION_CODE = "-c";
 	final protected static String OPTION_SCRIPTFILE = "-f";
@@ -294,6 +296,12 @@ public class AFCmdOS extends AFCmdBase {
 				case OPTION_SB:
 					exprInput = a;
 					continue;
+				case OPTION_BASHCOMPLETION:
+					exprInput = a;
+					continue;
+				case OPTION_ZSHCOMPLETION:
+					exprInput = a;
+					continue;
 				case OPTION_DAEMON:
 					scriptfile = a;
 					continue;					
@@ -395,6 +403,24 @@ public class AFCmdOS extends AFCmdBase {
 				injectclass = true;
                 injectclassfile = "genSB_js";
                 continue;
+			case OPTION_BASHCOMPLETION:
+				checkNext = true;
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				checkOption = OPTION_BASHCOMPLETION;
+				injectclass = true;
+				injectclassfile = "bashcompletion_js";
+				continue;
+			case OPTION_ZSHCOMPLETION:
+				checkNext = true;
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				checkOption = OPTION_ZSHCOMPLETION;
+				injectclass = true;
+				injectclassfile = "zshcompletion_js";
+				continue;
             case OPTION_OJOB:
                 filescript = false;
                 silentMode = true;

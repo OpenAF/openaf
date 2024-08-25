@@ -11,6 +11,10 @@ help:
     example  : oaf
     mandatory: "true"
 
+ojob:
+  catch       : printErrnl("[" + job.name + "] "); if (isDef(exception.javaException)) exception.javaException.printStackTrace(); else printErr(exception)
+  logToConsole: false
+
 todo:
 - Generate completion shell script
 
@@ -19,13 +23,15 @@ jobs:
   check:
     in:
       file: isString
-  from :
+  exec : |
+    ow.template.addHelper("$p", p => p)
+  to   :
   - (pass    ):
       aYAMLFile: "{{file}}"
   - (fn      ): io.readFileYAML
     ((key   )): data
   - (print   ): |-
-      #!/bin/bash
+      #!/bin/sh
 
       # Flags
       {{#each complete}}
@@ -40,18 +46,19 @@ jobs:
 
       # Iterate over the arguments
       if [ $# -gt 0 ]; then
-        for arg in "${@:1:$#-1}"; do
+        for arg in "$@"; do
+          if [ "$arg" = "${!#}" ]; then break; fi
           {{#each complete}}
           {{#if opts.length}}
           # {{{name}}} options
           {{else}}
           # {{{name}}} single option
-          if [[ $arg == {{{name}}} ]]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
+          if [ "$arg" = "{{{name}}}" ]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{/if}}
           {{#each opts}}
-          if [[ $arg == {{{name}}} ]]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1; F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
+          if [ "$arg" = "{{{name}}}" ]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1; F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{#each opts}}
-          if [[ $arg == {{{name}}}* ]]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
+          if [ "${arg#{{{name}}}{{$p '}'}}" != "$arg" ]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{/each}}
           {{/each}}
           {{/each}}

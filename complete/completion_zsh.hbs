@@ -46,7 +46,7 @@ _{{tool}}()
     fi
 
     # Prepare the command to obtain completions
-    requestComp="${words[0]} --complete {{tool}} ${words[2,-1]}"
+    requestComp="sh {{home}}/.openaf_completion_{{tool}}.sh ${words[2,-1]}"
     if [ "${lastChar}" = "" ]; then
         # If the last parameter is complete (there is a space following it)
         # We add an extra empty parameter so we can indicate this to the go completion code.
