@@ -23,6 +23,8 @@ complete:
   desc: executes a script/opack as a daemon
 - name: --script
   desc: executes a script/opack
+- name: --force
+  desc: forces an update
 - name: --sb
   desc: generates or pre-appends openaf/ojob shebang to a js script or ojob yaml/json
 - name: -h

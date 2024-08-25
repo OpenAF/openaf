@@ -13,6 +13,7 @@ F___console=1
 F___repack=1
 F___daemon=1
 F___script=1
+F___force=1
 F___sb=1
 F__h=1
 F__v=1
@@ -46,6 +47,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "--daemon" ]; then F___daemon=0; fi
     # --script single option
     if [ "$arg" = "--script" ]; then F___script=0; fi
+    # --force single option
+    if [ "$arg" = "--force" ]; then F___force=0; fi
     # --sb single option
     if [ "$arg" = "--sb" ]; then F___sb=0; fi
     # -h single option
@@ -115,6 +118,11 @@ fi
 # Print completion for --script
 if [ $F___script -eq 1 ]; then
   echo "--script	executes a script/opack"
+  
+fi
+# Print completion for --force
+if [ $F___force -eq 1 ]; then
+  echo "--force	forces an update"
   
 fi
 # Print completion for --sb
