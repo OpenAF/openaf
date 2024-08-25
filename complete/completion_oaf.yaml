@@ -1,0 +1,33 @@
+complete:
+- name: -e
+  desc: provide input directly instead of using stdin
+- name: -c
+  desc: provide javascript code directly
+- name: -p
+  desc: received streaming input -OS pipe-
+- name: -o
+  desc: output mode -__pmOut displayed-
+- name: -f
+  desc: provide a script file directly
+- name: --install
+  desc: generates scripts to use openaf on the current directory
+- name: --check
+  desc: checks if this is the current version
+- name: --update
+  desc: updates to the most current version
+- name: --console
+  desc: interactive OpenAF console
+- name: --repack
+  desc: repack OpenAF.jar for faster startup times
+- name: --daemon
+  desc: executes a script/opack as a daemon
+- name: --script
+  desc: executes a script/opack
+- name: --sb
+  desc: generates or pre-appends openaf/ojob shebang to a js script or ojob yaml/json
+- name: -h
+  desc: show this help information
+- name: -v 
+  desc: show the version
+- name: -helpscript
+  desc: show help on a search term on scripting
