@@ -37,9 +37,9 @@ jobs:
       {{#each complete}}
       F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1
       {{#each opts}}
-      F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0
+      F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0
       {{#each opts}}
-      F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1
+      F_{{{$path ../../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1
       {{/each}}
       {{/each}}
       {{/each}}
@@ -56,9 +56,9 @@ jobs:
           if [ "$arg" = "{{{name}}}" ]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{/if}}
           {{#each opts}}
-          if [ "$arg" = "{{{name}}}" ]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1; F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
+          if [ "$arg" = "{{{name}}}" ]; then F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1; F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{#each opts}}
-          if [ "${arg#{{{name}}}{{$p '}'}}" != "$arg" ]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
+          if [ "${arg#{{{name}}}{{$p '}'}}" != "$arg" ]; then F_{{{$path ../../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{/each}}
           {{/each}}
           {{/each}}
@@ -76,9 +76,9 @@ jobs:
       fi
       {{#each opts}}
       {{#if opts.length}}
-      if [ $F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}} -eq 1 ]; then
+      if [ $F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}} -eq 1 ]; then
         {{#each opts}}
-        if [ $F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}} -eq 1 ]; then
+        if [ $F_{{{$path ../../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}} -eq 1 ]; then
           echo "{{{name}}}	{{{desc}}}"
         fi
         {{/each}}

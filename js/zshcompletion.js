@@ -17,11 +17,13 @@ case "oafp"  :
     io.writeFileString(homeDir + "/.openaf_completion_oafp.sh", shell2)
     print(shell1)
     break
-/*case "opack" :
-    var shell1 = io.readFileString(getOpenAFJar() + "::complete/completion_zsh.hbs").replace(/{{tool}}/g, "opack")
-    break*/
+case "opack" :
+    var shell1 = io.readFileString(getOpenAFJar() + "::complete/completion_zsh.hbs").replace(/{{tool}}/g, "opack").replace(/{{home}}/g, homeDir)
+    var shell2 = io.readFileString(getOpenAFJar() + "::complete/completion_opack.sh")
+    io.writeFileString(homeDir + "/.openaf_completion_opack.sh", shell2)
+    print(shell1)
+    break
 default: 
-    logErr("Unknown completion target: " + expr)
 }
 
 exit(0, true)
