@@ -55,6 +55,7 @@ jobs:
    - name : Prepare shell complete
      deps : 
      - Repack OpenAFOS
+     - Prepare ojob doc
      exec : |
        sleep(1000, true)
 
