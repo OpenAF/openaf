@@ -8730,11 +8730,11 @@ __YAMLformat = {
 };
 /**
  * <odoc>
- * <key>AF.toYAML(aJson, multiDoc, sanitize) : String</key>
+ * <key>AF.toYAML(aJson, multiDoc, sanitize, shouldColor) : String</key>
  * Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array the output will be multi-document. If sanitize = true all Java objects will be converted to avoid parsing errors.
  * </odoc>
  */
-AF.prototype.toYAML = function(aJson, multiDoc, sanitize) { 
+AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) { 
 	loadJSYAML()
 	if (sanitize) {
 		aJson = clone(aJson)
@@ -8743,11 +8743,50 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize) {
 		})
 	}
     var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth }
+	var _r
 	if (isArray(aJson) && multiDoc) {
-		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n")
+		_r = aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n")
 	} else {
-		return jsyaml.dump(aJson, o)
+		_r = jsyaml.dump(aJson, o)
 	}
+	if (shouldColor) {
+		var fn = (o, s) => {
+			s = s.trim()
+			if (s == "true" || s == "false") s = toBoolean(s)
+			switch(descType(s)) {
+			case "string": return ansiColor(__colorFormat.string, o)
+			case "number": return ansiColor(__colorFormat.number, o)
+			case "boolean": return ansiColor(__colorFormat.boolean, o)
+			case "date": return ansiColor(__colorFormat.date, o)
+			default: return o
+			} 
+		}
+		_r = pForEach(_r.split("\n"), s => {
+			var change = false
+			if (/^(\-|\s+\-)/.test(s)) {
+				// array
+				s = s.replace(/^(\-|\s+\-)(.+)/, ansiColor(__colorFormat.default, "$1") + fn("$2", s.replace(/^(\-|\s+\-)(.+)/, "$2")))
+				change = true
+			}
+			if (!change && /^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/.test(s)) {
+				// key
+				s = s.replace(/^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, ansiColor(__colorFormat.key, "$1:") + "$2" + fn("$3", s.replace(/^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, "$3")))
+				change = true
+			}
+			if (/((\#|\/\/)+.+)$/.test(s)) {
+				// comment
+				s = s.replace(/((\#|\/\/)+.+)$/, ansiColor("faint,italic", "$1"))	
+				change = true
+			}
+			if (!change) {
+				// default
+				s = ansiColor(__colorFormat.default, s)
+			}
+
+			return s
+		}).join("\n")
+	}
+	return _r
 }
 
 /**
@@ -12575,6 +12614,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			return fnP(af.fromObj2XML(res, true))
 		case "yaml":
 			return fnP(af.toYAML(res, __, true))
+		case "cyaml":
+			return fnP(af.toYAML(res, __, true, true))
 		case "table":
 			if (isMap(res)) res = [res]
 			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __)))
