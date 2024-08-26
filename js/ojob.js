@@ -459,6 +459,52 @@ function ojob_completion() {
 		{ name: "-global", desc: "List global jobs for this installation." },
 		{ name: "-shortcuts", desc: "Lists the included ojob shortcuts." }
 	]
-	print(opts.map(r => r.name + "\t" + r.desc).join("\n"))
+
+	var checked = false
+	// Check for authorized domains
+	OJOB_AUTHORIZEDDOMAINS.forEach(domain =>
+		Object.keys(params).filter(r => r.startsWith(domain)).forEach(r => {
+			try {
+				var _l = new Set()
+				var _d
+				if (!io.fileExists(__gHDir() + "/.openaf_completion_" + domain + ".json") &&
+					io.fileInfo(__gHDir() + "/.openaf_completion_" + domain + ".json").lastModified < (new Date().getTime() - 86400000)) {
+					_d = $rest().get("https://" + domain + "/_integrity.json")
+					io.writeFileJSON(__gHDir() + "/.openaf_completion_" + domain + ".json", _d)
+				} else {
+					_d = io.readFileJSON(__gHDir() + "/.openaf_completion_" + domain + ".json")
+				}
+				
+				if (Object.keys(_d).indexOf(r.replace(domain + "/", "./")) >= 0) {
+					checked = false
+					opts.push({ name: r })
+				} else {
+					checked = true
+					Object.keys(_d).filter(r => /[^(\.html|\.json|\.md|\.yaml|\.bat|\.sh)]$/.test(r)).forEach(k => _l.add({ name: k.replace(/^\./, domain) }))
+					opts = opts.concat(Array.from(_l))
+				}
+			} catch(e) {
+			}
+		})
+	)
+
+	// Check local
+	if (!checked) {
+		Object.keys(params).filter(r => !r.startsWith("-")).forEach(r => {
+			try {
+				if (io.fileExists(r)) {
+					var _d = r.endsWith(".json") ? io.readFileJSON(r) : io.readFileYAML(r)
+					if (isDef(_d) && isMap(_d.help) && isArray(_d.help.expects)) {
+						_d.help.expects.forEach(e => {
+							opts.push({ name: e.name+"=", desc: e.desc })
+						})
+					}
+				}
+			} catch(e) {
+			}
+		})
+	}
+
+	print(opts.map(r => r.name + (isDef(r.desc) ? "\t" + r.desc : "")).join("\n"))
 	print(":4")
 }
