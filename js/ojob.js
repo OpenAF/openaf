@@ -16,6 +16,11 @@ if (kparams.indexOf("-h") >= 0 && params["-h"] == "") {
 	ojob_showHelp();
 }
 
+if (kparams.indexOf("-completion") >= 0 && params["-completion"] == "") {
+	delete params["-completion"];
+	ojob_completion()
+}
+
 if (kparams.indexOf("-syntax") >= 0 && params["-syntax"] == "") {
 	delete params["-syntax"]
 	ojob_showSyntax()
@@ -436,4 +441,24 @@ function ojob_runFile() {
 			oJobRunFile(file, ojob_args, __, (nocolor) ? { conAnsi: false } : __);
 		}
 	}
+}
+
+function ojob_completion() {
+	ojob_shouldRun = false
+	var opts = [
+		{ name: "-compile", desc: "Compile all includes and current file into a single yaml output." },
+		{ name: "-tojson", desc: "Outputs all includes and current file into a single json output." },
+		{ name: "-json", desc: "Sets argument __format to 'json' for used with ow.oJob.output." },
+		{ name: "-gb64json", desc: "Sets argument __format to 'gb64json' for used with ow.oJob.output." },
+		{ name: "-jobs", desc: "List all jobs available." },
+		{ name: "-todo", desc: "List the final todo list." },
+		{ name: "-deps", desc: "Draws a list of dependencies of todo jobs on a file." },
+		{ name: "-jobhelp", desc: "Display any available help information for a job." },
+		{ name: "-syntax", desc: "Display the ojob syntax in yaml." },
+		{ name: "-which", desc: "Determines from where an oJob will be loaded from." },
+		{ name: "-global", desc: "List global jobs for this installation." },
+		{ name: "-shortcuts", desc: "Lists the included ojob shortcuts." }
+	]
+	print(opts.map(r => r.name + "\t" + r.desc).join("\n"))
+	print(":4")
 }

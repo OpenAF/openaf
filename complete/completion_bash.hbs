@@ -23,7 +23,7 @@ __{{tool}}_get_completion_results() {
     # Prepare the command to request completions for the program.
     # Calling ${words[0]} instead of directly {{tool}} allows handling aliases
     args=("${words[@]:1}")
-    requestComp="sh {{home}}/.openaf_completion_{{tool}}.sh ${args[*]}"
+    requestComp="{{request}} ${args[*]}"
 
     lastParam=${words[$((${#words[@]}-1))]}
     lastChar=${lastParam:$((${#lastParam}-1)):1}

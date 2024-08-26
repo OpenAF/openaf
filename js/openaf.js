@@ -8763,13 +8763,20 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) {
 		}
 		_r = pForEach(_r.split("\n"), s => {
 			var change = false
-			if (/^(\-|\s+\-)/.test(s)) {
+			if (!change && /^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +)?(.*)?/.test(s)) {
+				// key in array
+				if (!/^(\-|\s+\-)\s+['"][^'"]+:/.test(s.trim())) {
+					s = s.replace(/^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, ansiColor(__colorFormat.key, "$1") + ansiColor(__colorFormat.key, "$2:") + "$3" + fn("$4", s.replace(/^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, "$4")))
+					change = true
+				}
+			}
+			if (!change && /^(\-|\s+\-)/.test(s)) {
 				// array
 				s = s.replace(/^(\-|\s+\-)(.+)/, ansiColor(__colorFormat.default, "$1") + fn("$2", s.replace(/^(\-|\s+\-)(.+)/, "$2")))
 				change = true
 			}
 			if (!change && /^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/.test(s)) {
-				// key
+				// key with value
 				s = s.replace(/^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, ansiColor(__colorFormat.key, "$1:") + "$2" + fn("$3", s.replace(/^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, "$3")))
 				change = true
 			}
