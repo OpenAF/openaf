@@ -394,11 +394,11 @@ const cprint = function(str, delim) { ansiStart(); print(colorify(str)); ansiSto
 
 /**
  * <odoc>
- * <key>yprint(aObj, multidoc, sanitize)</key>
+ * <key>yprint(aObj, multidoc, sanitize, shouldColor)</key>
  * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document. If sanitize = true all Java objects will be converted to avoid parsing errors.
  * </odoc>
  */
-const yprint = function(str, multidoc, sanitize) { return print(af.toYAML(str, multidoc, sanitize)); }
+const yprint = function(str, multidoc, sanitize, shouldColor) { return print(af.toYAML(str, multidoc, sanitize, shouldColor)); }
 
 /**
  * <odoc>
