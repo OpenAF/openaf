@@ -6,9 +6,9 @@ complete:
   - name: in=ask       
     desc: Interactively asks questions to an user -using JSON/SLON for OpenAF's askStruct-
   - name: in=base64
-    desc: A base64 text format
+    desc: A base64 text input format
   - name: in=ch
-    desc: An OpenAF channel format
+    desc: An OpenAF channel input format
     opts:
     - name: inch        
       desc: A JSON/SLON configuration string with type and options/url
@@ -85,14 +85,14 @@ complete:
     - name: lsposix=
       desc: Tries to add extra posix data if available -for ZIP files-
   - name: in=md
-    desc: A Markdown format
+    desc: A Markdown input format
     opts:
     - name: inmdtablejoin=
       desc: Scans an entire markdown input for tables and returns an array with the data of each markdown table
   - name: in=mdtable
     desc: A Markdown table format
   - name: in=ndjson
-    desc: A NDJSON format
+    desc: A NDJSON input format
     opts:
     - name: ndjsonjoin=  
       desc: If true will join the ndjson records to build an output array
@@ -154,12 +154,12 @@ complete:
   opts:
   # oafp ../oafp/data/usage.json path="[3][].{name:concat-'in=',\"Output format\"-,desc:replace-Description,'[\-\-]','g','-'-}" out=yaml
   - name: out=base64   
-    desc: A base64 text format
+    desc: A base64 text output format
     opts:
     - name: base64gzip= 
       desc: If true the contents will thet gzip/gunzip respectively to reduce the size of the base64 output
   - name: out=ch
-    desc: An OpenAF channel format
+    desc: An OpenAF channel output format
     opts:
     - name: ch=         
       desc: A JSON/SLON configuration string with type and options/url
@@ -281,7 +281,7 @@ complete:
   - name: out=map
     desc: A rectangle map format
   - name: out=md
-    desc: A Markdown format
+    desc: An output Markdown format
     opts:
     - name: mdtemplate=
       desc: If true will apply a template output without any input data
@@ -290,7 +290,7 @@ complete:
   - name: out=mdyaml
     desc: A multi document YAML format -only for list outputs-
   - name: out=ndjson
-    desc: A NDJSON format
+    desc: A NDJSON output format
   - name: out=openmetrics
     desc: Converts a map or list to OpenMetrics/Prometheus compatible format
     opts:
