@@ -1574,7 +1574,7 @@ if (java.lang.System.getenv().get("OAF_CONSOLE") != null) {
 	}
 }
 if (isUnDef(__conConsole)) {
-	__conConsole = java.lang.System.console() != null && java.lang.System.console().isTerminal()
+	__conConsole = java.lang.System.console() != null
 }
 
 function __initializeCon() {
