@@ -1574,7 +1574,7 @@ if (java.lang.System.getenv().get("OAF_CONSOLE") != null) {
 	}
 }
 if (isUnDef(__conConsole)) {
-	__conConsole = java.lang.System.console() != null
+	__conConsole = java.lang.System.console() != null && java.lang.System.console().isTerminal()
 }
 
 function __initializeCon() {
@@ -1606,7 +1606,7 @@ function __initializeCon() {
 			return false;
 		}
 	} else {
-		while(__con == "") sleep(25, true);
+		while(__con == "" && __conConsole) sleep(25, true)
 		__conStatus = true;
 		__conAnsi = (isDef(__conAnsi) ? __conAnsi : true);
 		if (__conAnsi == true) __ansiColorFlag = true;
