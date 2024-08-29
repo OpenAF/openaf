@@ -30,7 +30,7 @@ jobs:
       aYAMLFile: "{{file}}"
   - (fn      ): io.readFileYAML
     ((key   )): data
-  - (print   ): |-
+  - (template): |-
       #!/bin/sh
 
       # Flags
@@ -90,3 +90,8 @@ jobs:
       # end
       echo :4
     ((key   )): data
+    ((out   )): out
+  - (if      ): "'{{keyout}}' != 'true'"
+    ((then  )):
+    - (output  ): out
+      ((path  )): output

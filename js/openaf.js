@@ -641,8 +641,8 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 
     aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
-    hSize   = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
-	vSize   = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
+    if (isDef(__con)) hSize   = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+	if (isDef(__con)) vSize   = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
 	options = _$(options, "options").isMap().default({})
 
     if (type == "clean" && name != "__") {
@@ -754,7 +754,7 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 
     aMax  = _$(aMax, "aMax").isNumber().default(__)
 	aMin  = _$(aMin, "aMin").isNumber().default(__)
-    hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+    if (isDef(__con)) hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
 
 	aIndicatorChar = _$(aIndicatorChar, "aIndicatorChar").isString().default("━")
 	aSpaceChar     = _$(aSpaceChar, "aSpaceChar").isString().default(" ")
@@ -886,7 +886,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		} else {
 			if (__initializeCon()) {
 				if (!ansiWinTermCap()) ansiStart();
-				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
+				if (isDef(__con) && isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
 				}
@@ -1087,7 +1087,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 
     _aPrefix  = _$(_aPrefix, "aPrefix").isString().default("")
     _aWidth   = _$(_aWidth, "aWidth").isNumber().default(__)
-    if (isUnDef(_aWidth)) _aWidth = Number(__con.getTerminal().getWidth())
+    if (isUnDef(_aWidth) && isDef(__con)) _aWidth = Number(__con.getTerminal().getWidth())
 
     // Prepare aux functions
     var _clr = __, _ac = __, _al = __
@@ -1338,7 +1338,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 		} else {
 			if (__initializeCon()) {
 				if (!ansiWinTermCap()) ansiStart();
-				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
+				if (isDef(__con) && isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
 				}
@@ -1544,7 +1544,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 		}
 	}
 	
-	aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 2);
+	if (isDef(__con)) aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 2);
 	Packages.openaf.asciitable.render.WidthAnsiLongestWordTab.setCallback(function(str) { return visibleLength(str) })
 	var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
 	rt.setTheme(aTheme);
@@ -1590,7 +1590,7 @@ function __initializeCon() {
 		return true;
 	}
 	
-	if (isUnDef(__con) && isUnDef(global.__engineScript)) {
+	if (isUnDef(__con) && isUnDef(global.__engineScript) && __conConsole) {
 		__con = "";
 		plugin("Console");
 		try {
@@ -12629,13 +12629,13 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			break
 		case "stable":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
 		case "ctable":
 			__ansiColorFlag = true
 			__conConsole = true
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, false, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, false, true))
 			break
 		case "tree":
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))

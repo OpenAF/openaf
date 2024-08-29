@@ -9,7 +9,9 @@ case "oaf"   :
     print(shell1)
     break
 case "ojob"  :
-    var shell1 = io.readFileString(getOpenAFJar() + "::complete/completion_bash.hbs").replace(/{{request}}/g, getOpenAFPath() + "ojob -completion").replace(/{{tool}}/g, "ojob").replace(/{{home}}/g, homeDir)
+    var shell1 = io.readFileString(getOpenAFJar() + "::complete/completion_bash.hbs").replace(/{{request}}/g, "sh {{home}}/.openaf_completion_{{tool}}.sh").replace(/{{tool}}/g, "ojob").replace(/{{home}}/g, homeDir)
+    oJobRunFile(getOpenAFJar() + "::complete/completion.yaml", { file: getOpenAFJar() + "::complete/completion_ojob.yaml", tool: "ojob", keyout: "true" })
+    io.writeFileString(homeDir + "/.openaf_completion_ojob.sh", $get("out").output)
     print(shell1)
     break
 case "oafp"  :
