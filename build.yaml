@@ -100,6 +100,7 @@ jobs:
        fnCp(global.path + "/complete/completion_oaf.yaml", "complete/completion_oaf.yaml", true)
        fnCp(global.path + "/complete/completion_oafp.yaml", "complete/completion_oafp.yaml", true)
        fnCp(global.path + "/complete/completion_opack.yaml", "complete/completion_opack.yaml", true)
+       fnCp(global.path + "/complete/completion_ojob.yaml", "complete/completion_ojob.yaml") 
 
    # -------------------------
    - name : Prepare ojob saved
