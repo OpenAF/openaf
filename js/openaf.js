@@ -641,8 +641,8 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 
     aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
-    if (isDef(__con)) hSize   = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
-	if (isDef(__con)) vSize   = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
+    hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
+	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
 	options = _$(options, "options").isMap().default({})
 
     if (type == "clean" && name != "__") {
@@ -754,7 +754,7 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 
     aMax  = _$(aMax, "aMax").isNumber().default(__)
 	aMin  = _$(aMin, "aMin").isNumber().default(__)
-    if (isDef(__con)) hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+    hSize = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
 
 	aIndicatorChar = _$(aIndicatorChar, "aIndicatorChar").isString().default("━")
 	aSpaceChar     = _$(aSpaceChar, "aSpaceChar").isString().default(" ")
@@ -1544,7 +1544,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 		}
 	}
 	
-	if (isDef(__con)) aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 2);
+	aWidth = _$(aWidth).isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth() - 2);
 	Packages.openaf.asciitable.render.WidthAnsiLongestWordTab.setCallback(function(str) { return visibleLength(str) })
 	var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
 	rt.setTheme(aTheme);
@@ -1590,7 +1590,7 @@ function __initializeCon() {
 		return true;
 	}
 	
-	if (isUnDef(__con) && isUnDef(global.__engineScript) && __conConsole) {
+	if (isUnDef(__con) && isUnDef(global.__engineScript)) {
 		__con = "";
 		plugin("Console");
 		try {
@@ -12622,6 +12622,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "yaml":
 			return fnP(af.toYAML(res, __, true))
 		case "cyaml":
+			__ansiColorFlag = true
+			__conConsole = true
 			return fnP(af.toYAML(res, __, true, true))
 		case "table":
 			if (isMap(res)) res = [res]

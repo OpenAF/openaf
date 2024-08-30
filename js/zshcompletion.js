@@ -1,5 +1,6 @@
 var homeDir = __gHDir()
 __bfprintFlag = false
+__conStatus = false
 
 switch(expr) {
 case "oaf"   :
