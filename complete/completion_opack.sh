@@ -31,47 +31,48 @@ F__cred=1
 
 # Iterate over the arguments
 if [ $# -gt 0 ]; then
+  FFOUND=0
   for arg in "$@"; do
-    if [ "$arg" = "${!#}" ]; then break; fi
+    if [ "$arg" = "${!#}" ]; then FFOUND=1; break; fi
     # info single option
-    if [ "$arg" = "info" ]; then F_info=0; fi
+    if [ "$arg" = "info" ]; then FFOUND=1; F_info=0; fi
     # search single option
-    if [ "$arg" = "search" ]; then F_search=0; fi
+    if [ "$arg" = "search" ]; then FFOUND=1; F_search=0; fi
     # install options
-    if [ "$arg" = "-d" ]; then F_install__d=1; F_install=0; fi
-    if [ "$arg" = "-force" ]; then F_install__force=1; F_install=0; fi
-    if [ "$arg" = "-repo" ]; then F_install__repo=1; F_install=0; fi
-    if [ "$arg" = "-deps" ]; then F_install__deps=1; F_install=0; fi
-    if [ "$arg" = "-useunzip" ]; then F_install__useunzip=1; F_install=0; fi
-    if [ "$arg" = "-noverify" ]; then F_install__noverify=1; F_install=0; fi
-    if [ "$arg" = "-arg" ]; then F_install__arg=1; F_install=0; fi
+    if [ "$arg" = "-d" ]; then FFOUND=1; F_install__d=1; F_install=0; fi
+    if [ "$arg" = "-force" ]; then FFOUND=1; F_install__force=1; F_install=0; fi
+    if [ "$arg" = "-repo" ]; then FFOUND=1; F_install__repo=1; F_install=0; fi
+    if [ "$arg" = "-deps" ]; then FFOUND=1; F_install__deps=1; F_install=0; fi
+    if [ "$arg" = "-useunzip" ]; then FFOUND=1; F_install__useunzip=1; F_install=0; fi
+    if [ "$arg" = "-noverify" ]; then FFOUND=1; F_install__noverify=1; F_install=0; fi
+    if [ "$arg" = "-arg" ]; then FFOUND=1; F_install__arg=1; F_install=0; fi
     # erase options
-    if [ "$arg" = "-force" ]; then F_erase__force=1; F_erase=0; fi
-    if [ "$arg" = "-arg" ]; then F_erase__arg=1; F_erase=0; fi
+    if [ "$arg" = "-force" ]; then FFOUND=1; F_erase__force=1; F_erase=0; fi
+    if [ "$arg" = "-arg" ]; then FFOUND=1; F_erase__arg=1; F_erase=0; fi
     # update options
-    if [ "$arg" = "-all" ]; then F_update__all=1; F_update=0; fi
-    if [ "$arg" = "-noerase" ]; then F_update__noerase=1; F_update=0; fi
-    if [ "$arg" = "-erasefolder" ]; then F_update__erasefolder=1; F_update=0; fi
+    if [ "$arg" = "-all" ]; then FFOUND=1; F_update__all=1; F_update=0; fi
+    if [ "$arg" = "-noerase" ]; then FFOUND=1; F_update__noerase=1; F_update=0; fi
+    if [ "$arg" = "-erasefolder" ]; then FFOUND=1; F_update__erasefolder=1; F_update=0; fi
     # exec single option
-    if [ "$arg" = "exec" ]; then F_exec=0; fi
+    if [ "$arg" = "exec" ]; then FFOUND=1; F_exec=0; fi
     # list single option
-    if [ "$arg" = "list" ]; then F_list=0; fi
+    if [ "$arg" = "list" ]; then FFOUND=1; F_list=0; fi
     # pack single option
-    if [ "$arg" = "pack" ]; then F_pack=0; fi
+    if [ "$arg" = "pack" ]; then FFOUND=1; F_pack=0; fi
     # genpack single option
-    if [ "$arg" = "genpack" ]; then F_genpack=0; fi
+    if [ "$arg" = "genpack" ]; then FFOUND=1; F_genpack=0; fi
     # add2db single option
-    if [ "$arg" = "add2db" ]; then F_add2db=0; fi
+    if [ "$arg" = "add2db" ]; then FFOUND=1; F_add2db=0; fi
     # remove4db single option
-    if [ "$arg" = "remove4db" ]; then F_remove4db=0; fi
+    if [ "$arg" = "remove4db" ]; then FFOUND=1; F_remove4db=0; fi
     # script single option
-    if [ "$arg" = "script" ]; then F_script=0; fi
+    if [ "$arg" = "script" ]; then FFOUND=1; F_script=0; fi
     # daemon single option
-    if [ "$arg" = "daemon" ]; then F_daemon=0; fi
+    if [ "$arg" = "daemon" ]; then FFOUND=1; F_daemon=0; fi
     # ojob single option
-    if [ "$arg" = "ojob" ]; then F_ojob=0; fi
+    if [ "$arg" = "ojob" ]; then FFOUND=1; F_ojob=0; fi
     # -cred single option
-    if [ "$arg" = "-cred" ]; then F__cred=0; fi
+    if [ "$arg" = "-cred" ]; then FFOUND=1; F__cred=0; fi
   done
 fi
 
@@ -164,5 +165,9 @@ if [ $F__cred -eq 1 ]; then
 fi
 
 # end
-echo :4
+if [ $FFOUND -eq 0 ]; then
+  echo :4
+else
+  echo :2
+fi
 

@@ -96,6 +96,7 @@ F_out__out_csv_withEscape_=1
 F_out__out_csv_withNullString_=1
 F_out__out_ctable=0
 F_out__out_ctree=0
+F_out__out_cyaml=0
 F_out__out_db=0
 F_out__out_db_dbjdbc_=1
 F_out__out_db_dbuser_=1
@@ -152,6 +153,7 @@ F_out__out_template=0
 F_out__out_template_template_=1
 F_out__out_template_templatepath_=1
 F_out__out_template_templatedata_=1
+F_out__out_text=0
 F_out__out_toml=0
 F_out__out_tree=0
 F_out__out_xls=0
@@ -238,289 +240,292 @@ F_trim_=1
 
 # Iterate over the arguments
 if [ $# -gt 0 ]; then
+  FFOUND=0
   for arg in "$@"; do
-    if [ "$arg" = "${!#}" ]; then break; fi
+    if [ "$arg" = "${!#}" ]; then FFOUND=1; break; fi
     # in= options
-    if [ "$arg" = "in=ask" ]; then F_in__in_ask=1; F_in_=0; fi
-    if [ "$arg" = "in=base64" ]; then F_in__in_base64=1; F_in_=0; fi
-    if [ "$arg" = "in=ch" ]; then F_in__in_ch=1; F_in_=0; fi
-    if [ "${arg#inch}" != "$arg" ]; then F_in__in_ch_inch=0; fi
-    if [ "${arg#inchall}" != "$arg" ]; then F_in__in_ch_inchall=0; fi
-    if [ "$arg" = "in=csv" ]; then F_in__in_csv=1; F_in_=0; fi
-    if [ "${arg#csv=}" != "$arg" ]; then F_in__in_csv_csv_=0; fi
-    if [ "$arg" = "in=db" ]; then F_in__in_db=1; F_in_=0; fi
-    if [ "${arg#indbjdbc=}" != "$arg" ]; then F_in__in_db_indbjdbc_=0; fi
-    if [ "${arg#indbuser=}" != "$arg" ]; then F_in__in_db_indbuser_=0; fi
-    if [ "${arg#indbpass=}" != "$arg" ]; then F_in__in_db_indbpass_=0; fi
-    if [ "${arg#indbtimeout=}" != "$arg" ]; then F_in__in_db_indbtimeout_=0; fi
-    if [ "${arg#indblib=}" != "$arg" ]; then F_in__in_db_indblib_=0; fi
-    if [ "${arg#indbexec=}" != "$arg" ]; then F_in__in_db_indbexec_=0; fi
-    if [ "$arg" = "in=gb64json" ]; then F_in__in_gb64json=1; F_in_=0; fi
-    if [ "$arg" = "in=hsperf" ]; then F_in__in_hsperf=1; F_in_=0; fi
-    if [ "$arg" = "in=ini" ]; then F_in__in_ini=1; F_in_=0; fi
-    if [ "$arg" = "in=json" ]; then F_in__in_json=1; F_in_=0; fi
-    if [ "${arg#jsondesc=}" != "$arg" ]; then F_in__in_json_jsondesc_=0; fi
-    if [ "${arg#jsonprefix=}" != "$arg" ]; then F_in__in_json_jsonprefix_=0; fi
-    if [ "$arg" = "in=jsonschema" ]; then F_in__in_jsonschema=1; F_in_=0; fi
-    if [ "$arg" = "in=jwt" ]; then F_in__in_jwt=1; F_in_=0; fi
-    if [ "${arg#injwtverify=}" != "$arg" ]; then F_in__in_jwt_injwtverify_=0; fi
-    if [ "${arg#injwtsecret=}" != "$arg" ]; then F_in__in_jwt_injwtsecret_=0; fi
-    if [ "${arg#injwtpubkey=}" != "$arg" ]; then F_in__in_jwt_injwtpubkey_=0; fi
-    if [ "${arg#injwtalg=}" != "$arg" ]; then F_in__in_jwt_injwtalg_=0; fi
-    if [ "${arg#injwtraw=}" != "$arg" ]; then F_in__in_jwt_injwtraw_=0; fi
-    if [ "$arg" = "in=lines" ]; then F_in__in_lines=1; F_in_=0; fi
-    if [ "${arg#linesjoin=}" != "$arg" ]; then F_in__in_lines_linesjoin_=0; fi
-    if [ "${arg#linesvisual=}" != "$arg" ]; then F_in__in_lines_linesvisual_=0; fi
-    if [ "${arg#linesvisualsepre=}" != "$arg" ]; then F_in__in_lines_linesvisualsepre_=0; fi
-    if [ "$arg" = "in=llm" ]; then F_in__in_llm=1; F_in_=0; fi
-    if [ "$arg" = "in=llmmodels" ]; then F_in__in_llmmodels=1; F_in_=0; fi
-    if [ "$arg" = "in=ls" ]; then F_in__in_ls=1; F_in_=0; fi
-    if [ "${arg#lsext=}" != "$arg" ]; then F_in__in_ls_lsext_=0; fi
-    if [ "${arg#lsrecursive=}" != "$arg" ]; then F_in__in_ls_lsrecursive_=0; fi
-    if [ "${arg#lsposix=}" != "$arg" ]; then F_in__in_ls_lsposix_=0; fi
-    if [ "$arg" = "in=md" ]; then F_in__in_md=1; F_in_=0; fi
-    if [ "${arg#inmdtablejoin=}" != "$arg" ]; then F_in__in_md_inmdtablejoin_=0; fi
-    if [ "$arg" = "in=mdtable" ]; then F_in__in_mdtable=1; F_in_=0; fi
-    if [ "$arg" = "in=ndjson" ]; then F_in__in_ndjson=1; F_in_=0; fi
-    if [ "${arg#ndjsonjoin=}" != "$arg" ]; then F_in__in_ndjson_ndjsonjoin_=0; fi
-    if [ "${arg#ndjsonfilter=}" != "$arg" ]; then F_in__in_ndjson_ndjsonfilter_=0; fi
-    if [ "$arg" = "in=oaf" ]; then F_in__in_oaf=1; F_in_=0; fi
-    if [ "$arg" = "in=oafp" ]; then F_in__in_oafp=1; F_in_=0; fi
-    if [ "$arg" = "in=openmetrics" ]; then F_in__in_openmetrics=1; F_in_=0; fi
-    if [ "$arg" = "in=raw" ]; then F_in__in_raw=1; F_in_=0; fi
-    if [ "$arg" = "in=rawhex" ]; then F_in__in_rawhex=1; F_in_=0; fi
-    if [ "${arg#inrawhexline=}" != "$arg" ]; then F_in__in_rawhex_inrawhexline_=0; fi
-    if [ "$arg" = "in=sh" ]; then F_in__in_sh=1; F_in_=0; fi
-    if [ "${arg#inshformat=}" != "$arg" ]; then F_in__in_sh_inshformat_=0; fi
-    if [ "$arg" = "in=slon" ]; then F_in__in_slon=1; F_in_=0; fi
-    if [ "$arg" = "in=sql" ]; then F_in__in_sql=1; F_in_=0; fi
-    if [ "${arg#sqlparse=}" != "$arg" ]; then F_in__in_sql_sqlparse_=0; fi
-    if [ "${arg#sqloptions=}" != "$arg" ]; then F_in__in_sql_sqloptions_=0; fi
-    if [ "$arg" = "in=toml" ]; then F_in__in_toml=1; F_in_=0; fi
-    if [ "$arg" = "in=xls" ]; then F_in__in_xls=1; F_in_=0; fi
-    if [ "${arg#xlssheet=}" != "$arg" ]; then F_in__in_xls_xlssheet_=0; fi
-    if [ "${arg#xlsevalformulas=}" != "$arg" ]; then F_in__in_xls_xlsevalformulas_=0; fi
-    if [ "${arg#xlscol=}" != "$arg" ]; then F_in__in_xls_xlscol_=0; fi
-    if [ "${arg#xlsrow=}" != "$arg" ]; then F_in__in_xls_xlsrow_=0; fi
-    if [ "$arg" = "in=xml" ]; then F_in__in_xml=1; F_in_=0; fi
-    if [ "${arg#xmlignored=}" != "$arg" ]; then F_in__in_xml_xmlignored_=0; fi
-    if [ "${arg#xmlprefix=}" != "$arg" ]; then F_in__in_xml_xmlprefix_=0; fi
-    if [ "${arg#xmlfiltertag=}" != "$arg" ]; then F_in__in_xml_xmlfiltertag_=0; fi
-    if [ "$arg" = "in=yaml" ]; then F_in__in_yaml=1; F_in_=0; fi
+    if [ "$arg" = "in=ask" ]; then FFOUND=1; F_in__in_ask=1; F_in_=0; fi
+    if [ "$arg" = "in=base64" ]; then FFOUND=1; F_in__in_base64=1; F_in_=0; fi
+    if [ "$arg" = "in=ch" ]; then FFOUND=1; F_in__in_ch=1; F_in_=0; fi
+    if [ "${arg#inch}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inch=0; fi
+    if [ "${arg#inchall}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inchall=0; fi
+    if [ "$arg" = "in=csv" ]; then FFOUND=1; F_in__in_csv=1; F_in_=0; fi
+    if [ "${arg#csv=}" != "$arg" ]; then FFOUND=1; F_in__in_csv_csv_=0; fi
+    if [ "$arg" = "in=db" ]; then FFOUND=1; F_in__in_db=1; F_in_=0; fi
+    if [ "${arg#indbjdbc=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbjdbc_=0; fi
+    if [ "${arg#indbuser=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbuser_=0; fi
+    if [ "${arg#indbpass=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbpass_=0; fi
+    if [ "${arg#indbtimeout=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbtimeout_=0; fi
+    if [ "${arg#indblib=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indblib_=0; fi
+    if [ "${arg#indbexec=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbexec_=0; fi
+    if [ "$arg" = "in=gb64json" ]; then FFOUND=1; F_in__in_gb64json=1; F_in_=0; fi
+    if [ "$arg" = "in=hsperf" ]; then FFOUND=1; F_in__in_hsperf=1; F_in_=0; fi
+    if [ "$arg" = "in=ini" ]; then FFOUND=1; F_in__in_ini=1; F_in_=0; fi
+    if [ "$arg" = "in=json" ]; then FFOUND=1; F_in__in_json=1; F_in_=0; fi
+    if [ "${arg#jsondesc=}" != "$arg" ]; then FFOUND=1; F_in__in_json_jsondesc_=0; fi
+    if [ "${arg#jsonprefix=}" != "$arg" ]; then FFOUND=1; F_in__in_json_jsonprefix_=0; fi
+    if [ "$arg" = "in=jsonschema" ]; then FFOUND=1; F_in__in_jsonschema=1; F_in_=0; fi
+    if [ "$arg" = "in=jwt" ]; then FFOUND=1; F_in__in_jwt=1; F_in_=0; fi
+    if [ "${arg#injwtverify=}" != "$arg" ]; then FFOUND=1; F_in__in_jwt_injwtverify_=0; fi
+    if [ "${arg#injwtsecret=}" != "$arg" ]; then FFOUND=1; F_in__in_jwt_injwtsecret_=0; fi
+    if [ "${arg#injwtpubkey=}" != "$arg" ]; then FFOUND=1; F_in__in_jwt_injwtpubkey_=0; fi
+    if [ "${arg#injwtalg=}" != "$arg" ]; then FFOUND=1; F_in__in_jwt_injwtalg_=0; fi
+    if [ "${arg#injwtraw=}" != "$arg" ]; then FFOUND=1; F_in__in_jwt_injwtraw_=0; fi
+    if [ "$arg" = "in=lines" ]; then FFOUND=1; F_in__in_lines=1; F_in_=0; fi
+    if [ "${arg#linesjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesjoin_=0; fi
+    if [ "${arg#linesvisual=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisual_=0; fi
+    if [ "${arg#linesvisualsepre=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisualsepre_=0; fi
+    if [ "$arg" = "in=llm" ]; then FFOUND=1; F_in__in_llm=1; F_in_=0; fi
+    if [ "$arg" = "in=llmmodels" ]; then FFOUND=1; F_in__in_llmmodels=1; F_in_=0; fi
+    if [ "$arg" = "in=ls" ]; then FFOUND=1; F_in__in_ls=1; F_in_=0; fi
+    if [ "${arg#lsext=}" != "$arg" ]; then FFOUND=1; F_in__in_ls_lsext_=0; fi
+    if [ "${arg#lsrecursive=}" != "$arg" ]; then FFOUND=1; F_in__in_ls_lsrecursive_=0; fi
+    if [ "${arg#lsposix=}" != "$arg" ]; then FFOUND=1; F_in__in_ls_lsposix_=0; fi
+    if [ "$arg" = "in=md" ]; then FFOUND=1; F_in__in_md=1; F_in_=0; fi
+    if [ "${arg#inmdtablejoin=}" != "$arg" ]; then FFOUND=1; F_in__in_md_inmdtablejoin_=0; fi
+    if [ "$arg" = "in=mdtable" ]; then FFOUND=1; F_in__in_mdtable=1; F_in_=0; fi
+    if [ "$arg" = "in=ndjson" ]; then FFOUND=1; F_in__in_ndjson=1; F_in_=0; fi
+    if [ "${arg#ndjsonjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_ndjson_ndjsonjoin_=0; fi
+    if [ "${arg#ndjsonfilter=}" != "$arg" ]; then FFOUND=1; F_in__in_ndjson_ndjsonfilter_=0; fi
+    if [ "$arg" = "in=oaf" ]; then FFOUND=1; F_in__in_oaf=1; F_in_=0; fi
+    if [ "$arg" = "in=oafp" ]; then FFOUND=1; F_in__in_oafp=1; F_in_=0; fi
+    if [ "$arg" = "in=openmetrics" ]; then FFOUND=1; F_in__in_openmetrics=1; F_in_=0; fi
+    if [ "$arg" = "in=raw" ]; then FFOUND=1; F_in__in_raw=1; F_in_=0; fi
+    if [ "$arg" = "in=rawhex" ]; then FFOUND=1; F_in__in_rawhex=1; F_in_=0; fi
+    if [ "${arg#inrawhexline=}" != "$arg" ]; then FFOUND=1; F_in__in_rawhex_inrawhexline_=0; fi
+    if [ "$arg" = "in=sh" ]; then FFOUND=1; F_in__in_sh=1; F_in_=0; fi
+    if [ "${arg#inshformat=}" != "$arg" ]; then FFOUND=1; F_in__in_sh_inshformat_=0; fi
+    if [ "$arg" = "in=slon" ]; then FFOUND=1; F_in__in_slon=1; F_in_=0; fi
+    if [ "$arg" = "in=sql" ]; then FFOUND=1; F_in__in_sql=1; F_in_=0; fi
+    if [ "${arg#sqlparse=}" != "$arg" ]; then FFOUND=1; F_in__in_sql_sqlparse_=0; fi
+    if [ "${arg#sqloptions=}" != "$arg" ]; then FFOUND=1; F_in__in_sql_sqloptions_=0; fi
+    if [ "$arg" = "in=toml" ]; then FFOUND=1; F_in__in_toml=1; F_in_=0; fi
+    if [ "$arg" = "in=xls" ]; then FFOUND=1; F_in__in_xls=1; F_in_=0; fi
+    if [ "${arg#xlssheet=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_xlssheet_=0; fi
+    if [ "${arg#xlsevalformulas=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_xlsevalformulas_=0; fi
+    if [ "${arg#xlscol=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_xlscol_=0; fi
+    if [ "${arg#xlsrow=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_xlsrow_=0; fi
+    if [ "$arg" = "in=xml" ]; then FFOUND=1; F_in__in_xml=1; F_in_=0; fi
+    if [ "${arg#xmlignored=}" != "$arg" ]; then FFOUND=1; F_in__in_xml_xmlignored_=0; fi
+    if [ "${arg#xmlprefix=}" != "$arg" ]; then FFOUND=1; F_in__in_xml_xmlprefix_=0; fi
+    if [ "${arg#xmlfiltertag=}" != "$arg" ]; then FFOUND=1; F_in__in_xml_xmlfiltertag_=0; fi
+    if [ "$arg" = "in=yaml" ]; then FFOUND=1; F_in__in_yaml=1; F_in_=0; fi
     # out= options
-    if [ "$arg" = "out=base64" ]; then F_out__out_base64=1; F_out_=0; fi
-    if [ "${arg#base64gzip=}" != "$arg" ]; then F_out__out_base64_base64gzip_=0; fi
-    if [ "$arg" = "out=ch" ]; then F_out__out_ch=1; F_out_=0; fi
-    if [ "${arg#ch=}" != "$arg" ]; then F_out__out_ch_ch_=0; fi
-    if [ "${arg#chkey=}" != "$arg" ]; then F_out__out_ch_chkey_=0; fi
-    if [ "${arg#chunset=}" != "$arg" ]; then F_out__out_ch_chunset_=0; fi
-    if [ "$arg" = "out=chart" ]; then F_out__out_chart=1; F_out_=0; fi
-    if [ "${arg#chart=}" != "$arg" ]; then F_out__out_chart_chart_=0; fi
-    if [ "${arg#chartcls=}" != "$arg" ]; then F_out__out_chart_chartcls_=0; fi
-    if [ "$arg" = "out=cjson" ]; then F_out__out_cjson=1; F_out_=0; fi
-    if [ "$arg" = "out=cmd" ]; then F_out__out_cmd=1; F_out_=0; fi
-    if [ "${arg#outcmd=}" != "$arg" ]; then F_out__out_cmd_outcmd_=0; fi
-    if [ "${arg#outcmdjoin=}" != "$arg" ]; then F_out__out_cmd_outcmdjoin_=0; fi
-    if [ "${arg#outcmdseq=}" != "$arg" ]; then F_out__out_cmd_outcmdseq_=0; fi
-    if [ "${arg#outcmdnl=}" != "$arg" ]; then F_out__out_cmd_outcmdnl_=0; fi
-    if [ "${arg#outcmdparam=}" != "$arg" ]; then F_out__out_cmd_outcmdparam_=0; fi
-    if [ "$arg" = "out=cslon" ]; then F_out__out_cslon=1; F_out_=0; fi
-    if [ "$arg" = "out=csv" ]; then F_out__out_csv=1; F_out_=0; fi
-    if [ "${arg#format=}" != "$arg" ]; then F_out__out_csv_format_=0; fi
-    if [ "${arg#withHeader=}" != "$arg" ]; then F_out__out_csv_withHeader_=0; fi
-    if [ "${arg#withHeaders=}" != "$arg" ]; then F_out__out_csv_withHeaders_=0; fi
-    if [ "${arg#quoteMode=}" != "$arg" ]; then F_out__out_csv_quoteMode_=0; fi
-    if [ "${arg#withDelimiter=}" != "$arg" ]; then F_out__out_csv_withDelimiter_=0; fi
-    if [ "${arg#withEscape=}" != "$arg" ]; then F_out__out_csv_withEscape_=0; fi
-    if [ "${arg#withNullString=}" != "$arg" ]; then F_out__out_csv_withNullString_=0; fi
-    if [ "$arg" = "out=ctable" ]; then F_out__out_ctable=1; F_out_=0; fi
-    if [ "$arg" = "out=ctree" ]; then F_out__out_ctree=1; F_out_=0; fi
-    if [ "$arg" = "out=db" ]; then F_out__out_db=1; F_out_=0; fi
-    if [ "${arg#dbjdbc=}" != "$arg" ]; then F_out__out_db_dbjdbc_=0; fi
-    if [ "${arg#dbuser=}" != "$arg" ]; then F_out__out_db_dbuser_=0; fi
-    if [ "${arg#dbpass=}" != "$arg" ]; then F_out__out_db_dbpass_=0; fi
-    if [ "${arg#dbtimeout=}" != "$arg" ]; then F_out__out_db_dbtimeout_=0; fi
-    if [ "${arg#dblib=}" != "$arg" ]; then F_out__out_db_dblib_=0; fi
-    if [ "${arg#dbtable=}" != "$arg" ]; then F_out__out_db_dbtable_=0; fi
-    if [ "${arg#dbnocreate=}" != "$arg" ]; then F_out__out_db_dbnocreate_=0; fi
-    if [ "${arg#dbicase=}" != "$arg" ]; then F_out__out_db_dbicase_=0; fi
-    if [ "${arg#dbbatchsize=}" != "$arg" ]; then F_out__out_db_dbbatchsize_=0; fi
-    if [ "$arg" = "out=envs" ]; then F_out__out_envs=1; F_out_=0; fi
-    if [ "${arg#envscmd=}" != "$arg" ]; then F_out__out_envs_envscmd_=0; fi
-    if [ "${arg#envsprefix=}" != "$arg" ]; then F_out__out_envs_envsprefix_=0; fi
-    if [ "$arg" = "out=gb64json" ]; then F_out__out_gb64json=1; F_out_=0; fi
-    if [ "$arg" = "out=grid" ]; then F_out__out_grid=1; F_out_=0; fi
-    if [ "${arg#grid=}" != "$arg" ]; then F_out__out_grid_grid_=0; fi
-    if [ "$arg" = "out=html" ]; then F_out__out_html=1; F_out_=0; fi
-    if [ "${arg#htmlcompact=}" != "$arg" ]; then F_out__out_html_htmlcompact_=0; fi
-    if [ "${arg#htmlpart=}" != "$arg" ]; then F_out__out_html_htmlpart_=0; fi
-    if [ "${arg#htmlopen=}" != "$arg" ]; then F_out__out_html_htmlopen_=0; fi
-    if [ "${arg#htmlwait=}" != "$arg" ]; then F_out__out_html_htmlwait_=0; fi
-    if [ "$arg" = "out=ini" ]; then F_out__out_ini=1; F_out_=0; fi
-    if [ "$arg" = "out=json" ]; then F_out__out_json=1; F_out_=0; fi
-    if [ "$arg" = "out=jwt" ]; then F_out__out_jwt=1; F_out_=0; fi
-    if [ "${arg#jwtsecret=}" != "$arg" ]; then F_out__out_jwt_jwtsecret_=0; fi
-    if [ "${arg#jwtprivkey=}" != "$arg" ]; then F_out__out_jwt_jwtprivkey_=0; fi
-    if [ "${arg#jwtalg=}" != "$arg" ]; then F_out__out_jwt_jwtalg_=0; fi
-    if [ "$arg" = "out=lines" ]; then F_out__out_lines=1; F_out_=0; fi
-    if [ "$arg" = "out=log" ]; then F_out__out_log=1; F_out_=0; fi
-    if [ "${arg#logprintall=}" != "$arg" ]; then F_out__out_log_logprintall_=0; fi
-    if [ "$arg" = "out=map" ]; then F_out__out_map=1; F_out_=0; fi
-    if [ "$arg" = "out=md" ]; then F_out__out_md=1; F_out_=0; fi
-    if [ "${arg#mdtemplate=}" != "$arg" ]; then F_out__out_md_mdtemplate_=0; fi
-    if [ "$arg" = "out=mdtable" ]; then F_out__out_mdtable=1; F_out_=0; fi
-    if [ "$arg" = "out=mdyaml" ]; then F_out__out_mdyaml=1; F_out_=0; fi
-    if [ "$arg" = "out=ndjson" ]; then F_out__out_ndjson=1; F_out_=0; fi
-    if [ "$arg" = "out=openmetrics" ]; then F_out__out_openmetrics=1; F_out_=0; fi
-    if [ "${arg#metricsprefix=}" != "$arg" ]; then F_out__out_openmetrics_metricsprefix_=0; fi
-    if [ "${arg#metricstimestamp=}" != "$arg" ]; then F_out__out_openmetrics_metricstimestamp_=0; fi
-    if [ "$arg" = "out=pjson" ]; then F_out__out_pjson=1; F_out_=0; fi
-    if [ "$arg" = "out=prettyjson" ]; then F_out__out_prettyjson=1; F_out_=0; fi
-    if [ "$arg" = "out=pxml" ]; then F_out__out_pxml=1; F_out_=0; fi
-    if [ "$arg" = "out=raw" ]; then F_out__out_raw=1; F_out_=0; fi
-    if [ "$arg" = "out=schart" ]; then F_out__out_schart=1; F_out_=0; fi
-    if [ "${arg#schart=}" != "$arg" ]; then F_out__out_schart_schart_=0; fi
-    if [ "$arg" = "out=slon" ]; then F_out__out_slon=1; F_out_=0; fi
-    if [ "$arg" = "out=sql" ]; then F_out__out_sql=1; F_out_=0; fi
-    if [ "${arg#sqltable=}" != "$arg" ]; then F_out__out_sql_sqltable_=0; fi
-    if [ "${arg#sqlicase=}" != "$arg" ]; then F_out__out_sql_sqlicase_=0; fi
-    if [ "${arg#sqlnocreate=}" != "$arg" ]; then F_out__out_sql_sqlnocreate_=0; fi
-    if [ "$arg" = "out=stable" ]; then F_out__out_stable=1; F_out_=0; fi
-    if [ "$arg" = "out=table" ]; then F_out__out_table=1; F_out_=0; fi
-    if [ "$arg" = "out=template" ]; then F_out__out_template=1; F_out_=0; fi
-    if [ "${arg#template=}" != "$arg" ]; then F_out__out_template_template_=0; fi
-    if [ "${arg#templatepath=}" != "$arg" ]; then F_out__out_template_templatepath_=0; fi
-    if [ "${arg#templatedata=}" != "$arg" ]; then F_out__out_template_templatedata_=0; fi
-    if [ "$arg" = "out=toml" ]; then F_out__out_toml=1; F_out_=0; fi
-    if [ "$arg" = "out=tree" ]; then F_out__out_tree=1; F_out_=0; fi
-    if [ "$arg" = "out=xls" ]; then F_out__out_xls=1; F_out_=0; fi
-    if [ "${arg#xlsfile=}" != "$arg" ]; then F_out__out_xls_xlsfile_=0; fi
-    if [ "${arg#xlssheet=}" != "$arg" ]; then F_out__out_xls_xlssheet_=0; fi
-    if [ "${arg#xlsformat=}" != "$arg" ]; then F_out__out_xls_xlsformat_=0; fi
-    if [ "${arg#xlsopen=}" != "$arg" ]; then F_out__out_xls_xlsopen_=0; fi
-    if [ "${arg#xlsopenwait=}" != "$arg" ]; then F_out__out_xls_xlsopenwait_=0; fi
-    if [ "$arg" = "out=xml" ]; then F_out__out_xml=1; F_out_=0; fi
-    if [ "$arg" = "out=yaml" ]; then F_out__out_yaml=1; F_out_=0; fi
+    if [ "$arg" = "out=base64" ]; then FFOUND=1; F_out__out_base64=1; F_out_=0; fi
+    if [ "${arg#base64gzip=}" != "$arg" ]; then FFOUND=1; F_out__out_base64_base64gzip_=0; fi
+    if [ "$arg" = "out=ch" ]; then FFOUND=1; F_out__out_ch=1; F_out_=0; fi
+    if [ "${arg#ch=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_ch_=0; fi
+    if [ "${arg#chkey=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_chkey_=0; fi
+    if [ "${arg#chunset=}" != "$arg" ]; then FFOUND=1; F_out__out_ch_chunset_=0; fi
+    if [ "$arg" = "out=chart" ]; then FFOUND=1; F_out__out_chart=1; F_out_=0; fi
+    if [ "${arg#chart=}" != "$arg" ]; then FFOUND=1; F_out__out_chart_chart_=0; fi
+    if [ "${arg#chartcls=}" != "$arg" ]; then FFOUND=1; F_out__out_chart_chartcls_=0; fi
+    if [ "$arg" = "out=cjson" ]; then FFOUND=1; F_out__out_cjson=1; F_out_=0; fi
+    if [ "$arg" = "out=cmd" ]; then FFOUND=1; F_out__out_cmd=1; F_out_=0; fi
+    if [ "${arg#outcmd=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmd_=0; fi
+    if [ "${arg#outcmdjoin=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdjoin_=0; fi
+    if [ "${arg#outcmdseq=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdseq_=0; fi
+    if [ "${arg#outcmdnl=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdnl_=0; fi
+    if [ "${arg#outcmdparam=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdparam_=0; fi
+    if [ "$arg" = "out=cslon" ]; then FFOUND=1; F_out__out_cslon=1; F_out_=0; fi
+    if [ "$arg" = "out=csv" ]; then FFOUND=1; F_out__out_csv=1; F_out_=0; fi
+    if [ "${arg#format=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_format_=0; fi
+    if [ "${arg#withHeader=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withHeader_=0; fi
+    if [ "${arg#withHeaders=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withHeaders_=0; fi
+    if [ "${arg#quoteMode=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_quoteMode_=0; fi
+    if [ "${arg#withDelimiter=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withDelimiter_=0; fi
+    if [ "${arg#withEscape=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withEscape_=0; fi
+    if [ "${arg#withNullString=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withNullString_=0; fi
+    if [ "$arg" = "out=ctable" ]; then FFOUND=1; F_out__out_ctable=1; F_out_=0; fi
+    if [ "$arg" = "out=ctree" ]; then FFOUND=1; F_out__out_ctree=1; F_out_=0; fi
+    if [ "$arg" = "out=cyaml" ]; then FFOUND=1; F_out__out_cyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=db" ]; then FFOUND=1; F_out__out_db=1; F_out_=0; fi
+    if [ "${arg#dbjdbc=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbjdbc_=0; fi
+    if [ "${arg#dbuser=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbuser_=0; fi
+    if [ "${arg#dbpass=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbpass_=0; fi
+    if [ "${arg#dbtimeout=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbtimeout_=0; fi
+    if [ "${arg#dblib=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dblib_=0; fi
+    if [ "${arg#dbtable=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbtable_=0; fi
+    if [ "${arg#dbnocreate=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbnocreate_=0; fi
+    if [ "${arg#dbicase=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbicase_=0; fi
+    if [ "${arg#dbbatchsize=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbbatchsize_=0; fi
+    if [ "$arg" = "out=envs" ]; then FFOUND=1; F_out__out_envs=1; F_out_=0; fi
+    if [ "${arg#envscmd=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envscmd_=0; fi
+    if [ "${arg#envsprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envsprefix_=0; fi
+    if [ "$arg" = "out=gb64json" ]; then FFOUND=1; F_out__out_gb64json=1; F_out_=0; fi
+    if [ "$arg" = "out=grid" ]; then FFOUND=1; F_out__out_grid=1; F_out_=0; fi
+    if [ "${arg#grid=}" != "$arg" ]; then FFOUND=1; F_out__out_grid_grid_=0; fi
+    if [ "$arg" = "out=html" ]; then FFOUND=1; F_out__out_html=1; F_out_=0; fi
+    if [ "${arg#htmlcompact=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlcompact_=0; fi
+    if [ "${arg#htmlpart=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlpart_=0; fi
+    if [ "${arg#htmlopen=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlopen_=0; fi
+    if [ "${arg#htmlwait=}" != "$arg" ]; then FFOUND=1; F_out__out_html_htmlwait_=0; fi
+    if [ "$arg" = "out=ini" ]; then FFOUND=1; F_out__out_ini=1; F_out_=0; fi
+    if [ "$arg" = "out=json" ]; then FFOUND=1; F_out__out_json=1; F_out_=0; fi
+    if [ "$arg" = "out=jwt" ]; then FFOUND=1; F_out__out_jwt=1; F_out_=0; fi
+    if [ "${arg#jwtsecret=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtsecret_=0; fi
+    if [ "${arg#jwtprivkey=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtprivkey_=0; fi
+    if [ "${arg#jwtalg=}" != "$arg" ]; then FFOUND=1; F_out__out_jwt_jwtalg_=0; fi
+    if [ "$arg" = "out=lines" ]; then FFOUND=1; F_out__out_lines=1; F_out_=0; fi
+    if [ "$arg" = "out=log" ]; then FFOUND=1; F_out__out_log=1; F_out_=0; fi
+    if [ "${arg#logprintall=}" != "$arg" ]; then FFOUND=1; F_out__out_log_logprintall_=0; fi
+    if [ "$arg" = "out=map" ]; then FFOUND=1; F_out__out_map=1; F_out_=0; fi
+    if [ "$arg" = "out=md" ]; then FFOUND=1; F_out__out_md=1; F_out_=0; fi
+    if [ "${arg#mdtemplate=}" != "$arg" ]; then FFOUND=1; F_out__out_md_mdtemplate_=0; fi
+    if [ "$arg" = "out=mdtable" ]; then FFOUND=1; F_out__out_mdtable=1; F_out_=0; fi
+    if [ "$arg" = "out=mdyaml" ]; then FFOUND=1; F_out__out_mdyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=ndjson" ]; then FFOUND=1; F_out__out_ndjson=1; F_out_=0; fi
+    if [ "$arg" = "out=openmetrics" ]; then FFOUND=1; F_out__out_openmetrics=1; F_out_=0; fi
+    if [ "${arg#metricsprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_openmetrics_metricsprefix_=0; fi
+    if [ "${arg#metricstimestamp=}" != "$arg" ]; then FFOUND=1; F_out__out_openmetrics_metricstimestamp_=0; fi
+    if [ "$arg" = "out=pjson" ]; then FFOUND=1; F_out__out_pjson=1; F_out_=0; fi
+    if [ "$arg" = "out=prettyjson" ]; then FFOUND=1; F_out__out_prettyjson=1; F_out_=0; fi
+    if [ "$arg" = "out=pxml" ]; then FFOUND=1; F_out__out_pxml=1; F_out_=0; fi
+    if [ "$arg" = "out=raw" ]; then FFOUND=1; F_out__out_raw=1; F_out_=0; fi
+    if [ "$arg" = "out=schart" ]; then FFOUND=1; F_out__out_schart=1; F_out_=0; fi
+    if [ "${arg#schart=}" != "$arg" ]; then FFOUND=1; F_out__out_schart_schart_=0; fi
+    if [ "$arg" = "out=slon" ]; then FFOUND=1; F_out__out_slon=1; F_out_=0; fi
+    if [ "$arg" = "out=sql" ]; then FFOUND=1; F_out__out_sql=1; F_out_=0; fi
+    if [ "${arg#sqltable=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqltable_=0; fi
+    if [ "${arg#sqlicase=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqlicase_=0; fi
+    if [ "${arg#sqlnocreate=}" != "$arg" ]; then FFOUND=1; F_out__out_sql_sqlnocreate_=0; fi
+    if [ "$arg" = "out=stable" ]; then FFOUND=1; F_out__out_stable=1; F_out_=0; fi
+    if [ "$arg" = "out=table" ]; then FFOUND=1; F_out__out_table=1; F_out_=0; fi
+    if [ "$arg" = "out=template" ]; then FFOUND=1; F_out__out_template=1; F_out_=0; fi
+    if [ "${arg#template=}" != "$arg" ]; then FFOUND=1; F_out__out_template_template_=0; fi
+    if [ "${arg#templatepath=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatepath_=0; fi
+    if [ "${arg#templatedata=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatedata_=0; fi
+    if [ "$arg" = "out=text" ]; then FFOUND=1; F_out__out_text=1; F_out_=0; fi
+    if [ "$arg" = "out=toml" ]; then FFOUND=1; F_out__out_toml=1; F_out_=0; fi
+    if [ "$arg" = "out=tree" ]; then FFOUND=1; F_out__out_tree=1; F_out_=0; fi
+    if [ "$arg" = "out=xls" ]; then FFOUND=1; F_out__out_xls=1; F_out_=0; fi
+    if [ "${arg#xlsfile=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsfile_=0; fi
+    if [ "${arg#xlssheet=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlssheet_=0; fi
+    if [ "${arg#xlsformat=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsformat_=0; fi
+    if [ "${arg#xlsopen=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsopen_=0; fi
+    if [ "${arg#xlsopenwait=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsopenwait_=0; fi
+    if [ "$arg" = "out=xml" ]; then FFOUND=1; F_out__out_xml=1; F_out_=0; fi
+    if [ "$arg" = "out=yaml" ]; then FFOUND=1; F_out__out_yaml=1; F_out_=0; fi
     # -h single option
-    if [ "$arg" = "-h" ]; then F__h=0; fi
+    if [ "$arg" = "-h" ]; then FFOUND=1; F__h=0; fi
     # help= options
-    if [ "$arg" = "help=filters" ]; then F_help__help_filters=1; F_help_=0; fi
-    if [ "$arg" = "help=template" ]; then F_help__help_template=1; F_help_=0; fi
-    if [ "$arg" = "help=examples" ]; then F_help__help_examples=1; F_help_=0; fi
+    if [ "$arg" = "help=filters" ]; then FFOUND=1; F_help__help_filters=1; F_help_=0; fi
+    if [ "$arg" = "help=template" ]; then FFOUND=1; F_help__help_template=1; F_help_=0; fi
+    if [ "$arg" = "help=examples" ]; then FFOUND=1; F_help__help_examples=1; F_help_=0; fi
     # file= single option
-    if [ "$arg" = "file=" ]; then F_file_=0; fi
+    if [ "$arg" = "file=" ]; then FFOUND=1; F_file_=0; fi
     # cmd= single option
-    if [ "$arg" = "cmd=" ]; then F_cmd_=0; fi
+    if [ "$arg" = "cmd=" ]; then FFOUND=1; F_cmd_=0; fi
     # data= single option
-    if [ "$arg" = "data=" ]; then F_data_=0; fi
+    if [ "$arg" = "data=" ]; then FFOUND=1; F_data_=0; fi
     # from= single option
-    if [ "$arg" = "from=" ]; then F_from_=0; fi
+    if [ "$arg" = "from=" ]; then FFOUND=1; F_from_=0; fi
     # sql= single option
-    if [ "$arg" = "sql=" ]; then F_sql_=0; fi
+    if [ "$arg" = "sql=" ]; then FFOUND=1; F_sql_=0; fi
     # sqlfilter= single option
-    if [ "$arg" = "sqlfilter=" ]; then F_sqlfilter_=0; fi
+    if [ "$arg" = "sqlfilter=" ]; then FFOUND=1; F_sqlfilter_=0; fi
     # sqlfiltertables= single option
-    if [ "$arg" = "sqlfiltertables=" ]; then F_sqlfiltertables_=0; fi
+    if [ "$arg" = "sqlfiltertables=" ]; then FFOUND=1; F_sqlfiltertables_=0; fi
     # path= single option
-    if [ "$arg" = "path=" ]; then F_path_=0; fi
+    if [ "$arg" = "path=" ]; then FFOUND=1; F_path_=0; fi
     # outkey= single option
-    if [ "$arg" = "outkey=" ]; then F_outkey_=0; fi
+    if [ "$arg" = "outkey=" ]; then FFOUND=1; F_outkey_=0; fi
     # outfile= single option
-    if [ "$arg" = "outfile=" ]; then F_outfile_=0; fi
+    if [ "$arg" = "outfile=" ]; then FFOUND=1; F_outfile_=0; fi
     # outfileappend= single option
-    if [ "$arg" = "outfileappend=" ]; then F_outfileappend_=0; fi
+    if [ "$arg" = "outfileappend=" ]; then FFOUND=1; F_outfileappend_=0; fi
     # pause= single option
-    if [ "$arg" = "pause=" ]; then F_pause_=0; fi
+    if [ "$arg" = "pause=" ]; then FFOUND=1; F_pause_=0; fi
     # color= single option
-    if [ "$arg" = "color=" ]; then F_color_=0; fi
+    if [ "$arg" = "color=" ]; then FFOUND=1; F_color_=0; fi
     # url= single option
-    if [ "$arg" = "url=" ]; then F_url_=0; fi
+    if [ "$arg" = "url=" ]; then FFOUND=1; F_url_=0; fi
     # urlmethod= single option
-    if [ "$arg" = "urlmethod=" ]; then F_urlmethod_=0; fi
+    if [ "$arg" = "urlmethod=" ]; then FFOUND=1; F_urlmethod_=0; fi
     # urlparams= single option
-    if [ "$arg" = "urlparams=" ]; then F_urlparams_=0; fi
+    if [ "$arg" = "urlparams=" ]; then FFOUND=1; F_urlparams_=0; fi
     # urldata= single option
-    if [ "$arg" = "urldata=" ]; then F_urldata_=0; fi
+    if [ "$arg" = "urldata=" ]; then FFOUND=1; F_urldata_=0; fi
     # chs= single option
-    if [ "$arg" = "chs=" ]; then F_chs_=0; fi
+    if [ "$arg" = "chs=" ]; then FFOUND=1; F_chs_=0; fi
     # loop= single option
-    if [ "$arg" = "loop=" ]; then F_loop_=0; fi
+    if [ "$arg" = "loop=" ]; then FFOUND=1; F_loop_=0; fi
     # loopcls= single option
-    if [ "$arg" = "loopcls=" ]; then F_loopcls_=0; fi
+    if [ "$arg" = "loopcls=" ]; then FFOUND=1; F_loopcls_=0; fi
     # libs= single option
-    if [ "$arg" = "libs=" ]; then F_libs_=0; fi
+    if [ "$arg" = "libs=" ]; then FFOUND=1; F_libs_=0; fi
     # -examples single option
-    if [ "$arg" = "-examples" ]; then F__examples=0; fi
+    if [ "$arg" = "-examples" ]; then FFOUND=1; F__examples=0; fi
     # examples= single option
-    if [ "$arg" = "examples=" ]; then F_examples_=0; fi
+    if [ "$arg" = "examples=" ]; then FFOUND=1; F_examples_=0; fi
     # version= single option
-    if [ "$arg" = "version=" ]; then F_version_=0; fi
+    if [ "$arg" = "version=" ]; then FFOUND=1; F_version_=0; fi
     # -v single option
-    if [ "$arg" = "-v" ]; then F__v=0; fi
+    if [ "$arg" = "-v" ]; then FFOUND=1; F__v=0; fi
     # arraytomap= single option
-    if [ "$arg" = "arraytomap=" ]; then F_arraytomap_=0; fi
+    if [ "$arg" = "arraytomap=" ]; then FFOUND=1; F_arraytomap_=0; fi
     # arraytomapkeepkey= single option
-    if [ "$arg" = "arraytomapkeepkey=" ]; then F_arraytomapkeepkey_=0; fi
+    if [ "$arg" = "arraytomapkeepkey=" ]; then FFOUND=1; F_arraytomapkeepkey_=0; fi
     # arraytomapkey= single option
-    if [ "$arg" = "arraytomapkey=" ]; then F_arraytomapkey_=0; fi
+    if [ "$arg" = "arraytomapkey=" ]; then FFOUND=1; F_arraytomapkey_=0; fi
     # cmlt= options
-    if [ "$arg" = "cmltch=" ]; then F_cmlt__cmltch_=1; F_cmlt_=0; fi
-    if [ "$arg" = "cmltsize=" ]; then F_cmlt__cmltsize_=1; F_cmlt_=0; fi
+    if [ "$arg" = "cmltch=" ]; then FFOUND=1; F_cmlt__cmltch_=1; F_cmlt_=0; fi
+    if [ "$arg" = "cmltsize=" ]; then FFOUND=1; F_cmlt__cmltsize_=1; F_cmlt_=0; fi
     # correcttypes= single option
-    if [ "$arg" = "correcttypes=" ]; then F_correcttypes_=0; fi
+    if [ "$arg" = "correcttypes=" ]; then FFOUND=1; F_correcttypes_=0; fi
     # denormalize= single option
-    if [ "$arg" = "denormalize=" ]; then F_denormalize_=0; fi
+    if [ "$arg" = "denormalize=" ]; then FFOUND=1; F_denormalize_=0; fi
     # diff= options
-    if [ "$arg" = "difftheme=" ]; then F_diff__difftheme_=1; F_diff_=0; fi
-    if [ "$arg" = "diffnlines=" ]; then F_diff__diffnlines_=1; F_diff_=0; fi
-    if [ "$arg" = "diffwords=" ]; then F_diff__diffwords_=1; F_diff_=0; fi
-    if [ "$arg" = "diffwordswithspace=" ]; then F_diff__diffwordswithspace_=1; F_diff_=0; fi
-    if [ "$arg" = "difflines=" ]; then F_diff__difflines_=1; F_diff_=0; fi
-    if [ "$arg" = "diffsentences=" ]; then F_diff__diffsentences_=1; F_diff_=0; fi
-    if [ "$arg" = "diffchars=" ]; then F_diff__diffchars_=1; F_diff_=0; fi
+    if [ "$arg" = "difftheme=" ]; then FFOUND=1; F_diff__difftheme_=1; F_diff_=0; fi
+    if [ "$arg" = "diffnlines=" ]; then FFOUND=1; F_diff__diffnlines_=1; F_diff_=0; fi
+    if [ "$arg" = "diffwords=" ]; then FFOUND=1; F_diff__diffwords_=1; F_diff_=0; fi
+    if [ "$arg" = "diffwordswithspace=" ]; then FFOUND=1; F_diff__diffwordswithspace_=1; F_diff_=0; fi
+    if [ "$arg" = "difflines=" ]; then FFOUND=1; F_diff__difflines_=1; F_diff_=0; fi
+    if [ "$arg" = "diffsentences=" ]; then FFOUND=1; F_diff__diffsentences_=1; F_diff_=0; fi
+    if [ "$arg" = "diffchars=" ]; then FFOUND=1; F_diff__diffchars_=1; F_diff_=0; fi
     # flatmap= single option
-    if [ "$arg" = "flatmap=" ]; then F_flatmap_=0; fi
+    if [ "$arg" = "flatmap=" ]; then FFOUND=1; F_flatmap_=0; fi
     # getlist= single option
-    if [ "$arg" = "getlist=" ]; then F_getlist_=0; fi
+    if [ "$arg" = "getlist=" ]; then FFOUND=1; F_getlist_=0; fi
     # jsonschema= single option
-    if [ "$arg" = "jsonschema=" ]; then F_jsonschema_=0; fi
+    if [ "$arg" = "jsonschema=" ]; then FFOUND=1; F_jsonschema_=0; fi
     # jsonschemacmd= single option
-    if [ "$arg" = "jsonschemacmd=" ]; then F_jsonschemacmd_=0; fi
+    if [ "$arg" = "jsonschemacmd=" ]; then FFOUND=1; F_jsonschemacmd_=0; fi
     # jsonschemagen= single option
-    if [ "$arg" = "jsonschemagen=" ]; then F_jsonschemagen_=0; fi
+    if [ "$arg" = "jsonschemagen=" ]; then FFOUND=1; F_jsonschemagen_=0; fi
     # kmeans= single option
-    if [ "$arg" = "kmeans=" ]; then F_kmeans_=0; fi
+    if [ "$arg" = "kmeans=" ]; then FFOUND=1; F_kmeans_=0; fi
     # llmprompt= options
-    if [ "$arg" = "llmcontext=" ]; then F_llmprompt__llmcontext_=1; F_llmprompt_=0; fi
-    if [ "$arg" = "llmenv=" ]; then F_llmprompt__llmenv_=1; F_llmprompt_=0; fi
-    if [ "$arg" = "llmoptions=" ]; then F_llmprompt__llmoptions_=1; F_llmprompt_=0; fi
-    if [ "$arg" = "llmconversation=" ]; then F_llmprompt__llmconversation_=1; F_llmprompt_=0; fi
-    if [ "$arg" = "llmimage=" ]; then F_llmprompt__llmimage_=1; F_llmprompt_=0; fi
+    if [ "$arg" = "llmcontext=" ]; then FFOUND=1; F_llmprompt__llmcontext_=1; F_llmprompt_=0; fi
+    if [ "$arg" = "llmenv=" ]; then FFOUND=1; F_llmprompt__llmenv_=1; F_llmprompt_=0; fi
+    if [ "$arg" = "llmoptions=" ]; then FFOUND=1; F_llmprompt__llmoptions_=1; F_llmprompt_=0; fi
+    if [ "$arg" = "llmconversation=" ]; then FFOUND=1; F_llmprompt__llmconversation_=1; F_llmprompt_=0; fi
+    if [ "$arg" = "llmimage=" ]; then FFOUND=1; F_llmprompt__llmimage_=1; F_llmprompt_=0; fi
     # maptoarray= single option
-    if [ "$arg" = "maptoarray=" ]; then F_maptoarray_=0; fi
+    if [ "$arg" = "maptoarray=" ]; then FFOUND=1; F_maptoarray_=0; fi
     # maptoarraykey= single option
-    if [ "$arg" = "maptoarraykey=" ]; then F_maptoarraykey_=0; fi
+    if [ "$arg" = "maptoarraykey=" ]; then FFOUND=1; F_maptoarraykey_=0; fi
     # merge= single option
-    if [ "$arg" = "merge=" ]; then F_merge_=0; fi
+    if [ "$arg" = "merge=" ]; then FFOUND=1; F_merge_=0; fi
     # normalize= single option
-    if [ "$arg" = "normalize=" ]; then F_normalize_=0; fi
+    if [ "$arg" = "normalize=" ]; then FFOUND=1; F_normalize_=0; fi
     # regression= options
-    if [ "$arg" = "regressionpath=" ]; then F_regression__regressionpath_=1; F_regression_=0; fi
-    if [ "$arg" = "regressionx=" ]; then F_regression__regressionx_=1; F_regression_=0; fi
-    if [ "$arg" = "regressionoptions=" ]; then F_regression__regressionoptions_=1; F_regression_=0; fi
-    if [ "$arg" = "regressionforecast=" ]; then F_regression__regressionforecast_=1; F_regression_=0; fi
+    if [ "$arg" = "regressionpath=" ]; then FFOUND=1; F_regression__regressionpath_=1; F_regression_=0; fi
+    if [ "$arg" = "regressionx=" ]; then FFOUND=1; F_regression__regressionx_=1; F_regression_=0; fi
+    if [ "$arg" = "regressionoptions=" ]; then FFOUND=1; F_regression__regressionoptions_=1; F_regression_=0; fi
+    if [ "$arg" = "regressionforecast=" ]; then FFOUND=1; F_regression__regressionforecast_=1; F_regression_=0; fi
     # removedups= single option
-    if [ "$arg" = "removedups=" ]; then F_removedups_=0; fi
+    if [ "$arg" = "removedups=" ]; then FFOUND=1; F_removedups_=0; fi
     # removenulls= single option
-    if [ "$arg" = "removenulls=" ]; then F_removenulls_=0; fi
+    if [ "$arg" = "removenulls=" ]; then FFOUND=1; F_removenulls_=0; fi
     # searchkeys= single option
-    if [ "$arg" = "searchkeys=" ]; then F_searchkeys_=0; fi
+    if [ "$arg" = "searchkeys=" ]; then FFOUND=1; F_searchkeys_=0; fi
     # searchvalues= single option
-    if [ "$arg" = "searchvalues=" ]; then F_searchvalues_=0; fi
+    if [ "$arg" = "searchvalues=" ]; then FFOUND=1; F_searchvalues_=0; fi
     # sortmapkeys= single option
-    if [ "$arg" = "sortmapkeys=" ]; then F_sortmapkeys_=0; fi
+    if [ "$arg" = "sortmapkeys=" ]; then FFOUND=1; F_sortmapkeys_=0; fi
     # trim= single option
-    if [ "$arg" = "trim=" ]; then F_trim_=0; fi
+    if [ "$arg" = "trim=" ]; then FFOUND=1; F_trim_=0; fi
   done
 fi
 
@@ -708,6 +713,7 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=csv	A CSV format -only for list outputs-"
   echo "out=ctable	A table-like forcely colored format -only for list outputs-"
   echo "out=ctree	A tree-like forcely colored format"
+  echo "out=cyaml	An YAML colored format"
   echo "out=db	Output to a JDBC database"
   echo "out=envs	Tries to output the input data as OS environment variables setting commands"
   echo "out=gb64json	Equivalent to out=base64 and base64gzip=true"
@@ -734,6 +740,7 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=stable	A table-like format with separation -only for list outputs-"
   echo "out=table	A table-like format without size constraints -only for list outputs-"
   echo "out=template	A Handlebars template format"
+  echo "out=text	A string text format"
   echo "out=toml	A TOML format -arrays will have outkey=list-"
   echo "out=tree	A tree-like format"
   echo "out=xls	A XLSx output format"
@@ -1216,5 +1223,9 @@ if [ $F_trim_ -eq 1 ]; then
 fi
 
 # end
-echo :4
+if [ $FFOUND -eq 0 ]; then
+  echo :4
+else
+  echo :2
+fi
 

@@ -21,42 +21,43 @@ F__helpscript=1
 
 # Iterate over the arguments
 if [ $# -gt 0 ]; then
+  FFOUND=0
   for arg in "$@"; do
-    if [ "$arg" = "${!#}" ]; then break; fi
+    if [ "$arg" = "${!#}" ]; then FFOUND=1; break; fi
     # -e single option
-    if [ "$arg" = "-e" ]; then F__e=0; fi
+    if [ "$arg" = "-e" ]; then FFOUND=1; F__e=0; fi
     # -c single option
-    if [ "$arg" = "-c" ]; then F__c=0; fi
+    if [ "$arg" = "-c" ]; then FFOUND=1; F__c=0; fi
     # -p single option
-    if [ "$arg" = "-p" ]; then F__p=0; fi
+    if [ "$arg" = "-p" ]; then FFOUND=1; F__p=0; fi
     # -o single option
-    if [ "$arg" = "-o" ]; then F__o=0; fi
+    if [ "$arg" = "-o" ]; then FFOUND=1; F__o=0; fi
     # -f single option
-    if [ "$arg" = "-f" ]; then F__f=0; fi
+    if [ "$arg" = "-f" ]; then FFOUND=1; F__f=0; fi
     # --install single option
-    if [ "$arg" = "--install" ]; then F___install=0; fi
+    if [ "$arg" = "--install" ]; then FFOUND=1; F___install=0; fi
     # --check single option
-    if [ "$arg" = "--check" ]; then F___check=0; fi
+    if [ "$arg" = "--check" ]; then FFOUND=1; F___check=0; fi
     # --update single option
-    if [ "$arg" = "--update" ]; then F___update=0; fi
+    if [ "$arg" = "--update" ]; then FFOUND=1; F___update=0; fi
     # --console single option
-    if [ "$arg" = "--console" ]; then F___console=0; fi
+    if [ "$arg" = "--console" ]; then FFOUND=1; F___console=0; fi
     # --repack single option
-    if [ "$arg" = "--repack" ]; then F___repack=0; fi
+    if [ "$arg" = "--repack" ]; then FFOUND=1; F___repack=0; fi
     # --daemon single option
-    if [ "$arg" = "--daemon" ]; then F___daemon=0; fi
+    if [ "$arg" = "--daemon" ]; then FFOUND=1; F___daemon=0; fi
     # --script single option
-    if [ "$arg" = "--script" ]; then F___script=0; fi
+    if [ "$arg" = "--script" ]; then FFOUND=1; F___script=0; fi
     # --force single option
-    if [ "$arg" = "--force" ]; then F___force=0; fi
+    if [ "$arg" = "--force" ]; then FFOUND=1; F___force=0; fi
     # --sb single option
-    if [ "$arg" = "--sb" ]; then F___sb=0; fi
+    if [ "$arg" = "--sb" ]; then FFOUND=1; F___sb=0; fi
     # -h single option
-    if [ "$arg" = "-h" ]; then F__h=0; fi
+    if [ "$arg" = "-h" ]; then FFOUND=1; F__h=0; fi
     # -v single option
-    if [ "$arg" = "-v" ]; then F__v=0; fi
+    if [ "$arg" = "-v" ]; then FFOUND=1; F__v=0; fi
     # -helpscript single option
-    if [ "$arg" = "-helpscript" ]; then F__helpscript=0; fi
+    if [ "$arg" = "-helpscript" ]; then FFOUND=1; F__helpscript=0; fi
   done
 fi
 
@@ -147,5 +148,9 @@ if [ $F__helpscript -eq 1 ]; then
 fi
 
 # end
-echo :4
+if [ $FFOUND -eq 0 ]; then
+  echo :4
+else
+  echo :2
+fi
 

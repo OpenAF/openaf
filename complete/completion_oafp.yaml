@@ -212,6 +212,8 @@ complete:
     desc: A table-like forcely colored format -only for list outputs-
   - name: out=ctree
     desc: A tree-like forcely colored format
+  - name: out=cyaml
+    desc: An YAML colored format
   - name: out=db
     desc: Output to a JDBC database
     opts:
@@ -335,6 +337,8 @@ complete:
       desc: If 'template' is not provided a path to the template definition -pre-transformation-
     - name: templatedata=
       desc: If defined the template data will be retrieved from the provided path
+  - name: out=text
+    desc: A string text format
   - name: out=toml
     desc: A TOML format -arrays will have outkey=list-
   - name: out=tree

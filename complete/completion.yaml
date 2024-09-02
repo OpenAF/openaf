@@ -46,19 +46,20 @@ jobs:
 
       # Iterate over the arguments
       if [ $# -gt 0 ]; then
+        FFOUND=0
         for arg in "$@"; do
-          if [ "$arg" = "${!#}" ]; then break; fi
+          if [ "$arg" = "${!#}" ]; then FFOUND=1; break; fi
           {{#each complete}}
           {{#if opts.length}}
           # {{{name}}} options
           {{else}}
           # {{{name}}} single option
-          if [ "$arg" = "{{{name}}}" ]; then F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
+          if [ "$arg" = "{{{name}}}" ]; then FFOUND=1; F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{/if}}
           {{#each opts}}
-          if [ "$arg" = "{{{name}}}" ]; then F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1; F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
+          if [ "$arg" = "{{{name}}}" ]; then FFOUND=1; F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1; F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{#each opts}}
-          if [ "${arg#{{{name}}}{{$p '}'}}" != "$arg" ]; then F_{{{$path ../../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
+          if [ "${arg#{{{name}}}{{$p '}'}}" != "$arg" ]; then FFOUND=1; F_{{{$path ../../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0; fi
           {{/each}}
           {{/each}}
           {{/each}}
@@ -88,7 +89,12 @@ jobs:
       {{/each}}
 
       # end
-      echo :4
+      if [ $FFOUND -eq 0 ]; then
+        echo :4
+      else
+        echo :2
+      fi
+      
     ((key   )): data
     ((out   )): out
   - (if      ): "'{{keyout}}' != 'true'"
