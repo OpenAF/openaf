@@ -1,0 +1,58 @@
+complete:
+- name: info
+  desc: Provides information about the current package.
+- name: search
+  desc: Searches for a keyword on the repository.
+- name: install
+  desc: Install a package
+  opts:
+  - name: -d
+    desc: Installation directory for package.
+  - name: -force
+    desc: Force instalation.
+  - name: -repo
+    desc: Use an alternatively repository for dependencies
+  - name: -deps
+    desc: Automatically try to install dependencies
+  - name: -useunzip
+    desc: Alternatively use unzip to save memory
+  - name: -noverify
+    desc: Don't run hash verification on the end
+  - name: -arg
+    desc: Pass an argument to the pre/post install scripts
+- name: erase
+  desc: Deletes a package on the path specified -only files declared on the package.json will be deleted-
+  opts:
+  - name: -force
+    desc: Force operation even with package dependencies
+  - name: -arg
+    desc: Pass an argument to the pre/post erase scripts
+- name: update
+  desc: Updates a package
+  opts:
+  - name: -all
+    desc: Tries to update all packages locally installed
+  - name: -noerase
+    desc: When updating don't delete the package first
+  - name: -erasefolder
+    desc: Erase previous version folder while updating to a new version
+- name: exec
+  desc: Executes code from an installed package
+- name: list
+  desc: List installed packages
+- name: pack
+  desc: Generates a opack file from a packaging directory
+- name: genpack
+  desc: Generates a package.json for packaging
+- name: add2db
+  desc: Add an already installed package to the local OpenPack database
+- name: remove4db
+  desc: Remove a package entry from the local OpenPack database
+- name: script
+  desc: Creates a shell script, on the current path, to execute a opack
+- name: daemon
+  desc: Creates a shell script, on the current path, to execute an opack as a daemon
+- name: ojob
+  desc: Creates a shell script, on the current path, to execute an opack as a ojob
+- name: -cred
+  desc: Provide authentication credentials for a remote repository -e.g. user:pass-

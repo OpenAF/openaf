@@ -107,6 +107,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $m2a             -- shortcut to the OpenAF's $m2a function\
  *   - $m4a             -- shortcut to the OpenAF's $m4a function\
  *   - $pass            -- returns an empty string\
+ *   - $p               -- returns the provided literal\
  *   - $sline           -- shortcut to the OpenAF's format withSideLine\
  *   - $set             -- block set of a provided key\
  *   - $concat          -- concatenates all arguments as a single value
@@ -246,7 +247,8 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 			}
 			return ar.join("")
 		},
-		pass: () => "",
+		pass : () => "",
+		p: s => s,
 		set: (aK, o) => {
 			if (__flags.TEMPLATE_SET && isString(aK) && isMap(o) && isMap(o.data)) {
 				$$(o.data.root).set(aK, o.fn(this) )

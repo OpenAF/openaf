@@ -16,6 +16,11 @@ if (kparams.indexOf("-h") >= 0 && params["-h"] == "") {
 	ojob_showHelp();
 }
 
+if (kparams.indexOf("-completion") >= 0 && params["-completion"] == "") {
+	delete params["-completion"];
+	ojob_completion()
+}
+
 if (kparams.indexOf("-syntax") >= 0 && params["-syntax"] == "") {
 	delete params["-syntax"]
 	ojob_showSyntax()
@@ -436,4 +441,70 @@ function ojob_runFile() {
 			oJobRunFile(file, ojob_args, __, (nocolor) ? { conAnsi: false } : __);
 		}
 	}
+}
+
+function ojob_completion() {
+	ojob_shouldRun = false
+	var opts = [
+		{ name: "-compile", desc: "Compile all includes and current file into a single yaml output." },
+		{ name: "-tojson", desc: "Outputs all includes and current file into a single json output." },
+		{ name: "-json", desc: "Sets argument __format to 'json' for used with ow.oJob.output." },
+		{ name: "-gb64json", desc: "Sets argument __format to 'gb64json' for used with ow.oJob.output." },
+		{ name: "-jobs", desc: "List all jobs available." },
+		{ name: "-todo", desc: "List the final todo list." },
+		{ name: "-deps", desc: "Draws a list of dependencies of todo jobs on a file." },
+		{ name: "-jobhelp", desc: "Display any available help information for a job." },
+		{ name: "-syntax", desc: "Display the ojob syntax in yaml." },
+		{ name: "-which", desc: "Determines from where an oJob will be loaded from." },
+		{ name: "-global", desc: "List global jobs for this installation." },
+		{ name: "-shortcuts", desc: "Lists the included ojob shortcuts." }
+	]
+
+	var checked = false
+	// Check for authorized domains
+	OJOB_AUTHORIZEDDOMAINS.forEach(domain =>
+		Object.keys(params).filter(r => r.startsWith(domain)).forEach(r => {
+			try {
+				var _l = new Set()
+				var _d
+				if (!io.fileExists(__gHDir() + "/.openaf_completion_" + domain + ".json") &&
+					io.fileInfo(__gHDir() + "/.openaf_completion_" + domain + ".json").lastModified < (new Date().getTime() - 86400000)) {
+					_d = $rest().get("https://" + domain + "/_integrity.json")
+					io.writeFileJSON(__gHDir() + "/.openaf_completion_" + domain + ".json", _d)
+				} else {
+					_d = io.readFileJSON(__gHDir() + "/.openaf_completion_" + domain + ".json")
+				}
+				
+				if (Object.keys(_d).indexOf(r.replace(domain + "/", "./")) >= 0) {
+					checked = false
+					opts.push({ name: r })
+				} else {
+					checked = true
+					Object.keys(_d).filter(r => /[^(\.html|\.json|\.md|\.yaml|\.bat|\.sh)]$/.test(r)).forEach(k => _l.add({ name: k.replace(/^\./, domain) }))
+					opts = opts.concat(Array.from(_l))
+				}
+			} catch(e) {
+			}
+		})
+	)
+
+	// Check local
+	if (!checked) {
+		Object.keys(params).filter(r => !r.startsWith("-")).forEach(r => {
+			try {
+				if (io.fileExists(r)) {
+					var _d = r.endsWith(".json") ? io.readFileJSON(r) : io.readFileYAML(r)
+					if (isDef(_d) && isMap(_d.help) && isArray(_d.help.expects)) {
+						_d.help.expects.forEach(e => {
+							opts.push({ name: e.name+"=", desc: e.desc })
+						})
+					}
+				}
+			} catch(e) {
+			}
+		})
+	}
+
+	print(opts.map(r => r.name + (isDef(r.desc) ? "\t" + r.desc : "")).join("\n"))
+	print(":4")
 }

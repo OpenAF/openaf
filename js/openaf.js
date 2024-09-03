@@ -126,14 +126,14 @@ const __envs = getEnvs()
  * <key>getEnvsDef(aEnv, aVar, aDefault, isJson) : Object</key>
  * Given an environment variable aEnv name will check if a value is provided and return it if so. Otherwise it will check
  * the value of aVar and return it if defined. If aVar is also not defined it will return aDefault. Optionally if isJson=true
- * the value of the provided aEnv will be parsed from JSON.
+ * the value of the provided aEnv will be parsed from JSON or SLON.
  * </odoc>
  */
 const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
 	if (isDef(aVar)) return aVar
 	if (isDef(__envs[aEnv])) {
 		if (isJson) {
-			return jsonParse(__envs[aEnv], true)
+			return af.fromJSSLON(__envs[aEnv], true)
 		} else {
 			return __envs[aEnv]
 		}
@@ -266,7 +266,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		seq_thrs_ms        : 6,
 		threads_thrs       : 2,
 		waitms             : 50,
-		forceSeq           : false
+		forceSeq           : false,
+		seq_ratio          : 1
 	}
 })
 
@@ -393,11 +394,11 @@ const cprint = function(str, delim) { ansiStart(); print(colorify(str)); ansiSto
 
 /**
  * <odoc>
- * <key>yprint(aObj, multidoc, sanitize)</key>
+ * <key>yprint(aObj, multidoc, sanitize, shouldColor)</key>
  * Prints aObj in YAML. If multiDoc = true and aJson is an array the output will be multi-document. If sanitize = true all Java objects will be converted to avoid parsing errors.
  * </odoc>
  */
-const yprint = function(str, multidoc, sanitize) { return print(af.toYAML(str, multidoc, sanitize)); }
+const yprint = function(str, multidoc, sanitize, shouldColor) { return print(af.toYAML(str, multidoc, sanitize, shouldColor)); }
 
 /**
  * <odoc>
@@ -640,8 +641,8 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 
     aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
-    hSize   = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
-	vSize   = _$(vSize, "vSize").isNumber().default(__con.getTerminal().getHeight() - 5)
+    hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
+	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
 	options = _$(options, "options").isMap().default({})
 
     if (type == "clean" && name != "__") {
@@ -753,7 +754,7 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 
     aMax  = _$(aMax, "aMax").isNumber().default(__)
 	aMin  = _$(aMin, "aMin").isNumber().default(__)
-    hSize = _$(hSize, "hSize").isNumber().default(__con.getTerminal().getWidth())
+    hSize = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
 
 	aIndicatorChar = _$(aIndicatorChar, "aIndicatorChar").isString().default("━")
 	aSpaceChar     = _$(aSpaceChar, "aSpaceChar").isString().default(" ")
@@ -885,7 +886,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		} else {
 			if (__initializeCon()) {
 				if (!ansiWinTermCap()) ansiStart();
-				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
+				if (isDef(__con) && isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
 				}
@@ -1086,7 +1087,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 
     _aPrefix  = _$(_aPrefix, "aPrefix").isString().default("")
     _aWidth   = _$(_aWidth, "aWidth").isNumber().default(__)
-    if (isUnDef(_aWidth)) _aWidth = Number(__con.getTerminal().getWidth())
+    if (isUnDef(_aWidth) && isDef(__con)) _aWidth = Number(__con.getTerminal().getWidth())
 
     // Prepare aux functions
     var _clr = __, _ac = __, _al = __
@@ -1337,7 +1338,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 		} else {
 			if (__initializeCon()) {
 				if (!ansiWinTermCap()) ansiStart();
-				if (isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
+				if (isDef(__con) && isDef(__con.getTerminal().getOutputEncoding())) aTheme = (__conAnsi ? "utf" : "plain");
 				if (isUnDef(useAnsi)) {
 					useAnsi = __conAnsi;
 				}
@@ -1543,7 +1544,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 		}
 	}
 	
-	aWidth = _$(aWidth).isNumber().default(__con.getTerminal().getWidth() - 2);
+	aWidth = _$(aWidth).isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth() - 2);
 	Packages.openaf.asciitable.render.WidthAnsiLongestWordTab.setCallback(function(str) { return visibleLength(str) })
 	var rt = new Packages.openaf.asciitable.render.AnsiAsciiTableRenderer(true);
 	rt.setTheme(aTheme);
@@ -1605,7 +1606,7 @@ function __initializeCon() {
 			return false;
 		}
 	} else {
-		while(__con == "") sleep(25, true);
+		while(__con == "" && __conConsole) sleep(25, true)
 		__conStatus = true;
 		__conAnsi = (isDef(__conAnsi) ? __conAnsi : true);
 		if (__conAnsi == true) __ansiColorFlag = true;
@@ -4256,7 +4257,10 @@ const clone = function(aObject) {
  */
 const merge = function(objA, objB, alternative, deDup) {
 	if (isUnDef(alternative)) alternative = __flags.ALTERNATIVES.merge
-	
+
+	if ("undefined" === typeof objA) return objB
+	if ("undefined" === typeof objB) return objA
+
 	if (alternative) {
 		let stack = []
 		let result
@@ -4594,6 +4598,7 @@ var $from = function(a) {
  * to_ms(date), timeagoAbbr(x)\
  * env(str), envs(regex)\
  * oafp(json/slon)\
+ * if(cond, then, else)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -5016,6 +5021,16 @@ const $path = function(aObj, aPath, customFunctions) {
 				return _r
 			}, 
 			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		if: {
+			_func: ar => {
+				if (ar[0]) {
+					return ar[1]
+				} else {
+					return ar[2]
+				}
+			},
+			_signature: [ { types: [ jmespath.types.boolean ] }, { types: [ jmespath.types.any ] }, { types: [ jmespath.types.any ] } ]
 		},
 		ch: {
 			_func: ar => {
@@ -5480,7 +5495,9 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	var _nc = getNumberOfCores()
 
 	// If not enough cores or if too many threads in the pool then go sequential
-	var beSeq = aUseSeq || _nc < 3 || __flags.PFOREACH.forceSeq
+	var _tpstats = __getThreadPools()
+	//lprint(_tpstats)
+	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq || _tpstats.active / getNumberOfCores() > __flags.PFOREACH.seq_ratio
 	pres.forEach((part, _i_) => {
 		try {
 			if (beSeq) {
@@ -5521,7 +5538,8 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
 				
 				// Cool down and go sequential if too many threads
-				if (__getThreadPool().getQueuedTaskCount() > __getThreadPool().getPoolSize() / __flags.PFOREACH.threads_thrs) {
+				_tpstats = __getThreadPools()
+				if (_tpstats.queued > _tpstats.poolSize / __flags.PFOREACH.threads_thrs) {
 					$doWait(_ts.pop())
 				}
 			}
@@ -5529,8 +5547,8 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 			aErrFn(eee)
 		} finally {
 			// If execution time per call is too low, go sequential
-			if ( _nc >= 3 ) {
-				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms) {
+			if ( pres.length > 1 && _nc >= 3 ) {
+				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms || __getThreadPools().active / getNumberOfCores() > __flags.PFOREACH.seq_ratio) {
 					beSeq = true
 				} else {
 					beSeq = false
@@ -5543,7 +5561,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	var tries = 0
 	do {
 		$doWait($doAll(_ts))
-		if (parts.get() < pres.length) sleep(__getThreadPool().getQueuedTaskCount() * __flags.PFOREACH.waitms, true)
+		if (parts.get() < pres.length) sleep(__getThreadPools().queued * __flags.PFOREACH.waitms, true)
 		tries++
 	} while(parts.get() < pres.length && tries < 100)
 
@@ -8712,11 +8730,11 @@ __YAMLformat = {
 };
 /**
  * <odoc>
- * <key>AF.toYAML(aJson, multiDoc, sanitize) : String</key>
+ * <key>AF.toYAML(aJson, multiDoc, sanitize, shouldColor) : String</key>
  * Tries to dump aJson into a YAML string. If multiDoc = true and aJson is an array the output will be multi-document. If sanitize = true all Java objects will be converted to avoid parsing errors.
  * </odoc>
  */
-AF.prototype.toYAML = function(aJson, multiDoc, sanitize) { 
+AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) { 
 	loadJSYAML()
 	if (sanitize) {
 		aJson = clone(aJson)
@@ -8725,11 +8743,57 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize) {
 		})
 	}
     var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth }
+	var _r
 	if (isArray(aJson) && multiDoc) {
-		return aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n")
+		_r = aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n")
 	} else {
-		return jsyaml.dump(aJson, o)
+		_r = jsyaml.dump(aJson, o)
 	}
+	if (shouldColor) {
+		var fn = (o, s) => {
+			s = s.trim()
+			if (s == "true" || s == "false") s = toBoolean(s)
+			switch(descType(s)) {
+			case "string": return ansiColor(__colorFormat.string, o)
+			case "number": return ansiColor(__colorFormat.number, o)
+			case "boolean": return ansiColor(__colorFormat.boolean, o)
+			case "date": return ansiColor(__colorFormat.date, o)
+			default: return o
+			} 
+		}
+		_r = pForEach(_r.split("\n"), s => {
+			var change = false
+			if (!change && /^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +)?(.*)?/.test(s)) {
+				// key in array
+				if (!/^(\-|\s+\-)\s+['"][^'"]+:/.test(s.trim())) {
+					s = s.replace(/^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, ansiColor(__colorFormat.key, "$1") + ansiColor(__colorFormat.key, "$2:") + "$3" + fn("$4", s.replace(/^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, "$4")))
+					change = true
+				}
+			}
+			if (!change && /^(\-|\s+\-)/.test(s)) {
+				// array
+				s = s.replace(/^(\-|\s+\-)(.+)/, ansiColor(__colorFormat.default, "$1") + fn("$2", s.replace(/^(\-|\s+\-)(.+)/, "$2")))
+				change = true
+			}
+			if (!change && /^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/.test(s)) {
+				// key with value
+				s = s.replace(/^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, ansiColor(__colorFormat.key, "$1:") + "$2" + fn("$3", s.replace(/^([^(\#|\/\/|\:)]+)\:( +)?(.*)?/, "$3")))
+				change = true
+			}
+			if (/((\#|\/\/)+.+)$/.test(s)) {
+				// comment
+				s = s.replace(/((\#|\/\/)+.+)$/, ansiColor("faint,italic", "$1"))	
+				change = true
+			}
+			if (!change) {
+				// default
+				s = ansiColor(__colorFormat.default, s)
+			}
+
+			return s
+		}).join("\n")
+	}
+	return _r
 }
 
 /**
@@ -8847,7 +8911,7 @@ AF.prototype.fromJSSLON = function(aString) {
 	if (!isString(aString) || aString == "" || isNull(aString)) return {}
 
 	aString = aString.trim()
-	if (aString.startsWith("{")) {
+	if (aString.startsWith("{") || /^\[\s*\{.+\}\s*\]$/.test(aString)) {
 		return jsonParse(aString, __, __, true)
 	} else {
 		return af.fromSLON(aString)
@@ -10253,13 +10317,13 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 				if (c == 127) {
 					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
 				} else {
-					if (c > 32 && c < 255) filter += _c
+					if (c >= 32 && c < 255) filter += _c
 				}
 				if (filter.length > 0) {
 					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 				}
 			}
-        } while (c != 13)
+        } while (c != 13 && c != 10)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printnl(repeat(_v.length, " ") + "\r")
 		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
@@ -10360,7 +10424,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 				}
 			}
-        } while (c != 13)
+        } while (c != 13 && c != 10)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printnl(repeat(_v.length, " ") + "\r")
 
@@ -10593,22 +10657,55 @@ const $channels = function(a) {
  */
 const $ch = $channels;
 
-var __threadPool;
+var __threadPools
 var __threadPoolFactor = 2
 
 const __resetThreadPool = function(poolFactor) {
-	__threadPoolFactor = poolFactor;
-	__threadPool = __;
-	__getThreadPool();
+	__threadPoolFactor = poolFactor
+	if (isDef(__threadPools)) { __threadPools.forEach(r => r.shutdown()); __threadPools.length = 0 }
+	__threadPools = __
+	__getThreadPool()
 }
 
 const __getThreadPool = function() {
-	if (isUnDef(__threadPool)) {
+	if (isUnDef(__threadPools)) {
 		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores()
-		__threadPool = new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+		__threadPools = [ new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) ]
 	}
 
-	return __threadPool;
+	for(let i = 0; i < __threadPools.length; i++) {
+		if (__threadPools[i].getActiveThreadCount() < __threadPools[i].getParallelism()) return __threadPools[i]
+	}
+	__threadPools.push( new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) )
+	return __threadPools[__threadPools.length - 1]
+}
+
+const __getThreadPools = function() {
+	var _r = {
+		pools: 0,
+		active: 0,
+		running: 0,
+		queued: 0,
+		steals: 0,
+		tasks: 0,
+		parallelism: 0,
+		poolSize: 0
+	}
+
+	if (isDef(__threadPools)) {
+		__threadPools.forEach(r => {
+			_r.pools += 1
+			_r.active += r.getActiveThreadCount()
+			_r.running += r.getRunningThreadCount()
+			_r.queued += r.getQueuedSubmissionCount()
+			_r.steals += r.getStealCount()
+			_r.tasks += r.getQueuedTaskCount()
+			_r.parallelism += r.getParallelism()
+			_r.poolSize += Number(r.getPoolSize())
+		})
+	}
+
+	return _r
 }
 
 /**
@@ -12524,19 +12621,23 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			return fnP(af.fromObj2XML(res, true))
 		case "yaml":
 			return fnP(af.toYAML(res, __, true))
+		case "cyaml":
+			__ansiColorFlag = true
+			__conConsole = true
+			return fnP(af.toYAML(res, __, true, true))
 		case "table":
 			if (isMap(res)) res = [res]
 			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __)))
 			break
 		case "stable":
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, true, true))
 			break
 		case "ctable":
 			__ansiColorFlag = true
 			__conConsole = true
 			if (isMap(res)) res = [res]
-			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, false, true))
+			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, false, true))
 			break
 		case "tree":
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
@@ -12667,6 +12768,8 @@ var console = { log: log, warn: logWarn, error: logErr };
 // Set __pm
 var __pm = __pmIn;
 __pmOut = __pm;
+
+__flags = merge(__flags, getEnvsDef("OAF_FLAGS", __, __, true))
 
 // -------------------------------------
 // Profile support (must be always last)

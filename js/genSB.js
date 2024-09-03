@@ -3,7 +3,7 @@
 
 var tmpl = "#!/usr/bin/env {{openAFPath}}oaf-sb\n\nvar params = processExpr(\" \");\n// sprint(params)\n\n";
 var tmplJ = "#!/usr/bin/env {{openAFPath}}ojob-sb\n\n"
-var tmplP = "#!/usr/bin/env {{openAFPath}}oafp-sb\n"
+var tmplP = "#!/usr/bin/env -S {{openAFPath}}oafp-sb\n"
 
 var isoJob = false, isoafp = false
 var isWin = String(java.lang.System.getProperty("os.name")).match(/Windows/)

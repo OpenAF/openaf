@@ -50,6 +50,57 @@ jobs:
        is = io.readFileStream(global.path + "/docs/ojob-all.yaml")
        zip.streamPutFileStream(global.path + "/openaf.jar.orig", "docs/.ojob-all.yaml", is)
        is.close()
+ 
+   # -----------------------------
+   - name : Prepare shell complete
+     deps : 
+     - Repack OpenAFOS
+     - Prepare ojob doc
+     exec : |
+       sleep(1000, true)
+
+       plugin("ZIP")
+       var zip = new ZIP()
+
+       var fnCp = (from, to, justOrig) => {
+          if (!justOrig) {
+            log("Copying " + from + " to " + to + "...")
+            try {
+              var is = io.readFileStream(from)
+              zip.streamPutFileStream(global.path + "/openaf.jar", to, is)
+              is.close()
+              zip.close()
+            } catch(e) {
+              logErr("Error copying " + from + " to (openaf.jar)" + to + ": " + e)
+            }
+          }
+          try {
+            var is = io.readFileStream(from)
+            zip.streamPutFileStream(global.path + "/openaf.jar.orig", to, is)
+            is.close()
+            zip.close()
+          } catch(e) {
+            logErr("Error copying " + from + " to (openaf.jar.orig)" + to + ": " + e)
+          }
+       }
+
+       log("Generating completion scripts...")
+       pForEach(["oaf", "oafp", "opack"], r => {
+          $sh(getOpenAFPath() + "/ojob " + global.path + "/complete/completion.yaml tool=" + r + " file=" + global.path + "/complete/completion_" + r + ".yaml > " + global.path + "/complete/completion_" + r + ".sh").exec()
+       })
+
+       fnCp(global.path + "/complete/completion.yaml", "complete/completion.yaml")
+       fnCp(global.path + "/complete/completion_bash.hbs", "complete/completion_bash.hbs")
+       fnCp(global.path + "/complete/completion_zsh.hbs", "complete/completion_zsh.hbs")
+
+       fnCp(global.path + "/complete/completion_oaf.sh", "complete/completion_oaf.sh")
+       fnCp(global.path + "/complete/completion_oafp.sh", "complete/completion_oafp.sh")
+       fnCp(global.path + "/complete/completion_opack.sh", "complete/completion_opack.sh")
+
+       fnCp(global.path + "/complete/completion_oaf.yaml", "complete/completion_oaf.yaml", true)
+       fnCp(global.path + "/complete/completion_oafp.yaml", "complete/completion_oafp.yaml", true)
+       fnCp(global.path + "/complete/completion_opack.yaml", "complete/completion_opack.yaml", true)
+       fnCp(global.path + "/complete/completion_ojob.yaml", "complete/completion_ojob.yaml") 
 
    # -------------------------
    - name : Prepare ojob saved
@@ -74,6 +125,7 @@ jobs:
 todo:
 - Prepare ojob saved
 - Prepare ojob doc
+- Prepare shell complete
 - Build OpenAFOS
 - Repack OpenAFOS
 - Copy OpenAF

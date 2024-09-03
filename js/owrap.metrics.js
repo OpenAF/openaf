@@ -58,15 +58,7 @@ OpenWrap.metrics.prototype.__m = {
             logWarn: __clogWarn.get(),
             cpuCores: __cpucores,
             threadPoolFactor: __threadPoolFactor,
-            mainThreadPool: {
-                parallelism: __getThreadPool().getParallelism(),
-                size: __getThreadPool().getPoolSize(),
-                active: __getThreadPool().getActiveThreadCount(),
-                running: __getThreadPool().getRunningThreadCount(),
-                steals: __getThreadPool().getStealCount(),
-                tasks: __getThreadPool().getQueuedTaskCount(),
-                queued: __getThreadPool().getQueuedSubmissionCount()
-            },
+            mainThreadPool: __getThreadPools(),
             bottlenecks: (isDef(global.__bottleneck) ? Object.keys(global.__bottleneck).map(r => ({
                 name    : r,
                 running : global.__bottleneck[r].atomic.get(),

@@ -30,6 +30,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
@@ -65,6 +67,9 @@ public class ZIP extends ScriptableObject {
 	protected Map<String, ZipEntry> zipEntries = new ConcurrentHashMap<String, ZipEntry>();
 	protected Map<String, byte[]> zipData = new ConcurrentHashMap<String, byte[]>();
 
+	static final ConcurrentHashMap<URI, FileSystem> fileSystems = new ConcurrentHashMap<>();
+	static final ReentrantLock lock = new ReentrantLock();
+
 	@Override
 	public String getClassName() {
 		return "ZIP";
@@ -73,6 +78,7 @@ public class ZIP extends ScriptableObject {
 	/**
 	 * 
 	 * @param data
+	 * @throws InterruptedException 
 	 * @throws IOException 
 	 */
 //	@JSConstructor
@@ -81,6 +87,16 @@ public class ZIP extends ScriptableObject {
 //			load(data);
 //	}
 	
+	protected void waitForFileSystem(URI uri) {
+		while(fileSystems.containsKey(uri)) {
+			lock.unlock();
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) { }
+			lock.lock();
+		}
+	}
+
 	/**
 	 * <odoc>
 	 * <key>ZIP.ZIP(anArrayOfBytes) : ZIP</key>
@@ -292,7 +308,10 @@ public class ZIP extends ScriptableObject {
 		env.put("create", "true");
 		if (useTempFile) env.put("useTempFile", "true");
 
+		lock.lock();
+		waitForFileSystem(uri);
 		try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
+			fileSystems.put(uri, fs);
 			SimpleLog.log(logtype.DEBUG, "put file with data of type " + data.getClass().getName(), null);
 			Path nf = fs.getPath(name);
 			
@@ -309,7 +328,10 @@ public class ZIP extends ScriptableObject {
 				}
 			} catch(NoSuchFileException nsfe) {
 			}
-		} 
+		} finally {
+			fileSystems.remove(uri);
+			lock.unlock();
+		}
 	}
 	
 	/**
@@ -329,7 +351,10 @@ public class ZIP extends ScriptableObject {
 		env.put("create", "true");
 		if (useTempFile) env.put("useTempFile", "true");
 		
+		lock.lock();
+		waitForFileSystem(uri);
 		try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {
+			fileSystems.put(uri, fs);
 			SimpleLog.log(logtype.DEBUG, "put file with data of type " + data.getClass().getName(), null);
 		
 			if (data instanceof NativeArray) {
@@ -354,7 +379,10 @@ public class ZIP extends ScriptableObject {
 				else
 					Files.write(nf, (byte[]) data);
 			}
-		} 
+		} finally {
+			fileSystems.remove(uri);
+			lock.unlock();
+		}
 	}
 	
 	/**
@@ -371,10 +399,16 @@ public class ZIP extends ScriptableObject {
 		env.put("create", "true");
 		if (useTempFile) env.put("useTempFile", "true");
 		
-		try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {			
+		lock.lock();
+		waitForFileSystem(uri);
+		try (FileSystem fs = FileSystems.newFileSystem(uri, env)) {	
+			fileSystems.put(uri, fs);		
 			Path nf = fs.getPath(name);
 			Files.deleteIfExists(nf);
-		} 
+		} finally {
+			fileSystems.remove(uri);
+			lock.unlock();
+		}
 	}
 
 	/**
@@ -402,8 +436,13 @@ public class ZIP extends ScriptableObject {
 		Map<String, String> env = new HashMap<>();
 		env.put("create", "true");
 		FileSystem fs = null;
+
+		lock.lock();
+		waitForFileSystem(uri);
 		try {
 			fs = FileSystems.newFileSystem(uri, env);
+			fileSystems.put(uri, fs);
+
 			Path nf = fs.getPath(aFolder);
 			if (Files.notExists(nf)) {
 				Files.createDirectory(nf);
@@ -415,6 +454,8 @@ public class ZIP extends ScriptableObject {
 			if (fs != null) {
 				fs.close();
 			}
+			fileSystems.remove(uri);
+			lock.unlock();
 		}
 	}
 

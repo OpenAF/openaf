@@ -1,0 +1,25 @@
+complete:
+- name: -compile
+  desc: Compile all includes and current file into a single yaml output.
+- name: -tojson
+  desc: Outputs all includes and current file into a single json output.
+- name: -json
+  desc: Sets argument __format to 'json' for used with ow.oJob.output.
+- name: -gb64json
+  desc: Sets argument __format to 'gb64json' for used with ow.oJob.output.
+- name: -jobs
+  desc: List all jobs available.
+- name: -todo
+  desc: List the final todo list.
+- name: -deps
+  desc: Draws a list of dependencies of todo jobs on a file.
+- name: -jobhelp
+  desc: Display any available help information for a job.
+- name: -syntax
+  desc: Display the ojob syntax in yaml.
+- name: -which
+  desc: Determines from where an oJob will be loaded from.
+- name: -global
+  desc: List global jobs for this installation.
+- name: -shortcuts
+  desc: Lists the included ojob shortcuts.
