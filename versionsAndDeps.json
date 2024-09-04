@@ -188,8 +188,8 @@
 		},
 		{
 			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.15.1.jar"],
-			"version": "2.10.0",
+			"path": ["lib/commons-io-2.16.1.jar"],
+			"version": "2.16.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -206,8 +206,8 @@
 		},
 		{
 			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.14.0.jar"],
-			"version": "3.13.0",
+			"path": ["lib/commons-lang3-3.17.0.jar"],
+			"version": "3.17.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -224,17 +224,8 @@
 		},
 		{
 			"description": "Apache Commons Compress",
-			"path": ["lib/commons-compress-1.25.0.jar"],
-			"version": "1.23",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
-			"deps": []
-		},
-		{
-			"description": "Apache Commons HTTPComponents",
-			"path": ["lib/httpclient-4.5.13.jar", "lib/httpcore-4.4.14.jar", "lib/httpmime-4.5.13.jar"],
-			"version": "4.5.13",
+			"path": ["lib/commons-compress-1.27.1.jar"],
+			"version": "1.27.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -242,7 +233,7 @@
 		},
 		{
 			"description": "OkHTTP Client",
-			"path": ["okhttp-4.12.0.jar", "okio-3.8.0.jar", "okio-jvm-3.8.0.jar", "kotlin-stdlib-1.9.24.jar"],
+			"path": ["okhttp-4.12.0.jar", "okio-3.9.0.jar", "okio-jvm-3.9.0.jar", "kotlin-stdlib-2.0.20.jar"],
 			"version": "4.12.0",
 			"changes": false,
 			"type": ["java"],
@@ -260,8 +251,8 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.7.1.jar"],
-			"version": "42.7.1",
+			"path": ["lib/postgresql-42.7.4.jar"],
+			"version": "42.7.4",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -269,8 +260,8 @@
 		},
 		{
 			"description": "DNS Java",
-			"path": ["lib/dnsjava-3.5.3.jar"],
-			"version": "3.5.3",
+			"path": ["lib/dnsjava-3.6.1.jar"],
+			"version": "3.6.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://github.com/dnsjava/dnsjava/blob/master/LICENSE",
@@ -310,8 +301,8 @@
 		},
 		{
 			"description": "GSON",
-			"path": ["lib/gson-2.9.1.jar"],
-			"version": "2.9.1",
+			"path": ["lib/gson-2.11.0.jar"],
+			"version": "2.11.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/google/gson/master/LICENSE",
@@ -323,8 +314,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.17.1.jar"],
-			"version": "2.16.1",
+			"path": ["lib/jackson-core-2.17.2.jar"],
+			"version": "2.17.2",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
@@ -384,33 +375,33 @@
 			"removable": true,
 			"deps": [
 				"lib/javax.mail.jar",
-				"lib/commons-email-1.5.jar"
+				"lib/commons-email-1.6.0.jar"
 			],
 			"hardDeps": [
-				"lib/commons-net-3.11.0.jar"
+				"lib/commons-net-3.11.1.jar"
 			]
 		},
 		{
 			"name": "HTTP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.15.1.jar",
-				"lib/jetty-io-9.4.54.jar",
-				"lib/jetty-util-9.4.54.jar",
-				"lib/jetty-client-9.4.54.jar",
-				"lib/jetty-http-9.4.54.jar"
+				"lib/commons-io-2.16.1.jar",
+				"lib/jetty-io-9.4.56.jar",
+				"lib/jetty-util-9.4.56.jar",
+				"lib/jetty-client-9.4.56.jar",
+				"lib/jetty-http-9.4.56.jar"
 			],
 			"deps": [
-				"lib/websocket-api-9.4.54.jar",
-				"lib/websocket-client-9.4.54.jar",
-				"lib/websocket-common-9.4.54.jar"
+				"lib/websocket-api-9.4.56.jar",
+				"lib/websocket-client-9.4.56.jar",
+				"lib/websocket-common-9.4.56.jar"
 			]
 		},
 		{
 			"name": "JMX",
 			"removable": true,
 			"deps": [
-				"lib/jodd-5.1.0.jar",
+				"lib/jodd-3.6.6.jar",
 				"lib/tools-attach.jar"
 			]
 		},
@@ -439,10 +430,10 @@
 			"name": "SSH",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.15.1.jar"
+				"lib/commons-io-2.16.1.jar"
 			],
 			"deps": [
-				"lib/jsch-0.2.16.jar",
+				"lib/jsch-0.2.19.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -471,8 +462,8 @@
 			"name": "ZIP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.15.1.jar",
-				"lib/commons-compress-1.25.0.jar"
+				"lib/commons-io-2.16.1.jar",
+				"lib/commons-compress-1.27.1.jar"
 			],
 			"deps": []
 		},
@@ -480,7 +471,7 @@
 			"name": "BSDiff",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-compress-1.25.0.jar"
+				"lib/commons-compress-1.27.1.jar"
 			],
 			"deps": [
 				"lib/jbsdiff-1.0.jar"
@@ -497,7 +488,7 @@
 			"name": "PostgreSQL",
 			"removable": true,
 			"deps": [
-				"lib/postgresql-42.5.1.jar"
+				"lib/postgresql-42.7.4.jar"
 			]
 		}
 	]
