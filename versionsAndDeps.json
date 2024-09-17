@@ -136,8 +136,8 @@
 		},
 		{
 			"description": "H2",
-			"path": ["lib/h2-2.2.224.jar"],
-			"version": "2.2.224",
+			"path": ["lib/h2-2.3.232.jar"],
+			"version": "2.3.232",
 			"changes": false,
 			"type": ["java"],
 			"license": "This software contains unmodified binary redistributions for H2 database engine (http://www.h2database.com/), which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License). An original copy of the license agreement can be found at: http://www.h2database.com/html/license.html",
@@ -156,8 +156,8 @@
 		},
 		{
 			"description": "jjwt",
-			"path": ["lib/jjwt-api-0.12.5.jar", "lib/jjwt-gson-0.12.5.jar", "lib/jjwt-impl-0.12.5.jar"],
-			"version": "0.12.4",
+			"path": ["lib/jjwt-api-0.12.6.jar", "lib/jjwt-gson-0.12.6.jar", "lib/jjwt-impl-0.12.6.jar"],
+			"version": "0.12.6",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",
@@ -197,8 +197,8 @@
 		},
 		{
 			"description": "Apache Commons CSV",
-			"path": ["lib/commons-csv-1.11.jar"],
-			"version": "1.11",
+			"path": ["lib/commons-csv-1.11.0.jar"],
+			"version": "1.11.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -231,6 +231,15 @@
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
 			"deps": []
 		},
+		/*{
+			"description": "Apache Commons HTTPComponents",
+			"path": ["lib/httpclient-4.5.13.jar", "lib/httpcore-4.4.14.jar", "lib/httpmime-4.5.13.jar"],
+			"version": "4.5.13",
+			"changes": false,
+			"type": ["java"],
+			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
+			"deps": []
+		},*/
 		{
 			"description": "OkHTTP Client",
 			"path": ["okhttp-4.12.0.jar", "okio-3.9.0.jar", "okio-jvm-3.9.0.jar", "kotlin-stdlib-2.0.20.jar"],
