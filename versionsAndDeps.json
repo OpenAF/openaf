@@ -206,8 +206,8 @@
 		},
 		{
 			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.16.0.jar"],
-			"version": "3.16.0",
+			"path": ["lib/commons-lang3-3.17.0.jar"],
+			"version": "3.17.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -224,8 +224,8 @@
 		},
 		{
 			"description": "Apache Commons Compress",
-			"path": ["lib/commons-compress-1.26.2.jar"],
-			"version": "1.26.2",
+			"path": ["lib/commons-compress-1.27.1.jar"],
+			"version": "1.27.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -242,7 +242,7 @@
 		},*/
 		{
 			"description": "OkHTTP Client",
-			"path": ["okhttp-4.12.0.jar", "okio-3.9.0.jar", "okio-jvm-3.0.0.jar", "kotlin-stdlib-2.0.0.jar"],
+			"path": ["okhttp-4.12.0.jar", "okio-3.9.0.jar", "okio-jvm-3.9.0.jar", "kotlin-stdlib-2.0.20.jar"],
 			"version": "4.12.0",
 			"changes": false,
 			"type": ["java"],
@@ -260,8 +260,8 @@
 		},
 		{
 			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.7.3.jar"],
-			"version": "42.7.3",
+			"path": ["lib/postgresql-42.7.4.jar"],
+			"version": "42.7.4",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -395,15 +395,15 @@
 			"removable": false,
 			"hardDeps": [
 				"lib/commons-io-2.16.1.jar",
-				"lib/jetty-io-9.4.55.jar",
-				"lib/jetty-util-9.4.55.jar",
-				"lib/jetty-client-9.4.55.jar",
-				"lib/jetty-http-9.4.55.jar"
+				"lib/jetty-io-9.4.56.jar",
+				"lib/jetty-util-9.4.56.jar",
+				"lib/jetty-client-9.4.56.jar",
+				"lib/jetty-http-9.4.56.jar"
 			],
 			"deps": [
-				"lib/websocket-api-9.4.55.jar",
-				"lib/websocket-client-9.4.55.jar",
-				"lib/websocket-common-9.4.55.jar"
+				"lib/websocket-api-9.4.56.jar",
+				"lib/websocket-client-9.4.56.jar",
+				"lib/websocket-common-9.4.56.jar"
 			]
 		},
 		{
@@ -472,7 +472,7 @@
 			"removable": false,
 			"hardDeps": [
 				"lib/commons-io-2.16.1.jar",
-				"lib/commons-compress-1.26.2.jar"
+				"lib/commons-compress-1.27.1.jar"
 			],
 			"deps": []
 		},
@@ -480,7 +480,7 @@
 			"name": "BSDiff",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-compress-1.26.2.jar"
+				"lib/commons-compress-1.27.1.jar"
 			],
 			"deps": [
 				"lib/jbsdiff-1.0.jar"
@@ -497,7 +497,7 @@
 			"name": "PostgreSQL",
 			"removable": true,
 			"deps": [
-				"lib/postgresql-42.7.3.jar"
+				"lib/postgresql-42.7.4.jar"
 			]
 		}
 	]

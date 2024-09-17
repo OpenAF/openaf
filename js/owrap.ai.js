@@ -86,6 +86,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _temperature = aOptions.temperature
             var _r = {
                 conversation: [],
+                tools: {},
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -93,8 +94,20 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isArray(aConversation)) _r.conversation = aConversation
                     return _r
                 },
-                prompt: (aPrompt, aModel, aTemperature, aJsonFlag) => {
-                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag)
+                setTool: (aName, aDesc, aParams, aFn) => {
+                    _r.tools[aName] = {
+                        type: "function",
+                        function: {
+                            name: aName,
+                            description: aDesc,
+                            parameters: aParams
+                        },
+                        fn: aFn
+                    }
+                    return _r
+                },
+                prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
                     if (isArray(__r.choices) && __r.choices.length > 0) {
                         if (__r.choices[0].finish_reason == "stop") {
                            return __r.choices[0].message.content
@@ -130,11 +143,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     return __r
                 },
-                rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag) => {
+                rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag, aTools) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
+                    aTools       = _$(aTools, "aTools").isArray().default(__)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
@@ -143,12 +157,51 @@ OpenWrap.ai.prototype.__gpttypes = {
                  
                     if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
                     _r.conversation = aPrompt
-                    return _r._request("/v1/chat/completions", merge({
-                       model: aModel,
-                       temperature: aTemperature,
-                       messages: msgs,
-                       response_format: (aJsonFlag ? { type: "json_object" } : __)
-                    }, aOptions.params))   
+                    var body = {
+                        model: aModel,
+                        temperature: aTemperature,
+                        messages: msgs,
+                        response_format: (aJsonFlag ? { type: "json_object" } : __)
+                    }
+                    body = merge(body, aOptions.params)
+                    if (isArray(aTools) && aTools.length > 0) {
+                        body.tools = aTools.map(t => {
+                            var _t = _r.tools[t].function
+                            return {
+                                type: "function",
+                                function: {
+                                    name: _t.name,
+                                    description: _t.description,
+                                    parameters: _t.parameters
+                                }
+                            }
+                        })
+                    }
+                    var _res = _r._request("/v1/chat/completions", body)   
+                    if (isDef(_res) && isArray(_res.choices)) {
+                        // call tools
+                        var _p = [], stopWith = false
+                        _res.choices.forEach(tc => {
+                            if (isDef(tc.message) && isArray(tc.message.tool_calls)) {
+                                tc.message.tool_calls.forEach(tci => {
+                                    var _t = _r.tools[tci.function.name]
+                                    var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
+                                    _p.push({ role: "assistant", tool_calls: [ tci ]})
+                                    _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
+                                })
+                            }
+                            if (isDef(tc.finish_reason) && tc.finish_reason == "stop") {
+                                _p.push({ role: "assistant", content: tc.message.content })
+                                stopWith = true
+                            }
+                        })
+                        if (stopWith)
+                            return _res
+                        else
+                            return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                    } else {
+                        return _res
+                    }
                 },
                 rawImgGen: (aPrompt, aModel) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
@@ -262,6 +315,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
             var _r = {
                 conversation: [],
+                tools: {},
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -269,8 +323,20 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isArray(aConversation)) _r.conversation = aConversation
                     return _r
                 },
-                prompt: (aPrompt, aModel, aTemperature, aJsonFlag) => {
-                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag)
+                setTool: (aName, aDesc, aParams, aFn) => {
+                    _r.tools[aName] = {
+                        type: "function",
+                        function: {
+                            name: aName,
+                            description: aDesc,
+                            parameters: aParams
+                        },
+                        fn: aFn
+                    }
+                    return _r
+                },
+                prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
                     if (isMap(__r.message)) {
                         return __r.message.content
                      }
@@ -299,11 +365,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isMap(__r.message) && isString(__r.message.content)) return __r.message.content.trim()
                     return __r
                 },
-                rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag) => {
+                rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag, aTools) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
+                    aTools       = _$(aTools, "aTools").isArray().default(__)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
@@ -321,9 +388,38 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (aJsonFlag) {
                         body.format = "json"
-                    } 
+                    }
+                    if (isArray(aTools) && aTools.length > 0) {
+                        body.tools = aTools.map(t => {
+                            var _t = _r.tools[t].function
+                            return {
+                                type: "function",
+                                function: {
+                                    name: _t.name,
+                                    description: _t.description,
+                                    parameters: _t.parameters
+                                }
+                            }
+                        })
+                    }
                     _r.conversation = aPrompt
-                    return _r._request(uri, body)   
+                    var _res = _r._request(uri, body)
+
+                    if (isDef(_res) && isDef(_res.message) && isArray(_res.message["tool_calls"])) {
+                        // call tools
+                        var _p = []
+                        _res.message["tool_calls"].forEach(tc => {
+                            if (isDef(tc.function)) {
+                                var _t = _r.tools[tc.function.name]
+                                var _tr = stringify(_t.fn(_t.arguments), __, "")
+                                if (isDef(tc.function.id)) _tr.tool_call_id = tc.function.id
+                                _p.push({ role: "tool", content: _tr, tool_call_id: tc.function.id })
+                            }
+                        })
+                        return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                    } else {
+                        return _res
+                    }
                 },
                 rawImgGen: (aPrompt, aModel) => {
                     throw "Not implemented for Ollama"
@@ -442,12 +538,12 @@ OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag) : String</key>
+ * <key>ow.ai.gpt.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) : String</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag) {
-    return this.model.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag)
+OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
+    return this.model.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools)
 }
 
 /**
@@ -483,12 +579,12 @@ OpenWrap.ai.prototype.gpt.prototype.setConversation = function(aConversation) {
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.rawPrompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag) : String</key>
+ * <key>ow.ai.gpt.rawPrompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) : String</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag) {
-    return this.model.rawPrompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag)
+OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
+    return this.model.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
 }
 
 /**
@@ -575,28 +671,39 @@ OpenWrap.ai.prototype.gpt.prototype.cleanPrompt = function() {
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.jsonPrompt(aPrompt, aModel, aTemperature) : Object</key>
+ * <key>ow.ai.gpt.jsonPrompt(aPrompt, aModel, aTemperature, tools) : Object</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature) {
+OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemperature, tools) {
     this.setInstructions("json")
 
-    var out = this.model.prompt(aPrompt, aModel, aTemperature, true)
+    var out = this.model.prompt(aPrompt, aModel, aTemperature, true, tools)
     return isString(out) ? jsonParse(out, __, __, true) : out 
 }
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.booleanPrompt(aPrompt, aModel, aTemperature) : boolean</key>
+ * <key>ow.ai.gpt.booleanPrompt(aPrompt, aModel, aTemperature, tools) : boolean</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.booleanPrompt = function(aPrompt, aModel, aTemperature) {
+OpenWrap.ai.prototype.gpt.prototype.booleanPrompt = function(aPrompt, aModel, aTemperature, tools) {
     this.setInstructions("boolean")
 
-    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    var out = this.model.prompt(aPrompt, aModel, aTemperature, tools)
     return isString(out) ? (out.toLowerCase() == "true") : out 
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.setTool(aName, aDesc, aParams, aFn) : ow.ai.gpt</key>
+ * Sets a tool with aName, aDesc (description), aParams (a json schema) and aFn (a javascript function tha receives a map according with the provided json schema and returns a map)
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.setTool = function(aName, aDesc, aParams, aFn) {
+    this.model.setTool(aName, aDesc, aParams, aFn)
+    return this
 }
 
 /**
@@ -625,30 +732,30 @@ OpenWrap.ai.prototype.gpt.prototype.setInstructions = function(aType) {
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.sqlPrompt(aPrompt, aTableDefs, aDBName, aModel, aTemperature) : String</key>
+ * <key>ow.ai.gpt.sqlPrompt(aPrompt, aTableDefs, aDBName, aModel, aTemperature, tools) : String</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.sqlPrompt = function(aPrompt, aTableDefs, aDBName, aModel, aTemperature) {
+OpenWrap.ai.prototype.gpt.prototype.sqlPrompt = function(aPrompt, aTableDefs, aDBName, aModel, aTemperature, tools) {
     aDBName = _$(aDBName, "aDBName").isString().default("H2")
     aTableDefs = _$(aTableDefs, "aTableDefs").isArray().$_()
 
     this.addSystemPrompt("Acting as a powerfull SQL assistant you can only output an answer as a single " + aDBName + " database SQL query, where all column names are double-quoted, considering the table '" + aTableDefs.join("' and the table '") + "'")
-    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    var out = this.model.prompt(aPrompt, aModel, aTemperature, tools)
     return out
 }
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.pathPrompt(aPrompt, aJSONSchemaDef, aModel, aTemperature) : String</key>
+ * <key>ow.ai.gpt.pathPrompt(aPrompt, aJSONSchemaDef, aModel, aTemperature, tools) : String</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.pathPrompt = function(aPrompt, aJSONSchemaDef, aModel, aTemperature) {
+OpenWrap.ai.prototype.gpt.prototype.pathPrompt = function(aPrompt, aJSONSchemaDef, aModel, aTemperature, tools) {
     this.addSystemPrompt("you can only output an answer as a single JMESPath query string to use as argument for JMESPath")
     this.addSystemPrompt("consider the array to be queried is composed of maps with the following json schema " + stringify(aJSONSchemaDef,__,""))
     
-    var out = this.model.prompt(aPrompt, aModel, aTemperature)
+    var out = this.model.prompt(aPrompt, aModel, aTemperature, tools)
     return out
 }
 
@@ -739,12 +846,12 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
-         * <key>$gpt.prompt(aPrompt, aRole, aModel, aTemperature) : String</key>
+         * <key>$gpt.prompt(aPrompt, aRole, aModel, aTemperature, tools) : String</key>
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor).
          * </odoc>
          */
-        prompt: (aPrompt, aRole, aModel, aTemperature) => {
-            return _g.prompt(aPrompt, aRole, aModel, aTemperature)
+        prompt: (aPrompt, aRole, aModel, aTemperature, tools) => {
+            return _g.prompt(aPrompt, aRole, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -767,30 +874,30 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
-         * <key>$gpt.promptMD(aPrompt, aRole, aModel, aTemperature) : String</key>
+         * <key>$gpt.promptMD(aPrompt, aRole, aModel, aTemperature, tools) : String</key>
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a markdown string.
          * </odoc>
          */
-        promptMD: (aPrompt, aRole, aModel, aTemperature) => {
-            return ow.loadFormat().withMD(_g.prompt(aPrompt, aRole, aModel, aTemperature))
+        promptMD: (aPrompt, aRole, aModel, aTemperature, tools) => {
+            return ow.loadFormat().withMD(_g.prompt(aPrompt, aRole, aModel, aTemperature, tools))
         },
         /**
          * <odoc>
-         * <key>$gpt.promptBool(aPrompt, aRole, aModel, aTemperature) : boolean</key>
+         * <key>$gpt.promptBool(aPrompt, aRole, aModel, aTemperature, tools) : boolean</key>
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a boolean.
          * </odoc>
          */
-        promptBool: (aPrompt, aRole, aModel, aTemperature) => {
-            return _g.booleanPrompt(aPrompt, aRole, aModel, aTemperature)
+        promptBool: (aPrompt, aRole, aModel, aTemperature, tools) => {
+            return _g.booleanPrompt(aPrompt, aRole, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
-         * <key>$gpt.promptSQL(aPrompt, aTableDefs, aDBName, aModel, aTemperature)</key>
+         * <key>$gpt.promptSQL(aPrompt, aTableDefs, aDBName, aModel, aTemperature, tools)</key>
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a SQL query.
          * </odoc>
          */
-        promptSQL: (aPrompt, aTableDefs, aDBName, aModel, aTemperature) => {
-            return _g.sqlPrompt(aPrompt, _dbtbls, _dbname, aModel, aTemperature)
+        promptSQL: (aPrompt, aTableDefs, aDBName, aModel, aTemperature, tools) => {
+            return _g.sqlPrompt(aPrompt, _dbtbls, _dbname, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -798,8 +905,8 @@ global.$gpt = function(aModel) {
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a JMESPath query.
          * </odoc>
          */
-        promptPath: (aPrompt, aJSONSchemaDef, aModel, aTemperature) => {
-            return _g.pathPrompt(aPrompt, aJSONSchemaDef, aModel, aTemperature)
+        promptPath: (aPrompt, aJSONSchemaDef, aModel, aTemperature, tools) => {
+            return _g.pathPrompt(aPrompt, aJSONSchemaDef, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -807,8 +914,8 @@ global.$gpt = function(aModel) {
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a Javascript function.
          * </odoc>
          */
-        promptJSON: (aPrompt, aModel, aTemperature) => {
-            return _g.jsonPrompt(aPrompt, aModel, aTemperature)
+        promptJSON: (aPrompt, aModel, aTemperature, tools) => {
+            return _g.jsonPrompt(aPrompt, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -816,8 +923,8 @@ global.$gpt = function(aModel) {
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) after cleaning the current conversation.
          * </odoc>
          */
-        iniPrompt: (aPrompt, aRole, aModel, aTemperature) => {
-            return _g.cleanPrompt().prompt(aPrompt, aRole, aModel, aTemperature)
+        iniPrompt: (aPrompt, aRole, aModel, aTemperature, tools) => {
+            return _g.cleanPrompt().prompt(aPrompt, aRole, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
@@ -844,6 +951,16 @@ global.$gpt = function(aModel) {
 
             _g.addSystemPrompt("with " + aContext + ": " + stringify(anObject, __, ""))
 
+            return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.setTool(aName, aDesc, aParams, aFn) : ow.ai.gpt</key>
+         * Sets a tool with aName, aDesc (description), aParams (a json schema) and aFn (a javascript function tha receives a map according with the provided json schema and returns a map)
+         * </odoc>
+         */
+        withTool: (aName, aDesc, aParams, aFn) => {
+            _g.model.setTool(aName, aDesc, aParams, aFn)
             return _r
         },
         /**
