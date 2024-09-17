@@ -3,7 +3,7 @@
  
   <groupId>openaf</groupId>
   <artifactId>openaf</artifactId>
-  <version>20201024</version>
+  <version>20240812</version>
   <packaging>pom</packaging>
   
   <build>
