@@ -242,7 +242,7 @@
 		},*/
 		{
 			"description": "OkHTTP Client",
-			"path": ["okhttp-4.12.0.jar", "okio-3.9.0.jar", "okio-jvm-3.9.0.jar", "kotlin-stdlib-2.0.20.jar"],
+			"path": ["okhttp-4.12.0.jar", "okio-3.9.1.jar", "okio-jvm-3.9.1.jar", "kotlin-stdlib-2.0.20.jar"],
 			"version": "4.12.0",
 			"changes": false,
 			"type": ["java"],
@@ -442,7 +442,7 @@
 				"lib/commons-io-2.16.1.jar"
 			],
 			"deps": [
-				"lib/jsch-0.2.19.jar",
+				"lib/jsch-0.2.20.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
