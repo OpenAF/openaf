@@ -816,3 +816,51 @@ OpenWrap.net.prototype.ipv4SubNetInRange = function(aAddr, aCIDR, aMask) {
     return result;
 };
 
+/**
+ * <odoc>
+ * <key>ow.net.getIP2ASNCache() : Array</key>
+ * Will retrieve the current IP to ASN cache from the iptoasn.com service.
+ * </odoc>
+ */
+OpenWrap.net.prototype.getIP2ASNCache = function() {
+    var tmpfs = io.createTempFile("ip2asn", "tsv.gz")
+    $rest().get2File(tmpfs, "https://api.iptoasn.com/data/ip2asn-combined.tsv.gz")
+    var gzStream = io.readFileGzipStream(tmpfs)
+    var outStream = af.newOutputStream()
+    ioStreamCopy(outStream, gzStream)
+    gzStream.close()
+
+    var str = String(outStream.toString())
+    outStream.close()
+    var data = $path(str.split("\n"), "[?length(@)>'0'].split(@,'\t').{start:[0],end:[1],asn:[2],area:[3],name:[4]}")
+    str = __
+
+    ow.loadFormat()
+    data.forEach(r => { 
+        r.istart = ow.format.IP2int(r.start)
+        r.iend = ow.format.IP2int(r.end)
+    })
+    return data
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.getIP2ASN(aIP, aIP2ASNCache, aTimeout) : Map</key>
+ * Given an aIP will try to retrieve the corresponding ASN information from the aIP2ASNCache (defaults to the one retrieved
+ * by ow.net.getIP2ASNCache()).
+ * </odoc>
+ */
+OpenWrap.net.prototype.getIP2ASN = function(aIP, aIP2ASNCache, aTimeout) {
+    _$(aIP, "IP").isString().$_()
+    aTimeout = _$(aTimeout, "aTimeout").isNumber().default(1000 * 60 * 60 * 24)
+    if (isUnDef(aIP2ASNCache)) {
+        $cache("ow.net.ip2asn")
+        .ttl(aTimeout)
+        .fn(k => ow.net.getIP2ASNCache())
+        .create()
+        aIP2ASNCache = $cache("ow.net.ip2asn").get({})
+    }
+    var iip = ow.format.IP2int(ow.net.getHost2IP(aIP))
+    var res = aIP2ASNCache.find(r => r.istart <= iip && r.iend >= iip)
+    return res
+}
