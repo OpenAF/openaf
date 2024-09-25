@@ -40,7 +40,7 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
       $ch("___openaf_sbuckets" + rep).create();
       var evs = getEnvs(), envs = {};
       Object.keys(evs).forEach(env => {
-         if (evs[env].trim().indexOf("{") == 0) {
+         /*if (evs[env].trim().indexOf("{") == 0) {
             envs[env] = jsonParse(evs[env], true, __, true)
          } else {
             if (evs[env].trim().indexOf("(") == 0) {
@@ -48,7 +48,8 @@ OpenWrap.sec.prototype.openSBuckets = function(aRepo, aMainSecret, aFile) {
             } else {
                envs[env] = evs[env]
             }
-         }
+         }*/
+         envs[env] = af.fromJSSLON(evs[env])
       })
       $ch("___openaf_sbuckets" + rep).set({ sbucket: "envs" }, envs);
    }
