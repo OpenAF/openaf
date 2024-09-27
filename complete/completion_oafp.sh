@@ -8,7 +8,7 @@ F_in__in_ch=0
 F_in__in_ch_inch=1
 F_in__in_ch_inchall=1
 F_in__in_csv=0
-F_in__in_csv_csv_=1
+F_in__in_csv_incsv_=1
 F_in__in_db=0
 F_in__in_db_indbjdbc_=1
 F_in__in_db_indbuser_=1
@@ -85,15 +85,10 @@ F_out__out_cmd_outcmdjoin_=1
 F_out__out_cmd_outcmdseq_=1
 F_out__out_cmd_outcmdnl_=1
 F_out__out_cmd_outcmdparam_=1
+F_out__out_cmd_outcmdtmpl_=1
 F_out__out_cslon=0
 F_out__out_csv=0
-F_out__out_csv_format_=1
-F_out__out_csv_withHeader_=1
-F_out__out_csv_withHeaders_=1
-F_out__out_csv_quoteMode_=1
-F_out__out_csv_withDelimiter_=1
-F_out__out_csv_withEscape_=1
-F_out__out_csv_withNullString_=1
+F_out__out_csv_csv_=1
 F_out__out_ctable=0
 F_out__out_ctree=0
 F_out__out_cyaml=0
@@ -153,6 +148,7 @@ F_out__out_template=0
 F_out__out_template_template_=1
 F_out__out_template_templatepath_=1
 F_out__out_template_templatedata_=1
+F_out__out_template_templatetmpl_=1
 F_out__out_text=0
 F_out__out_toml=0
 F_out__out_tree=0
@@ -250,7 +246,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#inch}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inch=0; fi
     if [ "${arg#inchall}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inchall=0; fi
     if [ "$arg" = "in=csv" ]; then FFOUND=1; F_in__in_csv=1; F_in_=0; fi
-    if [ "${arg#csv=}" != "$arg" ]; then FFOUND=1; F_in__in_csv_csv_=0; fi
+    if [ "${arg#incsv=}" != "$arg" ]; then FFOUND=1; F_in__in_csv_incsv_=0; fi
     if [ "$arg" = "in=db" ]; then FFOUND=1; F_in__in_db=1; F_in_=0; fi
     if [ "${arg#indbjdbc=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbjdbc_=0; fi
     if [ "${arg#indbuser=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbuser_=0; fi
@@ -327,15 +323,10 @@ if [ $# -gt 0 ]; then
     if [ "${arg#outcmdseq=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdseq_=0; fi
     if [ "${arg#outcmdnl=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdnl_=0; fi
     if [ "${arg#outcmdparam=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdparam_=0; fi
+    if [ "${arg#outcmdtmpl=}" != "$arg" ]; then FFOUND=1; F_out__out_cmd_outcmdtmpl_=0; fi
     if [ "$arg" = "out=cslon" ]; then FFOUND=1; F_out__out_cslon=1; F_out_=0; fi
     if [ "$arg" = "out=csv" ]; then FFOUND=1; F_out__out_csv=1; F_out_=0; fi
-    if [ "${arg#format=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_format_=0; fi
-    if [ "${arg#withHeader=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withHeader_=0; fi
-    if [ "${arg#withHeaders=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withHeaders_=0; fi
-    if [ "${arg#quoteMode=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_quoteMode_=0; fi
-    if [ "${arg#withDelimiter=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withDelimiter_=0; fi
-    if [ "${arg#withEscape=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withEscape_=0; fi
-    if [ "${arg#withNullString=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_withNullString_=0; fi
+    if [ "${arg#csv=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_csv_=0; fi
     if [ "$arg" = "out=ctable" ]; then FFOUND=1; F_out__out_ctable=1; F_out_=0; fi
     if [ "$arg" = "out=ctree" ]; then FFOUND=1; F_out__out_ctree=1; F_out_=0; fi
     if [ "$arg" = "out=cyaml" ]; then FFOUND=1; F_out__out_cyaml=1; F_out_=0; fi
@@ -395,6 +386,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#template=}" != "$arg" ]; then FFOUND=1; F_out__out_template_template_=0; fi
     if [ "${arg#templatepath=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatepath_=0; fi
     if [ "${arg#templatedata=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatedata_=0; fi
+    if [ "${arg#templatetmpl=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatetmpl_=0; fi
     if [ "$arg" = "out=text" ]; then FFOUND=1; F_out__out_text=1; F_out_=0; fi
     if [ "$arg" = "out=toml" ]; then FFOUND=1; F_out__out_toml=1; F_out_=0; fi
     if [ "$arg" = "out=tree" ]; then FFOUND=1; F_out__out_tree=1; F_out_=0; fi
@@ -573,8 +565,8 @@ if [ $F_in__in_ch -eq 1 ]; then
   fi
 fi
 if [ $F_in__in_csv -eq 1 ]; then
-  if [ $F_in__in_csv_csv_ -eq 1 ]; then
-    echo "csv=	If type=csv, the CSV options to use"
+  if [ $F_in__in_csv_incsv_ -eq 1 ]; then
+    echo "incsv=	If in=csv, the CSV options to use"
   fi
 fi
 if [ $F_in__in_db -eq 1 ]; then
@@ -787,28 +779,13 @@ if [ $F_out__out_cmd -eq 1 ]; then
   if [ $F_out__out_cmd_outcmdparam_ -eq 1 ]; then
     echo "outcmdparam=	If true the input entry will be replaced on the 'outcmd' where '{}' is found"
   fi
+  if [ $F_out__out_cmd_outcmdtmpl_ -eq 1 ]; then
+    echo "outcmdtmpl=	If true the input entry will be considered as an OpenAF template"
+  fi
 fi
 if [ $F_out__out_csv -eq 1 ]; then
-  if [ $F_out__out_csv_format_ -eq 1 ]; then
-    echo "format=	You can choose between DEFAULT, EXCEL, INFORMIX_UNLOAD, INFORMIX_UNLOAD_CSV, MYSQL, RFC4180, ORACLE, POSTGRESQL_CSV, POSTGRESQL_TEXT and TDF"
-  fi
-  if [ $F_out__out_csv_withHeader_ -eq 1 ]; then
-    echo "withHeader=	If true tries to automatically use the available header"
-  fi
-  if [ $F_out__out_csv_withHeaders_ -eq 1 ]; then
-    echo "withHeaders=	A list of headers to use with the corresponding order"
-  fi
-  if [ $F_out__out_csv_quoteMode_ -eq 1 ]; then
-    echo "quoteMode=	You can choose between ALL, ALL_NON_NULL, MINIMAL, NON_NUMERIC and NONE."
-  fi
-  if [ $F_out__out_csv_withDelimiter_ -eq 1 ]; then
-    echo "withDelimiter=	A single character as a custom delimiter"
-  fi
-  if [ $F_out__out_csv_withEscape_ -eq 1 ]; then
-    echo "withEscape=	A single character as a custom escape"
-  fi
-  if [ $F_out__out_csv_withNullString_ -eq 1 ]; then
-    echo "withNullString=	String to use as representation of null values"
+  if [ $F_out__out_csv_csv_ -eq 1 ]; then
+    echo "csv=	If out=csv, the CSV options to use"
   fi
 fi
 if [ $F_out__out_db -eq 1 ]; then
@@ -914,13 +891,16 @@ if [ $F_out__out_sql -eq 1 ]; then
 fi
 if [ $F_out__out_template -eq 1 ]; then
   if [ $F_out__out_template_template_ -eq 1 ]; then
-    echo "template=	A file path to a HandleBars' template"
+    echo "template=	A file path to a HandleBars' template or a string template definition if 'templatetmpl' is true"
   fi
   if [ $F_out__out_template_templatepath_ -eq 1 ]; then
     echo "templatepath=	If 'template' is not provided a path to the template definition -pre-transformation-"
   fi
   if [ $F_out__out_template_templatedata_ -eq 1 ]; then
     echo "templatedata=	If defined the template data will be retrieved from the provided path"
+  fi
+  if [ $F_out__out_template_templatetmpl_ -eq 1 ]; then
+    echo "templatetmpl=	If true the 'template' will be interpreted as the template defintion instead of a file path"
   fi
 fi
 if [ $F_out__out_xls -eq 1 ]; then

@@ -215,12 +215,12 @@
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna-platform</artifactId>
-      <version>5.14.0</version>
+      <version>5.15.0</version>
     </dependency>
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna</artifactId>
-      <version>5.14.0</version>
+      <version>5.15.0</version>
     </dependency>
     <dependency>
       <groupId>org.jodd</groupId>
@@ -270,12 +270,12 @@
     <dependency>
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio</artifactId>
-      <version>3.9.0</version>
+      <version>3.9.1</version>
     </dependency>
     <dependency>
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio-jvm</artifactId>
-      <version>3.9.0</version>
+      <version>3.9.1</version>
     </dependency>
     <dependency>
       <groupId>dnsjava</groupId>
@@ -295,7 +295,7 @@
     <dependency>
       <groupId>com.github.mwiede</groupId>
       <artifactId>jsch</artifactId>
-      <version>0.2.19</version>
+      <version>0.2.20</version>
     </dependency>
     <dependency>
       <groupId>com.github.vertical-blank</groupId>
