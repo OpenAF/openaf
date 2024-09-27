@@ -819,7 +819,7 @@ OpenWrap.net.prototype.ipv4SubNetInRange = function(aAddr, aCIDR, aMask) {
 /**
  * <odoc>
  * <key>ow.net.getIP2ASNCache() : Array</key>
- * Will retrieve the current IP to ASN cache from the iptoasn.com service.
+ * Retrieves the current IP to ASN cache from the iptoasn.com service returning as an array.
  * </odoc>
  */
 OpenWrap.net.prototype.getIP2ASNCache = function() {
@@ -847,7 +847,8 @@ OpenWrap.net.prototype.getIP2ASNCache = function() {
  * <odoc>
  * <key>ow.net.getIP2ASN(aIP, aIP2ASNCache, aTimeout) : Map</key>
  * Given an aIP will try to retrieve the corresponding ASN information from the aIP2ASNCache (defaults to the one retrieved
- * by ow.net.getIP2ASNCache()).
+ * by ow.net.getIP2ASNCache()). If aIP2ASNCache is not provided it will be retrieved and cached as "ow.net.ip2asn" with aTimeout
+ * by default of 24 hours. Returns a map with the ASN information.
  * </odoc>
  */
 OpenWrap.net.prototype.getIP2ASN = function(aIP, aIP2ASNCache, aTimeout) {
