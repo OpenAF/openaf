@@ -2805,7 +2805,7 @@ OpenWrap.server.prototype.httpd = {
 	 * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, {\
 	 *    "/stuff/to/server": r => ow.server.httpd.replyFile(hs, "/some/path/to/serve/files", "/stuff/to/server", req.uri)\
 	 * }), r => hs.replyOKText("nothing here...") );\
-	 * \
+	 * \ 
 	 * </odoc>
 	 */
 	replyFile: function(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray, mapOfHeaders) {
@@ -2817,7 +2817,7 @@ OpenWrap.server.prototype.httpd = {
 		try {
 			var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
 			var furi = String((new java.io.File(new java.io.File(baseFilePath),
-				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath()).replace(/\\/g, "/");
+				(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalPath()).replace(/\\/g, "/")
 			
 			if (furi.match(new RegExp("^" + baseFilePath + "$"))) {
 				for(var i in documentRootArray) {
@@ -2866,7 +2866,7 @@ OpenWrap.server.prototype.httpd = {
 		try {
 			var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
 			var furi = String((new java.io.File(new java.io.File(baseFilePath),
-				(new java.net.URI(aURI.replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath()).replace(/\\/g, "/");
+				(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalPath()).replace(/\\/g, "/");
 			
 			if (isUnDef(documentRootArray)) documentRootArray = [ "index.md" ];
 
@@ -2874,7 +2874,7 @@ OpenWrap.server.prototype.httpd = {
 			if (io.fileExists(furi) && io.fileInfo(furi).isDirectory) {
 				for(var i in documentRootArray) {
 					furi = String((new java.io.File(new java.io.File(baseFilePath),
-						(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
+						(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalPath());
 					if (furi.match(new RegExp("^" + baseFilePath))) break;
 				}
 			}

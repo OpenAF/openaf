@@ -197,8 +197,8 @@
 		},
 		{
 			"description": "Apache Commons CSV",
-			"path": ["lib/commons-csv-1.11.0.jar"],
-			"version": "1.11.0",
+			"path": ["lib/commons-csv-1.12.0.jar"],
+			"version": "1.12.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -269,8 +269,8 @@
 		},
 		{
 			"description": "DNS Java",
-			"path": ["lib/dnsjava-3.6.1.jar"],
-			"version": "3.6.1",
+			"path": ["lib/dnsjava-3.6.2.jar"],
+			"version": "3.6.2",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://github.com/dnsjava/dnsjava/blob/master/LICENSE",
@@ -323,8 +323,8 @@
 		},
 		{
 			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.17.2.jar"],
-			"version": "2.17.2",
+			"path": ["lib/jackson-core-2.18.0.jar"],
+			"version": "2.18.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
