@@ -227,6 +227,13 @@ F_regression__regressionpath_=0
 F_regression__regressionx_=0
 F_regression__regressionoptions_=0
 F_regression__regressionforecast_=0
+F_set_=1
+F_set__setop_=0
+F_set__setop__setop_union=1
+F_set__setop__setop_diffa=1
+F_set__setop__setop_diffb=1
+F_set__setop__setop_diffab=1
+F_set__setop__setop_intersect=1
 F_removedups_=1
 F_removenulls_=1
 F_searchkeys_=1
@@ -506,6 +513,13 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "regressionx=" ]; then FFOUND=1; F_regression__regressionx_=1; F_regression_=0; fi
     if [ "$arg" = "regressionoptions=" ]; then FFOUND=1; F_regression__regressionoptions_=1; F_regression_=0; fi
     if [ "$arg" = "regressionforecast=" ]; then FFOUND=1; F_regression__regressionforecast_=1; F_regression_=0; fi
+    # set= options
+    if [ "$arg" = "setop=" ]; then FFOUND=1; F_set__setop_=1; F_set_=0; fi
+    if [ "${arg#setop=union}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_union=0; fi
+    if [ "${arg#setop=diffa}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffa=0; fi
+    if [ "${arg#setop=diffb}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffb=0; fi
+    if [ "${arg#setop=diffab}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_diffab=0; fi
+    if [ "${arg#setop=intersect}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_intersect=0; fi
     # removedups= single option
     if [ "$arg" = "removedups=" ]; then FFOUND=1; F_removedups_=0; fi
     # removenulls= single option
@@ -1170,6 +1184,29 @@ if [ $F_regression_ -eq 1 ]; then
   echo "regressionx=	Optional path to the array of x values for the regression formulas -defaults to 1, 2, 3, ...-"
   echo "regressionoptions=	A JSON/SLON configuration with order -defaults to 2- and/or precision -defaults to 5-"
   echo "regressionforecast=	Optional path to an array of x values for which to forecast the corresponding y"
+fi
+# Print completion for set=
+if [ $F_set_ -eq 1 ]; then
+  echo "set=	Performs set operations (intersection by default) over an 'a' and 'b' path to an array defined in a JSON/SLON map"
+  
+  echo "setop=	Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' -symetric difference- and 'intersect' -default-"
+fi
+if [ $F_set__setop_ -eq 1 ]; then
+  if [ $F_set__setop__setop_union -eq 1 ]; then
+    echo "setop=union	Will return the union of the two sets"
+  fi
+  if [ $F_set__setop__setop_diffa -eq 1 ]; then
+    echo "setop=diffa	Will return the difference between 'a' and 'b'"
+  fi
+  if [ $F_set__setop__setop_diffb -eq 1 ]; then
+    echo "setop=diffb	Will return the difference between 'b' and 'a'"
+  fi
+  if [ $F_set__setop__setop_diffab -eq 1 ]; then
+    echo "setop=diffab	Will return the symetric difference between 'a' and 'b'"
+  fi
+  if [ $F_set__setop__setop_intersect -eq 1 ]; then
+    echo "setop=intersect	Will return the intersection of the two sets"
+  fi
 fi
 # Print completion for removedups=
 if [ $F_removedups_ -eq 1 ]; then
