@@ -22,7 +22,9 @@ case "ojob"  :
         oJobRunFile(getOpenAFJar() + "::complete/completion.yaml", { file: fs, tool: "ojob", keyout: "true" })  
         io.writeFileString(homeDir + "/.openaf_completion_ojob.sh", $get("out").output)
     } else {
-        $rest().get2File(homeDir + "/.openaf_completion_ojob.sh", _url)
+        var fs = io.createTempFile("ojob", "")
+        $rest().get2File(fs, _url)
+        io.writeFileString(homeDir + "/.openaf_completion_ojob.sh", io.readFileString(fs).replace(/\x0d/g, ""))
     }
 
     print(shell1)
