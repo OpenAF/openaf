@@ -496,6 +496,17 @@ complete:
   opts:
   - name: setop=
     desc: Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' -symetric difference- and 'intersect' -default-
+    opts:
+    - name: setop=union
+      desc: Will return the union of the two sets
+    - name: setop=diffa
+      desc: Will return the difference between 'a' and 'b'
+    - name: setop=diffb
+      desc: Will return the difference between 'b' and 'a'
+    - name: setop=diffab
+      desc: Will return the symetric difference between 'a' and 'b'
+    - name: setop=intersect
+      desc: Will return the intersection of the two sets
 - name: removedups=
   desc: If true will try to remove duplicates from an array
 - name: removenulls=
