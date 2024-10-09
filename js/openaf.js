@@ -4599,6 +4599,7 @@ var $from = function(a) {
  * env(str), envs(regex)\
  * oafp(json/slon)\
  * if(cond, then, else)\
+ * assign(obj, path, value), assignp(objPathStr, path, value)\
  * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
@@ -5009,6 +5010,20 @@ const $path = function(aObj, aPath, customFunctions) {
 				return Object.keys(_e).filter(k => k.match(new RegExp(ar[0]))).map(k => ({ name: k, value: _e[k] }))
 			},
 			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		assign: {
+			_func: ar => {
+				$$(ar[0]).set(ar[1], ar[2])
+				return ar[0]
+			},
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
+		},
+		assignp: {
+			_func: ar => {
+				$$($path(aObj, ar[0])).set(ar[1], ar[2])
+				return aObj
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
 		},
 		oafp: {
 			_func: ar => {
