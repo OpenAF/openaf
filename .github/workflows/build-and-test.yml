@@ -61,14 +61,14 @@ jobs:
           
     # -----------------------
     - name: Update openaf.jar
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: openaf.jar
         path: openaf.jar
 
     # ----------------------------
     - name: Upload openaf.jar.orig
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: openaf.jar.orig
         path: openaf.jar.orig
@@ -95,14 +95,14 @@ jobs:
       
     # ----------------------------------
     - name: Download artifact openaf.jar
-      uses: actions/download-artifact@v4.1.7
+      uses: actions/download-artifact@v4
       with:
         name: openaf.jar
         path: .
     
     # ---------------------------------------
     - name: Download artifact openaf.jar.orig
-      uses: actions/download-artifact@v4.1.7
+      uses: actions/download-artifact@v4
       with:
         name: openaf.jar.orig
         path: .
@@ -123,7 +123,7 @@ jobs:
         
     # ----------------------------
     - name: Upload autoTestAll.md
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4
       with:
         name: autoTestAll.html
         path: tests/autoTestAll.html
