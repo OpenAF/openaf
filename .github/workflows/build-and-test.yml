@@ -95,14 +95,14 @@ jobs:
       
     # ----------------------------------
     - name: Download artifact openaf.jar
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: openaf.jar
         path: .
     
     # ---------------------------------------
     - name: Download artifact openaf.jar.orig
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: openaf.jar.orig
         path: .
