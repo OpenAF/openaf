@@ -132,7 +132,7 @@ const __envs = getEnvs()
 const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
 	if (isDef(aVar)) return aVar
 	if (isDef(__envs[aEnv])) {
-		if (isJson) {
+		if (isJson && isDef(af.fromJSSLON)) {
 			return af.fromJSSLON(__envs[aEnv], true)
 		} else {
 			return __envs[aEnv]
@@ -141,6 +141,9 @@ const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
 		return aDefault
 	}
 }
+
+// List of authorized domains from which to run ojobs
+var OJOB_AUTHORIZEDDOMAINS = getEnvsDef("OJOB_AUTHORIZEDDOMAINS", OJOB_AUTHORIZEDDOMAINS, [ "ojob.io" ], true)
 
 var __openaf;
 if (isUnDef(__openaf)) __openaf =
@@ -8398,9 +8401,6 @@ const deleteFromArray = function(anArray, anIndex) {
 
 // ****
 // oJob
-
-// List of authorized domains from which to run ojobs
-var OJOB_AUTHORIZEDDOMAINS = getEnvsDef("OJOB_AUTHORIZEDDOMAINS", OJOB_AUTHORIZEDDOMAINS, [ "ojob.io" ], true)
 
 // Hash list of oJob urls and filepaths (each key value is a the url/canonical filepath; value is [hash-alg]-[hash])
 // Do note that ojob.io urls need to be converted: ojob.io/echo -> https://ojob.io/echo.json
