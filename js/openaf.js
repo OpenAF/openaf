@@ -9784,6 +9784,7 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 
 	var is = java.io.FileReader(aJSONFile)
 	var jr = Packages.com.google.gson.stream.JsonReader(is)
+	jr.setLenient(true)
 	
 	try {
 		var pending = 0, nam, res = new Set()
