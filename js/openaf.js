@@ -7905,6 +7905,77 @@ const $rest = function(ops) {
  
 /**
  * <odoc>
+ * <key>$fetch(aURL, aOptions) : oPromise</key>
+ * Tries to fetch aURL using the provided aOptions (a map with the following possible keys: method, body, headers, requestHeaders, downloadResume,
+ * connectionTimeout, uriQuery, urlEncode, login, pass, httpClient and retry). The method will return a promise that will resolve to a response object
+ * with the following methods: body, bodyUsed, headers, ok, status, json, bytes, blob and text. Example:\
+ * \
+ * var response = $fetch("https://httpbin.org/post", { method: "POST", body: { a: 1, b: 2 }, headers: { "Content-Type": "application/json" } });\
+ * response.then(function(aResponse) { print(aResponse.status); });\
+ * \
+ * The response object will have the following methods:\
+ * \
+ * - body() : returns a Java InputStream with the response body\
+ * - bodyUsed : returns true if the body was already read\
+ * - headers : returns a map with the response headers\
+ * - ok : returns true if the response status is between 200 and 299\
+ * - status : returns the response status\
+ * - json() : returns the response body as a JSON object\
+ * - bytes() : returns the response body as a byte array\
+ * - blob() : returns the response body as a byte array\
+ * - text() : returns the response body as a string\
+ * \
+ * </odoc>
+ */
+const $fetch = function(aURL, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({ method: "GET"})
+
+	ow.loadObj()
+	var _h = new ow.obj.http()
+	aOptions.headers = aOptions.requestHeaders
+	aOptions.httpClient = _h
+
+	var _pR = (_hc, _m) => {
+		// TODO: incomplete, check https://developer.mozilla.org/en-US/docs/Web/API/Response
+		var bodyUsed = false
+		var _rr = $rest(aOptions)[_m + "2Stream"](aURL, aOptions.body)
+		var _fn = isS => {
+			var ostream = af.newOutputStream()
+			ioStreamCopy(ostream, _rr)
+			bodyUsed = true
+			if (isS) {
+				return ostream.toString()
+			} else {
+				return ostream.toByteArray()
+			}	
+		}
+		return {
+			body: () => _fn(true),
+			bodyUsed: bodyUsed,
+			headers: _hc.responseHeaders(),
+			ok: _hc.responseCode() >= 200 && _hc.responseCode() < 300,
+			status: _hc.responseCode(),
+			json: () => jsonParse(_fn(true)),
+			bytes: () => _fn(false),
+			blob: () => _fn(false),
+			text: () => _fn(true)
+		}
+	}
+
+	return $do(() => {
+		switch(aOptions.method.toUpperCase()) {
+		case "GET"   : return _pR( _h, "get" ) 
+		case "POST"  : return _pR( _h, "post" ) 
+		case "PUT"   : return _pR( _h, "put" ) 
+		case "DELETE": return _pR( _h, "delete" ) 
+		case "PATCH" : return _pR( _h, "patch" ) 
+		case "HEAD"  : return _pR( _h, "head" ) 
+		}
+	})
+}
+
+/**
+ * <odoc>
  * <key>$pyStart()</key>
  * Start python process on the background. Should be stopped with $pyStop.
  * </odoc>
