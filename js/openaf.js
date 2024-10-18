@@ -3482,22 +3482,33 @@ const load = function(aScript, loadPrecompiled) {
 	if (io.fileExists(aScript) || aScript.indexOf("::") > 0) {
 		return fn(aScript, 3);
 	} else {
-		var paths = getOPackPaths();
 		//paths["__default"] = getOpenAFJar() + "::js/";
-
-		for(var i in paths) {
-			try {
-				paths[i] = paths[i].replace(/\\+/g, "/");
-				if (io.fileExists(paths[i] + "/" + aScript)) return fn(paths[i] + "/" + aScript, 1);
-			} catch(_e) {
-				if (_e.message.indexOf("java.io.FileNotFoundException") < 0 &&
-				    _e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
-				    _e.message.indexOf("java.lang.NullPointerException: entry") < 0) {
-						error.push(_e);
-						inErr = true;
+		if (/^\@([^\/]+)\/(.+)\.js$/.test(aScript)) {
+			var _ar = aScript.match(/^\@([^\/]+)\/(.+)\.js$/)
+			var _path = getOPackPath(_ar[1])
+			var _file = _path + "/" + _ar[2] + ".js"
+			if (io.fileExists(_file)) {
+				return fn(_file, 1)
+			} else {
+				new Error("ERROR: Library '" + aScript + "' not found.")
+			}
+		} else {
+			var paths = getOPackPaths()
+			for(var i in paths) {
+				try {
+					paths[i] = paths[i].replace(/\\+/g, "/");
+					if (io.fileExists(paths[i] + "/" + aScript)) return fn(paths[i] + "/" + aScript, 1);
+				} catch(_e) {
+					if (_e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+						_e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
+						_e.message.indexOf("java.lang.NullPointerException: entry") < 0) {
+							error.push(_e);
+							inErr = true;
+					}
 				}
 			}
 		}
+
 
 		global.__loadedfrom = _$(global.__loadedfrom).default(__)
 		if (isDef(__loadedfrom)) {
