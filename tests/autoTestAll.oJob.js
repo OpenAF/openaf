@@ -144,7 +144,10 @@
         var testOJob = {
             "jobs": [ {
                 "name": "a",
-                "exec": "sleep(50, true);__pm = args"
+                "typeArgs": {
+                    "single": true
+                },
+                "exec": "sleep(50, true);__pm = merge(__pm, args)"
             } ],
             "todo": [ {
                 "name": "a",
