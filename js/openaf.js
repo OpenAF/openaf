@@ -132,7 +132,7 @@ const __envs = getEnvs()
 const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
 	if (isDef(aVar)) return aVar
 	if (isDef(__envs[aEnv])) {
-		if (isJson) {
+		if (isJson && isDef(af.fromJSSLON)) {
 			return af.fromJSSLON(__envs[aEnv], true)
 		} else {
 			return __envs[aEnv]
@@ -141,6 +141,9 @@ const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
 		return aDefault
 	}
 }
+
+// List of authorized domains from which to run ojobs
+var OJOB_AUTHORIZEDDOMAINS = getEnvsDef("OJOB_AUTHORIZEDDOMAINS", OJOB_AUTHORIZEDDOMAINS, [ "ojob.io" ], true)
 
 var __openaf;
 if (isUnDef(__openaf)) __openaf =
@@ -3479,22 +3482,33 @@ const load = function(aScript, loadPrecompiled) {
 	if (io.fileExists(aScript) || aScript.indexOf("::") > 0) {
 		return fn(aScript, 3);
 	} else {
-		var paths = getOPackPaths();
 		//paths["__default"] = getOpenAFJar() + "::js/";
-
-		for(var i in paths) {
-			try {
-				paths[i] = paths[i].replace(/\\+/g, "/");
-				if (io.fileExists(paths[i] + "/" + aScript)) return fn(paths[i] + "/" + aScript, 1);
-			} catch(_e) {
-				if (_e.message.indexOf("java.io.FileNotFoundException") < 0 &&
-				    _e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
-				    _e.message.indexOf("java.lang.NullPointerException: entry") < 0) {
-						error.push(_e);
-						inErr = true;
+		if (/^\@([^\/]+)\/(.+)\.js$/.test(aScript)) {
+			var _ar = aScript.match(/^\@([^\/]+)\/(.+)\.js$/)
+			var _path = getOPackPath(_ar[1])
+			var _file = _path + "/" + _ar[2] + ".js"
+			if (io.fileExists(_file)) {
+				return fn(_file, 1)
+			} else {
+				new Error("ERROR: Library '" + aScript + "' not found.")
+			}
+		} else {
+			var paths = getOPackPaths()
+			for(var i in paths) {
+				try {
+					paths[i] = paths[i].replace(/\\+/g, "/");
+					if (io.fileExists(paths[i] + "/" + aScript)) return fn(paths[i] + "/" + aScript, 1);
+				} catch(_e) {
+					if (_e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+						_e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
+						_e.message.indexOf("java.lang.NullPointerException: entry") < 0) {
+							error.push(_e);
+							inErr = true;
+					}
 				}
 			}
 		}
+
 
 		global.__loadedfrom = _$(global.__loadedfrom).default(__)
 		if (isDef(__loadedfrom)) {
@@ -7902,6 +7916,77 @@ const $rest = function(ops) {
  
 /**
  * <odoc>
+ * <key>$fetch(aURL, aOptions) : oPromise</key>
+ * Tries to fetch aURL using the provided aOptions (a map with the following possible keys: method, body, headers, requestHeaders, downloadResume,
+ * connectionTimeout, uriQuery, urlEncode, login, pass, httpClient and retry). The method will return a promise that will resolve to a response object
+ * with the following methods: body, bodyUsed, headers, ok, status, json, bytes, blob and text. Example:\
+ * \
+ * var response = $fetch("https://httpbin.org/post", { method: "POST", body: { a: 1, b: 2 }, headers: { "Content-Type": "application/json" } });\
+ * response.then(function(aResponse) { print(aResponse.status); });\
+ * \
+ * The response object will have the following methods:\
+ * \
+ * - body() : returns a Java InputStream with the response body\
+ * - bodyUsed : returns true if the body was already read\
+ * - headers : returns a map with the response headers\
+ * - ok : returns true if the response status is between 200 and 299\
+ * - status : returns the response status\
+ * - json() : returns the response body as a JSON object\
+ * - bytes() : returns the response body as a byte array\
+ * - blob() : returns the response body as a byte array\
+ * - text() : returns the response body as a string\
+ * \
+ * </odoc>
+ */
+const $fetch = function(aURL, aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({ method: "GET"})
+
+	ow.loadObj()
+	var _h = new ow.obj.http()
+	aOptions.headers = aOptions.requestHeaders
+	aOptions.httpClient = _h
+
+	var _pR = (_hc, _m) => {
+		// TODO: incomplete, check https://developer.mozilla.org/en-US/docs/Web/API/Response
+		var bodyUsed = false
+		var _rr = $rest(aOptions)[_m + "2Stream"](aURL, aOptions.body)
+		var _fn = isS => {
+			var ostream = af.newOutputStream()
+			ioStreamCopy(ostream, _rr)
+			bodyUsed = true
+			if (isS) {
+				return ostream.toString()
+			} else {
+				return ostream.toByteArray()
+			}	
+		}
+		return {
+			body: () => _fn(true),
+			bodyUsed: bodyUsed,
+			headers: _hc.responseHeaders(),
+			ok: _hc.responseCode() >= 200 && _hc.responseCode() < 300,
+			status: _hc.responseCode(),
+			json: () => jsonParse(_fn(true)),
+			bytes: () => _fn(false),
+			blob: () => _fn(false),
+			text: () => _fn(true)
+		}
+	}
+
+	return $do(() => {
+		switch(aOptions.method.toUpperCase()) {
+		case "GET"   : return _pR( _h, "get" ) 
+		case "POST"  : return _pR( _h, "post" ) 
+		case "PUT"   : return _pR( _h, "put" ) 
+		case "DELETE": return _pR( _h, "delete" ) 
+		case "PATCH" : return _pR( _h, "patch" ) 
+		case "HEAD"  : return _pR( _h, "head" ) 
+		}
+	})
+}
+
+/**
+ * <odoc>
  * <key>$pyStart()</key>
  * Start python process on the background. Should be stopped with $pyStop.
  * </odoc>
@@ -8398,9 +8483,6 @@ const deleteFromArray = function(anArray, anIndex) {
 
 // ****
 // oJob
-
-// List of authorized domains from which to run ojobs
-var OJOB_AUTHORIZEDDOMAINS = getEnvsDef("OJOB_AUTHORIZEDDOMAINS", OJOB_AUTHORIZEDDOMAINS, [ "ojob.io" ], true)
 
 // Hash list of oJob urls and filepaths (each key value is a the url/canonical filepath; value is [hash-alg]-[hash])
 // Do note that ojob.io urls need to be converted: ojob.io/echo -> https://ojob.io/echo.json
@@ -9784,6 +9866,7 @@ IO.prototype.readStreamJSON = function(aJSONFile, aValFunc) {
 
 	var is = java.io.FileReader(aJSONFile)
 	var jr = Packages.com.google.gson.stream.JsonReader(is)
+	jr.setLenient(true)
 	
 	try {
 		var pending = 0, nam, res = new Set()

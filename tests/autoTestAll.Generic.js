@@ -779,10 +779,10 @@
         ow.test.assert(fnargs, ["aBaseURI","aIndexMap","aLoginOrFunction","aPassword","aTimeout","aRequestMap","aHTTP", "retBytes", "options"], "Problem with getting arguments from help using $fnDef4Help.");
 
         var res = $fnM2A(ow.obj.rest.jsonGet, ow.obj.rest, fnargs, { aBaseURI: "https://postman-echo.com/get" });
-        ow.test.assert(res.url, "http://postman-echo.com/get", "Problem with $fnM2A.");
+        ow.test.assert(res.url, "https://postman-echo.com/get", "Problem with $fnM2A.");
 
         res = $fnM("ow.obj.rest.jsonGet", { aBaseURI: "https://postman-echo.com/get" });
-        ow.test.assert(res.url, "http://postman-echo.com/get", "Problem with $fnM.");
+        ow.test.assert(res.url, "https://postman-echo.com/get", "Problem with $fnM.");
     };
 
     exports.testVoidShortcut = function() {
