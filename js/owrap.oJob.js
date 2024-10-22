@@ -2264,9 +2264,10 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			var errors = [];
 			var single = false;
 			if (isDef(parent.__ojob.numThreads) && parent.__ojob.numThreads <= 1) single = true;
+			if (isDef(parent.__ojob.numThreads)) __cpucores = parent.__ojob.numThreads
 	        if (isDef(aJob.typeArgs.single)) single = aJob.typeArgs.single;
 			if (!single) {
-				parallel4Array(args.__oJobRepeat, function(aValue) {
+				pForEach(args.__oJobRepeat, aValue => {
 					if (isUnDef(aValue.execid) && isUnDef(aValue.objId)) {
 						aValue.execid = args.execid;
 						aValue.objId = args.objId;
@@ -2305,7 +2306,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					} finally {
 						return true;
 					}
-				}, parent.__ojob.numThreads);
+				});
 			} else {
 				for(var aVi in args.__oJobRepeat) {
 					args.__oJobRepeat[aVi].execid = args.execid;
