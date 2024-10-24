@@ -264,9 +264,49 @@ const $sec = function(aRepo, dBucket, dLockSecret, aMainSecret, aFile) {
        */
       encSKey: aKey => {
          return af.encrypt(aKey, sha512(Packages.openaf.AFCmdBase.afc.dIP(aMainSecret)).substr(0, 16))
+      },
+      /**
+       * <odoc>
+       * <key>$sec.procMap(aMap, aPath) : Map</key>
+       * Given aMap will process it and replace any secKey with the corresponding secret. Optionally you can provide aPath to
+       * process only a specific path of the map.
+       * \
+       *   secKey, secRepo, secBucket, secPass, secMainPass, secFile\
+       * \
+       * </odoc>
+       */
+      procMap: (aM, aPath) => {
+         aM = _$(aM).isMap().default({})
+         if (isUnDef(aM.secKey)) return aM
+
+         var evs = getEnvs()
+
+         _$(aMap.secKey, "secKey").$_()
+         
+         aMap.secRepo     = _$(aMap.secRepo).default(evs.OAF_SEC_REPO)
+         aMap.secBucket   = _$(aMap.secBucket).default(evs.OAF_SEC_BUCKET)
+         aMap.secPass     = _$(aMap.secPass).default(evs.OAF_SEC_BUCKET_PASS)
+         aMap.secMainPass = _$(aMap.secMainPass).default(evs.OAF_SEC_MAIN_PASS)
+         aMap.secFile     = _$(aMap.secFile).default(evs.OAF_SEC_FILE)
+         
+         var s = $sec(aMap.secRepo, aMap.secBucket, aMap.secPass, aMap.secMainPass, aMap.secFile).get(aMap.secKey)
+   
+         delete aMap.secRepo
+         delete aMap.secBucket
+         delete aMap.secPass
+         delete aMap.secMainPass
+         delete aMap.secFile
+         delete aMap.secKey
+   
+         if (isDef(aPath)) {
+            return $$(aMap).set(aPath, merge($$(aMap).get(aPath), s))
+         } else {
+            return merge(aMap, s)
+         }
+
       }
-   };
-};
+   }
+}
 
 /**
  * <odoc>
