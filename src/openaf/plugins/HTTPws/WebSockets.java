@@ -13,6 +13,21 @@ import java.lang.String;
 import openaf.AFCmdBase;
 import org.mozilla.javascript.Undefined;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+
+import java.nio.ByteBuffer;
+
+import java.util.concurrent.Future;
 
 /**
  * HTTP plugin websockets extension
@@ -21,9 +36,12 @@ import org.mozilla.javascript.Undefined;
  */
 
 public class WebSockets {
+    public WebSocketClient client;
+    public Future<Session> fut;
+
     static public class WebSocketsReply {
-        public org.eclipse.jetty.websocket.client.WebSocketClient client;
-        public Future<org.eclipse.jetty.websocket.api.Session> fut;
+        public WebSocketClient client;
+        public Future<Session> fut;
     }
 
     static public Object wsConnect(Authenticator authenticator, String u, String p, String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
@@ -35,100 +53,19 @@ public class WebSockets {
     static public Object wsClient(Authenticator authenticator, String u, String p, String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
             NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 
-        class EventSocket extends org.eclipse.jetty.websocket.api.WebSocketAdapter {
-            NativeFunction onConnect, onMsg, onError, onClose;
-
-            public EventSocket(NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
-                    NativeFunction onClose) {
-                this.onConnect = onConnect;
-                this.onMsg = onMsg;
-                this.onError = onError;
-                this.onClose = onClose;
-            }
-
-            @Override
-            public void onWebSocketConnect(org.eclipse.jetty.websocket.api.Session sess) {
-                super.onWebSocketConnect(sess);
-                try {
-                    Context cx = (Context) AFCmdBase.jse.enterContext();
-                    this.onConnect.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
-                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { sess });
-                } catch (Exception e) {
-                    throw e;
-                } finally {
-                    AFCmdBase.jse.exitContext();
-                }
-            }
-
-            @Override
-            public void onWebSocketText(String payload) {
-                super.onWebSocketText(payload);
-                try {
-                    Context cx = (Context) AFCmdBase.jse.enterContext();
-                    this.onMsg.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
-                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
-                            new Object[] { "text", payload });
-                } catch (Exception e) {
-                    throw e;
-                } finally {
-                    AFCmdBase.jse.exitContext();
-                }
-            }
-
-            @Override
-            public void onWebSocketBinary(byte[] payload, int offset, int len) {
-                super.onWebSocketBinary(payload, offset, len);
-                try {
-                    Context cx = (Context) AFCmdBase.jse.enterContext();
-                    this.onMsg.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
-                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
-                            new Object[] { "bytes", payload, offset, len });
-                } catch (Exception e) {
-                    throw e;
-                } finally {
-                    AFCmdBase.jse.exitContext();
-                }
-            }
-
-            @Override
-            public void onWebSocketClose(int statusCode, String reason) {
-                super.onWebSocketClose(statusCode, reason);
-                try {
-                    Context cx = (Context) AFCmdBase.jse.enterContext();
-                    this.onClose.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
-                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
-                            new Object[] { statusCode, reason });
-                } catch (Exception e) {
-                    throw e;
-                } finally {
-                    AFCmdBase.jse.exitContext();
-                }
-            }
-
-            @Override
-            public void onWebSocketError(Throwable cause) {
-                super.onWebSocketError(cause);
-                try {
-                    Context cx = (Context) AFCmdBase.jse.enterContext();
-                    this.onError.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
-                            cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { cause });
-                } catch (Exception e) {
-                    throw e;
-                } finally {
-                    AFCmdBase.jse.exitContext();
-                }
-            }
-        }
-
         URI uri = URI.create(anURL);
-        org.eclipse.jetty.websocket.client.WebSocketClient client;
-        org.eclipse.jetty.client.HttpClient hclient = null;
+        WebSocketClient client;
+        HttpClient hclient = null;
 
         if (anURL.toLowerCase().startsWith("wss")) {
-            org.eclipse.jetty.util.ssl.SslContextFactory ssl = new org.eclipse.jetty.util.ssl.SslContextFactory.Client(
-                    supportSelfSigned);
-            if (supportSelfSigned) { ssl.setValidateCerts(false); ssl.setTrustAll(true); }
-            hclient = new org.eclipse.jetty.client.HttpClient(ssl);
+            org.eclipse.jetty.util.ssl.SslContextFactory.Client ssl = new org.eclipse.jetty.util.ssl.SslContextFactory.Client();
+            if (supportSelfSigned) { 
+                ssl.setValidateCerts(false); 
+                ssl.setTrustAll(true); 
+            }
+            HttpClientTransport transport = new HttpClientTransportOverHTTP();
+            hclient = new org.eclipse.jetty.client.HttpClient(transport);
+            hclient.setSslContextFactory(ssl);
             client = new org.eclipse.jetty.websocket.client.WebSocketClient(hclient);
         } else {
             client = new org.eclipse.jetty.websocket.client.WebSocketClient();
@@ -138,8 +75,13 @@ public class WebSockets {
 
         if (u != null && p != null) {
             if (authenticator != null) Authenticator.setDefault(authenticator);
-            client.getHttpClient().getAuthenticationStore().addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));
-            if (hclient != null) hclient.getAuthenticationStore().addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));;
+            org.eclipse.jetty.client.AuthenticationStore authStore = client.getHttpClient().getAuthenticationStore();
+            authStore.addAuthentication(new org.eclipse.jetty.client.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));
+            if (hclient != null) {
+                hclient.getAuthenticationStore().addAuthentication(new org.eclipse.jetty.client.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));
+            }
+            //client.getHttpClient().getAuthenticationStore().addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));
+            //if (hclient != null) hclient.getAuthenticationStore().addAuthentication(new org.eclipse.jetty.client.util.BasicAuthentication(uri, "", AFCmdBase.afc.dIP(u), new String(AFCmdBase.afc.dIP(p).toCharArray())));;
         }
 
         //client = new WebSocketClient(hclient);
@@ -163,7 +105,8 @@ public class WebSockets {
             if (request == null) {
                 fut = client.connect(socket, uri);
             } else {
-                fut = client.connect(socket, uri, request);
+                fut = client
+                .connect(socket, uri, request);
             }
             
             org.eclipse.jetty.websocket.api.Session session;
@@ -180,6 +123,93 @@ public class WebSockets {
         } catch (Exception e) {
             client.stop();
             throw e;
+        }
+    }
+
+    @WebSocket
+    public static class EventSocket {
+        NativeFunction onConnect, onMsg, onError, onClose;
+
+        public EventSocket(NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose) {
+            this.onConnect = onConnect;
+            this.onMsg = onMsg;
+            this.onError = onError;
+            this.onClose = onClose;
+        }
+
+        @OnWebSocketOpen
+        public void OnWebSocketOpen(Session sess) {
+            //super.OnWebSocketOpen(sess);
+            try {
+                Context cx = (Context) AFCmdBase.jse.enterContext();
+                this.onConnect.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                        cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { sess });
+            } catch (Exception e) {
+                throw e;
+            } finally {
+                AFCmdBase.jse.exitContext();
+            }
+        }
+
+        @OnWebSocketMessage
+        public void onWebSocketText(String payload) {
+            //super.onWebSocketText(payload);
+            try {
+                Context cx = (Context) AFCmdBase.jse.enterContext();
+                this.onMsg.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                        cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                        new Object[] { "text", payload });
+            } catch (Exception e) {
+                throw e;
+            } finally {
+                AFCmdBase.jse.exitContext();
+            }
+        }
+
+        @OnWebSocketMessage
+        public void onWebSocketBinary(ByteBuffer byteBuffer, org.eclipse.jetty.websocket.api.Callback callback) {
+            //super.onWebSocketBinary(byteBuffer, callback);
+            try {
+                Context cx = (Context) AFCmdBase.jse.enterContext();
+                this.onMsg.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                    cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                    new Object[] { "bytes", byteBuffer });
+                callback.succeed();
+            } catch (Exception e) {
+                callback.fail(e);
+                throw e;
+            } finally {
+                AFCmdBase.jse.exitContext();
+            }
+        }
+
+        @OnWebSocketClose
+        public void onWebSocketClose(int statusCode, String reason) {
+            //super.onWebSocketClose(statusCode, reason);
+            try {
+                Context cx = (Context) AFCmdBase.jse.enterContext();
+                this.onClose.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                        cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                        new Object[] { statusCode, reason });
+            } catch (Exception e) {
+                throw e;
+            } finally {
+                AFCmdBase.jse.exitContext();
+            }
+        }
+
+        @OnWebSocketError
+        public void onWebSocketError(Throwable cause) {
+            //super.onWebSocketError(cause);
+            try {
+                Context cx = (Context) AFCmdBase.jse.enterContext();
+                this.onError.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                        cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { cause });
+            } catch (Exception e) {
+                throw e;
+            } finally {
+                AFCmdBase.jse.exitContext();
+            }
         }
     }
 }
