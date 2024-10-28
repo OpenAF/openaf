@@ -91,7 +91,14 @@ jobs:
     # --------------
     - name: Checkout
       uses: actions/checkout@v3.5.2
-      
+
+    # --------------------
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: 21
+        distribution: 'temurin'
+        
     # ----------------------------------
     - name: Download artifact openaf.jar
       uses: actions/download-artifact@v4
