@@ -47,13 +47,17 @@
             function(aType, aPayload, aOffset, aLength) { if (aType == "text") output.push(aPayload); },
             function(aCause) { },
             function(aStatusCode, aReason) { });
-        session.getRemote().sendString(stringify({
+        var msg = stringify({
             event: "subscribe",
             pair : [ "XBT/USD", "XBT/EUR" ],
             subscription: {
                 name: "ticker"
             }
-        }));
+        })
+        session.sendText(msg, {
+            succeed: () => log("WebSocket message sent successfully"),
+            fail   : (aCause) => log("WebSocket failed to send message: " + aCause)
+        })
         //while(output.length < 1) { res.fut.get(); sleep(100, true); };
         res.fut.get(); sleep(1000, true);
         //session.stop();

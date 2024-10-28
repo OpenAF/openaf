@@ -10275,7 +10275,7 @@ const ask = (aPrompt, aMask, _con, noAnsi) => {
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
 		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
-		print("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
+		printErr("\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, _m) + "]")
 		return _v
 	} else {
 		return _con.readLinePrompt(aPrompt, aMask)
@@ -10373,7 +10373,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
     if (__flags.ANSICOLOR_ASK) {
         if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
-        print("\x1B[?25l" + _v)
+        printErr("\x1B[?25l" + _v)
 
         let option = 0, firstTime = true, span = 0
         let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
@@ -10427,11 +10427,11 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 			}
         } while (c != 13 && c != 10)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		printnl(repeat(_v.length, " ") + "\r")
-		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
-        print(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
+		printErrnl(repeat(_v.length, " ") + "\r")
+		printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
+        printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
         ow.format.string.ansiMoveUp(aMaxDisplay+2)
-		print("\x1B[?25h\n")
+		printErr("\x1B[?25h\n")
 
         return option
     } else {
@@ -10471,7 +10471,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
         if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
-        print("\x1B[?25l" + _v)
+        printErr("\x1B[?25l" + _v)
 
         let option = 0, firstTime = true, span = 0
         let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
@@ -10497,7 +10497,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                      .filter(l => l.length > 0)
                      .join("\n")
             if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
-            print(_o)
+            printErr(_o)
         }
 
         plugin("Console")
@@ -10528,14 +10528,14 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 			}
         } while (c != 13 && c != 10)
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		printnl(repeat(_v.length, " ") + "\r")
+		printErrnl(repeat(_v.length, " ") + "\r")
 
 		let options = []
 		aSelectMap.forEach((v, k) => { if (v) options.push(k) })
-		print("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
-        print(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
+		printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
+        printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
         ow.format.string.ansiMoveUp(aMaxDisplay+2)
-		print("\x1B[?25h\n")
+		printErr("\x1B[?25h\n")
 
         return options
     } else {

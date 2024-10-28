@@ -260,6 +260,16 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAFScopeIds
 
+   - name: OpenAF::Test Path
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPath
+
+   - name: OpenAF::Test pForEach
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testPForEach
+
 todo:
    # Generic Tests
    # -------------
@@ -310,3 +320,5 @@ todo:
    - OpenAF::Test Envs
    - OpenAF::Test AF Parse
    - OpenAF::Test Scope Ids
+   - OpenAF::Test Path
+   - OpenAF::Test pForEach
