@@ -118,6 +118,14 @@
         );
     };
 
+    exports.testPath = function() {
+        ow.test.assert($path({ x: true }, "to_number(if(x, '1', '0'))"), 1, "Problem with $path if")
+        ow.test.assert($path({ y: true }, "assign(@, 'x', `false`)"), { x: false, y: true }, "Problem with $path assign")
+        ow.test.assert($path({ y: { a: 1 } }, "assignp('y', 'x', `false`)"), { y: { a: 1, x: false } }, "Problem with $path assignp")
+        ow.test.assert($path({}, "env('PATH')"), getEnv("PATH"), "Problem with $path env")
+        ow.test.assert($path({}, "envs('^PATH$')"), [ { name: 'PATH', value: getEnv("PATH") } ], "Problem with $path envs")
+    }
+
     exports.testCache = function() {
         $cache("cache")
         .fn((k) => {
@@ -688,6 +696,22 @@
         ow.test.assert(af.decrypt(af.encrypt(res1, "openappframework"), "openappframework"), res1, "Problem with default encrypt/decrypt.");
         ow.test.assert(af.decrypt(af.encrypt(res1, "1234567890123456"), "1234567890123456"), res1, "Problem with custom encrypt/decrypt.");
     };
+
+    exports.testPForEach = function() {
+        var files = listFilesRecursive("..")
+        var res = pForEach(files, r => {
+            return r.isFile ? 1 : 0
+        })
+        ow.test.assert($from(res).count(), files.length, "Problem with pForEach (1)")
+        ow.test.assert($from(res).sum(), $from(files).equals("isFile", true).count(), "Problem with pForEach (2)")
+
+        files = io.listFiles(".").files
+        res = pForEach(files, r => {
+            return r.isFile ? 1 : 0
+        })
+        ow.test.assert($from(res).count(), files.length, "Problem with pForEach (3)")
+        ow.test.assert($from(res).sum(), $from(files).equals("isFile", true).count(), "Problem with pForEach (4)")
+    }
 
     exports.test2FA = function() {
         ow.loadFormat();
