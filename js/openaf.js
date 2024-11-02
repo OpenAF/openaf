@@ -4617,7 +4617,8 @@ var $from = function(a) {
  * oafp(json/slon)\
  * if(cond, then, else)\
  * assign(obj, path, value), assignp(objPathStr, path, value)\
- * \
+ * random(min, max), srandom(min, max)\
+ * at(arrayIndex)\
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
  * \
@@ -5041,6 +5042,22 @@ const $path = function(aObj, aPath, customFunctions) {
 				return aObj
 			},
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
+		},
+		at: {
+			_func: ar => ar[0][ar[1]],
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.number ] } ]
+		},
+		random: {
+			_func: ar => {
+				return Math.floor(Math.random() * (ar[1] - ar[0] + 1) + ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		srandom: {
+			_func: ar => {
+				return Math.floor(af.secureRandom() * (ar[1] - ar[0] + 1) + ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
 		},
 		oafp: {
 			_func: ar => {
