@@ -241,7 +241,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true,
 		listFilesRecursive: true,
-		colorify: true
+		colorify : true
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -251,6 +251,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	},
 	SH: {
 		prefixLog: false
+	},
+	NET: {
+		getDNSExtended: false
 	},
 	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR     : true,
