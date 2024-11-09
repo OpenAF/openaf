@@ -270,6 +270,21 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testPForEach
 
+   - name: OpenAF::Test GetSet
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testGetSet
+
+   - name: OpenAF::Test Lock
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLock  
+
+   - name: OpenAF::Test FLock
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testFLock  
+
 todo:
    # Generic Tests
    # -------------
@@ -322,3 +337,6 @@ todo:
    - OpenAF::Test Scope Ids
    - OpenAF::Test Path
    - OpenAF::Test pForEach
+   - OpenAF::Test GetSet
+   - OpenAF::Test Lock
+   - OpenAF::Test FLock

@@ -396,21 +396,55 @@ OpenWrap.net.prototype.testURLLatency = function(aURL, aCustomTimeout) {
 
 /**
  * <odoc>
- * <key>ow.net.getDNS(aName, aType, aServer) : Object</key>
+ * <key>ow.net.getDNS(aName, aType, aServer, aExtended) : Object</key>
  * Given aName will do a DNS search for aType (defaults to "a") optionally using dns server aServer.
- * Returns an object or an array of objects.
+ * Returns an object or an array of objects. If aExtended is true it will return a more detailed JSON object.
  * </odoc>
  */
-OpenWrap.net.prototype.getDNS = function(aName, aType, aServer) {
+OpenWrap.net.prototype.getDNS = function(aName, aType, aServer, aExtended) {
     _$(aName, "aName").isString().$_()
-    aType   = _$(aType, "aType").isString().default("a")
-    aServer = _$(aServer, "aServer").isString().default(__)
+    aType      = _$(aType, "aType").isString().default("a")
+    aServer    = _$(aServer, "aServer").isString().default(__)
+    aExtended = _$(aExtended, "aExtended").isBoolean().default(__flags.NET.getDNSExtended)
 
     var getProps = aObj => {
         var rr = {}
-        Object.keys(aObj).forEach(r => {
-            if (r.startsWith("get") && (r != "getClass")) {
-                rr[r.substring(3)] = aObj[r]()
+        if (!isJavaObject(aObj) || aObj instanceof java.lang.String) return String(aObj)
+        Object.keys(aObj).filter(r => r!="getClass").forEach(r => {
+            try {
+                if (r.startsWith("get")) {
+                    var _v
+                    try {
+                        _v = aObj[r]()
+
+                        if (aExtended) {
+                            if (r != "getBytes") {
+                                if (isNumber(_v)) {
+                                    rr[r.substring(3)] = _v
+                                } else {
+                                    if (!isNull(_v) && Object.keys(_v).filter(r => r.startsWith("get")).filter(r => r!="getBytes" && r!="getChars").length > 0) {
+                                        rr[r.substring(3)] = getProps(_v)
+                                    } else {
+                                        if (isNull(_v)) {
+                                            if (r != "getLabel" && r != "getLabelString")
+                                                rr[r.substring(3)] = _v
+                                            else
+                                                rr = String(_v)
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            rr[r.substring(3)] = _v
+                        }
+                    } catch(ee) {
+                        rr = String(aObj)
+                    }
+                }
+                if (r.startsWith("is")) {
+                    rr[r.substring(2)] = aObj[r]()
+                }
+            } catch(e) {
             }
         })
         return rr
@@ -485,12 +519,12 @@ OpenWrap.net.prototype.getDoH = function(aName, aType, aProvider) {
  
 	switch (aProvider) {
        case "local":
-          var _r = ow.net.getDNS(aName, aType)
+          var _r = ow.net.getDNS(aName, aType, __, true)
           return [{
             name: _r.Name,
             type: _r.Type,
             TTL : _r.TTL,
-            data: _r.Address.getHostAddress()
+            data: _r.Address.HostAddress
           }]
 	   case "google":
 		  var res = $rest({ uriQuery: true }).get("https://8.8.8.8/resolve", {

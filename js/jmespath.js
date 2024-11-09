@@ -1316,7 +1316,7 @@
             case "[object Object]":
               // Check if it's an expref.  If it has, it's been
               // tagged with a jmespathType attr of 'Expref';
-              if (obj.jmespathType === TOK_EXPREF) {
+              if (obj && obj.jmespathType === TOK_EXPREF) {
                 return TYPE_EXPREF;
               } else {
                 return TYPE_OBJECT;

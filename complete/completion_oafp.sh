@@ -40,8 +40,8 @@ F_in__in_ls_lsext_=1
 F_in__in_ls_lsrecursive_=1
 F_in__in_ls_lsposix_=1
 F_in__in_md=0
-F_in__in_md_inmdtablejoin_=1
 F_in__in_mdtable=0
+F_in__in_mdtable_inmdtablejoin_=1
 F_in__in_ndjson=0
 F_in__in_ndjson_ndjsonjoin_=1
 F_in__in_ndjson_ndjsonfilter_=1
@@ -105,6 +105,7 @@ F_out__out_db_dbbatchsize_=1
 F_out__out_envs=0
 F_out__out_envs_envscmd_=1
 F_out__out_envs_envsprefix_=1
+F_out__out_envs_envsnoprefix_=1
 F_out__out_gb64json=0
 F_out__out_grid=0
 F_out__out_grid_grid_=1
@@ -285,8 +286,8 @@ if [ $# -gt 0 ]; then
     if [ "${arg#lsrecursive=}" != "$arg" ]; then FFOUND=1; F_in__in_ls_lsrecursive_=0; fi
     if [ "${arg#lsposix=}" != "$arg" ]; then FFOUND=1; F_in__in_ls_lsposix_=0; fi
     if [ "$arg" = "in=md" ]; then FFOUND=1; F_in__in_md=1; F_in_=0; fi
-    if [ "${arg#inmdtablejoin=}" != "$arg" ]; then FFOUND=1; F_in__in_md_inmdtablejoin_=0; fi
     if [ "$arg" = "in=mdtable" ]; then FFOUND=1; F_in__in_mdtable=1; F_in_=0; fi
+    if [ "${arg#inmdtablejoin=}" != "$arg" ]; then FFOUND=1; F_in__in_mdtable_inmdtablejoin_=0; fi
     if [ "$arg" = "in=ndjson" ]; then FFOUND=1; F_in__in_ndjson=1; F_in_=0; fi
     if [ "${arg#ndjsonjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_ndjson_ndjsonjoin_=0; fi
     if [ "${arg#ndjsonfilter=}" != "$arg" ]; then FFOUND=1; F_in__in_ndjson_ndjsonfilter_=0; fi
@@ -350,6 +351,7 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "out=envs" ]; then FFOUND=1; F_out__out_envs=1; F_out_=0; fi
     if [ "${arg#envscmd=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envscmd_=0; fi
     if [ "${arg#envsprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envsprefix_=0; fi
+    if [ "${arg#envsnoprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_envs_envsnoprefix_=0; fi
     if [ "$arg" = "out=gb64json" ]; then FFOUND=1; F_out__out_gb64json=1; F_out_=0; fi
     if [ "$arg" = "out=grid" ]; then FFOUND=1; F_out__out_grid=1; F_out_=0; fi
     if [ "${arg#grid=}" != "$arg" ]; then FFOUND=1; F_out__out_grid_grid_=0; fi
@@ -650,8 +652,8 @@ if [ $F_in__in_ls -eq 1 ]; then
     echo "lsposix=	Tries to add extra posix data if available -for ZIP files-"
   fi
 fi
-if [ $F_in__in_md -eq 1 ]; then
-  if [ $F_in__in_md_inmdtablejoin_ -eq 1 ]; then
+if [ $F_in__in_mdtable -eq 1 ]; then
+  if [ $F_in__in_mdtable_inmdtablejoin_ -eq 1 ]; then
     echo "inmdtablejoin=	Scans an entire markdown input for tables and returns an array with the data of each markdown table"
   fi
 fi
@@ -837,6 +839,9 @@ if [ $F_out__out_envs -eq 1 ]; then
   fi
   if [ $F_out__out_envs_envsprefix_ -eq 1 ]; then
     echo "envsprefix=	If defined uses the provided prefix for each environment variable key -defaults to 'OAFP'-"
+  fi
+  if [ $F_out__out_envs_envsnoprefix_ -eq 1 ]; then
+    echo "envsnoprefix=	Boolean flag to indicate that no envsprefix should be used -defaults to false-"
   fi
 fi
 if [ $F_out__out_grid -eq 1 ]; then
