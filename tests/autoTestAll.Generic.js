@@ -147,6 +147,44 @@
         ow.test.assert($path({}, "range(`2`)"), [ 1, 2 ], "Problem with $path range")
     }
 
+    exports.testGetSet = function() {
+        $set("_test", 1)
+        ow.test.assert($get("_test"), 1, "Problem with $get (1)")
+
+        $set("_test", { a: 1, b: 2 })
+        ow.test.assert($get("_test"), { a: 1, b: 2 }, "Problem with $get (2)")
+
+        $set("_test", [ 1, 2, 3 ])
+        ow.test.assert($get("_test"), [ 1, 2, 3 ], "Problem with $get (3)")
+
+        $set("_test", "test")
+        ow.test.assert($get("_test"), "test", "Problem with $get (4)")
+
+        $set("_test", true)
+        ow.test.assert($get("_test"), true, "Problem with $get (5)")
+    }
+ 
+    exports.testLock = function() {
+        var res = false
+        $lock("a").tryLock(() => {
+            res = $lock("a").isLocked()
+        })
+
+        ow.test.assert(res, true, "Problem with $lock.tryLock")
+        ow.test.assert($lock("a").isLocked(), false, "Problem with $lock.isLocked")
+    }
+
+    exports.testFLock = function() {
+        var res = false
+        var tmp = io.createTempFile("test")
+        $flock(tmp).tryLock(() => {
+            res = $flock(tmp).isLocked()
+        })
+
+        ow.test.assert(res, true, "Problem with $lock.tryLock")
+        ow.test.assert($flock(tmp).isLocked(), false, "Problem with $lock.isLocked")
+    }
+
     exports.testCache = function() {
         $cache("cache")
         .fn((k) => {

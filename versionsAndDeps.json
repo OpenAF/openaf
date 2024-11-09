@@ -395,17 +395,17 @@
 			"removable": false,
 			"hardDeps": [
 				"lib/commons-io-2.17.0.jar",
-				"lib/jetty-io-12.0.14.jar",
-				"lib/jetty-util-12.0.14.jar",
-				"lib/jetty-client-12.0.14.jar",
-				"lib/jetty-http-12.0.14.jar"
+				"lib/jetty-io-12.0.15.jar",
+				"lib/jetty-util-12.0.15.jar",
+				"lib/jetty-client-12.0.15.jar",
+				"lib/jetty-http-12.0.15.jar"
 			],
 			"deps": [
-				"lib/jetty-websocket-jetty-api-12.0.14.jar",
-				"lib/jetty-websocket-jetty-client-12.0.14.jar",
-				"lib/jetty-websocket-jetty-common-12.0.14.jar",
-				"lib/jetty-websocket-core-12.0.14.jar",
-				"lib/jetty-websocket-core-common-12.0.14.jar"
+				"lib/jetty-websocket-jetty-api-12.0.15.jar",
+				"lib/jetty-websocket-jetty-client-12.0.15.jar",
+				"lib/jetty-websocket-jetty-common-12.0.15.jar",
+				"lib/jetty-websocket-core-12.0.15.jar",
+				"lib/jetty-websocket-core-common-12.0.15.jar"
 			]
 		},
 		{

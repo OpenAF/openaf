@@ -241,7 +241,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true,
 		listFilesRecursive: true,
-		colorify: true
+		colorify : true
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -251,6 +251,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	},
 	SH: {
 		prefixLog: false
+	},
+	NET: {
+		getDNSExtended: false
 	},
 	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR     : true,
@@ -4614,7 +4617,8 @@ var $from = function(a) {
  * oafp(json/slon)\
  * if(cond, then, else)\
  * assign(obj, path, value), assignp(objPathStr, path, value)\
- * \
+ * random(min, max), srandom(min, max)\
+ * at(arrayIndex)\
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
  * \
@@ -5038,6 +5042,22 @@ const $path = function(aObj, aPath, customFunctions) {
 				return aObj
 			},
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
+		},
+		at: {
+			_func: ar => ar[0][ar[1]],
+			_signature: [ { types: [ jmespath.types.array ] }, { types: [ jmespath.types.number ] } ]
+		},
+		random: {
+			_func: ar => {
+				return Math.floor(Math.random() * (ar[1] - ar[0] + 1) + ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
+		},
+		srandom: {
+			_func: ar => {
+				return Math.floor(af.secureRandom() * (ar[1] - ar[0] + 1) + ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.number ] } ]
 		},
 		oafp: {
 			_func: ar => {
@@ -8961,6 +8981,114 @@ AF.prototype.toTOML = function(aObj) {
  */
 IO.prototype.writeFileTOML = function(aFile, aObj) {
 	io.writeFileString(aFile, af.toTOML(aObj))
+}
+
+/**
+ * <odoc>
+ * <key>io.unzip(zipFile, targetDir, logFn, logErrFn)</key>
+ * Tries to unzip a zipFile into targetDir. Optionally you can provide a logFn and logErrFn to log the progress.
+ * The logFn will receive the following object:\
+ * \
+ *   { type: "file" | "dir", source: [zip entry], target: [targetPath] }\
+ * \
+ * </odoc>
+ */
+IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
+    logFn     = _$(logFn, "logFn").isFunction().default(print)
+    logErrFn  = _$(logErrFn, "logErrFn").isFunction().default(printErr)
+    zipFile   = _$(zipFile, "zipFile").isString().$_()
+    targetDir = _$(targetDir, "targetDir").isString().default(".")
+ 
+    var fis = new java.io.FileInputStream(zipFile)
+    var zis = new java.util.zip.ZipInputStream(fis)
+
+    var ne = zis.getNextEntry()
+    while (!isNull(ne)) {
+        var p = String(ne.getName()).lastIndexOf("/")
+        var _targetDir = targetDir + "/" + String(ne.getName()).substring(0, p)
+        var _targetFile = String(ne.getName()).substring(p + 1)
+
+        if (!io.fileExists(_targetDir)) {
+            try {
+                logFn("Creating dir " + _targetDir, {
+					type: "dir",
+					target: _targetDir
+				})
+                io.mkdir(_targetDir)
+            } catch(e) {
+                logErrFn("ERROR: [" + _targetDir + "] " + e, e)
+            }
+        }
+
+        if (!ne.isDirectory() && _targetFile.length > 0) {
+            try {
+                logFn("Extracting " + String(ne.getName()) + " -> " + _targetDir + "/" + _targetFile, {
+					type: "file",
+					source: String(ne.getName()),
+					target: _targetDir + "/" + _targetFile
+				})
+                var wtmp = io.writeFileStream(_targetDir + "/" + _targetFile)
+                Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
+                wtmp.close()
+            } catch(e) {
+                logErrFn("ERROR: [" + _targetDir + " | " + _targetFile + "] " + e, e)
+            }
+        }
+        
+        zis.closeEntry()
+        ne = zis.getNextEntry()
+    }
+}
+
+/**
+ * <odoc>
+ * <key>io.zip(targetDir, zipFile, logFn, logErrFn)</key>
+ * Tries to zip a targetDir into a zipFile. Optionally you can provide a logFn and logErrFn to log the progress.
+ * The logFn will receive the following object:\
+ * \
+ *   { type: "file" | "dir", source: [io.listFile entry], target: [targetPath] }\
+ * \
+ * </odoc>
+ */
+IO.prototype.zip = function(targetDir, zipFile, logFn, logErrFn) {
+    logFn     = _$(logFn, "logFn").isFunction().default(print)
+    logErrFn  = _$(logErrFn, "logErrFn").isFunction().default(printErr)
+    targetDir = _$(targetDir, "targetDir").isString().$_()
+    zipFile   = _$(zipFile, "zipFile").isString().$_()
+
+    var fos = new java.io.FileOutputStream(zipFile)
+    var zos = new java.util.zip.ZipOutputStream(fos)
+
+    listFilesRecursive(targetDir).forEach(f => {
+        try {
+            var zipEntryName = f.filepath.substring(targetDir.length + 1)
+            if (f.isFile) {
+                logFn("Adding " + f.filepath + " to zip as " + zipEntryName, {
+                    type: "file",
+                    source: f,
+                    target: zipEntryName
+                })
+                var fis = new java.io.FileInputStream(f.filepath)
+                zos.putNextEntry(new java.util.zip.ZipEntry(zipEntryName))
+                Packages.org.apache.commons.io.IOUtils.copyLarge(fis, zos)
+                zos.closeEntry()
+                fis.close()
+            } else {
+                logFn("Adding directory " + f.filepath + " to zip as " + zipEntryName, {
+                    type: "dir",
+                    source: f,
+                    target: zipEntryName + "/"
+                })
+                zos.putNextEntry(new java.util.zip.ZipEntry(zipEntryName + "/"))
+                zos.closeEntry()
+            }
+        } catch(e) {
+            logErrFn("ERROR: [" + f.filepath + "] " + e, e)
+        }
+    })
+
+    zos.close()
+    fos.close()
 }
 
 /**
