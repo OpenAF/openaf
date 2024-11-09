@@ -6,6 +6,7 @@
 * Number of tests passed: 183
 * Number of tests failed: 0
 * Number of asserts: 550
+
 ## Result details
 
 | Suite | Test | Status | Time | Result       |
@@ -119,8 +120,8 @@
 |OpenAF | Cache | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 316 ms | n/a |
 |OpenAF | Crypt | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 15 ms | n/a |
 |OpenAF | DescType | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
-|OpenAF | Encrypt/Decrypt | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
-|OpenAF | Get Path | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
+|OpenAF | Encrypt/Decrypt | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
+|OpenAF | Get Path | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
 |OpenAF | Get version | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
 |OpenAF | IsFunctions | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | ~0 ms | n/a |
 |OpenAF | Java RegExp | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 3 ms | n/a |
@@ -130,7 +131,7 @@
 |OpenAF | NDJSON | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 2 ms | n/a |
 |OpenAF | PSelect | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 12 ms | n/a |
 |OpenAF | Prints | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
-|OpenAF | Range | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
+|OpenAF | Range | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 2 ms | n/a |
 |OpenAF | Retry | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
 |OpenAF | SPrints | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 1 ms | n/a |
 |OpenAF | Search Key and Values | <span style="background-color: green; color: white">&nbsp;&nbsp;PASS&nbsp;&nbsp;</span> | 2 ms | n/a |
