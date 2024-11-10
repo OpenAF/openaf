@@ -177,7 +177,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }
-                    var _res = _r._request("/v1/chat/completions", body)   
+                    var _res = _r._request("v1/chat/completions", body)   
                     if (isDef(_res) && isArray(_res.choices)) {
                         // call tools
                         var _p = [], stopWith = false
@@ -213,7 +213,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     msgs = aPrompt.map(c => isMap(c) ? c.content : c )
                  
                     _r.conversation = aPrompt
-                    return _r._request("/v1/images/generations", merge({
+                    return _r._request("v1/images/generations", merge({
                        model: aModel,
                        prompt: msgs.join("\n"),
                        response_format: "b64_json"
@@ -250,7 +250,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getModels: () => {
-                    var res = _r._request("/v1/models", {}, "GET")
+                    var res = _r._request("v1/models", {}, "GET")
                     if (isArray(res.data)) {
                         return res.data
                     } else {
@@ -288,8 +288,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
 
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + "/" + aURI))
-                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + "/" + aURI, aData))
+                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI))
+                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData))
                     }
                 }
             }
