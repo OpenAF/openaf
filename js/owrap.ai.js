@@ -78,6 +78,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.openai.com")
+            aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
 
             ow.loadObj()
             var _key = aOptions.key
@@ -266,11 +267,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
-                       requestHeaders: { 
+                       requestHeaders: merge(aOptions.headers, { 
                           Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key),
                           Accept       : "*/*"
-                       } 
-                    }
+                       })
+                    } 
                     _h.close()
                  
                     var _fnh = r => {
