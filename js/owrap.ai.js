@@ -78,6 +78,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.openai.com")
+            aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
 
             ow.loadObj()
             var _key = aOptions.key
@@ -177,7 +178,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }
-                    var _res = _r._request("/v1/chat/completions", body)   
+                    var _res = _r._request("v1/chat/completions", body)   
                     if (isDef(_res) && isArray(_res.choices)) {
                         // call tools
                         var _p = [], stopWith = false
@@ -213,7 +214,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     msgs = aPrompt.map(c => isMap(c) ? c.content : c )
                  
                     _r.conversation = aPrompt
-                    return _r._request("/v1/images/generations", merge({
+                    return _r._request("v1/images/generations", merge({
                        model: aModel,
                        prompt: msgs.join("\n"),
                        response_format: "b64_json"
@@ -250,7 +251,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getModels: () => {
-                    var res = _r._request("/v1/models", {}, "GET")
+                    var res = _r._request("v1/models", {}, "GET")
                     if (isArray(res.data)) {
                         return res.data
                     } else {
@@ -266,11 +267,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var __m = { 
                        conTimeout    : 60000,
                        httpClient    : _h,
-                       requestHeaders: { 
+                       requestHeaders: merge(aOptions.headers, { 
                           Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key),
                           Accept       : "*/*"
-                       } 
-                    }
+                       })
+                    } 
                     _h.close()
                  
                     var _fnh = r => {
@@ -288,8 +289,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
 
                     switch(aVerb.toUpperCase()) {
-                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + "/" + aURI))
-                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + "/" + aURI, aData))
+                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI))
+                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData))
                     }
                 }
             }

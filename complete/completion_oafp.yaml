@@ -130,13 +130,13 @@ complete:
   - name: in=xls
     desc: A XLSx compatible file -requires file=abc.xlsx-
     opts:
-    - name: xlssheet=    
+    - name: inxlssheet=
       desc: The name of sheet to consider -default to the first sheet-
-    - name: xlsevalformulas=
+    - name: inxlsevalformulas=
       desc: If false the existing formulas won't be evaluated -defaults to true-
-    - name: xlscol=
+    - name: inxlscol=
       desc: The column on the sheet where a table should be detected -e.g. "A"-
-    - name: xlsrow=
+    - name: inxlsrow=
       desc: The row on the sheet where a table should be detected -e.g. 1-
   - name: in=xml
     desc: An XML format -auto-detected-
