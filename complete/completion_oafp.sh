@@ -59,10 +59,10 @@ F_in__in_sql_sqlparse_=1
 F_in__in_sql_sqloptions_=1
 F_in__in_toml=0
 F_in__in_xls=0
-F_in__in_xls_xlssheet_=1
-F_in__in_xls_xlsevalformulas_=1
-F_in__in_xls_xlscol_=1
-F_in__in_xls_xlsrow_=1
+F_in__in_xls_inxlssheet_=1
+F_in__in_xls_inxlsevalformulas_=1
+F_in__in_xls_inxlscol_=1
+F_in__in_xls_inxlsrow_=1
 F_in__in_xml=0
 F_in__in_xml_xmlignored_=1
 F_in__in_xml_xmlprefix_=1
@@ -241,6 +241,14 @@ F_searchkeys_=1
 F_searchvalues_=1
 F_sortmapkeys_=1
 F_trim_=1
+F_forcearray_=1
+F_secKey_=1
+F_secKey__secEnv_=0
+F_secKey__secFile_=0
+F_secKey__secMainPass_=0
+F_secKey__secPass_=0
+F_secKey__secBucket_=0
+F_secKey__secRepo_=0
 
 # Iterate over the arguments
 if [ $# -gt 0 ]; then
@@ -305,10 +313,10 @@ if [ $# -gt 0 ]; then
     if [ "${arg#sqloptions=}" != "$arg" ]; then FFOUND=1; F_in__in_sql_sqloptions_=0; fi
     if [ "$arg" = "in=toml" ]; then FFOUND=1; F_in__in_toml=1; F_in_=0; fi
     if [ "$arg" = "in=xls" ]; then FFOUND=1; F_in__in_xls=1; F_in_=0; fi
-    if [ "${arg#xlssheet=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_xlssheet_=0; fi
-    if [ "${arg#xlsevalformulas=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_xlsevalformulas_=0; fi
-    if [ "${arg#xlscol=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_xlscol_=0; fi
-    if [ "${arg#xlsrow=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_xlsrow_=0; fi
+    if [ "${arg#inxlssheet=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlssheet_=0; fi
+    if [ "${arg#inxlsevalformulas=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlsevalformulas_=0; fi
+    if [ "${arg#inxlscol=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlscol_=0; fi
+    if [ "${arg#inxlsrow=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlsrow_=0; fi
     if [ "$arg" = "in=xml" ]; then FFOUND=1; F_in__in_xml=1; F_in_=0; fi
     if [ "${arg#xmlignored=}" != "$arg" ]; then FFOUND=1; F_in__in_xml_xmlignored_=0; fi
     if [ "${arg#xmlprefix=}" != "$arg" ]; then FFOUND=1; F_in__in_xml_xmlprefix_=0; fi
@@ -534,6 +542,15 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "sortmapkeys=" ]; then FFOUND=1; F_sortmapkeys_=0; fi
     # trim= single option
     if [ "$arg" = "trim=" ]; then FFOUND=1; F_trim_=0; fi
+    # forcearray= single option
+    if [ "$arg" = "forcearray=" ]; then FFOUND=1; F_forcearray_=0; fi
+    # secKey= options
+    if [ "$arg" = "secEnv=" ]; then FFOUND=1; F_secKey__secEnv_=1; F_secKey_=0; fi
+    if [ "$arg" = "secFile=" ]; then FFOUND=1; F_secKey__secFile_=1; F_secKey_=0; fi
+    if [ "$arg" = "secMainPass=" ]; then FFOUND=1; F_secKey__secMainPass_=1; F_secKey_=0; fi
+    if [ "$arg" = "secPass=" ]; then FFOUND=1; F_secKey__secPass_=1; F_secKey_=0; fi
+    if [ "$arg" = "secBucket=" ]; then FFOUND=1; F_secKey__secBucket_=1; F_secKey_=0; fi
+    if [ "$arg" = "secRepo=" ]; then FFOUND=1; F_secKey__secRepo_=1; F_secKey_=0; fi
   done
 fi
 
@@ -684,17 +701,17 @@ if [ $F_in__in_sql -eq 1 ]; then
   fi
 fi
 if [ $F_in__in_xls -eq 1 ]; then
-  if [ $F_in__in_xls_xlssheet_ -eq 1 ]; then
-    echo "xlssheet=	The name of sheet to consider -default to the first sheet-"
+  if [ $F_in__in_xls_inxlssheet_ -eq 1 ]; then
+    echo "inxlssheet=	The name of sheet to consider -default to the first sheet-"
   fi
-  if [ $F_in__in_xls_xlsevalformulas_ -eq 1 ]; then
-    echo "xlsevalformulas=	If false the existing formulas won't be evaluated -defaults to true-"
+  if [ $F_in__in_xls_inxlsevalformulas_ -eq 1 ]; then
+    echo "inxlsevalformulas=	If false the existing formulas won't be evaluated -defaults to true-"
   fi
-  if [ $F_in__in_xls_xlscol_ -eq 1 ]; then
-    echo "xlscol=	The column on the sheet where a table should be detected -e.g. "A"-"
+  if [ $F_in__in_xls_inxlscol_ -eq 1 ]; then
+    echo "inxlscol=	The column on the sheet where a table should be detected -e.g. "A"-"
   fi
-  if [ $F_in__in_xls_xlsrow_ -eq 1 ]; then
-    echo "xlsrow=	The row on the sheet where a table should be detected -e.g. 1-"
+  if [ $F_in__in_xls_inxlsrow_ -eq 1 ]; then
+    echo "inxlsrow=	The row on the sheet where a table should be detected -e.g. 1-"
   fi
 fi
 if [ $F_in__in_xml -eq 1 ]; then
@@ -1242,6 +1259,22 @@ fi
 if [ $F_trim_ -eq 1 ]; then
   echo "trim=	If true all the strings of the result map/list will be trimmed"
   
+fi
+# Print completion for forcearray=
+if [ $F_forcearray_ -eq 1 ]; then
+  echo "forcearray=	If true and if the input is map it will force it to be an array with that map as the only element"
+  
+fi
+# Print completion for secKey=
+if [ $F_secKey_ -eq 1 ]; then
+  echo "secKey=	The mandatory sBucket bucket key to use"
+  
+  echo "secEnv=	A boolean flag to use environment variables as sBuckets"
+  echo "secFile=	Optional sBucket file source"
+  echo "secMainPass=	sBucket repository password"
+  echo "secPass=	sBucket bucket password"
+  echo "secBucket=	sBucket bucket name"
+  echo "secRepo=	sBucket repository"
 fi
 
 # end
