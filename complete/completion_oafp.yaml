@@ -521,3 +521,20 @@ complete:
   desc: If true the resulting map keys will be sorted
 - name: trim=
   desc: If true all the strings of the result map/list will be trimmed
+- name: forcearray=
+  desc: If true and if the input is map it will force it to be an array with that map as the only element
+- name: secKey=
+  desc: The mandatory sBucket bucket key to use
+  opts:
+  - name: secEnv=
+    desc: A boolean flag to use environment variables as sBuckets 
+  - name: secFile=
+    desc: Optional sBucket file source
+  - name: secMainPass=
+    desc: sBucket repository password
+  - name: secPass=
+    desc: sBucket bucket password
+  - name: secBucket=
+    desc: sBucket bucket name
+  - name: secRepo=
+    desc: sBucket repository
