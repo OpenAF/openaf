@@ -29,6 +29,20 @@ OpenWrap.ai.prototype.regression = function() {
     return loadCompiledRequire("regression_js");
 }
 
+/**
+ * <odoc>
+ * <key>ow.ai.valuesArray(entriesspan) : Map</key>
+ * Creates a valuesArray object with the following functions:\
+ * \
+ *   getValues()     : Array\
+ *   push(value)     : void\
+ *   deviation()     : Number\
+ *   variance()      : Number\
+ *   movingAverage() : Number\
+ * \
+ * entriesspan - number of entries to keep\
+ * </odoc>
+ */
 OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
     entriesspan = _$(entriesspan, "entriesspan").isNumber().default(3);
     ow.loadObj();
