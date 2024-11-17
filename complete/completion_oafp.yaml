@@ -519,6 +519,8 @@ complete:
   desc: If true will try to remove duplicates from an array
 - name: removenulls=
   desc: If true will try to remove nulls and undefined values from a map or array
+- name: spacekeys=
+  desc: Replaces spaces in keys with the provided string -for example, helpful to xml output-
 - name: searchkeys=
   desc: Will return a map with only keys that match the provided string
 - name: searchvalues=
