@@ -9652,33 +9652,56 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 
 /**
  * <odoc>
- * <key>af.fromObj2XML(aMap, sanitize) : String</key>
+ * <key>af.fromObj2XML(aMap, sanitize, aAttrKey) : String</key>
  * Tries to convert aMap into a similiar XML strucuture returned as string.
  * Note that no validation of XML strucuture is performed. 
+ * If aAttrKey string is defined it will be used to prefix attributes (from af.fromXML2Obj).
  * Tips: ensure each map is under a map key.
  * </odoc>
  */
-AF.prototype.fromObj2XML = function (obj, sanitize) {
+AF.prototype.fromObj2XML = function (obj, sanitize, aAttrKey, aPrefix, aSuffix) {
+	aPrefix = _$(aPrefix).isString().default("")
+	aSuffix = _$(aSuffix).isString().default("")
 	if (sanitize) {
 		obj = clone(obj)
 		traverse(obj, (aK, aV, aP, aO) => {
 			if (isJavaObject(aV)) aO[aK] = String(aV)
 		})
 	}
-	var xml = '';
-	for (var prop in obj) {
+	var keys
+	if (isString(aAttrKey)) {
+		keys = Object.keys(obj).sort((a, b) => {
+			if (a === "_") return 1
+			if (b === "_") return -1
+			return 0
+		})
+	} else {
+		keys = Object.keys(obj)
+	}
+	var xml = aPrefix;
+	for (var i = 0; i <= keys.length - 1; i++) {
+		var prop = keys[i]
 		if (obj[prop] instanceof Array) {
 			for (var array in obj[prop]) {
-				xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop][array])) + "</" + prop + ">";
+				xml += af.fromObj2XML(new Object(obj[prop][array]), sanitize, aAttrKey, "<" + prop + ">", "</" + prop + ">")
 			}
 		} else if (isDate(obj[prop])) {
 			xml += "<" + prop + ">" + obj[prop].toISOString() + "</" + prop + ">"
 		} else if (typeof obj[prop] == "object") {
-			xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop])) + "</" + prop + ">";
+			xml += af.fromObj2XML(new Object(obj[prop]), sanitize, aAttrKey, "<" + prop + ">", "</" + prop + ">")
 		} else {
-			xml += "<" + prop + ">" + obj[prop] + "</" + prop + ">";
+			if (isString(aAttrKey) && prop.startsWith("_")) {
+				if (prop == "_") {
+					xml += obj[prop]
+				} else {
+					xml = xml.replace(/>$/, ` ${prop.substring(1)}="${obj[prop]}">`)
+				}
+			} else {
+				xml += "<" + prop + ">" + obj[prop] + "</" + prop + ">"
+			}
 		}
 	}
+	xml += aSuffix
 	xml = xml.replace(/<\/?[0-9]{1,}>/g, '');
 	return xml;
 };

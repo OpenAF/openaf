@@ -298,6 +298,9 @@ complete:
     desc: A JSON format with spacing
   - name: out=pxml
     desc: Tries to output the input data into pretty xml
+    opts:
+    - name: pxmlprefix
+      desc: A prefix added to all XML tags
   - name: out=raw
     desc: Tries to output the internal representation -string or json- of the input transformed data
   - name: out=schart
@@ -352,6 +355,9 @@ complete:
       desc: The amount of time, in ms, to keep the temporary file for the OS's Excel-compatible application to start and open the file
   - name: out=xml
     desc: An XML format
+    opts:
+    - name: outxmlprefix
+      desc: A prefix added to all XML tags
   - name: out=yaml
     desc: A YAML format
 - name: '-h'        
