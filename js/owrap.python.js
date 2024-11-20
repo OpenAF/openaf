@@ -54,7 +54,9 @@ OpenWrap.python.prototype.initCode = function(includeCoding) {
 	}
 };
 
-OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
+OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn, isAlone) {
+	isAlone = _$(isAlone, "isAlone").isBoolean().default(false)
+
 	if (this.version >= 2 && this.version <= 3) {
 		ow.python.cServer.inc();
 		if (isUnDef(this.token)) {
@@ -91,89 +93,91 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn) {
 			}, __, "127.0.0.1");
 	
 			// Send
-			if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();
-			this.sport = aSendPort;
-			//this.pidfile = getOpenAFPath() + "/openaf_python.pid";
-			this.pidfile = __gHDir().replace(/\\/g, "/") + "/.openaf_python.pid";
-			var s = "# -*- coding: utf-8 -*-\n";
-			s += "import json\n";
-			s += "import sys\n";
-			s += "import os\n";
-			s += "\n";
-			//s += "_newpid = os.fork()\n";
-			//s += "if _newpid != 0:\n";
-			//s += "  os._exit(os.EX_OK)\n";
-			s += "if sys.version_info[0] == 2:\n";
-			s += "  from StringIO import StringIO\n";
-			s += "  import SocketServer\n";
-			s += "  __h = SocketServer.BaseRequestHandler\n";
-			s += "else:\n";
-			s += "  from io import StringIO\n";
-			s += "  import socketserver\n";
-			s += "  __h = socketserver.BaseRequestHandler\n";
-			s += "\n";
-			s += "class oafHandler(__h):\n";
-			s += "  def handle(self):\n";
-			s += "      res = ''\n";
-			s += "      self.request.settimeout(1500)\n";
-			s += "      while True:\n";
-			s += "          res += self.request.recv(1024).decode('utf-8')\n";
-			s += "          if str(res).endswith('}\\n') or str(res) == '':\n";
-			s += "              break\n";
-			s += "      \n";
-			s += "      try:\n";
-			s += "          mm = json.loads(res)\n";
-			s += "      except:\n";
-			s += "          mm = {}\n";
-			s += "      if 'exit' in mm.keys() and mm['t'] == '" + this.token + "':\n";
-			s += "          os._exit(os.EX_OK)\n";
-			s += "      if 'e' in mm.keys() and mm['t'] == '" + this.token + "':\n";
-			s += "          myStdOut = StringIO()\n";
-			s += "          myStdErr = StringIO()\n";
-			s += "          sys.stdout = myStdOut\n";
-			s += "          sys.stderr = myStdErr\n";
-			s += "          try:\n";
-			s += "              exec(mm['e'])\n";
-			s += "              mm['stdout'] = myStdOut.getvalue()\n";
-			s += "              mm['stderr'] = myStdErr.getvalue()\n";
-			s += "          except:\n";
-			s += "              mm['stderr'] = str(sys.exc_info())\n";
-			s += "      try:\n";
-			s += "        del mm['e']\n";		
-			s += "        del mm['t']\n";
-			s += "        self.request.sendall(json.dumps(mm).encode('utf-8'))\n";
-			s += "      except:\n";
-			s += "        pass\n";
-			s += "\n";
-			s += ow.python.initCode(false) + "\n\n";
-			s += "_oafF = open('" + this.pidfile + "', 'w')\n";
-			s += "_oafF.write(str(os.getpid()))\n";
-			s += "_oafF.close()\n";
-			s += "if sys.version_info[0] == 2:\n";
-			s += "  server = SocketServer.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
-			s += "else:\n";
-			s += "  server = socketserver.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
-			s += "server.serve_forever()\n";
-			s += "\n";
+			if (!isAlone) {
+				if (isUnDef(aSendPort)) aSendPort = findRandomOpenPort();
+				this.sport = aSendPort;
+				//this.pidfile = getOpenAFPath() + "/openaf_python.pid";
+				this.pidfile = __gHDir().replace(/\\/g, "/") + "/.openaf_python.pid";
+				var s = "# -*- coding: utf-8 -*-\n";
+				s += "import json\n";
+				s += "import sys\n";
+				s += "import os\n";
+				s += "\n";
+				//s += "_newpid = os.fork()\n";
+				//s += "if _newpid != 0:\n";
+				//s += "  os._exit(os.EX_OK)\n";
+				s += "if sys.version_info[0] == 2:\n";
+				s += "  from StringIO import StringIO\n";
+				s += "  import SocketServer\n";
+				s += "  __h = SocketServer.BaseRequestHandler\n";
+				s += "else:\n";
+				s += "  from io import StringIO\n";
+				s += "  import socketserver\n";
+				s += "  __h = socketserver.BaseRequestHandler\n";
+				s += "\n";
+				s += "class oafHandler(__h):\n";
+				s += "  def handle(self):\n";
+				s += "      res = ''\n";
+				s += "      self.request.settimeout(1500)\n";
+				s += "      while True:\n";
+				s += "          res += self.request.recv(1024).decode('utf-8')\n";
+				s += "          if str(res).endswith('}\\n') or str(res) == '':\n";
+				s += "              break\n";
+				s += "      \n";
+				s += "      try:\n";
+				s += "          mm = json.loads(res)\n";
+				s += "      except:\n";
+				s += "          mm = {}\n";
+				s += "      if 'exit' in mm.keys() and mm['t'] == '" + this.token + "':\n";
+				s += "          os._exit(os.EX_OK)\n";
+				s += "      if 'e' in mm.keys() and mm['t'] == '" + this.token + "':\n";
+				s += "          myStdOut = StringIO()\n";
+				s += "          myStdErr = StringIO()\n";
+				s += "          sys.stdout = myStdOut\n";
+				s += "          sys.stderr = myStdErr\n";
+				s += "          try:\n";
+				s += "              exec(mm['e'])\n";
+				s += "              mm['stdout'] = myStdOut.getvalue()\n";
+				s += "              mm['stderr'] = myStdErr.getvalue()\n";
+				s += "          except:\n";
+				s += "              mm['stderr'] = str(sys.exc_info())\n";
+				s += "      try:\n";
+				s += "        del mm['e']\n";		
+				s += "        del mm['t']\n";
+				s += "        self.request.sendall(json.dumps(mm).encode('utf-8'))\n";
+				s += "      except:\n";
+				s += "        pass\n";
+				s += "\n";
+				s += ow.python.initCode(false) + "\n\n";
+				s += "_oafF = open('" + this.pidfile + "', 'w')\n";
+				s += "_oafF.write(str(os.getpid()))\n";
+				s += "_oafF.close()\n";
+				s += "if sys.version_info[0] == 2:\n";
+				s += "  server = SocketServer.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
+				s += "else:\n";
+				s += "  server = socketserver.ThreadingTCPServer(('127.0.0.1', " + aSendPort + "), oafHandler)\n";
+				s += "server.serve_forever()\n";
+				s += "\n";
+		
+				//af.sh(this.python + " -", s, __, __, __, __, __, __, true);
+				plugin("Threads");
+				this.__t = new Threads();
+				var parent = this;
+				this.__t.addSingleThread(function() {
+					$sh([parent.python, "-c", s]).dontWait(false).get(0);
+					return 1;
+				});
+				this.__t.startNoWait();
 	
-			//af.sh(this.python + " -", s, __, __, __, __, __, __, true);
-			plugin("Threads");
-			this.__t = new Threads();
-			var parent = this;
-			this.__t.addSingleThread(function() {
-				$sh([parent.python, "-c", s]).dontWait(false).get(0);
-				return 1;
-			});
-			this.__t.startNoWait();
-
-			ow.loadFormat(); var init = now();
-			do {
-				sleep(100, true);
-			} while((now() - init) < 1500);
-			sleep(150, true);
-			ow.format.testPort("127.0.0.1", this.sport, 1500);
-	
-			addOnOpenAFShutdown(() => { ow.python.stopServer(__, true); });
+				ow.loadFormat(); var init = now();
+				do {
+					sleep(100, true);
+				} while((now() - init) < 1500);
+				sleep(150, true);
+				ow.format.testPort("127.0.0.1", this.sport, 1500);
+		
+				addOnOpenAFShutdown(() => { ow.python.stopServer(__, true); });
+			}
 		}
 	
 		return this.token;
