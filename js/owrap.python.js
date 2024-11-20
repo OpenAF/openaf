@@ -12,6 +12,7 @@ OpenWrap.python = function() {
 	this.reset(true, isDef(pen) && pen != "null");
 	this.cServer = $atomic();
 	this.running = false;
+	this.mode = "embedded"
 
 	return ow.python;
 };
@@ -177,6 +178,8 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn, isAlone)
 				ow.format.testPort("127.0.0.1", this.sport, 1500);
 		
 				addOnOpenAFShutdown(() => { ow.python.stopServer(__, true); });
+			} else {
+				this.mode = "standalone"
 			}
 		}
 	
@@ -357,3 +360,19 @@ OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, thr
 	}
 	return jsonParse(rres[1], true);
 };
+
+OpenWrap.python.prototype.execStandalone = function(aPythonCodeOrFile, aInput, throwExceptions) {
+	if (!this.running) {
+		this.startServer(__, __, __, true)
+	}
+	if (this.mode != "standalone") throw "Not in standalone mode."
+
+	if (aPythonCodeOrFile.match(/\.py$/) && io.fileExists(aPythonCodeOrFile)) {
+		var code = io.readFileString(aPythonCodeOrFile)
+		code = this.initCode() + "\n" + code
+	} else {
+		code = this.initCode() + "\n" + aPythonCodeOrFile
+
+	}
+	$sh([this.python, "-c", code]).exec(0)
+}
