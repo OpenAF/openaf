@@ -8100,6 +8100,17 @@ const $py = function(aPythonCode, aInput, aOutputArray) {
 
 /**
  * <odoc>
+ * <key>$pyExec(aPythonCodeOrFile, aInput)</key>
+ * Executes aPythonCodeOrFile using a map aInput as variables in python. The python execution will be 'standalone', with access to OpenAF functionality,
+ * but no output will be returned.
+ */
+const $pyExec = function(aPythonCodeOrFile, aInput) {
+	ow.loadPython()
+	ow.python.execStandalone(aPythonCodeOrFile, aInput)
+}
+
+/**
+ * <odoc>
  * <key>$pyStop()</key>
  * Stops the background python process started by $pyStart.
  * </odoc>
