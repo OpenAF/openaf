@@ -372,7 +372,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     //if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
                     _r.conversation = aPrompt
                     var body = {
-                        parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }))
+                        parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ),
                         contents: [
                             { parts: msgs }
                         ],
@@ -470,13 +470,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getModels: () => {
-                    throw "Not supported yet"
                     /*var res = _r._request("v1/models", {}, "GET")
                     if (isArray(res.data)) {
                         return res.data
                     } else {
                         return res
                     }*/
+                   var res = _r._request("models", {}, "GET")
+                   if (isDef(res.models)) res = res.models
+                   return res
                 },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -505,7 +507,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
 
                     switch(aVerb.toUpperCase()) {
-                    //case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + _key))
+                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + _key))
                     case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + _key, aData))
                     }
                 }
