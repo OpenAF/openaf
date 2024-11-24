@@ -370,9 +370,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     msgs = aPrompt.map(c => isMap(c) ? c : { text: c })
                  
                     //if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
-                    _r.conversation = aPrompt
                     var body = {
-                        parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ),
+                        system_instruction: { parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ) },
                         contents: [
                             { parts: msgs }
                         ],
@@ -380,6 +379,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                             temperature: aTemperature
                         }
                     }
+                    if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
+                    if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
                     body = merge(body, aOptions.params)
                     /*if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
