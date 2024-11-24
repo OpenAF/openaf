@@ -40,7 +40,7 @@ OpenWrap.ai.prototype.regression = function() {
  *   variance()      : Number\
  *   movingAverage() : Number\
  * \
- * entriesspan - number of entries to keep\
+ * entriesspan - number of entries to keep
  * </odoc>
  */
 OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
@@ -94,7 +94,6 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.openai.com")
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
 
-            ow.loadObj()
             var _key = aOptions.key
             var _timeout = aOptions.timeout
             var _model = aOptions.model
@@ -305,6 +304,209 @@ OpenWrap.ai.prototype.__gpttypes = {
                     switch(aVerb.toUpperCase()) {
                     case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI))
                     case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData))
+                    }
+                }
+            }
+            return _r
+        }
+    },
+    gemini: {
+        create: (aOptions) => {
+            ow.loadObj()
+            aOptions = _$(aOptions, "aOptions").isMap().$_()
+            aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
+            aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gemini-1.5-flash")
+            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+            aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://generativelanguage.googleapis.com/v1beta")
+            aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
+
+            var _key = aOptions.key
+            var _timeout = aOptions.timeout
+            var _model = aOptions.model
+            var _temperature = aOptions.temperature
+
+            var _r = {
+                conversation: [],
+                tools: {},
+                getConversation: () => {
+                    return _r.conversation
+                },
+                setConversation: (aConversation) => {
+                    if (isArray(aConversation)) _r.conversation = aConversation
+                    return _r
+                },
+                setTool: (aName, aDesc, aParams, aFn) => {
+                    throw "Not supported yet"
+                    return _r
+                },
+                prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
+                    if (isArray(__r.candidates) && isArray(__r.candidates[0].content.parts) && __r.candidates[0].content.parts.length > 0) {
+                        if (__r.candidates[0].finishReason == "STOP") {
+                           return __r.candidates[0].content.parts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                        }
+                     }
+                     return __r
+                },
+                promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, aJsonFlag) => {
+                    aRole        = _$(aRole, "aRole").isString().default("user")
+                    aDetailLevel = _$(aDetailLevel, "aDetailLevel").isString().default("low")
+
+                    throw "Not supported yet"
+                    return __r
+                },
+                rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag, aTools) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                    aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
+                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                 
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ { text: aPrompt } ]
+                    aPrompt = _r.conversation.filter(r => isUnDef(r.role) || r.role != "system").map(r => ({ text: r.text })).concat(aPrompt)
+                    msgs = aPrompt.map(c => isMap(c) ? c : { text: c })
+                 
+                    //if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
+                    _r.conversation = aPrompt
+                    var body = {
+                        parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }))
+                        contents: [
+                            { parts: msgs }
+                        ],
+                        generationConfig: {
+                            temperature: aTemperature
+                        }
+                    }
+                    body = merge(body, aOptions.params)
+                    /*if (isArray(aTools) && aTools.length > 0) {
+                        body.tools = aTools.map(t => {
+                            var _t = _r.tools[t].function
+                            return {
+                                type: "function",
+                                function: {
+                                    name: _t.name,
+                                    description: _t.description,
+                                    parameters: _t.parameters
+                                }
+                            }
+                        })
+                    }*/
+                    var _res = _r._request("models/" + aModel + ":generateContent", body)   
+                    if (isDef(_res) && isArray(_res.candidates)) {
+                        // call tools
+                        var _p = [], stopWith = false
+                        _res.candidates.forEach(tc => {
+                            /*if (isDef(tc.text) && isArray(tc.message.tool_calls)) {
+                                tc.message.tool_calls.forEach(tci => {
+                                    var _t = _r.tools[tci.function.name]
+                                    var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
+                                    _p.push({ role: "assistant", tool_calls: [ tci ]})
+                                    _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
+                                })
+                            }*/
+                            if (isArray(tc.content.parts) && tc.finishReason == "STOP") {
+                                _p.push({ role: "model", content: tc.content })
+                                stopWith = true
+                            }
+                        })
+                        if (stopWith)
+                            return _res
+                        else
+                            return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                    } else {
+                        return _res
+                    }
+                },
+                rawImgGen: (aPrompt, aModel) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+
+                    throw "Not supported yet."
+                    /*var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.map(c => isMap(c) ? c.content : c )
+                 
+                    _r.conversation = aPrompt
+                    return _r._request("v1/images/generations", merge({
+                       model: aModel,
+                       prompt: msgs.join("\n"),
+                       response_format: "b64_json"
+                    }, aOptions.params))   
+                    // data[0].b64_json
+                    */
+                },
+                promptImgGen: (aPrompt, aModel) => {
+                    var res = _r.rawImgGen(aPrompt, aModel)
+                    if (isArray(res.data) && res.data.length > 0) {
+                        return res.data.map(r => af.fromBase64(r.b64_json))
+                    } else {
+                        return res
+                    }
+                },
+                addPrompt: (aRole, aPrompt) => {
+                    if (isUnDef(aPrompt)) {
+                        aPrompt = aRole
+                        aRole = "user"
+                     }
+                     if (isString(aPrompt)) _r.conversation.push({ parts: [ { text: aPrompt } ] })
+                     if (!isArray(_r.conversation)) _r.conversation = []
+                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
+                     return _r
+                },
+                addUserPrompt: (aPrompt) => {
+                    _r.conversation.push({ text: aPrompt })
+                    return _r
+                },
+                addSystemPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "system", text: aPrompt })
+                    return _r
+                },
+                cleanPrompt: () => {
+                    _r.conversation = []
+                    return _r
+                },
+                getModels: () => {
+                    throw "Not supported yet"
+                    /*var res = _r._request("v1/models", {}, "GET")
+                    if (isArray(res.data)) {
+                        return res.data
+                    } else {
+                        return res
+                    }*/
+                },
+                _request: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __m = { 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                       requestHeaders: merge(aOptions.headers, { 
+                          //Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key),
+                          Accept       : "*/*"
+                       })
+                    } 
+                    _h.close()
+                 
+                    var _fnh = r => {
+                        var _r 
+                        if ("function" !== typeof r.getClass) {
+                            _r = (isDef(r.error) ? jsonParse(r.error, __, __, true) : r)
+                        } else {
+                            _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
+                        }
+                        return _r
+                    }
+
+                    switch(aVerb.toUpperCase()) {
+                    //case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + _key))
+                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + _key, aData))
                     }
                 }
             }

@@ -1794,7 +1794,7 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
  * \
  *   var http = ow.obj.http("http://www.google.com", "GET");\
  *   var res = http.exec();\
- * \
+ * 
  * </odoc>
  */
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
