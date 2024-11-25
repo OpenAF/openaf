@@ -71,6 +71,8 @@ complete:
       desc: If true it will try to determine header and column position from spaces and tabs
     - name: linesvisualsepre=
       desc: Regular expression representing the separator between columns when linesvisual=true -defaults to ' \\s+'-
+    - name: linesvisualheadsep
+      desc: If true will try to process the second line as header separator aiding on column position determination -if linesvisualsepre is not defined it will default to '\\s+'-
   - name: in=llm
     desc: A large language model input -uses 'llmenv' or 'llmoptions'-
   - name: in=llmmodels
