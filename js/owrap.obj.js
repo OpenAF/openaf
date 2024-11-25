@@ -1775,6 +1775,28 @@ OpenWrap.obj.prototype.httpSetDefaultTimeout = function(aTimeout) {
 };
 
 // https://javadoc.io/static/com.squareup.okhttp3/okhttp/3.14.9/index.html?okhttp3/Request.html
+/**
+ * <odoc>
+ * <key>ow.obj.http(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) : Object</key>
+ * Creates a new instance of an HTTP client to be used to execute a request to aURL using aRequestType (GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS, TRACE).
+ * Optionally you can provide aIn (the body of the request), aRequestMap (a map with the headers), isBytes (if the body is bytes), aTimeout (timeout in milliseconds),
+ * returnStream (if the response should be a stream) and options (a map with the following options:\
+ * \
+ *   - timeout: the connection timeout in milliseconds\
+ *   - readTimeout: the read timeout in milliseconds\
+ *   - writeTimeout: the write timeout in milliseconds\
+ *   - callTimeout: the call timeout in milliseconds\
+ *   - followRedirects: if should follow redirects\
+ *   - followSslRedirects: if should follow ssl redirects\
+ *   - delayBuild: if should delay the build of the client\
+ * \
+ * Example:\
+ * \
+ *   var http = ow.obj.http("http://www.google.com", "GET");\
+ *   var res = http.exec();\
+ * 
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
 	this.__config = {}
 	this.__throwExceptions = true
@@ -1818,6 +1840,12 @@ OpenWrap.obj.prototype.http = function(aURL, aRequestType, aIn, aRequestMap, isB
 	}
 }
 
+/**
+ * <odoc>
+ * <key>ow.obj.http.upload(aName, aFile)</key>
+ * Sets the file to be uploaded with the next request.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
 	this.__ufn = _$(aName, "aName").isString().default("file")
 	_$(aFile, "aFile").isString().$_()
@@ -1825,17 +1853,41 @@ OpenWrap.obj.prototype.http.prototype.upload = function(aName, aFile) {
 	this.__ufn = aName
 	this.__uf = aFile
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.head(aURL, aIn, aRequestMap, isBytes, aTimeout) : Map</key>
+ * Executes a HEAD request to aURL with the provided aIn, aRequestMap, isBytes and aTimeout. Returns a map with the response headers.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.head = function(aURL, aIn, aRequestMap, isBytes, aTimeout) { 
 	this.exec(aURL, "HEAD", aIn, aRequestMap, isBytes, aTimeout)
 	return this.responseHeaders()
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.setThrowExceptions(should)</key>
+ * Sets if the http object should throw exceptions or not.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.setThrowExceptions = function(should) {
 	this.__throwExceptions = should
 }
 OpenWrap.obj.prototype.http.prototype.setConfig = function(aMap) { }
+/**
+ * <odoc>
+ * <key>ow.obj.http.getCookieStore() : String</key>
+ * Returns the current cookie store name channel.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.getCookieStore = function() { 
 	return this.__cookiesCh
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.setCookieStore(aCh)</key>
+ * Sets the cookie store channel to be used with the current http object.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) { 
 	aCh = _$(aCh, "aCh").isString().default("oaf::cookies")
 	this.__cookiesCh = aCh
@@ -1869,6 +1921,13 @@ OpenWrap.obj.prototype.http.prototype.setCookieStore = function(aCh) {
 		}
 	}).build()
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.exec(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) : Object</key>
+ * Executes a request to aURL with the provided aRequestType, aIn, aRequestMap, isBytes, aTimeout and returnStream. Optionally you can provide options.
+ * Returns a map with the response code, the content type and the response.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
 	aURL = _$(aURL, "aURL").isString().$_()
 	aIn  = _$(aIn, "aIn").default(__)
@@ -1969,76 +2028,51 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 	}
 
 	return this.outputObj
-
-	/*
-	
-	// Set credentials
-	if (isDef(this.__l) && !(this.__forceBasic)) {
-		var getKey;
-		this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
-		if (this.__usv) this.__h = this.__h.useSystemProperties();
-		for(var key in this.__lps) {
-			if (aUrl.startsWith(key)) getKey = key;
-		}
-		if (isDef(getKey)) {
-			this.__h = this.__h.setDefaultCredentialsProvider(this.__lps[getKey]);
-			this.__h = this.__handleConfig(this.__h);
-			this.__h = this.__h.build();
-		} else {
-			this.__h = this.__handleConfig(this.__h);
-			this.__h = this.__h.build();
-		}
-	} else {
-		if (isUnDef(this.__h)) {
-			this.__h = new Packages.org.apache.http.impl.client.HttpClients.custom();
-			if (this.__usv) this.__h = this.__h.useSystemProperties();
-			this.__h = this.__handleConfig(this.__h);
-			this.__h = this.__h.build();
-		}
-	}
-
-	if (this.__forceBasic && isDef(this.__l)) {
-		r.addHeader("Authorization", "Basic " + String(new java.lang.String(Packages.org.apache.commons.codec.binary.Base64.encodeBase64(new java.lang.String(Packages.openaf.AFCmdBase.afc.dIP(this.__l) + ":" + Packages.openaf.AFCmdBase.afc.dIP(this.__p)).getBytes()))));
-	}
-
-	for(var i in aRequestMap) {
-		if (r.containsHeader(i)) {
-			r.setHeader(i, aRequestMap[i]);
-		} else {
-			r.addHeader(i, aRequestMap[i]);
-		}
-	}
-
-	if (isDef(aIn) && isString(aIn) && canHaveIn) {
-		r.setEntity(Packages.org.apache.http.entity.StringEntity(aIn));
-	} else {
-		if (isDef(this.__uf) && canHaveIn) {
-			//var fileBody = new Pacakges.org.apache.http.entity.mime.content.FileBody(new java.io.File(this.__uf), Packages.org.apache.http.entity.ContentType.DEFAULT_BINARY);
-			var entityBuilder = Packages.org.apache.http.entity.mime.MultipartEntityBuilder.create();
-			entityBuilder.setMode(Packages.org.apache.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE);
-			if (isString(this.__uf)) {
-				entityBuilder.addBinaryBody(this.__ufn, new java.io.File(this.__uf));
-			} else {
-				entityBuilder.addBinaryBody(this.__ufn, this.__uf);
-			}
-			var mutiPartHttpEntity = entityBuilder.build();
-			r.setEntity(mutiPartHttpEntity);
-		}
-	}
-	*/
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.get(aURL, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) : Object</key>
+ * Executes a GET request to aURL with the provided aIn, aRequestMap, isBytes, aTimeout and returnStream. Optionally you can provide options.
+ * Returns a map with the response code, the content type and the response.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.get = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) { 
 	return this.exec(aUrl, "GET", aIn, aRequestMap, isBytes, aTimeout, returnStream, options)
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.getBytes(aURL, aIn, aRequestMap, aTimeout, options) : Object</key>
+ * Executes a GET request to aURL with the provided aIn, aRequestMap, aTimeout and options. Returns the response as bytes.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.getBytes = function(aUrl, aIn, aRequestMap, aTimeout, options) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, true, aTimeout, false, options)
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.getStream(aURL, aIn, aRequestMap, aTimeout, options) : Object</key>
+ * Executes a GET request to aURL with the provided aIn, aRequestMap, aTimeout and options. Returns the response as a stream.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.getStream = function(aUrl, aIn, aRequestMap, aTimeout, options) {
 	return this.exec(aUrl, "GET", aIn, aRequestMap, false, aTimeout, true, options)
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.post(aURL, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) : Object</key>
+ * Executes a POST request to aURL with the provided aIn, aRequestMap, isBytes, aTimeout and returnStream. Optionally you can provide options.
+ * Returns a map with the response code, the content type and the response.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.post = function(aUrl, aIn, aRequestMap, isBytes, aTimeout, returnStream, options) {
 	return this.exec(aUrl, "POST", aIn, aRequestMap, false, aTimeout, true, options)
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.getErrorResponse(parseJson) : Object</key>
+ * Returns the response object with the response and responseBytes parsed as JSON if parseJson is true.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) { 
 	if (parseJson) {
 		var res = this.outputObj
@@ -2053,9 +2087,21 @@ OpenWrap.obj.prototype.http.prototype.getErrorResponse = function(parseJson) { 
 		return _r
 	}
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.getResponse() : Object</key>
+ * Returns the response object.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.getResponse = function()  { 
 	return this.outputObj
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.login(aUser, aPassword, forceBasic, urlPartial)</key>
+ * Sets the login credentials to be used with the next request. If forceBasic is true it will always use basic authentication.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBasic, urlPartial) { 
 	if (isUnDef(urlPartial)) forceBasic = true;
 
@@ -2100,6 +2146,12 @@ OpenWrap.obj.prototype.http.prototype.login = function(aUser, aPassword, forceBa
 	this.__forceBasic = forceBasic;
 
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.response() : String</key>
+ * Returns the response as a string.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.response = function() {
 	if (isUnDef(this._response)) return __
 
@@ -2107,6 +2159,12 @@ OpenWrap.obj.prototype.http.prototype.response = function() {
 	//this._response.body().close()
 	return res
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.responseBytes() : Object</key>
+ * Returns the response as bytes.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
 	if (isUnDef(this._response)) return __
 
@@ -2114,11 +2172,23 @@ OpenWrap.obj.prototype.http.prototype.responseBytes = function() {
 	//this._response.body().close()
 	return res
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.responseCode() : Number</key>
+ * Returns the response code.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.responseCode = function() { 
 	if (isUnDef(this._response)) return __
 
 	return this._response.code()
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.responseHeaders() : Map</key>
+ * Returns the response headers.
+ * </odoc> 
+ */
 OpenWrap.obj.prototype.http.prototype.responseHeaders = function() { 
 	if (isUnDef(this._response)) return __
 	
@@ -2127,17 +2197,35 @@ OpenWrap.obj.prototype.http.prototype.responseHeaders = function() {
 
 	return m
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.responseStream() : Object</key>
+ * Returns the response as a stream.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.responseStream = function() { 
 	if (isUnDef(this._response)) return __
 
 	var res = this._response.body().byteStream()
 	return res
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.responseType() : String</key>
+ * Returns the response content type.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.responseType = function() { 
 	if (isUnDef(this._response)) return __
 
 	return this._response.header("content-type")
 }
+/**
+ * <odoc>
+ * <key>ow.obj.http.close()</key>
+ * Closes the current http connection.
+ * </odoc>
+ */
 OpenWrap.obj.prototype.http.prototype.close = function() {
 	if (isUnDef(this._response)) return __
 

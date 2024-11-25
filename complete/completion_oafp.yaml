@@ -71,6 +71,8 @@ complete:
       desc: If true it will try to determine header and column position from spaces and tabs
     - name: linesvisualsepre=
       desc: Regular expression representing the separator between columns when linesvisual=true -defaults to ' \\s+'-
+    - name: linesvisualheadsep
+      desc: If true will try to process the second line as header separator aiding on column position determination -if linesvisualsepre is not defined it will default to '\\s+'-
   - name: in=llm
     desc: A large language model input -uses 'llmenv' or 'llmoptions'-
   - name: in=llmmodels
@@ -298,6 +300,9 @@ complete:
     desc: A JSON format with spacing
   - name: out=pxml
     desc: Tries to output the input data into pretty xml
+    opts:
+    - name: pxmlprefix
+      desc: A prefix added to all XML tags
   - name: out=raw
     desc: Tries to output the internal representation -string or json- of the input transformed data
   - name: out=schart
@@ -352,6 +357,9 @@ complete:
       desc: The amount of time, in ms, to keep the temporary file for the OS's Excel-compatible application to start and open the file
   - name: out=xml
     desc: An XML format
+    opts:
+    - name: outxmlprefix
+      desc: A prefix added to all XML tags
   - name: out=yaml
     desc: A YAML format
 - name: '-h'        
@@ -513,6 +521,8 @@ complete:
   desc: If true will try to remove duplicates from an array
 - name: removenulls=
   desc: If true will try to remove nulls and undefined values from a map or array
+- name: spacekeys=
+  desc: Replaces spaces in keys with the provided string -for example, helpful to xml output-
 - name: searchkeys=
   desc: Will return a map with only keys that match the provided string
 - name: searchvalues=
