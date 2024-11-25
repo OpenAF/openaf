@@ -268,6 +268,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	PRINT_BUFFER_STREAM         : 8192,
 	JAVA_CERT_BC_PROVIDER       : false,
 	PATH_CFN                    : __,             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
+	PATH_SAFE                   : false,
 	PFOREACH                    : {
 		seq_thrs_ms        : 6,
 		threads_thrs       : 2,
@@ -3169,19 +3170,31 @@ const oPack = function(aCmd) {
 
 /**
  * <odoc>
- * <key>oJob(aFile, args, aId, aOptionsMap)</key>
+ * <key>oJob(aFile, args, aId, aOptionsMap, shouldReturn)</key>
  * Shortcut for oJobRunFile return the result on the variable __pm. Keep in mind that it doesn't support concurrency.
+ * If shouldReturn is true it will return the result (from ow.oJob.output if used) of the job instead of the __pm variable.
  * </odoc>
  */
-const oJob = function(aFile, args, aId, aOptionsMap) {
-	args = merge({ "__format": "pm" }, args);
-	if (isDef(__pm._list)) __pm._list = __;
-	if (isDef(__pm._map)) __pm._list = __;
-	if (isDef(__pm.result)) __pm.result = __;
-	oJobRunFile(aFile, args, aId, aOptionsMap);
-	if (isDef(__pm._list)) return __pm._list;
-	if (isDef(__pm._map)) return __pm._map;
-	return __pm.result;
+const oJob = function(aFile, args, aId, aOptionsMap, shouldReturn) {
+	if (shouldReturn) {
+		var _id = genUUID()
+		args = merge(args, { __format: "key", __key: _id })
+		oJobRunFile(aFile, args, aId, aOptionsMap)
+		var _res = $get(_id)
+		delete _res.__format
+		delete _res.__key
+		delete _res.init
+		return _res
+	} else {
+		args = merge({ "__format": "pm" }, args)
+		if (isDef(__pm._list)) __pm._list = __
+		if (isDef(__pm._map)) __pm._list = __
+		if (isDef(__pm.result)) __pm.result = __
+		oJobRunFile(aFile, args, aId, aOptionsMap)
+		if (isDef(__pm._list)) return __pm._list
+		if (isDef(__pm._map)) return __pm._map
+		return __pm.result
+	}
 }
 
 /**
@@ -4619,6 +4632,11 @@ var $from = function(a) {
  * assign(obj, path, value), assignp(objPathStr, path, value)\
  * random(min, max), srandom(min, max)\
  * at(arrayIndex)\
+ * 
+ * Functions only active if flag PATH_SAFE is false:\
+ *   ojob(name, argsJSSLON)\
+ *   sh(command, stdin), sh_json(command, stdin), sh_jsslon(command, stdin), sh_yaml(command, stdin)\
+ * \
  * Custom functions:\
  *   $path(2, "example(@)", { example: { _func: (a) => { return Number(a) + 10; }, _signature: [ { types: [ $path().number ] } ] } });\
  * \
@@ -5070,6 +5088,57 @@ const $path = function(aObj, aPath, customFunctions) {
 				return _r
 			}, 
 			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		ojob: {
+			_func: ar => {
+				if (!__flags.PATH_SAFE) {
+					var _res = oJob(ar[0], isString(ar[1]) ? af.fromJSSLON(ar[1]) : ar[1], __, __, true)
+					return _res
+				} else {
+					throw "ojob is disabled due to PATH_SAFE flag"
+				}
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.any ] } ]
+		},
+		sh: {
+			_func: ar => {
+				if (!__flags.PATH_SAFE) {
+					return $sh(ar[0], ar[1]).get(0)
+				} else {
+					throw "sh is disabled due to PATH_SAFE flag"
+				}
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		sh_json: {
+			_func: ar => {
+				if (!__flags.PATH_SAFE) {
+					return $sh(ar[0], ar[1]).getJson(0)
+				} else {
+					throw "sh_json is disabled due to PATH_SAFE flag"
+				}
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		sh_jsslon: {
+			_func: ar => {
+				if (!__flags.PATH_SAFE) {
+					return $sh(ar[0], ar[1]).getJsSlon(0)
+				} else {
+					throw "sh_jsslon is disabled due to PATH_SAFE flag"
+				}
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		sh_yaml: {
+			_func: ar => {
+				if (!__flags.PATH_SAFE) {
+					return $sh(ar[0], ar[1]).getYaml(0)
+				} else {
+					throw "sh_yaml is disabled due to PATH_SAFE flag"
+				}
+			},
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		},
 		if: {
 			_func: ar => {
@@ -8031,6 +8100,18 @@ const $py = function(aPythonCode, aInput, aOutputArray) {
 
 /**
  * <odoc>
+ * <key>$pyExec(aPythonCodeOrFile, aInput)</key>
+ * Executes aPythonCodeOrFile using a map aInput as variables in python. The python execution will be 'standalone', with access to OpenAF functionality,
+ * but no output will be returned.
+ * </odoc>
+ */
+const $pyExec = function(aPythonCodeOrFile, aInput) {
+	ow.loadPython()
+	ow.python.execStandalone(aPythonCodeOrFile, aInput)
+}
+
+/**
+ * <odoc>
  * <key>$pyStop()</key>
  * Stops the background python process started by $pyStart.
  * </odoc>
@@ -9583,33 +9664,56 @@ AF.prototype.fromXML2Obj = function (xml, ignored, aPrefix, reverseIgnored) {
 
 /**
  * <odoc>
- * <key>af.fromObj2XML(aMap, sanitize) : String</key>
+ * <key>af.fromObj2XML(aMap, sanitize, aAttrKey) : String</key>
  * Tries to convert aMap into a similiar XML strucuture returned as string.
  * Note that no validation of XML strucuture is performed. 
+ * If aAttrKey string is defined it will be used to prefix attributes (from af.fromXML2Obj).
  * Tips: ensure each map is under a map key.
  * </odoc>
  */
-AF.prototype.fromObj2XML = function (obj, sanitize) {
+AF.prototype.fromObj2XML = function (obj, sanitize, aAttrKey, aPrefix, aSuffix) {
+	aPrefix = _$(aPrefix).isString().default("")
+	aSuffix = _$(aSuffix).isString().default("")
 	if (sanitize) {
 		obj = clone(obj)
 		traverse(obj, (aK, aV, aP, aO) => {
 			if (isJavaObject(aV)) aO[aK] = String(aV)
 		})
 	}
-	var xml = '';
-	for (var prop in obj) {
+	var keys
+	if (isString(aAttrKey)) {
+		keys = Object.keys(obj).sort((a, b) => {
+			if (a === "_") return 1
+			if (b === "_") return -1
+			return 0
+		})
+	} else {
+		keys = Object.keys(obj)
+	}
+	var xml = aPrefix;
+	for (var i = 0; i <= keys.length - 1; i++) {
+		var prop = keys[i]
 		if (obj[prop] instanceof Array) {
 			for (var array in obj[prop]) {
-				xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop][array])) + "</" + prop + ">";
+				xml += af.fromObj2XML(new Object(obj[prop][array]), sanitize, aAttrKey, "<" + prop + ">", "</" + prop + ">")
 			}
 		} else if (isDate(obj[prop])) {
 			xml += "<" + prop + ">" + obj[prop].toISOString() + "</" + prop + ">"
 		} else if (typeof obj[prop] == "object") {
-			xml += "<" + prop + ">" + af.fromObj2XML(new Object(obj[prop])) + "</" + prop + ">";
+			xml += af.fromObj2XML(new Object(obj[prop]), sanitize, aAttrKey, "<" + prop + ">", "</" + prop + ">")
 		} else {
-			xml += "<" + prop + ">" + obj[prop] + "</" + prop + ">";
+			if (isString(aAttrKey) && prop.startsWith("_")) {
+				if (prop == "_") {
+					xml += obj[prop]
+				} else {
+					xml = xml.replace(/>$/, ` ${prop.substring(1)}="${obj[prop]}">`)
+				}
+			} else {
+				xml += "<" + prop + ">" + obj[prop] + "</" + prop + ">"
+			}
 		}
 	}
+	xml += aSuffix
 	xml = xml.replace(/<\/?[0-9]{1,}>/g, '');
 	return xml;
 };
@@ -12128,7 +12232,7 @@ const $sh = function(aString, aIn) {
 	/**
 	 * <odoc>
 	 * <key>$sh.getJson(aIdx) : Object</key>
-	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh) trying to parse it as json.
+	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh) trying to parse it as json (will ingore non json content).
 	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
@@ -12137,16 +12241,39 @@ const $sh = function(aString, aIn) {
 
 		if (isArray(res)) {
 			for(var ii in res) {
-				res[ii].stdout = jsonParse(res[ii].stdout);
-				res[ii].stderr = jsonParse(res[ii].stderr);
+				res[ii].stdout = jsonParse(res[ii].stdout, __, __, true)
+				res[ii].stderr = jsonParse(res[ii].stderr, __, __, true)
 			}
 		} else {
-			res.stdout = jsonParse(res.stdout);
-			res.stderr = jsonParse(res.stderr);
+			res.stdout = jsonParse(res.stdout, __, __, true)
+			res.stderr = jsonParse(res.stderr, __, __, true)
 		}
 
 		return res;
 	};
+
+	/**
+	 * <odoc>
+	 * <key>$sh.getJsSlon(aIdx) : Object</key>
+	 * Immediately copies the result of executing aCmd string or array (and any other commands in queue added using sh) trying to parse it as json or slon.
+	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
+	 * </odoc>
+	 */
+	__sh.prototype.getJsSlon = function(aIdx) {
+		var res = this.get(aIdx)
+
+		if (isArray(res)) {
+			for(var ii in res) {
+				res[ii].stdout = af.fromJSSLON(res[ii].stdout)
+				res[ii].stderr = af.fromJSSLON(res[ii].stderr)
+			}
+		} else {
+			res.stdout = af.fromJSSLON(res.stdout)
+			res.stderr = af.fromJSSLON(res.stderr)
+		}
+
+		return res
+	}
 
 	/**
 	 * <odoc>

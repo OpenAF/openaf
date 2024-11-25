@@ -135,6 +135,7 @@ F_out__out_openmetrics_metricstimestamp_=1
 F_out__out_pjson=0
 F_out__out_prettyjson=0
 F_out__out_pxml=0
+F_out__out_pxml_pxmlprefix=1
 F_out__out_raw=0
 F_out__out_schart=0
 F_out__out_schart_schart_=1
@@ -160,6 +161,7 @@ F_out__out_xls_xlsformat_=1
 F_out__out_xls_xlsopen_=1
 F_out__out_xls_xlsopenwait_=1
 F_out__out_xml=0
+F_out__out_xml_outxmlprefix=1
 F_out__out_yaml=0
 F__h=1
 F_help_=1
@@ -237,6 +239,7 @@ F_set__setop__setop_diffab=1
 F_set__setop__setop_intersect=1
 F_removedups_=1
 F_removenulls_=1
+F_spacekeys_=1
 F_searchkeys_=1
 F_searchvalues_=1
 F_sortmapkeys_=1
@@ -389,6 +392,7 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "out=pjson" ]; then FFOUND=1; F_out__out_pjson=1; F_out_=0; fi
     if [ "$arg" = "out=prettyjson" ]; then FFOUND=1; F_out__out_prettyjson=1; F_out_=0; fi
     if [ "$arg" = "out=pxml" ]; then FFOUND=1; F_out__out_pxml=1; F_out_=0; fi
+    if [ "${arg#pxmlprefix}" != "$arg" ]; then FFOUND=1; F_out__out_pxml_pxmlprefix=0; fi
     if [ "$arg" = "out=raw" ]; then FFOUND=1; F_out__out_raw=1; F_out_=0; fi
     if [ "$arg" = "out=schart" ]; then FFOUND=1; F_out__out_schart=1; F_out_=0; fi
     if [ "${arg#schart=}" != "$arg" ]; then FFOUND=1; F_out__out_schart_schart_=0; fi
@@ -414,6 +418,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#xlsopen=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsopen_=0; fi
     if [ "${arg#xlsopenwait=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsopenwait_=0; fi
     if [ "$arg" = "out=xml" ]; then FFOUND=1; F_out__out_xml=1; F_out_=0; fi
+    if [ "${arg#outxmlprefix}" != "$arg" ]; then FFOUND=1; F_out__out_xml_outxmlprefix=0; fi
     if [ "$arg" = "out=yaml" ]; then FFOUND=1; F_out__out_yaml=1; F_out_=0; fi
     # -h single option
     if [ "$arg" = "-h" ]; then FFOUND=1; F__h=0; fi
@@ -534,6 +539,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "removedups=" ]; then FFOUND=1; F_removedups_=0; fi
     # removenulls= single option
     if [ "$arg" = "removenulls=" ]; then FFOUND=1; F_removenulls_=0; fi
+    # spacekeys= single option
+    if [ "$arg" = "spacekeys=" ]; then FFOUND=1; F_spacekeys_=0; fi
     # searchkeys= single option
     if [ "$arg" = "searchkeys=" ]; then FFOUND=1; F_searchkeys_=0; fi
     # searchvalues= single option
@@ -909,6 +916,11 @@ if [ $F_out__out_openmetrics -eq 1 ]; then
     echo "metricstimestamp=	Unix Epoch in seconds for each metric"
   fi
 fi
+if [ $F_out__out_pxml -eq 1 ]; then
+  if [ $F_out__out_pxml_pxmlprefix -eq 1 ]; then
+    echo "pxmlprefix	A prefix added to all XML tags"
+  fi
+fi
 if [ $F_out__out_schart -eq 1 ]; then
   if [ $F_out__out_schart_schart_ -eq 1 ]; then
     echo "schart=	Chart definition in the format --unit path:color:legend... -min:0 -max:100--"
@@ -954,6 +966,11 @@ if [ $F_out__out_xls -eq 1 ]; then
   fi
   if [ $F_out__out_xls_xlsopenwait_ -eq 1 ]; then
     echo "xlsopenwait=	The amount of time, in ms, to keep the temporary file for the OS's Excel-compatible application to start and open the file"
+  fi
+fi
+if [ $F_out__out_xml -eq 1 ]; then
+  if [ $F_out__out_xml_outxmlprefix -eq 1 ]; then
+    echo "outxmlprefix	A prefix added to all XML tags"
   fi
 fi
 # Print completion for -h
@@ -1238,6 +1255,11 @@ fi
 # Print completion for removenulls=
 if [ $F_removenulls_ -eq 1 ]; then
   echo "removenulls=	If true will try to remove nulls and undefined values from a map or array"
+  
+fi
+# Print completion for spacekeys=
+if [ $F_spacekeys_ -eq 1 ]; then
+  echo "spacekeys=	Replaces spaces in keys with the provided string -for example, helpful to xml output-"
   
 fi
 # Print completion for searchkeys=
