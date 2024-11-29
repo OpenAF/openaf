@@ -374,5 +374,7 @@ OpenWrap.python.prototype.execStandalone = function(aPythonCodeOrFile, aInput, t
 		code = this.initCode() + "\n" + aPythonCodeOrFile
 
 	}
-	$sh([this.python, "-c", code]).exec(0)
+	var _f = io.createTempFile("oafpy", ".py")
+	io.writeFileString(_f, code)
+	$sh([this.python, _f]).exec(0)
 }
