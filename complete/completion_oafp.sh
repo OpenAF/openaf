@@ -33,6 +33,7 @@ F_in__in_lines=0
 F_in__in_lines_linesjoin_=1
 F_in__in_lines_linesvisual_=1
 F_in__in_lines_linesvisualsepre_=1
+F_in__in_lines_linesvisualheadsep=1
 F_in__in_llm=0
 F_in__in_llmmodels=0
 F_in__in_ls=0
@@ -290,6 +291,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#linesjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesjoin_=0; fi
     if [ "${arg#linesvisual=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisual_=0; fi
     if [ "${arg#linesvisualsepre=}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisualsepre_=0; fi
+    if [ "${arg#linesvisualheadsep}" != "$arg" ]; then FFOUND=1; F_in__in_lines_linesvisualheadsep=0; fi
     if [ "$arg" = "in=llm" ]; then FFOUND=1; F_in__in_llm=1; F_in_=0; fi
     if [ "$arg" = "in=llmmodels" ]; then FFOUND=1; F_in__in_llmmodels=1; F_in_=0; fi
     if [ "$arg" = "in=ls" ]; then FFOUND=1; F_in__in_ls=1; F_in_=0; fi
@@ -663,6 +665,9 @@ if [ $F_in__in_lines -eq 1 ]; then
   fi
   if [ $F_in__in_lines_linesvisualsepre_ -eq 1 ]; then
     echo "linesvisualsepre=	Regular expression representing the separator between columns when linesvisual=true -defaults to ' \\s+'-"
+  fi
+  if [ $F_in__in_lines_linesvisualheadsep -eq 1 ]; then
+    echo "linesvisualheadsep	If true will try to process the second line as header separator aiding on column position determination -if linesvisualsepre is not defined it will default to '\\s+'-"
   fi
 fi
 if [ $F_in__in_ls -eq 1 ]; then

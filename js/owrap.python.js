@@ -196,11 +196,13 @@ OpenWrap.python.prototype.stopServer = function(aPort, force) {
 			aPort = _$(aPort).isNumber().default(this.port);
 
 			ow.server.socket.stop(aPort);
-			ow.loadObj();
 
-			ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ exit: true, t: this.token }, __, "")+"\n");
-			pidKill(io.readFileString(this.pidfile), true);
-			this.__t.stop(true);
+			if (this.mode != "standalone") {
+				ow.loadObj()
+				ow.obj.socket.string2string("127.0.0.1", this.sport, stringify({ exit: true, t: this.token }, __, "")+"\n")
+				pidKill(io.readFileString(this.pidfile), true)
+				this.__t.stop(true)
+			}
 			//this.threads.stop(true);
 			delete this.sport;
 			delete this.server;
@@ -374,5 +376,8 @@ OpenWrap.python.prototype.execStandalone = function(aPythonCodeOrFile, aInput, t
 		code = this.initCode() + "\n" + aPythonCodeOrFile
 
 	}
-	$sh([this.python, "-c", code]).exec(0)
+	var _f = io.createTempFile("oafpy", ".py")
+	io.writeFileString(_f, code)
+	$sh([this.python, _f]).exec(0)
+	io.rm(_f)
 }
