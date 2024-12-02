@@ -105,7 +105,7 @@ OpenWrap.oJob = function(isNonLocal) {
 		"go": {
 			lang: "go",
 			shell: "go run ",
-			pre: "package main\nimport (\"encoding/json\"; \"fmt\")\nfunc main(){var args map[string]interface{}\njson.Unmarshal([]byte(`{{{args}}}`), &args)\n",
+			pre: "package main\nimport (\"encoding/json\"; \"fmt\"{{#each langArgs.goImports}}; {{{this}}}{{/each}})\nfunc main(){var args map[string]interface{}\njson.Unmarshal([]byte(`{{{args}}}`), &args)\n",
 			pos: "\n_args, _err := json.Marshal(args); if _err != nil { return }; fmt.Println(string(_args))}",
 			withFile: ".go"
 		},
@@ -2857,7 +2857,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 					if (isDef(m) && isString(m.withFile) && isUnDef(aJobTypeArgs.langFn)) {
 						if (isUnDef(aJobTypeArgs.pre)) aJobTypeArgs.pre = ""
 						if (isUnDef(aJobTypeArgs.pos)) aJobTypeArgs.pos = ""
-						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, $t(" + stringify(aJobTypeArgs.pre) + ",{args:stringify(args,__,'')}) + code + " + stringify(aJobTypeArgs.pos) + ", 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp)" + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
+						aJobTypeArgs.langFn = "var tmp = io.createTempFile('ojob_', '" + m.withFile + "');\nio.writeFileString(tmp, $t(" + stringify(aJobTypeArgs.pre) + ",{args:stringify(args,__,''),langArgs:" + stringify(aJobTypeArgs.langArgs,__,'') + "}) + code + " + stringify(aJobTypeArgs.pos) + ", 'UTF-8');var res = $sh().sh('" + aJobTypeArgs.shell + "' + tmp)" + (isString(aJobTypeArgs.pwd) ? ".pwd(\"" + aJobTypeArgs.pwd +"\")" : "") + ".getJson(0);if (res.exitcode != 0) throw res.stderr;args = merge(args, res.stdout);io.rm(tmp);";
 						aJobTypeArgs.shell = __;
 					}
 				}
