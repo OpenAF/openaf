@@ -19,6 +19,8 @@ F_in__in_db_indbexec_=1
 F_in__in_gb64json=0
 F_in__in_hsperf=0
 F_in__in_ini=0
+F_in__in_javagc=0
+F_in__in_javagc_javagcjoin_=1
 F_in__in_json=0
 F_in__in_json_jsondesc_=1
 F_in__in_json_jsonprefix_=1
@@ -239,6 +241,7 @@ F_set__setop__setop_diffb=1
 F_set__setop__setop_diffab=1
 F_set__setop__setop_intersect=1
 F_removedups_=1
+F_removeempty_=1
 F_removenulls_=1
 F_spacekeys_=1
 F_searchkeys_=1
@@ -277,6 +280,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=gb64json" ]; then FFOUND=1; F_in__in_gb64json=1; F_in_=0; fi
     if [ "$arg" = "in=hsperf" ]; then FFOUND=1; F_in__in_hsperf=1; F_in_=0; fi
     if [ "$arg" = "in=ini" ]; then FFOUND=1; F_in__in_ini=1; F_in_=0; fi
+    if [ "$arg" = "in=javagc" ]; then FFOUND=1; F_in__in_javagc=1; F_in_=0; fi
+    if [ "${arg#javagcjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_javagc_javagcjoin_=0; fi
     if [ "$arg" = "in=json" ]; then FFOUND=1; F_in__in_json=1; F_in_=0; fi
     if [ "${arg#jsondesc=}" != "$arg" ]; then FFOUND=1; F_in__in_json_jsondesc_=0; fi
     if [ "${arg#jsonprefix=}" != "$arg" ]; then FFOUND=1; F_in__in_json_jsonprefix_=0; fi
@@ -539,6 +544,8 @@ if [ $# -gt 0 ]; then
     if [ "${arg#setop=intersect}" != "$arg" ]; then FFOUND=1; F_set__setop__setop_intersect=0; fi
     # removedups= single option
     if [ "$arg" = "removedups=" ]; then FFOUND=1; F_removedups_=0; fi
+    # removeempty= single option
+    if [ "$arg" = "removeempty=" ]; then FFOUND=1; F_removeempty_=0; fi
     # removenulls= single option
     if [ "$arg" = "removenulls=" ]; then FFOUND=1; F_removenulls_=0; fi
     # spacekeys= single option
@@ -575,6 +582,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=gb64json	Equivalent to in=base64 and base64gzip=true"
   echo "in=hsperf	A Java hsperfdata* file -requires file=hsperfdata_user/123-"
   echo "in=ini	INI/Properties format"
+  echo "in=javagc	A Java GC log text file format"
   echo "in=json	A JSON format -auto-detected-"
   echo "in=jsonschema	Given a JSON schema format tries to generate sample data for it"
   echo "in=jwt	Decodes and/or verifies a JSON Web Token -JWT-"
@@ -629,6 +637,11 @@ if [ $F_in__in_db -eq 1 ]; then
   fi
   if [ $F_in__in_db_indbexec_ -eq 1 ]; then
     echo "indbexec=	If true the input SQL is not a query but a DML statement"
+  fi
+fi
+if [ $F_in__in_javagc -eq 1 ]; then
+  if [ $F_in__in_javagc_javagcjoin_ -eq 1 ]; then
+    echo "javagcjoin=	If true it will return an array with each processed line."
   fi
 fi
 if [ $F_in__in_json -eq 1 ]; then
@@ -1255,6 +1268,11 @@ fi
 # Print completion for removedups=
 if [ $F_removedups_ -eq 1 ]; then
   echo "removedups=	If true will try to remove duplicates from an array"
+  
+fi
+# Print completion for removeempty=
+if [ $F_removeempty_ -eq 1 ]; then
+  echo "removeempty=	If true will remove array/list entries that are either null or undefined"
   
 fi
 # Print completion for removenulls=
