@@ -4632,6 +4632,7 @@ var $from = function(a) {
  * assign(obj, path, value), assignp(objPathStr, path, value)\
  * random(min, max), srandom(min, max)\
  * at(arrayIndex)\
+ * to_numSpace(num, space), from_numSpace(num, space)\
  * 
  * Functions only active if flag PATH_SAFE is false:\
  *   ojob(name, argsJSSLON)\
@@ -4786,6 +4787,14 @@ const $path = function(aObj, aPath, customFunctions) {
 		to_numAbbr: {
 			_func: ar => ow.loadFormat().toAbbreviation(ar[0]),
 			_signature: [ { types: [ jmespath.types.number ] } ]
+		},
+		to_numSpace: {
+			_func: ar => ow.loadFormat().toNumberSpacing(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.string ] } ]
+		},
+		from_numSpace: {
+			_func: ar => ow.loadFormat().fromNumberSpacing(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		},
 		from_bytesAbbr: {
 			_func: ar => ow.loadFormat().fromBytesAbbreviation(ar[0]),
