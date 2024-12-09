@@ -8929,6 +8929,21 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 	return res;
 };
 
+/**
+ * <odoc>
+ * <key>AF.setInteractiveTerminal()</key>
+ * Sets the current terminal to be interactive (no echo, no buffering).
+ * </odoc>
+ */
+AF.prototype.setInteractiveTerminal = () => isDef(__con) ? __con.getTerminal().settings.set("-icanon min 1 -echo") : __
+/**
+ * <odoc>
+ * <key>AF.unsetInteractiveTerminal()</key>
+ * Unsets the current terminal to be interactive (no echo, no buffering).
+ * </odoc>
+ */
+AF.prototype.unsetInteractiveTerminal = () => isDef(__con) ? __con.getTerminal().settings.set("icanon echo") : __
+
 __YAMLformat = {
   indent: 2,
   arrayIndent: false,
@@ -10618,6 +10633,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
         let option = 0, firstTime = true, span = 0
         let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
+		ow.loadFormat()
         let _print = () => {
             if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
             var _o = anArray
