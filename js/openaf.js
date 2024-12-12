@@ -4632,6 +4632,7 @@ var $from = function(a) {
  * assign(obj, path, value), assignp(objPathStr, path, value)\
  * random(min, max), srandom(min, max)\
  * at(arrayIndex)\
+ * to_numSpace(num, space), from_numSpace(num, space)\
  * 
  * Functions only active if flag PATH_SAFE is false:\
  *   ojob(name, argsJSSLON)\
@@ -4786,6 +4787,14 @@ const $path = function(aObj, aPath, customFunctions) {
 		to_numAbbr: {
 			_func: ar => ow.loadFormat().toAbbreviation(ar[0]),
 			_signature: [ { types: [ jmespath.types.number ] } ]
+		},
+		to_numSpace: {
+			_func: ar => ow.loadFormat().toNumberSpacing(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.number ] }, { types: [ jmespath.types.string ] } ]
+		},
+		from_numSpace: {
+			_func: ar => ow.loadFormat().fromNumberSpacing(ar[0], ar[1]),
+			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		},
 		from_bytesAbbr: {
 			_func: ar => ow.loadFormat().fromBytesAbbreviation(ar[0]),
@@ -8920,6 +8929,21 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 	return res;
 };
 
+/**
+ * <odoc>
+ * <key>AF.setInteractiveTerminal()</key>
+ * Sets the current terminal to be interactive (no echo, no buffering).
+ * </odoc>
+ */
+AF.prototype.setInteractiveTerminal = () => isDef(__con) ? __con.getTerminal().settings.set("-icanon min 1 -echo") : __
+/**
+ * <odoc>
+ * <key>AF.unsetInteractiveTerminal()</key>
+ * Unsets the current terminal to be interactive (no echo, no buffering).
+ * </odoc>
+ */
+AF.prototype.unsetInteractiveTerminal = () => isDef(__con) ? __con.getTerminal().settings.set("icanon echo") : __
+
 __YAMLformat = {
   indent: 2,
   arrayIndent: false,
@@ -10609,6 +10633,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
         let option = 0, firstTime = true, span = 0
         let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
+		ow.loadFormat()
         let _print = () => {
             if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
             var _o = anArray

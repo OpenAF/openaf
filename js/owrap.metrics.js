@@ -498,7 +498,7 @@ OpenWrap.metrics.prototype.fromOpenMetrics2Array = function(lines) {
  * <odoc>
  * <key>ow.metrics.fromObj2OpenMetrics(aObj, aPrefix, aTimestamp, aHelpMap, aConvMap) : String</key>
  * Given aObj will return a string of open metric (prometheus) metric strings. Optionally you can provide a prefix (defaults to "metric") 
- * and/or aTimestamp (that will be used for all aObj values) and aConvMap composed of a key with a map of possible values and corresponding
+ * and/or aTimestamp (a number in seconds or a label field, that will be used for all aObj values) and aConvMap composed of a key with a map of possible values and corresponding
  * translation to numbers. Note: prefixes should not start with a digit.
  * </odoc>
  */
@@ -510,8 +510,18 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
     if (/^\d.+/.test(aPrefix)) aPrefix = "_" + aPrefix
 
     aConvMap = _$(aConvMap, "aConvMap").isMap().default({})
+    const _useTS = isDef(aTimestamp) && !isNumber(aTimestamp)
 
     // https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md
+
+    let _tsfn = (ks, k) => {
+        if (isDef(ks) && isDef(ks[k])) {
+            var _n = (new Date(ks[k].replace(/\"/g, ""))).getTime()
+            return Math.round(_n / 1000)
+        } else {
+            return ""
+        }
+    }
 
     let _help = aMetric => {
         // NOTE: In rare cases isMap will return true despite aHelpMap is not defined
@@ -560,7 +570,12 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
             }
             let _kLbs = Object.keys(lbs)
 
-            var lprefix = (_kLbs.length > 0 ? "{" + _kLbs.map(k => k + "=" + lbs[k]).join(",") + "}" : "")
+            var lprefix
+            if (_useTS) {
+                lprefix = (_kLbs.filter(k => k != aTimestamp).length > 0 ? "{" + _kLbs.filter(k => k != aTimestamp).map(k => k + "=" + lbs[k]).join(",") + "}" : "")
+            } else {
+                lprefix = (_kLbs.length > 0 ? "{" + _kLbs.map(k => k + "=" + lbs[k]).join(",") + "}" : "")
+            }
 
             // build each map metric entry
             for (var key in obj) {
@@ -569,16 +584,16 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
                     var k = key.replace(_reInitTxt, "_")
                     if (isMap(aConvMap) && isString(_v) && isDef(aConvMap[key])) {
                         if (isMap(aConvMap[key]) && isNumber(aConvMap[key][_v])) {
-                            ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[key][_v]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : ""))
+                            ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[key][_v]) + (isDef(aTimestamp) && !_useTS ? " " + Number(aTimestamp) : (_useTS ? " " + _tsfn(lbs, aTimestamp) : "")))
                             continue
                         }
                         if (isMap(aConvMap[prefix + "_" + k + suf]) && isNumber(aConvMap[prefix + "_" + k + suf][_v])) {
-                            ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[prefix + "_" + k + suf][_v]) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : ""))
+                            ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (aConvMap[prefix + "_" + k + suf][_v]) + (isDef(aTimestamp) && !_useTS ? " " + Number(aTimestamp) : (_useTS ? " " + _tsfn(lbs, aTimestamp) : "")))
                             continue
                         }
                     }
-                    if (isBoolean(_v)) ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (_v ? "1" : "0") + (isDef(aTimestamp) ? " " + Number(aTimestamp) : ""))
-                    if (isNumber(_v)) ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + Number(_v) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : ""))
+                    if (isBoolean(_v)) ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + (_v ? "1" : "0") + (isDef(aTimestamp) && !_useTS ? " " + Number(aTimestamp) : (_useTS ? " " + _tsfn(lbs, aTimestamp) : "")))
+                    if (isNumber(_v)) ar.push(_help(prefix + "_" + k) + prefix + "_" + k + suf + lprefix + " " + Number(_v) + (isDef(aTimestamp) && !_useTS ? " " + Number(aTimestamp) : (_useTS ? " " + _tsfn(lbs, aTimestamp) : "")))
                     if (isMap(_v)) ar.push(_map(_v, prefix + "_" + k, clone(lbs), suf))
                     if (isArray(_v)) ar.push(_arr(_v, prefix + "_" + k, clone(lbs), suf))
                 }
@@ -614,10 +629,15 @@ OpenWrap.metrics.prototype.fromObj2OpenMetrics = function(aObj, aPrefix, aTimest
         }
 
         tlbs = _$(tlbs).default({})
-        var lprefix = (Object.keys(tlbs).length > 0 ? "{" + Object.keys(tlbs).map(k => k + "=" + tlbs[k]).join(",") + "}" : "")
+        var lprefix
+        if (_useTS) {   
+            lprefix = (Object.keys(tlbs).filter(k => k != aTimestamp).length > 0 ? "{" + Object.keys(tlbs).filter(k => k != aTimestamp).map(k => k + "=" + tlbs[k]).join(",") + "}" : "")
+        } else {
+            lprefix = (Object.keys(tlbs).length > 0 ? "{" + Object.keys(tlbs).map(k => k + "=" + tlbs[k]).join(",") + "}" : "")
+        }
 
         if (isNumber(obj)) {
-            ar = _help(prefix) + prefix + suf + lprefix + " " + Number(aObj) + (isDef(aTimestamp) ? " " + Number(aTimestamp) : "")
+            ar = _help(prefix) + prefix + suf + lprefix + " " + Number(aObj) + (isDef(aTimestamp) && !_useTS ? " " + Number(aTimestamp) : (_useTS ? " " + _tsfn(tlbs, aTimestamp) : ""))
         }
         return ar
     }
