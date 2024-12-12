@@ -40,6 +40,11 @@ complete:
     desc: A Java hsperfdata* file -requires file=hsperfdata_user/123-
   - name: in=ini
     desc: INI/Properties format
+  - name: in=javagc
+    desc: A Java GC log text file format
+    opts:
+    - name: javagcjoin=
+      desc: If true it will return an array with each processed line.
   - name: in=json
     desc: A JSON format -auto-detected-
     opts:
@@ -490,6 +495,8 @@ complete:
   desc: If input is a list/array of maps will merge each element into one map
 - name: normalize=
   desc: A JSON/SLON map with a normalize schema -see OpenAF's ow.ai.normalize.withSchema-
+- name: numformat=
+  desc: For all number values applies a java.util.Formatter format -e.g. %,d-
 - name: regression=
   desc: Performs a regression -linear, log, exp, poly or power- over a provided list/array of numeric values
   opts:
@@ -519,6 +526,8 @@ complete:
       desc: Will return the intersection of the two sets
 - name: removedups=
   desc: If true will try to remove duplicates from an array
+- name: removeempty=
+  desc: If true will remove array/list entries that are either null or undefined
 - name: removenulls=
   desc: If true will try to remove nulls and undefined values from a map or array
 - name: spacekeys=

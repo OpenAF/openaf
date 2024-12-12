@@ -1830,6 +1830,34 @@ OpenWrap.format.prototype.toAbbreviation = function(number, digits) {
 
 /**
  * <odoc>
+ * <key>ow.format.toNumberSpacing(aNumber, aSpacer) : String</key>
+ * Returns a number with aSpacer as thousands separator.\
+ * (available after ow.loadFormat())
+ * </odoc>
+ */
+OpenWrap.format.prototype.toNumberSpacing = function(aNumber, aSpacer) {
+	aSpacer = _$(aSpacer, "aSpacer").isString().default(" ")
+	aNumber = _$(Number(aNumber), "aNumber").isNumber().$_()
+	let parts = aNumber.toString().split(".")
+	parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, aSpacer)
+	return parts.join(".")
+}
+
+/**
+ * <odoc>
+ * <key>ow.format.fromNumberSpacing(aNumber, aSpacer) : Number</key>
+ * Returns a number from a string with aSpacer as thousands separator.\
+ * (available after ow.loadFormat())
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromNumberSpacing = function(aNumber, aSpacer) {
+	aSpacer = _$(aSpacer, "aSpacer").isString().default(" ")
+	aNumber = _$(aNumber, "aNumber").isString().$_()
+	return Number(aNumber.replace(new RegExp(aSpacer, "g"), ""))
+}
+
+/**
+ * <odoc>
  * <key>ow.format.toBytesAbbreviation(aNumber, aDigits) : String</key>
  * Returns a number abbreviation to "bytes", "KB", "MB", "GB", "TB", etc. Will round number to 3 significant
  * digits if aDigits doesn't provide a different number of precision digits to convert to.\

@@ -2075,16 +2075,16 @@ OpenWrap.java.prototype.getWhoIs = function(aQuery, server) {
 
 /**
  * <odoc>
- * <key>ow.java.getLocalJavaPIDs(aUserID) : Array</key>
+ * <key>ow.java.getLocalJavaPIDs(aUserID, aTmpDir) : Array</key>
  * Will return an array with the pid and the path for hsperf (to use with ow.java.parseHSPerf) that are currently running (hotspot jvms only) in the current system. 
- * If aUserID is not provided the current user name will be used.
+ * If aUserID is not provided the current user name will be used. Optionally you can provide aTmpDir to use a different temporary directory.
  * </odoc>
  */
-OpenWrap.java.prototype.getLocalJavaPIDs = function(aUserID) {
+OpenWrap.java.prototype.getLocalJavaPIDs = function(aUserID, aTmpDir) {
     ow.loadFormat()
 
     aUserID = _$(aUserID, "aUserID").isString().default(ow.format.getUserName())
-    var td = ow.format.getTmpDir() + "/hsperfdata_" + aUserID
+    var td = (isString(aTmpDir) ? aTmpDir : ow.format.getTmpDir()) + "/hsperfdata_" + aUserID
 
     return $from(io.listFiles(td).files)
            .equals("isFile", true)
