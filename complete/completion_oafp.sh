@@ -228,6 +228,7 @@ F_maptoarray_=1
 F_maptoarraykey_=1
 F_merge_=1
 F_normalize_=1
+F_numformat_=1
 F_regression_=1
 F_regression__regressionpath_=0
 F_regression__regressionx_=0
@@ -530,6 +531,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "merge=" ]; then FFOUND=1; F_merge_=0; fi
     # normalize= single option
     if [ "$arg" = "normalize=" ]; then FFOUND=1; F_normalize_=0; fi
+    # numformat= single option
+    if [ "$arg" = "numformat=" ]; then FFOUND=1; F_numformat_=0; fi
     # regression= options
     if [ "$arg" = "regressionpath=" ]; then FFOUND=1; F_regression__regressionpath_=1; F_regression_=0; fi
     if [ "$arg" = "regressionx=" ]; then FFOUND=1; F_regression__regressionx_=1; F_regression_=0; fi
@@ -1231,6 +1234,11 @@ fi
 # Print completion for normalize=
 if [ $F_normalize_ -eq 1 ]; then
   echo "normalize=	A JSON/SLON map with a normalize schema -see OpenAF's ow.ai.normalize.withSchema-"
+  
+fi
+# Print completion for numformat=
+if [ $F_numformat_ -eq 1 ]; then
+  echo "numformat=	For all number values applies a java.util.Formatter format -e.g. %,d-"
   
 fi
 # Print completion for regression=
