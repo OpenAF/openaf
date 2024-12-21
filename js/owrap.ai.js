@@ -88,16 +88,19 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions = _$(aOptions, "aOptions").isMap().$_()
             aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
-            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(15 * 60000)
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gpt-3.5-turbo")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.openai.com")
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
+            // If noSystem=true it will not output the system messages
+            aOptions.noSystem = _$(aOptions.noSystem, "aOptions.noSystem").isBoolean().default(true)
 
             var _key = aOptions.key
             var _timeout = aOptions.timeout
             var _model = aOptions.model
             var _temperature = aOptions.temperature
+            var _noSystem = aOptions.noSystem
             var _r = {
                 conversation: [],
                 tools: {},
@@ -169,8 +172,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
-                    if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
+                    if (aJsonFlag) {
+                        msgs.unshift({ role: (_noSystem ? "developer" : "system"), content: "output json" })
+                    }
                     _r.conversation = aPrompt
+                    if (_noSystem) msgs = msgs.filter(m => m.role != "system")
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
@@ -259,6 +265,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                     _r.conversation.push({ role: "system", content: aPrompt })
                     return _r
                 },
+                addDeveloperPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "developer", content: aPrompt })
+                    return _r
+                },
                 cleanPrompt: () => {
                     _r.conversation = []
                     return _r
@@ -316,7 +326,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions = _$(aOptions, "aOptions").isMap().$_()
             aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
             aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
-            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(15 * 60000)
             aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("gemini-1.5-flash")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://generativelanguage.googleapis.com/v1beta")
@@ -521,8 +531,8 @@ OpenWrap.ai.prototype.__gpttypes = {
             ow.loadObj()
             aOptions = _$(aOptions, "aOptions").isMap().$_()
             aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
-            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(5 * 60000)
-            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("llama3.1:latest")
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(15 * 60000)
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("llama3.2:latest")
             aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
             aOptions.url = _$(aOptions.url, "aOptions.url").isString().$_()
 
@@ -880,6 +890,17 @@ OpenWrap.ai.prototype.gpt.prototype.addSystemPrompt = function(aPrompt) {
 
 /**
  * <odoc>
+ * <key>ow.ai.gpt.addDeveloperPrompt(aPrompt) : ow.ai.gpt</key>
+ * Adds aPrompt (a string or an array of strings) with aRole (defaults to "developer") to the current conversation.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.addDeveloperPrompt = function(aPrompt) {
+    this.model = this.model.addDeveloperPrompt(aPrompt)
+    return this
+}
+
+/**
+ * <odoc>
  * <key>ow.ai.gpt.cleanPrompt() : ow.ai.gpt</key>
  * Cleans the current conversation.
  * </odoc>
@@ -1154,6 +1175,9 @@ global.$gpt = function(aModel) {
          */
         sysPrompt: (aPrompt, aModel, aTemperature) => { 
             return _g.addSystemPrompt(aPrompt).prompt(__, aModel, aTemperature)
+        },
+        devPrompt: (aPrompt, aModel, aTemperature) => {
+            return _g.addDeveloperPrompt(aPrompt).prompt(__, aModel, aTemperature)
         },
         withInstructions: (aPrompt, aModel, aTemperature) => {
             _g.addSystemPrompt(aPrompt).prompt(__, aModel, aTemperature)

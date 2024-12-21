@@ -64,6 +64,7 @@ F_in__in_toml=0
 F_in__in_xls=0
 F_in__in_xls_inxlssheet_=1
 F_in__in_xls_inxlsevalformulas_=1
+F_in__in_xls_inxlsdesc_=1
 F_in__in_xls_inxlscol_=1
 F_in__in_xls_inxlsrow_=1
 F_in__in_xml=0
@@ -326,6 +327,7 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=xls" ]; then FFOUND=1; F_in__in_xls=1; F_in_=0; fi
     if [ "${arg#inxlssheet=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlssheet_=0; fi
     if [ "${arg#inxlsevalformulas=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlsevalformulas_=0; fi
+    if [ "${arg#inxlsdesc=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlsdesc_=0; fi
     if [ "${arg#inxlscol=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlscol_=0; fi
     if [ "${arg#inxlsrow=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlsrow_=0; fi
     if [ "$arg" = "in=xml" ]; then FFOUND=1; F_in__in_xml=1; F_in_=0; fi
@@ -734,6 +736,9 @@ if [ $F_in__in_xls -eq 1 ]; then
   fi
   if [ $F_in__in_xls_inxlsevalformulas_ -eq 1 ]; then
     echo "inxlsevalformulas=	If false the existing formulas won't be evaluated -defaults to true-"
+  fi
+  if [ $F_in__in_xls_inxlsdesc_ -eq 1 ]; then
+    echo "inxlsdesc=	If true, instead of retrieving data, either a list of sheet names will be returned, or, if inxlssheet is provided, a table empty and non-empty will be returned"
   fi
   if [ $F_in__in_xls_inxlscol_ -eq 1 ]; then
     echo "inxlscol=	The column on the sheet where a table should be detected -e.g. "A"-"
