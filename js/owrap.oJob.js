@@ -321,6 +321,16 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 	jobs.forEach((v, i) => { 
 		mdeps[v.name] = 0
 
+		// Helpers
+		if (isDef(jobs[i].execFile)) {
+			if (isUnDef(jobs[i].typeArgs)) jobs[i].typeArgs = {}
+			jobs[i].typeArgs.file = jobs[i].execFile
+		}
+		if (isDef(jobs[i].execRequire)) {
+			if (isUnDef(jobs[i].typeArgs)) jobs[i].typeArgs = {}
+			jobs[i].typeArgs.execRequire = jobs[i].execRequire
+		}
+
 		// Add custom shortcuts
 		// v = parent.addShortcuts(v) // already done in loadJSON
 
@@ -736,7 +746,11 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos, dontLoadJobs) 
 			Object.keys(res.code).forEach(k => {
 				if (k.endsWith(".js")) {
 					try {
-						require.cache[k] = newFn('require', 'exports', 'module', res.code[k]);
+						if (res.code[k].trim().endsWith(")") && res.code[k].trim().startsWith("(")) {
+							require.cache[k] = newFn('require', 'exports', 'module', res.code[k])
+						} else {
+							this._code[k] = res.code[k]
+						}
 					} catch(e) {
 						logErr("Problem with code '" + k + "': " + e.message + " (#" + e.lineNumber + ")");
 					}
