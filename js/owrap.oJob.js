@@ -746,7 +746,7 @@ OpenWrap.oJob.prototype.loadJSON = function(aJSON, dontLoadTodos, dontLoadJobs) 
 			Object.keys(res.code).forEach(k => {
 				if (k.endsWith(".js")) {
 					try {
-						if (res.code[k].trim().endsWith(")") && res.code[k].trim().startsWith("(")) {
+						if (res.code[k].trim().match(/\(.+\);?/)) {
 							require.cache[k] = newFn('require', 'exports', 'module', res.code[k])
 						} else {
 							this._code[k] = res.code[k]
