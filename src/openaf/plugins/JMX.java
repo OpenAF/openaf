@@ -357,7 +357,9 @@ public class JMX extends ScriptableObject {
 			if (_url != null) {
 				url = new JMXServiceURL(_url.toString());
 			} else {
-				props.put("com.sun.management.jmxremote", (new ServerSocket(0)).getLocalPort());
+				try (ServerSocket socket = new ServerSocket(0)) {
+					props.put("com.sun.management.jmxremote", socket.getLocalPort());
+				}
 				vm.startLocalManagementAgent();
 				_url = vm.getAgentProperties().getProperty("com.sun.management.jmxremote.localConnectorAddress");
 			}
