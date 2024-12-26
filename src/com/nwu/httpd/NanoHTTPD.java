@@ -1194,13 +1194,15 @@ public abstract class NanoHTTPD {
         private String saveTmpFile(ByteBuffer b, int offset, int len, String filename_hint) {
             String path = "";
             if (len > 0) {
-                try (FileOutputStream fileOutputStream = new FileOutputStream(this.tempFileManager.createTempFile(filename_hint).getName());
-                     FileChannel dest = fileOutputStream.getChannel()) {
-                    ByteBuffer src = b.duplicate();
-                    src.position(offset).limit(offset + len);
-                    dest.write(src.slice());
+                try {
                     path = this.tempFileManager.createTempFile(filename_hint).getName();
-                } catch (Exception e) {
+                    try (FileOutputStream fileOutputStream = new FileOutputStream(path);
+                        FileChannel dest = fileOutputStream.getChannel()) {
+                        ByteBuffer src = b.duplicate();
+                        src.position(offset).limit(offset + len);
+                        dest.write(src.slice());
+                    }
+                } ccatch (Exception e) {
                     throw new Error(e); // we won't recover, so throw an error
                 }
             }
