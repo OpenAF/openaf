@@ -1924,7 +1924,8 @@ public abstract class NanoHTTPD {
         try {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             trustManagerFactory.init(loadedKeyStore);
-            SSLContext ctx = SSLContext.getInstance("TLS");
+            // Security CWE-327
+            SSLContext ctx = SSLContext.getInstance("TLSv1.2");
             ctx.init(keyManagers, trustManagerFactory.getTrustManagers(), null);
             res = ctx.getServerSocketFactory();
         } catch (Exception e) {

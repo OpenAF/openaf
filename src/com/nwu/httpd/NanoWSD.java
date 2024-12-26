@@ -801,7 +801,7 @@ public abstract class NanoWSD extends NanoHTTPD {
     }
 
     public static String makeAcceptKey(String key) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
         String text = key + NanoWSD.WEBSOCKET_KEY_MAGIC;
         md.update(text.getBytes(), 0, text.length());
         byte[] sha1hash = md.digest();
@@ -852,7 +852,7 @@ public abstract class NanoWSD extends NanoHTTPD {
                 handshakeResponse.addHeader(NanoWSD.HEADER_WEBSOCKET_ACCEPT, makeAcceptKey(headers.get(NanoWSD.HEADER_WEBSOCKET_KEY)));
             } catch (NoSuchAlgorithmException e) {
                 return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT,
-                        "The SHA-1 Algorithm required for websockets is not available on the server.");
+                        "The SHA-256 Algorithm required for websockets is not available on the server.");
             }
 
             if (headers.containsKey(NanoWSD.HEADER_WEBSOCKET_PROTOCOL)) {

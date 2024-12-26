@@ -832,6 +832,7 @@ public class AFBase extends ScriptableObject {
 	@SuppressWarnings("rawtypes")
 	@JSFunction
 	public Class<?> externalClass(Object locs, String clName) throws Exception {
+		URLClassLoader loader = null;
 		try {
 			ArrayList<URL> aURLs = new ArrayList<URL>();
 			if (!(locs instanceof NativeArray)) return null;
@@ -842,13 +843,17 @@ public class AFBase extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+			loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
 			Class<?> cl = Class.forName(clName, true, loader);
 			
 			return cl;
 		} catch (ClassNotFoundException | MalformedURLException e) {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "Cannot find class: " + clName + "; " + e.getMessage(), e);
 			throw e;
+		} finally {
+			if (loader != null) {
+				loader.close();
+			}
 		}
 	}
 	
