@@ -792,7 +792,7 @@ public class AFBase extends ScriptableObject {
 		}
 	}
 	
-	protected static HashMap<URL[], URLClassLoader> loaders = new HashMap();
+	protected static HashMap<URL[], URLClassLoader> loaders = new HashMap<URL[], URLClassLoader>();
 
 	/**
 	 * <odoc>
