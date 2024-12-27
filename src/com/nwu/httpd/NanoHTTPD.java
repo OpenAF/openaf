@@ -1202,7 +1202,7 @@ public abstract class NanoHTTPD {
                         src.position(offset).limit(offset + len);
                         dest.write(src.slice());
                     }
-                } ccatch (Exception e) {
+                } catch (Exception e) {
                     throw new Error(e); // we won't recover, so throw an error
                 }
             }
