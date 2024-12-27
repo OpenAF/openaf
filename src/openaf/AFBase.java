@@ -43,7 +43,6 @@ import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Callable;
 import org.mozilla.javascript.CompilerEnvirons;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJSON;
@@ -74,7 +73,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
-import com.warrenstrange.googleauth.GoogleAuthenticatorQRGenerator;
 import openaf.JSEngine.JSList;
 import openaf.JSEngine.JSMap;
 import openaf.SimpleLog.logtype;
@@ -809,7 +807,7 @@ public class AFBase extends ScriptableObject {
 			if (!(locs instanceof NativeArray)) return;
 			AFCmdBase.jse.enterContext();
 			for(Object loc : (NativeArray) locs) {
-				aURLs.add(new URL(Context.toString(loc)));
+				aURLs.add(new URI(Context.toString(loc)).toURL());
 			}
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
