@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.zip.ZipFile;
 import java.util.Iterator;
+import java.util.HashMap;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -791,6 +792,8 @@ public class AFBase extends ScriptableObject {
 		}
 	}
 	
+	protected static HashMap<URL[], URLClassLoader> loaders = new HashMap();
+
 	/**
 	 * <odoc>
 	 * <key>af.externalPlugin(anArrayOfClasspathEntries, aPluginClass)</key>
@@ -801,7 +804,6 @@ public class AFBase extends ScriptableObject {
 	@SuppressWarnings("unchecked")
 	@JSFunction 
 	public void externalPlugin(Object locs, String clName) throws Exception {
-		URLClassLoader loader = null;
 		try {
 			ArrayList<URL> aURLs = new ArrayList<URL>();
 			if (!(locs instanceof NativeArray)) return;
@@ -812,7 +814,13 @@ public class AFBase extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+			URLClassLoader loader;
+			if (loaders.containsKey(urls)) {
+				loader = loaders.get(urls);
+			} else {
+				loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+				loaders.put(urls, loader);
+			}
 			@SuppressWarnings("rawtypes")
 			Class cl = Class.forName(clName, true, loader);
 			
@@ -820,10 +828,6 @@ public class AFBase extends ScriptableObject {
 		} catch (ClassNotFoundException | IllegalAccessException | InstantiationException | InvocationTargetException | MalformedURLException e) {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "Cannot find class: " + clName + "; " + e.getMessage(), e);
 			throw e;
-		} finally {
-			if (loader != null) {
-				loader.close();
-			}
 		}
 	}
 	
