@@ -1,10 +1,5 @@
 package openaf.plugins;
 
-/**
- * 
- * Copyright 2023 Nuno Aguiar
- *
- */
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
@@ -12,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import java.lang.String;
+
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeJavaObject;
@@ -30,676 +25,550 @@ import openaf.plugins.HTTPd.JSResponse;
 import com.nwu.httpd.Codes;
 import com.nwu.httpd.IHTTPd;
 import com.nwu.httpd.IWebSock;
+import com.nwu.httpd.UndertowHTTPd;
 import com.nwu.httpd.NanoHTTPD.Response.IStatus;
 import com.nwu.httpd.responses.EchoResponse;
 import com.nwu.httpd.responses.FileResponse;
 import com.nwu.httpd.responses.StatusResponse;
 import com.nwu.log.Log;
 
+/**
+ * Copyright (C) 2024 Nuno Aguiar
+ */
+
 public class HTTPServer extends ScriptableObject {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -8638106468713717782L;
-	protected IHTTPd httpd;
-	protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
-	protected String id;
-	protected int serverport;
-	public static Map<String, NativeFunction> callbacks = new ConcurrentHashMap<String, NativeFunction>();
+    // Feature flag between nwu and undertow
+    public static boolean useUndertow = false; 
 
-	/**
-	 * 
-	 * @return
-	 */
-	@Override
-	public String getClassName() {
-		return "HTTPd";
-	}
-	
-	public class HLog extends Log {
-		protected int port; 
-		protected NativeFunction callback = null;
-		
-		public HLog(int port, Object f) {
-			super(false);
-			this.port = port;
-			if (f != null && f instanceof NativeFunction)
-				this.callback = (NativeFunction) f;
-		}
-		
-		protected void SimpleLoglog(SimpleLog.logtype type, String message, Exception e) {
-			if (callback == null) {
-				switch(type) {
-				case DEBUG:
-					SimpleLog.log(logtype.DEBUG, "[HTTPD " + port + "]" + message, e);
-					break;
-				case ERROR:
-					SimpleLog.log(logtype.ERROR, "[HTTPD " + port + "]" + message, e);
-					break;
-				case INFO:
-					SimpleLog.log(logtype.INFO, "[HTTPD " + port + "]" + message, e);
-					break;
-				default:
-					break;
-				}
-			} else {
-				Context cx = (Context) AFCmdBase.jse.enterContext();
-				try {
-					callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { type, message, e });
-				} catch(Exception ee) {
-					throw ee;
-				} finally {
-					AFCmdBase.jse.exitContext();
-				}
-			}
-				
-		}
+    private static final long serialVersionUID = -8638106468713717782L;
 
-		@Override
-		public void log(Type type, String message) {
-			switch (type) {
-			case DEBUG:
-				SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]" + message, null);
-				break;
-			case ERROR:
-				SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]" + message, null);
-				break;
-			case INFO:
-				SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]" + message, null);
-				break;
-			case OFF:
-				break;
-			default:
-				break;
-			}
-		}
-		
-		@Override
-		public void log(Type type, String message, Exception e) {
-			switch (type) {
-			case DEBUG:
-				SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]" + message, e);
-				break;
-			case ERROR:
-				SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]" + message, e);
-				break;
-			case INFO:
-				SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]" + message, e);
-				break;
-			case OFF:
-				break;
-			default:
-				break;
-			}			
-		}
-		
-		@Override
-		public void log(Level type, String message, Exception e) {
-			if (type == Level.WARNING) log(Type.DEBUG, message, e);
-			if (type == Level.SEVERE) log(Type.ERROR, message, e);
-			if (type == Level.INFO) log(Type.INFO, message, e);
-		}	
-		
-		@Override
-		public void log(Type type, long id, String message) {
-			switch (type) {
-			case DEBUG:
-				SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]|" + id + "|" + message, null);
-				break;
-			case ERROR:
-				SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]|" + id + "|" + message, null);
-				break;
-			case INFO:
-				SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]|" + id + "|" + message, null);
-				break;
-			case OFF:
-				break;
-			default:
-				break;
-			}			
-		}
-		
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout)</key>
-	 * Creates a HTTP server instance on the provided port and optionally on the identified local interface.
-	 * If the port provided is 0 or negative a random port will be assigned. To determine what this port is 
-	 * you can use the function HTTPServer.getPort().
-	 * If keyStorePath is defined, the corresponding SSL Key Store will be used (connections will be https) with
-	 * the provided keyStorePassword. Do note that the keyStorePath should be included in the OpenAF classpath.
-	 * The logFunction, if defined, will be called by the server whenever there is any logging to be performed 
-	 * by the HTTPServer. This function will receive 3 arguments. Example:\
-	 * \
-	 * plugin("HTTPServer");\
-	 * var s = new HTTPd(8091, void 0, void 0, void 0, function(aType, aMsg, anException) {\
-	 *    if(aType.toString() != "DEBUG" &amp;&amp; anException.getMessage() != "Broken pipe")\
-	 *       logErr("Type: " + aType + " | Message: " + aMsg + anException.printStackTrace());\
-	 * });\
-	 * s.addEcho("/echo");
-	 * s.add("/stuff", function(req) {\
-	 *    print(beautifier(req));\
-	 *    return s.replyOKText("Stuff!!");\
-	 * };\
-	 * s.setDefault("/stuff");\
-	 * \ 
-	 * To generate a SSL key store you can use Java's keytool:\
-	 * \
-	 * keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks -storepass password -validity 360 -keysize 2048 -ext SAN=DNS:localhost,IP:127.0.0.1  -validity 9999\
-	 * \
-	 * And then add keystore.jks to the openaf.jar and have keyStorePath = "/keystore.jks".\
-	 * \
-	 * To support websockets you need to build IWebSock object and provide a timeout. For example:\
-	 * \
-	 * plugin("HTTPServer");\
-	 * var webSock = new Packages.com.nwu.httpd.IWebSock({\
-	 *    // onOpen callback\
-	 *    oOpen: _ws => { log("Connection open") },\
-	 *    // onClose callback\
-	 *    oClose: (_ws, aCode, aReason, hasInitByRemote) => { log("Connection close: " + String(aReason)) },\
-	 *    // onMessage callback\
-	 *    oMessage: (_ws, aMessage) => { _ws.send(aMessage.getTextPayload()); },\
-	 *    // onPong callback\
-	 *    oPong: (_ws, aPong) => { },\
-	 *    // onException callback\
-	 *    oException: (_ws, anException) => { logErr(String(anException)); }\
-	 * });\
-	 * var s = new HTTPd(8091, "127.0.0.1", void 0, void 0, void 0, webSock, 30000); // 30 seconds timeout\
-	 * s.addWS("/websocket");  // makes it available at ws://127.0.0.1:8091/websocket\
-	 * \
-	 * </odoc>
-	 */
-	@JSConstructor
-	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout) throws IOException {
-		if (port <= 0) {
-			port = findRandomOpenPortOnAllLocalInterfaces();
-		}
-		
-		serverport = port;
-		if (ws instanceof NativeJavaObject) ws = ((NativeJavaObject) ws).unwrap();
-		
-		if (host == null || host instanceof Undefined) {
-			if (ws == null || ws instanceof Undefined) 
-				httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), port);
-			else
-				httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), port, (IWebSock) ws, timeout);
-		} else {
-			if (ws == null || ws instanceof Undefined)
-				httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), (String) host, port);
-			else
-				httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), (String) host, port, (IWebSock) ws, timeout);
-		}
+    // If using NWU: hold a reference to IHTTPd
+    protected IHTTPd httpd;
+    // If using Undertow: hold a reference to Undertow-based server
+    protected UndertowHTTPd undertowHttpd;
 
-		if (keyStorePath != null && !keyStorePath.equals("undefined") &&
-			password != null && !(password instanceof Undefined)) {
-			httpd.stop();
-			if ((new java.io.File(keyStorePath)).exists()) {
-				httpd.makeSecure(com.nwu.httpd.HTTPd.makeLocalSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
-			} else {
-				httpd.makeSecure(com.nwu.httpd.HTTPd.makeSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
-			}
-			
-			httpd.start();
-		}
-		
-		httpd.addToGzipAccept("text/plain");
-		httpd.addToGzipAccept("application/javascript");
-		httpd.addToGzipAccept("text/css");
-		httpd.addToGzipAccept("application/json");
-		httpd.addToGzipAccept("application/xml");
-		httpd.addToGzipAccept("text/richtext");
-		httpd.addToGzipAccept("text/html");
-		
-		id = Integer.toString(port) + this.hashCode();
-	}
-	
-	private Integer findRandomOpenPortOnAllLocalInterfaces() throws IOException {
-		try (ServerSocket socket = new ServerSocket(0)) {
-			return socket.getLocalPort();
-		}
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.getPort() : number</key>
-	 * Returns the listen port of the HTTP server instance.
-	 * </odoc>
-	 */
-	@JSFunction
-	public int getPort() {
-		return serverport;
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.stop()</key>
-	 * Tries to stop the currently running HTTP server instance.
-	 * </odoc>
-	 */
-	@JSFunction
-	public void stop() {
-		httpd.stop();
-	}
+    // Common fields
+    protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
+    protected String id;
+    protected int serverport;
+    public static Map<String, NativeFunction> callbacks = new ConcurrentHashMap<String, NativeFunction>();
 
-	@JSFunction
-	public boolean isAlive() {
-		return httpd.isAlive();
-	}
+    @Override
+    public String getClassName() {
+        return "HTTPd";
+    }
 
-	@JSFunction
-	public void addWS(String uri) {
-		httpd.addToWsAccept(uri);
-	}
+    // Custom logger
+    public class HLog extends Log {
+        protected int port; 
+        protected NativeFunction callback = null;
 
-	/**
-	 * <odoc>
-	 * <key>HTTPd.addEcho(aURI)</key>
-	 * Adds a echo responder to the provided URI. Useful for debugging http requests to 
-	 * a server instance. 
-	 * </odoc>
-	 */
-	@JSFunction
-	public void addEcho(String uri) {
-		httpd.registerURIResponse(uri, EchoResponse.class, null);
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.addStatus(aURI)</key>
-	 * Adds a status responder to the provided URI. Useful for debugging proposes
-	 * </odoc>
-	 */
-	@JSFunction
-	public void addStatus(String uri) {
-		httpd.registerURIResponse(uri, StatusResponse.class, null);
-		//httpd.createContext(uri, new StatusHandler());
-	}
-	
+        public HLog(int port, Object f) {
+            super(false);
+            this.port = port;
+            if (f != null && f instanceof NativeFunction) {
+                this.callback = (NativeFunction) f;
+            }
+        }
 
-	/**
-	 * <odoc>
-	 * <key>HTTPd.add(aURI, aFunction)</key>
-	 * Adds a custom responder to the provided URI. Any call to the URI will trigger a call to 
-	 * the provided function. The function will receive the request as an argument. For example:\
-	 * \
-	 *   var hs = new HTTPd(1234);\
-	 *   hs.add("/example", function(req) { hs.replyOKText(beautifier(req)); }
-	 * \
-	 * </odoc>
-	 */
-	@JSFunction
-	public void add(String uri, NativeFunction callback) {
-		callbacks.put(this.serverport + ":" + uri, callback);
-		
-		Map<String, String> props = new HashMap<String, String>();
-		props.put("uri", uri);
-		
-		httpd.registerURIResponse(uri, JSResponse.class, props);
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.setDefault(aURI)</key>
-	 * Sets the default URI to redirect all requests that don't have a responder associated. For example:\
-	 * \
-	 *   var hs = new HTTPd(1234);\
-	 *   hs.addEcho("/echo");\
-	 *   hs.setDefault("/echo");\
-	 * \
-	 * </odoc>
-	 */
-	@JSFunction
-	public void setDefault(String uri) {
-		httpd.setDefaultResponse(uri);
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.addFileBrowse(aURI, aFilepath)</key>
-	 * Adds a responder to the provided URI that provides a very basic file browse to the provided
-	 * aFilepath. Warning: keep in mind that this will expose files without any credential checking.
-	 * </odoc>
-	 */
-	@JSFunction
-	public void addFileBrowse(String uri, String filepath) {
-		Map<String, String> props = new HashMap<String, String>();
-		props.put("publichtml", filepath);
-		httpd.registerURIResponse(uri, FileResponse.class, props);
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.addXDTServer(aURI, aAuthFunction, aOpsBrokerFunction)</key>
-	 * Adds a WeDo XDT server responder to the provided URI with authentication provided by the aAuthFunction
-	 * and operations provided by the aOpsBrokerFunction. For example:\
-	 * \
-	 *   var hs = new HTTPd(1234);\
-	 *   hs.addXDTServer('/xdt',\
-	 *     function(auth) {\
-	 *        if (auth.getUser() == 'adm' &amp;&amp; auth.getPass() == 'Password1') {\
-	 *           return true;\
-	 *        } else {\
-	 *        	 return false;\
-	 *        }\
-	 *     },\
-	 *     function(sessionId, operation, paramIn, request) {\
-	 *        switch(operation) {\
-	 *           case "HelloWorld":\
-	 *              return {"hello": "world!"};\
-	 *           case "Ping":\
-	 *              return paramIn;\
-	 *           default:\
-	 *              return paramIn;\
-	 *        }\
-	 *     }\
-	 *   );\
-	 * \
-	 * </odoc>
-	 * @throws ClassNotFoundException 
-	 * @throws SecurityException 
-	 * @throws NoSuchMethodException 
-	 * @throws InvocationTargetException 
-	 * @throws IllegalArgumentException 
-	 * @throws IllegalAccessException 
-	 */
-	@JSFunction
-	public void addXDTServer(String uri, NativeFunction authFunction, NativeFunction opsBroker) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-		Map<String, String> props = new HashMap<String, String>();
-		props.put("uri", uri);
-		
-		if (AFCmdBase.afcmd.equals("AFCmdWeDo")) {
-			Class<?> cl = Class.forName("openaf.plugins.HTTPd.XDTServerResponse");
-			cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(this, authFunction);
-			cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(this, opsBroker);
-			
-			httpd.registerURIResponse(uri, cl, props);
-		}
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.replyOKText(data, aMapOfHeaders) : Object</key>
-	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return a text mimetype with the provided data and a HTTP code of OK. Also you can provide the map
-	 * of extra HTTP headers.
-	 * </odoc>
-	 */
-	@JSFunction
-	public Object replyOKText(String data, Object headers) {
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
-		
-		no.put("status", no, 200);
-		no.put("mimetype", no, Codes.MIME_PLAINTEXT);
-		no.put("data", no, data);
-		no.put("header", no, headers);
-		
-		return no;
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.replyOKXML(data, aMapOfHeaders) : Object</key>
-	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return a XML mimetype with the provided data (in string format) and a HTTP code of OK. Also you can provide the map
-	 * of extra HTTP headers.
-	 * </odoc>
-	 */
-	@JSFunction
-	public Object replyOKXML(String data, Object headers) {
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
-		
-		no.put("status", no, 200);
-		no.put("mimetype", no, "text/xml");
-		no.put("data", no, data);
-		no.put("header", no, headers);
-		
-		return no;
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.replyOKHTML(data, aMapOfHeaders) : Object</key>
-	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return a HTML mimetype with the provided data (in string format) and a HTTP code of OK. Also you can provide the map
-	 * of extra HTTP headers.
-	 * </odoc>
-	 */
-	@JSFunction
-	public Object replyOKHTML(String data, Object headers) {
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
-		
-		no.put("status",  no, 200);
-		no.put("mimetype", no, Codes.MIME_HTML);
-		no.put("data", no, data);
-		no.put("header", no, headers);
-		
-		return no;
-	}
+        protected void SimpleLoglog(SimpleLog.logtype type, String message, Exception e) {
+            if (callback == null) {
+                switch(type) {
+                    case DEBUG:
+                        SimpleLog.log(logtype.DEBUG, "[HTTPD " + port + "]" + message, e);
+                        break;
+                    case ERROR:
+                        SimpleLog.log(logtype.ERROR, "[HTTPD " + port + "]" + message, e);
+                        break;
+                    case INFO:
+                        SimpleLog.log(logtype.INFO, "[HTTPD " + port + "]" + message, e);
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                Context cx = (Context) AFCmdBase.jse.enterContext();
+                try {
+                    callback.call(cx,
+                                  (Scriptable) AFCmdBase.jse.getGlobalscope(),
+                                  cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
+                                  new Object[] { type, message, e });
+                } catch(Exception ee) {
+                    throw ee;
+                } finally {
+                    AFCmdBase.jse.exitContext();
+                }
+            }
+        }
 
-	/**
-	 * <odoc>
-	 * <key>HTTPd.replyOKJSON(data, aMapOfHeaders) : Object</key>
-	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return a JSON mimetype with the provided data (in string format) and a HTTP code of OK. Also you can provide the map
-	 * of extra HTTP headers.
-	 * </odoc>
-	 */
-	@JSFunction
-	public Object replyOKJSON(String data, Object headers) {
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
-		
-		no.put("status", no, 200);
-		no.put("mimetype", no, Codes.MIME_JSON);
-		no.put("data", no, data);
-		no.put("header", no, headers);
+        @Override
+        public void log(Type type, String message) {
+            switch (type) {
+                case DEBUG:
+                    SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]" + message, null);
+                    break;
+                case ERROR:
+                    SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]" + message, null);
+                    break;
+                case INFO:
+                    SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]" + message, null);
+                    break;
+                case OFF:
+                    break;
+                default:
+                    break;
+            }
+        }
 
-		return no;
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.replyOKBin(data, aMapOfHeaders) : Object</key>
-	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return application/octet-stream mimetype with the provided data (as an array of bytes) and a HTTP code of OK.  Also you can provide the map
-	 * of extra HTTP headers.
-	 * </odoc>
-	 */
-	@JSFunction
-	public Object replyOKBin(String data, Object headers) {
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
+        @Override
+        public void log(Type type, String message, Exception e) {
+            switch (type) {
+                case DEBUG:
+                    SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]" + message, e);
+                    break;
+                case ERROR:
+                    SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]" + message, e);
+                    break;
+                case INFO:
+                    SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]" + message, e);
+                    break;
+                case OFF:
+                    break;
+                default:
+                    break;
+            }
+        }
 
-		no.put("status", no, 200);
-		no.put("mimetype", no, Codes.MIME_DEFAULT_BINARY);
-		no.put("data", no, data);
-		no.put("header", no, headers);
+        @Override
+        public void log(Level type, String message, Exception e) {
+            if (type == Level.WARNING) log(Type.DEBUG, message, e);
+            if (type == Level.SEVERE)  log(Type.ERROR, message, e);
+            if (type == Level.INFO)    log(Type.INFO,  message, e);
+        }
 
-		return no;
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.reply(data, aMimetype, aHTTPCode, aMapOfHeaders) : Object</key>
-	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return aMimetype (string representation) with the provided data (string format) and the aHTTPCode and the map
-	 * of extra HTTP headers.
-	 * </odoc>
-	 */
-	@JSFunction
-	public Object reply(String data, String mimetype, int code, Object headers) {
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
+        @Override
+        public void log(Type type, long id, String message) {
+            switch (type) {
+                case DEBUG:
+                    SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]|" + id + "|" + message, null);
+                    break;
+                case ERROR:
+                    SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]|" + id + "|" + message, null);
+                    break;
+                case INFO:
+                    SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]|" + id + "|" + message, null);
+                    break;
+                case OFF:
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 
-		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
-		if(code <= 0) code = 200;
-		
-		no.put("status", no, code);
-		no.put("mimetype", no, mimetype);
-		no.put("data", no, data);
-		no.put("header", no, headers);
-		
-		return no;	
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.replyBytes(data, aMimetype, aHTTPCode, aMapOfHeaders) : Object</key>
-	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return aMimetype (string representation) with the provided data (as an array of bytes), the aHTTPCode and the map
-	 * of extra HTTP headers.
-	 * </odoc>
-	 */
-	@JSFunction
-	public Object replyBytes(Object data, String mimetype, int code, Object headers) {
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
-		if (data instanceof org.mozilla.javascript.NativeJavaArray) {
-			data = ((org.mozilla.javascript.NativeJavaArray) data).unwrap();
-		}
+    @JSConstructor
+    public void newHTTPd(int port, Object host, String keyStorePath, Object password,
+                         Object errorFunction, Object ws, int timeout)
+                         throws IOException {
 
-		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
-		if(code <= 0) code = 200;
-		
-		no.put("status", no, code);
-		no.put("mimetype", no, mimetype);
-		no.put("data", no, (byte[]) data);
-		no.put("header", no, headers);
-		
-		return no;			
-	}
+        if (port <= 0) {
+            port = findRandomOpenPortOnAllLocalInterfaces();
+        }
+        this.serverport = port;
 
-	/**
-	 * <odoc>
-	 * <key>HTTPd.replyStream(stream, aMimetype, aHTTPCode, aMapOfHeaders) : Object</key>
-	 * Builds a response object suitable to provide a reply to a HTTP request for a function used with the HTTPServer.add method.
-	 * It will return aMimetype (string representation) with the provided input stream, the aHTTPCode and the map
-	 * of extra HTTP headers.
-	 * </odoc>
-	 */
-	@JSFunction
-	public Object replyStream(Object data, String mimetype, int code, Object headers) {
-		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
+        // NWU or Undertow?
+        if (!useUndertow) {
+            // --- Original nwu code ---
+            if (ws instanceof NativeJavaObject) {
+                ws = ((NativeJavaObject) ws).unwrap();
+            }
 
-		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
-		if(code <= 0) code = 200;
+            if (host == null || host instanceof Undefined) {
+                if (ws == null || ws instanceof Undefined) {
+                    httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), port);
+                } else {
+                    httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction),
+                                                       port, (IWebSock) ws, timeout);
+                }
+            } else {
+                if (ws == null || ws instanceof Undefined) {
+                    httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction),
+                                                    (String) host, port);
+                } else {
+                    httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction),
+                                                       (String) host, port, (IWebSock) ws, timeout);
+                }
+            }
 
-		if (data instanceof NativeJavaObject) data = ((NativeJavaObject) data).unwrap();
-		
-		no.put("status", no, code);
-		no.put("mimetype", no, mimetype);
-		no.put("stream", no, data);
-		no.put("header", no, headers);
-		
-		return no;			
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.addSession(aSessionID)</key>
-	 * Provides a simple session track mechanism adding the session ID provided. See HTTPServer.setSession to add data.
-	 * </odoc>
-	 */
-	@JSFunction
-	public static void addSession(String session) {
-		setSession(session, null);
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.getSession(aSessionID) : Object</key>
-	 * Retrieves the current data stored for the provided session ID.
-	 * </odoc>
-	 */
-	@JSFunction
-	public static Object getSession(String session) {
-		return sessions.get(session);
-	}
+            if (keyStorePath != null && !keyStorePath.equals("undefined") &&
+                password != null && !(password instanceof Undefined)) {
 
-	/**
-	 * <odoc>
-	 * <key>HTTPd.setSession(aSessionID, anObject)</key>
-	 * Sets the provided anObject as the session data for the session ID provided.
-	 * </odoc>
-	 */
-	@JSFunction
-	public static void setSession(String session, Object obj) {
-		sessions.put(session, obj);
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.delSession(aSessionID)</key>
-	 * Removes the provided session ID data from memory.
-	 * </odoc>
-	 */
-	@JSFunction
-	public static void delSession(String session) {
-		sessions.remove(session);
-	}
-	
-	/**
-	 * <odoc>
-	 * <key>HTTPd.hasSession(aSessionID) : boolean</key>
-	 * Returns true if the provided session ID was add to memory. False otherwise.
-	 * </odoc>
-	 */
-	@JSFunction
-	public static boolean hasSession(String session) {
-		return sessions.containsKey(session);
-	}
-	
-	public static IStatus translateToNanoHTTPD(int code) {
-		return com.nwu.httpd.NanoHTTPD.Response.Status.lookup(code);
-		/*
-		switch(code) {
-		case 101: return com.nwu.httpd.NanoHTTPD.Response.Status.SWITCH_PROTOCOL; 
-		case 200: return com.nwu.httpd.NanoHTTPD.Response.Status.OK; 
-		case 201: return com.nwu.httpd.NanoHTTPD.Response.Status.CREATED; 
-		case 202: return com.nwu.httpd.NanoHTTPD.Response.Status.ACCEPTED; 
-		case 204: return com.nwu.httpd.NanoHTTPD.Response.Status.NO_CONTENT; 
-		case 206: return com.nwu.httpd.NanoHTTPD.Response.Status.PARTIAL_CONTENT; 
-		case 207: return com.nwu.httpd.NanoHTTPD.Response.Status.MULTI_STATUS;
-		case 301: return com.nwu.httpd.NanoHTTPD.Response.Status.REDIRECT;
-		case 302: return com.nwu.httpd.NanoHTTPD.Response.Status.FOUND;
-		case 303: return com.nwu.httpd.NanoHTTPD.Response.Status.REDIRECT_SEE_OTHER;
-		case 304: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_MODIFIED; 
-		case 307: return com.nwu.httpd.NanoHTTPD.Response.Status.TEMPORARY_REDIRECT;
-		case 400: return com.nwu.httpd.NanoHTTPD.Response.Status.BAD_REQUEST; 
-		case 401: return com.nwu.httpd.NanoHTTPD.Response.Status.UNAUTHORIZED; 
-		case 403: return com.nwu.httpd.NanoHTTPD.Response.Status.FORBIDDEN; 
-		case 404: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_FOUND; 
-		case 405: return com.nwu.httpd.NanoHTTPD.Response.Status.METHOD_NOT_ALLOWED;
-		case 406: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_ACCEPTABLE;
-		case 408: return com.nwu.httpd.NanoHTTPD.Response.Status.REQUEST_TIMEOUT;
-		case 409: return com.nwu.httpd.NanoHTTPD.Response.Status.CONFLICT;
-		case 410: return com.nwu.httpd.NanoHTTPD.Response.Status.GONE;
-		case 411: return com.nwu.httpd.NanoHTTPD.Response.Status.LENGTH_REQUIRED;
-		case 412: return com.nwu.httpd.NanoHTTPD.Response.Status.PRECONDITION_FAILED;
-		case 413: return com.nwu.httpd.NanoHTTPD.Response.Status.PAYLOAD_TOO_LARGE;
-		case 415: return com.nwu.httpd.NanoHTTPD.Response.Status.UNSUPPORTED_MEDIA_TYPE;
-		case 416: return com.nwu.httpd.NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE; 
-		case 417: return com.nwu.httpd.NanoHTTPD.Response.Status.EXPECTATION_FAILED;
-		case 429: return com.nwu.httpd.NanoHTTPD.Response.Status.TOO_MANY_REQUESTS;
-		case 500: return com.nwu.httpd.NanoHTTPD.Response.Status.INTERNAL_ERROR;
-		case 501: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_IMPLEMENTED;
-		case 503: return com.nwu.httpd.NanoHTTPD.Response.Status.SERVICE_UNAVAILABLE;
-		case 505: return com.nwu.httpd.NanoHTTPD.Response.Status.UNSUPPORTED_HTTP_VERSION;
-		default: return Codes.HTTP_OK;
-		}*/
-	}
+                httpd.stop();
+                if ((new java.io.File(keyStorePath)).exists()) {
+                    httpd.makeSecure(com.nwu.httpd.HTTPd.makeLocalSSLSocketFactory(
+                                     keyStorePath,
+                                     AFCmdBase.afc.dIP(((String) password)).toCharArray()),
+                                     null);
+                } else {
+                    httpd.makeSecure(com.nwu.httpd.HTTPd.makeSSLSocketFactory(
+                                     keyStorePath,
+                                     AFCmdBase.afc.dIP(((String) password)).toCharArray()),
+                                     null);
+                }
+                httpd.start();
+            }
+
+            // Gzip config
+            httpd.addToGzipAccept("text/plain");
+            httpd.addToGzipAccept("application/javascript");
+            httpd.addToGzipAccept("text/css");
+            httpd.addToGzipAccept("application/json");
+            httpd.addToGzipAccept("application/xml");
+            httpd.addToGzipAccept("text/richtext");
+            httpd.addToGzipAccept("text/html");
+
+        } else {
+            // Undertow code
+            // We instantiate our Undertow-based wrapper passing relevant parameters.
+            undertowHttpd = new UndertowHTTPd(
+                port,
+                (host instanceof String) ? (String) host : null,
+                keyStorePath,
+                (password instanceof String) ? (String) password : null,
+                new HLog(port, errorFunction),
+                ws,
+                timeout
+            );
+            // Start Undertow server now
+            undertowHttpd.start();
+        }
+
+        id = Integer.toString(port) + this.hashCode();
+    }
+
+    // Helper method: find an open random port
+    private Integer findRandomOpenPortOnAllLocalInterfaces() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Below are the wrappers for the public methods
+    // They now check if we are using NWU or Undertow
+    // -----------------------------------------------------------------------
+
+    @JSFunction
+    public int getPort() {
+        return this.serverport;
+    }
+
+    @JSFunction
+    public void stop() {
+        if (!useUndertow) {
+            if (httpd != null) httpd.stop();
+        } else {
+            if (undertowHttpd != null) undertowHttpd.stop();
+        }
+    }
+
+    @JSFunction
+    public boolean isAlive() {
+        if (!useUndertow) {
+            return (httpd != null) && httpd.isAlive();
+        } else {
+            return (undertowHttpd != null) && undertowHttpd.isAlive();
+        }
+    }
+
+    @JSFunction
+    public void addWS(String uri) throws Exception {
+        if (!useUndertow) {
+            if (httpd != null) {
+                httpd.addToWsAccept(uri);
+            }
+        } else {
+            if (undertowHttpd != null) {
+                //undertowHttpd.addWS(uri);
+				throw new Exception("Undertow WS not supported yet.");
+            }
+        }
+    }
+
+    @JSFunction
+    public void addEcho(String uri) {
+        if (!useUndertow) {
+            if (httpd != null) {
+                httpd.registerURIResponse(uri, EchoResponse.class, null);
+            }
+        } else {
+            if (undertowHttpd != null) {
+                undertowHttpd.registerURIResponse(uri, EchoResponse.class, null);
+            }
+        }
+    }
+
+    @JSFunction
+    public void addStatus(String uri) {
+        if (!useUndertow) {
+            if (httpd != null) {
+                httpd.registerURIResponse(uri, StatusResponse.class, null);
+            }
+        } else {
+            if (undertowHttpd != null) {
+                undertowHttpd.registerURIResponse(uri, StatusResponse.class, null);
+            }
+        }
+    }
+
+    @JSFunction
+    public void add(String uri, NativeFunction callback) {
+        callbacks.put(this.serverport + ":" + uri, callback);
+
+        Map<String, String> props = new HashMap<String, String>();
+        props.put("uri", uri);
+
+        if (!useUndertow) {
+            if (httpd != null) {
+                httpd.registerURIResponse(uri, JSResponse.class, props);
+            }
+        } else {
+            if (undertowHttpd != null) {
+                undertowHttpd.registerURIResponse(uri, JSResponse.class, props);
+            }
+        }
+    }
+
+    @JSFunction
+    public void setDefault(String uri) {
+        if (!useUndertow) {
+            if (httpd != null) {
+                httpd.setDefaultResponse(uri);
+            }
+        } else {
+            if (undertowHttpd != null) {
+                undertowHttpd.setDefaultResponse(uri);
+            }
+        }
+    }
+
+    @JSFunction
+    public void addFileBrowse(String uri, String filepath) {
+        Map<String, String> props = new HashMap<String, String>();
+        props.put("publichtml", filepath);
+
+        if (!useUndertow) {
+            if (httpd != null) {
+                httpd.registerURIResponse(uri, FileResponse.class, props);
+            }
+        } else {
+            if (undertowHttpd != null) {
+                undertowHttpd.registerURIResponse(uri, FileResponse.class, props);
+            }
+        }
+    }
+
+    @JSFunction
+    public void addXDTServer(String uri,
+                             NativeFunction authFunction,
+                             NativeFunction opsBroker)
+       throws ClassNotFoundException, IllegalAccessException,
+              IllegalArgumentException, InvocationTargetException,
+              NoSuchMethodException, SecurityException {
+
+        Map<String, String> props = new HashMap<String, String>();
+        props.put("uri", uri);
+
+        if (AFCmdBase.afcmd.equals("AFCmdWeDo")) {
+            Class<?> cl = Class.forName("openaf.plugins.HTTPd.XDTServerResponse");
+            cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(this, authFunction);
+            cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(this, opsBroker);
+
+            if (!useUndertow) {
+                if (httpd != null) {
+                    httpd.registerURIResponse(uri, cl, props);
+                }
+            } else {
+                if (undertowHttpd != null) {
+                    undertowHttpd.registerURIResponse(uri, cl, props);
+                }
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // The reply methods remain the same. The difference is just in how they're
+    // eventually handled by the underlying NWU or Undertow implementation.
+    // -----------------------------------------------------------------------
+
+    @JSFunction
+    public Object replyOKText(String data, Object headers) {
+        Context cx = (Context) AFCmdBase.jse.enterContext();
+        Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+        AFCmdBase.jse.exitContext();
+
+        no.put("status", no, 200);
+        no.put("mimetype", no, Codes.MIME_PLAINTEXT);
+        no.put("data", no, data);
+        no.put("header", no, headers);
+
+        return no;
+    }
+
+    @JSFunction
+    public Object replyOKXML(String data, Object headers) {
+        Context cx = (Context) AFCmdBase.jse.enterContext();
+        Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+        AFCmdBase.jse.exitContext();
+
+        no.put("status", no, 200);
+        no.put("mimetype", no, "text/xml");
+        no.put("data", no, data);
+        no.put("header", no, headers);
+
+        return no;
+    }
+
+    @JSFunction
+    public Object replyOKHTML(String data, Object headers) {
+        Context cx = (Context) AFCmdBase.jse.enterContext();
+        Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+        AFCmdBase.jse.exitContext();
+
+        no.put("status",  no, 200);
+        no.put("mimetype", no, Codes.MIME_HTML);
+        no.put("data", no, data);
+        no.put("header", no, headers);
+
+        return no;
+    }
+
+    @JSFunction
+    public Object replyOKJSON(String data, Object headers) {
+        Context cx = (Context) AFCmdBase.jse.enterContext();
+        Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+        AFCmdBase.jse.exitContext();
+
+        no.put("status", no, 200);
+        no.put("mimetype", no, Codes.MIME_JSON);
+        no.put("data", no, data);
+        no.put("header", no, headers);
+
+        return no;
+    }
+
+    @JSFunction
+    public Object replyOKBin(String data, Object headers) {
+        Context cx = (Context) AFCmdBase.jse.enterContext();
+        Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+        AFCmdBase.jse.exitContext();
+
+        no.put("status", no, 200);
+        no.put("mimetype", no, Codes.MIME_DEFAULT_BINARY);
+        no.put("data", no, data);
+        no.put("header", no, headers);
+
+        return no;
+    }
+
+    @JSFunction
+    public Object reply(String data, String mimetype, int code, Object headers) {
+        Context cx = (Context) AFCmdBase.jse.enterContext();
+        Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+        AFCmdBase.jse.exitContext();
+
+        if(mimetype == null || mimetype.equals("undefined")) {
+            mimetype = Codes.MIME_DEFAULT_BINARY;
+        }
+        if(code <= 0) {
+            code = 200;
+        }
+
+        no.put("status", no, code);
+        no.put("mimetype", no, mimetype);
+        no.put("data", no, data);
+        no.put("header", no, headers);
+
+        return no; 
+    }
+
+    @JSFunction
+    public Object replyBytes(Object data, String mimetype, int code, Object headers) {
+        Context cx = (Context) AFCmdBase.jse.enterContext();
+        Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+        AFCmdBase.jse.exitContext();
+
+        if (data instanceof org.mozilla.javascript.NativeJavaArray) {
+            data = ((org.mozilla.javascript.NativeJavaArray) data).unwrap();
+        }
+
+        if(mimetype == null || mimetype.equals("undefined")) {
+            mimetype = Codes.MIME_DEFAULT_BINARY;
+        }
+        if(code <= 0) {
+            code = 200;
+        }
+
+        no.put("status", no, code);
+        no.put("mimetype", no, mimetype);
+        no.put("data", no, (byte[]) data);
+        no.put("header", no, headers);
+
+        return no;
+    }
+
+    @JSFunction
+    public Object replyStream(Object data, String mimetype, int code, Object headers) {
+        Context cx = (Context) AFCmdBase.jse.enterContext();
+        Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+        AFCmdBase.jse.exitContext();
+
+        if(mimetype == null || mimetype.equals("undefined")) {
+            mimetype = Codes.MIME_DEFAULT_BINARY;
+        }
+        if(code <= 0) {
+            code = 200;
+        }
+        if (data instanceof NativeJavaObject) {
+            data = ((NativeJavaObject) data).unwrap();
+        }
+
+        no.put("status", no, code);
+        no.put("mimetype", no, mimetype);
+        no.put("stream", no, data);
+        no.put("header", no, headers);
+
+        return no;
+    }
+
+    // Sessions
+    @JSFunction
+    public static void addSession(String session) {
+        setSession(session, null);
+    }
+
+    @JSFunction
+    public static Object getSession(String session) {
+        return sessions.get(session);
+    }
+
+    @JSFunction
+    public static void setSession(String session, Object obj) {
+        sessions.put(session, obj);
+    }
+
+    @JSFunction
+    public static void delSession(String session) {
+        sessions.remove(session);
+    }
+
+    @JSFunction
+    public static boolean hasSession(String session) {
+        return sessions.containsKey(session);
+    }
+
+    public static IStatus translateToNanoHTTPD(int code) {
+        return com.nwu.httpd.NanoHTTPD.Response.Status.lookup(code);
+    }
 }

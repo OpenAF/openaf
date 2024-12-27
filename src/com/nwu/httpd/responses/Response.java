@@ -19,16 +19,22 @@
 package com.nwu.httpd.responses;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import com.nwu.httpd.Codes;
-import com.nwu.httpd.HTTPd;
 import com.nwu.httpd.IHTTPd;
 import com.nwu.httpd.NanoHTTPD.Response.IStatus;
 import com.nwu.httpd.Request;
+import com.nwu.httpd.responses.Response;
 import com.nwu.log.Log;
 import java.lang.String;
+import java.nio.ByteBuffer;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  * HTTP response.
@@ -119,7 +125,22 @@ public abstract class Response {
 		}
 		return response;
 	}
-	
+
+	/*
+	 * Build a Undertow response
+	 */
+	public HttpServerExchange getUndertowResponse(HttpServerExchange exchange) throws IOException {
+		exchange.setStatusCode(status.getRequestStatus());
+		exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mimeType);
+		for(String key : header.keySet()) {
+			exchange.getResponseHeaders().put(new HttpString(key), header.get(key));
+		}
+		byte[] bytes = data.readAllBytes();
+		ByteBuffer buffer = ByteBuffer.wrap(bytes);
+		exchange.getResponseSender().send(buffer);
+		return exchange;
+	}
+
 	/**
 	 * Adds given line to the header.
 	 */

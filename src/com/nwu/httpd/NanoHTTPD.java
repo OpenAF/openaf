@@ -96,6 +96,8 @@ import javax.net.ssl.TrustManagerFactory;
 import com.nwu.httpd.NanoHTTPD.Response.IStatus;
 import com.nwu.httpd.NanoHTTPD.Response.Status;
 
+import io.undertow.server.HttpServerExchange;
+
 import org.apache.commons.io.FileUtils;
 
 import java.lang.String;
@@ -1710,6 +1712,11 @@ public abstract class NanoHTTPD {
 
         public void setStatus(IStatus status) {
             this.status = status;
+        }
+
+        public HttpServerExchange getUndertowResponse(HttpServerExchange exchange) {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'getUndertowResponse'");
         }
     }
 

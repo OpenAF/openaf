@@ -23,11 +23,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Map;
-import java.util.Properties;
 import java.util.StringTokenizer;
 
 import com.nwu.httpd.Codes;
-import com.nwu.httpd.HTTPd;
 import com.nwu.httpd.IHTTPd;
 import com.nwu.httpd.Request;
 import com.nwu.log.Log.Type;
@@ -249,10 +247,11 @@ public class FileResponse extends Response {
 			else if (tok.equals(" "))
 				newUri += "%20";
 			else {
-				newUri += URLEncoder.encode(tok);
-				// For Java 1.4 you'll want to use this instead:
-				// try { newUri += URLEncoder.encode( tok, "UTF-8" ); } catch (
-				// UnsupportedEncodingException uee )
+				try {
+					newUri += URLEncoder.encode(tok, "UTF-8");
+				} catch (java.io.UnsupportedEncodingException e) {
+					// Handle the exception or log it
+				}
 			}
 		}
 		return newUri;
