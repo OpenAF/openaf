@@ -1,6 +1,8 @@
 package com.nwu.httpd;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,13 +12,11 @@ import org.xnio.OptionMap;
 import org.xnio.Xnio;
 import org.xnio.XnioWorker;
 
-import com.nwu.httpd.NanoHTTPD.Response;
+import com.nwu.httpd.responses.Response;
 import com.nwu.log.Log;
-
 import io.undertow.Undertow;
 import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.ExceptionHandler;
-import io.undertow.util.Headers;
 
 /**
  * A minimal Undertow-based server wrapper to emulate the IHTTPd methods.
@@ -94,24 +94,65 @@ public class UndertowHTTPd implements IHTTPd {
         return alive;
     }
 
+    protected void _exec(io.undertow.server.HttpServerExchange exchange, String uri, Class<?> clazz, Map<String, String> props) {
+        try {
+            System.out.println("Handling URI: " + uri);
+            System.out.println("Class: " + clazz.getName());
+            if (Response.class.isAssignableFrom(clazz)) {
+                String registeredUri = uri;
+
+                if (uri.indexOf('/', 1) > -1) {
+                    registeredUri = registeredUri.substring(0, uri.indexOf('/', 1));
+                }
+                
+                if (!this.getURIresponses().containsKey(registeredUri)) {
+                    registeredUri = this.getDefaultResponse();
+                }
+        
+                if (this.getURIresponses().containsKey(registeredUri)) {
+                    com.nwu.httpd.responses.Response response = null;
+        
+                    System.out.println("Using response class '" + this.getURIresponses().get(registeredUri).getName() + "' for URI = '" + registeredUri + "'"); 
+
+                    try {
+                        Constructor<?> c = this.getURIresponse(registeredUri).getDeclaredConstructor(IHTTPd.class, String.class, Map.class);
+                        response = (com.nwu.httpd.responses.Response) c.newInstance(this, registeredUri, this.getURIProps(registeredUri));
+                        response.executeUndertow(exchange);
+                    } catch (InstantiationException | IllegalAccessException | SecurityException | NoSuchMethodException | IllegalArgumentException | InvocationTargetException e) {
+                        e.printStackTrace();
+                    } finally {
+                        if (response != null) response.getUndertowResponse(exchange);
+                    }
+                }
+            } else {
+                System.err.println("Class not supported: " + clazz.getName());
+                if (logger != null) {
+                    logger.log(Log.Type.ERROR, "Class not supported: " + clazz.getName());
+                }
+                exchange.setStatusCode(500);
+                exchange.getResponseSender().send("Server error: Class not supported: " + clazz.getName());
+            }
+        } catch (Exception ex) {
+            System.err.println("Error in registerURIResponse: " + ex.getMessage());
+            if (logger != null) {
+                logger.log(Log.Type.ERROR, "Error in registerURIResponse: " + ex.getMessage(), ex);
+            }
+            exchange.setStatusCode(500);
+            exchange.getResponseSender().send("Server error: " + ex.getMessage());
+        }
+    }
+
     public void registerURIResponse(String uri, Class<?> clazz, Map<String, String> props) {
         // You'd intercept the request and call your "responder".
         // If it's EchoResponse, StatusResponse, JSResponse, etc.
         // We'll demonstrate a minimal JSResponse approach:
+        System.out.println("Registering URI: " + uri);
+        URIresponses.put(uri, clazz);
+        URIhits.put(uri, 0L);
+        URIProps.put(uri, props);
 
         routingHandler.get(uri, exchange -> {
-            try {
-                if (Response.class.isAssignableFrom(clazz)) {
-                    Response response = (Response) clazz.getDeclaredConstructor().newInstance();
-                    exchange = response.getUndertowResponse(exchange);
-                }
-            } catch (Exception ex) {
-                if (logger != null) {
-                    logger.log(Log.Type.ERROR, "Error in registerURIResponse: " + ex.getMessage(), ex);
-                }
-                exchange.setStatusCode(500);
-                exchange.getResponseSender().send("Server error: " + ex.getMessage());
-            }
+            this._exec(exchange, uri, clazz, props);
         });
     }
 
@@ -120,10 +161,13 @@ public class UndertowHTTPd implements IHTTPd {
         // One approach: add a fallback route that matches "/*" or use .setFallbackHandler().
         routingHandler.setFallbackHandler(exchange -> {
             // You can redirect or call something akin to the "default" URI:
-            exchange.setStatusCode(302);
-            exchange.getResponseHeaders().put(Headers.LOCATION, uri);
-            exchange.endExchange();
+            //exchange.setStatusCode(302);
+            //exchange.getResponseHeaders().put(Headers.LOCATION, uri);
+            //exchange.endExchange();
+            _exec(exchange, uri, this.getURIresponse(uri), this.getURIProps(uri));
         });
+
+        this.defaultResponse = uri;
     }
 
     public void addToGzipAccept(String mime) {
@@ -150,40 +194,55 @@ public class UndertowHTTPd implements IHTTPd {
         }
     }
 
+	@SuppressWarnings("rawtypes")
+	protected HashMap<String, Class> URIresponses = new HashMap<String, Class>();
+	protected HashMap<String, Long> URIhits = new HashMap<String, Long>();
+	protected HashMap<String, Map<String, String>> URIProps = new HashMap<String, Map<String, String>>();
+    protected String defaultResponse = null;
+
+    @SuppressWarnings("rawtypes")
     @Override
     public HashMap<String, Class> getURIresponses() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getURIresponses'");
+        return URIresponses;
     }
 
     @Override
     public String getDefaultResponse() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDefaultResponse'");
+        return this.defaultResponse;
     }
 
     @Override
     public HashMap<String, Map<String, String>> getURIproperties() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getURIproperties'");
+        return URIProps;
     }
 
     @Override
     public Class<?> getURIresponse(String URI) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getURIresponse'");
+        URI.replaceFirst("/+", "/");
+
+		if (getURIresponses().containsKey(URI)) {
+			URIhits.put(URI, URIhits.get(URI) + 1);
+			return getURIresponses().get(URI);
+		}
+
+		return null;
     }
 
     @Override
     public Map<String, String> getURIProps(String URI) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getURIProps'");
+		if (URI.equals(""))
+			URI = "/";
+
+		if (getURIproperties().containsKey(URI)) {
+			return getURIproperties().get(URI);
+		}
+
+		return null;
     }
 
     @Override
     public HashMap<String, Long> getURIhits() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getURIhits'");
+        return URIhits;
     }
 
     @Override
@@ -198,12 +257,11 @@ public class UndertowHTTPd implements IHTTPd {
 
     @Override
     public int getListeningPort() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getListeningPort'");
+        return port;
     }
 
     @Override
-    public boolean useGzipWhenAccepted(Response r) {
+    public boolean useGzipWhenAccepted(com.nwu.httpd.NanoHTTPD.Response r) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'useGzipWhenAccepted'");
     }

@@ -130,14 +130,19 @@ public abstract class Response {
 	 * Build a Undertow response
 	 */
 	public HttpServerExchange getUndertowResponse(HttpServerExchange exchange) throws IOException {
-		exchange.setStatusCode(status.getRequestStatus());
-		exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mimeType);
+		if (this.status != null) exchange.setStatusCode(this.status.getRequestStatus());
+		if (this.mimeType != null) exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, mimeType);
 		for(String key : header.keySet()) {
 			exchange.getResponseHeaders().put(new HttpString(key), header.get(key));
 		}
-		byte[] bytes = data.readAllBytes();
-		ByteBuffer buffer = ByteBuffer.wrap(bytes);
-		exchange.getResponseSender().send(buffer);
+		if (this.data != null) {
+			byte[] bytes = data.readAllBytes();
+			ByteBuffer buffer = ByteBuffer.wrap(bytes);
+			exchange.getResponseSender().send(buffer);
+		} else {
+			System.out.println("No data to send.");
+		}
+		
 		return exchange;
 	}
 
@@ -183,6 +188,18 @@ public abstract class Response {
 
 	public InputStream getData() {
 		return data;
+	}
+
+	public void executeUndertow(HttpServerExchange exchange) {
+		try {
+			System.out.println("Executing response for URI: " + this.rURI);
+			this.execute(new Request(exchange));
+			System.out.println("Response executed.");
+		} catch (Exception e) {
+			log.log(Log.Type.ERROR, "Error in executeUndertow: " + e.getMessage(), e);
+			exchange.setStatusCode(500);
+			exchange.getResponseSender().send("Server error: " + e.getMessage());
+		}
 	}
 	
 }

@@ -23,6 +23,9 @@ import java.lang.String;
 
 import com.nwu.httpd.NanoHTTPD.Method;
 
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
+
 public class Request {
 	String uri;
 	String originalURI;
@@ -72,6 +75,56 @@ public class Request {
 		this.originalURI = originalURI;
 	}
 	
+	public Request(HttpServerExchange exchange) {
+		this.uri = exchange.getRequestURI();
+		this.method = strMethod2Type(exchange.getRequestMethod());
+		this.header = exchange.getRequestHeaders().getHeaderNames().stream().collect(
+				java.util.stream.Collectors.toMap(
+						header -> header.toString(),
+						header -> exchange.getRequestHeaders().get(header.toString()).getFirst()
+				)
+		);
+		this.params = exchange.getQueryParameters().entrySet().stream().collect(
+			java.util.stream.Collectors.toMap(
+					param -> param.getKey(),
+					param -> param.getValue().getFirst()
+			)
+		);
+		this.files = new java.util.HashMap<>();
+		io.undertow.server.handlers.form.FormData formData = exchange.getAttachment(io.undertow.server.handlers.form.FormDataParser.FORM_DATA);
+		if (formData != null) {
+			for (String field : formData) {
+				io.undertow.server.handlers.form.FormData.FormValue formValue = formData.getFirst(field);
+				if (formValue.isFileItem()) {
+					this.files.put(field, formValue.getFileItem().getFile().toAbsolutePath().toString());
+				}
+			}
+		}
+		this.originalURI = exchange.getRequestURI();
+	}
+
+	private MethodType strMethod2Type(HttpString requestMethod) {
+		MethodType mtype = null;
+		
+		if (requestMethod.toString().equalsIgnoreCase(MethodType.GET.toString())) {
+			return MethodType.GET;
+		} else if (requestMethod.toString().equalsIgnoreCase(MethodType.POST.toString())) {
+			return MethodType.POST;
+		} else if (requestMethod.toString().equalsIgnoreCase(MethodType.UPDATE.toString())) {
+			return MethodType.UPDATE;
+		} else if (requestMethod.toString().equalsIgnoreCase(MethodType.DELETE.toString())) {
+			return MethodType.DELETE;
+		} else if (requestMethod.toString().equalsIgnoreCase(MethodType.HEAD.toString())) {
+			return MethodType.HEAD;
+		} else if (requestMethod.toString().equalsIgnoreCase(MethodType.OPTIONS.toString())) {
+			return MethodType.OPTIONS;
+		} else if (requestMethod.toString().equalsIgnoreCase(MethodType.PUT.toString())) {
+			return MethodType.PUT;
+		}
+		
+		return mtype;
+	}
+
 	public String getUri() {
 		return uri;
 	}

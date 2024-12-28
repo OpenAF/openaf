@@ -133,6 +133,8 @@ public class JSResponse extends Response {
 			}
 		} catch (Exception e) {
 			//throw e;
+			System.err.println("Exception " + e.getMessage());
+			e.printStackTrace();
 			SimpleLog.log(logtype.DEBUG, "Exception " + e.getMessage(), e);
 		} finally {
 			AFCmdBase.jse.exitContext();
