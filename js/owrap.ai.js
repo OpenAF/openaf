@@ -739,6 +739,207 @@ OpenWrap.ai.prototype.__gpttypes = {
             }
             return _r
         }
+    },
+    anthropic: {
+        create: (aOptions) => {
+            ow.loadObj()
+            aOptions = _$(aOptions, "aOptions").isMap().$_()
+            aOptions.params = _$(aOptions.params, "aOptions.params").isMap().default({})
+            aOptions.key = _$(aOptions.key, "aOptions.key").isString().$_()
+            aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(15 * 60000)
+            aOptions.model = _$(aOptions.model, "aOptions.model").isString().default("claude-3-5-sonnet-20241022")
+            aOptions.temperature = _$(aOptions.temperature, "aOptions.temperature").isNumber().default(0.7)
+            aOptions.url = _$(aOptions.url, "aOptions.url").isString().default("https://api.anthropic.com/")
+            aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
+            // If noSystem=true it will not output the system messages
+            aOptions.noSystem = _$(aOptions.noSystem, "aOptions.noSystem").isBoolean().default(true)
+
+            var _key = aOptions.key
+            var _timeout = aOptions.timeout
+            var _model = aOptions.model
+            var _temperature = aOptions.temperature
+            var _noSystem = aOptions.noSystem
+            var _r = {
+                conversation: [],
+                tools: {},
+                getConversation: () => {
+                    return _r.conversation
+                },
+                setConversation: (aConversation) => {
+                    if (isArray(aConversation)) _r.conversation = aConversation
+                    return _r
+                },
+                setTool: (aName, aDesc, aParams, aFn) => {
+                    _r.tools[aName] = {
+                        type: "function",
+                        function: {
+                            name: aName,
+                            description: aDesc,
+                            parameters: aParams
+                        },
+                        fn: aFn
+                    }
+                    return _r
+                },
+                prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
+                    var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
+                    if (isArray(__r.content) && __r.content.length > 0) {
+                        if (__r.stop_reason === "end_turn") {
+                           return __r.content[0].text
+                        }
+                    }
+                    return __r
+                },
+                promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, aJsonFlag) => {
+                    throw "Not supported yet"
+                },
+                rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag, aTools) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                    aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
+                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                 
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                 
+                    _r.conversation = aPrompt
+                    if (_noSystem) {
+                        msgs = msgs.filter(m => m.role != "system")
+                    }
+                    var body = {
+                        model: aModel,
+                        temperature: aTemperature,
+                        messages: msgs
+                        //response_format: (aJsonFlag ? { type: "json_object" } : __)
+                    }
+                    if (_noSystem) {
+                        body.system = msgs.filter(m => m.role == "system").map(m => m.content).join("\n")
+                    }
+                    if (aJsonFlag) {
+                        msgs.push({ role: "user", content: "output json" })
+                    }
+                    body = merge(body, aOptions.params)
+                    /*if (isArray(aTools) && aTools.length > 0) {
+                        body.tools = aTools.map(t => {
+                            var _t = _r.tools[t].function
+                            return {
+                                type: "function",
+                                function: {
+                                    name: _t.name,
+                                    description: _t.description,
+                                    parameters: _t.parameters
+                                }
+                            }
+                        })
+                    }*/
+                    var _res = _r._request("v1/messages", body)   
+                    /*if (isDef(_res) && isArray(_res.choices)) {
+                        // call tools
+                        var _p = [], stopWith = false
+                        _res.choices.forEach(tc => {
+                            if (isDef(tc.message) && isArray(tc.message.tool_calls)) {
+                                tc.message.tool_calls.forEach(tci => {
+                                    var _t = _r.tools[tci.function.name]
+                                    var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
+                                    _p.push({ role: "assistant", tool_calls: [ tci ]})
+                                    _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
+                                })
+                            }
+                            if (isDef(tc.finish_reason) && tc.finish_reason == "stop") {
+                                _p.push({ role: "assistant", content: tc.message.content })
+                                stopWith = true
+                            }
+                        })
+                        if (stopWith)
+                            return _res
+                        else
+                            return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                    } else {
+                        return _res
+                    }*/
+                   return _res
+                },
+                rawImgGen: (aPrompt, aModel) => {
+                    throw "Not supported yet"
+                },
+                promptImgGen: (aPrompt, aModel) => {
+                    throw "Not supported yet"
+                },
+                addPrompt: (aRole, aPrompt) => {
+                    if (isUnDef(aPrompt)) {
+                        aPrompt = aRole
+                        aRole = "user"
+                     }
+                     if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
+                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
+                     return _r
+                },
+                addUserPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "user", content: aPrompt })
+                    return _r
+                },
+                addSystemPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "system", content: aPrompt })
+                    return _r
+                },
+                addDeveloperPrompt: (aPrompt) => {
+                    _r.conversation.push({ role: "developer", content: aPrompt })
+                    return _r
+                },
+                cleanPrompt: () => {
+                    _r.conversation = []
+                    return _r
+                },
+                getModels: () => {
+                    var res = _r._request("v1/models", {}, "GET")
+                    if (isArray(res.data)) {
+                        return res.data
+                    } else {
+                        return res
+                    }
+                },
+                _request: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __m = { 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                       requestHeaders: merge(aOptions.headers, { 
+                          "x-api-key"        : Packages.openaf.AFCmdBase.afc.dIP(_key),
+                          "anthropic-version": "2023-06-01",
+                          Accept             : "*/*"
+                       })
+                    } 
+                    _h.close()
+                 
+                    var _fnh = r => {
+                        var _r 
+                        if ("function" !== typeof r.getClass) {
+                            _r = (isDef(r.error) ? jsonParse(r.error, __, __, true) : r)
+                        } else {
+                            _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
+                        }
+                        if (typeof _r.response !== "undefined") {
+                            return jsonParse(_r.response)
+                        } else {
+                            return _r
+                        }
+                    }
+
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI))
+                    case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData))
+                    }
+                }
+            }
+            return _r
+        }
     }
 }
 
