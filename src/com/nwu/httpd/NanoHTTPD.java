@@ -1138,23 +1138,16 @@ public abstract class NanoHTTPD {
 
         @Override
         public void parseBody(Map<String, String> files) throws IOException, ResponseException {
-            RandomAccessFile randomAccessFile = null;
-            try {
-                long size = getBodySize();
-                ByteArrayOutputStream baos = null;
-                DataOutput requestDataOutput = null;
+            try (RandomAccessFile randomAccessFile = getBodySize() >= MEMORY_STORE_LIMIT ? getTmpBucket() : null;
+                 FileChannel fileChannel = randomAccessFile != null ? randomAccessFile.getChannel() : null;
+                 ByteArrayOutputStream baos = getBodySize() < MEMORY_STORE_LIMIT ? new ByteArrayOutputStream() : null;
+                 DataOutputStream dataOutputStream = baos != null ? new DataOutputStream(baos) : null) {
 
-                // Store the request in memory or a file, depending on size
-                if (size < MEMORY_STORE_LIMIT) {
-                    baos = new ByteArrayOutputStream();
-                    requestDataOutput = new DataOutputStream(baos);
-                } else {
-                    randomAccessFile = getTmpBucket();
-                    requestDataOutput = randomAccessFile;
-                }
+                DataOutput requestDataOutput = baos != null ? dataOutputStream : randomAccessFile;
 
                 // Read all the body and write it to request_data_output
                 byte[] buf = new byte[REQUEST_BUFFER_LEN];
+                long size = getBodySize();
                 while (this.rlen >= 0 && size > 0) {
                     this.rlen = this.inputStream.read(buf, 0, (int) Math.min(size, REQUEST_BUFFER_LEN));
                     size -= this.rlen;
@@ -1163,16 +1156,10 @@ public abstract class NanoHTTPD {
                     }
                 }
 
-                ByteBuffer fbuf = null;
-                if (baos != null) {
-                    fbuf = ByteBuffer.wrap(baos.toByteArray(), 0, baos.size());
-                } else {
-                    fbuf = randomAccessFile.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, randomAccessFile.length());
-                    randomAccessFile.seek(0);
-                }
+                ByteBuffer fbuf = baos != null ? ByteBuffer.wrap(baos.toByteArray(), 0, baos.size()) :
+                        fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, randomAccessFile.length());
 
-                // If the method is POST, there may be parameters
-                // in data section, too, read it:
+                // If the method is POST, there may be parameters in data section, too, read it:
                 if (Method.POST.equals(this.method)) {
                     ContentType contentType = new ContentType(this.headers.get("content-type"));
                     if (contentType.isMultipart()) {
@@ -1190,17 +1177,13 @@ public abstract class NanoHTTPD {
                         if ("application/x-www-form-urlencoded".equalsIgnoreCase(contentType.getContentType())) {
                             decodeParms(postLine, this.parms);
                         } else if (postLine.length() != 0) {
-                            // Special case for raw POST data => create a
-                            // special files entry "postData" with raw content
-                            // data
+                            // Special case for raw POST data => create a special files entry "postData" with raw content data
                             files.put("postData", postLine);
                         }
                     }
                 } else if (Method.PUT.equals(this.method)) {
                     files.put("content", saveTmpFile(fbuf, 0, fbuf.limit(), null));
                 }
-            } finally {
-                safeClose(randomAccessFile);
             }
         }
 
@@ -1211,19 +1194,16 @@ public abstract class NanoHTTPD {
         private String saveTmpFile(ByteBuffer b, int offset, int len, String filename_hint) {
             String path = "";
             if (len > 0) {
-                FileOutputStream fileOutputStream = null;
                 try {
-                    TempFile tempFile = this.tempFileManager.createTempFile(filename_hint);
-                    ByteBuffer src = b.duplicate();
-                    fileOutputStream = new FileOutputStream(tempFile.getName());
-                    FileChannel dest = fileOutputStream.getChannel();
-                    src.position(offset).limit(offset + len);
-                    dest.write(src.slice());
-                    path = tempFile.getName();
-                } catch (Exception e) { // Catch exception if any
+                    path = this.tempFileManager.createTempFile(filename_hint).getName();
+                    try (FileOutputStream fileOutputStream = new FileOutputStream(path);
+                        FileChannel dest = fileOutputStream.getChannel()) {
+                        ByteBuffer src = b.duplicate();
+                        src.position(offset).limit(offset + len);
+                        dest.write(src.slice());
+                    }
+                } catch (Exception e) {
                     throw new Error(e); // we won't recover, so throw an error
-                } finally {
-                    safeClose(fileOutputStream);
                 }
             }
             return path;
@@ -1924,7 +1904,8 @@ public abstract class NanoHTTPD {
         try {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             trustManagerFactory.init(loadedKeyStore);
-            SSLContext ctx = SSLContext.getInstance("TLS");
+            // Security CWE-327
+            SSLContext ctx = SSLContext.getInstance("TLSv1.2");
             ctx.init(keyManagers, trustManagerFactory.getTrustManagers(), null);
             res = ctx.getServerSocketFactory();
         } catch (Exception e) {
@@ -1956,10 +1937,15 @@ public abstract class NanoHTTPD {
             InputStream keystoreStream = ClassLoader.class.getResourceAsStream(keyAndTrustStoreClasspathPath);
 
             if (keystoreStream == null) {
-                throw new IOException("Unable to load keystore from classpath: " + keyAndTrustStoreClasspathPath);
+            throw new IOException("Unable to load keystore from classpath: " + keyAndTrustStoreClasspathPath);
             }
 
-            keystore.load(keystoreStream, passphrase);
+            try {
+                keystore.load(keystoreStream, passphrase);
+            } finally {
+                safeClose(keystoreStream);
+            }
+
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             keyManagerFactory.init(keystore, passphrase);
             return makeSSLSocketFactory(keystore, keyManagerFactory);
@@ -1969,9 +1955,8 @@ public abstract class NanoHTTPD {
     }
 
     public static SSLServerSocketFactory makeLocalSSLSocketFactory(String keyAndTrustStore, char[] passphrase) throws IOException {
-        try {
+        try (InputStream keystoreStream = FileUtils.openInputStream(new File(keyAndTrustStore))) {
             KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-            InputStream keystoreStream = FileUtils.openInputStream(new File(keyAndTrustStore));
 
             if (keystoreStream == null) {
                 throw new IOException("Unable to load keystore from filesystem: " + keyAndTrustStore);

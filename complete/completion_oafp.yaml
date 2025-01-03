@@ -141,6 +141,8 @@ complete:
       desc: The name of sheet to consider -default to the first sheet-
     - name: inxlsevalformulas=
       desc: If false the existing formulas won't be evaluated -defaults to true-
+    - name: inxlsdesc=
+      desc: If true, instead of retrieving data, either a list of sheet names will be returned, or, if inxlssheet is provided, a table empty and non-empty will be returned
     - name: inxlscol=
       desc: The column on the sheet where a table should be detected -e.g. "A"-
     - name: inxlsrow=

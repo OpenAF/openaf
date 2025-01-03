@@ -229,11 +229,11 @@ jobsInclude:
 # === JOBS ===
 # The definition of each job that gets listed on the "todo:" section
 jobs:
-- name    : Some job
+- name      : Some job
 
   ## --- DEPS ---
 
-  deps    :
+  deps      :
   - Another job that needs to end successfully for this to run
   - name     : A job that has a dependency with Some job
     onSuccess: |
@@ -243,24 +243,24 @@ jobs:
 
   ### --- ERROR HANDLING ---
 
-  catch   : |
+  catch     : |
     // code to handle an "exception" variable
 
   ## --- EACH ---
 
-  each    :
+  each      :
   - Job to be called in parallel by executing the "each" function taking some args map as an argument
 
   ### --- PRE/POST INCLUDES ---
 
-  from    : 
+  from      : 
   - Other job execution before
-  to      :
+  to        :
   - Other job execution after
 
   ### --- HELP ---
 
-  help    :
+  help      :
     text   : The specific job help
     expects:
     - name: arg1
@@ -270,8 +270,8 @@ jobs:
 
   ### --- TYPE AND OPTIONS ---
 
-  type    : simple  # either simple, jobs, shutdown, subscribe and periodic (see more in typeArgs)
-  typeArgs:
+  type      : simple  # either simple, jobs, shutdown, subscribe and periodic (see more in typeArgs)
+  typeArgs  :
     noTemplateArgs: true # Boolean to indicate that any "{{ }}" handlebars entry on args should not be processed before the actual processing starts (defaults to ojob.templateArgs) 
     noTemplate    : false # Boolean to indicate if the "exec" contents should or not be parsed as a template with the current execution args (helpfull for shell or ssh langs)
     shellPrefix   : myprefix # When "lang: shell" or "lang: ssh" it will prefix all stdout lines immediatelly (if value equals an args property the property value will be used instead)
@@ -291,7 +291,7 @@ jobs:
     lockCh  : oJob::locks # If defined, changes the default locks OpenAF channel to use with "jobs[].typeArgs.lock"
     shortcut:
       name  : somejob   # defined a shortcut "(somejob)"
-      #nolog: true      # boolean to indicate if the execution shouldn't be logged 
+      nolog : true      # boolean to indicate if the execution shouldn't be logged 
       keyArg: arg0      # defined the argument associated with "(somejob)"
       args  : # mapping of shortcut args to job args
         arg1: _arg1    # defined as shortcut "((arg1))"
@@ -302,13 +302,13 @@ jobs:
     # -- type=simple (the basic default type)
     async: false # if true this specific job will always be executed async
     # -- type=jobs (executes other external ojobs)
-    #file : aLocalFile.yaml
-    #url  : ojob.io/external/url
+    file : aLocalFile.yaml      # only for type=jobs
+    url  : ojob.io/external/url # only for type=jobs
     # -- type=shutdown (executes on the ojob process shutdown if not killed)
     # -- type=subscribe (executes when there is a change on the provided OpenAF channel)
     chSubscribe: theOpenAFChannelToSubscribe
     # -- type=periodic (executes periodically on the provided interval / cron expression)
-    #timeInterval : # an interval of time in ms between executions in alternative to cron
+    timeInterval : # an interval of time in ms between executions in alternative to cron
     cron         : "*/5 * * * * *" # a cron expression
     waitForFinish: true # Boolean to indicate if a new execution should not be started if the previous is still executing
     eachThreads  : 50% # Percentage or number of threads to use for each execution (defaults to number of cores)
@@ -321,7 +321,7 @@ jobs:
 
   ## --- CHECKS ---
 
-  check   :
+  check     :
     # Checks the input provided in args before execution after processing all job.from if any
     in  :
       arg0 : isString  # forces to be a string with a value
@@ -338,20 +338,30 @@ jobs:
 
   ## --- CODE EXECUTION ---
 
-  #lang    : my-language  (built-in: winssh, ssh, js, oaf, python (requires python), shell, sh, powershell (requires powershell), go (requires go), ruby (requires ruby), perl (requires perl))
-  #file    : fileWithCode.cmdlang  # see "code:"
-  exec    : |
+  lang       : my-language  (built-in: winssh, ssh, js, oaf, python (requires python), shell, sh, powershell (requires powershell), go (requires go), ruby (requires ruby), perl (requires perl))
+  file       : fileWithCode.cmdlang  # see "code:"
+  exec       : |
     // A piece of code on the specified language (defaults to javascript OpenAF)
     // Using "args" variable and "job" variable
+
+  execRequire: # equivalent to typeArgs.execRequire
+  execFile   : # equivalent to typeArgs.file
   
 # === CODE SEPARATION ===
 # Map used to separate javascript OpenAF code from the "jobs:" section. 
 # Each map entry corresponds to a javascript libray (via the require function) filename which each job, on "jobs:" section, can include using the
-# "jobs[].typeArgs.execRequire" option. The contents should include a "exports.nameOfJob" function that will be called with the job's execution args.
+# "jobs[].typeArgs.execRequire" or the "jobs[].typeArgs.execFile" options. For execRequire the contents should include a "exports.nameOfJob" function 
+# that will be called with the job's execution args; for execFile the contents should be a direct replacement for jobs[].exec.
 # If the filename entry exists in the "code:" it will be prefered from the local filesystem version.
-# If the entry does not end with ".js" it won't be parsed and will be used to replace any jobs[].typeArgs.file for jobs[].typeArgs.type != 'jobs'
+# If the entry does not end with ".js" it will be used to replace any jobs[].typeArgs.file for jobs[].typeArgs.type != 'jobs'.
 code:
+  codeFileS.sh: |
+    echo Hello World!
+  codeFileB.js: |
+    // For execFile
+    print("Hello")
   codeFileA.js: |
+    // For execRequire
     (function() {
       exports["Example Job"] = function(args) {
           // TODO: code for example
