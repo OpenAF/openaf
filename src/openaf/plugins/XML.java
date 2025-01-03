@@ -3,14 +3,13 @@ package openaf.plugins;
 import java.io.IOException;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.XMLConstants;
+import javax.xml.transform.*;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
@@ -144,7 +143,23 @@ public class XML extends ScriptableObject {
 		DOMSource source = new DOMSource();
 		StringWriter writer = new StringWriter();
 		StreamResult result = new StreamResult(writer);
-		Transformer transformer = TransformerFactory.newInstance().newTransformer();
+
+		// Fixing security CWE-611
+
+		// Create a TransformerFactory and configure it for secure processing
+		TransformerFactory factory = TransformerFactory.newInstance();
+
+		// Enable secure processing
+		factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+		
+		// Disable access to external DTDs and stylesheets
+		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+
+		//Transformer transformer = TransformerFactory.newInstance().newTransformer();
+		// Create the Transformer from the factory
+		Transformer transformer = factory.newTransformer();
+
 		transformer.setOutputProperty(javax.xml.transform.OutputKeys.OMIT_XML_DECLARATION, "yes");
 
 		if (nodes instanceof NativeJavaObject) nodes = ((NativeJavaObject) nodes).unwrap();

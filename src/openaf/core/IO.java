@@ -69,27 +69,27 @@ public class IO extends ScriptableObject {
 		byte[] buf = new byte[4096];
 		
 		FileInputStream fis = new FileInputStream(aFile);
-		UniversalDetector detector = new UniversalDetector(null);
+		try {
+			UniversalDetector detector = new UniversalDetector(null);
 
-		if (fis != null) {
-			String encoding = null;
-			try {
+			if (fis != null) {
+				String encoding = null;
+
 				int nread;
 				while ((nread = fis.read(buf)) > 0 && !detector.isDone()) {
-				  detector.handleData(buf, 0, nread);
+					detector.handleData(buf, 0, nread);
 				}
 				detector.dataEnd();
 				encoding = detector.getDetectedCharset();
 				detector.reset();
-				fis.close();
-			} finally {
-				fis.close();
+	
+				return encoding;
 			}
-
-			return encoding;
+	
+			return null;
+		} finally {
+			if (fis != null) fis.close();
 		}
-
-		return null;
 	}
 	
 	/**
