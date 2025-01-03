@@ -209,15 +209,25 @@ public class FileResponse extends Response {
 				}
 			}
 
-			FileInputStream fis = new FileInputStream(f);
-			fis.skip(startFrom);
-			com.nwu.httpd.responses.Response r = new com.nwu.httpd.responses.SimpleResponse(
-					httpd, Codes.HTTP_OK, mime, fis);
-			r.addHeader("Content-length", "" + (f.length() - startFrom));
-			r.addHeader("Content-range", "" + startFrom + "-"
-					+ (f.length() - 1) + "/" + f.length());
-			fis.close();
-			return r;
+			FileInputStream fis = null;
+			try {
+				fis = new FileInputStream(f);
+				fis.skip(startFrom);
+				com.nwu.httpd.responses.Response r = new com.nwu.httpd.responses.SimpleResponse(
+						httpd, Codes.HTTP_OK, mime, fis);
+				r.addHeader("Content-length", "" + (f.length() - startFrom));
+				r.addHeader("Content-range", "" + startFrom + "-"
+						+ (f.length() - 1) + "/" + f.length());
+				return r;
+			} finally {
+				if (fis != null) {
+					try {
+						fis.close();
+					} catch (IOException e) {
+						// Log the exception or handle it as needed
+					}
+				}
+			}
 		} catch (IOException ioe) {
 			return new com.nwu.httpd.responses.SimpleResponse(httpd,
 					Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,

@@ -308,21 +308,55 @@ jobs:
       name  : set
       keyArg: __key
       args  :
-        path: __path
+        path        : __path
+        data        : __data
+        templateArgs: __templateArgs
+        debug       : __debug
   help : 
-    text   : Sets a "key" with the current value on a "path" using $set
+    text   : Sets a "key" with the current value on a "path", or provided data, using $set
     expects:
     - name: __key
       desc: Map key
     - name: __path
       desc: A key or path to a value from the current args
+    - name: __data
+      desc: If defined, will set the provided data (with templateArgs or not)
+    - name: __templateArgs
+      desc: If defined, will apply template to each entry in __data
+    - name: __debug
+      desc: If defined, will print the current args
   check:
     in:
-      __key : isString.default("res")
-      __path: isString
+      __key         : isString.default("res")
+      __path        : isString.default(__)
+      __data        : isMap.default(__)
+      __templateArgs: toBoolean.isBoolean.default(true)
+      __debug       : toBoolean.isBoolean.default(false)
   exec : |
-    var r = $path(args, args.__path)
-  
+    var r
+    if (isDef(args.__path)) {
+      r = $path(args, args.__path)
+    } else if (isDef(args.__data)) {
+      r = args.__data
+      if (args.__templateArgs) {
+        traverse(r, (aK, aV, aP, aO) => {
+          if (isNull(aV)) aO[aK] = __
+          if (isString(aV) && aV.indexOf("{{") >= 0) {
+            aO[aK] = templify(aV, args)
+          }
+        })
+      }
+    } else {
+      r = args
+    }
+
+    delete r.__key
+    delete r.__path
+    delete r.__data
+    delete r.__debug
+    delete r.__templateArgs
+    if (args.__debug) cprint( ow.format.withSideLine(printTreeOrS(r, __, { bgcolor: "BG(235)" }), __, "FG(240)", "BG(235)", ow.format.withSideLineThemes().openBottomCurvedRect) )
+
     if (isDef(r) && args.__key != "args") $set(args.__key, r)
 
     // Delete all __ args

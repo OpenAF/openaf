@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.zip.ZipFile;
 import java.util.Iterator;
+import java.util.HashMap;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -42,7 +43,6 @@ import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Callable;
 import org.mozilla.javascript.CompilerEnvirons;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJSON;
@@ -73,7 +73,6 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
-import com.warrenstrange.googleauth.GoogleAuthenticatorQRGenerator;
 import openaf.JSEngine.JSList;
 import openaf.JSEngine.JSMap;
 import openaf.SimpleLog.logtype;
@@ -791,6 +790,8 @@ public class AFBase extends ScriptableObject {
 		}
 	}
 	
+	protected static HashMap<URL[], URLClassLoader> loaders = new HashMap<URL[], URLClassLoader>();
+
 	/**
 	 * <odoc>
 	 * <key>af.externalPlugin(anArrayOfClasspathEntries, aPluginClass)</key>
@@ -806,12 +807,18 @@ public class AFBase extends ScriptableObject {
 			if (!(locs instanceof NativeArray)) return;
 			AFCmdBase.jse.enterContext();
 			for(Object loc : (NativeArray) locs) {
-				aURLs.add(new URL(Context.toString(loc)));
+				aURLs.add(new URI(Context.toString(loc)).toURL());
 			}
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+			URLClassLoader loader;
+			if (loaders.containsKey(urls)) {
+				loader = loaders.get(urls);
+			} else {
+				loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+				loaders.put(urls, loader);
+			}
 			@SuppressWarnings("rawtypes")
 			Class cl = Class.forName(clName, true, loader);
 			
@@ -832,6 +839,7 @@ public class AFBase extends ScriptableObject {
 	@SuppressWarnings("rawtypes")
 	@JSFunction
 	public Class<?> externalClass(Object locs, String clName) throws Exception {
+		URLClassLoader loader = null;
 		try {
 			ArrayList<URL> aURLs = new ArrayList<URL>();
 			if (!(locs instanceof NativeArray)) return null;
@@ -842,13 +850,17 @@ public class AFBase extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+			loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
 			Class<?> cl = Class.forName(clName, true, loader);
 			
 			return cl;
 		} catch (ClassNotFoundException | MalformedURLException e) {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "Cannot find class: " + clName + "; " + e.getMessage(), e);
 			throw e;
+		} finally {
+			if (loader != null) {
+				loader.close();
+			}
 		}
 	}
 	
