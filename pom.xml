@@ -55,7 +55,17 @@
     <dependency>
         <groupId>org.mozilla</groupId>
         <artifactId>rhino</artifactId>
-        <version>1.7.15</version>
+        <version>1.8.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.mozilla</groupId>
+        <artifactId>rhino-xml</artifactId>
+        <version>1.8.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.mozilla</groupId>
+        <artifactId>rhino-engine</artifactId>
+        <version>1.8.0</version>
     </dependency>
     <dependency>
       <groupId>de.vandermeer</groupId>
@@ -280,12 +290,12 @@
     <dependency>
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio</artifactId>
-      <version>3.9.1</version>
+      <version>3.10.2</version>
     </dependency>
     <dependency>
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio-jvm</artifactId>
-      <version>3.9.1</version>
+      <version>3.10.2</version>
     </dependency>
     <dependency>
       <groupId>dnsjava</groupId>
@@ -305,7 +315,7 @@
     <dependency>
       <groupId>com.github.mwiede</groupId>
       <artifactId>jsch</artifactId>
-      <version>0.2.21</version>
+      <version>0.2.22</version>
     </dependency>
     <dependency>
       <groupId>com.github.vertical-blank</groupId>
