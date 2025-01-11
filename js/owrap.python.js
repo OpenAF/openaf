@@ -3,13 +3,22 @@
 // Python
 
 OpenWrap.python = function() {
-    var pen = getEnv("OAF_PYTHON");
+    var pen = getEnv("OAF_PYTHON")
+	var penVer = getEnv("OAF_PYTHON_VER")
+	
     if (isDef(pen) && pen != "null") {
-		this.python = pen; 
+		this.python = pen
 	} else {
-		this.python = "python";
+		this.python = "python"
 	}
-	this.reset(true, isDef(pen) && pen != "null");
+
+	if (isDef(penVer) && penVer != "null") {
+		this.version = penVer
+	} else {
+		this.version = 3
+	}
+
+	//this.reset(true, isDef(pen) && pen != "null");
 	this.cServer = $atomic();
 	this.running = false;
 	this.mode = "embedded"
@@ -351,7 +360,7 @@ OpenWrap.python.prototype.exec = function(aPythonCode, aInput, aOutputArray, thr
 	if (isMap(res) && isDef(res.stdout) && res.stdout.indexOf(delim) >= 0) {
 		rres = res.stdout.split(new RegExp("^" + delim + "\r?\n", "mg"));
 	}
-	if (isDef(rres[0]) && rres[0] != "") print(rres[0]);
+	if (isDef(rres[0]) && rres[0] != "") printnl(rres[0])
 	if (isDef(res.stderr) && res.stderr != "") {
 		if (throwExceptions) {
 			printErr(res.stderr);

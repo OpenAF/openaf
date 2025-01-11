@@ -15,6 +15,7 @@ F___daemon=1
 F___script=1
 F___force=1
 F___sb=1
+F___py=1
 F__h=1
 F__v=1
 F__helpscript=1
@@ -52,6 +53,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "--force" ]; then FFOUND=1; F___force=0; fi
     # --sb single option
     if [ "$arg" = "--sb" ]; then FFOUND=1; F___sb=0; fi
+    # --py single option
+    if [ "$arg" = "--py" ]; then FFOUND=1; F___py=0; fi
     # -h single option
     if [ "$arg" = "-h" ]; then FFOUND=1; F__h=0; fi
     # -v single option
@@ -129,6 +132,11 @@ fi
 # Print completion for --sb
 if [ $F___sb -eq 1 ]; then
   echo "--sb	generates or pre-appends openaf/ojob shebang to a js script or ojob yaml/json"
+  
+fi
+# Print completion for --py
+if [ $F___py -eq 1 ]; then
+  echo "--py	runs a python script with openaf extensions"
   
 fi
 # Print completion for -h
