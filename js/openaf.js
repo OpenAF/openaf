@@ -9238,7 +9238,7 @@ AF.prototype.fromSLON = function(aString) {
  * </odoc>
  */
 AF.prototype.fromJSSLON = function(aString) {
-	if (!isString(aString) || aString == "" || isNull(aString)) return {}
+	if (!isString(aString) || aString == "" || isNull(aString)) return aString
 
 	try {
 		aString = aString.trim()
