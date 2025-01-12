@@ -2981,7 +2981,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 	var aQto  = aOptions.qto
 	
 	var res = {}, isK = true, isV = false, isQ = false, buf = "", k = __, v = __
-	aString = aString.trim()
+	aString = aString.trimStart()
 
 	for(var i = 0; i < aString.length; i++) {
 		// ignore more than one separator
@@ -3033,6 +3033,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 			// Unless it's escape keep it
 			if (aString[i] != aEsc || (i < aString.length && aString[i+1] != aSep && aString[i+1] != "\"" && aString[i+1] != "'")) buf += aString[i]
 		}
+		print("buf = '" + buf + "'")
 	}
 	if (buf.length > 0) {
 		if (isK) { k = buf; v = __ }
