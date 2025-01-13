@@ -86,6 +86,7 @@ public class AFCmdOS extends AFCmdBase {
 	final protected static String OPTION_VERSION = "-v";
 	final protected static String OPTION_SB = "--sb";
 	final protected static String OPTION_PY = "--py";
+	final protected static String OPTION_OAFPY = "--oafpy";
 	final protected static String OPTION_INTERPRET = "--i";
 	final protected static String PREFIX_SCRIPT = "script:";
 	final protected static String OPACK = ".package.json";
@@ -379,6 +380,13 @@ public class AFCmdOS extends AFCmdBase {
 				INPUT_TYPE = inputtype.INPUT_SCRIPT;
 				injectclass = true;
 				injectclassfile = "genScripts_js";
+				continue;
+			case OPTION_OAFPY:
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				injectclass = true;
+				injectclassfile = "oafpy_js";
 				continue;
 			case OPTION_UPDATE:
 				//update();
