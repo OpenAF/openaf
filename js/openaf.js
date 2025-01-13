@@ -8997,9 +8997,9 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) {
 				s = s.replace(/^(\-|\s+\-)(.+)/, ansiColor(__colorFormat.default, "$1") + fn("$2", s.replace(/^(\-|\s+\-)(.+)/, "$2")))
 				change = true
 			}
-			if (!change && /^([^(\#|\/\/|\:)]+)\:( +.*)?$/.test(s)) {
+			if (!change && /^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/.test(s)) {
 				// key with value
-				s = s.replace(/^([^(\#|\/\/|\:)]+)\:( +.*)?$/, ansiColor(__colorFormat.key, "$1:") + fn("$2", s.replace(/^([^(\#|\/\/|\:)]+)\:( +.*)?$/, "$2")))
+				s = s.replace(/^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/, ansiColor(__colorFormat.key, "$1:") + fn("$2", s.replace(/^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/, "$2")))
 				change = true
 			} 
 			/*if (/((\#|\/\/)+.+)$/.test(s)) {
