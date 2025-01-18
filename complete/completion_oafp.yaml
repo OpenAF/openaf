@@ -40,11 +40,31 @@ complete:
     desc: A Java hsperfdata* file -requires file=hsperfdata_user/123-
   - name: in=ini
     desc: INI/Properties format
+  - name: in=javas
+    desc: Tries to list java processes running locally
+    opts:
+    - name: javasinception=
+      desc: If true will include also oafp itself
   - name: in=javagc
     desc: A Java GC log text file format
     opts:
     - name: javagcjoin=
       desc: If true it will return an array with each processed line.
+  - name: in=jmx
+    desc: Uses Java JMX to retrieve data from another Java process
+    opts:
+    - name: jmxpid=
+      desc: The PID of the Java process to connect to
+    - name: jmxurl=
+      desc: The JMX URL to connect to
+    - name: jmxuser=
+      desc: The JMX user to connect to
+    - name: jmxpass=
+      desc: The JMX password to connect to
+    - name: jmxprovider=
+      desc: The JMX Java class provider to use
+    - name: jmxop=
+      desc: The JMX operation to execute between 'all', 'domains', 'query' and 'get'
   - name: in=json
     desc: A JSON format -auto-detected-
     opts:
