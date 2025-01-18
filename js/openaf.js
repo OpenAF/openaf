@@ -10629,7 +10629,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
     if (__flags.ANSICOLOR_ASK) {
 		anArray = clone(anArray)
 		plugin("Console")
-        let _con = new Console(), _maxl = con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
+        let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
 		anArray = anArray.map(l => {
 			if (l.length + _maxls >= _maxl)
 				return l.substring(0, _maxl - _maxls - 4) + "..."
@@ -10735,7 +10735,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
     if (__flags.ANSICOLOR_ASK) {
 		aSelectMap = new Map()
 		plugin("Console")
-		let _con = new Console(), _maxl = con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize) + chooseMultipleSize
+		let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize) + chooseMultipleSize
 		anArray = anArray.map(l => {
 			if (l.length + _maxls >= _maxl)
 				return l.substring(0, _maxl - _maxls - 4) + "..."
