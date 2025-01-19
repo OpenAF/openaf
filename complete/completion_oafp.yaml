@@ -155,6 +155,21 @@ complete:
       desc: If true instead of returning a SQL AST representation it will beautify the SQL statements
     - name: sqloptions=
       desc: A JSON/SLON map with options for sqlparse=true
+  - name: in=snmp
+    desc: Retrieves data from a SNMP device
+    opts:
+    - name: insnmp=
+      desc: The SNMP address 'udp://1.2.3.4/161'
+    - name: insnmpcommunity=
+      desc: The SNMP community
+    - name: insnmpversion=
+      desc: The SNMP version -1, 2, 3-
+    - name: insnmptimeout=
+      desc: The SNMP timeout
+    - name: insnmpretries=
+      desc: The SNMP retries
+    - name: insnmpsec=
+      desc: JSON/SLON map with SNMPv3 security options
   - name: in=toml
     desc: TOML format
   - name: in=xls
