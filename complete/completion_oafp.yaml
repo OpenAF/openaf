@@ -597,3 +597,15 @@ complete:
     desc: sBucket bucket name
   - name: secRepo=
     desc: sBucket repository
+- name: xjs=
+  desc: A .js file with function code manipulating an input 'args'. Returns the transformed 'args' variable
+- name: xpy=
+  desc: A .py file with Python function code manipulating an input 'args'. Returns the transformed 'args' variable
+- name: xfn=
+  desc: A javascript code, receiving input as 'args' and return it's code evaluation
+- name: xrjs=
+  desc: A .js file with function code to manipulate each input array record as 'args'. Returns the transformed 'args' record
+- name: xrpy=
+  desc: A .py file with function code to manipulate each input array record as 'args'. Returns the transformed 'args' record
+- name: xrfn=
+  desc: A javascript code, receiving each input array record as 'args' and return it's code evaluation
