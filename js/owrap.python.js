@@ -40,7 +40,7 @@ OpenWrap.python.prototype.initCode = function(includeCoding) {
 		s += "   s.sendall(bytearray(json.dumps(sR) + '\\n', 'utf-8'))\n";
 		s += "   res = ''\n";
 		s += "   while True:\n";
-		s += "      data = s.recv(1024).decode('utf-8')\n";
+		s += "      data = s.recv(4096).decode('utf-8', errors='replace')\n";
 		s += "      if not data:\n";
 		s += "         break\n";
 		s += "      res += data\n";
