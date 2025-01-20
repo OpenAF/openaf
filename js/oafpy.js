@@ -11,14 +11,17 @@ if (isDef(getEnv("PATH")) && getEnv("PATH").indexOf(getOpenAFPath()) >= 0) {
 // The Python code for oaf.py
 var oafpy = `# oaf.py
 # Store this as oaf.py in the same directory as the script or as oaf/__init__.py in a package directory
-#
+# ---
+# import oaf
+# from oaf import _, _d, _oaf, _g, _s
+# ---
 
 import subprocess
 import atexit
 
 # Start the openaf process in the background
 proc = subprocess.Popen(
-   ["${openafExec}", "-c", "ow.loadPython().startServer(__,__,__,true);print(ow.python.initCode()+'\\java\\n----')"],
+   ["${openafExec}", "-c", "ow.loadPython().startServer(__,__,__,true);print(ow.python.initCode()+'\\\\n----')"],
    stdout=subprocess.PIPE,
    stderr=subprocess.STDOUT,
    text=True
