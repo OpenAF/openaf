@@ -502,6 +502,12 @@ complete:
     desc: If true and the input is text based will perfom the diff at the sentence level
   - name: diffchars=
     desc: If true and the input is text based will perform the diff at the char level
+- name: field2byte=
+  desc: A comma delimited list of fields whose value should be converted to a byte abbreviation
+- name: field2date=
+  desc: A comma delimited list of fields whose value should be converted to date values
+- name: field2si=
+  desc: A comma delimited list of fields whose value should be converted to a SI abbreviation
 - name: flatmap=
   desc: If true a map structure will be flat to just one level -optionally flatmapsep=[char] to use a different separator that '.'-
 - name: getlist=
@@ -609,3 +615,5 @@ complete:
   desc: A .py file with function code to manipulate each input array record as 'args'. Returns the transformed 'args' record
 - name: xrfn=
   desc: A javascript code, receiving each input array record as 'args' and return it's code evaluation
+- name: val2icon= 
+  desc: If true will transform undefined, null and boolean values to emoticons
