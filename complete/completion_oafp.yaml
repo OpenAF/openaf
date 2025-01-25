@@ -616,4 +616,4 @@ complete:
 - name: xrfn=
   desc: A javascript code, receiving each input array record as 'args' and return it's code evaluation
 - name: val2icon= 
-  desc: If true will transform undefined, null and boolean values to emoticons
+  desc: If defined will transform undefined, null and boolean values to emoticons -values can be 'default' or 'simple'-
