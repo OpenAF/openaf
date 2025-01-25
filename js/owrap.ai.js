@@ -81,6 +81,13 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
     }
 }
 
+// | type      | chat | tooling | image | list | genimg |
+// |-----------|------|---------|-------|------|--------|
+// | openai    | ✔    | ✔       | ✔     | ✔    | ✔      |
+// | gemini    | ✔    | ✔       | ✔     | ✔    | ✖      |
+// | ollama    | ✔    | ✔       | ✔     | ✔    | ✖      |
+// | anthropic | ✔    | ✔       | ✖     | ✔    | ✖      |
+
 OpenWrap.ai.prototype.__gpttypes = {
     openai: {
         create: (aOptions) => {
