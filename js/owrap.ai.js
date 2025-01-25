@@ -165,7 +165,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
@@ -339,7 +339,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
             var _r = {
                 conversation: [],
-                tools: {},
+                tools: [],
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -348,7 +348,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 setTool: (aName, aDesc, aParams, aFn) => {
-                    throw "Not supported yet"
+                    _r.tools.push( {
+                        name: aName,
+                        description: aDesc,
+                        parameters: aParams,
+                        fn: aFn
+                    } )
                     return _r
                 },
                 prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
@@ -364,31 +369,38 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aRole        = _$(aRole, "aRole").isString().default("user")
                     aDetailLevel = _$(aDetailLevel, "aDetailLevel").isString().default("low")
 
-                    var base64 = ""
-                    if (io.fileExists(aImage)) {
-                        base64 = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(aImage)))
-                    } else {
-                        if (isString(aImage)) {
-                            base64 = aImage
-                        }
-                    }
+                    if (!isArray(aImage)) aImage = [ aImage ]
 
-                    aMime = "image/jpeg"
-                    switch(aImage.substring(aImage.lastIndexOf(".") + 1).toLowerCase()) {
-                    case "png": aMime = "image/png"; break
-                    case "webp": aMime = "image/webp"; break
-                    case "heic": aMime = "image/heic"; break
-                    case "webp": aMime = "image/webp"; break
-                    default: aMime = "image/jpeg"
-                    }
-                    var body = [{
+                    var body = [ {
                         text: aPrompt
-                    }, {
-                        inline_data: {
-                            mime_type: aMime,
-                            data: base64
+                    } ]
+
+                    aImage.forEach(r => {
+                        var base64 = ""
+                        if (io.fileExists(r)) {
+                            base64 = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(r)))
+                        } else {
+                            if (isString(r)) {
+                                base64 = r
+                            }
                         }
-                    }]
+
+                        aMime = "image/jpeg"
+                        switch(r.substring(r.lastIndexOf(".") + 1).toLowerCase()) {
+                        case "png": aMime = "image/png"; break
+                        case "webp": aMime = "image/webp"; break
+                        case "heic": aMime = "image/heic"; break
+                        case "webp": aMime = "image/webp"; break
+                        default: aMime = "image/jpeg"
+                        }
+
+                        body.push({
+                            inline_data: {
+                                mime_type: aMime,
+                                data: base64
+                            }
+                        })
+                    })
                     
                     var __r = _r.rawPrompt(body, aModel, aTemperature, aJsonFlag)
 
@@ -404,34 +416,63 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
-                    if (isString(aPrompt)) aPrompt = [ { text: aPrompt } ]
+                    if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
                     aPrompt = _r.conversation.filter(r => isUnDef(r.role) || r.role != "system").map(r => ({ text: r.text })).concat(aPrompt)
-                    msgs = aPrompt.map(c => isMap(c) ? c : { text: c })
+                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", parts: [ { text: c } ] })
                  
                     var body = {
                         system_instruction: { parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ) },
-                        contents: [
-                            { parts: msgs }
-                        ],
+                        contents: msgs,
                         generationConfig: {
                             temperature: aTemperature
                         }
                     }
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
+                    if (isDef(aTools)) {
+                        var sTools = clone(aTools)
+                        // remove functions
+                        traverse(sTools, (aK, aV, aP, aO) => {
+                            if (aK == 'fn') delete aO[aK]
+                        })
+                        body = merge(body, { tools: [ { functionDeclarations: sTools } ] })
+                    }
                     body = merge(body, aOptions.params)
 
                     var _res = _r._request("models/" + aModel + ":generateContent", body)   
                     if (isDef(_res) && isArray(_res.candidates)) {
                         // call tools
-                        var _p = [], stopWith = false
+                        var _p = msgs, stopWith = false
                         _res.candidates.forEach(tc => {
                             if (isArray(tc.content.parts) && tc.finishReason == "STOP") {
-                                _p.push({ role: "model", content: tc.content })
                                 stopWith = true
+                                tc.content.parts.forEach(p => {
+                                    if (isDef(p.functionCall)) {
+                                        _p.push({ role: "model", parts: [{
+                                            functionCall: {
+                                                name: p.functionCall.name,
+                                                args: p.functionCall.args
+                                            }
+                                        }]})
+                                        var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
+                                        var _tr = stringify(_t.fn(p.functionCall.args), __, "")
+                                        _p.push({ role: "user", parts: [{
+                                            functionResponse: {
+                                                name: p.functionCall.name,
+                                                response: {
+                                                    name: p.functionCall.name,
+                                                    content: _tr
+                                                }
+                                            }
+                                        }]})
+                                        stopWith = false
+                                    } else {
+                                        _p.push(p)
+                                    }
+                                })
                             }
                         })
                         if (stopWith)
@@ -614,7 +655,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
@@ -812,7 +853,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
