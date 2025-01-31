@@ -56,7 +56,11 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 			AFCmdBase.jse.exitContext();
 		}
 
-		return ((Double) ret).intValue();
+		if (ret instanceof Double) {
+			return ((Double) ret).intValue();
+		} else {
+			return (int) ret;
+		}
 	}
 
 	public static int[] longestWord(V2_AsciiTable table) {

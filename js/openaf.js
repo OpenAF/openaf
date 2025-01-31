@@ -2981,7 +2981,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 	var aQto  = aOptions.qto
 	
 	var res = {}, isK = true, isV = false, isQ = false, buf = "", k = __, v = __
-	aString = aString.trim()
+	aString = aString.trimStart()
 
 	for(var i = 0; i < aString.length; i++) {
 		// ignore more than one separator
@@ -8997,9 +8997,9 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) {
 				s = s.replace(/^(\-|\s+\-)(.+)/, ansiColor(__colorFormat.default, "$1") + fn("$2", s.replace(/^(\-|\s+\-)(.+)/, "$2")))
 				change = true
 			}
-			if (!change && /^([^(\#|\/\/|\:)]+)\:( +.*)?$/.test(s)) {
+			if (!change && /^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/.test(s)) {
 				// key with value
-				s = s.replace(/^([^(\#|\/\/|\:)]+)\:( +.*)?$/, ansiColor(__colorFormat.key, "$1:") + fn("$2", s.replace(/^([^(\#|\/\/|\:)]+)\:( +.*)?$/, "$2")))
+				s = s.replace(/^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/, ansiColor(__colorFormat.key, "$1:") + fn("$2", s.replace(/^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/, "$2")))
 				change = true
 			} 
 			/*if (/((\#|\/\/)+.+)$/.test(s)) {
@@ -10627,6 +10627,16 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let filter = ""
 
     if (__flags.ANSICOLOR_ASK) {
+		anArray = clone(anArray)
+		plugin("Console")
+        let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
+		anArray = anArray.map(l => {
+			if (l.length + _maxls >= _maxl)
+				return l.substring(0, _maxl - _maxls - 4) + "..."
+			else
+				return l
+		})
+
         if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
         printErr("\x1B[?25l" + _v)
@@ -10640,14 +10650,14 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                      .map((l, i) => {
                         if (i >= span && i - span < aMaxDisplay) {
                             if (i == option) {
-								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize, " "))
+								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize -1, " "))
 								if (filter.length > 0) {
 									_l = _l.replace(filter, ansiColor(__colorFormat.askChooseFilter, filter))
 								}
                                 return _l
                             } else {
                                 var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
-                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + chooseDirSize, " "))
+                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + chooseDirSize -1, " "))
                             }
                         }
                         return ""
@@ -10658,8 +10668,7 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
             print(_o)
         }
 
-        plugin("Console")
-        let c = 0, _con = new Console()
+        let c = 0
         do {
             _print()
 			var _c = _con.readChar("")
@@ -10683,11 +10692,12 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 				}
 			}
         } while (c != 13 && c != 10)
+		ow.format.string.ansiMoveUp(aMaxDisplay)
+		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printErrnl(repeat(_v.length, " ") + "\r")
 		printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
-        printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
-        ow.format.string.ansiMoveUp(aMaxDisplay+2)
+        ow.format.string.ansiMoveUp(2)
 		printErr("\x1B[?25h\n")
 
         return option
@@ -10724,6 +10734,14 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 
     if (__flags.ANSICOLOR_ASK) {
 		aSelectMap = new Map()
+		plugin("Console")
+		let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize) + chooseMultipleSize
+		anArray = anArray.map(l => {
+			if (l.length + _maxls >= _maxl)
+				return l.substring(0, _maxl - _maxls - 4) + "..."
+			else
+				return l
+		})
 		anArray.forEach(v => aSelectMap.set(v, false) )
 
         if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
@@ -10739,14 +10757,14 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
                         if (i >= span && i - span < aMaxDisplay) {
 							selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
                             if (i == option) {
-								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize, " "))
+								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize -5, " "))
 								if (filter.length > 0) {
 									_l = _l.replace(filter, ansiColor(__colorFormat.askChooseFilter, filter))
 								}
                                 return _l
                             } else {
                                 var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
-                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseDirSize + chooseMultipleSize, " "))
+                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseDirSize + chooseMultipleSize -5, " "))
                             }
                         }
                         return ""
@@ -10757,8 +10775,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
             printErr(_o)
         }
 
-        plugin("Console")
-        let c = 0, _con = new Console()
+        let c = 0
         do {
             _print()
 			var _c = _con.readChar("")
@@ -10784,14 +10801,16 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 				}
 			}
         } while (c != 13 && c != 10)
+		ow.format.string.ansiMoveUp(aMaxDisplay)
+		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
         ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printErrnl(repeat(_v.length, " ") + "\r")
 
 		let options = []
 		aSelectMap.forEach((v, k) => { if (v) options.push(k) })
 		printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
-        printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
-        ow.format.string.ansiMoveUp(aMaxDisplay+2)
+
+        ow.format.string.ansiMoveUp(2)
 		printErr("\x1B[?25h\n")
 
         return options

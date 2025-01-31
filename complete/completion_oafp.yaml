@@ -40,11 +40,31 @@ complete:
     desc: A Java hsperfdata* file -requires file=hsperfdata_user/123-
   - name: in=ini
     desc: INI/Properties format
+  - name: in=javas
+    desc: Tries to list java processes running locally
+    opts:
+    - name: javasinception=
+      desc: If true will include also oafp itself
   - name: in=javagc
     desc: A Java GC log text file format
     opts:
     - name: javagcjoin=
       desc: If true it will return an array with each processed line.
+  - name: in=jmx
+    desc: Uses Java JMX to retrieve data from another Java process
+    opts:
+    - name: jmxpid=
+      desc: The PID of the Java process to connect to
+    - name: jmxurl=
+      desc: The JMX URL to connect to
+    - name: jmxuser=
+      desc: The JMX user to connect to
+    - name: jmxpass=
+      desc: The JMX password to connect to
+    - name: jmxprovider=
+      desc: The JMX Java class provider to use
+    - name: jmxop=
+      desc: The JMX operation to execute between 'all', 'domains', 'query' and 'get'
   - name: in=json
     desc: A JSON format -auto-detected-
     opts:
@@ -109,6 +129,9 @@ complete:
     desc: Takes an OpenAF scripting code to execute and use the result as input
   - name: in=oafp
     desc: Takes a JSON/SLON map input as parameters for calling a sub oafp process -arrays will call multiple oafp processes-
+    opts:
+    - name: inoafpseq=
+      desc: If true and if input is an array the oafp processes will be executed in sequence
   - name: in=openmetrics
     desc: An OpenMetrics/Prometheus compatible format
   - name: in=raw
@@ -132,6 +155,21 @@ complete:
       desc: If true instead of returning a SQL AST representation it will beautify the SQL statements
     - name: sqloptions=
       desc: A JSON/SLON map with options for sqlparse=true
+  - name: in=snmp
+    desc: Retrieves data from a SNMP device
+    opts:
+    - name: insnmp=
+      desc: The SNMP address 'udp://1.2.3.4/161'
+    - name: insnmpcommunity=
+      desc: The SNMP community
+    - name: insnmpversion=
+      desc: The SNMP version -1, 2, 3-
+    - name: insnmptimeout=
+      desc: The SNMP timeout
+    - name: insnmpretries=
+      desc: The SNMP retries
+    - name: insnmpsec=
+      desc: JSON/SLON map with SNMPv3 security options
   - name: in=toml
     desc: TOML format
   - name: in=xls
@@ -464,6 +502,12 @@ complete:
     desc: If true and the input is text based will perfom the diff at the sentence level
   - name: diffchars=
     desc: If true and the input is text based will perform the diff at the char level
+- name: field2byte=
+  desc: A comma delimited list of fields whose value should be converted to a byte abbreviation
+- name: field2date=
+  desc: A comma delimited list of fields whose value should be converted to date values
+- name: field2si=
+  desc: A comma delimited list of fields whose value should be converted to a SI abbreviation
 - name: flatmap=
   desc: If true a map structure will be flat to just one level -optionally flatmapsep=[char] to use a different separator that '.'-
 - name: getlist=
@@ -559,3 +603,17 @@ complete:
     desc: sBucket bucket name
   - name: secRepo=
     desc: sBucket repository
+- name: xjs=
+  desc: A .js file with function code manipulating an input 'args'. Returns the transformed 'args' variable
+- name: xpy=
+  desc: A .py file with Python function code manipulating an input 'args'. Returns the transformed 'args' variable
+- name: xfn=
+  desc: A javascript code, receiving input as 'args' and return it's code evaluation
+- name: xrjs=
+  desc: A .js file with function code to manipulate each input array record as 'args'. Returns the transformed 'args' record
+- name: xrpy=
+  desc: A .py file with function code to manipulate each input array record as 'args'. Returns the transformed 'args' record
+- name: xrfn=
+  desc: A javascript code, receiving each input array record as 'args' and return it's code evaluation
+- name: val2icon= 
+  desc: If defined will transform undefined, null and boolean values to emoticons -values can be 'default' or 'simple'-

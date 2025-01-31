@@ -342,6 +342,7 @@ var unixScript, unixSB, unixSBoJob, unixSBoafp, unixPackScript, unixJobScript, u
   unixSBoJob = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
   unixPackScript = generateUnixScript("--opack -e \"$*\"")
   unixJobScript = generateUnixScript("--ojob -e \"$SCRIPT $ARGS\"", true)
+  unixPyScript = generateUnixScript("--py -e \"$SCRIPT $ARGS\"", true)
   unixConsoleScript = generateUnixScript("--console \"$@\"", __, __, true)
   unixOAFPScript = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"$ARGS\"")
   unixSBoafp = generateUnixScript("-c \"load(getOpenAFJar()+'::js/oafp.js')\" -e \"_shebang=true $OAFP_ARGS $ARGS\"")
@@ -369,6 +370,7 @@ try {
   io.writeFileString(curDir + "/oafp-sb", unixSBoafp)
   io.writeFileString(curDir + "/opack", unixPackScript);
   io.writeFileString(curDir + "/ojob", unixJobScript);
+  io.writeFileString(curDir + "/pyoaf", unixPyScript)
   io.writeFileString(curDir + "/openaf-console", unixConsoleScript);
   io.writeFileString(curDir + "/oafc", unixConsoleScript);
   if (isUnDef(getOPackPath("oafproc"))) io.writeFileString(curDir + "/oafp", unixOAFPScript)
@@ -387,6 +389,7 @@ if (windows == 0) {
     sh("chmod a+x " + curDir + "/oafp-sb", "", null, false)
 	  sh("chmod a+x " + curDir + "/opack", "", null, false);
 	  sh("chmod a+x " + curDir + "/ojob", "", null, false);
+    sh("chmod a+x " + curDir + "/pyoaf", "", null, false)
 	  sh("chmod a+x " + curDir + "/openaf-console", "", null, false);
 	  sh("chmod a+x " + curDir + "/oafc", "", null, false);
     sh("chmod a+x " + curDir + "/oafp", "", null, false)

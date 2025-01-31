@@ -27,6 +27,8 @@ complete:
   desc: forces an update
 - name: --sb
   desc: generates or pre-appends openaf/ojob shebang to a js script or ojob yaml/json
+- name: --py
+  desc: runs a python script with openaf extensions
 - name: -h
   desc: show this help information
 - name: -v 
