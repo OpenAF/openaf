@@ -2965,7 +2965,7 @@ OpenWrap.server.prototype.httpd = {
 	 */
 	getMimeType: function(aFilename) {
 		var ext = String(Packages.org.apache.commons.io.FilenameUtils.getExtension(aFilename)).toUpperCase();
-		if (isDefined(ow.server.httpd.mimes[ext])) {
+		if (isDef(ow.server.httpd.mimes[ext])) {
 			return ow.server.httpd.mimes[ext];
 		} else {
 			return "application/octet-stream";
@@ -3208,13 +3208,14 @@ OpenWrap.server.prototype.httpd = {
 		"CSS": "text/css; charset=utf-8",
 		"JS": "application/javascript; charset=utf-8",
 		"JSON": "application/json; charset=utf-8",
-		"YAML": "application/x-yaml; charset=utf-8",
+		//"YAML": "application/x-yaml; charset=utf-8",
 		"JAR": "application/java-archive",
 		"ZIP": "application/zip",
 		"XML": "application/xml; charset=utf-8",
 		"TXT": "text/plain; charset=utf-8",
 		"RTF": "text/richtext; charset=utf-8",
 		"JPG": "image/jpeg",
+		"JPEG": "image/jpeg",
 		"PNG": "image/png",
 		"GIF": "image/gif",
 		"TTF": "font/truetype",
@@ -3222,7 +3223,18 @@ OpenWrap.server.prototype.httpd = {
 		"SVG": "image/svg+xml",
 		"EOT": "application/vnd.ms-fontobject",
 		"BIN": "application/octet-stream",
-		"ICO": "image/x-icon"
+		"ICO": "image/x-icon",
+		"YML": "text/yaml",
+		"YAML": "text/yaml",
+		"LOG": "text/plain",
+		"PY": "text/x-python",
+		"JAVA": "text/x-java-source",
+		"CSV": "text/csv",
+		"INI": "text/plain",
+		"NDJSON": "application/x-ndjson",
+		"SLON": "text/plain",
+		"SQL": "text/plain",
+		"TOML": "text/plain"
 	},
 
 	/**

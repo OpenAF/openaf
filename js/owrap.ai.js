@@ -81,6 +81,13 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
     }
 }
 
+// | type      | chat | tooling | image | list | genimg |
+// |-----------|------|---------|-------|------|--------|
+// | openai    | ✔    | ✔       | ✔     | ✔    | ✔      |
+// | gemini    | ✔    | ✔       | ✔     | ✔    | ✖      |
+// | ollama    | ✔    | ✔       | ✔     | ✔    | ✖      |
+// | anthropic | ✔    | ✔       | ✖     | ✔    | ✖      |
+
 OpenWrap.ai.prototype.__gpttypes = {
     openai: {
         create: (aOptions) => {
@@ -165,7 +172,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
@@ -339,7 +346,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
             var _r = {
                 conversation: [],
-                tools: {},
+                tools: [],
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -348,7 +355,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 setTool: (aName, aDesc, aParams, aFn) => {
-                    throw "Not supported yet"
+                    _r.tools.push( {
+                        name: aName,
+                        description: aDesc,
+                        parameters: aParams,
+                        fn: aFn
+                    } )
                     return _r
                 },
                 prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
@@ -364,63 +376,110 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aRole        = _$(aRole, "aRole").isString().default("user")
                     aDetailLevel = _$(aDetailLevel, "aDetailLevel").isString().default("low")
 
-                    throw "Not supported yet"
-                    return __r
+                    if (!isArray(aImage)) aImage = [ aImage ]
+
+                    var body = [ {
+                        text: aPrompt
+                    } ]
+
+                    aImage.forEach(r => {
+                        var base64 = ""
+                        if (io.fileExists(r)) {
+                            base64 = af.fromBytes2String(af.toBase64Bytes(io.readFileBytes(r)))
+                        } else {
+                            if (isString(r)) {
+                                base64 = r
+                            }
+                        }
+
+                        aMime = "image/jpeg"
+                        switch(r.substring(r.lastIndexOf(".") + 1).toLowerCase()) {
+                        case "png": aMime = "image/png"; break
+                        case "webp": aMime = "image/webp"; break
+                        case "heic": aMime = "image/heic"; break
+                        case "webp": aMime = "image/webp"; break
+                        default: aMime = "image/jpeg"
+                        }
+
+                        body.push({
+                            inline_data: {
+                                mime_type: aMime,
+                                data: base64
+                            }
+                        })
+                    })
+                    
+                    var __r = _r.rawPrompt(body, aModel, aTemperature, aJsonFlag)
+
+                    if (isArray(__r.candidates) && isArray(__r.candidates[0].content.parts) && __r.candidates[0].content.parts.length > 0) {
+                        if (__r.candidates[0].finishReason == "STOP") {
+                           return __r.candidates[0].content.parts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                        }
+                     }
+                     return __r
                 },
                 rawPrompt: (aPrompt, aModel, aTemperature, aJsonFlag, aTools) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
-                    if (isString(aPrompt)) aPrompt = [ { text: aPrompt } ]
+                    if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
                     aPrompt = _r.conversation.filter(r => isUnDef(r.role) || r.role != "system").map(r => ({ text: r.text })).concat(aPrompt)
-                    msgs = aPrompt.map(c => isMap(c) ? c : { text: c })
+                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", parts: [ { text: c } ] })
                  
-                    //if (aJsonFlag) msgs.unshift({ role: "system", content: "output json" })
                     var body = {
                         system_instruction: { parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ) },
-                        contents: [
-                            { parts: msgs }
-                        ],
+                        contents: msgs,
                         generationConfig: {
                             temperature: aTemperature
                         }
                     }
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
-                    body = merge(body, aOptions.params)
-                    /*if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools.map(t => {
-                            var _t = _r.tools[t].function
-                            return {
-                                type: "function",
-                                function: {
-                                    name: _t.name,
-                                    description: _t.description,
-                                    parameters: _t.parameters
-                                }
-                            }
+                    if (isDef(aTools)) {
+                        var sTools = clone(aTools)
+                        // remove functions
+                        traverse(sTools, (aK, aV, aP, aO) => {
+                            if (aK == 'fn') delete aO[aK]
                         })
-                    }*/
+                        body = merge(body, { tools: [ { functionDeclarations: sTools } ] })
+                    }
+                    body = merge(body, aOptions.params)
+
                     var _res = _r._request("models/" + aModel + ":generateContent", body)   
                     if (isDef(_res) && isArray(_res.candidates)) {
                         // call tools
-                        var _p = [], stopWith = false
+                        var _p = msgs, stopWith = false
                         _res.candidates.forEach(tc => {
-                            /*if (isDef(tc.text) && isArray(tc.message.tool_calls)) {
-                                tc.message.tool_calls.forEach(tci => {
-                                    var _t = _r.tools[tci.function.name]
-                                    var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
-                                    _p.push({ role: "assistant", tool_calls: [ tci ]})
-                                    _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
-                                })
-                            }*/
                             if (isArray(tc.content.parts) && tc.finishReason == "STOP") {
-                                _p.push({ role: "model", content: tc.content })
                                 stopWith = true
+                                tc.content.parts.forEach(p => {
+                                    if (isDef(p.functionCall)) {
+                                        _p.push({ role: "model", parts: [{
+                                            functionCall: {
+                                                name: p.functionCall.name,
+                                                args: p.functionCall.args
+                                            }
+                                        }]})
+                                        var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
+                                        var _tr = stringify(_t.fn(p.functionCall.args), __, "")
+                                        _p.push({ role: "user", parts: [{
+                                            functionResponse: {
+                                                name: p.functionCall.name,
+                                                response: {
+                                                    name: p.functionCall.name,
+                                                    content: _tr
+                                                }
+                                            }
+                                        }]})
+                                        stopWith = false
+                                    } else {
+                                        _p.push(p)
+                                    }
+                                })
                             }
                         })
                         if (stopWith)
@@ -437,18 +496,27 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     throw "Not supported yet."
                     /*var msgs = []
+                    var body = {
+                        system_instruction: { parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ) },
+                        contents: [
+                            { parts: aPrompt }
+                        ],
+                        generationConfig: {
+                            temperature: _temperature
+                        }
+                    }
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c.content : c )
                  
                     _r.conversation = aPrompt
+                    
                     return _r._request("v1/images/generations", merge({
                        model: aModel,
                        prompt: msgs.join("\n"),
                        response_format: "b64_json"
-                    }, aOptions.params))   
+                    }, aOptions.params))   */
                     // data[0].b64_json
-                    */
                 },
                 promptImgGen: (aPrompt, aModel) => {
                     var res = _r.rawImgGen(aPrompt, aModel)
@@ -481,12 +549,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getModels: () => {
-                    /*var res = _r._request("v1/models", {}, "GET")
-                    if (isArray(res.data)) {
-                        return res.data
-                    } else {
-                        return res
-                    }*/
                    var res = _r._request("models", {}, "GET")
                    if (isDef(res.models)) res = res.models
                    return res
@@ -600,7 +662,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
@@ -798,7 +860,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(__)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]

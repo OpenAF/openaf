@@ -55,6 +55,7 @@ public class AFCmdOS extends AFCmdBase {
 			+ "   --daemon           - executes a script/opack as a daemon\n"
 			+ "   --script           - executes a script/opack\n"
 			+ "   --sb               - generates or pre-appends openaf/ojob shebang to a js script or ojob yaml/json\n"
+			+ "   --py               - runs a python script with openaf extensions\n"
 			+ "\n"
 			+ "   -h                 - show this help information\n"
 			+ "   -v                 - show the version\n"
@@ -84,6 +85,8 @@ public class AFCmdOS extends AFCmdBase {
 	final protected static String OPTION_SCRIPTFILE = "-f";
 	final protected static String OPTION_VERSION = "-v";
 	final protected static String OPTION_SB = "--sb";
+	final protected static String OPTION_PY = "--py";
+	final protected static String OPTION_OAFPY = "--oafpy";
 	final protected static String OPTION_INTERPRET = "--i";
 	final protected static String PREFIX_SCRIPT = "script:";
 	final protected static String OPACK = ".package.json";
@@ -296,6 +299,9 @@ public class AFCmdOS extends AFCmdBase {
 				case OPTION_SB:
 					exprInput = a;
 					continue;
+				case OPTION_PY:
+					exprInput = a;
+					continue;
 				case OPTION_BASHCOMPLETION:
 					exprInput = a;
 					continue;
@@ -375,6 +381,13 @@ public class AFCmdOS extends AFCmdBase {
 				injectclass = true;
 				injectclassfile = "genScripts_js";
 				continue;
+			case OPTION_OAFPY:
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				injectclass = true;
+				injectclassfile = "oafpy_js";
+				continue;
 			case OPTION_UPDATE:
 				//update();
 				silenceRepack = true;
@@ -403,6 +416,13 @@ public class AFCmdOS extends AFCmdBase {
 				injectclass = true;
                 injectclassfile = "genSB_js";
                 continue;
+			case OPTION_PY:
+				filescript = false;
+				silentMode = true;
+				INPUT_TYPE = inputtype.INPUT_SCRIPT;
+				injectclass = true;
+				injectclassfile = "pyoaf_js";
+				continue;
 			case OPTION_BASHCOMPLETION:
 				checkNext = true;
 				filescript = false;

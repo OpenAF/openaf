@@ -732,8 +732,8 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 	extraDownOptions = _$(extraDownOptions).isMap().default(__flags.MD_SHOWDOWN_OPTIONS)
 
 	removeMaxWidth = _$(removeMaxWidth, "removeMaxWidth").isBoolean().default(__flags.MD_NOMAXWIDTH)
-	//var showdown = require(getOpenAFJar() + "::js/showdown.js");
-	var showdown = loadCompiledRequire("showdown_js");
+	var showdown = require(getOpenAFJar() + "::js/showdown.js");
+	//var showdown = loadCompiledRequire("showdown_js");
 	showdown.setFlavor("github");
 	/*showdown.setOption("customizedHeaderId", "true");
 	showdown.setOption("parseImgDimensions", "true");
