@@ -6,11 +6,14 @@ var _style = `
     .copy-button {
       position: absolute;
       top: 0px;
-      right: 16px;
+      right: 0;
       background: transparent;
       border: none;
       cursor: pointer;
-      padding: 0;
+      padding-left: 16x;
+      padding-right: 16px;
+      padding-top: 8px;
+      padding-bottom: 8px;
       margin: 0;
     }
     .copy-button .icon {
@@ -21,20 +24,16 @@ var _style = `
   </style>
    `
 // Bootstrap Icons. MIT License: https://github.com/twbs/icons/blob/main/LICENSE.md
-var _copysym = `
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="icon" viewBox="0 0 16 16">
+var _copysym = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="icon" viewBox="0 0 16 16">
   <path d="M3.5 2a.5.5 0 0 0-.5.5v12a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-12a.5.5 0 0 0-.5-.5H12a.5.5 0 0 1 0-1h.5A1.5 1.5 0 0 1 14 2.5v12a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-12A1.5 1.5 0 0 1 3.5 1H4a.5.5 0 0 1 0 1z"/>
   <path d="M10 .5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5.5.5 0 0 1-.5.5.5.5 0 0 0-.5.5V2a.5.5 0 0 0 .5.5h5A.5.5 0 0 0 11 2v-.5a.5.5 0 0 0-.5-.5.5.5 0 0 1-.5-.5"/>
-</svg>
-   `
+</svg>`
    
 // Bootstrap Icons. MIT License: https://github.com/twbs/icons/blob/main/LICENSE.md
-var _copiedsym = `
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="icon" viewBox="0 0 16 16">
+var _copiedsym = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="icon" viewBox="0 0 16 16">
   <path d="M10 .5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5.5.5 0 0 1-.5.5.5.5 0 0 0-.5.5V2a.5.5 0 0 0 .5.5h5A.5.5 0 0 0 11 2v-.5a.5.5 0 0 0-.5-.5.5.5 0 0 1-.5-.5"/>
   <path d="M4.085 1H3.5A1.5 1.5 0 0 0 2 2.5v12A1.5 1.5 0 0 0 3.5 16h9a1.5 1.5 0 0 0 1.5-1.5v-12A1.5 1.5 0 0 0 12.5 1h-.585q.084.236.085.5V2a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 2v-.5q.001-.264.085-.5m6.769 6.854-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708.708"/>
-</svg>
-   `
+</svg>`
 
 document.addEventListener("DOMContentLoaded", function () {
     var svgContainer = document.createElement("svg")
@@ -59,6 +58,15 @@ document.addEventListener("DOMContentLoaded", function () {
         // Show the button on hover.
         pre.addEventListener("mouseenter", function () { copyButton.style.display = "block" })
         pre.addEventListener("mouseleave", function () { copyButton.style.display = "none" })
+
+        // For touch devices, show the button on touch.
+        pre.addEventListener("touchstart", function () {
+            copyButton.style.display = "block"
+            // Optionally, hide it after a delay:
+            setTimeout(function () {
+                copyButton.style.display = "none"
+            }, 2000)
+        });
 
         // When the button is clicked, copy the code text.
         copyButton.addEventListener("click", function (event) {
