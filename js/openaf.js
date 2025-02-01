@@ -212,6 +212,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
+	MD_CODECLIP                : true,   // If true, code blocks will have a button to copy the code to the clipboard
 	USE_JAVA_GENUUID           : true,
 	ANSICOLOR_CACHE            : true,
 	ANSICOLOR_ASK              : true,
