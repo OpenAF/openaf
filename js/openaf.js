@@ -9352,6 +9352,23 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 
 				_r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _re ] })
 				break
+			case "NOT LIKE" : 
+				_p = isOr ? "orNotM" : "notM"
+				var _re = "^" + _b.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[%_]|\\[[^]]*\\]|[^%_[]+/g, function(match) {
+					if (match === "%") {
+						return ".*"
+					}
+					if (match === "_") {
+						return "."
+					}
+					if (match.startsWith("[") && match.endsWith("]")) {
+						return match
+					}
+					return match
+				}) + "$"
+
+				_r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _re ] })
+				break
 
 			case "AND": _begin(op, false); _process(_a, false, isNot); _process(_b, false, isNot); _end(); break
 			case "OR" : _begin(op, true); _process(_a, false, isNot); _process(_b, true, isNot); _end(); break
