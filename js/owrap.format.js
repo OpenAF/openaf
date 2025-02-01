@@ -2035,7 +2035,7 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	   sepArr   : " | ",
 	   endArr   : "]",
 	   strQuote : "'",
-	   specialRE: "[\(\,\)\:\\[\\]\|\']"
+	   specialRE: "[\.\(\,\)\:\\[\\]\|\']"
 	}
   
 	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
@@ -2057,6 +2057,9 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	}
 	if (isDate(aObj)) {
 		return ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS');
+	}
+	if (isNumber(aObj)) {
+		return String(aObj)
 	}
 	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
 	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && aObj.match(new RegExp(dTheme.specialRE))) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)

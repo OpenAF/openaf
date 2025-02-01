@@ -310,7 +310,7 @@
 		},
 		{
 			"description": "GSON",
-			"path": ["lib/gson-2.11.0.jar"],
+			"path": ["lib/gson-2.12.1.jar"],
 			"version": "2.11.0",
 			"changes": false,
 			"type": ["java"],
@@ -444,7 +444,7 @@
 				"lib/commons-io-2.17.0.jar"
 			],
 			"deps": [
-				"lib/jsch-0.2.20.jar",
+				"lib/jsch-0.2.22.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",

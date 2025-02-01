@@ -134,6 +134,11 @@
         var target = "(s: abc, num: -1.23456, bol: true, subMap: (x: 1, y: -1), subArr: [1 | 2 | 3], dt: 2020-01-01/12:34:56.000, subArr2: [(n: 1, b: true, s: abc, p: (x: 1, y: -1)) | (n: 2, b: false, s: 'xyz \\'a\\'', a: [4 | 5 | 6]) | (n: 3, b: false, s: axZ xyz)])";
 
         ow.test.assert(ow.format.toSLON(orig), target, "Problem with toSLON.");
+
+        var slon = "(a: 1, b: abc, c: 123aBc, d: 1.1, e: 1.2.3, f: [ 'ab:12' | '12:ab' ], g: [ ( x: 1 ) | ( y: abc , z :  ab  cd  ) ])"
+        var json = {"a":1,"b":"abc","c":"123aBc","d":1.1,"e":"1.2.3","f":["ab:12","12:ab"],"g":[{"x":1},{"y":"abc","z":"ab  cd"}]}
+
+        ow.test.assert(af.fromSLON(slon), json, "Problem with fromSLON.")
     };
 
     exports.timeAbbreviation = function() {
