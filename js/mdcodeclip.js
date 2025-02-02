@@ -6,7 +6,6 @@ var _style = `
     .copy-button {
       position: absolute;
       top: 0px;
-      right: 0;
       background: transparent;
       border: none;
       cursor: pointer;
@@ -15,6 +14,7 @@ var _style = `
       padding-top: 8px;
       padding-bottom: 8px;
       margin: 0;
+      z-index: 2;
     }
     .copy-button .icon {
       width: 16px;
@@ -55,13 +55,29 @@ document.addEventListener("DOMContentLoaded", function () {
         // Append the button to the <pre> element.
         pre.appendChild(copyButton)
 
+        // Define a function to update the button's position.
+        function updateButtonPosition() {
+            // Calculate the left position so the button stays at the visible right edge.
+            // pre.scrollLeft is how far the content has been scrolled,
+            // pre.clientWidth is the width of the visible area,
+            // copyButton.offsetWidth is the button's width.
+            copyButton.style.left = (pre.scrollLeft + pre.clientWidth - copyButton.offsetWidth) + "px";
+        }
+
+        // Call once to position the button initially.
+        updateButtonPosition();
+
+        // Listen for scroll events on the <pre> element.
+        pre.addEventListener("scroll", updateButtonPosition);
+
         // Show the button on hover.
-        pre.addEventListener("mouseenter", function () { copyButton.style.display = "block" })
+        pre.addEventListener("mouseenter", function () { copyButton.style.display = "block"; updateButtonPosition() })
         pre.addEventListener("mouseleave", function () { copyButton.style.display = "none" })
 
         // For touch devices, show the button on touch.
         pre.addEventListener("touchstart", function () {
             copyButton.style.display = "block"
+            updateButtonPosition()
             // Optionally, hide it after a delay:
             setTimeout(function () {
                 copyButton.style.display = "none"
