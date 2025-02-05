@@ -1,5 +1,5 @@
-// Version: 0.1.5b
-// Copyright 2023 Nuno Aguiar
+// Version: 0.1.6
+// Copyright 2025 Nuno Aguiar
 
 var nLinq_USE_CASE = false;
 var nLinq = function(anObject, aK) {
@@ -322,7 +322,7 @@ var nLinq = function(anObject, aK) {
         },
 
         andBegin: () => {
-            return this.begin()
+            return code.begin()
         },
 
         end  : () => {
@@ -693,6 +693,65 @@ var nLinq = function(anObject, aK) {
 
             return code;
         },
+        // Attach a new key to the result set based on an equal condition
+        //   aNewKey: the new key to be attached
+        //   aKey: the key to be compared
+        //   aValue: the value to be compared
+        //   aClass: the class value to be attached to aNewKey
+        attachBy: (aNewKey, aKey, aValue, aClass) => {
+            _$(aNewKey, "newkey").isString().$_()
+            _$(aKey, "key").isString().$_()
+            _$(aValue, "value").$_()
+            _$(aClass, "class").$_()
+
+            res = applyConditions(res)
+            res = res.map(r => {
+                if (aValue == $$(r).get(aKey)) {
+                    $$(r).set(aNewKey, aClass)
+                }   
+                return r
+            })
+
+            return code
+        },
+        // Attach a new key to the result set based on a negative equal condition
+        //   aNewKey: the new key to be attached
+        //   aKey: the key to be compared
+        //   aValue: the value to be compared
+        //   aClass: the class value to be attached to aNewKey
+        attachNotBy: (aNewKey, aKey, aValue, aClass) => {
+            _$(aNewKey, "newkey").isString().$_()
+            _$(aKey, "key").isString().$_()
+            _$(aValue, "value").$_()
+            _$(aClass, "class").$_()
+
+            res = applyConditions(res)
+            res = res.map(r => {
+                if (aValue != $$(r).get(aKey)) {
+                    $$(r).set(aNewKey, aClass)
+                }   
+                return r
+            })
+
+            return code
+        },
+        // Attach to an existing key the result set based on an empty condition
+        //   aNewKey: the key to check if empty
+        //   aClass: the class value to be attached to aNewKey
+        attachByEmpty: (aNewKey, aClass) => {
+            _$(aNewKey, "newkey").isString().$_()
+            _$(aClass, "class").$_()
+
+            res = applyConditions(res)
+            res = res.map(r => {
+                if ($$(r).get(aNewKey) == null || $$($$(r).get(aNewKey)).isUnDef()) {
+                    $$(r).set(aNewKey, aClass)
+                }
+                return r
+            })
+
+            return code
+        },
         detach: aKey => {
             _$(aKey, "key").$_()
 
@@ -968,14 +1027,14 @@ var nLinq = function(anObject, aK) {
         pselect : aParam => {
 		    var pres = splitArray(res);
 		    var fRes = [];
-            pForEach(pres, ares => {
-                try {
-                    return nLinq(ares)._setState(code._getState()).select(aParam)
-                } catch(e) { sprintErr(e) }
-                return __
-            }).forEach(rs => {
-                fRes = fRes.concat(rs)
-            })
+		    parallel4Array(pres, ares => {
+		        try {
+		        var rr = nLinq(ares)._setState(code._getState()).select(aParam);
+		        return rr;
+		        } catch(e) { sprintErr(e);}
+		    }).map(rs => {
+		        fRes = fRes.concat(rs);
+		    });
 		    return fRes;
 		}
 		
