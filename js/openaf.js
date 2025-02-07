@@ -4721,11 +4721,11 @@ const $path = function(aObj, aPath, customFunctions) {
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		},
 		to_isoDate: {
-			_func: ar => (new Date(java.time.Instant.parse(ar[0]).toEpochMilli())).toISOString(),
+			_func: ar => (isNull(ar[0]) || isUnDef(ar[0]) ? __ : new Date(java.time.Instant.parse(ar[0]).toEpochMilli())).toISOString(),
 			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
 		to_date: {
-			_func: ar => (new Date(java.time.Instant.parse(ar[0]).toEpochMilli())),
+			_func: ar => (isNull(ar[0]) || isUnDef(ar[0]) ? __ : new Date(java.time.Instant.parse(ar[0]).toEpochMilli())),
 			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
 		to_datef: {
