@@ -4721,11 +4721,41 @@ const $path = function(aObj, aPath, customFunctions) {
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		},
 		to_isoDate: {
-			_func: ar => (isNull(ar[0]) || isUnDef(ar[0]) ? __ : new Date(java.time.Instant.parse(ar[0]).toEpochMilli())).toISOString(),
+			_func: ar => {
+				var _r
+				try {
+					if (isNull(ar[0]) || isUnDef(ar[0]))
+						_r = __
+					else 
+						_r = new Date(java.time.Instant.parse(ar[0]).toEpochMilli()).toISOString()
+				} catch(e) {
+					try {
+						_r = new Date(ar[0]).toISOString()
+					} catch(ee) {
+						_r = __
+					}
+				}
+				return isDate(_r) ? _r : ar[0]
+			},
 			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
 		to_date: {
-			_func: ar => (isNull(ar[0]) || isUnDef(ar[0]) ? __ : new Date(java.time.Instant.parse(ar[0]).toEpochMilli())),
+			_func: ar => {
+				var _r 
+				try {
+					if (isNull(ar[0]) || isUnDef(ar[0])) 
+						_r = __
+					else 
+						_r = new Date(java.time.Instant.parse(ar[0]).toEpochMilli())
+				} catch(e) {
+					try {
+						_r = new Date(ar[0])
+					} catch(ee) {
+						_r = __
+					}
+				}
+				return isDate(_r) ? _r : ar[0]
+			},
 			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
 		to_datef: {
