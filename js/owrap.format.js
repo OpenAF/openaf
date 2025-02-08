@@ -2398,6 +2398,30 @@ OpenWrap.format.prototype.isWedoDate = function(aWedoDate) {
 
 /**
  * <odoc>
+ * <key>ow.format.fromISODate(aISODate) : Date</key>
+ * Converts a ISO date string into a javascript Date.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromISODate = function(aISODate) {
+	_$(aISODate, "aISODate").isString().$_()
+	var _r 
+	try {
+		if (isNull(aISODate) || isUnDef(aISODate)) 
+			_r = __
+		else 
+			_r = new Date(java.time.Instant.parse(aISODate).toEpochMilli())
+	} catch(e) {
+		try {
+			_r = new Date(aISODate)
+		} catch(ee) {
+			_r = __
+		}
+	}
+	return isDate(_r) ? _r : aISODate
+}
+
+/**
+ * <odoc>
  * <key>ow.format.isIPv4(aIP) : boolean</key>
  * Tries to determine if aIP is a syntactic valid IPv4.
  * </odoc>
