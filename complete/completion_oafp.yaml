@@ -119,12 +119,19 @@ complete:
     - name: inmdtablejoin=
       desc: Scans an entire markdown input for tables and returns an array with the data of each markdown table
   - name: in=ndjson
-    desc: A NDJSON input format
+    desc: A NDJSON (new-line delimited JSON) format
     opts:
     - name: ndjsonjoin=  
       desc: If true will join the ndjson records to build an output array
     - name: ndjsonfilter=
       desc: If true each line is interpreted as an array before filters execute -this allows to filter json records on a ndjson-
+  - name: in=ndslon
+    desc: A NDSLON (new-line delimited SLON) format
+    opts:
+    - name: ndslonjoin=  
+      desc: If true will join the ndslon records to build an output array
+    - name: ndslonfilter=
+      desc: If true each line is interpreted as an array before filters execute -this allows to filter slon records on a ndslon-
   - name: in=oaf
     desc: Takes an OpenAF scripting code to execute and use the result as input
   - name: in=oafp
@@ -331,7 +338,9 @@ complete:
   - name: out=mdyaml
     desc: A multi document YAML format -only for list outputs-
   - name: out=ndjson
-    desc: A NDJSON output format
+    desc: A NDJSON -new-line delimited JSON- format
+  - name: out=ndslon
+    desc: A NDSLON -new-line delimited SLON- format
   - name: out=openmetrics
     desc: Converts a map or list to OpenMetrics/Prometheus compatible format
     opts:
