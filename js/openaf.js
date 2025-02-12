@@ -4722,39 +4722,16 @@ const $path = function(aObj, aPath, customFunctions) {
 		},
 		to_isoDate: {
 			_func: ar => {
-				var _r
-				try {
-					if (isNull(ar[0]) || isUnDef(ar[0]))
-						_r = __
-					else 
-						_r = new Date(java.time.Instant.parse(ar[0]).toEpochMilli()).toISOString()
-				} catch(e) {
-					try {
-						_r = new Date(ar[0]).toISOString()
-					} catch(ee) {
-						_r = __
-					}
-				}
-				return isDate(_r) ? _r : ar[0]
+				ow.loadFormat()
+				var _r = ow.format.fromISODate(ar[0])
+				if (isDate(_r)) return _r.toISOString(); else return ar[0]
 			},
 			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
 		to_date: {
 			_func: ar => {
-				var _r 
-				try {
-					if (isNull(ar[0]) || isUnDef(ar[0])) 
-						_r = __
-					else 
-						_r = new Date(java.time.Instant.parse(ar[0]).toEpochMilli())
-				} catch(e) {
-					try {
-						_r = new Date(ar[0])
-					} catch(ee) {
-						_r = __
-					}
-				}
-				return isDate(_r) ? _r : ar[0]
+				ow.loadFormat()
+				return ow.format.fromISODate(ar[0])
 			},
 			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
@@ -6296,28 +6273,28 @@ var OpenWrap = function() {}
  * Loads OpenWrap debug functionality.
  * </odoc>
  */
-OpenWrap.prototype.loadDebug = function() { loadCompiledLib("owrap_debug_js"); if (isUnDef(ow.debug)) { ow.debug = new OpenWrap.debug(); pods.declare("ow.debug", ow.debug); }; return ow.debug; };
+OpenWrap.prototype.loadDebug = function() { loadCompiledLib("owrap_debug_js"); if (isUnDef(ow.debug)) { ow.debug = new OpenWrap.debug(); /*pods.declare("ow.debug", ow.debug);*/ }; return ow.debug; };
 /**
  * <odoc>
  * <key>ow.loadDev()</key>
  * Loads OpenWrap dev functionality. Basically functions being tested.
  * </odoc>
  */
-OpenWrap.prototype.loadDev = function() { loadCompiledLib("owrap_dev_js"); if (isUnDef(ow.dev)) { ow.dev = new OpenWrap.dev(); pods.declare("ow.dev", ow.dev); }; return ow.dev; };
+OpenWrap.prototype.loadDev = function() { loadCompiledLib("owrap_dev_js"); if (isUnDef(ow.dev)) { ow.dev = new OpenWrap.dev(); /*pods.declare("ow.dev", ow.dev);*/ }; return ow.dev; };
 /**
  * <odoc>
  * <key>ow.loadNet()</key>
  * Loads OpenWrap net functionality. Basically functions for net.
  * </odoc>
  */
-OpenWrap.prototype.loadNet = function() { loadCompiledLib("owrap_net_js"); if (isUnDef(ow.net)) { ow.net = new OpenWrap.net(); pods.declare("ow.net", ow.net); }; return ow.net; };
+OpenWrap.prototype.loadNet = function() { loadCompiledLib("owrap_net_js"); if (isUnDef(ow.net)) { ow.net = new OpenWrap.net(); /*pods.declare("ow.net", ow.net);*/ }; return ow.net; };
 /**
  * <odoc>
  * <key>ow.loadSec()</key>
  * Loads OpenWrap sec functionality. Basically functions for sec.
  * </odoc>
  */
-OpenWrap.prototype.loadSec = function() { loadCompiledLib("owrap_sec_js"); if (isUnDef(ow.sec)) { ow.sec = new OpenWrap.sec(); pods.declare("ow.sec", ow.sec); }; return ow.sec; };
+OpenWrap.prototype.loadSec = function() { loadCompiledLib("owrap_sec_js"); if (isUnDef(ow.sec)) { ow.sec = new OpenWrap.sec(); /*pods.declare("ow.sec", ow.sec);*/ }; return ow.sec; };
 /**
  * <odoc>
  * <key>ow.loadFormat()</key>
@@ -6325,7 +6302,7 @@ OpenWrap.prototype.loadSec = function() { loadCompiledLib("owrap_sec_js"); if (i
  * </odoc>
  */
 //OpenWrap.prototype.loadFormat = function() { loadLib(getOpenAFJar() + "::js/owrap.format.js"); ow.format = new OpenWrap.format(); pods.declare("ow.format", ow.format); return ow.format; }
-OpenWrap.prototype.loadFormat = function() { loadCompiledLib("owrap_format_js"); if (isUnDef(ow.format)) { ow.format = new OpenWrap.format(); pods.declare("ow.format", ow.format); }; return ow.format; };
+OpenWrap.prototype.loadFormat = function() { loadCompiledLib("owrap_format_js"); if (isUnDef(ow.format)) { ow.format = new OpenWrap.format(); /*pods.declare("ow.format", ow.format);*/ }; return ow.format; };
 /**
  * <odoc>
  * <key>ow.loadTest()</key>
@@ -6333,7 +6310,7 @@ OpenWrap.prototype.loadFormat = function() { loadCompiledLib("owrap_format_js");
  * </odoc>
  */
 //OpenWrap.prototype.loadTest = function() { loadLib(getOpenAFJar() + "::js/owrap.test.js"); ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); return ow.test; }
-OpenWrap.prototype.loadTest = function() { loadCompiledLib("owrap_test_js"); if (isUnDef(ow.test)) { ow.test = new OpenWrap.test(); pods.declare("ow.test", ow.test); }; return ow.test; };
+OpenWrap.prototype.loadTest = function() { loadCompiledLib("owrap_test_js"); if (isUnDef(ow.test)) { ow.test = new OpenWrap.test(); /*pods.declare("ow.test", ow.test);*/ }; return ow.test; };
 /**
  * <odoc>
  * <key>ow.loadAI()</key>
@@ -6341,7 +6318,7 @@ OpenWrap.prototype.loadTest = function() { loadCompiledLib("owrap_test_js"); if 
  * </odoc>
  */
 //OpenWrap.prototype.loadAI = function() { loadLib(getOpenAFJar() + "::js/owrap.ai.js"); ow.ai = new OpenWrap.ai(); pods.declare("ow.ai", ow.ai); return ow.ai; }
-OpenWrap.prototype.loadAI = function() { loadCompiledLib("owrap_ai_js"); if (isUnDef(ow.ai)) { ow.ai = new OpenWrap.ai(); pods.declare("ow.ai", ow.ai); }; return ow.ai; };
+OpenWrap.prototype.loadAI = function() { loadCompiledLib("owrap_ai_js"); if (isUnDef(ow.ai)) { ow.ai = new OpenWrap.ai(); /*pods.declare("ow.ai", ow.ai);*/ }; return ow.ai; };
 /**
  * <odoc>
  * <key>ow.loadServer()</key>
@@ -6349,7 +6326,7 @@ OpenWrap.prototype.loadAI = function() { loadCompiledLib("owrap_ai_js"); if (isU
  * </odoc>
  */
 //OpenWrap.prototype.loadServer = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
-OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js"); if (isUnDef(ow.server)) { ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); }; return ow.server; };
+OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js"); if (isUnDef(ow.server)) { ow.server = new OpenWrap.server(); /*pods.declare("ow.server", ow.server);*/ }; return ow.server; };
 /**
  * <odoc>
  * <key>ow.loadMetrics()</key>
@@ -6357,7 +6334,7 @@ OpenWrap.prototype.loadServer = function() { loadCompiledLib("owrap_server_js");
  * </odoc>
  */
 //OpenWrap.prototype.loadMetrics = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
-OpenWrap.prototype.loadMetrics = function() { loadCompiledLib("owrap_metrics_js"); if (isUnDef(ow.metrics)) { ow.metrics = new OpenWrap.metrics(); pods.declare("ow.metrics", ow.metrics); }; return ow.metrics; };
+OpenWrap.prototype.loadMetrics = function() { loadCompiledLib("owrap_metrics_js"); if (isUnDef(ow.metrics)) { ow.metrics = new OpenWrap.metrics(); /*pods.declare("ow.metrics", ow.metrics);*/ }; return ow.metrics; };
 /**
  * <odoc>
  * <key>ow.loadPython()</key>
@@ -6365,7 +6342,7 @@ OpenWrap.prototype.loadMetrics = function() { loadCompiledLib("owrap_metrics_js"
  * </odoc>
  */
 //OpenWrap.prototype.loadPython = function() { loadLib(getOpenAFJar() + "::js/owrap.server.js"); ow.server = new OpenWrap.server(); pods.declare("ow.server", ow.server); return ow.server; }
-OpenWrap.prototype.loadPython = function() { loadCompiledLib("owrap_python_js"); if (isUnDef(ow.python)) { ow.python = new OpenWrap.python(); pods.declare("ow.python", ow.python); }; return ow.python; };
+OpenWrap.prototype.loadPython = function() { loadCompiledLib("owrap_python_js"); if (isUnDef(ow.python)) { ow.python = new OpenWrap.python(); /*pods.declare("ow.python", ow.python);*/ }; return ow.python; };
 /**
  * <odoc>
  * <key>ow.loadTemplate()</key>
@@ -6373,7 +6350,7 @@ OpenWrap.prototype.loadPython = function() { loadCompiledLib("owrap_python_js");
  * </odoc>
  */
 //OpenWrap.prototype.loadTemplate = function() { loadLib(getOpenAFJar() + "::js/owrap.template.js"); ow.template = new OpenWrap.template(); pods.declare("ow.template", ow.template); return ow.template; }
-OpenWrap.prototype.loadTemplate = function() { loadCompiledLib("owrap_template_js"); if (isUnDef(ow.template)) { ow.template = new OpenWrap.template(); pods.declare("ow.template", ow.template); }; return ow.template; };
+OpenWrap.prototype.loadTemplate = function() { loadCompiledLib("owrap_template_js"); if (isUnDef(ow.template)) { ow.template = new OpenWrap.template(); /*pods.declare("ow.template", ow.template);*/ }; return ow.template; };
 /**
  * <odoc>
  * <key>ow.loadObj()</key>
@@ -6381,7 +6358,7 @@ OpenWrap.prototype.loadTemplate = function() { loadCompiledLib("owrap_template_j
  * </odoc>
  */
 //OpenWrap.prototype.loadObj = function() { loadLib(getOpenAFJar() + "::js/owrap.obj.js"); ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); return ow.obj; }
-OpenWrap.prototype.loadObj = function() { loadCompiledLib("owrap_obj_js"); if (isUnDef(ow.obj)) { ow.obj = new OpenWrap.obj(); pods.declare("ow.obj", ow.obj); }; return ow.obj; };
+OpenWrap.prototype.loadObj = function() { loadCompiledLib("owrap_obj_js"); if (isUnDef(ow.obj)) { ow.obj = new OpenWrap.obj(); /*pods.declare("ow.obj", ow.obj);*/ }; return ow.obj; };
 /**
  * <odoc>
  * <key>ow.loadCh()</key>
@@ -6389,7 +6366,7 @@ OpenWrap.prototype.loadObj = function() { loadCompiledLib("owrap_obj_js"); if (i
  * </odoc>
  */
 //OpenWrap.prototype.loadCh = function() { loadLib(getOpenAFJar() + "::js/owrap.ch.js"); ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); return ow.ch; }
-OpenWrap.prototype.loadCh = function() { loadCompiledLib("owrap_ch_js"); if (isUnDef(ow.ch)) { ow.ch = new OpenWrap.ch(); pods.declare("ow.ch", ow.ch); }; return ow.ch; };
+OpenWrap.prototype.loadCh = function() { loadCompiledLib("owrap_ch_js"); if (isUnDef(ow.ch)) { ow.ch = new OpenWrap.ch(); /*pods.declare("ow.ch", ow.ch);*/ }; return ow.ch; };
 /**
  * <odoc>
  * <key>ow.loadOJob()</key>
@@ -6397,21 +6374,21 @@ OpenWrap.prototype.loadCh = function() { loadCompiledLib("owrap_ch_js"); if (isU
  * </odoc>
  */
 //OpenWrap.prototype.loadOJob = function() { loadLib(getOpenAFJar() + "::js/owrap.oJob.js"); ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); return ow.oJob; }
-OpenWrap.prototype.loadOJob = function() { loadCompiledLib("owrap_oJob_js"); if (isUnDef(ow.oJob)) { ow.oJob = new OpenWrap.oJob(); pods.declare("ow.oJob", ow.oJob); }; return ow.oJob; };
+OpenWrap.prototype.loadOJob = function() { loadCompiledLib("owrap_oJob_js"); if (isUnDef(ow.oJob)) { ow.oJob = new OpenWrap.oJob(); /*pods.declare("ow.oJob", ow.oJob);*/ }; return ow.oJob; };
 /**
  * <odoc>
  * <key>ow.loadOBook()</key>
  * Loads OpenWrap oBook functionality. 
  * </odoc>
  */
-OpenWrap.prototype.loadOBook = function() { loadCompiledLib("owrap_oBook_js"); if (isUnDef(ow.oBook)) { ow.oBook = new OpenWrap.oBook(); pods.declare("ow.oBook", ow.oBook) }; return ow.oBook }
+OpenWrap.prototype.loadOBook = function() { loadCompiledLib("owrap_oBook_js"); if (isUnDef(ow.oBook)) { ow.oBook = new OpenWrap.oBook(); /*pods.declare("ow.oBook", ow.oBook)*/ }; return ow.oBook }
 /**
  * <odoc>
  * <key>ow.loadJava()</key>
  * Loads OpenWrap Java functionality. 
  * </odoc>
  */
-OpenWrap.prototype.loadJava = function() { loadCompiledLib("owrap_java_js"); if (isUnDef(ow.java)) { ow.java = new OpenWrap.java(); pods.declare("ow.java", ow.java); }; return ow.java; };
+OpenWrap.prototype.loadJava = function() { loadCompiledLib("owrap_java_js"); if (isUnDef(ow.java)) { ow.java = new OpenWrap.java(); /*pods.declare("ow.java", ow.java);*/ }; return ow.java; };
 
 var ow = new OpenWrap()
 
