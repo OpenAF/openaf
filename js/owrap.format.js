@@ -1979,23 +1979,23 @@ OpenWrap.format.prototype.fromBytesAbbreviation = function(aStr, useDecimal) {
 OpenWrap.format.prototype.fromTimeAbbreviation = function(aStr) {
 	_$(aStr, "aStr").isString().$_()
 
-	var ars = aStr.trim().match(/[0-9]+[a-zA-Z]+/g), res = 0
-	if (!isArray(ars) || ars.length == 0) return parseInt(aStr)
-	for(var i in ars) {
-		var ar = ars[i].match(/([0-9]+)\s*([a-zA-Z]+)/)
+	var ars = aStr.trim().match(/[\d\.]+[a-zA-Z]+/g), res = 0;
+	if (!isArray(ars) || ars.length === 0) return parseFloat(aStr);
+	for (var i in ars) {
+		var ar = ars[i].match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
 		if (isArray(ar) && ar.length > 0) {
 			var v = Number(ar[1])
 			var u = String(ar[2])
 
 			var _u = {
 				"ms": 1,
-				"s" : 1000,
-				"m" : 60 * 1000,
-				"h" : 60 * 60 * 1000,
-				"d" : 24 * 60 * 60 * 1000,
-				"w" : 7 * 24 * 60 * 60 * 1000,
-				"M" : 30 * 24 * 60 * 60 * 1000,
-				"y" : 365 * 24 * 60 * 60 * 1000
+				"s": 1000,
+				"m": 60 * 1000,
+				"h": 60 * 60 * 1000,
+				"d": 24 * 60 * 60 * 1000,
+				"w": 7 * 24 * 60 * 60 * 1000,
+				"M": 30 * 24 * 60 * 60 * 1000,
+				"y": 365 * 24 * 60 * 60 * 1000
 			}
 			if (isDef(_u[u])) {
 				res += v * _u[u]
