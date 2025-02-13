@@ -70,6 +70,7 @@ public class SNMP extends ScriptableObject {
 	protected String privPassphrase;
 	protected int version;
 	protected byte[] engineID;
+	protected TransportMapping<?> transport;
 
 	/**
 	 * 
@@ -166,23 +167,41 @@ public class SNMP extends ScriptableObject {
 	 */
 	@JSFunction
 	public void start() throws IOException {
-		TransportMapping<?> transport;
+		if (this.snmp != null) this.snmp.close();
+		if (this.transport != null) this.transport.close();
+
 		if (address.startsWith("tcp")) {
-			transport = new DefaultTcpTransportMapping();
+			this.transport = new DefaultTcpTransportMapping();
 		} else {
-			transport = new DefaultUdpTransportMapping();
+			this.transport = new DefaultUdpTransportMapping();
 		}
 		
-		snmp = new Snmp(transport);
+		this.snmp = new Snmp(this.transport);
 		if (this.version >= 3) {
 			if (this.engineID == null) this.engineID = MPv3.createLocalEngineID();
 			USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(this.engineID), 0);
 			SecurityModels.getInstance().addSecurityModel(usm);
-			snmp.getUSM().addUser(new OctetString(this.securityName), new UsmUser(new OctetString(this.securityName), this.authProtocol, new OctetString(this.authPassphrase), this.privProtocol, new OctetString(this.privPassphrase)));
-			snmp.setLocalEngine(new OctetString(this.engineID).getValue(), 0, 0);   // Making sure the local Engine ID is also set
+			this.snmp.getUSM().addUser(new OctetString(this.securityName), new UsmUser(new OctetString(this.securityName), this.authProtocol, new OctetString(this.authPassphrase), this.privProtocol, new OctetString(this.privPassphrase)));
+			this.snmp.setLocalEngine(new OctetString(this.engineID).getValue(), 0, 0);   // Making sure the local Engine ID is also set
 		}
 
-		transport.listen();
+		this.transport.listen();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>SNMP.close()</key>
+	 * Closes the current connection and object.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void close() {
+		try {
+			this.snmp.close();
+			this.transport.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**

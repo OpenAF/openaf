@@ -1979,23 +1979,23 @@ OpenWrap.format.prototype.fromBytesAbbreviation = function(aStr, useDecimal) {
 OpenWrap.format.prototype.fromTimeAbbreviation = function(aStr) {
 	_$(aStr, "aStr").isString().$_()
 
-	var ars = aStr.trim().match(/[0-9]+[a-zA-Z]+/g), res = 0
-	if (!isArray(ars) || ars.length == 0) return parseInt(aStr)
-	for(var i in ars) {
-		var ar = ars[i].match(/([0-9]+)\s*([a-zA-Z]+)/)
+	var ars = aStr.trim().match(/[\d\.]+[a-zA-Z]+/g), res = 0;
+	if (!isArray(ars) || ars.length === 0) return parseFloat(aStr);
+	for (var i in ars) {
+		var ar = ars[i].match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/);
 		if (isArray(ar) && ar.length > 0) {
 			var v = Number(ar[1])
 			var u = String(ar[2])
 
 			var _u = {
 				"ms": 1,
-				"s" : 1000,
-				"m" : 60 * 1000,
-				"h" : 60 * 60 * 1000,
-				"d" : 24 * 60 * 60 * 1000,
-				"w" : 7 * 24 * 60 * 60 * 1000,
-				"M" : 30 * 24 * 60 * 60 * 1000,
-				"y" : 365 * 24 * 60 * 60 * 1000
+				"s": 1000,
+				"m": 60 * 1000,
+				"h": 60 * 60 * 1000,
+				"d": 24 * 60 * 60 * 1000,
+				"w": 7 * 24 * 60 * 60 * 1000,
+				"M": 30 * 24 * 60 * 60 * 1000,
+				"y": 365 * 24 * 60 * 60 * 1000
 			}
 			if (isDef(_u[u])) {
 				res += v * _u[u]
@@ -2035,7 +2035,7 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	   sepArr   : " | ",
 	   endArr   : "]",
 	   strQuote : "'",
-	   specialRE: "[\(\,\)\:\\[\\]\|\']"
+	   specialRE: "[\.\(\,\)\:\\[\\]\|\']"
 	}
   
 	if (isMap(cTheme)) dTheme = merge(dTheme, cTheme);
@@ -2057,6 +2057,9 @@ OpenWrap.format.prototype.toSLON = function(aObj, cTheme) {
 	}
 	if (isDate(aObj)) {
 		return ow.format.fromDate(aObj, 'yyyy-MM-dd/HH:mm:ss.SSS');
+	}
+	if (isNumber(aObj)) {
+		return String(aObj)
 	}
 	var _escape = s => s.replace(new RegExp(dTheme.strQuote, "g"), "\\" + dTheme.strQuote)
 	if (!isMap(aObj) && !isArray(aObj)) return (isString(aObj) && aObj.match(new RegExp(dTheme.specialRE))) ? dTheme.strQuote + _escape(aObj) + dTheme.strQuote : String(aObj)
@@ -2392,6 +2395,30 @@ OpenWrap.format.prototype.isWedoDate = function(aWedoDate) {
 	else
 		return false;
 };
+
+/**
+ * <odoc>
+ * <key>ow.format.fromISODate(aISODate) : Date</key>
+ * Converts a ISO date string into a javascript Date.
+ * </odoc>
+ */
+OpenWrap.format.prototype.fromISODate = function(aISODate) {
+	_$(aISODate, "aISODate").isString().$_()
+	var _r 
+	try {
+		if (isNull(aISODate) || isUnDef(aISODate)) 
+			_r = __
+		else 
+			_r = new Date(java.time.Instant.parse(aISODate).toEpochMilli())
+	} catch(e) {
+		try {
+			_r = new Date(aISODate)
+		} catch(ee) {
+			_r = __
+		}
+	}
+	return isDate(_r) ? _r : aISODate
+}
 
 /**
  * <odoc>
