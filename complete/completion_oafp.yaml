@@ -50,6 +50,11 @@ complete:
     opts:
     - name: javagcjoin=
       desc: If true it will return an array with each processed line.
+  - name: in=javathread
+    desc: A Java thread dump text file format or java pid
+    opts:
+    - name: javathreadpid=
+      desc: The PID of the Java process to connect to -requires Java SDK-
   - name: in=jmx
     desc: Uses Java JMX to retrieve data from another Java process
     opts:
