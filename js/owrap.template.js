@@ -777,8 +777,9 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 		return this.parse(this.__templatemd, {
 			markdown: converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">"),
 			noMaxWidth: removeMaxWidth,
-			extras: ow.template.__mdHTMLExtras
-		});
+			extras: ow.template.__mdHTMLExtras,
+			mdcodeclip: __flags.MD_CODECLIP
+		})
 	} else {
 		return converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">")
 	}
