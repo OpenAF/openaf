@@ -9381,6 +9381,7 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 			case "OR" : _begin(op, true); _process(_a, false, isNot); _process(_b, true, isNot); _end(); break
   
 			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case "IS NOT" : _p = isOr ? (isNot ? "orE" : "orNotE") : (isNot ? "e" : "notE"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
 			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ] }); break
 			case "BETWEEN": _p = isOr ? (isNot ? "orNotB" : "orB") : (isNot ? "notB" : "b"); _r.where.push({ cond: _p + "etweenEquals", args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value[0].value, _b.value[1].value ] }); break
 
