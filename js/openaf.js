@@ -222,7 +222,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		fullValSize: false,
 		withValues : true,
 		wordWrap   : true,
-		compact    : true
+		compact    : true,
+		mono       : false,
+		color      : true
 	},
 	TABLE: {
 		wordWrap           : true,
@@ -1059,16 +1061,28 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         minSize: 5
     }, __flags.TREE), __colorFormat.tree), _aOptions)
 
-    // Decide on decorations to use
+    // Decide on decorations to use 
     if (_aOptions.compact) {
-        slines = 2
-        line = (_aOptions.noansi ? "|" : "│") 
-        endc = (_aOptions.noansi ? "\\ " : (_aOptions.curved ? "╰ " : "└ "))
-        //strc = (_aOptions.noansi ? "/ " : "┬ ")
-        strc = (_aOptions.noansi ? "/ " :  (_aOptions.curved ? "╭ " : "┌ "))
-        ssrc = (_aOptions.noansi ? "- " : "─ ")
-        midc = (_aOptions.noansi ? "| " : "├ ")
-		skey = ": "
+		if (_aOptions.mono) {
+			slines = 2
+			line = (_aOptions.noansi ? "\u001b[2m|\u001b[m" : "\u001b[2m│\u001b[m") 
+			endc = (_aOptions.noansi ? "\u001b[2m\\\u001b[m " : (_aOptions.curved ? "\u001b[2m╰\u001b[m " : "\u001b[2m└\u001b[m "))
+			//strc = (_aOptions.noansi ? "/ " : "┬ ")
+			strc = (_aOptions.noansi ? "\u001b[2m/\u001b[m " :  (_aOptions.curved ? "\u001b[2m╭\u001b[m " : "\u001b[2m┌\u001b[m "))
+			ssrc = (_aOptions.noansi ? "\u001b[2m-\u001b[m " : "\u001b[2m─\u001b[m ")
+			midc = (_aOptions.noansi ? "\u001b[2m|\u001b[m " : "\u001b[2m├\u001b[m ")
+			skey = ":\u001b[2m "
+			_aOptions.color = false
+		} else {
+			slines = 2
+			line = (_aOptions.noansi ? "|" : "│") 
+			endc = (_aOptions.noansi ? "\\ " : (_aOptions.curved ? "╰ " : "└ "))
+			//strc = (_aOptions.noansi ? "/ " : "┬ ")
+			strc = (_aOptions.noansi ? "/ " :  (_aOptions.curved ? "╭ " : "┌ "))
+			ssrc = (_aOptions.noansi ? "- " : "─ ")
+			midc = (_aOptions.noansi ? "| " : "├ ")
+			skey = ": "
+		}
     } else {
         slines = 3
         line = (_aOptions.noansi ? "|" : "│") 
@@ -1135,7 +1149,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             return result
         }
         _ac  = (aAnsi, aString) => {
-            if (!__conConsole) return aString
+            if (!__conConsole || (isDef(_aOptions.color) && !_aOptions.color)) return aString
 
             aAnsi = aAnsi.trim().toUpperCase()
             if (_aOptions.bgcolor && aAnsi.length > 0) {
@@ -13067,11 +13081,15 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, false, true))
 			break
 		case "tree":
-			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: false }))
 		case "ctree":
 			__ansiColorFlag = true
 			__conConsole = true
-			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true }))
+		case "mtree":
+			__ansiColorFlag = true
+			__conConsole = true
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: true, color: false }))
 		case "res":
 			if (isDef(res)) $set("res", res)
 			break
