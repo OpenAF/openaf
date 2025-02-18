@@ -263,6 +263,8 @@ complete:
     desc: A table-like forcely colored format -only for list outputs-
   - name: out=ctree
     desc: A tree-like forcely colored format
+  - name: out=mtree
+    desc: A tree-like forcely monochrome format
   - name: out=cyaml
     desc: An YAML colored format
   - name: out=db
