@@ -265,6 +265,8 @@ complete:
     desc: A tree-like forcely colored format
   - name: out=mtree
     desc: A tree-like forcely monochrome format
+  - name: out=btree
+    desc: A tree-like forcely with non-ansi characters format
   - name: out=cyaml
     desc: An YAML colored format
   - name: out=db

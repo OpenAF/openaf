@@ -1118,7 +1118,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			if (null == aO) return "null"
 			try {
 				if ("function" === typeof aO.getClass && "[object JavaObject]" === Object.prototype.toString.call(aO)) return "java"
-			} catch(e) {
+			} catch(e) {
 				if (aO.getClass() instanceof java.lang.Object) return "java"
 			}
             if ("undefined" == typeof aO) return "undefined"
@@ -1127,8 +1127,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if ("string" == typeof aO) return "string"
             if ("undefined" !== typeof aO.getDate) return "date"
         }
-        _acr = () => _ac("RESET","")
-        var _clrCache = new ow.obj.syncMap()
+        //_acr = () => _ac("RESET","")
         _clr = aO => {
             //if (_clrCache[String(aO)]) return _clrCache[String(aO)]
 			if (_clrCache.containsKey(String(aO))) return _clrCache.get(String(aO))
@@ -1136,13 +1135,13 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             let result
             let dt = _dt(aO)
             switch(dt) {
-			case "null"   : result = [_ac(__colorFormat.default, "null"), _acr()].join(""); break
-            case "number" : result = [_ac(__colorFormat.number, String(aO)), _acr()].join(""); break
-            case "string" : result = [_ac(__colorFormat.string, String(aO)), _acr()].join(""); break
-            case "boolean": result = [_ac(__colorFormat.boolean, String(aO)), _acr()].join(""); break
-            case "date"   : result = [_ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")), _acr()].join(""); break
-            case "java"   : result = [_ac(__colorFormat.string, String(aO.toString())), _acr()].join(""); break
-            default       : result = [_ac(__colorFormat.default, String(aO)), _acr()].join(""); break
+			case "null"   : result = [_acCFdefault, "null", "\u001b[m"].join(""); break
+            case "number" : result = [_acCFnumber, String(aO), "\u001b[m"].join(""); break
+            case "string" : result = [_acCFstring, String(aO), "\u001b[m"].join(""); break
+            case "boolean": result = [_acCFboolean, String(aO), "\u001b[m"].join(""); break
+            case "date"   : result = [_acCFdate, aO.toISOString().replace("Z","").replace("T"," "), "\u001b[m"].join(""); break
+            case "java"   : result = [_acCFstring, String(aO.toString()), "\u001b[m"].join(""); break
+            default       : result = [_acCFdefault, String(aO), "\u001b[m"].join(""); break
             }
             //_clrCache[String(aO)] = result
 			_clrCache.put(String(aO), result)
@@ -1162,6 +1161,13 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         
             return ansiColor(aAnsi, aString, true, true)
         }
+		var _clrCache = new ow.obj.syncMap()
+		var _acCFdefault = _ac(__colorFormat.default, "").replace("\u001b[m", "")
+		var _acCFnumber = _ac(__colorFormat.number, "").replace("\u001b[m", "")
+		var _acCFstring = _ac(__colorFormat.string, "").replace("\u001b[m", "")
+		var _acCFboolean = _ac(__colorFormat.boolean, "").replace("\u001b[m", "")
+		var _acCFdate = _ac(__colorFormat.date, "").replace("\u001b[m", "")
+		var _acCFstring  = _ac(__colorFormat.string, "").replace("\u001b[m", "")
         _al  = m => (__flags.VISIBLELENGTH ? visibleLength(m) : m.replace(/\033\[[0-9;]*m/g, "").length)
     } else {
         _clr = s => s
@@ -13090,6 +13096,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: true, color: false }))
+		case "btree":
+			return fnP(printTreeOrS(res, __, { noansi: true, mono: false, color: false }))
 		case "res":
 			if (isDef(res)) $set("res", res)
 			break
