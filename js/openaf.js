@@ -1026,7 +1026,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			} else {	
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
-				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > 0 ? anArrayOfEntries[ii-1][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
+				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > (useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(useRowSep ? 2 : 1)][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
 				if (colNum < (cols.length-1)) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 			}
 			colNum++
