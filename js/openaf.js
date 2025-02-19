@@ -885,6 +885,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		colorMap.value = aBgColor + "," + colorMap.value
 		colorMap.title = aBgColor + "," + colorMap.title
 	}
+	var _colorMap = {
+		lines: ansiColor(colorMap.lines, "").replace(/\u001b\[m$/, ""),
+		value: ansiColor(colorMap.value, "").replace(/\u001b\[m$/, ""),
+		title: ansiColor(colorMap.title, "").replace(/\u001b\[m$/, "")
+	}
 
 	ow.loadFormat();
 	if (isUnDef(aTheme)) {
@@ -912,7 +917,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	}
 
 	//var pShouldBand = false
-	var _getColor = (aValue, ii) => {
+	var _getColor = (aValue, ii, prev) => {
 		var shouldBand
 		if (bandRows) {
 			// Given anArrayOfIdxs with a list of intervals, if ii is in one of them, then band
@@ -931,10 +936,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			shouldBand = false
 		}
 		var _bg = isDef(aBgColor) ? aBgColor + "," + (shouldBand ? __colorFormat.table.bandRow+"," : "") : (shouldBand ? __colorFormat.table.bandRow+"," : "") + ""
-		if (isNumber(aValue)) return _bg + __colorFormat.number
-		if (isString(aValue)) return _bg + __colorFormat.string
-		if (isBoolean(aValue)) return _bg + __colorFormat.boolean
-		if (isDate(aValue)) return _bg + __colorFormat.date
+		var _aValue = String(aValue).trim()
+		if (isNumber(_aValue) && ((isUnDef(prev) || prev.trim() == "") || (isDef(prev) && isNumber(prev)))) return _bg + __colorFormat.number
+		if (_aValue == "true" || _aValue == "false") return _bg + __colorFormat.boolean
+		if (isString(_aValue)) return _bg + __colorFormat.string
+		if (isDate(_aValue)) return _bg + __colorFormat.date
 		return _bg + __colorFormat.default
 	}
 
@@ -959,7 +965,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			if (isDate(_v)) 
 				_v = _v.toISOString().replace("Z","").replace("T"," ")
 			else 
-				_v = String(_v)
+				_v = isJavaObject(_v) ? String(_v) : _v
 			let ansiLength_v = visibleLength(_v)
 			if (isUnDef(maxsize[col])) 
 				maxsize[col] = visibleLength(col)
@@ -978,19 +984,19 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		var colNum
 	
 		if (ii == 0) {
-			output.push(useAnsi ? ansiColor(colorMap.title, "") : "")
+			output.push(useAnsi ? _colorMap.title : "")
 			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(col => {
 				if (outOfWidth) return
 				lineSize += maxsize[col] + 1
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output.push((useAnsi ? ansiColor(colorMap.title, "...") : "...")); outOfWidth = true
+					output.push((useAnsi ? [ _colorMap.title, "...", "\u001b[m" ].join("") : "...")); outOfWidth = true
 				} else {
 					var ansiLengthCol = visibleLength(col);
 					var _ps = ' '.repeat(Math.floor((maxsize[col] - ansiLengthCol)/2))
 					var _pe = ' '.repeat(Math.round((maxsize[col] - ansiLengthCol) / 2))
-					output.push(useAnsi ? ansiColor(colorMap.title, _ps + col + _pe) : _ps + col + _pe)
-					if (colNum < colsLengthMinusOne) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
+					output.push(useAnsi ? [ _colorMap.title, _ps, col, _pe, "\u001b[m" ].join("") : _ps + col + _pe)
+					if (colNum < colsLengthMinusOne) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 				}
 				colNum++
 			})
@@ -1000,11 +1006,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				if (outOfWidth) return;
 				lineSize += maxsize[col] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output.push(useAnsi ? ansiColor(colorMap.lines, "...") : "...")
+					output.push(useAnsi ? [ _colorMap.lines, "...", "\u001b[m" ].join("") : "...")
 					outOfWidth = true
 				} else {
-					output.push((useAnsi ? ansiColor(colorMap.lines, hLine.repeat(maxsize[col])) : hLine.repeat(maxsize[col])))
-					if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, hvJoin) : hvJoin)
+					output.push((useAnsi ? [ _colorMap.lines, hLine.repeat(maxsize[col]), "\u001b[m" ].join("") : hLine.repeat(maxsize[col])))
+					if (colNum < (cols.length-1)) output.push(useAnsi ? [_colorMap.lines, hvJoin, "\u001b[m" ].join("") : hvJoin)
 				}
 				colNum++
 			})
@@ -1020,8 +1026,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			} else {	
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
-				output.push(useAnsi ? ansiColor(_getColor(row[col], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
-				if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
+				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > 0 ? anArrayOfEntries[ii-1][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
+				if (colNum < (cols.length-1)) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 			}
 			colNum++
 		})
@@ -1031,10 +1037,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	if (displayCount) {
 		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]"
-		_output.add(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
+		_output.add(useAnsi ? [ _colorMap.lines, summary, "\u001b[m" ].join("") : summary)
 	}
 	
-	return _output.toArray().join("")
+	return _output.toArray().join("") + "\u001b[m"
 }
 
 /**
