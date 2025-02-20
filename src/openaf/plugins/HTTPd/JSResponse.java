@@ -72,7 +72,12 @@ public class JSResponse extends Response {
 				try {
 					ret = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {json});
 				} catch(Exception e) {
-					System.err.println("HTTPd error on request=" + AFCmdBase.jse.stringify(json, null, "").toString() + " with exception=" + e.getMessage());
+					java.io.StringWriter sw = new java.io.StringWriter();
+					java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+					e.printStackTrace(pw);
+					String stackTrace = sw.toString();
+
+					System.err.println("HTTPd error on request=" + AFCmdBase.jse.stringify(json, null, "").toString() + " with exception=" + e.getMessage() + " | " + e.getClass() + " | " + stackTrace);
 					e.printStackTrace();
 				}
 			}
