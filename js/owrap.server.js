@@ -2641,16 +2641,20 @@ OpenWrap.server.prototype.httpd = {
 		if (isDef(aPreRouteFunc)) this.__preRoutes[aPort] = aPreRouteFunc;
 		
 		aHTTPd.add(aPath, function(req) {			
-			var uri = req.uri.replace(new RegExp("^" + aP), "");
-			if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req, aHTTPd);
-			if (isFunction(parent.__routes[aPort][uri])) {
-				return parent.__routes[aPort][uri](req, aHTTPd);
-			} else {
-				var bp = ow.format.string.bestPrefix(uri, Object.keys(parent.__routes[aPort]));
-				if (isDef(bp))
-					return parent.__routes[aPort][bp](req, aHTTPd);
-				else
-					return parent.__defaultRoutes[aPort](req, aHTTPd);
+			try {
+				var uri = req.uri.replace(new RegExp("^" + aP), "");
+				if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req, aHTTPd);
+				if (isFunction(parent.__routes[aPort][uri])) {
+					return parent.__routes[aPort][uri](req, aHTTPd);
+				} else {
+					var bp = ow.format.string.bestPrefix(uri, Object.keys(parent.__routes[aPort]));
+					if (isDef(bp))
+						return parent.__routes[aPort][bp](req, aHTTPd);
+					else
+						return parent.__defaultRoutes[aPort](req, aHTTPd);
+				}
+			} catch(e) {
+				printErr("HTTPd route error: " + af.toSLON(req) + " | " + e)
 			}
 		});
 		
