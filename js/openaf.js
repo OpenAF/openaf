@@ -937,7 +937,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		}
 		var _bg = isDef(aBgColor) ? aBgColor + "," + (shouldBand ? __colorFormat.table.bandRow+"," : "") : (shouldBand ? __colorFormat.table.bandRow+"," : "") + ""
 		var _aValue = String(aValue).trim()
-		if (isNumber(_aValue) && ((isUnDef(prev) || prev.trim() == "") || (isDef(prev) && isNumber(prev)))) return _bg + __colorFormat.number
+		if (isNumber(_aValue) && ((isUnDef(prev) || String(prev).trim() == "") || (isDef(prev) && isNumber(prev)))) return _bg + __colorFormat.number
 		if (_aValue == "true" || _aValue == "false") return _bg + __colorFormat.boolean
 		if (isString(_aValue)) return _bg + __colorFormat.string
 		if (isDate(_aValue)) return _bg + __colorFormat.date
@@ -963,9 +963,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		cols.forEach(col => {
 			let _v = row[col]
 			if (isDate(_v)) 
-				_v = _v.toISOString().replace("Z","").replace("T"," ")
+				_v = _v.toISOString() //.replace("Z","").replace("T"," ")
 			else 
-				_v = isJavaObject(_v) ? String(_v) : _v
+				//_v = isJavaObject(_v) ? String(_v) : _v
+				_v = String(_v)
 			let ansiLength_v = visibleLength(_v)
 			if (isUnDef(maxsize[col])) 
 				maxsize[col] = visibleLength(col)
@@ -1024,6 +1025,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 				output.push("..."); outOfWidth = true
 			} else {	
+				//var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
 				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > (useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(useRowSep ? 2 : 1)][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)

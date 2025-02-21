@@ -130,7 +130,7 @@ OpenWrap.format.prototype.string = {
 				let column = row[_keys[i]]
 				let _v
 				if (column != null && !isNaN(_v) && typeof _v.getDate !== "undefined") {
-					_v = column.toISOString().replace("Z","").replace("T"," ")
+					_v = column.toISOString() //.replace("Z","").replace("T"," ")
 				} else {
 					_v = column == null ? "" : (isDef(column) ? String(column) : "")
 				}
@@ -184,7 +184,10 @@ OpenWrap.format.prototype.string = {
 			v = _ar[_keys[i]]
 	
 			let _v
-			if (isDate(v)) _v = v.toISOString().replace("Z","").replace("T"," "); else _v = v
+			if (isDate(v)) {
+				_v = v.toISOString() //.replace("Z","").replace("T"," "); 
+			} else 
+				_v = v
 			if (chgCols.has(i)) {
 				_newSize[i] = Math.max(fixedMinSize[i], Math.round((maxSizes[i] * (maxTableSize - fixedSize))/(curMaxSize - fixedSize)))
 			} else {
