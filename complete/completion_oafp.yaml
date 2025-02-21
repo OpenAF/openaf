@@ -486,8 +486,12 @@ complete:
   desc: Will search the provided keyword or 'category::subcategory' in the internet based list of oafp examples
 - name: version=
   desc: Alternative way to change the input to a map with the tool's version
+- name: pipe=
+  desc: A JSON/SLON/YAML map for recursive call of oafp similar to using unix pipes - useful with -f -
 - name: '-v'
   desc: Changes the input to a map with the tool's version info
+- name: '-f'
+  desc: A JSON/SLON/YAML file with all the oafp parameters as a map
 - name: arraytomap=
   desc: If true will try to convert the input array to a map -see arraytomapkey, arraytomapkeepkey-
 - name: arraytomapkeepkey=
