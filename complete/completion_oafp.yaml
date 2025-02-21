@@ -142,7 +142,7 @@ complete:
   - name: in=oaf
     desc: Takes an OpenAF scripting code to execute and use the result as input
   - name: in=oafp
-    desc: Takes a JSON/SLON map input as parameters for calling a sub oafp process -arrays will call multiple oafp processes-
+    desc: Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process -arrays will call multiple oafp processes-
     opts:
     - name: inoafpseq=
       desc: If true and if input is an array the oafp processes will be executed in sequence
