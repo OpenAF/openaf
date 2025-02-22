@@ -264,6 +264,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
     HTTP_CON_TIMEOUT            : __,
 	HTTP_DEFAULT_HEADERS		: true,
 	HTTP_USE_MEDIA_TYPE         : false,
+	HTTPD_THREADS               : "auto",
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,

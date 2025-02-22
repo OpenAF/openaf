@@ -10,6 +10,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptRuntime;
 
 import openaf.AFCmdBase;
 import openaf.SimpleLog;
@@ -70,7 +71,8 @@ public class JSResponse extends Response {
 			Object ret = null; 
 			if (func != null) {
 				try {
-					ret = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {json});
+					//ret = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] {json});
+					ret = func.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), json, new Object[] { json });
 				} catch(Exception e) {
 					java.io.StringWriter sw = new java.io.StringWriter();
 					java.io.PrintWriter pw = new java.io.PrintWriter(sw);

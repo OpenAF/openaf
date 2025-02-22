@@ -293,6 +293,11 @@ public class HTTPServer extends ScriptableObject {
 		httpd.addToWsAccept(uri);
 	}
 
+	@JSFunction
+	public IHTTPd getHTTPObj() {
+		return httpd;
+	}
+
 	/**
 	 * <odoc>
 	 * <key>HTTPd.addEcho(aURI)</key>
