@@ -2028,7 +2028,7 @@ public abstract class NanoHTTPD {
         }
     }
 
-    public static int numThreads = java.lang.Runtime.getRuntime().availableProcessors() * 2;
+    public static int numThreads = java.lang.Math.max(java.lang.Runtime.getRuntime().availableProcessors() * 2, 15);
 
     private final String hostname;
 
