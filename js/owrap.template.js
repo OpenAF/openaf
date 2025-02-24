@@ -15,6 +15,7 @@ OpenWrap.template = function() {
 };
 
 OpenWrap.template.prototype.__mdHTMLExtras = []
+OpenWrap.template.prototype.__mdHTMLTExtras = []
 OpenWrap.template.prototype.__srcPath = {}
 
 OpenWrap.template.prototype.__requireHB = function() {
@@ -774,10 +775,16 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
 		}
 		
+		var _extras = ow.template.__mdHTMLExtras
+		// Process trigger extas
+		ow.template.__mdHTMLTExtras.forEach(r => {
+			if (aMarkdownString.indexOf(r.t) >= 0) _extras.push(r.e)
+		})
+
 		return this.parse(this.__templatemd, {
 			markdown: converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">"),
 			noMaxWidth: removeMaxWidth,
-			extras: ow.template.__mdHTMLExtras,
+			extras: _extras,
 			mdcodeclip: __flags.MD_CODECLIP
 		})
 	} else {
