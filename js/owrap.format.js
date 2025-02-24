@@ -129,7 +129,7 @@ OpenWrap.format.prototype.string = {
 			for(let i = 0; i < _keys.length; i++) {
 				let column = row[_keys[i]]
 				let _v
-				if (column != null && !isNaN(_v) && typeof _v.getDate !== "undefined") {
+				if (column != null && !isNaN(column) && typeof column.getDate !== "undefined") {
 					_v = column.toISOString() //.replace("Z","").replace("T"," ")
 				} else {
 					_v = column == null ? "" : (isDef(column) ? String(column) : "")
