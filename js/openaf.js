@@ -892,7 +892,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		title: ansiColor(colorMap.title, "").replace(/\u001b\[m$/, "")
 	}
 
-	ow.loadFormat();
+	ow.loadFormat()
 	if (isUnDef(aTheme)) {
 		if (!ow.format.isWindows()) {
 			if (isUnDef(useAnsi) && __initializeCon()) {
@@ -940,8 +940,8 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		var _aValue = String(aValue).trim()
 		if (isNumber(_aValue) && ((isUnDef(prev) || String(prev).trim() == "") || (isDef(prev) && isNumber(prev)))) return _bg + __colorFormat.number
 		if (_aValue == "true" || _aValue == "false") return _bg + __colorFormat.boolean
-		if (isString(_aValue)) return _bg + __colorFormat.string
-		if (isDate(_aValue)) return _bg + __colorFormat.date
+		if (isString(aValue)) return _bg + __colorFormat.string
+		if (isDate(aValue)) return _bg + __colorFormat.date
 		return _bg + __colorFormat.default
 	}
 
@@ -963,9 +963,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	anArrayOfEntries.forEach(row => {
 		cols.forEach(col => {
 			let _v = row[col]
-			if (isDate(_v)) 
-				_v = _v.toISOString() //.replace("Z","").replace("T"," ")
-			else 
+			if (isString(_v) && _v.length >= 24 && isDate(new Date(_v))) {
+				_v = new Date(_v).toISOString().replace("Z","").replace("T"," ")
+				row[col] = new Date(row[col])
+			} else 
 				//_v = isJavaObject(_v) ? String(_v) : _v
 				_v = String(_v)
 			let ansiLength_v = visibleLength(_v)
