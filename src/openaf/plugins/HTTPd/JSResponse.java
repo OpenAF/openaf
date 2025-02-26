@@ -10,8 +10,6 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptRuntime;
-
 import openaf.AFCmdBase;
 import openaf.SimpleLog;
 import openaf.SimpleLog.logtype;
@@ -117,12 +115,31 @@ public class JSResponse extends Response {
 				}
 				
 				if (no.containsKey("data")) {
-					this.data = new ByteArrayInputStream( 
-						(no.get("data") instanceof String) ? no.get("data").toString().getBytes("UTF-8")
-									                        : (byte[]) no.get("data"));
-						
-					this.size =	((no.get("data") instanceof String) ? no.get("data").toString().getBytes("UTF-8").length
-									                        : ((byte[]) no.get("data")).length);
+					try {
+						Object dataObj = no.get("data");
+						if (dataObj instanceof String) {
+							String dataStr = dataObj.toString();
+							byte[] bytes = dataStr.getBytes("UTF-8");
+							this.data = new ByteArrayInputStream(bytes);
+							this.size = bytes.length;
+						} else if (dataObj instanceof byte[]) {
+							byte[] bytes = (byte[]) dataObj;
+							this.data = new ByteArrayInputStream(bytes);
+							this.size = bytes.length;
+						} else {
+							// Handle unexpected data type
+							String errorMsg = "Unsupported data type: " + (dataObj != null ? dataObj.getClass().getName() : "null");
+							SimpleLog.log(logtype.ERROR, errorMsg, null);
+							this.data = new ByteArrayInputStream(errorMsg.getBytes("UTF-8"));
+							this.size = errorMsg.length();
+						}
+					} catch (Exception e) {
+						SimpleLog.log(logtype.ERROR, "Error processing response data", e);
+						String errorMsg = "Internal server error";
+						this.data = new ByteArrayInputStream(errorMsg.getBytes("UTF-8"));
+						this.size = errorMsg.length();
+						this.status = Codes.HTTP_INTERNALERROR;
+					}
 				} else {
 					if (no.containsKey("stream")) {
 						this.data = (java.io.InputStream) no.get("stream");
