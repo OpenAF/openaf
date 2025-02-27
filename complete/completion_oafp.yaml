@@ -582,7 +582,7 @@ complete:
   desc: Performs set operations (intersection by default) over an 'a' and 'b' path to an array defined in a JSON/SLON map
   opts:
   - name: setop=
-    desc: Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' -symetric difference- and 'intersect' -default-
+    desc: Allows to choose a different set operation between 'union', 'diffa', 'diffb', 'diffab' -symetric difference-, 'diff' and 'intersect' -default-
     opts:
     - name: setop=union
       desc: Will return the union of the two sets
