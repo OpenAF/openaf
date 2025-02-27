@@ -178,10 +178,22 @@ public class AFBase extends ScriptableObject {
 	 * @return
 	 */
 	public static String correctUrlString(String url) {
-		if (!url.endsWith("/"))
-			url = url + "/";
-
-		return url;
+		try {
+			URI uri = new URI(url);
+			String path = uri.getPath();
+			
+			// Ensure path ends with "/"
+			if (path == null || path.isEmpty()) {
+				path = "/";
+			} else if (!path.endsWith("/")) {
+				path += "/";
+			}
+			
+			// Rebuild the URI with the modified path
+			return new URI(uri.getScheme(), uri.getAuthority(), path, uri.getQuery(), uri.getFragment()).toString();
+		} catch (URISyntaxException e) {
+			throw new IllegalArgumentException("Invalid URL: " + url, e);
+		}
 	}
 
 	/**

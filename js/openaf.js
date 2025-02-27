@@ -222,7 +222,9 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		fullValSize: false,
 		withValues : true,
 		wordWrap   : true,
-		compact    : true
+		compact    : true,
+		mono       : false,
+		color      : true
 	},
 	TABLE: {
 		wordWrap           : true,
@@ -262,6 +264,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
     HTTP_CON_TIMEOUT            : __,
 	HTTP_DEFAULT_HEADERS		: true,
 	HTTP_USE_MEDIA_TYPE         : false,
+	HTTPD_THREADS               : "auto",
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
@@ -883,8 +886,13 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		colorMap.value = aBgColor + "," + colorMap.value
 		colorMap.title = aBgColor + "," + colorMap.title
 	}
+	var _colorMap = {
+		lines: ansiColor(colorMap.lines, "").replace(/\u001b\[m$/, ""),
+		value: ansiColor(colorMap.value, "").replace(/\u001b\[m$/, ""),
+		title: ansiColor(colorMap.title, "").replace(/\u001b\[m$/, "")
+	}
 
-	ow.loadFormat();
+	ow.loadFormat()
 	if (isUnDef(aTheme)) {
 		if (!ow.format.isWindows()) {
 			if (isUnDef(useAnsi) && __initializeCon()) {
@@ -910,7 +918,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	}
 
 	//var pShouldBand = false
-	var _getColor = (aValue, ii) => {
+	var _getColor = (aValue, ii, prev) => {
 		var shouldBand
 		if (bandRows) {
 			// Given anArrayOfIdxs with a list of intervals, if ii is in one of them, then band
@@ -929,9 +937,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			shouldBand = false
 		}
 		var _bg = isDef(aBgColor) ? aBgColor + "," + (shouldBand ? __colorFormat.table.bandRow+"," : "") : (shouldBand ? __colorFormat.table.bandRow+"," : "") + ""
-		if (isNumber(aValue)) return _bg + __colorFormat.number
+		var _aValue = String(aValue).trim()
+		if (isNumber(_aValue) && ((isUnDef(prev) || String(prev).trim() == "") || (isDef(prev) && isNumber(prev)))) return _bg + __colorFormat.number
+		if (_aValue == "true" || _aValue == "false") return _bg + __colorFormat.boolean
 		if (isString(aValue)) return _bg + __colorFormat.string
-		if (isBoolean(aValue)) return _bg + __colorFormat.boolean
 		if (isDate(aValue)) return _bg + __colorFormat.date
 		return _bg + __colorFormat.default
 	}
@@ -954,9 +963,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	anArrayOfEntries.forEach(row => {
 		cols.forEach(col => {
 			let _v = row[col]
-			if (isDate(_v)) 
-				_v = _v.toISOString().replace("Z","").replace("T"," ")
-			else 
+			if (isString(_v) && _v.length >= 24 && isDate(new Date(_v))) {
+				_v = new Date(_v).toISOString().replace("Z","").replace("T"," ")
+				row[col] = new Date(row[col])
+			} else 
+				//_v = isJavaObject(_v) ? String(_v) : _v
 				_v = String(_v)
 			let ansiLength_v = visibleLength(_v)
 			if (isUnDef(maxsize[col])) 
@@ -976,19 +987,19 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 		var colNum
 	
 		if (ii == 0) {
-			output.push(useAnsi ? ansiColor(colorMap.title, "") : "")
+			output.push(useAnsi ? _colorMap.title : "")
 			lineSize = 1; outOfWidth = false; colNum = 0;
 			cols.forEach(col => {
 				if (outOfWidth) return
 				lineSize += maxsize[col] + 1
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output.push((useAnsi ? ansiColor(colorMap.title, "...") : "...")); outOfWidth = true
+					output.push((useAnsi ? [ _colorMap.title, "...", "\u001b[m" ].join("") : "...")); outOfWidth = true
 				} else {
 					var ansiLengthCol = visibleLength(col);
 					var _ps = ' '.repeat(Math.floor((maxsize[col] - ansiLengthCol)/2))
 					var _pe = ' '.repeat(Math.round((maxsize[col] - ansiLengthCol) / 2))
-					output.push(useAnsi ? ansiColor(colorMap.title, _ps + col + _pe) : _ps + col + _pe)
-					if (colNum < colsLengthMinusOne) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
+					output.push(useAnsi ? [ _colorMap.title, _ps, col, _pe, "\u001b[m" ].join("") : _ps + col + _pe)
+					if (colNum < colsLengthMinusOne) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 				}
 				colNum++
 			})
@@ -998,11 +1009,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 				if (outOfWidth) return;
 				lineSize += maxsize[col] + 1;
 				if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
-					output.push(useAnsi ? ansiColor(colorMap.lines, "...") : "...")
+					output.push(useAnsi ? [ _colorMap.lines, "...", "\u001b[m" ].join("") : "...")
 					outOfWidth = true
 				} else {
-					output.push((useAnsi ? ansiColor(colorMap.lines, hLine.repeat(maxsize[col])) : hLine.repeat(maxsize[col])))
-					if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, hvJoin) : hvJoin)
+					output.push((useAnsi ? [ _colorMap.lines, hLine.repeat(maxsize[col]), "\u001b[m" ].join("") : hLine.repeat(maxsize[col])))
+					if (colNum < (cols.length-1)) output.push(useAnsi ? [_colorMap.lines, hvJoin, "\u001b[m" ].join("") : hvJoin)
 				}
 				colNum++
 			})
@@ -1016,10 +1027,11 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			if (aWidthLimit > 0 && lineSize > (aWidthLimit+3)) {
 				output.push("..."); outOfWidth = true
 			} else {	
+				//var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var value = isDate(row[col]) ? row[col].toISOString().replace("Z","").replace("T"," ") : String(row[col]).replace(/\n/g, " ")
 				var _pe = ' '.repeat(maxsize[col] - visibleLength(value))
-				output.push(useAnsi ? ansiColor(_getColor(row[col], ii), value + _pe, __, __, jj != cols.length -1) : value + _pe)
-				if (colNum < (cols.length-1)) output.push(useAnsi ? ansiColor(colorMap.lines, vLine) : vLine)
+				output.push(useAnsi ? ansiColor(_getColor(row[col], ii, ii > (useRowSep ? 1 : 0) ? anArrayOfEntries[ii-(useRowSep ? 2 : 1)][col] : __), value + _pe, __, __, jj != cols.length -1) : value + _pe)
+				if (colNum < (cols.length-1)) output.push(useAnsi ? [ _colorMap.lines, vLine, "\u001b[m" ].join("") : vLine)
 			}
 			colNum++
 		})
@@ -1029,10 +1041,10 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 
 	if (displayCount) {
 		var summary = "[#" + inCount + " " + ((inCount <= 1) ? "row" : "rows") + "]"
-		_output.add(useAnsi ? ansiColor(colorMap.lines, summary) : summary)
+		_output.add(useAnsi ? [ _colorMap.lines, summary, "\u001b[m" ].join("") : summary)
 	}
 	
-	return _output.toArray().join("")
+	return _output.toArray().join("") + "\u001b[m"
 }
 
 /**
@@ -1059,16 +1071,28 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         minSize: 5
     }, __flags.TREE), __colorFormat.tree), _aOptions)
 
-    // Decide on decorations to use
+    // Decide on decorations to use 
     if (_aOptions.compact) {
-        slines = 2
-        line = (_aOptions.noansi ? "|" : "│") 
-        endc = (_aOptions.noansi ? "\\ " : (_aOptions.curved ? "╰ " : "└ "))
-        //strc = (_aOptions.noansi ? "/ " : "┬ ")
-        strc = (_aOptions.noansi ? "/ " :  (_aOptions.curved ? "╭ " : "┌ "))
-        ssrc = (_aOptions.noansi ? "- " : "─ ")
-        midc = (_aOptions.noansi ? "| " : "├ ")
-		skey = ": "
+		if (_aOptions.mono) {
+			slines = 2
+			line = (_aOptions.noansi ? "\u001b[2m|\u001b[m" : "\u001b[2m│\u001b[m") 
+			endc = (_aOptions.noansi ? "\u001b[2m\\\u001b[m " : (_aOptions.curved ? "\u001b[2m╰\u001b[m " : "\u001b[2m└\u001b[m "))
+			//strc = (_aOptions.noansi ? "/ " : "┬ ")
+			strc = (_aOptions.noansi ? "\u001b[2m/\u001b[m " :  (_aOptions.curved ? "\u001b[2m╭\u001b[m " : "\u001b[2m┌\u001b[m "))
+			ssrc = (_aOptions.noansi ? "\u001b[2m-\u001b[m " : "\u001b[2m─\u001b[m ")
+			midc = (_aOptions.noansi ? "\u001b[2m|\u001b[m " : "\u001b[2m├\u001b[m ")
+			skey = ":\u001b[2m "
+			_aOptions.color = false
+		} else {
+			slines = 2
+			line = (_aOptions.noansi ? "|" : "│") 
+			endc = (_aOptions.noansi ? "\\ " : (_aOptions.curved ? "╰ " : "└ "))
+			//strc = (_aOptions.noansi ? "/ " : "┬ ")
+			strc = (_aOptions.noansi ? "/ " :  (_aOptions.curved ? "╭ " : "┌ "))
+			ssrc = (_aOptions.noansi ? "- " : "─ ")
+			midc = (_aOptions.noansi ? "| " : "├ ")
+			skey = ": "
+		}
     } else {
         slines = 3
         line = (_aOptions.noansi ? "|" : "│") 
@@ -1104,7 +1128,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			if (null == aO) return "null"
 			try {
 				if ("function" === typeof aO.getClass && "[object JavaObject]" === Object.prototype.toString.call(aO)) return "java"
-			} catch(e) {
+			} catch(e) {
 				if (aO.getClass() instanceof java.lang.Object) return "java"
 			}
             if ("undefined" == typeof aO) return "undefined"
@@ -1113,8 +1137,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             if ("string" == typeof aO) return "string"
             if ("undefined" !== typeof aO.getDate) return "date"
         }
-        _acr = () => _ac("RESET","")
-        var _clrCache = new ow.obj.syncMap()
+        //_acr = () => _ac("RESET","")
         _clr = aO => {
             //if (_clrCache[String(aO)]) return _clrCache[String(aO)]
 			if (_clrCache.containsKey(String(aO))) return _clrCache.get(String(aO))
@@ -1122,20 +1145,20 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             let result
             let dt = _dt(aO)
             switch(dt) {
-			case "null"   : result = [_ac(__colorFormat.default, "null"), _acr()].join(""); break
-            case "number" : result = [_ac(__colorFormat.number, String(aO)), _acr()].join(""); break
-            case "string" : result = [_ac(__colorFormat.string, String(aO)), _acr()].join(""); break
-            case "boolean": result = [_ac(__colorFormat.boolean, String(aO)), _acr()].join(""); break
-            case "date"   : result = [_ac(__colorFormat.date, aO.toISOString().replace("Z","").replace("T"," ")), _acr()].join(""); break
-            case "java"   : result = [_ac(__colorFormat.string, String(aO.toString())), _acr()].join(""); break
-            default       : result = [_ac(__colorFormat.default, String(aO)), _acr()].join(""); break
+			case "null"   : result = [_acCFdefault, "null", "\u001b[m"].join(""); break
+            case "number" : result = [_acCFnumber, String(aO), "\u001b[m"].join(""); break
+            case "string" : result = [_acCFstring, String(aO), "\u001b[m"].join(""); break
+            case "boolean": result = [_acCFboolean, String(aO), "\u001b[m"].join(""); break
+            case "date"   : result = [_acCFdate, aO.toISOString().replace("Z","").replace("T"," "), "\u001b[m"].join(""); break
+            case "java"   : result = [_acCFstring, String(aO.toString()), "\u001b[m"].join(""); break
+            default       : result = [_acCFdefault, String(aO), "\u001b[m"].join(""); break
             }
             //_clrCache[String(aO)] = result
 			_clrCache.put(String(aO), result)
             return result
         }
         _ac  = (aAnsi, aString) => {
-            if (!__conConsole) return aString
+            if (!__conConsole || (isDef(_aOptions.color) && !_aOptions.color)) return aString
 
             aAnsi = aAnsi.trim().toUpperCase()
             if (_aOptions.bgcolor && aAnsi.length > 0) {
@@ -1148,6 +1171,13 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
         
             return ansiColor(aAnsi, aString, true, true)
         }
+		var _clrCache = new ow.obj.syncMap()
+		var _acCFdefault = _ac(__colorFormat.default, "").replace("\u001b[m", "")
+		var _acCFnumber = _ac(__colorFormat.number, "").replace("\u001b[m", "")
+		var _acCFstring = _ac(__colorFormat.string, "").replace("\u001b[m", "")
+		var _acCFboolean = _ac(__colorFormat.boolean, "").replace("\u001b[m", "")
+		var _acCFdate = _ac(__colorFormat.date, "").replace("\u001b[m", "")
+		var _acCFstring  = _ac(__colorFormat.string, "").replace("\u001b[m", "")
         _al  = m => (__flags.VISIBLELENGTH ? visibleLength(m) : m.replace(/\033\[[0-9;]*m/g, "").length)
     } else {
         _clr = s => s
@@ -9381,6 +9411,7 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
 			case "OR" : _begin(op, true); _process(_a, false, isNot); _process(_b, true, isNot); _end(); break
   
 			case "IS"     : _p = isOr ? (isNot ? "orNotE" : "orE") : (isNot ? "notE" : "e"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
+			case "IS NOT" : _p = isOr ? (isNot ? "orE" : "orNotE") : (isNot ? "e" : "notE"); _r.where.push({ cond: _p + 'quals', args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ]}); break
 			case "REGEXP" : _p = isOr ? (isNot ? "orNotM" : "orM") : (isNot ? "notM" : "m"); _r.where.push({ cond: _p + "atch", args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value ] }); break
 			case "BETWEEN": _p = isOr ? (isNot ? "orNotB" : "orB") : (isNot ? "notB" : "b"); _r.where.push({ cond: _p + "etweenEquals", args: [ (isDef(_a.value) ? _a.value : _a.column), _b.value[0].value, _b.value[1].value ] }); break
 
@@ -13066,11 +13097,17 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			if (isArray(res)) return fnP(printTable(res, (__conAnsi ? isDef(__con) && __con.getTerminal().getWidth() : __), true, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __), __, true, false, true))
 			break
 		case "tree":
-			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: false }))
 		case "ctree":
 			__ansiColorFlag = true
 			__conConsole = true
-			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi }))
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true }))
+		case "mtree":
+			__ansiColorFlag = true
+			__conConsole = true
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: true, color: false }))
+		case "btree":
+			return fnP(printTreeOrS(res, __, { noansi: true, mono: false, color: false }))
 		case "res":
 			if (isDef(res)) $set("res", res)
 			break

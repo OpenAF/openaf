@@ -44,7 +44,7 @@ public class Threads extends ScriptableObject {
 	 */
 	public class ScriptFunction implements Callable<Boolean>, Runnable {
 		protected NativeFunction aFunction;
-		protected Context cx;
+		//protected Context cx;
 		protected UUID uuid;
 		
 		/**
@@ -59,7 +59,7 @@ public class Threads extends ScriptableObject {
 
 		@Override
 		public Boolean call() throws Exception {
-			cx = (Context) AFCmdBase.jse.enterContext();
+			Context cx = (Context) AFCmdBase.jse.enterContext();
 			try {
 				aFunction.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[]{ uuid.toString() });
 			} catch (Exception e) {
