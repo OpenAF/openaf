@@ -100,6 +100,9 @@ import org.apache.commons.io.FileUtils;
 
 import java.lang.String;
 
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * A simple, tiny, nicely embeddable HTTP server in Java
  * <p/>
@@ -348,7 +351,25 @@ public abstract class NanoHTTPD {
         private long requestCount;
 
         private final List<ClientHandler> running = Collections.synchronizedList(new ArrayList<NanoHTTPD.ClientHandler>());
-
+        // Use a cached thread pool for reusing threads
+        //private final ExecutorService threadPool = Executors.newCachedThreadPool();
+        private final ExecutorService threadPool = new ThreadPoolExecutor(
+            1,                                  // core pool size
+            numThreads,                         // maximum pool size
+            60L, TimeUnit.SECONDS,              // keep-alive time
+            new SynchronousQueue<Runnable>(),   // work queue
+            new ThreadFactory() {               // custom thread factory
+            private final AtomicInteger count = new AtomicInteger(1);
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r, "NanoHttpd Request Processor (#" + count.getAndIncrement() + ")");
+                t.setDaemon(true);
+                return t;
+            }
+            },
+            new ThreadPoolExecutor.CallerRunsPolicy()  // rejected execution handler
+        );
+        
         /**
          * @return a list with currently running clients.
          */
@@ -358,6 +379,7 @@ public abstract class NanoHTTPD {
 
         @Override
         public void closeAll() {
+            threadPool.shutdownNow();
             // copy of the list for concurrency
             for (ClientHandler clientHandler : new ArrayList<ClientHandler>(this.running)) {
                 clientHandler.close();
@@ -372,11 +394,12 @@ public abstract class NanoHTTPD {
         @Override
         public void exec(ClientHandler clientHandler) {
             ++this.requestCount;
-            Thread t = new Thread(clientHandler);
-            t.setDaemon(true);
-            t.setName("NanoHttpd Request Processor (#" + this.requestCount + ")");
+            //Thread t = new Thread(clientHandler);
+            //t.setDaemon(true);
+            //t.setName("NanoHttpd Request Processor (#" + this.requestCount + ")");
             this.running.add(clientHandler);
-            t.start();
+            //t.start();
+            threadPool.execute(clientHandler);
         }
     }
 
@@ -2004,6 +2027,8 @@ public abstract class NanoHTTPD {
             NanoHTTPD.LOG.log(Level.SEVERE, "Could not close", e);
         }
     }
+
+    public static int numThreads = java.lang.Math.max(java.lang.Runtime.getRuntime().availableProcessors() * 2, 15);
 
     private final String hostname;
 

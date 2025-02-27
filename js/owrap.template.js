@@ -15,6 +15,7 @@ OpenWrap.template = function() {
 };
 
 OpenWrap.template.prototype.__mdHTMLExtras = []
+OpenWrap.template.prototype.__mdHTMLTExtras = []
 OpenWrap.template.prototype.__srcPath = {}
 
 OpenWrap.template.prototype.__requireHB = function() {
@@ -33,14 +34,15 @@ OpenWrap.template.prototype.__requireHB = function() {
  * </odoc>
  */
 OpenWrap.template.prototype.addHelpers = function(aPrefix, aObject) {
-	this.__helpers = _$(this.__helpers).default({});
+	ow.loadObj()
+	if (isUnDef(this.__helpers)) this.__helpers = new ow.obj.syncMap()
 
 	var m = Object.keys(aObject.constructor.prototype);
 	if (m.length < 1) m = (isDef(aObject.prototype)) ? Object.keys(aObject.prototype) : Object.keys(aObject);
 	m.forEach((aMethod) => {
 		var subs = Object.keys(aObject[aMethod]);
 		if (subs.length == 0)
-			this.__helpers[aPrefix + aMethod] = aObject[aMethod];
+			this.__helpers.put(aPrefix + aMethod, aObject[aMethod])
 		else 
 			this.addHelpers(aPrefix + aMethod + "_", aObject[aMethod]);
 		//require(this.hb).registerHelper(aPrefix + aMethod, aObject[aMethod]);
@@ -48,10 +50,12 @@ OpenWrap.template.prototype.addHelpers = function(aPrefix, aObject) {
 };
 
 OpenWrap.template.prototype.__addHelpers = function(aHB) {
-	this.__helpers = _$(this.__helpers).default({});
-	for(var i in this.__helpers) {
-		aHB.registerHelper(i, this.__helpers[i]);
-	}
+	ow.loadObj()
+	if (isUnDef(this.__helpers)) this.__helpers = new ow.obj.syncMap()
+
+	this.__helpers.forEach((k, v) => {
+		aHB.registerHelper(k, v)
+	})
 };
 
 /**
@@ -462,10 +466,12 @@ OpenWrap.template.prototype.addConditionalHelpers = function() {
  * </odoc>
  */
 OpenWrap.template.prototype.addHelper = function(aHelperName, aFunction) {
-	this.__helpers = _$(this.__helpers).default({});
+	ow.loadObj()
+	if (isUnDef(this.__helpers)) this.__helpers = new ow.obj.syncMap()
 	if (isUnDef(this.hb)) this.__requireHB();
 
-	this.__helpers[aHelperName] = aFunction;
+	//this.__helpers[aHelperName] = aFunction;
+	this.__helpers.put(aHelperName, aFunction)
 	//require(this.hb).registerHelper(aHelperName, aFunction);
 }
 
@@ -476,10 +482,12 @@ OpenWrap.template.prototype.addHelper = function(aHelperName, aFunction) {
  * </odoc>
  */
 OpenWrap.template.prototype.delHelper = function(aHelperName) {
-	this.__helpers = _$(this.__helpers).default({});
+	ow.loadObj()
+	if (isUnDef(this.__helpers)) this.__helpers = new ow.obj.syncMap()
 	if (isUnDef(this.hb)) this.__requireHB();
 	
-	delete this.__helpers[aHelperName];
+	//delete this.__helpers[aHelperName];
+	this.__helpers.remove(aHelperName)
 	//require(this.hb).unregisterHelper(aHelperName);
 };
 
@@ -490,16 +498,21 @@ OpenWrap.template.prototype.delHelper = function(aHelperName) {
  * </odoc>
  */
 OpenWrap.template.prototype.addPartial = function(aPartial, aSource) {
-	this.__partials = _$(this.__partials).default({});
-	this.__partials[aPartial] = aSource;
+	ow.loadObj()
+	if (isUnDef(this.__partials)) this.__partials = new ow.obj.syncMap()
+	
+	//this.__partials[aPartial] = aSource;
+	this.__partials.put(aPartial, aSource)
 	//require(this.hb).registerPartial(aPartial, aSource);
 };
 
 OpenWrap.template.prototype.__addPartials = function(aHB) {
-	this.__partials = _$(this.__partials).default({});
-	for(var i in this.__partials) {
-		aHB.registerPartial(i, this.__partials[i]);
-	}
+	ow.loadObj()
+	if (isUnDef(this.__partials)) this.__partials = new ow.obj.syncMap()
+
+	this.__partials.forEach((k, v) => {
+		aHB.registerPartial(k, v)
+	})
 };
 
 /**
@@ -509,7 +522,8 @@ OpenWrap.template.prototype.__addPartials = function(aHB) {
  * </odoc>
  */
 OpenWrap.template.prototype.delPartial = function(aPartial) {
-	delete this.__partials[aPartial];
+	//delete this.__partials[aPartial];
+	this.__partials.remove(aPartial)
 	//require(this.hb).unregisterPartial(aPartial);
 }
 
@@ -774,10 +788,16 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
 		}
 		
+		var _extras = ow.template.__mdHTMLExtras
+		// Process trigger extas
+		ow.template.__mdHTMLTExtras.forEach(r => {
+			if (aMarkdownString.indexOf(r.t) >= 0) _extras.push(r.e)
+		})
+
 		return this.parse(this.__templatemd, {
 			markdown: converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">"),
 			noMaxWidth: removeMaxWidth,
-			extras: ow.template.__mdHTMLExtras,
+			extras: _extras,
 			mdcodeclip: __flags.MD_CODECLIP
 		})
 	} else {

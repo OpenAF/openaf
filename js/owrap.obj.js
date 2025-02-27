@@ -3487,6 +3487,18 @@ OpenWrap.obj.prototype.syncMap.prototype.toMap = function() {
 
 /**
  * <odoc>
+ * <key>ow.obj.syncMap.forEach(aFunction)</key>
+ * Executes aFunction for each entry in the internal map. The function should have the signature function(key, value).
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncMap.prototype.forEach = function(fn) {
+	this.map.forEach(function(k, v) {
+		fn(k, v)
+	})
+}
+
+/**
+ * <odoc>
  * <key>ow.obj.syncArray(anArray) : ow.obj.syncArray</key>
  * Creates an instance of a thread-safe array/list. Optionally it can be initialized with anArray.
  * </odoc>
@@ -3601,6 +3613,18 @@ OpenWrap.obj.prototype.syncArray.prototype.clear = function() {
 OpenWrap.obj.prototype.syncArray.prototype.indexOf = function(aObject) {
 	return this.arr.indexOf(aObject);
 };
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.forEach(aFunction)</key>
+ * Executes aFunction for each element in the internal array/list. The function should have the signature function(value).
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.forEach = function(fn) {
+	this.arr.forEach(function(v) {
+		fn(v);
+	})
+}
 
 /**
  * <odoc>
