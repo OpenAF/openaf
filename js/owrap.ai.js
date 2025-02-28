@@ -409,7 +409,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         })
                     })
                     
-                    var __r = _r.rawPrompt(body, aModel, aTemperature, aJsonFlag)
+                    var __r = _r.rawPrompt({ parts: body }, aModel, aTemperature, aJsonFlag)
 
                     if (isArray(__r.candidates) && isArray(__r.candidates[0].content.parts) && __r.candidates[0].content.parts.length > 0) {
                         if (__r.candidates[0].finishReason == "STOP") {
