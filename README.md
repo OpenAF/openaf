@@ -117,4 +117,4 @@ But you can use a previous stable openaf build if the ow.test and ojob functiona
 
 * https://github.com/OpenAF/openaf-templates - Code/oJob templates
 * https://openaf.io/opacks - OpenAF packages
-* https://openafs.blogspot.com - OpenAF code snippets and functionality explained
+* https://docs.openaf.io - OpenAF code snippets and functionality explained
