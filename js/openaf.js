@@ -3627,10 +3627,15 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 				cl = info.filename.replace(/\./g, "_");
 				clFile = cl + ".class";
 				clFilepath = path + clFile;
+				// Check version and recompile if needed
+				if (!io.fileExists(path + "." + getDistribution() + "-" + getVersion())) {
+					io.rm(path)
+				}
 				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
 				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
 					if (!dontCompile) {
 						io.mkdir(path);
+						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
 						io.rm(clFilepath);
 						var code = io.readFileString(info.canonicalPath)
 						__codeVerify(code, aScript)
@@ -3681,10 +3686,15 @@ const loadCompiled = function(aScript, dontCompile, dontLoad) {
 				cl = info.filename.replace(/\./g, "_");
 				clFile = cl + ".class";
 				clFilepath = path + clFile;
+				// Check version and recompile if needed
+				if (!io.fileExists(path + "." + getDistribution() + "-" + getVersion())) {
+					io.rm(path)
+				}
 				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
 				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
 					if (!dontCompile) {
 						io.mkdir(path);
+						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
 						io.rm(clFilepath);
 						var code = io.readFileString(info.canonicalPath)
 						__codeVerify(code, aScript)
