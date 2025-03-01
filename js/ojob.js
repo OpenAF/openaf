@@ -8,7 +8,7 @@ var ojob_args = {};
 var nocolor = false;
 
 var kparams = Object.keys(params)
-if (kparams.length == 1 && kparams[0] == "") ojob_showHelp();
+if ((kparams.length == 1 && kparams[0] == "") || kparams.length == 0) ojob_showHelp()
 
 // Check parameters
 if (kparams.indexOf("-h") >= 0 && params["-h"] == "") {
