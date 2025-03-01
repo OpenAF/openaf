@@ -789,8 +789,8 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
 		}
 		
-		var _extras = ow.template.__mdHTMLExtras
-		// Process trigger extas
+		var _extras = []
+		// Process trigger extras
 		ow.template.__mdHTMLTExtras.forEach(r => {
 			if (aMarkdownString.indexOf(r.t) >= 0) _extras.push(r.e)
 		})
