@@ -2708,7 +2708,8 @@ OpenWrap.server.prototype.httpd = {
 		if (isUnDef(aMapOfRoutes)) aMapOfRoutes = {};
 		var parent = this
 
-		if (isDef(getOPackPath("Mermaid"))) loadLib("mermaid.js")
+		if (isDef(getOPackPath("Mermaid")) && 
+		    io.fileExists(getOPackPath("Mermaid")+"/mermaid.js")) loadLib("mermaid.js")
 
 		Object.keys(this.customLibs).forEach(lib => {
 			aMapOfRoutes["/js/" + lib] = function() { return parent.customLibs[lib](aHTTPd) }

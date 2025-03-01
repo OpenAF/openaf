@@ -784,7 +784,8 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 
 	if (isFull) {
 		if (isUnDef(this.__templatemd)) {
-			if (isDef(getOPackPath("Mermaid"))) loadLib("mermaid.js")
+			if (isDef(getOPackPath("Mermaid")) && 
+			    io.fileExists(getOPackPath("Mermaid")+"/mermaid.js")) loadLib("mermaid.js")
 			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
 		}
 		
