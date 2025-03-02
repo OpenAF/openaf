@@ -830,10 +830,21 @@ OpenWrap.server.prototype.rest = {
 
 		var fnD = r => {
 			if (returnHTML) {
-				var res = ow.template.html.parseMap(r, true);
+				//var res = ow.template.html.parseMap(r, true);
 				var _themeauto = ow.template.html.njsmapAutoTheme()
+				var code = "var out, _data=" + stringify(r,__,true) + ";"
+				if (__flags.MD_DARKMODE == "auto") {
+					code += "out = nJSMap(_data,void 0,window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);"
+				} else {
+					if (__flags.MD_DARKMODE == "true") {
+						code += "out = nJSMap(_data,void 0,true);"
+					} else {
+						code += "out = nJSMap(_data);"
+					}
+				}
+				code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
-				return String("<html><style>" + res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + res.out + _themeauto + "</body></html>");
+				return String("<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>")
 			} else {
 				if (isString(r)) {
 					return r;
@@ -2920,10 +2931,22 @@ OpenWrap.server.prototype.httpd = {
 	replyJSMap: function(aHTTPd, aMapOrArray) {
 		ow.loadTemplate();
 
-		var res = ow.template.html.parseMap(aMapOrArray, true);
+		//var res = ow.template.html.parseMap(aMapOrArray, true);
 		var _themeauto = ow.template.html.njsmapAutoTheme()
+		var code = "var out, _data=" + stringify(aMapOrArray,__,true) + ";"
+		if (__flags.MD_DARKMODE == "auto") {
+			code += "out = nJSMap(_data,void 0,window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);"
+		} else {
+			if (__flags.MD_DARKMODE == "true") {
+				code += "out = nJSMap(_data,void 0,true);"
+			} else {
+				code += "out = nJSMap(_data);"
+			}
+		}
+		code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
-		return aHTTPd.replyOKHTML("<html><style>" + res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + res.out + _themeauto + "</body></html>");
+		return aHTTPd.replyOKHTML("<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>")
+		//return aHTTPd.replyOKHTML("<html><style>" + res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + res.out + _themeauto + "</body></html>");
 	},
 
 	/**
