@@ -831,8 +831,9 @@ OpenWrap.server.prototype.rest = {
 		var fnD = r => {
 			if (returnHTML) {
 				var res = ow.template.html.parseMap(r, true);
+				var _themeauto = ow.template.html.njsmapAutoTheme()
 
-				return String("<html><style>" + res.css + "</style><body>" + res.out + "</body></html>");
+				return String("<html><style>" + res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + res.out + _themeauto + "</body></html>");
 			} else {
 				if (isString(r)) {
 					return r;
@@ -2920,8 +2921,9 @@ OpenWrap.server.prototype.httpd = {
 		ow.loadTemplate();
 
 		var res = ow.template.html.parseMap(aMapOrArray, true);
+		var _themeauto = ow.template.html.njsmapAutoTheme()
 
-		return aHTTPd.replyOKHTML("<html><style>" + res.css + "</style><body>" + res.out + "</body></html>");
+		return aHTTPd.replyOKHTML("<html><style>" + res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + res.out + _themeauto + "</body></html>");
 	},
 
 	/**

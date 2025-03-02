@@ -213,6 +213,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
 	MD_CODECLIP                : true,   // If true, code blocks will have a button to copy the code to the clipboard
+	MD_DARKMODE                : "false", // Possible values: "auto", "true", "false"
 	USE_JAVA_GENUUID           : true,
 	ANSICOLOR_CACHE            : true,
 	ANSICOLOR_ASK              : true,
@@ -13136,7 +13137,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "jsmap":
 		case "html":
 			var _res = ow.loadTemplate().html.parseMap(res, true)
-			return fnP("<html><meta charset=\"utf-8\"><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
+			return fnP("<html><meta charset=\"utf-8\"><style>" + _res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + _res.out + "</body></html>")
 		case "text":
 			return fnP(String(res))
 		case "md":

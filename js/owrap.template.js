@@ -215,7 +215,11 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		cslon: ow.loadFormat().toCSLON,
 		jsmap: (res, isFull) => {
 			var _res = ow.template.html.parseMap(res, true)
-			return (isFull ? "<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>" : _res.out)
+			var _themeauto = ow.template.html.njsmapAutoTheme()
+			/*if (__flags.MD_DARKMODE == "auto") {
+				_themeauto = `<script>if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('njsmap_dark')</script>`
+			}*/
+			return (isFull ? "<html><style>" + _res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + _res.out + _themeauto + "</body></html>" : _res.out)
 		},	
 		env: getEnv,
 		escape: s => { return s.replace(/['"]/g, "\\$1"); },
@@ -799,7 +803,9 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			markdown: converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">"),
 			noMaxWidth: removeMaxWidth,
 			extras: _extras,
-			mdcodeclip: __flags.MD_CODECLIP
+			mdcodeclip: __flags.MD_CODECLIP,
+			themeauto: __flags.MD_DARKMODE == "auto",
+			themedark: __flags.MD_DARKMODE == "true"
 		})
 	} else {
 		return converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">")
@@ -927,7 +933,7 @@ OpenWrap.template.prototype.html = {
 			loadLib(getOpenAFJar() + "::js/njsmap.js");
 		}
 
-		var out = nJSMap(aMapOrArray);
+		var out = nJSMap(aMapOrArray, __, (__flags.MD_DARKMODE == "true" ? true : __))
 		if (genParts) {
 			var res = {};
 			res.css = io.readFileString(getOpenAFJar() + "::css/nJSMap.css");
@@ -1014,6 +1020,19 @@ OpenWrap.template.prototype.html = {
 	 */	
 	inlineImageTag: function(aImageFile, justPartial) {
 		return ow.template.html.inlineSrc(aImageFile, (justPartial ? "" : "<img src=\"", "\">"));
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.njsmapAutoTheme() : String</key>
+	 * Returns a script to automatically set the njsmap theme based on the user's preference if the MD_DARKMODE flag is set to "auto".
+	 * </odoc>
+	 */
+	njsmapAutoTheme: function() {
+		var _themeauto = "";
+		if (__flags.MD_DARKMODE == "auto") {
+			_themeauto = `<script>if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('njsmap_dark')</script>`
+		}
+		return _themeauto
 	},
 	/**
 	 * <odoc>
