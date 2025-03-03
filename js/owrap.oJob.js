@@ -1620,6 +1620,60 @@ OpenWrap.oJob.prototype.__processArgs = function(aArgsA, aArgsB, aId, execStr) {
 	return argss;
 };
 
+OpenWrap.oJob.prototype.askOnHelp = function(aHelpMap) {
+	_$(aHelpMap, "helpMap").isMap().$_()
+
+	if (!__flags.OJOB_HELPSIMPLEUI) __initializeCon()
+
+	if (isDef(aHelpMap) && aHelpMap.text) 
+		print("Job description: " + aHelpMap.text)
+	else
+		print("Job description: (none available)")
+
+	print()
+
+	_args = {}
+	if (isDef(aHelpMap.expects)) {
+		print("Please fill out the job arguments (no value entered is equivalent to not providing the argument; * means a value it's mandatory):")
+		print()
+		aHelpMap.expects.forEach(param => {
+			if (isDef(param.name)) {
+				if (isDef(param.desc)) print(param.desc)
+				
+				var p = param.name
+				if (isDef(param.mandatory) && param.mandatory) p = p + " (*)"
+				p += ": "
+
+				if (param.secret) {
+					_args[param.name] = ask(p, "*")
+				} else {
+					if (isDef(param.options)) {
+						_args[param.name] = askChoose(p, param.options)
+					} else if (isDef(param.moptions)) {
+						_args[param.name] = askChooseMultiple(p, param.moptions).join(",")
+					} else {
+						_args[param.name] = ask(p)
+					}
+				}
+
+				print()
+			}
+		})
+	}
+
+	Object.keys(_args).forEach(k => {
+		if (isUnDef(_args[k]) || String(_args[k]).length == 0) delete _args[k]
+	})
+
+	print("Executing the equivalent command to:")
+	print(" ojob " + this.__file + " " + Object.keys(_args).map(k => k + "=" + _args[k]).join(" "))
+	print()
+	print(repeat(6, "─"))
+	print()
+
+	return _args
+}
+
 /**
  * <odoc>
  * <key>ow.oJob.showHelp(aHelpMap, args, showAnyway) : boolean</key>

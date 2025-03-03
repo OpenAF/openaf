@@ -85,6 +85,11 @@ if (kparams.indexOf("-which") >= 0 && params["-which"] == "") {
 	ojob_which()
 }
 
+if (kparams.indexOf("-i") >= 0 && params["-i"] == "") {	
+	delete params["-i"]
+	ojob_askOnHelp()
+}
+
 //if ($from(Object.keys(params)).starts("-").any()) {
 //	$from(Object.keys(params)).starts("-").select(function(r) {
 //		ojob_args[r.replace(/^-/, "")] = params[r];
@@ -379,6 +384,26 @@ function ojob_jobhelp() {
 	ojob_shouldRun = false;
 }
 
+function ojob_askOnHelp() {
+	var file = ojob__getFile()
+
+	if (isDef(file) && file != "") {
+		var oj = ow.loadOJob().previewFile(file)
+
+		if (isDef(oj.help)) {
+			var _r = ow.oJob.askOnHelp(oj.help)
+			params = merge(params, _r)
+			kparams = Object.keys(params)
+		}
+	}
+
+	var _id = now()
+	ow.oJob.load(oj.jobs, oj.todo, oj.ojob, params, _id, oj.init, oj.help)
+	ow.oJob.start(params, true, _id)
+
+	ojob_shouldRun = false
+}
+
 function ojob_todo() {
 	var file = ojob__getFile();
 
@@ -438,7 +463,7 @@ function ojob_runFile() {
 		var file = ojob__getFile();
 
 		if (isDef(file)) {
-			oJobRunFile(file, ojob_args, __, (nocolor) ? { conAnsi: false } : __);
+			oJobRunFile(file, ojob_args, __, __, (nocolor) ? { conAnsi: false } : __)
 		}
 	}
 }
