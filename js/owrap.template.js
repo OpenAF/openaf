@@ -921,11 +921,12 @@ OpenWrap.template.prototype.md = {
 OpenWrap.template.prototype.html = {
 	/**
 	 * <odoc>
-	 * <key>ow.template.html.parseMap(aMapOrArray, genParts) : Object</key>
+	 * <key>ow.template.html.parseMap(aMapOrArray, genParts, forceDark) : Object</key>
 	 * Returns a string with a HTML representation of the aMapOrArray provided or, if genParts = true, a map with the style css and the out string necessary.
+	 * If forceDark = true it will force the dark mode.
 	 * </odoc>
 	 */
-	parseMap: function(aMapOrArray, genParts) {
+	parseMap: function(aMapOrArray, genParts, forceDark) {
 		if (!isMap(aMapOrArray) && !isArray(aMapOrArray)) throw "aMapOrArray needs to be a map or an array.";
 		genParts = _$(genParts).isBoolean().default(false);
 
@@ -935,7 +936,7 @@ OpenWrap.template.prototype.html = {
 			loadLib(getOpenAFJar() + "::js/njsmap.js");
 		}
 
-		var out = nJSMap(aMapOrArray, __, (__flags.MD_DARKMODE == "true" ? true : __))
+		var out = nJSMap(aMapOrArray, __, (__flags.MD_DARKMODE == "true" || forceDark ? true : __))
 		if (genParts) {
 			var res = {};
 			res.css = io.readFileString(getOpenAFJar() + "::css/nJSMap.css");
