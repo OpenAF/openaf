@@ -964,7 +964,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	anArrayOfEntries.forEach(row => {
 		cols.forEach(col => {
 			let _v = row[col]
-			if (isString(_v) && _v.length >= 24 && isDate(new Date(_v))) {
+			if (isString(_v) && _v.length >= 20 && isDate(new Date(_v))) {
 				_v = new Date(_v).toISOString().replace("Z","").replace("T"," ")
 				row[col] = new Date(row[col])
 			} else 
