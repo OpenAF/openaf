@@ -115,6 +115,7 @@ function ojob_showHelp() {
 	print("  -which         Determines from where an oJob will be loaded from.")
 	print("  -global        List global jobs for this installation.")
 	print("  -shortcuts     Lists the included ojob shortcuts.")
+	print("  -i             Interactive prompt of the corresponding oJob arguments.")
 	print("");
 	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE + ")");
 	ojob_shouldRun = false;
@@ -386,16 +387,18 @@ function ojob_jobhelp() {
 
 function ojob_askOnHelp() {
 	var file = ojob__getFile()
+	var _r = {}
 
 	if (isDef(file) && file != "") {
 		var oj = ow.loadOJob().previewFile(file)
 
 		if (isDef(oj.help)) {
-			var _r = ow.oJob.askOnHelp(oj.help)
-			params = merge(params, _r)
-			kparams = Object.keys(params)
+			_r = ow.oJob.askOnHelp(oj.help)
 		}
 	}
+
+	params = merge(params, _r)
+	kparams = Object.keys(params)
 
 	var _id = now()
 	ow.oJob.load(oj.jobs, oj.todo, oj.ojob, params, _id, oj.init, oj.help)
