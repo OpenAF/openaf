@@ -8,7 +8,7 @@ var ojob_args = {};
 var nocolor = false;
 
 var kparams = Object.keys(params)
-if (kparams.length == 1 && kparams[0] == "") ojob_showHelp();
+if ((kparams.length == 1 && kparams[0] == "") || kparams.length == 0) ojob_showHelp()
 
 // Check parameters
 if (kparams.indexOf("-h") >= 0 && params["-h"] == "") {
@@ -85,6 +85,11 @@ if (kparams.indexOf("-which") >= 0 && params["-which"] == "") {
 	ojob_which()
 }
 
+if (kparams.indexOf("-i") >= 0 && params["-i"] == "") {	
+	delete params["-i"]
+	ojob_askOnHelp()
+}
+
 //if ($from(Object.keys(params)).starts("-").any()) {
 //	$from(Object.keys(params)).starts("-").select(function(r) {
 //		ojob_args[r.replace(/^-/, "")] = params[r];
@@ -110,6 +115,7 @@ function ojob_showHelp() {
 	print("  -which         Determines from where an oJob will be loaded from.")
 	print("  -global        List global jobs for this installation.")
 	print("  -shortcuts     Lists the included ojob shortcuts.")
+	print("  -i             Interactive prompt of the corresponding oJob arguments.")
 	print("");
 	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE + ")");
 	ojob_shouldRun = false;
@@ -379,6 +385,28 @@ function ojob_jobhelp() {
 	ojob_shouldRun = false;
 }
 
+function ojob_askOnHelp() {
+	var file = ojob__getFile()
+	var _r = {}
+
+	if (isDef(file) && file != "") {
+		var oj = ow.loadOJob().previewFile(file)
+
+		if (isDef(oj.help)) {
+			_r = ow.oJob.askOnHelp(oj.help)
+		}
+	}
+
+	params = merge(params, _r)
+	kparams = Object.keys(params)
+
+	var _id = now()
+	ow.oJob.load(oj.jobs, oj.todo, oj.ojob, params, _id, oj.init, oj.help)
+	ow.oJob.start(params, true, _id)
+
+	ojob_shouldRun = false
+}
+
 function ojob_todo() {
 	var file = ojob__getFile();
 
@@ -438,7 +466,7 @@ function ojob_runFile() {
 		var file = ojob__getFile();
 
 		if (isDef(file)) {
-			oJobRunFile(file, ojob_args, __, (nocolor) ? { conAnsi: false } : __);
+			oJobRunFile(file, ojob_args, __, __, (nocolor) ? { conAnsi: false } : __)
 		}
 	}
 }

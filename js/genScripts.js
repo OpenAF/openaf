@@ -218,7 +218,9 @@ function generateUnixScript(options, shouldSep, extraOptions, isCon) {
   if (io.getDefaultEncoding() != "UTF-8") s += "export LANG=\"${LANG:-C.UTF-8}\"\n";
   if (shouldSep) {
     s += "SCRIPT=$1\n";
-    s += "shift\n";
+    s += "if [ $# -gt 0 ]; then\n"
+    s += "  shift\n"
+    s += "fi"
   }
   if (options.indexOf("$ARGS") >= 0) {
     s += `

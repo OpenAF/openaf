@@ -23,3 +23,5 @@ complete:
   desc: List global jobs for this installation.
 - name: -shortcuts
   desc: Lists the included ojob shortcuts.
+- name: -i
+  desc: Interactive prompt of the corresponding oJob arguments.

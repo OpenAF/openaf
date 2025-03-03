@@ -3,13 +3,60 @@
 <link rel="stylesheet" href="/css/github-markdown.css">
 <link rel="stylesheet" href="/css/nJSMap.css">
 <script src="/js/highlight.js"></script>
-<script>hljs.initHighlightingOnLoad();</script>
-<style>.markdown-body { box-sizing: border-box; min-width: 200px; {{#if noMaxWidth}}{{else}}max-width: 980px;{{/if}} margin: 0 auto; padding: 45px; } @media (max-width: 767px) { .markdown-body { padding: 15px; } }</style>
+<script>hljs.highlightAll();</script>
+<style>.markdown-body, .markdown-body-dark { box-sizing: border-box; min-width: 200px; {{#if noMaxWidth}}{{else}}max-width: 980px;{{/if}} margin: 0 auto; padding: 45px; } @media (max-width: 767px) { .markdown-body, .markdown-body-dark { padding: 15px; } }</style>
 {{#each extras}}
 {{{this}}}
 {{/each}}
-<body class="markdown-body">
+{{#if themeauto}}
+<body class="markdown-body"></body>
+{{else}}
+  {{#if themedark}}
+<body class="markdown-body markdown-body-dark hljs_dark njsmap_dark"></body>
+  {{else}}
+<body class="markdown-body"></body>
+  {{/if}}
+{{/if}}
 {{{markdown}}}
 </body>
 {{#if mdcodeclip}}<script src="/js/mdcodeclip.js"></script>{{/if}}
+{{#if themeauto}}
+<script>
+function __refreshDarkMode() {
+    if (__isDark) {
+        document.body.classList.add('markdown-body-dark')
+        document.body.classList.add('hljs_dark')
+        document.body.classList.add('njsmap_dark')
+        document.body.bgColor = "#000000"
+
+        document.querySelectorAll('pre code').forEach((block) => {
+          block.classList.add('hljs_dark')
+        })
+    } else {
+        document.body.classList.remove('markdown-body-dark')
+        document.body.classList.remove('hljs_dark')
+        document.body.classList.remove('njsmap_dark')
+        document.body.bgColor = "#FFFFFF"
+
+        document.querySelectorAll('pre code').forEach((block) => {
+          block.classList.remove('hljs_dark')
+        })
+    }
+}
+var __isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+__refreshDarkMode()
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+    __isDark = event.matches
+    __refreshDarkMode()
+})
+</script>
+{{else}}
+{{#if themedark}}
+<script>
+document.querySelectorAll('pre code').forEach((block) => {
+  block.classList.add('hljs_dark')
+})
+</script>
+{{/if}}
+{{/if}}
 </html>

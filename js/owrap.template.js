@@ -215,7 +215,11 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		cslon: ow.loadFormat().toCSLON,
 		jsmap: (res, isFull) => {
 			var _res = ow.template.html.parseMap(res, true)
-			return (isFull ? "<html><style>" + _res.css + "</style><body>" + _res.out + "</body></html>" : _res.out)
+			var _themeauto = ow.template.html.njsmapAutoTheme()
+			/*if (__flags.MD_DARKMODE == "auto") {
+				_themeauto = `<script>if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('njsmap_dark')</script>`
+			}*/
+			return (isFull ? "<html><style>" + _res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + _res.out + _themeauto + "</body></html>" : _res.out)
 		},	
 		env: getEnv,
 		escape: s => { return s.replace(/['"]/g, "\\$1"); },
@@ -731,9 +735,11 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
 
 /**
  * <odoc>
- * <key>ow.template.parseMD2HTML(aMarkdownString, isFull, removeMaxWidth, extraDownOptions) : String</key>
+ * <key>ow.template.parseMD2HTML(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark) : String</key>
  * Given aMarkdownString will parse it with showdown (using the github flavor) and return the HTML in a string. If isFull = true
  * it will produce a complete HTML with references for the highlight library+css and github markdown css included internally in OpenAF.
+ * If removeMaxWidth = true it will remove the max-width css style. You can provide extraDownOptions to be used with showdown and
+ * forceDark to force the dark mode.
  * Example:\
  * \
  * ow.server.httpd.route(hs, ow.server.httpd.mapRoutesWithLibs(hs, { \
@@ -742,7 +748,7 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
  * \
  * </odoc>
  */
-OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions) {
+OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark) {
 	extraDownOptions = _$(extraDownOptions).isMap().default(__flags.MD_SHOWDOWN_OPTIONS)
 
 	removeMaxWidth = _$(removeMaxWidth, "removeMaxWidth").isBoolean().default(__flags.MD_NOMAXWIDTH)
@@ -784,12 +790,13 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 
 	if (isFull) {
 		if (isUnDef(this.__templatemd)) {
-			if (isDef(getOPackPath("Mermaid"))) loadLib("mermaid.js")
+			if (isDef(getOPackPath("Mermaid")) && 
+			    io.fileExists(getOPackPath("Mermaid")+"/mermaid.js")) loadLib("mermaid.js")
 			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
 		}
 		
-		var _extras = ow.template.__mdHTMLExtras
-		// Process trigger extas
+		var _extras = []
+		// Process trigger extras
 		ow.template.__mdHTMLTExtras.forEach(r => {
 			if (aMarkdownString.indexOf(r.t) >= 0) _extras.push(r.e)
 		})
@@ -798,7 +805,9 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			markdown: converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">"),
 			noMaxWidth: removeMaxWidth,
 			extras: _extras,
-			mdcodeclip: __flags.MD_CODECLIP
+			mdcodeclip: __flags.MD_CODECLIP,
+			themeauto: __flags.MD_DARKMODE == "auto" && !forceDark,
+			themedark: __flags.MD_DARKMODE == "true" || forceDark
 		})
 	} else {
 		return converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">")
@@ -912,11 +921,12 @@ OpenWrap.template.prototype.md = {
 OpenWrap.template.prototype.html = {
 	/**
 	 * <odoc>
-	 * <key>ow.template.html.parseMap(aMapOrArray, genParts) : Object</key>
+	 * <key>ow.template.html.parseMap(aMapOrArray, genParts, forceDark) : Object</key>
 	 * Returns a string with a HTML representation of the aMapOrArray provided or, if genParts = true, a map with the style css and the out string necessary.
+	 * If forceDark = true it will force the dark mode.
 	 * </odoc>
 	 */
-	parseMap: function(aMapOrArray, genParts) {
+	parseMap: function(aMapOrArray, genParts, forceDark) {
 		if (!isMap(aMapOrArray) && !isArray(aMapOrArray)) throw "aMapOrArray needs to be a map or an array.";
 		genParts = _$(genParts).isBoolean().default(false);
 
@@ -926,7 +936,7 @@ OpenWrap.template.prototype.html = {
 			loadLib(getOpenAFJar() + "::js/njsmap.js");
 		}
 
-		var out = nJSMap(aMapOrArray);
+		var out = nJSMap(aMapOrArray, __, (__flags.MD_DARKMODE == "true" || forceDark ? true : __))
 		if (genParts) {
 			var res = {};
 			res.css = io.readFileString(getOpenAFJar() + "::css/nJSMap.css");
@@ -936,6 +946,30 @@ OpenWrap.template.prototype.html = {
 		} else {
 			return out;
 		}
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.parseMapInHTML(aMapOrArray, forceDark) : String</key>
+	 * Returns a full HTML page with the nJSMap representation of the aMapOrArray provided. If forceDark = true it will force the dark mode.
+	 * </odoc>
+	 */
+	parseMapInHTML: function(aMapOrArray, forceDark) {
+		ow.loadTemplate()
+
+		var _themeauto = ow.template.html.njsmapAutoTheme()
+		var code = "var out, _data=" + stringify(aMapOrArray,__,true) + ";"
+		if (__flags.MD_DARKMODE == "auto" && !forceDark) {
+			code += "out = nJSMap(_data,void 0,window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);"
+		} else {
+			if (__flags.MD_DARKMODE == "true" || forceDark) {
+				code += "out = nJSMap(_data,void 0,true);"
+			} else {
+				code += "out = nJSMap(_data);"
+			}
+		}
+		code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
+
+		return "<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
 	},
 	/**
 	 * <odoc>
@@ -1013,6 +1047,19 @@ OpenWrap.template.prototype.html = {
 	 */	
 	inlineImageTag: function(aImageFile, justPartial) {
 		return ow.template.html.inlineSrc(aImageFile, (justPartial ? "" : "<img src=\"", "\">"));
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.template.html.njsmapAutoTheme() : String</key>
+	 * Returns a script to automatically set the njsmap theme based on the user's preference if the MD_DARKMODE flag is set to "auto".
+	 * </odoc>
+	 */
+	njsmapAutoTheme: function() {
+		var _themeauto = "";
+		if (__flags.MD_DARKMODE == "auto") {
+			_themeauto = `<script>if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('njsmap_dark')</script>`
+		}
+		return _themeauto
 	},
 	/**
 	 * <odoc>

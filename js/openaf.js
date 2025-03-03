@@ -213,6 +213,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
 	MD_CODECLIP                : true,   // If true, code blocks will have a button to copy the code to the clipboard
+	MD_DARKMODE                : "false", // Possible values: "auto", "true", "false"
 	USE_JAVA_GENUUID           : true,
 	ANSICOLOR_CACHE            : true,
 	ANSICOLOR_ASK              : true,
@@ -963,7 +964,7 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 	anArrayOfEntries.forEach(row => {
 		cols.forEach(col => {
 			let _v = row[col]
-			if (isString(_v) && _v.length >= 24 && isDate(new Date(_v))) {
+			if (isString(_v) && _v.length >= 20 && isDate(new Date(_v))) {
 				_v = new Date(_v).toISOString().replace("Z","").replace("T"," ")
 				row[col] = new Date(row[col])
 			} else 
@@ -3627,10 +3628,15 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 				cl = info.filename.replace(/\./g, "_");
 				clFile = cl + ".class";
 				clFilepath = path + clFile;
+				// Check version and recompile if needed
+				if (!io.fileExists(path + "." + getDistribution() + "-" + getVersion())) {
+					io.rm(path)
+				}
 				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
 				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
 					if (!dontCompile) {
 						io.mkdir(path);
+						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
 						io.rm(clFilepath);
 						var code = io.readFileString(info.canonicalPath)
 						__codeVerify(code, aScript)
@@ -3681,10 +3687,15 @@ const loadCompiled = function(aScript, dontCompile, dontLoad) {
 				cl = info.filename.replace(/\./g, "_");
 				clFile = cl + ".class";
 				clFilepath = path + clFile;
+				// Check version and recompile if needed
+				if (!io.fileExists(path + "." + getDistribution() + "-" + getVersion())) {
+					io.rm(path)
+				}
 				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
 				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
 					if (!dontCompile) {
 						io.mkdir(path);
+						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
 						io.rm(clFilepath);
 						var code = io.readFileString(info.canonicalPath)
 						__codeVerify(code, aScript)
@@ -13126,7 +13137,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 		case "jsmap":
 		case "html":
 			var _res = ow.loadTemplate().html.parseMap(res, true)
-			return fnP("<html><meta charset=\"utf-8\"><style>" + _res.css + "</style><body>" + _res.out + "</body></html>")
+			return fnP("<html><meta charset=\"utf-8\"><style>" + _res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + _res.out + "</body></html>")
 		case "text":
 			return fnP(String(res))
 		case "md":

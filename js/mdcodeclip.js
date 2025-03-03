@@ -21,6 +21,10 @@ var _style = `
       height: 16px;
       display: block;
     }
+
+    .markdown-body-dark .copy-button .icon {
+      fill: grey;
+    }
   </style>
    `
 // Bootstrap Icons. MIT License: https://github.com/twbs/icons/blob/main/LICENSE.md
