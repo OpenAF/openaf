@@ -16,10 +16,17 @@ jobs:
    - name  : Repack OpenAFOS
      deps  :
      - Build OpenAFOS
-     exec  : >
+     exec  : |
         log("Repacking...");
-        $sh(ow.format.getJavaHome() + "/bin/java -jar " + global.path + "/openaf.jar --repack")
-        .exec()
+        $sh(ow.format.getJavaHome() + "/bin/java -jar " + global.path + "/openaf.jar --repack").exec()
+
+        var isOk = false, init = now()
+        do {
+          sleep(1000, true)
+          if (!io.fileExists(global.path + "/openaf.jar.tmp")) isOk = true
+        } while (!isOk && now() - init < 60000)
+
+        log("Repacked.")
 
    # Copy OpenAF to the right place for use
    - name  : Copy OpenAF

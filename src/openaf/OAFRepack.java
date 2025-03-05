@@ -258,6 +258,7 @@ public class OAFRepack {
             if (zis != null) zis.close();
             if (fis != null) fis.close();
         }
+        System.out.println("Repack done.");
     }
 
     public static void repackAndReplace(String jarFile, String cmd) throws Exception {
@@ -268,7 +269,7 @@ public class OAFRepack {
         if (unix) {
             command.add("/bin/sh");
             command.add("-c");
-            command.add("sleep 1 && mv '" + jarFile + ".tmp' '" + jarFile + "' > /dev/null && " + cmd + ""); 
+            command.add("sleep 1 && echo Moving '" + jarFile + ".tmp' to '" + jarFile + "'... && mv '" + jarFile + ".tmp' '" + jarFile + "' && echo Moving done. && " + cmd + ""); 
         } else {
             command.add("cmd");
             command.add("/c");
