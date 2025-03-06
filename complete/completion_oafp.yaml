@@ -317,6 +317,8 @@ complete:
       desc: Boolean that if false won't try to open the output contents in a browser -defaults to true-
     - name: htmlwait=
       desc: Amount of ms, when htmlopen=true, to wait for the system browser to open an render the html output
+    - name: htmldark=
+      desc: If supported and true the output html will use a dark theme.
   - name: out=ini
     desc: A INI/Properties format -arrays are not supported-
   - name: out=json
