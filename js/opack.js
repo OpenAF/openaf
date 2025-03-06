@@ -1,5 +1,5 @@
 // OPack cli
-// Copyright 2023 Nuno Aguiar
+// Copyright 2025 Nuno Aguiar
 
 // ****
 // DATA
@@ -1136,259 +1136,278 @@ function install(args) {
     var nohash = false;
     var deps = false;
     var forceOutput = false;
-    var output;
+    var _output;
+	var packages = [] // found packages
 
     for(let i in args) {
+		// -d output folder
     	if (foundOutput) {
-    		output = args[i];
+    		_output = args[i];
     		foundOutput = false;
-    		forceOutput = true;
+    		forceOutput = true
+			continue
     	}
 
+		// -repo repository
     	if (foundRepo) {
     		if (__opackCentral.indexOf(args[i]) < 0) __opackCentral.unshift(args[i]);
-    		foundRepo = false;
+    		foundRepo = false
+			continue
     	}
 
+		// -arg argument
     	if (foundArg) {
     		arg = args[i];
-    		foundArg = false;
+    		foundArg = false
+			continue
 		}
 		
+		// -cred user:pass
 		if (foundCred) {
 			var cred = args[i];
 			if (cred.indexOf(":") > 0) [__remoteUser, __remotePass] = cred.split(/:/);
-			foundCred = false;
+			foundCred = false
+			continue
 		}
 
-    	if (args[i] == "-d") foundOutput = true;
-    	if (args[i] == "-force") force = true;
-    	if (args[i] == "-repo") foundRepo = true;
-    	if (args[i] == "-deps") deps = true;
-    	if (args[i] == "-arg") foundArg = true;
-    	if (args[i] == "-justcopy") justCopy = true;
-    	if (args[i] == "-noverify") nohash = true;
-		if (args[i] == "-useunzip") useunzip = true;
-		if (args[i] == "-cred") foundCred = true;
+    	if (args[i] == "-d")        { foundOutput = true; continue }
+    	if (args[i] == "-force")    { force = true; continue }
+    	if (args[i] == "-repo")     { foundRepo = true; continue }
+    	if (args[i] == "-deps")     { deps = true; continue }
+    	if (args[i] == "-arg")      { foundArg = true; continue }
+    	if (args[i] == "-justcopy") { justCopy = true; continue }
+    	if (args[i] == "-noverify") { nohash = true; continue }
+		if (args[i] == "-useunzip") { useunzip = true; continue }
+		if (args[i] == "-cred")     { foundCred = true; continue }
+
+		packages.push(args[i])
     }
-	var packag = getPackage(args[0]);
 
-	if (isUnDef(packag.name) && packag.__filelocation != "opackurl") {
-		//logErr("Couldn't find package on location " + args[0]);
+	// For each package found
+	packages.forEach(pack => {
+		var _msg = "Getting package '" + pack + "'..."
+		if (packages.length > 1) log(repeat(_msg.length, "-"))
+		log(_msg)
+		var packag = getPackage(pack)
 
-		log("Checking remote OPack database");
-		var packs = getRemoteDB();
-		var packFound = findCaseInsensitive(packs, args[0]);
-		if (isUnDef(packFound)) {
-			logErr("No entry for '" + args[0] + "' on remote OPack database.");
+		// Verify remote repositories
+		if (isUnDef(packag.name) && packag.__filelocation != "opackurl") {
+			log("Checking remote OPack database");
+			var packs = getRemoteDB();
+			var packFound = findCaseInsensitive(packs, pack);
+			if (isUnDef(packFound)) {
+				logErr("No entry for '" + pack + "' on remote OPack database.");
+				return;
+			} else {
+				packag = getPackage(packFound.repository.url);
+				//if (!forceOutput) output = getOpenAFPath() + "/" + packag.name;
+				pack = packag.repository.url;
+			}
+		}
+
+		var output
+		// If no output folder is defined
+		if (isUnDef(_output) && !forceOutput) {
+			// and if OpenAF folder is writable
+			if (io.fileInfo(getOpenAFPath()).permissions.indexOf("w") >= 0) {
+				output = getOpenAFPath() + packag.name
+			} else {
+				// else use user home
+				output = __gHDir() + "/.openaf-opack-" + packag.name
+			}
+		} else {
+			output = _output
+		}
+		log("Install folder: " + output)
+
+		// Verify version
+		var origPack
+		if (checkVersion(packag, force) || justCopy) {
+			log((justCopy ? "COPYING" : "INSTALLING") + " -- " + packag.name + " version " + packag.version);
+			origPack = findLocalDBByName(packag.name)
+		} else {
+			log("No need to install/update " + pack);
 			return;
-		} else {
-			packag = getPackage(packFound.repository.url);
-			//if (!forceOutput) output = getOpenAFPath() + "/" + packag.name;
-			args[0] = packag.repository.url;
 		}
-	}
-	if (isUnDef(output) && !forceOutput) {
-		if (io.fileInfo(getOpenAFPath()).permissions.indexOf("w") >= 0) {
-			output = getOpenAFPath() + packag.name;
-		} else {
-			output = __gHDir() + "/.openaf-opack-" + packag.name; 
-		}
-	}
-	log("Install folder: " + output);
 
+		// Verify deps
+		var depsResults = verifyDeps(packag);
+		if (!force && !justCopy && isMap(packag.dependencies)) {
+			for(let i in packag.dependencies) {
+				var depend = packag.dependencies[i];
 
-	// Verify version
-	var origPack
-	if (checkVersion(packag, force) || justCopy) {
-		log((justCopy ? "COPYING" : "INSTALLING") + " -- " + packag.name + " version " + packag.version);
-		origPack = findLocalDBByName(packag.name)
-	} else {
-		log("No need to install/update " + args[0]);
-		return;
-	}
+				if (!(depsResults[i])) {
+					logErr("Failed dependency on '" + i + "', version " + depend + ".");
 
-	// Verify deps
-	var depsResults = verifyDeps(packag);
-	if (!force && !justCopy && isMap(packag.dependencies))
-		for(let i in packag.dependencies) {
-			var depend = packag.dependencies[i];
-
-			if (!(depsResults[i])) {
-				logErr("Failed dependency on '" + i + "', version " + depend + ".");
-
-				if (i.toUpperCase() == 'OPENAF') {
-					logErr("Please update OpenAF (e.g. 'openaf --update')");
-					return;
-				}
-
-				log("Checking remote OPack database");
-				var packs = getRemoteDB();
-				var packFound = findCaseInsensitive(packs, i);
-				if (isUnDef(packFound)) {
-					logErr("No entry for '" + i + "' on remote OPack database.");
-					return;
-				}
-
-				if (!deps) {
-					plugin("Console");
-					try {
-						var con = new Console();
-						printnl("Do you want to try to install '" + i + "' [Y/N]: ");
-						var res = con.readChar("YNyn"); print(res);
-						if (res == 'N' || res == 'n') {
-							return;
-						}
-					} catch(e) {
+					if (i.toUpperCase() == 'OPENAF') {
+						logErr("Please update OpenAF (e.g. 'openaf --update')");
 						return;
 					}
-				}
 
-				var newArgs = args.slice(0);
-				newArgs[0] = packs[i].repository.url;
-				install(newArgs);
+					log("Checking remote OPack database");
+					var packs = getRemoteDB();
+					var packFound = findCaseInsensitive(packs, i);
+					if (isUnDef(packFound)) {
+						logErr("No entry for '" + i + "' on remote OPack database.");
+						return;
+					}
 
-			}
-		}
-
-	outputPath = output;
-    if (!isUnDef(packag.scripts.preinstall) && !justCopy) runScript(packag.scripts.preinstall);
-
-	switch(packag.__filelocation) {
-		case "url":
-			log("Copying remote files...");
-			//for(i in packag.files) {
-			mkdir(outputPath);
-			var pres = parallel4Array(packag.files, function(apackfile) {
-				var message = "Copying " + apackfile + "...";
-				log(message);
-				
-				try {
-					var http = execHTTPWithCred(args[0].replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true, undefined, true);
-					//io.writeFileBytes(outputPath + "/" + apackfile, http.responseBytes());
-					ioStreamCopy(io.writeFileStream(outputPath + "/" + apackfile), http);
-				} catch(e) {
-					logErr("Can't copy remote file '" + apackfile + "' (" + e.message + ")");
-					return 0;
-				}
-				return 1;
-			});
-			if (pres.length == packag.files.length) 
-				log("All files copied.");
-			else
-				log("Not all files were copied (" + pres.length + "/" + packag.files.length + ")");
-			break;
-		case "opackurl":
-			var opack = getHTTPOPack(args[0]);
-			if(typeof opack == 'undefined') return;
-
-			//biggestMessage = 0;
-			var _ul = ow.format.string.updateLine(lognl)
-			/*for(var i in packag.files) {
-				var str = "Unpacking " + packag.files[i] + "..."
-				if (str.length > biggestMessage) biggestMessage = str.length;
-			}*/
-			parallel4Array(packag.files, function(apackfile) {
-				mkdir(outputPath);
-				var message = "Unpacking " + apackfile + "..."
-				//lognl(message)
-				_ul.line(message)
-
-				try {
-					io.writeFileBytes(outputPath + "/" + apackfile, opack.getFile(apackfile));
-				} catch(e) {
-					logErr("Can't write " + outputPath + "/" + apackfile + " (" + e.message + ")");
-					return;
-				}
-				return 1;
-			});
-			//lognl(repeat(biggestMessage, " ") + "\r");
-			_ul.end()
-			log("All files unpacked.");
-		    break;
-		case "local": {
-			log("Copying files");
-			//biggestMessage = 0;
-			var _ul = ow.format.string.updateLine(lognl)
-			outputPath = outputPath.replace(/\/{2,}/g, "/");
-			//for(i in packag.files) {
-			parallel4Array(packag.files, function(apackfile) {
-				try {
-					mkdir(outputPath);
-					var message = "Copying " + apackfile.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "") + "...";
-					//log(message);
-					_ul.line(message)
-					copyFile(args[0] + "/" + apackfile, outputPath + "/" + apackfile.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", ""));
-				} catch(e) {
-					logErr(e);
-				}
-				return 1;
-			});
-			_ul.end()
-			log("All files copied.");
-			break;
-		}
-		case "opacklocal": {
-			log("Copying files");
-			//biggestMessage = 0;
-			var _ul = ow.format.string.updateLine(lognl)
-			outputPath = outputPath.replace(/\/{2,}/g, "/");
-			//for(i in packag.files) {
-			parallel4Array(packag.files, function(apackfile) {
-				mkdir(outputPath);
-				var message = "Copying " + apackfile.replace(new RegExp("^" + args[0].replace(/\./g, "\\."), "") + "/", "") + "...";
-				//log(message);
-				log(message)
-
-				try {
-					if (!useunzip) {
-						var opack = new ZIP();
-						ioStreamCopy(io.writeFileStream(outputPath + "/" + apackfile), opack.streamGetFileStream(args[0], apackfile));
-						opack.close();
-					} else {
-						sh("unzip -o " + args[0] + " " + apackfile + " -d " + outputPath);
-						if (__exitcode != 0) {
-							throw "Unzip exit code " + __exitcode + " for " + apackfile;
+					if (!deps) {
+						plugin("Console");
+						try {
+							var con = new Console();
+							printnl("Do you want to try to install '" + i + "' [Y/N]: ");
+							var res = con.readChar("YNyn"); print(res);
+							if (res == 'N' || res == 'n') {
+								return;
+							}
+						} catch(e) {
+							return;
 						}
 					}
-				} catch(e) {
-					logErr("Can't write " + outputPath + "/" + apackfile + " (" + e.message + ")");
-					return;
+
+					var newArgs = args.slice(0);
+					newpack = packs[i].repository.url;
+					install(newArgs);
+
 				}
-				return 1;
-			});
-			_ul.end()
-			log("All files copied.");
-			break;
-		}
-	}
-
-	// Delete old files
-	if (isDef(origPack)) {
-		$from(origPack.files).except(packag.files).select(file => {
-			log("Deleting " + file + "...")
-			io.rm(outputPath + "/" + file)
-		})
-	}
-
-	if (!nohash) {
-	    log("Verifying package files installed...");
-		var hashResults = verifyHashList(outputPath, packag.filesHash);
-		for(let i in packag.files) {
-			var file = packag.files[i];
-			if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
-			if (!(hashResults[file])) {
-				logErr("File '" + file + "' not equal to declared hash ('" + packag.filesHash[file] + "')");
-				//return;
 			}
 		}
-	}
 
-	if (typeof packag.scripts.postinstall !== 'undefined' && !justCopy) runScript(packag.scripts.postinstall);
+		outputPath = output;
+		if (!isUnDef(packag.scripts.preinstall) && !justCopy) runScript(packag.scripts.preinstall);
 
-	log("Package " + packag.name + " installed.");
-	delete packag["__filelocation"];
-	if (!justCopy) addLocalDB(packag, outputPath);
+		switch(packag.__filelocation) {
+			case "url":
+				log("Copying remote files...");
+				//for(i in packag.files) {
+				mkdir(outputPath);
+				var pres = parallel4Array(packag.files, function(apackfile) {
+					var message = "Copying " + apackfile + "...";
+					log(message);
+					
+					try {
+						var http = execHTTPWithCred(pack.replace(/ /g, "%20") + "/" + apackfile.replace(/ /g, "%20"), "GET", "", {}, true, undefined, true);
+						//io.writeFileBytes(outputPath + "/" + apackfile, http.responseBytes());
+						ioStreamCopy(io.writeFileStream(outputPath + "/" + apackfile), http);
+					} catch(e) {
+						logErr("Can't copy remote file '" + apackfile + "' (" + e.message + ")");
+						return 0;
+					}
+					return 1;
+				});
+				if (pres.length == packag.files.length) 
+					log(`All files copied (#${packag.files.length}).`)
+				else
+					log("Not all files were copied (" + pres.length + "/" + packag.files.length + ").")
+				break;
+			case "opackurl":
+				var opack = getHTTPOPack(pack);
+				if(typeof opack == 'undefined') return;
+
+				//biggestMessage = 0;
+				var _ul = ow.format.string.updateLine(lognl)
+				pForEach(packag.files, function(apackfile) {
+					mkdir(outputPath);
+					var message = "Unpacking " + apackfile + "..."
+					_ul.line(message)
+
+					try {
+						io.writeFileBytes(outputPath + "/" + apackfile, opack.getFile(apackfile));
+					} catch(e) {
+						logErr("Can't write " + outputPath + "/" + apackfile + " (" + e.message + ")");
+						return;
+					}
+					return 1;
+				})
+				_ul.end()
+				log(`All files unpacked (#${packag.files.length}).`);
+				break;
+			case "local": {
+				log("Copying files");
+				var _ul = ow.format.string.updateLine(lognl)
+				outputPath = outputPath.replace(/\/{2,}/g, "/");
+				pForEach(packag.files, function(apackfile) {
+					try {
+						mkdir(outputPath);
+						var message = "Copying " + apackfile.replace(new RegExp("^" + pack.replace(/\./g, "\\."), "") + "/", "") + "...";
+						//log(message);
+						_ul.line(message)
+						copyFile(pack + "/" + apackfile, outputPath + "/" + apackfile.replace(new RegExp("^" + pack.replace(/\./g, "\\."), "") + "/", ""));
+					} catch(e) {
+						logErr(e);
+					}
+					return 1;
+				})
+				_ul.end()
+				log(`All files copied (#${packag.files.length}).`);
+				break;
+			}
+			case "opacklocal": {
+				log("Copying files");
+				var _ul = ow.format.string.updateLine(lognl)
+				outputPath = outputPath.replace(/\/{2,}/g, "/");
+				pForEach(packag.files, function(apackfile) {
+					mkdir(outputPath);
+					var message = "Copying " + apackfile.replace(new RegExp("^" + pack.replace(/\./g, "\\."), "") + "/", "") + "...";
+					//log(message);
+					log(message)
+
+					try {
+						if (!useunzip) {
+							var opack = new ZIP();
+							ioStreamCopy(io.writeFileStream(outputPath + "/" + apackfile), opack.streamGetFileStream(pack, apackfile));
+							opack.close();
+						} else {
+							sh("unzip -o " + pack + " " + apackfile + " -d " + outputPath);
+							if (__exitcode != 0) {
+								throw "Unzip exit code " + __exitcode + " for " + apackfile;
+							}
+						}
+					} catch(e) {
+						logErr("Can't write " + outputPath + "/" + apackfile + " (" + e.message + ")");
+						return;
+					}
+					return 1;
+				})
+				_ul.end()
+				log(`All files copied (#${packag.files}).`);
+				break;
+			}
+		}
+
+		// Delete old files
+		if (isDef(origPack)) {
+			$from(origPack.files).except(packag.files).select(file => {
+				log("Deleting " + file + "...")
+				io.rm(outputPath + "/" + file)
+			})
+		}
+
+		// Verify package files installed
+		if (!nohash) {
+			log("Verifying package files installed...");
+			var hashResults = verifyHashList(outputPath, packag.filesHash);
+			var c = 0, t = 0
+			for(let i in packag.files) {
+				var file = packag.files[i];
+				if (file == PACKAGEJSON || file == PACKAGEYAML) continue;
+				if (!(hashResults[file])) {
+					logErr("File '" + file + "' not equal to declared hash ('" + packag.filesHash[file] + "')");
+				} else {
+					c++
+				}
+				t++
+			}
+			log(`` + c + ` file(s) verified (#` + t + `).`)
+		}
+
+		if (typeof packag.scripts.postinstall !== 'undefined' && !justCopy) runScript(packag.scripts.postinstall);
+
+		log("Package " + packag.name + " installed.");
+		delete packag["__filelocation"];
+		if (!justCopy) addLocalDB(packag, outputPath);
+	})
 }
 
 // EXEC
