@@ -1763,7 +1763,7 @@ function update(args) {
 
 		if (ferase) {
 			var otherStats = erase(clone(options.concat(_pack)), derase)
-			_stats.updated += otherStats.erased
+			_stats.updated -= otherStats.erased
 			_stats.failed += otherStats.failed
 		}
 		var otherStats = install(options.concat(_pack))
