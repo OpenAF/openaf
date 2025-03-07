@@ -396,11 +396,20 @@ function verifyDeps(packag) {
 			var compareTo = findLocalDBByName(dep);
 			results[dep] = false;
 			if (!isUnDef(compareTo)) {
-				if (compareTo.version == version)                          							{ results[dep] = true; continue; }
-				if (version.match(/^\>\=/) && compareTo.version >= version.replace(/^\>\=/, ""))  	{ results[dep] = true; continue; }
-				if (version.match(/^\<\=/) && compareTo.version <= version.replace(/^\<\=/, ""))  	{ results[dep] = true; continue; }
-				if (version.match(/^\<(?=[^=])/) && compareTo.version < version.replace(/^\</, "")) { results[dep] = true; continue; }
-				if (version.match(/^\>(?=[^=])/) && compareTo.version > version.replace(/^\>/, "")) { results[dep] = true; continue; }
+				if (compareTo.version.indexOf(".") > 0 && version.indexOf(".") < 0) {  
+					try {                                           
+						if (version.match(/^\>\=/) && ow.format.semVer(compareTo.version).greaterEquals(version.replace(/^\>\=/, ""))) { results[dep] = true; continue }
+						if (version.match(/^\<\=/) && ow.format.semVer(compareTo.version).lowerEquals(version.replace(/\>\=/, "")))    { results[dep] = true; continue }
+						if (version.match(/^\<(?=[^=])/) && ow.format.semVer(compareTo.version).lower(version.replace(/^\</, "")))     { results[dep] = true; continue }
+						if (version.match(/^\>(?=[^=])/) && ow.format.semVer(compareTo.version).greater(version.replace(/^\>/, "")))   { results[dep] = true; continue }
+						if (ow.format.semVer(compareTo.version).equals(version))                                                       { results[dep] = true; continue }
+					} catch(ee) { /* nothing */ }
+				}
+				if (compareTo.version == version)                          							{ results[dep] = true; continue }
+				if (version.match(/^\>\=/) && compareTo.version >= version.replace(/^\>\=/, ""))  	{ results[dep] = true; continue }
+				if (version.match(/^\<\=/) && compareTo.version <= version.replace(/^\<\=/, ""))  	{ results[dep] = true; continue }
+				if (version.match(/^\<(?=[^=])/) && compareTo.version < version.replace(/^\</, "")) { results[dep] = true; continue }
+				if (version.match(/^\>(?=[^=])/) && compareTo.version > version.replace(/^\>/, "")) { results[dep] = true; continue }
 			}
 		}
 	}
@@ -1114,11 +1123,15 @@ function __opack_list(args) {
 function checkVersion(packag, force) {
 	var installedVersion = getPackVersion(packag.name);
 
-	if (installedVersion > packag.version && !force) {
+	if (!force && isDef(installedVersion) &&
+		 ( (installedVersion.indexOf(".") > 0 && packag.version.indexOf(".") && ow.format.semver(installedVersion).greater(packag.version)) ||
+		   (installedVersion > packag.version) ) ) {
 		log("Installed version is newer " + installedVersion);
 		return 0;
 	} else {
-		if (installedVersion == packag.version && !force) {
+		if (!force && isDef(installedVersion) &&
+			((installedVersion.indexOf(".") > 0 && packag.version.indexOf(".") && ow.format.semver(installedVersion).equals(packag.version)) ||
+			 (installedVersion == packag.version ) )) {
 			log(packag.name + ", version " + installedVersion + ", already installed in '" + findLocalDBTargetByName(packag.name) + "'.");
 			return 0;
 		} else {
