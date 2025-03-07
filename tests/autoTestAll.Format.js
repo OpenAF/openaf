@@ -37,6 +37,13 @@
         ow.test.assert(ow.format.fromDate(String(new Date(2014, 0, 1)), "yyyyMMdd"), "20140101", "Problem with fromDate (with string param)");            
     };
 
+    exports.testISODate = function() {
+        var orig = new Date()
+        ow.test.assert(ow.format.fromISODate(orig.toISOString()).getTime(), orig.getTime(), "Problem with ISO date conversion (1)")
+        ow.test.assert(ow.format.fromISODate("2020-01-02T12:34:56.Z").getTime(), new Date("2020-01-02T12:34:56Z").getTime(), "Problem with ISO date conversion (2)")
+        ow.test.assert(ow.format.fromISODate("2020-01-02T12:34:56.123456789Z").getTime(), new Date("2020-01-02T12:34:56.123Z").getTime(), "Problem with ISO date conversion (3)")
+    }
+
     exports.testEscape = function() {
         ow.test.assert(ow.format.escapeString("<json>{ a: 1, b: \"2\", c: [1, 2] }</json>"), "<json>\\{ a: 1, b: \"2\", c: \\[1, 2\\] \\}<\\/json>", "Problem with escapeString");
         ow.test.assert(ow.format.escapeHTML("<json>{ a: 1, b: \"2\", c: [1, 2] }</json>"), "&lt;json&gt;{ a: 1, b: &quot;2&quot;, c: [1, 2] }&lt;/json&gt;", "Problem with escapeHTML");            

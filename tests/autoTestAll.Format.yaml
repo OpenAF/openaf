@@ -49,6 +49,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testDate;     
 
+   - name: Format::Date ISO from
+     from: Format::Init
+     to  : oJob Test
+     deps: 
+       - Format::Load Format
+     exec: args.func = args.tests.testISODate;
+
    - name: Format::Escape strings
      from: Format::Init
      to  : oJob Test
