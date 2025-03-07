@@ -811,7 +811,7 @@ function getOpenAFSB() {
 
 // Find OpenAF
 function getOpenAF() {
-	var os = ow.format.getOS();
+  var os = ow.format.getOS();
   var currentClassPath = getOpenAFJar();
 
   var openaf;
@@ -850,12 +850,31 @@ function fixSheBang(aFile) {
 }
 
 // Run a script
-function runScript(aScript) {
-	try {
-		var s = newFn(aScript);
-		s();
-	} catch(e) {
-		logErr(e);
+function runScript(aScript, aEnvsMap) {
+	aEnvsMap = _$(aEnvsMap).isMap().default({})
+	aEnvsMap = merge({
+		OAF_PATH   : getOpenAFPath(),
+		JAVA_HOME  : ow.format.getJavaHome(),
+		OAF_HOME   : __gHDir(),
+		OAF_VERSION: getVersion(),
+		OAF_DIST   : getDistribution(),
+		OJOB_HOME  : __flags.OJOB_LOCALPATH
+	})
+	if (isString(aScript)) {
+		try {
+			var s = newFn("args=" + stringify(aEnvsMap,__,"") + ";" + aScript)
+			s();
+		} catch(e) {
+			logErr(e);
+		}
+	} else if (isArray(aScript)) {
+		Object.keys(aEnvsMap).forEach(k => aEnvsMap[k] = String(aEnvsMap[k]))
+		var inError = false
+		aScript.forEach(s => {
+			if (inError) return
+			var _r = $sh(s).envs(aEnvsMap, true).exec()
+			if (isArray(_r) && _r.length > 0 && _r[0].exitcode != 0) inError = true
+		})
 	}
 }
 
@@ -1315,7 +1334,7 @@ function install(args) {
 		}
 
 		outputPath = output;
-		if (!isUnDef(packag.scripts.preinstall) && !justCopy) runScript(packag.scripts.preinstall);
+		if (!isUnDef(packag.scripts.preinstall) && !justCopy) runScript(packag.scripts.preinstall, { OPACK_PATH: outputPath })
 
 		switch(packag.__filelocation) {
 			case "url":
@@ -1463,7 +1482,7 @@ function install(args) {
 			log(`` + c + ` file(s) verified (#` + t + `) (+package description file).`)
 		}
 
-		if (typeof packag.scripts.postinstall !== 'undefined' && !justCopy) runScript(packag.scripts.postinstall);
+		if (typeof packag.scripts.postinstall !== 'undefined' && !justCopy) runScript(packag.scripts.postinstall, { OPACK_PATH: outputPath })
 
 		log("Package " + packag.name + " installed.");
 		delete packag["__filelocation"];
@@ -1844,7 +1863,7 @@ function erase(args, dontRemoveDir) {
 			}
 		}
 	
-		if (typeof packag.scripts.preerase !== 'undefined') runScript(packag.scripts.preerase);
+		if (typeof packag.scripts.preerase !== 'undefined') runScript(packag.scripts.preerase, { OPACK_PATH: packag.__target })
 	
 		switch(packag.__filelocation) {
 		case "url": logErr("Can't remove non local packages"); _stats.failed++; break
@@ -1891,7 +1910,7 @@ function erase(args, dontRemoveDir) {
 		default: // TODO: IMPLEMENT SEARCH LOCAL DB FOR OPACK INFO
 		}
 	
-		if (typeof packag.scripts.posterase !== 'undefined') runScript(packag.scripts.posterase);
+		if (typeof packag.scripts.posterase !== 'undefined') runScript(packag.scripts.posterase, { OPACK_PATH: packag.__target })
 	})
 
 	if (_packages.length > 1) log(repeat(4, "-"))
