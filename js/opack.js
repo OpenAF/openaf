@@ -154,11 +154,11 @@ function getHTTPOPack(aURL) {
 
 // OpenPack get packages
 function getRemoteDB() {
-	if (!isUnDef(remoteDB)) return remoteDB;
+	if (!isUnDef(remoteDB)) return remoteDB
 
-	remoteDB = getOPackRemoteDB();
+	remoteDB = getOPackRemoteDB()
 
-	return remoteDB;
+	return remoteDB
 }
 
 // Add a package to a remote DB
@@ -310,19 +310,19 @@ function addLocalDB(aPackage, aTarget) {
 
 // OpenPack local register get version
 function getPackVersion(packageName, packag) {
-	if (packageName.toUpperCase() == "OPENAF") return getVersion();
+	if (packageName.toUpperCase() == "OPENAF") return String(getVersion())
 	
 	//var packages = getLocalDB(true);
 	if (isUnDef(packag)) {
 		var packageFound = findLocalDBByName(packageName);
 
 		if (!isUnDef(packageFound)) {
-			return packageFound.version;
+			return String(packageFound.version)
 		} else {
 			return;
 		}
 	} else {
-		return packag.version;
+		return String(packag.version)
 	}
 }
 
@@ -345,7 +345,7 @@ function findLocalDBByTarget(aTarget) {
 
 // OpenPack find a package by name
 function findLocalDBByName(aName) {
-	var packages = getLocalDB();
+	var packages = getLocalDB(true)
 
 	if(isUnDef(aName) || aName.length <= 0) return;
 	var res;
@@ -390,26 +390,37 @@ function verifyDeps(packag) {
 	var results = {};
 
 	if (isMap(packag.dependencies)) {
+		log("Checking dependencies for " + packag.name + "...")
 		for(let dep in packag.dependencies) {
 			var version = packag.dependencies[dep];
 	
 			var compareTo = findLocalDBByName(dep);
-			results[dep] = false;
+			ldep = dep.toLowerCase()
+			results[ldep] = false;
 			if (!isUnDef(compareTo)) {
-				if (compareTo.version.indexOf(".") > 0 && version.indexOf(".") < 0) {  
-					try {                                           
-						if (version.match(/^\>\=/) && ow.format.semVer(compareTo.version).greaterEquals(version.replace(/^\>\=/, ""))) { results[dep] = true; continue }
-						if (version.match(/^\<\=/) && ow.format.semVer(compareTo.version).lowerEquals(version.replace(/\>\=/, "")))    { results[dep] = true; continue }
-						if (version.match(/^\<(?=[^=])/) && ow.format.semVer(compareTo.version).lower(version.replace(/^\</, "")))     { results[dep] = true; continue }
-						if (version.match(/^\>(?=[^=])/) && ow.format.semVer(compareTo.version).greater(version.replace(/^\>/, "")))   { results[dep] = true; continue }
-						if (ow.format.semVer(compareTo.version).equals(version))                                                       { results[dep] = true; continue }
-					} catch(ee) { /* nothing */ }
+				var _vs = version.split(",")
+				
+				var isValid = []
+				for(var j in _vs) {
+					var _version = String(_vs[j]).trim()
+					compareTo.version = String(compareTo.version).trim()
+					if (compareTo.version.indexOf(".") > 0 && _version.indexOf(".") > 0) {  
+						try {                                           
+							if (_version.match(/^\>\=/) && ow.format.semVer(compareTo.version).greaterEquals(_version.replace(/^\>\=/, ""))) { isValid.push(true); continue }
+							if (_version.match(/^\<\=/) && ow.format.semVer(compareTo.version).lowerEquals(_version.replace(/\<\=/, "")))    { isValid.push(true); continue }
+							if (_version.match(/^\<(?=[^=])/) && ow.format.semVer(compareTo.version).lower(_version.replace(/^\</, "")))     { isValid.push(true); continue }
+							if (_version.match(/^\>(?=[^=])/) && ow.format.semVer(compareTo.version).greater(_version.replace(/^\>/, "")))   { isValid.push(true); continue }
+							if (ow.format.semVer(compareTo.version).equals(_version))                                                        { isValid.push(true); continue }
+						} catch(ee) { /* nothing */ }
+					}
+					if (compareTo.version == _version)                          						  { isValid.push(true); continue }
+					if (_version.match(/^\>\=/) && compareTo.version >= _version.replace(/^\>\=/, ""))    { isValid.push(true); continue }
+					if (_version.match(/^\<\=/) && compareTo.version <= _version.replace(/^\<\=/, ""))    { isValid.push(true); continue }
+					if (_version.match(/^\<(?=[^=])/) && compareTo.version < _version.replace(/^\</, "")) { isValid.push(true); continue }
+					if (_version.match(/^\>(?=[^=])/) && compareTo.version > _version.replace(/^\>/, "")) { isValid.push(true); continue }
+					isValid.push(false)
 				}
-				if (compareTo.version == version)                          							{ results[dep] = true; continue }
-				if (version.match(/^\>\=/) && compareTo.version >= version.replace(/^\>\=/, ""))  	{ results[dep] = true; continue }
-				if (version.match(/^\<\=/) && compareTo.version <= version.replace(/^\<\=/, ""))  	{ results[dep] = true; continue }
-				if (version.match(/^\<(?=[^=])/) && compareTo.version < version.replace(/^\</, "")) { results[dep] = true; continue }
-				if (version.match(/^\>(?=[^=])/) && compareTo.version > version.replace(/^\>/, "")) { results[dep] = true; continue }
+				if (isValid.indexOf(false) < 0) results[ldep] = true
 			}
 		}
 	}
@@ -720,6 +731,102 @@ function rmdir(aNewDirectory, shouldCheck) {
 	return io.rm(aNewDirectory);
 }
 
+// Sort packages by dependencies (topological sort) 
+function sortPackagesByDeps(packages, isErase) {
+	// Early return for simple cases
+	if (isUnDef(packages) || packages.length <= 1) return packages
+	
+	var packsLst = isErase ? getLocalDB() : getRemoteDB()
+	if (isUnDef(packsLst) || Object.keys(packsLst).length == 0) return packages
+
+	log("Sorting packages by dependencies...")
+
+	// Map package names to their full definitions
+	var packMap = {}
+	var packageNames = []
+	for (var i in packages) {
+		var pack = findCaseInsensitive(packsLst, packages[i])
+		if (pack) {
+			packMap[pack.name] = pack
+			packageNames.push(pack.name)
+		} else {
+			packageNames.push(packages[i])  // Keep original if not found
+		}
+	}
+
+	// Check if there are any inter-dependencies among the packages
+	var hasInterDependencies = false
+	for (var name in packMap) {
+		if (isMap(packMap[name].dependencies)) {
+			for (var dep in packMap[name].dependencies) {
+				// Case insensitive check if dependency exists in packageNames
+				if (packageNames.some(pkg => pkg.toLowerCase() === dep.toLowerCase())) {
+					hasInterDependencies = true
+					break
+				}
+			}
+			if (hasInterDependencies) break
+		}
+	}
+
+	// If no inter-dependencies, return original array
+	if (!hasInterDependencies) return packages
+
+	// Build dependency graph for topological sort
+	var deps = {}
+	for (var name in packMap) {
+		deps[name] = isMap(packMap[name].dependencies) ? packMap[name].dependencies : {}
+	}
+
+	var keys = Object.keys(deps)
+	var sortedKeys = []
+
+	while (keys.length > 0) {
+		var foundNodeWithNoDeps = false
+		for (var i in keys) {
+			var key = keys[i]
+			if (isUnDef(deps[key]) || Object.keys(deps[key]).length == 0) {
+				sortedKeys.push(key)
+				delete deps[key]
+				for (var j in deps) {
+					delete deps[j][key]
+				}
+				keys.splice(i, 1)
+				foundNodeWithNoDeps = true
+				break
+			}
+		}
+		
+		// If we didn't find any node with no dependencies, we have a circular dependency
+		if (!foundNodeWithNoDeps) {
+			sortedKeys = sortedKeys.concat(keys)
+			break
+		}
+	}
+
+	// Map sorted keys back to original package entries
+	var result = []
+	for (var i in sortedKeys) {
+		for (var j in packages) {
+			var pack = findCaseInsensitive(packsLst, packages[j])
+			if (pack && pack.name === sortedKeys[i]) {
+				result.push(packages[j])
+				break
+			}
+		}
+	}
+	
+	// Add any packages that weren't in the sortedKeys
+	for (var i in packages) {
+		if (!result.includes(packages[i])) {
+			result.push(packages[i])
+		}
+	}
+
+	if (isErase) result = result.reverse()
+	return result
+}
+
 // ----------------------------------------------------------
 // SCRIPT UTILITIES
 // ----------------------------------------------------------
@@ -883,12 +990,13 @@ function runScript(aScript, aEnvsMap) {
 
 // Find case insensitive
 function findCaseInsensitive(aObject, aKey) {
+	if (isUnDef(aKey)) return __
 	for(i in aObject) {
-		if (i.toUpperCase() == aKey.toUpperCase())
-			return aObject[i];
+		if (aObject[i].name.toUpperCase() == aKey.toUpperCase())
+			return aObject[i]
 	}
 
-	return undefined;
+	return __
 }
 
 function fromJsonYaml(aString) {
@@ -1017,17 +1125,37 @@ function __opack_info(args) {
 			var packs = getRemoteDB();
 			var packFound = findCaseInsensitive(packs, args[0]);
 			if (isUnDef(packFound)) {
-				logErr("No entry for '" + args[0] + "' on remote OPack database.");
-				logErr("Package not found.");
+				logErr("No entry for '" + args[0] + "' on remote OPack database(s).");
+				logErr(`Package ${args[0]} not found.`)
 				return;
 			} else {
-				packag = getPackage(packFound.repository.url);
-				if (isUnDef(packag) && !(isUnDef(packFound.repository.backupurl))) {
-					packag = getPackage(packFound.repository.backupurl)
+				var _p
+				switch(packFound.repository.type) {
+				case "path":
+					if (isUnDef(packFound.repository.path)) {
+						logErr("No repository.path defined for '" + args[0] + "' on remote OPack database(s).")
+						return
+					}
+					_p = packFound.repository.path
+					packag = getPackage(_p)
+					break
+				case "http":
+				default    :
+					if (isUnDef(packFound.repository.url)) {
+						logErr("No repository.url defined for '" + args[0] + "' on remote OPack database(s).")
+						return
+					}
+					_p = packFound.repository.url
+					packag = getPackage(_p)
+
+					// to be deprecated
+					if (isUnDef(packag) && !(isUnDef(packFound.repository.backupurl))) {
+						packag = getPackage(packFound.repository.backupurl)
+					}
 				}
-				args[0] = packag.repository.url;
+
+				args[0] = _p
 				packag.__filelocation = "remote";
-				//remote = true;
 			}
 		} else {
 			args[0] = findLocalDBTargetByName(args[0]);
@@ -1040,13 +1168,23 @@ function __opack_info(args) {
 	if (packag.__filelocation.match(/local$/)) remote = false; else remote = true;
 
 	var iinfo = {};
+	var repoValue = ""
+	switch(packag.repository.type) {
+	case "path":
+		repoValue = packag.repository.path
+		break
+	case "http":
+	default    :
+		repoValue = packag.repository.url
+		break
+	}
 	iinfo = {
 		"Installed in": args[0],
 		"Name"        : packag.name,
 		"Version"     : packag.version,
 		"Description" : packag.description,
 		"Author"      : packag.author,
-		"Repository"  : "[" + packag.repository.type + "] " + packag.repository.url,
+		"Repository"  : "[" + packag.repository.type + "] " + repoValue,
 	};
 	print( printMap(iinfo) );
 
@@ -1143,6 +1281,7 @@ function __opack_list(args) {
 
 // Check version given package and force parameters
 function checkVersion(packag, force) {
+	if (isUnDef(packag)) return -1
 	var installedVersion = getPackVersion(packag.name);
 
 	if (!force && isDef(installedVersion) &&
@@ -1189,9 +1328,12 @@ function install(args) {
     var deps = false;
     var forceOutput = false;
     var _output;
+	var options = []
 	var packages = [] // found packages
 
     for(let i in args) {
+		options.push(args[i])
+
 		// -d output folder
     	if (foundOutput) {
     		_output = args[i];
@@ -1232,10 +1374,14 @@ function install(args) {
 		if (args[i] == "-useunzip") { useunzip = true; continue }
 		if (args[i] == "-cred")     { foundCred = true; continue }
 
+		options.pop()
 		packages.push(args[i])
     }
 
 	var _stats = { installed: 0, updated: 0, failed: 0, notNeeded: 0 }
+
+	// Sort packages by dependencies
+	packages = sortPackagesByDeps(packages)
 
 	// For each package found
 	packages.forEach(pack => {
@@ -1246,17 +1392,34 @@ function install(args) {
 
 		// Verify remote repositories
 		if (isUnDef(packag.name) && packag.__filelocation != "opackurl") {
-			log("Checking remote OPack database");
+			log("Checking remote OPack database(s)...");
 			var packs = getRemoteDB();
 			var packFound = findCaseInsensitive(packs, pack);
 			if (isUnDef(packFound)) {
-				logErr("No entry for '" + pack + "' on remote OPack database.");
+				logErr("No entry for '" + pack + "' on remote OPack database(s).");
 				_stats.failed++
 				return;
 			} else {
-				packag = getPackage(packFound.repository.url);
-				//if (!forceOutput) output = getOpenAFPath() + "/" + packag.name;
-				pack = packag.repository.url;
+				switch(packFound.repository.type) {
+				case "path":
+					if (isUnDef(packFound.repository.path)) {
+						logErr("Missing repository.path for '" + pack + "' on remote OPack database(s).")
+						_stats.failed++
+						return
+					}
+					packag = getPackage(packFound.repository.path)
+					pack = packag.repository.path
+					break
+				case "http":
+				default    :
+					if (isUnDef(packFound.repository.url)) {
+						logErr("Missing repository.url for '" + pack + "' on remote OPack database(s).")
+						_stats.failed++
+						return
+					}
+					packag = getPackage(packFound.repository.url)
+					pack = packag.repository.url
+				}
 			}
 		}
 
@@ -1292,38 +1455,57 @@ function install(args) {
 			for(let i in packag.dependencies) {
 				var depend = packag.dependencies[i];
 
-				if (!(depsResults[i])) {
-					logErr("Failed dependency on '" + i + "', version " + depend + ".");
+				if (!(depsResults[i.toLowerCase()])) {
+					logWarn("Failed dependency on '" + i + "', version " + depend + ".");
 
 					if (i.toUpperCase() == 'OPENAF') {
 						logErr("Please update OpenAF (e.g. 'openaf --update')");
 						return;
 					}
 
-					log("Checking remote OPack database");
+					log("Checking remote OPack database(s)...");
 					var packs = getRemoteDB();
 					var packFound = findCaseInsensitive(packs, i);
 					if (isUnDef(packFound)) {
-						logErr("No entry for '" + i + "' on remote OPack database.");
+						logErr("No entry for '" + i + "' on remote OPack database(s).");
 						return;
 					}
 
 					if (!deps) {
-						plugin("Console");
+						//plugin("Console");
 						try {
-							var con = new Console();
-							printnl("Do you want to try to install '" + i + "' [Y/N]: ");
-							var res = con.readChar("YNyn"); print(res);
-							if (res == 'N' || res == 'n') {
-								return;
+							//var con = new Console();
+							logFlush()
+							var res = askChoose("Do you want to try to install '" + i + "': ", ["yes", "no"])
+							//var res = con.readChar("YNyn"); print(res);
+
+							if (res == 1) {
+								return
 							}
 						} catch(e) {
-							return;
+							return
 						}
 					}
 
-					var newArgs = args.slice(0);
-					newpack = packs[i].repository.url;
+					var newArgs = clone(options)
+					switch(packFound.repository.type) {
+					case "path":
+						if (isUnDef(packFound.repository.path)) {
+							logErr("Missing repository.path for '" + i + "' on remote OPack database(s).")
+							return
+						}
+						newArgs.push(packFound.repository.path)
+						break
+					case "http":
+					default    :
+						if (isUnDef(packFound.repository.url)) {
+							logErr("Missing repository.url for '" + i + "' on remote OPack database(s).")
+							return
+						}
+						newArgs.push(packFound.repository.url)
+					}
+
+					// Refresh local database
 					var _otherStats = install(newArgs)
 
 					if (isDef(_otherStats)) {
@@ -1528,7 +1710,7 @@ function __opack_exec(args) {
 				logErr("Please use 'openaf-sb " + args[0] + "' instead.");
 				return;
 			} else {
-				logErr("Package not found (note: only installed or local packages can be executed)");
+				logErr(`Package '${args[0]}' not found (note: only installed or local packages can be executed)`)
 				return;
 			}
 		}
@@ -1565,7 +1747,7 @@ function __opack_script(args, isDaemon, isJob) {
 				logErr("Please use 'openaf-sb " + args[0] + "' instead.");
 				return;
 			} else {
-				logErr("Package not found (note: only installed or local packages can be executed)");
+				logErr(`Package '${args[0]}' not found (note: only installed or local packages can be executed)`)
 				return;
 			}
 		}
@@ -1743,6 +1925,9 @@ function update(args) {
 		//return _stats
 	}
 
+	// Sort packages by dependencies
+	_packages = sortPackagesByDeps(_packages)
+
 	_packages.forEach(_pack => {
 		// Check OpenAF
 		if (_pack.toUpperCase() == 'OPENAF') {
@@ -1774,7 +1959,26 @@ function update(args) {
 			if (_res > 0) {
 				if ((typeof packag.__filelocation !== 'undefined') &&
 					!(packag.__filelocation.match(/opack/))
-					) pack = packag.repository.url
+					) {
+					switch(packag.repository.type) {
+					case "path":
+						if (isUnDef(packag.repository.path)) {
+							logErr("Missing repository.path for '" + _pack + "' on remote OPack database(s).")
+							_stats.failed++
+							return
+						}
+						pack = packag.repository.path
+						break
+					case "http":
+					default    :
+						if (isUnDef(packag.repository.url)) {
+							logErr("Missing repository.url for '" + _pack + "' on remote OPack database(s).")
+							_stats.failed++
+							return
+						}
+						pack = packag.repository.url
+					}
+				}
 				log("UPDATING -- " + packag.name + " version " + packag.version);
 			} else {
 				log("No need to update " + packag.name);
@@ -1841,6 +2045,9 @@ function erase(args, dontRemoveDir) {
 
 	var _stats = { erased: 0, failed: 0 }
 
+	// Sort packages by dependencies
+	_packages = sortPackagesByDeps(_packages, true)
+
 	// For each package found
 	_packages.forEach(_pack => {
 		// Check package
@@ -1849,12 +2056,11 @@ function erase(args, dontRemoveDir) {
 		log(_msg)
 		var packag = getPackage(_pack)
 	
-		var _pack
 		if (isUnDef(packag) || isUnDef(packag["name"])) {
-			packag = findLocalDBByName(pack)
+			packag = findLocalDBByName(_pack)
 	
 			if (isUnDef(packag) || isUnDef(packag["name"])) {
-				logErr("Package not found.")
+				logErr(`Package '${_pack}' not found.`)
 				_stats.failed++
 				return
 			} else {
@@ -1955,7 +2161,7 @@ function remove(args) {
 	var packag = findLocalDBByName(args[0]);
 
 	if (isDef(packag) && isUnDef(packag["name"])) {
-		logErr("Package not found on the local OpenPack DB.");
+		logErr(`Package '${args[0]}' not found on the local OpenPack DB.`);
 		return;
 	} else {
 		args[0] = findLocalDBTargetByName(args[0]);
@@ -1966,19 +2172,21 @@ function remove(args) {
 
 // REMOVE CENTRAL
 function removeCentral(args) {
-	removeRemoteDB(args[0], args[1]);
+	var centralFile = _$(args[1], "centralFile").isString().default("opack.db")
+	removeRemoteDB(args[0], centralFile)
 }
 
 // ADD CENTRAL
 function addCentral(args) {
 	var packag = getPackage(args[0]);
+	var centralFile = _$(args[1], "centralFile").isString().default("opack.db")
 
 	if (isUnDef(packag["name"])) {
-		logErr("Package not found");
+		logErr(`Package '${args[0]}' not found`)
 		return;
 	} else {
 		log("Adding to central");
-		addRemoteDB(packag, args[1]);
+		addRemoteDB(packag, centralFile)
 	}
 }
 
@@ -1988,7 +2196,7 @@ function add(args) {
 	var packag = getPackage(args[0]);
 
 	if (isUnDef(packag["name"])) {
-		logErr("Package not found.");
+		logErr(`Package '${args[0]}' not found.`)
 		return;
 	} else {
 		if (packag.__filelocation !== 'local') {
