@@ -1288,18 +1288,23 @@ function checkVersion(packag, force) {
 		 ( (installedVersion.indexOf(".") > 0 && packag.version.indexOf(".") && ow.format.semver(installedVersion).greater(packag.version)) ||
 		   (installedVersion > packag.version) ) ) {
 		log("Installed version is newer " + installedVersion);
-		return 0;
+		// Installed and newer
+		return 0
 	} else {
 		if (!force && isDef(installedVersion) &&
 			((installedVersion.indexOf(".") > 0 && packag.version.indexOf(".") && ow.format.semver(installedVersion).equals(packag.version)) ||
 			 (installedVersion == packag.version ) )) {
 			log(packag.name + ", version " + installedVersion + ", already installed in '" + findLocalDBTargetByName(packag.name) + "'.");
-			return 0;
+			// Already installed
+			return 0
 		} else {
-			if (isUnDef(installedVersion))
+			if (isUnDef(installedVersion)) {
+				// Not installed
 				return -1
-			else
+			} else {
+				// Installed and older
 				return 1
+			}
 		}
 	}
 }
@@ -1456,6 +1461,10 @@ function install(args) {
 				var depend = packag.dependencies[i];
 
 				if (!(depsResults[i.toLowerCase()])) {
+					var depPack = findCaseInsensitive(getLocalDB(true), i)
+					if (isDef(depPack)) {
+						if (checkVersion(depPack) == 0) continue
+					}
 					logWarn("Failed dependency on '" + i + "', version " + depend + ".");
 
 					if (i.toUpperCase() == 'OPENAF') {
