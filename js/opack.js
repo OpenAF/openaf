@@ -864,8 +864,10 @@ function runScript(aScript, aEnvsMap) {
 		try {
 			var s = newFn("args=" + stringify(aEnvsMap,__,"") + ";" + aScript)
 			s();
+			return true
 		} catch(e) {
 			logErr(e);
+			return false
 		}
 	} else if (isArray(aScript)) {
 		Object.keys(aEnvsMap).forEach(k => aEnvsMap[k] = String(aEnvsMap[k]))
@@ -875,6 +877,7 @@ function runScript(aScript, aEnvsMap) {
 			var _r = $sh(s).envs(aEnvsMap, true).exec()
 			if (isArray(_r) && _r.length > 0 && _r[0].exitcode != 0) inError = true
 		})
+		return !inError
 	}
 }
 
@@ -1334,7 +1337,14 @@ function install(args) {
 		}
 
 		outputPath = output;
-		if (!isUnDef(packag.scripts.preinstall) && !justCopy) runScript(packag.scripts.preinstall, { OPACK_PATH: outputPath })
+		if (!isUnDef(packag.scripts.preinstall) && !justCopy) {
+			var _r = runScript(packag.scripts.preinstall, { OPACK_PATH: outputPath })
+			if (!_r) {
+				logErr("Error while executing preinstall script.")
+				_stats.failed++
+				return
+			}
+		}
 
 		switch(packag.__filelocation) {
 			case "url":
@@ -1482,7 +1492,14 @@ function install(args) {
 			log(`` + c + ` file(s) verified (#` + t + `) (+package description file).`)
 		}
 
-		if (typeof packag.scripts.postinstall !== 'undefined' && !justCopy) runScript(packag.scripts.postinstall, { OPACK_PATH: outputPath })
+		if (typeof packag.scripts.postinstall !== 'undefined' && !justCopy) {
+			var _r = runScript(packag.scripts.postinstall, { OPACK_PATH: outputPath })
+			if (!_r) {
+				logErr("Error while executing postinstall script.")
+				_stats.failed++
+				return
+			}
+		}
 
 		log("Package " + packag.name + " installed.");
 		delete packag["__filelocation"];
@@ -1863,7 +1880,14 @@ function erase(args, dontRemoveDir) {
 			}
 		}
 	
-		if (typeof packag.scripts.preerase !== 'undefined') runScript(packag.scripts.preerase, { OPACK_PATH: packag.__target })
+		if (typeof packag.scripts.preerase !== 'undefined') {
+			var _r = runScript(packag.scripts.preerase, { OPACK_PATH: packag.__target })
+			if (!_r) {
+				logErr("Error while executing preerase script.")
+				_stats.failed++
+				return
+			}
+		}
 	
 		switch(packag.__filelocation) {
 		case "url": logErr("Can't remove non local packages"); _stats.failed++; break
@@ -1910,7 +1934,14 @@ function erase(args, dontRemoveDir) {
 		default: // TODO: IMPLEMENT SEARCH LOCAL DB FOR OPACK INFO
 		}
 	
-		if (typeof packag.scripts.posterase !== 'undefined') runScript(packag.scripts.posterase, { OPACK_PATH: packag.__target })
+		if (typeof packag.scripts.posterase !== 'undefined') {
+			var _r = runScript(packag.scripts.posterase, { OPACK_PATH: packag.__target })
+			if (!_r) {
+				logErr("Error while executing posterase script.")
+				_stats.failed++
+				return
+			}
+		}
 	})
 
 	if (_packages.length > 1) log(repeat(4, "-"))
