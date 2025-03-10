@@ -1076,7 +1076,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
     if (_aOptions.compact) {
 		if (_aOptions.mono) {
 			slines = 2
-			line = (_aOptions.noansi ? "\u001b[2m|\u001b[m" : "\u001b[2m│\u001b[m") 
+			line = (_aOptions.noansi ? "\u001b[2m|\u001b[m" : "\u001b[2m│\u001b[2m") 
 			endc = (_aOptions.noansi ? "\u001b[2m\\\u001b[m " : (_aOptions.curved ? "\u001b[2m╰\u001b[m " : "\u001b[2m└\u001b[m "))
 			//strc = (_aOptions.noansi ? "/ " : "┬ ")
 			strc = (_aOptions.noansi ? "\u001b[2m/\u001b[m " :  (_aOptions.curved ? "\u001b[2m╭\u001b[m " : "\u001b[2m┌\u001b[m "))

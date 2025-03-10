@@ -1961,7 +1961,7 @@ function update(args) {
 			(typeof packag.name !== 'undefined')) {
 			var _res = checkVersion(packag, force)
 			if (_res < 0) {
-				logErr("Can't update since package is not installed.")
+				logWarn("Can't update since package is not installed.")
 				_stats.failed++
 				return
 			}
@@ -1996,7 +1996,7 @@ function update(args) {
 			}
 		} else {
 			if (!force) {
-				logErr("Can't update!")
+				logWarn("Can't update!")
 				_stats.failed++
 			} else {
 				var otherStats = install(options.concat(_pack))
