@@ -1663,6 +1663,10 @@ OpenWrap.oJob.prototype.askOnHelp = function(aHelpMap) {
 				print()
 			}
 		})
+	} else {
+		var _res = askChoose("no arguments to fill out; should execution proceed? ", ["yes", "no"])
+		if (_res == 1) return __
+		print()
 	}
 
 	Object.keys(_args).forEach(k => {

@@ -397,12 +397,14 @@ function ojob_askOnHelp() {
 		}
 	}
 
-	params = merge(params, _r)
-	kparams = Object.keys(params)
+	if (isDef(_r)) {
+		params = merge(params, _r)
+		kparams = Object.keys(params)
 
-	var _id = now()
-	ow.oJob.load(oj.jobs, oj.todo, oj.ojob, params, _id, oj.init, oj.help)
-	ow.oJob.start(params, true, _id)
+		var _id = now()
+		ow.oJob.load(oj.jobs, oj.todo, oj.ojob, params, _id, oj.init, oj.help)
+		ow.oJob.start(params, true, _id)
+	}
 
 	ojob_shouldRun = false
 }
