@@ -783,13 +783,18 @@ function sortPackagesByDeps(packages, isErase) {
 
 	while (keys.length > 0) {
 		var foundNodeWithNoDeps = false
-		for (var i in keys) {
+		for (var i = 0; i < keys.length; i++) {
 			var key = keys[i]
-			if (isUnDef(deps[key]) || Object.keys(deps[key]).length == 0) {
-				sortedKeys.push(key)
+			if (isUnDef(deps[key]) || Object.keys(deps[key]).length === 0) {
+				if (isErase) sortedKeys.unshift(key); else sortedKeys.push(key)
 				delete deps[key]
+				var keyLower = key.toLowerCase()
 				for (var j in deps) {
-					delete deps[j][key]
+					for (var depKey in deps[j]) {
+						if (depKey.toLowerCase() === keyLower) {
+							delete deps[j][depKey]
+						}
+					}
 				}
 				keys.splice(i, 1)
 				foundNodeWithNoDeps = true
@@ -797,9 +802,9 @@ function sortPackagesByDeps(packages, isErase) {
 			}
 		}
 		
-		// If we didn't find any node with no dependencies, we have a circular dependency
+		// If no node with no dependencies is found, handle circular dependency
 		if (!foundNodeWithNoDeps) {
-			sortedKeys = sortedKeys.concat(keys)
+			sortedKeys = sortedKeys.concat(isErase ? keys.reverse() : keys)
 			break
 		}
 	}
@@ -819,11 +824,10 @@ function sortPackagesByDeps(packages, isErase) {
 	// Add any packages that weren't in the sortedKeys
 	for (var i in packages) {
 		if (!result.includes(packages[i])) {
-			result.push(packages[i])
+			if (isErase) result.unshift(packages[i]); else result.push(packages[i])
 		}
 	}
 
-	if (isErase) result = result.reverse()
 	return result
 }
 
@@ -1391,7 +1395,7 @@ function install(args) {
 	// For each package found
 	packages.forEach(pack => {
 		var _msg = "Getting package '" + pack + "'..."
-		if (packages.length > 1) log(repeat(_msg.length, "-"))
+		log(repeat(_msg.length, "-"))
 		log(_msg)
 		var packag = getPackage(pack)
 
@@ -1697,7 +1701,7 @@ function install(args) {
 		if (!justCopy) addLocalDB(packag, outputPath);
 	})
 
-	if (packages.length > 1) log(repeat(4, "-"))
+	log(repeat(4, "-"))
 
 	return _stats
 }
@@ -1947,7 +1951,7 @@ function update(args) {
 
 		// Check package
 		var _msg = "Getting package '" + _pack + "'..."
-		if (_packages.length > 1) log(repeat(_msg.length, "-"))
+		log(repeat(_msg.length, "-"))
 		log(_msg)
 		var packag = getPackage(_pack)
 
@@ -1999,7 +2003,7 @@ function update(args) {
 				logWarn("Can't update!")
 				_stats.failed++
 			} else {
-				var otherStats = install(options.concat(_pack))
+				var otherStats = install([_pack])
 				if (isDef(otherStats)) {
 					_stats.updated += otherStats.installed
 					_stats.failed += otherStats.failed
@@ -2011,11 +2015,11 @@ function update(args) {
 		}
 
 		if (ferase) {
-			var otherStats = erase(clone(options.concat(_pack)), derase)
+			var otherStats = erase([_pack], derase)
 			_stats.updated -= otherStats.erased
 			_stats.failed += otherStats.failed
 		}
-		var otherStats = install(options.concat(_pack))
+		var otherStats = install([_pack])
 		if (isDef(otherStats)) {
 			_stats.updated += otherStats.installed
 			_stats.failed += otherStats.failed
@@ -2023,7 +2027,7 @@ function update(args) {
 		}
 	})
 
-	if (_packages.length > 1) log(repeat(4, "-"))
+	log(repeat(4, "-"))
 
 	return _stats
 }
@@ -2061,7 +2065,7 @@ function erase(args, dontRemoveDir) {
 	_packages.forEach(_pack => {
 		// Check package
 		var _msg = "Getting package '" + _pack + "'..."
-		if (_packages.length > 1) log(repeat(_msg.length, "-"))
+		log(repeat(_msg.length, "-"))
 		log(_msg)
 		var packag = getPackage(_pack)
 	
@@ -2159,7 +2163,7 @@ function erase(args, dontRemoveDir) {
 		}
 	})
 
-	if (_packages.length > 1) log(repeat(4, "-"))
+	log(repeat(4, "-"))
 
 	return _stats
 }
