@@ -1076,7 +1076,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
     if (_aOptions.compact) {
 		if (_aOptions.mono) {
 			slines = 2
-			line = (_aOptions.noansi ? "\u001b[2m|\u001b[m" : "\u001b[2m│\u001b[m") 
+			line = (_aOptions.noansi ? "\u001b[2m|\u001b[m" : "\u001b[2m│\u001b[2m") 
 			endc = (_aOptions.noansi ? "\u001b[2m\\\u001b[m " : (_aOptions.curved ? "\u001b[2m╰\u001b[m " : "\u001b[2m└\u001b[m "))
 			//strc = (_aOptions.noansi ? "/ " : "┬ ")
 			strc = (_aOptions.noansi ? "\u001b[2m/\u001b[m " :  (_aOptions.curved ? "\u001b[2m╭\u001b[m " : "\u001b[2m┌\u001b[m "))
@@ -2224,6 +2224,17 @@ const __initializeLogPromise = function() {
 
 /**
  * <odoc>
+ * <key>logFlush(aTimeout)</key>
+ * Will wait for the current log promise to finish. Optionally you can provide aTimeout in milliseconds.
+ * </odoc>
+ */
+function logFlush(aTimeout) {
+	aTimeout = _$(aTimeout, "timeout").isNumber().default(__)
+	$doWait(__logPromise, aTimeout)
+}
+
+/**
+ * <odoc>
  * <key>setLog(aMap)</key>
  * Sets the current log output settings:\
  * \
@@ -3183,6 +3194,7 @@ const PACKAGEJSON  = ".package.json";
 const PACKAGEYAML  = ".package.yaml";
 const PACKAGESJSON = "packages.json";
 const PACKAGESJSON_DB = ".opack.db";
+const PACKAGESJSON_CENTRALDB = "opack.db"
 const PACKAGESJSON_USERDB = ".openaf-opack.db";
 const OPACKCENTRALJSON = "packages.json";
 
@@ -3236,7 +3248,7 @@ const oJob = function(aFile, args, aId, aOptionsMap, shouldReturn) {
  * </odoc>
  */
 const addOPackRemoteDB = function(aURL) {
-	__opackCentral.push(aURL);
+	if (__opackCentral.indexOf(aURL) < 0) __opackCentral.push(aURL)
 }
 
 /**
@@ -3247,24 +3259,37 @@ const addOPackRemoteDB = function(aURL) {
  */
 const getOPackRemoteDB = function() {
 	var packages = {};
-	if (noHomeComms) return packages;
 
-	plugin("ZIP");
-	plugin("HTTP");
+	plugin("ZIP")
+	var zip
 
-	var http;
-	var zip;
-
+	// Check for OAF_OPACKS environment variable
+	// If it exists, add the remote opack repositories
+	if (isString(getEnv("OAF_OPACKS"))) {
+		getEnv("OAF_OPACKS").split(",").forEach(url => addOPackRemoteDB(url) )
+	}
 	for(var i in __opackCentral) {
-		try {
-			http = new HTTP(__opackCentral[i], "GET", "", {}, true, 1500);
-			zip = new ZIP(http.responseBytes());
-			if (isDef(http)) {
-				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON))));
-            }
-			if (!isUnDef(zip)) zip.close();
-		} catch(e) {
-			// Continue to next
+		if (!noHomeComms && __opackCentral[i].toLowerCase().startsWith("http")) {
+			try {
+				var _stream = $rest({ connectionTimeout: 1500 }).get2Stream(__opackCentral[i])
+				//http = new HTTP(, "GET", "", {}, true, 1500);
+				//zip = new ZIP(http.responseBytes());
+				zip = new ZIP(af.fromInputStream2Bytes(_stream))
+				packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON))))
+			} catch(e) {
+				// Continue to next
+			} finally {
+				if (isDef(zip)) zip.close()
+			}
+		} else if (io.fileExists(__opackCentral[i]) && io.fileInfo(__opackCentral[i]).isDirectory) {
+			if (io.fileExists(__opackCentral[i] + "/" + PACKAGESJSON_CENTRALDB)) {
+				try {
+					zip = new ZIP(io.readFileBytes(__opackCentral[i] + "/" + PACKAGESJSON_CENTRALDB))
+					packages = merge(packages, af.fromJson(af.fromBytes2String(zip.getFile(OPACKCENTRALJSON))))
+				} finally {
+					if (isDef(zip)) zip.close()
+				}
+			}
 		}
 	}
 	

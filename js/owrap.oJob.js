@@ -1242,6 +1242,7 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 	var altId = (isDef(aId) ? aId : "");
 	aId = altId;
 	for(var i in todoList) { 
+		var name = isDef(todoList[i].name) ? todoList[i].name : Object.keys(todoList[i])[0]
 		if(isDef(aJobArgs) && isObject(todoList[i])) 
 			todoList[i].args = this.__processArgs(todoList[i].args, aJobArgs, aId);
 
@@ -1251,7 +1252,7 @@ OpenWrap.oJob.prototype.addTodos = function(todoList, aJobArgs, aId) {
 			if (isDef(todoList[i].job) && isUnDef(todoList[i].name)) todoList[i].name = todoList[i].job;
 			if (isUnDef(todoList[i].typeArgs)) todoList[i].typeArgs = {};
 			if (isDef(todoList[i].when))       todoList[i].typeArgs.when = todoList[i].when;
-			this.addTodo(this.getID() + (isDef(todoList[i].id) ? todoList[i].id : altId), this.getJobsCh(), this.getTodoCh(), todoList[i].name, todoList[i].args, todoList[i].type, todoList[i].typeArgs);
+			this.addTodo(this.getID() + (isDef(todoList[i].id) ? todoList[i].id : altId), this.getJobsCh(), this.getTodoCh(), isUnDef(todoList[i].name) ? name : todoList[i].name, todoList[i].args, todoList[i].type, todoList[i].typeArgs);
 		} else {
 			this.addTodo(this.getID() + (isDef(todoList[i].id) ? todoList[i].id : altId), this.getJobsCh(), this.getTodoCh(), todoList[i], __, __, aJobArgs);
 		}
@@ -1662,6 +1663,10 @@ OpenWrap.oJob.prototype.askOnHelp = function(aHelpMap) {
 				print()
 			}
 		})
+	} else {
+		var _res = askChoose("no arguments to fill out; should execution proceed? ", ["yes", "no"])
+		if (_res == 1) return __
+		print()
 	}
 
 	Object.keys(_args).forEach(k => {

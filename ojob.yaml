@@ -1017,8 +1017,10 @@ jobs:
   exec: |
     if (args.__fn.indexOf(".") < 0) args.__fn = "global." + args.__fn
     var res = $fnM(args.__fn, (isDef(args.__path) ? $path(args, args.__path) : args))
-    if (isDef(args.__fnPath)) && isString(args.__fnPath)) res = $$({}).set(args.__fnPath, res)
-    if (isDef(args.__key)) && isString(args.__key)) $set(args.__key, res); else args = merge(args, res)
+    if (isDef(args.__fnPath) && isString(args.__fnPath)) res = $$({}).set(args.__fnPath, res)
+    if (isDef(res)) {
+      if (isDef(args.__key) && isString(args.__key) && args.__key != "args") $set(args.__key, res); else args = merge(args, res)
+    }
 
     // Delete all __ args
     Object.keys(args).filter(k => k.startsWith("__")).forEach(k => delete args[k])

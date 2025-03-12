@@ -92,8 +92,9 @@ jobs:
        }
 
        log("Generating completion scripts...")
+       ow.loadFormat()
        pForEach(["oaf", "oafp", "opack"], r => {
-          $sh(getOpenAFPath() + "/ojob " + global.path + "/complete/completion.yaml tool=" + r + " file=" + global.path + "/complete/completion_" + r + ".yaml > " + global.path + "/complete/completion_" + r + ".sh").exec()
+          $sh(ow.format.getJavaHome() + "/bin/java -jar " + global.path + "/openaf.jar --ojob -e \"" + global.path + "/complete/completion.yaml tool=" + r + " file=" + global.path + "/complete/completion_" + r + ".yaml\" > " + global.path + "/complete/completion_" + r + ".sh").exec()
        })
 
        fnCp(global.path + "/complete/completion.yaml", "complete/completion.yaml")

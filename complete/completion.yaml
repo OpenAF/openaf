@@ -25,11 +25,13 @@ jobs:
       file: isString
   exec : |
     ow.template.addHelper("$p", p => p)
-  to   :
+  from  :
   - (pass    ):
       aYAMLFile: "{{file}}"
   - (fn      ): io.readFileYAML
-    ((key   )): data
+    ((key   )): args
+    ((fnPath)): data
+  to    :
   - (template): |-
       #!/bin/sh
 
@@ -95,7 +97,8 @@ jobs:
         echo :2
       fi
       
-    ((key   )): data
+    ((key   )): args
+    ((dpath )): data
     ((out   )): out
   - (if      ): "'{{keyout}}' != 'true'"
     ((then  )):
