@@ -25,16 +25,18 @@ jobs:
       file: isString
   exec : |
     ow.template.addHelper("$p", p => p)
-  to   :
+  from  :
   - (pass    ):
       aYAMLFile: "{{file}}"
   - (fn      ): io.readFileYAML
-    ((key   )): data
+    ((key   )): args
+    ((fnPath)): data
+  to    :
   - (template): |-
       #!/bin/sh
 
       # Flags
-      {{#each this}}
+      {{#each complete}}
       F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=1
       {{#each opts}}
       F_{{{$path ../name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}}=0
@@ -49,7 +51,7 @@ jobs:
         FFOUND=0
         for arg in "$@"; do
           if [ "$arg" = "${!#}" ]; then FFOUND=1; break; fi
-          {{#each this}}
+          {{#each complete}}
           {{#if opts.length}}
           # {{{name}}} options
           {{else}}
@@ -66,7 +68,7 @@ jobs:
         done
       fi
 
-      {{#each this}}
+      {{#each complete}}
       # Print completion for {{{name}}}
       if [ $F_{{{$path name 'replace(@,\'[^a-zA-Z0-9]\',\'g\',\'_\')'}}} -eq 1 ]; then
         echo "{{{name}}}	{{{desc}}}"
@@ -95,7 +97,8 @@ jobs:
         echo :2
       fi
       
-    ((key   )): data
+    ((key   )): args
+    ((dpath )): data
     ((out   )): out
   - (if      ): "'{{keyout}}' != 'true'"
     ((then  )):
