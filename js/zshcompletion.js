@@ -18,7 +18,7 @@ function _r(_e) {
             var fs = io.createTempFile("ojob", "")
             io.writeFileString(fs, io.readFileString(getOpenAFJar() + "::complete/completion_ojob.yaml"))
             var ojobio = $rest().get("https://ojob.io/index.json").init.l.map(r => r.replace(/^https:\/\/(.+)\.(yaml|json|yml|sh|bat)$/,"$1")).filter(r => !r.startsWith("https:"))
-            var s = "complete:\n- name: ojob.io/\n  desc: oJob.io online repository\n  opts:\n" + ojobio.map(r => "  - name: " + r).join("\n")
+            var s = "\n- name: ojob.io/\n  desc: oJob.io online repository\n  opts:\n" + ojobio.map(r => "  - name: " + r).join("\n")
             io.writeFileString(fs, s, __, true)
     
             oJobRunFile(getOpenAFJar() + "::complete/completion.yaml", { file: fs, tool: "ojob", keyout: "true" })    
