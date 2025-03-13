@@ -2819,7 +2819,7 @@ OpenWrap.server.prototype.httpd = {
 	/**
 	 * <odoc>
 	 * <key>ow.server.httpd.replyFile(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray, mapOfHeaders) : Map</key>
-	 * Provides a helper aHTTPd reply that will enable the download of a file, from aBaseFilePath, given aURI part of 
+	 * Provides a helper aHTTPd reply that will enable the download of a file, from aBaseFilePath (a file path or java stream), given aURI part of 
 	 * aBaseURI. Optionally you can also provide a notFoundFunction and an array of file strings (documentRootArraY) to replace as
 	 * documentRoot. Example:\
 	 * \
@@ -2835,32 +2835,45 @@ OpenWrap.server.prototype.httpd = {
 				return aHTTPd.reply("Not found!", ow.server.httpd.mimes.TXT, ow.server.httpd.codes.NOTFOUND);
 			}
 		}
-		try {
-			var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
-			var furi = String((new java.io.File(new java.io.File(baseFilePath),
-				(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalPath()).replace(/\\/g, "/")
-			
-			if (furi.match(new RegExp("^" + baseFilePath + "$"))) {
-				for(var i in documentRootArray) {
-					furi = String((new java.io.File(new java.io.File(baseFilePath),
-						(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
-					if (furi.match(new RegExp("^" + baseFilePath))) break;
+		if (isString(aBaseFilePath)) {
+			try {
+				// Determine the full canonical path
+				var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
+				// Determine the full canonical path of the file to be served
+				var furi = String((new java.io.File(new java.io.File(baseFilePath),
+					(new java.net.URI(encodeURI( aURI.replace(new RegExp("^" + aBaseURI), "") ) )).getPath())).getCanonicalPath()).replace(/\\/g, "/")
+				
+				// If the file is a directory, try to find the documentRootArray
+				if (furi.match(new RegExp("^" + baseFilePath + "$"))) {
+					for(var i in documentRootArray) {
+						furi = String((new java.io.File(new java.io.File(baseFilePath),
+							(new java.net.URI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") )).getPath())).getCanonicalPath());
+						if (furi.match(new RegExp("^" + baseFilePath))) break;
+					}
 				}
+			
+				// If full uri matches the baseFilePath then proceed to serve the file
+				if (furi.match(new RegExp("^" + baseFilePath))) {
+					return aHTTPd.replyStream(io.readFileStream(furi), ow.server.httpd.getMimeType(furi), __, mapOfHeaders)
+				} else {
+				  return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI)
+				}
+			} catch(e) { 
+				return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e)
 			}
-		
-			if (furi.match(new RegExp("^" + baseFilePath)))
-				return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), __, mapOfHeaders);
-			else
-			  return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI);
-		} catch(e) { 
-			return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e);
+		} else {
+			try {
+				return aHTTPd.replyStream(aBaseFilePath, ow.server.httpd.getMimeType(furi), 200, mapOfHeaders)
+			} catch(e) {
+				return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e)
+			}
 		}
 	},
 	
 	/**
 	 * <odoc>
 	 * <key>ow.server.httpd.replyFileMD(aHTTPd, aBaseFilePath, aBaseURI, aURI, notFoundFunction, documentRootArray, mapOfHeaders, noMaxWidth) : Map</key>
-	 * Provides a helper aHTTPd reply that will enable the parsing markdown file-based sites, from aBaseFilePath, given aURI part of 
+	 * Provides a helper aHTTPd reply that will enable the parsing markdown file-based sites, from aBaseFilePath (a file path or stream), given aURI part of 
 	 * aBaseURI. Optionally you can also provide a notFoundFunction and an array of file strings (documentRootArraY) to replace as
 	 * documentRoot. Example:\
 	 * \
@@ -2884,35 +2897,44 @@ OpenWrap.server.prototype.httpd = {
 				return aHTTPd.reply("Not found!", ow.server.httpd.mimes.TXT, ow.server.httpd.codes.NOTFOUND);
 			}
 		}
-		try {
-			var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
-			var furi = String((new java.io.File(new java.io.File(baseFilePath),
-				(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalPath()).replace(/\\/g, "/");
-			
-			if (isUnDef(documentRootArray)) documentRootArray = [ "index.md" ];
-
-			// TODO:if io.fileExists is false to directories
-			if (io.fileExists(furi) && io.fileInfo(furi).isDirectory) {
-				for(var i in documentRootArray) {
-					furi = String((new java.io.File(new java.io.File(baseFilePath),
-						(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalPath());
-					if (furi.match(new RegExp("^" + baseFilePath))) break;
+		
+		if (isString(aBaseFilePath)) {
+			try {
+				var baseFilePath = String((new java.io.File(aBaseFilePath)).getCanonicalPath()).replace(/\\/g, "/");
+				var furi = String((new java.io.File(new java.io.File(baseFilePath),
+					(new java.net.URI(encodeURI(aURI.replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalPath()).replace(/\\/g, "/");
+				
+				if (isUnDef(documentRootArray)) documentRootArray = [ "index.md" ];
+	
+				// TODO:if io.fileExists is false to directories
+				if (io.fileExists(furi) && io.fileInfo(furi).isDirectory) {
+					for(var i in documentRootArray) {
+						furi = String((new java.io.File(new java.io.File(baseFilePath),
+							(new java.net.URI(encodeURI((aURI + documentRootArray[i]).replace(new RegExp("^" + aBaseURI), "") ))).getPath())).getCanonicalPath());
+						if (furi.match(new RegExp("^" + baseFilePath))) break;
+					}
 				}
-			}
-
-			if (!(furi.match(/[^/]+\.[^/]+$/))) furi = furi + ".md";
-
-			if (furi.match(new RegExp("^" + baseFilePath))) {
-				if (furi.match(/\.md$/)) {
-					return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(io.readFileString(furi), 1, noMaxWidth));
+	
+				if (!(furi.match(/[^/]+\.[^/]+$/))) furi = furi + ".md";
+	
+				if (furi.match(new RegExp("^" + baseFilePath))) {
+					if (furi.match(/\.md$/)) {
+						return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(io.readFileString(furi), 1, noMaxWidth));
+					} else {
+						return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), __, mapOfHeaders);
+					}
 				} else {
-					return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), __, mapOfHeaders);
+					return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI);
 				}
-			} else {
-			    return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI);
+			} catch(e) { 
+				return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e);
 			}
-		} catch(e) { 
-			return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e);
+		} else {
+			try {
+				return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(af.fromInputStream2String(aBaseFilePath), 1, noMaxWidth))
+			} catch(e) {
+				return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e)
+			}
 		}
 	},
 
