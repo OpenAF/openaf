@@ -392,11 +392,11 @@ function verifyDeps(packag) {
 	if (isMap(packag.dependencies)) {
 		log("Checking dependencies for " + packag.name + "...")
 		for(let dep in packag.dependencies) {
-			var version = packag.dependencies[dep];
+			var version = packag.dependencies[dep]
 	
-			var compareTo = findLocalDBByName(dep);
+			var compareTo = findLocalDBByName(dep)
 			ldep = dep.toLowerCase()
-			results[ldep] = false;
+			results[ldep] = false
 			if (!isUnDef(compareTo)) {
 				var _vs = version.split(",")
 				
@@ -425,7 +425,7 @@ function verifyDeps(packag) {
 		}
 	}
 
-	return results;
+	return results
 }
 
 // OpenPack local register remove
@@ -483,9 +483,11 @@ function removeLocalDB(aPackage, aTarget) {
 				if (isDef(packages)) {
 					let keyToDelete = isDef(packages[aTarget]) ? aTarget :
 						Object.keys(packages).find(key => key.toUpperCase() === aTarget.toUpperCase())
-					if (keyToDelete) {
+					if (isDef(keyToDelete)) {
 						delete packages[keyToDelete]
 						removed = true
+					} else {
+						logWarn(`Package '${aTarget.replace("$DIR/", getOpenAFPath())}' not found in OpenPack DB.`)
 					}
 				}
 				if (removed) zip.streamPutFile(fileDB, PACKAGESJSON, af.fromString2Bytes(stringify(packages)));
@@ -498,7 +500,7 @@ function removeLocalDB(aPackage, aTarget) {
 			try {
 				if (isDef(packagesLocal)) {
 					let keyToDelete = isDef(packagesLocal[aTarget]) ? aTarget :
-						Object.keys(packagesLocal).find(key => key.toUpperCase() === aTarget.toUpperCase())
+						Object.keys(packagesLocal).find(key => key.toUpperCase() === aTarget.replace("$DIR/", getOpenAFPath()).toUpperCase())
 					if (keyToDelete) {
 						delete packagesLocal[keyToDelete]
 						removed = true
@@ -770,7 +772,9 @@ function sortPackagesByDeps(packages, isErase) {
 	}
 
 	// If no inter-dependencies, return original array
-	if (!hasInterDependencies) return packages
+	if (!hasInterDependencies) {
+		return packages
+	}
 
 	// Build dependency graph for topological sort
 	var deps = {}
@@ -804,7 +808,8 @@ function sortPackagesByDeps(packages, isErase) {
 		
 		// If no node with no dependencies is found, handle circular dependency
 		if (!foundNodeWithNoDeps) {
-			sortedKeys = sortedKeys.concat(isErase ? keys.reverse() : keys)
+			//sortedKeys = sortedKeys.concat(isErase ? keys.reverse() : keys)
+			sortedKeys = sortedKeys.concat(isErase ? keys : keys.reverse())
 			break
 		}
 	}
@@ -828,6 +833,7 @@ function sortPackagesByDeps(packages, isErase) {
 		}
 	}
 
+	log("Sorted: " + result.join(", "))
 	return result
 }
 
@@ -1395,7 +1401,7 @@ function install(args) {
 	// For each package found
 	packages.forEach(pack => {
 		var _msg = "Getting package '" + pack + "'..."
-		log(repeat(_msg.length, "-"))
+		log(ansiColor("FAINT",repeat(_msg.length, "-")))
 		log(_msg)
 		var packag = getPackage(pack)
 
@@ -1701,7 +1707,7 @@ function install(args) {
 		if (!justCopy) addLocalDB(packag, outputPath);
 	})
 
-	log(repeat(4, "-"))
+	log(ansiColor("FAINT",repeat(4, "-")))
 
 	return _stats
 }
@@ -1951,7 +1957,7 @@ function update(args) {
 
 		// Check package
 		var _msg = "Getting package '" + _pack + "'..."
-		log(repeat(_msg.length, "-"))
+		log(ansiColor("FAINT",repeat(_msg.length, "-")))
 		log(_msg)
 		var packag = getPackage(_pack)
 
@@ -2021,13 +2027,13 @@ function update(args) {
 		}
 		var otherStats = install([_pack])
 		if (isDef(otherStats)) {
-			_stats.updated += otherStats.installed
+			_stats.updated += otherStats.installed * (ferase ? 2 : 1)
 			_stats.failed += otherStats.failed
 			_stats.notNeeded += otherStats.notNeeded
 		}
 	})
 
-	log(repeat(4, "-"))
+	log(ansiColor("FAINT",repeat(4, "-")))
 
 	return _stats
 }
@@ -2065,7 +2071,7 @@ function erase(args, dontRemoveDir) {
 	_packages.forEach(_pack => {
 		// Check package
 		var _msg = "Getting package '" + _pack + "'..."
-		log(repeat(_msg.length, "-"))
+		log(ansiColor("FAINT",repeat(_msg.length, "-")))
 		log(_msg)
 		var packag = getPackage(_pack)
 	
@@ -2163,7 +2169,7 @@ function erase(args, dontRemoveDir) {
 		}
 	})
 
-	log(repeat(4, "-"))
+	log(ansiColor("FAINT",repeat(4, "-")))
 
 	return _stats
 }
@@ -2387,8 +2393,8 @@ for(let i in verbs) {
 
 		switch(verb) {
 			case 'info'           : __opack_info(params); break;
-			case 'install'        : log(af.toSLON(install(params), true)); fnDone(); break;
-			case 'erase'          : log(af.toSLON(erase(params), true)); fnDone(); break;
+			case 'install'        : log(af.toCSLON(install(params), true)); fnDone(); break;
+			case 'erase'          : log(af.toCSLON(erase(params), true)); fnDone(); break;
 			case 'list'           : __opack_list(params); break;
 			case 'genpack'        : genpack(params); fnDone(); break;
 			case 'pack'           : pack(params); fnDone(); break;
@@ -2400,7 +2406,7 @@ for(let i in verbs) {
 			case 'daemon'         : __opack_script(params, true); break;
 			case 'ojob'           : __opack_script(params, false, true); break;
 			case 'search'         : __opack_search(params); break;
-			case 'update'         : log(af.toSLON(update(params), true)); fnDone(); break;
+			case 'update'         : log(af.toCSLON(update(params), true)); fnDone(); break;
 			case 'exec'           : __opack_exec(params); break;
 			case 'help'           : showhelp = 1; showHelp(); break;
 		}
