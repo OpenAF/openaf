@@ -48,10 +48,9 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', eve
     __refreshDarkMode()
 })
 </script>
-{{else}}
-{{#if themedark}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{/if}}
 {{{markdown}}}
+{{#if themedark}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{#if themeauto}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{#if mdcodeclip}}<script src="/js/mdcodeclip.js"></script>{{/if}}
 </body>
