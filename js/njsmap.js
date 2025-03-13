@@ -47,27 +47,41 @@ function nJSMap(aValue, aType, isDark) {
 
         var out = "";
         if (Array.isArray(aValue) && aValue.length > 0) {
-            var _keys = Array.from(_determineKeys(aValue))
+            // If the array is nested, work with the inner array.
+            let innerArray = Array.isArray(aValue[0]) ? aValue[0] : aValue;
+            var _keys = Array.from(_determineKeys(innerArray));
             var out = "";
-            if ($$(aValue[0]).isMap()) {
+            // Test the first element (or its first element if nested) to see if it is a map.
+            let firstItem = Array.isArray(aValue[0]) ? aValue[0][0] : aValue[0];
+            if ($$(firstItem).isMap()) {
                 out += "<table class=\"njsmap_table\"><tr>";
-                for(var i in _keys) {
-                    out += "<td class=\"njsmap_tablehead\" style=\"text-align: center\"><span style=\"color: " + (isDark ? "lightgray" : "darkblue") + ";font-weight: bold;\">" + _keys[i] + "</span></td>";
+                for (var i in _keys) {
+                    out += "<td class=\"njsmap_tablehead\" style=\"text-align: center\"><span style=\"color: " +
+                        (isDark ? "lightgray" : "darkblue") +
+                        ";font-weight: bold;\">" + _keys[i] + "</span></td>";
                 }
                 out += "</tr>";
             } else {
                 out += "<table class=\"njsmap_table\">";
             }
-            for(var x in aValue) {
+            // Iterate over the original array. If nested, assume each element is an inner array of maps.
+            for (var x in aValue) {
                 out += "<tr>";
-                if (!($$(aValue[x]).isMap()) && !(Array.isArray(aValue[x]))) {
-                    out += "<td class=\"njsmap_tablecell\" style=\"text-align: center\"><span style=\"color: " + (isDark ? "lightgray" : "darkblue") + ";font-weight: bold;\">" + aValue[x] + "</span></td>";
+                // Check if this row is a nested array.
+                let row = Array.isArray(aValue[x]) ? aValue[x] : [aValue[x]];
+                // If row element is not a map, render it centered.
+                if (!($$(row[0]).isMap())) {
+                    out += "<td class=\"njsmap_tablecell\" style=\"text-align: center\"><span style=\"color: " +
+                        (isDark ? "lightgray" : "darkblue") +
+                        ";font-weight: bold;\">" + row[0] + "</span></td>";
                 } else {
                     for (var y in _keys) {
-                        var _v = ""
-                        if (aValue[x] != null && aValue[x][_keys[y]] != null) {
-                            if ("undefined" != aValue[x][_keys[y]]) _v = aValue[x][_keys[y]]
-                            if ("undefined" == typeof _v) _v = ""
+                        var _v = "";
+                        if (row[0] != null && row[0][_keys[y]] != null) {
+                            if ("undefined" != row[0][_keys[y]])
+                                _v = row[0][_keys[y]];
+                            if ("undefined" == typeof _v)
+                                _v = "";
                         }
                         out += "<td class=\"njsmap_tablecell\" style=\"text-align: left\">" + _render(_v) + "</td>";
                     }
@@ -75,6 +89,7 @@ function nJSMap(aValue, aType, isDark) {
                 out += "</tr>";
             }
             out += "</table>";
+            return out;
         } else {
             var out = "<table class=\"njsmap_table\">";
             for (var i in aValue) {
