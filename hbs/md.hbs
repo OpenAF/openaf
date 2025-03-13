@@ -17,9 +17,6 @@
 <body class="markdown-body"></body>
   {{/if}}
 {{/if}}
-{{{markdown}}}
-</body>
-{{#if mdcodeclip}}<script src="/js/mdcodeclip.js"></script>{{/if}}
 {{#if themeauto}}
 <script>
 function __refreshDarkMode() {
@@ -51,12 +48,10 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', eve
 })
 </script>
 {{else}}
-{{#if themedark}}
-<script>
-document.querySelectorAll('pre code').forEach((block) => {
-  block.classList.add('hljs_dark')
-})
-</script>
+{{#if themedark}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{/if}}
-{{/if}}
+{{{markdown}}}
+{{#if themeauto}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
+{{#if mdcodeclip}}<script src="/js/mdcodeclip.js"></script>{{/if}}
+</body>
 </html>

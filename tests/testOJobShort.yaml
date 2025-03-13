@@ -1,0 +1,92 @@
+jobs:
+# -----------------------------
+- name: Test fn uni-directional
+  from:
+  # Running function getVersion
+  - (fn): getVersion
+  exec: |
+    // Setting comparing values
+    args.a = $get("res")
+    args.b = getVersion()
+  to  :
+  # Testing assertion
+  - (testAssert): Problem with fn uni-directional
+  # Cleanup
+  - (unset     ): res
+
+# ----------------------------
+- name: Test fn bi-directional
+  from:
+  # Setting key-value pair
+  - (pass ):
+      aKey  : my-key
+      aValue: my-value
+  # Running function $set
+  - (fn   ): "$set"
+  to  :
+  # Setting values for assertion test
+  - (pass      ):
+      a: "{{$get 'my-key'}}"
+      b: my-value
+  # Testing assertion
+  - (testAssert): Problem with fn bi-directional
+  # Cleanup
+  - (unset     ): res
+
+# --------------------
+- name: Test ch simple
+  from:
+  # Setting value 'test-value' for key 'test' in channel 'test'
+  - (ch     ): test
+    ((op   )): set
+    ((k    )): test
+    ((v    )): test-value
+  # Getting value for key 'test' in channel 'test'
+  - (ch     ): test
+    ((op   )): get
+    ((k    )): test
+  to  :
+  # Setting values for assertion test
+  - (pass      ):
+      a: "{{$path ($get 'res') 'value'}}"
+      b: test-value
+  # Testing assertion
+  - (testAssert): Problem with ch simple
+  # Cleanup
+  - (unset     ): res
+
+# ----------------------
+- name: Test todo simple
+  from:
+  # Preparing todo list to be tested
+  - (todo         ):
+    # Set arg a
+    - (pass):
+        a: 1
+    # Set arg b
+    - (pass):
+        b: 1
+    # Testing assertion as part of the todo list
+    - (testAssert): Problem with todo simple
+    # Ensure args are shared between todo list items
+    ((shareArgs  )): true
+  to  :
+  # Cleanup
+  - (unset     ): res
+
+include:
+- oJobBasics.yaml
+- oJobTest.yaml
+
+ojob:
+  channels:
+    # Creating channel for "Test ch"
+    create:
+    - name: test
+
+todo:
+- Test fn uni-directional
+- Test fn bi-directional
+- Test ch simple
+- Test todo simple
+- oJob Jobs Final Report 
