@@ -1919,7 +1919,7 @@ function update(args) {
 		_packages.push(args[i])
 	}
 
-	var _stats = { updated: 0, failed: 0, notNeeded: 0 }
+	var _stats = { updated: 0, erasedToUpdate: 0, failed: 0, notNeeded: 0 }
 
 	// Update all packages
 	if (all) {
@@ -2022,12 +2022,12 @@ function update(args) {
 
 		if (ferase) {
 			var otherStats = erase([_pack], derase)
-			_stats.updated -= otherStats.erased
+			_stats.erasedToUpdate += otherStats.erased
 			_stats.failed += otherStats.failed
 		}
 		var otherStats = install([_pack])
 		if (isDef(otherStats)) {
-			_stats.updated += otherStats.installed * (ferase ? 2 : 1)
+			_stats.updated += otherStats.installed
 			_stats.failed += otherStats.failed
 			_stats.notNeeded += otherStats.notNeeded
 		}
