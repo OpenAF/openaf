@@ -421,7 +421,7 @@ const __sbucket__decrypt = function(aObj, aMainKey, aKey) {
          mk = Packages.openaf.AFCmdBase.afc.dIP(aKey);
       }
       var s = af.fromBytes2String(af.fromBase64(aObj));
-      return jsonParse(af.decrypt(s, sha512(mk).substr(0, 16)));
+      return af.fromJSSLON(af.decrypt(s, sha512(mk).substr(0, 16)))
    } else {
       return aObj;
    }
@@ -464,7 +464,7 @@ OpenWrap.sec.prototype.SBucket.prototype.getSecret = function(sBucket, aLockSecr
     //if (isDef(kv) && ( (isDef(kv.v) && isDef(aLockSecret)) || (isMap(kv) && isUnDef(aLockSecret)) ) ) {
     if (isMap(kv)) {
        var _isenc = isDef(kv.sbucket) && kv.sbucket == sBucket && isString(kv.v) && isDef(aLockSecret)
-       var sb = _isenc ? __sbucket__decrypt(kv.v, this.s, aLockSecret) : kv
+       var sb = _isenc ? __sbucket__decrypt(kv.v, this.s, aLockSecret) : af.fromJSSLON(kv)
        if (isMap(sb)) {
           return (_isenc ? sb.keys[aKey] : sb[aKey]);
        } else {
