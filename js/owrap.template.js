@@ -957,7 +957,7 @@ OpenWrap.template.prototype.html = {
 		ow.loadTemplate()
 
 		var _themeauto = ow.template.html.njsmapAutoTheme()
-		var code = "var out, _data=" + stringify(aMapOrArray,__,true) + ";"
+		var code = "var out, _data=" + stringify(aMapOrArray,__,"") + ";"
 		if (__flags.MD_DARKMODE == "auto" && !forceDark) {
 			code += "out = nJSMap(_data,void 0,window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);"
 		} else {

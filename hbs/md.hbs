@@ -2,6 +2,7 @@
 <link rel="stylesheet" href="/css/github-gist.css">
 <link rel="stylesheet" href="/css/github-markdown.css">
 <link rel="stylesheet" href="/css/nJSMap.css">
+<head><meta charset="utf-8"></head>
 <script src="/js/highlight.js"></script>
 <script>hljs.highlightAll();</script>
 <style>.markdown-body, .markdown-body-dark { box-sizing: border-box; min-width: 200px; {{#if noMaxWidth}}{{else}}max-width: 980px;{{/if}} margin: 0 auto; padding: 45px; } @media (max-width: 767px) { .markdown-body, .markdown-body-dark { padding: 15px; } }</style>
@@ -47,10 +48,9 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', eve
     __refreshDarkMode()
 })
 </script>
-{{else}}
-{{#if themedark}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{/if}}
 {{{markdown}}}
+{{#if themedark}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{#if themeauto}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{#if mdcodeclip}}<script src="/js/mdcodeclip.js"></script>{{/if}}
 </body>
