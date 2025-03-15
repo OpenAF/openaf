@@ -9316,6 +9316,7 @@ AF.prototype.fromJSSLON = function(aString) {
 
 	try {
 		aString = aString.trim()
+		if (aString.startsWith("$raw$")) return aString.substring(5)
 		if (aString.startsWith("{") || /^\[\s*\{.+\}\s*\]$/.test(aString)) {
 			return jsonParse(aString, __, __, true)
 		} else {

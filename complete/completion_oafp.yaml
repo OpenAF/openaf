@@ -146,6 +146,8 @@ complete:
     opts:
     - name: inoafpseq=
       desc: If true and if input is an array the oafp processes will be executed in sequence
+  - name: in=ojob
+    desc: Takes a JSON/SLON/YAML map input with a 'ojob' string and a 'args' map parameter
   - name: in=openmetrics
     desc: An OpenMetrics/Prometheus compatible format
   - name: in=raw
