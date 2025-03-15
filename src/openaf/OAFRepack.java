@@ -98,6 +98,16 @@ public class OAFRepack {
         
         ZipInputStream zis = null;
         FileInputStream fis = null;
+
+        // If environment variable __OAF_MAINCLASS exists then replace mainClass with it
+        // NOTE: this should only be used for original packing proposes with openaf.Launcer
+        String envMainClass = System.getenv("__OAF_MAINCLASS");
+        if (envMainClass != null) {
+            System.out.println("Previous main class: " + mainClass);
+            System.out.println("New main class: " + envMainClass);
+            mainClass = envMainClass;
+        }
+
         try {
             fis = new FileInputStream(aOrigFile);
             if (fis == null) throw new Exception("Couldn't read input file " + aOrigFile);

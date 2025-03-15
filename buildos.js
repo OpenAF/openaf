@@ -156,6 +156,7 @@ log(af.sh(cmd, "", undefined, true));
 if (__exitcode != 0) {
 	logErr("Error compiling: " + __stderr);
 }
+$sh(JAVAC + " -source 8 -target 8 -d " + OPENAF_BIN + " " + OPENAF_SRC + "/openaf/Launcher.java").exec();
 
 var tempJar = new ZIP(io.readFileBytes(OPENAF_BUILD_HOME + "/jar-in-jar-loader.zip"));
 var binFiles = listFiles(OPENAF_BIN, new RegExp("\.class$"));
@@ -360,7 +361,8 @@ log("Adding manifest");
 var manifest = "Manifest-Version: 1.0\n";
 manifest += "Rsrc-Class-Path: ./" + smallClassPath + "\n";
 manifest += "Class-Path: .\n";
-manifest += "Rsrc-Main-Class: openaf._AFCmdOS\n";
+//manifest += "Rsrc-Main-Class: openaf._AFCmdOS\n";
+manifest += "Rsrc-Main-Class: openaf.Launcher\n";
 manifest += "Main-Class: org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader\n";
 tempJar.putFile("META-INF/MANIFEST.MF", af.fromString2Bytes(manifest));
 tempJar.putFile("META-INF/services/javax.script.ScriptEngineFactory", af.fromString2Bytes("openaf.OAFEngineFactory"));

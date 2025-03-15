@@ -9,7 +9,7 @@ __logFormat.async = false
 
 var createTmp = false;
 
-//Check if a Jar was repacked
+//Check if a Jar was repacked and if main class is no longer openaf.Launcher
 function isRepackJar(aJarFilePath) {
 	var res = true;
 
@@ -87,6 +87,17 @@ var includeMore = {};
 var mainClass = undefined;
 
 var irj = isRepackJar(classPath);
+log("Checking OpenAF launcher...")
+if (irj && isUnDef(getEnv("__OAF_MAINCLASS"))) {
+	var _zip = new ZIP()
+	var str = af.fromBytes2String(_zip.streamGetFile(classPath, "META-INF/MANIFEST.MF"))
+	if (str.match(/Main-Class: openaf.Launcher/)) {
+		var _newClass = (isDef(mainClass)) ? mainClass : "openaf.AFCmdOS"
+		log("Replacing main class with " + _newClass + "...")
+		str = str.replace(/Main-Class: openaf.Launcher/g, "Main-Class: " + _newClass)
+		_zip.streamPutFile(classPath, "META-INF/MANIFEST.MF", af.fromString2Bytes(str))
+	}
+}
 
 try {
 // Set .package.json	

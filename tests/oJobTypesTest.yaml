@@ -42,7 +42,7 @@ jobs:
 - name: Via inline job
   args: |
     ({ verb: ow.oJob.init.hello })
-  exec: &EXE |
+  exec: &EXE | # javascript
     //yprint(args);
     if (isDef(args.verb) && args.verb == 'world') print("arg : yes"); else print("arg : NO!!!");
     if (isDef(args.init)) print("init: yes"); else print("init: NO!!!");

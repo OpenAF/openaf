@@ -4,7 +4,8 @@ jobs:
   from:
   # Running function getVersion
   - (fn): getVersion
-  exec: |
+  # Using YAML Embedded Language in VSCode
+  exec: | # javascript
     // Setting comparing values
     args.a = $get("res")
     args.b = getVersion()
@@ -55,6 +56,51 @@ jobs:
   # Cleanup
   - (unset     ): res
 
+# --------------------
+- name: Test SQL query
+  from:
+  - (pass   ):
+      data:
+      - id  : 1
+        name: Id 1
+      - id  : 2
+        name: Id 2
+  - (set    ): data
+    ((path )): data
+  - (query  ): | #sql
+      select count(1) as "count"
+    ((key  )): data
+    ((type )): sql
+    ((toKey)): res
+  to  :
+  - (pass      ):
+      a: "{{$path ($get 'res') '[0].count'}}"
+      b: "2"
+  - (testAssert): Problem with query
+
+# ---------------
+- name: Test oAFp
+  from:
+  - (pass   ):
+      data:
+      - id  : 1
+        name: Id 1
+      - id  : 2
+        name: Id 2
+  - (set    ): data
+    ((path )): data
+  - (oafp   ):
+      in    : key
+      data  : data
+      path  : "[0]"
+      out   : key
+      __key : res
+  to  :
+  - (pass      ):
+      a: "{{$path ($get 'res') 'id'}}"
+      b: "1"
+  - (testAssert): Problem with oAFp
+
 # ----------------------
 - name: Test todo simple
   from:
@@ -89,4 +135,6 @@ todo:
 - Test fn bi-directional
 - Test ch simple
 - Test todo simple
+- Test SQL query
+- Test oAFp
 - oJob Jobs Final Report 
