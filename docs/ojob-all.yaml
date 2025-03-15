@@ -4,6 +4,15 @@
 # === HELP ===
 # This section contains information to be display to humans regarding what the oJob does and which args it expects
 help:
+  text   : # Description of the oJob and what it does
+  expects:
+  - name     : arg1
+    desc     : description of arg1
+    example  : valueExample
+    mandatory: true
+    secret   : false  # if true will hide the value from input with '-i'
+    options  : # list of possible values with '-i'
+    moptions : # or list of multiple options with '-i'
 
 # === INIT ===
 # This section is intended to provide initialization values and all jobs receive it's values as args.init
