@@ -45,7 +45,7 @@ java -jar openaf.jar --install
 
 ### Minimum requirements
 
-* Java: JRE 11 (JRE 1.8 with limited functionality)
+* Java: JRE 21
 * Memory: 128MB (for installing and updating, runtime can be lower)
 * Storage: around 160MB (for installing and updating, runtime can be 64MB)
 
