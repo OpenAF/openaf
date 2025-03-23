@@ -440,6 +440,209 @@ OpenWrap.java.prototype.jcmd = function(aPid, aCmd) {
     return String(os.toString())
 }
 
+/**
+ * <odoc>
+ * <key>ow.java.pidStartJFR(aPid, aDuration, aName, aMaxSize) : String</key>
+ * Tries to attach to local JVM with aPid and start a Java Flight Recorder returning the output.
+ * </odoc>
+ */
+OpenWrap.java.prototype.pidStartJFR = function(aPid, aDuration, aName, aMaxSize) {
+    aDuration = _$(aDuration, "aDuration").isNumber().default(__)
+    aName = _$(aName, "aName").isString().default(__)
+    aMaxSize = _$(aMaxSize, "aMaxSize").isString().default(__)
+
+    // Check for Java >= 14
+    ow.loadFormat()
+    var jver = ow.format.getJavaVersion()
+    if (ow.format.semver(jver).getMajor() < 14) throw "Remote start of Java Flight Recorder is only available on Java 14 or later."
+
+    var params = []
+    if (isDef(aDuration)) params.push("duration=" + aDuration + "s")
+    if (isDef(aName)) params.push("name=" + aName)
+    if (isDef(aMaxSize)) params.push("maxsize=" + aMaxSize)
+
+    return ow.java.jcmd(aPid, "JFR.start " + params.join(" "))
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.pidStopJFR(aPid, aName) : String</key>
+ * Tries to attach to local JVM with aPid and stop a Java Flight Recorder returning the output.
+ * </odoc>
+ */
+OpenWrap.java.prototype.pidStopJFR = function(aPid, aName) {
+    aName = _$(aName, "aName").isString().default(__)
+
+    // Check for Java >= 14
+    ow.loadFormat()
+    var jver = ow.format.getJavaVersion()
+    if (ow.format.semver(jver).getMajor() < 14) throw "Remote stop of Java Flight Recorder is only available on Java 14 or later."
+
+
+    var params = []
+    if (isDef(aName)) params.push("name=" + aName)
+    
+    return ow.java.jcmd(aPid, "JFR.stop " + params.join(" "))
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.pidDumpJFR(aPid, aName, aFile) : String</key>
+ * Tries to attach to local JVM with aPid and dump a Java Flight Recorder returning the output.
+ * </odoc>
+ */
+OpenWrap.java.prototype.pidDumpJFR = function(aPid, aName, aFile) {
+    aName = _$(aName, "aName").isString().default(__)
+    aFile = _$(aFile, "aFile").isString().default(__)
+
+    // Check for Java >= 14
+    ow.loadFormat()
+    var jver = ow.format.getJavaVersion()
+    if (ow.format.semver(jver).getMajor() < 14) throw "Remote dump of Java Flight Recorder is only available on Java 14 or later."
+
+
+    var params = []
+    if (isDef(aName)) params.push("name=" + aName)
+    if (isDef(aFile)) params.push("filename=" + aFile)
+    
+    return ow.java.jcmd(aPid, "JFR.dump " + params.join(" "))
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.parseJFR(aFile, aFnRec) : Array</key>
+ * Given aFile (a Java Flight Recorder file) will parse it and call aFnRec for each event found, if defined. Optionally you can provide aFnRec
+ * to receive each event as a map with the following fields: startTime, endTime, duration, name, thread and fields.
+ * </odoc>
+ */
+OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec) {
+    // Check for Java >= 14
+    ow.loadFormat()
+    var jver = ow.format.getJavaVersion()
+    if (ow.format.semver(jver).getMajor() < 14) throw "Parsing Java Flight Recorder files is only available on Java 14 or later."
+
+    // Instantiate the Java Flight Recorder file
+    var jfr = new java.nio.file.Path.of(aFile)
+    var jfrp = new Packages.jdk.jfr.consumer.RecordingFile(jfr)
+
+    var events = [], shouldReturnData = false
+  
+    // Check if a function was provided
+    // if not provide the default function to return the data in an array
+    if (isUnDef(aFnRec)) {
+      aFnRec = event => {
+        events.push(event)
+      }
+      shouldReturnData = true
+    }
+  
+    // Helper function for parsing the fields
+    // Receives the event and the field
+    var fnRec = (ev, f) => {
+      var value, t
+      
+      // Check if the field has a type name
+      if (isDef(f.getTypeName)) {
+        t = f.getTypeName()
+      } else {
+        t = f.getClass().getName()
+      }
+  
+      // Switch the type and parse the value
+      switch(String(t)) {
+        case "boolean": value = Boolean(ev.getBoolean(f.getName())); break
+        case "byte": value = ev.getByte(f.getName()); break
+        case "char": value = String(ev.getChar(f.getName())); break
+        case "double": value = Number(ev.getDouble(f.getName())); break
+        case "float": value = Number(ev.getFloat(f.getName())); break
+        case "int": value = Number(ev.getInt(f.getName())); break
+        case "long": value = Number(ev.getLong(f.getName())); break
+        case "short": value = Number(ev.getShort(f.getName())); break
+        case "java.lang.Long": value = Number(ev.getLong(f.getName())); break
+        case "java.lang.Integer": value = Number(ev.getInt(f.getName())); break
+        case "java.lang.Double": value = Number(ev.getDouble(f.getName())); break
+        case "java.lang.Float": value = Number(ev.getFloat(f.getName())); break
+        case "java.lang.Boolean": value = Boolean(ev.getBoolean(f.getName())); break
+        case "java.lang.Byte": value = ev.getByte(f.getName()); break
+        case "java.lang.Short": value = Number(ev.getShort(f.getName())); break
+        case "java.lang.Character": value = String(ev.getChar(f.getName()));
+        case "java.lang.String": value = String(ev.getString(f.getName())); break
+        default: 
+            var evf = ev.getValue(f.getName())
+            // Check if the field is an array
+            if (f.isArray()) {
+              // Parse the array in parallel
+              value = pForEach(af.fromJavaArray(evf), ae => {
+                // Parse the fields of the array
+                return af.fromJavaArray(ae.getFields()).reduce((acc, field) => {
+                  acc[field.getName()] = fnRec(ae, field)
+                  return acc
+                }, {})
+              })
+            } else {
+              if (!isNull(evf) && isDef(evf.getFields)) {
+                // Parse the fields of the event
+                value = af.fromJavaArray(evf.getFields()).reduce((acc, field) => {
+                  acc[field.getName()] = fnRec(evf, field)
+                  return acc
+                }, {})
+              }
+            }
+        }
+  
+        return value
+    }
+  
+    // Main loop
+    try {
+      // While there are more events
+      while (jfrp.hasMoreEvents()) {
+        // Read the next event
+        var event = jfrp.readEvent()
+        var fields = {}
+  
+        // Parse the fields of the event
+        af.fromJavaArray(event.getFields()).forEach(f => {
+          try {
+            /*return { name: f.getName(), typeName: f.getTypeName(), typeId: f.getTypeId(), label: f.getLabel(), description: f.getDescription(), contentType: f.getContentType(), isArray: f.isArray(), value: value }*/
+            fields[f.getName()] = fnRec(event, f)
+          } catch(e) {
+            printErr("Error parsing field " + f.getName() + " of type " + f.getTypeName())
+            throw e
+          }
+        })
+  
+        // Call the function with the event
+        aFnRec({
+            startTime: ow.format.fromISODate(String(event.getStartTime().toString())),
+            endTime: ow.format.fromISODate(String(event.getEndTime().toString())),
+            duration: String(event.getDuration()),
+            name: String(event.getEventType().getName()),
+            thread: isNull(event.getThread()) ? {} : {
+              id: Number(event.getThread().getId()),
+              javaName: String(event.getThread().getJavaName()),
+              javaid: Number(event.getThread().getJavaThreadId()),
+              osName: String(event.getThread().getOSName()),
+              osid: Number(event.getThread().getOSThreadId()),
+              virtual: Boolean(event.getThread().isVirtual()),
+              threadGroup: isNull(event.getThread().getThreadGroup()) ? "n/a" : String(event.getThread().getThreadGroup().getName())
+            },
+            fields: fields
+        })
+      }
+    } finally {
+      jfrp.close()
+    }
+  
+    if (shouldReturnData) return events
+}
+
+/**
+ * <odoc>
+ * <key>ow.java.pidSystemProperties(aPid) : Map</key>
+ * Tries to attach to local JVM with aPid and retrieve the system properties.
+ * </odoc>
+ */
 OpenWrap.java.prototype.pidSystemProperties = function(aPid) {
     var vm = Packages.com.sun.tools.attach.VirtualMachine.attach(aPid)
     var props = vm.getSystemProperties()
