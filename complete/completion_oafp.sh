@@ -66,6 +66,7 @@ F_in__in_ndslon_ndslonfilter_=1
 F_in__in_oaf=0
 F_in__in_oafp=0
 F_in__in_oafp_inoafpseq_=1
+F_in__in_ojob=0
 F_in__in_openmetrics=0
 F_in__in_raw=0
 F_in__in_rawhex=0
@@ -368,6 +369,7 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=oaf" ]; then FFOUND=1; F_in__in_oaf=1; F_in_=0; fi
     if [ "$arg" = "in=oafp" ]; then FFOUND=1; F_in__in_oafp=1; F_in_=0; fi
     if [ "${arg#inoafpseq=}" != "$arg" ]; then FFOUND=1; F_in__in_oafp_inoafpseq_=0; fi
+    if [ "$arg" = "in=ojob" ]; then FFOUND=1; F_in__in_ojob=1; F_in_=0; fi
     if [ "$arg" = "in=openmetrics" ]; then FFOUND=1; F_in__in_openmetrics=1; F_in_=0; fi
     if [ "$arg" = "in=raw" ]; then FFOUND=1; F_in__in_raw=1; F_in_=0; fi
     if [ "$arg" = "in=rawhex" ]; then FFOUND=1; F_in__in_rawhex=1; F_in_=0; fi
@@ -694,6 +696,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=ndslon	A NDSLON (new-line delimited SLON) format"
   echo "in=oaf	Takes an OpenAF scripting code to execute and use the result as input"
   echo "in=oafp	Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process -arrays will call multiple oafp processes-"
+  echo "in=ojob	Takes a JSON/SLON/YAML map input with a 'ojob' string and a 'args' map parameter"
   echo "in=openmetrics	An OpenMetrics/Prometheus compatible format"
   echo "in=raw	Passes the input directly to transforms and output"
   echo "in=rawhex	Tries to read the input char by char converting into lines with the hexadecimal representation"
