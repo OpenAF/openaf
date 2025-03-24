@@ -26,6 +26,8 @@ F_in__in_javagc=0
 F_in__in_javagc_javagcjoin_=1
 F_in__in_javathread=0
 F_in__in_javathread_javathreadpid_=1
+F_in__in_jfr=0
+F_in__in_jfr_jfrjoin_=1
 F_in__in_jmx=0
 F_in__in_jmx_jmxpid_=1
 F_in__in_jmx_jmxurl_=1
@@ -66,6 +68,7 @@ F_in__in_ndslon_ndslonfilter_=1
 F_in__in_oaf=0
 F_in__in_oafp=0
 F_in__in_oafp_inoafpseq_=1
+F_in__in_ojob=0
 F_in__in_openmetrics=0
 F_in__in_raw=0
 F_in__in_rawhex=0
@@ -328,6 +331,8 @@ if [ $# -gt 0 ]; then
     if [ "${arg#javagcjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_javagc_javagcjoin_=0; fi
     if [ "$arg" = "in=javathread" ]; then FFOUND=1; F_in__in_javathread=1; F_in_=0; fi
     if [ "${arg#javathreadpid=}" != "$arg" ]; then FFOUND=1; F_in__in_javathread_javathreadpid_=0; fi
+    if [ "$arg" = "in=jfr" ]; then FFOUND=1; F_in__in_jfr=1; F_in_=0; fi
+    if [ "${arg#jfrjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_jfr_jfrjoin_=0; fi
     if [ "$arg" = "in=jmx" ]; then FFOUND=1; F_in__in_jmx=1; F_in_=0; fi
     if [ "${arg#jmxpid=}" != "$arg" ]; then FFOUND=1; F_in__in_jmx_jmxpid_=0; fi
     if [ "${arg#jmxurl=}" != "$arg" ]; then FFOUND=1; F_in__in_jmx_jmxurl_=0; fi
@@ -368,6 +373,7 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=oaf" ]; then FFOUND=1; F_in__in_oaf=1; F_in_=0; fi
     if [ "$arg" = "in=oafp" ]; then FFOUND=1; F_in__in_oafp=1; F_in_=0; fi
     if [ "${arg#inoafpseq=}" != "$arg" ]; then FFOUND=1; F_in__in_oafp_inoafpseq_=0; fi
+    if [ "$arg" = "in=ojob" ]; then FFOUND=1; F_in__in_ojob=1; F_in_=0; fi
     if [ "$arg" = "in=openmetrics" ]; then FFOUND=1; F_in__in_openmetrics=1; F_in_=0; fi
     if [ "$arg" = "in=raw" ]; then FFOUND=1; F_in__in_raw=1; F_in_=0; fi
     if [ "$arg" = "in=rawhex" ]; then FFOUND=1; F_in__in_rawhex=1; F_in_=0; fi
@@ -680,6 +686,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=javas	Tries to list java processes running locally"
   echo "in=javagc	A Java GC log text file format"
   echo "in=javathread	A Java thread dump text file format or java pid"
+  echo "in=jfr	A Java Flight Recorder file format"
   echo "in=jmx	Uses Java JMX to retrieve data from another Java process"
   echo "in=json	A JSON format -auto-detected-"
   echo "in=jsonschema	Given a JSON schema format tries to generate sample data for it"
@@ -694,6 +701,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=ndslon	A NDSLON (new-line delimited SLON) format"
   echo "in=oaf	Takes an OpenAF scripting code to execute and use the result as input"
   echo "in=oafp	Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process -arrays will call multiple oafp processes-"
+  echo "in=ojob	Takes a JSON/SLON/YAML map input with a 'ojob' string and a 'args' map parameter"
   echo "in=openmetrics	An OpenMetrics/Prometheus compatible format"
   echo "in=raw	Passes the input directly to transforms and output"
   echo "in=rawhex	Tries to read the input char by char converting into lines with the hexadecimal representation"
@@ -755,6 +763,11 @@ fi
 if [ $F_in__in_javathread -eq 1 ]; then
   if [ $F_in__in_javathread_javathreadpid_ -eq 1 ]; then
     echo "javathreadpid=	The PID of the Java process to connect to -requires Java SDK-"
+  fi
+fi
+if [ $F_in__in_jfr -eq 1 ]; then
+  if [ $F_in__in_jfr_jfrjoin_ -eq 1 ]; then
+    echo "jfrjoin=	If true it will return an array with each processed line."
   fi
 fi
 if [ $F_in__in_jmx -eq 1 ]; then

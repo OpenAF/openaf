@@ -57,6 +57,13 @@ complete:
     opts:
     - name: javathreadpid=
       desc: The PID of the Java process to connect to -requires Java SDK-
+  - name: in=jfr
+    desc: A Java Flight Recorder file format
+    opts:
+    - name: jfrjoin=    
+      desc: If true it will return an array with each processed line.
+    - name: jfrdesc=
+      desc: If true it will include a __desc_ entry with the JFR event description
   - name: in=jmx
     desc: Uses Java JMX to retrieve data from another Java process
     opts:
