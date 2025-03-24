@@ -62,6 +62,8 @@ complete:
     opts:
     - name: jfrjoin=    
       desc: If true it will return an array with each processed line.
+    - name: jfrdesc=
+      desc: If true it will include a __desc_ entry with the JFR event description
   - name: in=jmx
     desc: Uses Java JMX to retrieve data from another Java process
     opts:

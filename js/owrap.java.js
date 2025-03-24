@@ -510,12 +510,15 @@ OpenWrap.java.prototype.pidDumpJFR = function(aPid, aName, aFile) {
 
 /**
  * <odoc>
- * <key>ow.java.parseJFR(aFile, aFnRec) : Array</key>
+ * <key>ow.java.parseJFR(aFile, aFnRec, includeDesc) : Array</key>
  * Given aFile (a Java Flight Recorder file) will parse it and call aFnRec for each event found, if defined. Optionally you can provide aFnRec
  * to receive each event as a map with the following fields: startTime, endTime, duration, name, thread and fields.
+ * If includeDesc is true it will include a field (__desc_) for each field added with the description of the field.
  * </odoc>
  */
-OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec) {
+OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec, includeDesc) {
+    includeDesc = _$(includeDesc, "includeDesc").isBoolean().default(false)
+
     // Check for Java >= 14
     ow.loadFormat()
     var jver = ow.format.getJavaVersion()
@@ -576,6 +579,7 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec) {
                 // Parse the fields of the array
                 return af.fromJavaArray(ae.getFields()).reduce((acc, field) => {
                   acc[field.getName()] = fnRec(ae, field)
+                  if (includeDesc) acc["__desc_" + field.getName()] = field.getLabel() + (field.getDescription() == null ? "" : " - " + field.getDescription())
                   return acc
                 }, {})
               })
@@ -584,6 +588,7 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec) {
                 // Parse the fields of the event
                 value = af.fromJavaArray(evf.getFields()).reduce((acc, field) => {
                   acc[field.getName()] = fnRec(evf, field)
+                  if (includeDesc) acc["__desc_" + field.getName()] = field.getLabel() + (field.getDescription() == null ? "" : " - " + field.getDescription())
                   return acc
                 }, {})
               }
@@ -606,6 +611,7 @@ OpenWrap.java.prototype.parseJFR = function(aFile, aFnRec) {
           try {
             /*return { name: f.getName(), typeName: f.getTypeName(), typeId: f.getTypeId(), label: f.getLabel(), description: f.getDescription(), contentType: f.getContentType(), isArray: f.isArray(), value: value }*/
             fields[f.getName()] = fnRec(event, f)
+            if (includeDesc) fields["__desc_" + f.getName()] = f.getLabel() + (f.getDescription() == null ? "" : " - " + f.getDescription())
           } catch(e) {
             printErr("Error parsing field " + f.getName() + " of type " + f.getTypeName())
             throw e
