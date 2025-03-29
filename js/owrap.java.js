@@ -510,6 +510,21 @@ OpenWrap.java.prototype.pidDumpJFR = function(aPid, aName, aFile) {
 
 /**
  * <odoc>
+ * <key>ow.java.pidCheckJFR(aPid) : String</key>
+ * Tries to attach to local JVM with aPid and check the current Java Flight Recorder recording status.
+ * </odoc>
+ */
+OpenWrap.java.prototype.pidCheckJFR = function(aPid) {
+    // Check for Java >= 14
+    ow.loadFormat()
+    var jver = ow.format.getJavaVersion()
+    if (ow.format.semver(jver).getMajor() < 14) throw "Remote view of Java Flight Recorder is only available on Java 14 or later."
+
+    return ow.java.jcmd(aPid, "JFR.check")
+}
+
+/**
+ * <odoc>
  * <key>ow.java.parseJFR(aFile, aFnRec, includeDesc) : Array</key>
  * Given aFile (a Java Flight Recorder file) will parse it and call aFnRec for each event found, if defined. Optionally you can provide aFnRec
  * to receive each event as a map with the following fields: startTime, endTime, duration, name, thread and fields.

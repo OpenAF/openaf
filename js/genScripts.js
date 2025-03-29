@@ -47,6 +47,7 @@ var extraArgsForJava11 = " --illegal-access=permit -Xshare:off "
 var extraArgsForJava12 = extraArgsForJava11 + " ";
 //var extraArgsForJava17 = " --add-opens java.base/java.io=ALL-UNNAMED --add-exports jdk.attach/sun.tools.attach=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.perfdata.monitor.protocol.local=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED --add-exports java.management/sun.management=ALL-UNNAMED --add-exports java.base/sun.security.x509=ALL-UNNAMED --add-exports java.base/sun.security.util=ALL-UNNAMED -Xshare:off";
 var extraArgsForJava17 = " -Xshare:off "
+var extraArgsForJava24 = " --enable-native-access=ALL-UNNAMED "
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -329,6 +330,7 @@ if (Number(javaVer) != null && Number(javaVer) == 10) javaargs += " " + extraArg
 if (Number(javaVer) != null && Number(javaVer) == 11) javaargs += " " + extraArgsForJava11;
 if (Number(javaVer) != null && Number(javaVer) > 11 && Number(javaVer) < 17) javaargs += " " + extraArgsForJava12;
 if (Number(javaVer) != null && Number(javaVer) >= 17) javaargs += " " + extraArgsForJava17;
+if (Number(javaVer) != null && Number(javaVer) >= 24) javaargs += " " + extraArgsForJava24;
 
 var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
