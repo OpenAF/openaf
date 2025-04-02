@@ -55,6 +55,7 @@ ojob:
     // Javascript OpenAF code to execute by default, with variables 'args', 'job' and 'id', if a job dependency failed it's execution
   depsTimeout: 300000  # If defined, represents the maximum elapsed time, in ms, from the first point in time a jobs[].deps was evaluated to determine if all deps had successfully executed
   templateArgs: true   # Boolean that if defined will process "{{ }}" handlebars entries on args using the "args" before the actual processing starts
+  argsFromEnvs: true   # Boolean that if true will process the environment variables as args (e.g. ARG0=1234 will be available as args.arg0)
 
   ## --- LOG CONTROL ---
 
