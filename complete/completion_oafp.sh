@@ -28,6 +28,7 @@ F_in__in_javathread=0
 F_in__in_javathread_javathreadpid_=1
 F_in__in_jfr=0
 F_in__in_jfr_jfrjoin_=1
+F_in__in_jfr_jfrdesc_=1
 F_in__in_jmx=0
 F_in__in_jmx_jmxpid_=1
 F_in__in_jmx_jmxurl_=1
@@ -333,6 +334,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#javathreadpid=}" != "$arg" ]; then FFOUND=1; F_in__in_javathread_javathreadpid_=0; fi
     if [ "$arg" = "in=jfr" ]; then FFOUND=1; F_in__in_jfr=1; F_in_=0; fi
     if [ "${arg#jfrjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_jfr_jfrjoin_=0; fi
+    if [ "${arg#jfrdesc=}" != "$arg" ]; then FFOUND=1; F_in__in_jfr_jfrdesc_=0; fi
     if [ "$arg" = "in=jmx" ]; then FFOUND=1; F_in__in_jmx=1; F_in_=0; fi
     if [ "${arg#jmxpid=}" != "$arg" ]; then FFOUND=1; F_in__in_jmx_jmxpid_=0; fi
     if [ "${arg#jmxurl=}" != "$arg" ]; then FFOUND=1; F_in__in_jmx_jmxurl_=0; fi
@@ -768,6 +770,9 @@ fi
 if [ $F_in__in_jfr -eq 1 ]; then
   if [ $F_in__in_jfr_jfrjoin_ -eq 1 ]; then
     echo "jfrjoin=	If true it will return an array with each processed line."
+  fi
+  if [ $F_in__in_jfr_jfrdesc_ -eq 1 ]; then
+    echo "jfrdesc=	If true it will include a __desc_ entry with the JFR event description"
   fi
 fi
 if [ $F_in__in_jmx -eq 1 ]; then

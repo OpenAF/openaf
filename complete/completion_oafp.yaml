@@ -543,6 +543,8 @@ complete:
   desc: A comma delimited list of fields whose value should be converted to date values
 - name: field2si=
   desc: A comma delimited list of fields whose value should be converted to a SI abbreviation
+- name: field4map=
+  desc: A comma delimited list of fields whose value should be converted from JSON/SLON string representation to a map
 - name: flatmap=
   desc: If true a map structure will be flat to just one level -optionally flatmapsep=[char] to use a different separator that '.'-
 - name: getlist=
