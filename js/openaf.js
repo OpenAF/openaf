@@ -8425,6 +8425,7 @@ const $cache = function(aName) {
 		this.ach   = __
 		this.msize = __
 		this.method = "t"
+		this.default = __
     }
 
 	/**
@@ -8481,6 +8482,19 @@ const $cache = function(aName) {
 		this.method = "p"
 		return this
 	}
+	/**
+	 * <odoc>
+	 * <key>$cache.byDefault(useDefault, aDefault) : Object</key>
+	 * Changes the behaviour of the cache to either use the default value (aDefault) if useDefault is true
+	 * (launching the cache function in background) or try to use the previous value in the cache if useDefault 
+	 * is false (if a previous value is not available the cache function will be called and the .get will wait for it).
+	 * </odoc>
+	 */
+	__c.prototype.byDefault = function(useDefault, aDefault) {
+		this.useDefault = useDefault
+		this.default = aDefault
+		return this
+	}
     __c.prototype.create = function() {
         _$(this.func).isFunction().$_("Please provide a function (fn).")
 
@@ -8491,7 +8505,9 @@ const $cache = function(aName) {
 					ttl: this.attl,
 					ch: this.ach,
 					size: this.msize,
-					method: this.method
+					method: this.method,
+					default: this.default,
+					useDefault: this.useDefault
 				})
 			}
 		}, this.name)

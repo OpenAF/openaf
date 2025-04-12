@@ -537,6 +537,8 @@ OpenWrap.ch.prototype.__types = {
 			this.__cache[aName].TTL = (isDef(options.ttl) ? options.ttl : 5000);
 			this.__cache[aName].Size = (isDef(options.size) ? options.size : -1);
 			this.__cache[aName].Method = (isDef(options.method) && options.method == "p") ? "p" : "t"
+			this.__cache[aName].Default = (isDef(options.default) ? options.default : __)
+			this.__cache[aName].UseDefault = (isDef(options.useDefault) ? options.useDefault : __)
 			this.__cache[aName].__t = nowUTC();
 			if (isUnDef(options.ch)) {
 				$ch(aName + "::__cache").create();
@@ -551,6 +553,7 @@ OpenWrap.ch.prototype.__types = {
 			if (isDef(this.__cache[aName].TTL)) delete this.__cache[aName].TTL;
 			if (isDef(this.__cache[aName].Size)) delete this.__cache[aName].Size;
 			if (isDef(this.__cache[aName].Method)) delete this.__cache[aName].Method
+			if (isDef(this.__cache[aName].Default)) delete this.__cache[aName].Default
 			if (isDef(this.__cacheStats[aName])) delete this.__cacheStats[aName];
 			$ch(aName + "::__cache").destroy();
 		},
@@ -659,7 +662,7 @@ OpenWrap.ch.prototype.__types = {
 			ee = (ee > -1 ? ar[ee] : __); 
 			if (isDef(ee)) {
 				if (ee.____t > (nowUTC() - this.__cache[aName].TTL)) {
-					aVv = this.__cache[aName].Ch.get(ee);
+					aVv = this.__cache[aName].Ch.get(ee)
 					if (this.__cache[aName].Method == "p") {
 						this.__cache[aName].Ch.unset(ee)
 						ee.____t = nowUTC()
@@ -667,29 +670,45 @@ OpenWrap.ch.prototype.__types = {
 					}
 					this.__cacheStats[aName].hits++;
 				} else {
-					var init = nowUTC();
-					var aVv = this.__cache[aName].Func(aK);
-					this.__cacheStats[aName].miss++;
-					this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (nowUTC() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
-					this.__cache[aName].Ch.unset(ee);
-					var eK = merge(aK, { ____t: nowUTC() });
-					this.__cache[aName].Ch.set(eK, aVv);
-					//aVv = this.__cache[aName].Ch.get(eK);
+					var _fnProc = () => {
+						var init = nowUTC();
+						aVv = this.__cache[aName].Func(aK)
+						this.__cacheStats[aName].miss++;
+						this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (nowUTC() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
+						this.__cache[aName].Ch.unset(ee);
+						var eK = merge(aK, { ____t: nowUTC() });
+						this.__cache[aName].Ch.set(eK, aVv);
+						//aVv = this.__cache[aName].Ch.get(eK);
+					}
+					if (isDef(this.__cache[aName].UseDefault)) {
+						$do( () => _fnProc() )
+						aVv = this.__cache[aName].UseDefault ? this.__cache[aName].Default : this.__cache[aName].Ch.get(ee)
+					} else {
+						_fnProc()
+					}
 				}
 			} else {
-				var init = nowUTC();
-				var aVv = this.__cache[aName].Func(aK);
-				this.__cacheStats[aName].miss++;
-				this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (nowUTC() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
-				this.__refresh(aName, 1)
-				if (this.__cache[aName].Method == "p" || this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) {
-					var eK = merge(aK, { ____t: nowUTC() });
-					this.__cache[aName].Ch.set(eK, aVv);
-					//aVv = this.__cache[aName].Ch.get(eK);
+				var _fnProc = () => {
+					var init = nowUTC();
+					aVv = this.__cache[aName].Func(aK)
+					this.__cacheStats[aName].miss++;
+					this.__cacheStats[aName].avg = (this.__cacheStats[aName].avg + (nowUTC() - init)) / (this.__cacheStats[aName].miss + this.__cacheStats[aName].hits);
+					this.__refresh(aName, 1)
+					if (this.__cache[aName].Method == "p" || this.__cache[aName].Size < 0 || this.__cache[aName].Size > this.__cache[aName].Ch.size()) {
+						var eK = merge(aK, { ____t: nowUTC() });
+						this.__cache[aName].Ch.set(eK, aVv);
+						//aVv = this.__cache[aName].Ch.get(eK);
+					}
+					if (this.__cache[aName].Method == "p") this.__refresh(aName)
 				}
-				if (this.__cache[aName].Method == "p") this.__refresh(aName)
+				if (isDef(this.__cache[aName].UseDefault) && this.__cache[aName].UseDefault) {
+					$do( () => _fnProc() )
+					aVv = this.__cache[aName].Default
+				} else {
+					_fnProc()
+				}
 			}
-			return aVv;
+			return aVv
 		},
 		pop          : function(aName) { 
 			var aKs = this.getSortedKeys(aName);
