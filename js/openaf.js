@@ -4789,7 +4789,7 @@ const $path = function(aObj, aPath, customFunctions) {
 		to_isoDate: {
 			_func: ar => {
 				ow.loadFormat()
-				var _r = ow.format.fromISODate(ar[0])
+				var _r = isNumber(ar[0]) ? new Date(ar[0]) : ow.format.fromISODate(ar[0])
 				if (isDate(_r)) return _r.toISOString(); else return ar[0]
 			},
 			_signature: [ { types: [ jmespath.types.any ] } ]
@@ -4797,7 +4797,7 @@ const $path = function(aObj, aPath, customFunctions) {
 		to_date: {
 			_func: ar => {
 				ow.loadFormat()
-				return ow.format.fromISODate(ar[0])
+				return isNumber(ar[0]) ? new Date(ar[0]) : ow.format.fromISODate(ar[0])
 			},
 			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
