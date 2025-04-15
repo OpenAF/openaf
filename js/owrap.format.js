@@ -1868,25 +1868,34 @@ OpenWrap.format.prototype.fromNumberSpacing = function(aNumber, aSpacer) {
  * </odoc>
  */
 OpenWrap.format.prototype.toBytesAbbreviation = function (bytes, precision) {
-    bytes = _$(bytes, "bytes").isNumber().default(0)
-	if (bytes == 0) return "0 bytes"
-	if (isUnDef(precision)) precision = 3
+    bytes = _$(bytes, "bytes").isNumber().default(0);
+    if (bytes === 0) return "0 bytes";
+    
+    var sizes = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    var index = 0
+    var result = bytes
 
-	var sizes = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-	var posttxt = 0;
+    // Determine the proper unit
+    while (result >= 1024 && index < sizes.length - 1) {
+        result /= 1024
+        index++
+    }
 
-	if (bytes == 0) return;
+    // Determine decimals: if precision is undefined then auto-select decimals
+    var decimals
+    if (isUnDef(precision)) {
+        if (result < 10) decimals = 2
+        else if (result < 100) decimals = 1
+        else decimals = 0
+    } else {
+        decimals = precision
+    }
 
-	if (bytes < 1024) {
-		return Number(bytes) + " " + sizes[posttxt];
-	}
+    // Use toFixed to avoid scientific notation and trim trailing zeros.
+    var formatted = result.toFixed(decimals)
+    formatted = parseFloat(formatted).toString()
 
-	while (bytes >= 1024) {
-		posttxt++;
-		bytes = bytes / 1024;
-	}
-
-	return bytes.toPrecision(precision) + " " + sizes[posttxt];
+    return formatted + " " + sizes[index]
 }
 
 /**
