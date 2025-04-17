@@ -9170,6 +9170,14 @@ AF.prototype.toTOML = function(aObj) {
 
 /**
  * <odoc>
+ * <key>af.nvl(aValue, aDefault) : Object</key>
+ * Returns aValue if it is defined or aDefault otherwise.
+ * </odoc>
+ */
+AF.prototype.nvl = (aValue, aDefault) => "undefined" !== typeof aValue ? aValue : aDefault
+
+/**
+ * <odoc>
  * <key>io.writeFileTOML(aFile, aObj)</key>
  * Tries to write aObj into aFile as TOML.
  * </odoc>

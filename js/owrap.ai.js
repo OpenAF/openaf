@@ -183,7 +183,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         msgs.unshift({ role: (_noSystem ? "developer" : "system"), content: "output json" })
                     }
                     _r.conversation = aPrompt
-                    if (_noSystem) msgs = msgs.filter(m => m.role != "system")
+                    if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
