@@ -1575,6 +1575,14 @@ OpenWrap.oJob.prototype.__mergeArgs = function(a, b) {
 	if (arep && brep)   { a["__oJobRepeat"] = _flatten(merge(a["__oJobRepeat"], b["__oJobRepeat"])); r = a; }
 	if (!arep && !brep) { r = merge(a, b); }
 
+	// Process $$ variables
+	traverse(r, (aK, aV, aP, aO) => {
+		if ("string" == typeof aV && aV.length > 4 && aV.startsWith("$$") && aV.endsWith("$$")) {
+			var _t = $$(r).get(aV.substring(2, aV.length - 2))
+			if ("undefined" !== typeof _t) aO[aK] = _t
+		}
+	})
+
 	return r;
 };
 
