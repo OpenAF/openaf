@@ -3627,9 +3627,10 @@ OpenWrap.server.prototype.jwt = {
 OpenWrap.server.prototype.httpd.browse = {
 	/**
 	 * <odoc>
-	 * <key>ow.server.httpd.browse.files(aURI, aPath, aOptions) : Map</key>
-	 * Provides a simple file browser for the provided aURI and aPath. The aOptions map can contain the following keys:\
+	 * <key>ow.server.httpd.browse.files(aURI, aOptions) : Map</key>
+	 * Provides a simple file browser for the provided aURI. The aOptions map can contain the following keys:\
 	 * \
+	 *   path     (string)   The path to use as root (defaults to ".")\
 	 *   browse   (boolean)  If true the file browser will be shown (defaults to true)\
 	 *   showURI  (boolean)  If true the URI will be shown in the file browser (defaults to false)\
 	 *   sortTab  (boolean)  If true the table will be sorted (defaults to false)\
@@ -3639,10 +3640,11 @@ OpenWrap.server.prototype.httpd.browse = {
 	 * 
 	 * </odoc>
 	 */
-	files: function(aURI, aPath, aOptions) {
+	files: function(aURI, aOptions) {
 		_$(aURI, "uri").isString().$_()
-		_$(aPath, "path").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
+		_$(aPath, "path").isString().$_()
+		aOptions.path = _$(aOptions.path, "options.path").isString().default(".")
 
 		// Init
 		ow.loadTemplate(); ow.loadFormat()
@@ -3650,7 +3652,7 @@ OpenWrap.server.prototype.httpd.browse = {
 		//ow.template.addHelper("$escapeMDTable", str => str.replace(/\|/g, "\\|"))
 
 		aOptions.parentURI  = aURI
-		aOptions.parentPath = aPath
+		aOptions.parentPath = aOptions.path
 
 		// Return aOptions
 		return merge({
