@@ -3643,7 +3643,6 @@ OpenWrap.server.prototype.httpd.browse = {
 	files: function(aURI, aOptions) {
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
-		_$(aPath, "path").isString().$_()
 		aOptions.path = _$(aOptions.path, "options.path").isString().default(".")
 
 		// Init
