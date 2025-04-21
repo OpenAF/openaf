@@ -3912,7 +3912,7 @@ OpenWrap.server.prototype.httpd.browse = {
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		
-		aOptions = ow.server.httpd.browse.files(aURI, "", aOptions)
+		aOptions = ow.server.httpd.browse.files(aURI, aOptions)
 		aOptions.ttl = _$(aOptions.ttl, "ttl").isNumber().default(5 * 60 * 1000)
 
 		// Init
@@ -3995,7 +3995,7 @@ OpenWrap.server.prototype.httpd.browse = {
 		_$(aURI, "uri").isString().$_()
 		aOptions = _$(aOptions, "options").isMap().default({})
 		
-		aOptions = ow.server.httpd.browse.files(aURI, "", aOptions)
+		aOptions = ow.server.httpd.browse.files(aURI, aOptions)
 		aOptions.ttl = _$(aOptions.ttl, "ttl").isNumber().default(5 * 60 * 1000)
 
 		// Init
