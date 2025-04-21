@@ -13270,6 +13270,14 @@ const $err = function(exception, rethrow, returnStr, code) {
 			code = io.readFileString(file)
 		}
 
+		// If lineNum = 0 try to extract it from the cached stack lines
+		if (code !== undefined && lineNum === 0 && stackLines && stackLines.length > 0) {
+			if (stackLines[0].indexOf(":") > 0) {
+				var ar = stackLines[0].match(/at [^:]+:(\d+)/);
+				lineNum = parseInt(ar[1], 10)
+			}
+		} 
+
 		if (code !== undefined && !isNaN(lineNum) && isFinite(lineNum)) {
 			var lcode = code.split(/[\r\n]/)
 			var start = Math.max(0, lineNum - 3)
