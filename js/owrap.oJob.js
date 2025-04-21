@@ -1551,12 +1551,16 @@ OpenWrap.oJob.prototype.__defaultArgs = function(aArgs) {
 		if ("string" == typeof aV && aV.length > 3 && aV.startsWith("${") && aV.endsWith("}")) {
 			var _s = aV.substring(2, aV.length - 1)
 			var _r, _t = _s.split(":-")
-			_r = $$(aArgs).get(_t[0])
-			if ("undefined" == typeof _r && _t.length > 1) {
-				// There is a default
-				_r = _t[1]
+			if (_t[0] != aK) {
+				_r = $$(aArgs).get(_t[0])
+				if ("undefined" == typeof _r && _t.length > 1) {
+					// There is a default
+					_r = _t[1]
+				}
+				aO[aK] = _r
+			} else {
+				logWarn("oJob: argument '" + aK + "' can't be used as default value for itself (" + aV + ")")
 			}
-			aO[aK] = _r
 		}
 	})
 	return aArgs
@@ -2011,7 +2015,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			}
 			if ((now() - parent.__mtStart) > (parent.__ojob.checkStall.killAfterSeconds * 1000)) {
 				logErr("oJob: Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
-				printErr("oJob: Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
+				//printErr("oJob: Check stall over " + (parent.__ojob.checkStall.killAfterSeconds * 1000));
 				exit(-1);
 			} 
 		}, this.__ojob.checkStall.everySeconds * 1000);
