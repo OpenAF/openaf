@@ -3016,6 +3016,43 @@ OpenWrap.server.prototype.httpd = {
 
 	/**
 	 * <odoc>
+	 * <key>ow.server.httpd.replyBrowse(server, request, _options) : Map</key>
+	 * Provides a helper function to reply with a list of files or a file content. The _options map is used to
+	 * provide the following functions:\
+	 * \
+	 *   getList(request, _options)   : Function to get the list of files or directories\
+	 *   getObj(request, _options)    : Function to get the object requested\
+	 *   renderList(list, server, request, _options) : Function to render the list of files\
+	 *   renderObj(obj, server, request, _options)   : Function to render the object requested\
+	 *   renderEmpty(request, _options) : Function to render an empty list\
+	 * 
+	 * </odoc>
+	 */
+	replyBrowse: function(server, request, _options) {
+		try {
+			var _out = ""
+			var _lst = _options._fns.getList(request, _options)
+			if (_lst.isList) {
+				_out = _options._fns.renderList(_lst, server, request, _options)
+				if (isMap(_out)) return _out
+			} else {
+				if (_lst.isFile) {
+				  var _obj = _options._fns.getObj(request, _options)
+				  return _options._fns.renderObj(_obj, server, request, _options)
+				} else {
+					_out = _options._fns.renderEmpty(request, _options)
+				}
+			}
+	
+			return server.replyOKHTML( String(_out) )
+		} catch(e) {
+			$err(e)
+			return { data: "Internal error", mimetype: "text/plain", status: 500, header: {} }
+		}
+	},
+
+	/**
+	 * <odoc>
 	 * <key>ow.server.httpd.getMimeType(aFilename) : String</key>
 	 * Tries to determine the mime type of aFilename and returns it. If not determined it will default
 	 * to application/octet-stream.
@@ -3584,5 +3621,439 @@ OpenWrap.server.prototype.jwt = {
 			headers: jsonParse( af.fromBytes2String( af.fromBase64( parts[0] ) ) ),
 			claims : jsonParse( af.fromBytes2String( af.fromBase64( parts[1] ) ) )
 		}
+	}
+}
+
+OpenWrap.server.prototype.httpd.browse = {
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.browse.files(aURI, aPath, aOptions) : Map</key>
+	 * Provides a simple file browser for the provided aURI and aPath. The aOptions map can contain the following keys:\
+	 * \
+	 *   browse   (boolean)  If true the file browser will be shown (defaults to true)\
+	 *   showURI  (boolean)  If true the URI will be shown in the file browser (defaults to false)\
+	 *   sortTab  (boolean)  If true the table will be sorted (defaults to false)\
+	 *   default  (string)   The default file to show (defaults to undefined)\
+	 *   logo  	  (string)   The logo to show in the file browser (defaults to undefined)\
+	 *   footer   (string)   The footer to show in the file browser (defaults to undefined)\
+	 * 
+	 * </odoc>
+	 */
+	files: function(aURI, aPath, aOptions) {
+		_$(aURI, "uri").isString().$_()
+		_$(aPath, "path").isString().$_()
+		aOptions = _$(aOptions, "options").isMap().default({})
+
+		// Init
+		ow.loadTemplate(); ow.loadFormat()
+		//ow.template.addHelper("$encodeURI", encodeURI)
+		//ow.template.addHelper("$escapeMDTable", str => str.replace(/\|/g, "\\|"))
+
+		aOptions.parentURI  = aURI
+		aOptions.parentPath = aPath
+
+		// Return aOptions
+		return merge({
+			_fns: {
+				getList: (request, options) => {
+					const uri = request.uri
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
+			  
+					if (io.fileExists(options.parentPath + "/" + puri)) {
+						if (io.fileInfo(options.parentPath + "/" + puri).isFile) {
+							return { isFile: true }
+						} 
+					} else {
+						return { isFile: false }
+					}
+			  
+					var lst = io.listFiles(options.parentPath + "/" + puri).files
+					return {
+						isList     : true,
+						fields     : [ "Filename", "Last modified", "Size", "Size in bytes" ],
+						alignFields: [ "left", "center", "right", "right" ],
+						key        : "Filename",
+						list       : lst.map(r => ({
+							isDirectory: r.isDirectory,
+							values     : {
+								Filename        : r.filename,
+								"Last modified" : ow.format.fromDate(new Date(r.lastModified), "yyyy-MM-dd HH:mm:ss"),
+								Size            : (!r.isDirectory ? ow.format.toBytesAbbreviation(r.size) : ""),
+								"Size in bytes" : (!r.isDirectory ? r.size : "")
+							}
+						}))
+					}
+				},
+				getObj: (request, options) => {
+					const uri = request.uri
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
+					
+					if (request.params.raw == "true") {
+					  return { stream: io.readFileStream(options.parentPath + "/" + puri) }
+					}
+			  
+					var ext = String(puri).replace(/^.*\./, "")
+					switch(ext) {
+					case "md"  : return { data: io.readFileString(options.parentPath + "/" + puri), type: "md" }
+					case "yml" :
+					case "yaml": return { data: io.readFileString(options.parentPath + "/" + puri), type: "yaml" }
+					case "css" : return { data: io.readFileString(options.parentPath + "/" + puri), type: "css" }
+					case "sh"  : return { data: io.readFileString(options.parentPath + "/" + puri), type: "sh" }
+					case "js"  : return { data: io.readFileString(options.parentPath + "/" + puri), type: "js" }
+					case "java": return { data: io.readFileString(options.parentPath + "/" + puri), type: "java" }
+					case "py"  : return { data: io.readFileString(options.parentPath + "/" + puri), type: "python" }
+					case "toml": return { data: io.readFileString(options.parentPath + "/" + puri), type: "toml" }
+					case "hbs" : return { data: io.readFileString(options.parentPath + "/" + puri), type: "handlebars" }
+					case "json": return { data: io.readFileJSON(options.parentPath + "/" + puri), type: "json" }  
+					case "adoc": return { file: options.parentPath + "/" + puri, type: "asciidoc" }            
+					default:
+					  return { file: options.parentPath + "/" + puri }
+					}
+				},
+				renderList: (lst, server, request, options) => {
+					if (isDef(options.browse) && !options.browse) return ""
+					const uri = request.uri
+			  
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "").replace(/\/$/, "")
+			  
+					if (isDef(options.default) && lst.list.filter(r => r.values[lst.key] == options.default).length == 1) {
+					  request.uri = request.uri + "/" + options.default
+					  return options._fns.renderObj(options._fns.getObj(request, options), server, request, options)
+					}
+			  
+					const breadcrumb = p => {
+					  if (p == "") return "[/](</>) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + options.parentURI.replace(/ +/g, "") + ">)"
+					  var parts = p.split("/")
+					  var b = "[/](</>) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + options.parentURI.replace(/ +/g, "") + ">)"
+					  for (var i = 0; i < parts.length; i++) {
+						if (i == parts.length - 1) {
+						  b += (!options.showURI && i == 0 ? "" : " / ") + parts[i] + " "
+						} else {
+						  b += " [" + (!options.showURI && i == 0 ? "" : " / ") + " " + parts[i] + "](<" + options.parentURI + "/" + parts.slice(0, i + 1).join("/") + "/>)"
+						}
+					  }
+					  return b
+					}
+			  
+					const logo = _$(options.logo, "logo").isString().default("/fonts/openaf_small.png")
+					var content = "## " + breadcrumb( puri ) + "<img style=\"padding-left: 1em;\" align=\"right\" src=\"" + logo + "\">\n\n"
+					content += "|  |" + lst.fields.join(" | ") + " |\n"
+					if (lst.alignFields) {
+						content += "|---"
+						lst.alignFields.forEach((a, i) => {
+							if (a == "left") {
+								content += "|:--"
+							} else if (a == "right") {
+								content += "|--:"
+							} else {
+								content += "|--"
+							}
+						})
+						content += "|\n"
+			  
+						if (puri != "/" && puri != "") {
+						  content += "| <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8598;</span> | __[..](<" + options.parentURI + puri.replace(/[^\/]+\/?$/, "") + ">)__ | | |\n"
+						}
+			  
+						$from(lst.list).sort("-isDirectory", "values." + lst.key).select(r => {
+							content += "|"
+							if (r.isDirectory) {
+								content += " <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8600;</span> |"
+							} else {
+								content += " <span style=\"font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + "?raw=true\" download=\"" + r.values[lst.key] + "\">&darr;</a></span> |"
+							}
+							lst.fields.forEach((f, i) => {
+							  if (r.isDirectory) {
+								  content += " " + (i == 0 ? "__[" + r.values[f] + "](<" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + ">)__" : r.values[f]) + " |"
+							  } else {
+								  content += " " + (i == 0 ? "[" + r.values[f] + "](<" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + ">)" : r.values[f]) + " |"
+							  }
+							})
+							content += "\n"
+						})
+					}
+			  
+					if (isDef(options.footer)) {
+						content += "\n" + options.footer + "\n"
+					}
+			  
+					if (options.sortTab) content += "<script src=\"/js/mdtablesort.js\"></script>\n"
+			  
+					return ow.template.parseMD2HTML( content, true )
+				},
+				renderObj: (obj, server, request, options) => {
+					const uri = request.uri
+			  
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "").replace(/\/$/, "")
+			  
+					if (request.params.raw == "true") {
+					  log("Downloading raw file: " + puri)  
+					  if (isDef(obj.stream)) {
+						return server.replyStream(obj.stream, ow.server.httpd.getMimeType(puri))
+					  }
+					  if (isDef(obj.file)) {
+						return server.replyStream(io.readFileStream(obj.file), ow.server.httpd.getMimeType(puri))
+					  }
+					  if (isDef(obj.data)) {
+						return server.replyOK(obj.data, ow.server.httpd.getMimeType(puri))
+					  }
+					}
+			  
+					if (obj.type == "asciidoc" && isDef(getOPackPath("Asciidoc"))) {
+					  loadLib("asciidoc.js")
+					  if (isUnDef(obj.file) && isDef(obj.stream)) {
+						return  ow.server.httpd.replyAsciidoc(server, obj.stream)
+					  } else {
+						return ow.server.httpd.replyAsciidoc(server, obj.file)
+					  }
+					}
+			  
+					if (isDef(obj.stream)) {
+					  return server.replyStream(obj.stream, ow.server.httpd.getMimeType(puri))
+					}
+			  
+					if (isDef(obj.file)) {
+					  return server.replyStream(io.readFileStream(obj.file), ow.server.httpd.getMimeType(puri))
+					}
+			  
+					if (obj.type == "md") {
+					  return server.replyOKHTML(ow.template.parseMD2HTML(obj.data, true))
+					}
+			  
+					if (obj.type == "json" && (isUnDef(request.params.parse) || request.params.parse != "false")) {
+					  return ow.server.httpd.replyJSMap(server, obj.data)
+					}
+			  
+					const breadcrumb = p => {
+					  if (p == "") return "[/](</>) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + options.parentURI.replace(/ +/g, "") + ">)"
+					  var parts = p.split("/")
+					  var b = "[/](</>) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + options.parentURI.replace(/ +/g, "") + ">)"
+					  for (var i = 0; i < parts.length; i++) {
+						if (i == parts.length - 1) {
+						  b += (!options.showURI && i == 0 ? "" : " / ") + parts[i] + " "
+						} else {
+						  b += " [" + (!options.showURI && i == 0 ? "" : " / ") + " " + parts[i] + "](<" + options.parentURI + "/" + parts.slice(0, i + 1).join("/") + "/>)"
+						}
+					  }
+					  return b
+					}
+			  
+					const _downloadcode = `<span><script>
+					  function downloadText(aFile) {
+						var selectedText = document.querySelectorAll("pre")[0].innerText
+						const blob = new Blob([selectedText], { type: "text/plain" })
+						const url = URL.createObjectURL(blob)
+						const a = document.createElement("a")
+						a.href = url
+						a.download = aFile
+						document.body.appendChild(a)
+						a.click()
+						document.body.removeChild(a)
+						URL.revokeObjectURL(url)
+					  }
+					</script></span>`
+			  
+					if (obj.type == "rawjson") obj.type = "json"
+			  
+					const logo = _$(options.logo, "logo").isString().default("/fonts/openaf_small.png")
+					var content
+					if (obj.type == "raw") {
+					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span></span></span>\n\n"
+					  content += String(obj.data)
+					  content += "\n\n"
+			  
+					  if (isDef(options.footer)) {
+						content += "\n" + options.footer + "\n"
+					  }
+					} else {
+					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span><span onclick=\"downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; float: right; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:downloadText('" + puri.replace(/\/?$/,"").substr(puri.replace(/\/?$/,"").lastIndexOf("/")+1) + "')\">&darr;</a></span></span></span>\n\n"
+					  content += "```" + obj.type + "\n"
+					  content += isMap(obj.data) ? stringify(obj.data) : String(obj.data)
+					  content += "\n```\n\n"
+			  
+					  if (isDef(options.footer)) {
+						content += "\n" + options.footer + "\n"
+					  }
+					  content += _downloadcode
+					}
+			  
+			  
+					return server.replyOKHTML( ow.template.parseMD2HTML( content, true ) )
+				},
+				renderEmpty: (request, options) => {
+					const uri = request.uri
+			  
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
+			  
+					var content = "# " + (options.showURI ? options.parentURI + "/" : "") + puri + "\n\n"
+					content += "*No content found.*\n"
+			  
+					return ow.template.parseMD2HTML( content, true )
+				}
+			}
+		}, aOptions)
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.browse.odoc(aURI, aOptions) : Map</key>
+	 * Provides a simple oDoc browser. The aOptions map can contain the following keys:\
+	 * \
+	 *   browse   (boolean)  If true the file browser will be shown (defaults to true)\
+	 *   showURI  (boolean)  If true the URI will be shown in the file browser (defaults to false)\
+	 *   sortTab  (boolean)  If true the table will be sorted (defaults to false)\
+	 *   logo  	  (string)   The logo to show in the file browser (defaults to undefined)\
+	 *   footer   (string)   The footer to show in the file browser (defaults to undefined)\
+	 *   ttl	  (number)   The time to live for the cache (defaults to 5 minutes)\
+	 * 
+	 * </odoc>
+	 */
+	odoc: function(aURI, aOptions) {
+		_$(aURI, "uri").isString().$_()
+		aOptions = _$(aOptions, "options").isMap().default({})
+		
+		aOptions = ow.server.httpd.browse.files(aURI, "", aOptions)
+		aOptions.ttl = _$(aOptions.ttl, "ttl").isNumber().default(5 * 60 * 1000)
+
+		// Init
+		ow.loadTemplate(); ow.loadFormat()
+		ow.template.addConditionalHelpers()
+		ow.template.addFormatHelpers()
+		ow.template.addOpenAFHelpers()
+
+        $cache("__hB_oDoc")
+        .ttl(_$(aOptions.ttl, "ttl").isNumber().default(aOptions.ttl))
+        .fn(k => searchHelp(""))
+        .create()
+
+		return merge(aOptions, {
+			_fns: {
+				getList: (request, options) => {
+					const uri = request.uri
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
+			
+					var lst = $cache("__hB_oDoc").get({})
+					const parts = puri.split("/").filter(r => r != "")
+					if (parts.length > 1) {
+						return { isFile: $from(lst).equals("id", parts[0]).equals("key", parts[1]).any() }
+					} else {
+						var _lst
+						if (parts.length < 1) 
+							_lst = $from(lst).distinct("id").map(r => ({ id: r, key: "" }))
+						else
+							_lst = $from(lst).equals("id", parts[0]).select(r => ({ id: r.key, key: r.id }))
+						return {
+							isList: parts.length < 2,
+							fields: [ "Id", "Category" ],
+							alignFields:["left", "left"],
+							key   : "Id",
+							list  : _lst.map(r => {
+								return {
+									isDirectory: r.key == "",
+									values: {
+										Id : r.id,
+										Category: r.key
+									}
+								}
+							})
+						}
+					}
+				},
+				getObj: (request, options) => {
+					const uri = request.uri
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
+
+					const parts = puri.split("/").filter(r => r != "")
+					var _h = searchHelp(parts[1], parts[0])
+					if (isArray(_h)) {
+						return {
+							data: `\`\`\`javascript\n${_h[0].fullkey}\n\`\`\`\n---\n<pre style="white-space: pre-wrap;">${_h[0].text}\n</pre>\n---\n`,
+							type: "raw"
+						}
+					} else {
+						return { data: "Not found", type: "md" }
+					}
+				}
+			}
+		})
+	},
+	/**
+	 * <odoc>
+	 * <key>ow.server.httpd.browse.opacks(aURI, aOptions) : Map</key>
+	 * Provides a simple oPack browser. The aOptions map can contain the following keys:\
+	 * \
+	 *   browse   (boolean)  If true the file browser will be shown (defaults to true)\
+	 *   showURI  (boolean)  If true the URI will be shown in the file browser (defaults to false)\
+	 *   sortTab  (boolean)  If true the table will be sorted (defaults to false)\
+	 *   logo  	  (string)   The logo to show in the file browser (defaults to undefined)\
+	 *   footer   (string)   The footer to show in the file browser (defaults to undefined)\
+	 *   ttl	  (number)   The time to live for the cache (defaults to 5 minutes)\
+	 * 
+	 * </odoc>
+	 */
+	opacks: function(aURI, aOptions) {
+		_$(aURI, "uri").isString().$_()
+		aOptions = _$(aOptions, "options").isMap().default({})
+		
+		aOptions = ow.server.httpd.browse.files(aURI, "", aOptions)
+		aOptions.ttl = _$(aOptions.ttl, "ttl").isNumber().default(5 * 60 * 1000)
+
+		// Init
+		ow.loadTemplate(); ow.loadFormat()
+		ow.template.addConditionalHelpers()
+		ow.template.addFormatHelpers()
+		ow.template.addOpenAFHelpers()
+
+        $cache("__hB_oPacks")
+        .ttl(_$(aOptions.ttl, "ttl").isNumber().default(aOptions.ttl))
+        .fn(k => $m4a(getOPackRemoteDB(), "key"))
+        .create()
+
+		var tmpl = io.readFileString(getOpenAFJar() + "::hbs/browseOPacks.hbs")
+
+		return merge(aOptions, {
+			_fns: {
+				getList: (request, options) => {
+					const uri = request.uri
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
+			
+					var lst = $cache("__hB_oPacks").get({})
+					if (puri.length > 0) {
+						return { isFile: $from(lst).equals("name", puri).any() }
+					} else {
+						return {
+							isList: true,
+							fields: [ "oPack", "Version", "Description", "Author" ],
+							alignFields: ["left", "left", "left", "left" ],
+							key   : "oPack",
+							list  : lst.map(r => {
+							return {
+								isDirectory: true,
+								values: {
+								oPack  : r.name,
+								Version: r.version,
+								Description: r.description,
+								Author: r.author
+								}  
+							}})
+						}
+					}
+				},
+				getObj: (request, options) => {
+					const uri = request.uri
+					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "")
+			
+					var lst = $cache("__hB_oPacks").get({})
+					var opack = $from(lst).equals("name", puri).at(0)
+					if (isDef(opack)) {
+						return {
+							data: $t(tmpl, opack),
+							type: "raw"
+						}
+					} else {
+						return { data: "Not found", type: "md" }
+					}
+				}
+			}
+		})
 	}
 }
