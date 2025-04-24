@@ -168,15 +168,15 @@
 			"path": ["lib/jline-2.14.5.jar"],
 			"version": "2.14.5",
 			"changes": true,
-			"comment": "updated to jline 1.18",
+			"comment": "updated to jline 2.14.6",
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/jline/jline2/master/LICENSE.txt",
 			"deps": []
 		},
 		{
 			"description": "JAnsi",
-			"path": ["lib/jansi-2.4.0.jar"],
-			"version": "2.4.0",
+			"path": ["lib/jansi-2.14.6.jar"],
+			"version": "2.14.6",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/fusesource/jansi/master/license.txt",

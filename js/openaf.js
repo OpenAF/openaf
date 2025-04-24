@@ -208,6 +208,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_CHECK_JOB_CHANGES     : false,
 	OAF_CLOSED                 : false,
 	OAF_PRECOMPILE_LEVEL       : 2,
+	OAF_ERRSTACK               : true,   // If true $err will print the stack trace
 	TEMPLATE_SET               : true,
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
@@ -13225,6 +13226,93 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 	return fnP(__)
 }
 const $o = $output
+
+/**
+ * <odoc>
+ * <key>$err(exception, rethrow, returnStr, code)</key>
+ * Prints the exception stack trace and the code where it was thrown. If rethrow is true it will throw the exception again. If returnStr is true it will return the string instead of printing it.
+ * </odoc>
+ */
+const $err = function(exception, rethrow, returnStr, code) {
+	// Cache the file name and line number, providing sensible defaults.
+	var file = exception.fileName || ""
+	var lineNum = parseInt(exception.lineNumber, 10)
+	var str = [ ansiColor("UNDERLINE,BOLD", `${exception.name} @${file}:${exception.lineNumber}`) ]
+
+	if (exception.message !== undefined) {
+		str.push(["\n", ansiColor("", exception.message)].join(""))
+	}
+
+	// If we need to print the error stack, cache the split stack lines.
+	let stackLines
+	if (__flags.OAF_ERRSTACK && exception.stack !== undefined) {
+		stackLines = exception.stack.split("\n")
+		// Color the entire stack at once.
+		let coloredStack = stackLines.map(line => ansiColor("FAINT,ITALIC", line)).join("\n")
+		str.push(["\n", coloredStack].join(""))
+	}
+
+	if (!returnStr) {
+		printnl(ow.loadFormat().withSideLine(str.join(""), __, "red"))
+		str = []
+	}
+
+	if (__flags.OAF_ERRSTACK) {
+		// If no file name exists, try to extract it from the cached stack lines
+		if (!file && stackLines && stackLines.length > 0 && code === undefined) {
+			var matchLine = stackLines.find(r => /at [^:]+:/.test(r))
+			if (matchLine) {
+				file = matchLine.trim().split(" ")[1].split(":")[0]
+			}
+		}
+		// Avoid reading file more than once by checking the cached file variable.
+		if (file && io.fileExists(file)) {
+			code = io.readFileString(file)
+		}
+
+		// If lineNum = 0 try to extract it from the cached stack lines
+		if (code !== undefined && lineNum === 0 && stackLines && stackLines.length > 0) {
+			if (stackLines[0].indexOf(":") > 0) {
+				var ar = stackLines[0].match(/at [^:]+:(\d+)/);
+				lineNum = parseInt(ar[1], 10)
+			}
+		} 
+
+		if (code !== undefined && !isNaN(lineNum) && isFinite(lineNum)) {
+			var lcode = code.split(/[\r\n]/)
+			var start = Math.max(0, lineNum - 3)
+			var end = Math.min(lcode.length, lineNum + 3)
+			str.push(ansiColor("FAINT", "   v\n"))
+			var numWidth = Math.max(String(start).length, String(end).length)
+			var lnFormat = "%" + numWidth + "d"
+
+			for (var i = start; i < end; i++) {
+				var lineStr = $ft(lnFormat, i + 1) + ": " + lcode[i]
+				if (i === lineNum - 1) {
+					str.push([ansiColor("RED,BOLD,UNDERLINE", ["> ", lineStr].join("")), "\n"].join(""))
+				} else {
+					str.push(["  ", ansiColor("RED,FAINT", lineStr), "\n"].join(""))
+				}
+			}
+		}
+		if (isJavaException(exception)) {
+			str.push("\n")
+			var jStack = getJavaStackTrace(exception)
+				.map(r => ansiColor("FAINT,ITALIC", `  at ${r.className}.${r.methodName}(${r.fileName}:${r.lineNumber})`))
+				.join("\n")
+			str.push(["\n", jStack].join(""))
+		}
+	}
+	
+	str = str.join("")
+	if (returnStr) {
+		return str
+	} else {
+		print(str)
+	}
+	
+	if (rethrow) throw exception
+}
 
 Float32Array.from = function(arr) {
 	var _r = new Float32Array(arr.length)

@@ -156,7 +156,7 @@ log(af.sh(cmd, "", undefined, true));
 if (__exitcode != 0) {
 	logErr("Error compiling: " + __stderr);
 }
-$sh(JAVAC + " -source 8 -target 8 -d " + OPENAF_BIN + " " + OPENAF_SRC + "/openaf/Launcher.java").exec();
+$sh(JAVAC + " -source 21 -target 21 -d " + OPENAF_BIN + " " + OPENAF_SRC + "/openaf/Launcher.java").exec();
 
 var tempJar = new ZIP(io.readFileBytes(OPENAF_BUILD_HOME + "/jar-in-jar-loader.zip"));
 var binFiles = listFiles(OPENAF_BIN, new RegExp("\.class$"));
@@ -293,7 +293,7 @@ try {
 
 			if (doIt) {
 				log("-> Compiling " + file.filename);
-				var output = af.sh("java -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT_2019" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+				var output = af.sh("java --sun-misc-unsafe-memory-access=allow -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT_2019" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
 				log("<- Compiled  " + file.filename);
 				destjssha.files.push({
 					file: file.filename,

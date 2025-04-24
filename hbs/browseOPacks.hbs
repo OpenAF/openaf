@@ -1,0 +1,27 @@
+### 📋 Basic information
+
+| Property | Value |
+|----------|-------|
+| Description | {{description}} |
+| Version | {{version}} |
+| Author | {{author}} |
+| Keywords | {{keywords}} |
+| License | {{license}} |
+| Repository | {{repository.url}} |
+| Bugs | {{bugs.url}} |
+
+### 🔗 Dependencies
+
+| Dependency | Version
+|--------------|----|
+{{#each ($path this 'set(@,\'dependencies\').keys(dependencies)[].{key: @, value: get(concat(\'dependencies[\',concat(@, \']\'))) }')}}
+| {{this.key}} | {{this.value}} |
+{{/each}}
+
+### 🗂️ Files
+
+| File | 
+|------|
+{{#each files}}
+| {{this}} |
+{{/each}}

@@ -801,6 +801,8 @@ public class AFCmdOS extends AFCmdBase {
 			if (isolatePMs) {
 				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + pmIn + ")";
 			}
+
+			script = "try{" + script + "} catch(_e) { $err(_e) }";
 			
 			Object res = null;
 			if (injectscript || filescript || injectcode || processScript) {
