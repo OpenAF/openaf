@@ -210,15 +210,15 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 		if(el.name.match(/\.jar$/)) {
 			var zipTemp = new ZIP();
 
-			if (el.name.match(/tools-attach.jar$/) &&
+			/*if (el.name.match(/tools-attach.jar$/) &&
 			    Packages.jodd.util.ClassLoaderUtil.findToolsJar() != null) {
 				zipTemp.loadFile(String(Packages.jodd.util.ClassLoaderUtil.findToolsJar()));
-			} else {
+			} else {*/
 				if (!el.outside) 
 					zipTemp.load(zip.getFile(el.name));
 				else
 					zipTemp.loadFile(el.outsideName);
-			}
+			//}
 			
 			var listTemp = zipTemp.list();
 							

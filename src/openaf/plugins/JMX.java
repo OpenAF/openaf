@@ -28,7 +28,7 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import jodd.util.ClassLoaderUtil;
+//import jodd.util.ClassLoaderUtil;
 
 import org.apache.commons.math3.ode.UnknownParameterException;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.CMAESOptimizer;
@@ -301,11 +301,11 @@ public class JMX extends ScriptableObject {
 	 */
 	@JSFunction
 	public static Object getLocals() throws IOException {
-		File toolsFile = ClassLoaderUtil.findToolsJar();
+		/*File toolsFile = ClassLoaderUtil.findToolsJar();
 		if (toolsFile != null) {
 			// Default to the tools.jar
 			ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
-		}
+		}*/
 
 		List<VirtualMachineDescriptor> vms = VirtualMachine.list();
 		JSEngine.JSMap pmap = AFCmdBase.jse.getNewMap(null);
@@ -332,11 +332,11 @@ public class JMX extends ScriptableObject {
 	 */
 	@JSFunction
 	public static Object attach2Local(String id) throws IOException, AgentLoadException, AgentInitializationException, AttachNotSupportedException {
-		File toolsFile = ClassLoaderUtil.findToolsJar();
-		VirtualMachine vm;
+		/*File toolsFile = ClassLoaderUtil.findToolsJar();
 		if (toolsFile != null) {
 			ClassLoaderUtil.addFileToClassPath(toolsFile, ClassLoader.getSystemClassLoader());
-		}
+		}*/
+		VirtualMachine vm;
 		vm = VirtualMachine.attach(id);
 		
 		JSEngine.JSMap local = AFCmdBase.jse.getNewMap(null);
@@ -344,13 +344,13 @@ public class JMX extends ScriptableObject {
 		Properties props;
 		String _url;
 
-		if (toolsFile != null) {
+		/*if (toolsFile != null) {
 			vm.loadAgent(vm.getSystemProperties().getProperty("java.home") + File.separator + "lib" + File.separator + "management-agent.jar");
 			props = vm.getAgentProperties();
 			_url = props.getProperty("com.sun.management.jmxremote.localConnectorAddress");
 
 			url = new JMXServiceURL(_url);
-		} else {
+		} else {*/
 			// Assume JRE
 			props = vm.getSystemProperties();
 			_url = vm.getAgentProperties().getProperty("com.sun.management.jmxremote.localConnectorAddress");
@@ -363,7 +363,7 @@ public class JMX extends ScriptableObject {
 				vm.startLocalManagementAgent();
 				_url = vm.getAgentProperties().getProperty("com.sun.management.jmxremote.localConnectorAddress");
 			}
-		}
+		//}
 
 		JSEngine.JSMap map = AFCmdBase.jse.getNewMap(local.getMap());
 	    
