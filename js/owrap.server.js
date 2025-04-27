@@ -3695,7 +3695,7 @@ OpenWrap.server.prototype.httpd.browse = {
 			  
 					var ext = String(puri).replace(/^.*\./, "")
 					switch(ext) {
-					case "md"  : return { data: io.readFileString(options.parentPath + "/" + puri), type: "md" }
+					case "md"  : return { data: io.readFileString(options.parentPath + "/" + puri), type: (options.useMDRaw ? "raw" : "md") }
 					case "yml" :
 					case "yaml": return { data: io.readFileString(options.parentPath + "/" + puri), type: "yaml" }
 					case "css" : return { data: io.readFileString(options.parentPath + "/" + puri), type: "css" }
@@ -3716,6 +3716,10 @@ OpenWrap.server.prototype.httpd.browse = {
 					const uri = request.uri
 			  
 					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "").replace(/\/$/, "")
+					if (isString(options.suffix)) 
+						options.suffix = (options.suffix.startsWith("?") ? options.suffix : "?" + options.suffix)
+					else
+						options.suffix = ""
 			  
 					if (isDef(options.default) && lst.list.filter(r => r.values[lst.key] == options.default).length == 1) {
 					  request.uri = request.uri + "/" + options.default
@@ -3767,7 +3771,7 @@ OpenWrap.server.prototype.httpd.browse = {
 							  if (r.isDirectory) {
 								  content += " " + (i == 0 ? "__[" + r.values[f] + "](<" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + ">)__" : r.values[f]) + " |"
 							  } else {
-								  content += " " + (i == 0 ? "[" + r.values[f] + "](<" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + ">)" : r.values[f]) + " |"
+								  content += " " + (i == 0 ? "[" + r.values[f] + "](<" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + options.suffix + ">)" : r.values[f]) + " |"
 							  }
 							})
 							content += "\n"
@@ -3786,6 +3790,8 @@ OpenWrap.server.prototype.httpd.browse = {
 					const uri = request.uri
 			  
 					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "").replace(/\/$/, "")
+					delete request.params["NanoHttpd.QUERY_STRING"]
+					delete request.files
 			  
 					if (request.params.raw == "true") {
 					  log("Downloading raw file: " + puri)  
@@ -3818,7 +3824,7 @@ OpenWrap.server.prototype.httpd.browse = {
 					}
 			  
 					if (obj.type == "md") {
-					  return server.replyOKHTML(ow.template.parseMD2HTML(obj.data, true))
+					  return server.replyOKHTML(ow.template.parseMD2HTML((options.useMDTemplate ? $t(String(obj.data), { request: request }) : String(obj.data)), true))
 					}
 			  
 					if (obj.type == "json" && (isUnDef(request.params.parse) || request.params.parse != "false")) {
@@ -3860,7 +3866,7 @@ OpenWrap.server.prototype.httpd.browse = {
 					var content
 					if (obj.type == "raw") {
 					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span></span></span>\n\n"
-					  content += String(obj.data)
+					  content += (options.useMDTemplate ? $t(String(obj.data), { request: request }) : String(obj.data))
 					  content += "\n\n"
 			  
 					  if (isDef(options.footer)) {
