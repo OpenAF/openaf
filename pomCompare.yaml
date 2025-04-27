@@ -1,0 +1,51 @@
+# use in=oafp to compare pom.xml files
+in   : oafp
+data :
+# Build a list of all the jar files that should be in the lib directory
+- file: pom.xml
+  path: "project.dependencies.dependency[?not_null(artifactId) && artifactId != 'rhino'].{file:concat(artifactId, concat('-', concat(version, '.jar')))}"
+# Build a list of all the jar files that are actually in the lib directory
+- in  : ls
+  data: lib
+  path: "[].{file: filename}"
+# Store in a channel the pom.xml dependencies
+- file : pom.xml
+  path : "project.dependencies.dependency"
+  out  : ch
+  ch   : &CH
+    name   : ref
+    type   : file
+    options: 
+      file: pom.json 
+  chkey: artifactId
+# Compare the two lists and find the differences comparing with the 'a' difference
+set  :
+  a: "[0]"
+  b: "[1]"
+setop: diffa
+out  : json
+pipe :
+  # PIPE to get a list of artifactId and version from the jar file names
+  chs   : *CH
+  path  : "[].{ file: file, groupId: ch('ref', 'get', concat('(artifactId: ', concat(replace(file, '^(.*)-([0-9]+\\.[0-9]+\\.[0-9]+)\\.jar$', '', '$1'), ')')), __ ).groupId, artifactId: replace(file, '^(.*)-([0-9]+\\.[0-9]+\\.[0-9]+)\\.jar$', '', '$1'), version: replace(file, '^(.*)-([0-9]+\\.[0-9]+\\.[0-9]+)\\.jar$', '', '$2')}"
+  out   : oaf
+  outoaf: |- #js
+      var ar = data
+      var lt = io.listFiles("lib").files
+      ow.loadJava()
+      var m = new ow.java.maven()
+
+      ar.forEach(r => {
+        $from(lt)
+        .starts("filename", r.artifactId + '-')
+        .select(f => {
+          log(`removing lib/${f.filename}`)
+          io.rm("lib/" + f.filename)
+        })
+
+        log(`downloading ${r.file}...`)
+        $rest().get2File("lib/" + r.file, "https://repo1.maven.org/maven2/" + r.groupId.replace(/\./g, '/') + '/' + r.artifactId + '/' + r.version + '/' + r.file)
+      })
+
+      return ar
+  

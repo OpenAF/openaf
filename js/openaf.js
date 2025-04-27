@@ -13237,7 +13237,7 @@ const $err = function(exception, rethrow, returnStr, code) {
 	// Cache the file name and line number, providing sensible defaults.
 	var file = exception.fileName || ""
 	var lineNum = parseInt(exception.lineNumber, 10)
-	var str = [ ansiColor("UNDERLINE,BOLD", `${exception.name} @${file}:${exception.lineNumber}`) ]
+	var str = isUnDef(exception.name) ? [ ansiColor("UNDERLINE,BOLD", String(exception)) ] : [ ansiColor("UNDERLINE,BOLD", `${exception.name} @${file}:${exception.lineNumber}`) ]
 
 	if (exception.message !== undefined) {
 		str.push(["\n", ansiColor("", exception.message)].join(""))
