@@ -134,6 +134,9 @@ jobs:
 
    # --------------------
    - name : Check pom.xml
+     to   :
+     - (oafp):
+        paramsfile: pomCompare.yaml 
 
 todo:
 - Check pom.xml
