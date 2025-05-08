@@ -110,6 +110,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $a4m             -- shortcut to the OpenAF's $a4m function\
  *   - $m2a             -- shortcut to the OpenAF's $m2a function\
  *   - $m4a             -- shortcut to the OpenAF's $m4a function\
+ *   - $nvl             -- shortcut to the OpenAF's nvl function\
  *   - $pass            -- returns an empty string\
  *   - $p               -- returns the provided literal\
  *   - $sline           -- shortcut to the OpenAF's format withSideLine\
@@ -291,6 +292,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		a4m: (a, k, d) => $a4m(a, k, d),
 		m2a: (d, m) => $m2a(d, m),
 		m4a: (m, k) => $m4a(m, k),
+		nvl: (v, d) => af.nvl(v, d),
 		keys: (o) => Object.keys(o),
 		values: (o) => Object.values(o),
 		dateDiff: (a, p, isN) => {

@@ -9175,7 +9175,7 @@ AF.prototype.toTOML = function(aObj) {
  * Returns aValue if it is defined or aDefault otherwise.
  * </odoc>
  */
-AF.prototype.nvl = (aValue, aDefault) => "undefined" !== typeof aValue ? aValue : aDefault
+AF.prototype.nvl = (aValue, aDefault) => ("undefined" !== typeof aValue) && (aValue != null) ? aValue : aDefault
 
 /**
  * <odoc>

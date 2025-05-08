@@ -4,6 +4,8 @@ ojob:
 jobs:
    # Build OpenAF
    - name  : Build OpenAFOS
+     deps  : 
+     - Check pom.xml
      exec  : >
         global.path = (isDef(args.path)) ? args.path : ".";
         if (isUnDef(args.openafJSON)) args.openafJSON = global.path + "/openaf.json";
@@ -130,7 +132,14 @@ jobs:
        zip.streamPutFileStream(global.path + "/openaf.jar.orig", "ojob.saved.json", is)
        is.close()
 
+   # --------------------
+   - name : Check pom.xml
+     to   :
+     - (oafp):
+        paramsfile: pomCompare.yaml 
+
 todo:
+- Check pom.xml
 - Prepare ojob saved
 - Prepare ojob doc
 - Prepare shell complete
