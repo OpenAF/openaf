@@ -18,7 +18,7 @@ jobs:
     steps:
     # --------------------------
     - name: Cache OpenAF runtime
-      uses: actions/cache@v1.2.1
+      uses: actions/cache@v4
       with:
         key : oaf-t8
         path: /tmp/oaf
@@ -29,7 +29,7 @@ jobs:
 
     # -----------------------
     - name: Compile ojob yaml
-      uses: openaf/ojob-action@v6 
+      uses: openaf/ojob-action@v7 
       with:
         ojob: ojob.io/ojob/compile
         args: "source=ojob.yaml target=ojob.json"
@@ -37,7 +37,7 @@ jobs:
 
     # -------------
     - name: Checkin
-      uses: openaf/ojob-action@v6
+      uses: openaf/ojob-action@v7
       env :
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -54,7 +54,7 @@ jobs:
 
     # -----------
     - name: Build
-      uses: openaf/ojob-action@v6
+      uses: openaf/ojob-action@v7
       with:
         ojob: build.yaml
           
@@ -83,7 +83,7 @@ jobs:
     steps:
     # --------------------------
     - name: Cache OpenAF runtime
-      uses: actions/cache@v1.2.1
+      uses: actions/cache@v4
       with:
         key : oaf-t8
         path: /tmp/oaf
@@ -121,7 +121,7 @@ jobs:
         
     # ------------------------------------
     - name: Convert autoTestAll.md to html
-      uses: openaf/ojob-action@v6
+      uses: openaf/ojob-action@v7
       with:
         dist: t8
         ojob: ojob.io/formats/md2html
@@ -136,7 +136,7 @@ jobs:
         
     # ---------------------
     - name: Generate badges
-      uses: openaf/ojob-action@v6
+      uses: openaf/ojob-action@v7
       with:
         dist: t8
         def : |
@@ -208,7 +208,7 @@ jobs:
      
     # --------------
     - name: Check in
-      uses: openaf/ojob-action@v6
+      uses: openaf/ojob-action@v7
       env :
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
