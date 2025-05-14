@@ -156,6 +156,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class NanoHTTPD {
 
+    public static int BUFSIZE = 8192;
+
+    /**
+     * Gets the buffer size used for HTTP sessions.
+     * @return the buffer size
+     */
+    public static int getBufSize() {
+        return BUFSIZE;
+    }
+
+    /**
+     * Sets the buffer size used for HTTP sessions.
+     * @param bufSize the buffer size to set
+     */
+    public static void setBufSize(int bufSize) {
+        BUFSIZE = bufSize;
+    }
+
     /**
      * Pluggable strategy for asynchronously executing requests.
      */
@@ -632,8 +650,6 @@ public abstract class NanoHTTPD {
 
         private static final int MEMORY_STORE_LIMIT = 1024;
 
-        public static final int BUFSIZE = 8192;
-
         public static final int MAX_HEADER_SIZE = 1024;
 
         private final TempFileManager tempFileManager;
@@ -668,13 +684,13 @@ public abstract class NanoHTTPD {
 
         public HTTPSession(TempFileManager tempFileManager, InputStream inputStream, OutputStream outputStream) {
             this.tempFileManager = tempFileManager;
-            this.inputStream = new BufferedInputStream(inputStream, HTTPSession.BUFSIZE);
+            this.inputStream = new BufferedInputStream(inputStream, NanoHTTPD.getBufSize());
             this.outputStream = outputStream;
         }
 
         public HTTPSession(TempFileManager tempFileManager, InputStream inputStream, OutputStream outputStream, InetAddress inetAddress) {
             this.tempFileManager = tempFileManager;
-            this.inputStream = new BufferedInputStream(inputStream, HTTPSession.BUFSIZE);
+            this.inputStream = new BufferedInputStream(inputStream, NanoHTTPD.getBufSize());
             this.outputStream = outputStream;
             this.remoteIp = inetAddress.isLoopbackAddress() || inetAddress.isAnyLocalAddress() ? "127.0.0.1" : inetAddress.getHostAddress().toString();
             this.remoteHostname = inetAddress.isLoopbackAddress() || inetAddress.isAnyLocalAddress() ? "localhost" : inetAddress.getHostName().toString();
@@ -900,14 +916,14 @@ public abstract class NanoHTTPD {
                 // Apache's default header limit is 8KB.
                 // Do NOT assume that a single read will get the entire header
                 // at once!
-                byte[] buf = new byte[HTTPSession.BUFSIZE];
+                byte[] buf = new byte[NanoHTTPD.getBufSize()];
                 this.splitbyte = 0;
                 this.rlen = 0;
 
                 int read = -1;
-                this.inputStream.mark(HTTPSession.BUFSIZE);
+                this.inputStream.mark(NanoHTTPD.getBufSize());
                 try {
-                    read = this.inputStream.read(buf, 0, HTTPSession.BUFSIZE);
+                    read = this.inputStream.read(buf, 0, NanoHTTPD.getBufSize());
                 } catch (SSLException e) {
                     throw e;
                 } catch (IOException e) {
@@ -927,7 +943,7 @@ public abstract class NanoHTTPD {
                     if (this.splitbyte > 0) {
                         break;
                     }
-                    read = this.inputStream.read(buf, this.rlen, HTTPSession.BUFSIZE - this.rlen);
+                    read = this.inputStream.read(buf, this.rlen, NanoHTTPD.getBufSize() - this.rlen);
                 }
 
                 if (this.splitbyte < this.rlen) {
