@@ -2534,6 +2534,7 @@ OpenWrap.server.prototype.httpd = {
 		}
 
 		if (__flags.HTTPD_THREADS != "auto") try { com.nwu.httpd.NanoHTTPD.numThreads = Number(__flags.HTTPD_THREADS) } catch(e) {}
+		if (isNumber(__flags.HTTPD_BUFSIZE)) com.nwu.httpd.NanoHTTPD.setBufSize(Number(__flags.HTTPD_BUFSIZE))
 		
 		var hs;
 		if (isDef(aWebSockets) && isMap(aWebSockets)) 
