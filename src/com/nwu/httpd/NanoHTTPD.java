@@ -156,7 +156,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class NanoHTTPD {
 
-    public static int BUFSIZE = 8192;
+    public volatile static int BUFSIZE = 8192;
 
     /**
      * Gets the buffer size used for HTTP sessions.

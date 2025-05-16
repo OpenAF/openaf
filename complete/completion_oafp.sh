@@ -249,6 +249,7 @@ F_diff__diffchars_=0
 F_field2byte_=1
 F_field2date_=1
 F_field2si_=1
+F_field4map_=1
 F_flatmap_=1
 F_getlist_=1
 F_jsonschema_=1
@@ -591,6 +592,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "field2date=" ]; then FFOUND=1; F_field2date_=0; fi
     # field2si= single option
     if [ "$arg" = "field2si=" ]; then FFOUND=1; F_field2si_=0; fi
+    # field4map= single option
+    if [ "$arg" = "field4map=" ]; then FFOUND=1; F_field4map_=0; fi
     # flatmap= single option
     if [ "$arg" = "flatmap=" ]; then FFOUND=1; F_flatmap_=0; fi
     # getlist= single option
@@ -1389,6 +1392,11 @@ fi
 # Print completion for field2si=
 if [ $F_field2si_ -eq 1 ]; then
   echo "field2si=	A comma delimited list of fields whose value should be converted to a SI abbreviation"
+  
+fi
+# Print completion for field4map=
+if [ $F_field4map_ -eq 1 ]; then
+  echo "field4map=	A comma delimited list of fields whose value should be converted from JSON/SLON string representation to a map"
   
 fi
 # Print completion for flatmap=
