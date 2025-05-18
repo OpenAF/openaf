@@ -13244,9 +13244,11 @@ const $err = function(exception, rethrow, returnStr, code) {
 		str.push(["\n", ansiColor("", exception.message)].join(""))
 	}
 
+	var isNavErr = (__flags.OAF_ERRSTACK && Object.keys(exception).indexOf("lineNumber") >= 0)
+
 	// If we need to print the error stack, cache the split stack lines.
 	let stackLines
-	if (__flags.OAF_ERRSTACK && exception.stack !== undefined) {
+	if (__flags.OAF_ERRSTACK && isNavErr && exception.stack !== undefined) {
 		stackLines = exception.stack.split("\n")
 		// Color the entire stack at once.
 		let coloredStack = stackLines.map(line => ansiColor("FAINT,ITALIC", line)).join("\n")
@@ -13258,7 +13260,7 @@ const $err = function(exception, rethrow, returnStr, code) {
 		str = []
 	}
 
-	if (__flags.OAF_ERRSTACK) {
+	if (__flags.OAF_ERRSTACK && isNavErr) {
 		// If no file name exists, try to extract it from the cached stack lines
 		if (!file && stackLines && stackLines.length > 0 && code === undefined) {
 			var matchLine = stackLines.find(r => /at [^:]+:/.test(r))
