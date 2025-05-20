@@ -3053,6 +3053,83 @@ OpenWrap.server.prototype.httpd = {
 	},
 
 	/**
+     * <odoc>
+     * <key>ow.server.httpd.replyJSONRPC(server, request, mapOfFunctions) : Map</key>
+     * Implements a JSON-RPC 2.0 endpoint using the provided mapOfFunctions. The request must be a POST with a JSON-RPC body.\
+	 * \
+     * Example usage:\
+     *   ow.server.httpd.route(hs, {\
+     *     "/rpc": (req) => ow.server.httpd.replyJSONRPC(hs, req, { sum: (a, b) => a + b })\
+     *   })\
+	 * 
+     * </odoc>
+     */
+    replyJSONRPC: function(server, request, mapOfFunctions) {
+        try {
+            if (request.method !== "POST") {
+                return ow.server.httpd.reply({
+                    jsonrpc: "2.0",
+                    error: { code: -32600, message: "Invalid Request: Only POST allowed" },
+                    id: null
+                }, 400, "application/json", {})
+            }
+            var body = request.files && request.files.postData ? request.files.postData : __
+            if (!body) {
+                return ow.server.httpd.reply({
+                    jsonrpc: "2.0",
+                    error: { code: -32700, message: "Parse error: No body" },
+                    id: null
+                }, 400, "application/json", {})
+            }
+            var reqObj
+            try {
+                reqObj = jsonParse(body)
+            } catch(e) {
+                return ow.server.httpd.reply({
+                    jsonrpc: "2.0",
+                    error: { code: -32700, message: "Parse error: Invalid JSON" },
+                    id: null
+                }, 400, "application/json", {})
+            }
+            if (!reqObj || reqObj.jsonrpc !== "2.0" || !reqObj.method) {
+                return ow.server.httpd.reply({
+                    jsonrpc: "2.0",
+                    error: { code: -32600, message: "Invalid Request" },
+                    id: reqObj && reqObj.id !== undefined ? reqObj.id : null
+                }, 400, "application/json", {})
+            }
+            var fn = mapOfFunctions[reqObj.method]
+            if (!isFunction(fn)) {
+                return ow.server.httpd.reply({
+                    jsonrpc: "2.0",
+                    error: { code: -32601, message: "Method not found" },
+                    id: reqObj.id
+                }, 404, "application/json", {})
+            }
+            try {
+                var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params);
+                return ow.server.httpd.reply({
+                    jsonrpc: "2.0",
+                    result: result,
+                    id: reqObj.id
+                }, 200, "application/json", {})
+            } catch(e) {
+                return ow.server.httpd.reply({
+                    jsonrpc: "2.0",
+                    error: { code: -32603, message: "Internal error", data: String(e) },
+                    id: reqObj.id
+                }, 500, "application/json", {})
+            }
+        } catch(e) {
+            return ow.server.httpd.reply({
+                jsonrpc: "2.0",
+                error: { code: -32604, message: "Internal error", data: String(e) },
+                id: null
+            }, 500, "application/json", {})
+        }
+    },
+
+	/**
 	 * <odoc>
 	 * <key>ow.server.httpd.getMimeType(aFilename) : String</key>
 	 * Tries to determine the mime type of aFilename and returns it. If not determined it will default
