@@ -36,6 +36,8 @@ complete:
       desc: If true will stream the data instead of loading it all in memory
     - name: indbexec=
       desc: If true the input SQL is not a query but a DML statement
+    - name: indbdesc=
+      desc: If true the output will be a list of column names and types -use 'LIMIT 1' for faster results-
   - name: in=gb64json
     desc: Equivalent to in=base64 and base64gzip=true
   - name: in=hsperf
@@ -147,7 +149,7 @@ complete:
     - name: ndslonfilter=
       desc: If true each line is interpreted as an array before filters execute -this allows to filter slon records on a ndslon-
   - name: in=oaf
-    desc: Takes an OpenAF scripting code to execute and use the result as input
+    desc: Takes an OpenAF scripting code or OpenAF script file to execute and use the result as input
   - name: in=oafp
     desc: Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process -arrays will call multiple oafp processes-
     opts:
@@ -363,6 +365,11 @@ complete:
     desc: A NDJSON -new-line delimited JSON- format
   - name: out=ndslon
     desc: A NDSLON -new-line delimited SLON- format
+  - name: out=oaf
+    desc: Takes an OpenAF scripting code or OpenAF script file to execute receiving -data- as input as -outoaf-
+    opts:
+    - name: outoaf=
+      desc: The OpenAF script to execute scripting code or file path receiving -data- as input
   - name: out=openmetrics
     desc: Converts a map or list to OpenMetrics/Prometheus compatible format
     opts:
@@ -580,6 +587,8 @@ complete:
   desc: A JSON/SLON map with a normalize schema -see OpenAF's ow.ai.normalize.withSchema-
 - name: numformat=
   desc: For all number values applies a java.util.Formatter format -e.g. %,d-
+- name: oaf=
+  desc: A OpenAF script to execute or a file path to an OpenAF script taking -data- as input and returning the transformed data
 - name: regression=
   desc: Performs a regression -linear, log, exp, poly or power- over a provided list/array of numeric values
   opts:
