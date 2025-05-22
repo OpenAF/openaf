@@ -13244,7 +13244,7 @@ const $err = function(exception, rethrow, returnStr, code) {
 		str.push(["\n", ansiColor("", exception.message)].join(""))
 	}
 
-	var isNavErr = (__flags.OAF_ERRSTACK && Object.keys(exception).indexOf("lineNumber") >= 0)
+	var isNavErr = (__flags.OAF_ERRSTACK && "lineNumber" in exception)
 
 	// If we need to print the error stack, cache the split stack lines.
 	let stackLines
