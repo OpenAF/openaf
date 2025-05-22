@@ -3123,7 +3123,7 @@ OpenWrap.server.prototype.httpd = {
         } catch(e) {
             return ow.server.httpd.reply({
                 jsonrpc: "2.0",
-                error: { code: -32604, message: "Internal error", data: String(e) },
+                error: { code: -32603, message: "Internal error", data: String(e) },
                 id: null
             }, 500, "application/json", {})
         }
