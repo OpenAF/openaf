@@ -588,7 +588,7 @@ complete:
 - name: numformat=
   desc: For all number values applies a java.util.Formatter format -e.g. %,d-
 - name: oaf=
-  desc: A OpenAF script to execute or a file path to an OpenAF script taking -data- as input and returning the transformed data
+  desc: An OpenAF script to execute or a file path to an OpenAF script taking -data- as input and returning the transformed data
 - name: regression=
   desc: Performs a regression -linear, log, exp, poly or power- over a provided list/array of numeric values
   opts:
