@@ -37,7 +37,7 @@ complete:
     - name: indbexec=
       desc: If true the input SQL is not a query but a DML statement
     - name: indbdesc=
-      desc: If true the output will be a list of column names and types -use 'LIMIT 1' for faster results-
+      desc: If true, the output will be a list of column names and types. Use 'LIMIT 1' for faster results.
   - name: in=gb64json
     desc: Equivalent to in=base64 and base64gzip=true
   - name: in=hsperf
