@@ -366,7 +366,7 @@ complete:
   - name: out=ndslon
     desc: A NDSLON -new-line delimited SLON- format
   - name: out=oaf
-    desc: Takes an OpenAF scripting code or OpenAF script file to execute receiving -data- as input as -outoaf-
+    desc: Executes OpenAF scripting code or an OpenAF script file; receives -data- as input and outputs via -outoaf-.
     opts:
     - name: outoaf=
       desc: The OpenAF script to execute scripting code or file path receiving -data- as input
