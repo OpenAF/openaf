@@ -459,11 +459,15 @@ OpenWrap.ch.prototype.__types = {
 	// (run operations from a channel)
 	/**
 	 * <odoc>
-	 * <key>ow.ch.types.ops</key>
-	 * This OpenAF channel implementation encapsulates access based on functions. The creation options a map of
-	 * keys where each value is a function.
-	 * </odoc>
-	 */
+         * <key>ow.ch.types.ops</key>
+         * This OpenAF channel implementation encapsulates access based on functions. The creation options are a map of
+         * keys where each value is a function.\
+         * \
+         * Example:\
+         * \
+         * ow.ch.create("logic", false, "ops", { hello: name => "hi " + name });\
+         * </odoc>
+         */
 	ops: {
 		__ops : {},
 		create       : function(aName, shouldCompress, options) { 
@@ -3049,9 +3053,13 @@ OpenWrap.ch.prototype.__types = {
 /**
  * <odoc>
  * <key>ow.ch.create(aName, shouldCompress, type, options) : ow.ch</key>
- * Creates a channel of key/values with aName. Optionally you can specify if keys should also 
+ * Creates a channel of key/values with aName. Optionally you can specify if keys should also
  * be compressed in memory (shouldCompress = true), a channels implementation type and corresponding
- * options in a map.
+ * options in a map.\
+ * \
+ * Example:\
+ * \
+ * ow.ch.create("myChan", false, "db", { db: myDB, from: "TABLE" });\
  * </odoc>
  */
 OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {
