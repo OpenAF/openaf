@@ -163,12 +163,12 @@ public class DB {
 	
 	/**
 	 * <odoc>
-	 * <key>DB.q(aQuery) : Map</key>
-	 * Performs aQuery (SQL) on the current DB object instance. It returns a Map with a
-	 * results array that will have an element per result set line. In case of error an exception will be 
-	 * thrown.
-	 * </odoc>
-	 */
+        * <key>DB.q(aQuery) : Map</key>
+         * Executes the SQL query provided in aQuery on the current DB connection. It returns a Map with a
+         * results array where each element corresponds to one row. In case of error an exception will be
+         * thrown.
+         * </odoc>
+         */
 	public Object q(String query) throws IOException, SQLException {
 		if (con != null) {
 			//try {
@@ -454,11 +454,10 @@ public class DB {
 	/**
 	 * <odoc>
 	 * <key>DB.qLob(aSQL) : Object</key>
-	 * Performs aSQL query on the current DB object instance. It tries to return only the first result set
-	 * row and the first object that can be either a CLOB (returns a string) or a BLOB (byte array). In case
-	 * of error an exception will be thrown. 
-	 * </odoc>
-	 */
+         * Executes aSQL on the current DB object returning only the first row and column. If that column is a
+         * CLOB a string is returned; if it is a BLOB a byte array is provided. Errors will raise an exception.
+         * </odoc>
+         */
 	public Object qLob(String sql) throws Exception {
 		if (con != null) {
 			//try {
@@ -712,10 +711,15 @@ public class DB {
 	/**
 	 * <odoc>
 	 * <key>DB.commit()</key>
-	 * Commits to the database the current database session on the current DB object instance.
-	 * In case of error an exception will be thrown.
-	 * </odoc>
-	 */
+         * Commits the current transaction associated with this DB object.
+         * An exception will be thrown if any database error occurs.\
+         * \
+         * Example:\
+         * \
+         * db.u("INSERT INTO A VALUES (1)");\
+         * db.commit();\
+         * </odoc>
+         */
 	public void commit() throws SQLException {
 		if (con != null) {
 			try {
@@ -749,7 +753,14 @@ public class DB {
 		}
 	}
 	
-	protected void connect(String driver, String url, String login, String pass, String timeout) throws Exception {
+        /**
+         * <odoc>
+         * <key>DB.connect(aDriver, aURL, aLogin, aPassword, aTimeout)</key>
+         * Establishes a JDBC connection using aDriver, aURL, aLogin and aPassword.
+         * The connection timeout can be provided via aTimeout in milliseconds and auto-commit is disabled.
+         * </odoc>
+         */
+        protected void connect(String driver, String url, String login, String pass, String timeout) throws Exception {
 		//try {
 			if (OAFdCL.oafdcl != null) 
 				Class.forName(driver, true, OAFdCL.oafdcl);
