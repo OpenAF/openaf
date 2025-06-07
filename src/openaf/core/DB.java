@@ -753,14 +753,7 @@ public class DB {
 		}
 	}
 	
-        /**
-         * <odoc>
-         * <key>DB.connect(aDriver, aURL, aLogin, aPassword, aTimeout)</key>
-         * Establishes a JDBC connection using aDriver, aURL, aLogin and aPassword.
-         * The connection timeout can be provided via aTimeout in milliseconds and auto-commit is disabled.
-         * </odoc>
-         */
-        protected void connect(String driver, String url, String login, String pass, String timeout) throws Exception {
+    protected void connect(String driver, String url, String login, String pass, String timeout) throws Exception {
 		//try {
 			if (OAFdCL.oafdcl != null) 
 				Class.forName(driver, true, OAFdCL.oafdcl);
