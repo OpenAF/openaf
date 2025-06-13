@@ -215,7 +215,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		cjson: colorify,
 		cslon: ow.loadFormat().toCSLON,
 		jsmap: (res, isFull) => {
-			var _res = ow.template.html.parseMap(res, true)
+			var _res = ow.template.html.parseMap(res, true, __, true)
 			var _themeauto = ow.template.html.njsmapAutoTheme()
 			/*if (__flags.MD_DARKMODE == "auto") {
 				_themeauto = `<script>if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('njsmap_dark')</script>`
@@ -901,7 +901,7 @@ OpenWrap.template.prototype.md = {
 	 */
 	htmlArrayMap: function(anMapOrArray) {
 		var md = "<div>";
-        md = ow.template.html.parseMap(anMapOrArray);
+        md = ow.template.html.parseMap(anMapOrArray, __, __, true);
 		md += "</div>";
 
 		return md;
@@ -923,7 +923,7 @@ OpenWrap.template.prototype.md = {
 OpenWrap.template.prototype.html = {
 	/**
 	 * <odoc>
-	 * <key>ow.template.html.parseMap(aMapOrArray, genParts, forceDark, ) : Object</key>
+	 * <key>ow.template.html.parseMap(aMapOrArray, genParts, forceDark, newStyle) : Object</key>
 	 * Returns a string with a HTML representation of the aMapOrArray provided or, if genParts = true, a map with the style css and the out string necessary.
 	 * If forceDark = true it will force the dark mode.
 	 * </odoc>
@@ -951,11 +951,11 @@ OpenWrap.template.prototype.html = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.template.html.parseMapInHTML(aMapOrArray, forceDark) : String</key>
+	 * <key>ow.template.html.parseMapInHTML(aMapOrArray, forceDark, newStyle) : String</key>
 	 * Returns a full HTML page with the nJSMap representation of the aMapOrArray provided. If forceDark = true it will force the dark mode.
 	 * </odoc>
 	 */
-	parseMapInHTML: function(aMapOrArray, forceDark) {
+	parseMapInHTML: function(aMapOrArray, forceDark, newStyle) {
 		ow.loadTemplate()
 
 		var _themeauto = ow.template.html.njsmapAutoTheme()
@@ -971,7 +971,7 @@ OpenWrap.template.prototype.html = {
 		}
 		code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
-		return "<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
+		return "<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/" + (newStyle ? "nJSMap2.css" : "nJSMap.css") + "\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
 	},
 	/**
 	 * <odoc>

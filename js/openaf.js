@@ -13188,7 +13188,7 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			break
 		case "jsmap":
 		case "html":
-			var _res = ow.loadTemplate().html.parseMap(res, true)
+			var _res = ow.loadTemplate().html.parseMap(res, true, __, true)
 			return fnP("<html><meta charset=\"utf-8\"><style>" + _res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + _res.out + "</body></html>")
 		case "text":
 			return fnP(String(res))
