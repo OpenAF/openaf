@@ -923,12 +923,12 @@ OpenWrap.template.prototype.md = {
 OpenWrap.template.prototype.html = {
 	/**
 	 * <odoc>
-	 * <key>ow.template.html.parseMap(aMapOrArray, genParts, forceDark, newStyle) : Object</key>
+	 * <key>ow.template.html.parseMap(aMapOrArray, genParts, forceDark) : Object</key>
 	 * Returns a string with a HTML representation of the aMapOrArray provided or, if genParts = true, a map with the style css and the out string necessary.
 	 * If forceDark = true it will force the dark mode.
 	 * </odoc>
 	 */
-	parseMap: function(aMapOrArray, genParts, forceDark, newStyle) {
+	parseMap: function(aMapOrArray, genParts, forceDark) {
 		if (!isMap(aMapOrArray) && !isArray(aMapOrArray)) throw "aMapOrArray needs to be a map or an array.";
 		genParts = _$(genParts).isBoolean().default(false);
 
@@ -951,11 +951,11 @@ OpenWrap.template.prototype.html = {
 	},
 	/**
 	 * <odoc>
-	 * <key>ow.template.html.parseMapInHTML(aMapOrArray, forceDark, newStyle) : String</key>
+	 * <key>ow.template.html.parseMapInHTML(aMapOrArray, forceDark) : String</key>
 	 * Returns a full HTML page with the nJSMap representation of the aMapOrArray provided. If forceDark = true it will force the dark mode.
 	 * </odoc>
 	 */
-	parseMapInHTML: function(aMapOrArray, forceDark, newStyle) {
+	parseMapInHTML: function(aMapOrArray, forceDark) {
 		ow.loadTemplate()
 
 		var _themeauto = ow.template.html.njsmapAutoTheme()
