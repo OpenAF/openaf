@@ -845,7 +845,7 @@ OpenWrap.server.prototype.rest = {
 				code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
 				return String("<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>")*/
-				return String(ow.template.html.parseMapInHTML(r, __, true))
+				return String(ow.template.html.parseMapInHTML(r))
 			} else {
 				if (isString(r)) {
 					return r;
@@ -2971,7 +2971,7 @@ OpenWrap.server.prototype.httpd = {
 		code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
 		return aHTTPd.replyOKHTML("<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>")*/
-		return aHTTPd.replyOKHTML(ow.template.html.parseMapInHTML(aMapOrArray, __, true))
+		return aHTTPd.replyOKHTML(ow.template.html.parseMapInHTML(aMapOrArray))
 		//return aHTTPd.replyOKHTML("<html><style>" + res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + res.out + _themeauto + "</body></html>");
 	},
 

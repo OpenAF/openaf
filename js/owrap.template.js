@@ -215,7 +215,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		cjson: colorify,
 		cslon: ow.loadFormat().toCSLON,
 		jsmap: (res, isFull) => {
-			var _res = ow.template.html.parseMap(res, true, __, true)
+			var _res = ow.template.html.parseMap(res, true)
 			var _themeauto = ow.template.html.njsmapAutoTheme()
 			/*if (__flags.MD_DARKMODE == "auto") {
 				_themeauto = `<script>if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('njsmap_dark')</script>`
@@ -901,7 +901,7 @@ OpenWrap.template.prototype.md = {
 	 */
 	htmlArrayMap: function(anMapOrArray) {
 		var md = "<div>";
-        md = ow.template.html.parseMap(anMapOrArray, __, __, true);
+        md = ow.template.html.parseMap(anMapOrArray);
 		md += "</div>";
 
 		return md;
