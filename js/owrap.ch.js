@@ -30,10 +30,6 @@ OpenWrap.ch.prototype.__types = {
 			this.getKeys(aName).forEach((aK, aV) => {
 				aFunction(aK, parent.get(aName, aK));
 			});
-			/*this.__channels[aName].find(function(aKey) {
-				aFunction(aKey, parent.get(aName, aKey));
-				return aKey;
-			});*/
 		},
 		getKeys: function(aName, full) {
 			var keys = [];
@@ -1278,6 +1274,7 @@ OpenWrap.ch.prototype.__types = {
 	 *    - multipath (Boolean) Supports string keys with paths (e.g. ow.obj.setPath) (defaults to false)\
 	 *    - lock      (String)  If defined the filepath to a dummy file for filesystem lock while accessing the file\
 	 *    - gzip      (Boolean) If true the output file will be gzip (defaults to false)\
+	 *    - lz4       (Boolean) If true the output file will be lz4 (defaults to false)\
 	 *    - tmp       (Boolean) If true "file" will be temporary and destroyed upon execution/process end\
 	 * \
 	 * (*) - Be aware that althought there is a very small probability of collision between the unique id (sha-512) for filenames it still exists\
@@ -1298,11 +1295,20 @@ OpenWrap.ch.prototype.__types = {
 					return r
 				}
 			}
-
+			
 			if (m.yaml) {
 				if (m.gzip) {
 					try {
 						var is = io.readFileGzipStream(m.file)
+						r = af.fromYAML(af.fromInputStream2String(is))
+						if (m.multipart && isDef(m.key)) r = $a4m(r, m.key)
+						is.close()
+					} catch(e) {
+						if (String(e).indexOf("java.io.EOFException") < 0) throw e	
+					}
+				} else if (m.lz4) {
+					try {
+						var is = io.readFileLZ4Stream(m.file)
 						r = af.fromYAML(af.fromInputStream2String(is))
 						if (m.multipart && isDef(m.key)) r = $a4m(r, m.key)
 						is.close()
@@ -1316,6 +1322,14 @@ OpenWrap.ch.prototype.__types = {
 				if (m.gzip) {
 					try {
 						var is = io.readFileGzipStream(m.file)
+						r = jsonParse(af.fromInputStream2String(is), true)
+						is.close()
+					} catch(e) {
+						if (String(e).indexOf("java.io.EOFException") < 0) throw e	
+					}
+				} else if (m.lz4) {
+					try {
+						var is = io.readFileLZ4Stream(m.file)
 						r = jsonParse(af.fromInputStream2String(is), true)
 						is.close()
 					} catch(e) {
@@ -1342,12 +1356,20 @@ OpenWrap.ch.prototype.__types = {
 						var is = io.readFileGzipStream(m.path + "/" + _id + ".yaml.gz")
 						r = af.fromYAML(af.fromInputStream2String(is))
 						is.close()
+					} else if (m.lz4) {
+						var is = io.readFileLZ4Stream(m.path + "/" + _id + ".yaml.lz4")
+						r = af.fromYAML(af.fromInputStream2String(is))
+						is.close()
 					} else {
 						r = io.readFileYAML(m.path + "/" + _id + ".yaml")
 					}
 				} else {
 					if (m.gzip) {
 						var is = io.readFileGzipStream(m.path + "/" + _id + ".json.gz")
+						r = jsonParse(af.fromInputStream2String(is), true)
+						is.close()
+					} else if (m.lz4) {
+						var is = io.readFileLZ4Stream(m.path + "/" + _id + ".json.lz4")
 						r = jsonParse(af.fromInputStream2String(is), true)
 						is.close()
 					} else {
@@ -1369,6 +1391,10 @@ OpenWrap.ch.prototype.__types = {
 					var os = io.writeFileGzipStream(m.file)
 					ioStreamWrite(os, af.toYAML((m.multipart && isDef(m.key) ? $m4a(o, m.key) : o), m.multipart))
 					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.file)
+					ioStreamWriteBytes(os, af.toYAML((m.multipart && isDef(m.key) ? $m4a(o, m.key) : o), m.multipart))
+					os.close()
 				} else {
 					io.writeFileYAML(m.file, (m.multipart && isDef(m.key) ? $m4a(o, m.key) : o), m.multipart)
 				}
@@ -1376,6 +1402,10 @@ OpenWrap.ch.prototype.__types = {
 				if (m.gzip) {
 					var os = io.writeFileGzipStream(m.file)
 					ioStreamWrite(os, stringify(o, __, m.compact ? "" : __))
+					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.file)
+					ioStreamWriteBytes(os, stringify(o, __, m.compact ? "" : __))
 					os.close()
 				} else {
 					io.writeFileJSON(m.file, o, m.compact ? "" : __)
@@ -1391,6 +1421,10 @@ OpenWrap.ch.prototype.__types = {
 					var os = io.writeFileGzipStream(m.path + "/" + _id + ".yaml.gz")
 					ioStreamWrite(os, af.toYAML(v, m.multipart))
 					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.path + "/" + _id + ".yaml.lz4")
+					ioStreamWriteBytes(os, af.toYAML(v, m.multipart))
+					os.close()
 				} else {
 					io.writeFileYAML(m.path + "/" + _id + ".yaml", v, m.multipart)
 				}
@@ -1398,6 +1432,10 @@ OpenWrap.ch.prototype.__types = {
 				if (m.gzip) {
 					var os = io.writeFileGzipStream(m.path + "/" + _id + ".json.gz")
 					ioStreamWrite(os, stringify(v, __, m.compact ? "" : __))
+					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.path + "/" + _id + ".json.lz4")
+					ioStreamWriteBytes(os, stringify(v, __, m.compact ? "" : __))
 					os.close()
 				} else {
 					io.writeFileJSON(m.path + "/" + _id + ".json", v, m.compact ? "" : __)
@@ -1429,7 +1467,11 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].key       = _$(options.key, "options.key").isString().default(__);
 			this.__channels[aName].lock      = _$(options.lock, "options.lock").isString().default(__);
 			this.__channels[aName].gzip      = _$(options.gzip, "options.gzip").isBoolean().default(false)
+			this.__channels[aName].lz4       = _$(options.lz4, "options.lz4").isBoolean().default(false)
 			this.__channels[aName].tmp       = _$(options.tmp, "options.tmp").isBoolean().default(false)
+
+			if (this.__channels[aName].lz4) this.__channels[aName].gzip = false
+			if (this.__channels[aName].gzip) this.__channels[aName].lz4 = false
 
 			if (this.__channels[aName].multifile) {
 				this.__channels[aName].file = this.__channels[aName].path + "/index" + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : "")

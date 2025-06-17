@@ -9311,12 +9311,14 @@ IO.prototype.lz4 = function(anInput) {
 	if (isJavaArray(anInput) && !isJavaObject(anInput)) {
 		// It's not a Java stream
 		byteOut = new java.io.ByteArrayOutputStream()
+	} else {
+		byteOut = anInput
 	}
 	
 	var lz4Out
 	try {
 		lz4Out = new org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorOutputStream(byteOut)
-		lz4Out.write(anInput)rciy
+		lz4Out.write(anInput)
 	} catch(e) {
 		throw e
 	} finally {
@@ -9352,6 +9354,8 @@ IO.prototype.unlz4 = function(anInput) {
 	if (isJavaArray(anInput) && !isJavaObject(anInput)) {
 		// It's not a Java stream
 		byteIn = new java.io.ByteArrayInputStream(anInput)
+	} else {
+		byteIn = anInput
 	}
 
 	var resultOut = new java.io.ByteArrayOutputStream(), lz4In
