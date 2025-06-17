@@ -1345,10 +1345,10 @@ OpenWrap.ch.prototype.__types = {
 		},
 		__rf: (m, k) => {
 			var r = {};
-			var _tmpf = io.createTempFile("tmp-", "")
+			//var _tmpf = io.createTempFile("tmp-", "")
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 
-			if (!io.fileExists(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : ""))) {
+			if (!io.fileExists(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))) {
 				return __
 			} else {
 				if (m.yaml) {
@@ -1447,7 +1447,7 @@ OpenWrap.ch.prototype.__types = {
 		__df: (m, k) => {
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 			try {
-				io.rm(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : ""))
+				io.rm(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))
 			} catch(e) {
 				logErr("Error removing file: " + e)
 				throw e
@@ -1474,7 +1474,11 @@ OpenWrap.ch.prototype.__types = {
 			if (this.__channels[aName].gzip) this.__channels[aName].lz4 = false
 
 			if (this.__channels[aName].multifile) {
-				this.__channels[aName].file = this.__channels[aName].path + "/index" + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : "")
+				this.__channels[aName].file = this.__channels[aName].path + "/index" + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : (this.__channels[aName].lz4 ? ".lz4" : ""))
+			} else {
+				if (isUnDef(this.__channels[aName].file) || this.__channels[aName].file === "") {
+					this.__channels[aName].file = (isDef(this.__channels[aName].path) ? this.__channels[aName].path : ".") + "/data-" + aName + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : (this.__channels[aName].lz4 ? ".lz4" : ""))
+				}
 			}
 
 		},
@@ -1515,7 +1519,7 @@ OpenWrap.ch.prototype.__types = {
 			try {
 				m = this.__r(this.__channels[aName]);
 				if (this.__channels[aName].multifile) {
-					mv = Object.keys(m).map(k => this.__rf(this.__ch, jsonParse(k)))
+					mv = Object.keys(m).map(k => this.__rf(this.__channels[aName], jsonParse(k)))
 				} 
 			} finally {
 				this.__ul(this.__channels[aName]);
@@ -1560,7 +1564,7 @@ OpenWrap.ch.prototype.__types = {
 				var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
 
 				if (this.__channels[aName].multifile) {
-					var __id = this.__wf(this.__channels[aName], aK, aV)
+					var _id = this.__wf(this.__channels[aName], aK, aV)
 					if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
 						ow.obj.setPath(m, id, _id)
 					} else {
