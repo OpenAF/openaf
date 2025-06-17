@@ -9298,7 +9298,7 @@ IO.prototype.zip = function(targetDir, zipFile, logFn, logErrFn) {
 
 /**
  * <odoc>
- * <key>IO.prototype.lz4(anInput) : bytes</key>
+ * <key>io.lz4(anInput) : bytes</key>
  * Compresses anInput using LZ4 compression and returns the compressed bytes.
  * </odoc>
  */
@@ -9316,7 +9316,7 @@ IO.prototype.lz4 = function(anInput) {
 	var lz4Out
 	try {
 		lz4Out = new org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorOutputStream(byteOut)
-		lz4Out.write(anInput)
+		lz4Out.write(anInput)rciy
 	} catch(e) {
 		throw e
 	} finally {
@@ -9327,7 +9327,7 @@ IO.prototype.lz4 = function(anInput) {
 
 /**
  * <odoc>
- * <key>IO.prototype.readFileLZ4Stream(aFile) : InputStream</key>
+ * <key>io.readFileLZ4Stream(aFile) : InputStream</key>
  * Reads aFile as a LZ4 compressed file and returns the InputStream to read
  * from. This is useful to read large files that are compressed with LZ4 without decompressing them
  * into memory.
@@ -9341,7 +9341,7 @@ IO.prototype.writeFileLZ4Stream = function(aFile) {
 
 /**
  * <odoc>
- * <key>IO.prototype.unlz4(anInput) : Map/String</key>
+ * <key>io.unlz4(anInput) : Map/String</key>
  * Decompresses anInput using LZ4 compression and returns the decompressed map or string.
  * </odoc>
  */
@@ -9375,7 +9375,7 @@ IO.prototype.unlz4 = function(anInput) {
 
 /**
  * <odoc>
- * <key>IO.prototype.readFileLZ4Stream(aFile) : InputStream</key>
+ * <key>io.readFileLZ4Stream(aFile) : InputStream</key>
  * Reads aFile as a LZ4 compressed stream and returns the InputStream to read from.
  * This is useful to read large files that are compressed with LZ4 without decompressing them
  * into memory.
