@@ -9364,7 +9364,7 @@ IO.prototype.unlz4 = function(anInput) {
 			len = lz4In.read(buffer)
 		}
 	} catch(e) {
-		$err(e)
+		throw e
 	} finally {
 		if (isDef(lz4In)) lz4In.close()
 	}
