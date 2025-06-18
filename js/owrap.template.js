@@ -941,7 +941,7 @@ OpenWrap.template.prototype.html = {
 		var out = nJSMap(aMapOrArray, __, (__flags.MD_DARKMODE == "true" || forceDark ? true : __))
 		if (genParts) {
 			var res = {};
-			res.css = io.readFileString(getOpenAFJar() + "::css/nJSMap.css");
+			res.css = io.readFileString(getOpenAFJar() + "::css/nJSMap.css")
 			res.out = out;
 			
 			return res;
@@ -971,7 +971,7 @@ OpenWrap.template.prototype.html = {
 		}
 		code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
-		return "<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
+		return "<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/" + "nJSMap.css" + "\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
 	},
 	/**
 	 * <odoc>

@@ -102,6 +102,8 @@ OpenWrap.ai.prototype.__gpttypes = {
             aOptions.headers = _$(aOptions.headers, "aOptions.headers").isMap().default({})
             // If noSystem=true it will not output the system messages
             aOptions.noSystem = _$(aOptions.noSystem, "aOptions.noSystem").isBoolean().default(true)
+            aOptions.noResponseFormat = _$(aOptions.noResponseFormat, "aOptions.noResponseFormat").isBoolean().default(false)
+            aOptions.apiVersion = _$(aOptions.apiVersion, "aOptions.apiVersion").isString().default("v1")
 
             var _key = aOptions.key
             var _timeout = aOptions.timeout
@@ -188,7 +190,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         model: aModel,
                         temperature: aTemperature,
                         messages: msgs,
-                        response_format: (aJsonFlag ? { type: "json_object" } : __)
+                        response_format: (aOptions.noResponseFormat ? __ : (aJsonFlag  ? { type: "json_object" } : __))
                     }
                     body = merge(body, aOptions.params)
                     if (isArray(aTools) && aTools.length > 0) {
@@ -204,7 +206,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }
-                    var _res = _r._request("v1/chat/completions", body)   
+                    var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)   
                     if (isDef(_res) && isArray(_res.choices)) {
                         // call tools
                         var _p = [], stopWith = false
@@ -240,7 +242,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     msgs = aPrompt.map(c => isMap(c) ? c.content : c )
                  
                     _r.conversation = aPrompt
-                    return _r._request("v1/images/generations", merge({
+                    return _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "images/generations", merge({
                        model: aModel,
                        prompt: msgs.join("\n"),
                        response_format: "b64_json"
@@ -281,7 +283,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getModels: () => {
-                    var res = _r._request("v1/models", {}, "GET")
+                    var res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "models", {}, "GET")
                     if (isArray(res.data)) {
                         return res.data
                     } else {
