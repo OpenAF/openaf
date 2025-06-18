@@ -144,7 +144,7 @@ OpenWrap.ch.prototype.__types = {
 	 * <key>ow.ch.types.db</key>
 	 * This OpenAF channel implementation wraps access to a db table. The creation options are:\
 	 * \
-	 *    - db   (Database) The database object to access the database table.\
+	 *    - db   (Database) The database object to access the database table (or a JSON/SLON string with 'url', 'user', 'pass', 'timeout', 'driver').\
 	 *    - from (String)   The name of the database table or object (don't use double quotes).\
 	 *    - keys (Array)    An array of fields keys to use (don't use double quotes).\
 	 *    - cs   (Boolean)  Determines if the database is case sensitive for table and field names (defaults to false).\
@@ -168,10 +168,28 @@ OpenWrap.ch.prototype.__types = {
 			if (options.cs && isDef(options.keys)) {
 				options.keys = options.keys.map(k => "\"" + k + "\"");
 			}
+
+			// Check if db is a string or map to convert it to a DB object
+			if (isString(options.db) || isMap(options.db)) {
+				var _d = af.fromJSSLON(options.db)
+				// If we created the DB object, we need to close it when the channel is destroyed
+				options._closedb = true
+				if (isDef(_d.driver)) {
+					options.db = new DB(_d.driver, _d.url, _d.user, _d.pass, _d.timeout)
+				} else {
+					options.db = new DB(_d.url, _d.user, _d.pass, _d.timeout)
+				}
+			} else {
+				options._closedb = false
+			}
 			
 			this.__options[aName] = options;
 		},
 		destroy: function(aName) { 
+			// Close the database connection if it was created by this channel
+			if (this.__options[aName]._closedb && isDef(this.__options[aName].db)) {
+				this.__options[aName].db.close()
+			}
 			delete this.__options[aName];
 		},
 		size: function(aName) {
