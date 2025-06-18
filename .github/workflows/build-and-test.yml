@@ -116,8 +116,9 @@ jobs:
     # -------------------
     - name: Execute tests
       run : |
+        java -jar openaf.jar --install
         cd tests
-        java -jar ../openaf.jar --ojob -e "autoTestAll.yaml"
+        ../ojob autoTestAll.yaml
         
     # ------------------------------------
     - name: Convert autoTestAll.md to html
