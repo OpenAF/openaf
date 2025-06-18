@@ -402,18 +402,17 @@ OpenWrap.format.prototype.string = {
 	 * </odoc>
 	 */
 	bestPrefix: function(aString, aList) {
-		var maxLen = 0;
-		var maxPos = -1;
+		var maxLen = 0
+		var maxPos = -1
 
 		for(var i in aList) {
-			if (aString.lastIndexOf(aList[i]) > -1 &&
-				aList[i].length > maxLen) {
-				maxLen = aList[i].length;
-				maxPos = i;
+			if (aString.indexOf(aList[i]) === 0 && aList[i].length > maxLen) {
+				maxLen = aList[i].length
+				maxPos = i
 			}
 		}
 
-		return aList[maxPos];
+		return aList[maxPos]
 	},
 	
 	/**
@@ -1790,7 +1789,7 @@ OpenWrap.format.prototype.int2IP = function(ipInt) {
 
 /**
  * <odoc>
- * <key>ow.format.IP2Int(aIP) : String</key>
+ * <key>ow.format.IP2int(aIP) : String</key>
  * Converts an IP address into it's decimal IP address representation.
  * </odoc>
  */
@@ -2598,8 +2597,11 @@ OpenWrap.format.prototype.getTLSCertificates = function(aHost, aPort, withJava, 
 OpenWrap.format.prototype.testPublicPort = function(aPort) {
 	ow.loadNet();
 	return ow.net.testPublicPort(aPort);
-	/*plugin("HTTP");
-	return JSON.parse((new HTTP("http://ifconfig.co/port/" + String(aPort))).response());*/
+	/*_$(aPort, "port").isNumber().$_();
+	
+	var res = (new HTTP("http://ifconfig.co/port/" + String(aPort))).response();
+	return JSON.parse(res);
+	*/
 };
 
 /**
@@ -4132,19 +4134,19 @@ OpenWrap.format.prototype.xls = {
 	 * \
 	 * Color names:\ 
 	 * \
-	 * aqua,auto,black,blue,blue_grey,bright_green,brown,coral,cornflower_blue,dark_blue,dark_green,dark_red,dark_teal,
+	 *   aqua,auto,black,blue,blue_grey,bright_green,brown,coral,cornflower_blue,dark_blue,dark_green,dark_red,dark_teal,
 	 * dark_yellow,gold,green,grey25,grey40,grey50,grey80,indigo,lavender,lemon_chiffon,light_blue,light_cornflower_blue,
 	 * light_green,light_orange,light_turquoise,light_yellow,lime,maroon,olive_green,orange,orchid,pale_blue,pink,plum,
 	 * red,rose,royal_blue,sea_green,sky_blue,tan,teal,turquoise,violet,white,yellow\
 	 * \
 	 * Border names:\
 	 * \
-	 * dash_dot,dash_dot_dot,dashed,dotted,double,hair,medium,medium_dash_dot,medium_dash_dot_dot,medium_dashed,none,
+	 *   dash_dot,dash_dot_dot,dashed,dotted,double,hair,medium,medium_dash_dot,medium_dash_dot_dot,medium_dashed,none,
 	 * slanted_dash_dot,thick,thin\
 	 * \
 	 * Fill patterns:\
 	 * \
-	 * solid_foreground\
+	 *   solid_foreground\
 	 * \
 	 * </odoc>
 	 */
