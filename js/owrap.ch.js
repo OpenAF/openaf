@@ -1363,7 +1363,6 @@ OpenWrap.ch.prototype.__types = {
 		},
 		__rf: (m, k) => {
 			var r = {};
-			//var _tmpf = io.createTempFile("tmp-", "")
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 
 			if (!io.fileExists(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))) {
