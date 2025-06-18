@@ -30,10 +30,6 @@ OpenWrap.ch.prototype.__types = {
 			this.getKeys(aName).forEach((aK, aV) => {
 				aFunction(aK, parent.get(aName, aK));
 			});
-			/*this.__channels[aName].find(function(aKey) {
-				aFunction(aKey, parent.get(aName, aKey));
-				return aKey;
-			});*/
 		},
 		getKeys: function(aName, full) {
 			var keys = [];
@@ -148,7 +144,7 @@ OpenWrap.ch.prototype.__types = {
 	 * <key>ow.ch.types.db</key>
 	 * This OpenAF channel implementation wraps access to a db table. The creation options are:\
 	 * \
-	 *    - db   (Database) The database object to access the database table.\
+	 *    - db   (Database) The database object to access the database table (or a JSON/SLON string with 'url', 'user', 'pass', 'timeout', 'driver').\
 	 *    - from (String)   The name of the database table or object (don't use double quotes).\
 	 *    - keys (Array)    An array of fields keys to use (don't use double quotes).\
 	 *    - cs   (Boolean)  Determines if the database is case sensitive for table and field names (defaults to false).\
@@ -172,10 +168,28 @@ OpenWrap.ch.prototype.__types = {
 			if (options.cs && isDef(options.keys)) {
 				options.keys = options.keys.map(k => "\"" + k + "\"");
 			}
+
+			// Check if db is a string or map to convert it to a DB object
+			if (isString(options.db) || isMap(options.db)) {
+				var _d = af.fromJSSLON(options.db)
+				// If we created the DB object, we need to close it when the channel is destroyed
+				options._closedb = true
+				if (isDef(_d.driver)) {
+					options.db = new DB(_d.driver, _d.url, _d.user, _d.pass, _d.timeout)
+				} else {
+					options.db = new DB(_d.url, _d.user, _d.pass, _d.timeout)
+				}
+			} else {
+				options._closedb = false
+			}
 			
 			this.__options[aName] = options;
 		},
 		destroy: function(aName) { 
+			// Close the database connection if it was created by this channel
+			if (this.__options[aName]._closedb && isDef(this.__options[aName].db)) {
+				this.__options[aName].db.close()
+			}
 			delete this.__options[aName];
 		},
 		size: function(aName) {
@@ -459,11 +473,15 @@ OpenWrap.ch.prototype.__types = {
 	// (run operations from a channel)
 	/**
 	 * <odoc>
-	 * <key>ow.ch.types.ops</key>
-	 * This OpenAF channel implementation encapsulates access based on functions. The creation options a map of
-	 * keys where each value is a function.
-	 * </odoc>
-	 */
+         * <key>ow.ch.types.ops</key>
+         * This OpenAF channel implementation encapsulates access based on functions. The creation options are a map of
+         * keys where each value is a function.\
+         * \
+         * Example:\
+         * \
+         * ow.ch.create("logic", false, "ops", { hello: name => "hi " + name });\
+         * </odoc>
+         */
 	ops: {
 		__ops : {},
 		create       : function(aName, shouldCompress, options) { 
@@ -1274,6 +1292,7 @@ OpenWrap.ch.prototype.__types = {
 	 *    - multipath (Boolean) Supports string keys with paths (e.g. ow.obj.setPath) (defaults to false)\
 	 *    - lock      (String)  If defined the filepath to a dummy file for filesystem lock while accessing the file\
 	 *    - gzip      (Boolean) If true the output file will be gzip (defaults to false)\
+	 *    - lz4       (Boolean) If true the output file will be lz4 (defaults to false)\
 	 *    - tmp       (Boolean) If true "file" will be temporary and destroyed upon execution/process end\
 	 * \
 	 * (*) - Be aware that althought there is a very small probability of collision between the unique id (sha-512) for filenames it still exists\
@@ -1294,11 +1313,20 @@ OpenWrap.ch.prototype.__types = {
 					return r
 				}
 			}
-
+			
 			if (m.yaml) {
 				if (m.gzip) {
 					try {
 						var is = io.readFileGzipStream(m.file)
+						r = af.fromYAML(af.fromInputStream2String(is))
+						if (m.multipart && isDef(m.key)) r = $a4m(r, m.key)
+						is.close()
+					} catch(e) {
+						if (String(e).indexOf("java.io.EOFException") < 0) throw e	
+					}
+				} else if (m.lz4) {
+					try {
+						var is = io.readFileLZ4Stream(m.file)
 						r = af.fromYAML(af.fromInputStream2String(is))
 						if (m.multipart && isDef(m.key)) r = $a4m(r, m.key)
 						is.close()
@@ -1317,6 +1345,14 @@ OpenWrap.ch.prototype.__types = {
 					} catch(e) {
 						if (String(e).indexOf("java.io.EOFException") < 0) throw e	
 					}
+				} else if (m.lz4) {
+					try {
+						var is = io.readFileLZ4Stream(m.file)
+						r = jsonParse(af.fromInputStream2String(is), true)
+						is.close()
+					} catch(e) {
+						if (String(e).indexOf("java.io.EOFException") < 0) throw e	
+					}
 				} else {
 					r = io.readFileJSON(m.file)
 				}
@@ -1327,15 +1363,18 @@ OpenWrap.ch.prototype.__types = {
 		},
 		__rf: (m, k) => {
 			var r = {};
-			var _tmpf = io.createTempFile("tmp-", "")
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 
-			if (!io.fileExists(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : ""))) {
+			if (!io.fileExists(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))) {
 				return __
 			} else {
 				if (m.yaml) {
 					if (m.gzip) {
 						var is = io.readFileGzipStream(m.path + "/" + _id + ".yaml.gz")
+						r = af.fromYAML(af.fromInputStream2String(is))
+						is.close()
+					} else if (m.lz4) {
+						var is = io.readFileLZ4Stream(m.path + "/" + _id + ".yaml.lz4")
 						r = af.fromYAML(af.fromInputStream2String(is))
 						is.close()
 					} else {
@@ -1344,6 +1383,10 @@ OpenWrap.ch.prototype.__types = {
 				} else {
 					if (m.gzip) {
 						var is = io.readFileGzipStream(m.path + "/" + _id + ".json.gz")
+						r = jsonParse(af.fromInputStream2String(is), true)
+						is.close()
+					} else if (m.lz4) {
+						var is = io.readFileLZ4Stream(m.path + "/" + _id + ".json.lz4")
 						r = jsonParse(af.fromInputStream2String(is), true)
 						is.close()
 					} else {
@@ -1365,6 +1408,10 @@ OpenWrap.ch.prototype.__types = {
 					var os = io.writeFileGzipStream(m.file)
 					ioStreamWrite(os, af.toYAML((m.multipart && isDef(m.key) ? $m4a(o, m.key) : o), m.multipart))
 					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.file)
+					ioStreamWriteBytes(os, af.toYAML((m.multipart && isDef(m.key) ? $m4a(o, m.key) : o), m.multipart))
+					os.close()
 				} else {
 					io.writeFileYAML(m.file, (m.multipart && isDef(m.key) ? $m4a(o, m.key) : o), m.multipart)
 				}
@@ -1372,6 +1419,10 @@ OpenWrap.ch.prototype.__types = {
 				if (m.gzip) {
 					var os = io.writeFileGzipStream(m.file)
 					ioStreamWrite(os, stringify(o, __, m.compact ? "" : __))
+					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.file)
+					ioStreamWriteBytes(os, stringify(o, __, m.compact ? "" : __))
 					os.close()
 				} else {
 					io.writeFileJSON(m.file, o, m.compact ? "" : __)
@@ -1387,6 +1438,10 @@ OpenWrap.ch.prototype.__types = {
 					var os = io.writeFileGzipStream(m.path + "/" + _id + ".yaml.gz")
 					ioStreamWrite(os, af.toYAML(v, m.multipart))
 					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.path + "/" + _id + ".yaml.lz4")
+					ioStreamWriteBytes(os, af.toYAML(v, m.multipart))
+					os.close()
 				} else {
 					io.writeFileYAML(m.path + "/" + _id + ".yaml", v, m.multipart)
 				}
@@ -1394,6 +1449,10 @@ OpenWrap.ch.prototype.__types = {
 				if (m.gzip) {
 					var os = io.writeFileGzipStream(m.path + "/" + _id + ".json.gz")
 					ioStreamWrite(os, stringify(v, __, m.compact ? "" : __))
+					os.close()
+				} else if (m.lz4) {
+					var os = io.writeFileLZ4Stream(m.path + "/" + _id + ".json.lz4")
+					ioStreamWriteBytes(os, stringify(v, __, m.compact ? "" : __))
 					os.close()
 				} else {
 					io.writeFileJSON(m.path + "/" + _id + ".json", v, m.compact ? "" : __)
@@ -1405,7 +1464,7 @@ OpenWrap.ch.prototype.__types = {
 		__df: (m, k) => {
 			var _id = sha512(stringify(sortMapKeys(k, true)))
 			try {
-				io.rm(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : ""))
+				io.rm(m.path + "/" + _id + (m.yaml ? ".yaml" : ".json") + (m.gzip ? ".gz" : (m.lz4 ? ".lz4" : "")))
 			} catch(e) {
 				logErr("Error removing file: " + e)
 				throw e
@@ -1425,10 +1484,18 @@ OpenWrap.ch.prototype.__types = {
 			this.__channels[aName].key       = _$(options.key, "options.key").isString().default(__);
 			this.__channels[aName].lock      = _$(options.lock, "options.lock").isString().default(__);
 			this.__channels[aName].gzip      = _$(options.gzip, "options.gzip").isBoolean().default(false)
+			this.__channels[aName].lz4       = _$(options.lz4, "options.lz4").isBoolean().default(false)
 			this.__channels[aName].tmp       = _$(options.tmp, "options.tmp").isBoolean().default(false)
 
+			if (this.__channels[aName].lz4) this.__channels[aName].gzip = false
+			if (this.__channels[aName].gzip) this.__channels[aName].lz4 = false
+
 			if (this.__channels[aName].multifile) {
-				this.__channels[aName].file = this.__channels[aName].path + "/index" + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : "")
+				this.__channels[aName].file = this.__channels[aName].path + "/index" + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : (this.__channels[aName].lz4 ? ".lz4" : ""))
+			} else {
+				if (isUnDef(this.__channels[aName].file) || this.__channels[aName].file === "") {
+					this.__channels[aName].file = (isDef(this.__channels[aName].path) ? this.__channels[aName].path : ".") + "/data-" + aName + (this.__channels[aName].yaml ? ".yaml" : ".json") + (this.__channels[aName].gzip ? ".gz" : (this.__channels[aName].lz4 ? ".lz4" : ""))
+				}
 			}
 
 		},
@@ -1469,7 +1536,7 @@ OpenWrap.ch.prototype.__types = {
 			try {
 				m = this.__r(this.__channels[aName]);
 				if (this.__channels[aName].multifile) {
-					mv = Object.keys(m).map(k => this.__rf(this.__ch, jsonParse(k)))
+					mv = Object.keys(m).map(k => this.__rf(this.__channels[aName], jsonParse(k)))
 				} 
 			} finally {
 				this.__ul(this.__channels[aName]);
@@ -1514,7 +1581,7 @@ OpenWrap.ch.prototype.__types = {
 				var id = isDef(aK.key)   ? aK.key   : stringify(sortMapKeys(aK), __, "");
 
 				if (this.__channels[aName].multifile) {
-					var __id = this.__wf(this.__channels[aName], aK, aV)
+					var _id = this.__wf(this.__channels[aName], aK, aV)
 					if (isString(id) && id.indexOf(".") > 0 && this.__channels[aName].multipath) {
 						ow.obj.setPath(m, id, _id)
 					} else {
@@ -3049,9 +3116,13 @@ OpenWrap.ch.prototype.__types = {
 /**
  * <odoc>
  * <key>ow.ch.create(aName, shouldCompress, type, options) : ow.ch</key>
- * Creates a channel of key/values with aName. Optionally you can specify if keys should also 
+ * Creates a channel of key/values with aName. Optionally you can specify if keys should also
  * be compressed in memory (shouldCompress = true), a channels implementation type and corresponding
- * options in a map.
+ * options in a map.\
+ * \
+ * Example:\
+ * \
+ * ow.ch.create("myChan", false, "db", { db: myDB, from: "TABLE" });\
  * </odoc>
  */
 OpenWrap.ch.prototype.create = function(aName, shouldCompress, type, options) {

@@ -9298,6 +9298,101 @@ IO.prototype.zip = function(targetDir, zipFile, logFn, logErrFn) {
 
 /**
  * <odoc>
+ * <key>io.lz4(anInput) : bytes</key>
+ * Compresses anInput using LZ4 compression and returns the compressed bytes.
+ * </odoc>
+ */
+IO.prototype.lz4 = function(anInput) {
+	if (isUnDef(anInput)) return anInput
+	if (isMap(anInput) || isArray(anInput)) anInput = stringify(anInput, __, true)
+
+	var byteOut
+	if (isString(anInput)) anInput = af.fromString2Bytes(anInput)
+	if (isJavaArray(anInput) && !isJavaObject(anInput)) {
+		// It's not a Java stream
+		byteOut = new java.io.ByteArrayOutputStream()
+	} else {
+		byteOut = anInput
+	}
+	
+	var lz4Out
+	try {
+		lz4Out = new org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorOutputStream(byteOut)
+		lz4Out.write(anInput)
+	} catch(e) {
+		throw e
+	} finally {
+		if (isDef(lz4Out)) lz4Out.close()
+	}
+	return byteOut.toByteArray()
+}
+
+/**
+ * <odoc>
+ * <key>io.readFileLZ4Stream(aFile) : InputStream</key>
+ * Reads aFile as a LZ4 compressed file and returns the InputStream to read
+ * from. This is useful to read large files that are compressed with LZ4 without decompressing them
+ * into memory.
+ * </odoc>
+ */
+IO.prototype.writeFileLZ4Stream = function(aFile) {
+	var byteOut = io.writeFileStream(aFile)
+	var lz4Out = new org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorOutputStream(byteOut)
+	return lz4Out
+}
+
+/**
+ * <odoc>
+ * <key>io.unlz4(anInput) : Map/String</key>
+ * Decompresses anInput using LZ4 compression and returns the decompressed map or string.
+ * </odoc>
+ */
+IO.prototype.unlz4 = function(anInput) {
+	if (isUnDef(anInput)) return anInput
+	
+	var byteIn
+	if (isJavaArray(anInput) && !isJavaObject(anInput)) {
+		// It's not a Java stream
+		byteIn = new java.io.ByteArrayInputStream(anInput)
+	} else {
+		byteIn = anInput
+	}
+
+	var resultOut = new java.io.ByteArrayOutputStream(), lz4In
+	try {
+		lz4In = new org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream(byteIn)
+		var buffer = newJavaArray(java.lang.Byte.TYPE, __flags.IO.bufferSize)
+		var len = lz4In.read(buffer)
+		while (len !== -1) {
+			resultOut.write(buffer, 0, len)
+			len = lz4In.read(buffer)
+		}
+	} catch(e) {
+		throw e
+	} finally {
+		if (isDef(lz4In)) lz4In.close()
+	}
+
+	var out = resultOut.toString("UTF-8")
+	return jsonParse(out)
+}
+
+/**
+ * <odoc>
+ * <key>io.readFileLZ4Stream(aFile) : InputStream</key>
+ * Reads aFile as a LZ4 compressed stream and returns the InputStream to read from.
+ * This is useful to read large files that are compressed with LZ4 without decompressing them
+ * into memory.
+ * </odoc>
+ */
+IO.prototype.readFileLZ4Stream = function(aFile) {
+	var byteIn = io.readFileStream(aFile)
+	var lz4In = new org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream(byteIn)
+	return lz4In
+}
+
+/**
+ * <odoc>
  * <key>AF.toSLON(aObject, aTheme) : String</key>
  * Converts aObject map/array into SLON representation (see more in help for ow.format.toSLON)
  * </odoc>
