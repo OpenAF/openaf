@@ -126,7 +126,7 @@
         ow.test.assert($path({}, "envs('^PATH$')"), [ { name: 'PATH', value: getEnv("PATH") } ], "Problem with $path envs")
         ow.test.assert($path({}, "timeagoAbbr(now('5000'))"), "5secs", "Problem with $path timeagoAbbr")
         ow.test.assert($path({}, "date_diff(now('60000'), 'minutes', __)"), 1, "Problem with $path date_diff")
-        ow.test.assert($path({}, "to_bytesAbbr(`2048`)"), "2.00 KB", "Problem with $path to_bytesAbbr")
+        ow.test.assert($path({}, "to_bytesAbbr(`2048`)"), "2 KB", "Problem with $path to_bytesAbbr")
         ow.test.assert($path({}, "to_numAbbr(`2000`)"), "2k", "Problem with $path to_numAbbr")
         ow.test.assert($path({}, "from_siAbbr('2m')"), 0.002, "Problem with $path from_siAbbr")
         ow.test.assert($path({}, "from_timeAbbr('5s')"), 5000, "Problem with $path from_timeAbbr")

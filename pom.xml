@@ -3,7 +3,7 @@
  
   <groupId>openaf</groupId>
   <artifactId>openaf</artifactId>
-  <version>20240812</version>
+  <version>20250315</version>
   <packaging>pom</packaging>
   
   <build>
@@ -21,24 +21,39 @@
                 <version>3.13.0</version>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.5.1</version>
-                <executions>
-                    <execution>
-                        <id>default-package</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <executable>ojob</executable>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>exec-maven-plugin</artifactId>
+              <version>3.5.1</version>
+              <executions>
+                <execution>
+                  <id>ojob-build</id>
+                  <phase>compile</phase>
+                  <goals>
+                    <goal>exec</goal>
+                  </goals>
+                </execution>
+                <execution>
+                  <id>oaf-test</id>
+                  <phase>test</phase>
+                  <goals>
+                    <goal>exec</goal>
+                  </goals>
+                  <configuration>
+                    <executable>sh</executable>
                     <workingDirectory>.</workingDirectory>
                     <arguments>
-                        <argument>build.yaml</argument>
+                      <argument>oafTest.sh</argument>
                     </arguments>
-                </configuration>
+                  </configuration>
+                </execution>
+              </executions>
+              <configuration>
+                <executable>ojob</executable>
+                <workingDirectory>.</workingDirectory>
+                <arguments>
+                  <argument>build.yaml</argument>
+                </arguments>
+              </configuration>
             </plugin>   
             <plugin>
               <artifactId>maven-clean-plugin</artifactId>
