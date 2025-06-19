@@ -158,9 +158,9 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray,
 		aMap = ow.obj.flatMap(aMapOrArray[i])
 		var keys = Object.keys(aMap)
 		for(var ii in keys) {
-			var key = (enforceCase ? "\"" + keys[ii] + "\"" : keys[ii])
-		
-			var s 
+			var key = (enforceCase || keys[ii].match(/^[A-Z0-9_]+$/) ? "\"" + keys[ii] + "\"" : keys[ii])
+
+			var s
 			if (isDef(aOverrideMap[keys[ii]])) {
 				s = aOverrideMap[keys[ii]]
 				override.add(ii)
