@@ -47,6 +47,9 @@ ojob:
   depsTimeout: 300000  # If defined, represents the maximum elapsed time, in ms, from the first point in time a jobs[].deps was evaluated to determine if all deps had successfully executed
   templateArgs: true   # Boolean that if defined will process "{{ }}" handlebars entries on args using the "args" before the actual processing starts
   argsFromEnvs: true   # Boolean that if true will process the environment variables as args (e.g. ARG0=1234 will be available as args.arg0)
+  initTemplateEscape: false # If true escapes any '{{' in init so values won't be processed as templates
+  cronInLocalTime: false    # If true cron expressions are evaluated using local time instead of UTC
+  showHelp    : true   # Boolean to display help output when mandatory arguments are missing
 
   ## --- LOG CONTROL ---
 
@@ -127,6 +130,7 @@ ojob:
   - do coffee
   - do beer
   channels    :
+    recordLog  : false # Boolean to start OpenAF log recording on execution
     create:
     - name   : OpenAFChannelToCreate
       type   : typeOfChannel
@@ -284,6 +288,7 @@ jobs:
     pos     : # The same as ojob.langs.pos
     shell   : # The same as ojob.langs.shell
     timeout : 300000 # If defined the maximum time, in ms, that each execution can take before being forced to end
+    when    : [init]  # Array or value of states in which this job can run (see ow.oJob.setState)
     stopWhen: |
       // Javascript OpenAF code, using 'args', 'job', 'id' and 'deps' variables, that if returns true the job execution will be halted. 
       // The function will be executed when the defined timeout is reached.
