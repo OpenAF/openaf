@@ -5694,7 +5694,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 
 	ow.loadObj()
 	var pres = splitArray(range(anArray.length))
-    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic(), times = $atomic(), execs = $atomic()
+    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic(0, "long"), times = $atomic(), execs = $atomic(0, "long")
 	var _nc = getNumberOfCores()
 
 	// If not enough cores or if too many threads in the pool then go sequential
