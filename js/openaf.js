@@ -8982,6 +8982,24 @@ AF.prototype.fromJavaArray = function(aJavaArray) {
     }
     return ar;
 };
+
+/**
+ * <odoc>
+ * <key>AF.swap(anArray, anIndex1, anIndex2) : Array</key>
+ * Swaps the elements at anIndex1 and anIndex2 in anArray.
+ * Returns the new array with the elements swapped.
+ * </odoc>
+ */
+AF.prototype.swap = function(anArray, anIndex1, anIndex2) {
+	_$(anIndex1, "anIndex1").isNumber().$_()
+	_$(anIndex2, "anIndex2").isNumber().$_()
+	_$(anArray, "anArray").isArray().$_("Please provide an array to swap elements in.");
+
+	var pp = java.util.ArrayList(anArray)
+	java.util.Collections.swap(pp, anIndex1, anIndex2)
+	return af.fromJavaArray(pp)
+}
+
 /**
  * <odoc>
  * <key>AF.printStackTrace(aFunction) : Object</key>
