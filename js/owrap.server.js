@@ -2663,7 +2663,22 @@ OpenWrap.server.prototype.httpd = {
 				if (isFunction(parent.__routes[aPort][uri])) {
 					return parent.__routes[aPort][uri](req, aHTTPd);
 				} else {
-					var bp = ow.format.string.bestPrefix(uri, Object.keys(parent.__routes[aPort]));
+					//var bp = ow.format.string.bestPrefix(uri, Object.keys(parent.__routes[aPort]));
+					var bp
+					// Assign bp to the right parent.__routes[aPort] prefix uri to match the request uri
+					// or to the default route if no prefix matches
+					bp = Object.keys(parent.__routes[aPort]).reduce((best, aRoute) => {
+						if (
+							uri === aRoute ||
+							(uri.startsWith(aRoute) && uri.charAt(aRoute.length) === "/")
+						) {
+							if (isUnDef(best) || aRoute.length > best.length) {
+								return aRoute
+							}
+						}
+						return best
+					}, __)
+					// If we have a best prefix, then call the route function for that prefix	
 					if (isDef(bp))
 						return parent.__routes[aPort][bp](req, aHTTPd);
 					else
