@@ -3689,12 +3689,13 @@ OpenWrap.obj.prototype.syncArray.prototype.forEach = function(fn) {
  */
 OpenWrap.obj.prototype.schemaInit = function(aOptions) {
 	if (isUnDef(global.__ajv)) {
-		aOptions = _$(aOptions).isMap().default({
-			$data: true,
-			$comment: true,
-			useDefaults: true //,
-			//coerceTypes: true
-		});
+                aOptions = _$(aOptions).isMap().default({
+                        $data: true,
+                        $comment: true,
+                        useDefaults: true,
+                        strict: false //,
+                        //coerceTypes: true
+                });
 		loadAjv();
 		global.__ajv = new Ajv(aOptions);
 	}

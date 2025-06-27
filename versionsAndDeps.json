@@ -47,7 +47,7 @@
 		{
 			"description": "ajv",
 			"path": ["js/ajv.js"],
-			"version": "6.12.4",
+                        "version": "8.17.1",
 			"changes": false,
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/ajv-validator/ajv/master/LICENSE",

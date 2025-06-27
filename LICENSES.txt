@@ -309,7 +309,7 @@ THE SOFTWARE.
 
 -----------------------
 Third-party name      : ajv
-Version               : 6.12.4
+Version               : 8.17.1
 Changed from original : No
 Location in openaf.jar: js/ajv.js
 License               : 
