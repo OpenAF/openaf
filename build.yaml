@@ -59,6 +59,14 @@ jobs:
        is = io.readFileStream(global.path + "/docs/ojob-all.yaml")
        zip.streamPutFileStream(global.path + "/openaf.jar.orig", "docs/.ojob-all.yaml", is)
        is.close()
+
+       is = io.readFileStream(global.path + "/docs/ojob.md")
+       zip.streamPutFileStream(global.path + "/openaf.jar", "docs/.ojob.md", is)
+       is.close()
+
+       is = io.readFileStream(global.path + "/docs/ojob.md")
+       zip.streamPutFileStream(global.path + "/openaf.jar.orig", "docs/.ojob.md", is)
+       is.close()
  
    # -----------------------------
    - name : Prepare shell complete

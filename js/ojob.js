@@ -26,6 +26,11 @@ if (kparams.indexOf("-syntax") >= 0 && params["-syntax"] == "") {
 	ojob_showSyntax()
 }
 
+if (params["-reference"] != __ && params["-reference"] == "") {
+	delete params["-reference"]
+	ojob_showReference()
+}
+
 if (kparams.indexOf("-global") >= 0 && params["-global"] == "") {
 	delete params["-global"]
 	ojob_global()
@@ -112,6 +117,7 @@ function ojob_showHelp() {
 	print("  -deps          Draws a list of dependencies of todo jobs on a file.");
 	print("  -jobhelp (job) Display any available help information for a job.");
 	print("  -syntax        Display the ojob syntax in yaml.")
+	print("  -reference     Display the ojob reference in markdown.")
 	print("  -which         Determines from where an oJob will be loaded from.")
 	print("  -global        List global jobs for this installation.")
 	print("  -shortcuts     Lists the included ojob shortcuts.")
@@ -131,6 +137,13 @@ function ojob_showSyntax() {
 		}).join("\n")
 	}
 	print( _r )
+	ojob_shouldRun = false
+}
+
+function ojob_showReference() {
+	var _r = io.readFileString(getOpenAFJar() + "::" + "docs/.ojob.md")
+	__initializeCon()
+	$o(_r, { __format: "md" })
 	ojob_shouldRun = false
 }
 
