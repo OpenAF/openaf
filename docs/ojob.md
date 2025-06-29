@@ -1048,6 +1048,8 @@ todo:
   ((outPath)): "summary"
 ```
 
+> Use the OAF_MODEL environment variable to specify the LLM model to use similarily to OAFP_MODEL
+
 ### Job State Management
 
 ```yaml
