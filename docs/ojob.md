@@ -12,8 +12,8 @@ oJob is OpenAF's job orchestration framework that allows you to define, schedule
 6. [Including Other oJobs](#including-other-ojobs)
 7. [Job Definitions](#job-definitions)
 8. [Code Separation](#code-separation)
-9. [Advanced Features](#advanced-features)
-10. [Built-in Jobs](#built-in-jobs)
+9. [Built-in Jobs](#built-in-jobs)
+10. [Advanced Features](#advanced-features)
 11. [Examples](#examples)
 
 ## Basic Structure
@@ -355,93 +355,6 @@ todo:
     output: "result2.txt"
 ```
 
-### Built-in Shortcuts
-
-oJob provides many built-in shortcuts for common operations:
-
-```yaml
-todo:
-# Conditional execution
-- (if): "args.env == 'prod'"
-  ((then)): 
-  - "Production Job"
-  ((else)):
-  - "Development Job"
-  
-# Parallel execution
-- (parallel):
-  - "Job A"
-  - "Job B"
-  - "Job C"
-  
-# Set values
-- (set): myKey
-    value: "some value"
-  
-# Get values
-- (get): myKey
-  
-# File operations
-- (fileget): "config.json"
-  ((out)): config
-  
-# Channel operations
-- (ch): "myChannel"
-  ((op)): "set"
-  ((k)): { id: 1 }
-  ((v)): { name: "test" }
-  
-# Output formatting
-- (output): results
-  ((format)): "json"
-  
-# Template processing
-- (template): "Hello {{name}}!"
-  ((data)): { name: "World" }
-  
-# Ask for input
-- (ask): "Please enter your name"
-    
-# Wait/delay
-- (wait): 5000               # Wait 5 seconds
-  
-# Logging
-- (log): "Processing started"
-  ((level)): "INFO"
-  
-# Run external oJob
-- (runfile): "external.yaml"
-  ((args)): { param: "value" }
-  
-# Repeat operations
-- (repeat): 3
-  ((todo)):
-  - "Repeated Job"
-  
-# Each loop
-- (each): "items"
-  ((todo)):
-  - "Process Item"
-  
-# Query data
-- (query): "[?status=='active']"
-  ((from)): "data"
-  ((to)): "activeItems"
-  
-# State management
-- (state): "processing"
-- (stateOn): "processing"
-  ((default)): "Continue Processing"
-  
-# Debug
-- (debug):                   # Pause for debugging
-  
-# Conversion
-- (convert): "inputData"
-  ((outFormat)): "yaml"
-  ((outKey)): "yamlData"
-```
-
 ## Including Other oJobs
 
 ### Include Complete oJobs
@@ -744,7 +657,263 @@ jobs:
   #   file: "config.json"
 ```
 
+## Built-in Jobs
+
+oJob includes many built-in jobs for common operations. These are available when `ojob.includeOJob` is true (default).
+
+### Common Built-in Jobs
+
+**Core Execution Jobs:**
+- `ojob pass` - Placeholder/pass job to allow for arguments injection
+- `ojob parallel` - Execute jobs in parallel
+- `ojob if` - Conditional execution based on conditions
+- `ojob repeat` - Repeats sequentially for a specific number of times
+- `ojob repeat with each` - Repeats for each element in a provided list
+- `ojob run` - Execute a single job with specific arguments
+- `ojob run file` - Execute external YAML/JSON ojob files or remote URLs
+- `ojob todo` - Execute an ojob sub-todo list
+- `ojob wait` - Wait for a specific amount of time
+- `ojob exit` - End all processing with an exit code
+
+**Data Management Jobs:**
+- `ojob get` - Retrieve a specific map key or path using $get
+- `ojob set` - Set a key with current value or provided data using $set
+- `ojob unset` - Unset a key using $unset
+- `ojob get pm` - Get process manager data
+- `ojob file get` - Retrieve data from YAML or JSON files
+- `ojob query` - Perform queries using ow.obj.filter on existing args
+- `ojob convert` - Convert string content into internal objects (map/array)
+- `ojob split to items` - Split strings into arrays
+
+**Output and Logging Jobs:**
+- `ojob output` - Print current arguments to console with formatting
+- `ojob print` - Print a message line using OpenAF templates
+- `ojob print md` - Parse and display simple ASCII markdown
+- `ojob log` - Log a message line using OpenAF templates
+- `ojob debug` - Output current args and res values for debugging
+
+**Template and Processing Jobs:**
+- `ojob template` - Apply OpenAF templates over provided data
+- `ojob template folder` - Process template folders recursively
+- `ojob find/replace` - Perform in-memory find/replace operations
+- `ojob function` - Execute OpenAF functions dynamically
+- `ojob oafp` - OpenAF Processing operations for data transformation
+
+**Channel Operations:**
+- `ojob channel` - Provide operations over OpenAF channels
+
+**Security and Environment:**
+- `ojob sec get` - Get SBucket secrets and map to oJob args
+- `ojob set envs` - Set job args based on environment variables
+
+**State Management:**
+- `ojob state` - Change the current execution state
+- `ojob set state` - Set the current state
+- `ojob get state` - Get the current state into args.state
+
+**Interactive and User Input:**
+- `ojob ask` - Interactive prompts for user input
+- `ojob questions` - Handle multiple interactive questions
+
+**Planning and Validation:**
+- `ojob check` - Check and validate inputs with actions
+- `ojob job` - Organize idempotent jobs with checks and actions
+- `ojob options` - Handle switch/options based execution
+
+**AI and Advanced Processing:**
+- `ojob llm` - Execute LLM (Local Language Model) prompts
+
+**Reporting Jobs:**
+- `ojob report` - Output job execution reports
+- `ojob job report` - Output job planning reports  
+- `ojob deps report` - Output dependency tree reports
+- `ojob final report` - Output reports upon ojob termination
+- `ojob final deps report` - Output dependency reports upon termination
+- `ojob job final report` - Output job reports upon termination
+
+### Built-in Job Shortcuts
+
+oJob provides many built-in shortcuts for common operations:
+
+```yaml
+todo:
+# Conditional execution
+- (if): "args.env == 'prod'"
+  ((then)): 
+  - "Production Job"
+  ((else)):
+  - "Development Job"
+  
+# Parallel execution
+- (parallel):
+  - "Job A"
+  - "Job B"
+  - "Job C"
+  
+# Set values
+- (set): myKey
+    value: "some value"
+  
+# Get values
+- (get): myKey
+  
+# File operations
+- (fileget): "config.json"
+  ((out)): config
+  
+# Channel operations
+- (ch): "myChannel"
+  ((op)): "set"
+  ((k)): { id: 1 }
+  ((v)): { name: "test" }
+  
+# Output formatting
+- (output): results
+  ((format)): "json"
+  
+# Template processing
+- (template): "Hello {{name}}!"
+  ((data)): { name: "World" }
+  
+# Ask for input
+- (ask): "Please enter your name"
+    
+# Wait/delay
+- (wait): 5000               # Wait 5 seconds
+  
+# Logging
+- (log): "Processing started"
+  ((level)): "INFO"
+  
+# Run external oJob
+- (runfile): "external.yaml"
+  ((args)): { param: "value" }
+  
+# Repeat operations
+- (repeat): 3
+  ((todo)):
+  - "Repeated Job"
+  
+# Each loop
+- (each): "items"
+  ((todo)):
+  - "Process Item"
+  
+# Query data
+- (query): "[?status=='active']"
+  ((from)): "data"
+  ((to)): "activeItems"
+  
+# State management
+- (state): "processing"
+- (stateOn): "processing"
+  ((default)): "Continue Processing"
+  
+# Debug
+- (debug):                   # Pause for debugging
+  
+# Conversion
+- (convert): "inputData"
+  ((outFormat)): "yaml"
+  ((outKey)): "yamlData"
+```
+
+### Specialized Built-in Jobs
+
+oJob includes many more built-in jobs for specific operations:
+
+```yaml
+todo:
+# Security operations
+- (secget): "mySecretKey"
+  ((secRepo)): "secrets"
+  ((secBucket)): "app-secrets"
+
+# Print markdown
+- (printmd): |
+    # Status Report
+    Current status: {{status}}
+  
+# Function execution  
+- (fn): "myFunction"
+  ((args)): { param: "value" }
+  
+# Split operations
+- (split): "item1,item2,item3"
+  ((sep)): ","
+  ((outPath)): "items"
+  
+# Options/switch operations
+- (options): "environment"
+  ((dev)):
+  - "Development Job"
+  ((prod)):
+  - "Production Job"
+  
+# Environment variable setting
+- (setenvs):
+    DATABASE_URL: "{{config.db.url}}"
+    API_KEY: "{{secrets.apikey}}"
+    
+# Job planning and checking
+- (check): "Validation Job"
+  ((actions)):
+    create: "Create Resource"
+    update: "Update Resource"
+    
+# Find and replace operations
+- (replace): "input text"
+  ((replace)): "old"
+  ((with)): "new"
+  ((outPath)): "result"
+  
+# OAFP (OpenAF Processing) operations
+- (oafp): "data"
+  ((from)): "json"
+  ((to)): "yaml"
+  ((outPath)): "convertedData"
+
+# LLM Integration
+- (llm): "Summarize the following data in 3 bullet points"
+  ((inKey)): "salesData"
+  ((inPath)): "records"
+  ((context)): "monthly sales figures"
+  ((outPath)): "summary"
+```
+
 ## Advanced Features
+
+### Job Each Processing
+
+The `each` section allows a job to call other jobs in parallel for each element in a list or array:
+
+```yaml
+jobs:
+# Example: Process multiple files in parallel
+- name: List files to process
+  from:
+  - (pass  ):
+      aFilePath: "."
+  - (fn    ): io.listFiles
+    ((key )): res
+  each: 
+  - Process file
+  exec: | #js
+    $get("res").files.forEach(file => {
+      print(`⚙️ Processing file ${file.canonicalPath}...`)
+      each(file)
+    })
+
+- name: Process file
+  exec: | #js
+    print(`  🗂️ file ${args.canonicalPath} with ${args.size} bytes processed.`)
+```
+
+The `each` functionality:
+- Calls the specified jobs in parallel
+- Passes the current arguments as the `each(data)` parameter
+- Each call receives the data passed to the `each()` function
+- Useful for parallel processing of collections
 
 ### State Management
 
@@ -804,216 +973,307 @@ jobs:
     args.message = templify(template, data)
 ```
 
-## Built-in Jobs
+### Job Shortcut Support
 
-oJob includes many built-in jobs for common operations. These are available when `ojob.includeOJob` is true (default).
+oJob supports shortcut definitions that create convenient shorthand syntax for jobs:
 
-### Common Built-in Jobs
+```yaml
+jobs:
+- name: "My Custom Job"
+  typeArgs:
+    shortcut:
+      name: "mycustom"         # Creates (mycustom) shortcut
+      keyArg: "inputValue"     # Main argument for the shortcut
+      args:                    # Mapping of shortcut args to job args
+        output: "__output"     # Creates ((output)) shortcut arg
+        format: "__format"     # Creates ((format)) shortcut arg
+  exec: |
+    // Job logic here
+```
 
-- `ojob parallel` - Execute jobs in parallel
-- `ojob if` - Conditional execution
-- `ojob output` - Format and display output
-- `ojob set` - Set variables
-- `ojob get` - Get variables
-- `ojob template` - Process templates
-- `ojob channel` - Channel operations
-- `ojob run file` - Execute external oJobs
-- `ojob log` - Logging
-- `ojob wait` - Delays and waits
-- `ojob ask` - Interactive prompts
-- `ojob query` - Data querying
-- `ojob repeat` - Loops and repetition
+Usage in todo:
+```yaml
+todo:
+- (mycustom): "input data"
+  ((output)): "result"
+  ((format)): "json"
+```
 
-## Examples
+### Job Security Features
 
-### Simple Data Processing
+```yaml
+jobs:
+- name: "Secure Job"
+  exec: |
+    // Access secure data using SBucket
+    var secret = $sec("mysecrets", "mypassword").get("apikey")
+    
+todo:
+- (secget): "database.password"
+  ((secRepo)): "myrepo"
+  ((secBucket)): "secrets"
+```
+
+### Job Markdown Support
+
+```yaml
+todo:
+- (printmd): |
+    # My Report
+    
+    Processing completed with {{results.count}} items.
+    
+    ## Results:
+    {{#each results.items}}
+    - **{{name}}**: {{status}}
+    {{/each}}
+  ((outputMD)): false  # Parse as markdown (default)
+```
+
+### Job LLM Integration
+
+```yaml
+jobs:
+- name: "AI Analysis"
+  exec: |
+    var prompt = "Analyze this data and provide insights"
+    var result = $llm().withContext(args.data, "sales data").promptJSON(prompt)
+    args.analysis = result
+
+todo:
+- (llm): "Summarize the following data in 3 bullet points"
+  ((inKey)): "salesData"
+  ((inPath)): "records"
+  ((context)): "monthly sales figures"
+  ((outPath)): "summary"
+```
+
+### Job State Management
+
+```yaml
+jobs:
+- name: "State Dependent Job"
+  typeArgs:
+    when: ["processing", "ready"]  # Only run in these states
+  exec: |
+    // This job only runs when state is 'processing' or 'ready'
+    
+todo:
+- (state): "initializing"
+- "Setup Job"
+- (state): "processing" 
+- "State Dependent Job"
+```
+
+### Additional Built-in Jobs
+
+oJob includes many more built-in jobs for specific operations:
+
+```yaml
+todo:
+# Security operations
+- (secget): "mySecretKey"
+  ((secRepo)): "secrets"
+  ((secBucket)): "app-secrets"
+
+# Print markdown
+- (printmd): |
+    # Status Report
+    Current status: {{status}}
+  
+# Function execution  
+- (fn): "myFunction"
+  ((args)): { param: "value" }
+  
+# Split operations
+- (split): "item1,item2,item3"
+  ((sep)): ","
+  ((outPath)): "items"
+  
+# Options/switch operations
+- (options): "environment"
+  ((dev)):
+  - "Development Job"
+  ((prod)):
+  - "Production Job"
+  
+# Environment variable setting
+- (setenvs):
+    DATABASE_URL: "{{config.db.url}}"
+    API_KEY: "{{secrets.apikey}}"
+    
+# Job planning and checking
+- (check): "Validation Job"
+  ((actions)):
+    create: "Create Resource"
+    update: "Update Resource"
+    
+# Find and replace operations
+- (replace): "input text"
+  ((replace)): "old"
+  ((with)): "new"
+  ((outPath)): "result"
+  
+# OAFP (OpenAF Processing) operations
+- (oafp): "data"
+  ((from)): "json"
+  ((to)): "yaml"
+  ((outPath)): "convertedData"
+```
+
+### Advanced Data Pipeline with Each
 
 ```yaml
 help:
-  text: "Process CSV data and generate report"
+  text: "Advanced data processing pipeline with parallel file processing"
   expects:
-  - name: inputFile
-    desc: "CSV file to process"
-    mandatory: true
-  - name: outputFormat
-    desc: "Output format"
-    options: ["json", "yaml", "xml"]
+  - name: inputDir
+    desc: "Directory containing files to process"
+    example: "/data/input"
+  - name: outputDir
+    desc: "Directory for processed results"
+    example: "/data/output"
+
+ojob:
+  async: false
+  logToConsole: true
+  shareArgs: true
+  metrics:
+    passive: true
+    port: 8080
 
 init:
-  outputFormat: json
+  batchSize: 10
+  maxRetries: 3
 
 jobs:
-- name: Load Data
+- name: "Initialize Processing"
   check:
     in:
-        inputFile: isString
+      inputDir: isString
+      outputDir: isString
   exec: |
-    args.data = $csv().fromFile(args.inputFile).getList()
-    log("Loaded " + args.data.length + " records")
-
-- name: Process Data
-  deps: 
-  - Load Data
+    // Validate directories and setup
+    if (!io.fileExists(args.inputDir)) {
+      throw "Input directory does not exist: " + args.inputDir
+    }
+    io.mkdir(args.outputDir)
+    args.startTime = now()
+    
+- name: "Scan Files"
+  deps: ["Initialize Processing"]
+  each: ["Process File Batch"]
   exec: |
-    args.processed = args.data.map(row => {
-        row.processed_at = new Date().toISOString()
-        row.status = 'processed'
-        return row
+    var files = io.listFilenames(args.inputDir)
+    var batches = []
+    
+    // Group files into batches
+    for(var i = 0; i < files.length; i += args.init.batchSize) {
+      batches.push(files.slice(i, i + args.init.batchSize))
+    }
+    
+    print("Processing " + files.length + " files in " + batches.length + " batches")
+    
+    // Process each batch in parallel using 'each'
+    batches.forEach(batch => {
+      each({ 
+        batch: batch, 
+        batchId: batches.indexOf(batch),
+        inputDir: args.inputDir,
+        outputDir: args.outputDir
+      })
     })
 
-- name: Generate Output
-  deps: 
-  - Process Data
+- name: "Process File Batch"
+  typeArgs:
+    timeout: 60000
+    lock: "file-processing"
   exec: |
-    switch(args.outputFormat) {
-    case 'yaml':
-        io.writeFileString("output.yaml", af.toYAML(args.processed))
-        break
-    case 'xml':
-        io.writeFileString("output.xml", af.toXML(args.processed))
-        break
-    default:
-        io.writeFileString("output.json", stringify(args.processed, "", 2))
-    }
-    log("Output written to output." + args.outputFormat)
+    var processed = 0
+    var errors = []
+    
+    args.batch.forEach(filename => {
+      try {
+        var inputPath = args.inputDir + "/" + filename
+        var outputPath = args.outputDir + "/" + filename + ".processed"
+        
+        // Simulate file processing
+        var data = io.readFileString(inputPath)
+        var result = "PROCESSED: " + data.toUpperCase()
+        io.writeFileString(outputPath, result)
+        
+        processed++
+        print("✓ Processed: " + filename)
+      } catch(e) {
+        errors.push({ file: filename, error: e })
+        logErr("Failed to process " + filename + ": " + e)
+      }
+    })
+    
+    print("Batch " + args.batchId + " completed: " + processed + " files, " + errors.length + " errors")
+
+- name: "Generate Report"
+  deps: ["Scan Files"]
+  exec: |
+    var duration = now() - args.startTime
+    var totalFiles = io.listFilenames(args.outputDir).length
+    
+    print("Processing completed in " + duration + "ms")
+    print("Total files processed: " + totalFiles)
 
 todo:
-- Load Data
-- Process Data
-- Generate Output
+- "Initialize Processing"
+- "Scan Files" 
+- "Generate Report"
 ```
 
-### Scheduled Monitoring
+### Advanced Monitoring and Metrics
 
 ```yaml
 ojob:
   daemon: true
-  logToConsole: true
-
-init:
-  checkInterval: 300000  # 5 minutes
-  alertThreshold: 90
-
-jobs:
-- name: Check System Health
-  type: periodic
-  typeArgs:
-    timeInterval: "{{init.checkInterval}}"
-    waitForFinish: true
-  exec: |
-    var cpuUsage = ow.metrics.get().cpu.usage
-    var memUsage = ow.metrics.get().mem.usage
-    
-    if (cpuUsage > args.init.alertThreshold) {
-      log("HIGH CPU USAGE: " + cpuUsage + "%")
-    }
-    
-    if (memUsage > args.init.alertThreshold) {
-      log("HIGH MEMORY USAGE: " + memUsage + "%")
-    }
-
-todo:
-- Check System Health
-```
-
-### API Data Pipeline
-
-```yaml
-ojob:
-  channels:
-    create:
-    - name: apiData
-      type: simple
-
-init:
-  apiUrl: "https://api.example.com/data"
-  batchSize: 100
-
-jobs:
-- name: Fetch API Data
-  type: periodic
-  typeArgs:
-    cron: "0 */10 * * * *"  # Every 10 minutes
-  exec: |
-    var response = $rest().get(args.init.apiUrl)
-    $ch("apiData").setAll(["id"], response.data)
-    log("Fetched " + response.data.length + " records")
-
-- name: Process Batch
-  type: subscribe
-  typeArgs:
-    chSubscribe: apiData
-  exec: |
-    if (op == "setall") {
-        var batch = $ch("apiData").getAll()
-        if (batch.length >= args.init.batchSize) {
-          // Process batch
-          batch.forEach(record => {
-            record.processed = true
-            record.processedAt = now()
-          })
-          
-          // Clear processed data
-          $ch("apiData").unsetAll(["id"], batch)
-          log("Processed batch of " + batch.length + " records")
+  metrics:
+    active:
+      nattrmon:
+        url: "http://monitor:7777/remote"
+        attrPrefix: "DataPipeline/"
+        periodInMs: 30000
+    collect:
+      ch: "metricsHistory"
+      period: 10000
+      some: ["mem", "cpu", "custom-throughput"]
+    add:
+      custom-throughput: |
+        return { 
+          value: $get("processedFiles") || 0,
+          timestamp: now() 
         }
-    }
-
-todo:
-- Fetch API Data
-- Process Batch
-```
-
-### Interactive Setup
-
-```yaml
-help:
-  text: Interactive application setup
 
 jobs:
-- name: Gather Configuration
+- name: "Health Check"
+  type: periodic
+  typeArgs:
+    cron: "*/30 * * * * *"  # Every 30 seconds
+    cronCheck: |
+      return ow.oJob.getState() === "running"
   exec: |
-    args.config = {}
-      
-- name: Database Setup
-  deps: 
-  - Gather Configuration
-  exec: |
-    var dbHost = ask("Database host: ", "localhost")
-    var dbPort = ask("Database port: ", "5432")
-    var dbName = ask("Database name: ")
-      
-    args.config.database = {
-        host: dbHost,
-        port: Number(dbPort),
-        name: dbName
+    var health = {
+      status: "healthy",
+      uptime: now() - $get("startTime"),
+      processed: $get("processedFiles") || 0
     }
+    $ch("health").set("current", health)
 
-- name: API Configuration
-  deps: 
-  - Gather Configuration
+- name: "Cleanup Old Files"
+  type: periodic  
+  typeArgs:
+    cron: "0 0 2 * * *"  # Daily at 2 AM
   exec: |
-    var apiUrl = ask("API URL: ")
-    var apiKey = ask("API Key: ", null, null, true) // secret
-      
-    args.config.api = {
-        url: apiUrl,
-        key: apiKey
-    }
-
-- name: Save Configuration
-  deps: 
-  - Database Setup
-  - API Configuration
-  exec: |
-    io.writeFileString("config.json", stringify(args.config, "", 2))
-    log("Configuration saved to config.json")
+    var cutoff = now() - (7 * 24 * 60 * 60 * 1000)  # 7 days ago
+    // Cleanup logic here
 
 todo:
-- Gather Configuration
-- Database Setup
-- API Configuration
-- Save Configuration
+- (state): "running"
+- "Health Check"
+- "Cleanup Old Files"
 ```
-
-This comprehensive guide covers all aspects of creating and using oJob YAML files. For more specific use cases and advanced patterns, refer to the OpenAF documentation and the extensive library of built-in jobs available in the oJob ecosystem.
