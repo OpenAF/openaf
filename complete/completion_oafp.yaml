@@ -155,6 +155,8 @@ complete:
     opts:
     - name: inmdtablejoin=
       desc: Scans an entire markdown input for tables and returns an array with the data of each markdown table
+  - name: in=mdcode
+    desc: A Markdown code blocks format
   - name: in=ndjson
     desc: A NDJSON (new-line delimited JSON) format
     opts:
