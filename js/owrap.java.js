@@ -1724,7 +1724,7 @@ OpenWrap.java.prototype.cipher.prototype.genCertBC = function(aDn, aPubKey, aPri
 
         var ks = java.security.KeyStore.getInstance(aKeyStoreType)
         ks.load(null, null)
-        ks.setKeyEntry("main", aPrivKey, (new java.lang.String(aPassword)).toCharArray(), [ certificate ])
+        ks.setKeyEntry("main", aPrivKey, (new java.lang.String(aPassword)).toCharArray(), [ certHolder ])
         var fos = io.writeFileStream(aKeyStore)
         ks.store(fos, (new java.lang.String(aPassword)).toCharArray())
         fos.close()
