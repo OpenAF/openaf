@@ -382,7 +382,7 @@ Jobs are the building blocks of oJob. Each job defines a unit of work.
 
 ```yaml
 jobs:
-- name: "Basic Job"
+- name: "Basic Job"          # unique name (mandatory)
   type: simple               # Job type (default)
   exec: |                    # Code to execute
     print("Hello from " + job.name)
