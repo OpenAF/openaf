@@ -2663,7 +2663,22 @@ OpenWrap.server.prototype.httpd = {
 				if (isFunction(parent.__routes[aPort][uri])) {
 					return parent.__routes[aPort][uri](req, aHTTPd);
 				} else {
-					var bp = ow.format.string.bestPrefix(uri, Object.keys(parent.__routes[aPort]));
+					//var bp = ow.format.string.bestPrefix(uri, Object.keys(parent.__routes[aPort]));
+					var bp
+					// Assign bp to the right parent.__routes[aPort] prefix uri to match the request uri
+					// or to the default route if no prefix matches
+					bp = Object.keys(parent.__routes[aPort]).reduce((best, aRoute) => {
+						if (
+							uri === aRoute ||
+							(uri.startsWith(aRoute) && uri.charAt(aRoute.length) === "/")
+						) {
+							if (isUnDef(best) || aRoute.length > best.length) {
+								return aRoute
+							}
+						}
+						return best
+					}, __)
+					// If we have a best prefix, then call the route function for that prefix	
 					if (isDef(bp))
 						return parent.__routes[aPort][bp](req, aHTTPd);
 					else
@@ -2750,7 +2765,6 @@ OpenWrap.server.prototype.httpd = {
 		aMapOfRoutes["/css/github-gist.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/github-gist.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/github-markdown.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/github-markdown.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/nJSMap.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/nJSMap.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
-		aMapOfRoutes["/css/nJSMap2.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/nJSMap2.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) }
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.eot"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.eot", true), ow.server.httpd.mimes.EOT, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.svg"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.svg", true), ow.server.httpd.mimes.SVG, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/fonts/material-design-icons/Material-Design-Icons.ttf"] = function() { return aHTTPd.replyBytes(ow.server.httpd.getFromOpenAF("fonts/material-design-icons/Material-Design-Icons.ttf", true), ow.server.httpd.mimes.TTF, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
@@ -3055,19 +3069,21 @@ OpenWrap.server.prototype.httpd = {
 
 	/**
      * <odoc>
-     * <key>ow.server.httpd.replyJSONRPC(server, request, mapOfFunctions) : Map</key>
+     * <key>ow.server.httpd.replyJSONRPC(server, request, mapOfFunctions, logFn, debugFn) : Map</key>
      * Implements a JSON-RPC 2.0 endpoint using the provided mapOfFunctions. The request must be a POST with a JSON-RPC body.\
+	 * Optionally you can provide logFn and debugFn functions to log errors and debug information respectively.\
 	 * \
      * Example usage:\
      *   ow.server.httpd.route(hs, {\
-     *     "/rpc": (req) => ow.server.httpd.replyJSONRPC(hs, req, { sum: (a, b) => a + b })\
+     *     "/rpc": (req) => ow.server.httpd.replyJSONRPC(hs, req, { sum: (a, b) => a + b }, logErr, log) \
      *   })\
 	 * 
      * </odoc>
      */
-    replyJSONRPC: function(server, request, mapOfFunctions) {
+    replyJSONRPC: function(server, request, mapOfFunctions, logFn, debugFn) {
         try {
             if (request.method !== "POST") {
+                logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Only POST allowed")
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32600, message: "Invalid Request: Only POST allowed" },
@@ -3076,6 +3092,7 @@ OpenWrap.server.prototype.httpd = {
             }
             var body = request.files && request.files.postData ? request.files.postData : __
             if (!body) {
+                logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32700, message: "Parse error: No body" },
@@ -3086,6 +3103,7 @@ OpenWrap.server.prototype.httpd = {
             try {
                 reqObj = jsonParse(body)
             } catch(e) {
+                logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Invalid JSON")
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32700, message: "Parse error: Invalid JSON" },
@@ -3093,6 +3111,7 @@ OpenWrap.server.prototype.httpd = {
                 }, 400, "application/json", {})
             }
             if (!reqObj || reqObj.jsonrpc !== "2.0" || !reqObj.method) {
+                logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Invalid Request")
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32600, message: "Invalid Request" },
@@ -3101,6 +3120,7 @@ OpenWrap.server.prototype.httpd = {
             }
             var fn = mapOfFunctions[reqObj.method]
             if (!isFunction(fn)) {
+                logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Method not found: " + reqObj.method)
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32601, message: "Method not found" },
@@ -3108,13 +3128,15 @@ OpenWrap.server.prototype.httpd = {
                 }, 404, "application/json", {})
             }
             try {
-                var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params);
+                var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params)
+                debugFn("JSON-RPC request result: " + stringify(result));
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     result: result,
                     id: reqObj.id
                 }, 200, "application/json", {})
             } catch(e) {
+                logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     error: { code: -32603, message: "Internal error", data: String(e) },
@@ -3122,6 +3144,7 @@ OpenWrap.server.prototype.httpd = {
                 }, 500, "application/json", {})
             }
         } catch(e) {
+            logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
             return ow.server.httpd.reply({
                 jsonrpc: "2.0",
                 error: { code: -32603, message: "Internal error", data: String(e) },
@@ -3132,19 +3155,31 @@ OpenWrap.server.prototype.httpd = {
 
 	/**
      * <odoc>
-     * <key>ow.server.httpd.replyMCP(server, request, mapOfFunctions) : Map</key>
+     * <key>ow.server.httpd.replyMCP(server, request, mapOfFunctions, logFn, debugFn) : Map</key>
      * Implements a Model Context Protocol (MCP) endpoint using the provided mapOfFunctions. The request must be a POST with a MCP body.\
+	 * Optionally you can provide logFn and debugFn functions to log errors and debug information respectively.\
      * \ 
      * Example usage:\
-     *   ow.server.httpd.route(hs, {\
-     *     "/mcp": (req) => ow.server.httpd.replyMCP(hs, req, { ping: () => "pong" })\
-     *   })\
-     * 
+	 *	ow.server.httpd.route(hs, {\
+ 	 *    "/mcp": req => ow.server.httpd.replyMCP(hs, req, {\
+	 *		initialize                 : params => ({ serverInfo: { name: "OpenAF", title: "OpenAF test ", version: "1.0.0" }, capabilities: { prompts: { listChanged: true }, tools: { listChanged: true } } }),\
+	 *		"notifications/initialized": params => ({}),\
+	 *		"tools/call"               : () => ({content:[{type:"text",text:"PONG!"}],isError: false}),\
+	 *		"tools/list"               : params => { cprint(params); return { tools: [{name:"ping",description:"pings",title:"ping"}] } },\
+	 *		"prompts/list"             : params => ({})\
+	 *	  }, logErr, log),\
+	 *	  "/echo": req => ow.server.httpd.reply(stringify(req))\
+	 *  })
+     *
      * </odoc>
      */
-    replyMCP: function(server, request, mapOfFunctions) {
+    replyMCP: function(server, request, mapOfFunctions, logFn, debugFn) {
+		logFn = _$(logFn, "logFn").isFunction().default(function() {})
+		debugFn = _$(debugFn, "debugFn").isFunction().default(function() {})
         try {
+			debugFn("Processing MCP request: " + stringify(request))
             if (request.method !== "POST") {
+				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Only POST allowed")
                 return ow.server.httpd.reply({
                     mcp: "1.0",
                     error: { code: -32600, message: "Invalid Request: Only POST allowed" },
@@ -3153,6 +3188,7 @@ OpenWrap.server.prototype.httpd = {
             }
             var body = request.files && request.files.postData ? request.files.postData : __
             if (!body) {
+				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({
                     mcp: "1.0",
                     error: { code: -32700, message: "Parse error: No body" },
@@ -3163,13 +3199,15 @@ OpenWrap.server.prototype.httpd = {
             try {
                 reqObj = jsonParse(body)
             } catch(e) {
+				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Invalid JSON")
                 return ow.server.httpd.reply({
                     mcp: "1.0",
                     error: { code: -32700, message: "Parse error: Invalid JSON" },
                     id: null
                 }, 400, "application/json", {})
             }
-            if (!reqObj || reqObj.mcp !== "1.0" || !reqObj.method) {
+            if (!reqObj || (reqObj.mcp !== "1.0" && reqObj.jsonrpc !== "2.0") || !reqObj.method) {
+				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Invalid Request")
                 return ow.server.httpd.reply({
                     mcp: "1.0",
                     error: { code: -32600, message: "Invalid Request" },
@@ -3178,6 +3216,7 @@ OpenWrap.server.prototype.httpd = {
             }
             var fn = mapOfFunctions[reqObj.method]
             if (!isFunction(fn)) {
+				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Method not found: " + reqObj.method)
                 return ow.server.httpd.reply({
                     mcp: "1.0",
                     error: { code: -32601, message: "Method not found" },
@@ -3185,13 +3224,15 @@ OpenWrap.server.prototype.httpd = {
                 }, 404, "application/json", {})
             }
             try {
-                var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params);
+                var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params)
+				debugFn("MCP request result: " + stringify(result))
                 return ow.server.httpd.reply({
                     mcp: "1.0",
                     result: result,
                     id: reqObj.id
                 }, 200, "application/json", {})
             } catch(e) {
+				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
                 return ow.server.httpd.reply({
                     mcp: "1.0",
                     error: { code: -32603, message: "Internal error", data: String(e) },
@@ -3199,6 +3240,7 @@ OpenWrap.server.prototype.httpd = {
                 }, 500, "application/json", {})
             }
         } catch(e) {
+			logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
             return ow.server.httpd.reply({
                 mcp: "1.0",
                 error: { code: -32604, message: "Internal error", data: String(e) },

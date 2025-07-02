@@ -9,6 +9,16 @@ F_in__in_ch_inch=1
 F_in__in_ch_inchall=1
 F_in__in_csv=0
 F_in__in_csv_incsv_=1
+F_in__in_dsv=0
+F_in__in_dsv_indsvsep_=1
+F_in__in_dsv_indsvsepre_=1
+F_in__in_dsv_indsvquote_=1
+F_in__in_dsv_indsvescape_=1
+F_in__in_dsv_indsvcomment_=1
+F_in__in_dsv_indsvheader_=1
+F_in__in_dsv_indsvtrim_=1
+F_in__in_dsv_indsvjoin_=1
+F_in__in_dsv_indsvfields_=1
 F_in__in_db=0
 F_in__in_db_indbjdbc_=1
 F_in__in_db_indbuser_=1
@@ -17,6 +27,7 @@ F_in__in_db_indbtimeout_=1
 F_in__in_db_indblib_=1
 F_in__in_db_indbstream_=1
 F_in__in_db_indbexec_=1
+F_in__in_db_indbdesc_=1
 F_in__in_gb64json=0
 F_in__in_hsperf=0
 F_in__in_ini=0
@@ -120,6 +131,12 @@ F_out__out_cmd_outcmdtmpl_=1
 F_out__out_cslon=0
 F_out__out_csv=0
 F_out__out_csv_csv_=1
+F_out__out_dsv=0
+F_out__out_dsv_dsvsep_=1
+F_out__out_dsv_dsvquote_=1
+F_out__out_dsv_dsvfields_=1
+F_out__out_dsv_dsvuseslon_=1
+F_out__out_dsv_dsvheader_=1
 F_out__out_ctable=0
 F_out__out_ctree=0
 F_out__out_mtree=0
@@ -164,6 +181,8 @@ F_out__out_mdtable=0
 F_out__out_mdyaml=0
 F_out__out_ndjson=0
 F_out__out_ndslon=0
+F_out__out_oaf=0
+F_out__out_oaf_outoaf_=1
 F_out__out_openmetrics=0
 F_out__out_openmetrics_metricsprefix_=1
 F_out__out_openmetrics_metricstimestamp_=1
@@ -228,6 +247,7 @@ F__examples=1
 F_examples_=1
 F_version_=1
 F_pipe_=1
+F_parallel_=1
 F__v=1
 F__f=1
 F_arraytomap_=1
@@ -267,6 +287,7 @@ F_maptoarraykey_=1
 F_merge_=1
 F_normalize_=1
 F_numformat_=1
+F_oaf_=1
 F_regression_=1
 F_regression__regressionpath_=0
 F_regression__regressionx_=0
@@ -316,6 +337,16 @@ if [ $# -gt 0 ]; then
     if [ "${arg#inchall}" != "$arg" ]; then FFOUND=1; F_in__in_ch_inchall=0; fi
     if [ "$arg" = "in=csv" ]; then FFOUND=1; F_in__in_csv=1; F_in_=0; fi
     if [ "${arg#incsv=}" != "$arg" ]; then FFOUND=1; F_in__in_csv_incsv_=0; fi
+    if [ "$arg" = "in=dsv" ]; then FFOUND=1; F_in__in_dsv=1; F_in_=0; fi
+    if [ "${arg#indsvsep=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvsep_=0; fi
+    if [ "${arg#indsvsepre=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvsepre_=0; fi
+    if [ "${arg#indsvquote=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvquote_=0; fi
+    if [ "${arg#indsvescape=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvescape_=0; fi
+    if [ "${arg#indsvcomment=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvcomment_=0; fi
+    if [ "${arg#indsvheader=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvheader_=0; fi
+    if [ "${arg#indsvtrim=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvtrim_=0; fi
+    if [ "${arg#indsvjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvjoin_=0; fi
+    if [ "${arg#indsvfields=}" != "$arg" ]; then FFOUND=1; F_in__in_dsv_indsvfields_=0; fi
     if [ "$arg" = "in=db" ]; then FFOUND=1; F_in__in_db=1; F_in_=0; fi
     if [ "${arg#indbjdbc=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbjdbc_=0; fi
     if [ "${arg#indbuser=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbuser_=0; fi
@@ -324,6 +355,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#indblib=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indblib_=0; fi
     if [ "${arg#indbstream=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbstream_=0; fi
     if [ "${arg#indbexec=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbexec_=0; fi
+    if [ "${arg#indbdesc=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbdesc_=0; fi
     if [ "$arg" = "in=gb64json" ]; then FFOUND=1; F_in__in_gb64json=1; F_in_=0; fi
     if [ "$arg" = "in=hsperf" ]; then FFOUND=1; F_in__in_hsperf=1; F_in_=0; fi
     if [ "$arg" = "in=ini" ]; then FFOUND=1; F_in__in_ini=1; F_in_=0; fi
@@ -427,6 +459,12 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "out=cslon" ]; then FFOUND=1; F_out__out_cslon=1; F_out_=0; fi
     if [ "$arg" = "out=csv" ]; then FFOUND=1; F_out__out_csv=1; F_out_=0; fi
     if [ "${arg#csv=}" != "$arg" ]; then FFOUND=1; F_out__out_csv_csv_=0; fi
+    if [ "$arg" = "out=dsv" ]; then FFOUND=1; F_out__out_dsv=1; F_out_=0; fi
+    if [ "${arg#dsvsep=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvsep_=0; fi
+    if [ "${arg#dsvquote=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvquote_=0; fi
+    if [ "${arg#dsvfields=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvfields_=0; fi
+    if [ "${arg#dsvuseslon=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvuseslon_=0; fi
+    if [ "${arg#dsvheader=}" != "$arg" ]; then FFOUND=1; F_out__out_dsv_dsvheader_=0; fi
     if [ "$arg" = "out=ctable" ]; then FFOUND=1; F_out__out_ctable=1; F_out_=0; fi
     if [ "$arg" = "out=ctree" ]; then FFOUND=1; F_out__out_ctree=1; F_out_=0; fi
     if [ "$arg" = "out=mtree" ]; then FFOUND=1; F_out__out_mtree=1; F_out_=0; fi
@@ -471,6 +509,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "out=mdyaml" ]; then FFOUND=1; F_out__out_mdyaml=1; F_out_=0; fi
     if [ "$arg" = "out=ndjson" ]; then FFOUND=1; F_out__out_ndjson=1; F_out_=0; fi
     if [ "$arg" = "out=ndslon" ]; then FFOUND=1; F_out__out_ndslon=1; F_out_=0; fi
+    if [ "$arg" = "out=oaf" ]; then FFOUND=1; F_out__out_oaf=1; F_out_=0; fi
+    if [ "${arg#outoaf=}" != "$arg" ]; then FFOUND=1; F_out__out_oaf_outoaf_=0; fi
     if [ "$arg" = "out=openmetrics" ]; then FFOUND=1; F_out__out_openmetrics=1; F_out_=0; fi
     if [ "${arg#metricsprefix=}" != "$arg" ]; then FFOUND=1; F_out__out_openmetrics_metricsprefix_=0; fi
     if [ "${arg#metricstimestamp=}" != "$arg" ]; then FFOUND=1; F_out__out_openmetrics_metricstimestamp_=0; fi
@@ -561,6 +601,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "version=" ]; then FFOUND=1; F_version_=0; fi
     # pipe= single option
     if [ "$arg" = "pipe=" ]; then FFOUND=1; F_pipe_=0; fi
+    # parallel= single option
+    if [ "$arg" = "parallel=" ]; then FFOUND=1; F_parallel_=0; fi
     # -v single option
     if [ "$arg" = "-v" ]; then FFOUND=1; F__v=0; fi
     # -f single option
@@ -622,6 +664,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "normalize=" ]; then FFOUND=1; F_normalize_=0; fi
     # numformat= single option
     if [ "$arg" = "numformat=" ]; then FFOUND=1; F_numformat_=0; fi
+    # oaf= single option
+    if [ "$arg" = "oaf=" ]; then FFOUND=1; F_oaf_=0; fi
     # regression= options
     if [ "$arg" = "regressionpath=" ]; then FFOUND=1; F_regression__regressionpath_=1; F_regression_=0; fi
     if [ "$arg" = "regressionx=" ]; then FFOUND=1; F_regression__regressionx_=1; F_regression_=0; fi
@@ -684,6 +728,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=base64	A base64 text input format"
   echo "in=ch	An OpenAF channel input format"
   echo "in=csv	A CSV format -auto-detected-"
+  echo "in=dsv	A DSV (Delimiter Separated Values) format"
   echo "in=db	A JDBC query to a database"
   echo "in=gb64json	Equivalent to in=base64 and base64gzip=true"
   echo "in=hsperf	A Java hsperfdata* file -requires file=hsperfdata_user/123-"
@@ -704,7 +749,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=mdtable	A Markdown table format"
   echo "in=ndjson	A NDJSON (new-line delimited JSON) format"
   echo "in=ndslon	A NDSLON (new-line delimited SLON) format"
-  echo "in=oaf	Takes an OpenAF scripting code to execute and use the result as input"
+  echo "in=oaf	Takes an OpenAF scripting code or OpenAF script file to execute and use the result as input"
   echo "in=oafp	Takes a JSON/SLON/YAML map input as parameters for calling a sub oafp process -arrays will call multiple oafp processes-"
   echo "in=ojob	Takes a JSON/SLON/YAML map input with a 'ojob' string and a 'args' map parameter"
   echo "in=openmetrics	An OpenMetrics/Prometheus compatible format"
@@ -732,6 +777,35 @@ if [ $F_in__in_csv -eq 1 ]; then
     echo "incsv=	If in=csv, the CSV options to use"
   fi
 fi
+if [ $F_in__in_dsv -eq 1 ]; then
+  if [ $F_in__in_dsv_indsvsep_ -eq 1 ]; then
+    echo "indsvsep=	The separator to use for the DSV format -defaults to ','-"
+  fi
+  if [ $F_in__in_dsv_indsvsepre_ -eq 1 ]; then
+    echo "indsvsepre=	The regular expression to use for the DSV format"
+  fi
+  if [ $F_in__in_dsv_indsvquote_ -eq 1 ]; then
+    echo "indsvquote=	The quote character to use for the DSV format -defaults to '"'-"
+  fi
+  if [ $F_in__in_dsv_indsvescape_ -eq 1 ]; then
+    echo "indsvescape=	The escape character to use for the DSV format -defaults to '\'-"
+  fi
+  if [ $F_in__in_dsv_indsvcomment_ -eq 1 ]; then
+    echo "indsvcomment=	The comment character to use for the DSV format -defaults to '#'-"
+  fi
+  if [ $F_in__in_dsv_indsvheader_ -eq 1 ]; then
+    echo "indsvheader=	If true the first line will be considered as header -defaults to true-"
+  fi
+  if [ $F_in__in_dsv_indsvtrim_ -eq 1 ]; then
+    echo "indsvtrim=	If true the values will be trimmed -defaults to true-"
+  fi
+  if [ $F_in__in_dsv_indsvjoin_ -eq 1 ]; then
+    echo "indsvjoin=	If true will join the DSV records to build an output array"
+  fi
+  if [ $F_in__in_dsv_indsvfields_ -eq 1 ]; then
+    echo "indsvfields=	Comma delimited list of fields to use for the DSV format -defaults to all fields-"
+  fi
+fi
 if [ $F_in__in_db -eq 1 ]; then
   if [ $F_in__in_db_indbjdbc_ -eq 1 ]; then
     echo "indbjdbc=	The JDBC URL to access the input database"
@@ -753,6 +827,9 @@ if [ $F_in__in_db -eq 1 ]; then
   fi
   if [ $F_in__in_db_indbexec_ -eq 1 ]; then
     echo "indbexec=	If true the input SQL is not a query but a DML statement"
+  fi
+  if [ $F_in__in_db_indbdesc_ -eq 1 ]; then
+    echo "indbdesc=	If true, the output will be a list of column names and types. Use 'LIMIT 1' for faster results."
   fi
 fi
 if [ $F_in__in_javas -eq 1 ]; then
@@ -951,6 +1028,7 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=cmd	Executes a command for each input data entry"
   echo "out=cslon	A SLON format forcely colored"
   echo "out=csv	A CSV format -only for list outputs-"
+  echo "out=dsv	A DSV (Delimiter Separated Values) format -only for list outputs-"
   echo "out=ctable	A table-like forcely colored format -only for list outputs-"
   echo "out=ctree	A tree-like forcely colored format"
   echo "out=mtree	A tree-like forcely monochrome format"
@@ -972,6 +1050,7 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=mdyaml	A multi document YAML format -only for list outputs-"
   echo "out=ndjson	A NDJSON -new-line delimited JSON- format"
   echo "out=ndslon	A NDSLON -new-line delimited SLON- format"
+  echo "out=oaf	Executes OpenAF scripting code or an OpenAF script file; receives -data- as input and outputs via -outoaf-."
   echo "out=openmetrics	Converts a map or list to OpenMetrics/Prometheus compatible format"
   echo "out=pjson	A JSON format with spacing -equivalent to prettyjson-"
   echo "out=prettyjson	A JSON format with spacing"
@@ -1037,6 +1116,23 @@ fi
 if [ $F_out__out_csv -eq 1 ]; then
   if [ $F_out__out_csv_csv_ -eq 1 ]; then
     echo "csv=	If out=csv, the CSV options to use"
+  fi
+fi
+if [ $F_out__out_dsv -eq 1 ]; then
+  if [ $F_out__out_dsv_dsvsep_ -eq 1 ]; then
+    echo "dsvsep=	The separator to use for the DSV format -defaults to ','-"
+  fi
+  if [ $F_out__out_dsv_dsvquote_ -eq 1 ]; then
+    echo "dsvquote=	The quote character to use for the DSV format -defaults to '"'-"
+  fi
+  if [ $F_out__out_dsv_dsvfields_ -eq 1 ]; then
+    echo "dsvfields=	Comma delimited list of fields to use for the DSV format -defaults to all fields-"
+  fi
+  if [ $F_out__out_dsv_dsvuseslon_ -eq 1 ]; then
+    echo "dsvuseslon=	If true the output of value objects will be a SLON format -default is false-"
+  fi
+  if [ $F_out__out_dsv_dsvheader_ -eq 1 ]; then
+    echo "dsvheader=	If true will try to output the first line as header -default is true-"
   fi
 fi
 if [ $F_out__out_db -eq 1 ]; then
@@ -1120,6 +1216,11 @@ fi
 if [ $F_out__out_md -eq 1 ]; then
   if [ $F_out__out_md_mdtemplate_ -eq 1 ]; then
     echo "mdtemplate=	If true will apply a template output without any input data"
+  fi
+fi
+if [ $F_out__out_oaf -eq 1 ]; then
+  if [ $F_out__out_oaf_outoaf_ -eq 1 ]; then
+    echo "outoaf=	The OpenAF script to execute scripting code or file path receiving -data- as input"
   fi
 fi
 if [ $F_out__out_openmetrics -eq 1 ]; then
@@ -1325,6 +1426,11 @@ if [ $F_pipe_ -eq 1 ]; then
   echo "pipe=	A JSON/SLON/YAML map for recursive call of oafp similar to using unix pipes - useful with -f -"
   
 fi
+# Print completion for parallel=
+if [ $F_parallel_ -eq 1 ]; then
+  echo "parallel=	If true and input supports parallel processing it will try to process the input in parallel regardless of the input data order"
+  
+fi
 # Print completion for -v
 if [ $F__v -eq 1 ]; then
   echo "-v	Changes the input to a map with the tool's version info"
@@ -1462,6 +1568,11 @@ fi
 # Print completion for numformat=
 if [ $F_numformat_ -eq 1 ]; then
   echo "numformat=	For all number values applies a java.util.Formatter format -e.g. %,d-"
+  
+fi
+# Print completion for oaf=
+if [ $F_oaf_ -eq 1 ]; then
+  echo "oaf=	An OpenAF script to execute or a file path to an OpenAF script taking -data- as input and returning the transformed data"
   
 fi
 # Print completion for regression=

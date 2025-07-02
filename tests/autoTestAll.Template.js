@@ -27,7 +27,7 @@
         ow.loadTemplate();
         ow.template.addFormatHelpers();
         ow.test.assert(templify("{{#owFormat_toHex a}}{{/owFormat_toHex}}", {a:123}), "7b", "Problem with template ow.format helper toHex");
-        ow.test.assert(templify("{{#owFormat_toBytesAbbreviation a 3}}{{/owFormat_toBytesAbbreviation}}", {a:1024}), "1.00 KB", "Problem with template ow.format helper toBytesAbbreviation");
+        ow.test.assert(templify("{{#owFormat_toBytesAbbreviation a 3}}{{/owFormat_toBytesAbbreviation}}", {a:1024}), "1 KB", "Problem with template ow.format helper toBytesAbbreviation");
 
         ow.template.delHelper("owFormat_toHex");
         try {

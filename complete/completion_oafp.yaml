@@ -19,6 +19,27 @@ complete:
     opts:
     - name: incsv=
       desc: If in=csv, the CSV options to use
+  - name: in=dsv
+    desc: A DSV (Delimiter Separated Values) format
+    opts: 
+    - name: indsvsep=
+      desc: The separator to use for the DSV format -defaults to ','-
+    - name: indsvsepre=
+      desc: The regular expression to use for the DSV format
+    - name: indsvquote=
+      desc: The quote character to use for the DSV format -defaults to '"'-
+    - name: indsvescape=
+      desc: The escape character to use for the DSV format -defaults to '\'- 
+    - name: indsvcomment=
+      desc: The comment character to use for the DSV format -defaults to '#'-
+    - name: indsvheader=
+      desc: If true the first line will be considered as header -defaults to true-
+    - name: indsvtrim=
+      desc: If true the values will be trimmed -defaults to true-
+    - name: indsvjoin=
+      desc: If true will join the DSV records to build an output array
+    - name: indsvfields=
+      desc: Comma delimited list of fields to use for the DSV format -defaults to all fields-
   - name: in=db
     desc: A JDBC query to a database
     opts:
@@ -134,6 +155,8 @@ complete:
     opts:
     - name: inmdtablejoin=
       desc: Scans an entire markdown input for tables and returns an array with the data of each markdown table
+  - name: in=mdcode
+    desc: A Markdown code blocks format
   - name: in=ndjson
     desc: A NDJSON (new-line delimited JSON) format
     opts:
@@ -270,6 +293,19 @@ complete:
     opts:
     - name: csv=
       desc: If out=csv, the CSV options to use
+  - name: out=dsv
+    desc: A DSV (Delimiter Separated Values) format -only for list outputs-
+    opts:
+    - name: dsvsep=
+      desc: The separator to use for the DSV format -defaults to ','-
+    - name: dsvquote=
+      desc: The quote character to use for the DSV format -defaults to '"'-
+    - name: dsvfields=
+      desc: Comma delimited list of fields to use for the DSV format -defaults to all fields-
+    - name: dsvuseslon=
+      desc: If true the output of value objects will be a SLON format -default is false-
+    - name: dsvheader=
+      desc: If true will try to output the first line as header -default is true-
   - name: out=ctable
     desc: A table-like forcely colored format -only for list outputs-
   - name: out=ctree
@@ -506,6 +542,8 @@ complete:
   desc: Alternative way to change the input to a map with the tool's version
 - name: pipe=
   desc: A JSON/SLON/YAML map for recursive call of oafp similar to using unix pipes - useful with -f -
+- name: parallel=
+  desc: If true and input supports parallel processing it will try to process the input in parallel regardless of the input data order
 - name: '-v'
   desc: Changes the input to a map with the tool's version info
 - name: '-f'

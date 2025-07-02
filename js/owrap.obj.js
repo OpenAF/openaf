@@ -158,9 +158,9 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray,
 		aMap = ow.obj.flatMap(aMapOrArray[i])
 		var keys = Object.keys(aMap)
 		for(var ii in keys) {
-			var key = (enforceCase ? "\"" + keys[ii] + "\"" : keys[ii])
-		
-			var s 
+			var key = (enforceCase || keys[ii].match(/^[A-Z0-9_]+$/) ? "\"" + keys[ii] + "\"" : keys[ii])
+
+			var s
 			if (isDef(aOverrideMap[keys[ii]])) {
 				s = aOverrideMap[keys[ii]]
 				override.add(ii)
@@ -3504,13 +3504,12 @@ OpenWrap.obj.prototype.syncMap.prototype.forEach = function(fn) {
  * </odoc>
  */
 OpenWrap.obj.prototype.syncArray = function(aArray) {
-	var ja; 
 	if (isDef(aArray) && isArray(aArray)) 
-		ja = new java.util.ArrayList(aArray);
+		this.ja = new java.util.ArrayList(aArray)
 	else
-		ja = new java.util.ArrayList();
+		this.ja = new java.util.ArrayList()
 		
-	this.arr = java.util.Collections.synchronizedList(ja);
+	this.arr = java.util.Collections.synchronizedList(this.ja)
 };
 
 /**
@@ -3525,23 +3524,42 @@ OpenWrap.obj.prototype.syncArray.prototype.getJavaObject = function() {
 
 /**
  * <odoc>
- * <key>ow.obj.syncArray.add(aObject) : boolean</key>
- * Adds aObject to the internal array/list.
+ * <key>ow.obj.syncArray.getUnsafeJavaObject() : Object</key>
+ * Returns the internal java object without synchronization. Use with care!
+ * This is useful when you want to use the internal java object directly without the overhead of synchronization.
  * </odoc>
  */
-OpenWrap.obj.prototype.syncArray.prototype.add = function(aObject) {
-	return this.arr.add(aObject);
-};
+OpenWrap.obj.prototype.syncArray.prototype.getUnsafeJavaObject = function() {
+	return this.ja
+}
 
 /**
  * <odoc>
- * <key>ow.obj.syncArray.addAll(anArray)</key>
- * Concatenates anArray with the internal array/list.
+ * <key>ow.obj.syncArray.add(aObject, aPosition) : boolean</key>
+ * Adds aObject to the internal array/list. If aPosition is provided it will be added at that position, otherwise it will be added at the end.
  * </odoc>
  */
-OpenWrap.obj.prototype.syncArray.prototype.addAll = function(anArray) {
+OpenWrap.obj.prototype.syncArray.prototype.add = function(aObject, aPosition) {
+	if (isDef(aPosition)) {
+		this.arr.add(aPosition, aObject)
+	} else {
+		this.arr.add(aObject)
+	}
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.addAll(anArray, aPosition)</key>
+ * Concatenates anArray with the internal array/list. If aPosition is provided it will be added at that position, otherwise it will be added at the end.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.addAll = function(anArray, aPosition) {
 	_$(anArray, "array").isArray().$_();
-	return this.arr.addAll(new java.util.ArrayList(anArray));
+	if (isDef(aPosition)) {
+		return this.arr.addAll(aPosition, new java.util.ArrayList(anArray))
+	} else {
+		return this.arr.addAll(new java.util.ArrayList(anArray))
+	}
 };
 
 /**
@@ -3563,6 +3581,42 @@ OpenWrap.obj.prototype.syncArray.prototype.toArray = function() {
 OpenWrap.obj.prototype.syncArray.prototype.length = function() {
 	return this.arr.size();
 };
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.trimToSize()</key>
+ * Trims the internal array/list to its current size.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.trimToSize = function() {
+	this.ja.trimToSize()
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.isEmpty() : boolean</key>
+ * Returns true if the internal array/list is empty.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.isEmpty = function() {
+	return this.arr.isEmpty()
+}
+
+/**
+ * <odoc>
+ * <key>ow.obj.syncArray.subList(aStart, aEnd) : Array</key>
+ * Returns a sublist of the internal array/list from aStart to aEnd (exclusive). If aStart or aEnd are out of bounds it will throw an exception.
+ * The returned array will be a new array with the elements from aStart to aEnd.
+ * </odoc>
+ */
+OpenWrap.obj.prototype.syncArray.prototype.subList = function(aStart, aEnd) {
+	_$(aStart, "aStart").isNumber().$_()
+	_$(aEnd, "aEnd").isNumber().$_()
+	if (aStart < 0 || aEnd < 0 || aStart > aEnd || aEnd > this.arr.size()) {
+		throw "Invalid sublist range: " + aStart + ", " + aEnd + ", size = " + this.arr.size()
+	}
+	return af.fromJavaArray(this.arr.subList(aStart, aEnd).toArray())
+}
 
 /**
  * <odoc>
