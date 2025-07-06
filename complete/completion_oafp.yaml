@@ -245,7 +245,7 @@ complete:
   - name: in=yaml
     desc: A YAML format -auto-detected-
 - name: "out="
-  desc: 'The output format -default ctree-'
+  desc: 'The output format -default mtree-'
   opts:
   # oafp ../oafp/data/usage.json path="[3][].{name:concat-'in=',\"Output format\"-,desc:replace-Description,'[\-\-]','g','-'-}" out=yaml
   - name: out=base64   
@@ -294,7 +294,7 @@ complete:
     - name: csv=
       desc: If out=csv, the CSV options to use
   - name: out=dsv
-    desc: A DSV (Delimiter Separated Values) format -only for list outputs-
+    desc: A DSV -Delimiter Separated Values- format -only for list outputs-
     opts:
     - name: dsvsep=
       desc: The separator to use for the DSV format -defaults to ','-
