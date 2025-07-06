@@ -20,18 +20,18 @@ complete:
     - name: incsv=
       desc: If in=csv, the CSV options to use
   - name: in=dsv
-    desc: A DSV (Delimiter Separated Values) format
+    desc: A DSV -Delimiter Separated Values- format
     opts: 
     - name: indsvsep=
-      desc: The separator to use for the DSV format -defaults to ','-
+      desc: The separator to use for the DSV format -defaults to comma-
     - name: indsvsepre=
       desc: The regular expression to use for the DSV format
     - name: indsvquote=
-      desc: The quote character to use for the DSV format -defaults to '"'-
+      desc: The quote character to use for the DSV format -defaults to double quote-
     - name: indsvescape=
-      desc: The escape character to use for the DSV format -defaults to '\'- 
+      desc: The escape character to use for the DSV format -defaults to backslash - 
     - name: indsvcomment=
-      desc: The comment character to use for the DSV format -defaults to '#'-
+      desc: The comment character to use for the DSV format -defaults to pound-
     - name: indsvheader=
       desc: If true the first line will be considered as header -defaults to true-
     - name: indsvtrim=
@@ -297,9 +297,9 @@ complete:
     desc: A DSV -Delimiter Separated Values- format -only for list outputs-
     opts:
     - name: dsvsep=
-      desc: The separator to use for the DSV format -defaults to ','-
+      desc: The separator to use for the DSV format -defaults to comma-
     - name: dsvquote=
-      desc: The quote character to use for the DSV format -defaults to '"'-
+      desc: The quote character to use for the DSV format -defaults to double quote-
     - name: dsvfields=
       desc: Comma delimited list of fields to use for the DSV format -defaults to all fields-
     - name: dsvuseslon=
@@ -402,7 +402,7 @@ complete:
   - name: out=ndslon
     desc: A NDSLON -new-line delimited SLON- format
   - name: out=oaf
-    desc: Executes OpenAF scripting code or an OpenAF script file; receives -data- as input and outputs via -outoaf-.
+    desc: Executes OpenAF scripting code or an OpenAF script file and receives -data- as input and outputs via -outoaf-
     opts:
     - name: outoaf=
       desc: The OpenAF script to execute scripting code or file path receiving -data- as input

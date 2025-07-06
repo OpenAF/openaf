@@ -730,7 +730,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=base64	A base64 text input format"
   echo "in=ch	An OpenAF channel input format"
   echo "in=csv	A CSV format -auto-detected-"
-  echo "in=dsv	A DSV (Delimiter Separated Values) format"
+  echo "in=dsv	A DSV -Delimiter Separated Values- format"
   echo "in=db	A JDBC query to a database"
   echo "in=gb64json	Equivalent to in=base64 and base64gzip=true"
   echo "in=hsperf	A Java hsperfdata* file -requires file=hsperfdata_user/123-"
@@ -782,19 +782,19 @@ if [ $F_in__in_csv -eq 1 ]; then
 fi
 if [ $F_in__in_dsv -eq 1 ]; then
   if [ $F_in__in_dsv_indsvsep_ -eq 1 ]; then
-    echo "indsvsep=	The separator to use for the DSV format -defaults to ','-"
+    echo "indsvsep=	The separator to use for the DSV format -defaults to comma-"
   fi
   if [ $F_in__in_dsv_indsvsepre_ -eq 1 ]; then
     echo "indsvsepre=	The regular expression to use for the DSV format"
   fi
   if [ $F_in__in_dsv_indsvquote_ -eq 1 ]; then
-    echo "indsvquote=	The quote character to use for the DSV format -defaults to '"'-"
+    echo "indsvquote=	The quote character to use for the DSV format -defaults to double quote-"
   fi
   if [ $F_in__in_dsv_indsvescape_ -eq 1 ]; then
-    echo "indsvescape=	The escape character to use for the DSV format -defaults to '\'-"
+    echo "indsvescape=	The escape character to use for the DSV format -defaults to backslash -"
   fi
   if [ $F_in__in_dsv_indsvcomment_ -eq 1 ]; then
-    echo "indsvcomment=	The comment character to use for the DSV format -defaults to '#'-"
+    echo "indsvcomment=	The comment character to use for the DSV format -defaults to pound-"
   fi
   if [ $F_in__in_dsv_indsvheader_ -eq 1 ]; then
     echo "indsvheader=	If true the first line will be considered as header -defaults to true-"
@@ -1022,7 +1022,7 @@ if [ $F_in__in_xml -eq 1 ]; then
 fi
 # Print completion for out=
 if [ $F_out_ -eq 1 ]; then
-  echo "out=	The output format -default ctree-"
+  echo "out=	The output format -default mtree-"
   
   echo "out=base64	A base64 text output format"
   echo "out=ch	An OpenAF channel output format"
@@ -1031,7 +1031,7 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=cmd	Executes a command for each input data entry"
   echo "out=cslon	A SLON format forcely colored"
   echo "out=csv	A CSV format -only for list outputs-"
-  echo "out=dsv	A DSV (Delimiter Separated Values) format -only for list outputs-"
+  echo "out=dsv	A DSV -Delimiter Separated Values- format -only for list outputs-"
   echo "out=ctable	A table-like forcely colored format -only for list outputs-"
   echo "out=ctree	A tree-like forcely colored format"
   echo "out=mtree	A tree-like forcely monochrome format"
@@ -1053,7 +1053,7 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=mdyaml	A multi document YAML format -only for list outputs-"
   echo "out=ndjson	A NDJSON -new-line delimited JSON- format"
   echo "out=ndslon	A NDSLON -new-line delimited SLON- format"
-  echo "out=oaf	Executes OpenAF scripting code or an OpenAF script file; receives -data- as input and outputs via -outoaf-."
+  echo "out=oaf	Executes OpenAF scripting code or an OpenAF script file and receives -data- as input and outputs via -outoaf-"
   echo "out=openmetrics	Converts a map or list to OpenMetrics/Prometheus compatible format"
   echo "out=pjson	A JSON format with spacing -equivalent to prettyjson-"
   echo "out=prettyjson	A JSON format with spacing"
@@ -1123,10 +1123,10 @@ if [ $F_out__out_csv -eq 1 ]; then
 fi
 if [ $F_out__out_dsv -eq 1 ]; then
   if [ $F_out__out_dsv_dsvsep_ -eq 1 ]; then
-    echo "dsvsep=	The separator to use for the DSV format -defaults to ','-"
+    echo "dsvsep=	The separator to use for the DSV format -defaults to comma-"
   fi
   if [ $F_out__out_dsv_dsvquote_ -eq 1 ]; then
-    echo "dsvquote=	The quote character to use for the DSV format -defaults to '"'-"
+    echo "dsvquote=	The quote character to use for the DSV format -defaults to double quote-"
   fi
   if [ $F_out__out_dsv_dsvfields_ -eq 1 ]; then
     echo "dsvfields=	Comma delimited list of fields to use for the DSV format -defaults to all fields-"
