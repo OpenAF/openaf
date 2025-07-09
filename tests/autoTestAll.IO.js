@@ -102,9 +102,9 @@
     };
 
     exports.testGzipNativeToByte = () => {
-        var orig = io.readFileString(getOpenAFPath() + "/js/openaf.js", io.getDefaultEncoding());
+        var orig = io.readFileString("../js/openaf.js", io.getDefaultEncoding());
 
-        io.writeFileBytes("autoTestAll.gz", io.gzip(io.readFileBytes(getOpenAFPath() + "/js/openaf.js")));
+        io.writeFileBytes("autoTestAll.gz", io.gzip(io.readFileBytes("../js/openaf.js")));
         var a = Packages.org.apache.commons.io.IOUtils.toByteArray(io.readFileStream("autoTestAll.gz"));
         var s = af.fromBytes2String(io.gunzip(a));
 
@@ -113,11 +113,11 @@
 
     exports.testBinaryFileDetection = () => {
         ow.test.assert(io.isBinaryFile(getOpenAFJar()), true, "Problem with io.isBinaryFile detecting binary files.");
-        ow.test.assert(io.isBinaryFile(getOpenAFPath() + "/js/openaf.js"), false, "Problem with io.isBinaryFile detecting text files.");
+        ow.test.assert(io.isBinaryFile("../js/openaf.js"), false, "Problem with io.isBinaryFile detecting text files.");
     };
 
     exports.testCopyMoveDeleteFile = () => {
-        var orig = getOpenAFPath() + "/js/openaf.js";
+        var orig = "../js/openaf.js";
 
         var contents = io.readFileString(orig);
         

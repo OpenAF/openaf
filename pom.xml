@@ -3,7 +3,7 @@
  
   <groupId>openaf</groupId>
   <artifactId>openaf</artifactId>
-  <version>20240812</version>
+  <version>20250315</version>
   <packaging>pom</packaging>
   
   <build>
@@ -21,24 +21,39 @@
                 <version>3.14.0</version>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.5.1</version>
-                <executions>
-                    <execution>
-                        <id>default-package</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <executable>ojob</executable>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>exec-maven-plugin</artifactId>
+              <version>3.5.1</version>
+              <executions>
+                <execution>
+                  <id>ojob-build</id>
+                  <phase>compile</phase>
+                  <goals>
+                    <goal>exec</goal>
+                  </goals>
+                </execution>
+                <execution>
+                  <id>oaf-test</id>
+                  <phase>test</phase>
+                  <goals>
+                    <goal>exec</goal>
+                  </goals>
+                  <configuration>
+                    <executable>sh</executable>
                     <workingDirectory>.</workingDirectory>
                     <arguments>
-                        <argument>build.yaml</argument>
+                      <argument>oafTest.sh</argument>
                     </arguments>
-                </configuration>
+                  </configuration>
+                </execution>
+              </executions>
+              <configuration>
+                <executable>ojob</executable>
+                <workingDirectory>.</workingDirectory>
+                <arguments>
+                  <argument>build.yaml</argument>
+                </arguments>
+              </configuration>
             </plugin>   
             <plugin>
               <artifactId>maven-clean-plugin</artifactId>
@@ -150,22 +165,22 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.19.0</version>
+      <version>2.19.1</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.19.0</version>
+      <version>2.19.1</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.19.0</version>
+      <version>2.19.1</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-toml</artifactId>
-      <version>2.19.0</version>
+      <version>2.19.1</version>
     </dependency>
     <dependency>
       <groupId>org.fusesource.jansi</groupId>
@@ -185,47 +200,47 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>12.0.21</version>
+      <version>12.0.22</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
-      <version>12.0.21</version>
+      <version>12.0.22</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
-      <version>12.0.21</version>
+      <version>12.0.22</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>12.0.21</version>
+      <version>12.0.22</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-jetty-common</artifactId>
-      <version>12.0.21</version>
+      <version>12.0.22</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-jetty-api</artifactId>
-      <version>12.0.21</version>
+      <version>12.0.22</version>
     </dependency>
     <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>jetty-websocket-jetty-client</artifactId>
-        <version>12.0.21</version>
+        <version>12.0.22</version>
     </dependency>
     <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>jetty-websocket-core-client</artifactId>
-        <version>12.0.21</version>
+        <version>12.0.22</version>
     </dependency>
     <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>jetty-websocket-core-common</artifactId>
-        <version>12.0.21</version>
+        <version>12.0.22</version>
     </dependency>
     <dependency>
       <groupId>jline</groupId>
