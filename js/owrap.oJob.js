@@ -406,7 +406,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 
 	// Channels
 	if (isDef(this.__ojob.channels)) {
-		if (this.__ojob.channels.recordLog) startLog();
+		if (this.__ojob.channels.recordLog) startLog(__, this.__ojob.channels.recordLogHistory)
 		if (isDef(this.__ojob.channels.create) && isArray(this.__ojob.channels.create)) {
 			for(var cI in this.__ojob.channels.create) {
 				var cObj = this.__ojob.channels.create[cI]; 
