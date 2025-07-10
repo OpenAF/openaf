@@ -129,7 +129,8 @@ ojob:
   - do coffee
   - do beer
   channels    :
-    recordLog  : false # Boolean to start OpenAF log recording on execution
+    recordLog       : false # Boolean to start OpenAF log recording on execution
+    recordLogHistory: -1    # Number of log entries to keep (-1 unlimited)
     create:
     - name   : OpenAFChannelToCreate
       type   : typeOfChannel
