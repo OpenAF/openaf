@@ -1,11 +1,46 @@
-<project>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
  
-  <groupId>io</groupId>
+  <groupId>io.openaf</groupId>
   <artifactId>openaf</artifactId>
   <version>20250315</version>
   <packaging>pom</packaging>
+  <name>io.openaf:openaf</name>
+  <description>A Java and Javascript based "swiss-army knife" scripting DevOps tool for different automation 
+    challenges with minimal requirements and footprint, extensible through packages (opacks).</description>
+  <url>https://openaf.io</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>OpenAF Team</name>
+      <email>openaf@openaf.io</email>
+      <roles>
+        <role>developer</role>
+        <role>owner</role>
+      </roles>
+      <organization>OpenAF</organization>
+      <organizationUrl>https://openaf.io</organizationUrl>
+      <timezone>UTC</timezone>
+    </developer>
+  </developers>
   
+  <scm>
+    <connection>scm:git:git://github.com/openaf/openaf.git</connection>
+    <developerConnection>scm:git:ssh://github.com:openaf/openaf.git</developerConnection>
+    <url>http://github.com/openaf/openaf/tree/master</url>
+  </scm>
+
   <build>
     <defaultGoal>exec:exec</defaultGoal>
     <directory>${project.basedir}/</directory>
