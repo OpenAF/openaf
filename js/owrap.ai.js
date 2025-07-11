@@ -702,7 +702,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }
-                    _r.conversation = aPrompt
+                    _r.conversation = msgs
                     var _res = _r._request(uri, body)
 
                     if (isDef(_res) && isDef(_res.message) && isArray(_res.message["tool_calls"])) {
@@ -716,8 +716,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 _p.push({ role: "tool", content: _tr, tool_call_id: tc.function.id })
                             }
                         })
+                        _r.conversation = _r.conversation.concat(_p)
                         return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
                     } else {
+                        if (isDef(_res) && isDef(_res.message) && isString(_res.message.content)) {
+                            _r.conversation.push({ role: "assistant", content: _res.message.content })
+                        } else {
+                            _r.conversation.push({ role: "assistant", content: _res })
+                        }
                         return _res
                     }
                 },
