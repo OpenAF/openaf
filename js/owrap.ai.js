@@ -881,7 +881,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
-                    _r.conversation = aPrompt
                     if (_noSystem) {
                         msgs = msgs.filter(m => m.role != "system")
                     }
@@ -897,6 +896,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (aJsonFlag) {
                         msgs.push({ role: "user", content: "output json" })
                     }
+                     _r.conversation = msgs
                     body = merge(body, aOptions.params)
                     /*if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
@@ -936,6 +936,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return _res
                     }*/
+                   _r.conversation.push({
+                        role: "assistant",
+                        content: _res.content
+                   })
                    return _res
                 },
                 rawImgGen: (aPrompt, aModel) => {
