@@ -184,7 +184,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (aJsonFlag) {
                         msgs.unshift({ role: (_noSystem ? "developer" : "system"), content: "output json" })
                     }
-                    _r.conversation = aPrompt
+                    _r.conversation = msgs
                     if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
                     var body = {
                         model: aModel,
@@ -225,8 +225,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                         if (stopWith) {
+                            _r.conversation = _r.conversation.concat(isString(_res) ? { role: "assistant", content: _res } : _res.choices[0].message)
                             return _res
-                        } else {
+                        } else {
                             _r.conversation = _r.conversation.concat(_p)
                             return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
                         }
