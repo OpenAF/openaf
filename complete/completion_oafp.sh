@@ -251,6 +251,7 @@ F_pipe_=1
 F_parallel_=1
 F__v=1
 F__f=1
+F_allstrings_=1
 F_arraytomap_=1
 F_arraytomapkeepkey_=1
 F_arraytomapkey_=1
@@ -270,6 +271,7 @@ F_diff__diffchars_=0
 F_field2byte_=1
 F_field2date_=1
 F_field2si_=1
+F_field2str_=1
 F_field4map_=1
 F_flatmap_=1
 F_getlist_=1
@@ -609,6 +611,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "-v" ]; then FFOUND=1; F__v=0; fi
     # -f single option
     if [ "$arg" = "-f" ]; then FFOUND=1; F__f=0; fi
+    # allstrings= single option
+    if [ "$arg" = "allstrings=" ]; then FFOUND=1; F_allstrings_=0; fi
     # arraytomap= single option
     if [ "$arg" = "arraytomap=" ]; then FFOUND=1; F_arraytomap_=0; fi
     # arraytomapkeepkey= single option
@@ -636,6 +640,8 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "field2date=" ]; then FFOUND=1; F_field2date_=0; fi
     # field2si= single option
     if [ "$arg" = "field2si=" ]; then FFOUND=1; F_field2si_=0; fi
+    # field2str= single option
+    if [ "$arg" = "field2str=" ]; then FFOUND=1; F_field2str_=0; fi
     # field4map= single option
     if [ "$arg" = "field4map=" ]; then FFOUND=1; F_field4map_=0; fi
     # flatmap= single option
@@ -1444,6 +1450,11 @@ if [ $F__f -eq 1 ]; then
   echo "-f	A JSON/SLON/YAML file with all the oafp parameters as a map"
   
 fi
+# Print completion for allstrings=
+if [ $F_allstrings_ -eq 1 ]; then
+  echo "allstrings=	If true all fields will be converted to strings -useful for text processing-"
+  
+fi
 # Print completion for arraytomap=
 if [ $F_arraytomap_ -eq 1 ]; then
   echo "arraytomap=	If true will try to convert the input array to a map -see arraytomapkey, arraytomapkeepkey-"
@@ -1501,6 +1512,11 @@ fi
 # Print completion for field2si=
 if [ $F_field2si_ -eq 1 ]; then
   echo "field2si=	A comma delimited list of fields whose value should be converted to a SI abbreviation"
+  
+fi
+# Print completion for field2str=
+if [ $F_field2str_ -eq 1 ]; then
+  echo "field2str=	A comma delimited list of fields whose value should be converted to a string representation"
   
 fi
 # Print completion for field4map=

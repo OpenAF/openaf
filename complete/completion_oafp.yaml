@@ -548,6 +548,8 @@ complete:
   desc: Changes the input to a map with the tool's version info
 - name: '-f'
   desc: A JSON/SLON/YAML file with all the oafp parameters as a map
+- name: allstrings=
+  desc: If true all fields will be converted to strings -useful for text processing-
 - name: arraytomap=
   desc: If true will try to convert the input array to a map -see arraytomapkey, arraytomapkeepkey-
 - name: arraytomapkeepkey=
@@ -588,6 +590,8 @@ complete:
   desc: A comma delimited list of fields whose value should be converted to date values
 - name: field2si=
   desc: A comma delimited list of fields whose value should be converted to a SI abbreviation
+- name: field2str=
+  desc: A comma delimited list of fields whose value should be converted to a string representation
 - name: field4map=
   desc: A comma delimited list of fields whose value should be converted from JSON/SLON string representation to a map
 - name: flatmap=
