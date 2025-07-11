@@ -224,10 +224,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 stopWith = true
                             }
                         })
-                        if (stopWith)
+                        if (stopWith) {
                             return _res
-                        else
+                        } else {
+                            _r.conversation = _r.conversation.concat(_p)
                             return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                        }
                     } else {
                         return _res
                     }
@@ -429,7 +431,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
-                    aPrompt = _r.conversation.filter(r => isUnDef(r.role) || r.role != "system").map(r => ({ text: r.text })).concat(aPrompt)
+                    aPrompt = _r.conversation.filter(r => isUnDef(r.role) || r.role != "system").map(r => isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ]}).concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", parts: [ { text: c } ] })
                  
                     var body = {
@@ -484,10 +486,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 })
                             }
                         })
-                        if (stopWith)
+                        if (stopWith) { 
+                            _r.conversation = _r.conversation.concat(_res.candidates[0].content)
                             return _res
-                        else
+                        } else {
+                            _r.conversation = _r.conversation.concat(_p)
                             return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                        }
                     } else {
                         return _res
                     }
