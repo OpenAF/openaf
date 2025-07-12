@@ -432,7 +432,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
-                    aPrompt = _r.conversation.filter(r => isUnDef(r.role) || r.role != "system").map(r => isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ]}).concat(aPrompt)
+                    aPrompt = _r.conversation.reduce((acc, r) => {
+                        if (isUnDef(r.role) || r.role != "system") {
+                            acc.push(isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ] });
+                        }
+                        return acc;
+                    }, []).concat(aPrompt);
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", parts: [ { text: c } ] })
                  
                     var body = {
