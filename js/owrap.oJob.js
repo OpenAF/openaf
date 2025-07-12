@@ -22,8 +22,9 @@ OpenWrap.oJob = function(isNonLocal) {
 	//this.__promises.push($do(() => {
 		if (isNonLocal) {
 			try {
-				parent.__host = String(java.net.InetAddress.getLocalHost().getHostName());
-				parent.__ip = String(java.net.InetAddress.getLocalHost().getHostAddress());
+				var lh = java.net.InetAddress.getLocalHost()
+				parent.__host = String(lh.getHostName())
+				parent.__ip = String(lh.getHostAddress())
 			} catch(e) {
 				//logWarn(e);
 			}
@@ -2077,7 +2078,14 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
-			var argss = (this.__ojob.shareArgs) ? merge(args, $get("res")) : args
+			var argss 
+			if (this.__ojob.shareArgs) {
+				var _r = clone($get("res"))
+				delete _r.init
+				argss = merge(args, _r)
+			} else {
+				argss = args
+			}
 			//var argss = merge(args, last);
 			//if (isDef(todo.args)) argss = this.__processArgs(merge(args, last), todo.args, aId);
 			if (isDef(todo.args)) argss = this.__processArgs(argss, todo.args, aId);
