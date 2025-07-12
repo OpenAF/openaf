@@ -2021,7 +2021,7 @@ function update(args) {
 		}
 
 		if (ferase) {
-			var otherStats = erase([_pack], derase)
+			var otherStats = erase([_pack], derase, true)
 			_stats.erasedToUpdate += otherStats.erased
 			_stats.failed += otherStats.failed
 		}
@@ -2039,7 +2039,7 @@ function update(args) {
 }
 
 // ERASE
-function erase(args, dontRemoveDir) {
+function erase(args, dontRemoveDir, isUpdate) {
 	if (!isUnDef(args[0]) && args[0].toUpperCase() == 'OPENAF') {
 		logErr("Can't delete OpenAF. Please delete manually or following the uninstall instructions.");
 		return;
@@ -2091,7 +2091,7 @@ function erase(args, dontRemoveDir) {
 	
 		// Find deps
 		if (isMap(packag.dependencies) &&
-			!force) {
+			!force && !isUpdate) {
 			var packages = getLocalDB(true);
 			for(var pack in packages) {
 				if (isMap(packages[pack].dependencies) &&
