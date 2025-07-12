@@ -22,8 +22,9 @@ OpenWrap.oJob = function(isNonLocal) {
 	//this.__promises.push($do(() => {
 		if (isNonLocal) {
 			try {
-				parent.__host = String(java.net.InetAddress.getLocalHost().getHostName());
-				parent.__ip = String(java.net.InetAddress.getLocalHost().getHostAddress());
+				var lh = java.net.InetAddress.getLocalHost()
+				parent.__host = String(lh.getHostName())
+				parent.__ip = String(lh.getHostAddress())
 			} catch(e) {
 				//logWarn(e);
 			}
@@ -406,7 +407,7 @@ OpenWrap.oJob.prototype.load = function(jobs, todo, ojob, args, aId, init, help)
 
 	// Channels
 	if (isDef(this.__ojob.channels)) {
-		if (this.__ojob.channels.recordLog) startLog();
+		if (this.__ojob.channels.recordLog) startLog(__, this.__ojob.channels.recordLogHistory)
 		if (isDef(this.__ojob.channels.create) && isArray(this.__ojob.channels.create)) {
 			for(var cI in this.__ojob.channels.create) {
 				var cObj = this.__ojob.channels.create[cI]; 
@@ -1446,20 +1447,46 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 				
 				if (__flags.OJOB_JOBSIGNORELOG.indexOf(existing.name) < 0) {
 					var sep = (isDef(__logFormat) && (isDef(__logFormat.separator))) ? __logFormat.separator : " | ";
-					var msg = "[" + existing.name + "]" + sep + this.__pid + sep;
+					
+					// Helper function to trim job name if needed to fit the log line
+					var _trimJobName = function(jobName, status, dateStr, flagStr) {
+						var baseMsg = "[" + jobName + "]" + sep + this.__pid + sep + status;
+						var totalNeeded = ansiLength(flagStr) + ansiLength(baseMsg) + ansiLength(dateStr) + 3; // 3 for spaces and margin
+						
+						if (totalNeeded <= w) return jobName; // Name fits, no trimming needed
+						
+						// Calculate how much we need to trim
+						var maxNameLength = w - (ansiLength(sep) * 2 + ansiLength(this.__pid) + ansiLength(status) + ansiLength(dateStr) + ansiLength(flagStr) + 6); // 6 for brackets, spaces, and "..."
+						
+						if (maxNameLength <= 3) return "..."; // If even "..." won't fit, just return "..."
+						return jobName.substring(0, maxNameLength - 3) + "...";
+					}.bind(this);
+					
 					if (existing.start && (!existing.error && !existing.success)) { 
 						var __f = ansis ? "\u25B7 " : ">> "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
-						var __m1 = msg + "STARTED", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (showLogs && this.__ojob.logToConsole) { syncFn(() => { __pl(_g(aa) + _s(__f) + _b(__m1) + " " + _s(s.substr(0, ansiLength(s) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
+						var __m2 = __d.replace(/(T|Z)/g, " ").trim();
+						var trimmedName = _trimJobName(existing.name, "STARTED", __m2, __f);
+						var msg = "[" + trimmedName + "]" + sep + this.__pid + sep;
+						var __m1 = msg + "STARTED";
+						if (showLogs && this.__ojob.logToConsole) { 
+							var sepLength = Math.max(0, ansiLength(s) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f));
+							syncFn(() => { __pl(_g(aa) + _s(__f) + _b(__m1) + " " + _s(s.substr(0, sepLength) + " " + __m2 + sn)); }, this); 
+						}
 						if (showLogs && this.__ojob.logOJob)      { log(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
 					if (existing.start && existing.error) { 
 						var __f = ansis ? "\u2715 " : "!! "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
-						var __m1 = msg + "ERROR", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (showLogs && this.__ojob.logToConsole) { syncFn(() => { __p("\n" + _e(__f) + _g(aa) + _b(__m1) + " " + _e(se.substr(0, ansiLength(se) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn) + af.toYAML(existing.log) + "\n" + _e(se)); }, this); }
+						var __m2 = __d.replace(/(T|Z)/g, " ").trim();
+						var trimmedName = _trimJobName(existing.name, "ERROR", __m2, __f);
+						var msg = "[" + trimmedName + "]" + sep + this.__pid + sep;
+						var __m1 = msg + "ERROR";
+						if (showLogs && this.__ojob.logToConsole) { 
+							var sepLength = Math.max(0, ansiLength(se) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f));
+							syncFn(() => { __p("\n" + _e(__f) + _g(aa) + _b(__m1) + " " + _e(se.substr(0, sepLength) + " " + __m2 + sn) + af.toYAML(existing.log) + "\n" + _e(se)); }, this); 
+						}
 						if (!showLogs || !this.__ojob.logToConsole) { 
 							// Errors should be always logged and catch is available
 							logErr(__m1 + ": " + af.toSLON(existing.log)) 
@@ -1469,8 +1496,14 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 					if (existing.start && existing.success) { 
 						var __f = ansis ? "\u2713 " : "<< "
 						var __d = (new Date()).toJSON(); var __n = nowNano();
-						var __m1 = msg + "SUCCESS", __m2 = __d.replace(/(T|Z)/g, " ").trim();
-						if (showLogs && this.__ojob.logToConsole) { syncFn(() => { __pl("\n" + _g(aa) + _c(__f) + _b(__m1) + " " + _c(ss.substr(0, ansiLength(ss) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f)) + " " + __m2 + sn)); }, this); }
+						var __m2 = __d.replace(/(T|Z)/g, " ").trim();
+						var trimmedName = _trimJobName(existing.name, "SUCCESS", __m2, __f);
+						var msg = "[" + trimmedName + "]" + sep + this.__pid + sep;
+						var __m1 = msg + "SUCCESS";
+						if (showLogs && this.__ojob.logToConsole) { 
+							var sepLength = Math.max(0, ansiLength(ss) - (ansiLength(__m1) + __m2.length) - 2 - ansiLength(__f));
+							syncFn(() => { __pl("\n" + _g(aa) + _c(__f) + _b(__m1) + " " + _c(ss.substr(0, sepLength) + " " + __m2 + sn)); }, this); 
+						}
 						if (showLogs && this.__ojob.logOJob)      { log(__m1) }
 						if (isDef(getChLog()) && this.__ojob.logJobs) getChLog().set({ n: nowNano(), d: __d, t: "INFO" }, { n: nowNano(), d: __d, t: "INFO", m: __m1 });
 					}
@@ -2045,7 +2078,14 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 		while(listTodos.length > 0) {
 			var todo = this.getTodoCh().get(listTodos.shift());
 			job = this.getJobsCh().get({ name: todo.name });
-			var argss = (this.__ojob.shareArgs) ? merge(args, $get("res")) : args
+			var argss 
+			if (this.__ojob.shareArgs) {
+				var _r = clone($get("res"))
+				delete _r.init
+				argss = merge(args, _r)
+			} else {
+				argss = args
+			}
 			//var argss = merge(args, last);
 			//if (isDef(todo.args)) argss = this.__processArgs(merge(args, last), todo.args, aId);
 			if (isDef(todo.args)) argss = this.__processArgs(argss, todo.args, aId);

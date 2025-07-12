@@ -218,7 +218,8 @@ ojob:
 ```yaml
 ojob:
   channels:
-    recordLog: false           # Record OpenAF logs
+    recordLog       : false    # Record OpenAF logs
+    recordLogHistory: -1       # Number of log entries to keep (-1 unlimited)
     
     # Create channels
     create:

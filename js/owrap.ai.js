@@ -184,7 +184,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (aJsonFlag) {
                         msgs.unshift({ role: (_noSystem ? "developer" : "system"), content: "output json" })
                     }
-                    _r.conversation = aPrompt
+                    _r.conversation = msgs
                     if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
                     var body = {
                         model: aModel,
@@ -224,10 +224,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 stopWith = true
                             }
                         })
-                        if (stopWith)
+                        if (stopWith) {
+                            _r.conversation = _r.conversation.concat(isString(_res) ? { role: "assistant", content: _res } : _res.choices[0].message)
                             return _res
-                        else
+                        } else {
+                            _r.conversation = _r.conversation.concat(_p)
                             return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                        }
                     } else {
                         return _res
                     }
@@ -429,11 +432,21 @@ OpenWrap.ai.prototype.__gpttypes = {
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
-                    aPrompt = _r.conversation.filter(r => isUnDef(r.role) || r.role != "system").map(r => ({ text: r.text })).concat(aPrompt)
+                    aPrompt = _r.conversation.reduce((acc, r) => {
+                        if (isUnDef(r.role) || r.role != "system") {
+                            acc.push(isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ] });
+                        }
+                        return acc;
+                    }, []).concat(aPrompt);
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", parts: [ { text: c } ] })
                  
                     var body = {
-                        system_instruction: { parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ) },
+                        system_instruction: { parts: _r.conversation.reduce((acc, r) => {
+                            if (isDef(r.role) && r.role == "system") {
+                                acc.push(isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ] });
+                            }
+                            return acc;
+                        }, []) },
                         contents: msgs,
                         generationConfig: {
                             temperature: aTemperature
@@ -484,10 +497,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 })
                             }
                         })
-                        if (stopWith)
+                        if (stopWith) { 
+                            _r.conversation = _r.conversation.concat(_res.candidates[0].content)
                             return _res
-                        else
+                        } else {
+                            _r.conversation = _r.conversation.concat(_p)
                             return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                        }
                     } else {
                         return _res
                     }
@@ -696,7 +712,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }
-                    _r.conversation = aPrompt
+                    _r.conversation = msgs
                     var _res = _r._request(uri, body)
 
                     if (isDef(_res) && isDef(_res.message) && isArray(_res.message["tool_calls"])) {
@@ -710,8 +726,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 _p.push({ role: "tool", content: _tr, tool_call_id: tc.function.id })
                             }
                         })
+                        _r.conversation = _r.conversation.concat(_p)
                         return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
                     } else {
+                        if (isDef(_res) && isDef(_res.message) && isString(_res.message.content)) {
+                            _r.conversation.push({ role: "assistant", content: _res.message.content })
+                        } else {
+                            _r.conversation.push({ role: "assistant", content: _res })
+                        }
                         return _res
                     }
                 },
@@ -869,7 +891,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
                  
-                    _r.conversation = aPrompt
                     if (_noSystem) {
                         msgs = msgs.filter(m => m.role != "system")
                     }
@@ -885,6 +906,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (aJsonFlag) {
                         msgs.push({ role: "user", content: "output json" })
                     }
+                     _r.conversation = msgs
                     body = merge(body, aOptions.params)
                     /*if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
@@ -924,6 +946,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return _res
                     }*/
+                   _r.conversation.push({
+                        role: "assistant",
+                        content: _res.content
+                   })
                    return _res
                 },
                 rawImgGen: (aPrompt, aModel) => {

@@ -143,7 +143,7 @@ OpenWrap.obj.prototype.fromObj2DBTableCreate = function(aTableName, aMapOrArray,
 
 	const detType = aO => {
 		if (isBoolean(aO)) return "BOOLEAN"
-		if (isNumber(aO)) return "NUMBER"
+		if (isNumber(aO)) return "NUMERIC"
 		if (isDate(aO)) return "TIMESTAMP"
 		return "VARCHAR"
 	}

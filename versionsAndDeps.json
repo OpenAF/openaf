@@ -89,7 +89,7 @@
 			"license": "https://raw.githubusercontent.com/lodash/lodash/master/LICENSE",
 			"deps": []
 		},
-                {
+				{
 			"description": "Regression",
 			"path": ["js/regression.js"],
 			"version": "2.0.1",
@@ -97,7 +97,7 @@
 			"type": ["js"],
 			"license": "https://raw.githubusercontent.com/Tom-Alexander/regression-js/master/LICENSE",
 			"deps": []
-    		},
+			},
 		{
 			"description": "JsDiff",
 			"path": [ "js/diff.js" ],
@@ -163,20 +163,20 @@
 			"license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",
 			"deps": []
 		},
-		{
-			"description": "JLine",
-			"path": ["lib/jline-2.14.5.jar"],
-			"version": "2.14.5",
+	   {
+		   "description": "JLine",
+		   "path": ["lib/jline-2.14.6.jar"],
+		   "version": "2.14.6",
 			"changes": true,
 			"comment": "updated to jline 2.14.6",
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/jline/jline2/master/LICENSE.txt",
 			"deps": []
 		},
-		{
-			"description": "JAnsi",
-			"path": ["lib/jansi-2.14.6.jar"],
-			"version": "2.14.6",
+	   {
+		   "description": "JAnsi",
+		   "path": ["lib/jansi-1.18.jar"],
+		   "version": "1.18",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/fusesource/jansi/master/license.txt",
@@ -186,19 +186,19 @@
 				"file": "jansi-{{version}}.jar"
 			}
 		},
-		{
-			"description": "Apache Commons IO",
-			"path": ["lib/commons-io-2.17.0.jar"],
-			"version": "2.17.0",
+	   {
+		   "description": "Apache Commons IO",
+		   "path": ["lib/commons-io-2.19.0.jar"],
+		   "version": "2.19.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
 			"deps": []
 		},
-		{
-			"description": "Apache Commons CSV",
-			"path": ["lib/commons-csv-1.12.0.jar"],
-			"version": "1.12.0",
+	   {
+		   "description": "Apache Commons CSV",
+		   "path": ["lib/commons-csv-1.14.0.jar"],
+		   "version": "1.14.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -231,46 +231,37 @@
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
 			"deps": []
 		},
-		/*{
-			"description": "Apache Commons HTTPComponents",
-			"path": ["lib/httpclient-4.5.13.jar", "lib/httpcore-4.4.14.jar", "lib/httpmime-4.5.13.jar"],
-			"version": "4.5.13",
-			"changes": false,
-			"type": ["java"],
-			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
-			"deps": []
-		},*/
-		{
-			"description": "OkHTTP Client",
-			"path": ["okhttp-4.12.0.jar", "okio-3.9.1.jar", "okio-jvm-3.9.1.jar", "kotlin-stdlib-2.0.20.jar"],
-			"version": "4.12.0",
+	   {
+		   "description": "OkHTTP Client",
+		   "path": ["okhttp-4.12.0.jar", "okio-3.15.0.jar", "okio-jvm-3.15.0.jar", "kotlin-stdlib-2.2.0.jar"],
+		   "version": "4.12.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",
 			"deps": []
 		},
-		{
-			"description": "Oracle JDBC 23",
-			"path": ["lib/ojdbc8.jar"],
-			"version": "23.2.0.0",
+	   {
+		   "description": "Oracle JDBC 23",
+		   "path": ["lib/ojdbc11-23.8.0.25.04.jar"],
+		   "version": "23.8.0.25.04",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.oracle.com/webapps/maven/register/license.html",
 			"deps": []
 		},
-		{
-			"description": "PostgreSQL JDBC",
-			"path": ["lib/postgresql-42.7.4.jar"],
-			"version": "42.7.4",
+	   {
+		   "description": "PostgreSQL JDBC",
+		   "path": ["lib/postgresql-42.7.7.jar"],
+		   "version": "42.7.7",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
 			"deps": []
 		},
-		{
-			"description": "DNS Java",
-			"path": ["lib/dnsjava-3.6.2.jar"],
-			"version": "3.6.2",
+	   {
+		   "description": "DNS Java",
+		   "path": ["lib/dnsjava-3.6.3.jar"],
+		   "version": "3.6.3",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://github.com/dnsjava/dnsjava/blob/master/LICENSE",
@@ -308,10 +299,10 @@
 			"license": "https://raw.githubusercontent.com/wstrange/GoogleAuth/master/LICENSE",
 			"deps": []
 		},
-		{
-			"description": "GSON",
-			"path": ["lib/gson-2.12.1.jar"],
-			"version": "2.11.0",
+	   {
+		   "description": "GSON",
+		   "path": ["lib/gson-2.13.1.jar"],
+		   "version": "2.13.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/google/gson/master/LICENSE",
@@ -321,10 +312,10 @@
 				"file": "gson-{{version}}.jar"
 			}
 		},
-		{
-			"description": "Jackson Core",
-			"path": ["lib/jackson-core-2.18.0.jar"],
-			"version": "2.18.0",
+	   {
+		   "description": "Jackson Core",
+		   "path": ["lib/jackson-core-2.19.1.jar"],
+		   "version": "2.19.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
@@ -376,7 +367,7 @@
 			"name": "Console",
 			"removable": false,
 			"deps": [
-				"lib/jline-2.14.5.jar"
+				"lib/jline-2.14.6.jar"
 			]
 		},
 		{
@@ -394,18 +385,18 @@
 			"name": "HTTP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.17.0.jar",
-				"lib/jetty-io-12.0.15.jar",
-				"lib/jetty-util-12.0.15.jar",
-				"lib/jetty-client-12.0.15.jar",
-				"lib/jetty-http-12.0.15.jar"
+				"lib/commons-io-2.19.0.jar",
+				"lib/jetty-io-12.0.23.jar",
+				"lib/jetty-util-12.0.23.jar",
+				"lib/jetty-client-12.0.23.jar",
+				"lib/jetty-http-12.0.23.jar"
 			],
 			"deps": [
-				"lib/jetty-websocket-jetty-api-12.0.15.jar",
-				"lib/jetty-websocket-jetty-client-12.0.15.jar",
-				"lib/jetty-websocket-jetty-common-12.0.15.jar",
-				"lib/jetty-websocket-core-12.0.15.jar",
-				"lib/jetty-websocket-core-common-12.0.15.jar"
+				"lib/jetty-websocket-jetty-api-12.0.23.jar",
+				"lib/jetty-websocket-jetty-client-12.0.23.jar",
+				"lib/jetty-websocket-jetty-common-12.0.23.jar",
+				"lib/jetty-websocket-core-12.0.23.jar",
+				"lib/jetty-websocket-core-common-12.0.23.jar"
 			]
 		},
 		{
@@ -425,26 +416,26 @@
 			"name": "SNMP",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-3.8.2.jar",
-				"lib/snmp4j-agent-3.8.1.jar"
+				"lib/snmp4j-3.9.3.jar",
+				"lib/snmp4j-agent-3.8.2.jar"
 			]
 		},
 		{
 			"name": "SNMPServer",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-3.8.2.jar",
-				"lib/snmp4j-agent-3.8.1.jar"
+				"lib/snmp4j-3.9.3.jar",
+				"lib/snmp4j-agent-3.8.2.jar"
 			]
 		},
 		{
 			"name": "SSH",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.17.0.jar"
+				"lib/commons-io-2.19.0.jar"
 			],
 			"deps": [
-				"lib/jsch-0.2.22.jar",
+				"lib/jsch-2.27.2.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -492,14 +483,14 @@
 			"name": "Oracle",
 			"removable": true,
 			"deps": [
-				"lib/ojdbc8.jar"
+				"lib/ojdbc11-23.8.0.25.04.jar"
 			]
 		},
 		{
 			"name": "PostgreSQL",
 			"removable": true,
 			"deps": [
-				"lib/postgresql-42.7.4.jar"
+				"lib/postgresql-42.7.7.jar"
 			]
 		}
 	]
