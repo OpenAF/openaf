@@ -8602,6 +8602,38 @@ const $cache = function(aName) {
 
 /**
  * <odoc>
+ * <key>$sync() : Object</key>
+ * Returns an object with a 'run(aFn)' function that will execute the provided aFn in a synchronized way.
+ * The run function will lock the execution until the aFn is finished. This is useful to
+ * ensure that only one thread is executing the aFn at a time.\
+ * \
+ * Example:\
+ * \
+ * var s = $sync()\
+ * s.run(() => {\
+ *     // Your code here, only one thread will execute this at a time\
+ * })
+ * </odoc>
+ */
+function $sync() {
+	const _l = new java.util.concurrent.locks.ReentrantLock()
+
+	const fnS = function(aFn) {
+		_l.lock()
+		try {
+			aFn()
+		} finally {
+			_l.unlock()
+		}
+	}
+
+	return {
+		run: fnS
+	}
+}
+
+/**
+ * <odoc>
  * <key>threadBoxCtrlC() : Boolean</key>
  * Meant to be use as a stopFunction for threadBox will return true if
  * Ctrl-C is detected and false otherwise. If the current terminal can't
