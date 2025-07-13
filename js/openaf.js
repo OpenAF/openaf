@@ -5461,20 +5461,20 @@ const pidCheckOut = function(aFilename) {
  * </odoc>
  */
 const splitArray = function(anArray, numberOfParts) {
-    var res = [];
-    if (isUnDef(numberOfParts)) numberOfParts = getNumberOfCores()
-    
+	var res = [];
+	if (isUnDef(numberOfParts)) numberOfParts = getNumberOfCores()
+	
 	if (numberOfParts >= anArray.length) {
 		for(var i in anArray) { res.push([anArray[i]]); }
 	} else {
-	    for(var i = 0; i < numberOfParts; i++) {
-	        var lower = Math.round(anArray.length/numberOfParts * i);
-	        var upper = Math.round(anArray.length/numberOfParts * (i+1));
-	        res.push(anArray.slice(lower, upper));
-	    }
+		for(var i = 0; i < numberOfParts; i++) {
+			var lower = Math.round(anArray.length/numberOfParts * i);
+			var upper = Math.round(anArray.length/numberOfParts * (i+1));
+			res.push(anArray.slice(lower, upper));
+		}
 	}
-    
-    return res;
+	
+	return res;
 }
 
 /**
@@ -5692,79 +5692,119 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	_$(aFn, "aFn").isFunction().$_()
 	aErrFn = _$(aErrFn, "aErrFn").isFunction().default(printErr)
 
-	ow.loadObj()
-	var pres = splitArray(range(anArray.length))
-    var fRes = new ow.obj.syncArray([]), _ts = [], parts = $atomic(0, "long"), times = $atomic(), execs = $atomic(0, "long")
-	var _nc = getNumberOfCores()
+
+	var fRes, times, execs, _nc, arS = anArray.length
+	// If anArray is empty, just return an empty array
+	if (arS == 0) return []
+	// If anArray is just one element, just return it
+	if (arS == 1) {
+		try {
+			return [ aFn(anArray[0], 0) ]
+		} catch(e) {
+			aErrFn(e)
+			return []
+		}
+	} else {
+	    ow.loadObj()
+		fRes = new ow.obj.syncArray(), times = $atomic(), execs = $atomic(0, "long"), _nc = getNumberOfCores()
+	}
+
+	const calculatePartitions = (arraySize, numThreads) => {
+		const partitions = []
+		const chunkSize = Math.floor(arraySize / numThreads)
+		const remainder = arraySize % numThreads
+		
+		var start = 0
+		for (var i = 0; i < numThreads; i++) {
+			var end = start + chunkSize + (i < remainder ? 1 : 0)
+			partitions.push({ start, end })
+			start = end
+		}
+		return partitions
+	}
+
+	var pres = calculatePartitions(arS, _nc)
+    var _ts = [], parts = $atomic(0, "long")
 
 	// If not enough cores or if too many threads in the pool then go sequential
 	var _tpstats = __getThreadPools()
 	//lprint(_tpstats)
-	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq || _tpstats.active / getNumberOfCores() > __flags.PFOREACH.seq_ratio
-	pres.forEach((part, _i_) => {
-		try {
-			if (beSeq) {
-				var ar = part.map(a => {
+	var beSeq = aUseSeq || pres.length == 1 || _nc < 3 || __flags.PFOREACH.forceSeq || _tpstats.active / _nc > __flags.PFOREACH.seq_ratio
+
+	const waitMs = __flags.PFOREACH.waitms
+	const seqThresholdMs = __flags.PFOREACH.seq_thrs_ms
+	const threads_thrs = __flags.PFOREACH.threads_thrs
+	const seq_ratio = __flags.PFOREACH.seq_ratio
+
+	const fnPar = function(ipart, part) {
+		return () => {
+			var _ar = []
+			try {
+				for (var j = part.start; j < part.end; j++) {
 					try {
 						var init = nowNano()
-						var _R = aFn(anArray[a-1], a-1)
+						var _R = aFn(anArray[j], j)
 						times.getAdd(nowNano() - init)
 						execs.inc()
-						return _R
-					} catch(ee) {
+						_ar.push(_R)
+					} catch (ee) {
 						aErrFn(ee)
+						_ar.push(__)
 					}
-					return __
-				} )
+				}
+				fRes.add( { i: ipart, r: _ar } )
+			} catch(e) { 
+				aErrFn(e)
+			}
+		}
+	}
+
+	for(var _i_ = 0; _i_ < pres.length; _i_++) {
+		try {
+			if (beSeq) {
+				// Use a regular for loop for better performance
+				var ar = []
+				for (var j = pres[_i_].start; j < pres[_i_].end; j++) {
+					try {
+						var init = nowNano()
+						var _R = aFn(anArray[j], j)
+						times.getAdd(nowNano() - init)
+						execs.inc()
+						ar.push(_R)
+					} catch (ee) {
+						aErrFn(ee)
+						ar.push(__)
+					}
+				}
 				fRes.add( { i: _i_, r: ar } )
 				parts.inc()
 			} else {
-				_ts.push( $do(() => {
-					try {
-						var ar = part.map(a => {
-							try {
-								var init = nowNano()
-								var _R = aFn(anArray[a-1], a-1)
-								times.getAdd(nowNano() - init)
-								execs.inc()
-								return _R
-							} catch(ee) {
-								aErrFn(ee)
-							}
-							return __
-						} )
-						fRes.add( { i: _i_, r: ar } )
-					} catch(e) { 
-						aErrFn(e)
-					}
-					return true
-				}).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
+				_ts.push( $do( fnPar(_i_, pres[_i_]) ).then(() => parts.inc() ).catch(derr => { parts.inc(); aErrFn(derr) } ) )
 				
 				// Cool down and go sequential if too many threads
 				_tpstats = __getThreadPools()
-				if (_tpstats.queued > _tpstats.poolSize / __flags.PFOREACH.threads_thrs) {
+				if (_tpstats.queued > _tpstats.poolSize / threads_thrs) {
 					$doWait(_ts.pop())
 				}
 			}
 		} catch(eee) {
-			aErrFn(eee)
+			aErrFn(eee) 
 		} finally {
 			// If execution time per call is too low, go sequential
-			if ( pres.length > 1 && _nc >= 3 ) {
-				if ( ((times.get() / execs.get() ) / 1000000) < __flags.PFOREACH.seq_thrs_ms || __getThreadPools().active / getNumberOfCores() > __flags.PFOREACH.seq_ratio) {
+			if ( typeof aUseSeq === "undefined" && pres.length > 1 && _nc >= 3 ) {
+				if ( ((times.get() / execs.get() ) / 1000000) < seqThresholdMs || __getThreadPools().active / _nc > seq_ratio) {
 					beSeq = true
 				} else {
 					beSeq = false
 				}
 			}
 		}
-		return part.length
-	})
+	}
 
 	var tries = 0
 	do {
 		$doWait($doAll(_ts))
-		if (parts.get() < pres.length) sleep(__getThreadPools().queued * __flags.PFOREACH.waitms, true)
+		if (parts.get() < pres.length) sleep(__getThreadPools().queued * waitMs, true)
 		tries++
 	} while(parts.get() < pres.length && tries < 100)
 
