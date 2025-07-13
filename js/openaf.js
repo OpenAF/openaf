@@ -1078,13 +1078,13 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
     if (_aOptions.compact) {
 		if (_aOptions.mono) {
 			slines = 2
-			line = (_aOptions.noansi ? "\u001b[2m|\u001b[m" : "\u001b[2m│\u001b[2m") 
-			endc = (_aOptions.noansi ? "\u001b[2m\\\u001b[m " : (_aOptions.curved ? "\u001b[2m╰\u001b[m " : "\u001b[2m└\u001b[m "))
+			line = (_aOptions.noansi ? "|" : "│") 
+			endc = (_aOptions.noansi ? "\\ " : (_aOptions.curved ? "╰ " : "└ "))
 			//strc = (_aOptions.noansi ? "/ " : "┬ ")
-			strc = (_aOptions.noansi ? "\u001b[2m/\u001b[m " :  (_aOptions.curved ? "\u001b[2m╭\u001b[m " : "\u001b[2m┌\u001b[m "))
-			ssrc = (_aOptions.noansi ? "\u001b[2m-\u001b[m " : "\u001b[2m─\u001b[m ")
-			midc = (_aOptions.noansi ? "\u001b[2m|\u001b[m " : "\u001b[2m├\u001b[m ")
-			skey = ":\u001b[2m "
+			strc = (_aOptions.noansi ? "/ " :  (_aOptions.curved ? "╭ " : "┌ "))
+			ssrc = (_aOptions.noansi ? "- " : "─ ")
+			midc = (_aOptions.noansi ? "| " : "├ ")
+			skey = ": "
 			_aOptions.color = false
 		} else {
 			slines = 2
@@ -1161,7 +1161,7 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
             return result
         }
         _ac  = (aAnsi, aString) => {
-            if (!__conConsole || (isDef(_aOptions.color) && !_aOptions.color)) return aString
+            if (!__conConsole || ((isDef(_aOptions.color) && !_aOptions.color))) return aString
 
             aAnsi = aAnsi.trim().toUpperCase()
             if (_aOptions.bgcolor && aAnsi.length > 0) {
@@ -13351,9 +13351,9 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__conConsole = true
 			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: false, color: true }))
 		case "mtree":
-			__ansiColorFlag = true
-			__conConsole = true
-			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: true, color: false }))
+			//__ansiColorFlag = true
+			//__conConsole = true
+			return fnP(printTreeOrS(res, __, { noansi: !__conAnsi, mono: true, color: false, curved: false }))
 		case "btree":
 			return fnP(printTreeOrS(res, __, { noansi: true, mono: false, color: false }))
 		case "res":
