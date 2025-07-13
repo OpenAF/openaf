@@ -115,7 +115,8 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $p               -- returns the provided literal\
  *   - $sline           -- shortcut to the OpenAF's format withSideLine\
  *   - $set             -- block set of a provided key\
- *   - $concat          -- concatenates all arguments as a single value
+ *   - $concat          -- concatenates all arguments as a single value\
+ *   - $nl              -- returns a new line character
  * </odoc>
  */
 OpenWrap.template.prototype.addOpenAFHelpers = function() {
@@ -258,6 +259,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		},
 		pass : () => "",
 		p: s => s,
+		nl: () => "\n",
 		set: (aK, o) => {
 			if (__flags.TEMPLATE_SET && isString(aK) && isMap(o) && isMap(o.data)) {
 				$$(o.data.root).set(aK, o.fn(this) )
