@@ -2740,9 +2740,15 @@ OpenWrap.server.prototype.httpd = {
 		if (isDef(getOPackPath("Mermaid")) && 
 		    io.fileExists(getOPackPath("Mermaid")+"/mermaid.js")) loadLib("mermaid.js")
 
+		// To be deprecated in favour of HTTPD_CUSTOMURIS
 		Object.keys(this.customLibs).forEach(lib => {
 			aMapOfRoutes["/js/" + lib] = function() { return parent.customLibs[lib](aHTTPd) }
 		})
+
+		Object.keys(__flags.HTTPD_CUSTOMURIS).forEach(uri => {
+			aMapOfRoutes[uri] = function() { return __flags.HTTPD_CUSTOMURIS[uri](aHTTPd) }
+		})
+
 		aMapOfRoutes["/js/jquery.js"] = function() { return ow.server.httpd.replyJQuery(aHTTPd); };
 		aMapOfRoutes["/js/chart.js"] = function() { return ow.server.httpd.replyChart(aHTTPd) }
 		aMapOfRoutes["/js/handlebars.js"] = function() { return ow.server.httpd.replyHandlebars(aHTTPd); };
