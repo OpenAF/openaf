@@ -117,7 +117,23 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r.conversation
                 },
                 setConversation: (aConversation) => {
-                    if (isArray(aConversation)) _r.conversation = aConversation
+                    aConversation = _$(aConversation, "aConversation").isArray().default([])
+
+                    if (isArray(aConversation)) {
+                        _r.conversation = aConversation.map(r => {
+                            if (isDef(r)) {
+                                if (isString(r)) {
+                                    return { role: "user", content: r }
+                                } else if (isMap(r)) {
+                                    if (isDef(r.role) && r.role == "model") {
+                                        r.role = "assistant"
+                                    }
+                                    if (isUnDef(r.role)) r.role = "user"
+                                    return r
+                                }
+                            }
+                        })
+                    }
                     return _r
                 },
                 setTool: (aName, aDesc, aParams, aFn) => {
@@ -353,10 +369,43 @@ OpenWrap.ai.prototype.__gpttypes = {
                 conversation: [],
                 tools: [],
                 getConversation: () => {
-                    return _r.conversation
+                    var _res = _r.conversation.map(r => {
+                        if (isMap(r)) {
+                            if (isUnDef(r.role)) 
+                                r.role = "user"
+                            else if (r.role == "assistant") {
+                                r.role = "model"
+                            }
+                            
+                            if (isArray(r.parts) && r.parts.length > 0) {
+                                r.content = r.parts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                                delete r.parts
+                            }
+                        }
+                        return r
+                    })
+                    return _res
                 },
                 setConversation: (aConversation) => {
-                    if (isArray(aConversation)) _r.conversation = aConversation
+                    aConversation = _$(aConversation, "aConversation").isArray().default([])
+
+                    if (isArray(aConversation)) {
+                        _r.conversation = aConversation.map(r => {
+                            if (isDef(r)) {
+                                if (isString(r)) {
+                                    return { role: "user", parts: [ { text: r } ] }
+                                } else if (isMap(r)) {
+                                    if (isUnDef(r.role)) r.role = "user"
+                                    if (r.role != "model" && r.role != "user") r.role = "model"
+                                    if (isDef(r.content)) {
+                                        r.parts = [ { text: r.content } ]
+                                        delete r.content
+                                    }
+                                    return r
+                                }
+                            }
+                        })
+                    }
                     return _r
                 },
                 setTool: (aName, aDesc, aParams, aFn) => {
@@ -374,8 +423,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (__r.candidates[0].finishReason == "STOP") {
                            return __r.candidates[0].content.parts.reduce((aC, aV) => aC + "\n" + aV.text, "")
                         }
-                     }
-                     return __r
+                    }
+                    return stringify(__r, __, "")
                 },
                 promptImage: (aPrompt, aImage, aDetailLevel, aRole, aModel, aTemperature, aJsonFlag) => {
                     aRole        = _$(aRole, "aRole").isString().default("user")
