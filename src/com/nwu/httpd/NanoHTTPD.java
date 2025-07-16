@@ -1594,6 +1594,10 @@ public abstract class NanoHTTPD {
             return this.lowerCaseHeader.get(name.toLowerCase());
         }
 
+        public Map<String, String> getHeaders() {
+            return this.lowerCaseHeader;
+        }
+
         public String getMimeType() {
             return this.mimeType;
         }

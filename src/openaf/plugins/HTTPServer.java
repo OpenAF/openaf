@@ -42,11 +42,9 @@ public class HTTPServer extends ScriptableObject {
 	/**
 	 * 
 	 */
-        private static final long serialVersionUID = -8638106468713717782L;
-        private static final boolean USE_UNDERTOW = Boolean.parseBoolean(
-            System.getProperty("openaf.httpd.undertow",
-                java.lang.System.getenv().getOrDefault("OAF_HTTPD_UNDERTOW", "false")));
-        protected IHTTPd httpd;
+	private static final long serialVersionUID = -8638106468713717782L;
+	public static boolean USE_UNDERTOW = false;
+	protected IHTTPd httpd;
 	protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
 	protected String id;
 	protected int serverport;
@@ -243,6 +241,8 @@ public class HTTPServer extends ScriptableObject {
                                 httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), (String) host, port, (IWebSock) ws, timeout);
                         }
                 }
+
+		System.out.println("undertow = " + USE_UNDERTOW);
 
 		if (keyStorePath != null && !keyStorePath.equals("undefined") &&
 			password != null && !(password instanceof Undefined)) {

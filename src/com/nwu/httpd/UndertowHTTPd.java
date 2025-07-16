@@ -84,7 +84,7 @@ public class UndertowHTTPd implements IHTTPd {
                 params.put("body", body);
             }
         }
-        Response resp = HTTPSession.serve(this, log, uri, method, headers, params, files, original);
+        com.nwu.httpd.NanoHTTPD.Response resp = HTTPSession.serve(this, log, uri, method, headers, params, files, original);
         if (resp == null) {
             exchange.setStatusCode(404);
             exchange.getResponseSender().send("Not Found");
@@ -94,7 +94,7 @@ public class UndertowHTTPd implements IHTTPd {
         if (resp.getMimeType() != null) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, resp.getMimeType());
         }
-        for(Map.Entry<String,String> e : resp.getHeader().entrySet()) {
+        for(Map.Entry<String,String> e : resp.getHeaders().entrySet()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString(e.getKey()), e.getValue());
         }
         InputStream data = resp.getData();

@@ -6,7 +6,7 @@ jobs:
    - name  : Build OpenAFOS
      deps  : 
      - Check pom.xml
-     exec  : >
+     exec  : | #js
         global.path = (isDef(args.path)) ? args.path : ".";
         if (isUnDef(args.openafJSON)) args.openafJSON = global.path + "/openaf.json";
         if (isUnDef(args.openafDIST)) args.openafDIST = "nightly";
@@ -18,7 +18,7 @@ jobs:
    - name  : Repack OpenAFOS
      deps  :
      - Build OpenAFOS
-     exec  : |
+     exec  : | #js
         log("Repacking...");
         $sh().envs({ __OAF_MAINCLASS: "openaf.Launcher" }, true).sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "--repack"]).exec()
 
@@ -37,7 +37,7 @@ jobs:
      - Prepare ojob doc
      - Build OpenAFOS
      - Repack OpenAFOS
-     exec  : >
+     exec  : | #js
         log("Copying...");
         //sh("cp " + global.path + "/openaf.jar " + global.path + "/dist/openaf.jar", "", undefined, true);
         io.mkdir(global.path + "/dist");
@@ -47,7 +47,7 @@ jobs:
    - name : Prepare ojob doc
      deps :
      - Repack OpenAFOS
-     exec : |
+     exec : | #js
        sleep(1000, true)
 
        plugin("ZIP")
@@ -73,7 +73,7 @@ jobs:
      deps : 
      - Repack OpenAFOS
      - Prepare ojob doc
-     exec : |
+     exec : | #js
        sleep(1000, true)
 
        plugin("ZIP")
@@ -124,7 +124,7 @@ jobs:
    - name : Prepare ojob saved
      deps :
      - Repack OpenAFOS
-     exec : |
+     exec : | #js
        sleep(1000, true)
 
        $sh([ow.format.getJavaHome() + "/bin/java", "-jar", global.path + "/openaf.jar", "-c", "ow.loadOJob();__flags.OJOB_CHECK_JOB_CHANGES=false;oJobRunFile('" + global.path + "/ojob.json');io.writeFileJSON('" + global.path + "/ojob.saved.json',$ch('oJob::jobs').getAll(), '')"])
