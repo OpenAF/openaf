@@ -74,9 +74,9 @@ public class HTTPServer extends ScriptableObject {
 	private static final long serialVersionUID = -8638106468713717782L;
 	
 	// Flag to control which HTTP server implementation to use
-	// true = use Java built-in HttpServer, false = use com.nwu.httpd implementation
-	public static boolean DEFAULT_USE_JAVA_HTTP_SERVER = false;
-	protected boolean USE_JAVA_HTTP_SERVER = DEFAULT_USE_JAVA_HTTP_SERVER;
+	// // public static String DEFAULT_HTTP_SERVER = "java"; // Use Java built-in HttpServer
+	public static String DEFAULT_HTTP_SERVER = "nwu";
+	protected boolean USE_JAVA_HTTP_SERVER = DEFAULT_HTTP_SERVER.equals("java") ? true: false;
 	
 	// NWU implementation fields
 	protected IHTTPd httpd;
@@ -266,7 +266,7 @@ public class HTTPServer extends ScriptableObject {
 		if (version.equals("java")) {
 			USE_JAVA_HTTP_SERVER = true;
 		} else {
-			USE_JAVA_HTTP_SERVER = !DEFAULT_USE_JAVA_HTTP_SERVER;
+			USE_JAVA_HTTP_SERVER = DEFAULT_HTTP_SERVER.equals("java");
 		}
 
 		serverport = port;
@@ -455,6 +455,16 @@ public class HTTPServer extends ScriptableObject {
 	@JSFunction
 	public void addEcho(String uri) {
 		if (USE_JAVA_HTTP_SERVER) {
+			// Remove previous handler/context if already exists for this URI
+			if (javaHandlers.containsKey(uri)) {
+				if (isSecure && javaHttpsServer != null) {
+					javaHttpsServer.removeContext(uri);
+				} else if (javaHttpServer != null) {
+					javaHttpServer.removeContext(uri);
+				}
+				javaHandlers.remove(uri);
+			}
+
 			HttpHandler echoHandler = new HttpHandler() {
 				@Override
 				public void handle(HttpExchange exchange) throws IOException {
@@ -501,6 +511,16 @@ public class HTTPServer extends ScriptableObject {
 	@JSFunction
 	public void addStatus(String uri) {
 		if (USE_JAVA_HTTP_SERVER) {
+			// Remove previous handler/context if already exists for this URI
+			if (javaHandlers.containsKey(uri)) {
+				if (isSecure && javaHttpsServer != null) {
+					javaHttpsServer.removeContext(uri);
+				} else if (javaHttpServer != null) {
+					javaHttpServer.removeContext(uri);
+				}
+				javaHandlers.remove(uri);
+			}
+
 			HttpHandler statusHandler = new HttpHandler() {
 				@Override
 				public void handle(HttpExchange exchange) throws IOException {
@@ -590,7 +610,19 @@ public class HTTPServer extends ScriptableObject {
 					exchange.sendResponseHeaders(302, -1);
 				}
 			};
-			
+
+			// Remove previous handler/context for "/" if it exists
+			if (javaHandlers.containsKey("/")) {
+				if (isSecure && javaHttpsServer != null) {
+					javaHttpsServer.removeContext("/");
+				} else if (javaHttpServer != null) {
+					javaHttpServer.removeContext("/");
+				}
+				javaHandlers.remove("/");
+			}
+
+			javaHandlers.put("/", defaultRedirectHandler);
+
 			if (isSecure && javaHttpsServer != null) {
 				javaHttpsServer.createContext("/", defaultRedirectHandler);
 			} else if (javaHttpServer != null) {
@@ -611,6 +643,16 @@ public class HTTPServer extends ScriptableObject {
 	@JSFunction
 	public void addFileBrowse(String uri, String filepath) {
 		if (USE_JAVA_HTTP_SERVER) {
+			// Remove previous handler/context if already exists for this URI
+			if (javaHandlers.containsKey(uri)) {
+				if (isSecure && javaHttpsServer != null) {
+					javaHttpsServer.removeContext(uri);
+				} else if (javaHttpServer != null) {
+					javaHttpServer.removeContext(uri);
+				}
+				javaHandlers.remove(uri);
+			}
+
 			HttpHandler fileHandler = new HttpHandler() {
 				@Override
 				public void handle(HttpExchange exchange) throws IOException {
