@@ -2,23 +2,53 @@ package openaf.plugins;
 
 /**
  * 
- * Copyright 2023 Nuno Aguiar
+ * Copyright 2025 Nuno Aguiar
+ * 
+ * HTTPServer plugin with dual implementation support:
+ * 1. Legacy NWU HTTPd implementation (default)
+ * 2. Java built-in HttpServer implementation
+ * 
+ * To use Java implementation, set: HTTPServer.USE_JAVA_HTTP_SERVER = true
+ * 
+ * Features supported by both implementations:
+ * - HTTP and HTTPS support
+ * - Custom request handlers
+ * - Static file serving
+ * - Echo and status endpoints
+ * - Session management
+ * 
+ * Features only supported by NWU implementation:
+ * - WebSocket support
+ * - XDT Server
+ * - Direct access to underlying HTTP server object
  *
  */
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.lang.String;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsServer;
+import javax.net.ssl.SSLContext;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
+import org.mozilla.javascript.UniqueTag;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
 
@@ -42,7 +72,22 @@ public class HTTPServer extends ScriptableObject {
 	 * 
 	 */
 	private static final long serialVersionUID = -8638106468713717782L;
+	
+	// Flag to control which HTTP server implementation to use
+	// true = use Java built-in HttpServer, false = use com.nwu.httpd implementation
+	public static boolean DEFAULT_USE_JAVA_HTTP_SERVER = false;
+	protected boolean USE_JAVA_HTTP_SERVER = DEFAULT_USE_JAVA_HTTP_SERVER;
+	
+	// NWU implementation fields
 	protected IHTTPd httpd;
+	
+	// Java implementation fields  
+	protected HttpServer javaHttpServer;
+	protected HttpsServer javaHttpsServer;
+	protected boolean isSecure = false;
+	protected Map<String, HttpHandler> javaHandlers = new ConcurrentHashMap<>();
+	protected String defaultHandler = null;
+	
 	protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
 	protected String id;
 	protected int serverport;
@@ -164,10 +209,11 @@ public class HTTPServer extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout)</key>
+	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout, aVersion)</key>
 	 * Creates a HTTP server instance on the provided port and optionally on the identified local interface.
 	 * If the port provided is 0 or negative a random port will be assigned. To determine what this port is 
 	 * you can use the function HTTPServer.getPort().
+	 * If aVersion = "java" is provided the Java built-in HttpServer implementation will be used.
 	 * If keyStorePath is defined, the corresponding SSL Key Store will be used (connections will be https) with
 	 * the provided keyStorePassword. Do note that the keyStorePath should be included in the OpenAF classpath.
 	 * The logFunction, if defined, will be called by the server whenever there is any logging to be performed 
@@ -212,12 +258,84 @@ public class HTTPServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSConstructor
-	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout) throws IOException {
+	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout, String version) throws IOException {
 		if (port <= 0) {
 			port = findRandomOpenPortOnAllLocalInterfaces();
 		}
-		
+
+		if (version.equals("java")) {
+			USE_JAVA_HTTP_SERVER = true;
+		} else {
+			USE_JAVA_HTTP_SERVER = !DEFAULT_USE_JAVA_HTTP_SERVER;
+		}
+
 		serverport = port;
+		
+		if (USE_JAVA_HTTP_SERVER) {
+			// Use Java built-in HTTP server implementation
+			initializeJava21HttpServer(port, host, keyStorePath, password, errorFunction);
+		} else {
+			// Use existing NWU implementation
+			initializeNWUHttpServer(port, host, keyStorePath, password, errorFunction, ws, timeout);
+		}
+		
+		id = Integer.toString(port) + this.hashCode();
+	}
+	
+	private void initializeJava21HttpServer(int port, Object host, String keyStorePath, Object password, Object errorFunction) throws IOException {
+		InetSocketAddress address;
+		if (host == null || host instanceof Undefined) {
+			address = new InetSocketAddress(port);
+		} else {
+			address = new InetSocketAddress((String) host, port);
+		}
+		
+		if (keyStorePath != null && !keyStorePath.equals("undefined") && 
+			password != null && !(password instanceof Undefined)) {
+			// HTTPS server
+			javaHttpsServer = HttpsServer.create(address, 0);
+			
+			try {
+				// Create SSL context
+				SSLContext sslContext = SSLContext.getInstance("TLS");
+				
+				// Load keystore
+				java.security.KeyStore ks = java.security.KeyStore.getInstance("JKS");
+				char[] passwordChars = AFCmdBase.afc.dIP(((String) password)).toCharArray();
+				
+				if ((new java.io.File(keyStorePath)).exists()) {
+					try (java.io.FileInputStream fis = new java.io.FileInputStream(keyStorePath)) {
+						ks.load(fis, passwordChars);
+					}
+				} else {
+					try (InputStream is = HTTPServer.class.getResourceAsStream(keyStorePath)) {
+						ks.load(is, passwordChars);
+					}
+				}
+				
+				javax.net.ssl.KeyManagerFactory kmf = javax.net.ssl.KeyManagerFactory.getInstance("SunX509");
+				kmf.init(ks, passwordChars);
+				
+				sslContext.init(kmf.getKeyManagers(), null, null);
+				javaHttpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
+				
+				javaHttpsServer.setExecutor(Executors.newCachedThreadPool());
+				javaHttpsServer.start();
+				isSecure = true;
+				
+			} catch (Exception e) {
+				throw new IOException("Failed to configure HTTPS", e);
+			}
+		} else {
+			// HTTP server
+			javaHttpServer = HttpServer.create(address, 0);
+			javaHttpServer.setExecutor(Executors.newCachedThreadPool());
+			javaHttpServer.start();
+			isSecure = false;
+		}
+	}
+	
+	private void initializeNWUHttpServer(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout) throws IOException {
 		if (ws instanceof NativeJavaObject) ws = ((NativeJavaObject) ws).unwrap();
 		
 		if (host == null || host instanceof Undefined) {
@@ -251,8 +369,6 @@ public class HTTPServer extends ScriptableObject {
 		httpd.addToGzipAccept("application/xml");
 		httpd.addToGzipAccept("text/richtext");
 		httpd.addToGzipAccept("text/html");
-		
-		id = Integer.toString(port) + this.hashCode();
 	}
 	
 	private Integer findRandomOpenPortOnAllLocalInterfaces() throws IOException {
@@ -280,21 +396,52 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void stop() {
-		httpd.stop();
+		if (USE_JAVA_HTTP_SERVER) {
+			if (javaHttpServer != null) {
+				javaHttpServer.stop(0);
+			}
+			if (javaHttpsServer != null) {
+				javaHttpsServer.stop(0);
+			}
+		} else {
+			if (httpd != null) {
+				httpd.stop();
+			}
+		}
 	}
 
 	@JSFunction
 	public boolean isAlive() {
-		return httpd.isAlive();
+		if (USE_JAVA_HTTP_SERVER) {
+			if (isSecure && javaHttpsServer != null) {
+				return javaHttpsServer.getAddress() != null;
+			} else if (javaHttpServer != null) {
+				return javaHttpServer.getAddress() != null;
+			}
+			return false;
+		} else {
+			return httpd != null && httpd.isAlive();
+		}
 	}
 
 	@JSFunction
 	public void addWS(String uri) {
-		httpd.addToWsAccept(uri);
+		if (USE_JAVA_HTTP_SERVER) {
+			// WebSocket support would require additional implementation
+			// For now, throw an exception indicating it's not supported
+			throw new UnsupportedOperationException("WebSocket support not implemented for Java HTTP server");
+		} else {
+			if (httpd != null) {
+				httpd.addToWsAccept(uri);
+			}
+		}
 	}
 
 	@JSFunction
 	public IHTTPd getHTTPObj() {
+		if (USE_JAVA_HTTP_SERVER) {
+			throw new UnsupportedOperationException("getHTTPObj() not available for Java HTTP server implementation");
+		}
 		return httpd;
 	}
 
@@ -307,7 +454,42 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addEcho(String uri) {
-		httpd.registerURIResponse(uri, EchoResponse.class, null);
+		if (USE_JAVA_HTTP_SERVER) {
+			HttpHandler echoHandler = new HttpHandler() {
+				@Override
+				public void handle(HttpExchange exchange) throws IOException {
+					StringBuilder response = new StringBuilder();
+					response.append("Method: ").append(exchange.getRequestMethod()).append("\n");
+					response.append("URI: ").append(exchange.getRequestURI()).append("\n");
+					response.append("Headers:\n");
+					exchange.getRequestHeaders().forEach((key, values) -> {
+						response.append("  ").append(key).append(": ").append(String.join(", ", values)).append("\n");
+					});
+					
+					try (InputStream is = exchange.getRequestBody()) {
+						byte[] body = is.readAllBytes();
+						if (body.length > 0) {
+							response.append("Body:\n").append(new String(body, StandardCharsets.UTF_8));
+						}
+					}
+					
+					byte[] responseBytes = response.toString().getBytes(StandardCharsets.UTF_8);
+					exchange.getResponseHeaders().set("Content-Type", "text/plain");
+					exchange.sendResponseHeaders(200, responseBytes.length);
+					try (OutputStream os = exchange.getResponseBody()) {
+						os.write(responseBytes);
+					}
+				}
+			};
+			
+			if (isSecure && javaHttpsServer != null) {
+				javaHttpsServer.createContext(uri, echoHandler);
+			} else if (javaHttpServer != null) {
+				javaHttpServer.createContext(uri, echoHandler);
+			}
+		} else {
+			httpd.registerURIResponse(uri, EchoResponse.class, null);
+		}
 	}
 	
 	/**
@@ -318,8 +500,28 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addStatus(String uri) {
-		httpd.registerURIResponse(uri, StatusResponse.class, null);
-		//httpd.createContext(uri, new StatusHandler());
+		if (USE_JAVA_HTTP_SERVER) {
+			HttpHandler statusHandler = new HttpHandler() {
+				@Override
+				public void handle(HttpExchange exchange) throws IOException {
+					String response = "Server Status: OK\nPort: " + serverport + "\nTimestamp: " + new java.util.Date();
+					byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+					exchange.getResponseHeaders().set("Content-Type", "text/plain");
+					exchange.sendResponseHeaders(200, responseBytes.length);
+					try (OutputStream os = exchange.getResponseBody()) {
+						os.write(responseBytes);
+					}
+				}
+			};
+			
+			if (isSecure && javaHttpsServer != null) {
+				javaHttpsServer.createContext(uri, statusHandler);
+			} else if (javaHttpServer != null) {
+				javaHttpServer.createContext(uri, statusHandler);
+			}
+		} else {
+			httpd.registerURIResponse(uri, StatusResponse.class, null);
+		}
 	}
 	
 
@@ -338,10 +540,31 @@ public class HTTPServer extends ScriptableObject {
 	public void add(String uri, NativeFunction callback) {
 		callbacks.put(this.serverport + ":" + uri, callback);
 		
-		Map<String, String> props = new HashMap<String, String>();
-		props.put("uri", uri);
-		
-		httpd.registerURIResponse(uri, JSResponse.class, props);
+		if (USE_JAVA_HTTP_SERVER) {
+			// Remove previous handler/context if already exists for this URI
+			if (javaHandlers.containsKey(uri)) {
+				if (isSecure && javaHttpsServer != null) {
+					javaHttpsServer.removeContext(uri);
+				} else if (javaHttpServer != null) {
+					javaHttpServer.removeContext(uri);
+				}
+				javaHandlers.remove(uri);
+			}
+
+			Java21HttpHandler handler = new Java21HttpHandler(uri, callback, serverport);
+			javaHandlers.put(uri, handler);
+
+			if (isSecure && javaHttpsServer != null) {
+				javaHttpsServer.createContext(uri, handler);
+			} else if (javaHttpServer != null) {
+				javaHttpServer.createContext(uri, handler);
+			}
+		} else {
+			Map<String, String> props = new HashMap<String, String>();
+			props.put("uri", uri);
+			
+			httpd.registerURIResponse(uri, JSResponse.class, props);
+		}
 	}
 	
 	/**
@@ -357,7 +580,25 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void setDefault(String uri) {
-		httpd.setDefaultResponse(uri);
+		if (USE_JAVA_HTTP_SERVER) {
+			defaultHandler = uri;
+			HttpHandler defaultRedirectHandler = new HttpHandler() {
+				@Override
+				public void handle(HttpExchange exchange) throws IOException {
+					String location = uri;
+					exchange.getResponseHeaders().set("Location", location);
+					exchange.sendResponseHeaders(302, -1);
+				}
+			};
+			
+			if (isSecure && javaHttpsServer != null) {
+				javaHttpsServer.createContext("/", defaultRedirectHandler);
+			} else if (javaHttpServer != null) {
+				javaHttpServer.createContext("/", defaultRedirectHandler);
+			}
+		} else {
+			httpd.setDefaultResponse(uri);
+		}
 	}
 	
 	/**
@@ -369,9 +610,81 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addFileBrowse(String uri, String filepath) {
-		Map<String, String> props = new HashMap<String, String>();
-		props.put("publichtml", filepath);
-		httpd.registerURIResponse(uri, FileResponse.class, props);
+		if (USE_JAVA_HTTP_SERVER) {
+			HttpHandler fileHandler = new HttpHandler() {
+				@Override
+				public void handle(HttpExchange exchange) throws IOException {
+					String path = exchange.getRequestURI().getPath();
+					String relativePath = path.substring(uri.length());
+					if (relativePath.startsWith("/")) {
+						relativePath = relativePath.substring(1);
+					}
+					
+					java.io.File file = new java.io.File(filepath, relativePath);
+					
+					if (!file.exists()) {
+						String response = "File not found";
+						exchange.sendResponseHeaders(404, response.length());
+						try (OutputStream os = exchange.getResponseBody()) {
+							os.write(response.getBytes(StandardCharsets.UTF_8));
+						}
+						return;
+					}
+					
+					if (file.isDirectory()) {
+						// List directory contents
+						StringBuilder response = new StringBuilder();
+						response.append("<html><body><h2>Directory: ").append(relativePath).append("</h2><ul>");
+						java.io.File[] files = file.listFiles();
+						if (files != null) {
+							for (java.io.File f : files) {
+								String name = f.getName();
+								if (f.isDirectory()) {
+									name += "/";
+								}
+								response.append("<li><a href=\"").append(name).append("\">").append(name).append("</a></li>");
+							}
+						}
+						response.append("</ul></body></html>");
+						
+						byte[] responseBytes = response.toString().getBytes(StandardCharsets.UTF_8);
+						exchange.getResponseHeaders().set("Content-Type", "text/html");
+						exchange.sendResponseHeaders(200, responseBytes.length);
+						try (OutputStream os = exchange.getResponseBody()) {
+							os.write(responseBytes);
+						}
+					} else {
+						// Serve file
+						String contentType = java.net.URLConnection.guessContentTypeFromName(file.getName());
+						if (contentType == null) {
+							contentType = "application/octet-stream";
+						}
+						
+						exchange.getResponseHeaders().set("Content-Type", contentType);
+						exchange.sendResponseHeaders(200, file.length());
+						
+						try (OutputStream os = exchange.getResponseBody();
+							 java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+							byte[] buffer = new byte[8192];
+							int bytesRead;
+							while ((bytesRead = fis.read(buffer)) != -1) {
+								os.write(buffer, 0, bytesRead);
+							}
+						}
+					}
+				}
+			};
+			
+			if (isSecure && javaHttpsServer != null) {
+				javaHttpsServer.createContext(uri, fileHandler);
+			} else if (javaHttpServer != null) {
+				javaHttpServer.createContext(uri, fileHandler);
+			}
+		} else {
+			Map<String, String> props = new HashMap<String, String>();
+			props.put("publichtml", filepath);
+			httpd.registerURIResponse(uri, FileResponse.class, props);
+		}
 	}
 	
 	/**
@@ -411,15 +724,19 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addXDTServer(String uri, NativeFunction authFunction, NativeFunction opsBroker) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-		Map<String, String> props = new HashMap<String, String>();
-		props.put("uri", uri);
-		
-		if (AFCmdBase.afcmd.equals("AFCmdWeDo")) {
-			Class<?> cl = Class.forName("openaf.plugins.HTTPd.XDTServerResponse");
-			cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(this, authFunction);
-			cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(this, opsBroker);
+		if (USE_JAVA_HTTP_SERVER) {
+			throw new UnsupportedOperationException("XDT Server not implemented for Java HTTP server");
+		} else {
+			Map<String, String> props = new HashMap<String, String>();
+			props.put("uri", uri);
 			
-			httpd.registerURIResponse(uri, cl, props);
+			if (AFCmdBase.afcmd.equals("AFCmdWeDo")) {
+				Class<?> cl = Class.forName("openaf.plugins.HTTPd.XDTServerResponse");
+				cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(this, authFunction);
+				cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(this, opsBroker);
+				
+				httpd.registerURIResponse(uri, cl, props);
+			}
 		}
 	}
 	
@@ -706,5 +1023,154 @@ public class HTTPServer extends ScriptableObject {
 		case 505: return com.nwu.httpd.NanoHTTPD.Response.Status.UNSUPPORTED_HTTP_VERSION;
 		default: return Codes.HTTP_OK;
 		}*/
+	}
+	
+	/**
+	 * Custom HttpHandler implementation for Java HTTP server
+	 */
+	public class Java21HttpHandler implements HttpHandler {
+		private final NativeFunction callback;
+		
+		public Java21HttpHandler(String uri, NativeFunction callback, int port) {
+			this.callback = callback;
+		}
+		
+		@Override
+		public void handle(HttpExchange exchange) throws IOException {
+			try {
+				// Convert HttpExchange to request object similar to NWU implementation
+				Object request = convertHttpExchangeToRequest(exchange);
+				
+				// Call the JavaScript callback
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				Object result = null;
+				try {
+					result = callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), 
+						cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { request });
+				} finally {
+					AFCmdBase.jse.exitContext();
+				}
+				
+				// Convert result to HTTP response
+				sendResponse(exchange, result);
+				
+			} catch (Exception e) {
+				// Send error response
+				String response = "Internal Server Error: " + e.getMessage();
+				exchange.sendResponseHeaders(500, response.length());
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(response.getBytes(StandardCharsets.UTF_8));
+				}
+				System.err.println("Error handling request: " + e.getMessage());
+			}
+		}
+		
+		private Object convertHttpExchangeToRequest(HttpExchange exchange) {
+			Context cx = (Context) AFCmdBase.jse.enterContext();
+			Scriptable request = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+			AFCmdBase.jse.exitContext();
+			
+			// Basic request properties
+			request.put("method", request, exchange.getRequestMethod());
+			request.put("uri", request, exchange.getRequestURI().toString());
+			request.put("path", request, exchange.getRequestURI().getPath());
+			request.put("query", request, exchange.getRequestURI().getQuery());
+			
+			// Headers
+			Scriptable headers = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
+			exchange.getRequestHeaders().forEach((key, values) -> {
+				if (values.size() == 1) {
+					headers.put(key.toLowerCase(), headers, values.get(0));
+				} else {
+					headers.put(key.toLowerCase(), headers, values.toArray(new String[0]));
+				}
+			});
+			request.put("header", request, headers);
+			
+			// Body (if any)
+			try (InputStream is = exchange.getRequestBody()) {
+				byte[] body = is.readAllBytes();
+				if (body.length > 0) {
+					request.put("data", request, new String(body, StandardCharsets.UTF_8));
+					request.put("bytes", request, body);
+				}
+			} catch (IOException e) {
+				// Handle error
+			}
+			
+			return request;
+		}
+		
+		private void sendResponse(HttpExchange exchange, Object result) throws IOException {
+			if (result instanceof Scriptable) {
+				Scriptable response = (Scriptable) result;
+				
+				// Get status code
+				int status = 200;
+				Object statusObj = response.get("status", response);
+				if (statusObj instanceof Number) {
+					status = ((Number) statusObj).intValue();
+				}
+				
+				// Get content type
+				String contentType = "text/plain";
+				Object mimeObj = response.get("mimetype", response);
+				if (mimeObj instanceof String) {
+					contentType = (String) mimeObj;
+				}
+				
+				// Set headers
+				exchange.getResponseHeaders().set("Content-Type", contentType);
+				Object headerObj = response.get("header", response);
+				if (headerObj instanceof Scriptable) {
+					Scriptable headers = (Scriptable) headerObj;
+					for (Object key : headers.getIds()) {
+						if (key instanceof String) {
+							String headerName = (String) key;
+							Object headerValue = headers.get(headerName, headers);
+							if (headerValue instanceof String) {
+								exchange.getResponseHeaders().set(headerName, (String) headerValue);
+							}
+						}
+					}
+				}
+				
+				// Send response
+				byte[] responseBytes = null;
+				Object dataObj = response.get("data", response);
+				Object streamObj = response.get("stream", response);
+				
+				if (streamObj != null && !(streamObj instanceof Undefined) && !(streamObj instanceof UniqueTag)) {
+					// Handle stream
+					if (streamObj instanceof InputStream) {
+						try (InputStream is = (InputStream) streamObj) {
+							responseBytes = is.readAllBytes();
+						}
+					}
+				} else if (dataObj != null && !(dataObj instanceof Undefined) && !(dataObj instanceof UniqueTag)) {
+					if (dataObj instanceof byte[]) {
+						responseBytes = (byte[]) dataObj;
+					} else {
+						responseBytes = dataObj.toString().getBytes(StandardCharsets.UTF_8);
+					}
+				}
+				
+				if (responseBytes == null) {
+					responseBytes = new byte[0];
+				}
+				
+				exchange.sendResponseHeaders(status, responseBytes.length);
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(responseBytes);
+				}
+			} else {
+				// Default response
+				String response = (result != null) ? result.toString() : "";
+				exchange.sendResponseHeaders(200, response.length());
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(response.getBytes(StandardCharsets.UTF_8));
+				}
+			}
+		}
 	}
 }

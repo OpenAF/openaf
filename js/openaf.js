@@ -269,6 +269,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	HTTPD_THREADS               : "auto",
 	HTTPD_BUFSIZE               : 8192,
 	HTTPD_CUSTOMURIS 			: {},
+	HTTPD_DEFAULT_JAVA          : false,
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
@@ -13603,6 +13604,9 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 		    e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
 	}
 })();
+
+// Set HTTPD server
+if (__flags.HTTPD_DEFAULT_JAVA) Packages.openaf.plugins.HTTPServer.DEFAULT_USE_JAVA_HTTP_SERVER = true
 
 // OAF Code Integrity for script files
 var __scriptfile
