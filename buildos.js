@@ -293,7 +293,12 @@ try {
 
 			if (doIt) {
 				log("-> Compiling " + file.filename);
-				var output = af.sh("java --sun-misc-unsafe-memory-access=allow -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT_2019" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+				var compilerOption = ""
+				// if java >= 24 then add to compilerOption --sun-misc-unsafe-memory-access=allow
+				if (ow.format.semver(ow.format.getJavaVersion()).getMajor() >= 24) compilerOption += " --sun-misc-unsafe-memory-access=allow "
+				var output = $sh("java " + compilerOption + " -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT_2019" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "").get(0);
+
+				output = output.stdout + output.stderr
 				log("<- Compiled  " + file.filename);
 				destjssha.files.push({
 					file: file.filename,
