@@ -34,6 +34,7 @@ import com.nwu.httpd.NanoHTTPD.Response.IStatus;
 import com.nwu.httpd.responses.EchoResponse;
 import com.nwu.httpd.responses.FileResponse;
 import com.nwu.httpd.responses.StatusResponse;
+import com.nwu.httpd.UndertowHTTPd;
 import com.nwu.log.Log;
 
 public class HTTPServer extends ScriptableObject {
@@ -41,8 +42,11 @@ public class HTTPServer extends ScriptableObject {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -8638106468713717782L;
-	protected IHTTPd httpd;
+        private static final long serialVersionUID = -8638106468713717782L;
+        private static final boolean USE_UNDERTOW = Boolean.parseBoolean(
+            System.getProperty("openaf.httpd.undertow",
+                java.lang.System.getenv().getOrDefault("OAF_HTTPD_UNDERTOW", "false")));
+        protected IHTTPd httpd;
 	protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
 	protected String id;
 	protected int serverport;
@@ -220,17 +224,25 @@ public class HTTPServer extends ScriptableObject {
 		serverport = port;
 		if (ws instanceof NativeJavaObject) ws = ((NativeJavaObject) ws).unwrap();
 		
-		if (host == null || host instanceof Undefined) {
-			if (ws == null || ws instanceof Undefined) 
-				httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), port);
-			else
-				httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), port, (IWebSock) ws, timeout);
-		} else {
-			if (ws == null || ws instanceof Undefined)
-				httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), (String) host, port);
-			else
-				httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), (String) host, port, (IWebSock) ws, timeout);
-		}
+                if (host == null || host instanceof Undefined) {
+                        if (ws == null || ws instanceof Undefined) {
+                                if (USE_UNDERTOW)
+                                        httpd = new UndertowHTTPd((Log) new HLog(port, errorFunction), port);
+                                else
+                                        httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), port);
+                        } else {
+                                httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), port, (IWebSock) ws, timeout);
+                        }
+                } else {
+                        if (ws == null || ws instanceof Undefined) {
+                                if (USE_UNDERTOW)
+                                        httpd = new UndertowHTTPd((Log) new HLog(port, errorFunction), (String) host, port);
+                                else
+                                        httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), (String) host, port);
+                        } else {
+                                httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), (String) host, port, (IWebSock) ws, timeout);
+                        }
+                }
 
 		if (keyStorePath != null && !keyStorePath.equals("undefined") &&
 			password != null && !(password instanceof Undefined)) {

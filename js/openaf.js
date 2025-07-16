@@ -268,6 +268,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	HTTP_USE_MEDIA_TYPE         : false,
 	HTTPD_THREADS               : "auto",
 	HTTPD_BUFSIZE               : 8192,
+        HTTPD_USE_UNDERTOW          : false,
 	HTTPD_CUSTOMURIS 			: {},
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
