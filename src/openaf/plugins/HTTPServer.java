@@ -263,7 +263,8 @@ public class HTTPServer extends ScriptableObject {
 			port = findRandomOpenPortOnAllLocalInterfaces();
 		}
 
-		if (version.equals("java")) {
+		if (version.equals("java") || 
+		    (keyStorePath != null && !keyStorePath.equals("undefined") && password != null && !(password instanceof Undefined)) ) {
 			USE_JAVA_HTTP_SERVER = true;
 		} else {
 			USE_JAVA_HTTP_SERVER = DEFAULT_HTTP_SERVER.equals("java");
@@ -454,6 +455,9 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addEcho(String uri) {
+		// Ensure URI starts with a slash
+		if (!uri.startsWith("/")) uri = "/" + uri;
+
 		if (USE_JAVA_HTTP_SERVER) {
 			// Remove previous handler/context if already exists for this URI
 			if (javaHandlers.containsKey(uri)) {
@@ -510,6 +514,9 @@ public class HTTPServer extends ScriptableObject {
 	 */
 	@JSFunction
 	public void addStatus(String uri) {
+		// Ensure URI starts with a slash
+		if (!uri.startsWith("/")) uri = "/" + uri;
+
 		if (USE_JAVA_HTTP_SERVER) {
 			// Remove previous handler/context if already exists for this URI
 			if (javaHandlers.containsKey(uri)) {
@@ -557,7 +564,10 @@ public class HTTPServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void add(String uri, NativeFunction callback) {
+	public void add(String auri, NativeFunction callback) {
+		// Ensure URI starts with a slash
+		String uri = (!auri.startsWith("/")) ? "/" + auri : auri;
+
 		callbacks.put(this.serverport + ":" + uri, callback);
 		
 		if (USE_JAVA_HTTP_SERVER) {
@@ -599,7 +609,10 @@ public class HTTPServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void setDefault(String uri) {
+	public void setDefault(String auri) {		
+		// Ensure URI starts with a slash
+		String uri = (!auri.startsWith("/")) ? "/" + auri : auri;
+
 		if (USE_JAVA_HTTP_SERVER) {
 			defaultHandler = uri;
 			HttpHandler defaultRedirectHandler = new HttpHandler() {
@@ -619,6 +632,10 @@ public class HTTPServer extends ScriptableObject {
 					javaHttpServer.removeContext("/");
 				}
 				javaHandlers.remove("/");
+			}
+
+			if (javaHandlers.containsKey(uri)) {
+				defaultRedirectHandler = javaHandlers.get(uri);
 			}
 
 			javaHandlers.put("/", defaultRedirectHandler);
@@ -641,7 +658,10 @@ public class HTTPServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void addFileBrowse(String uri, String filepath) {
+	public void addFileBrowse(String auri, String filepath) {
+		// Ensure URI starts with a slash
+		String uri = (!auri.startsWith("/")) ? "/" + auri : auri;
+
 		if (USE_JAVA_HTTP_SERVER) {
 			// Remove previous handler/context if already exists for this URI
 			if (javaHandlers.containsKey(uri)) {

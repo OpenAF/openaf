@@ -2672,12 +2672,12 @@ OpenWrap.server.prototype.httpd = {
 							uri === aRoute ||
 							(uri.startsWith(aRoute) && uri.charAt(aRoute.length) === "/")
 						) {
-							if (isUnDef(best) || aRoute.length > best.length) {
+							if (aRoute.length > best.length) {
 								return aRoute
 							}
 						}
 						return best
-					}, __)
+					}, "/")
 					// If we have a best prefix, then call the route function for that prefix	
 					if (isDef(bp))
 						return parent.__routes[aPort][bp](req, aHTTPd);
