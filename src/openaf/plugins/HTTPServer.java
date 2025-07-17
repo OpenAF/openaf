@@ -493,7 +493,7 @@ public class HTTPServer extends ScriptableObject {
 				if ((new java.io.File(keyStorePath)).exists()) {
 					httpd.makeSecure(com.nwu2.httpd.HTTPd.makeLocalSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
 				} else {
-					httpd.makeSecure(com.nwu2.httpd.HTTPd.makeSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
+					httpd.makeSecure(com.nwu.httpd.HTTPd.makeSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
 				}
 				
 				httpd.start();
