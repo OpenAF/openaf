@@ -269,7 +269,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	HTTPD_THREADS               : "auto",
 	HTTPD_BUFSIZE               : 8192,
 	HTTPD_CUSTOMURIS 			: {},
-	HTTPD_DEFAULT_IMPL          : "nwu",
+	HTTPD_DEFAULT_IMPL          : "nwu2",
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,

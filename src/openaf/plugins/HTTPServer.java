@@ -55,16 +55,6 @@ import org.mozilla.javascript.annotations.JSFunction;
 import openaf.AFCmdBase;
 import openaf.SimpleLog;
 import openaf.SimpleLog.logtype;
-import openaf.plugins.HTTPd.JSResponse;
-
-import com.nwu.httpd.Codes;
-import com.nwu.httpd.IHTTPd;
-import com.nwu.httpd.IWebSock;
-import com.nwu.httpd.NanoHTTPD.Response.IStatus;
-import com.nwu.httpd.responses.EchoResponse;
-import com.nwu.httpd.responses.FileResponse;
-import com.nwu.httpd.responses.StatusResponse;
-import com.nwu.log.Log;
 
 public class HTTPServer extends ScriptableObject {
 
@@ -75,12 +65,14 @@ public class HTTPServer extends ScriptableObject {
 	
 	// Flag to control which HTTP server implementation to use
 	// // public static String DEFAULT_HTTP_SERVER = "java"; // Use Java built-in HttpServer
-	public static String DEFAULT_HTTP_SERVER = "nwu";
+	public static String DEFAULT_HTTP_SERVER = "nwu2";
 	protected boolean USE_JAVA_HTTP_SERVER = DEFAULT_HTTP_SERVER.equals("java") ? true: false;
+	protected boolean USE_NWU2 = DEFAULT_HTTP_SERVER.equals("nwu2") ? true : false;
 	
 	// NWU implementation fields
-	protected IHTTPd httpd;
-	
+	protected com.nwu.httpd.IHTTPd httpd;
+	protected com.nwu2.httpd.IHTTPd httpd2;
+
 	// Java implementation fields  
 	protected HttpServer javaHttpServer;
 	protected HttpsServer javaHttpsServer;
@@ -102,11 +94,116 @@ public class HTTPServer extends ScriptableObject {
 		return "HTTPd";
 	}
 	
-	public class HLog extends Log {
+	public class HLog extends com.nwu.log.Log {
 		protected int port; 
 		protected NativeFunction callback = null;
 		
 		public HLog(int port, Object f) {
+			super(false);
+			this.port = port;
+			if (f != null && f instanceof NativeFunction)
+				this.callback = (NativeFunction) f;
+		}
+		
+		protected void SimpleLoglog(SimpleLog.logtype type, String message, Exception e) {
+			if (callback == null) {
+				switch(type) {
+				case DEBUG:
+					SimpleLog.log(logtype.DEBUG, "[HTTPD " + port + "]" + message, e);
+					break;
+				case ERROR:
+					SimpleLog.log(logtype.ERROR, "[HTTPD " + port + "]" + message, e);
+					break;
+				case INFO:
+					SimpleLog.log(logtype.INFO, "[HTTPD " + port + "]" + message, e);
+					break;
+				default:
+					break;
+				}
+			} else {
+				Context cx = (Context) AFCmdBase.jse.enterContext();
+				try {
+					callback.call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { type, message, e });
+				} catch(Exception ee) {
+					throw ee;
+				} finally {
+					AFCmdBase.jse.exitContext();
+				}
+			}
+				
+		}
+
+		@Override
+		public void log(com.nwu.log.Log.Type type, String message) {
+			switch (type) {
+			case DEBUG:
+				SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]" + message, null);
+				break;
+			case ERROR:
+				SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]" + message, null);
+				break;
+			case INFO:
+				SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]" + message, null);
+				break;
+			case OFF:
+				break;
+			default:
+				break;
+			}
+		}
+		
+		@Override
+		public void log(com.nwu.log.Log.Type type, String message, Exception e) {
+			switch (type) {
+			case DEBUG:
+				SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]" + message, e);
+				break;
+			case ERROR:
+				SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]" + message, e);
+				break;
+			case INFO:
+				SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]" + message, e);
+				break;
+			case OFF:
+				break;
+			default:
+				break;
+			}			
+		}
+		
+		@Override
+		public void log(Level type, String message, Exception e) {
+			if (type == Level.WARNING) log(Type.DEBUG, message, e);
+			if (type == Level.SEVERE) log(Type.ERROR, message, e);
+			if (type == Level.INFO) log(Type.INFO, message, e);
+		}	
+		
+		@Override
+		public void log(Type type, long id, String message) {
+			switch (type) {
+			case DEBUG:
+				SimpleLoglog(logtype.DEBUG, "[HTTPD " + port + "]|" + id + "|" + message, null);
+				break;
+			case ERROR:
+				SimpleLoglog(logtype.ERROR, "[HTTPD " + port + "]|" + id + "|" + message, null);
+				break;
+			case INFO:
+				SimpleLoglog(logtype.INFO, "[HTTPD " + port + "]|" + id + "|" + message, null);
+				break;
+			case OFF:
+				break;
+			default:
+				break;
+			}			
+		}
+		
+	}
+	
+	public class HLog2 extends com.nwu2.log.Log {
+		protected int port; 
+		protected NativeFunction callback = null;
+		
+		public HLog2(int port, Object f) {
 			super(false);
 			this.port = port;
 			if (f != null && f instanceof NativeFunction)
@@ -206,7 +303,7 @@ public class HTTPServer extends ScriptableObject {
 		}
 		
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout, aVersion)</key>
@@ -240,7 +337,7 @@ public class HTTPServer extends ScriptableObject {
 	 * To support websockets you need to build IWebSock object and provide a timeout. For example:\
 	 * \
 	 * plugin("HTTPServer");\
-	 * var webSock = new Packages.com.nwu.httpd.IWebSock({\
+	 * var webSock = new Packages.com.nwu2.httpd.IWebSock({\
 	 *    // onOpen callback\
 	 *    oOpen: _ws => { log("Connection open") },\
 	 *    // onClose callback\
@@ -263,10 +360,16 @@ public class HTTPServer extends ScriptableObject {
 			port = findRandomOpenPortOnAllLocalInterfaces();
 		}
 
-		if (version.equals("java") || 
-		    (keyStorePath != null && !keyStorePath.equals("undefined") && password != null && !(password instanceof Undefined)) ) {
-			USE_JAVA_HTTP_SERVER = true;
+		if ((keyStorePath != null && !keyStorePath.equals("undefined") && password != null && !(password instanceof Undefined)) ) {
+			USE_JAVA_HTTP_SERVER = false;
+			USE_NWU2 = true;
 		} else {
+			switch(DEFAULT_HTTP_SERVER) {
+			case "java": USE_JAVA_HTTP_SERVER = true; USE_NWU2 = false; break;
+			case "nwu" : USE_JAVA_HTTP_SERVER = false; USE_NWU2 = false; break;
+			case "nwu2": USE_JAVA_HTTP_SERVER = false; USE_NWU2 = true; break;
+			default    : USE_JAVA_HTTP_SERVER = false; USE_NWU2 = false; break;
+			}
 			USE_JAVA_HTTP_SERVER = DEFAULT_HTTP_SERVER.equals("java");
 		}
 
@@ -339,37 +442,71 @@ public class HTTPServer extends ScriptableObject {
 	private void initializeNWUHttpServer(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout) throws IOException {
 		if (ws instanceof NativeJavaObject) ws = ((NativeJavaObject) ws).unwrap();
 		
-		if (host == null || host instanceof Undefined) {
-			if (ws == null || ws instanceof Undefined) 
-				httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), port);
-			else
-				httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), port, (IWebSock) ws, timeout);
+		if (this.USE_NWU2) {
+			if (host == null || host instanceof Undefined) {
+				if (ws == null || ws instanceof Undefined) 
+					httpd2 = new com.nwu2.httpd.HTTPd((com.nwu2.log.Log) new HLog2(port, errorFunction), port);
+				else
+					httpd2 = new com.nwu2.httpd.HTTPWSd((com.nwu2.log.Log) new HLog2(port, errorFunction), port, (com.nwu2.httpd.IWebSock) ws, timeout);
+			} else {
+				if (ws == null || ws instanceof Undefined)
+					httpd2 = new com.nwu2.httpd.HTTPd((com.nwu2.log.Log) new HLog2(port, errorFunction), (String) host, port);
+				else
+					httpd2 = new com.nwu2.httpd.HTTPWSd((com.nwu2.log.Log) new HLog2(port, errorFunction), (String) host, port, (com.nwu2.httpd.IWebSock) ws, timeout);
+			}
+
+			if (keyStorePath != null && !keyStorePath.equals("undefined") &&
+				password != null && !(password instanceof Undefined)) {
+				httpd2.stop();
+				if ((new java.io.File(keyStorePath)).exists()) {
+					httpd2.makeSecure(com.nwu2.httpd.HTTPd.makeLocalSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
+				} else {
+					httpd2.makeSecure(com.nwu2.httpd.HTTPd.makeSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
+				}
+				
+				httpd2.start();
+			}
+			httpd2.addToGzipAccept("text/plain");
+			httpd2.addToGzipAccept("application/javascript");
+			httpd2.addToGzipAccept("text/css");
+			httpd2.addToGzipAccept("application/json");
+			httpd2.addToGzipAccept("application/xml");
+			httpd2.addToGzipAccept("text/richtext");
+			httpd2.addToGzipAccept("text/html");
 		} else {
-			if (ws == null || ws instanceof Undefined)
-				httpd = new com.nwu.httpd.HTTPd((Log) new HLog(port, errorFunction), (String) host, port);
-			else
-				httpd = new com.nwu.httpd.HTTPWSd((Log) new HLog(port, errorFunction), (String) host, port, (IWebSock) ws, timeout);
+			if (host == null || host instanceof Undefined) {
+				if (ws == null || ws instanceof Undefined) 
+					httpd = new com.nwu.httpd.HTTPd((com.nwu.log.Log) new HLog(port, errorFunction), port);
+				else
+					httpd = new com.nwu.httpd.HTTPWSd((com.nwu.log.Log) new HLog(port, errorFunction), port, (com.nwu.httpd.IWebSock) ws, timeout);
+			} else {
+				if (ws == null || ws instanceof Undefined)
+					httpd = new com.nwu.httpd.HTTPd((com.nwu.log.Log) new HLog(port, errorFunction), (String) host, port);
+				else
+					httpd = new com.nwu.httpd.HTTPWSd((com.nwu.log.Log) new HLog(port, errorFunction), (String) host, port, (com.nwu.httpd.IWebSock) ws, timeout);
+			}
+
+
+			if (keyStorePath != null && !keyStorePath.equals("undefined") &&
+				password != null && !(password instanceof Undefined)) {
+				httpd.stop();
+				if ((new java.io.File(keyStorePath)).exists()) {
+					httpd.makeSecure(com.nwu2.httpd.HTTPd.makeLocalSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
+				} else {
+					httpd.makeSecure(com.nwu.httpd.HTTPd.makeSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
+				}
+				
+				httpd.start();
+			}
+			httpd.addToGzipAccept("text/plain");
+			httpd.addToGzipAccept("application/javascript");
+			httpd.addToGzipAccept("text/css");
+			httpd.addToGzipAccept("application/json");
+			httpd.addToGzipAccept("application/xml");
+			httpd.addToGzipAccept("text/richtext");
+			httpd.addToGzipAccept("text/html");
 		}
 
-		if (keyStorePath != null && !keyStorePath.equals("undefined") &&
-			password != null && !(password instanceof Undefined)) {
-			httpd.stop();
-			if ((new java.io.File(keyStorePath)).exists()) {
-				httpd.makeSecure(com.nwu.httpd.HTTPd.makeLocalSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
-			} else {
-				httpd.makeSecure(com.nwu.httpd.HTTPd.makeSSLSocketFactory(keyStorePath, AFCmdBase.afc.dIP(((String) password)).toCharArray()), null);
-			}
-			
-			httpd.start();
-		}
-		
-		httpd.addToGzipAccept("text/plain");
-		httpd.addToGzipAccept("application/javascript");
-		httpd.addToGzipAccept("text/css");
-		httpd.addToGzipAccept("application/json");
-		httpd.addToGzipAccept("application/xml");
-		httpd.addToGzipAccept("text/richtext");
-		httpd.addToGzipAccept("text/html");
 	}
 	
 	private Integer findRandomOpenPortOnAllLocalInterfaces() throws IOException {
@@ -405,7 +542,11 @@ public class HTTPServer extends ScriptableObject {
 				javaHttpsServer.stop(0);
 			}
 		} else {
-			if (httpd != null) {
+			if (USE_NWU2) {
+				if (httpd2 != null) {
+					httpd2.stop();
+				}
+			} else if (httpd != null) {
 				httpd.stop();
 			}
 		}
@@ -421,6 +562,9 @@ public class HTTPServer extends ScriptableObject {
 			}
 			return false;
 		} else {
+			if (USE_NWU2) {
+				return httpd2 != null && httpd2.isAlive();
+			}
 			return httpd != null && httpd.isAlive();
 		}
 	}
@@ -432,18 +576,30 @@ public class HTTPServer extends ScriptableObject {
 			// For now, throw an exception indicating it's not supported
 			throw new UnsupportedOperationException("WebSocket support not implemented for Java HTTP server");
 		} else {
-			if (httpd != null) {
+			if (USE_NWU2) {
+				if (httpd2 != null) {
+					httpd2.addToWsAccept(uri);
+				}
+			} else if (httpd != null) {
 				httpd.addToWsAccept(uri);
 			}
 		}
 	}
 
 	@JSFunction
-	public IHTTPd getHTTPObj() {
+	public com.nwu.httpd.IHTTPd getHTTPObj() {
 		if (USE_JAVA_HTTP_SERVER) {
 			throw new UnsupportedOperationException("getHTTPObj() not available for Java HTTP server implementation");
 		}
 		return httpd;
+	}
+
+	@JSFunction
+	public com.nwu2.httpd.IHTTPd getHTTPObj2() {
+		if (USE_JAVA_HTTP_SERVER) {
+			throw new UnsupportedOperationException("getHTTPObj2() not available for Java HTTP server implementation");
+		}
+		return httpd2;
 	}
 
 	/**
@@ -502,7 +658,11 @@ public class HTTPServer extends ScriptableObject {
 				javaHttpServer.createContext(uri, echoHandler);
 			}
 		} else {
-			httpd.registerURIResponse(uri, EchoResponse.class, null);
+			if (USE_NWU2) {
+				httpd2.registerURIResponse(uri, com.nwu2.httpd.responses.EchoResponse.class, null);
+			} else {
+				httpd.registerURIResponse(uri, com.nwu.httpd.responses.EchoResponse.class, null);
+			}
 		}
 	}
 	
@@ -547,7 +707,10 @@ public class HTTPServer extends ScriptableObject {
 				javaHttpServer.createContext(uri, statusHandler);
 			}
 		} else {
-			httpd.registerURIResponse(uri, StatusResponse.class, null);
+			if (USE_NWU2)
+				httpd2.registerURIResponse(uri, com.nwu2.httpd.responses.StatusResponse.class, null);
+			else
+				httpd.registerURIResponse(uri, com.nwu.httpd.responses.StatusResponse.class, null);
 		}
 	}
 	
@@ -593,7 +756,10 @@ public class HTTPServer extends ScriptableObject {
 			Map<String, String> props = new HashMap<String, String>();
 			props.put("uri", uri);
 			
-			httpd.registerURIResponse(uri, JSResponse.class, props);
+			if (this.USE_NWU2)
+				httpd2.registerURIResponse(uri, openaf.plugins.HTTPd.JSResponse2.class, props);
+			else
+				httpd.registerURIResponse(uri, openaf.plugins.HTTPd.JSResponse.class, props);
 		}
 	}
 	
@@ -646,7 +812,11 @@ public class HTTPServer extends ScriptableObject {
 				javaHttpServer.createContext("/", defaultRedirectHandler);
 			}
 		} else {
-			httpd.setDefaultResponse(uri);
+			if (USE_NWU2) {
+				httpd2.setDefaultResponse(auri);
+			} else {
+				httpd.setDefaultResponse(auri);
+			}
 		}
 	}
 	
@@ -745,7 +915,11 @@ public class HTTPServer extends ScriptableObject {
 		} else {
 			Map<String, String> props = new HashMap<String, String>();
 			props.put("publichtml", filepath);
-			httpd.registerURIResponse(uri, FileResponse.class, props);
+
+			if (USE_NWU2)
+				httpd2.registerURIResponse(uri, com.nwu2.httpd.responses.FileResponse.class, props);
+			else
+				httpd.registerURIResponse(uri, com.nwu.httpd.responses.FileResponse.class, props);
 		}
 	}
 	
@@ -797,7 +971,10 @@ public class HTTPServer extends ScriptableObject {
 				cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(this, authFunction);
 				cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(this, opsBroker);
 				
-				httpd.registerURIResponse(uri, cl, props);
+				if (USE_NWU2)
+					httpd2.registerURIResponse(uri, cl, props);
+				else
+					httpd.registerURIResponse(uri, cl, props);
 			}
 		}
 	}
@@ -817,7 +994,7 @@ public class HTTPServer extends ScriptableObject {
 		AFCmdBase.jse.exitContext();
 		
 		no.put("status", no, 200);
-		no.put("mimetype", no, Codes.MIME_PLAINTEXT);
+		no.put("mimetype", no, com.nwu.httpd.Codes.MIME_PLAINTEXT);
 		no.put("data", no, data);
 		no.put("header", no, headers);
 		
@@ -861,7 +1038,7 @@ public class HTTPServer extends ScriptableObject {
 		AFCmdBase.jse.exitContext();
 		
 		no.put("status",  no, 200);
-		no.put("mimetype", no, Codes.MIME_HTML);
+		no.put("mimetype", no, com.nwu.httpd.Codes.MIME_HTML);
 		no.put("data", no, data);
 		no.put("header", no, headers);
 		
@@ -883,7 +1060,7 @@ public class HTTPServer extends ScriptableObject {
 		AFCmdBase.jse.exitContext();
 		
 		no.put("status", no, 200);
-		no.put("mimetype", no, Codes.MIME_JSON);
+		no.put("mimetype", no, com.nwu.httpd.Codes.MIME_JSON);
 		no.put("data", no, data);
 		no.put("header", no, headers);
 
@@ -905,7 +1082,7 @@ public class HTTPServer extends ScriptableObject {
 		AFCmdBase.jse.exitContext();
 
 		no.put("status", no, 200);
-		no.put("mimetype", no, Codes.MIME_DEFAULT_BINARY);
+		no.put("mimetype", no, com.nwu.httpd.Codes.MIME_DEFAULT_BINARY);
 		no.put("data", no, data);
 		no.put("header", no, headers);
 
@@ -926,7 +1103,7 @@ public class HTTPServer extends ScriptableObject {
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
 
-		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
+		if(mimetype == null || mimetype.equals("undefined")) mimetype = com.nwu.httpd.Codes.MIME_DEFAULT_BINARY;
 		if(code <= 0) code = 200;
 		
 		no.put("status", no, code);
@@ -954,7 +1131,7 @@ public class HTTPServer extends ScriptableObject {
 			data = ((org.mozilla.javascript.NativeJavaArray) data).unwrap();
 		}
 
-		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
+		if(mimetype == null || mimetype.equals("undefined")) mimetype = com.nwu.httpd.Codes.MIME_DEFAULT_BINARY;
 		if(code <= 0) code = 200;
 		
 		no.put("status", no, code);
@@ -979,7 +1156,7 @@ public class HTTPServer extends ScriptableObject {
 		Scriptable no = cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
 
-		if(mimetype == null || mimetype.equals("undefined")) mimetype = Codes.MIME_DEFAULT_BINARY;
+		if(mimetype == null || mimetype.equals("undefined")) mimetype = com.nwu.httpd.Codes.MIME_DEFAULT_BINARY;
 		if(code <= 0) code = 200;
 
 		if (data instanceof NativeJavaObject) data = ((NativeJavaObject) data).unwrap();
@@ -1047,44 +1224,12 @@ public class HTTPServer extends ScriptableObject {
 		return sessions.containsKey(session);
 	}
 	
-	public static IStatus translateToNanoHTTPD(int code) {
+	public static com.nwu.httpd.NanoHTTPD.Response.IStatus translateToNanoHTTPD(int code) {
 		return com.nwu.httpd.NanoHTTPD.Response.Status.lookup(code);
-		/*
-		switch(code) {
-		case 101: return com.nwu.httpd.NanoHTTPD.Response.Status.SWITCH_PROTOCOL; 
-		case 200: return com.nwu.httpd.NanoHTTPD.Response.Status.OK; 
-		case 201: return com.nwu.httpd.NanoHTTPD.Response.Status.CREATED; 
-		case 202: return com.nwu.httpd.NanoHTTPD.Response.Status.ACCEPTED; 
-		case 204: return com.nwu.httpd.NanoHTTPD.Response.Status.NO_CONTENT; 
-		case 206: return com.nwu.httpd.NanoHTTPD.Response.Status.PARTIAL_CONTENT; 
-		case 207: return com.nwu.httpd.NanoHTTPD.Response.Status.MULTI_STATUS;
-		case 301: return com.nwu.httpd.NanoHTTPD.Response.Status.REDIRECT;
-		case 302: return com.nwu.httpd.NanoHTTPD.Response.Status.FOUND;
-		case 303: return com.nwu.httpd.NanoHTTPD.Response.Status.REDIRECT_SEE_OTHER;
-		case 304: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_MODIFIED; 
-		case 307: return com.nwu.httpd.NanoHTTPD.Response.Status.TEMPORARY_REDIRECT;
-		case 400: return com.nwu.httpd.NanoHTTPD.Response.Status.BAD_REQUEST; 
-		case 401: return com.nwu.httpd.NanoHTTPD.Response.Status.UNAUTHORIZED; 
-		case 403: return com.nwu.httpd.NanoHTTPD.Response.Status.FORBIDDEN; 
-		case 404: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_FOUND; 
-		case 405: return com.nwu.httpd.NanoHTTPD.Response.Status.METHOD_NOT_ALLOWED;
-		case 406: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_ACCEPTABLE;
-		case 408: return com.nwu.httpd.NanoHTTPD.Response.Status.REQUEST_TIMEOUT;
-		case 409: return com.nwu.httpd.NanoHTTPD.Response.Status.CONFLICT;
-		case 410: return com.nwu.httpd.NanoHTTPD.Response.Status.GONE;
-		case 411: return com.nwu.httpd.NanoHTTPD.Response.Status.LENGTH_REQUIRED;
-		case 412: return com.nwu.httpd.NanoHTTPD.Response.Status.PRECONDITION_FAILED;
-		case 413: return com.nwu.httpd.NanoHTTPD.Response.Status.PAYLOAD_TOO_LARGE;
-		case 415: return com.nwu.httpd.NanoHTTPD.Response.Status.UNSUPPORTED_MEDIA_TYPE;
-		case 416: return com.nwu.httpd.NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE; 
-		case 417: return com.nwu.httpd.NanoHTTPD.Response.Status.EXPECTATION_FAILED;
-		case 429: return com.nwu.httpd.NanoHTTPD.Response.Status.TOO_MANY_REQUESTS;
-		case 500: return com.nwu.httpd.NanoHTTPD.Response.Status.INTERNAL_ERROR;
-		case 501: return com.nwu.httpd.NanoHTTPD.Response.Status.NOT_IMPLEMENTED;
-		case 503: return com.nwu.httpd.NanoHTTPD.Response.Status.SERVICE_UNAVAILABLE;
-		case 505: return com.nwu.httpd.NanoHTTPD.Response.Status.UNSUPPORTED_HTTP_VERSION;
-		default: return Codes.HTTP_OK;
-		}*/
+	}
+
+	public static com.nwu2.httpd.NanoHTTPD.Response.IStatus translateToNanoHTTPD2(int code) {
+		return com.nwu2.httpd.NanoHTTPD.Response.Status.lookup(code);
 	}
 	
 	/**
