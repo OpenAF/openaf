@@ -25,11 +25,11 @@ public class TimeTask extends TimerTask {
 	
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
+		// Initialize the cache if it is null
 		if (cache == null) {
 			SimpleCacheConfig config = new SimpleCacheConfig();
+			cache = new SimpleCache(config);
 		}
-		
 	}
 
 }
