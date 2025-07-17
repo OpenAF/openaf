@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.net.ssl.SSLServerSocketFactory;
 
+import com.nwu2.httpd.NanoHTTPD.DefaultAsyncRunner;
 import com.nwu2.httpd.NanoHTTPD.Response;
 import com.nwu2.log.Log;
 import java.lang.String;
@@ -34,4 +35,5 @@ public interface IHTTPd {
 	public void makeSecure(SSLServerSocketFactory makeLocalSSLSocketFactory, String[] object);
 	public void start() throws IOException;
 	public boolean isAlive();
+    public void setAsyncRunner(DefaultAsyncRunner defaultAsyncRunner);
 }

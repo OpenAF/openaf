@@ -250,4 +250,8 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 	public void addToWsAccept(String uri) {
     }
 
+	@Override
+	public void setAsyncRunner(DefaultAsyncRunner defaultAsyncRunner) {
+		super.setAsyncRunner(defaultAsyncRunner);
+	}
 }

@@ -299,4 +299,8 @@ public class HTTPWSd extends NanoWSD implements IHTTPd {
         super.makeSecure(makeLocalSSLSocketFactory, object);
     }
 
+    @Override
+    public void setAsyncRunner(DefaultAsyncRunner defaultAsyncRunner) {
+        super.setAsyncRunner(defaultAsyncRunner);
+    }
 }
