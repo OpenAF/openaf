@@ -274,7 +274,7 @@ public class HTTPServer extends ScriptableObject {
 		
 		if (USE_JAVA_HTTP_SERVER) {
 			// Use Java built-in HTTP server implementation
-			initializeJava21HttpServer(port, host, keyStorePath, password, errorFunction);
+			initializeJavaHttpServer(port, host, keyStorePath, password, errorFunction);
 		} else {
 			// Use existing NWU implementation
 			initializeNWUHttpServer(port, host, keyStorePath, password, errorFunction, ws, timeout);
@@ -283,7 +283,7 @@ public class HTTPServer extends ScriptableObject {
 		id = Integer.toString(port) + this.hashCode();
 	}
 	
-	private void initializeJava21HttpServer(int port, Object host, String keyStorePath, Object password, Object errorFunction) throws IOException {
+	private void initializeJavaHttpServer(int port, Object host, String keyStorePath, Object password, Object errorFunction) throws IOException {
 		InetSocketAddress address;
 		if (host == null || host instanceof Undefined) {
 			address = new InetSocketAddress(port);
@@ -581,7 +581,7 @@ public class HTTPServer extends ScriptableObject {
 				javaHandlers.remove(uri);
 			}
 
-			Java21HttpHandler handler = new Java21HttpHandler(uri, callback, serverport);
+			JavaHttpHandler handler = new JavaHttpHandler(uri, callback, serverport);
 			javaHandlers.put(uri, handler);
 
 			if (isSecure && javaHttpsServer != null) {
@@ -1090,10 +1090,10 @@ public class HTTPServer extends ScriptableObject {
 	/**
 	 * Custom HttpHandler implementation for Java HTTP server
 	 */
-	public class Java21HttpHandler implements HttpHandler {
+	public class JavaHttpHandler implements HttpHandler {
 		private final NativeFunction callback;
 		
-		public Java21HttpHandler(String uri, NativeFunction callback, int port) {
+		public JavaHttpHandler(String uri, NativeFunction callback, int port) {
 			this.callback = callback;
 		}
 		
@@ -1190,9 +1190,7 @@ public class HTTPServer extends ScriptableObject {
 						if (key instanceof String) {
 							String headerName = (String) key;
 							Object headerValue = headers.get(headerName, headers);
-							if (headerValue instanceof String) {
-								exchange.getResponseHeaders().set(headerName, (String) headerValue);
-							}
+							exchange.getResponseHeaders().set(headerName, headerValue.toString());
 						}
 					}
 				}
