@@ -244,64 +244,66 @@
         var port1 = findRandomOpenPort()
         var port2 = findRandomOpenPort()
 
-        var hs1 = ow.server.httpd.start(" + port1 + ", "127.0.0.1", __, __, __, __, __, aImpl)
-        var hs2 = ow.server.httpd.start(" + port2 + ", "127.0.0.1", __, __, __, __, __, aImpl)
+        var hs1 = ow.server.httpd.start(port1, "127.0.0.1", __, __, __, __, __, aImpl)
+        var hs2 = ow.server.httpd.start(port2, "127.0.0.1", __, __, __, __, __, aImpl)
     
-        ow.loadObj();
-        var h = new ow.obj.http();
-        var test = false;
         try {
-            h.get("http://127.0.0.1:" + port1 + "");
+            ow.loadObj();
+            var h = new ow.obj.http();
+            var test = false;
+            try {
+                h.get("http://127.0.0.1:" + port1 + "");
+                test = false;
+            } catch(e) {
+                if (h.responseCode() == 401) test = true;
+            }
+
+            ow.test.assert(test, true, "Unexpected reply from server 1 without routes");
+
+            ow.server.httpd.route(hs1, 
+                { "/normal": function(req) { return hs1.replyOKText("normal 1"); } }, 
+                function(req) { return hs1.replyOKText("I am 1"); });
+            ow.server.httpd.route(hs2, 
+                { "/normal": function(req) { return hs1.replyOKText("normal 2"); } }, 
+                function(req) { return hs1.replyOKText("I am 2"); });
+        
+            plugin("HTTP");
+            ow.test.assert(
+                (new HTTP()).get("http://127.0.0.1:" + port1 + "").response,
+                "I am 1",
+                "Problem with server 1 on default response"
+            );
+            ow.test.assert(
+                (new HTTP()).get("http://127.0.0.1:" + port2 + "").response,
+                "I am 2",
+                "Problem with server 2 on default response"
+            );
+            ow.test.assert(
+                (new HTTP()).get("http://127.0.0.1:" + port1 + "/normal").response,
+                "normal 1",
+                "Problem with server 1 on /normal response"
+            );
+            ow.test.assert(
+                (new HTTP()).get("http://127.0.0.1:" + port2 + "/normal").response,
+                "normal 2",
+                "Problem with server 2 on /normal response"
+            );
+        
+            ow.server.httpd.resetRoutes(hs1);
+            h = new ow.obj.http();
             test = false;
-        } catch(e) {
-            if (h.responseCode() == 401) test = true;
+            try {
+                h.get("http://127.0.0.1:" + port1 + "");
+                test = false;
+            } catch(e) {
+                if (h.responseCode() == 401) test = true;
+            }
+
+            ow.test.assert(test, true, "Unexpected reply from server 1 after routes reset");
+        } finally {
+            ow.server.httpd.stop(hs1)
+            ow.server.httpd.stop(hs2)
         }
-
-        ow.test.assert(test, true, "Unexpected reply from server 1 without routes");
-
-        ow.server.httpd.route(hs1, 
-            { "/normal": function(req) { return hs1.replyOKText("normal 1"); } }, 
-            function(req) { return hs1.replyOKText("I am 1"); });
-        ow.server.httpd.route(hs2, 
-            { "/normal": function(req) { return hs1.replyOKText("normal 2"); } }, 
-            function(req) { return hs1.replyOKText("I am 2"); });
-    
-        plugin("HTTP");
-        ow.test.assert(
-            (new HTTP()).get("http://127.0.0.1:" + port1 + "").response,
-            "I am 1",
-            "Problem with server 1 on default response"
-        );
-        ow.test.assert(
-            (new HTTP()).get("http://127.0.0.1:" + port2 + "").response,
-            "I am 2",
-            "Problem with server 2 on default response"
-        );
-        ow.test.assert(
-            (new HTTP()).get("http://127.0.0.1:" + port1 + "/normal").response,
-            "normal 1",
-            "Problem with server 1 on /normal response"
-        );
-        ow.test.assert(
-            (new HTTP()).get("http://127.0.0.1:" + port2 + "/normal").response,
-            "normal 2",
-            "Problem with server 2 on /normal response"
-        );
-    
-        ow.server.httpd.resetRoutes(hs1);
-        h = new ow.obj.http();
-        test = false;
-        try {
-            h.get("http://127.0.0.1:" + port1 + "");
-            test = false;
-        } catch(e) {
-            if (h.responseCode() == 401) test = true;
-        }
-
-        ow.test.assert(test, true, "Unexpected reply from server 1 after routes reset");
-
-        ow.server.httpd.stop(hs1);
-        ow.server.httpd.stop(hs2);
     }
     exports.testHTTPServer = function() {
         _testHTTPServer("nwu")
