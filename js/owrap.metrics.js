@@ -132,11 +132,12 @@ OpenWrap.metrics.prototype.__m = {
     threads: () => {
         var res = {
             list  : af.fromJavaArray(java.lang.Thread.getAllStackTraces().keySet().toArray()).map(t => ({
-                id      : t.getId(),
-                name    : String(t.getName()),
-                isAlive : t.isAlive(),
-                priority: Number(t.getPriority()),
-                state   : String(t.getState())
+                id       : t.getId(),
+                name     : String(t.getName()),
+                isAlive  : t.isAlive(),
+                isVirtual: t.isVirtual(),
+                priority : Number(t.getPriority()),
+                state    : String(t.getState())
             })),
             active: Number(java.lang.Thread.activeCount()),
             total : Number(java.lang.Thread.getAllStackTraces().size()),

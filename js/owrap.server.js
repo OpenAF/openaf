@@ -3612,7 +3612,7 @@ OpenWrap.server.prototype.socket = {
 
 		plugin("Threads");
 		var t = new Threads();
-		t.addSingleThread(function() {
+		t.addVirtualThread(function() {
 			while(isDef(ow.server.socket.__servers[aPort]) && !(ow.server.socket.__servers[aPort].isClosed())) {
 				var clt = server.accept();
 				aFn(clt, server);
