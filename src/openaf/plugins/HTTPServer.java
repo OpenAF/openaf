@@ -306,11 +306,11 @@ public class HTTPServer extends ScriptableObject {
 
 	/**
 	 * <odoc>
-	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout, aVersion)</key>
+	 * <key>HTTPd.HTTPd(aPort, aLocalInteface, keyStorePath, keyStorePassword, logFunction, webSockets, aTimeout, aImpl)</key>
 	 * Creates a HTTP server instance on the provided port and optionally on the identified local interface.
 	 * If the port provided is 0 or negative a random port will be assigned. To determine what this port is 
 	 * you can use the function HTTPServer.getPort().
-	 * If aVersion = "java" is provided the Java built-in HttpServer implementation will be used.
+	 * If aImpl = "java" is provided the Java built-in HttpServer implementation will be used.
 	 * If keyStorePath is defined, the corresponding SSL Key Store will be used (connections will be https) with
 	 * the provided keyStorePassword. Do note that the keyStorePath should be included in the OpenAF classpath.
 	 * The logFunction, if defined, will be called by the server whenever there is any logging to be performed 
@@ -355,7 +355,7 @@ public class HTTPServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSConstructor
-	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout, String version) throws IOException {
+	public void newHTTPd(int port, Object host, String keyStorePath, Object password, Object errorFunction, Object ws, int timeout, String aImpl) throws IOException {
 		if (port <= 0) {
 			port = findRandomOpenPortOnAllLocalInterfaces();
 		}
@@ -515,6 +515,24 @@ public class HTTPServer extends ScriptableObject {
 		}
 	}
 	
+	/**
+	 * <odoc>
+	 * <key>HTTPd.getImpl() : string</key>
+	 * Returns the implementation used by the HTTP server instance.
+	 * Possible values are "java" for Java built-in HttpServer, "nwu2" for NWU2 HTTP server, and "nwu" for legacy NWU HTTP server.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String getImpl() {
+		if (USE_JAVA_HTTP_SERVER) {
+			return "java";
+		} else if (USE_NWU2) {
+			return "nwu2";
+		} else {
+			return "nwu";
+		}
+	}
+
 	/**
 	 * <odoc>
 	 * <key>HTTPd.getPort() : number</key>
