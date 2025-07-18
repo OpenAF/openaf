@@ -167,10 +167,10 @@ var __opackCentral = (isDef(__openaf.opackCentral)) ? __openaf.opackCentral : [
 	"http://openaf.io/opack.db" 
 ]
 var __openafBuild = (isDef(__openaf.openafBuild)) ? __openaf.openafBuild : [
-    "http://openaf.io/build"
+	"http://openaf.io/build"
 ]
 var __openafRelease = (isDef(__openaf.openafRelease)) ? __openaf.openafRelease : [
-    "http://openaf.io/release"
+	"http://openaf.io/release"
 ]
 var __openafDownload = (isDef(__openaf.openafDownload)) ? __openaf.openafDownload : [
 	"https//openaf.io"
@@ -263,7 +263,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	ALTERNATIVE_HOME            : String(java.lang.System.getProperty("java.io.tmpdir")),
 	ALTERNATIVE_PROCESSEXPR     : true,
 	HTTP_TIMEOUT                : __,
-    HTTP_CON_TIMEOUT            : __,
+	HTTP_CON_TIMEOUT            : __,
 	HTTP_DEFAULT_HEADERS		: true,
 	HTTP_USE_MEDIA_TYPE         : false,
 	HTTPD_THREADS               : "auto",
@@ -273,7 +273,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
 	SQL_QUERY_COLS_DETECT_SAMPLE: 25,
-  	DOH_PROVIDER                : "cloudflare",
+	DOH_PROVIDER                : "cloudflare",
 	PRINT_BUFFER_STREAM         : 8192,
 	JAVA_CERT_BC_PROVIDER       : false,
 	PATH_CFN                    : __,             // $path custom functions (execute loadCompiledLib("jmespath_js") before using)
@@ -366,7 +366,7 @@ const bfprintErrnl = function(str, codePage) {
 const bfprintSetStreamSize = function(aStreamSize) {
 	__flags.PRINT_BUFFER_STREAM = aStreamSize
 	__bfprint = {}
-    __bfprintErr = {}
+	__bfprintErr = {}
 }
 
 const bfprint = function(str, codePage) {
@@ -651,29 +651,29 @@ const tprintErr = function(aTemplateString, someData) {
 const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 	_$(as, "aFormatString").isString().$_()
 	
-    var _d = as.trim().split(/ +/)
-    var name = _$(_d.shift(), "name").isString().$_()
-    var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec4", "dec", "bytes", "si", "clean"]).$_()
+	var _d = as.trim().split(/ +/)
+	var name = _$(_d.shift(), "name").isString().$_()
+	var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec4", "dec", "bytes", "si", "clean"]).$_()
 
-    aMax    = _$(aMax, "aMax").isNumber().default(__)
+	aMax    = _$(aMax, "aMax").isNumber().default(__)
 	aMin    = _$(aMin, "aMin").isNumber().default(__)
-    hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
+	hSize   = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
 	vSize   = _$(vSize, "vSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getHeight() - 5)
 	options = _$(options, "options").isMap().default({})
 
-    if (type == "clean" && name != "__") {
-        ow.format.string.dataClean(name)
-        return
-    }
-    var useColor = false
-    var colors = [], titles = []
+	if (type == "clean" && name != "__") {
+		ow.format.string.dataClean(name)
+		return
+	}
+	var useColor = false
+	var colors = [], titles = []
 
-    if (_d.filter(r => !r.startsWith("-")).filter(r => r.indexOf(":") > 0).length > 0) {
-        if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
-        useColor = true
-    }
+	if (_d.filter(r => !r.startsWith("-")).filter(r => r.indexOf(":") > 0).length > 0) {
+		if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
+		useColor = true
+	}
 
-    var data = _d.filter(r => !r.startsWith("-")).map(r => {
+	var data = _d.filter(r => !r.startsWith("-")).map(r => {
 		try {
 			if (useColor) {
 				var _ar = r.split(":")
@@ -686,7 +686,7 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
 		}
-    }).filter(r => isDef(r))
+	}).filter(r => isDef(r))
 
 	_d.filter(r => r.startsWith("-")).forEach(r => {
 		var _ar = r.split(":")
@@ -698,42 +698,42 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 		}
 	})
 
-    //var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
-    var options = merge(options, { max: aMax, min: aMin })
-    if (useColor) options.colors = colors
+	//var options = { symbols: [ '+', '|', '-', '-', '-', '\\', '/', '\\', '/', '|' ] }
+	var options = merge(options, { max: aMax, min: aMin })
+	if (useColor) options.colors = colors
 
-    switch(type) {
-    case "int":
-        options.format = x => $f("%2.0f", Number(x))
-        break
-    case "dec":
-        options.format = x => String(x)
-        break
-    case "dec1":
-        options.format = x => Number(x).toFixed(1)
-        break
-    case "dec2":
-        options.format = x => Number(x).toFixed(2)
-        break
-    case "dec3":
-        options.format = x => Number(x).toFixed(3)
-        break
+	switch(type) {
+	case "int":
+		options.format = x => $f("%2.0f", Number(x))
+		break
+	case "dec":
+		options.format = x => String(x)
+		break
+	case "dec1":
+		options.format = x => Number(x).toFixed(1)
+		break
+	case "dec2":
+		options.format = x => Number(x).toFixed(2)
+		break
+	case "dec3":
+		options.format = x => Number(x).toFixed(3)
+		break
 	case "dec4":
 		options.format = x => Number(x).toFixed(4)
 		break
-    case "bytes":
-        options.format = x => ow.format.toBytesAbbreviation(x)
-        break
-    case "si":
-        options.format = x => ow.format.toAbbreviation(x)
-        break
-    }
+	case "bytes":
+		options.format = x => ow.format.toBytesAbbreviation(x)
+		break
+	case "si":
+		options.format = x => ow.format.toAbbreviation(x)
+		break
+	}
 
 	var _out
 	var useLegend = useColor & titles.reduce((pV, cV, cI, aR) => { if (cV == "") return 0; return pV + cV.length }, 0 ) > 0
 	try {
 		//io.writeFileString("/tmp/test", name + "; " + stringify(data, __, true) + "; " + hSize + "; " + vSize + "; " + stringify(options, __, true) + "\n", __, true)
-    	if (name != "__") {
+		if (name != "__") {
 			_out = ow.format.string.dataLineChart(name, data, hSize, useLegend ? vSize -2 : vSize, options)
 		} else {
 			_out = ow.format.string.lineChart(data, merge({ width: hSize, height: useLegend ? vSize -2 : vSize }, options))
@@ -742,11 +742,11 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 		//io.writeFileString("/tmp/test", "ERROR: " + name + " " + stringify(data,__,"") + " " + stringify(options,__,"") + " | " + e + "\n", __, true)
 		throw e
 	} 
-    if (useLegend) {
-        _out += "\n\n  " + ow.format.string.lineChartLegend(titles, options).map(r => r.symbol + " " + r.title).join("  ")
-    }
+	if (useLegend) {
+		_out += "\n\n  " + ow.format.string.lineChartLegend(titles, options).map(r => r.symbol + " " + r.title).join("  ")
+	}
 	
-    return _out
+	return _out
 }
 
 /**
@@ -765,25 +765,25 @@ const printChart = function(as, hSize, vSize, aMax, aMin, options) {
 const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 	_$(as, "aFormatString").isString().$_()
 	
-    var _d = as.trim().split(/ +/)
-    var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si"]).$_()
+	var _d = as.trim().split(/ +/)
+	var type = _$(_d.shift(), "type").oneOf(["int", "dec1", "dec2", "dec3", "dec", "bytes", "si"]).$_()
 
-    aMax  = _$(aMax, "aMax").isNumber().default(__)
+	aMax  = _$(aMax, "aMax").isNumber().default(__)
 	aMin  = _$(aMin, "aMin").isNumber().default(__)
-    hSize = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
+	hSize = _$(hSize, "hSize").isNumber().default(isUnDef(__con) ? __ : __con.getTerminal().getWidth())
 
 	aIndicatorChar = _$(aIndicatorChar, "aIndicatorChar").isString().default("━")
 	aSpaceChar     = _$(aSpaceChar, "aSpaceChar").isString().default(" ")
 
-    var useColor = false
-    var colors = [], titles = []
+	var useColor = false
+	var colors = [], titles = []
 
 	if (_d.filter(r => r.indexOf(":") > 0).length > 0) {
-        if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
-        useColor = true
-    }
+		if (_d.filter(r => r.indexOf(":") > 0).length != _d.length) throw "Please provide a color for all series functions."
+		useColor = true
+	}
 
-    var data = _d.filter(r => !r.startsWith("-")).map(r => {
+	var data = _d.filter(r => !r.startsWith("-")).map(r => {
 		try {
 			if (useColor) {
 				var _ar = r.split(":")
@@ -796,7 +796,7 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 		} catch(dme) {
 			throw "Error on '" + r + "': " + dme
 		}
-    }).filter(r => isDef(r))
+	}).filter(r => isDef(r))
 
 	_d.filter(r => r.startsWith("-")).forEach(r => {
 		var _ar = r.split(":")
@@ -807,57 +807,57 @@ const printBars = function(as, hSize, aMax, aMin, aIndicatorChar, aSpaceChar) {
 		}
 	})
 
-    if (isUnDef(aMax)) aMax = $from(data).max()
-    if (isUnDef(aMin)) aMin = $from(data).min()
-    if (aMin > 0) aMin = 0
+	if (isUnDef(aMax)) aMax = $from(data).max()
+	if (isUnDef(aMin)) aMin = $from(data).min()
+	if (aMin > 0) aMin = 0
 
-    var fn
+	var fn
 
-    switch(type) {
-    case "int":
-        fn = x => $f("%2.0f", Number(x))
-        break
-    case "dec":
-        fn = x => String(x)
-        break
-    case "dec1":
-        fn = x => Number(x).toFixed(1)
-        break
-    case "dec2":
-        fn = x => Number(x).toFixed(2)
-        break
-    case "dec3":
-        fn = x => Number(x).toFixed(3)
-        break
-    case "bytes":
-        fn = x => ow.format.toBytesAbbreviation(x)
-        break
-    case "si":
-        fn = x => ow.format.toAbbreviation(x)
-        break
-    }
+	switch(type) {
+	case "int":
+		fn = x => $f("%2.0f", Number(x))
+		break
+	case "dec":
+		fn = x => String(x)
+		break
+	case "dec1":
+		fn = x => Number(x).toFixed(1)
+		break
+	case "dec2":
+		fn = x => Number(x).toFixed(2)
+		break
+	case "dec3":
+		fn = x => Number(x).toFixed(3)
+		break
+	case "bytes":
+		fn = x => ow.format.toBytesAbbreviation(x)
+		break
+	case "si":
+		fn = x => ow.format.toAbbreviation(x)
+		break
+	}
 
 	var _out = {}, values = []
 	try {
-        var maxTitle = titles.reduce((pV,cV,cI,aR) => {
-            return Math.max(Number(pV), (isString(cV) ? ansiLength(cV) : ("f" + ansiLength(String(cI)))))
-        }, 0)
-        var maxValue = data.reduce((pV,cV,cI,aR) => {
-            var _v = fn(cV)
-            values.push(_v)
-            return Math.max(pV, ansiLength(String(_v)))
-        }, 0)
+		var maxTitle = titles.reduce((pV,cV,cI,aR) => {
+			return Math.max(Number(pV), (isString(cV) ? ansiLength(cV) : ("f" + ansiLength(String(cI)))))
+		}, 0)
+		var maxValue = data.reduce((pV,cV,cI,aR) => {
+			var _v = fn(cV)
+			values.push(_v)
+			return Math.max(pV, ansiLength(String(_v)))
+		}, 0)
 		data.forEach((d, i) => {
-            var _vv = $f("%" + maxValue + "s", String(values[i]))
-            var _s = hSize -1 -2 -2 -2 -maxTitle -maxValue
-            var _v = ansiColor(colors[i], ow.format.string.progress(Number(d), Number(aMax), Number(aMin), Number(aMax > _s ? _s : aMax), aIndicatorChar, aSpaceChar)) + " :" + _vv
+			var _vv = $f("%" + maxValue + "s", String(values[i]))
+			var _s = hSize -1 -2 -2 -2 -maxTitle -maxValue
+			var _v = ansiColor(colors[i], ow.format.string.progress(Number(d), Number(aMax), Number(aMin), Number(aMax > _s ? _s : aMax), aIndicatorChar, aSpaceChar)) + " :" + _vv
 			if (isDef(titles[i])) {
 				_out[titles[i]] = $f("%" + maxTitle + "s", _v)
 			} else {
 				_out["f" + String(i)] = $f("%" + maxTitle + "s", _v)
 			}
 		})
-    	return printTree(_out)
+		return printTree(_out)
 	} catch(e) {
 		throw e
 	} 
@@ -929,15 +929,15 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
 			// Given anArrayOfIdxs with a list of intervals, if ii is in one of them, then band
 			shouldBand = false
 			var _found = false
-            var acc = 0
-            for(var _ii = 0; !_found && _ii < anArrayOfIdxs.length; _ii++) {
-                var pos = anArrayOfIdxs[_ii]
-                if (acc <= ii && ii < pos) {
-                    shouldBand = _ii % 2 != 0
-                    _found = true
-                }
-                acc = pos
-            }
+			var acc = 0
+			for(var _ii = 0; !_found && _ii < anArrayOfIdxs.length; _ii++) {
+				var pos = anArrayOfIdxs[_ii]
+				if (acc <= ii && ii < pos) {
+					shouldBand = _ii % 2 != 0
+					_found = true
+				}
+				acc = pos
+			}
 		} else {
 			shouldBand = false
 		}
@@ -1061,23 +1061,23 @@ const printTable = function(anArrayOfEntries, aWidthLimit, displayCount, useAnsi
  * </odoc>
  */
 const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
-    let slines, line, endc, strc, ssrc, midc, skey
-    _aOptions = _$(_aOptions, "aOptions").isMap().default({})
+	let slines, line, endc, strc, ssrc, midc, skey
+	_aOptions = _$(_aOptions, "aOptions").isMap().default({})
 
-    // Merge with default options
-    _aOptions = merge(merge(merge({
-        noansi: false,
-        curved: true,
-        fullKeySize: true,
-        fullValSize: false,
-        withValues: true,
-        wordWrap: true,
-        compact: true,
-        minSize: 5
-    }, __flags.TREE), __colorFormat.tree), _aOptions)
+	// Merge with default options
+	_aOptions = merge(merge(merge({
+		noansi: false,
+		curved: true,
+		fullKeySize: true,
+		fullValSize: false,
+		withValues: true,
+		wordWrap: true,
+		compact: true,
+		minSize: 5
+	}, __flags.TREE), __colorFormat.tree), _aOptions)
 
-    // Decide on decorations to use 
-    if (_aOptions.compact) {
+	// Decide on decorations to use 
+	if (_aOptions.compact) {
 		if (_aOptions.mono) {
 			slines = 2
 			line = "│"
@@ -1098,84 +1098,84 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 			midc = (_aOptions.noansi ? "| " : "├ ")
 			skey = ": "
 		}
-    } else {
-        slines = 3
-        line = (_aOptions.noansi ? "|" : "│") 
-        endc = (_aOptions.noansi ? "\\- " : (_aOptions.curved ? "╰─ " : "└─ "))
-        strc = (_aOptions.noansi ? "/- " :  (_aOptions.curved ? "╭─ " : "┌─ "))
-        ssrc = (_aOptions.noansi ? "-- " : "── ")
-        midc = (_aOptions.noansi ? "|- " : "├─ ")
+	} else {
+		slines = 3
+		line = (_aOptions.noansi ? "|" : "│") 
+		endc = (_aOptions.noansi ? "\\- " : (_aOptions.curved ? "╰─ " : "└─ "))
+		strc = (_aOptions.noansi ? "/- " :  (_aOptions.curved ? "╭─ " : "┌─ "))
+		ssrc = (_aOptions.noansi ? "-- " : "── ")
+		midc = (_aOptions.noansi ? "|- " : "├─ ")
 		skey = ": "
-    }
+	}
 
-    // Don't repeat options if already done as a sub-call
-    ow.loadFormat()
+	// Don't repeat options if already done as a sub-call
+	ow.loadFormat()
 	ow.loadObj()
-    if (!ow.format.isWindows()) {
-        if (isUnDef(_aOptions.noansi) && __initializeCon()) {
-            _aOptions.noansi = !__conAnsi
-        }
-    } else {
-        if (__initializeCon()) {
-            if (!ansiWinTermCap()) ansiStart()
-            if (isUnDef(_aOptions.noansi)) _aOptions.noansi = !__conAnsi
-        }
-    }
+	if (!ow.format.isWindows()) {
+		if (isUnDef(_aOptions.noansi) && __initializeCon()) {
+			_aOptions.noansi = !__conAnsi
+		}
+	} else {
+		if (__initializeCon()) {
+			if (!ansiWinTermCap()) ansiStart()
+			if (isUnDef(_aOptions.noansi)) _aOptions.noansi = !__conAnsi
+		}
+	}
 
-    _aPrefix  = _$(_aPrefix, "aPrefix").isString().default("")
-    _aWidth   = _$(_aWidth, "aWidth").isNumber().default(__)
-    if (isUnDef(_aWidth) && isDef(__con)) _aWidth = Number(__con.getTerminal().getWidth())
+	_aPrefix  = _$(_aPrefix, "aPrefix").isString().default("")
+	_aWidth   = _$(_aWidth, "aWidth").isNumber().default(__)
+	if (isUnDef(_aWidth) && isDef(__con)) _aWidth = Number(__con.getTerminal().getWidth())
 
-    // Prepare aux functions
-    var _clr = __, _ac = __, _al = __
-    if (!_aOptions.noansi) {
-        _dt = aO => {
+	// Prepare aux functions
+	var _clr = __, _ac = __, _al = __
+	if (!_aOptions.noansi) {
+		_dt = aO => {
 			if (null == aO) return "null"
 			try {
 				if ("function" === typeof aO.getClass && "[object JavaObject]" === Object.prototype.toString.call(aO)) return "java"
 			} catch(e) {
 				if (aO.getClass() instanceof java.lang.Object) return "java"
 			}
-            if ("undefined" == typeof aO) return "undefined"
-            if ("boolean" == typeof aO) return "boolean"
-            if ("number" === typeof aO) return "number"
-            if ("string" == typeof aO) return "string"
-            if ("undefined" !== typeof aO.getDate) return "date"
-        }
-        //_acr = () => _ac("RESET","")
-        _clr = aO => {
-            //if (_clrCache[String(aO)]) return _clrCache[String(aO)]
+			if ("undefined" == typeof aO) return "undefined"
+			if ("boolean" == typeof aO) return "boolean"
+			if ("number" === typeof aO) return "number"
+			if ("string" == typeof aO) return "string"
+			if ("undefined" !== typeof aO.getDate) return "date"
+		}
+		//_acr = () => _ac("RESET","")
+		_clr = aO => {
+			//if (_clrCache[String(aO)]) return _clrCache[String(aO)]
 			if (_clrCache.containsKey(String(aO))) return _clrCache.get(String(aO))
 
-            let result
-            let dt = _dt(aO)
-            switch(dt) {
+			let result
+			let dt = _dt(aO)
+			switch(dt) {
 			case "null"   : result = [_acCFdefault, "null", "\u001b[m"].join(""); break
-            case "number" : result = [_acCFnumber, String(aO), "\u001b[m"].join(""); break
-            case "string" : result = [_acCFstring, String(aO), "\u001b[m"].join(""); break
-            case "boolean": result = [_acCFboolean, String(aO), "\u001b[m"].join(""); break
-            case "date"   : result = [_acCFdate, aO.toISOString().replace("Z","").replace("T"," "), "\u001b[m"].join(""); break
-            case "java"   : result = [_acCFstring, String(aO.toString()), "\u001b[m"].join(""); break
-            default       : result = [_acCFdefault, String(aO), "\u001b[m"].join(""); break
-            }
-            //_clrCache[String(aO)] = result
+			case "number" : result = [_acCFnumber, String(aO), "\u001b[m"].join(""); break
+			case "string" : result = [_acCFstring, String(aO), "\u001b[m"].join(""); break
+			case "boolean": result = [_acCFboolean, String(aO), "\u001b[m"].join(""); break
+			case "date"   : result = [_acCFdate, aO.toISOString().replace("Z","").replace("T"," "), "\u001b[m"].join(""); break
+			case "java"   : result = [_acCFstring, String(aO.toString()), "\u001b[m"].join(""); break
+			default       : result = [_acCFdefault, String(aO), "\u001b[m"].join(""); break
+			}
+			//_clrCache[String(aO)] = result
 			_clrCache.put(String(aO), result)
-            return result
-        }
-        _ac  = (aAnsi, aString) => {
-            if (!__conConsole || ((isDef(_aOptions.color) && !_aOptions.color))) return aString
+			return result
+		}
+		_ac  = (aAnsi, aString) => {
+			if (!__conConsole || ((isDef(_aOptions.color) && !_aOptions.color))) return aString
 
-            aAnsi = aAnsi.trim().toUpperCase()
-            if (_aOptions.bgcolor && aAnsi.length > 0) {
-                aAnsi += "," + _aOptions.bgcolor
-            }
-        
-            if (aAnsi.length == 0) return aString
+			aAnsi = aAnsi.trim().toUpperCase()
+			if (_aOptions.bgcolor && aAnsi.length > 0) {
+				aAnsi += "," + _aOptions.bgcolor
+			}
+		
+			if (aAnsi.length == 0) return aString
 
-            if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString].join("")
-        
-            return ansiColor(aAnsi, aString, true, true)
-        }
+			if (__ansiColorCache[aAnsi]) return [__ansiColorCache[aAnsi], aString].join("")
+		
+			return ansiColor(aAnsi, aString, true, true)
+		}
 		var _clrCache = new ow.obj.syncMap()
 		var _acCFdefault = _ac(__colorFormat.default, "").replace("\u001b[m", "")
 		var _acCFnumber = _ac(__colorFormat.number, "").replace("\u001b[m", "")
@@ -1183,147 +1183,147 @@ const printTree = function(_aM, _aWidth, _aOptions, _aPrefix, _isSub) {
 		var _acCFboolean = _ac(__colorFormat.boolean, "").replace("\u001b[m", "")
 		var _acCFdate = _ac(__colorFormat.date, "").replace("\u001b[m", "")
 		var _acCFstring  = _ac(__colorFormat.string, "").replace("\u001b[m", "")
-        _al  = m => (__flags.VISIBLELENGTH ? visibleLength(m) : m.replace(/\033\[[0-9;]*m/g, "").length)
-    } else {
-        _clr = s => s
-        _ac  = (o, s) => s
-        _al  = s => s.length
-    }
-    //_ac("RESET", "")
+		_al  = m => (__flags.VISIBLELENGTH ? visibleLength(m) : m.replace(/\033\[[0-9;]*m/g, "").length)
+	} else {
+		_clr = s => s
+		_ac  = (o, s) => s
+		_al  = s => s.length
+	}
+	//_ac("RESET", "")
 
-    var _tw = (ps, s, mx) => {
-        if ((ps.length + _aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + _aOptions.minSize) + "; max = " + mx + ")"
-        var ar = new Set()
-        var i = 0, mxp = Math.floor(mx * 0.25)
-        var sub, ni
-        do {
-            sub = s.substr(i, mx)
-            if ((ni = sub.indexOf("\n")) >= 0) {
-                ar.add(s.substr(i, ni))
-                i += ni + 1
-            } else {
-                if (s.length > i+mx+1 && s.substr(i, mx+1).match(/ [^ ]+$/)) {
-                    var mxp = sub.lastIndexOf(" ")
-                    ar.add(s.substr(i, mxp))
-                    i += mxp + 1
-                } else {
-                    ar.add(sub)
-                    i += mx
-                }
-            }
-        } while(i < s.length)
-        return Array.from(ar)
-    }
+	var _tw = (ps, s, mx) => {
+		if ((ps.length + _aOptions.minSize) >= mx || mx <= 0) throw "Insufficient width (length = " + (ps.length + _aOptions.minSize) + "; max = " + mx + ")"
+		var ar = new Set()
+		var i = 0, mxp = Math.floor(mx * 0.25)
+		var sub, ni
+		do {
+			sub = s.substr(i, mx)
+			if ((ni = sub.indexOf("\n")) >= 0) {
+				ar.add(s.substr(i, ni))
+				i += ni + 1
+			} else {
+				if (s.length > i+mx+1 && s.substr(i, mx+1).match(/ [^ ]+$/)) {
+					var mxp = sub.lastIndexOf(" ")
+					ar.add(s.substr(i, mxp))
+					i += mxp + 1
+				} else {
+					ar.add(sub)
+					i += mx
+				}
+			}
+		} while(i < s.length)
+		return Array.from(ar)
+	}
 
-    let _pt = (aM, aWidth, aOptions, aPrefix, isSub) => {
-        //isSub = _$(isSub, "isSub").isBoolean().default(false)
-        var isAr = Array.isArray(aM)
-        if ("[object Object]" != Object.prototype.toString.call(aM) && !isAr) throw "Not a map or array"
-    
-        var out, aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
-        
-        // Render key and value
-        var _get = (k, v) => {
-          var _k = (isAr ? ["[", k, "]"].join("") : k), _r
-          if (aOptions.withValues) {
-            _r = [_ac(__colorFormat.key, _k),
-                           _ac("", ("undefined" !== typeof ksize ? " ".repeat(ksize - _k.length) : "")),
-                           _ac("", (!("[object Object]" == Object.prototype.toString.call(v) || Array.isArray(v)) ? [_ac(__colorFormat.tree.lines, skey), _clr(v)].join("") : ""))].join("")
-          } else {
-            _r = _k
-          }
+	let _pt = (aM, aWidth, aOptions, aPrefix, isSub) => {
+		//isSub = _$(isSub, "isSub").isBoolean().default(false)
+		var isAr = Array.isArray(aM)
+		if ("[object Object]" != Object.prototype.toString.call(aM) && !isAr) throw "Not a map or array"
+	
+		var out, aMKeys = Object.keys(aM), size = aMKeys.length, ksize = __, vsize = __
+		
+		// Render key and value
+		var _get = (k, v) => {
+		  var _k = (isAr ? ["[", k, "]"].join("") : k), _r
+		  if (aOptions.withValues) {
+			_r = [_ac(__colorFormat.key, _k),
+						   _ac("", ("undefined" !== typeof ksize ? " ".repeat(ksize - _k.length) : "")),
+						   _ac("", (!("[object Object]" == Object.prototype.toString.call(v) || Array.isArray(v)) ? [_ac(__colorFormat.tree.lines, skey), _clr(v)].join("") : ""))].join("")
+		  } else {
+			_r = _k
+		  }
 		  return _r
-        }
-      
-        // Determine max sizes of keys and values
-        var _getCache = {}
-        if (aOptions.fullKeySize || aOptions.fullValSize) {
-            if (aOptions.fullKeySize) ksize = 0
-            if (aOptions.fullValSize) vsize = 0
-            aMKeys.forEach(k => {
-                if (aOptions.fullKeySize) {
-                    //var _k = (isAr ? ["[", k, "]"].join("") : k) 
-                    var _kl = isAr ? k.length + 2 : k.length 
-                    if (_kl > ksize) ksize = _kl
-                }
-                if (aOptions.fullValSize) {
-                    var _gR = _get(k, aM[k])
-                    var lv = _al(_gR)
-                    _getCache[k] = _gR
-                    if (lv > vsize) vsize = lv
-                }
-            }) 
-        }
-        
-        // Text wrap function
-        var _wf = (m, p) => {
-            if (!aOptions.wordWrap) return m
-        
-            if (!isString(m)) return m
-        
-            if (isString(p)) p = ["undefined" !== typeof p ? p : "", " "].join("")
-        
-            let mIO = m.indexOf(": ")
-            let mSub = m.substring(mIO + 2)
-        
-            var ss = aWidth
-            var ps = _al(p)
-            var ms = _al(mSub)
-        
-            if (m.indexOf("\n") < 0) {
-                if (mIO < 0 || ps + ms - 2 < ss) return m
-            }
-        
-            const mIO0 = m.substring(0, mIO + 2)
-            const _res = [mIO0,
-                    _tw(mIO0, mSub, ss-ps-1).map((_l, ii) => {
-                        if (ii == 0) return _l
-                        return [_ac("RESET", p), _ac(__colorFormat.string, _l)].join("")
-                    }).join("\n")].join("")
-        
-            return _res
-        }
-      
+		}
+	  
+		// Determine max sizes of keys and values
+		var _getCache = {}
+		if (aOptions.fullKeySize || aOptions.fullValSize) {
+			if (aOptions.fullKeySize) ksize = 0
+			if (aOptions.fullValSize) vsize = 0
+			aMKeys.forEach(k => {
+				if (aOptions.fullKeySize) {
+					//var _k = (isAr ? ["[", k, "]"].join("") : k) 
+					var _kl = isAr ? k.length + 2 : k.length 
+					if (_kl > ksize) ksize = _kl
+				}
+				if (aOptions.fullValSize) {
+					var _gR = _get(k, aM[k])
+					var lv = _al(_gR)
+					_getCache[k] = _gR
+					if (lv > vsize) vsize = lv
+				}
+			}) 
+		}
+		
+		// Text wrap function
+		var _wf = (m, p) => {
+			if (!aOptions.wordWrap) return m
+		
+			if (!isString(m)) return m
+		
+			if (isString(p)) p = ["undefined" !== typeof p ? p : "", " "].join("")
+		
+			let mIO = m.indexOf(": ")
+			let mSub = m.substring(mIO + 2)
+		
+			var ss = aWidth
+			var ps = _al(p)
+			var ms = _al(mSub)
+		
+			if (m.indexOf("\n") < 0) {
+				if (mIO < 0 || ps + ms - 2 < ss) return m
+			}
+		
+			const mIO0 = m.substring(0, mIO + 2)
+			const _res = [mIO0,
+					_tw(mIO0, mSub, ss-ps-1).map((_l, ii) => {
+						if (ii == 0) return _l
+						return [_ac("RESET", p), _ac(__colorFormat.string, _l)].join("")
+					}).join("\n")].join("")
+		
+			return _res
+		}
+	  
 		//var _out = new ow.obj.syncMap()
-        //parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
+		//parallel4Array(aMKeys.map((k, i) => ({ k: k, i: i })), _v => {
 		var out = pForEach(aMKeys, (k, i) => {
 			//try {
-            let v = aOptions.fullValSize ? _getCache[k] : _get(k, aM[k]), lv = _al(v)
+			let v = aOptions.fullValSize ? _getCache[k] : _get(k, aM[k]), lv = _al(v)
 			
-            let ksizeOrAlKPlusSline = ("undefined" !== typeof ksize ? ksize : _al(k)) + slines
-            let vsizeOrLvPlusSline = ("undefined" !== typeof vsize ? vsize : lv) + slines
-            let aPrefix2 = _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
+			let ksizeOrAlKPlusSline = ("undefined" !== typeof ksize ? ksize : _al(k)) + slines
+			let vsizeOrLvPlusSline = ("undefined" !== typeof vsize ? vsize : lv) + slines
+			let aPrefix2 = _ac(__colorFormat.tree.lines, (i < (size-1) ? line : " ") + " ".repeat(ksizeOrAlKPlusSline))
 
-            let wfResult = _wf(v, aPrefix + aPrefix2)
-            let repeatResult = _ac("", ("undefined" !== typeof vsize ? " ".repeat(vsize - lv+1) : " "))
+			let wfResult = _wf(v, aPrefix + aPrefix2)
+			let repeatResult = _ac("", ("undefined" !== typeof vsize ? " ".repeat(vsize - lv+1) : " "))
 
-            let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
-            let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
-            let suffix
+			let prefix = (i > 0 && size <= (i+1)) ? [aPrefix, _ac(__colorFormat.tree.lines, endc)].join("") : (i == 0) ? _ac(__colorFormat.tree.lines, (size == 1 ? ssrc : strc)) : [aPrefix, _ac(__colorFormat.tree.lines, midc)].join("")
+			let reset = (i == 0 || i > 0) ? __ansiColorCache["RESET"] : ""
+			let suffix
 
-            if ("undefined" !== typeof aM[k] && aM[k] != null && ("[object Object]" == Object.prototype.toString.call(aM[k]) || Array.isArray(aM[k]))) {
-                suffix = _pt(aM[k], aWidth, aOptions, [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join(""), true)
-            }
+			if ("undefined" !== typeof aM[k] && aM[k] != null && ("[object Object]" == Object.prototype.toString.call(aM[k]) || Array.isArray(aM[k]))) {
+				suffix = _pt(aM[k], aWidth, aOptions, [aPrefix, _ac(__colorFormat.tree.lines, [(i < (size-1) ? line : " "), " ".repeat(vsizeOrLvPlusSline)].join(""))].join(""), true)
+			}
 
-            //_out.put(i, [prefix, wfResult, repeatResult, suffix, reset].join(""))
+			//_out.put(i, [prefix, wfResult, repeatResult, suffix, reset].join(""))
 			return [prefix, wfResult, repeatResult, suffix, reset].join("")
 			//} catch(e) {
 			//	printErr(e)
 			//}
-        })
+		})
 		//out = _out.getKeys().sort((a, b) => a - b).map(k => _out.get(k))
 		//_out.clear()
 		//_out = __
-      
-        if (out.length > 0) {
-            out = ("undefined" !== typeof out[out.length - 1] && out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
-        }
-        
-        var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
-        return _res
-    }
+	  
+		if (out.length > 0) {
+			out = ("undefined" !== typeof out[out.length - 1] && out[out.length - 1].endsWith("\n") ? out.slice(0, -1) : out)
+		}
+		
+		var _res = out.join("\n") + (!isSub ? (!__conConsole ? "" : __ansiColorCache["RESET"]) : "")
+		return _res
+	}
 	var res = _pt(_aM, _aWidth, _aOptions, _aPrefix, _isSub)
-    return res
+	return res
 }
 
 /**
@@ -1372,7 +1372,7 @@ const printMap = function(aValueR, aWidth, aTheme, useAnsi) {
 	if (!isMap(aValueR) && !isArray(aValueR)) throw "Not a map or array.";
 
 	if (isUnDef(aTheme)) {
-        ow.loadFormat();
+		ow.loadFormat();
 		if (!ow.format.isWindows()) {
 			aTheme = (__conAnsi ? "utf" : "plain");
 			if (isUnDef(useAnsi) && __initializeCon()) {
@@ -2958,44 +2958,44 @@ const splitBySeparator = function(aString, aSep) {
  * </odoc>
  */
 const splitBySepWithEnc = function(text, separator, enclosures, includeEnclosures) {
-    _$(text, "text").isString().$_()
-    separator  = _$(separator, "separator").isString().default("\\s+")
-    enclosures = _$(enclosures, "enclosures").isArray().default([])
-    includeEnclosures = _$(includeEnclosures, "includeEnclosures").isBoolean().default(false)
+	_$(text, "text").isString().$_()
+	separator  = _$(separator, "separator").isString().default("\\s+")
+	enclosures = _$(enclosures, "enclosures").isArray().default([])
+	includeEnclosures = _$(includeEnclosures, "includeEnclosures").isBoolean().default(false)
 
-    // If the text is empty, return an empty array
-    if (text.length === 0) {
-        return []
-    }
-    // Create a regular expression that matches any of the enclosures
-    let enclosureRegex = new RegExp(`(${enclosures.map(([start, end]) => `\\${start}[^\\${end}]*\\${end}`).join('|')})`, 'g')
-    // Find all the enclosures in the text
-    let matches = text.match(enclosureRegex) || []
-    // Replace the separator with a null character if it is inside an enclosure
-    let splitText = text
-    // Replace the separator with a colon if it is not inside an enclosure
-    matches.forEach(match => {
-        // Replace the separator with a colon
-        splitText = splitText.replace(match, match.replace(new RegExp(separator, 'g'), '\0'));
-    })
-    // Split the text by the separator
-    return splitText.split(new RegExp(separator)).map(part => {
-        // Remove the enclosures from the result if includeEnclosures is false
-        let trimmedPart = part.replace(/\0/g, separator).trim()
-        // Include the enclosures in the result if includeEnclosures is true
-        if (includeEnclosures) {
-            return trimmedPart
-        } else {
-            // Remove the enclosures from the result
-            for (let [start, end] of enclosures) {
-                // If the part starts with the start enclosure and ends with the end enclosure, remove the enclosures
-                if (trimmedPart.startsWith(start) && trimmedPart.endsWith(end)) {
-                    return trimmedPart.slice(1, -1)
-                }
-            }
-        }
-        return trimmedPart
-    })
+	// If the text is empty, return an empty array
+	if (text.length === 0) {
+		return []
+	}
+	// Create a regular expression that matches any of the enclosures
+	let enclosureRegex = new RegExp(`(${enclosures.map(([start, end]) => `\\${start}[^\\${end}]*\\${end}`).join('|')})`, 'g')
+	// Find all the enclosures in the text
+	let matches = text.match(enclosureRegex) || []
+	// Replace the separator with a null character if it is inside an enclosure
+	let splitText = text
+	// Replace the separator with a colon if it is not inside an enclosure
+	matches.forEach(match => {
+		// Replace the separator with a colon
+		splitText = splitText.replace(match, match.replace(new RegExp(separator, 'g'), '\0'));
+	})
+	// Split the text by the separator
+	return splitText.split(new RegExp(separator)).map(part => {
+		// Remove the enclosures from the result if includeEnclosures is false
+		let trimmedPart = part.replace(/\0/g, separator).trim()
+		// Include the enclosures in the result if includeEnclosures is true
+		if (includeEnclosures) {
+			return trimmedPart
+		} else {
+			// Remove the enclosures from the result
+			for (let [start, end] of enclosures) {
+				// If the part starts with the start enclosure and ends with the end enclosure, remove the enclosures
+				if (trimmedPart.startsWith(start) && trimmedPart.endsWith(end)) {
+					return trimmedPart.slice(1, -1)
+				}
+			}
+		}
+		return trimmedPart
+	})
 }
 
 /**
@@ -3039,7 +3039,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 				isK = false
 				isV = true
 				k = buf
-                v = __
+				v = __
 				buf = ""
 				continue
 			}
@@ -3060,7 +3060,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 			isK = true
 			isV = false
 			k = buf
-            v = __
+			v = __
 			buf = ""
 			res[k] = aOptions.nul 
 			continue
@@ -3083,7 +3083,7 @@ const splitKVBySeparator = function(aString, aOptions) {
 	}
 	if (buf.length > 0) {
 		if (isK) { k = buf; v = __ }
-        if (isV) { v = buf }
+		if (isV) { v = buf }
 		buf = ""
 		res[k] = (isUnDef(v) ? aOptions.nul : v)
 	}
@@ -3100,7 +3100,7 @@ const splitKVBySeparator = function(aString, aOptions) {
  * </odoc>
  */
 const processExpr = function(aSep, ignoreCase, aSource) {
-    aSource = _$(aSource, "aSource").isString().default(__expr);
+	aSource = _$(aSource, "aSource").isString().default(__expr);
 	aSep    = _$(aSep, "aSep").isString().default(";");
 	var pairs = {}
 
@@ -3313,11 +3313,11 @@ const getOPackRemoteDB = function() {
  */
 const getOPackLocalDB = function() {
 	var fileDB = getOpenAFPath() + "/" + PACKAGESJSON_DB;
-    var homeDB = __gHDir() + "/" + PACKAGESJSON_USERDB;
+	var homeDB = __gHDir() + "/" + PACKAGESJSON_USERDB;
 	var packages = {};
 	var exc, homeDBCheck = false;
 
-    if (isUnDef(__opackOpenAF)) {
+	if (isUnDef(__opackOpenAF)) {
 		__opackOpenAF = io.readFileJSON(getOpenAFJar() + "::.package.json")
 		__opackOpenAF.version = getVersion()
 	}
@@ -3427,7 +3427,7 @@ const loadExternalJars = function(aPath, dontCheck) {
 			af.externalAddClasspath(new java.io.File(v.canonicalPath).toURI().toURL(), true );
 			__loadedJars.push(libfile);
 		}
-    });
+	});
 }
  
 /**
@@ -3662,7 +3662,7 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 					io.rm(path)
 				}
 				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
-				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
+					info.lastModified > io.fileInfo(clFilepath).lastModified) {
 					if (!dontCompile) {
 						io.mkdir(path);
 						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
@@ -3673,13 +3673,13 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 						af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + io.readFileString(info.canonicalPath) + "}", path);
 					}
 				}
-                aScript = clFilepath;
+				aScript = clFilepath;
 			}
 			if (!dontLoad && aScript.endsWith(".class")) {
-                try {
-                    af.getClass(cl);
-                } catch(e) {
-                    if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
+				try {
+					af.getClass(cl);
+				} catch(e) {
+					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
 						af.runFromExternalClass(cl, path);
 						var exp = {}, mod = { id: cl, uri: cl, exports: exp };
 
@@ -3687,10 +3687,10 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 						//exp = mod.exports || exp;
 					
 						return mod.exports;
-                    } else {
-                        throw e;
-                    }
-                }
+					} else {
+						throw e;
+					}
+				}
 			}
 		}
 	}
@@ -3707,11 +3707,11 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
  * </odoc>
  */
 const loadCompiled = function(aScript, dontCompile, dontLoad) {
-    var res = false, cl, clFile, clFilepath;
-    if (io.fileExists(aScript)) {
+	var res = false, cl, clFile, clFilepath;
+	if (io.fileExists(aScript)) {
 		var info = io.fileInfo(aScript);
 		if (info.isFile) {
-            var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename)) + ".openaf_precompiled/";
+			var path = info.canonicalPath.substr(0, info.canonicalPath.indexOf(info.filename)) + ".openaf_precompiled/";
 			if (info.filename.endsWith(".js") || info.filename.endsWith("_profile")) {
 				cl = info.filename.replace(/\./g, "_");
 				clFile = cl + ".class";
@@ -3721,7 +3721,7 @@ const loadCompiled = function(aScript, dontCompile, dontLoad) {
 					io.rm(path)
 				}
 				if (!(io.fileExists(path) && io.fileExists(clFilepath)) ||
-				    info.lastModified > io.fileInfo(clFilepath).lastModified) {
+					info.lastModified > io.fileInfo(clFilepath).lastModified) {
 					if (!dontCompile) {
 						io.mkdir(path);
 						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
@@ -3732,19 +3732,19 @@ const loadCompiled = function(aScript, dontCompile, dontLoad) {
 						af.compileToClasses(cl, code, path);
 					}
 				}
-                aScript = clFilepath;
+				aScript = clFilepath;
 			}
 			if (!dontLoad && aScript.endsWith(".class")) {
-                try {
-                    af.getClass(cl);
-                } catch(e) {
-                    if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
-                        af.runFromExternalClass(cl, path);
+				try {
+					af.getClass(cl);
+				} catch(e) {
+					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
+						af.runFromExternalClass(cl, path);
 						res = true;
-                    } else {
-                        throw e;
-                    }
-                }
+					} else {
+						throw e;
+					}
+				}
 			}
 		}
 	}
@@ -4027,7 +4027,7 @@ const beep = function() {
  * </odoc>
  */
 const objOrStr = function(aObj, aStr) {
-    if (!isMap(aObj) && !isArray(aObj)) return aStr;
+	if (!isMap(aObj) && !isArray(aObj)) return aStr;
 	var r = $$(aObj).get(aStr);
 	if (isUnDef(r)) r = aStr;
 	return r;
@@ -4063,7 +4063,7 @@ const watch = function(waitFor, aCommand, beautifyFlag, noPrint) {
 		if (noPrint) {
 			cls();
 			print(out);
-		 	print("Press 'q' to quit. (refreshed at " + new Date() + ")");
+			print("Press 'q' to quit. (refreshed at " + new Date() + ")");
 		}
 	}, waitFor);
 
@@ -4347,7 +4347,7 @@ const clone = function(aObject) {
 	if (isNull(aObject) || isUnDef(aObject)) return __
 	if (!isObject(aObject)) return aObject
 	if (Array.isArray(aObject)) return aObject.map(r=>isObject(r) ? clone(r) : r)
- 	return aObject.__proto__ instanceof Object ? extend(true, aObject) : extend(true, {}, aObject)
+	return aObject.__proto__ instanceof Object ? extend(true, aObject) : extend(true, {}, aObject)
 }
 
 /**
@@ -4557,12 +4557,12 @@ const compare = function(x, y) {
 	if (!(y instanceof Object)) { return false; }
 
 	var p = Object.keys(x), q = Object.keys(y);
-    if (p.length != q.length) return false;
-    for(var k in x) { 
-        var v = x[k];
-	    if (isUnDef(y[k]) || (!compare(v, y[k]))) return false;
+	if (p.length != q.length) return false;
+	for(var k in x) { 
+		var v = x[k];
+		if (isUnDef(y[k]) || (!compare(v, y[k]))) return false;
 	}
-    
+	
 	return true;
 }
 
@@ -4615,7 +4615,7 @@ const visibleLength = str => {
 		if (_c <= 254)
 			l += 1
 		else
-	   		l += Number(__visibleLength2[str.charCodeAt(i) - 32])
+			l += Number(__visibleLength2[str.charCodeAt(i) - 32])
 	}
 	return l
 }
@@ -5300,14 +5300,14 @@ var __cpucores;
  */
 const getNumberOfCores = function(realValue) {
 	if (isDef(__cpucores) && !realValue) return __cpucores
-  	plugin("Threads")
+	plugin("Threads")
 
-  	var t = new Threads()
-  	var _cc = Number(t.getNumberOfCores())
+	var t = new Threads()
+	var _cc = Number(t.getNumberOfCores())
 
 	if (isUnDef(__cpucores)) __cpucores = _cc
 
- 	return _cc
+	return _cc
 }
 
 /**
@@ -5319,13 +5319,13 @@ const getNumberOfCores = function(realValue) {
  * </odoc>
  */
 const getCPULoad = function(useAlternative) {
-        if (useAlternative) {
-        	return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores(true));
-        } else {
+		if (useAlternative) {
+			return Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores(true));
+		} else {
 		var res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage());
- 		if (res < 0) res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores(true));
+		if (res < 0) res = Number(java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemCpuLoad() * getNumberOfCores(true));
 		return res;
- 	}
+	}
 }
 
 /**
@@ -5674,8 +5674,8 @@ const parallel4Array = function(anArray, aFunction, numberOfThreads, threads) {
  * <key>pForEach(anArray, aFn, aErrFn, aUseSeq) : Array</key>
  * Given anArray, divides it in subsets for processing in a specific number of threads. In each thread aFn(aValue, index)
  * will be executed for each value in sequence. The results of each aFn will be returned in the same order as the original
- * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true
- * the sequential execution will be forced.\
+ * array. If an error occurs during the execution of aFn, aErrFn will be called with the error. If aUseSeq is true the
+ * sequential execution will be forced.\
  * \
  * Example:\
  * \
@@ -5707,7 +5707,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 			return []
 		}
 	} else {
-	    ow.loadObj()
+		ow.loadObj()
 		fRes = new ow.obj.syncArray(), times = $atomic(), execs = $atomic(0, "long"), _nc = getNumberOfCores()
 	}
 
@@ -5726,7 +5726,7 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	}
 
 	var pres = calculatePartitions(arS, _nc)
-    var _ts = [], parts = $atomic(0, "long")
+	var _ts = [], parts = $atomic(0, "long")
 
 	// If not enough cores or if too many threads in the pool then go sequential
 	var _tpstats = __getThreadPools()
@@ -5811,13 +5811,13 @@ const pForEach = (anArray, aFn, aErrFn, aUseSeq) => {
 	} while(parts.get() < pres.length && tries < 100)
 
 	var res = []
-    fRes.toArray().sort((a, b) => a.i - b.i).forEach(rs => {
-        res = res.concat(rs.r)
-    })
+	fRes.toArray().sort((a, b) => a.i - b.i).forEach(rs => {
+		res = res.concat(rs.r)
+	})
 	fRes.clear()
 	fRes = __
 
-    return res
+	return res
 }
 
 /** 
@@ -5863,8 +5863,8 @@ const isMap = a => (Object.prototype.toString.call(a) == "[object Object]")
  * </odoc>
  */
 const isObject = obj => {
-    var type = typeof obj
-    return type === 'function' || type === 'object' && !!obj
+	var type = typeof obj
+	return type === 'function' || type === 'object' && !!obj
 }
 
 /**
@@ -6107,12 +6107,12 @@ const syncFn = function(aFunction, anObj) {
    var foundException = false, exception;
 
    var r = new Packages.org.mozilla.javascript.Synchronizer(function() { 
-      try { 
-         return aFunction();
-      } catch(e) {
-         foundException = true;
-         exception = e;
-      }
+	  try { 
+		 return aFunction();
+	  } catch(e) {
+		 foundException = true;
+		 exception = e;
+	  }
    }, anObj)();
 
    if (foundException) throw exception;
@@ -6150,27 +6150,27 @@ Pod._m = {};
 Pod.define = function (id, deps, factory) {
 	// Resolve dependency array:
 	if (!(deps instanceof Array)) {
-	    factory = deps;
-	    deps = [];
+		factory = deps;
+		deps = [];
 	}
 	
 	// Error if id or factory were not provided:
 	if (!id || !factory) {
-	    throw ('invalid definition');
+		throw ('invalid definition');
 	}
 	
 	// Resolve exports as a factory function:
 	if (typeof factory != 'function') {
-	    var exports = factory;
-	    factory = function () {
-	        return exports;
-	    };
+		var exports = factory;
+		factory = function () {
+			return exports;
+		};
 	}
 	
 	// Set new module definition:
 	this._m[id] = {
-	    d: deps,
-	    f: factory
+		d: deps,
+		f: factory
 	};
 	
 	return this;
@@ -6192,20 +6192,20 @@ Pod.declare = function (id, exports) {
 	var defs = id;
 	
 	if (typeof id == 'string') {
-	    defs = {};
-	    defs[id] = exports;
+		defs = {};
+		defs[id] = exports;
 	}
 	
 	function factory(exports) {
-	    return function () {
-	        return exports;
-	    };
+		return function () {
+			return exports;
+		};
 	}
 	
 	for (id in defs) {
-	    if (defs.hasOwnProperty(id)) {
-	        this.define(id, factory(defs[id]));
-	    }
+		if (defs.hasOwnProperty(id)) {
+			this.define(id, factory(defs[id]));
+		}
 	}
 	return this;
 };
@@ -6227,45 +6227,45 @@ Pod.require = function (req, callback) {
 	req = single ? [req] : req.slice();
 	
 	for (var i = 0; i < req.length; i++) {
-	    var id = req[i];
+		var id = req[i];
 	
-	    if (this._m.hasOwnProperty(id)) {
-	        // Known module reference:
-	        // Pull module definition from key table.
-	        var mod = this._m[id];
+		if (this._m.hasOwnProperty(id)) {
+			// Known module reference:
+			// Pull module definition from key table.
+			var mod = this._m[id];
 	
-	        // If the module has no existing export,
-	        // Resolve dependencies and create module. 
-	        if (!mod.e) {
-	            // If module is active within the working dependency path chain,
-	            // throw a circular reference error.
-	            if (mod._) throw ('circular reference to ' + id);
+			// If the module has no existing export,
+			// Resolve dependencies and create module. 
+			if (!mod.e) {
+				// If module is active within the working dependency path chain,
+				// throw a circular reference error.
+				if (mod._) throw ('circular reference to ' + id);
 	
-	            // Flag module as active within the path chain.
-	            mod._ = 1;
+				// Flag module as active within the path chain.
+				mod._ = 1;
 	
-	            // Run factory function with recursive require call to fetch dependencies:
-	            mod.e = mod.f.apply(null, this.require(mod.d));
+				// Run factory function with recursive require call to fetch dependencies:
+				mod.e = mod.f.apply(null, this.require(mod.d));
 	
-	            // Release module from the active path.
-	            mod._ = 0;
-	        }
+				// Release module from the active path.
+				mod._ = 0;
+			}
 	
-	        // Replace dependency reference with the resolved module.
-	        req[i] = mod.e;
-	    } else if (id === this.name || id === 'pod') {
-	        // Pod self-reference:
-	        req[i] = this;
-	    } else {
-	        // Error for undefined module references.
-	        throw (id + ' is undefined');
-	    }
+			// Replace dependency reference with the resolved module.
+			req[i] = mod.e;
+		} else if (id === this.name || id === 'pod') {
+			// Pod self-reference:
+			req[i] = this;
+		} else {
+			// Error for undefined module references.
+			throw (id + ' is undefined');
+		}
 	}
 	
 	// If a callback function was provided,
 	// Inject dependency array into the callback.
 	if (typeof callback == 'function') {
-	    callback.apply(null, req);
+		callback.apply(null, req);
 	}
 	
 	// If directly referenced by ID, return module.
@@ -7464,14 +7464,14 @@ const newJavaArray = function(aJavaClass, aSize) {
  * </odoc>
  */
 const threadBox = function(aFunction, aTimeout, aStopFunction) {
-    if (isUnDef(aStopFunction)) aStopFunction = (aR) => { if (!aR) sleep(25); return aR; };
+	if (isUnDef(aStopFunction)) aStopFunction = (aR) => { if (!aR) sleep(25); return aR; };
 
 	var done = false;
 	var exc = __;
 
 	plugin("Threads");
 	var t = new Threads();
-	t.addSingleThread(function(uuid) {
+	t.addVirtualThread(function(uuid) {
 		try {
 			aFunction(uuid);
 		} catch(e) {
@@ -7485,19 +7485,19 @@ const threadBox = function(aFunction, aTimeout, aStopFunction) {
 	});
 	t.startNoWait();
 
-    var res = false;
-    if (isDef(aTimeout)) {
-    	var s = now();
-        while(!res && !done && ((now() - s) < aTimeout)) {
-            res = aStopFunction(done);
-        }
-    } else {
-        while(!res && !done) {
-            res = aStopFunction(done);
-        }
-    }
-    
-    t.stop(true);
+	var res = false;
+	if (isDef(aTimeout)) {
+		var s = now();
+		while(!res && !done && ((now() - s) < aTimeout)) {
+			res = aStopFunction(done);
+		}
+	} else {
+		while(!res && !done) {
+			res = aStopFunction(done);
+		}
+	}
+	
+	t.stop(true);
 
 	if (isDef(exc)) throw exc;
 	
@@ -7561,7 +7561,7 @@ const $rest = function(ops) {
 		_toptions.requestHeaders = _$(_toptions.requestHeaders, "requestHeaders").isMap().default(__flags.HTTP_DEFAULT_HEADERS ? { Accept: "*/*" } : __)
 	};
 
-    _rest.prototype.__check = function(aBaseURI) {
+	_rest.prototype.__check = function(aBaseURI) {
 		// try URL based
 		if (isDef(__openaf_rest.urls[aBaseURI])) {
 			if (isDef(__openaf_rest.urls[aBaseURI]) && __openaf_rest.urls[aBaseURI].off) return false;
@@ -7581,7 +7581,7 @@ const $rest = function(ops) {
 
 		return true;
 	};
-    _rest.prototype.__stats = function(aBaseURI, isFail, aETime) {
+	_rest.prototype.__stats = function(aBaseURI, isFail, aETime) {
 		if (_toptions.collectAllStats) {
 			if (isUnDef(__openaf_rest.urls[aBaseURI])) __openaf_rest.urls[aBaseURI] = {};
 			__openaf_rest.urls[aBaseURI].c = (isDef(__openaf_rest.urls[aBaseURI].c) ? __openaf_rest.urls[aBaseURI].c + 1 : 1);
@@ -8404,7 +8404,7 @@ const $bottleneck = function(aName, aFn) {
 	 * </odoc>
 	 */	
 	__b.prototype.maxExec = function(aNCE) { this.ance = aNCE; return this; };
-    /**
+	/**
 	 * <odoc>
 	 * <key>$bottleneck.destroy()</key>
 	 * Destroys any existing bottleneck definition.
@@ -8414,7 +8414,7 @@ const $bottleneck = function(aName, aFn) {
 		delete global.__bottleneck[aName];
 	};
 
-    /**
+	/**
 	 * <odoc>
 	 * <key>$bottleneck.exec(args) : Object</key>
 	 * Creates a bottleneck aName to execute aFunction with the provided args. Returns what the function returns:\
@@ -8455,22 +8455,22 @@ const $bottleneck = function(aName, aFn) {
 		if (isDef(aFn)) global.__bottleneck[aName].aF = aFn;
 	}
 
-    return global.__bottleneck[aName];
+	return global.__bottleneck[aName];
 };
 
 const $cache = function(aName) {
 	if (isUnDef(global.__$cache)) global.__$cache = {}
 
-    var __c = function(aN) {
-        aN = _$(aN).default("cache")
-        this.name  = aN
-        this.func  = k => k
-        this.attl  = __
+	var __c = function(aN) {
+		aN = _$(aN).default("cache")
+		this.name  = aN
+		this.func  = k => k
+		this.attl  = __
 		this.ach   = __
 		this.msize = __
 		this.method = "t"
 		this.default = __
-    }
+	}
 
 	/**
 	 * <odoc>
@@ -8506,15 +8506,15 @@ const $cache = function(aName) {
 	 * Creates a mvs channel to hold the cache data in aFile. Note: don't use $cache.ch if you use this option.
 	 * </odoc>
 	 */
-    __c.prototype.inFile = function(aFile) {
-        $ch(this.name + "::filecache").create(1, "mvs", {
-            file: aFile,
-            compact: true,
-            map: this.name
-        })
-        this.ach = this.name + "::filecache"
-        return this
-    }
+	__c.prototype.inFile = function(aFile) {
+		$ch(this.name + "::filecache").create(1, "mvs", {
+			file: aFile,
+			compact: true,
+			map: this.name
+		})
+		this.ach = this.name + "::filecache"
+		return this
+	}
 	/**
 	 * <odoc>
 	 * <key>$cache.byPopularity() : Object</key>
@@ -8539,8 +8539,8 @@ const $cache = function(aName) {
 		this.default = aDefault
 		return this
 	}
-    __c.prototype.create = function() {
-        _$(this.func).isFunction().$_("Please provide a function (fn).")
+	__c.prototype.create = function() {
+		_$(this.func).isFunction().$_("Please provide a function (fn).")
 
 		syncFn(() => {
 			if ($ch().list().indexOf(this.name) < 0) {
@@ -8556,7 +8556,7 @@ const $cache = function(aName) {
 			}
 		}, this.name)
 
-        return this
+		return this
 	}
 	/**
 	 * <odoc>
@@ -8574,16 +8574,16 @@ const $cache = function(aName) {
 	 * \
 	 * </odoc>
 	 */
-    __c.prototype.get    = function(aK) {
-        if ($ch().list().indexOf(this.name) < 0) {
-            this.create()
-        }
-
-        return $ch(this.name).get(aK)
-    }
-    __c.prototype.destroy = function() {
+	__c.prototype.get    = function(aK) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create()
+			this.create()
+		}
+
+		return $ch(this.name).get(aK)
+	}
+	__c.prototype.destroy = function() {
+		if ($ch().list().indexOf(this.name) < 0) {
+			this.create()
 		}
 		
 		if (isDef(this.ach)) {
@@ -8594,52 +8594,52 @@ const $cache = function(aName) {
 		}
 		$ch(this.name).destroy()
 		delete global.__$cache[this.name]
-    }
-    __c.prototype.unset  = function(aK) {
+	}
+	__c.prototype.unset  = function(aK) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create()
+			this.create()
 		}
 		
-        $ch(this.name).unset(aK)
-        return this
-    }
-    __c.prototype.size   = function() {
+		$ch(this.name).unset(aK)
+		return this
+	}
+	__c.prototype.size   = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create()
+			this.create()
 		}
 		
 		return $ch(this.name).size()
-    }
-    __c.prototype.set    = function(aK, aV) {
+	}
+	__c.prototype.set    = function(aK, aV) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create()
-        }
+			this.create()
+		}
 		$ch(this.name).set(aK, aV)
-        return this
-    }
-    __c.prototype.setAll = function(aK, aV) {
+		return this
+	}
+	__c.prototype.setAll = function(aK, aV) {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create()
-        }
-        $ch(this.name).setAll(aK, aV)
-        return this
+			this.create()
+		}
+		$ch(this.name).setAll(aK, aV)
+		return this
 	}
 	__c.prototype.getAll = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create()
-        }
+			this.create()
+		}
 		return $ch(this.name).getAll()
 	};
 	__c.prototype.getKeys = function() {
 		if ($ch().list().indexOf(this.name) < 0) {
-            this.create()
-        }
+			this.create()
+		}
 		return $ch(this.name).getKeys()
 	}
 
 	if (isUnDef(global.__$cache[aName])) global.__$cache[aName] = new __c(aName)
 
-    return global.__$cache[aName]
+	return global.__$cache[aName]
 }
 
 /**
@@ -8685,11 +8685,11 @@ function $sync() {
 const threadBoxCtrlC = function() {
 	if (isUnDef(__conStatus)) __initializeCon();
 	var c = new Console();
-    if (__conAnsi) {
-        if (c.readCharNB() == 3) return true; else return false;
-    } else {
-        return false;
-    }
+	if (__conAnsi) {
+		if (c.readCharNB() == 3) return true; else return false;
+	} else {
+		return false;
+	}
 }
 
 var alert;
@@ -8712,7 +8712,7 @@ const setInterval = function(aFunction, aPeriod) {
 	var args = [];
 	for(var i = 2; i <= arguments.length; i++) { args.push(arguments[i]); }
 	var pf = aFunction;
-    var parent = this;
+	var parent = this;
 
 	var f = function(uuid) {
 		aFunction.apply(parent, args);
@@ -8793,7 +8793,7 @@ const oJobRunFile = function(aYAMLFile, args, aId, aOptionsMap, isSubJob) {
 	aOptionsMap = _$(aOptionsMap, "aOptionsMap").isMap().default({ shareArgs: false })
 
 	$set("res", {})
-    var _h = oo.__help
+	var _h = oo.__help
 	oo.__help = {}
 	oo.runFile(aYAMLFile, args, aId, isSubJob, aOptionsMap)
 	oo.__help = _h
@@ -8906,7 +8906,7 @@ const $job = function(aJob, args, aId, isolate) {
  * </odoc>
  */
 const oJobRunJobAsync = function(aJob, args, aId) {
-	return $do(() => {
+	return $doV(() => {
 		oJobRunJob(aJob, args, aId);
 		return true
 	});
@@ -8979,7 +8979,7 @@ var __i$interactive = true;
 const _i$ = (aValue, aPrefixMessage) => {
 	if (__i$interactive && isUnDef(aValue) && isString(aPrefixMessage)) {
 		if (aPrefixMessage.toLowerCase().indexOf("secret") >= 0 || 
-		    aPrefixMessage.toLowerCase().indexOf("pass") >= 0
+			aPrefixMessage.toLowerCase().indexOf("pass") >= 0
 		   ) {
 			aValue = askEncrypt(aPrefixMessage + ": ");
 		} else {
@@ -9050,11 +9050,11 @@ AF.prototype.runFromExternalClass = function(aClass, aPath) {
  * </odoc>
  */
 AF.prototype.fromJavaArray = function(aJavaArray) {
-    var ar = [];
-    for(var el in aJavaArray) {
-        ar.push(aJavaArray[el]);
-    }
-    return ar;
+	var ar = [];
+	for(var el in aJavaArray) {
+		ar.push(aJavaArray[el]);
+	}
+	return ar;
 };
 
 /**
@@ -9148,7 +9148,7 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) {
 			if (isJavaObject(aV)) aO[aK] = String(aV)
 		})
 	}
-    var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth }
+	var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth }
 	var _r
 	if (isArray(aJson) && multiDoc) {
 		_r = aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n")
@@ -9211,14 +9211,14 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) {
 AF.prototype.fromYAML = function(aYAML, unsafe) { 
 	loadJSYAML(); 
 	//if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); 
-        var res;
-        if (__YAMLformat.unsafe && unsafe) {
-                var t = new jsyaml.Type('tag:yaml.org,2002:js/eval', { kind: 'scalar', resolve: function() { return true }, construct: function(d){ return eval(d) }, predicate: isString, represent: function(o) { return o } });
-                var s = jsyaml.DEFAULT_SCHEMA.extend([t]); 
-      		res = jsyaml.loadAll(aYAML, { schema: s }); 
-        } else {
- 		res = jsyaml.loadAll(aYAML); 
-        }
+		var res;
+		if (__YAMLformat.unsafe && unsafe) {
+				var t = new jsyaml.Type('tag:yaml.org,2002:js/eval', { kind: 'scalar', resolve: function() { return true }, construct: function(d){ return eval(d) }, predicate: isString, represent: function(o) { return o } });
+				var s = jsyaml.DEFAULT_SCHEMA.extend([t]); 
+			res = jsyaml.loadAll(aYAML, { schema: s }); 
+		} else {
+		res = jsyaml.loadAll(aYAML); 
+		}
 	if (isArray(res) && res.length == 1) {
 		return res[0];
 	} else {
@@ -9291,50 +9291,50 @@ IO.prototype.writeFileTOML = function(aFile, aObj) {
  * </odoc>
  */
 IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
-    logFn     = _$(logFn, "logFn").isFunction().default(print)
-    logErrFn  = _$(logErrFn, "logErrFn").isFunction().default(printErr)
-    zipFile   = _$(zipFile, "zipFile").isString().$_()
-    targetDir = _$(targetDir, "targetDir").isString().default(".")
+	logFn     = _$(logFn, "logFn").isFunction().default(print)
+	logErrFn  = _$(logErrFn, "logErrFn").isFunction().default(printErr)
+	zipFile   = _$(zipFile, "zipFile").isString().$_()
+	targetDir = _$(targetDir, "targetDir").isString().default(".")
  
-    var fis = new java.io.FileInputStream(zipFile)
-    var zis = new java.util.zip.ZipInputStream(fis)
+	var fis = new java.io.FileInputStream(zipFile)
+	var zis = new java.util.zip.ZipInputStream(fis)
 
-    var ne = zis.getNextEntry()
-    while (!isNull(ne)) {
-        var p = String(ne.getName()).lastIndexOf("/")
-        var _targetDir = targetDir + "/" + String(ne.getName()).substring(0, p)
-        var _targetFile = String(ne.getName()).substring(p + 1)
+	var ne = zis.getNextEntry()
+	while (!isNull(ne)) {
+		var p = String(ne.getName()).lastIndexOf("/")
+		var _targetDir = targetDir + "/" + String(ne.getName()).substring(0, p)
+		var _targetFile = String(ne.getName()).substring(p + 1)
 
-        if (!io.fileExists(_targetDir)) {
-            try {
-                logFn("Creating dir " + _targetDir, {
+		if (!io.fileExists(_targetDir)) {
+			try {
+				logFn("Creating dir " + _targetDir, {
 					type: "dir",
 					target: _targetDir
 				})
-                io.mkdir(_targetDir)
-            } catch(e) {
-                logErrFn("ERROR: [" + _targetDir + "] " + e, e)
-            }
-        }
+				io.mkdir(_targetDir)
+			} catch(e) {
+				logErrFn("ERROR: [" + _targetDir + "] " + e, e)
+			}
+		}
 
-        if (!ne.isDirectory() && _targetFile.length > 0) {
-            try {
-                logFn("Extracting " + String(ne.getName()) + " -> " + _targetDir + "/" + _targetFile, {
+		if (!ne.isDirectory() && _targetFile.length > 0) {
+			try {
+				logFn("Extracting " + String(ne.getName()) + " -> " + _targetDir + "/" + _targetFile, {
 					type: "file",
 					source: String(ne.getName()),
 					target: _targetDir + "/" + _targetFile
 				})
-                var wtmp = io.writeFileStream(_targetDir + "/" + _targetFile)
-                Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
-                wtmp.close()
-            } catch(e) {
-                logErrFn("ERROR: [" + _targetDir + " | " + _targetFile + "] " + e, e)
-            }
-        }
-        
-        zis.closeEntry()
-        ne = zis.getNextEntry()
-    }
+				var wtmp = io.writeFileStream(_targetDir + "/" + _targetFile)
+				Packages.org.apache.commons.io.IOUtils.copyLarge(zis, wtmp)
+				wtmp.close()
+			} catch(e) {
+				logErrFn("ERROR: [" + _targetDir + " | " + _targetFile + "] " + e, e)
+			}
+		}
+		
+		zis.closeEntry()
+		ne = zis.getNextEntry()
+	}
 }
 
 /**
@@ -9348,44 +9348,44 @@ IO.prototype.unzip = function(zipFile, targetDir, logFn, logErrFn) {
  * </odoc>
  */
 IO.prototype.zip = function(targetDir, zipFile, logFn, logErrFn) {
-    logFn     = _$(logFn, "logFn").isFunction().default(print)
-    logErrFn  = _$(logErrFn, "logErrFn").isFunction().default(printErr)
-    targetDir = _$(targetDir, "targetDir").isString().$_()
-    zipFile   = _$(zipFile, "zipFile").isString().$_()
+	logFn     = _$(logFn, "logFn").isFunction().default(print)
+	logErrFn  = _$(logErrFn, "logErrFn").isFunction().default(printErr)
+	targetDir = _$(targetDir, "targetDir").isString().$_()
+	zipFile   = _$(zipFile, "zipFile").isString().$_()
 
-    var fos = new java.io.FileOutputStream(zipFile)
-    var zos = new java.util.zip.ZipOutputStream(fos)
+	var fos = new java.io.FileOutputStream(zipFile)
+	var zos = new java.util.zip.ZipOutputStream(fos)
 
-    listFilesRecursive(targetDir).forEach(f => {
-        try {
-            var zipEntryName = f.filepath.substring(targetDir.length + 1)
-            if (f.isFile) {
-                logFn("Adding " + f.filepath + " to zip as " + zipEntryName, {
-                    type: "file",
-                    source: f,
-                    target: zipEntryName
-                })
-                var fis = new java.io.FileInputStream(f.filepath)
-                zos.putNextEntry(new java.util.zip.ZipEntry(zipEntryName))
-                Packages.org.apache.commons.io.IOUtils.copyLarge(fis, zos)
-                zos.closeEntry()
-                fis.close()
-            } else {
-                logFn("Adding directory " + f.filepath + " to zip as " + zipEntryName, {
-                    type: "dir",
-                    source: f,
-                    target: zipEntryName + "/"
-                })
-                zos.putNextEntry(new java.util.zip.ZipEntry(zipEntryName + "/"))
-                zos.closeEntry()
-            }
-        } catch(e) {
-            logErrFn("ERROR: [" + f.filepath + "] " + e, e)
-        }
-    })
+	listFilesRecursive(targetDir).forEach(f => {
+		try {
+			var zipEntryName = f.filepath.substring(targetDir.length + 1)
+			if (f.isFile) {
+				logFn("Adding " + f.filepath + " to zip as " + zipEntryName, {
+					type: "file",
+					source: f,
+					target: zipEntryName
+				})
+				var fis = new java.io.FileInputStream(f.filepath)
+				zos.putNextEntry(new java.util.zip.ZipEntry(zipEntryName))
+				Packages.org.apache.commons.io.IOUtils.copyLarge(fis, zos)
+				zos.closeEntry()
+				fis.close()
+			} else {
+				logFn("Adding directory " + f.filepath + " to zip as " + zipEntryName, {
+					type: "dir",
+					source: f,
+					target: zipEntryName + "/"
+				})
+				zos.putNextEntry(new java.util.zip.ZipEntry(zipEntryName + "/"))
+				zos.closeEntry()
+			}
+		} catch(e) {
+			logErrFn("ERROR: [" + f.filepath + "] " + e, e)
+		}
+	})
 
-    zos.close()
-    fos.close()
+	zos.close()
+	fos.close()
 }
 
 /**
@@ -9802,7 +9802,7 @@ const $sql = function(aObj, aSQL, aMethod) {
 				db.close()
 				if (isDef(tf)) io.rm(tf)
 			},
-		    getTableDef: (aTable) => {
+			getTableDef: (aTable) => {
 				aTable = _$(aTable, "aTable").isString().default("_TMP")
 				return defs[aTable]
 			},
@@ -10514,39 +10514,39 @@ IO.prototype.isBinaryFile = function(aFile, confirmLimit) {
  * </odoc>
  */
 IO.prototype.onDirEvent = function(aPath, aFn, aFnErr) {
-    _$(aPath, "path").isString().$_();
-    _$(aFn, "fn").isFunction().$_();
+	_$(aPath, "path").isString().$_();
+	_$(aFn, "fn").isFunction().$_();
 
-    if(!io.fileExists(aPath)) throw "'" + aPath + "' doesn't exist.";
-    if(!io.fileInfo(aPath).isDirectory) throw "'" + aPath + "' is not a directory.";
+	if(!io.fileExists(aPath)) throw "'" + aPath + "' doesn't exist.";
+	if(!io.fileInfo(aPath).isDirectory) throw "'" + aPath + "' is not a directory.";
 
-    aFnErr = _$(aFnErr, "fnErr").isFunction().default(e => { if (!(isString(e) && e == "ENTRY_NA")) printErr(e); });
+	aFnErr = _$(aFnErr, "fnErr").isFunction().default(e => { if (!(isString(e) && e == "ENTRY_NA")) printErr(e); });
 
-    return $do(() => {
-        var watcher = java.nio.file.FileSystems.getDefault().newWatchService();
-        var path = java.nio.file.Paths.get(aPath);
-        path.register(watcher, java.nio.file.StandardWatchEventKinds.ENTRY_CREATE, java.nio.file.StandardWatchEventKinds.ENTRY_DELETE, java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY);
-        
-        var goOn = true;
-        do {
-            var key = watcher.take();
-            if (!isNull(key)) {
-                var events = key.pollEvents();
-                for(var eventI in events.toArray()) {
-                    var event = events.toArray()[eventI];
-                    aFn(String(event.kind()), String(event.context()));
-                }
-                if (!key.reset()) goOn = false;
-            } else {
-                goOn = false;
-            }
-        } while(goOn);
-        
-        aFnErr("ENTRY_NA");
-    })
-    .catch((e) => {
-        aFnErr(e);
-    });
+	return $do(() => {
+		var watcher = java.nio.file.FileSystems.getDefault().newWatchService();
+		var path = java.nio.file.Paths.get(aPath);
+		path.register(watcher, java.nio.file.StandardWatchEventKinds.ENTRY_CREATE, java.nio.file.StandardWatchEventKinds.ENTRY_DELETE, java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY);
+		
+		var goOn = true;
+		do {
+			var key = watcher.take();
+			if (!isNull(key)) {
+				var events = key.pollEvents();
+				for(var eventI in events.toArray()) {
+					var event = events.toArray()[eventI];
+					aFn(String(event.kind()), String(event.context()));
+				}
+				if (!key.reset()) goOn = false;
+			} else {
+				goOn = false;
+			}
+		} while(goOn);
+		
+		aFnErr("ENTRY_NA");
+	})
+	.catch((e) => {
+		aFnErr(e);
+	});
 };
 
 /**
@@ -10832,8 +10832,8 @@ ow.loadSec();
  * </odoc>
  */
 const ask = (aPrompt, aMask, _con, noAnsi) => {
-    aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
- 	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
+	aPrompt = _$(aPrompt, "aPrompt").isString().default("> ");
+	if (isUnDef(_con)) { plugin("Console"); _con = new Console(); }
 	if (__conAnsi && __flags.ANSICOLOR_ASK && !noAnsi) {
 		var _v = _con.readLinePrompt(ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt), aMask)
 		var _m = (isUnDef(aMask) ? _v : (aMask == String.fromCharCode(0) ? "---" : repeat(_v.length, aMask)))
@@ -10855,7 +10855,7 @@ const askEncrypt = (aPrompt, _con) => {
 	aPrompt = _$(aPrompt).isString().default(": ");
 	var v = ask(aPrompt, String.fromCharCode(0), _con);
 	if (isString(v) && v == "") return __;
-    return af.encrypt(v);
+	return af.encrypt(v);
 }
 
 /**
@@ -10920,9 +10920,9 @@ const askDef = (aInit, aQuestion, isSecret, isVoidable) => {
  * </odoc>
  */
 const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
-    _$(aPrompt, "aPrompt").isString().$_()
-    _$(anArray, "anArray").isArray().$_()
-    aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
+	_$(aPrompt, "aPrompt").isString().$_()
+	_$(anArray, "anArray").isArray().$_()
+	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
 	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, enter to select)"))
 
 	let chooseLine = __colorFormat.askChooseChars.chooseLine
@@ -10932,10 +10932,10 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
 	let filter = ""
 
-    if (__flags.ANSICOLOR_ASK) {
+	if (__flags.ANSICOLOR_ASK) {
 		anArray = clone(anArray)
 		plugin("Console")
-        let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
+		let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize)
 		anArray = anArray.map(l => {
 			if (l.length + _maxls >= _maxl)
 				return l.substring(0, _maxl - _maxls - 4) + "..."
@@ -10943,51 +10943,51 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 				return l
 		})
 
-        if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
+		if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
-        printErr("\x1B[?25l" + _v)
+		printErr("\x1B[?25l" + _v)
 
-        let option = 0, firstTime = true, span = 0
-        let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
+		let option = 0, firstTime = true, span = 0
+		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
 		ow.loadFormat()
-        let _print = () => {
-            if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
-            var _o = anArray
-                     .map((l, i) => {
-                        if (i >= span && i - span < aMaxDisplay) {
-                            if (i == option) {
+		let _print = () => {
+			if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
+			var _o = anArray
+					 .map((l, i) => {
+						if (i >= span && i - span < aMaxDisplay) {
+							if (i == option) {
 								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + l + repeat(maxSpace - l.length + chooseLineSize -1, " "))
 								if (filter.length > 0) {
 									_l = _l.replace(filter, ansiColor(__colorFormat.askChooseFilter, filter))
 								}
-                                return _l
-                            } else {
-                                var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
-                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + chooseDirSize -1, " "))
-                            }
-                        }
-                        return ""
-                     })
-                     .filter(l => l.length > 0)
-                     .join("\n")
-            if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
-            print(_o)
-        }
+								return _l
+							} else {
+								var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
+								return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + l + repeat(maxSpace - l.length + chooseDirSize -1, " "))
+							}
+						}
+						return ""
+					 })
+					 .filter(l => l.length > 0)
+					 .join("\n")
+			if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
+			print(_o)
+		}
 
-        let c = 0
-        do {
-            _print()
+		let c = 0
+		do {
+			_print()
 			var _c = _con.readChar("")
-            c = String(_c).charCodeAt(0)
-            if (c == 27) {
+			c = String(_c).charCodeAt(0)
+			if (c == 27) {
 				filter = ""
-                c = String(_con.readChar("")).charCodeAt(0)
-                if (c == 91 || c == 79) {
-                    c = String(_con.readChar("")).charCodeAt(0)
-                    if (c == 66 && option < anArray.length - 1) option++
-                    if (c == 65 && option > 0) option--
-                }
-            } else {
+				c = String(_con.readChar("")).charCodeAt(0)
+				if (c == 91 || c == 79) {
+					c = String(_con.readChar("")).charCodeAt(0)
+					if (c == 66 && option < anArray.length - 1) option++
+					if (c == 65 && option > 0) option--
+				}
+			} else {
 				if (c == 127) {
 					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
 				} else {
@@ -10997,21 +10997,21 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 				}
 			}
-        } while (c != 13 && c != 10)
+		} while (c != 13 && c != 10)
 		ow.format.string.ansiMoveUp(aMaxDisplay)
 		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
-        ow.format.string.ansiMoveUp(aMaxDisplay+1)
+		ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printErrnl(repeat(_v.length, " ") + "\r")
 		printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
-        ow.format.string.ansiMoveUp(2)
+		ow.format.string.ansiMoveUp(2)
 		printErr("\x1B[?25h\n")
 
-        return option
-    } else {
-        throw "Choose options not supported on the current terminal."
-    }
+		return option
+	} else {
+		throw "Choose options not supported on the current terminal."
+	}
 
-    return __
+	return __
 }
 
 /**
@@ -11022,9 +11022,9 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
  * </odoc>
  */
 const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
-    _$(aPrompt, "aPrompt").isString().$_()
-    _$(anArray, "anArray").isArray().$_()
-    aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
+	_$(aPrompt, "aPrompt").isString().$_()
+	_$(anArray, "anArray").isArray().$_()
+	aMaxDisplay = _$(aMaxDisplay, "aMaxDisplay").isNumber().default(5)
 	aHelpText = _$(aHelpText, "aHelpText").isString().default(ansiColor("FAINT,ITALIC","(arrows to move, space to select, enter to submit)"))
 
 	let chooseMultipleSelected = __colorFormat.askChooseChars.chooseMultipleSelected
@@ -11038,7 +11038,7 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 	let chooseDirSize = Math.max(visibleLength(chooseUp), visibleLength(chooseDown)) + 1
 	let filter = ""
 
-    if (__flags.ANSICOLOR_ASK) {
+	if (__flags.ANSICOLOR_ASK) {
 		aSelectMap = new Map()
 		plugin("Console")
 		let _con = new Console(), _maxl = _con.getConsoleReader().getTerminal().getWidth(), _maxls = Math.max(chooseDirSize, chooseLineSize) + chooseMultipleSize
@@ -11050,51 +11050,51 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 		})
 		anArray.forEach(v => aSelectMap.set(v, false) )
 
-        if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
+		if (anArray.length < aMaxDisplay) aMaxDisplay = anArray.length
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
-        printErr("\x1B[?25l" + _v)
+		printErr("\x1B[?25l" + _v)
 
-        let option = 0, firstTime = true, span = 0
-        let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
-        let _print = () => {
-            if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
-            var _o = anArray
-                     .map((l, i) => {
-                        if (i >= span && i - span < aMaxDisplay) {
+		let option = 0, firstTime = true, span = 0
+		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
+		let _print = () => {
+			if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
+			var _o = anArray
+					 .map((l, i) => {
+						if (i >= span && i - span < aMaxDisplay) {
 							selectChar = (aSelectMap.get(l) ? chooseMultipleSelected : chooseMultipleEmpty)
-                            if (i == option) {
+							if (i == option) {
 								var _l = ansiColor(__colorFormat.askChoose, chooseLine + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseLineSize + chooseMultipleSize -5, " "))
 								if (filter.length > 0) {
 									_l = _l.replace(filter, ansiColor(__colorFormat.askChooseFilter, filter))
 								}
-                                return _l
-                            } else {
-                                var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
-                                return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseDirSize + chooseMultipleSize -5, " "))
-                            }
-                        }
-                        return ""
-                     })
-                     .filter(l => l.length > 0)
-                     .join("\n")
-            if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
-            printErr(_o)
-        }
+								return _l
+							} else {
+								var s = ((span > 0 && i == span) ? chooseUp : ((i - span == aMaxDisplay-1 && anArray.length > aMaxDisplay) ? chooseDown : " "))
+								return ansiColor("RESET", ansiColor(__colorFormat.askChoose, s) + " " + selectChar + " " + l + repeat(maxSpace - l.length + chooseDirSize + chooseMultipleSize -5, " "))
+							}
+						}
+						return ""
+					 })
+					 .filter(l => l.length > 0)
+					 .join("\n")
+			if (!firstTime) ow.format.string.ansiMoveUp(aMaxDisplay); else firstTime = false
+			printErr(_o)
+		}
 
-        let c = 0
-        do {
-            _print()
+		let c = 0
+		do {
+			_print()
 			var _c = _con.readChar("")
-            c = String(_c).charCodeAt(0)
-            if (c == 27) {
+			c = String(_c).charCodeAt(0)
+			if (c == 27) {
 				filter = ""
-                c = String(_con.readChar("")).charCodeAt(0)
-                if (c == 91 || c == 79) {
-                    c = String(_con.readChar("")).charCodeAt(0)
-                    if (c == 66 && option < anArray.length - 1) option++
-                    if (c == 65 && option > 0) option--
-                }
-            } else if (c == 32) {
+				c = String(_con.readChar("")).charCodeAt(0)
+				if (c == 91 || c == 79) {
+					c = String(_con.readChar("")).charCodeAt(0)
+					if (c == 66 && option < anArray.length - 1) option++
+					if (c == 65 && option > 0) option--
+				}
+			} else if (c == 32) {
 				aSelectMap.set(anArray[option], !aSelectMap.get(anArray[option]))
 			} else {
 				if (c == 127) {
@@ -11106,25 +11106,25 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 				}
 			}
-        } while (c != 13 && c != 10)
+		} while (c != 13 && c != 10)
 		ow.format.string.ansiMoveUp(aMaxDisplay)
 		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
-        ow.format.string.ansiMoveUp(aMaxDisplay+1)
+		ow.format.string.ansiMoveUp(aMaxDisplay+1)
 		printErrnl(repeat(_v.length, " ") + "\r")
 
 		let options = []
 		aSelectMap.forEach((v, k) => { if (v) options.push(k) })
 		printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
 
-        ow.format.string.ansiMoveUp(2)
+		ow.format.string.ansiMoveUp(2)
 		printErr("\x1B[?25h\n")
 
-        return options
-    } else {
-        throw "Choose options not supported on the current terminal."
-    }
+		return options
+	} else {
+		throw "Choose options not supported on the current terminal."
+	}
 
-    return __
+	return __
 }
 
 /**
@@ -11343,19 +11343,30 @@ const $ch = $channels;
 
 var __threadPools
 var __threadPoolFactor = 2
+var __virtualExecutor
 
 const __resetThreadPool = function(poolFactor) {
 	__threadPoolFactor = poolFactor
-	if (isDef(__threadPools)) { __threadPools.forEach(r => r.shutdown()); __threadPools.length = 0 }
+   if (isDef(__threadPools)) { __threadPools.forEach(r => r.shutdown()); __threadPools.length = 0 }
+   // Shutdown virtual thread executor if present
+   if (isDef(__virtualExecutor)) { __virtualExecutor.shutdown(); __virtualExecutor = undefined; }
 	__threadPools = __
 	__getThreadPool()
 }
 
-const __getThreadPool = function() {
-	if (isUnDef(__threadPools)) {
-		if (isUnDef(__cpucores)) __cpucores = getNumberOfCores()
-		__threadPools = [ new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) ]
-	}
+const __getThreadPool = function(wantVirt) {
+   // Use virtual threads if flag enabled
+   if (wantVirt) {
+	   if (isUnDef(__virtualExecutor)) {
+		   // Create a virtual-thread-per-task executor
+		   __virtualExecutor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor();
+	   }
+	   return __virtualExecutor;
+   }
+   if (isUnDef(__threadPools)) {
+	   if (isUnDef(__cpucores)) __cpucores = getNumberOfCores()
+	   __threadPools = [ new java.util.concurrent.ForkJoinPool(__cpucores * __threadPoolFactor, java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true) ]
+   }
 
 	for(let i = 0; i < __threadPools.length; i++) {
 		if (__threadPools[i].getActiveThreadCount() < __threadPools[i].getParallelism()) return __threadPools[i]
@@ -11394,7 +11405,7 @@ const __getThreadPools = function() {
 
 /**
  * <odoc>
- * <key>oPromise(aFunction, aRejFunction) : oPromise</key>
+ * <key>oPromise(aFunction, aRejFunction, useVirtualThreads) : oPromise</key>
  * Custom Promise-like implementation. If you provide aFunction, this aFunction will be executed async in a thread and oPromise
  * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
  * aFunction to provide a result with resolve(aResult) or an exception with reject(aReason). If you don't call theses functions the
@@ -11402,10 +11413,11 @@ const __getThreadPools = function() {
  * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the 
  * previous function will be passed as the value for the second. You can use the "catch" method to add aFunction that will receive
  * a string or exception for any exception thrown with the reject functions. You can also provide a aRejFunction that works like a "catch"
- * method as previously described.
+ * method as previously described. 
+ * Optionally if useVirtualThreads is true, the aFunction will be executed in a virtual thread, otherwise it will be executed in a normal thread.
  * </odoc>
  */
- const oPromise = function(aFunction, aRejFunction) {
+ const oPromise = function(aFunction, aRejFunction, useVirtualThreads) {
 	this.states = {
 		NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
 	};
@@ -11413,6 +11425,7 @@ const __getThreadPools = function() {
 	this.state = $atomic(this.states.NEW, "int");
 	this.executing = $atomic(false, "boolean");
 	this.executors = new java.util.concurrent.ConcurrentLinkedQueue();
+	this.vThreads = useVirtualThreads || false
 	
 	this.then(aFunction, aRejFunction);
 };
@@ -11594,15 +11607,15 @@ oPromise.prototype.__exec = function() {
 
 	do {
 		try {
-			this.__f = __getThreadPool().submit(new java.lang.Runnable({
+			this.__f = __getThreadPool(this.vThreads).submit(new java.lang.Runnable({
 				run: () => {
 					//var ignore = false;
 					//syncFn(() => { if (thisOP.executing.get()) ignore = true; else thisOP.executing.set(true); }, thisOP.executing.get());
 					if (!thisOP.executing.setIf(false, true)) return
-                    //if (ignore) return;
-                    
-                    try {
-                        while (thisOP.executors.size() > 0) {
+					//if (ignore) return;
+					
+					try {
+						while (thisOP.executors.size() > 0) {
 							var f = thisOP.executors.poll();
 							// Exec
 							if (thisOP.state.get() != thisOP.states.PREFAILED && 
@@ -11646,18 +11659,18 @@ oPromise.prototype.__exec = function() {
 									if (isUnDef(f) || f == null) thisOP.state.set(thisOP.states.FAILED);
 								}
 							}
-                        }
-                    } catch(ee) {
-                        throw ee;
-                    } finally {
-					    //syncFn(() => { thisOP.executing.set(false); }, thisOP.executing.get());
+						}
+					} catch(ee) {
+						throw ee;
+					} finally {
+						//syncFn(() => { thisOP.executing.set(false); }, thisOP.executing.get());
 						thisOP.executing.set(false)
 
 						if (thisOP.executors.isEmpty()) {
 							thisOP.state.setIf(thisOP.states.NEW, thisOP.states.FULFILLED);
 							thisOP.state.setIf(thisOP.states.PREFAILED, thisOP.states.FAILED);
 						}
-                    }
+					}
 
 					/*if (thisOP.state == thisOP.states.PREFAILED && thisOP.executors.isEmpty()) {
 						thisOP.state = thisOP.states.FAILED;
@@ -11673,95 +11686,95 @@ oPromise.prototype.__exec = function() {
 };
 
 const javaRegExp = (text) => {
-    var s = java.lang.String(text);
-    var calcMods = (mods) => {
-        if (isUnDef(mods)) return 0;
-        if (isNumber(mods)) return mods;
+	var s = java.lang.String(text);
+	var calcMods = (mods) => {
+		if (isUnDef(mods)) return 0;
+		if (isNumber(mods)) return mods;
 
-        var v = 0;
+		var v = 0;
 
-        if (mods.indexOf("i") >= 0) v += java.util.regex.Pattern.CASE_INSENSITIVE;
-        if (mods.indexOf("m") >= 0) v += java.util.regex.Pattern.MULTILINE;
+		if (mods.indexOf("i") >= 0) v += java.util.regex.Pattern.CASE_INSENSITIVE;
+		if (mods.indexOf("m") >= 0) v += java.util.regex.Pattern.MULTILINE;
 
-        return v;
-    };
+		return v;
+	};
 
-    var addPC = (regexp, mods) => {
-        if (isUnDef(global.__javaRegExp)) {
-            global.__javaRegExp = {};
-        }
+	var addPC = (regexp, mods) => {
+		if (isUnDef(global.__javaRegExp)) {
+			global.__javaRegExp = {};
+		}
 
-        var id = regexp + String(mods);
-        global.__javaRegExp[id] = java.util.regex.Pattern.compile(regexp, calcMods(mods));
-        return id;
-    };
+		var id = regexp + String(mods);
+		global.__javaRegExp[id] = java.util.regex.Pattern.compile(regexp, calcMods(mods));
+		return id;
+	};
 
-    var removePC = (regexp, mods) => {
-        if (isUnDef(global.__javaRegExp)) return;
-        var id = regexp + String(mods);
-        delete global.__javaRegExp[id];
-        return id;
-    };
+	var removePC = (regexp, mods) => {
+		if (isUnDef(global.__javaRegExp)) return;
+		var id = regexp + String(mods);
+		delete global.__javaRegExp[id];
+		return id;
+	};
 
-    var getPC = (regexp, mods) => {
-        if (isUnDef(global.__javaRegExp)) {
-            return java.util.regex.Pattern.compile(regexp, calcMods(mods));
-        } else {
-            var id = regexp + String(mods);
-            if (isDef(global.__javaRegExp[id])) {
-                return global.__javaRegExp[id];
-            } else {
-                return java.util.regex.Pattern.compile(regexp, calcMods(mods));
-            }
-        }
-    };
+	var getPC = (regexp, mods) => {
+		if (isUnDef(global.__javaRegExp)) {
+			return java.util.regex.Pattern.compile(regexp, calcMods(mods));
+		} else {
+			var id = regexp + String(mods);
+			if (isDef(global.__javaRegExp[id])) {
+				return global.__javaRegExp[id];
+			} else {
+				return java.util.regex.Pattern.compile(regexp, calcMods(mods));
+			}
+		}
+	};
 
-    return {
-        /**
+	return {
+		/**
 		 * <odoc>
 		 * <key>javaRegExp(text).match(regExp, mods) : Array</key>
 		 * Mimics, using Java, the javascript match function. Supported mods are "g", "m" and "i" or the java integer composed 
 		 * mods. Returns the corresponding array.
 		 * </odoc>
 		 */
-        match: (regexp, mods) => {
-            var m = getPC(regexp, mods).matcher(s);
-            var r = [];
-            if (isDef(mods) && mods.indexOf("g") >= 0) {
-                while(m.find()) { r.push(String(m.group())); }
-            } else {
-                m.find();
-                r.push(String(m.group()));
-            }
-            return r;
-        },
-    	/**
+		match: (regexp, mods) => {
+			var m = getPC(regexp, mods).matcher(s);
+			var r = [];
+			if (isDef(mods) && mods.indexOf("g") >= 0) {
+				while(m.find()) { r.push(String(m.group())); }
+			} else {
+				m.find();
+				r.push(String(m.group()));
+			}
+			return r;
+		},
+		/**
 		 * <odoc>
 		 * <key>javaRegExp(text).matchAll(regExp, mods) : Array</key>
 		 * Mimics, using Java, the javascript match function with the "g" modifier. Supported mods are "m" and "i" or the java integer composed 
 		 * mods. Returns the corresponding array.
 		 * </odoc>
 		 */
-        matchAll: (regexp, mods) => {
-            var m = getPC(regexp, mods).matcher(s);
-            var r = [];
-            while(m.find()) { r.push(String(m.group())); }
-            return r;
-        },
-    	/**
+		matchAll: (regexp, mods) => {
+			var m = getPC(regexp, mods).matcher(s);
+			var r = [];
+			while(m.find()) { r.push(String(m.group())); }
+			return r;
+		},
+		/**
 		 * <odoc>
 		 * <key>javaRegExp(text).match(regExp, mods) : Array</key>
 		 * Mimics, using Java, the javascript match function. Supported mods are "g", "m" and "i" or the java integer composed 
 		 * mods. Returns the corresponding array.
 		 * </odoc>
 		 */
-        replace: (regexp, replaceStr, mods) => {
-            var m = getPC(regexp, mods).matcher(s);
-            if (isDef(mods) && mods.indexOf("g") >= 0) {
-                return String(m.replaceAll(replaceStr));
-            } else {
-                return String(m.replaceFirst(replaceStr));
-            }     
+		replace: (regexp, replaceStr, mods) => {
+			var m = getPC(regexp, mods).matcher(s);
+			if (isDef(mods) && mods.indexOf("g") >= 0) {
+				return String(m.replaceAll(replaceStr));
+			} else {
+				return String(m.replaceFirst(replaceStr));
+			}     
 		},
 		/**
 		 * <odoc>
@@ -11770,9 +11783,9 @@ const javaRegExp = (text) => {
 		 * mods. Returns the corresponding array.
 		 * </odoc>
 		 */
-        replaceAll: (regexp, replaceStr, mods) => {
-            var m = getPC(regexp, mods).matcher(s);
-            return String(m.replaceAll(replaceStr));
+		replaceAll: (regexp, replaceStr, mods) => {
+			var m = getPC(regexp, mods).matcher(s);
+			return String(m.replaceAll(replaceStr));
 		},
 		/**
 		 * <odoc>
@@ -11781,8 +11794,8 @@ const javaRegExp = (text) => {
 		 * is invoked for the same combination of regExp and mods.
 		 * </odoc>
 		 */
-        preCompile: (regexp, mods) => {
-            return addPC(regexp, mods);
+		preCompile: (regexp, mods) => {
+			return addPC(regexp, mods);
 		},
 		/**
 		 * <odoc>
@@ -11790,8 +11803,8 @@ const javaRegExp = (text) => {
 		 * Removes a previously added pre compiled combination of regExp and mods.
 		 * </odoc>
 		 */
-        removePreCompiled: (regexp, mods) => {
-            return removePC(regexp, mods);
+		removePreCompiled: (regexp, mods) => {
+			return removePC(regexp, mods);
 		},
 		/**
 		 * <odoc>
@@ -11800,7 +11813,7 @@ const javaRegExp = (text) => {
 		 * mods.
 		 * </odoc>
 		 */
-        split: (regexp, mods) => {
+		split: (regexp, mods) => {
 			var ar = getPC(regexp, mods).split(s);
 			var res = [];
 			for(var ii = 0; ii < ar.length; ii++) {
@@ -11815,11 +11828,11 @@ const javaRegExp = (text) => {
 		 * mods. Returns the corresponding boolean value.
 		 * </odoc>
 		 */
-        test: (regexp, mods) => {
-            var m = getPC(regexp, mods).matcher(s);
-            return m.find();
-        }
-    };
+		test: (regexp, mods) => {
+			var m = getPC(regexp, mods).matcher(s);
+			return m.find();
+		}
+	};
 };
 
 /**
@@ -11853,18 +11866,18 @@ const includeOPack = function(aOPackName, aMinVersion) {
 		}
 	}
 	if (isUnDef(getOPackPath(aOPackName))) {
-        oPack("install " + aOPackName + " -deps");
-        if (isUnDef(getOPackPath(aOPackName))) throw "Couldn't install opack '" + aOPackName + "'.";
-    }
-    if (isDef(aMinVersion)) {
-        var version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
-        if (version < aMinVersion) {
-            oPack("update " + aOPackName);
-            version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
-            if (version < aMinVersion) throw "Couldn't update opack " + aOPackName + " from version " + version + " to >=" + aMinVersion;
-        }
-    }    
-    return true;
+		oPack("install " + aOPackName + " -deps");
+		if (isUnDef(getOPackPath(aOPackName))) throw "Couldn't install opack '" + aOPackName + "'.";
+	}
+	if (isDef(aMinVersion)) {
+		var version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
+		if (version < aMinVersion) {
+			oPack("update " + aOPackName);
+			version = $path(getOPackLocalDB(), "to_array(*)[?name==`" + aOPackName + "`] | [0].version");
+			if (version < aMinVersion) throw "Couldn't update opack " + aOPackName + " from version " + version + " to >=" + aMinVersion;
+		}
+	}    
+	return true;
 };
 
 /**
@@ -11953,32 +11966,32 @@ const $throwIfUnDef = function(aFunc) {
  * </odoc>
  */
 const $retry = function(aFunc, aNumTries) {
-    var aFn;
-    aNumTries = _$(aNumTries).default(1);
+	var aFn;
+	aNumTries = _$(aNumTries).default(1);
 
-    if (isNumber(aNumTries)) {
-        aFn = () => { aNumTries--; return (aNumTries > 0); };
-    }
+	if (isNumber(aNumTries)) {
+		aFn = () => { aNumTries--; return (aNumTries > 0); };
+	}
 
-    if (isFunction(aNumTries)) {
-        aFn = aNumTries;
-    }
+	if (isFunction(aNumTries)) {
+		aFn = aNumTries;
+	}
 
-    if (isUnDef(aFn)) throw "Can't determine how to retry.";
+	if (isUnDef(aFn)) throw "Can't determine how to retry.";
 
-    var error, res;
+	var error, res;
 
-    do {
-        try {
-            res = aFunc();
-            error = __;
-            return res;
-        } catch(e) {
-            error = e;
-        }
-    } while(aFn(error));
+	do {
+		try {
+			res = aFunc();
+			error = __;
+			return res;
+		} catch(e) {
+			error = e;
+		}
+	} while(aFn(error));
 
-    return error;
+	return error;
 };
 
 var __flock = {};
@@ -12016,11 +12029,11 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 		 * \
 		 * </odoc>
 		 */
-                getMainObject: () => __flock[aLockFile],
+				getMainObject: () => __flock[aLockFile],
 		lock : () => {
 			try {
 				if (isUnDef(__flock[aLockFile].l)) __flock[aLockFile].l = __flock[aLockFile].c.lock();
-                                __flock[aLockFile].i.inc();
+								__flock[aLockFile].i.inc();
 				return true;
 			} catch(e) {
 				r.destroy();
@@ -12038,15 +12051,15 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 		 */
 		unlock: () => {
 			if (isDef(__flock[aLockFile].i)) {
-                           if (__flock[aLockFile].i.get() > 0) __flock[aLockFile].i.dec();
-                           if (__flock[aLockFile].i.get() <= 0) {
-                             if (isDef(__flock[aLockFile]) && isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
+						   if (__flock[aLockFile].i.get() > 0) __flock[aLockFile].i.dec();
+						   if (__flock[aLockFile].i.get() <= 0) {
+							 if (isDef(__flock[aLockFile]) && isDef(__flock[aLockFile].l) && !isNull(__flock[aLockFile].l)) {
 				// warning on some newer JVMs: https://github.com/mozilla/rhino/issues/462
 				__flock[aLockFile].l.release();
-                             }
-                           }
+							 }
+						   }
 			   return __flock[aLockFile].i.get();
-                        }
+						}
 		},
 		/**
 		 * <odoc>
@@ -12113,7 +12126,7 @@ const $flock = function(aLockFile, aTimeout, aWaitPerCall) {
 			try {
 				__flock[aLockFile].l = __flock[aLockFile].c.tryLock();
 				if (isNull(__flock[aLockFile].l)) return false;
- 				try {
+				try {
 					f();
 					return true;
 				} finally {
@@ -12237,68 +12250,87 @@ const $lock = function(aName) {
  * </odoc>
  */
 const $await = function(aName) {
-    if (isUnDef(global.__await)) global.__await = {};
-    if (isUnDef(global.__await[aName])) global.__await[aName] = new java.lang.Object();
+	if (isUnDef(global.__await)) global.__await = {};
+	if (isUnDef(global.__await[aName])) global.__await[aName] = new java.lang.Object();
 
-    var _f = function(n) { this.n = n; };
-    _f.prototype.wait = function(aTimeout) {
-        syncFn(() => {
+	var _f = function(n) { this.n = n; };
+	_f.prototype.wait = function(aTimeout) {
+		syncFn(() => {
 			if (isDef(aTimeout)) 
 				global.__await[this.n].wait(aTimeout); 
 			else
 				global.__await[this.n].wait();
-        }, global.__await[this.n]);
-    };
-    _f.prototype.notify = function() {
-        syncFn(() => {
-            global.__await[this.n].notify();
-        }, global.__await[this.n]);
-    };
-    _f.prototype.notifyAll = function() {
-        syncFn(() => {
-            global.__await[this.n].notifyAll()
-        }, global.__await[this.n])
-    }
-    _f.prototype.destroy = function() {
+		}, global.__await[this.n]);
+	};
+	_f.prototype.notify = function() {
+		syncFn(() => {
+			global.__await[this.n].notify();
+		}, global.__await[this.n]);
+	};
+	_f.prototype.notifyAll = function() {
+		syncFn(() => {
+			global.__await[this.n].notifyAll()
+		}, global.__await[this.n])
+	}
+	_f.prototype.destroy = function() {
 		this.notifyAll();
-        delete global.__await[this.n];
-    };
+		delete global.__await[this.n];
+	};
 
-    return new _f(aName);
+	return new _f(aName);
 };
 
 /**
  * <odoc>
- * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises, defaultTimeout, aErrorFunction)</key>
+ * <key>$doA2B(aAFunction, aBFunction, numberOfDoPromises, defaultTimeout, aErrorFunction, useVirtualThreads)</key>
  * Will call aAFunction with a function as argument that should be used to "send" values to aBFunction. aBFunction will be call asynchronously in individual
  * $do up to the numberOfDoPromises limit. The defaultTimeout it 2500ms. If aErrorFunction is defined it will received any exceptions thrown from aBFunction with the corresponding arguments array.
+ * If useVirtualThreads is true it will use virtual threads to execute aBFunction. If useVirtualThreads is false (default) it will use the thread pool.
+ * Use virtual threads if you want to execute aBFunction without blocking the current thread (IO bound operations / high concurrency).
  * </odoc>
  */
-const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction) {
-    var recs = $atomic(), srecs = $atomic(), trecs = $atomic()
-    var noc  = _$(noc).isNumber().default(getNumberOfCores())
+const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction, useVirtualThreads) {
+	var recs = $atomic(), srecs = $atomic(), trecs = $atomic()
+	var noc  = _$(noc).isNumber().default(getNumberOfCores())
 	var id   = md5(aAFn.toString() + aBFn.toString()) + (Math.random()*100000000000000000)
 	defaultTimeout = _$(defaultTimeout).isNumber().default(2500)
 
-    var B = function(aObj) {
-        var cc = recs.inc()
-        srecs.inc()
-        while(cc > noc) { $await(id).wait(defaultTimeout); cc = recs.get(); }
-        $do(() => {
-			aBFn(aObj)
-			//aBFn.apply(this, arguments)
-            recs.dec()
-            trecs.inc()
-            $await(id).notify()
-        }).catch((e) => {
-            recs.dec()
-            trecs.inc()
-			$await(id).notify()
-			aErrorFunction(e, aObj)
-			//aErrorFunction(e, arguments)
-		});
+	var B = function(aObj) {
+		var cc = recs.inc()
+		srecs.inc()
+		while(cc > noc) { $await(id).wait(defaultTimeout); cc = recs.get(); }
+		if (useVirtualThreads) {
+			$doV(() => {
+				aBFn(aObj)
+				//aBFn.apply(this, arguments)
+				recs.dec()
+				trecs.inc()
+				$await(id).notify()
+			}).catch((e) => {
+				recs.dec()
+				trecs.inc()
+				$await(id).notify()
+				aErrorFunction(e, aObj)
+				//aErrorFunction(e, arguments)
+			});
+		} else {
+			$do(() => {
+				aBFn(aObj)
+				//aBFn.apply(this, arguments)
+				recs.dec()
+				trecs.inc()
+				$await(id).notify()
+			}).catch((e) => {
+				recs.dec()
+				trecs.inc()
+				$await(id).notify()
+				aErrorFunction(e, aObj)
+				//aErrorFunction(e, arguments)
+			});
+		}
+
 		$await(id).notify()
-    }
+	}
  
 	aAFn(B)
 	$await(id).notify()
@@ -12321,8 +12353,20 @@ const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction) {
  * </odoc>
  */
 const $do = function(aFunction, aRejFunction) {
-    return new oPromise(aFunction, aRejFunction);
+	return new oPromise(aFunction, aRejFunction);
 };
+
+/**
+ * <odoc>
+ * <key>$doV(aFunction, aRejFunction) : oPromise</key>
+ * Equivalent to $do but using virtual threads (if available) to execute the aFunction. This will allow the aFunction to be executed
+ * without blocking the current thread. If aFunction is not provided it will return a new oPromise that will be resolved
+ * when the first executor is added to it. If aRejFunction is provided it will be used as a "catch" method for the oPromise.
+ * </odoc>
+ */
+const $doV = function(aFunction, aRejFunction) {
+	return new oPromise(aFunction, aRejFunction, true)
+}
 
 /**
  * <odoc>
@@ -12332,7 +12376,7 @@ const $do = function(aFunction, aRejFunction) {
  * </odoc>
  */
 const $doAll = function(anArray) {
-    return new oPromise().all(anArray);
+	return new oPromise().all(anArray);
 };
 
 /**
@@ -12343,7 +12387,7 @@ const $doAll = function(anArray) {
  * </odoc>
  */
 const $doFirst = function(anArray) {
-    return new oPromise().race(anArray);
+	return new oPromise().race(anArray);
 };
 
 /**
@@ -12386,16 +12430,16 @@ const $doWait = function(aPromise, aWaitTimeout) {
 }
 
 const $sh = function(aString, aIn) {
-    var __sh = function(aCmd, aIn) {
-        this.q = [];
-        this.wd = __;
-        this.fcb = __;
+	var __sh = function(aCmd, aIn) {
+		this.q = [];
+		this.wd = __;
+		this.fcb = __;
 		this.t = __;
 		this.dw = __;
 		ow.loadFormat();
 		if (ow.format.isWindows()) this.encoding = "cp850"; else this.encoding = __;
-        if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
-    };
+		if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
+	};
 
 	/**
 	 * <odoc>
@@ -12414,7 +12458,7 @@ const $sh = function(aString, aIn) {
 	 * If aBooleanValue = true the execution won't wait for output (default: false).
 	 * </odoc>
 	 */
-    __sh.prototype.dontWait = function(aFlag) {
+	__sh.prototype.dontWait = function(aFlag) {
 		_$(aFlag, "dontWait flag").isBoolean().$_();
 		this.dw = aFlag;
 		return this;
@@ -12439,10 +12483,10 @@ const $sh = function(aString, aIn) {
 	 * When executing aCmd (with .exec) sets additional aCmds (with the optional corresponding aIn) to use.
 	 * </odoc>
 	 */
-    __sh.prototype.sh = function(aCmd, aIn) {
-        if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
-        return this;
-    };
+	__sh.prototype.sh = function(aCmd, aIn) {
+		if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12450,10 +12494,10 @@ const $sh = function(aString, aIn) {
 	 * When executing aCmd (with .exec) use aPwd as the current working directory.
 	 * </odoc>
 	 */
-    __sh.prototype.pwd = function(aPwd) {
-        this.wd = aPwd;
-        return this;
-    };
+	__sh.prototype.pwd = function(aPwd) {
+		this.wd = aPwd;
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12462,9 +12506,9 @@ const $sh = function(aString, aIn) {
 	 * </odoc>
 	 */
 	__sh.prototype.cb = function(aCallback) {
-        this.fcb = () => { return aCallback; };
-        return this;
-    };
+		this.fcb = () => { return aCallback; };
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12488,10 +12532,10 @@ const $sh = function(aString, aIn) {
 	 * When executing aCmd (with .exec) uses aTimeout.
 	 * </odoc>
 	 */
-    __sh.prototype.timeout = function(aTimeout) {
-        this.t = aTimeout;
-        return this;
-    };
+	__sh.prototype.timeout = function(aTimeout) {
+		this.t = aTimeout;
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12499,10 +12543,10 @@ const $sh = function(aString, aIn) {
 	 * Immediately creates aDir before executing aCmd (with .exec).
 	 * </odoc>
 	 */
-    __sh.prototype.mkdir = function(aDir) {
-        io.mkdir(aDir);
-        return this;
-    };
+	__sh.prototype.mkdir = function(aDir) {
+		io.mkdir(aDir);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12510,10 +12554,10 @@ const $sh = function(aString, aIn) {
 	 * Immediately moves aSource to aTarget before executing aCmd (with .exec).
 	 * </odoc>
 	 */
-    __sh.prototype.mv = function(aSource, aTarget) {
-        io.mv(aSource, aTarget);
-        return this;
-    };
+	__sh.prototype.mv = function(aSource, aTarget) {
+		io.mv(aSource, aTarget);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12521,10 +12565,10 @@ const $sh = function(aString, aIn) {
 	 * Immediately copies aSource to aTarget before executing aCmd (with .exec).
 	 * </odoc>
 	 */
-    __sh.prototype.cp = function(aSource, aTarget) {
-        io.cp(aSource, aTarget);
-        return this;
-    };
+	__sh.prototype.cp = function(aSource, aTarget) {
+		io.cp(aSource, aTarget);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12532,10 +12576,10 @@ const $sh = function(aString, aIn) {
 	 * Immediately renames aSource to aTarget before executing aCmd (with .exec).
 	 * </odoc>
 	 */
-    __sh.prototype.rename = function(aSource, aTarget) {
-        io.rename(aSource, aTarget);
-        return this;
-    };
+	__sh.prototype.rename = function(aSource, aTarget) {
+		io.rename(aSource, aTarget);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12543,10 +12587,10 @@ const $sh = function(aString, aIn) {
 	 * Immediately removes aFilePath before executing aCmd (with .exec).
 	 * </odoc>
 	 */
-    __sh.prototype.rm = function(aFilePath) {
-        io.rm(aFilePath);
-        return this;
-    };
+	__sh.prototype.rm = function(aFilePath) {
+		io.rm(aFilePath);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12555,10 +12599,10 @@ const $sh = function(aString, aIn) {
 	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
-    __sh.prototype.get = function(aIdx) {
-        var res = [];
-        for(var ii in this.q) {
-            if (isDef(this.q[ii].cmd)) {
+	__sh.prototype.get = function(aIdx) {
+		var res = [];
+		for(var ii in this.q) {
+			if (isDef(this.q[ii].cmd)) {
 				this._fcbE = ""
 				this._fcbO = ""
 				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs), this.q[ii]);
@@ -12567,16 +12611,16 @@ const $sh = function(aString, aIn) {
 					_res.stderr = this._fcbE.slice(0,-1)
 				}
 				res.push(_res);
-                if (isDef(this.fe)) {
-                    var rfe = this.fe(_res);
-                    if (isDef(rfe) && rfe == false) {
-                        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
-                    }
-                }
-            }
-        }
+				if (isDef(this.fe)) {
+					var rfe = this.fe(_res);
+					if (isDef(rfe) && rfe == false) {
+						if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
+					}
+				}
+			}
+		}
 
-        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
+		if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
 	};
 	
 	/**
@@ -12655,23 +12699,23 @@ const $sh = function(aString, aIn) {
 	 * If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
-    __sh.prototype.exec = function(aIdx) {
-        var res = [];
-        for(var ii in this.q) {
-            if (isDef(this.q[ii].cmd)) {
-                var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs), this.q[ii]);
-                res.push(_res);
-                if (isDef(this.fe)) {
-                    var rfe = this.fe(_res);
-                    if (isDef(rfe) && rfe == false) {
-                        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
-                    }
-                }
-            }
-        }
+	__sh.prototype.exec = function(aIdx) {
+		var res = [];
+		for(var ii in this.q) {
+			if (isDef(this.q[ii].cmd)) {
+				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs), this.q[ii]);
+				res.push(_res);
+				if (isDef(this.fe)) {
+					var rfe = this.fe(_res);
+					if (isDef(rfe) && rfe == false) {
+						if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
+					}
+				}
+			}
+		}
 
-        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
-    };
+		if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
+	};
 
 	/**
 	 * <odoc>
@@ -12679,12 +12723,12 @@ const $sh = function(aString, aIn) {
 	 * Sets aFunc function to execute after the execution of aCmd (with .exec).
 	 * </odoc>
 	 */
-    __sh.prototype.exit = function(aFunc) {
-        this.fe = aFunc;
-        return this;
-    };
+	__sh.prototype.exit = function(aFunc) {
+		this.fe = aFunc;
+		return this;
+	};
 
-    return new __sh(aString, aIn);
+	return new __sh(aString, aIn);
 };
 
 const $ssh = function(aMap) {
@@ -12695,17 +12739,17 @@ const $ssh = function(aMap) {
 	 * a map with the keys: host, port, login, pass, id (file key) / key (string representation), compress and timeout. See "help SSH.SSH" for more info.
 	 * </odoc>
 	 */
-    var __ssh = function(aMap) {
-        this.q = [];
-        this.fcb = __;
-        this.t = __;
-        this.ppty = __;
+	var __ssh = function(aMap) {
+		this.q = [];
+		this.fcb = __;
+		this.t = __;
+		this.ppty = __;
 
-        plugin("SSH");
+		plugin("SSH");
 		aMap = _$(aMap).$_("Please provide a ssh map or an URL");
 		this.map = aMap;
-        this.ssh = this.__connect(aMap);
-    };
+		this.ssh = this.__connect(aMap);
+	};
 
 	__ssh.prototype.__getssh = function() {
 		if (isUnDef(this.ssh)) this.ssh = this.__connect(this.map);
@@ -12721,19 +12765,19 @@ const $ssh = function(aMap) {
 		var s;
 
 		if (isMap(aMap)) {
-            aMap.port = _$(aMap.port).isNumber().default(22);
-            aMap.compress = _$(aMap.compress).isBoolean().default(false);
-            if (isDef(aMap.url)) aMap.host = aMap.url;
-        }
-        if (!(aMap instanceof SSH)) {
+			aMap.port = _$(aMap.port).isNumber().default(22);
+			aMap.compress = _$(aMap.compress).isBoolean().default(false);
+			if (isDef(aMap.url)) aMap.host = aMap.url;
+		}
+		if (!(aMap instanceof SSH)) {
 			if (isString(aMap.key)) {
 				this.__f = io.createTempFile("__oaf_ssh_", ".oaf");
 				io.writeFileString(this.__f, aMap.key);
 				aMap.id = this.__f;
 			}
-            s = new SSH((isString(aMap) ? aMap : aMap.host), aMap.port, aMap.login, aMap.pass, aMap.id, aMap.compress, aMap.timeout);
-        } else {
-            s = aMap;
+			s = new SSH((isString(aMap) ? aMap : aMap.host), aMap.port, aMap.login, aMap.pass, aMap.id, aMap.compress, aMap.timeout);
+		} else {
+			s = aMap;
 		}
 		return s;
 	};
@@ -12744,10 +12788,10 @@ const $ssh = function(aMap) {
 	 * Sets aCmd to be executed with an optional aIn (stdin) on the remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.sh = function(aCmd, aIn) {
-        if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
-        return this;
-    };
+	__ssh.prototype.sh = function(aCmd, aIn) {
+		if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12755,10 +12799,10 @@ const $ssh = function(aMap) {
 	 * Sets aPwd directory for getting and sending files to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.pwd = function(aPwd) {
-        this.__getsftp.cd(aPwd);
-        return this;
-    };
+	__ssh.prototype.pwd = function(aPwd) {
+		this.__getsftp.cd(aPwd);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12766,10 +12810,10 @@ const $ssh = function(aMap) {
 	 * Sets aTimeout in ms for the ssh/sftp connection to a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.timeout = function(aTimeout) {
-        this.t = aTimeout;
-        return this;
-    };
+	__ssh.prototype.timeout = function(aTimeout) {
+		this.t = aTimeout;
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12777,10 +12821,10 @@ const $ssh = function(aMap) {
 	 * Sets aCallback function to execute during the execution of commands on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.cb = function(aCallback) {
-        this.fcb = () => { return aCallback; };
-        return this;
-    };
+	__ssh.prototype.cb = function(aCallback) {
+		this.fcb = () => { return aCallback; };
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12801,10 +12845,10 @@ const $ssh = function(aMap) {
 	 * Creates aDirectory via SFTP on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.mkdir = function(aDir) {
-        this.__getsftp().mkdir(aDir);
-        return this;
-    };
+	__ssh.prototype.mkdir = function(aDir) {
+		this.__getsftp().mkdir(aDir);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12812,10 +12856,10 @@ const $ssh = function(aMap) {
 	 * Gets aSource filepath and stores it locally on aTarget from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.getFile = function(aSource, aTarget) {
-        this.__getsftp().sftpGet(aSource, aTarget);
-        return this;
-    };
+	__ssh.prototype.getFile = function(aSource, aTarget) {
+		this.__getsftp().sftpGet(aSource, aTarget);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12823,10 +12867,10 @@ const $ssh = function(aMap) {
 	 * Puts aSource local filepath and stores it remotely in aTarget on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.putFile = function(aSource, aTarget) {
-        this.__getsftp().sftpPut(aSource, aTarget);
-        return this;
-    };
+	__ssh.prototype.putFile = function(aSource, aTarget) {
+		this.__getsftp().sftpPut(aSource, aTarget);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12834,9 +12878,9 @@ const $ssh = function(aMap) {
 	 * Renames aSource filepath to aTarget filepath on a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.rename = function(aSource, aTarget) {
-        this.__getsftp().rename(aSource, aTarget);
-        return this;
+	__ssh.prototype.rename = function(aSource, aTarget) {
+		this.__getsftp().rename(aSource, aTarget);
+		return this;
 	};
 	
 		/**
@@ -12857,10 +12901,10 @@ const $ssh = function(aMap) {
 	 * Remove aFilePath from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.rm = function(aFilePath) {
-        this.__getsftp().rm(aFilePath);
-        return this;
-    };
+	__ssh.prototype.rm = function(aFilePath) {
+		this.__getsftp().rm(aFilePath);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12868,10 +12912,10 @@ const $ssh = function(aMap) {
 	 * Removes a directory from a remote host defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.rmdir = function(aFilePath) {
-        this.__getsftp().rmdir(aFilePath);
-        return this;
-    };
+	__ssh.prototype.rmdir = function(aFilePath) {
+		this.__getsftp().rmdir(aFilePath);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12879,10 +12923,10 @@ const $ssh = function(aMap) {
 	 * Sets the flag to use or not a pty term allocation on the ssh connection to a remote host defined by aMap (host, port, login, pass, id, key, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.pty = function(aFlag) {
-        this.ppty = aFlag;
-        return this;
-    };
+	__ssh.prototype.pty = function(aFlag) {
+		this.ppty = aFlag;
+		return this;
+	};
 
 	/**
 	 * <odoc<
@@ -12901,12 +12945,12 @@ const $ssh = function(aMap) {
 	 * Closes a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.close = function() {
+	__ssh.prototype.close = function() {
 		if (isDef(this.ssh)) this.ssh.close();
 		if (isDef(this.sftp)) this.sftp.close();
 		if (isDef(this.__f)) io.rm(this.__f);
-        return this;
-    };
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12914,10 +12958,10 @@ const $ssh = function(aMap) {
 	 * Creates a local tunnel mapping aLocalPort to aRemoteHost:aRemotePort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.tunnelLocal = function(aLocalPort, aRemoteHost, aRemotePort) {
-        this.__getssh().tunnelLocal(aLocalPort, aRemoteHost, aRemotePort);
-        return this;
-    };
+	__ssh.prototype.tunnelLocal = function(aLocalPort, aRemoteHost, aRemotePort) {
+		this.__getssh().tunnelLocal(aLocalPort, aRemoteHost, aRemotePort);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12925,10 +12969,10 @@ const $ssh = function(aMap) {
 	 * Creates a local tunnel mapping aLocalInterface:aLocalPort to aRemoteHost:aRemotePort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.tunnelLocalBind = function(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort) {
-        this.__getssh().tunnelLocalBind(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort);
-        return this;
-    };
+	__ssh.prototype.tunnelLocalBind = function(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort) {
+		this.__getssh().tunnelLocalBind(aLocalInterface, aLocalPort, aRemoteHost, aRemotePort);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12936,10 +12980,10 @@ const $ssh = function(aMap) {
 	 * Creates a remote tunnel mapping aRemotePort to aLocalAddress:aLocalPort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.tunnelRemote = function(aRemotePort, aLocalAddress, aLocalPort) {
-        this.__getssh().tunnelRemote(aRemotePort, aLocalAddress, aLocalPort);
-        return this;
-    };
+	__ssh.prototype.tunnelRemote = function(aRemotePort, aLocalAddress, aLocalPort) {
+		this.__getssh().tunnelRemote(aRemotePort, aLocalAddress, aLocalPort);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12947,10 +12991,10 @@ const $ssh = function(aMap) {
 	 * Creates a remote tunnel mapping aRemoteInterface:aRemotePort to aLocalAddress:aLocalPort using the ssh connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.tunnelRemoteBind = function(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort) {
-        this.__getssh().tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort);
-        return this;
-    };
+	__ssh.prototype.tunnelRemoteBind = function(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort) {
+		this.__getssh().tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort);
+		return this;
+	};
 
 	/**
 	 * <odoc>
@@ -12959,24 +13003,24 @@ const $ssh = function(aMap) {
 	 * IO is not inherit. If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
-    __ssh.prototype.get = function(aIdx) {
-        var res = [];
-        if (isDef(this.t)) this.__getssh().setTimeout(this.t);
-        for(var ii in this.q) {
-            if (isDef(this.q[ii].cmd)) {
-                var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, false, this.ppty, true, (isDef(this.fcb) ? this.fcb() : __)), this.q[ii]);
-                res.push(_res);
-                if (isDef(this.fe)) {
-                    var rfe = this.fe(_res, this);
-                    if (isDef(rfe) && rfe == false) {
-                        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
-                    }
-                }
-            }
-        }
+	__ssh.prototype.get = function(aIdx) {
+		var res = [];
+		if (isDef(this.t)) this.__getssh().setTimeout(this.t);
+		for(var ii in this.q) {
+			if (isDef(this.q[ii].cmd)) {
+				var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, false, this.ppty, true, (isDef(this.fcb) ? this.fcb() : __)), this.q[ii]);
+				res.push(_res);
+				if (isDef(this.fe)) {
+					var rfe = this.fe(_res, this);
+					if (isDef(rfe) && rfe == false) {
+						if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
+					}
+				}
+			}
+		}
 
-        this.close();
-        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
+		this.close();
+		if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
 	};
 	
 	/**
@@ -13010,25 +13054,25 @@ const $ssh = function(aMap) {
 	 * IO is inherit. If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
 	 * </odoc>
 	 */
-    __ssh.prototype.exec = function(aIdx) {
-        var res = [];
-        if (isDef(this.t)) this.__getssh().setTimeout(this.t);
-        for(var ii in this.q) {
-            if (isDef(this.q[ii].cmd)) {
-                var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, true, this.ppty, true, (isDef(this.fcb) ? this.fcb() : __)), this.q[ii]);
-                res.push(_res);
-                if (isDef(this.fe)) {
-                    var rfe = this.fe(_res, this);
-                    if (isDef(rfe) && rfe == false) {
-                        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
-                    }
-                }
-            }
-        }
+	__ssh.prototype.exec = function(aIdx) {
+		var res = [];
+		if (isDef(this.t)) this.__getssh().setTimeout(this.t);
+		for(var ii in this.q) {
+			if (isDef(this.q[ii].cmd)) {
+				var _res = merge(this.__getssh().exec(this.q[ii].cmd, this.q[ii].in, true, this.ppty, true, (isDef(this.fcb) ? this.fcb() : __)), this.q[ii]);
+				res.push(_res);
+				if (isDef(this.fe)) {
+					var rfe = this.fe(_res, this);
+					if (isDef(rfe) && rfe == false) {
+						if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
+					}
+				}
+			}
+		}
 
-        this.close();
-        if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
-    };
+		this.close();
+		if (isNumber(aIdx) && isDef(res[aIdx])) return res[aIdx]; else return res;
+	};
 
 	/**
 	 * <odoc>
@@ -13036,12 +13080,12 @@ const $ssh = function(aMap) {
 	 * Sets a callback aFunc to execute upon a command execution s a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * </odoc>
 	 */
-    __ssh.prototype.exit = function(aFunc) {
-        this.fe = aFunc;
-        return this;
-    };
+	__ssh.prototype.exit = function(aFunc) {
+		this.fe = aFunc;
+		return this;
+	};
 
-    return new __ssh(aMap);
+	return new __ssh(aMap);
 };
 
 /**
@@ -13202,14 +13246,14 @@ const $csv = function(aMap) {
  * </odoc>
  */
 const $set = function(aK, aV) {
-    _$(aK, "aK").isString().$_();
-    _$(aV, "aV").$_();
+	_$(aK, "aK").isString().$_();
+	_$(aV, "aV").$_();
 
-    if ($ch().list().indexOf("oaf::global") < 0) {
-        $ch("oaf::global").create();
-    }
+	if ($ch().list().indexOf("oaf::global") < 0) {
+		$ch("oaf::global").create();
+	}
 
-    $ch("oaf::global").set({ k: aK }, { k: aK, v: aV });
+	$ch("oaf::global").set({ k: aK }, { k: aK, v: aV });
 }
 
 /**
@@ -13219,15 +13263,15 @@ const $set = function(aK, aV) {
  * </odoc>
  */
 const $get = function(aK) {
-    _$(aK, "aK").isString().$_();
+	_$(aK, "aK").isString().$_();
 
-    if ($ch().list().indexOf("oaf::global") < 0) {
-        $ch("oaf::global").create();
-    }
+	if ($ch().list().indexOf("oaf::global") < 0) {
+		$ch("oaf::global").create();
+	}
 
-    var res = $ch("oaf::global").get({ k: aK });
-    
-    if (isDef(res) && isDef(res.v)) return res.v; else return __;
+	var res = $ch("oaf::global").get({ k: aK });
+	
+	if (isDef(res) && isDef(res.v)) return res.v; else return __;
 }
 
 /**
@@ -13239,11 +13283,11 @@ const $get = function(aK) {
 const $unset = function(aK) {
 	_$(aK, "aK").isString().$_();
 
-    if ($ch().list().indexOf("oaf::global") < 0) {
-        $ch("oaf::global").create();
-    }
+	if ($ch().list().indexOf("oaf::global") < 0) {
+		$ch("oaf::global").create();
+	}
 
-    $ch("oaf::global").unset({ k: aK });
+	$ch("oaf::global").unset({ k: aK });
 }
 
 /**
@@ -13588,7 +13632,7 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 		}
 	} catch(e) {
 		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
-		    e.message.indexOf("java.nio.file.NoSuchFileException") < 0) throw e;
+			e.message.indexOf("java.nio.file.NoSuchFileException") < 0) throw e;
 	}
 
 	try {
@@ -13599,9 +13643,9 @@ if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 		}
 	} catch(e) {
 		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
-		    e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
-		    e.message.indexOf("java.io.IOException") < 0 &&
-		    e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
+			e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
+			e.message.indexOf("java.io.IOException") < 0 &&
+			e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
 	}
 })();
 
