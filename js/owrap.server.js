@@ -2759,6 +2759,7 @@ OpenWrap.server.prototype.httpd = {
 		delete this.__routes[Number(aHTTPd.getPort())]
 		delete this.__defaultRoutes[Number(aHTTPd.getPort())]
 		delete this.__preRoutes[Number(aHTTPd.getPort())]
+		delete this.__servers[Number(aHTTPd.getPort())]
 	},
 	
 	/**
