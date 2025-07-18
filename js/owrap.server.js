@@ -2509,9 +2509,15 @@ OpenWrap.server.prototype.httpd = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout) : Object</key>
+	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout, aImpl) : Object</key>
 	 * Will prepare a HTTP server to be used returning a HTTPServer object. Optionally you can provide 
-	 * aPort where you want the HTTP server to run. Otherwise a free port will be assigned.
+	 * aPort where you want the HTTP server to run. Otherwise a free port will be assigned. Optionally you can provide a different
+	 * aImpl (implementation) for the HTTP server. If aHost is provided it will be used as the host to bind the server to.
+	 * If keyStorePath and password are provided the server will be started as a secure HTTPS server. If errorFunction is provided
+	 * it will be called whenever an error occurs in the server. This function will receive the error as a parameter.
+	 * If aWebSockets is provided it will be used to handle WebSockets connections. If aTimeout is provided it will be used as
+	 * the timeout for the server to wait for a request before closing the connection.\
+	 * \
 	 * (available after ow.loadServer()).\
 	 * \
 	 * aWebSockets, if used, should be a map with the following functions:\
@@ -2524,7 +2530,7 @@ OpenWrap.server.prototype.httpd = {
 	 * \
 	 * </odoc>
 	 */
-	start: function(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout) {
+	start: function(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout, aImpl) {
 		if (isNumber(aPort) && isDef(this.__servers[aPort])) return this.__servers[aPort]
 
 		plugin("HTTPServer");
@@ -2544,9 +2550,9 @@ OpenWrap.server.prototype.httpd = {
 				oMessage  : aWebSockets.onMessage,
 				oPong     : aWebSockets.onPong,
 				oException: aWebSockets.onException
-			}), aTimeout);
+			}), aTimeout, aImpl);
 		else
-			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction);
+			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, __, aTimeout, aImpl);
 		
 		this.resetRoutes(hs);
 		this.__servers[Number(hs.getPort())] = hs
@@ -2678,8 +2684,8 @@ OpenWrap.server.prototype.httpd = {
 						}
 						return best
 					}, "/")
-					// If we have a best prefix, then call the route function for that prefix	
-					if (isDef(bp))
+					// If we have a best prefix, then call the route function for that prefix
+					if (typeof bp !== "undefined" && typeof parent.__routes[aPort][bp] === "function")
 						return parent.__routes[aPort][bp](req, aHTTPd);
 					else
 						return parent.__defaultRoutes[aPort](req, aHTTPd);

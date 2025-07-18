@@ -487,7 +487,6 @@ public class HTTPServer extends ScriptableObject {
 					httpd = new com.nwu.httpd.HTTPWSd((com.nwu.log.Log) new HLog(port, errorFunction), (String) host, port, (com.nwu.httpd.IWebSock) ws, timeout);
 			}
 
-
 			if (keyStorePath != null && !keyStorePath.equals("undefined") &&
 				password != null && !(password instanceof Undefined)) {
 				httpd.stop();
