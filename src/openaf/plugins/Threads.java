@@ -287,6 +287,34 @@ public class Threads extends ScriptableObject {
 			executor = Executors.newSingleThreadExecutor();
 		}
 	}
+	
+	// Virtual threads support (Java 21)
+	/**
+	 * <odoc>
+	 * <key>Threads.initVirtualThreadPerTaskExecutor()</key>
+	 * Uses a virtual thread per task executor (Java 21).
+	 * </odoc>
+	 */
+	@JSFunction
+	public void initVirtualThreadPerTaskExecutor() {
+		if (executor == null) {
+			executor = Executors.newVirtualThreadPerTaskExecutor();
+		}
+	}
+
+	/**
+	 * <odoc>
+	 * <key>Threads.addVirtualThread(aFunction) : String</key>
+	 * Adds to the virtual thread executor aFunction to be executed. Returns an UUID associated with the thread.
+	 * </odoc>
+	 */
+	@JSFunction
+	public String addVirtualThread(NativeFunction aFunction) {
+		if (executor == null) initVirtualThreadPerTaskExecutor();
+		UUID uuid = UUID.randomUUID();
+		executor.execute((Runnable) new ScriptFunction(uuid, aFunction));
+		return uuid.toString();
+	}
 
 	/**
 	 * <odoc>
