@@ -2532,6 +2532,7 @@ OpenWrap.server.prototype.httpd = {
 	 */
 	start: function(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout, aImpl) {
 		if (isNumber(aPort) && isDef(this.__servers[aPort])) return this.__servers[aPort]
+		aImpl = _$(aImpl).isString().default(__flags.HTTPD_DEFAULT_IMPL)
 
 		plugin("HTTPServer");
 		
@@ -2539,23 +2540,51 @@ OpenWrap.server.prototype.httpd = {
 			aPort = findRandomOpenPort();
 		}
 
-		if (__flags.HTTPD_THREADS != "auto") try { com.nwu.httpd.NanoHTTPD.numThreads = Number(__flags.HTTPD_THREADS) } catch(e) {}
-		if (isNumber(__flags.HTTPD_BUFSIZE)) com.nwu.httpd.NanoHTTPD.setBufSize(Number(__flags.HTTPD_BUFSIZE))
-		
-		var hs;
-		if (isDef(aWebSockets) && isMap(aWebSockets)) 
-			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, new Packages.com.nwu.httpd.IWebSock({
-				oOpen     : aWebSockets.onOpen,
-				oClose    : aWebSockets.onClose,
-				oMessage  : aWebSockets.onMessage,
-				oPong     : aWebSockets.onPong,
-				oException: aWebSockets.onException
-			}), aTimeout, aImpl);
-		else
-			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, __, aTimeout, aImpl);
+		var hs
+		switch(aImpl) {
+		case "nwu" :
+			if (__flags.HTTPD_THREADS != "auto") try { com.nwu.httpd.NanoHTTPD.numThreads = Number(__flags.HTTPD_THREADS) } catch(e) {}
+			if (isNumber(__flags.HTTPD_BUFSIZE)) com.nwu.httpd.NanoHTTPD.setBufSize(Number(__flags.HTTPD_BUFSIZE))
+			
+			if (isDef(aWebSockets) && isMap(aWebSockets)) 
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, new Packages.com.nwu.httpd.IWebSock({
+					oOpen     : aWebSockets.onOpen,
+					oClose    : aWebSockets.onClose,
+					oMessage  : aWebSockets.onMessage,
+					oPong     : aWebSockets.onPong,
+					oException: aWebSockets.onException
+				}), aTimeout, aImpl);
+			else
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, __, aTimeout, aImpl);
+
+			break
+		case "nwu2":
+			if (__flags.HTTPD_THREADS != "auto") try { com.nwu2.httpd.NanoHTTPD.numThreads = Number(__flags.HTTPD_THREADS) } catch(e) {}
+			if (isNumber(__flags.HTTPD_BUFSIZE)) com.nwu2.httpd.NanoHTTPD.setBufSize(Number(__flags.HTTPD_BUFSIZE))
+			
+			if (isDef(aWebSockets) && isMap(aWebSockets)) 
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, new Packages.com.nwu2.httpd.IWebSock({
+					oOpen     : aWebSockets.onOpen,
+					oClose    : aWebSockets.onClose,
+					oMessage  : aWebSockets.onMessage,
+					oPong     : aWebSockets.onPong,
+					oException: aWebSockets.onException
+				}), aTimeout, aImpl);
+			else
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, __, aTimeout, aImpl);
+
+			break
+		case "java":			
+			if (isDef(aWebSockets) && isMap(aWebSockets)) 
+				throw "WebSockets are not supported in the Java HTTPd implementation."
+			else
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, __, aTimeout, aImpl);
+
+			break
+		}
 		
 		this.resetRoutes(hs);
-		this.__servers[Number(hs.getPort())] = hs
+		this.__servers[aPort] = hs
 
 		return hs;
 	},
