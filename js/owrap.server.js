@@ -1652,6 +1652,182 @@ OpenWrap.server.prototype.queue.prototype.purge = function() {
 };
 
 //-----------------------------------------------------------------------------------------------------
+// JSONRPC
+//-----------------------------------------------------------------------------------------------------
+
+/**
+ * <odoc>
+ * <key>ow.server.jsonRPC(data, mapOfFns) : Map</key>
+ * Processes a JSON-RPC request (data) using the provided mapOfFns where each key is the method name and the value is the function to be executed.
+ * The data should be a map with the following entries: jsonrpc (should be "2.0"), method (the method name to be executed), params (optional, the parameters to be passed to the method) and id (optional, the request id).
+ * Returns a map with the following entries: jsonrpc (should be "2.0"), id (the request id), result (the result of the method execution) or error (if the method is unknown or if the request is invalid).
+ * </odoc>
+ */
+OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
+	// Validate the input parameters
+    if (isMap(data)) {
+		// Check if the required fields are present
+        if (isDef(data.jsonrpc)) {
+            const fn = mapOfFns[data.method]
+            const id = data.id
+            const params = data.params || {}
+
+			// If the method is defined in the mapOfFns, execute it and return the result
+			// Otherwise, return an error indicating that the method is unknown
+            if (fn) {
+                var _res = fn(params)
+                return {
+                    jsonrpc: "2.0",
+                    id: id,
+                    result: _res
+                }
+            } else {
+                return {
+                    jsonrpc: "2.0",
+                    id: id,
+                    error: "Unknown method: " + data.method
+                }
+            }
+        } else {
+            return {
+                jsonrpc: "2.0",
+                id: null,
+                error: "Invalid JSON-RPC request"
+            }
+        }
+    } else {
+        return {
+            jsonrpc: "2.0",
+            id: null,
+            error: "Invalid JSON-RPC request format"
+        }
+    }
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.mcpStdio(initData, fnsMeta, fns, lgF)</key>
+ * Processes a MCP (Model Context Protocol) request using standard input/output. The initData is a map with initial data to be sent to the client, fnsMeta is an array of function metadata and fns is a map of functions to be executed.
+ * The lgF is a function that will be used to log messages. If not provided, it will default to a function that writes logs to a file named "log.ndjson".
+ * The initData should contain the server information and capabilities. The fnsMeta should contain metadata about the functions available, such as their names and descriptions. The fns should contain the actual functions that can be called by the client.
+ * The function will listen for incoming MCP requests on standard input and respond accordingly.\
+ * \
+ * Example usage:\
+ * \
+ *      ow.server.mcpStdio({
+ * 			serverInfo: {
+ * 				name: "MyServer",
+ * 				title: "My Server",
+ * 				version: "1.0.0"
+ * 			},
+ * 			capabilities: {
+ * 				prompts: {
+ * 					listChanged: true
+ * 				},
+ * 				tools: {
+ * 					listChanged: true
+ * 				}
+ * 			}
+ * 		}, [{
+ *			name: "ping",
+ *			description: "Ping the server"
+ *		}, {
+ *			name: "get_user",
+ *			description: "Get user information",
+ *			input_schema: {
+ *				type: "object",
+ *				properties: {
+ *					userId: {
+ *						type: "string",
+ *						description: "The ID of the user to retrieve"
+ *					}
+ *				},
+ *				required: ["userId"]
+ *			}
+ *		}], {
+ *			ping: params => {
+ *				return "Pong! Server is running."
+ *			},
+ *			get_user: params => {
+ *				return {
+ *					name: "Alice",
+ *					userId: params.userId
+ *				}
+ *			}
+ *		})
+ * </odoc>
+ */
+OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
+    lgF = _$(lgF, "lgF").isFunction().default((t, m) => {
+        // io.writeLineNDJSON("log.ndjson", { type: t, data: m })
+    })
+
+    initData = _$(initData, "initData").isMap().default({})
+    _$(fnsMeta, "fnsMeta").isArray().$_()
+    _$(fns, "fns").isMap().$_()
+
+    initData = merge({
+        serverInfo: {
+            name: "OpenAF",
+            title: "OpenAF Server",
+            version: "1.0.0"
+        },
+        capabilities: {
+            prompts: {
+                listChanged: true
+            },
+            tools: {
+                listChanged: true
+            }
+        }
+    }, initData)
+
+    io.pipeLn(line => {
+        var _pline = jsonParse(line)
+        lgF("rcv", _pline)
+        var _res = ow.server.jsonRPC(_pline, {
+            initialize                 : () => initData,
+            "prompts/list"             : () => ({}),
+            "notifications/initialized": () => ({}),
+            "tools/call"               : params => {
+                if (isDef(params.name)) {
+                    const tool = fns[params.name]
+                    if (tool) {
+                        try {
+                            var result = tool(params.input || {})
+                            return { 
+                                content: [{
+                                    type: "text",
+                                    text: isString(result) ? result : stringify(result, __, "")
+                                }],
+                                isError: false
+                            }
+                        } catch (e) {
+                            return { 
+                                content: [{
+                                    type: "text",
+                                    text: "Error executing tool: " + e.message
+                                }],
+                                isError: true
+                            }
+                        }
+                    } else {
+                        return { content: [{
+                            type: "text",
+                            text: "Tool not found: " + params.name
+                        }], isError: true }
+                    }
+                }
+            },
+            "tools/list": () => ({ tools: fnsMeta })
+        })
+
+        lgF("snd", _res)
+        sprint(_res, "")
+    })
+}
+
+//-----------------------------------------------------------------------------------------------------
 // TELEMETRY
 //-----------------------------------------------------------------------------------------------------
 
