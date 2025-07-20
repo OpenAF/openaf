@@ -831,21 +831,6 @@ OpenWrap.server.prototype.rest = {
 
 		var fnD = r => {
 			if (returnHTML) {
-				//var res = ow.template.html.parseMap(r, true);
-				/*var _themeauto = ow.template.html.njsmapAutoTheme()
-				var code = "var out, _data=" + stringify(r,__,true) + ";"
-				if (__flags.MD_DARKMODE == "auto") {
-					code += "out = nJSMap(_data,void 0,window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);"
-				} else {
-					if (__flags.MD_DARKMODE == "true") {
-						code += "out = nJSMap(_data,void 0,true);"
-					} else {
-						code += "out = nJSMap(_data);"
-					}
-				}
-				code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
-
-				return String("<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>")*/
 				return String(ow.template.html.parseMapInHTML(r))
 			} else {
 				if (isString(r)) {
@@ -868,7 +853,7 @@ OpenWrap.server.prototype.rest = {
 			}
 			break;
 		case "POST":
-			if (isDef(aReq.files.content)) {
+			if (isDef(aReq.files) && isDef(aReq.files.content)) {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { }
 				if (returnWithParams) {
@@ -880,8 +865,10 @@ OpenWrap.server.prototype.rest = {
 					res.data = fnD(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq));
 				}
 			} else {
-				if (isDef(aReq.files.postData)) {
+				if (isDef(aReq.files) && isDef(aReq.files.postData)) {
 					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData), aReq);
+				} else if (isDef(aReq.data)) {
+					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.data), aReq)
 				} else {
 					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"]), aReq);
 				}
@@ -896,10 +883,12 @@ OpenWrap.server.prototype.rest = {
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
 			break;
 		case "PUT":
-			if (isDef(aReq.files.content)) {
+			if (isDef(aReq.files) && isDef(aReq.files.content)) {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { };
 				params = aSetFunc(idxs, ow.server.rest.parseQuery(fdata), aReq);
+			} else if (isDef(aReq.data)) {
+				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.data), aReq)
 			} else {
 				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData), aReq);
 			}
@@ -923,7 +912,7 @@ OpenWrap.server.prototype.rest = {
 			break;
 		}
 
-		if (isDef(anAuditFn) && isFunction(anAuditFn)) $do(() => { anAuditFn(aReq, res); });
+		if (isDef(anAuditFn) && isFunction(anAuditFn)) $do(() => { anAuditFn(aReq, res); })
 
 		return res;
 	},
@@ -992,6 +981,7 @@ OpenWrap.server.prototype.rest = {
 	 */
 	parseIndexes: function(aBaseURI, req) {
 		var baseURL = aBaseURI;
+		if (isUnDef(req.originalURI)) req.originalURI = String(req.uri)
 		var props = req.originalURI.replace(new RegExp("^" + baseURL + "/*\#*"), "").split("/");
 		var propsObj = {};
 
@@ -2868,8 +2858,16 @@ OpenWrap.server.prototype.httpd = {
 		if (isDef(aDefaultRoute)) this.__defaultRoutes[aPort] = aDefaultRoute;
 		if (isDef(aPreRouteFunc)) this.__preRoutes[aPort] = aPreRouteFunc;
 		
+		const cnvt2string = m => {
+			if (Object.keys(m).indexOf("bytes") >= 0) {
+				m.bdata = String((java.lang.String(m.bytes, "UTF-8")))
+				delete m.bytes
+			}
+		}
+
 		aHTTPd.add(aPath, function(req) {			
 			try {
+				if (aHTTPd.getImpl() == "java") cnvt2string(req)
 				var uri = req.uri.replace(new RegExp("^" + aP), "");
 				if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req, aHTTPd);
 				if (isFunction(parent.__routes[aPort][uri])) {
@@ -3236,7 +3234,9 @@ OpenWrap.server.prototype.httpd = {
 		if (aReq.method == "POST") {
 			try {
 				aParams = _$(aParams, "params").isMap().default($fnDef4Help(aFunctionName));
-				return ow.server.httpd.reply($fnM2A(af.eval(aFunctionName), aInstance, aParams, jsonParse(aReq.files.postData)));
+				var data = aReq.files && aReq.files.postData ? aReq.files.postData : __
+				data = aReq.data ? aReq.data : __
+				return ow.server.httpd.reply($fnM2A(af.eval(aFunctionName), aInstance, aParams, jsonParse(data)));
 			} catch(e) {
 				if (dontRetError) {
 					throw e;
@@ -3310,6 +3310,7 @@ OpenWrap.server.prototype.httpd = {
                 }, 400, "application/json", {})
             }
             var body = request.files && request.files.postData ? request.files.postData : __
+			body = request.data ? request.data : __
             if (!body) {
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({
@@ -3406,6 +3407,7 @@ OpenWrap.server.prototype.httpd = {
                 }, 400, "application/json", {})
             }
             var body = request.files && request.files.postData ? request.files.postData : __
+			body = request.data ? request.data : __
             if (!body) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({

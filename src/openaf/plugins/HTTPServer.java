@@ -76,6 +76,7 @@ public class HTTPServer extends ScriptableObject {
 	// Java implementation fields  
 	protected HttpServer javaHttpServer;
 	protected HttpsServer javaHttpsServer;
+	protected String impl;
 	protected boolean isSecure = false;
 	protected Map<String, HttpHandler> javaHandlers = new ConcurrentHashMap<>();
 	protected String defaultHandler = null;
@@ -363,12 +364,15 @@ public class HTTPServer extends ScriptableObject {
 		if ((keyStorePath != null && !keyStorePath.equals("undefined") && password != null && !(password instanceof Undefined)) ) {
 			USE_JAVA_HTTP_SERVER = false;
 			USE_NWU2 = true;
+			this.impl = "nwu2"; // Default to NWU2 if keyStorePath is provided
 		} else {
-			switch(DEFAULT_HTTP_SERVER) {
-			case "java": USE_JAVA_HTTP_SERVER = true; USE_NWU2 = false; break;
-			case "nwu" : USE_JAVA_HTTP_SERVER = false; USE_NWU2 = false; break;
-			case "nwu2": USE_JAVA_HTTP_SERVER = false; USE_NWU2 = true; break;
-			default    : USE_JAVA_HTTP_SERVER = false; USE_NWU2 = false; break;
+			String _impl = DEFAULT_HTTP_SERVER;
+			if (aImpl != null && aImpl instanceof String) _impl = (String) aImpl;
+			switch(_impl) {
+			case "java": this.impl = "java"; USE_JAVA_HTTP_SERVER = true; USE_NWU2 = false; break;
+			case "nwu" : this.impl = "nwu"; USE_JAVA_HTTP_SERVER = false; USE_NWU2 = false; break;
+			case "nwu2": this.impl = "nwu2"; USE_JAVA_HTTP_SERVER = false; USE_NWU2 = true; break;
+			default    : this.impl = "nwu2"; USE_JAVA_HTTP_SERVER = false; USE_NWU2 = false; break;
 			}
 		}
 
@@ -542,7 +546,7 @@ public class HTTPServer extends ScriptableObject {
 	public int getPort() {
 		return serverport;
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>HTTPd.stop()</key>
@@ -591,7 +595,7 @@ public class HTTPServer extends ScriptableObject {
 		if (USE_JAVA_HTTP_SERVER) {
 			// WebSocket support would require additional implementation
 			// Log a warning to inform users about the limitation
-			SimpleLog.log(logtype.WARNING, "WebSocket support is not implemented for the Java HTTP server. This operation will be ignored.");
+			SimpleLog.log(logtype.ERROR, "WebSocket support is not implemented for the Java HTTP server. This operation will be ignored.", null);
 		} else {
 			if (USE_NWU2) {
 				if (httpd2 != null) {
@@ -1285,7 +1289,7 @@ public class HTTPServer extends ScriptableObject {
 				try (OutputStream os = exchange.getResponseBody()) {
 					os.write(response.getBytes(StandardCharsets.UTF_8));
 				}
-				SimpleLog.log(logtype.ERROR, "Error handling request: " + e.getMessage());
+				SimpleLog.log(logtype.ERROR, "Error handling request: " + e.getMessage(), e);
 			}
 		}
 		
