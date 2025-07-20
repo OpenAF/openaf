@@ -21,9 +21,9 @@ package com.nwu2.util;
 import java.util.HashMap;
 
 /**
- * This is a simple cache implementation to hold objects between counter cycles
+ * This is a simple cache implementation to hold objects between counter cycles.
  * 
- * Copyright 2023 Nuno Aguiar
+ * Copyright 2023 Nuno Aguiar
  *
  */
 public class SimpleCache {
