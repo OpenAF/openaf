@@ -3911,20 +3911,15 @@ const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 	if (__flags.ALTERNATIVES.listFilesRecursive && getNumberOfCores() > 2) {
 		aFnErr = _$(aFnErr, "aFnErr").isFunction().default(printErr)
 		ow.loadObj()
-		var ret = new ow.obj.syncArray(), visited = new ow.obj.syncMap(), stack = new ow.obj.syncArray([ aPath ]), _ps = new ow.obj.syncArray()
+		var ret = new ow.obj.syncArray(), stack = $queue([ aPath ]), _ps = new ow.obj.syncArray()
 		var ini = $atomic(), end = $atomic()
 
 		var fn = () => {
 			try {
 				ini.inc()
-				if (stack.length() > 0) {
-					var currentPath
-					sync(() => {
-						var i = stack.length() - 1
-						currentPath = stack.get(i)
-						stack.remove(i)
-					}, stack)
-	
+				while(!stack.isEmpty()) {
+					var currentPath = stack.poll()
+
 					var files = io.listFiles(currentPath, usePosix)
 					var _ret  = new Set()
 		
@@ -3932,10 +3927,9 @@ const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 						for (var file of files.files) {
 							file.path = currentPath
 							_ret.add(file)
-							if (file.isDirectory && !visited.containsKey(file.filepath)) {
+							if (file.isDirectory) {
 								stack.add(file.filepath)
-								visited.put(file.filepath, true)
-								_ps.add($do(fn))
+								_ps.add($doV(fn))
 							}
 						}
 					}
@@ -3947,11 +3941,17 @@ const listFilesRecursive = function(aPath, usePosix, aFnErr) {
 			} finally {
 				end.inc()
 			}
+
+			return true
 		}
 
-		_ps.add($do(fn))
+		_ps.add($doV(fn))
 		do {
-			$doWait($doAll(_ps.toArray()))
+			try {
+				$doWait($doAll(_ps.toArray()))
+			} catch(ee) {
+				$err(ee)
+			}
 		} while(ini.get() > end.get())
 
 		return ret.toArray()
@@ -8129,6 +8129,157 @@ const $rest = function(ops) {
 
 	return new _rest(ops);
 };
+
+/**
+ * <odoc>
+ * <key>$jsonrpc(aOptions) : Map</key>
+ * Creates a JSON-RPC client that can be used to communicate with a JSON-RPC server
+ * or a local process using stdio. The aOptions parameter is a map with the following
+ * possible keys: type (string, default "stdio" for local process or "remote" for remote server),
+ * url (string, required for remote server), timeout (number, default 60000 ms
+ * for remote server), cmd (string, required for local process),
+ * and options (map, optional additional options for remote server).
+ * The returned map has the following methods: type (to set the type),
+ * url (to set the URL for remote server), sh (to set the command for local
+ * process), exec (to execute a method with parameters),
+ * and destroy (to stop the client). The exec method returns a promise that resolves
+ * to the result of the method call or an error if the call fails.
+ * Example usage:\
+ * \
+ * var client = $jsonrpc({type: "remote", url: "http://example.com/api", timeout: 5000});\
+ * client.exec("methodName", {param1: "value1", param2: "value2"}).then(result => {\
+ *     log("Result:", result);\
+ * }).catch(error => {\
+ *     logErr("Error:", error);\
+ * });\
+ * \
+ * var localClient = $jsonrpc({type: "stdio", cmd: "myLocalProcess"});\
+ * localClient.exec("localMethod", {param1: "value1"}).then(result => {\
+ *     log("Local Result:", result);\
+ * }).catch(error => {\
+ *     logErr("Local Error:", error);\
+ * });\
+ * </odoc>
+ */
+const $jsonrpc = function(aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
+	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+
+	const _r = {
+		_ids: $atomic(1, "long"),
+		_p  : __,
+		_s  : false,
+		_q  : {},
+		_r  : {},
+		type: type => {
+			aOptions.type = type
+			return _r
+		},
+		url : url => {
+			aOptions.url = url
+			aOptions.type = "remote"
+			return _r
+		},
+		sh  : cmd => {
+			aOptions.cmd = cmd
+			aOptions.type = "stdio"
+			_r._p = $doV(() => {
+				$tb(() => {
+					_r._s = false
+					$sh(cmd)
+					.cb((o, e, i) => {
+						$doWait($doAll(
+							[
+								// in stream
+								$do(() => {
+									do {
+										var _id = _r._ids.get()
+										$await("__jsonrpc_q-" + _id).wait()
+										if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
+											var msg = stringify({
+												jsonrpc: "2.0",
+												id: _id,
+												method: _r._q[_id].method,
+												params: _r._q[_id].params
+											}, __, "") + "\n"
+											ioStreamWrite(i, msg)
+                                            i.flush()
+											delete _r._q[_id]
+											_r._ids.inc()
+										}
+										$await("__jsonrpc_q-" + _id).destroy()
+										$await("__jsonrpc_r-" + _id).notify()
+									} while(!_r._s)
+								}),
+								// out stream
+								$do(() => {
+									do {
+										var _id = _r._ids.get()
+										$await("__jsonrpc_r-" + _id).wait()
+										ioStreamReadLines(o, line => {
+											var _l = jsonParse(line)
+											_r._r[_l.id] = _l
+											$await("__jsonrpc_a-" + _l.id).notify()
+											$await("__jsonrpc_r-" + _id).destroy()
+											return false
+										}, __, false)
+                                        o.flush()
+									} while(!_r._s)
+								})
+							]
+						))
+					})
+					.get()
+				}).stopWhen(() => _r._s).exec()
+			})
+			return _r
+		},
+		exec: (aMethod, aParams) => {
+			switch(aOptions.type) {
+			case "stdio" :
+				var _id = _r._ids.get()
+				_r._q[_id] = {
+					method: _$(aMethod, "aMethod").isString().$_(),
+					params: _$(aParams, "aParams").isMap().default({})
+				}
+				$await("__jsonrpc_q-" + _id).notifyAll()
+				$await("__jsonrpc_a-" + _id).wait(aOptions.timeout)
+				var _res
+				if (isMap(_r._r[_id])) {
+					_res = _r._r[_id]
+					delete _r._r[_id]
+				}
+				$await("__jsonrpc_a-" + _id).destroy()
+				return isDef(_res) && isDef(_res.result) ? _res.result : _res
+			case "remote":
+			default      :
+				_$(aOptions.url, "aOptions.url").isString().$_()
+				aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
+				aMethod = _$(aMethod, "aMethod").isString().$_()
+				aParams = _$(aParams, "aParams").isMap().default({})
+
+				var res = $rest(aOptions.options).post(aOptions.url, {
+					jsonrpc: "2.0",
+					method: aMethod,
+					params: aParams,
+					id: aOptions.id || _r._ids.inc()
+				})
+				if (isDef(res)) {
+					if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
+					if (isDef(res.result)) return res.result
+				}
+			}
+		},
+		destroy: () => {
+            _r._s = true
+			if (isDef(_r._p)) {
+				$doWait(_r._p)
+			}
+		}
+	}
+	return _r
+}
  
 /**
  * <odoc>
@@ -8672,6 +8823,41 @@ function $sync() {
 	return {
 		run: fnS
 	}
+}
+
+/**
+ * <odoc>
+ * <key>$queue(anArray) : Object</key>
+ * Returns an object with the following methods:\
+ * - add(aItem) : adds aItem to the queue and returns true if successful\
+ * - remove(aItem) : removes aItem from the queue and returns true if successful\
+ * - addAll(aItems) : adds all aItems to the queue and returns true if successful\
+ * - has(aItem) : returns true if aItem is in the queue\
+ * - isEmpty() : returns true if the queue is empty\
+ * - size() : returns the size of the queue\
+ * - toArray() : returns the queue as an array\
+ * - peek() : returns the first item in the queue without removing it\
+ * - poll() : returns the first item in the queue and removes it\
+ * 
+ * The queue is implemented using a java.util.concurrent.ConcurrentLinkedQueue, which is thread-safe and allows concurrent access.\
+ * If anArray is provided, it will be added to the queue using addAll.
+ * </odoc>
+ */
+const $queue = function(anArray) {
+	var _r = {
+		_q    : new java.util.concurrent.ConcurrentLinkedQueue(),
+		add   : aItem => Boolean(_r._q.add(aItem)),
+		remove: aItem => Boolean(_r._q.remove(aItem)),
+		addAll: aItems => Boolean(_r._q.addAll(aItems)),
+		has   : aItem => Boolean(_r._q.contains(aItem)),
+		isEmpty: () => Boolean(_r._q.isEmpty()),
+		size  : () => Number(_r._q.size()),
+		toArray: () => af.fromJavaArray(_r._q.toArray()),
+		peek  : () => _r._q.peek(),
+		poll  : () => _r._q.poll()
+	}
+	if (isArray(anArray)) _r.addAll(anArray)
+	return _r
 }
 
 /**
