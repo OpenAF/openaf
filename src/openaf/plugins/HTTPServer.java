@@ -370,7 +370,6 @@ public class HTTPServer extends ScriptableObject {
 			case "nwu2": USE_JAVA_HTTP_SERVER = false; USE_NWU2 = true; break;
 			default    : USE_JAVA_HTTP_SERVER = false; USE_NWU2 = false; break;
 			}
-			USE_JAVA_HTTP_SERVER = DEFAULT_HTTP_SERVER.equals("java");
 		}
 
 		serverport = port;
