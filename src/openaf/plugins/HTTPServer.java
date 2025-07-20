@@ -1285,7 +1285,7 @@ public class HTTPServer extends ScriptableObject {
 				try (OutputStream os = exchange.getResponseBody()) {
 					os.write(response.getBytes(StandardCharsets.UTF_8));
 				}
-				System.err.println("Error handling request: " + e.getMessage());
+				SimpleLog.log(logtype.ERROR, "Error handling request: " + e.getMessage());
 			}
 		}
 		
