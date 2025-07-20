@@ -590,8 +590,8 @@ public class HTTPServer extends ScriptableObject {
 	public void addWS(String uri) {
 		if (USE_JAVA_HTTP_SERVER) {
 			// WebSocket support would require additional implementation
-			// For now, throw an exception indicating it's not supported
-			throw new UnsupportedOperationException("WebSocket support not implemented for Java HTTP server");
+			// Log a warning to inform users about the limitation
+			SimpleLog.log(logtype.WARNING, "WebSocket support is not implemented for the Java HTTP server. This operation will be ignored.");
 		} else {
 			if (USE_NWU2) {
 				if (httpd2 != null) {
