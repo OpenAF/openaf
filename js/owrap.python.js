@@ -173,7 +173,7 @@ OpenWrap.python.prototype.startServer = function(aPort, aSendPort, aFn, isAlone)
 				plugin("Threads");
 				this.__t = new Threads();
 				var parent = this;
-				this.__t.addSingleThread(function() {
+				this.__t.addVirtualThread(function() {
 					$sh([parent.python, "-c", s]).dontWait(false).get(0);
 					return 1;
 				});

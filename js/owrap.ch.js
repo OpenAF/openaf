@@ -582,7 +582,7 @@ OpenWrap.ch.prototype.__types = {
 					this.__cache[aName].Ch.shift();
 				}
 				var parent = this;
-				$do(() => {
+				$doV(() => {
 					parent.getKeys(aName, true).forEach(v => {
 						try {
 							if (v.____t <= (nowUTC() - parent.__cache[aName].TTL)) 
@@ -699,7 +699,7 @@ OpenWrap.ch.prototype.__types = {
 						//aVv = this.__cache[aName].Ch.get(eK);
 					}
 					if (isDef(this.__cache[aName].UseDefault)) {
-						$do( () => _fnProc() )
+						$doV( () => _fnProc() )
 						aVv = this.__cache[aName].UseDefault ? this.__cache[aName].Default : this.__cache[aName].Ch.get(ee)
 					} else {
 						_fnProc()
@@ -720,7 +720,7 @@ OpenWrap.ch.prototype.__types = {
 					if (this.__cache[aName].Method == "p") this.__refresh(aName)
 				}
 				if (isDef(this.__cache[aName].UseDefault) && this.__cache[aName].UseDefault) {
-					$do( () => _fnProc() )
+					$doV( () => _fnProc() )
 					aVv = this.__cache[aName].Default
 				} else {
 					_fnProc()
@@ -2907,7 +2907,7 @@ OpenWrap.ch.prototype.__types = {
 				var res = $atomic(0);
 				
 				lst.forEach(c => {
-					arr.push($do( () => {
+					arr.push($doV( () => {
 						var _o = this.__r(aName, c, "size");
 						if (isDef(_o)) res.getAdd(_o);
 					}));
@@ -2919,7 +2919,7 @@ OpenWrap.ch.prototype.__types = {
 				var res;
 
 				lst.forEach(c => {
-					arr.push($do( () => {
+					arr.push($doV( () => {
 						if (isUnDef(res)) {
 							var _o = this.__r(aName, c, "size");
 							if (isDef(_o)) res = _o;
@@ -2941,7 +2941,7 @@ OpenWrap.ch.prototype.__types = {
 			
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
-				arr.push($do( () => {
+				arr.push($doV( () => {
 					var _o = parent.__r(aName, c, "get", [ parent.__o[aName].fnTrans(aK) ]);
 					if (isDef(_o)) res.add(_o);
 					return 1;
@@ -2958,7 +2958,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
-				arr.push($do( () => this.__r(aName, c, "forEach", [ aFunction ]) ));
+				arr.push($doV( () => this.__r(aName, c, "forEach", [ aFunction ]) ));
 			});
 	
 			$doWait($doAll(arr));
@@ -2972,7 +2972,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
-				arr.push($do( () => {
+				arr.push($doV( () => {
 					res.addAll( this.__r(aName, c, "getAll", [ full ]) );
 				}));
 			});
@@ -2988,7 +2988,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
-				arr.push($do( () => {
+				arr.push($doV( () => {
 					res.addAll( this.__r(aName, c, "getKeys", [ full ]) );
 				}));
 			});
@@ -3003,7 +3003,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
-				arr.push($do( () => {
+				arr.push($doV( () => {
 					res.addAll( this.__r(aName, c, "getSortedKeys", [ full ]) );
 				}));
 			});
@@ -3019,7 +3019,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
-				arr.push($do( () => {
+				arr.push($doV( () => {
 					res.add( this.__r(aName, c, "getSet", [ aMatch, this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
 				}));
 			});
@@ -3034,7 +3034,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
-				arr.push($do( () => {
+				arr.push($doV( () => {
 					res.add( this.__r(aName, c, "set", [ this.__o[aName].fnTrans(aK), aV, aTimestamp ]) );
 				}));
 			});
@@ -3053,7 +3053,7 @@ OpenWrap.ch.prototype.__types = {
 				var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 				if (!isArray(lst)) lst = [ lst ];
 				var naKs = aKs.map(this.__o[aName].fnTrans);
-				lst.forEach(c => arr.push($do( () => this.__r(aName, c, "setAll", [ naKs, aVs, aTimestamp ]) )) );
+				lst.forEach(c => arr.push($doV( () => this.__r(aName, c, "setAll", [ naKs, aVs, aTimestamp ]) )) );
 	
 				$doWait($doAll(arr));
 			}
@@ -3071,7 +3071,7 @@ OpenWrap.ch.prototype.__types = {
 				if (!isArray(lst)) lst = [ lst ];
 				var naKs = aKs.map(this.__o[aName].fnTrans);
 				lst.forEach(c => {
-					arr.push($do( () => {
+					arr.push($doV( () => {
 						res.add( this.__r(aName, c, "unsetAll", [ naKs, aVs, aTimestamp ]) );
 					}));
 				});
@@ -3101,7 +3101,7 @@ OpenWrap.ch.prototype.__types = {
 			var lst = (isDef(_lst) ? _lst : this.__o[aName].chs);
 			if (!isArray(lst)) lst = [ lst ];
 			lst.forEach(c => {
-				arr.push($do( () => {
+				arr.push($doV( () => {
 					res.add( this.__r(aName, c, "unset", [ this.__o[aName].fnTrans(aK), aTimestamp ]) );
 				}));
 			});
@@ -3315,7 +3315,7 @@ OpenWrap.ch.prototype.subscribe = function(aName, aFunction, onlyFromNow, anId) 
 			var aValue = parent.get(aName, aKey);
 			var uuid = genUUID();
 			if (isUnDef(parent.jobs[aName][anId])) {
-				parent.jobs[aName][anId] = $do(function() {
+				parent.jobs[aName][anId] = $doV(function() {
 					try {
 						aFunction(aName, "set", aKey, aValue, parent, uuid);
 					} catch(e) {}
@@ -3501,7 +3501,7 @@ OpenWrap.ch.prototype.set = function(aName, aKey, aValue, aTimestamp, aUUID, x) 
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+				parent.jobs[aName][_i] = $doV(f(_i)).catch((e) => { 
 					ow.ch.__errorHandle({ 
 						chName: aName,
 						op: "set",
@@ -3579,7 +3579,7 @@ OpenWrap.ch.prototype.setAll = function(aName, anArrayOfKeys, anArrayOfMapData, 
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+				parent.jobs[aName][_i] = $doV(f(_i)).catch((e) => { 
 					ow.ch.__errorHandle({ 
 						chName: aName,
 						op: "set",
@@ -3647,7 +3647,7 @@ OpenWrap.ch.prototype.unsetAll = function(aName, anArrayOfKeys, anArrayOfMapData
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+				parent.jobs[aName][_i] = $doV(f(_i)).catch((e) => { 
 					ow.ch.__errorHandle({ 
 						chName: aName,
 						op: "unset",
@@ -3769,7 +3769,7 @@ OpenWrap.ch.prototype.getSet = function(aName, aMatch, aKey, aValue, aTimestamp,
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+				parent.jobs[aName][_i] = $doV(f(_i)).catch((e) => { 
 					ow.ch.__errorHandle({ 
 						chName: aName,
 						op: "set",
@@ -3869,7 +3869,7 @@ OpenWrap.ch.prototype.unset = function(aName, aKey, aTimestamp, aUUID, x) {
 						return ii;
 					};
 				};
-				parent.jobs[aName][_i] = $do(f(_i)).catch((e) => { 
+				parent.jobs[aName][_i] = $doV(f(_i)).catch((e) => { 
 					ow.ch.__errorHandle({ 
 						chName: aName,
 						op: "set",
@@ -4794,7 +4794,7 @@ OpenWrap.ch.prototype.comms = {
 						}).get(aURL, { "o": "k" });
 						shouldReset(res);
 					}, aURL);
-					if (res.r.length > 0) $do(() => { $ch(na).setAll(Object.keys(resk.r[0]), res.r); });
+					if (res.r.length > 0) $doV(() => { $ch(na).setAll(Object.keys(resk.r[0]), res.r); });
 				}
 			} catch(e) {
 				recordError(op, t, ak, v, e);

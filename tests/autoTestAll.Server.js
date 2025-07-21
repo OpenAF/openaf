@@ -1,9 +1,9 @@
 // Copyright 2023 Nuno Aguiar
 
 (function() {
-    exports.testRESTServer = function() {
+    function _testRestServer(aImpl) {
         var port = findRandomOpenPort();
-        var hs = ow.loadServer().httpd.start(port);
+        var hs = ow.loadServer().httpd.start(port, __, __, __, __, __, __, aImpl);
         var myData = [];
     
         ow.loadObj();
@@ -17,24 +17,33 @@
         ow.obj.rest.jsonCreate("http://127.0.0.1:" + port + "/rest", {k:2}, { k: 2, v: 456 });
         ow.obj.rest.jsonCreate("http://127.0.0.1:" + port + "/rest", {k:3}, { k: 3, v: 789 });
     
-        ow.test.assert(myData, [{k:1, v:123},{k:2, v:456},{k:3, v:789}], "Problem with rest record creation (POST).");
-        ow.test.assert(ow.obj.rest.jsonGet("http://127.0.0.1:" + port + "/rest", { k: 2 }), {k:2, v:456}, "Problem with rest record get (GET).");
-    
-        ow.obj.rest.jsonSet("http://127.0.0.1:" + port + "/rest", { k: 2 }, { k: 2, v: 666});
-        ow.test.assert($from(myData).equals("k", 2).first().v, 666, "Problem with rest record set (PUT).");
-    
-        ow.obj.rest.jsonRemove("http://127.0.0.1:" + port + "/rest", { k: 2});
-        ow.test.assert($from(myData).equals("k", 2).none(), true, "Problem with rest record remove (DELETE).");
-    
-        ow.server.httpd.stop(hs);
-    };
+        ow.test.assert(myData, [{k:1, v:123},{k:2, v:456},{k:3, v:789}], `(${aImpl}) Problem with rest record creation (POST).`);
+        ow.test.assert(ow.obj.rest.jsonGet("http://127.0.0.1:" + port + "/rest", { k: 2 }), {k:2, v:456}, `(${aImpl}) Problem with rest record get (GET).`);
 
-    exports.testRESTServer2 = function() {
+        ow.obj.rest.jsonSet("http://127.0.0.1:" + port + "/rest", { k: 2 }, { k: 2, v: 666});
+        ow.test.assert($from(myData).equals("k", 2).first().v, 666, `(${aImpl}) Problem with rest record set (PUT).`);
+
+        ow.obj.rest.jsonRemove("http://127.0.0.1:" + port + "/rest", { k: 2});
+        ow.test.assert($from(myData).equals("k", 2).none(), true, `(${aImpl}) Problem with rest record remove (DELETE).`);
+
+        ow.server.httpd.stop(hs);
+    }
+    exports.testRESTServer = function() {
+        _testRestServer("nwu")
+    }
+    exports.testRESTServerJava = function() {
+        _testRestServer("java")
+    }
+    exports.testRESTServerNWU2 = function() {
+        _testRestServer("nwu2")
+    }
+
+    function _testRestServer2(aImpl) {
         ow.loadServer();
         ow.loadObj();
 
         var port = findRandomOpenPort();
-        var hs = ow.loadServer().httpd.start(port);
+        var hs = ow.loadServer().httpd.start(port, __, __, __, __, __, __, aImpl)
 
         var met = "";
         var res = {};
@@ -80,7 +89,16 @@
         ow.test.assert(rr, { i: 1 }, "Problem with REST server return data on DELETE");
 
         ow.server.httpd.stop(hs);
-    };
+    }
+    exports.testRESTServer2 = function() {
+        _testRestServer2("nwu")
+    }
+    exports.testRESTServer2Java = function() {
+        _testRestServer2("java")
+    }
+    exports.testRESTServer2NWU2 = function() {
+        _testRestServer2("nwu2")
+    }
 
     exports.testAuth = function() {
         ow.loadServer();
@@ -220,67 +238,82 @@
         l.clear("test");
     };
 
-    exports.testHTTPServer = function() {
+    function _testHTTPServer(aImpl) {
         ow.loadServer();
-        var hs1 = ow.server.httpd.start(18081);
-        var hs2 = ow.server.httpd.start(18082);
+
+        var port1 = findRandomOpenPort()
+        var port2 = findRandomOpenPort()
+
+        var hs1 = ow.server.httpd.start(port1, "127.0.0.1", __, __, __, __, __, aImpl)
+        var hs2 = ow.server.httpd.start(port2, "127.0.0.1", __, __, __, __, __, aImpl)
     
-        ow.loadObj();
-        var h = new ow.obj.http();
-        var test = false;
         try {
-            h.get("http://127.0.0.1:18081");
+            ow.loadObj();
+            var h = new ow.obj.http();
+            var test = false;
+            try {
+                h.get("http://127.0.0.1:" + port1 + "");
+                test = false;
+            } catch(e) {
+                if (h.responseCode() == 401) test = true;
+            }
+
+            ow.test.assert(test, true, "Unexpected reply from server 1 without routes");
+
+            ow.server.httpd.route(hs1, 
+                { "/normal": function(req) { return hs1.replyOKText("normal 1"); } }, 
+                function(req) { return hs1.replyOKText("I am 1"); });
+            ow.server.httpd.route(hs2, 
+                { "/normal": function(req) { return hs1.replyOKText("normal 2"); } }, 
+                function(req) { return hs1.replyOKText("I am 2"); });
+        
+            plugin("HTTP");
+            ow.test.assert(
+                (new HTTP()).get("http://127.0.0.1:" + port1 + "").response,
+                "I am 1",
+                "Problem with server 1 on default response"
+            );
+            ow.test.assert(
+                (new HTTP()).get("http://127.0.0.1:" + port2 + "").response,
+                "I am 2",
+                "Problem with server 2 on default response"
+            );
+            ow.test.assert(
+                (new HTTP()).get("http://127.0.0.1:" + port1 + "/normal").response,
+                "normal 1",
+                "Problem with server 1 on /normal response"
+            );
+            ow.test.assert(
+                (new HTTP()).get("http://127.0.0.1:" + port2 + "/normal").response,
+                "normal 2",
+                "Problem with server 2 on /normal response"
+            );
+        
+            ow.server.httpd.resetRoutes(hs1);
+            h = new ow.obj.http();
             test = false;
-        } catch(e) {
-            if (h.responseCode() == 401) test = true;
+            try {
+                h.get("http://127.0.0.1:" + port1 + "");
+                test = false;
+            } catch(e) {
+                if (h.responseCode() == 401) test = true;
+            }
+
+            ow.test.assert(test, true, "Unexpected reply from server 1 after routes reset");
+        } finally {
+            ow.server.httpd.stop(hs1)
+            ow.server.httpd.stop(hs2)
         }
-
-        ow.test.assert(test, true, "Unexpected reply from server 1 without routes");
-
-        ow.server.httpd.route(hs1, 
-            { "/normal": function(req) { return hs1.replyOKText("normal 1"); } }, 
-            function(req) { return hs1.replyOKText("I am 1"); });
-        ow.server.httpd.route(hs2, 
-            { "/normal": function(req) { return hs1.replyOKText("normal 2"); } }, 
-            function(req) { return hs1.replyOKText("I am 2"); });
-    
-        plugin("HTTP");
-        ow.test.assert(
-            (new HTTP()).get("http://127.0.0.1:18081").response,
-            "I am 1",
-            "Problem with server 1 on default response"
-        );
-        ow.test.assert(
-            (new HTTP()).get("http://127.0.0.1:18082").response,
-            "I am 2",
-            "Problem with server 2 on default response"
-        );
-        ow.test.assert(
-            (new HTTP()).get("http://127.0.0.1:18081/normal").response,
-            "normal 1",
-            "Problem with server 1 on /normal response"
-        );
-        ow.test.assert(
-            (new HTTP()).get("http://127.0.0.1:18082/normal").response,
-            "normal 2",
-            "Problem with server 2 on /normal response"
-        );
-    
-        ow.server.httpd.resetRoutes(hs1);
-        h = new ow.obj.http();
-        test = false;
-        try {
-            h.get("http://127.0.0.1:18081");
-            test = false;
-        } catch(e) {
-            if (h.responseCode() == 401) test = true;
-        }
-
-        ow.test.assert(test, true, "Unexpected reply from server 1 after routes reset");
-
-        ow.server.httpd.stop(hs1);
-        ow.server.httpd.stop(hs2);
-    };
+    }
+    exports.testHTTPServer = function() {
+        _testHTTPServer("nwu")
+    }
+    exports.testHTTPServerJava = function() {
+        _testHTTPServer("java")
+    }
+    exports.testHTTPServerNWU2 = function() {
+        _testHTTPServer("nwu2")
+    }
 
     exports.testQueue = function() {
         ow.loadServer();

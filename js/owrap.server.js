@@ -96,12 +96,13 @@ OpenWrap.server.prototype.processArguments = function(aRouterFunction, aMainSepa
  * </odoc>
  */
 OpenWrap.server.prototype.daemon = function(aTimePeriod, aPeriodicFunction) {
-	if (isUndefined(aTimePeriod)) aTimePeriod = 5000;
-	var shouldStop = false;
+	if (isUnDef(aTimePeriod)) aTimePeriod = 5000
+	var shouldStop = false
 	
 	while(!shouldStop) {
-		if (isDefined(aPeriodicFunction)) shouldStop = aPeriodicFunction();
-		if (!shouldStop) sleep(aTimePeriod, true);
+		if (isDef(aPeriodicFunction)) shouldStop = aPeriodicFunction()
+		java.lang.Thread.onSpinWait()
+		if (!shouldStop) sleep(aTimePeriod, true)
 	}
 }
 
@@ -830,21 +831,6 @@ OpenWrap.server.prototype.rest = {
 
 		var fnD = r => {
 			if (returnHTML) {
-				//var res = ow.template.html.parseMap(r, true);
-				/*var _themeauto = ow.template.html.njsmapAutoTheme()
-				var code = "var out, _data=" + stringify(r,__,true) + ";"
-				if (__flags.MD_DARKMODE == "auto") {
-					code += "out = nJSMap(_data,void 0,window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);"
-				} else {
-					if (__flags.MD_DARKMODE == "true") {
-						code += "out = nJSMap(_data,void 0,true);"
-					} else {
-						code += "out = nJSMap(_data);"
-					}
-				}
-				code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
-
-				return String("<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>")*/
 				return String(ow.template.html.parseMapInHTML(r))
 			} else {
 				if (isString(r)) {
@@ -867,7 +853,7 @@ OpenWrap.server.prototype.rest = {
 			}
 			break;
 		case "POST":
-			if (isDef(aReq.files.content)) {
+			if (isDef(aReq.files) && isDef(aReq.files.content)) {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { }
 				if (returnWithParams) {
@@ -879,8 +865,10 @@ OpenWrap.server.prototype.rest = {
 					res.data = fnD(aCreateFunc(idxs, ow.server.rest.parseQuery(fdata), aReq));
 				}
 			} else {
-				if (isDef(aReq.files.postData)) {
+				if (isDef(aReq.files) && isDef(aReq.files.postData)) {
 					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData), aReq);
+				} else if (isDef(aReq.data)) {
+					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.data), aReq)
 				} else {
 					params = aCreateFunc(idxs, ow.server.rest.parseQuery(aReq.params["NanoHttpd.QUERY_STRING"]), aReq);
 				}
@@ -895,10 +883,12 @@ OpenWrap.server.prototype.rest = {
 			res.headers["Location"] = ow.server.rest.writeIndexes(res.data);
 			break;
 		case "PUT":
-			if (isDef(aReq.files.content)) {
+			if (isDef(aReq.files) && isDef(aReq.files.content)) {
 				var fdata = "";
 				try { fdata = io.readFileString(aReq.files.content); } catch(e) { };
 				params = aSetFunc(idxs, ow.server.rest.parseQuery(fdata), aReq);
+			} else if (isDef(aReq.data)) {
+				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.data), aReq)
 			} else {
 				params = aSetFunc(idxs, ow.server.rest.parseQuery(aReq.files.postData), aReq);
 			}
@@ -922,7 +912,7 @@ OpenWrap.server.prototype.rest = {
 			break;
 		}
 
-		if (isDef(anAuditFn) && isFunction(anAuditFn)) $do(() => { anAuditFn(aReq, res); });
+		if (isDef(anAuditFn) && isFunction(anAuditFn)) $do(() => { anAuditFn(aReq, res); })
 
 		return res;
 	},
@@ -991,6 +981,7 @@ OpenWrap.server.prototype.rest = {
 	 */
 	parseIndexes: function(aBaseURI, req) {
 		var baseURL = aBaseURI;
+		if (isUnDef(req.originalURI)) req.originalURI = String(req.uri)
 		var props = req.originalURI.replace(new RegExp("^" + baseURL + "/*\#*"), "").split("/");
 		var propsObj = {};
 
@@ -1649,6 +1640,182 @@ OpenWrap.server.prototype.queue.prototype.purge = function() {
     }
     if (ar.length > 0) $ch(this.name).unsetAll(Object.keys(ar[0]), ar);
 };
+
+//-----------------------------------------------------------------------------------------------------
+// JSONRPC
+//-----------------------------------------------------------------------------------------------------
+
+/**
+ * <odoc>
+ * <key>ow.server.jsonRPC(data, mapOfFns) : Map</key>
+ * Processes a JSON-RPC request (data) using the provided mapOfFns where each key is the method name and the value is the function to be executed.
+ * The data should be a map with the following entries: jsonrpc (should be "2.0"), method (the method name to be executed), params (optional, the parameters to be passed to the method) and id (optional, the request id).
+ * Returns a map with the following entries: jsonrpc (should be "2.0"), id (the request id), result (the result of the method execution) or error (if the method is unknown or if the request is invalid).
+ * </odoc>
+ */
+OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
+	// Validate the input parameters
+    if (isMap(data)) {
+		// Check if the required fields are present
+        if (isDef(data.jsonrpc)) {
+            const fn = mapOfFns[data.method]
+            const id = data.id
+            const params = data.params || {}
+
+			// If the method is defined in the mapOfFns, execute it and return the result
+			// Otherwise, return an error indicating that the method is unknown
+            if (fn) {
+                var _res = fn(params)
+                return {
+                    jsonrpc: "2.0",
+                    id: id,
+                    result: _res
+                }
+            } else {
+                return {
+                    jsonrpc: "2.0",
+                    id: id,
+                    error: "Unknown method: " + data.method
+                }
+            }
+        } else {
+            return {
+                jsonrpc: "2.0",
+                id: null,
+                error: "Invalid JSON-RPC request"
+            }
+        }
+    } else {
+        return {
+            jsonrpc: "2.0",
+            id: null,
+            error: "Invalid JSON-RPC request format"
+        }
+    }
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.mcpStdio(initData, fnsMeta, fns, lgF)</key>
+ * Processes a MCP (Model Context Protocol) request using standard input/output. The initData is a map with initial data to be sent to the client, fnsMeta is an array of function metadata and fns is a map of functions to be executed.
+ * The lgF is a function that will be used to log messages. If not provided, it will default to a function that writes logs to a file named "log.ndjson".
+ * The initData should contain the server information and capabilities. The fnsMeta should contain metadata about the functions available, such as their names and descriptions. The fns should contain the actual functions that can be called by the client.
+ * The function will listen for incoming MCP requests on standard input and respond accordingly.\
+ * \
+ * Example usage:\
+ * \
+ *      ow.server.mcpStdio({
+ * 			serverInfo: {
+ * 				name: "MyServer",
+ * 				title: "My Server",
+ * 				version: "1.0.0"
+ * 			},
+ * 			capabilities: {
+ * 				prompts: {
+ * 					listChanged: true
+ * 				},
+ * 				tools: {
+ * 					listChanged: true
+ * 				}
+ * 			}
+ * 		}, [{
+ *			name: "ping",
+ *			description: "Ping the server"
+ *		}, {
+ *			name: "get_user",
+ *			description: "Get user information",
+ *			input_schema: {
+ *				type: "object",
+ *				properties: {
+ *					userId: {
+ *						type: "string",
+ *						description: "The ID of the user to retrieve"
+ *					}
+ *				},
+ *				required: ["userId"]
+ *			}
+ *		}], {
+ *			ping: params => {
+ *				return "Pong! Server is running."
+ *			},
+ *			get_user: params => {
+ *				return {
+ *					name: "Alice",
+ *					userId: params.userId
+ *				}
+ *			}
+ *		})
+ * </odoc>
+ */
+OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
+    lgF = _$(lgF, "lgF").isFunction().default((t, m) => {
+        // io.writeLineNDJSON("log.ndjson", { type: t, data: m })
+    })
+
+    initData = _$(initData, "initData").isMap().default({})
+    _$(fnsMeta, "fnsMeta").isArray().$_()
+    _$(fns, "fns").isMap().$_()
+
+    initData = merge({
+        serverInfo: {
+            name: "OpenAF",
+            title: "OpenAF Server",
+            version: "1.0.0"
+        },
+        capabilities: {
+            prompts: {
+                listChanged: true
+            },
+            tools: {
+                listChanged: true
+            }
+        }
+    }, initData)
+
+    io.pipeLn(line => {
+        var _pline = jsonParse(line)
+        lgF("rcv", _pline)
+        var _res = ow.server.jsonRPC(_pline, {
+            initialize                 : () => initData,
+            "prompts/list"             : () => ({}),
+            "notifications/initialized": () => ({}),
+            "tools/call"               : params => {
+                if (isDef(params.name)) {
+                    const tool = fns[params.name]
+                    if (tool) {
+                        try {
+                            var result = tool(params.input || {})
+                            return { 
+                                content: [{
+                                    type: "text",
+                                    text: isString(result) ? result : stringify(result, __, "")
+                                }],
+                                isError: false
+                            }
+                        } catch (e) {
+                            return { 
+                                content: [{
+                                    type: "text",
+                                    text: "Error executing tool: " + e.message
+                                }],
+                                isError: true
+                            }
+                        }
+                    } else {
+                        return { content: [{
+                            type: "text",
+                            text: "Tool not found: " + params.name
+                        }], isError: true }
+                    }
+                }
+            },
+            "tools/list": () => ({ tools: fnsMeta })
+        })
+
+        lgF("snd", _res)
+        sprint(_res, "")
+    })
+}
 
 //-----------------------------------------------------------------------------------------------------
 // TELEMETRY
@@ -2509,9 +2676,15 @@ OpenWrap.server.prototype.httpd = {
 
 	/**
 	 * <odoc>
-	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout) : Object</key>
+	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout, aImpl) : Object</key>
 	 * Will prepare a HTTP server to be used returning a HTTPServer object. Optionally you can provide 
-	 * aPort where you want the HTTP server to run. Otherwise a free port will be assigned.
+	 * aPort where you want the HTTP server to run. Otherwise a free port will be assigned. Optionally you can provide a different
+	 * aImpl (implementation) for the HTTP server. If aHost is provided it will be used as the host to bind the server to.
+	 * If keyStorePath and password are provided the server will be started as a secure HTTPS server. If errorFunction is provided
+	 * it will be called whenever an error occurs in the server. This function will receive the error as a parameter.
+	 * If aWebSockets is provided it will be used to handle WebSockets connections. If aTimeout is provided it will be used as
+	 * the timeout for the server to wait for a request before closing the connection.\
+	 * \
 	 * (available after ow.loadServer()).\
 	 * \
 	 * aWebSockets, if used, should be a map with the following functions:\
@@ -2524,8 +2697,9 @@ OpenWrap.server.prototype.httpd = {
 	 * \
 	 * </odoc>
 	 */
-	start: function(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout) {
+	start: function(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout, aImpl) {
 		if (isNumber(aPort) && isDef(this.__servers[aPort])) return this.__servers[aPort]
+		aImpl = _$(aImpl).isString().default(__flags.HTTPD_DEFAULT_IMPL)
 
 		plugin("HTTPServer");
 		
@@ -2533,23 +2707,51 @@ OpenWrap.server.prototype.httpd = {
 			aPort = findRandomOpenPort();
 		}
 
-		if (__flags.HTTPD_THREADS != "auto") try { com.nwu.httpd.NanoHTTPD.numThreads = Number(__flags.HTTPD_THREADS) } catch(e) {}
-		if (isNumber(__flags.HTTPD_BUFSIZE)) com.nwu.httpd.NanoHTTPD.setBufSize(Number(__flags.HTTPD_BUFSIZE))
-		
-		var hs;
-		if (isDef(aWebSockets) && isMap(aWebSockets)) 
-			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, new Packages.com.nwu.httpd.IWebSock({
-				oOpen     : aWebSockets.onOpen,
-				oClose    : aWebSockets.onClose,
-				oMessage  : aWebSockets.onMessage,
-				oPong     : aWebSockets.onPong,
-				oException: aWebSockets.onException
-			}), aTimeout);
-		else
-			hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction);
+		var hs
+		switch(aImpl) {
+		case "nwu" :
+			if (__flags.HTTPD_THREADS != "auto") try { com.nwu.httpd.NanoHTTPD.numThreads = Number(__flags.HTTPD_THREADS) } catch(e) {}
+			if (isNumber(__flags.HTTPD_BUFSIZE)) com.nwu.httpd.NanoHTTPD.setBufSize(Number(__flags.HTTPD_BUFSIZE))
+			
+			if (isDef(aWebSockets) && isMap(aWebSockets)) 
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, new Packages.com.nwu.httpd.IWebSock({
+					oOpen     : aWebSockets.onOpen,
+					oClose    : aWebSockets.onClose,
+					oMessage  : aWebSockets.onMessage,
+					oPong     : aWebSockets.onPong,
+					oException: aWebSockets.onException
+				}), aTimeout, aImpl);
+			else
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, __, aTimeout, aImpl);
+
+			break
+		case "nwu2":
+			if (__flags.HTTPD_THREADS != "auto") try { com.nwu2.httpd.NanoHTTPD.numThreads = Number(__flags.HTTPD_THREADS) } catch(e) {}
+			if (isNumber(__flags.HTTPD_BUFSIZE)) com.nwu2.httpd.NanoHTTPD.setBufSize(Number(__flags.HTTPD_BUFSIZE))
+			
+			if (isDef(aWebSockets) && isMap(aWebSockets)) 
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, new Packages.com.nwu2.httpd.IWebSock({
+					oOpen     : aWebSockets.onOpen,
+					oClose    : aWebSockets.onClose,
+					oMessage  : aWebSockets.onMessage,
+					oPong     : aWebSockets.onPong,
+					oException: aWebSockets.onException
+				}), aTimeout, aImpl);
+			else
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, __, aTimeout, aImpl);
+
+			break
+		case "java":			
+			if (isDef(aWebSockets) && isMap(aWebSockets)) 
+				throw "WebSockets are not supported in the Java HTTPd implementation."
+			else
+				hs = new HTTPd(aPort, aHost, keyStorePath, password, errorFunction, __, aTimeout, aImpl);
+
+			break
+		}
 		
 		this.resetRoutes(hs);
-		this.__servers[Number(hs.getPort())] = hs
+		this.__servers[aPort] = hs
 
 		return hs;
 	},
@@ -2656,8 +2858,16 @@ OpenWrap.server.prototype.httpd = {
 		if (isDef(aDefaultRoute)) this.__defaultRoutes[aPort] = aDefaultRoute;
 		if (isDef(aPreRouteFunc)) this.__preRoutes[aPort] = aPreRouteFunc;
 		
+		const cnvt2string = m => {
+			if (Object.keys(m).indexOf("bytes") >= 0) {
+				m.bdata = String((java.lang.String(m.bytes, "UTF-8")))
+				delete m.bytes
+			}
+		}
+
 		aHTTPd.add(aPath, function(req) {			
 			try {
+				if (aHTTPd.getImpl() == "java") cnvt2string(req)
 				var uri = req.uri.replace(new RegExp("^" + aP), "");
 				if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req, aHTTPd);
 				if (isFunction(parent.__routes[aPort][uri])) {
@@ -2672,14 +2882,14 @@ OpenWrap.server.prototype.httpd = {
 							uri === aRoute ||
 							(uri.startsWith(aRoute) && uri.charAt(aRoute.length) === "/")
 						) {
-							if (isUnDef(best) || aRoute.length > best.length) {
+							if (aRoute.length > best.length) {
 								return aRoute
 							}
 						}
 						return best
-					}, __)
-					// If we have a best prefix, then call the route function for that prefix	
-					if (isDef(bp))
+					}, "/")
+					// If we have a best prefix, then call the route function for that prefix
+					if (typeof bp !== "undefined" && typeof parent.__routes[aPort][bp] === "function")
 						return parent.__routes[aPort][bp](req, aHTTPd);
 					else
 						return parent.__defaultRoutes[aPort](req, aHTTPd);
@@ -2724,6 +2934,7 @@ OpenWrap.server.prototype.httpd = {
 		delete this.__routes[Number(aHTTPd.getPort())]
 		delete this.__defaultRoutes[Number(aHTTPd.getPort())]
 		delete this.__preRoutes[Number(aHTTPd.getPort())]
+		delete this.__servers[Number(aHTTPd.getPort())]
 	},
 	
 	/**
@@ -3023,7 +3234,9 @@ OpenWrap.server.prototype.httpd = {
 		if (aReq.method == "POST") {
 			try {
 				aParams = _$(aParams, "params").isMap().default($fnDef4Help(aFunctionName));
-				return ow.server.httpd.reply($fnM2A(af.eval(aFunctionName), aInstance, aParams, jsonParse(aReq.files.postData)));
+				var data = aReq.files && aReq.files.postData ? aReq.files.postData : __
+				data = aReq.data ? aReq.data : __
+				return ow.server.httpd.reply($fnM2A(af.eval(aFunctionName), aInstance, aParams, jsonParse(data)));
 			} catch(e) {
 				if (dontRetError) {
 					throw e;
@@ -3097,6 +3310,7 @@ OpenWrap.server.prototype.httpd = {
                 }, 400, "application/json", {})
             }
             var body = request.files && request.files.postData ? request.files.postData : __
+			body = request.data ? request.data : __
             if (!body) {
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({
@@ -3193,6 +3407,7 @@ OpenWrap.server.prototype.httpd = {
                 }, 400, "application/json", {})
             }
             var body = request.files && request.files.postData ? request.files.postData : __
+			body = request.data ? request.data : __
             if (!body) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({
@@ -3612,7 +3827,7 @@ OpenWrap.server.prototype.socket = {
 
 		plugin("Threads");
 		var t = new Threads();
-		t.addSingleThread(function() {
+		t.addVirtualThread(function() {
 			while(isDef(ow.server.socket.__servers[aPort]) && !(ow.server.socket.__servers[aPort].isClosed())) {
 				var clt = server.accept();
 				aFn(clt, server);

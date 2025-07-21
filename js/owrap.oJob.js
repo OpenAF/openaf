@@ -170,7 +170,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.__codepage = __;
 
 	if (ow.format.isWindows()) {
-		$do(() => {
+		$doV(() => {
 			if (isUnDef(__conAnsi)) __initializeCon();
 			var res = __con.getTerminal().getOutputEncoding();
 			if (isDef(res)) {
@@ -1525,7 +1525,7 @@ OpenWrap.oJob.prototype.__addLog = function(aOp, aJobName, aJobExecId, args, anE
 	// Generic housekeeping
 	//if (this.__ojob.logHistory > -1) while(this.getLogCh().size() > this.__ojob.logHistory) this.getLogCh().shift();
 	if (this.__ojob.logHistory > -1 && this.getLogCh().size() > (this.__ojob.logHistory * this.getJobsCh().size())) {
-		$do(() => {
+		$doV(() => {
 			$ch("oJob::jobs").getKeys().forEach(j => {
 				var hkks = this.getLogCh().getKeys().filter(r => r.name == j.name);
 				var hklst = [];
@@ -2122,7 +2122,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 			//listTodos = $path(this.getTodoCh().getSortedKeys(), "[?ojobId==`" + (this.getID() + altId) + "`]")
 		}
 	} else {
-		t.addSingleThread(function() {
+		t.addVirtualThread(function() {
 		//t.addThread(function() {
 			// Check all jobs in the todo queue
 			var job = __

@@ -527,7 +527,7 @@
             }
         });
 
-        if (isDef(err) && err.message.indexOf("sleep interrupted") < 0) throw err;
+        if (isDef(err) && !(err.javaException instanceof java.lang.InterruptedException)) throw err;
         ow.test.assert(__state, 2, "Problem with threadBox timeout (2).");
 
         __state = 0;
@@ -545,7 +545,7 @@
             }
         });
 
-        if (isDef(err) && err.message.indexOf("sleep interrupted") < 0) throw err;
+        if (isDef(err) && !(err.javaException instanceof java.lang.InterruptedException)) throw err;
         ow.test.assert(__state, 1, "Problem with stopWhen.");
     };
 
