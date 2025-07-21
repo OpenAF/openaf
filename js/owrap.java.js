@@ -1641,7 +1641,7 @@ OpenWrap.java.prototype.cipher.prototype.decodeKey = function(aString, isPrivate
  */
 OpenWrap.java.prototype.cipher.prototype.genCert = function(aDn, aPubKey, aPrivKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType) {
     // Java 21+ does not support sun.security.x509.X509CertImpl
-    if (__flags.JAVA_CERT_BC_PROVIDER || String(java.lang.System.getProperty("java.version")).startsWith("21.")) {
+    if (__flags.JAVA_CERT_BC_PROVIDER || Number(String(java.lang.System.getProperty("java.version")).replace(/\..+$/, "")) >= 21) {
         return this.genCertBC(aDn, aPubKey, aPrivKey, aValidity, aSigAlgName, aKeyStore, aPassword, aKeyStoreType)
     }
 
@@ -1708,7 +1708,7 @@ OpenWrap.java.prototype.cipher.prototype.genCertBC = function(aDn, aPubKey, aPri
         
             java.security.Security.addProvider(new Packages.org.bouncycastle.jce.provider.BouncyCastleProvider())
         } else {
-            throw "The BouncyCastle package is required for ow.java.cipher.genCertBC (specially in Java 21)"
+            throw new Error("The BouncyCastle package is required for ow.java.cipher.genCertBC (specially in Java 21)")
         }
     }
 
@@ -1719,12 +1719,17 @@ OpenWrap.java.prototype.cipher.prototype.genCertBC = function(aDn, aPubKey, aPri
     var signer = new Packages.org.bouncycastle.operator.jcajce.JcaContentSignerBuilder(aSigAlgName).setProvider(Packages.org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME).build(aPrivKey)
     var certHolder = certBuilder.build(signer)
 
+    // Convert to java.security.cert.Certificate
+    var cert = new Packages.org.bouncycastle.cert.jcajce.JcaX509CertificateConverter()
+        .setProvider(Packages.org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME)
+        .getCertificate(certHolder)
+
     if (isDef(aKeyStore)) { 
         aPassword = _$(aPassword).isString().default("changeit")
 
         var ks = java.security.KeyStore.getInstance(aKeyStoreType)
         ks.load(null, null)
-        ks.setKeyEntry("main", aPrivKey, (new java.lang.String(aPassword)).toCharArray(), [ certHolder ])
+        ks.setKeyEntry("main", aPrivKey, (new java.lang.String(aPassword)).toCharArray(), [ cert ])
         var fos = io.writeFileStream(aKeyStore)
         ks.store(fos, (new java.lang.String(aPassword)).toCharArray())
         fos.close()
@@ -1734,7 +1739,7 @@ OpenWrap.java.prototype.cipher.prototype.genCertBC = function(aDn, aPubKey, aPri
         //aKeyStore.setEntry("main", privKeyEntry, protParam)
     }
 
-    return certHolder
+    return cert
 }
 
 /**
