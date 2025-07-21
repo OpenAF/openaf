@@ -1784,7 +1784,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
                     const tool = fns[params.name]
                     if (tool) {
                         try {
-                            var result = tool(params.input || {})
+                            var result = tool(params.input || params.arguments || {})
                             return { 
                                 content: [{
                                     type: "text",
