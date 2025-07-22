@@ -1784,7 +1784,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
                     const tool = fns[params.name]
                     if (tool) {
                         try {
-                            var result = tool(params.input || {})
+                            var result = tool(params.input || params.arguments || {})
                             return { 
                                 content: [{
                                     type: "text",
@@ -3300,6 +3300,9 @@ OpenWrap.server.prototype.httpd = {
      * </odoc>
      */
     replyJSONRPC: function(server, request, mapOfFunctions, logFn, debugFn) {
+		logFn = _$(logFn, "logFn").isFunction().default(log)
+		debugFn = _$(debugFn, "debugFn").isFunction().default(() => {})
+
         try {
             if (request.method !== "POST") {
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - Only POST allowed")
@@ -3309,9 +3312,9 @@ OpenWrap.server.prototype.httpd = {
                     id: null
                 }, 400, "application/json", {})
             }
-            var body = request.files && request.files.postData ? request.files.postData : __
-			body = request.data ? request.data : __
-            if (!body) {
+            var body = (isDef(request.files) && isDef(request.files.postData)) ? request.files.postData : __
+			if (isUnDef(body) && isDef(request.data)) body = request.data
+            if (isUnDef(body)) {
                 logFn("Invalid JSON-RPC request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
@@ -3406,9 +3409,9 @@ OpenWrap.server.prototype.httpd = {
                     id: null
                 }, 400, "application/json", {})
             }
-            var body = request.files && request.files.postData ? request.files.postData : __
-			body = request.data ? request.data : __
-            if (!body) {
+            var body = (isDef(request.files) && isDef(request.files.postData)) ? request.files.postData : __
+			if (isUnDef(body) && isDef(request.data)) body = request.data
+            if (isUnDef(body)) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({
                     mcp: "1.0",
