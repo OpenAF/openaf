@@ -14,6 +14,7 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -438,7 +439,7 @@ public class HTTP extends ScriptableObject {
 		//if (this.authenticator != null && !forceBasic) Authenticator.setDefault(this.authenticator);
 		CookieHandler.setDefault(ckman);
 		
-		URL url = new URL(aURL);
+		URL url = URI.create(aURL).toURL();
 		
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 		con.setRequestMethod(method);

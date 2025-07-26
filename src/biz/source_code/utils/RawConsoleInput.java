@@ -127,8 +127,8 @@ private static int getwch() {
 private static synchronized void initWindows() throws IOException {
    if (initDone) {
       return; }
-   msvcrt = (Msvcrt)Native.loadLibrary("msvcrt", Msvcrt.class);
-   kernel32 = (Kernel32)Native.loadLibrary("kernel32", Kernel32.class);
+   msvcrt = Native.load("msvcrt", Msvcrt.class);
+   kernel32 = Native.load("kernel32", Kernel32.class);
    try {
       consoleHandle = getStdInputHandle();
       originalConsoleMode = getConsoleMode(consoleHandle);
@@ -255,7 +255,7 @@ private static synchronized int decodeCharFromBytes (byte[] inBytes, int inLen) 
 private static synchronized void initUnix() throws IOException {
    if (initDone) {
       return; }
-   libc = (Libc)Native.loadLibrary("c", Libc.class);
+   libc = Native.load("c", Libc.class);
    stdinIsConsole = libc.isatty(stdinFd) == 1;
    charsetDecoder = Charset.defaultCharset().newDecoder();
    if (stdinIsConsole) {

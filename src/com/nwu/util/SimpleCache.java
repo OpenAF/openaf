@@ -90,7 +90,7 @@ public class SimpleCache {
 	 */
 	public void addObjectToCacheWithTimeLimit(String key, CacheableObject obj, long timeLimit) {
 		addObjectToCache(key, obj);
-		cacheLimitAge.put(key, new Long(timeLimit));
+		cacheLimitAge.put(key, Long.valueOf(timeLimit));
 	}
 	
 	public boolean isObjectStillValid(String key) {
