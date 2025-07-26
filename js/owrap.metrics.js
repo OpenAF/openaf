@@ -59,6 +59,11 @@ OpenWrap.metrics.prototype.__m = {
             cpuCores: __cpucores,
             threadPoolFactor: __threadPoolFactor,
             mainThreadPool: __getThreadPools(),
+            classLoader: {
+                cache: Number(Packages.openaf.OAFdCL.getInstance(java.lang.ClassLoader.getSystemClassLoader()).getCacheSize()),
+                hits: Number(Packages.openaf.OAFdCL.getInstance(java.lang.ClassLoader.getSystemClassLoader()).getCacheHits()),
+                misses: Number(Packages.openaf.OAFdCL.getInstance(java.lang.ClassLoader.getSystemClassLoader()).getCacheMisses())
+            },
             bottlenecks: (isDef(global.__bottleneck) ? Object.keys(global.__bottleneck).map(r => ({
                 name    : r,
                 running : global.__bottleneck[r].atomic.get(),
