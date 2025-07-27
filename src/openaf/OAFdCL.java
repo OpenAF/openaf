@@ -43,23 +43,47 @@ public final class OAFdCL extends URLClassLoader {
 
     /**
      * Thread-safe singleton pattern with double-checked locking
+     * Prevents creation of nested OAFdCL instances
      */
     public static OAFdCL getInstance(ClassLoader classLoader) {
-        if (oafdcl == null) {
-            lock.writeLock().lock();
-            try {
-                if (oafdcl == null) {
-                    oafdcl = new OAFdCL(classLoader);
-                }
-            } finally {
-                lock.writeLock().unlock();
-            }
+        // CRITICAL: Always return the existing instance if it exists, regardless of classLoader parameter
+        if (oafdcl != null) {
+            return oafdcl;
         }
+        
+        lock.writeLock().lock();
+        try {
+            // Double-check after acquiring lock
+            if (oafdcl == null) {
+                // Find the root non-OAFdCL class loader to avoid nesting
+                ClassLoader rootParent = classLoader;
+                while (rootParent instanceof OAFdCL) {
+                    // If we already have a singleton and someone is trying to create a nested one,
+                    // return the existing singleton instead of creating a new one
+                    if (oafdcl != null) {
+                        return oafdcl;
+                    }
+                    
+                    rootParent = rootParent.getParent();
+                }
+                
+                oafdcl = new OAFdCL(rootParent);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+        return oafdcl;
+    }
+    
+    /**
+     * Get the current singleton instance if it exists, or null if not yet created
+     */
+    public static OAFdCL getCurrentInstance() {
         return oafdcl;
     }
 
     public OAFdCL(ClassLoader classLoader) {
-        super(new URL[0], classLoader);
+        super(new URL[] {}, classLoader);
     }
 
     /**
@@ -87,14 +111,22 @@ public final class OAFdCL extends URLClassLoader {
     @Override
     public final void addURL(URL url) {
         if (url != null) {
-            super.addURL(url);
+            super.addURL(url);  
             // Cache the URL string representation for future lookups
             urlCache.putIfAbsent(url.toString(), url);
+            
+            // Clear class cache when new URLs are added to allow reloading
+            // This ensures that previously failed class lookups can succeed
+            // after new classpath entries are added
+            int cacheSize = classCache.size();
+            if (cacheSize > 0) {
+                classCache.clear();
+            }
         }
     }
 
     @Override
-    public final Class<?> findClass(String name) throws ClassNotFoundException {
+    public final Class<?> findClass(String name) throws ClassNotFoundException {        
         // Check cache first for performance
         Class<?> cachedClass = classCache.get(name);
         if (cachedClass != null) {
@@ -124,6 +156,11 @@ public final class OAFdCL extends URLClassLoader {
 
     @Override
     public final Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        // If we're not the singleton, delegate to the singleton for consistency
+        if (this != oafdcl && oafdcl != null) {
+            return oafdcl.loadClass(name, resolve);
+        }
+        
         // Check cache first for frequently loaded classes
         Class<?> cachedClass = classCache.get(name);
         if (cachedClass != null) {
@@ -134,16 +171,34 @@ public final class OAFdCL extends URLClassLoader {
             return cachedClass;
         }
         
-        // Use parent's loadClass for proper delegation
-        Class<?> clazz = super.loadClass(name, resolve);
-        
-        // Cache non-system classes for better performance
-        if (!name.startsWith("java.") && !name.startsWith("javax.") && !name.startsWith("sun.")) {
+
+        try {
+            Class<?> clazz = findClass(name);
+            if (resolve) {
+                resolveClass(clazz);
+            }
+            // Cache the result
             classCache.putIfAbsent(name, clazz);
+            cacheMisses.incrementAndGet();
+            return clazz;
+        } catch (ClassNotFoundException e) {
+            // Fall through to normal delegation
         }
         
-        cacheMisses.incrementAndGet();
-        return clazz;
+        try {
+            // Use parent's loadClass for proper delegation
+            Class<?> clazz = super.loadClass(name, resolve);
+            
+            // Cache non-system classes for better performance
+            if (!name.startsWith("java.") && !name.startsWith("javax.") && !name.startsWith("sun.")) {
+                classCache.putIfAbsent(name, clazz);
+            }
+            
+            cacheMisses.incrementAndGet();
+            return clazz;
+        } catch (ClassNotFoundException e) {
+            throw e;
+        }
     }
 
     @Override

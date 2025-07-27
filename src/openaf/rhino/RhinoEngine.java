@@ -16,7 +16,7 @@ import openaf.OpenRhinoErrorReporter;
 /**
  * Rhino JSEngine implementation
  * 
- * Copyright 2023 Nuno Aguiar
+ * Copyright 2025 Nuno Aguiar
  *
  */
 public class RhinoEngine implements JSEngine {
@@ -25,6 +25,30 @@ public class RhinoEngine implements JSEngine {
 	protected static boolean getSerializeDefined = false;
 	protected boolean ready = false;
 	protected long numberOfLines = 0;
+	
+	/**
+	 * Helper method to set the OAFdCL class loader on a Rhino context
+	 */
+	private void setOAFdCLClassLoader(Context context) {
+		try {
+			ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+			
+			if (systemClassLoader instanceof openaf.OAFdCL) {
+				context.setApplicationClassLoader(systemClassLoader);
+				// CRITICAL: Also set the thread context class loader
+				Thread.currentThread().setContextClassLoader(systemClassLoader);
+			} else {
+				openaf.OAFdCL oafdcl = openaf.OAFdCL.getInstance(systemClassLoader);
+				if (oafdcl != null) {
+					context.setApplicationClassLoader(oafdcl);
+					// CRITICAL: Also set the thread context class loader
+					Thread.currentThread().setContextClassLoader(oafdcl);
+				}
+			}
+		} catch (Exception e) {
+			// Silently handle failures in class loader setup
+		}
+	}
 	
 	public boolean isReady() {
 		return ready;
@@ -45,6 +69,10 @@ public class RhinoEngine implements JSEngine {
 			String source = "function getSerialize (fn, decycle) { function getPath (value, seen, keys) { var index = seen.indexOf(value); var path = [ keys[index] ]; for (index--; index >= 0; index--) { if (seen[index][ path[0] ] === value) { value = seen[index]; path.unshift(keys[index]); }} return '~' + path.join('.'); }";
 			source = source + " var seen = [], keys = []; decycle = decycle || function(key, value) {return '[Circular ' + getPath(value, seen, keys) + ']'}; return function(key, value) {var ret = value;if (typeof value === 'object' && value) {if (seen.indexOf(value) !== -1) ret = decycle(key, value); else { seen.push(value); keys.push(key); }} if (fn) ret = fn(key, ret);  return ret;}}";
 			Context cx = Context.enter();
+			
+			// Set the application class loader for this context too
+			setOAFdCLClassLoader(cx);
+			
 			cx.evaluateString((Scriptable) AFCmdBase.jse.getGlobalscope(), source, "internal_getSerialize", 1, null);
 			Context.exit();
 		}
@@ -59,7 +87,13 @@ public class RhinoEngine implements JSEngine {
 		//cx.setOptimizationLevel(compLevel);
 		cx.setLanguageVersion(Context.VERSION_ES6); 
 		cx.setErrorReporter(new OpenRhinoErrorReporter());
+		
+		// CRITICAL: Configure the application class loader BEFORE initializing standard objects
+		// This ensures that the Java package resolution uses the correct class loader from the start
+		setOAFdCLClassLoader(cx);
+		
 		globalscope = cx.initStandardObjects();
+		
 		ready = true;
 	}
 	@Override
@@ -105,7 +139,12 @@ public class RhinoEngine implements JSEngine {
 
 	@Override
 	public Object enterContext() {
-		return Context.enter();
+		Context context = Context.enter();
+		
+		// Ensure the application class loader is set for this context too
+		setOAFdCLClassLoader(context);
+		
+		return context;
 	}
 
 	@Override
@@ -234,6 +273,5 @@ public class RhinoEngine implements JSEngine {
 		else
 			return new JSMap((Scriptable) parent);
 	}
-	
 	
 }
