@@ -181,7 +181,8 @@ public class SNMP extends ScriptableObject {
 			if (this.engineID == null) this.engineID = MPv3.createLocalEngineID();
 			USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(this.engineID), 0);
 			SecurityModels.getInstance().addSecurityModel(usm);
-			this.snmp.getUSM().addUser(new OctetString(this.securityName), new UsmUser(new OctetString(this.securityName), this.authProtocol, new OctetString(this.authPassphrase), this.privProtocol, new OctetString(this.privPassphrase)));
+			UsmUser user = new UsmUser(new OctetString(this.securityName), this.authProtocol, new OctetString(this.authPassphrase), this.privProtocol, new OctetString(this.privPassphrase));
+			this.snmp.getUSM().addUser(user);
 			this.snmp.setLocalEngine(new OctetString(this.engineID).getValue(), 0, 0);   // Making sure the local Engine ID is also set
 		}
 
