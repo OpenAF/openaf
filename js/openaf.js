@@ -9607,7 +9607,7 @@ IO.prototype.lz4 = function(anInput) {
 
 /**
  * <odoc>
- * <key>io.readFileLZ4Stream(aFile) : InputStream</key>
+ * <key>io.writeFileLZ4Stream(aFile) : InputStream</key>
  * Reads aFile as a LZ4 compressed file and returns the InputStream to read
  * from. This is useful to read large files that are compressed with LZ4 without decompressing them
  * into memory.
