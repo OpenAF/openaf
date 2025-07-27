@@ -899,3 +899,100 @@ OpenWrap.net.prototype.getIP2ASN = function(aIP, aIP2ASNCache, aTimeout) {
     var res = aIP2ASNCache.find(r => r.istart <= iip && r.iend >= iip)
     return res
 }
+
+/**
+ * <odoc>
+ * <key>ow.net.createIP2ASNIndex(aFile, aIP2ASNCache, logFn)</key>
+ * Creates an ASN index from the aIP2ASNCache (defaults to the one retrieved by ow.net.getIP2ASNCache()) and saves it into aFile.
+ * If aIP2ASNCache is not provided it will be retrieved using ow.net.getIP2ASNCache(). The index is saved as a JSON array with the following structure:
+ * [ { i: (index), a: (asn), s: (start), e: (end) }, ... ]
+ * where i is the index in the original aIP2ASNCache, a is the ASN number, s is the start IP in integer format and e is the end IP in integer format.
+ * The aFile is saved as a gzip compressed JSON file.
+ * </odoc>
+ */
+OpenWrap.net.prototype.createIP2ASNIndex = function(aFile, aIP2ASNCache, logFn) {
+    _$(aFile, "aFile").isString().$_()
+    logFn = _$(logFn, "logFn").isFunction().default(log)
+
+    var _r
+    if (isUnDef(aIP2ASNCache)) {
+        logFn("Creating IP2ASN cache...")
+        _r = ow.net.getIP2ASNCache()
+        logFn("Cache loaded with #" + _r.length)
+    } else {
+        _r = aIP2ASNCache
+        logFn("Using provided IP2ASN cache with #" + _r.length)
+    }
+
+    logFn("Creating ASN index...")
+    var _aidx = pForEach(_r, (r, i) => ({
+        i: i,
+        a: Number(r.asn),
+        s: r.istart,
+        e: r.iend
+    }))
+    logFn("ASN index created with #" + _aidx.length)
+
+    logFn("Saving into aidx.json.gz")
+    var os = io.writeFileGzipStream(aFile)
+    ioStreamWriteBytes(os, stringify(_aidx, __, ""))
+    os.flush()
+    os.close()
+    logFn("Created aidx.json.gz with " + io.fileInfo(aFile).size + " bytes")
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.getIP2ASNIndex(aFile) : Array</key>
+ * Given aFile will try to retrieve the ASN index from the file.
+ * The file is expected to be a gzip compressed JSON file with the following structure (produced with ow.net.createIP2ASNIndex()):
+ * [ { i: (index), a: (asn), s: (start), e: (end) }, ... ]
+ * where i is the index in the original aIP2ASNCache, a is the ASN number, s is the start IP in integer format and e is the end IP in integer format.
+ * Returns an array with the ASN index.
+ * </odoc>
+ */
+OpenWrap.net.prototype.getIP2ASNIndex = function(aFile) {
+    _$(aFile, "aFile").isString().$_()
+
+    var is = io.readFileGzipStream(aFile)
+
+    var _r = jsonParse(af.fromInputStream2String(is), true)
+    is.close()
+    return _r
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.asnIndexIP2ASN(aIP, aidx) : Map</key>
+ * Given an aIP (or host) will try to retrieve the corresponding ASN information from the aidx (defaults to the one retrieved
+ * by ow.net.getIP2ASNIndex()). Returns a map with the ASN information.
+ * The aidx is expected to be an array with the following structure:
+ * [ { i: (index), a: (asn), s: (start), e: (end) }, ... ]
+ * where i is the index in the original aIP2ASNCache, a is the ASN number, s is the start IP in integer format and e is the end IP in integer format.
+ * </odoc>
+ */
+OpenWrap.net.prototype.asnIndexIP2ASN = function(aIP, _aidx) {
+    _$(aIP, "aIP").isString().$_()
+    _$(_aidx, "_aidx").isArray().$_()
+
+    ow.loadFormat()
+    var _t = ow.format.IP2int(ow.net.getHost2IP(aIP))
+
+    return _aidx.find(r => r.s <= _t && r.e >= _t) 
+}
+
+/**
+ * <odoc>
+ * <key>ow.net.asnIndexASN2IP(aASN, aidx) : Map</key>
+ * Given an aASN will try to retrieve the corresponding ASN information from the aidx. Returns a map with the ASN information.
+ * The aidx is expected to be an array with the following structure:
+ * [ { i: (index), a: (asn), s: (start), e: (end) }, ... ]
+ * where i is the index in the original aIP2ASNCache, a is the ASN number, s is the start IP in integer format and e is the end IP in integer format.
+ * </odoc>
+ */
+OpenWrap.net.prototype.asnIndexASN2IP = function(aASN, _aidx) {
+    _$(aASN, "aASN").isNumber().$_()
+    _$(_aidx, "_aidx").isArray().$_()
+
+    return _aidx.find(r => r.a == aASN)
+}
