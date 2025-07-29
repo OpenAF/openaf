@@ -340,7 +340,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio-jvm</artifactId>
-      <version>3.15.0</version>
+      <version>3.16.0</version>
     </dependency>
     <dependency>
       <groupId>dnsjava</groupId>
