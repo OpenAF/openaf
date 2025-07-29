@@ -375,7 +375,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>com.oracle.database.jdbc</groupId>
       <artifactId>ojdbc11</artifactId>
-      <version>23.8.0.25.04</version>
+      <version>23.9.0.25.07</version>
     </dependency>
   </dependencies>
 </project>
