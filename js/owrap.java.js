@@ -2109,7 +2109,7 @@ OpenWrap.java.prototype.ini = function() {
             // Second pass: output sections in sorted order
             Object.keys(sections).sort().forEach(section => {
                 if (s.length != 0) s += "\n"
-                s += "[" + section + "]\n"
+                if (section.length > 0) s += "[" + section + "]\n"
                 sections[section].forEach(prop => {
                     s += prop.key + "=" + prop.value + "\n"
                 })
