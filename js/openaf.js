@@ -13184,6 +13184,28 @@ const $ssh = function(aMap) {
 
 	/**
 	 * <odoc>
+	 * <key>$ssh.delTunnelLocal(aLocalInterface, aLocalPort) : $ssh</key>
+	 * Deletes a local tunnel mapping aLocalInterface:aLocalPort
+	 * </odoc>
+	 */
+	__ssh.prototype.delTunnelLocal = function(aLocalInterface, aLocalPort) {
+		this.__getssh().delTunnelLocal(aLocalInterface, aLocalPort)
+		return this
+	}
+
+	/**
+	 * <odoc>
+	 * <key>$ssh.delTunnelRemote(aRemoteInterface, aRemotePort) : $ssh</key>
+	 * Deletes a remote tunnel mapping aRemoteInterface:aRemotePort
+	 * </odoc>
+	 */
+	__ssh.prototype.delTunnelRemote = function(aRemoteInterface, aRemotePort) {
+		this.__getssh().delTunnelRemote(aRemoteInterface, aRemotePort)
+		return this
+	}
+
+	/**
+	 * <odoc>
 	 * <key>$ssh.get(aIdx) : Object</key>
 	 * Executes a list of commands previously set on a remote host connection defined by aMap (host, port, login, pass, id, compress and timeout).
 	 * IO is not inherit. If aIdx is provided it will return the map entry for the corresponding command on the array otherwise it will return the array.
