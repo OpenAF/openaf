@@ -282,6 +282,14 @@ if (createTmp) {
 	io.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
 }
 
+// Create archived classes (CDS)
+log("(re)Creating OpenAF shared archive...");
+var _res = $sh([ow.format.getJavaHome() + "/bin/java", "-XX:ArchiveClassesAtExit=" + getOpenAFPath() + ".shared.oaf", "-jar", getOpenAFJar(), "-c", "ow.loadOJob();loadOAFP();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})"])
+           .get(0)
+if (_res.exitcode != 0) {
+	logErr("Error creating OpenAF shared archive: " + _res.stderr);
+}
+
 log("Done repacking OpenAF.jar");
 // We need to stop
 //exit(0, true)
