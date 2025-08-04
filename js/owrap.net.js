@@ -902,15 +902,18 @@ OpenWrap.net.prototype.getIP2ASN = function(aIP, aIP2ASNCache, aTimeout) {
 
 /**
  * <odoc>
- * <key>ow.net.createIP2ASNIndex(aFile, aIP2ASNCache, logFn)</key>
+ * <key>ow.net.createIP2ASNIndex(aFile, aIP2ASNCache, logFn, aDescFile)</key>
  * Creates an ASN index from the aIP2ASNCache (defaults to the one retrieved by ow.net.getIP2ASNCache()) and saves it into aFile.
  * If aIP2ASNCache is not provided it will be retrieved using ow.net.getIP2ASNCache(). The index is saved as a JSON array with the following structure:
  * [ { i: (index), a: (asn), s: (start), e: (end) }, ... ]
  * where i is the index in the original aIP2ASNCache, a is the ASN number, s is the start IP in integer format and e is the end IP in integer format.
- * The aFile is saved as a gzip compressed JSON file.
+ * The aFile is saved as a gzip compressed JSON file. The aDescFile is optional and if provided it will create a descriptive index with the following structure:
+ * [ { i: (index), r: (area), n: (name) }, ... ]
+ * where i is the index in the original aIP2ASNCache, r is the area and n is the name.
+ * The aDescFile is also saved as a gzip compressed JSON file.
  * </odoc>
  */
-OpenWrap.net.prototype.createIP2ASNIndex = function(aFile, aIP2ASNCache, logFn) {
+OpenWrap.net.prototype.createIP2ASNIndex = function(aFile, aIP2ASNCache, logFn, aDescFile) {
     _$(aFile, "aFile").isString().$_()
     logFn = _$(logFn, "logFn").isFunction().default(log)
 
@@ -939,7 +942,25 @@ OpenWrap.net.prototype.createIP2ASNIndex = function(aFile, aIP2ASNCache, logFn) 
     os.flush()
     os.close()
     logFn("Created aidx.json.gz with " + io.fileInfo(aFile).size + " bytes")
-}
+
+    if (isDef(aDescFile)) {
+        _aidx = __
+        logFn("Creating ASN descriptive index...")
+        var _aidxd = pForEach(_r, (r, i) => ({
+            i: i,
+            r: r.area,
+            n: r.name
+        }))
+        logFn("ASN descriptive index created with #" + _aidxd.length)
+
+        logFn("Saving into aidxd.json.gz")
+        var os = io.writeFileGzipStream(aDescFile)
+        ioStreamWriteBytes(os, stringify(_aidxd, __, ""))
+        os.flush()
+        os.close()
+        logFn("Created " + aDescFile + " with " + io.fileInfo(aDescFile).size + " bytes")
+    }
+} 
 
 /**
  * <odoc>
@@ -948,7 +969,7 @@ OpenWrap.net.prototype.createIP2ASNIndex = function(aFile, aIP2ASNCache, logFn) 
  * The file is expected to be a gzip compressed JSON file with the following structure (produced with ow.net.createIP2ASNIndex()):
  * [ { i: (index), a: (asn), s: (start), e: (end) }, ... ]
  * where i is the index in the original aIP2ASNCache, a is the ASN number, s is the start IP in integer format and e is the end IP in integer format.
- * Returns an array with the ASN index.
+ * Returns an array with the ASN index. Can also be used to retrieve the ASN descriptive index.
  * </odoc>
  */
 OpenWrap.net.prototype.getIP2ASNIndex = function(aFile) {
