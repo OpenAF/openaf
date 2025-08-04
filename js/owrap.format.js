@@ -1060,7 +1060,7 @@ OpenWrap.format.prototype.string = {
 			}
 			var ba = af.fromArray2Bytes(e);
 			res.push({
-				pos: ii - perLine,
+				pos: (ii - perLine) < 0 ? 0 : ii - perLine,
 				hex: this.toHex(ba),
 				characters: this.printable(ba)
 			});
