@@ -249,12 +249,16 @@ public class RhinoEngine implements JSEngine {
 		@Override
 		public void addAll(Collection<?> items) {
 			alist.addAll(items);
-			
 		}
 
 		@Override
 		public Iterator<Object> iterator() {
 			return alist.iterator();
+		}
+
+		@Override
+		public long size() {
+			return alist.size();
 		}
 	}
 
