@@ -1,6 +1,6 @@
 /**
  * 
- * Copyright 2023 Nuno Aguiar
+ * Copyright 2025 Nuno Aguiar
  * 
  */
 package openaf;
