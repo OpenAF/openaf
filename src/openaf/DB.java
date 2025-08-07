@@ -118,7 +118,7 @@ public class DB extends ScriptableObject {
 	}
 	
 	@JSFunction
-	public int usArray(String sql, Object objs, int batchSize, boolean keepStatement) throws SQLException {
+	public long usArray(String sql, Object objs, int batchSize, boolean keepStatement) throws SQLException {
 		if (objs instanceof NativeArray) {
 			NativeArray lines = (NativeArray) objs;
 			JSEngine.JSList jslist = AFCmdBase.jse.getNewList(AFCmdBase.jse.getGlobalscope());
