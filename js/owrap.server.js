@@ -96,24 +96,13 @@ OpenWrap.server.prototype.processArguments = function(aRouterFunction, aMainSepa
  * </odoc>
  */
 OpenWrap.server.prototype.daemon = function(aTimePeriod, aPeriodicFunction) {
-	if (isUnDef(aTimePeriod) && isUnDef(aPeriodicFunction)) {
-		var shouldStop = false
-		addOnOpenAFShutdown(function() {
-			shouldStop = true
-		})
-		while(!shouldStop) {
-			java.lang.Thread.onSpinWait()
-			java.lang.Thread.currentThread().join()
-		}
-	} else {
-		if (isUnDef(aTimePeriod)) aTimePeriod = 5000
-		var shouldStop = false
-		
-		while(!shouldStop) {
-			if (isDef(aPeriodicFunction)) shouldStop = aPeriodicFunction()
-			java.lang.Thread.onSpinWait()
-			if (!shouldStop) sleep(aTimePeriod, true)
-		}
+	if (isUnDef(aTimePeriod)) aTimePeriod = 5000
+	var shouldStop = false
+	
+	while(!shouldStop) {
+		if (isDef(aPeriodicFunction)) shouldStop = aPeriodicFunction()
+		java.lang.Thread.onSpinWait()
+		if (!shouldStop) sleep(aTimePeriod, true)
 	}
 }
 
