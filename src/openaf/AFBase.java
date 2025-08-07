@@ -219,7 +219,7 @@ public class AFBase extends ScriptableObject {
 					}
 				}
 				if (jsonParseOld) {
-					out = (new JsonParser()).parse(out).toString();
+					out = JsonParser.parseString(out).toString();
 				} else {
 					out = JsonParser.parseString(out).toString();
 				}
@@ -857,7 +857,7 @@ public class AFBase extends ScriptableObject {
 			if (!(locs instanceof NativeArray)) return null;
 			AFCmdBase.jse.enterContext();
 			for(Object loc : (NativeArray) locs) {
-				aURLs.add(new URL(Context.toString(loc)));
+				aURLs.add(URI.create(Context.toString(loc)).toURL());
 			}
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
@@ -890,7 +890,7 @@ public class AFBase extends ScriptableObject {
 			if (!(locs instanceof NativeArray)) return null;
 			AFCmdBase.jse.enterContext();
 			for(Object loc : (NativeArray) locs) {
-				aURLs.add(new URL(Context.toString(loc)));
+				aURLs.add(URI.create(Context.toString(loc)).toURL());
 			}
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
@@ -918,12 +918,19 @@ public class AFBase extends ScriptableObject {
 		if (url != null) {
 			if (ClassLoader.getSystemClassLoader() instanceof OAFdCL) {
 				OAFdCL dyna = OAFdCL.getInstance(ClassLoader.getSystemClassLoader());
-				dyna.addURL(new URL(url));
+				dyna.addURL(java.net.URI.create(url).toURL());
 			} else {
-				ClassLoader sysloader = ClassLoader.getSystemClassLoader();
-				Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[] { URL.class });
-				method.setAccessible(true);
-				method.invoke(sysloader, new Object[]{ new URL(url) });
+				// Use the optimized OAFdCL if available
+				try {
+					OAFdCL dyna = OAFdCL.getInstance(ClassLoader.getSystemClassLoader());
+					dyna.addURL(java.net.URI.create(url).toURL());
+				} catch (Exception e) {
+					// Fallback to reflection-based approach
+					ClassLoader sysloader = ClassLoader.getSystemClassLoader();
+					Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[] { URL.class });
+					method.setAccessible(true);
+					method.invoke(sysloader, new Object[]{ java.net.URI.create(url).toURL() });
+				}
 			}
 		}
 	}
@@ -1041,7 +1048,6 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public Object compile(String script, String name) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
-		cx.setOptimizationLevel((System.getenv().get("OAF_LEVEL") != null ? Integer.parseInt(System.getenv("OAF_LEVEL")) : 9));
 		cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6); 
 		org.mozilla.javascript.Script compiledScript = cx.compileString(script, name, 1, null);
 		AFCmdBase.jse.addNumberOfLines(script);
@@ -1063,7 +1069,6 @@ public class AFBase extends ScriptableObject {
 		try {
 			JSEngine.JSList out = AFCmdBase.jse.getNewList(null);
 			CompilerEnvirons ce = new CompilerEnvirons();
-			ce.setOptimizationLevel((System.getenv().get("OAF_LEVEL") != null ? Integer.parseInt(System.getenv("OAF_LEVEL")) : 9));
 			ce.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6);
 			Parser parse = new Parser(ce);
 			AstRoot root = parse.parse(script, name, 1);

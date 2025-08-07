@@ -3,6 +3,7 @@ package openaf.plugins;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -346,7 +347,7 @@ public class Email extends ScriptableObject {
 	@JSFunction
 	public Email addExternalImage(String aURL) throws Exception {
 		if (this.isHtml) {
-			URL url = new URL(aURL);
+			URL url = URI.create(aURL).toURL();
 			((ImageHtmlEmail) this.email).setDataSourceResolver(new DataSourceUrlResolver(url));
 		} else {
 			throw new Exception("Not created as a HTML email.");
@@ -366,7 +367,7 @@ public class Email extends ScriptableObject {
 	@JSFunction
 	public String embedURL(String aURL, String aName) throws Exception {
 		if (this.isHtml) {
-			((ImageHtmlEmail) this.email).setDataSourceResolver(new DataSourceUrlResolver(new URL(aURL)));
+			((ImageHtmlEmail) this.email).setDataSourceResolver(new DataSourceUrlResolver(URI.create(aURL).toURL()));
 			return ((ImageHtmlEmail) this.email).embed(aURL, aName);
 		} else {
 			throw new Exception("Not created as a HTML email.");

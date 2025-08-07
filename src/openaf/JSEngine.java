@@ -38,6 +38,7 @@ public interface JSEngine {
 		public abstract void addAll(Collection<?> items);
 		public abstract Object getList();
 		public abstract Iterator<Object> iterator();
+		public abstract long size();
 	}
 	
 	public interface JSMap {

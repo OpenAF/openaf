@@ -9607,7 +9607,7 @@ IO.prototype.lz4 = function(anInput) {
 
 /**
  * <odoc>
- * <key>io.readFileLZ4Stream(aFile) : InputStream</key>
+ * <key>io.writeFileLZ4Stream(aFile) : InputStream</key>
  * Reads aFile as a LZ4 compressed file and returns the InputStream to read
  * from. This is useful to read large files that are compressed with LZ4 without decompressing them
  * into memory.
@@ -13181,6 +13181,28 @@ const $ssh = function(aMap) {
 		this.__getssh().tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort);
 		return this;
 	};
+
+	/**
+	 * <odoc>
+	 * <key>$ssh.delTunnelLocal(aLocalInterface, aLocalPort) : $ssh</key>
+	 * Deletes a local tunnel mapping aLocalInterface:aLocalPort
+	 * </odoc>
+	 */
+	__ssh.prototype.delTunnelLocal = function(aLocalInterface, aLocalPort) {
+		this.__getssh().delTunnelLocal(aLocalInterface, aLocalPort)
+		return this
+	}
+
+	/**
+	 * <odoc>
+	 * <key>$ssh.delTunnelRemote(aRemoteInterface, aRemotePort) : $ssh</key>
+	 * Deletes a remote tunnel mapping aRemoteInterface:aRemotePort
+	 * </odoc>
+	 */
+	__ssh.prototype.delTunnelRemote = function(aRemoteInterface, aRemotePort) {
+		this.__getssh().delTunnelRemote(aRemoteInterface, aRemotePort)
+		return this
+	}
 
 	/**
 	 * <odoc>

@@ -2095,17 +2095,26 @@ OpenWrap.java.prototype.ini = function() {
         },
         save: () => {
             var s = "", ss = "", psec = ""
+            var sections = {}
+            
+            // First pass: collect all sections and their properties
             traverse(data, (aK, aV, aP, aO) => {
                 if (aP.startsWith(".")) aP = aP.substr(1)
                 if (!isArray(aV) && !isMap(aV)) {
-                    if (aP != psec) {
-                        psec = aP
-                        if (s.length != 0) s += "\n"
-                        s += "[" + psec + "]\n"
-                    }
-                    s += aK + "=" + aV + "\n"
+                    if (!sections[aP]) sections[aP] = []
+                    sections[aP].push({ key: aK, value: aV })
                 }
             })
+            
+            // Second pass: output sections in sorted order
+            Object.keys(sections).sort().forEach(section => {
+                if (s.length != 0) s += "\n"
+                if (section.length > 0) s += "[" + section + "]\n"
+                sections[section].forEach(prop => {
+                    s += prop.key + "=" + prop.value + "\n"
+                })
+            })
+            
             s += ss
             return s
         },

@@ -201,7 +201,7 @@ public class CSV extends ScriptableObject {
 			if (!this.csvFormat.getSkipHeaderRecord() && this.heads == null) {
 				this.csvFormat = this.csvFormat.builder().setHeader().build();
 			}
-			CSVParser parser = new CSVParser(reader, this.csvFormat);
+			CSVParser parser = this.csvFormat.parse(reader);
 			
 			
 			if (parser.getHeaderNames() != null || this.heads != null) {

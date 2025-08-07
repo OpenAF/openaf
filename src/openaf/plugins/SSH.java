@@ -303,6 +303,18 @@ public class SSH extends ScriptableObject {
 	public void tunnelLocal(int localport, String remotehost, int remoteport) throws JSchException {
 		session.setPortForwardingL(localport, remotehost, remoteport);
 	}
+
+	/**
+	 * <odoc>
+	 * <key>SSH.delTunnelLocal(aLocalInterface, aLocalPort)</key>
+	 * Removes a TCP tunnel on the local port over the SSH connection.
+	 * This is the same as delTunnelLocal, but allows you to specify a local interface.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void delTunnelLocal(String localhost, int localport) throws JSchException {
+		session.delPortForwardingL(localhost, localport);
+	}
 	
 	/**
 	 * <odoc>
@@ -315,7 +327,7 @@ public class SSH extends ScriptableObject {
 	public void tunnelLocalBind(String localhost, int localport, String remotehost, int remoteport) throws JSchException {
 		session.setPortForwardingL(localhost, localport, remotehost, remoteport);
 	}
-	
+
 	/**
 	 * <odoc>
 	 * <key>SSH.tunnelRemote(aRemotePort, aLocalAddress, aLocalPort)</key>
@@ -326,7 +338,19 @@ public class SSH extends ScriptableObject {
 	public void tunnelRemote(int remoteport, String localhost, int localport) throws JSchException {
 		session.setPortForwardingR(remoteport, localhost, localport);
 	}
-	
+ 
+	/**
+	 * <odoc>
+	 * <key>SSH.delTunnelRemote(aRemoteInterface, aRemotePort)</key>
+	 * Removes a TCP tunnel on the remote port over the SSH connection.
+	 * This is the same as delTunnelRemote, but allows you to specify a remote interface.
+	 * </odoc>
+	 */
+	@JSFunction
+	public void delTunnelRemote(String remotehost, int remoteport) throws JSchException {
+		session.delPortForwardingR(remotehost, remoteport);
+	}
+
 	/**
 	 * <odoc>
 	 * <key>SSH.tunnelRemoteBind(aRemoteInterface, aRemotePort, aLocalAddress, aLocalPort)</key>

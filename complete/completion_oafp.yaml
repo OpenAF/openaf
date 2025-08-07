@@ -57,6 +57,8 @@ complete:
       desc: If true will stream the data instead of loading it all in memory
     - name: indbexec=
       desc: If true the input SQL is not a query but a DML statement
+    - name: indbautocommit=
+      desc: If true the input SQL will be executed with autocommit enabled
     - name: indbdesc=
       desc: If true, the output will be a list of column names and types. Use 'LIMIT 1' for faster results.
   - name: in=gb64json
@@ -424,6 +426,19 @@ complete:
       desc: A prefix added to all XML tags
   - name: out=raw
     desc: Tries to output the internal representation -string or json- of the input transformed data
+  - name: out=rawascii
+    desc: Outputs text data line by line with visual representation of non-visual characters
+    opts:
+    - name: rawasciistart=
+      desc: Starting line number to display
+    - name: rawasciiend=
+      desc: Ending line number to display
+    - name: rawasciitab=
+      desc: Tab size for tab character visualization (defaults to 8)
+    - name: rawasciinovisual=
+      desc: If true, non-visual characters won't be replaced by their visual representation
+    - name: rawasciinolinenum=
+      desc: If true, line numbers won't be displayed
   - name: out=schart
     desc: A static line-chart like chart -for a fixed list/array of values-
     opts:
