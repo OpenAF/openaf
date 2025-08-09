@@ -592,7 +592,7 @@ public class DB {
 	 * \
 	 * </odoc>
 	 */
-	public int usArray(String sql, JSEngine.JSList objs, int batchSize, boolean keepStatement) throws SQLException {
+	public long usArray(String sql, JSEngine.JSList objs, int batchSize, boolean keepStatement) throws SQLException {
 		if (con != null) {
 			//try {
 				PreparedStatement ps = preparedStatements.get(sql);

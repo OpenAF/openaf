@@ -873,13 +873,6 @@ todo:
   ((from)): "json"
   ((to)): "yaml"
   ((outPath)): "convertedData"
-
-# LLM Integration
-- (llm): "Summarize the following data in 3 bullet points"
-  ((inKey)): "salesData"
-  ((inPath)): "records"
-  ((context)): "monthly sales figures"
-  ((outPath)): "summary"
 ```
 
 ## Advanced Features
@@ -1124,112 +1117,6 @@ todo:
   ((outPath)): "convertedData"
 ```
 
-### Advanced Data Pipeline with Each
-
-```yaml
-help:
-  text: "Advanced data processing pipeline with parallel file processing"
-  expects:
-  - name: inputDir
-    desc: "Directory containing files to process"
-    example: "/data/input"
-  - name: outputDir
-    desc: "Directory for processed results"
-    example: "/data/output"
-
-ojob:
-  async: false
-  logToConsole: true
-  shareArgs: true
-  metrics:
-    passive: true
-    port: 8080
-
-init:
-  batchSize: 10
-  maxRetries: 3
-
-jobs:
-- name: "Initialize Processing"
-  check:
-    in:
-      inputDir: isString
-      outputDir: isString
-  exec: |
-    // Validate directories and setup
-    if (!io.fileExists(args.inputDir)) {
-      throw "Input directory does not exist: " + args.inputDir
-    }
-    io.mkdir(args.outputDir)
-    args.startTime = now()
-    
-- name: "Scan Files"
-  deps: ["Initialize Processing"]
-  each: ["Process File Batch"]
-  exec: |
-    var files = io.listFilenames(args.inputDir)
-    var batches = []
-    
-    // Group files into batches
-    for(var i = 0; i < files.length; i += args.init.batchSize) {
-      batches.push(files.slice(i, i + args.init.batchSize))
-    }
-    
-    print("Processing " + files.length + " files in " + batches.length + " batches")
-    
-    // Process each batch in parallel using 'each'
-    batches.forEach(batch => {
-      each({ 
-        batch: batch, 
-        batchId: batches.indexOf(batch),
-        inputDir: args.inputDir,
-        outputDir: args.outputDir
-      })
-    })
-
-- name: "Process File Batch"
-  typeArgs:
-    timeout: 60000
-    lock: "file-processing"
-  exec: |
-    var processed = 0
-    var errors = []
-    
-    args.batch.forEach(filename => {
-      try {
-        var inputPath = args.inputDir + "/" + filename
-        var outputPath = args.outputDir + "/" + filename + ".processed"
-        
-        // Simulate file processing
-        var data = io.readFileString(inputPath)
-        var result = "PROCESSED: " + data.toUpperCase()
-        io.writeFileString(outputPath, result)
-        
-        processed++
-        print("✓ Processed: " + filename)
-      } catch(e) {
-        errors.push({ file: filename, error: e })
-        logErr("Failed to process " + filename + ": " + e)
-      }
-    })
-    
-    print("Batch " + args.batchId + " completed: " + processed + " files, " + errors.length + " errors")
-
-- name: "Generate Report"
-  deps: ["Scan Files"]
-  exec: |
-    var duration = now() - args.startTime
-    var totalFiles = io.listFilenames(args.outputDir).length
-    
-    print("Processing completed in " + duration + "ms")
-    print("Total files processed: " + totalFiles)
-
-todo:
-- "Initialize Processing"
-- "Scan Files" 
-- "Generate Report"
-```
-
 ### Advanced Monitoring and Metrics
 
 ```yaml
@@ -1280,3 +1167,108 @@ todo:
 - "Health Check"
 - "Cleanup Old Files"
 ```
+
+### Cron Reliability & Retries (cronCheck)
+
+Periodic jobs can recover missed runs & retry failures using `typeArgs.cronCheck`.
+
+```yaml
+jobs:
+- name    : Sample Periodic
+  type    : periodic
+  typeArgs:
+    cron         : "*/15 * * * * *"
+    waitForFinish: true
+    cronCheck    :
+      active   : true
+      ch       : oJob::cron
+      retries  : 3
+      retryWait: 2000
+  exec    : | #js
+    if (Math.random() < 0.2) throw "transient error";
+    log("OK " + new Date())
+```
+
+Channel schema per job: `{ name, last, status, retries }`.
+
+### Integrity, Auditing & Change Detection
+
+Provide hashes to detect tampering and enable auditing flags:
+
+```yaml
+ojob:
+  integrity:
+    list:
+    - dep.yaml: sha256:abcd...
+    warn: true
+```
+Set env `OJOB_CHECK_JOB_CHANGES=true` / `OJOB_CHECK_JOB_REMOVAL=true` for dynamic mutation warnings.
+
+### Environment Variable Injection
+
+`ojob.argsFromEnvs: true` converts all environment variables to args (lowercased + underscores). Use `initTemplateEscape: true` to preserve literal handlebars in `init`.
+
+### Global vs Job catch
+
+`ojob.catch` defines a fallback error handler (vars: exception, job, args, id). Individual jobs can also declare `catch:` overriding it.
+
+### Unique Execution Control
+
+```yaml
+ojob:
+  unique:
+    pidFile     : service.pid
+    killPrevious: true
+```
+
+Rejects concurrent instances (or replaces prior if `killPrevious`). Runtime control args: `stop`, `restart`, `forcestop`, `status`.
+
+### Channel Exposure Auditing
+
+`ojob.channels.audit: true` (or template string) logs HTTP channel operations with key & user info.
+
+### Structured JSON Logs
+
+Enable with env `OJOB_JSONLOG=true` or:
+```yaml
+ojob:
+  log:
+    format: json
+```
+
+### cronInLocalTime
+
+`ojob.cronInLocalTime: true` evaluates cron schedules using local timezone.
+
+### Code Embedding Precedence
+
+When a file name exists under `code:` its content overrides filesystem counterparts for `execFile` / `execRequire` resolution, enabling fully self-contained distributions.
+
+### Arg Parallelism Control
+
+Array args run in parallel unless `typeArgs.single: true` or global `numThreads <= 1`. Use for rate-limited APIs or ordered processing.
+
+### Timeout & stopWhen
+
+`typeArgs.timeout` enforces a max duration; if exceeded an exception is raised. `typeArgs.stopWhen` (function) is evaluated on timeout to allow graceful termination.
+
+### Locks (`lock` / `lockCh`)
+
+Mutual exclusion across async jobs sharing the same `typeArgs.lock` name; defaults to channel `oJob::locks`. Customize storage via `lockCh` for distributed scenarios.
+
+### Inspect Internal Job Log
+
+```javascript
+print($ch('oJob::log').getAll())
+```
+
+### Flag Overrides in YAML
+
+```yaml
+ojob:
+  flags:
+    OJOB_CHECK_JOB_CHANGES: true
+    OJOB_CHECK_JOB_REMOVAL: true
+```
+
+See `openaf-flags.md` for exhaustive list.

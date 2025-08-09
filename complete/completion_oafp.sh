@@ -27,6 +27,7 @@ F_in__in_db_indbtimeout_=1
 F_in__in_db_indblib_=1
 F_in__in_db_indbstream_=1
 F_in__in_db_indbexec_=1
+F_in__in_db_indbautocommit_=1
 F_in__in_db_indbdesc_=1
 F_in__in_gb64json=0
 F_in__in_hsperf=0
@@ -182,6 +183,7 @@ F_out__out_mdtable=0
 F_out__out_mdyaml=0
 F_out__out_ndjson=0
 F_out__out_ndslon=0
+F_out__out_ndcslon=0
 F_out__out_oaf=0
 F_out__out_oaf_outoaf_=1
 F_out__out_openmetrics=0
@@ -192,6 +194,12 @@ F_out__out_prettyjson=0
 F_out__out_pxml=0
 F_out__out_pxml_pxmlprefix=1
 F_out__out_raw=0
+F_out__out_rawascii=0
+F_out__out_rawascii_rawasciistart_=1
+F_out__out_rawascii_rawasciiend_=1
+F_out__out_rawascii_rawasciitab_=1
+F_out__out_rawascii_rawasciinovisual_=1
+F_out__out_rawascii_rawasciinolinenum_=1
 F_out__out_schart=0
 F_out__out_schart_schart_=1
 F_out__out_slon=0
@@ -358,6 +366,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#indblib=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indblib_=0; fi
     if [ "${arg#indbstream=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbstream_=0; fi
     if [ "${arg#indbexec=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbexec_=0; fi
+    if [ "${arg#indbautocommit=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbautocommit_=0; fi
     if [ "${arg#indbdesc=}" != "$arg" ]; then FFOUND=1; F_in__in_db_indbdesc_=0; fi
     if [ "$arg" = "in=gb64json" ]; then FFOUND=1; F_in__in_gb64json=1; F_in_=0; fi
     if [ "$arg" = "in=hsperf" ]; then FFOUND=1; F_in__in_hsperf=1; F_in_=0; fi
@@ -513,6 +522,7 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "out=mdyaml" ]; then FFOUND=1; F_out__out_mdyaml=1; F_out_=0; fi
     if [ "$arg" = "out=ndjson" ]; then FFOUND=1; F_out__out_ndjson=1; F_out_=0; fi
     if [ "$arg" = "out=ndslon" ]; then FFOUND=1; F_out__out_ndslon=1; F_out_=0; fi
+    if [ "$arg" = "out=ndcslon" ]; then FFOUND=1; F_out__out_ndcslon=1; F_out_=0; fi
     if [ "$arg" = "out=oaf" ]; then FFOUND=1; F_out__out_oaf=1; F_out_=0; fi
     if [ "${arg#outoaf=}" != "$arg" ]; then FFOUND=1; F_out__out_oaf_outoaf_=0; fi
     if [ "$arg" = "out=openmetrics" ]; then FFOUND=1; F_out__out_openmetrics=1; F_out_=0; fi
@@ -523,6 +533,12 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "out=pxml" ]; then FFOUND=1; F_out__out_pxml=1; F_out_=0; fi
     if [ "${arg#pxmlprefix}" != "$arg" ]; then FFOUND=1; F_out__out_pxml_pxmlprefix=0; fi
     if [ "$arg" = "out=raw" ]; then FFOUND=1; F_out__out_raw=1; F_out_=0; fi
+    if [ "$arg" = "out=rawascii" ]; then FFOUND=1; F_out__out_rawascii=1; F_out_=0; fi
+    if [ "${arg#rawasciistart=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciistart_=0; fi
+    if [ "${arg#rawasciiend=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciiend_=0; fi
+    if [ "${arg#rawasciitab=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciitab_=0; fi
+    if [ "${arg#rawasciinovisual=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciinovisual_=0; fi
+    if [ "${arg#rawasciinolinenum=}" != "$arg" ]; then FFOUND=1; F_out__out_rawascii_rawasciinolinenum_=0; fi
     if [ "$arg" = "out=schart" ]; then FFOUND=1; F_out__out_schart=1; F_out_=0; fi
     if [ "${arg#schart=}" != "$arg" ]; then FFOUND=1; F_out__out_schart_schart_=0; fi
     if [ "$arg" = "out=slon" ]; then FFOUND=1; F_out__out_slon=1; F_out_=0; fi
@@ -837,6 +853,9 @@ if [ $F_in__in_db -eq 1 ]; then
   if [ $F_in__in_db_indbexec_ -eq 1 ]; then
     echo "indbexec=	If true the input SQL is not a query but a DML statement"
   fi
+  if [ $F_in__in_db_indbautocommit_ -eq 1 ]; then
+    echo "indbautocommit=	If true the input SQL will be executed with autocommit enabled"
+  fi
   if [ $F_in__in_db_indbdesc_ -eq 1 ]; then
     echo "indbdesc=	If true, the output will be a list of column names and types. Use 'LIMIT 1' for faster results."
   fi
@@ -1059,12 +1078,14 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=mdyaml	A multi document YAML format -only for list outputs-"
   echo "out=ndjson	A NDJSON -new-line delimited JSON- format"
   echo "out=ndslon	A NDSLON -new-line delimited SLON- format"
+  echo "out=ndcslon	A NDSLON -new-line delimited SLON- forcely colored"
   echo "out=oaf	Executes OpenAF scripting code or an OpenAF script file and receives -data- as input and outputs via -outoaf-"
   echo "out=openmetrics	Converts a map or list to OpenMetrics/Prometheus compatible format"
   echo "out=pjson	A JSON format with spacing -equivalent to prettyjson-"
   echo "out=prettyjson	A JSON format with spacing"
   echo "out=pxml	Tries to output the input data into pretty xml"
   echo "out=raw	Tries to output the internal representation -string or json- of the input transformed data"
+  echo "out=rawascii	Outputs text data line by line with visual representation of non-visual characters"
   echo "out=schart	A static line-chart like chart -for a fixed list/array of values-"
   echo "out=slon	A SLON format"
   echo "out=sql	Outputs a series of SQL statements for an input list/array data"
@@ -1243,6 +1264,23 @@ fi
 if [ $F_out__out_pxml -eq 1 ]; then
   if [ $F_out__out_pxml_pxmlprefix -eq 1 ]; then
     echo "pxmlprefix	A prefix added to all XML tags"
+  fi
+fi
+if [ $F_out__out_rawascii -eq 1 ]; then
+  if [ $F_out__out_rawascii_rawasciistart_ -eq 1 ]; then
+    echo "rawasciistart=	Starting line number to display"
+  fi
+  if [ $F_out__out_rawascii_rawasciiend_ -eq 1 ]; then
+    echo "rawasciiend=	Ending line number to display"
+  fi
+  if [ $F_out__out_rawascii_rawasciitab_ -eq 1 ]; then
+    echo "rawasciitab=	Tab size for tab character visualization (defaults to 8)"
+  fi
+  if [ $F_out__out_rawascii_rawasciinovisual_ -eq 1 ]; then
+    echo "rawasciinovisual=	If true, non-visual characters won't be replaced by their visual representation"
+  fi
+  if [ $F_out__out_rawascii_rawasciinolinenum_ -eq 1 ]; then
+    echo "rawasciinolinenum=	If true, line numbers won't be displayed"
   fi
 fi
 if [ $F_out__out_schart -eq 1 ]; then
