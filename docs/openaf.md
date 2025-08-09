@@ -1,5 +1,7 @@
 # OpenAF Reference Guide
 
+[Index](./index.md) | [oJob Reference](./ojob.md) | [Security](./ojob-security.md) | [Flags](./openaf-flags.md) | [Recipes](./ojob-recipes.md) | [Advanced](./openaf-advanced.md)
+
 ## Overview
 
 OpenAF is a comprehensive JavaScript framework that extends the Mozilla Rhino JavaScript interpreter with powerful helper functions, wrappers, and utilities for Java environments. This reference guide covers the core extensions and helper libraries provided by OpenAF.
@@ -16,6 +18,11 @@ OpenAF is a comprehensive JavaScript framework that extends the Mozilla Rhino Ja
 8. [Python Integration](#python-integration)
 9. [Parsing Utilities](#parsing-utilities)
 10. [Data Validation](#data-validation)
+11. [Additional Core Shortcuts & Utilities](#additional-core-shortcuts--utilities)
+12. [Metrics API (ow.metrics)](#metrics-api-owmetrics)
+13. [$path – JMESPath Inspired Query & Transform](#$path--jmespath-inspired-query--transform)
+14. [Additional ow.* Highlights](#additional-ow-highlights)
+15. [Putting It Together: Authoring a New oJob from Scratch](#putting-it-together-authoring-a-new-ojob-from-scratch)
 
 ---
 
@@ -643,6 +650,208 @@ _$(value, "value").check(v => v > 0 && v < 100, "Value must be between 0 and 100
 // Expression-based validation
 _$(user, "user").expr("v.age >= 18", "User must be an adult");
 ```
+
+---
+
+## Additional Core Shortcuts & Utilities
+
+### templify (Template Expansion)
+
+`templify(templateString, data?)` parses a Handlebars template with the provided data (or current scope):
+
+```javascript
+var someText = "World";
+var out = templify("Hello {{someText}}!"); // Hello World!
+```
+
+Registered helpers include OpenAF, format, conditional helpers added at startup.
+
+### $sh - Shell Command Runner
+
+Creates and executes shell pipelines with captured output.
+
+Basic usage:
+```javascript
+var res = $sh("ls -1").get(0); // { out, err, exitcode }
+print(res.out);
+```
+
+Chained execution:
+```javascript
+$sh()
+  .sh("echo first")
+  .sh("echo second 1>&2")
+  .exec(); // Streams output directly
+```
+
+Convenience getters:
+- `get(i)` raw output struct
+- `getJson(i)` parse stdout JSON
+- `getJsSlon(i)` parse SLON
+- `getYaml(i)` parse YAML
+
+### $tb - Thread Box (Timeout / Stop Controller)
+
+Run a function with enforced timeout or stop condition:
+```javascript
+$tb(() => { heavyWork(); })
+  .timeout(5000)
+  .exec(); // throws or returns "timeout" if exceeded
+
+$tb(taskFn)
+  .timeout(10000)
+  .stopWhen(() => shouldStop())
+  .exec(); // returns "stop" if stopWhen true
+```
+
+Integrates with periodic jobs (`typeArgs.timeout`) internally.
+
+### $ch Shortcut
+
+`$ch(name)` returns an object to manipulate a named channel (create if needed with `.create()`):
+```javascript
+$ch("cache").create();
+$ch("cache").set({ id: 1 }, { value: "A" });
+var all = $ch("cache").getAll();
+```
+
+Supports advanced operations: `subscribe`, `peer`, `expose`, `size`, `destroy`, etc. See `ojob-security.md` for exposure/audit options.
+
+### Logging Helpers with Templates
+
+All logging functions (`log`, `logErr`, `logWarn`, `lognl`, etc.) accept Handlebars expressions inside the message string processed via `templify` with provided `someData` optional map.
+
+### Process Integrity & Signatures
+
+Environment-level controls:
+```text
+OAF_INTEGRITY           # { filePath: alg-hash }
+OAF_INTEGRITY_WARN      # warn vs abort on mismatch (default true)
+OAF_INTEGRITY_STRICT    # if true require all loaded scripts have integrity entries
+OAF_SIGNATURE_STRICT    # require valid signature for loaded scripts
+OAF_SIGNATURE_KEY       # public key for signature verification
+OAF_VALIDATION_STRICT   # require integrity + signature success
+```
+Combine with oJob integrity (`ojob.integrity`) for full chain trust.
+
+### Timeout Aware Sleep & stopWhen
+
+`$tb().timeout(ms).stopWhen(fn).exec(fn2)` is preferred over manual polling loops for responsive cancellation.
+
+### Parallel foreach Heuristics
+
+OpenAF auto-selects parallel vs sequential for some internal iterations based on `__flags.PFOREACH.*`. Tune via `ojob.flags` if needed for large scale workloads.
+
+---
+
+## Metrics API (ow.metrics)
+
+Add custom metrics and collect them locally, expose or push:
+```javascript
+ow.loadMetrics();
+ow.metrics.add("randomGauge", () => ({ value: Math.random()*100 }));
+ow.metrics.startCollecting(); // start default collection (mem,cpu,...)
+```
+
+Within an oJob `ojob.metrics.add` simply injects functions into `ow.metrics.add` before collection starts. Use `ow.metrics.startCollecting(ch, period, some)` to push periodic snapshots to a channel for historical analysis.
+
+## $path – JMESPath Inspired Query & Transform
+
+`$path(obj, expr, customFns?)` extracts / transforms data using an extended JMESPath syntax including slicing, filters, projections, pipes, object construction and custom functions.
+
+Examples:
+```javascript
+var data = { a: [ {x:1,y:2}, {x:2,y:3}, {x:3,y:4} ] };
+$path(data, "a[?x>`1`].y");           // [3,4]
+$path(data, "a[].{ sum: x + y }");     // [{sum:3},{sum:5},{sum:7}]
+$path([1,2,3,4,5], "[1:4:2]");        // [2,4]
+```
+
+Custom function injection:
+```javascript
+var custom = {
+  inc: {
+    _func: v => Number(v)+1,
+    _signature: [ { types: [$path().number] } ]
+  }
+};
+$path(10, "inc(@)", custom); // 11
+```
+
+## Additional ow.* Highlights
+
+| Module | Sample Capability |
+|--------|-------------------|
+| ow.server.scheduler | Cron & fixed-rate entries used by periodic jobs |
+| ow.format.cron | Parse & evaluate cron timings / detect delays |
+| ow.ch.utils.setLogToFile | Redirect OpenAF logs to rotating files |
+| ow.debug (via ojob.debug) | Wrap job code for stack-rich diagnostics |
+| ow.template.addHelper | Add custom Handlebars helpers globally |
+
+## Putting It Together: Authoring a New oJob from Scratch
+
+Minimal pattern leveraging documented features:
+```yaml
+help:
+  text: "Example ETL pipeline"
+  expects:
+  - name: sourceDir
+    desc: "Input folder"
+  - name: out
+    desc: "Output file"
+
+init:
+  batchSize: 50
+
+ojob:
+  async: false
+  argsFromEnvs: true
+  metrics:
+    passive: true
+    port: 9100
+  log:
+    format: json
+
+jobs:
+- name: Scan Files
+  check:
+    in:
+      sourceDir: isString
+  each: [ Process Batch ]
+  exec: | #js
+    var files = io.listFilenames(args.sourceDir);
+    var batches = [];
+    for (var i=0;i<files.length;i+=args.init.batchSize) batches.push(files.slice(i,i+args.init.batchSize));
+    batches.forEach((b,idx)=> each({ batch: b, idx, sourceDir: args.sourceDir, out: args.out }));
+
+- name: Process Batch
+  typeArgs:
+    timeout: 60000
+    lock: write
+  exec: | #js
+    args.batch.forEach(f => {
+      var p = args.sourceDir + "/" + f;
+      if (io.fileExists(p)) {
+        var content = io.readFileString(p).toUpperCase();
+        io.writeFileString(args.out, (content+"\n"), true);
+      }
+    });
+
+- name: Report
+  deps: [ Scan Files ]
+  exec: | #js
+    log("Generated: " + args.out);
+
+code:
+  util.js: |
+    exports['Process Batch'] = function(a){ /* extension point */ }
+
+todo:
+- Scan Files
+- Report
+```
+
+An LLM or developer can now iterate: add validation under `check.out`, convert to periodic ingestion by changing `Process Batch` to `type: periodic` with a `cron`, or secure with integrity lists using the separate security docs.
 
 ---
 
