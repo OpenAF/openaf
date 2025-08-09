@@ -403,6 +403,8 @@ complete:
     desc: A NDJSON -new-line delimited JSON- format
   - name: out=ndslon
     desc: A NDSLON -new-line delimited SLON- format
+  - name: out=ndcslon
+    desc: A NDSLON -new-line delimited SLON- forcely colored 
   - name: out=oaf
     desc: Executes OpenAF scripting code or an OpenAF script file and receives -data- as input and outputs via -outoaf-
     opts:
