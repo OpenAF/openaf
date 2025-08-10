@@ -344,6 +344,8 @@ todo:
     env: "prod"
 ```
 
+> See below [Job State Management](#job-state-management) for more on state management.
+
 ### Multiple Arguments
 
 ```yaml
@@ -385,7 +387,7 @@ Jobs are the building blocks of oJob. Each job defines a unit of work.
 jobs:
 - name: "Basic Job"          # unique name (mandatory)
   type: simple               # Job type (default)
-  exec: |                    # Code to execute
+  exec: | #js                # Code to execute
     print("Hello from " + job.name)
     args.result = "success"
 ```
@@ -398,7 +400,7 @@ jobs:
 jobs:
 - name: "Simple Job"
   type: simple
-  exec: |
+  exec: | #js
     // Your JavaScript code here
     log("Processing...")
 ```
@@ -414,7 +416,7 @@ jobs:
     # OR
     timeInterval: 300000      # Every 5 minutes in ms
     waitForFinish: true       # Don't start new if previous still running
-  exec: |
+  exec: | #js
     log("Periodic execution at " + new Date())
 ```
 
@@ -424,7 +426,7 @@ jobs:
 jobs:
 - name: "Cleanup Job"
   type: shutdown
-  exec: |
+  exec: | #js
     log("Cleaning up before shutdown")
     // Cleanup code here
 ```
@@ -437,7 +439,7 @@ jobs:
   type: subscribe
   typeArgs:
     chSubscribe: "dataChannel"
-  exec: |
+  exec: | #js
     log("Channel operation: " + op + " on " + ch)
     log("Key: " + stringify(k))
     log("Value: " + stringify(v))
@@ -462,13 +464,13 @@ jobs:
 - name: "Dependent Job"
   deps:
   - "Prerequisite Job"
-  - name: "Another Prerequisite"
-    onSuccess: |
+  - name     : "Another Prerequisite"
+    onSuccess: | #js
         log("Prerequisite succeeded")
-    onFail: |
+    onFail   : | #js
         log("Prerequisite failed")
         return false  # Stop execution
-  exec: |
+  exec: | #js
     log("All dependencies satisfied")
 ```
 
@@ -480,7 +482,7 @@ jobs:
   args:
     defaultValue: "hello"
     templateValue: "{{args.input}}-processed"
-  exec: |
+  exec: | #js
     log("Default: " + args.defaultValue)
     log("Template result: " + args.templateValue)
 ```
@@ -489,12 +491,12 @@ jobs:
 
 ```yaml
 jobs:
-- name: "Error Prone Job"
-  catch: |
+- name : "Error Prone Job"
+  catch: | #js
     logErr("Job failed: " + exception)
     // Handle error, return false to propagate
     return true  // Error handled
-  exec: |
+  exec : | #js
     if (Math.random() > 0.5) {
         throw "Random failure"
     }
@@ -509,7 +511,7 @@ jobs:
 # Python
 - name: "Python Job"
   lang: python
-  exec: |
+  exec: | #python
     import json
     print("Python is running")
     args['pythonResult'] = 'success'
@@ -517,15 +519,20 @@ jobs:
 # Shell/Bash
 - name: "Shell Job"
   lang: shell
-  exec: |
+  exec: | #shell
     echo "Running shell command"
+    # To use input args
+    # echo $aInputArgs
+    # OR
+    # echo {{aInputArgs}}
     export RESULT="shell-success"
+    # To output args
     echo '{"shellResult": "'$RESULT'"}'
   
 # SSH Remote
-- name: "Remote SSH Job"
-  lang: ssh
-  exec: |
+- name    : "Remote SSH Job"
+  lang    : ssh
+  exec    : | #shell
     echo "Running on remote server"
     hostname
   typeArgs:
@@ -534,28 +541,28 @@ jobs:
 # PowerShell
 - name: "PowerShell Job"
   lang: powershell
-  exec: |
+  exec: | #powershell
     Write-Host "PowerShell is running"
     $_args.psResult = "success"
   
 # Go
 - name: "Go Job"
   lang: go
-  exec: |
+  exec: | #go
     fmt.Println("Go is running")
     args["goResult"] = "success"
   
 # Ruby
 - name: "Ruby Job"
   lang: ruby
-  exec: |
+  exec: | #ruby
     puts "Ruby is running"
     args['rubyResult'] = 'success'
   
 # Node.js
 - name: "Node Job"
   lang: node
-  exec: |
+  exec: | #js
     console.log("Node.js is running")
     args.nodeResult = "success"
 ```
@@ -566,19 +573,19 @@ jobs:
 
 ```yaml
 jobs:
-- name: "Controlled Job"
+- name    : "Controlled Job"
   typeArgs:
-    timeout: 30000           # Max execution time (ms)
-    single: true             # Don't parallelize array args
-    async: false             # Force synchronous execution
-    noLog: true              # Don't log this job
-    pwd: "/tmp"              # Working directory
-    when: ["init", "ready"]  # Only run in these states
+    timeout : 30000           # Max execution time (ms)
+    single  : true             # Don't parallelize array args
+    async   : false             # Force synchronous execution
+    noLog   : true              # Don't log this job
+    pwd     : "/tmp"              # Working directory
+    when    : ["init", "ready"]  # Only run in these states
     stopWhen: |              # Stop condition
       return args.shouldStop == true
       lock: "myLock"           # Mutual exclusion lock
       lockCh: "lockChannel"    # Channel for locks
-  exec: |
+  exec    : |
     // Job code here
 ```
 
@@ -586,16 +593,16 @@ jobs:
 
 ```yaml
 jobs:
-- name: "Validated Job"
+- name : "Validated Job"
   check:
     in:                      # Input validation
-        inputFile: isString
-        port: toNumber.isNumber.default(8080)
-        enabled: toBoolean.isBoolean.default(false)
+      inputFile: isString
+      port     : toNumber.isNumber.default(8080)
+      enabled  : toBoolean.isBoolean.default(false)
     out:                     # Output validation
-        result: isString.oneOf(['success', 'failure'])
-        count: isNumber.default(0)
-  exec: |
+      result: isString.oneOf(['success', 'failure'])
+      count : isNumber.default(0)
+  exec : | #js
     // Validation happens automatically
     args.result = "success"
     args.count = 42
@@ -606,15 +613,15 @@ jobs:
 ```yaml
 jobs:
 - name: "Base Job"
-  exec: |
+  exec: | #js
     log("Base functionality")
       
 - name: "Extended Job"
   from:
   - "Base Job"             # Execute before main job
-  to:
+  to  :
   - "Cleanup Job"          # Execute after main job
-  exec: |
+  exec: | #js
     log("Main functionality")
 ```
 
@@ -624,7 +631,7 @@ jobs:
 jobs:
 - name: "Documented Job"
   help:
-    text: "This job processes data files"
+    text   : "This job processes data files"
     expects:
     - name: inputFile
       desc: "Path to input file"
@@ -640,19 +647,19 @@ The `code` section allows separating JavaScript code from job definitions:
 
 ```yaml
 code:
-  utils.js: |
+  utils.js: | #js
     exports.processData = function(data) {
       return data.map(item => item.toUpperCase())
     }
   
-  config.json: |
+  config.json: | #json
     {
       "apiUrl": "https://api.example.com",
       "timeout": 30000
     }
 
 jobs:
-- name: "Code Using Job"
+- name    : "Code Using Job"
   typeArgs:
     execRequire: "utils.js"  # Load and call exports.jobName
   # Alternative: reference file directly
@@ -741,7 +748,7 @@ oJob provides many built-in shortcuts for common operations:
 ```yaml
 todo:
 # Conditional execution
-- (if): "args.env == 'prod'"
+- (if    ): "args.env == 'prod'"
   ((then)): 
   - "Production Job"
   ((else)):
@@ -762,21 +769,21 @@ todo:
   
 # File operations
 - (fileget): "config.json"
-  ((out)): config
+  ((out  )): config
   
 # Channel operations
-- (ch): "myChannel"
+- (ch  ): "myChannel"
   ((op)): "set"
-  ((k)): { id: 1 }
-  ((v)): { name: "test" }
+  ((k )): { id: 1 }
+  ((v )): { name: "test" }
   
 # Output formatting
-- (output): results
+- (output  ): results
   ((format)): "json"
   
 # Template processing
 - (template): "Hello {{name}}!"
-  ((data)): { name: "World" }
+  ((data  )): { name: "World" }
   
 # Ask for input
 - (ask): "Please enter your name"
@@ -785,12 +792,12 @@ todo:
 - (wait): 5000               # Wait 5 seconds
   
 # Logging
-- (log): "Processing started"
+- (log    ): "Processing started"
   ((level)): "INFO"
   
 # Run external oJob
 - (runfile): "external.yaml"
-  ((args)): { param: "value" }
+  ((args )): { param: "value" }
   
 # Repeat operations
 - (repeat): 3
@@ -798,28 +805,82 @@ todo:
   - "Repeated Job"
   
 # Each loop
-- (each): "items"
+- (each  ): "items"
   ((todo)):
   - "Process Item"
   
 # Query data
-- (query): "[?status=='active']"
+- (query ): "[?status=='active']"
   ((from)): "data"
-  ((to)): "activeItems"
+  ((to  )): "activeItems"
   
 # State management
-- (state): "processing"
-- (stateOn): "processing"
+- (state    ): "processing"
+- (stateOn  ): "processing"
   ((default)): "Continue Processing"
   
 # Debug
 - (debug):                   # Pause for debugging
   
 # Conversion
-- (convert): "inputData"
+- (convert    ): "inputData"
   ((outFormat)): "yaml"
-  ((outKey)): "yamlData"
+  ((outKey   )): "yamlData"
 ```
+
+#### Built-in Jobs and Shortcut Correlation
+
+| Built-in Job         | Shortcut Equivalent   |
+|----------------------|----------------------|
+| ojob pass            | (pass)               |
+| ojob parallel        | (parallel)           |
+| ojob if              | (if)                 |
+| ojob repeat          | (repeat)             |
+| ojob repeat with each| (each)               |
+| ojob run             | (run)                |
+| ojob run file        | (runfile)            |
+| ojob todo            | (todo)               |
+| ojob wait            | (wait)               |
+| ojob exit            | (fail)               |
+| ojob get             | (get)                |
+| ojob set             | (set)                |
+| ojob unset           | (unset)              |
+| ojob get pm          |                      |
+| ojob file get        | (fileget)            |
+| ojob query           | (query)              |
+| ojob convert         | (convert)            |
+| ojob split to items  | (split)              |
+| ojob channel         | (ch)                 |
+| ojob output          | (output)             |
+| ojob print           | (print)              |
+| ojob print md        | (printmd)            |
+| ojob log             | (log)                |
+| ojob template        | (template)           |
+| ojob template folder | (templateFolder)     |
+| ojob find/replace    | (findReplace)        |
+| ojob function        | (fn)                 |
+| ojob oafp            | (oafp)               |
+| ojob sec get         | (secget)             |
+| ojob set envs        | (setenvs)            |
+| ojob state           | (state)              |
+| ojob set state       | (state)              |
+| ojob get state       |                      |
+| ojob check           | (check)              |
+| ojob job             |                      |
+| ojob options         | (options)            |
+| ojob llm             | (llm)                |
+| ojob report          |                      |
+| ojob job report      |                      |
+| ojob deps report     |                      |
+| ojob final report    |                      |
+| ojob final deps report|                     |
+| ojob job final report|                      |
+| ojob ask             | (ask)                |
+| ojob questions       | (questions)          |
+
+> Not all built-in jobs have a direct shortcut equivalent. Shortcuts provide a concise way to invoke common jobs in the `todo` section.
+
+> To the list of arguments that apply to an shortcut run `ojob -shortcuts ojob something`; to get help on each argument run `ojob -jobhelp ojob something`
 
 ### Specialized Built-in Jobs
 
@@ -828,8 +889,8 @@ oJob includes many more built-in jobs for specific operations:
 ```yaml
 todo:
 # Security operations
-- (secget): "mySecretKey"
-  ((secRepo)): "secrets"
+- (secget     ): "mySecretKey"
+  ((secRepo  )): "secrets"
   ((secBucket)): "app-secrets"
 
 # Print markdown
@@ -838,19 +899,19 @@ todo:
     Current status: {{status}}
   
 # Function execution  
-- (fn): "myFunction"
+- (fn    ): "myFunction"
   ((args)): { param: "value" }
   
 # Split operations
-- (split): "item1,item2,item3"
-  ((sep)): ","
+- (split    ): "item1,item2,item3"
+  ((sep    )): ","
   ((outPath)): "items"
   
 # Options/switch operations
 - (options): "environment"
-  ((dev)):
+  ((dev  )):
   - "Development Job"
-  ((prod)):
+  ((prod )):
   - "Production Job"
   
 # Environment variable setting
@@ -859,21 +920,21 @@ todo:
     API_KEY: "{{secrets.apikey}}"
     
 # Job planning and checking
-- (check): "Validation Job"
+- (check    ): "Validation Job"
   ((actions)):
     create: "Create Resource"
     update: "Update Resource"
     
 # Find and replace operations
-- (replace): "input text"
+- (replace  ): "input text"
   ((replace)): "old"
-  ((with)): "new"
+  ((with   )): "new"
   ((outPath)): "result"
   
 # OAFP (OpenAF Processing) operations
-- (oafp): "data"
-  ((from)): "json"
-  ((to)): "yaml"
+- (oafp     ): "data"
+  ((from   )): "json"
+  ((to     )): "yaml"
   ((outPath)): "convertedData"
 ```
 
@@ -917,11 +978,11 @@ The `each` functionality:
 ```yaml
 todo:
 - (state): "initializing"
-- name: "State Dependent Job"
-  when: "initializing"
+- name   : "State Dependent Job"
+  when   : "initializing"
 - (state): "processing"
-- name: "Processing Job"
-  when: "processing"
+- name   : "Processing Job"
+  when   : "processing"
 ```
 
 ### Metrics Collection
@@ -930,12 +991,12 @@ todo:
 ojob:
   metrics:
     add:
-      processedItems: |
+      processedItems: | #js
         return { count: $get("processedCount") || 0 }
 
 jobs:
 - name: "Metric Updating Job"
-  exec: |
+  exec: | #js
     ow.oJob.setMetric("processedItems", {
         type: "processedItems",
         count: args.itemCount
@@ -947,14 +1008,14 @@ jobs:
 ```yaml
 jobs:
 - name: "Channel Writer"
-  exec: |
+  exec: | #js
     $ch("dataChannel").set(
         { id: args.id },
         { data: args.data, timestamp: now() }
     )
   
 - name: "Channel Reader"
-  exec: |
+  exec: | #js
     var data = $ch("dataChannel").getAll()
     args.results = data
 ```
@@ -964,7 +1025,7 @@ jobs:
 ```yaml
 jobs:
 - name: "Template Job"
-  exec: |
+  exec: | #js
     var template = "Hello {{name}}, welcome to {{app}}!"
     var data = { name: args.userName, app: "oJob" }
     args.message = templify(template, data)
@@ -976,15 +1037,15 @@ oJob supports shortcut definitions that create convenient shorthand syntax for j
 
 ```yaml
 jobs:
-- name: "My Custom Job"
+- name    : "My Custom Job"
   typeArgs:
     shortcut:
-      name: "mycustom"         # Creates (mycustom) shortcut
+      name  : "mycustom"       # Creates (mycustom) shortcut
       keyArg: "inputValue"     # Main argument for the shortcut
-      args:                    # Mapping of shortcut args to job args
+      args  :                  # Mapping of shortcut args to job args
         output: "__output"     # Creates ((output)) shortcut arg
         format: "__format"     # Creates ((format)) shortcut arg
-  exec: |
+  exec    : | #js
     // Job logic here
 ```
 
@@ -1001,13 +1062,13 @@ todo:
 ```yaml
 jobs:
 - name: "Secure Job"
-  exec: |
+  exec: | #js
     // Access secure data using SBucket
     var secret = $sec("mysecrets", "mypassword").get("apikey")
     
 todo:
-- (secget): "database.password"
-  ((secRepo)): "myrepo"
+- (secget     ): "database.password"
+  ((secRepo  )): "myrepo"
   ((secBucket)): "secrets"
 ```
 
@@ -1015,7 +1076,7 @@ todo:
 
 ```yaml
 todo:
-- (printmd): |
+- (printmd   ): | #handlebars
     # My Report
     
     Processing completed with {{results.count}} items.
@@ -1032,15 +1093,15 @@ todo:
 ```yaml
 jobs:
 - name: "AI Analysis"
-  exec: |
+  exec: | #js
     var prompt = "Analyze this data and provide insights"
     var result = $llm().withContext(args.data, "sales data").promptJSON(prompt)
     args.analysis = result
 
 todo:
-- (llm): "Summarize the following data in 3 bullet points"
-  ((inKey)): "salesData"
-  ((inPath)): "records"
+- (llm      ): "Summarize the following data in 3 bullet points"
+  ((inKey  )): "salesData"
+  ((inPath )): "records"
   ((context)): "monthly sales figures"
   ((outPath)): "summary"
 ```
@@ -1051,10 +1112,10 @@ todo:
 
 ```yaml
 jobs:
-- name: "State Dependent Job"
+- name    : "State Dependent Job"
   typeArgs:
     when: ["processing", "ready"]  # Only run in these states
-  exec: |
+  exec    : |
     // This job only runs when state is 'processing' or 'ready'
     
 todo:
@@ -1071,29 +1132,29 @@ oJob includes many more built-in jobs for specific operations:
 ```yaml
 todo:
 # Security operations
-- (secget): "mySecretKey"
-  ((secRepo)): "secrets"
+- (secget     ): "mySecretKey"
+  ((secRepo  )): "secrets"
   ((secBucket)): "app-secrets"
 
 # Print markdown
-- (printmd): |
+- (printmd    ): |
     # Status Report
     Current status: {{status}}
   
 # Function execution  
-- (fn): "myFunction"
+- (fn    ): "myFunction"
   ((args)): { param: "value" }
   
 # Split operations
-- (split): "item1,item2,item3"
-  ((sep)): ","
+- (split    ): "item1,item2,item3"
+  ((sep    )): ","
   ((outPath)): "items"
   
 # Options/switch operations
 - (options): "environment"
-  ((dev)):
+  ((dev  )):
   - "Development Job"
-  ((prod)):
+  ((prod )):
   - "Production Job"
   
 # Environment variable setting
@@ -1102,21 +1163,21 @@ todo:
     API_KEY: "{{secrets.apikey}}"
     
 # Job planning and checking
-- (check): "Validation Job"
+- (check    ): "Validation Job"
   ((actions)):
     create: "Create Resource"
     update: "Update Resource"
     
 # Find and replace operations
-- (replace): "input text"
+- (replace  ): "input text"
   ((replace)): "old"
-  ((with)): "new"
+  ((with   )): "new"
   ((outPath)): "result"
   
 # OAFP (OpenAF Processing) operations
-- (oafp): "data"
-  ((from)): "json"
-  ((to)): "yaml"
+- (oafp     ): "data"
+  ((from   )): "json"
+  ((to     )): "yaml"
   ((outPath)): "convertedData"
 ```
 
@@ -1126,30 +1187,30 @@ todo:
 ojob:
   daemon: true
   metrics:
-    active:
+    active :
       nattrmon:
-        url: "http://monitor:7777/remote"
+        url       : "http://monitor:7777/remote"
         attrPrefix: "DataPipeline/"
         periodInMs: 30000
     collect:
-      ch: "metricsHistory"
+      ch    : "metricsHistory"
       period: 10000
-      some: ["mem", "cpu", "custom-throughput"]
-    add:
-      custom-throughput: |
+      some  : ["mem", "cpu", "custom-throughput"]
+    add    :
+      custom-throughput: | #js
         return { 
           value: $get("processedFiles") || 0,
           timestamp: now() 
         }
 
 jobs:
-- name: "Health Check"
-  type: periodic
+- name    : "Health Check"
+  type    : periodic
   typeArgs:
-    cron: "*/30 * * * * *"  # Every 30 seconds
+    cron     : "*/30 * * * * *"  # Every 30 seconds
     cronCheck: |
       return ow.oJob.getState() === "running"
-  exec: |
+  exec    : | #js
     var health = {
       status: "healthy",
       uptime: now() - $get("startTime"),
@@ -1157,11 +1218,11 @@ jobs:
     }
     $ch("health").set("current", health)
 
-- name: "Cleanup Old Files"
-  type: periodic  
+- name    : "Cleanup Old Files"
+  type    : periodic  
   typeArgs:
     cron: "0 0 2 * * *"  # Daily at 2 AM
-  exec: |
+  exec    : | #js
     var cutoff = now() - (7 * 24 * 60 * 60 * 1000)  # 7 days ago
     // Cleanup logic here
 
