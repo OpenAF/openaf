@@ -2817,7 +2817,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 			aJobTypeArgs.lang = "oaf";
 			origRes = io.readFileString(aJobTypeArgs.execJs);
 		}
-		if (origRes == "" && aJobTypeArgs.lang == "oaf" && (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire))) {
+		if (origRes == "" && ["oaf", "javascript", "js"].indexOf(aJobTypeArgs.lang) > -1 && (isDef(aJobTypeArgs.execRequire) || isString(parent.__execRequire))) {
 			aJobTypeArgs.execRequire = _$(aJobTypeArgs.execRequire, "execRequire").isString().default(parent.__execRequire);
 
 			// Verify integrity 
@@ -2899,9 +2899,8 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				}
 			}
 			switch(aJobTypeArgs.lang) {
+			case "javascript":
 			case "js":
-				res = res + "\n" + origRes
-				break;
 			case "oaf":
 				res = res + "\n" + origRes
 				break;
