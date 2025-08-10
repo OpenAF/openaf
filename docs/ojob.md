@@ -23,7 +23,7 @@ An oJob YAML file consists of several main sections:
 ```yaml
 # Optional: Help information
 help:
-  text: "Description of what this oJob does"
+  text   : "Description of what this oJob does"
   expects:
   - name: arg1
     desc: "Description of argument 1"
@@ -34,7 +34,7 @@ init:
 
 # Optional: oJob configuration
 ojob:
-  daemon: false
+  daemon      : false
   logToConsole: true
 
 # Optional: Include other oJob files
@@ -58,25 +58,25 @@ The help section provides documentation for humans about what the oJob does and 
 
 ```yaml
 help:
-  text: "Detailed description of the oJob functionality"
+  text   : "Detailed description of the oJob functionality"
   expects:
-  - name: inputFile
-    desc: "Path to the input file to process"
+  - name     : inputFile
+    desc     : "Path to the input file to process"
     mandatory: true
-    example: "/path/to/file.txt"
-  - name: outputDir
-    desc: "Directory where results will be saved"
+    example  : "/path/to/file.txt"
+  - name     : outputDir
+    desc     : "Directory where results will be saved"
     mandatory: false
-    example: "/tmp/output"
-  - name: verbose
-    desc: "Enable verbose logging"
-    options: ["true", "false"]
-  - name: mode
-    desc: "Processing mode"
-    moptions: ["fast", "thorough", "debug"]
-  - name: password
-    desc: "Authentication password"
-    secret: true
+    example  : "/tmp/output"
+  - name     : verbose
+    desc     : "Enable verbose logging"
+    options  : ["true", "false"]
+  - name     : mode
+    desc     : "Processing mode"
+    moptions : ["fast", "thorough", "debug"]
+  - name     : password
+    desc     : "Authentication password"
+    secret   : true
 ```
 
 ### Help Properties
@@ -560,6 +560,8 @@ jobs:
     args.nodeResult = "success"
 ```
 
+> If not 'lang' entry is provided it's assumed to be `javascript`/`oaf`/`js` which defaults to OpenAF's javascript
+
 ### Job Execution Control
 
 ```yaml
@@ -573,9 +575,9 @@ jobs:
     pwd: "/tmp"              # Working directory
     when: ["init", "ready"]  # Only run in these states
     stopWhen: |              # Stop condition
-    return args.shouldStop == true
-    lock: "myLock"           # Mutual exclusion lock
-    lockCh: "lockChannel"    # Channel for locks
+      return args.shouldStop == true
+      lock: "myLock"           # Mutual exclusion lock
+      lockCh: "lockChannel"    # Channel for locks
   exec: |
     // Job code here
 ```
@@ -895,7 +897,8 @@ jobs:
   exec: | #js
     $get("res").files.forEach(file => {
       print(`⚙️ Processing file ${file.canonicalPath}...`)
-      each(file)
+      // Executes the array of jobs defined in the 'each' parameter with the 'file' map
+      each(file)   
     })
 
 - name: Process file

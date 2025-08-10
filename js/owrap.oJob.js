@@ -2060,7 +2060,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
         ow.debug.register()
 		var ch = ow.oJob.getJobsCh()
 		ch.forEach((k, job) => {
-			if (isUnDef(job.lang) || (isDef(job.lang) && (job.lang == "oaf" || job.lang == "js") ) ) {
+			if (isUnDef(job.lang) || (isDef(job.lang) && (job.lang == "oaf" || job.lang == "js" || job.lang == "javascript") ) ) {
 				job.exec = ow.debug.debug(job.exec, isMap(this.__ojob.debug) ? this.__ojob.debug : __, true, k.name)
 			}
 			ch.set(k, job)
@@ -2878,6 +2878,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("powershell");
 			}
 			var m = parent.__langs[aJobTypeArgs.lang]
+			if (isDef(aJobTypeArgs.lang) && isUnDef(m) && ["javascript", "oaf", "js"].indexOf(aJobTypeArgs.lang) === -1) throw "Language '" + aJobTypeArgs.lang + "' not supported or defined for job '" + aName + "'."
 			if (isDef(m) && isUnDef(aJobTypeArgs.returnRE) && isDef(m.returnRE)) aJobTypeArgs.returnRE = m.returnRE
 			if (isDef(m) && isUnDef(aJobTypeArgs.returnFn) && isDef(m.returnFn)) aJobTypeArgs.returnFn = m.returnFn
 
@@ -3033,7 +3034,9 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 							}
 						}
 					} else {
-						logWarn("Language '" + aJobTypeArgs.lang + "' or shell or langFn not found in job '" + _aName + "'. Reverting to javascript.");
+						if (["javascript", "oaf", "js"].indexOf(aJobTypeArgs.lang) === -1) {
+							logWarn("Language '" + aJobTypeArgs.lang + "' or shell or langFn not found in job '" + _aName + "'. Reverting to javascript.")
+						}
 					}
 				}
 			}
