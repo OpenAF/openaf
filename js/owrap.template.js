@@ -67,6 +67,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $stringify       -- stringify the parameter\
  *   - $stringifyInLine -- stringify in the same line the parameter\
  *   - $toYAML          -- returns the YAML version of the parameter\
+ *   - $toKYAML         -- returns the KYAML version fo the parameter\
  *   - $toJSON          -- returns the JSON version of the parameter\
  *   - $env             -- returns the current environment variable identified by the parameter\
  *   - $escape          -- returns an escaped version of the parameter\
@@ -146,6 +147,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		stringify: stringify,
 		stringifyInLine: s => { return stringify(s, __, "") },
 		toYAML: af.toYAML,
+		toKYAML: af.toKYAML,
 		toJSON: stringify,
 		ptree: r => printTree(r),
 		pmap: r => printMap(r),
