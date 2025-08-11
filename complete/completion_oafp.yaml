@@ -436,7 +436,7 @@ complete:
     - name: rawasciiend=
       desc: Ending line number to display
     - name: rawasciitab=
-      desc: Tab size for tab character visualization (defaults to 8)
+      desc: Tab size for tab character visualization -defaults to 8-
     - name: rawasciinovisual=
       desc: If true, non-visual characters won't be replaced by their visual representation
     - name: rawasciinolinenum=
