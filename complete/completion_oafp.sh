@@ -1274,7 +1274,7 @@ if [ $F_out__out_rawascii -eq 1 ]; then
     echo "rawasciiend=	Ending line number to display"
   fi
   if [ $F_out__out_rawascii_rawasciitab_ -eq 1 ]; then
-    echo "rawasciitab=	Tab size for tab character visualization (defaults to 8)"
+    echo "rawasciitab=	Tab size for tab character visualization -defaults to 8-"
   fi
   if [ $F_out__out_rawascii_rawasciinovisual_ -eq 1 ]; then
     echo "rawasciinovisual=	If true, non-visual characters won't be replaced by their visual representation"

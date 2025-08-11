@@ -318,6 +318,14 @@ complete:
     desc: A tree-like forcely with non-ansi characters format
   - name: out=cyaml
     desc: An YAML colored format
+  - name: out=kyaml
+    desc: A Kubernetes YAML format
+  - name: out=ckyaml
+    desc: A Kubernetes YAML colored format
+  - name: out=lkyaml
+    desc: A Kubernetes YAML format without new-lines
+  - name: out=clkyaml
+    desc: A Kubernetes YAML without new-lines colored format
   - name: out=db
     desc: Output to a JDBC database
     opts:
