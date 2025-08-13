@@ -99,7 +99,7 @@ if (irj && isUnDef(getEnv("__OAF_MAINCLASS"))) {
 	}
 }
 
-try {
+//try {
 // Set .package.json	
 
 packJson = jsonParse(af.fromBytes2String(zip.streamGetFile(getOpenAFJar(), ".package.json")));
@@ -293,4 +293,4 @@ if (_res.exitcode != 0) {
 log("Done repacking OpenAF.jar");
 // We need to stop
 //exit(0, true)
-} catch(e) { printErr(e); if (isDef(e.javaException)) se.javaException.printStackTrace(); }
+//} catch(e) { $err(e) }
