@@ -23,7 +23,7 @@ An oJob YAML file consists of several main sections:
 ```yaml
 # Optional: Help information
 help:
-  text: "Description of what this oJob does"
+  text   : "Description of what this oJob does"
   expects:
   - name: arg1
     desc: "Description of argument 1"
@@ -34,7 +34,7 @@ init:
 
 # Optional: oJob configuration
 ojob:
-  daemon: false
+  daemon      : false
   logToConsole: true
 
 # Optional: Include other oJob files
@@ -58,25 +58,25 @@ The help section provides documentation for humans about what the oJob does and 
 
 ```yaml
 help:
-  text: "Detailed description of the oJob functionality"
+  text   : "Detailed description of the oJob functionality"
   expects:
-  - name: inputFile
-    desc: "Path to the input file to process"
+  - name     : inputFile
+    desc     : "Path to the input file to process"
     mandatory: true
-    example: "/path/to/file.txt"
-  - name: outputDir
-    desc: "Directory where results will be saved"
+    example  : "/path/to/file.txt"
+  - name     : outputDir
+    desc     : "Directory where results will be saved"
     mandatory: false
-    example: "/tmp/output"
-  - name: verbose
-    desc: "Enable verbose logging"
-    options: ["true", "false"]
-  - name: mode
-    desc: "Processing mode"
-    moptions: ["fast", "thorough", "debug"]
-  - name: password
-    desc: "Authentication password"
-    secret: true
+    example  : "/tmp/output"
+  - name     : verbose
+    desc     : "Enable verbose logging"
+    options  : ["true", "false"]
+  - name     : mode
+    desc     : "Processing mode"
+    moptions : ["fast", "thorough", "debug"]
+  - name     : password
+    desc     : "Authentication password"
+    secret   : true
 ```
 
 ### Help Properties
@@ -344,6 +344,8 @@ todo:
     env: "prod"
 ```
 
+> See below [Job State Management](#job-state-management) for more on state management.
+
 ### Multiple Arguments
 
 ```yaml
@@ -354,6 +356,56 @@ todo:
     output: "result1.txt"
   - input: "file2.txt"     # Second execution (parallel)
     output: "result2.txt"
+```
+
+### Default Arguments in Todo
+
+Todo entries also support default argument values using the `"${key:-defaultValue}"` syntax, allowing you to provide fallback values for arguments that may not be defined:
+
+```yaml
+todo:
+- name: "Job with Default Args"
+  args:
+    # Use "localhost" if "serverHost" is not defined
+    host: "${serverHost:-localhost}"
+    # Use 3306 if "dbPort" is not defined
+    port: "${dbPort:-3306}"
+    # Use existing value if "mode" is provided, otherwise use "default"
+    mode: "${mode:-default}"
+    # Works with nested paths - use "INFO" if config.log.level is not defined
+    logLevel: "${config.log.level:-INFO}"
+```
+
+**Key features in todo entries:**
+- **Runtime resolution**: Default values are resolved when the todo entry is processed
+- **Inheritance**: These processed arguments are passed to the target job
+- **Template integration**: Works seamlessly with oJob's template processing
+- **Nested support**: Supports dot notation for nested object properties
+- **Type preservation**: Values are processed as strings but maintain their intended types
+
+**Usage examples:**
+```yaml
+# Todo entry with various default patterns
+todo:
+- name: "Database Migration Job"
+  args:
+    # Database connection defaults
+    dbHost: "${DB_HOST:-localhost}"
+    dbPort: "${DB_PORT:-5432}"
+    dbName: "${DB_NAME:-myapp}"
+    
+    # Processing options with defaults
+    batchSize: "${BATCH_SIZE:-1000}"
+    timeout: "${TIMEOUT:-30000}"
+    
+    # Feature flags with defaults
+    dryRun: "${DRY_RUN:-false}"
+    verbose: "${VERBOSE:-true}"
+    
+    # Nested configuration defaults
+    config:
+      retryCount: "${config.retries:-3}"
+      backoffMs: "${config.backoff:-5000}"
 ```
 
 ## Including Other oJobs
@@ -385,7 +437,7 @@ Jobs are the building blocks of oJob. Each job defines a unit of work.
 jobs:
 - name: "Basic Job"          # unique name (mandatory)
   type: simple               # Job type (default)
-  exec: |                    # Code to execute
+  exec: | #js                # Code to execute
     print("Hello from " + job.name)
     args.result = "success"
 ```
@@ -398,7 +450,7 @@ jobs:
 jobs:
 - name: "Simple Job"
   type: simple
-  exec: |
+  exec: | #js
     // Your JavaScript code here
     log("Processing...")
 ```
@@ -414,7 +466,7 @@ jobs:
     # OR
     timeInterval: 300000      # Every 5 minutes in ms
     waitForFinish: true       # Don't start new if previous still running
-  exec: |
+  exec: | #js
     log("Periodic execution at " + new Date())
 ```
 
@@ -424,7 +476,7 @@ jobs:
 jobs:
 - name: "Cleanup Job"
   type: shutdown
-  exec: |
+  exec: | #js
     log("Cleaning up before shutdown")
     // Cleanup code here
 ```
@@ -437,7 +489,7 @@ jobs:
   type: subscribe
   typeArgs:
     chSubscribe: "dataChannel"
-  exec: |
+  exec: | #js
     log("Channel operation: " + op + " on " + ch)
     log("Key: " + stringify(k))
     log("Value: " + stringify(v))
@@ -462,13 +514,13 @@ jobs:
 - name: "Dependent Job"
   deps:
   - "Prerequisite Job"
-  - name: "Another Prerequisite"
-    onSuccess: |
+  - name     : "Another Prerequisite"
+    onSuccess: | #js
         log("Prerequisite succeeded")
-    onFail: |
+    onFail   : | #js
         log("Prerequisite failed")
         return false  # Stop execution
-  exec: |
+  exec: | #js
     log("All dependencies satisfied")
 ```
 
@@ -480,21 +532,73 @@ jobs:
   args:
     defaultValue: "hello"
     templateValue: "{{args.input}}-processed"
-  exec: |
+  exec: | #js
     log("Default: " + args.defaultValue)
     log("Template result: " + args.templateValue)
 ```
+
+#### Default Arguments
+
+oJob supports default argument values using the `"${key:-defaultValue}"` syntax. This allows you to specify fallback values for arguments that may not be provided:
+
+```yaml
+jobs:
+- name: "Job with Default Args"
+  args:
+    # Use "defaultHost" if "serverHost" is not defined
+    host: "${serverHost:-defaultHost}"
+    # Use 8080 if "serverPort" is not defined
+    port: "${serverPort:-8080}"
+    # Use existing value if "environment" is provided, otherwise use "development"
+    env: "${environment:-development}"
+    # Works with nested paths - use "localhost" if config.database.host is not defined
+    dbHost: "${config.database.host:-localhost}"
+  exec: | #js
+    log("Connecting to: " + args.host + ":" + args.port)
+    log("Environment: " + args.env)
+    log("Database host: " + args.dbHost)
+
+todo:
+- name: "Job with Default Args"
+  args:
+    serverHost: "production.example.com"
+    config:
+      database:
+        host: "db.example.com"
+```
+
+**Key features:**
+- **Fallback values**: If the specified key is undefined, the default value is used
+- **Type preservation**: Default values are treated as strings but can represent any value
+- **Nested paths**: Supports dot notation for nested object properties (e.g., `config.database.host`)
+- **Circular reference prevention**: A key cannot reference itself as a default to prevent infinite loops
+- **Runtime evaluation**: Default values are resolved when arguments are processed before job execution
+- **String values only**: The syntax only works with string values containing the exact pattern `"${key:-default}"`
+
+**Examples:**
+- `"${missingKey:-defaultValue}"` → `"defaultValue"` (if `missingKey` is undefined)
+- `"${existingKey:-defaultValue}"` → value of `existingKey` (if `existingKey` exists)
+- `"${config.timeout:-30000}"` → `"30000"` (if `config.timeout` is undefined)
+- `"${circularRef:-circularRef}"` → `"${circularRef:-circularRef}"` (prevents circular reference)
+
+**Usage contexts:**
+This default argument syntax can be used in:
+- Job `args` sections
+- Arguments passed from `from` jobs to current jobs
+- Any string value within job argument processing
+
+**Note:** This feature is processed by the `__defaultArgs` function during argument preparation, which occurs before job execution and when processing job dependencies.
 
 ### Error Handling
 
 ```yaml
 jobs:
-- name: "Error Prone Job"
-  catch: |
+- name : "Error Prone Job"
+  catch: | #js
     logErr("Job failed: " + exception)
     // Handle error, return false to propagate
     return true  // Error handled
-  exec: |
+  exec : | #js
     if (Math.random() > 0.5) {
         throw "Random failure"
     }
@@ -509,7 +613,7 @@ jobs:
 # Python
 - name: "Python Job"
   lang: python
-  exec: |
+  exec: | #python
     import json
     print("Python is running")
     args['pythonResult'] = 'success'
@@ -517,15 +621,20 @@ jobs:
 # Shell/Bash
 - name: "Shell Job"
   lang: shell
-  exec: |
+  exec: | #shell
     echo "Running shell command"
+    # To use input args
+    # echo $aInputArgs
+    # OR
+    # echo {{aInputArgs}}
     export RESULT="shell-success"
+    # To output args
     echo '{"shellResult": "'$RESULT'"}'
   
 # SSH Remote
-- name: "Remote SSH Job"
-  lang: ssh
-  exec: |
+- name    : "Remote SSH Job"
+  lang    : ssh
+  exec    : | #shell
     echo "Running on remote server"
     hostname
   typeArgs:
@@ -534,49 +643,51 @@ jobs:
 # PowerShell
 - name: "PowerShell Job"
   lang: powershell
-  exec: |
+  exec: | #powershell
     Write-Host "PowerShell is running"
     $_args.psResult = "success"
   
 # Go
 - name: "Go Job"
   lang: go
-  exec: |
+  exec: | #go
     fmt.Println("Go is running")
     args["goResult"] = "success"
   
 # Ruby
 - name: "Ruby Job"
   lang: ruby
-  exec: |
+  exec: | #ruby
     puts "Ruby is running"
     args['rubyResult'] = 'success'
   
 # Node.js
 - name: "Node Job"
   lang: node
-  exec: |
+  exec: | #js
     console.log("Node.js is running")
     args.nodeResult = "success"
 ```
+
+> If not 'lang' entry is provided it's assumed to be `javascript`/`oaf`/`js` which defaults to OpenAF's javascript
 
 ### Job Execution Control
 
 ```yaml
 jobs:
-- name: "Controlled Job"
+- name    : "Controlled Job"
   typeArgs:
-    timeout: 30000           # Max execution time (ms)
-    single: true             # Don't parallelize array args
-    async: false             # Force synchronous execution
-    noLog: true              # Don't log this job
-    pwd: "/tmp"              # Working directory
-    when: ["init", "ready"]  # Only run in these states
+    timeout : 30000           # Max execution time (ms)
+    single  : true             # Don't parallelize array args
+    async   : false             # Force synchronous execution
+    noLog   : true              # Don't log this job
+    pwd     : "/tmp"              # Working directory
+    when    : ["init", "ready"]  # Only run in these states
     stopWhen: |              # Stop condition
-    return args.shouldStop == true
-    lock: "myLock"           # Mutual exclusion lock
-    lockCh: "lockChannel"    # Channel for locks
-  exec: |
+      return args.shouldStop == true
+      lock: "myLock"           # Mutual exclusion lock
+      lockCh: "lockChannel"    # Channel for locks
+  exec    : |
     // Job code here
 ```
 
@@ -584,16 +695,16 @@ jobs:
 
 ```yaml
 jobs:
-- name: "Validated Job"
+- name : "Validated Job"
   check:
     in:                      # Input validation
-        inputFile: isString
-        port: toNumber.isNumber.default(8080)
-        enabled: toBoolean.isBoolean.default(false)
+      inputFile: isString
+      port     : toNumber.isNumber.default(8080)
+      enabled  : toBoolean.isBoolean.default(false)
     out:                     # Output validation
-        result: isString.oneOf(['success', 'failure'])
-        count: isNumber.default(0)
-  exec: |
+      result: isString.oneOf(['success', 'failure'])
+      count : isNumber.default(0)
+  exec : | #js
     // Validation happens automatically
     args.result = "success"
     args.count = 42
@@ -604,15 +715,15 @@ jobs:
 ```yaml
 jobs:
 - name: "Base Job"
-  exec: |
+  exec: | #js
     log("Base functionality")
       
 - name: "Extended Job"
   from:
   - "Base Job"             # Execute before main job
-  to:
+  to  :
   - "Cleanup Job"          # Execute after main job
-  exec: |
+  exec: | #js
     log("Main functionality")
 ```
 
@@ -622,7 +733,7 @@ jobs:
 jobs:
 - name: "Documented Job"
   help:
-    text: "This job processes data files"
+    text   : "This job processes data files"
     expects:
     - name: inputFile
       desc: "Path to input file"
@@ -638,19 +749,19 @@ The `code` section allows separating JavaScript code from job definitions:
 
 ```yaml
 code:
-  utils.js: |
+  utils.js: | #js
     exports.processData = function(data) {
       return data.map(item => item.toUpperCase())
     }
   
-  config.json: |
+  config.json: | #json
     {
       "apiUrl": "https://api.example.com",
       "timeout": 30000
     }
 
 jobs:
-- name: "Code Using Job"
+- name    : "Code Using Job"
   typeArgs:
     execRequire: "utils.js"  # Load and call exports.jobName
   # Alternative: reference file directly
@@ -739,7 +850,7 @@ oJob provides many built-in shortcuts for common operations:
 ```yaml
 todo:
 # Conditional execution
-- (if): "args.env == 'prod'"
+- (if    ): "args.env == 'prod'"
   ((then)): 
   - "Production Job"
   ((else)):
@@ -760,21 +871,21 @@ todo:
   
 # File operations
 - (fileget): "config.json"
-  ((out)): config
+  ((out  )): config
   
 # Channel operations
-- (ch): "myChannel"
+- (ch  ): "myChannel"
   ((op)): "set"
-  ((k)): { id: 1 }
-  ((v)): { name: "test" }
+  ((k )): { id: 1 }
+  ((v )): { name: "test" }
   
 # Output formatting
-- (output): results
+- (output  ): results
   ((format)): "json"
   
 # Template processing
 - (template): "Hello {{name}}!"
-  ((data)): { name: "World" }
+  ((data  )): { name: "World" }
   
 # Ask for input
 - (ask): "Please enter your name"
@@ -783,12 +894,12 @@ todo:
 - (wait): 5000               # Wait 5 seconds
   
 # Logging
-- (log): "Processing started"
+- (log    ): "Processing started"
   ((level)): "INFO"
   
 # Run external oJob
 - (runfile): "external.yaml"
-  ((args)): { param: "value" }
+  ((args )): { param: "value" }
   
 # Repeat operations
 - (repeat): 3
@@ -796,38 +907,353 @@ todo:
   - "Repeated Job"
   
 # Each loop
-- (each): "items"
+- (each  ): "items"
   ((todo)):
   - "Process Item"
   
 # Query data
-- (query): "[?status=='active']"
+- (query ): "[?status=='active']"
   ((from)): "data"
-  ((to)): "activeItems"
+  ((to  )): "activeItems"
   
 # State management
-- (state): "processing"
-- (stateOn): "processing"
+- (state    ): "processing"
+- (stateOn  ): "processing"
   ((default)): "Continue Processing"
   
 # Debug
 - (debug):                   # Pause for debugging
   
 # Conversion
-- (convert): "inputData"
+- (convert    ): "inputData"
   ((outFormat)): "yaml"
-  ((outKey)): "yamlData"
+  ((outKey   )): "yamlData"
 ```
 
-### Specialized Built-in Jobs
+#### Built-in Jobs and Shortcut Correlation
 
-oJob includes many more built-in jobs for specific operations:
+| Built-in Job         | Shortcut Equivalent   |
+|----------------------|----------------------|
+| ojob pass            | (pass)               |
+| ojob parallel        | (parallel)           |
+| ojob if              | (if)                 |
+| ojob repeat          | (repeat)             |
+| ojob repeat with each| (each)               |
+| ojob run             | (run)                |
+| ojob run file        | (runfile)            |
+| ojob todo            | (todo)               |
+| ojob wait            | (wait)               |
+| ojob exit            | (fail)               |
+| ojob get             | (get)                |
+| ojob set             | (set)                |
+| ojob unset           | (unset)              |
+| ojob get pm          |                      |
+| ojob file get        | (fileget)            |
+| ojob query           | (query)              |
+| ojob convert         | (convert)            |
+| ojob split to items  | (split)              |
+| ojob channel         | (ch)                 |
+| ojob output          | (output)             |
+| ojob print           | (print)              |
+| ojob print md        | (printmd)            |
+| ojob log             | (log)                |
+| ojob template        | (template)           |
+| ojob template folder | (templateFolder)     |
+| ojob find/replace    | (findReplace)        |
+| ojob function        | (fn)                 |
+| ojob oafp            | (oafp)               |
+| ojob sec get         | (secget)             |
+| ojob set envs        | (setenvs)            |
+| ojob state           | (state)              |
+| ojob set state       | (state)              |
+| ojob get state       |                      |
+| ojob check           | (check)              |
+| ojob job             |                      |
+| ojob options         | (options)            |
+| ojob llm             | (llm)                |
+| ojob report          |                      |
+| ojob job report      |                      |
+| ojob deps report     |                      |
+| ojob final report    |                      |
+| ojob final deps report|                     |
+| ojob job final report|                      |
+| ojob ask             | (ask)                |
+| ojob questions       | (questions)          |
+
+> Not all built-in jobs have a direct shortcut equivalent. Shortcuts provide a concise way to invoke common jobs in the `todo` section.
+
+> To the list of arguments that apply to an shortcut run `ojob -shortcuts ojob something`; to get help on each argument run `ojob -jobhelp ojob something`
+
+---
+
+#### Built-in Job Arguments Reference
+
+**(pass)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __args          | (pass)            | The args to inject                                                          |
+| __debug         | ((debug))         | Boolean to print args before injection                                      |
+| __templateArgs  | ((templateArgs))  | Boolean to apply template to each string in args                            |
+
+**(get)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __key           | (get)    | Map key to retrieve                                                         |
+| __path          | ((path)) | Path to consider from the __key                                             |
+
+**(set)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __key           | (set)    | Map key                                                                     |
+| __path          | ((path)) | Path to value from current args                                             |
+| __data          | ((data)) | Data to set                                                                 |
+| __templateArgs  | ((templateArgs)) | Apply template to each entry in __data                                      |
+| __debug         | ((debug)) | Print current args                                                          |
+
+**(unset)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-----------------------------------------------------------------------------|
+| __key           | (unset) | Map key to unset                                                            |
+
+**(fileget)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __file          | (fileget) | File path to YAML/JSON file                                                 |
+| __path          | ((path)) | Path of the file contents                                                   |
+| __cache         | ((cache)) | Boolean to cache file contents                                              |
+| __ttl           | ((ttl)) | TTL for cache                                                               |
+| __out           | ((out)) | Path on args to set contents                                                |
+| __key           | ((key)) | Key to set content if __out not defined                                     |
+
+**(template)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| template        | (template) | Template string                                                             |
+| templateFile    | ((templateFile)) | Template file                                                               |
+| data            | ((data)) | Data to use                                                                 |
+| dataFile        | ((dataFile)) | Data file (yaml/json)                                                       |
+| outputFile      | ((outputFile)) | Output file path                                                            |
+| __key           | ((key)) | Key holding template/data                                                   |
+| __tpath         | ((tpath)) | Path to template                                                            |
+| __dpath         | ((dpath)) | Path to data                                                                |
+| __outPath       | ((outPath)) | Output path                                                                 |
+| __out           | ((out)) | Output key                                                                  |
+
+**(templateFolder)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| templateFolder  | (templateFolder) | Folder with templates                                                       |
+| __templatePath  | ((templatePath)) | Path over recursive list of files                                           |
+| outputFolder    | ((outputFolder)) | Output folder                                                               |
+| data            | ((data)) | Data to use                                                                 |
+| dataFile        | ((dataFile)) | Data file                                                                   |
+| __key           | ((key)) | Key holding template/data                                                   |
+| __dpath         | ((dpath)) | Path to data                                                                |
+| logJob          | ((logJob)) | Logging job                                                                 |
+| metaTemplate    | ((metaTemplate)) | Interpret json/yaml files as argument maps                                  |
+
+**(findReplace)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __key           | (findReplace) | Key holding replacements                                                    |
+| __path          | ((path)) | Path to replacements                                                        |
+| inputKey        | ((inputKey)) | Key holding string to replace                                               |
+| inputPath       | ((inputPath)) | Path to string to replace                                                   |
+| inputFile       | ((inputFile)) | File to read contents from                                                  |
+| outputFile      | ((outputFile)) | File to write output to                                                     |
+| useRegExp       | ((useRegExp)) | Interpret replacements as regexp                                            |
+| flagsRegExp     | ((flagsRegExp)) | Regexp flags                                                               |
+| logJob          | ((logJob)) | Logging job                                                                 |
+
+**(ch)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __name          | (ch) | Channel name                                                                |
+| __op            | ((op)) | Operation (set, get, unset, setall, unsetall, getall, getkeys)              |
+| __key           | ((key)) | Key for operation args                                                      |
+| __kpath         | ((kpath)) | Path for keys                                                               |
+| key             | ((k)) | Key for set/get/unset                                                       |
+| keys            | ((ks)) | Keys for setall/unsetall                                                    |
+| value           | ((v)) | Value for set/get/unset                                                     |
+| values          | ((vs)) | Values for setall/unsetall                                                  |
+| __vpath         | ((vpath)) | Path for values                                                             |
+| extra           | ((extra)) | Extra argument for getall/getkeys                                           |
+
+**(print)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| msg             | (print) | Message template                                                            |
+| __key           | ((key)) | Key to retrieve                                                             |
+| __path          | ((path)) | Path to consider from __key                                                 |
+| level           | ((level)) | Message level (info/error)                                                  |
+
+**(printmd)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __text          | (printmd) | Text template to parse                                                      |
+| __outputMD      | ((outputMD)) | Boolean to output as markdown                                               |
+
+**(log)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| msg             | (log) | Message template                                                            |
+| __key           | ((key)) | Key to retrieve                                                             |
+| __path          | ((path)) | Path to consider from __key                                                 |
+| level           | ((level)) | Message level (info/warn/error)                                             |
+| options         | ((options)) | Extra options for log functions                                             |
+
+**(fn)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __fn            | (fn) | Function to execute                                                         |
+| __key           | ((key)) | Key to retrieve previous results                                            |
+| __path          | ((path)) | Path for function arguments                                                 |
+| __fnPath        | ((fnPath)) | Path to set function result                                                 |
+
+**(output)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __key           | (output) | Key to retrieve results                                                     |
+| __path          | ((path)) | Path to map/array over results                                              |
+| __format        | ((format)) | Output format                                                               |
+| __title         | ((title)) | Title key for output                                                        |
+| __internal      | ((internal)) | Show internal oJob entries                                                  |
+| __function      | ((function)) | Print/log function                                                          |
+
+**(todo)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| todo            | (todo) | String or array of todo maps                                                |
+| isolateArgs     | ((isolateArgs)) | Isolate args from all others                                                |
+| isolateJob      | ((isolateJobs)) | Run job in different scope                                                  |
+| templateArgs    | ((templateArgs)) | Apply template to each string in args                                       |
+| shareArgs       | ((shareArgs)) | Share args between jobs sequentially                                        |
+| __debug         | ((debug)) | Print job execution parameters                                              |
+
+**(runfile)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __job           | (runfile) | YAML/JSON ojob file or remote URL                                           |
+| __args          | ((args)) | Args to provide to external ojob                                            |
+| __out           | ((out)) | Path on args to set contents                                                |
+| __key           | ((key)) | Key to set content if __out not defined                                     |
+| __inKey         | ((inKey)) | Merge args with content from provided key                                   |
+| __usePM         | ((usePM)) | Output to __pm                                                              |
+| __inPM          | ((inPM)) | Input from provided key to __pm                                             |
+| __templateArgs  | ((templateArgs)) | Apply template to each string in args                                       |
+| __debug         | ((debug)) | Print job execution parameters                                              |
+
+**(parallel)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| todo            | (parallel) | String or array of todo maps                                                |
+| isolateArgs     | ((isolateArgs)) | Isolate args from all others                                                |
+| isolateJob      | ((isolateJob)) | Run job in different scope                                                  |
+| templateArgs    | ((templateArgs)) | Apply template to each string in args                                       |
+| shareArgs       | ((shareArgs)) | Share args between jobs sequentially                                        |
+| isolateArgs     | on each entry | Isolate args from all others only on this entry                     |
+| isolateJob      | on each entry | Run job in different scope only on this entry                              |
+| templateArgs    | on each entry | Apply template to each string in args only on this entry               |
+| shareArgs       | on each entry | Share args between jobs sequentially only on this entry                  |
+| __debug         | ((debug)) | Print job execution parameters                                              |
+
+**(wait)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| time            | ((wait)) | Amount of time in ms to pause execution                                     |
+
+**(fail)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| code            | (fail) | Exit code number                                                            |
+| force           | ((force)) | Boolean to halt processing instead of exit                                  |
+
+**(convert)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __inKey         | (convert) | Input key for contents to convert                                           |
+| __inPath        | ((inPath)) | Path on input contents                                                      |
+| __inFormat      | ((inFormat)) | Format of input contents (yaml, json, xml, ndjson, slon)                    |
+| __outKey        | ((outKey)) | Output key for converted object                                             |
+| __outPath       | ((outPath)) | Path on output contents                                                     |
+
+**(questions)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __questions     | (questions) | Map structure for askStruct                                                 |
+
+**(ask)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __question      | (ask) | Question to ask                                                             |
+| __answers       | ((answers)) | Map of answers to store into args                                           |
+| __force         | ((force)) | Force asking even if value is defined                                       |
+
+**(oafp)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __params        | (oafp) | Parameters to provide to oafp                                               |
+
+**(llm)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __llmPrompt     | (llm) | Prompt to send to LLM model                                                 |
+| __llmContext    | ((context)) | Context of input data                                                       |
+| __llmInPath     | ((inPath)) | Path to consider from __llmInKey                                            |
+| __llmInKey      | ((inKey)) | Key for input data                                                          |
+| __llmEnv        | ((env)) | Environment variable for $llm options                                       |
+| __llmOptions    | ((options)) | Options for $llm                                                            |
+| __llmOutPath    | ((outPath)) | Path to store result                                                        |
+| __llmDebug      | ((debug)) | Print job execution parameters                                              |
+
+**(secget)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| secKey          | (secget) | SBucket key                                                                 |
+| secRepo         | ((secRepo)) | SBucket repository                                                          |
+| secBucket       | ((secBucket)) | SBucket name                                                                |
+| secPass         | ((secPass)) | SBucket password                                                            |
+| secOut          | ((secOut)) | Args path to map secret                                                     |
+| secMainPass     | ((secMainPass)) | SBucket repository password                                                 |
+| secFile         | ((secFile)) | SBucket file                                                                |
+| secDontAsk      | ((secDontAsk)) | Don't ask for passwords                                                     |
+| secIgnore       | ((secIgnore)) | Ignore errors for missing sec parameters                                    |
+| secEnv          | ((secEnv)) | Retrieve secret from env variable                                           |
+
+**(query)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __query         | (query) | Query map for ow.obj.filter or af.fromNLinq                                 |
+| __type          | ((type)) | Type of query (path, sql, nlinq)                                            |
+| __from          | ((from)) | Path to args key to query                                                   |
+| __to            | ((to)) | Path to store results in args                                               |
+| __toKey         | ((toKey)) | Key to set results                                                          |
+| __key           | ((key)) | Key for input/output                                                        |
+
+**(optionOn)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __optionOn      | (optionOn) | Variable in args to define which todos to add                               |
+| __lowerCase     | ((lowerCase)) | Compare optionOn in lower case                                              |
+| __upperCase     | ((upperCase)) | Compare optionOn in upper case                                              |
+| __todos         | ((todos)) | Map of option values to todo arrays                                         |
+| __default       | ((default)) | Default array of todos                                                      |
+| __async         | ((async)) | Run todos in async mode                                                     |
+
+**(state)**
+| Argument        | Shortcut argument | Description                                                                 |
+|-----------------|-------------------|-----------------------------------------------------------------------------|
+| __state         | (state) | State to change to                                                          |
+
+---
+
+## Examples
 
 ```yaml
 todo:
 # Security operations
-- (secget): "mySecretKey"
-  ((secRepo)): "secrets"
+- (secget     ): "mySecretKey"
+  ((secRepo  )): "secrets"
   ((secBucket)): "app-secrets"
 
 # Print markdown
@@ -836,19 +1262,19 @@ todo:
     Current status: {{status}}
   
 # Function execution  
-- (fn): "myFunction"
+- (fn    ): "myFunction"
   ((args)): { param: "value" }
   
 # Split operations
-- (split): "item1,item2,item3"
-  ((sep)): ","
+- (split    ): "item1,item2,item3"
+  ((sep    )): ","
   ((outPath)): "items"
   
 # Options/switch operations
 - (options): "environment"
-  ((dev)):
+  ((dev  )):
   - "Development Job"
-  ((prod)):
+  ((prod )):
   - "Production Job"
   
 # Environment variable setting
@@ -857,29 +1283,301 @@ todo:
     API_KEY: "{{secrets.apikey}}"
     
 # Job planning and checking
-- (check): "Validation Job"
+- (check    ): "Validation Job"
   ((actions)):
     create: "Create Resource"
     update: "Update Resource"
     
 # Find and replace operations
-- (replace): "input text"
+- (replace  ): "input text"
   ((replace)): "old"
-  ((with)): "new"
+  ((with   )): "new"
   ((outPath)): "result"
-  
+
 # OAFP (OpenAF Processing) operations
-- (oafp): "data"
-  ((from)): "json"
-  ((to)): "yaml"
+- (oafp     ): "data"
+  ((from   )): "json"
+  ((to     )): "yaml"
   ((outPath)): "convertedData"
 ```
 
-## Advanced Features
+### Example 1: Basic Hello World
 
-### Job Each Processing
+```yaml
+help:
+  text: "A simple Hello World example"
+  
+jobs:
+- name: "Hello World"
+  exec: |
+    print("Hello, World!")
+```
+
+### Example 2: File Processing with Arguments
+
+```yaml
+help:
+  text: "Processes a file and outputs results"
+  expects:
+  - name: inputFile
+    desc: "The file to process"
+  - name: outputDir
+    desc: "Where to save the results"
+
+init:
+  outputDir: "/tmp/results"
+
+ojob:
+  logToConsole: true
+
+jobs:
+- name: "Process File"
+  exec: |
+    var lines = readFile(args.inputFile).split("\n");
+    var result = lines.length;
+    writeFile(args.outputDir + "/result.txt", "Line count: " + result);
+```
+
+### Example 3: Conditional Execution
+
+```yaml
+help:
+  text: "Runs different jobs based on the environment"
+
+jobs:
+- name: "Setup"
+  exec: |
+    if (args.env == "prod") {
+      // Production setup
+    } else {
+      // Development setup
+    }
+```
+
+### Example 4: Parallel Job Execution
+
+```yaml
+help:
+  text: "Processes multiple files in parallel"
+
+jobs:
+- name: "List files"
+  from:
+  - (pass  ):
+      aFilePath: "."
+  - (fn    ): io.listFiles
+    ((key )): res
+  each: 
+  - Process file
+  exec: | #js
+    $get("res").files.forEach(file => {
+      print(`⚙️ Processing file ${file.canonicalPath}...`)
+      // Executes the array of jobs defined in the 'each' parameter with the 'file' map
+      each(file)   
+    })
+
+- name: Process file
+  exec: | #js
+    print(`  🗂️ file ${args.canonicalPath} with ${args.size} bytes processed.`)
+```
 
 The `each` section allows a job to call other jobs in parallel for each element in a list or array:
+
+
+
+### Example 5: Using Templates
+
+```yaml
+help:
+  text: "Demonstrates the use of templates in oJob"
+
+jobs:
+- name: "Generate Config"
+  args:
+    env: "production"
+  exec: |
+    var template = "server {\n  listen 80;\n  server_name {{domain}};\n}\n";
+    var data = { domain: "example.com" };
+    var config = templify(template, data);
+    writeFile("/etc/nginx/conf.d/example.com.conf", config);
+```
+
+### Example 6: Error Handling
+
+```yaml
+help:
+  text: "Shows how to handle errors in oJob"
+
+jobs:
+- name: "Faulty Job"
+  catch: | #js
+    logErr("Job failed: " + exception)
+    // Handle error, return false to propagate
+    return true  // Error handled
+  exec : | #js
+    if (Math.random() > 0.5) {
+        throw "Random failure"
+    }
+```
+
+### Example 6.5: Default Arguments
+
+```yaml
+help:
+  text: "Demonstrates default argument values"
+  expects:
+  - name: environment
+    desc: "Environment to deploy to (dev, staging, prod)"
+    example: "dev"
+  - name: database_host
+    desc: "Database server hostname"
+    example: "db.example.com"
+  - name: api_port
+    desc: "Port for the API server"
+    example: "3000"
+
+jobs:
+- name: "Configuration Setup"
+  args:
+    # Environment defaults to "development" if not provided
+    env: "${environment:-development}"
+    # Database connection with nested path fallback
+    dbHost: "${config.database.host:-localhost}"
+    dbPort: "${config.database.port:-5432}"
+    dbName: "${config.database.name:-myapp}"
+    # API configuration with fallbacks
+    apiPort: "${api_port:-3000}"
+    apiHost: "${api_host:-0.0.0.0}"
+    # Service URLs with environment-based defaults
+    logServiceUrl: "${log_service_url:-http://localhost:8080/logs}"
+    # Feature flags with boolean defaults  
+    enableDebug: "${debug_mode:-false}"
+  exec: | #js
+    log("Environment: " + args.env)
+    log("Database: " + args.dbHost + ":" + args.dbPort + "/" + args.dbName)
+    log("API Server: " + args.apiHost + ":" + args.apiPort)
+    log("Log Service: " + args.logServiceUrl)
+    log("Debug Mode: " + args.enableDebug)
+    
+    // Configuration object for other jobs to use
+    args.config = {
+      environment: args.env,
+      database: {
+        host: args.dbHost,
+        port: parseInt(args.dbPort),
+        name: args.dbName
+      },
+      api: {
+        host: args.apiHost,
+        port: parseInt(args.apiPort)
+      },
+      services: {
+        logging: args.logServiceUrl
+      },
+      features: {
+        debug: args.enableDebug === "true"
+      }
+    }
+
+todo:
+- name: "Configuration Setup"
+  args:
+    # Only provide some values, others will use defaults
+    environment: "staging"
+    api_port: "4000"
+    config:
+      database:
+        host: "staging-db.example.com"
+        name: "staging_myapp"
+```
+
+### Example 7: Using Multiple Languages
+
+```yaml
+help:
+  text: "Demonstrates using different languages in jobs"
+
+jobs:
+# Python
+- name: "Python Job"
+  lang: python
+  exec: | #python
+    import json
+    print("Python is running")
+    args['pythonResult'] = 'success'
+  
+# Shell/Bash
+- name: "Shell Job"
+  lang: shell
+  exec: | #shell
+    echo "Running shell command"
+    # To use input args
+    # echo $aInputArgs
+    # OR
+    # echo {{aInputArgs}}
+    export RESULT="shell-success"
+    # To output args
+    echo '{"shellResult": "'$RESULT'"}'
+  
+# SSH Remote
+- name    : "Remote SSH Job"
+  lang    : ssh
+  exec    : | #shell
+    echo "Running on remote server"
+    hostname
+  typeArgs:
+    shell: "/bin/bash"
+  
+# PowerShell
+- name: "PowerShell Job"
+  lang: powershell
+  exec: | #powershell
+    Write-Host "PowerShell is running"
+    $_args.psResult = "success"
+  
+# Go
+- name: "Go Job"
+  lang: go
+  exec: | #go
+    fmt.Println("Go is running")
+    args["goResult"] = "success"
+  
+# Ruby
+- name: "Ruby Job"
+  lang: ruby
+  exec: | #ruby
+    puts "Ruby is running"
+    args['rubyResult'] = 'success'
+  
+# Node.js
+- name: "Node Job"
+  lang: node
+  exec: | #js
+    console.log("Node.js is running")
+    args.nodeResult = "success"
+```
+
+### Example 8: Job Dependencies
+
+```yaml
+help:
+  text: "Demonstrates job dependencies"
+
+jobs:
+- name: "Main Job"
+  deps:
+  - "Setup Job"
+  - name     : "Config Job"
+    onSuccess: | #js
+        log("Config loaded")
+    onFail   : | #js
+        log("Config failed")
+        return false  # Stop execution
+  exec: | #js
+    log("All dependencies satisfied")
+```
+
+### Example 9: Job Each Processing
 
 ```yaml
 jobs:
@@ -895,7 +1593,8 @@ jobs:
   exec: | #js
     $get("res").files.forEach(file => {
       print(`⚙️ Processing file ${file.canonicalPath}...`)
-      each(file)
+      // Executes the array of jobs defined in the 'each' parameter with the 'file' map
+      each(file)   
     })
 
 - name: Process file
@@ -909,79 +1608,79 @@ The `each` functionality:
 - Each call receives the data passed to the `each()` function
 - Useful for parallel processing of collections
 
-### State Management
+### Example 10: State Management
 
 ```yaml
 todo:
 - (state): "initializing"
-- name: "State Dependent Job"
-  when: "initializing"
+- name   : "State Dependent Job"
+  when   : "initializing"
 - (state): "processing"
-- name: "Processing Job"
-  when: "processing"
+- name   : "Processing Job"
+  when   : "processing"
 ```
 
-### Metrics Collection
+### Example 11: Metrics Collection
 
 ```yaml
 ojob:
   metrics:
     add:
-      processedItems: |
+      processedItems: | #js
         return { count: $get("processedCount") || 0 }
 
 jobs:
 - name: "Metric Updating Job"
-  exec: |
+  exec: | #js
     ow.oJob.setMetric("processedItems", {
         type: "processedItems",
         count: args.itemCount
     })
 ```
 
-### Channel Operations
+### Example 12: Channel Operations
 
 ```yaml
 jobs:
 - name: "Channel Writer"
-  exec: |
+  exec: | #js
     $ch("dataChannel").set(
         { id: args.id },
         { data: args.data, timestamp: now() }
     )
   
 - name: "Channel Reader"
-  exec: |
+  exec: | #js
     var data = $ch("dataChannel").getAll()
     args.results = data
 ```
 
-### Template Processing
+### Example 13: Template Processing
 
 ```yaml
 jobs:
 - name: "Template Job"
-  exec: |
+  exec: | #js
     var template = "Hello {{name}}, welcome to {{app}}!"
     var data = { name: args.userName, app: "oJob" }
     args.message = templify(template, data)
 ```
 
-### Job Shortcut Support
+### Example 14: Job Shortcut Support
 
 oJob supports shortcut definitions that create convenient shorthand syntax for jobs:
 
 ```yaml
 jobs:
-- name: "My Custom Job"
+- name    : "My Custom Job"
   typeArgs:
     shortcut:
-      name: "mycustom"         # Creates (mycustom) shortcut
+      name  : "mycustom"       # Creates (mycustom) shortcut
       keyArg: "inputValue"     # Main argument for the shortcut
-      args:                    # Mapping of shortcut args to job args
+      args  :                  # Mapping of shortcut args to job args
         output: "__output"     # Creates ((output)) shortcut arg
         format: "__format"     # Creates ((format)) shortcut arg
-  exec: |
+  exec    : | #js
     // Job logic here
 ```
 
@@ -993,27 +1692,27 @@ todo:
   ((format)): "json"
 ```
 
-### Job Security Features
+### Example 15: Job Security Features
 
 ```yaml
 jobs:
 - name: "Secure Job"
-  exec: |
+  exec: | #js
     // Access secure data using SBucket
     var secret = $sec("mysecrets", "mypassword").get("apikey")
     
 todo:
-- (secget): "database.password"
-  ((secRepo)): "myrepo"
+- (secget     ): "database.password"
+  ((secRepo  )): "myrepo"
   ((secBucket)): "secrets"
 ```
 
-### Job Markdown Support
+### Example 16: Job Markdown Support
 
 ```yaml
 todo:
-- (printmd): |
-    # My Report
+- (printmd   ): | #handlebars
+    # Status Report
     
     Processing completed with {{results.count}} items.
     
@@ -1024,34 +1723,34 @@ todo:
   ((outputMD)): false  # Parse as markdown (default)
 ```
 
-### Job LLM Integration
+### Example 17: Job LLM Integration
 
 ```yaml
 jobs:
 - name: "AI Analysis"
-  exec: |
+  exec: | #js
     var prompt = "Analyze this data and provide insights"
     var result = $llm().withContext(args.data, "sales data").promptJSON(prompt)
     args.analysis = result
 
 todo:
-- (llm): "Summarize the following data in 3 bullet points"
-  ((inKey)): "salesData"
-  ((inPath)): "records"
+- (llm      ): "Summarize the following data in 3 bullet points"
+  ((inKey  )): "salesData"
+  ((inPath )): "records"
   ((context)): "monthly sales figures"
   ((outPath)): "summary"
 ```
 
 > Use the OAF_MODEL environment variable to specify the LLM model to use similarily to OAFP_MODEL
 
-### Job State Management
+### Example 18: Job State Management
 
 ```yaml
 jobs:
-- name: "State Dependent Job"
+- name    : "State Dependent Job"
   typeArgs:
     when: ["processing", "ready"]  # Only run in these states
-  exec: |
+  exec    : |
     // This job only runs when state is 'processing' or 'ready'
     
 todo:
@@ -1061,36 +1760,34 @@ todo:
 - "State Dependent Job"
 ```
 
-### Additional Built-in Jobs
-
-oJob includes many more built-in jobs for specific operations:
+### Example 19: Additional Built-in Jobs
 
 ```yaml
 todo:
 # Security operations
-- (secget): "mySecretKey"
-  ((secRepo)): "secrets"
+- (secget     ): "mySecretKey"
+  ((secRepo  )): "secrets"
   ((secBucket)): "app-secrets"
 
 # Print markdown
-- (printmd): |
+- (printmd    ): |
     # Status Report
     Current status: {{status}}
   
 # Function execution  
-- (fn): "myFunction"
+- (fn    ): "myFunction"
   ((args)): { param: "value" }
   
 # Split operations
-- (split): "item1,item2,item3"
-  ((sep)): ","
+- (split    ): "item1,item2,item3"
+  ((sep    )): ","
   ((outPath)): "items"
   
 # Options/switch operations
 - (options): "environment"
-  ((dev)):
+  ((dev  )):
   - "Development Job"
-  ((prod)):
+  ((prod )):
   - "Production Job"
   
 # Environment variable setting
@@ -1099,54 +1796,54 @@ todo:
     API_KEY: "{{secrets.apikey}}"
     
 # Job planning and checking
-- (check): "Validation Job"
+- (check    ): "Validation Job"
   ((actions)):
     create: "Create Resource"
     update: "Update Resource"
     
 # Find and replace operations
-- (replace): "input text"
+- (replace  ): "input text"
   ((replace)): "old"
-  ((with)): "new"
+  ((with   )): "new"
   ((outPath)): "result"
   
 # OAFP (OpenAF Processing) operations
-- (oafp): "data"
-  ((from)): "json"
-  ((to)): "yaml"
+- (oafp     ): "data"
+  ((from   )): "json"
+  ((to     )): "yaml"
   ((outPath)): "convertedData"
 ```
 
-### Advanced Monitoring and Metrics
+### Example 20: Advanced Monitoring and Metrics
 
 ```yaml
 ojob:
   daemon: true
   metrics:
-    active:
+    active :
       nattrmon:
-        url: "http://monitor:7777/remote"
+        url       : "http://monitor:7777/remote"
         attrPrefix: "DataPipeline/"
         periodInMs: 30000
     collect:
-      ch: "metricsHistory"
+      ch    : "metricsHistory"
       period: 10000
-      some: ["mem", "cpu", "custom-throughput"]
-    add:
-      custom-throughput: |
+      some  : ["mem", "cpu", "custom-throughput"]
+    add    :
+      custom-throughput: | #js
         return { 
           value: $get("processedFiles") || 0,
           timestamp: now() 
         }
 
 jobs:
-- name: "Health Check"
-  type: periodic
+- name    : "Health Check"
+  type    : periodic
   typeArgs:
-    cron: "*/30 * * * * *"  # Every 30 seconds
+    cron     : "*/30 * * * * *"  # Every 30 seconds
     cronCheck: |
       return ow.oJob.getState() === "running"
-  exec: |
+  exec    : | #js
     var health = {
       status: "healthy",
       uptime: now() - $get("startTime"),
@@ -1154,11 +1851,11 @@ jobs:
     }
     $ch("health").set("current", health)
 
-- name: "Cleanup Old Files"
-  type: periodic  
+- name    : "Cleanup Old Files"
+  type    : periodic  
   typeArgs:
     cron: "0 0 2 * * *"  # Daily at 2 AM
-  exec: |
+  exec    : | #js
     var cutoff = now() - (7 * 24 * 60 * 60 * 1000)  # 7 days ago
     // Cleanup logic here
 
@@ -1168,7 +1865,7 @@ todo:
 - "Cleanup Old Files"
 ```
 
-### Cron Reliability & Retries (cronCheck)
+### Example 21: Cron Reliability & Retries (cronCheck)
 
 Periodic jobs can recover missed runs & retry failures using `typeArgs.cronCheck`.
 
@@ -1191,7 +1888,7 @@ jobs:
 
 Channel schema per job: `{ name, last, status, retries }`.
 
-### Integrity, Auditing & Change Detection
+### Example 22: Integrity, Auditing & Change Detection
 
 Provide hashes to detect tampering and enable auditing flags:
 
@@ -1204,15 +1901,15 @@ ojob:
 ```
 Set env `OJOB_CHECK_JOB_CHANGES=true` / `OJOB_CHECK_JOB_REMOVAL=true` for dynamic mutation warnings.
 
-### Environment Variable Injection
+### Example 23: Environment Variable Injection
 
 `ojob.argsFromEnvs: true` converts all environment variables to args (lowercased + underscores). Use `initTemplateEscape: true` to preserve literal handlebars in `init`.
 
-### Global vs Job catch
+### Example 24: Global vs Job catch
 
 `ojob.catch` defines a fallback error handler (vars: exception, job, args, id). Individual jobs can also declare `catch:` overriding it.
 
-### Unique Execution Control
+### Example 25: Unique Execution Control
 
 ```yaml
 ojob:
@@ -1223,11 +1920,11 @@ ojob:
 
 Rejects concurrent instances (or replaces prior if `killPrevious`). Runtime control args: `stop`, `restart`, `forcestop`, `status`.
 
-### Channel Exposure Auditing
+### Example 26: Channel Exposure Auditing
 
 `ojob.channels.audit: true` (or template string) logs HTTP channel operations with key & user info.
 
-### Structured JSON Logs
+### Example 27: Structured JSON Logs
 
 Enable with env `OJOB_JSONLOG=true` or:
 ```yaml
@@ -1236,33 +1933,33 @@ ojob:
     format: json
 ```
 
-### cronInLocalTime
+### Example 28: cronInLocalTime
 
 `ojob.cronInLocalTime: true` evaluates cron schedules using local timezone.
 
-### Code Embedding Precedence
+### Example 29: Code Embedding Precedence
 
 When a file name exists under `code:` its content overrides filesystem counterparts for `execFile` / `execRequire` resolution, enabling fully self-contained distributions.
 
-### Arg Parallelism Control
+### Example 30: Arg Parallelism Control
 
 Array args run in parallel unless `typeArgs.single: true` or global `numThreads <= 1`. Use for rate-limited APIs or ordered processing.
 
-### Timeout & stopWhen
+### Example 31: Timeout & stopWhen
 
 `typeArgs.timeout` enforces a max duration; if exceeded an exception is raised. `typeArgs.stopWhen` (function) is evaluated on timeout to allow graceful termination.
 
-### Locks (`lock` / `lockCh`)
+### Example 32: Locks (`lock` / `lockCh`)
 
 Mutual exclusion across async jobs sharing the same `typeArgs.lock` name; defaults to channel `oJob::locks`. Customize storage via `lockCh` for distributed scenarios.
 
-### Inspect Internal Job Log
+### Example 33: Inspect Internal Job Log
 
 ```javascript
 print($ch('oJob::log').getAll())
 ```
 
-### Flag Overrides in YAML
+### Example 34: Flag Overrides in YAML
 
 ```yaml
 ojob:

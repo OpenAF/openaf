@@ -222,4 +222,68 @@
         ow.test.assert(r.a, 2, "Problem with oJob pass normal argument.")
         ow.test.assert(r.c, __, "Problem with oJob pass undefined/null argument.")
     }
+
+    exports.testOJobDefaultArgs = function() {
+        var testOJob = {
+            todo: [
+                { name: "Test Default Args", args: { providedValue: "actualValue", config: { database: { port: 5432 } } } }
+            ],
+            jobs: [
+                {
+                    name: "Test Default Args",
+                    args: {
+                        simpleDefault: "${missingValue:-defaultValue}",
+                        existingValue: "${providedValue:-shouldNotUseThis}", 
+                        numericDefault: "${missingNumber:-42}",
+                        nestedDefault: "${config.database.host:-localhost}",
+                        existingNested: "${config.database.port:-3306}",
+                        circularRef: "${circularRef:-circular}"
+                    },
+                    exec: "__pm.simpleDefault = args.simpleDefault; __pm.existingValue = args.existingValue; __pm.numericDefault = args.numericDefault; __pm.nestedDefault = args.nestedDefault; __pm.existingNested = args.existingNested; __pm.circularRef = args.circularRef;"
+                }
+            ]
+        }
+
+        var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/")
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/")
+        io.writeFileString(tmpOJob, af.toYAML(testOJob))
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJob + "\", { })")
+
+        var r = $openaf(tmpOAF)
+
+        ow.test.assert(r.simpleDefault, "defaultValue", "Problem with oJob default args for missing value.")
+        ow.test.assert(r.existingValue, "actualValue", "Problem with oJob default args for existing value.")
+        ow.test.assert(r.numericDefault, "42", "Problem with oJob default args for numeric default.")
+        ow.test.assert(r.nestedDefault, "localhost", "Problem with oJob default args for nested missing value.")
+        ow.test.assert(r.existingNested, 5432, "Problem with oJob default args for existing nested value.")
+        ow.test.assert(r.circularRef, "${circularRef:-circular}", "Problem with oJob default args circular reference prevention.")
+    }
+
+    exports.testOJobTodoDefaultArgs = function() {
+        var testOJob = {
+            todo: [
+                { name: "Test Default Args", args: { providedValue: "actualValue", config: { database: { port: 5432 } }, simpleDefault: "${missingValue:-defaultValue}", existingValue: "${providedValue:-shouldNotUseThis}", numericDefault: "${missingNumber:-42}", nestedDefault: "${config.database.host:-localhost}", existingNested: "${config.database.port:-3306}", circularRef: "${circularRef:-circular}" } }
+            ],
+            jobs: [
+                {
+                    name: "Test Default Args",
+                    exec: "__pm.simpleDefault = args.simpleDefault; __pm.existingValue = args.existingValue; __pm.numericDefault = args.numericDefault; __pm.nestedDefault = args.nestedDefault; __pm.existingNested = args.existingNested; __pm.circularRef = args.circularRef;"
+                }
+            ]
+        }
+
+        var tmpOJob = io.createTempFile("oJob", ".yaml").replace(/\\/g, "/")
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/")
+        io.writeFileString(tmpOJob, af.toYAML(testOJob))
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJob + "\", { })")
+
+        var r = $openaf(tmpOAF)
+
+        ow.test.assert(r.simpleDefault, "defaultValue", "Problem with oJob todo default args for missing value.")
+        ow.test.assert(r.existingValue, "actualValue", "Problem with oJob todo default args for existing value.")
+        ow.test.assert(r.numericDefault, "42", "Problem with oJob todo default args for numeric default.")
+        ow.test.assert(r.nestedDefault, "localhost", "Problem with oJob todo default args for nested missing value.")
+        ow.test.assert(r.existingNested, 5432, "Problem with oJob todo default args for existing nested value.")
+        ow.test.assert(r.circularRef, "${circularRef:-circular}", "Problem with oJob todo default args circular reference prevention.")
+    }
 })()

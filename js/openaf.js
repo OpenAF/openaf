@@ -284,6 +284,14 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		waitms             : 50,
 		forceSeq           : false,
 		seq_ratio          : 1
+	},
+	YAML: {
+		indent     : 2,
+		arrayIndent: false,
+		lineWidth  : -1,
+		unsafe     : true,
+		// If true, kyaml output (toKYAML) will place each mapping pair / sequence element on its own line (pretty flow)
+		perEntryNewLine: true
 	}
 })
 
@@ -4704,6 +4712,7 @@ var $from = function(a) {
  * random(min, max), srandom(min, max)\
  * at(arrayIndex)\
  * to_numSpace(num, space), from_numSpace(num, space)\
+ * to_kyaml(obj), from_kyaml(str)\
  * 
  * Functions only active if flag PATH_SAFE is false:\
  *   ojob(name, argsJSSLON)\
@@ -4980,6 +4989,14 @@ const $path = function(aObj, aPath, customFunctions) {
 		},
 		from_yaml: {
 			_func: ar => af.fromYAML(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		to_kyaml: {
+			_func: ar => af.toKYAML(ar[0], ar[1], __, ar[2]),
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.boolean ] }, { types: [ jmespath.types.boolean ] } ]
+		},
+		from_kyaml: {
+			_func: ar => jsonParse(ar[0], __, __, true),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
 		to_toml: {
@@ -9288,9 +9305,14 @@ AF.prototype.getEncoding = function(aBytesOrString) {
 
 	if (isString(aBytesOrString)) aBytesOrString = af.fromString2Bytes(aBytesOrString);
 
+	// Performance + correctness: avoid recalculating expressions and fix last chunk length calculation
 	var detector = new Packages.org.mozilla.universalchardet.UniversalDetector(null);
-	for(var ii = 0; ii < aBytesOrString.length && !detector.isDone(); ii = ii + __flags.IO.bufferSize) { 
-		detector.handleData(aBytesOrString, ii, ((aBytesOrString.length - ii) >= __flags.IO.bufferSize ? __flags.IO.bufferSize : (aBytesOrString.length - __flags.IO.bufferSize)));
+	var bufSize = __flags.IO.bufferSize;
+	var totalLen = aBytesOrString.length;
+	for (var ii = 0; ii < totalLen && !detector.isDone(); ii += bufSize) {
+		var remaining = totalLen - ii;
+		var len = remaining >= bufSize ? bufSize : remaining; // previous code had a bug using (totalLen - bufSize)
+		detector.handleData(aBytesOrString, ii, len);
 	}
 	detector.dataEnd();
 	res = detector.getDetectedCharset();
@@ -9314,12 +9336,6 @@ AF.prototype.setInteractiveTerminal = () => isDef(__con) ? __con.getTerminal().s
  */
 AF.prototype.unsetInteractiveTerminal = () => isDef(__con) ? __con.getTerminal().settings.set("icanon echo") : __
 
-__YAMLformat = {
-  indent: 2,
-  arrayIndent: false,
-  lineWidth: -1,
-  unsafe: true
-};
 /**
  * <odoc>
  * <key>AF.toYAML(aJson, multiDoc, sanitize, shouldColor) : String</key>
@@ -9330,62 +9346,192 @@ AF.prototype.toYAML = function(aJson, multiDoc, sanitize, shouldColor) {
 	loadJSYAML()
 	if (sanitize) {
 		aJson = clone(aJson)
-		traverse(aJson, (aK, aV, aP, aO) => {
-			if (isJavaObject(aV)) aO[aK] = String(aV)
-		})
+		traverse(aJson, (aK, aV, aP, aO) => { if (isJavaObject(aV)) aO[aK] = String(aV) })
 	}
-	var o = { indent: __YAMLformat.indent, noArrayIndent: !__YAMLformat.arrayIndent, lineWidth: __YAMLformat.lineWidth }
-	var _r
-	if (isArray(aJson) && multiDoc) {
-		_r = aJson.map(y => jsyaml.dump(y, o)).join("\n---\n\n")
-	} else {
-		_r = jsyaml.dump(aJson, o)
-	}
-	if (shouldColor) {
-		var fn = (o, s) => {
-			s = s.trim()
-			if (s == "true" || s == "false") s = toBoolean(s)
-			switch(descType(s)) {
-			case "string": return ansiColor(__colorFormat.string, o)
-			case "number": return ansiColor(__colorFormat.number, o)
-			case "boolean": return ansiColor(__colorFormat.boolean, o)
-			case "date": return ansiColor(__colorFormat.date, o)
-			default: return o
-			} 
-		}
-		_r = pForEach(_r.split("\n"), s => {
-			var change = false
-			if (!change && /^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +.*)?$/.test(s)) {
-				// key in array
-				if (!/^(\-|\s+\-)\s+['"][^'"]+:/.test(s.trim())) {
-					s = s.replace(/^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +.*)?$/, ansiColor(__colorFormat.key, "$1") + ansiColor(__colorFormat.key, "$2:") + fn("$3", s.replace(/^(\-|\s+\-)([^(\#|\/\/|\:)]+)\:( +.*)?$/, "$3")))
-					change = true
-				}
-			}
-			if (!change && /^(\-|\s+\-)/.test(s)) {
-				// array
-				s = s.replace(/^(\-|\s+\-)(.+)/, ansiColor(__colorFormat.default, "$1") + fn("$2", s.replace(/^(\-|\s+\-)(.+)/, "$2")))
-				change = true
-			}
-			if (!change && /^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/.test(s)) {
-				// key with value
-				s = s.replace(/^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/, ansiColor(__colorFormat.key, "$1:") + fn("$2", s.replace(/^([^(\#|\/\/|\:)][^\:]*)\:( +.*)?$/, "$2")))
-				change = true
-			} 
-			/*if (/((\#|\/\/)+.+)$/.test(s)) {
-				// comment
-				s = s.replace(/((\#|\/\/)+.+)$/, ansiColor("faint,italic", "$1"))	
-				change = true
-			}*/
-			if (!change) {
-				// default
-				s = ansiColor(__colorFormat.default, s)
-			}
+	var dumpOpts = { indent: __flags.YAML.indent, noArrayIndent: !__flags.YAML.arrayIndent, lineWidth: __flags.YAML.lineWidth }
+	var _r = (isArray(aJson) && multiDoc) ? aJson.map(y => jsyaml.dump(y, dumpOpts)).join("\n---\n\n") : jsyaml.dump(aJson, dumpOpts)
+	if (!shouldColor) return _r
 
-			return s
-		}).join("\n")
+	// Performance refactor: avoid pForEach + repeated regex + replace passes; compile regex once and build output directly
+	const reKeyInArray = /^(\-|\s+\-)([^#/:]+)\:( +.*)?$/
+	const reQuotedKeyInArray = /^(\-|\s+\-)\s+['"][^'"]+:/
+	const reArray = /^(\-|\s+\-)(.+)/
+	const reKeyVal = /^([^#/:][^:]*)\:( +.*)?$/
+
+	const fn = (orig, s) => {
+		if (!isString(s)) return ansiColor(__colorFormat.default, orig)
+		var ts = s.trim()
+		if (ts === "true" || ts === "false") ts = toBoolean(ts)
+		switch (descType(ts)) {
+		case "string": return ansiColor(__colorFormat.string, orig)
+		case "number": return ansiColor(__colorFormat.number, orig)
+		case "boolean": return ansiColor(__colorFormat.boolean, orig)
+		case "date": return ansiColor(__colorFormat.date, orig)
+		default: return orig
+		}
 	}
-	return _r
+
+	var lines = _r.split("\n")
+	for (var i = 0, L = lines.length; i < L; i++) {
+		var s = lines[i]
+		var m
+		// key in array (but not quoted key like - "a:")
+		if ((m = reKeyInArray.exec(s)) && !reQuotedKeyInArray.test(s.trim())) {
+			var val = isDef(m[3]) ? m[3] : ""
+			lines[i] = ansiColor(__colorFormat.key, m[1]) + ansiColor(__colorFormat.key, m[2] + ":") + fn(val, val)
+			continue
+		}
+		// array entry (plain)
+		if ((m = reArray.exec(s))) {
+			lines[i] = ansiColor(__colorFormat.default, m[1]) + fn(m[2], m[2])
+			continue
+		}
+		// key: value
+		if ((m = reKeyVal.exec(s))) {
+			var v2 = isDef(m[2]) ? m[2] : ""
+			lines[i] = ansiColor(__colorFormat.key, m[1] + ":") + fn(v2, v2)
+			continue
+		}
+		// default
+		lines[i] = ansiColor(__colorFormat.default, s)
+	}
+	return lines.join("\n")
+}
+
+/**
+ * <odoc>
+ * <key>AF.toKYAML(aJson, multiDoc, sanitize, shouldColor, perEntryNewLine) : String</key>
+ * Converts aJson to a Kubernetes style YAML (flow) string obeying rules:\
+ *  - Double-quoted string values\
+ *  - Unquoted keys unless ambiguous\
+ *  - Flow style {} for maps and [] for arrays\
+ *  - If perEntryNewLine (or __flags.YAML.perEntryNewLine) is true each entry / element appears in its own line similar to JSON pretty-print\
+ * If multiDoc and aJson is an array multiple documents will be emitted separated by '---'.
+ * If sanitize true Java objects are stringified.
+ * Color can be toggled with shouldColor.
+ * </odoc>
+ */
+AF.prototype.toKYAML = function(aJson, multiDoc, sanitize, shouldColor, perEntryNewLine) {
+	loadJSYAML()
+	/* Kubernetes YAML style (custom kyaml):
+	   - Always double-quoting value strings
+	   - Keys unquoted unless ambiguous (spaces, control chars, YAML specials, starts with '-' or '?' or contains ':', '#', '{', '}', '[', ']', ',')
+	   - Always flow style for mappings -> { k: v, ... }
+	   - Always flow style for sequences -> [ v1, v2, ... ]
+	*/
+	if (sanitize) {
+		aJson = clone(aJson)
+		traverse(aJson, (aK, aV, aP, aO) => { if (isJavaObject(aV)) aO[aK] = String(aV) })
+	}
+
+	// Determine if a key needs quoting (stricter ambiguity detection)
+	const needsQuotingKey = (k) => {
+		if (!isString(k)) return false
+		if (k.length === 0) return true
+		var trimmed = k.trim()
+		if (trimmed !== k) return true // leading/trailing spaces
+		var lw = k.toLowerCase()
+		// Reserved / special scalars in YAML 1.2 core + k8s common values
+		if (["true","false","null","~","yes","no","on","off","nan","inf","-inf"].indexOf(lw) >= 0) return true
+		// Numeric / timestamp like
+		if (/^[-+]?\d+(?:_\d+)*(?:\.?\d+)?$/.test(k)) return true
+		if (/^\d{4}-\d{2}-\d{2}(?:[tT ]\d{2}:\d{2}:\d{2}(?:\.[0-9]+)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(k)) return true
+		// Starts with or contains YAML special indicators
+		if (/^[\-?:,\[\]{}#&*!|>'"%@`]/.test(k)) return true
+		if (/[:#{}\[\],]/.test(k)) return true
+		if (/\s/.test(k)) return true
+		// Contains non-printable
+		if (/[^\x20-\x7E]/.test(k)) return true
+		return false
+	}
+
+	// Escape and quote a string value
+	const quoteString = (v) => {
+		if (!isString(v)) return v
+		return '"' + String(v)
+			.replace(/\\/g, "\\\\")
+			.replace(/"/g, '\\"')
+			.replace(/\n/g, "\\n")
+			.replace(/\r/g, "\\r")
+			.replace(/\t/g, "\\t") + '"'
+	}
+
+	// Render any JS value to kyaml scalar/collection
+	const IND = __flags.YAML.indent || 2
+	perEntryNewLine = isDef(perEntryNewLine) ? perEntryNewLine : (__flags.YAML.perEntryNewLine === true)
+	const lineLimit = (__flags.YAML.lineWidth && __flags.YAML.lineWidth > 0) ? __flags.YAML.lineWidth : -1
+
+	// Retrieve ordered key-value pairs preserving insertion order for Map or plain objects
+	const orderedEntries = (obj) => {
+		if (obj instanceof Map) return Array.from(obj.entries())
+		// Plain object - Object.keys preserves insertion order (except for numeric keys which are sorted ascending per spec); keep as is.
+		if (isMap(obj)) return Object.keys(obj).map(k => [k, obj[k]])
+		return []
+	}
+
+	const render = (val, depth) => {
+		if (val === null || typeof val === 'undefined') return 'null'
+		if (isDate(val)) return quoteString(af.fromDate(val))
+		if (isString(val)) return quoteString(val)
+		if (isNumber(val)) return String(val)
+		if (isBoolean(val)) return String(val)
+		if (isArray(val)) {
+			if (val.length === 0) return '[]'
+			var inner = val.map(v => render(v, depth + 1))
+			var single = '[ ' + inner.join(', ') + ' ]'
+			if (perEntryNewLine || (lineLimit > 0 && single.length > lineLimit)) {
+				var pad = repeat(depth * IND, ' ')
+				var padIn = repeat((depth + 1) * IND, ' ')
+				return '[\n' + padIn + inner.join(',\n' + padIn) + '\n' + pad + ']'
+			}
+			return single
+		}
+		// Map / Object / JS Map
+		if ((isMap(val) || isObject(val)) && !(val instanceof Date)) {
+			// Avoid treating arrays as object
+			if (isArray(val)) return render(Array.from(val), depth)
+			var entries = orderedEntries(val)
+			if (entries.length === 0) return '{}'
+			var parts = entries.map(([k,v]) => {
+				var rk = needsQuotingKey(k) ? quoteString(k) : k
+				return rk + ': ' + render(v, depth + 1)
+			})
+			var single = '{ ' + parts.join(', ') + ' }'
+			if (perEntryNewLine || (lineLimit > 0 && single.length > lineLimit)) {
+				var pad = repeat(depth * IND, ' ')
+				var padIn = repeat((depth + 1) * IND, ' ')
+				return '{\n' + padIn + parts.join(',\n' + padIn) + '\n' + pad + '}'
+			}
+			return single
+		}
+		// Fallback to quoted string
+		try { return quoteString(String(val)) } catch(e) { return quoteString('') }
+	}
+
+	var docs
+	if (multiDoc && isArray(aJson)) {
+		docs = aJson.map(d => render(d, 0))
+	} else {
+		docs = [ render(aJson, 0) ]
+	}
+	var out = docs.join('\n---\n')
+
+	if (!shouldColor) return out
+
+	// Colorization without lookbehinds for broader engine support
+	var colored = out
+	// Strings
+	colored = colored.replace(/"([^"\\]|\\.)*"/g, function(m){ return ansiColor(__colorFormat.string, m) })
+	// Keys (unquoted simple words before colon)
+	colored = colored.replace(/\b[A-Za-z0-9_\-]+(?=:\s)/g, function(m){ return ansiColor(__colorFormat.key, m) })
+	// Quoted keys (already strings) keep string coloring; ensure colon after remains uncolored
+	// Numbers
+	colored = colored.replace(/(^|[\s\[,\{:])(-?\d+(?:\.\d+)?)(?=([,\]\}\s]|$))/g, function(_, p1, num){ return p1 + ansiColor(__colorFormat.number, num) })
+	// Booleans
+	colored = colored.replace(/(^|[\s\[,\{:])(true|false)(?=([,\]\}\s]|$))/gi, function(_, p1, b){ return p1 + ansiColor(__colorFormat.boolean, b) })
+	// Null
+	colored = colored.replace(/(^|[\s\[,\{:])(null)(?=([,\]\}\s]|$))/gi, function(_, p1, n){ return p1 + ansiColor(__colorFormat.default, n) })
+	return colored
 }
 
 /**
@@ -9398,7 +9544,7 @@ AF.prototype.fromYAML = function(aYAML, unsafe) {
 	loadJSYAML(); 
 	//if (__correctYAML) aYAML = aYAML.replace(/^(\t+)/mg, (m) => { if (isDef(m)) return repeat(m.length, "  "); }); 
 		var res;
-		if (__YAMLformat.unsafe && unsafe) {
+		if (__flags.YAML.unsafe && unsafe) {
 				var t = new jsyaml.Type('tag:yaml.org,2002:js/eval', { kind: 'scalar', resolve: function() { return true }, construct: function(d){ return eval(d) }, predicate: isString, represent: function(o) { return o } });
 				var s = jsyaml.DEFAULT_SCHEMA.extend([t]); 
 			res = jsyaml.loadAll(aYAML, { schema: s }); 
@@ -10525,7 +10671,7 @@ IO.prototype.listFilesTAR = function(aTARfile, isGzip) {
  */
 IO.prototype.readFileYAML = function(aYAMLFile, unsafe) { 
 	var r = io.readFileString(aYAMLFile); 
-	if (__YAMLformat.unsafe && !unsafe) {
+	if (__flags.YAML.unsafe && !unsafe) {
 		r = r.replace(/(\!\!js\/eval .+)/g, "\"$1\"");
 	}
 	return af.fromYAML(r, unsafe); 
@@ -13580,6 +13726,16 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			return fnP(af.fromObj2XML(res, true))
 		case "yaml":
 			return fnP(af.toYAML(res, __, true))
+		case "kyaml":
+			return fnP(af.toKYAML(res, __, true))
+		case "ckyaml":
+			__ansiColorFlag = true
+			__conConsole = true
+			return fnP(af.toKYAML(res, __, true, true))
+		case "lkyaml":
+			return fnP(af.toKYAML(res, __, true, __, false))
+		case "clkyaml":
+			return fnP(af.toKYAML(res, __, true, true, false))
 		case "cyaml":
 			__ansiColorFlag = true
 			__conConsole = true
