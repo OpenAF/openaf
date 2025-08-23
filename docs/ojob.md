@@ -358,6 +358,56 @@ todo:
     output: "result2.txt"
 ```
 
+### Default Arguments in Todo
+
+Todo entries also support default argument values using the `"${key:-defaultValue}"` syntax, allowing you to provide fallback values for arguments that may not be defined:
+
+```yaml
+todo:
+- name: "Job with Default Args"
+  args:
+    # Use "localhost" if "serverHost" is not defined
+    host: "${serverHost:-localhost}"
+    # Use 3306 if "dbPort" is not defined
+    port: "${dbPort:-3306}"
+    # Use existing value if "mode" is provided, otherwise use "default"
+    mode: "${mode:-default}"
+    # Works with nested paths - use "INFO" if config.log.level is not defined
+    logLevel: "${config.log.level:-INFO}"
+```
+
+**Key features in todo entries:**
+- **Runtime resolution**: Default values are resolved when the todo entry is processed
+- **Inheritance**: These processed arguments are passed to the target job
+- **Template integration**: Works seamlessly with oJob's template processing
+- **Nested support**: Supports dot notation for nested object properties
+- **Type preservation**: Values are processed as strings but maintain their intended types
+
+**Usage examples:**
+```yaml
+# Todo entry with various default patterns
+todo:
+- name: "Database Migration Job"
+  args:
+    # Database connection defaults
+    dbHost: "${DB_HOST:-localhost}"
+    dbPort: "${DB_PORT:-5432}"
+    dbName: "${DB_NAME:-myapp}"
+    
+    # Processing options with defaults
+    batchSize: "${BATCH_SIZE:-1000}"
+    timeout: "${TIMEOUT:-30000}"
+    
+    # Feature flags with defaults
+    dryRun: "${DRY_RUN:-false}"
+    verbose: "${VERBOSE:-true}"
+    
+    # Nested configuration defaults
+    config:
+      retryCount: "${config.retries:-3}"
+      backoffMs: "${config.backoff:-5000}"
+```
+
 ## Including Other oJobs
 
 ### Include Complete oJobs
