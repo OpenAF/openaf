@@ -8182,11 +8182,18 @@ const $jsonrpc = function(aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	// debug = true will print JSON requests and responses using print()
+	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
+
+	const _debug = m => {
+		if (aOptions.debug) print(ansiColor("yellow,BOLD", "DEBUG: ") + ansiColor("yellow", m))
+	}
 
 	const _r = {
 		_ids: $atomic(1, "long"),
 		_p  : __,
 		_s  : false,
+		_cmd: false,
 		_q  : {},
 		_r  : {},
 		type: type => {
@@ -8202,59 +8209,73 @@ const $jsonrpc = function(aOptions) {
 			aOptions.cmd = cmd
 			aOptions.type = "stdio"
 			_r._p = $doV(() => {
-				$tb(() => {
+				var _rtb = $tb(() => {
 					_r._s = false
-					$sh(cmd)
-					.cb((o, e, i) => {
-						$doWait($doAll(
-							[
-								// in stream
-								$do(() => {
-									do {
-										var _id = _r._ids.get()
-										$await("__jsonrpc_q-" + _id).wait()
-										if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
-											var msg = stringify({
-												jsonrpc: "2.0",
-												id: _id,
-												method: _r._q[_id].method,
-												params: _r._q[_id].params
-											}, __, "") + "\n"
-											ioStreamWrite(i, msg)
-                                            i.flush()
-											delete _r._q[_id]
-											_r._ids.inc()
-										}
-										$await("__jsonrpc_q-" + _id).destroy()
-										$await("__jsonrpc_r-" + _id).notify()
-									} while(!_r._s)
-								}),
-								// out stream
-								$do(() => {
-									do {
-										var _id = _r._ids.get()
-										$await("__jsonrpc_r-" + _id).wait()
-										ioStreamReadLines(o, line => {
-											var _l = jsonParse(line)
-											_r._r[_l.id] = _l
-											$await("__jsonrpc_a-" + _l.id).notify()
-											$await("__jsonrpc_r-" + _id).destroy()
-											return false
-										}, __, false)
-                                        o.flush()
-									} while(!_r._s)
+					_debug("jsonrpc process started")
+					var _resh = $sh(cmd)
+								.cb((o, e, i) => {
+									_debug("jsonrpc process started")
+									$doWait($doAll(
+										[
+											// in stream
+											$do(() => {
+												do {
+													var _id = _r._ids.get()
+													$await("__jsonrpc_q-" + _id).wait()
+													if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
+														var msg = stringify({
+															jsonrpc: "2.0",
+															id: _id,
+															method: _r._q[_id].method,
+															params: _r._q[_id].params
+														}, __, "") + "\n"
+														_debug("jsonrpc -> " + msg)
+														ioStreamWrite(i, msg)
+														i.flush()
+														delete _r._q[_id]
+														_r._ids.inc()
+													}
+													$await("__jsonrpc_q-" + _id).destroy()
+													$await("__jsonrpc_r-" + _id).notify()
+												} while(!_r._s)
+											}),
+											// out stream
+											$do(() => {
+												do {
+													var _id = _r._ids.get()
+													$await("__jsonrpc_r-" + _id).wait()
+													ioStreamReadLines(o, line => {
+														_debug("jsonrpc <- " + line)
+														var _l = jsonParse(line)
+														_r._r[_l.id] = _l
+														$await("__jsonrpc_a-" + _l.id).notify()
+														$await("__jsonrpc_r-" + _id).destroy()
+														return false
+													}, __, false)
+													o.flush()
+												} while(!_r._s)
+											})
+										]
+									))
+									_debug("jsonrpc process ended")
 								})
-							]
-						))
-					})
-					.get()
+								.get()
+					_debug("jsonrpc process ended: " + af.toSLON(_resh))
 				}).stopWhen(() => _r._s).exec()
+				_debug("threadbox: " + af.toSLON(_rtb))
 			})
+			_r._cmd = true
 			return _r
 		},
 		exec: (aMethod, aParams) => {
 			switch(aOptions.type) {
 			case "stdio" :
+				if (_r._cmd === false) {
+					if (isUnDef(aOptions.cmd)) {
+						throw new Error("Command is not defined")
+					}
+					_r.sh(aOptions.cmd)
+				}
 				var _id = _r._ids.get()
 				_r._q[_id] = {
 					method: _$(aMethod, "aMethod").isString().$_(),
@@ -8276,12 +8297,15 @@ const $jsonrpc = function(aOptions) {
 				aMethod = _$(aMethod, "aMethod").isString().$_()
 				aParams = _$(aParams, "aParams").isMap().default({})
 
-				var res = $rest(aOptions.options).post(aOptions.url, {
+				var _req = {
 					jsonrpc: "2.0",
 					method: aMethod,
 					params: aParams,
 					id: aOptions.id || _r._ids.inc()
-				})
+				}
+				_debug("jsonrpc -> " + stringify(_req, __, ""))
+				var res = $rest(aOptions.options).post(aOptions.url, _req)
+				_debug("jsonrpc <- " + stringify(res, __, ""))
 				if (isDef(res)) {
 					if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
 					if (isDef(res.result)) return res.result
@@ -8289,7 +8313,7 @@ const $jsonrpc = function(aOptions) {
 			}
 		},
 		destroy: () => {
-            _r._s = true
+			_r._s = true
 			if (isDef(_r._p)) {
 				$doWait(_r._p)
 			}
@@ -8338,6 +8362,9 @@ const $mcp = function(aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	// debug = true will enable printing of JSON-RPC requests/responses
+	aOptions.strict = _$(aOptions.strict, "aOptions.strict").isBoolean().default(true)
+	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
 	aOptions.clientInfo = _$(aOptions.clientInfo, "aOptions.clientInfo").isMap().default({
 		name: "OpenAF MCP Client",
 		version: "1.0.0"
@@ -8377,13 +8404,15 @@ const $mcp = function(aOptions) {
 				_r._capabilities = initResult.capabilities || {}
 				
 				// Send initialized notification
-				try {
-					_jsonrpc.exec("notifications/initialized", {})
-				} catch(e) {
-					// Notifications might not return responses, ignore errors
+				if (aOptions.strict) {
+					try {
+						_jsonrpc.exec("notifications/initialized", {})
+					} catch(e) {
+						// Notifications might not return responses, ignore errors
+					}
 				}
-				
-				return initResult
+
+				return _r
 			} else {
 				throw new Error("MCP initialization failed: " + (initResult.error || "Unknown error"))
 			}
