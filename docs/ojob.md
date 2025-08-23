@@ -523,12 +523,21 @@ todo:
 - **Nested paths**: Supports dot notation for nested object properties (e.g., `config.database.host`)
 - **Circular reference prevention**: A key cannot reference itself as a default to prevent infinite loops
 - **Runtime evaluation**: Default values are resolved when arguments are processed before job execution
+- **String values only**: The syntax only works with string values containing the exact pattern `"${key:-default}"`
 
 **Examples:**
 - `"${missingKey:-defaultValue}"` → `"defaultValue"` (if `missingKey` is undefined)
 - `"${existingKey:-defaultValue}"` → value of `existingKey` (if `existingKey` exists)
 - `"${config.timeout:-30000}"` → `"30000"` (if `config.timeout` is undefined)
 - `"${circularRef:-circularRef}"` → `"${circularRef:-circularRef}"` (prevents circular reference)
+
+**Usage contexts:**
+This default argument syntax can be used in:
+- Job `args` sections
+- Arguments passed from `from` jobs to current jobs
+- Any string value within job argument processing
+
+**Note:** This feature is processed by the `__defaultArgs` function during argument preparation, which occurs before job execution and when processing job dependencies.
 
 ### Error Handling
 
