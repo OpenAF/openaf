@@ -487,6 +487,49 @@ jobs:
     log("Template result: " + args.templateValue)
 ```
 
+#### Default Arguments
+
+oJob supports default argument values using the `"${key:-defaultValue}"` syntax. This allows you to specify fallback values for arguments that may not be provided:
+
+```yaml
+jobs:
+- name: "Job with Default Args"
+  args:
+    # Use "defaultHost" if "serverHost" is not defined
+    host: "${serverHost:-defaultHost}"
+    # Use 8080 if "serverPort" is not defined
+    port: "${serverPort:-8080}"
+    # Use existing value if "environment" is provided, otherwise use "development"
+    env: "${environment:-development}"
+    # Works with nested paths - use "localhost" if config.database.host is not defined
+    dbHost: "${config.database.host:-localhost}"
+  exec: | #js
+    log("Connecting to: " + args.host + ":" + args.port)
+    log("Environment: " + args.env)
+    log("Database host: " + args.dbHost)
+
+todo:
+- name: "Job with Default Args"
+  args:
+    serverHost: "production.example.com"
+    config:
+      database:
+        host: "db.example.com"
+```
+
+**Key features:**
+- **Fallback values**: If the specified key is undefined, the default value is used
+- **Type preservation**: Default values are treated as strings but can represent any value
+- **Nested paths**: Supports dot notation for nested object properties (e.g., `config.database.host`)
+- **Circular reference prevention**: A key cannot reference itself as a default to prevent infinite loops
+- **Runtime evaluation**: Default values are resolved when arguments are processed before job execution
+
+**Examples:**
+- `"${missingKey:-defaultValue}"` → `"defaultValue"` (if `missingKey` is undefined)
+- `"${existingKey:-defaultValue}"` → value of `existingKey` (if `existingKey` exists)
+- `"${config.timeout:-30000}"` → `"30000"` (if `config.timeout` is undefined)
+- `"${circularRef:-circularRef}"` → `"${circularRef:-circularRef}"` (prevents circular reference)
+
 ### Error Handling
 
 ```yaml
@@ -1316,6 +1359,77 @@ jobs:
     if (Math.random() > 0.5) {
         throw "Random failure"
     }
+```
+
+### Example 6.5: Default Arguments
+
+```yaml
+help:
+  text: "Demonstrates default argument values"
+  expects:
+  - name: environment
+    desc: "Environment to deploy to (dev, staging, prod)"
+    example: "dev"
+  - name: database_host
+    desc: "Database server hostname"
+    example: "db.example.com"
+  - name: api_port
+    desc: "Port for the API server"
+    example: "3000"
+
+jobs:
+- name: "Configuration Setup"
+  args:
+    # Environment defaults to "development" if not provided
+    env: "${environment:-development}"
+    # Database connection with nested path fallback
+    dbHost: "${config.database.host:-localhost}"
+    dbPort: "${config.database.port:-5432}"
+    dbName: "${config.database.name:-myapp}"
+    # API configuration with fallbacks
+    apiPort: "${api_port:-3000}"
+    apiHost: "${api_host:-0.0.0.0}"
+    # Service URLs with environment-based defaults
+    logServiceUrl: "${log_service_url:-http://localhost:8080/logs}"
+    # Feature flags with boolean defaults  
+    enableDebug: "${debug_mode:-false}"
+  exec: | #js
+    log("Environment: " + args.env)
+    log("Database: " + args.dbHost + ":" + args.dbPort + "/" + args.dbName)
+    log("API Server: " + args.apiHost + ":" + args.apiPort)
+    log("Log Service: " + args.logServiceUrl)
+    log("Debug Mode: " + args.enableDebug)
+    
+    // Configuration object for other jobs to use
+    args.config = {
+      environment: args.env,
+      database: {
+        host: args.dbHost,
+        port: parseInt(args.dbPort),
+        name: args.dbName
+      },
+      api: {
+        host: args.apiHost,
+        port: parseInt(args.apiPort)
+      },
+      services: {
+        logging: args.logServiceUrl
+      },
+      features: {
+        debug: args.enableDebug === "true"
+      }
+    }
+
+todo:
+- name: "Configuration Setup"
+  args:
+    # Only provide some values, others will use defaults
+    environment: "staging"
+    api_port: "4000"
+    config:
+      database:
+        host: "staging-db.example.com"
+        name: "staging_myapp"
 ```
 
 ### Example 7: Using Multiple Languages
