@@ -8297,6 +8297,142 @@ const $jsonrpc = function(aOptions) {
 	}
 	return _r
 }
+
+/**
+ * <odoc>
+ * <key>$mcp(aOptions) : Map</key>
+ * Creates a Model Context Protocol (MCP) client that can communicate with LLM MCP servers
+ * using JSON-RPC over stdio or remote connections. The aOptions parameter is a map with the following
+ * possible keys: type (string, default "stdio" for local process or "remote" for remote server),
+ * url (string, required for remote server), timeout (number, default 60000 ms
+ * for remote server), cmd (string, required for local process),
+ * options (map, optional additional options for remote server), and
+ * clientInfo (map, optional client information for MCP initialization).
+ * The returned map has the following methods: type (to set the type),
+ * url (to set the URL for remote server), sh (to set the command for local
+ * process), initialize (to initialize MCP connection), listTools (to get available tools),
+ * callTool (to execute a tool), listPrompts (to get available prompts),
+ * exec (low-level method to execute any MCP method), and destroy (to stop the client).
+ * All methods return promises that resolve to results or errors.
+ * Example usage:\
+ * \
+ * var client = $mcp({type: "stdio", cmd: "npx @modelcontextprotocol/server-example"});\
+ * client.initialize().then(() => {\
+ *     return client.listTools();\
+ * }).then(tools => {\
+ *     log("Available tools:", tools);\
+ *     return client.callTool("exampleTool", {param1: "value1"});\
+ * }).then(result => {\
+ *     log("Tool result:", result);\
+ * }).catch(error => {\
+ *     logErr("Error:", error);\
+ * });\
+ * \
+ * var remoteClient = $mcp({type: "remote", url: "http://example.com/mcp"});\
+ * remoteClient.initialize({name: "MyClient", version: "1.0.0"}).then(() => {\
+ *     return remoteClient.listTools();\
+ * });\
+ * </odoc>
+ */
+const $mcp = function(aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
+	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	aOptions.clientInfo = _$(aOptions.clientInfo, "aOptions.clientInfo").isMap().default({
+		name: "OpenAF MCP Client",
+		version: "1.0.0"
+	})
+
+	// Create underlying JSON-RPC client
+	const _jsonrpc = $jsonrpc(aOptions)
+	
+	const _r = {
+		_initialized: false,
+		_capabilities: {},
+		type: type => {
+			_jsonrpc.type(type)
+			return _r
+		},
+		url: url => {
+			_jsonrpc.url(url)
+			return _r
+		},
+		sh: cmd => {
+			_jsonrpc.sh(cmd)
+			return _r
+		},
+		initialize: (clientInfo) => {
+			clientInfo = _$(clientInfo, "clientInfo").isMap().default(aOptions.clientInfo)
+			
+			var initResult = _jsonrpc.exec("initialize", {
+				protocolVersion: "2024-11-05",
+				capabilities: {
+					sampling: {}
+				},
+				clientInfo: clientInfo
+			})
+			
+			if (isDef(initResult) && !isDef(initResult.error)) {
+				_r._initialized = true
+				_r._capabilities = initResult.capabilities || {}
+				
+				// Send initialized notification
+				try {
+					_jsonrpc.exec("notifications/initialized", {})
+				} catch(e) {
+					// Notifications might not return responses, ignore errors
+				}
+				
+				return initResult
+			} else {
+				throw new Error("MCP initialization failed: " + (initResult.error || "Unknown error"))
+			}
+		},
+		listTools: () => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			return _jsonrpc.exec("tools/list", {})
+		},
+		callTool: (toolName, toolArguments) => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			toolName = _$(toolName, "toolName").isString().$_()
+			toolArguments = _$(toolArguments, "toolArguments").isMap().default({})
+			
+			return _jsonrpc.exec("tools/call", {
+				name: toolName,
+				arguments: toolArguments
+			})
+		},
+		listPrompts: () => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			return _jsonrpc.exec("prompts/list", {})
+		},
+		getPrompt: (promptName, promptArguments) => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			promptName = _$(promptName, "promptName").isString().$_()
+			promptArguments = _$(promptArguments, "promptArguments").isMap().default({})
+			
+			return _jsonrpc.exec("prompts/get", {
+				name: promptName,
+				arguments: promptArguments
+			})
+		},
+		exec: (method, params) => {
+			return _jsonrpc.exec(method, params)
+		},
+		destroy: () => {
+			_jsonrpc.destroy()
+		}
+	}
+	return _r
+}
  
 /**
  * <odoc>
