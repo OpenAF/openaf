@@ -8150,43 +8150,65 @@ const $rest = function(ops) {
 /**
  * <odoc>
  * <key>$jsonrpc(aOptions) : Map</key>
- * Creates a JSON-RPC client that can be used to communicate with a JSON-RPC server
- * or a local process using stdio. The aOptions parameter is a map with the following
- * possible keys: type (string, default "stdio" for local process or "remote" for remote server),
- * url (string, required for remote server), timeout (number, default 60000 ms
- * for remote server), cmd (string, required for local process),
- * and options (map, optional additional options for remote server).
- * The returned map has the following methods: type (to set the type),
- * url (to set the URL for remote server), sh (to set the command for local
- * process), exec (to execute a method with parameters),
- * and destroy (to stop the client). The exec method returns a promise that resolves
- * to the result of the method call or an error if the call fails.
- * Example usage:\
+ * Creates a JSON-RPC 2.0 client that can communicate with JSON-RPC servers over HTTP/HTTPS
+ * or with local processes using stdio. The aOptions parameter is a map with the following
+ * possible keys:\
  * \
- * var client = $jsonrpc({type: "remote", url: "http://example.com/api", timeout: 5000});\
- * client.exec("methodName", {param1: "value1", param2: "value2"}).then(result => {\
- *     log("Result:", result);\
- * }).catch(error => {\
- *     logErr("Error:", error);\
- * });\
+ * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio")\
+ * - url (string): Required for remote servers - the endpoint URL\
+ * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
+ * - cmd (string): Required for stdio type - the command to execute\
+ * - options (map): Additional options passed to $rest for remote connections\
+ * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
  * \
- * var localClient = $jsonrpc({type: "stdio", cmd: "myLocalProcess"});\
- * localClient.exec("localMethod", {param1: "value1"}).then(result => {\
- *     log("Local Result:", result);\
- * }).catch(error => {\
- *     logErr("Local Error:", error);\
- * });\
+ * The returned client object provides these methods:\
+ * \
+ * - type(aType): Set the connection type\
+ * - url(aURL): Set the URL and switch to remote type\
+ * - sh(aCommand): Set the command and switch to stdio type\
+ * - exec(aMethod, aParams, aNotification): Execute a JSON-RPC method\
+ * - destroy(): Stop the client and cleanup resources\
+ * \
+ * The exec method parameters:\
+ * - aMethod (string): The JSON-RPC method name to call\
+ * - aParams (map): Parameters object to send with the method call\
+ * - aNotification (boolean): If true, sends a notification (no response expected)\
+ * \
+ * For method calls (aNotification=false), exec returns the result directly.\
+ * For notifications (aNotification=true), exec returns undefined.\
+ * \
+ * Examples:\
+ * \
+ * // Remote JSON-RPC server\
+ * var client = $jsonrpc({type: "remote", url: "http://api.example.com/rpc", debug: true});\
+ * var result = client.exec("getUserInfo", {userId: 123});\
+ * log("User info:", result);\
+ * \
+ * // Send notification (no response)\
+ * client.exec("logEvent", {event: "user_login", userId: 123}, true);\
+ * \
+ * // Local process via stdio\
+ * var localClient = $jsonrpc({cmd: "python3 my_rpc_server.py"});\
+ * var data = localClient.exec("processData", {input: [1, 2, 3]});\
+ * localClient.destroy();\
  * </odoc>
  */
 const $jsonrpc = function(aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	// debug = true will print JSON requests and responses using print()
+	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
+
+	const _debug = m => {
+		if (aOptions.debug) printErr(ansiColor("yellow,BOLD", "DEBUG: ") + ansiColor("yellow", m))
+	}
 
 	const _r = {
 		_ids: $atomic(1, "long"),
 		_p  : __,
 		_s  : false,
+		_cmd: false,
 		_q  : {},
 		_r  : {},
 		type: type => {
@@ -8202,65 +8224,90 @@ const $jsonrpc = function(aOptions) {
 			aOptions.cmd = cmd
 			aOptions.type = "stdio"
 			_r._p = $doV(() => {
-				$tb(() => {
+				var _rtb = $tb(() => {
 					_r._s = false
-					$sh(cmd)
-					.cb((o, e, i) => {
-						$doWait($doAll(
-							[
-								// in stream
-								$do(() => {
-									do {
-										var _id = _r._ids.get()
-										$await("__jsonrpc_q-" + _id).wait()
-										if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
-											var msg = stringify({
-												jsonrpc: "2.0",
-												id: _id,
-												method: _r._q[_id].method,
-												params: _r._q[_id].params
-											}, __, "") + "\n"
-											ioStreamWrite(i, msg)
-                                            i.flush()
-											delete _r._q[_id]
-											_r._ids.inc()
-										}
-										$await("__jsonrpc_q-" + _id).destroy()
-										$await("__jsonrpc_r-" + _id).notify()
-									} while(!_r._s)
-								}),
-								// out stream
-								$do(() => {
-									do {
-										var _id = _r._ids.get()
-										$await("__jsonrpc_r-" + _id).wait()
-										ioStreamReadLines(o, line => {
-											var _l = jsonParse(line)
-											_r._r[_l.id] = _l
-											$await("__jsonrpc_a-" + _l.id).notify()
-											$await("__jsonrpc_r-" + _id).destroy()
-											return false
-										}, __, false)
-                                        o.flush()
-									} while(!_r._s)
+					_debug("jsonrpc process started")
+					var _resh = $sh(cmd)
+								.cb((o, e, i) => {
+									_debug("jsonrpc process started")
+									$doWait($doAll(
+										[
+											// in stream
+											$do(() => {
+												do {
+													var _id = _r._ids.get()
+													$await("__jsonrpc_q-" + _id).wait()
+													if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
+														var _m = {
+															jsonrpc: "2.0",
+															id: _id,
+															method: _r._q[_id].method,
+															params: _r._q[_id].params
+														}
+														if (_r._q[_id].__notify) {
+															delete _m.id
+														}
+														var msg = stringify(_m, __, "") + "\n"
+														_debug("jsonrpc -> " + msg)
+														ioStreamWrite(i, msg)
+														i.flush()
+														delete _r._q[_id]
+														_r._ids.inc()
+													}
+													$await("__jsonrpc_q-" + _id).destroy()
+													$await("__jsonrpc_r-" + _id).notify()
+												} while(!_r._s)
+											}),
+											// out stream
+											$do(() => {
+												do {
+													var _id = _r._ids.get()
+													$await("__jsonrpc_r-" + _id).wait()
+													ioStreamReadLines(o, line => {
+														_debug("jsonrpc <- " + line)
+														var _l = jsonParse(line)
+														_r._r[_l.id] = _l
+														$await("__jsonrpc_a-" + _l.id).notify()
+														$await("__jsonrpc_r-" + _id).destroy()
+														return false
+													}, __, false)
+													o.flush()
+												} while(!_r._s)
+											})
+										]
+									))
+									_debug("jsonrpc process ended")
 								})
-							]
-						))
-					})
-					.get()
+								.get()
+					_debug("jsonrpc process ended: " + af.toSLON(_resh))
 				}).stopWhen(() => _r._s).exec()
+				_debug("threadbox: " + af.toSLON(_rtb))
 			})
+			_r._cmd = true
 			return _r
 		},
-		exec: (aMethod, aParams) => {
+		exec: (aMethod, aParams, aNotification) => {
 			switch(aOptions.type) {
 			case "stdio" :
+				if (_r._cmd === false) {
+					if (isUnDef(aOptions.cmd)) {
+						throw new Error("Command is not defined")
+					}
+					_r.sh(aOptions.cmd)
+				}
 				var _id = _r._ids.get()
 				_r._q[_id] = {
 					method: _$(aMethod, "aMethod").isString().$_(),
-					params: _$(aParams, "aParams").isMap().default({})
+					params: _$(aParams, "aParams").isMap().default({}),
+					__notify: !!aNotification
 				}
 				$await("__jsonrpc_q-" + _id).notifyAll()
+				// If this is a notification (no reply expected) skip waiting for a response
+				if (!!aNotification) {
+					// cleanup waiter and return undefined
+					$await("__jsonrpc_a-" + _id).destroy()
+					return
+				}
 				$await("__jsonrpc_a-" + _id).wait(aOptions.timeout)
 				var _res
 				if (isMap(_r._r[_id])) {
@@ -8276,12 +8323,22 @@ const $jsonrpc = function(aOptions) {
 				aMethod = _$(aMethod, "aMethod").isString().$_()
 				aParams = _$(aParams, "aParams").isMap().default({})
 
-				var res = $rest(aOptions.options).post(aOptions.url, {
+				var _req = {
 					jsonrpc: "2.0",
 					method: aMethod,
-					params: aParams,
-					id: aOptions.id || _r._ids.inc()
-				})
+					params: aParams
+				}
+				// If not a notification attach an id
+				if (!aNotification) {
+					_req.id = aOptions.id || _r._ids.inc()
+				} else {
+					delete _req.id
+				}
+				_debug("jsonrpc -> " + stringify(_req, __, ""))
+				var res = $rest(aOptions.options).post(aOptions.url, _req)
+				// Notifications do not expect a reply
+				if (!!aNotification) return
+				_debug("jsonrpc <- " + stringify(res, __, ""))
 				if (isDef(res)) {
 					if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
 					if (isDef(res.result)) return res.result
@@ -8289,10 +8346,175 @@ const $jsonrpc = function(aOptions) {
 			}
 		},
 		destroy: () => {
-            _r._s = true
+			_r._s = true
 			if (isDef(_r._p)) {
 				$doWait(_r._p)
 			}
+		}
+	}
+	return _r
+}
+
+/**
+ * <odoc>
+ * <key>$mcp(aOptions) : Map</key>
+ * Creates a Model Context Protocol (MCP) client that can communicate with LLM MCP servers
+ * using JSON-RPC over stdio or remote connections. This client implements the MCP protocol
+ * version 2024-11-05 and provides access to tools, prompts, and other MCP capabilities.
+ * \
+ * The aOptions parameter is a map with the following possible keys:\
+ * \
+ * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio")\
+ * - url (string): Required for remote servers - the MCP server endpoint URL\
+ * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
+ * - cmd (string): Required for stdio type - the command to launch the MCP server\
+ * - options (map): Additional options passed to underlying JSON-RPC client\
+ * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
+ * - strict (boolean): Enable strict MCP protocol compliance (default: true)\
+ * - clientInfo (map): Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})\
+ * \
+ * The returned client object provides these methods:\
+ * \
+ * - type(aType): Set the connection type\
+ * - url(aURL): Set the URL and switch to remote type\
+ * - sh(aCommand): Set the command and switch to stdio type\
+ * - initialize(clientInfo): Initialize the MCP connection and exchange capabilities\
+ * - listTools(): Get list of available tools from the MCP server\
+ * - callTool(toolName, toolArguments): Execute a specific tool with given arguments\
+ * - listPrompts(): Get list of available prompts from the MCP server\
+ * - getPrompt(promptName, promptArguments): Get a specific prompt with given arguments\
+ * - exec(method, params): Low-level method to execute any MCP/JSON-RPC method\
+ * - destroy(): Stop the client and cleanup resources\
+ * \
+ * Important: The initialize() method must be called before using listTools, callTool,\
+ * listPrompts, or getPrompt methods. All methods return results synchronously (not promises).\
+ * \
+ * Examples:\
+ * \
+ * // Connect to local MCP server via stdio\
+ * var client = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
+ * client.initialize();\
+ * var tools = client.listTools();\
+ * log("Available tools:", tools.tools.map(t => t.name));\
+ * \
+ * var result = client.callTool("read_file", {path: "/tmp/example.txt"});\
+ * log("File content:", result.content);\
+ * \
+ * // Connect to remote MCP server\
+ * var remoteClient = $mcp({\
+ *   type: "remote",\
+ *   url: "http://localhost:8080/mcp",\
+ *   clientInfo: {name: "MyApp", version: "2.0.0"}\
+ * });\
+ * remoteClient.initialize();\
+ * var prompts = remoteClient.listPrompts();\
+ * \
+ * client.destroy();\
+ * remoteClient.destroy();\
+ * </odoc>
+ */
+const $mcp = function(aOptions) {
+	aOptions = _$(aOptions, "aOptions").isMap().default({})
+	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
+	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	// debug = true will enable printing of JSON-RPC requests/responses
+	aOptions.strict = _$(aOptions.strict, "aOptions.strict").isBoolean().default(true)
+	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
+	aOptions.clientInfo = _$(aOptions.clientInfo, "aOptions.clientInfo").isMap().default({
+		name: "OpenAF MCP Client",
+		version: "1.0.0"
+	})
+	aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default(__)
+
+	// Create underlying JSON-RPC client
+	const _jsonrpc = $jsonrpc(aOptions)
+	
+	const _r = {
+		_initialized: false,
+		_capabilities: {},
+		type: type => {
+			_jsonrpc.type(type)
+			return _r
+		},
+		url: url => {
+			_jsonrpc.url(url)
+			return _r
+		},
+		sh: cmd => {
+			_jsonrpc.sh(cmd)
+			return _r
+		},
+		initialize: (clientInfo) => {
+			clientInfo = _$(clientInfo, "clientInfo").isMap().default(aOptions.clientInfo)
+			
+			var initResult = _jsonrpc.exec("initialize", {
+				protocolVersion: "2024-11-05",
+				capabilities: {
+					sampling: {}
+				},
+				clientInfo: clientInfo
+			})
+			
+			if (isDef(initResult) && !isDef(initResult.error)) {
+				_r._initialized = true
+				_r._capabilities = initResult.capabilities || {}
+				
+				// Send initialized notification
+				if (aOptions.strict) {
+					try {
+						// send as a notification (no response expected)
+						_jsonrpc.exec("notifications/initialized", {}, true)
+					} catch(e) {
+						// Notifications might not return responses, ignore errors
+					}
+				}
+
+				return _r
+			} else {
+				throw new Error("MCP initialization failed: " + (initResult.error || "Unknown error"))
+			}
+		},
+		listTools: () => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			return _jsonrpc.exec("tools/list", {})
+		},
+		callTool: (toolName, toolArguments) => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			toolName = _$(toolName, "toolName").isString().$_()
+			toolArguments = _$(toolArguments, "toolArguments").isMap().default({})
+			
+			return _jsonrpc.exec("tools/call", {
+				name: toolName,
+				arguments: toolArguments
+			})
+		},
+		listPrompts: () => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			return _jsonrpc.exec("prompts/list", {})
+		},
+		getPrompt: (promptName, promptArguments) => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			promptName = _$(promptName, "promptName").isString().$_()
+			promptArguments = _$(promptArguments, "promptArguments").isMap().default({})
+			
+			return _jsonrpc.exec("prompts/get", {
+				name: promptName,
+				arguments: promptArguments
+			})
+		},
+		exec: (method, params) => {
+			return _jsonrpc.exec(method, params)
+		},
+		destroy: () => {
+			_jsonrpc.destroy()
 		}
 	}
 	return _r
