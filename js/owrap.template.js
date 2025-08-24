@@ -822,6 +822,209 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 
 /**
  * <odoc>
+ * <key>parseHTML2MD(aHTMLString, includeScripts) : String</key>
+ * Given an HTML string and a flag indicating whether to include scripts, this function converts the HTML to Markdown.
+ * <odoc>
+ */
+OpenWrap.template.prototype.parseHTML2MD = function(aHTMLString, includeScripts) {
+	_$(aHTMLString, "aHTMLString").isString().$_()
+	includeScripts = _$(includeScripts, "includeScripts").isBoolean().default(true)
+
+	// Optimized HTML to Markdown converter with better performance and completeness
+	var html = aHTMLString
+	
+	// Pre-process to handle nested tags and preserve content
+	// Replace entities first to avoid double-processing
+	html = html.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+	
+	// Handle <script> tags: external scripts become links, inline scripts become fenced code blocks, or ignore them
+	if (includeScripts) {
+		html = html.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, function(_, attrs, content) {
+			attrs = attrs || ""
+			// find src and type attributes
+			var mSrc = attrs.match(/src\s*=\s*['\"]([^'\"]+)['\"]/i)
+			var mType = attrs.match(/type\s*=\s*['\"]([^'\"]+)['\"]/i)
+			var src = mSrc ? mSrc[1] : null
+			var type = mType ? mType[1].toLowerCase() : null
+			if (src && (!content || content.trim() === "")) {
+				// External script - represent as a markdown link so the reference is preserved
+				// ensure we don't produce empty link syntax
+				if (!src.trim()) return ""
+				return "\n[external script: " + src + "](" + src + ")\n"
+			}
+			// Inline script - convert to fenced code block. Infer language from type when possible
+			var lang = "javascript"
+			if (type) {
+				if (type.indexOf('json') >= 0) lang = 'json'
+				else if (type.indexOf('html') >= 0) lang = 'html'
+				else if (type.indexOf('xml') >= 0) lang = 'xml'
+				else if (type.indexOf('javascript') >= 0 || type.indexOf('ecmascript') >= 0) lang = 'javascript'
+			}
+			// Protect any triple-backticks inside the script content
+			var safeContent = (content || '').replace(/```/g, '``\\`')
+			if (!safeContent.trim()) return ""
+			return "\n```" + lang + "\n" + safeContent.trim() + "\n```\n"
+		})
+	} else {
+		// Remove script tags completely - they will be ignored
+		html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+	}
+	
+	// Handle <style> tags: convert to CSS code blocks or remove them
+	if (includeScripts) {
+		html = html.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, function(_, content) {
+			// Protect any triple-backticks inside the style content
+			var safeContent = (content || '').replace(/```/g, '``\\`')
+			if (!safeContent.trim()) return ""
+			return "\n```css\n" + safeContent.trim() + "\n```\n"
+		})
+	} else {
+		// Remove style tags completely - they will be ignored
+		html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+	}
+
+	// Handle code blocks first to preserve their content
+	html = html.replace(/<pre><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, function(_, content) {
+		var c = content.replace(/^\s+|\s+$/g, '')
+		if (!c) return ""
+		return "\n```\n" + c + "\n```\n"
+	})
+	html = html.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, function(_, content) {
+		var c = content.replace(/^\s+|\s+$/g, '')
+		if (!c) return ""
+		return "\n```\n" + c + "\n```\n"
+	})
+	
+	// Handle inline code (preserve content exactly)
+	html = html.replace(/<code[^>]*>(.*?)<\/code>/gi, function(_, inner) {
+		if (!inner) return "` `"
+		return "`" + inner + "`"
+	})
+	
+	// Handle headers (h1-h6)
+	html = html.replace(/<h1[^>]*>(.*?)<\/h1>/gi, "\n# $1\n")
+	html = html.replace(/<h2[^>]*>(.*?)<\/h2>/gi, "\n## $1\n")
+	html = html.replace(/<h3[^>]*>(.*?)<\/h3>/gi, "\n### $1\n")
+	html = html.replace(/<h4[^>]*>(.*?)<\/h4>/gi, "\n#### $1\n")
+	html = html.replace(/<h5[^>]*>(.*?)<\/h5>/gi, "\n##### $1\n")
+	html = html.replace(/<h6[^>]*>(.*?)<\/h6>/gi, "\n###### $1\n")
+	
+	// Handle lists
+	html = html.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, function(_, content) {
+		return "\n" + content.replace(/<li[^>]*>(.*?)<\/li>/gi, "- $1\n") + "\n"
+	})
+	html = html.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, function(_, content) {
+		var counter = 1
+		return "\n" + content.replace(/<li[^>]*>(.*?)<\/li>/gi, function() {
+			return (counter++) + ". " + arguments[1] + "\n"
+		}) + "\n"
+	})
+	
+	// Handle links - avoid producing empty []() constructs
+	html = html.replace(/<a[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi, function(_, _q, href, inner) {
+		href = (href || "").trim()
+		inner = (inner || "").trim()
+		// remove nested tags inside inner for a cleaner label (they'll be processed later if needed)
+		inner = inner.replace(/<\/?[^>]+(>|$)/g, "").trim()
+		if (!href) {
+			// no href - return inner text only (or empty if also empty)
+			return inner || ""
+		}
+		if (!inner) {
+			// no label - use autolink to avoid []()
+			return "<" + href + ">"
+		}
+		return "[" + inner + "](" + href + ")"
+	})
+	
+	// Handle images - generic match and guard against empty src
+	html = html.replace(/<img[^>]*>/gi, function(match) {
+		var mSrc = match.match(/src\s*=\s*['"]([^'"]*)['"]/i)
+		var mAlt = match.match(/alt\s*=\s*['"]([^'"]*)['"]/i)
+		var src = mSrc ? (mSrc[1] || "").trim() : ""
+		var alt = mAlt ? (mAlt[1] || "").trim() : ""
+		if (!src) return "" // avoid ![]() when src empty
+		if (!alt) alt = ""
+		return "![" + alt + "](" + src + ")"
+	})
+	
+	// Handle blockquotes
+	html = html.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, function(_, content) {
+		var c = content.trim()
+		if (!c) return ""
+		return "\n> " + c.replace(/\n/g, "\n> ") + "\n"
+	})
+	
+	// Handle tables
+	html = html.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, function(_, content) {
+		var table = ""
+		var rows = content.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)
+		if (rows) {
+			var isHeader = true
+			rows.forEach(function(row) {
+				var cells = row.match(/<t[hd][^>]*>(.*?)<\/t[hd]>/gi)
+				if (cells) {
+					var cellContent = cells.map(function(cell) {
+						return cell.replace(/<t[hd][^>]*>(.*?)<\/t[hd]>/gi, "$1").trim()
+					})
+					// skip completely empty rows
+					if (cellContent.join("").trim() === "") return
+					table += "| " + cellContent.join(" | ") + " |\n"
+					if (isHeader) {
+						table += "|" + cellContent.map(() => "---").join("|") + "|\n"
+						isHeader = false
+					}
+				}
+			})
+		}
+		if (!table) return ""
+		return "\n" + table + "\n"
+	})
+	
+	// Handle horizontal rules
+	html = html.replace(/<hr[^>]*\/?>/gi, "\n---\n")
+	
+	// Handle line breaks
+	html = html.replace(/<br\s*\/?>/gi, "\n")
+	
+	// Handle text formatting (order matters for nested tags)
+	html = html.replace(/<strong[^>]*>(.*?)<\/strong>/gi, "**$1**")
+	html = html.replace(/<b[^>]*>(.*?)<\/b>/gi, "**$1**")
+	html = html.replace(/<em[^>]*>(.*?)<\/em>/gi, "*$1*")
+	html = html.replace(/<i[^>]*>(.*?)<\/i>/gi, "*$1*")
+	html = html.replace(/<u[^>]*>(.*?)<\/u>/gi, "_$1_")
+	html = html.replace(/<del[^>]*>(.*?)<\/del>/gi, "~~$1~~")
+	html = html.replace(/<s[^>]*>(.*?)<\/s>/gi, "~~$1~~")
+	html = html.replace(/<strike[^>]*>(.*?)<\/strike>/gi, "~~$1~~")
+	
+	// Handle paragraphs and divs
+	html = html.replace(/<p[^>]*>(.*?)<\/p>/gi, function(_, inner) { return inner && inner.trim() ? "\n" + inner + "\n" : "" })
+	html = html.replace(/<div[^>]*>(.*?)<\/div>/gi, function(_, inner) { return inner && inner.trim() ? "\n" + inner + "\n" : "" })
+	
+	// Remove remaining HTML tags
+	html = html.replace(/<\/?[^>]+(>|$)/g, "")
+	
+	// Clean up whitespace and normalize line breaks
+	html = html.replace(/\n\s*\n\s*\n/g, "\n\n")  // Remove excessive line breaks
+	html = html.replace(/^\s+|\s+$/g, "")          // Trim start and end
+	html = html.replace(/[ \t]+/g, " ")            // Normalize spaces
+	
+	// Decode remaining HTML entities
+	html = html.replace(/&nbsp;/g, " ")
+	html = html.replace(/&quot;/g, '"')
+	html = html.replace(/&apos;/g, "'")
+	html = html.replace(/&#(\d+);/g, function(_, dec) {
+		return String.fromCharCode(dec)
+	})
+	html = html.replace(/&#x([0-9a-f]+);/gi, function(_, hex) {
+		return String.fromCharCode(parseInt(hex, 16))
+	})
+	
+	return html
+}
+
+/**
+ * <odoc>
  * <key>ow.template.addInLineCSS2HTML(aHTML, aCustomCSSMap) : String</key>
  * Given aHTML (usually the result of parseMD2HTML) applies a custom inline css (aCustomCSSMap) usually useful to send HTML to 
  * email clients. This custom map should be composed of a html tag entity tag (e.g. "p") and, as value, the css style to apply (e.g. "color: red;").
