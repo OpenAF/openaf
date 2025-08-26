@@ -8445,7 +8445,8 @@ const $mcp = function(aOptions) {
 			return _r
 		},
 		initialize: (clientInfo) => {
-			clientInfo = _$(clientInfo, "clientInfo").isMap().default(aOptions.clientInfo)
+			clientInfo = _$(clientInfo, "clientInfo").isMap().default({})
+			clientInfo = merge(aOptions.clientInfo, clientInfo)
 			
 			var initResult = _jsonrpc.exec("initialize", {
 				protocolVersion: "2024-11-05",
