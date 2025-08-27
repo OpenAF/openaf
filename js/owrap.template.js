@@ -824,7 +824,7 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
  * <odoc>
  * <key>parseHTML2MD(aHTMLString, includeScripts) : String</key>
  * Given an HTML string and a flag indicating whether to include scripts, this function converts the HTML to Markdown.
- * <odoc>
+ * </odoc>
  */
 OpenWrap.template.prototype.parseHTML2MD = function(aHTMLString, includeScripts) {
 	_$(aHTMLString, "aHTMLString").isString().$_()
