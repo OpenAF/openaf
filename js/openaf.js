@@ -6008,6 +6008,25 @@ const descType = function(aObj) {
 
 /**
  * <odoc>
+ * <key>af.fromJava2JS(aJavaObj) : Object</key>
+ * Tries to convert the provided Java object to a native javascript object
+ * </odoc>
+ */
+AF.prototype.fromJava2JS = function(aObj) {
+	if (isUnDef(aObj)) return __
+	if (isNull(aObj)) return null
+	if (aObj instanceof java.lang.Boolean) return Boolean(aObj)
+	if (aObj instanceof java.lang.Number) return Number(aObj)
+	if (aObj instanceof java.lang.String) return String(aObj)
+	if (aObj instanceof java.util.AbstractList) return af.fromJavaMap(aObj)
+	if (isJavaArray(aObj)) aObj = af.fromJavaArray(aObj)
+	if (isArray(aObj)) return pForEach(aObj, af.fromJava2JS)
+
+	return aObj
+}
+
+/**
+ * <odoc>
  * <key>toBoolean(aObj) : Boolean</key>
  * Tries to convert aObj (String, Number or Boolean) into a boolean value
  * </odoc>
@@ -9092,9 +9111,9 @@ const $queue = function(anArray) {
 		has   : aItem => Boolean(_r._q.contains(aItem)),
 		isEmpty: () => Boolean(_r._q.isEmpty()),
 		size  : () => Number(_r._q.size()),
-		toArray: () => af.fromJavaArray(_r._q.toArray()),
-		peek  : () => _r._q.peek(),
-		poll  : () => _r._q.poll()
+		toArray: () => af.fromJava2JS(_r._q.toArray()),
+		peek  : () => af.fromJava2JS(_r._q.peek()),
+		poll  : () => af.fromJava2JS(_r._q.poll())
 	}
 	if (isArray(anArray)) _r.addAll(anArray)
 	return _r

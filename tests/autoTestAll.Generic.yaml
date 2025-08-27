@@ -284,6 +284,11 @@ jobs:
      from: OpenAF::Init
      to  : oJob Test
      exec: args.func = args.tests.testFLock  
+   
+   - name: OpenAF::Queue
+     from: OpenAF::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testQueue
 
 todo:
    # Generic Tests
@@ -330,6 +335,7 @@ todo:
    - OpenAF::PSelect
    - OpenAF::Thread box
    - OpenAF::Range
+   - OpenAF::Queue
    - OpenAF::Test Rest
    - OpenAF::Test Void shortcut
    - OpenAF::Test Envs

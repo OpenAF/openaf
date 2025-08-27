@@ -185,6 +185,35 @@
         ow.test.assert($flock(tmp).isLocked(), false, "Problem with $lock.isLocked")
     }
 
+    exports.testQueue = function() {
+        var q = $queue([1, "2a", "b3"])
+
+        ow.test.assert(q.size(), 3, "Problem with $queue size")
+        ow.test.assert(q.peek(), 1, "Problem with $queue peek")
+        ow.test.assert(q.poll(), 1, "Problem with $queue poll")
+        ow.test.assert(q.size(), 2, "Problem with $queue size after poll")
+        ow.test.assert(q.peek(), "2a", "Problem with $queue peek after poll")
+        q.add(4)
+        ow.test.assert(q.isEmpty(), false, "Problem with $queue isEmpty")
+        ow.test.assert(q.size(), 3, "Problem with $queue size after add")
+        ow.test.assert(q.poll(), "2a", "Problem with $queue poll after add")
+        ow.test.assert(q.peek(), "b3", "Problem with $queue peek after add")
+        ow.test.assert(q.poll(), "b3", "Problem with $queue poll after second add")
+        ow.test.assert(q.poll(), 4, "Problem with $queue poll after third add")
+        ow.test.assert(q.size(), 0, "Problem with $queue size after all polls")
+        ow.test.assert(q.poll(), null, "Problem with $queue poll after all polls")
+        ow.test.assert(q.peek(), null, "Problem with $queue peek after all polls")
+        ow.test.assert(q.isEmpty(), true, "Problem with $queue isEmpty after all polls")
+
+        q.addAll([5, 6, 7])
+        ow.test.assert(q.toArray(), [5.0, 6.0, 7.0], "Problem with $queue toArray")
+        q.remove(6)
+        ow.test.assert(q.toArray(), [5, 7], "Problem with $queue remove")
+        ow.test.assert(q.has(5), true, "Problem with $queue has (1)")
+        ow.test.assert(q.has(6), false, "Problem with $queue has (2)")
+        ow.test.assert(q.has(7), true, "Problem with $queue has (3)")
+    }
+
     exports.testCache = function() {
         $cache("cache")
         .fn((k) => {
