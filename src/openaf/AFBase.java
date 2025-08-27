@@ -488,7 +488,19 @@ public class AFBase extends ScriptableObject {
 		if (envs != null && envs instanceof NativeObject) {
 			Map<String, String> env = pb.environment();
 			env.clear();
-			env.putAll(((NativeObject) envs));
+			// Convert Rhino NativeObject properties to Java Strings safely (handle ConsString)
+			Scriptable sc = (Scriptable) envs;
+			for (Object idObj : sc.getIds()) {
+				String key = idObj == null ? null : idObj.toString();
+				if (key == null) continue;
+				Object val = ScriptableObject.getProperty(sc, key);
+				String sval = null;
+				if (val != null && !(val instanceof Undefined)) {
+					// Convert Rhino string-like objects (including ConsString) to Java String
+					sval = Context.toString(val);
+				}
+				env.put(key, sval);
+			}
 		}
 		
 		final Process p = pb.start();
