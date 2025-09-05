@@ -144,6 +144,10 @@ F_out__out_ctree=0
 F_out__out_mtree=0
 F_out__out_btree=0
 F_out__out_cyaml=0
+F_out__out_kyaml=0
+F_out__out_ckyaml=0
+F_out__out_lkyaml=0
+F_out__out_clkyaml=0
 F_out__out_db=0
 F_out__out_db_dbjdbc_=1
 F_out__out_db_dbuser_=1
@@ -483,6 +487,10 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "out=mtree" ]; then FFOUND=1; F_out__out_mtree=1; F_out_=0; fi
     if [ "$arg" = "out=btree" ]; then FFOUND=1; F_out__out_btree=1; F_out_=0; fi
     if [ "$arg" = "out=cyaml" ]; then FFOUND=1; F_out__out_cyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=kyaml" ]; then FFOUND=1; F_out__out_kyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=ckyaml" ]; then FFOUND=1; F_out__out_ckyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=lkyaml" ]; then FFOUND=1; F_out__out_lkyaml=1; F_out_=0; fi
+    if [ "$arg" = "out=clkyaml" ]; then FFOUND=1; F_out__out_clkyaml=1; F_out_=0; fi
     if [ "$arg" = "out=db" ]; then FFOUND=1; F_out__out_db=1; F_out_=0; fi
     if [ "${arg#dbjdbc=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbjdbc_=0; fi
     if [ "${arg#dbuser=}" != "$arg" ]; then FFOUND=1; F_out__out_db_dbuser_=0; fi
@@ -1062,6 +1070,10 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=mtree	A tree-like forcely monochrome format"
   echo "out=btree	A tree-like forcely with non-ansi characters format"
   echo "out=cyaml	An YAML colored format"
+  echo "out=kyaml	A Kubernetes YAML format"
+  echo "out=ckyaml	A Kubernetes YAML colored format"
+  echo "out=lkyaml	A Kubernetes YAML format without new-lines"
+  echo "out=clkyaml	A Kubernetes YAML without new-lines colored format"
   echo "out=db	Output to a JDBC database"
   echo "out=envs	Tries to output the input data as OS environment variables setting commands"
   echo "out=gb64json	Equivalent to out=base64 and base64gzip=true"

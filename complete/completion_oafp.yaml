@@ -159,6 +159,13 @@ complete:
       desc: Scans an entire markdown input for tables and returns an array with the data of each markdown table
   - name: in=mdcode
     desc: A Markdown code blocks format
+  - name: in=mcp
+    desc: A Model Context Protocol (MCP) input
+    opts:
+    - name: inmcptoolslist=
+      desc: If true will list all available MCP tools
+    - name: inmcplistprompts=
+      desc: If true will list all available MCP prompts
   - name: in=ndjson
     desc: A NDJSON (new-line delimited JSON) format
     opts:
