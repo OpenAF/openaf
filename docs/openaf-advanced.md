@@ -1,5 +1,7 @@
 # OpenAF Advanced Guide
 
+[Index](./index.md) | [oJob Reference](./ojob.md) | [Security](./ojob-security.md) | [Flags](./openaf-flags.md) | [Recipes](./ojob-recipes.md) | [Advanced](./openaf-advanced.md)
+
 Deeper coverage of selected modules and patterns.
 
 ## 1. Scheduler (ow.server.scheduler)
@@ -52,6 +54,8 @@ var lr = ow.ai.regression().linear([[0,1],[1,3],[2,5]]);
 log(lr.string);
 ```
 Combine with `(llm)` built-in job for integrated prompt workflows; set `OAF_MODEL` or use provider-specific configs.
+
+See also: `ow-ai-gpttypes.md` for provider wrappers, standardized interfaces and implementation notes.
 
 ## 7. Python Interop Patterns
 Use server mode for throughput:

@@ -1,5 +1,7 @@
 # oJob Security & Integrity
 
+[Index](./index.md) | [oJob Reference](./ojob.md) | [Security](./ojob-security.md) | [Flags](./openaf-flags.md) | [Recipes](./ojob-recipes.md) | [Advanced](./openaf-advanced.md)
+
 This document details security-focused capabilities in oJob supplementing `ojob.md`.
 
 ## Authorized Domains for Remote Includes

@@ -1,5 +1,7 @@
 # oJob YAML Reference Guide
 
+[Index](./index.md) | [oJob Reference](./ojob.md) | [Security](./ojob-security.md) | [Flags](./openaf-flags.md) | [Recipes](./ojob-recipes.md) | [Advanced](./openaf-advanced.md)
+
 oJob is OpenAF's job orchestration framework that allows you to define, schedule, and execute jobs using YAML configuration files. This comprehensive guide covers all aspects of creating and using oJob YAML files.
 
 ## Table of Contents
