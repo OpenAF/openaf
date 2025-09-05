@@ -8240,8 +8240,11 @@ const $jsonrpc = function(aOptions) {
 			return _r
 		},
 		sh  : cmd => {
+			if (_r._cmd && isDef(_r._p)) return _r
+
 			aOptions.cmd = cmd
 			aOptions.type = "stdio"
+			_r._cmd = true
 			_r._p = $doV(() => {
 				var _rtb = $tb(() => {
 					_r._s = false
@@ -8253,6 +8256,7 @@ const $jsonrpc = function(aOptions) {
 										[
 											// in stream
 											$do(() => {
+												$await("__jsonrpc_" + md5(cmd)).notifyAll()
 												do {
 													var _id = _r._ids.get()
 													$await("__jsonrpc_q-" + _id).wait()
@@ -8301,14 +8305,18 @@ const $jsonrpc = function(aOptions) {
 					_debug("jsonrpc process ended: " + af.toSLON(_resh))
 				}).stopWhen(() => _r._s).exec()
 				_debug("threadbox: " + af.toSLON(_rtb))
+			}).catch(e => {
+				_debug("jsonrpc process error: " + e)
+				$err(e)
 			})
-			_r._cmd = true
+			$await("__jsonrpc_" + md5(cmd)).wait()
+			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
 		exec: (aMethod, aParams, aNotification) => {
 			switch(aOptions.type) {
 			case "stdio" :
-				if (_r._cmd === false) {
+				if (_r._cmd == false) {
 					if (isUnDef(aOptions.cmd)) {
 						throw new Error("Command is not defined")
 					}
@@ -8491,7 +8499,7 @@ const $mcp = function(aOptions) {
 
 				return _r
 			} else {
-				throw new Error("MCP initialization failed: " + (initResult.error || "Unknown error"))
+				throw new Error("MCP initialization failed: " + (isDef(initResult) ? initResult.error : __ || "Unknown error"))
 			}
 		},
 		listTools: () => {
