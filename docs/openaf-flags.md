@@ -1,5 +1,7 @@
 # OpenAF & oJob Flags Reference
 
+[Index](./index.md) | [oJob Reference](./ojob.md) | [Security](./ojob-security.md) | [Flags](./openaf-flags.md) | [Recipes](./ojob-recipes.md) | [Advanced](./openaf-advanced.md)
+
 Central list of noteworthy runtime flags and environment variables.
 
 ## oJob Runtime (__flags subset & env)

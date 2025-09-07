@@ -18,11 +18,24 @@ public final class StartupOptimizer {
     
     private static volatile boolean optimizationEnabled = true;
     private static volatile ExecutorService virtualThreadExecutor;
+    // Precompile regex used to parse the java major version
+    private static final java.util.regex.Pattern JAVA_MAJOR_PATTERN =
+        java.util.regex.Pattern.compile("^(\\d+)");
     
     static {
         // Check if we're running on Java 21+ for virtual thread support
         String version = System.getProperty("java.version");
-        int majorVersion = Integer.parseInt(version.split("\\.")[0]);
+        String[] parts = version.split("\\.");
+        String first = parts.length > 0 ? parts[0] : version;
+    java.util.regex.Matcher m = JAVA_MAJOR_PATTERN.matcher(first);
+        int majorVersion = 0;
+        if (m.find()) {
+            try {
+                majorVersion = Integer.parseInt(m.group(1));
+            } catch (NumberFormatException ignored) {
+                majorVersion = 0;
+            }
+        }
         
         if (majorVersion >= 21) {
             // Use virtual thread executor for non-blocking initialization tasks

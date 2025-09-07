@@ -2,6 +2,8 @@
 
 This document provides a comprehensive reference guide for implementing LLM service API wrappers in OpenAF's `ow.ai` library. The `OpenWrap.ai.prototype.__gpttypes` object contains standardized wrappers for various LLM services, providing a unified interface for chat, tooling, image processing, model listing, and image generation capabilities.
 
+See also: `openaf-advanced.md` (AI Helpers section) for higher-level usage patterns and integration tips.
+
 ## Overview
 
 The GPT types system provides a consistent API across different LLM providers through standardized wrapper implementations. Each wrapper normalizes provider-specific APIs into a common interface, handling authentication, conversation management, tool calling, and various prompt types.

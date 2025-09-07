@@ -1,5 +1,7 @@
 # oJob Recipes
 
+[Index](./index.md) | [oJob Reference](./ojob.md) | [Security](./ojob-security.md) | [Flags](./openaf-flags.md) | [Recipes](./ojob-recipes.md) | [Advanced](./openaf-advanced.md)
+
 Reusable, composable examples to accelerate authoring. Copy & adapt.
 
 ## 1. File Ingestion with Parallel Processing
