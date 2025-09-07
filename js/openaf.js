@@ -8316,7 +8316,7 @@ const $jsonrpc = function(aOptions) {
 		exec: (aMethod, aParams, aNotification) => {
 			switch(aOptions.type) {
 			case "stdio" :
-				if (_r._cmd == false) {
+				if (_r._cmd === false) {
 					if (isUnDef(aOptions.cmd)) {
 						throw new Error("Command is not defined")
 					}
