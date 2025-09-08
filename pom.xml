@@ -275,7 +275,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>jetty-websocket-core-common</artifactId>
-        <version>12.1.0</version>
+        <version>12.1.1</version>
     </dependency>
     <dependency>
       <groupId>jline</groupId>
