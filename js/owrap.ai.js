@@ -396,7 +396,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                     return { role: "user", parts: [ { text: r } ] }
                                 } else if (isMap(r)) {
                                     if (isUnDef(r.role)) r.role = "user"
-                                    if (r.role != "model" && r.role != "user") r.role = "model"
+                                    if (r.role != "model" && r.role != "user" && r.role != "system") r.role = "model"
                                     if (isDef(r.content)) {
                                         r.parts = [ { text: r.content } ]
                                         delete r.content
@@ -492,7 +492,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var body = {
                         system_instruction: { parts: _r.conversation.reduce((acc, r) => {
                             if (isDef(r.role) && r.role == "system") {
-                                acc.push(isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ] });
+                                acc = acc.concat(r.parts)
                             }
                             return acc;
                         }, []) },
@@ -561,28 +561,17 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
 
-                    throw "Not supported yet."
-                    /*var msgs = []
-                    var body = {
-                        system_instruction: { parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ) },
-                        contents: [
-                            { parts: aPrompt }
-                        ],
-                        generationConfig: {
-                            temperature: _temperature
-                        }
-                    }
+                    var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c.content : c )
                  
                     _r.conversation = aPrompt
-                    
-                    return _r._request("v1/images/generations", merge({
+                    return _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "images/generations", merge({
                        model: aModel,
                        prompt: msgs.join("\n"),
                        response_format: "b64_json"
-                    }, aOptions.params))   */
+                    }, aOptions.params))   
                     // data[0].b64_json
                 },
                 promptImgGen: (aPrompt, aModel) => {
@@ -598,17 +587,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                         aPrompt = aRole
                         aRole = "user"
                      }
-                     if (isString(aPrompt)) _r.conversation.push({ parts: [ { text: aPrompt } ] })
-                     if (!isArray(_r.conversation)) _r.conversation = []
+                     if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
                      if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
                      return _r
                 },
                 addUserPrompt: (aPrompt) => {
-                    _r.conversation.push({ text: aPrompt })
+                    _r.conversation.push({ role: "user", content: aPrompt })
                     return _r
                 },
                 addSystemPrompt: (aPrompt) => {
-                    _r.conversation.push({ role: "system", text: aPrompt })
+                    _r.conversation.push({ role: "system", parts: [ { text: aPrompt } ] })
                     return _r
                 },
                 cleanPrompt: () => {
@@ -616,9 +604,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getModels: () => {
-                   var res = _r._request("models", {}, "GET")
-                   if (isDef(res.models)) res = res.models
-                   return res
+                    var res = _r._request("models", {}, "GET")
+                    if (isDef(res.models)) res = res.models
+                    return res
                 },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -643,7 +631,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         } else {
                             _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
                         }
-                        return _r
+                        if (typeof _r.response !== "undefined") {
+                            return jsonParse(_r.response)
+                        } else {
+                            return _r
+                        }
                     }
 
                     switch(aVerb.toUpperCase()) {
