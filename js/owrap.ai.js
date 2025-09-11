@@ -80,7 +80,7 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
         }
     }
 }
-
+ 
 // | type      | chat | tooling | image | list | genimg |
 // |-----------|------|---------|-------|------|--------|
 // | openai    | ✔    | ✔       | ✔     | ✔    | ✔      |
@@ -1545,12 +1545,76 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
-         * <key>$gpt.setTool(aName, aDesc, aParams, aFn) : ow.ai.gpt</key>
+         * <key>$gpt.withTool(aName, aDesc, aParams, aFn) : ow.ai.gpt</key>
          * Sets a tool with aName, aDesc (description), aParams (a json schema) and aFn (a javascript function tha receives a map according with the provided json schema and returns a map)
          * </odoc>
          */
         withTool: (aName, aDesc, aParams, aFn) => {
             _g.model.setTool(aName, aDesc, aParams, aFn)
+            return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.withMcpTools(aMcpClient, aToolNames) : ow.ai.gpt</key>
+         * Automatically adds MCP tools from an MCP client to the current GPT instance. The aMcpClient should be an initialized $mcp client.
+         * If aToolNames is provided (array of strings), only those specific tools will be added. Otherwise, all available tools are added.
+         * Each MCP tool will be converted to a GPT-compatible tool using the MCP tool's JSON schema.
+         * \
+         * Example:\
+         * \
+         * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
+         * mcpClient.initialize();\
+         * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
+         * gpt.withMcpTools(mcpClient); // Adds all MCP tools\
+         * // or gpt.withMcpTools(mcpClient, ["read_file", "write_file"]); // Adds only specific tools\
+         * \
+         * var response = gpt.prompt("Read the file /tmp/example.txt");\
+         * </odoc>
+         */
+        withMcpTools: (aMcpClient, aToolNames) => {
+            _$(aMcpClient, "aMcpClient").isMap().$_()
+            aToolNames = _$(aToolNames, "aToolNames").isArray().default(__)
+
+            if (!aMcpClient._initialized) {
+                throw new Error("MCP client not initialized. Call initialize() first.")
+            }
+
+            var toolsList = aMcpClient.listTools()
+            if (!isArray(toolsList.tools)) {
+                throw new Error("Unable to retrieve tools from MCP client")
+            }
+
+            var toolsToAdd = toolsList.tools
+            if (isDef(aToolNames)) {
+                toolsToAdd = toolsList.tools.filter(tool => aToolNames.indexOf(tool.name) >= 0)
+            }
+
+            toolsToAdd.forEach(tool => {
+                var gptParams = {
+                    type: "object",
+                    properties: tool.inputSchema.properties || {},
+                    required: tool.inputSchema.required || []
+                }
+
+                var mcpToolFn = function(args) {
+                    try {
+                        var result = aMcpClient.callTool(tool.name, args)
+                        if (isDef(result.content) && isArray(result.content)) {
+                            // Extract text content from MCP result
+                            return result.content.map(c => c.text || c.data || stringify(c)).join("\n")
+                        } else if (isDef(result.content)) {
+                            return result.content
+                        } else {
+                            return stringify(result)
+                        }
+                    } catch(e) {
+                        return "Error calling MCP tool '" + tool.name + "': " + e.message
+                    }
+                }
+
+                _g.model.setTool(tool.name, tool.description, gptParams, mcpToolFn)
+            })
+
             return _r
         },
         /**
