@@ -666,7 +666,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
             var _r = {
                 conversation: [],
-                tools: {},
+                tools: [],
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -675,7 +675,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 setTool: (aName, aDesc, aParams, aFn) => {
-                    _r.tools[aName] = {
+                    _r.tools.push({
                         type: "function",
                         function: {
                             name: aName,
@@ -683,7 +683,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             parameters: aParams
                         },
                         fn: aFn
-                    }
+                    })
                     return _r
                 },
                 prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
@@ -742,7 +742,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
-                            var _t = _r.tools[t].function
+                            var _t = t.function
                             return {
                                 type: "function",
                                 function: {
