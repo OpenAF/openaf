@@ -742,7 +742,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
-                            var _t = t.function
+                            var _t = t
                             return {
                                 type: "function",
                                 function: {
