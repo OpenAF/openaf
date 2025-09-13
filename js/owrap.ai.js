@@ -721,7 +721,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(Object.keys(_r.tools))
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
                  
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
@@ -761,7 +761,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         var _p = []
                         _res.message["tool_calls"].forEach(tc => {
                             if (isDef(tc.function)) {
-                                var _t = _r.tools[tc.function.name]
+                                var _t = $from(aTools).equals("function.name", tc.function.name).at(0)
                                 var _args = jsonParse(tc.function.arguments)
                                 var _tr = stringify(_t.fn(_args), __, "")
                                 _p.push({ role: "assistant", tool_calls: [ tc ] })
