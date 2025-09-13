@@ -742,7 +742,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
-                            var _t = t
+                            var _t = t.function
                             return {
                                 type: "function",
                                 function: {
@@ -761,7 +761,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                         var _p = []
                         _res.message["tool_calls"].forEach(tc => {
                             if (isDef(tc.function)) {
-                                var _t = aTools.find(tool => tool.function && tool.function.name === tc.function.name)
+                                var _t = aTools.find(tool => tool.function && tool.function.name == tc.function.name)
+                                if (isUnDef(_t)) throw "Tool '" + tc.function.name + "' not found"
                                 var _args = jsonParse(tc.function.arguments)
                                 var _tr = stringify(_t.fn(_args), __, "")
                                 _p.push({ role: "assistant", tool_calls: [ tc ] })
