@@ -761,7 +761,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         var _p = []
                         _res.message["tool_calls"].forEach(tc => {
                             if (isDef(tc.function)) {
-                                var _t = $from(aTools).equals("function.name", tc.function.name).at(0)
+                                var _t = aTools.find(tool => tool.function && tool.function.name === tc.function.name)
                                 var _args = jsonParse(tc.function.arguments)
                                 var _tr = stringify(_t.fn(_args), __, "")
                                 _p.push({ role: "assistant", tool_calls: [ tc ] })
