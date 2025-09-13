@@ -8538,6 +8538,70 @@ const $mcp = function(aOptions) {
 				arguments: promptArguments
 			})
 		},
+		/**
+		 * <odoc>
+		 * <key>$mcp.toGptTools(aGptInstance, aToolNames) : $mcp</key>
+		 * Automatically adds this MCP client's tools to a $gpt instance using the $gpt.withTool method.
+		 * The aGptInstance should be an initialized $gpt object. If aToolNames is provided (array of strings),
+		 * only those specific tools will be added. Otherwise, all available tools are added.
+		 * Each MCP tool will be converted to a GPT-compatible tool using the MCP tool's JSON schema.
+		 * \
+		 * Example:\
+		 * \
+		 * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
+		 * mcpClient.initialize();\
+		 * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
+		 * mcpClient.toGptTools(gpt); // Adds all MCP tools to GPT\
+		 * // or mcpClient.toGptTools(gpt, ["read_file", "write_file"]); // Adds only specific tools\
+		 * \
+		 * var response = gpt.prompt("Read the file /tmp/example.txt");\
+		 * </odoc>
+		 */
+		toGptTools: (aGptInstance, aToolNames) => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			_$(aGptInstance, "aGptInstance").isMap().$_()
+			aToolNames = _$(aToolNames, "aToolNames").isArray().default(__)
+
+			var toolsList = _r.listTools()
+			if (!isArray(toolsList.tools)) {
+				throw new Error("Unable to retrieve tools from MCP client")
+			}
+
+			var toolsToAdd = toolsList.tools
+			if (isDef(aToolNames)) {
+				toolsToAdd = toolsList.tools.filter(tool => aToolNames.indexOf(tool.name) >= 0)
+			}
+
+			toolsToAdd.forEach(tool => {
+				var gptParams = {
+					type: "object",
+					properties: tool.inputSchema.properties || {},
+					required: tool.inputSchema.required || []
+				}
+
+				var mcpToolFn = function(args) {
+					try {
+						var result = _r.callTool(tool.name, args)
+						if (isDef(result.content) && isArray(result.content)) {
+							// Extract text content from MCP result
+							return result.content.map(c => c.text || c.data || stringify(c)).join("\n")
+						} else if (isDef(result.content)) {
+							return result.content
+						} else {
+							return stringify(result)
+						}
+					} catch(e) {
+						return "Error calling MCP tool '" + tool.name + "': " + e.message
+					}
+				}
+
+				aGptInstance.withTool(tool.name, tool.description, gptParams, mcpToolFn)
+			})
+
+			return _r
+		},
 		exec: (method, params) => {
 			return _jsonrpc.exec(method, params)
 		},
@@ -10291,7 +10355,7 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
   
 	return _r
 }
-
+ 
 /**
  * <odoc>
  * <key>$llm(aModel) : $llm</key>

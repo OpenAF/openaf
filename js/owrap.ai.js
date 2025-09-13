@@ -80,7 +80,7 @@ OpenWrap.ai.prototype.valuesArray = function(entriesspan) {
         }
     }
 }
-
+ 
 // | type      | chat | tooling | image | list | genimg |
 // |-----------|------|---------|-------|------|--------|
 // | openai    | ✔    | ✔       | ✔     | ✔    | ✔      |
@@ -191,7 +191,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
-                 
+
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
@@ -396,7 +396,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                     return { role: "user", parts: [ { text: r } ] }
                                 } else if (isMap(r)) {
                                     if (isUnDef(r.role)) r.role = "user"
-                                    if (r.role != "model" && r.role != "user") r.role = "model"
+                                    if (r.role != "model" && r.role != "user" && r.role != "system") r.role = "model"
                                     if (isDef(r.content)) {
                                         r.parts = [ { text: r.content } ]
                                         delete r.content
@@ -478,7 +478,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
-                 
+
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
                     aPrompt = _r.conversation.reduce((acc, r) => {
@@ -492,7 +492,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var body = {
                         system_instruction: { parts: _r.conversation.reduce((acc, r) => {
                             if (isDef(r.role) && r.role == "system") {
-                                acc.push(isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ] });
+                                acc = acc.concat(r.parts)
                             }
                             return acc;
                         }, []) },
@@ -561,28 +561,17 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
 
-                    throw "Not supported yet."
-                    /*var msgs = []
-                    var body = {
-                        system_instruction: { parts: _r.conversation.filter(r => isDef(r.role) && r.role == "system").map(r => ({ text: r.text }) ) },
-                        contents: [
-                            { parts: aPrompt }
-                        ],
-                        generationConfig: {
-                            temperature: _temperature
-                        }
-                    }
+                    var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.map(c => isMap(c) ? c.content : c )
                  
                     _r.conversation = aPrompt
-                    
-                    return _r._request("v1/images/generations", merge({
+                    return _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "images/generations", merge({
                        model: aModel,
                        prompt: msgs.join("\n"),
                        response_format: "b64_json"
-                    }, aOptions.params))   */
+                    }, aOptions.params))   
                     // data[0].b64_json
                 },
                 promptImgGen: (aPrompt, aModel) => {
@@ -598,17 +587,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                         aPrompt = aRole
                         aRole = "user"
                      }
-                     if (isString(aPrompt)) _r.conversation.push({ parts: [ { text: aPrompt } ] })
-                     if (!isArray(_r.conversation)) _r.conversation = []
+                     if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
                      if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
                      return _r
                 },
                 addUserPrompt: (aPrompt) => {
-                    _r.conversation.push({ text: aPrompt })
+                    _r.conversation.push({ role: "user", content: aPrompt })
                     return _r
                 },
                 addSystemPrompt: (aPrompt) => {
-                    _r.conversation.push({ role: "system", text: aPrompt })
+                    _r.conversation.push({ role: "system", parts: [ { text: aPrompt } ] })
                     return _r
                 },
                 cleanPrompt: () => {
@@ -616,9 +604,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getModels: () => {
-                   var res = _r._request("models", {}, "GET")
-                   if (isDef(res.models)) res = res.models
-                   return res
+                    var res = _r._request("models", {}, "GET")
+                    if (isDef(res.models)) res = res.models
+                    return res
                 },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -643,7 +631,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         } else {
                             _r = jsonParse(af.fromBytes2String(r.readAllBytes()))
                         }
-                        return _r
+                        if (typeof _r.response !== "undefined") {
+                            return jsonParse(_r.response)
+                        } else {
+                            return _r
+                        }
                     }
 
                     switch(aVerb.toUpperCase()) {
@@ -674,7 +666,7 @@ OpenWrap.ai.prototype.__gpttypes = {
 
             var _r = {
                 conversation: [],
-                tools: {},
+                tools: [],
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -683,7 +675,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 setTool: (aName, aDesc, aParams, aFn) => {
-                    _r.tools[aName] = {
+                    _r.tools.push({
                         type: "function",
                         function: {
                             name: aName,
@@ -691,7 +683,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             parameters: aParams
                         },
                         fn: aFn
-                    }
+                    })
                     return _r
                 },
                 prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
@@ -750,7 +742,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools.map(t => {
-                            var _t = _r.tools[t].function
+                            var _t = t.function
                             return {
                                 type: "function",
                                 function: {
@@ -769,9 +761,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         var _p = []
                         _res.message["tool_calls"].forEach(tc => {
                             if (isDef(tc.function)) {
-                                var _t = _r.tools[tc.function.name]
-                                var _tr = stringify(_t.fn(_t.arguments), __, "")
-                                if (isDef(tc.function.id)) _tr.tool_call_id = tc.function.id
+                                var _t = aTools.find(tool => tool.function && tool.function.name == tc.function.name)
+                                if (isUnDef(_t)) throw "Tool '" + tc.function.name + "' not found"
+                                var _args = jsonParse(tc.function.arguments)
+                                var _tr = stringify(_t.fn(_args), __, "")
+                                _p.push({ role: "assistant", tool_calls: [ tc ] })
                                 _p.push({ role: "tool", content: _tr, tool_call_id: tc.function.id })
                             }
                         })
@@ -1553,12 +1547,76 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
-         * <key>$gpt.setTool(aName, aDesc, aParams, aFn) : ow.ai.gpt</key>
+         * <key>$gpt.withTool(aName, aDesc, aParams, aFn) : ow.ai.gpt</key>
          * Sets a tool with aName, aDesc (description), aParams (a json schema) and aFn (a javascript function tha receives a map according with the provided json schema and returns a map)
          * </odoc>
          */
         withTool: (aName, aDesc, aParams, aFn) => {
             _g.model.setTool(aName, aDesc, aParams, aFn)
+            return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.withMcpTools(aMcpClient, aToolNames) : ow.ai.gpt</key>
+         * Automatically adds MCP tools from an MCP client to the current GPT instance. The aMcpClient should be an initialized $mcp client.
+         * If aToolNames is provided (array of strings), only those specific tools will be added. Otherwise, all available tools are added.
+         * Each MCP tool will be converted to a GPT-compatible tool using the MCP tool's JSON schema.
+         * \
+         * Example:\
+         * \
+         * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
+         * mcpClient.initialize();\
+         * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
+         * gpt.withMcpTools(mcpClient); // Adds all MCP tools\
+         * // or gpt.withMcpTools(mcpClient, ["read_file", "write_file"]); // Adds only specific tools\
+         * \
+         * var response = gpt.prompt("Read the file /tmp/example.txt");\
+         * </odoc>
+         */
+        withMcpTools: (aMcpClient, aToolNames) => {
+            _$(aMcpClient, "aMcpClient").isMap().$_()
+            aToolNames = _$(aToolNames, "aToolNames").isArray().default(__)
+
+            if (!aMcpClient._initialized) {
+                throw new Error("MCP client not initialized. Call initialize() first.")
+            }
+
+            var toolsList = aMcpClient.listTools()
+            if (!isArray(toolsList.tools)) {
+                throw new Error("Unable to retrieve tools from MCP client")
+            }
+
+            var toolsToAdd = toolsList.tools
+            if (isDef(aToolNames)) {
+                toolsToAdd = toolsList.tools.filter(tool => aToolNames.indexOf(tool.name) >= 0)
+            }
+
+            toolsToAdd.forEach(tool => {
+                var gptParams = {
+                    type: "object",
+                    properties: tool.inputSchema.properties || {},
+                    required: tool.inputSchema.required || []
+                }
+
+                var mcpToolFn = function(args) {
+                    try {
+                        var result = aMcpClient.callTool(tool.name, args)
+                        if (isDef(result.content) && isArray(result.content)) {
+                            // Extract text content from MCP result
+                            return result.content.map(c => c.text || c.data || stringify(c)).join("\n")
+                        } else if (isDef(result.content)) {
+                            return result.content
+                        } else {
+                            return stringify(result)
+                        }
+                    } catch(e) {
+                        return "Error calling MCP tool '" + tool.name + "': " + e.message
+                    }
+                }
+
+                _g.model.setTool(tool.name, tool.description, gptParams, mcpToolFn)
+            })
+
             return _r
         },
         /**
