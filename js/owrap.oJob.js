@@ -1857,7 +1857,7 @@ OpenWrap.oJob.prototype.start = function(provideArgs, shouldStop, aId, isSubJob)
 	if (isDef(this.init)) args = merge(args, { init: this.init })
 
 	if (this.__ojob != {}) {
-		if (isDef(this.__ojob.argsFromEnvs) && this.__ojob.argsFromEnvs) {
+		if ((isDef(this.__ojob.argsFromEnvs) && this.__ojob.argsFromEnvs) || __flags.OJOB_ARGS_FROM_ENVS) {
 			args = this.__processArgs(getEnvs(), args, aId);
 		}
 
