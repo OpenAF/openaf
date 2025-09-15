@@ -195,7 +195,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
-                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                    msgs = aPrompt.filter(c => isDef(c)).map(c => isMap(c) ? c : { role: "user", content: c })
                  
                     if (aJsonFlag) {
                         msgs.unshift({ role: (_noSystem ? "developer" : "system"), content: "output json" })
@@ -222,6 +222,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }
+                
                     var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)   
                     if (isDef(_res) && isArray(_res.choices)) {
                         // call tools
