@@ -73,6 +73,9 @@ F_in__in_md=0
 F_in__in_mdtable=0
 F_in__in_mdtable_inmdtablejoin_=1
 F_in__in_mdcode=0
+F_in__in_mcp=0
+F_in__in_mcp_inmcptoolslist_=1
+F_in__in_mcp_inmcplistprompts_=1
 F_in__in_ndjson=0
 F_in__in_ndjson_ndjsonjoin_=1
 F_in__in_ndjson_ndjsonfilter_=1
@@ -416,6 +419,9 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=mdtable" ]; then FFOUND=1; F_in__in_mdtable=1; F_in_=0; fi
     if [ "${arg#inmdtablejoin=}" != "$arg" ]; then FFOUND=1; F_in__in_mdtable_inmdtablejoin_=0; fi
     if [ "$arg" = "in=mdcode" ]; then FFOUND=1; F_in__in_mdcode=1; F_in_=0; fi
+    if [ "$arg" = "in=mcp" ]; then FFOUND=1; F_in__in_mcp=1; F_in_=0; fi
+    if [ "${arg#inmcptoolslist=}" != "$arg" ]; then FFOUND=1; F_in__in_mcp_inmcptoolslist_=0; fi
+    if [ "${arg#inmcplistprompts=}" != "$arg" ]; then FFOUND=1; F_in__in_mcp_inmcplistprompts_=0; fi
     if [ "$arg" = "in=ndjson" ]; then FFOUND=1; F_in__in_ndjson=1; F_in_=0; fi
     if [ "${arg#ndjsonjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_ndjson_ndjsonjoin_=0; fi
     if [ "${arg#ndjsonfilter=}" != "$arg" ]; then FFOUND=1; F_in__in_ndjson_ndjsonfilter_=0; fi
@@ -780,6 +786,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=md	A Markdown input format"
   echo "in=mdtable	A Markdown table format"
   echo "in=mdcode	A Markdown code blocks format"
+  echo "in=mcp	A Model Context Protocol (MCP) input"
   echo "in=ndjson	A NDJSON (new-line delimited JSON) format"
   echo "in=ndslon	A NDSLON (new-line delimited SLON) format"
   echo "in=oaf	Takes an OpenAF scripting code or OpenAF script file to execute and use the result as input"
@@ -964,6 +971,14 @@ fi
 if [ $F_in__in_mdtable -eq 1 ]; then
   if [ $F_in__in_mdtable_inmdtablejoin_ -eq 1 ]; then
     echo "inmdtablejoin=	Scans an entire markdown input for tables and returns an array with the data of each markdown table"
+  fi
+fi
+if [ $F_in__in_mcp -eq 1 ]; then
+  if [ $F_in__in_mcp_inmcptoolslist_ -eq 1 ]; then
+    echo "inmcptoolslist=	If true will list all available MCP tools"
+  fi
+  if [ $F_in__in_mcp_inmcplistprompts_ -eq 1 ]; then
+    echo "inmcplistprompts=	If true will list all available MCP prompts"
   fi
 fi
 if [ $F_in__in_ndjson -eq 1 ]; then
