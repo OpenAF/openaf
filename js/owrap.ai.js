@@ -195,7 +195,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
-                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                    msgs = aPrompt.filter(c => isDef(c)).map(c => isMap(c) ? c : { role: "user", content: c })
                  
                     if (aJsonFlag) {
                         msgs.unshift({ role: (_noSystem ? "developer" : "system"), content: "output json" })

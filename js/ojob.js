@@ -16,6 +16,11 @@ if (kparams.indexOf("-h") >= 0 && params["-h"] == "") {
 	ojob_showHelp();
 }
 
+if (kparams.indexOf("-f") >= 0 && params["-f"] == "") {
+	delete params["-f"]
+	ojob_setParams()
+}
+
 if (kparams.indexOf("-completion") >= 0 && params["-completion"] == "") {
 	delete params["-completion"];
 	ojob_completion()
@@ -128,6 +133,7 @@ function ojob_showHelp() {
 	print("  -global        List global jobs for this installation.")
 	print("  -shortcuts     Lists the included ojob shortcuts.")
 	print("  -i             Interactive prompt of the corresponding oJob arguments.")
+	print("  -f aFile       Sets additional parameters from a file (yaml, json, slon).")
 	print("");
 	print("(version " + af.getVersion() + ", " + Packages.openaf.AFCmdBase.LICENSE + ")");
 	ojob_shouldRun = false;
@@ -159,38 +165,56 @@ function ojob__getFile() {
 	if (isDef(fparam)) {
 		return fparam;
 	} else {
-		printErr("Didn't recognize the aYamlFile.yaml\n");
-		ojob_showHelp();
-		return __;
+		printErr("Didn't recognize the aYamlFile.yaml\n")
+		ojob_showHelp()
+		return __
 	}
 }
 
 function ojob_compile() {
-	var file = ojob__getFile();
+	var file = ojob__getFile()
 
 	if (isDef(file)) {
-		print(af.toYAML(ow.loadOJob().previewFile(file)));
+		print(af.toYAML(ow.loadOJob().previewFile(file)))
 	}
-	ojob_shouldRun = false;
+	ojob_shouldRun = false
 }
 
 function ojob_tojson() {
-	var file = ojob__getFile();
+	var file = ojob__getFile()
 
 	if (isDef(file)) {
-		sprint(ow.loadOJob().previewFile(file));
+		sprint(ow.loadOJob().previewFile(file))
 	}
-	ojob_shouldRun = false;
+	ojob_shouldRun = false
 }
 
 function ojob_jobs() {
-	var file = ojob__getFile();
+	var file = ojob__getFile()
 
 	if (isDef(file)) {
-		print(af.toYAML($stream(ow.loadOJob().previewFile(file).jobs).map("name").distinct().toArray().sort()));
+		print(af.toYAML($stream(ow.loadOJob().previewFile(file).jobs).map("name").distinct().toArray().sort()))
 	}
-	ojob_shouldRun = false;
+	ojob_shouldRun = false
 }
+
+function ojob_setParams() {
+	var afile = String(__expr).replace(/.+-f */i, "")
+	var aString = io.readFileString(afile)
+	var _r = af.fromJSSLON(aString)
+    if (isUnDef(_r)) {
+        if (aString.startsWith("{")) {
+            _r = jsonParse(aString, __, __, true)
+        } else {
+            _r = af.fromSLON(aString)
+        }
+    } else {
+        if (isString(_r)) _r = af.fromYAML(_r)
+    }
+
+	if (isObject(_r)) ojob_args = merge(ojob_args, _r)
+	ojob_shouldRun = true
+}	
 
 function ojob_draw() {
 	var file = ojob__getFile();

@@ -206,6 +206,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	OJOB_INIT_ARRAY_ARGS_LIST  : true,
 	OJOB_CHECK_JOB_REMOVAL     : false,
 	OJOB_CHECK_JOB_CHANGES     : false,
+	OJOB_ARGS_FROM_ENVS        : false,
 	OAF_CLOSED                 : false,
 	OAF_PRECOMPILE_LEVEL       : 2,
 	OAF_ERRSTACK               : true,   // If true $err will print the stack trace
