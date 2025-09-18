@@ -222,7 +222,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }
-                
                     var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)   
                     if (isDef(_res) && isArray(_res.choices)) {
                         // call tools
