@@ -1751,11 +1751,11 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
     lgF = _$(lgF, "lgF").isFunction().default((t, m) => {
         // io.writeLineNDJSON("log.ndjson", { type: t, data: m })
     })
+	if (isMap(fnsMeta)) fnsMeta = $m4a(fnsMeta, "name")
 
     initData = _$(initData, "initData").isMap().default({})
     _$(fnsMeta, "fnsMeta").isArray().$_()
     _$(fns, "fns").isMap().$_()
-
     initData = merge({
         serverInfo: {
             name: "OpenAF",
@@ -1771,7 +1771,6 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
             }
         }
     }, initData)
-
     io.pipeLn(line => {
         var _pline = jsonParse(line)
         lgF("rcv", _pline)
