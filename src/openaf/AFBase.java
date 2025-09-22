@@ -68,6 +68,8 @@ import org.mozilla.javascript.ast.AstRoot;
 
 import java.util.zip.ZipEntry;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -449,7 +451,7 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * <odoc>
-	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding, dontWait, envsMap) : String/Map</key>
+	 * <key>af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, encoding, dontWait, envsMap, exitCallback) : String/Map</key>
 	 * Tries to execute commandArguments (either a String or an array of strings) in the operating system. Optionally
 	 * aStdIn can be provided, aTimeout can be defined for the execution and if shouldInheritIO is true the stdout, stderr and stdin
 	 * will be inherit from OpenAF. If shouldInheritIO is not defined or false it will return the stdout of the command execution.
@@ -457,20 +459,23 @@ public class AFBase extends ScriptableObject {
 	 * If envsMap (a map of strings) is defined the environment variables will be replaced by envsMap.
 	 * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly. In alternative 
 	 * if returnMap = true a map will be returned with stdout, stderr and exitcode.
-	 * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. If defined the stdout and stderr won't
-	 * be available for the returnMap if true. Example:\
+	 * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output stream, a error stream and an input stream. 
+	 * An exitCallback can also be provided that will receive the process as parameter and should return "force" to forcefully terminate the process or "destroy" to gracefully terminate it.
+	 * If defined the stdout and stderr won't be available for the returnMap if true. Example:\
 	 * \
 	 * sh("someCommand", void 0, void 0, false, void 0, false, function(o, e, i) { ioStreamReadLines(o, (f) => { print("TEST | " + String(f)) }, void 0, false) });\
 	 * \
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object sh(Object s, Object in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding, boolean dontWait, Object envs) throws IOException, InterruptedException {
+	public Object sh(Object s, Object in, Object timeout, boolean inheritIO, Object directory, boolean returnObj, Object callback, Object encoding, boolean dontWait, Object envs, Object exitCallback) throws IOException, InterruptedException {
 		ProcessBuilder pb = null;
-		Charset Cencoding = null;
+		final Charset Cencoding;
 
 		if (encoding instanceof String) {
 			Cencoding = Charset.forName((String) encoding);
+		} else {
+			Cencoding = Charset.defaultCharset();
 		}
 
 		if (s instanceof NativeArray) {
@@ -535,7 +540,89 @@ public class AFBase extends ScriptableObject {
 			iserr = p.getErrorStream();
 		}
 
-		if (is != null && iserr != null && callback != null && callback instanceof Function) {
+	    final AtomicReference<String> tlines = new AtomicReference<String>(null);
+	    final AtomicReference<String> tlinesErr = new AtomicReference<String>(null);
+
+		// Exit callback handling
+		Thread exitCallbackThread = null;
+		if (p.isAlive() && exitCallback != null && !(exitCallback instanceof Undefined) && exitCallback instanceof Function) {
+			exitCallbackThread = new Thread() {
+				public void run() {
+					boolean stopped = false;
+					while (p.isAlive()) {
+						try { this.sleep(50); } catch(Exception e) {}
+						Context cx = (Context) AFCmdBase.jse.enterContext();
+						try {
+							Object status = ((Function) exitCallback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { p });
+							if (status instanceof String) {
+								switch(((String) status).toLowerCase()) {
+								case "force"  :
+									p.destroyForcibly();
+									stopped = true;
+									break;
+								case "destroy":
+									p.destroy();
+									stopped = true;
+									break;
+								}
+							}
+						} catch(Exception e) {
+							e.printStackTrace();
+						} finally {
+							AFCmdBase.jse.exitContext();
+							if (stopped) {
+								try {
+									if (is != null    && !p.isAlive()) tlines.set(IOUtils.toString(is, Cencoding));
+									if (iserr != null && !p.isAlive()) tlinesErr.set(IOUtils.toString(iserr, Cencoding));
+								} catch(Exception e) { }
+							}
+						}
+					}
+				};
+			};
+			exitCallbackThread.start();
+		} 
+
+		// Timeout handling
+		Thread timeoutThread = null;
+		if (p.isAlive() && timeout != null && !(timeout instanceof org.mozilla.javascript.Undefined)) {
+			long tt = Double.valueOf(Double.parseDouble(timeout.toString())).longValue();
+			if (tt >= 0) {
+				timeoutThread = new Thread() {
+					public void run() {
+						try {
+							//t.join(tt); // not working in some cases
+							long limit = java.lang.System.currentTimeMillis() + tt;
+							while(java.lang.System.currentTimeMillis() < limit && p.isAlive()) {
+								Thread.sleep(50);
+								//long now = java.lang.System.currentTimeMillis();
+								//if (limit > now) t.wait(limit - now);
+							}
+						} catch(InterruptedException e) {
+							//t.interrupt();
+							Thread.currentThread().interrupt();
+						} finally {
+							try {
+								if (is != null    && !p.isAlive()) tlines.set(IOUtils.toString(is, Cencoding));
+								if (iserr != null && !p.isAlive()) tlinesErr.set(IOUtils.toString(iserr, Cencoding));
+							} catch(Exception e) { }
+							if (p.isAlive()) {
+								p.destroy();
+								p.destroyForcibly();
+								try {
+									if (is != null   ) is.close();
+									if (iserr != null) iserr.close();
+								} catch(Exception e) { }
+							}
+						}
+					};
+				};
+				timeoutThread.start();
+			} 
+		}
+
+		// Callback handling
+		if (p.isAlive() && is != null && iserr != null && callback != null && callback instanceof Function) {
 			Context cx = (Context) AFCmdBase.jse.enterContext();
 			try {
 				((Function) callback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { is, iserr, p.getOutputStream() });
@@ -549,61 +636,21 @@ public class AFBase extends ScriptableObject {
 		String lines = new String(); 
 		String linesErr = new String();
 
+		if (!dontWait) {
+			try {
+				if (is != null   ) lines = IOUtils.toString(is, Cencoding);
+				if (iserr != null) linesErr = IOUtils.toString(iserr, Cencoding);
+			} catch(Exception e) { }
+		}
+
 		int exit = -1; 
 		try {
-			if (timeout == null || timeout instanceof org.mozilla.javascript.Undefined) {
-				if (!dontWait) {
-					try {
-						if (is != null   ) lines = IOUtils.toString(is, Cencoding);
-						if (iserr != null) linesErr = IOUtils.toString(iserr, Cencoding);
-					} catch(Exception e) { }
-				}
-				exit = p.waitFor();
-				try { 
-					if (is != null   ) is.close();
-					if (iserr != null) iserr.close();
-				} catch(Exception e) { }
-			} else {
-				Thread t = new Thread() {
-					public void run() {
-						try {
-							p.waitFor();						
-						} catch(InterruptedException e) {
-							return;
-						}
-					}
-				};
-				//t.start();
-				long tt = Double.valueOf(Double.parseDouble(timeout.toString())).longValue();
-				if (tt >= 0) {
-					try {
-						//t.join(tt); // not working in some cases
-						long limit = java.lang.System.currentTimeMillis() + tt;
-						while(java.lang.System.currentTimeMillis() < limit && p.isAlive()) {
-							Thread.sleep(10);
-							//long now = java.lang.System.currentTimeMillis();
-							//if (limit > now) t.wait(limit - now);
-						}
-					} catch(InterruptedException e) {
-						t.interrupt();
-						Thread.currentThread().interrupt();
-					} finally {
-						try {
-							if (is != null    && !p.isAlive()) lines = IOUtils.toString(is, Cencoding);
-							if (iserr != null && !p.isAlive()) linesErr = IOUtils.toString(iserr, Cencoding);
-						} catch(Exception e) { }
-						p.destroy();
-						p.destroyForcibly();
-						try {
-							if (is != null   ) is.close();
-							if (iserr != null) iserr.close();
-						} catch(Exception e) { }
-					}
-					if (!p.isAlive()) exit = p.exitValue();
-				} else {
-					return null;
-				}
-			}
+			if (!dontWait) exit = p.waitFor();
+		
+			try { 
+				if (is != null   ) is.close();
+				if (iserr != null) iserr.close();
+			} catch(Exception e) { }
 		} catch(IllegalMonitorStateException e) {
 			//exit = p.exitValue();
 		}
@@ -613,14 +660,15 @@ public class AFBase extends ScriptableObject {
 		
 		if (returnObj) {
 			JSEngine.JSMap no = AFCmdBase.jse.getNewMap(null);
-			no.put("stdout", lines);
-			no.put("stderr", linesErr);
+			// prefer values captured in threads (timeout handler) when available
+			no.put("stdout", tlines.get() != null ? tlines.get() : lines);
+			no.put("stderr", tlinesErr.get() != null ? tlinesErr.get() : linesErr);
 			no.put("exitcode", exit);
 			return no.getMap();
 		} else {
 			((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__exitcode", exit, ScriptableObject.PERMANENT);
-			((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__stderr", linesErr, ScriptableObject.PERMANENT);
-			return lines;
+			((ScriptableObject) AFCmdBase.jse.getGlobalscope()).defineProperty("__stderr", tlinesErr.get() != null ? tlinesErr.get() : linesErr, ScriptableObject.PERMANENT);
+			return tlines.get() != null ? tlines.get() : lines;
 		}
 	}
 	
