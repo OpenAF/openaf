@@ -1518,17 +1518,19 @@ global.$gpt = function(aModel) {
         /**
          * <odoc>
          * <key>$gpt.sysPrompt(aPrompt, aModel, aTemperature) : String</key>
-         * Tries to prompt system aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor).
+         * Adds a prompt system aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor).
          * </odoc>
          */
         sysPrompt: (aPrompt, aModel, aTemperature) => { 
-            return _g.addSystemPrompt(aPrompt).prompt(__, aModel, aTemperature)
+            _g.addSystemPrompt(aPrompt)
+            return _r
         },
         devPrompt: (aPrompt, aModel, aTemperature) => {
-            return _g.addDeveloperPrompt(aPrompt).prompt(__, aModel, aTemperature)
+            _g.addDeveloperPrompt(aPrompt)
+            return _r
         },
         withInstructions: (aPrompt, aModel, aTemperature) => {
-            _g.addSystemPrompt(aPrompt).prompt(__, aModel, aTemperature)
+            _g.addSystemPrompt(aPrompt)
             return _r
         },
         /**
