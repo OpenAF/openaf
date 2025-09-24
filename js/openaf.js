@@ -10424,16 +10424,6 @@ const $llm = function(aModel) {
 
 /**
  * <odoc>
- * <key>$LLM(aModel) : $gpt</key>
- * Alias for $llm to keep backwards compatibility with upper-case invocations.
- * </odoc>
- */
-const $LLM = function(aModel) {
-        return $llm(aModel)
-}
-
-/**
- * <odoc>
  * <key>$sql(aObject, aSQL, aMethod) : Array</key>
  * Given an aObject (map or array) will try to execute aSQL (SQL expression) and return the corresponding results.
  * Optionally you can provide aMethod to be used (e.g. "auto" (default) or "nlinq" or "h2"). "nlinq" it's the fastest but doesn't
