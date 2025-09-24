@@ -110,6 +110,41 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _model = aOptions.model
             var _temperature = aOptions.temperature
             var _noSystem = aOptions.noSystem
+            var _lastStats = __
+            var _resetStats = () => { _lastStats = __ }
+            var _captureStats = (aResponse, aRequestBody) => {
+                if (!isMap(aResponse)) {
+                    _lastStats = __
+                    return _lastStats
+                }
+
+                var stats = { vendor: "openai" }
+                var modelName = isMap(aRequestBody) ? aRequestBody.model : __
+                if (isString(aResponse.model)) modelName = aResponse.model
+                if (isString(modelName)) stats.model = modelName
+                if (isString(aResponse.id)) stats.id = aResponse.id
+                if (isString(aResponse.system_fingerprint)) stats.systemFingerprint = aResponse.system_fingerprint
+
+                if (isMap(aResponse.usage)) {
+                    var tokens = {}
+                    if (isDef(aResponse.usage.prompt_tokens)) tokens.prompt = aResponse.usage.prompt_tokens
+                    if (isDef(aResponse.usage.completion_tokens)) tokens.completion = aResponse.usage.completion_tokens
+                    if (isDef(aResponse.usage.total_tokens)) tokens.total = aResponse.usage.total_tokens
+                    if (Object.keys(tokens).length > 0) stats.tokens = tokens
+                    stats.usage = aResponse.usage
+                }
+
+                if (isArray(aResponse.choices)) {
+                    var finishReasons = aResponse.choices
+                        .filter(c => isDef(c) && isDef(c.finish_reason))
+                        .map(c => c.finish_reason)
+                    if (finishReasons.length > 0) stats.finishReasons = finishReasons
+                }
+
+                if (Object.keys(stats).filter(k => k != "vendor").length == 0) stats = __
+                _lastStats = stats
+                return _lastStats
+            }
             var _r = {
                 conversation: [],
                 tools: {},
@@ -148,6 +183,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     return _r
                 },
+                getLastStats: () => _lastStats,
                 prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
                     var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
                     if (isArray(__r.choices) && __r.choices.length > 0) {
@@ -192,11 +228,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
 
+                    _resetStats()
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.filter(c => isDef(c)).map(c => isMap(c) ? c : { role: "user", content: c })
-                 
+
                     if (aJsonFlag) {
                         msgs.unshift({ role: (_noSystem ? "developer" : "system"), content: "output json" })
                     }
@@ -222,7 +259,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }
-                    var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)   
+                    var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
                     if (isDef(_res) && isArray(_res.choices)) {
                         // call tools
                         var _p = [], stopWith = false
@@ -242,12 +279,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                         })
                         if (stopWith) {
                             _r.conversation = _r.conversation.concat(isString(_res) ? { role: "assistant", content: _res } : _res.choices[0].message)
+                            _captureStats(_res, body)
                             return _res
                         } else {
                             _r.conversation = _r.conversation.concat(_p)
                             return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
                         }
                     } else {
+                        _captureStats(_res, body)
                         return _res
                     }
                 },
@@ -364,6 +403,39 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _timeout = aOptions.timeout
             var _model = aOptions.model
             var _temperature = aOptions.temperature
+            var _lastStats = __
+            var _resetStats = () => { _lastStats = __ }
+            var _captureStats = (aResponse, aModelName) => {
+                if (!isMap(aResponse)) {
+                    _lastStats = __
+                    return _lastStats
+                }
+
+                var stats = { vendor: "gemini" }
+                var modelName = isString(aModelName) ? aModelName : _model
+                if (isString(aResponse.model)) modelName = aResponse.model
+                if (isString(modelName)) stats.model = modelName
+
+                if (isMap(aResponse.usageMetadata)) {
+                    var tokens = {}
+                    if (isDef(aResponse.usageMetadata.promptTokenCount)) tokens.prompt = aResponse.usageMetadata.promptTokenCount
+                    if (isDef(aResponse.usageMetadata.candidatesTokenCount)) tokens.completion = aResponse.usageMetadata.candidatesTokenCount
+                    if (isDef(aResponse.usageMetadata.totalTokenCount)) tokens.total = aResponse.usageMetadata.totalTokenCount
+                    if (Object.keys(tokens).length > 0) stats.tokens = tokens
+                    stats.usage = aResponse.usageMetadata
+                }
+
+                if (isArray(aResponse.candidates)) {
+                    var finishReasons = aResponse.candidates
+                        .filter(c => isDef(c) && isDef(c.finishReason))
+                        .map(c => c.finishReason)
+                    if (finishReasons.length > 0) stats.finishReasons = finishReasons
+                }
+
+                if (Object.keys(stats).filter(k => k != "vendor").length == 0) stats = __
+                _lastStats = stats
+                return _lastStats
+            }
 
             var _r = {
                 conversation: [],
@@ -408,6 +480,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     return _r
                 },
+                getLastStats: () => _lastStats,
                 setTool: (aName, aDesc, aParams, aFn) => {
                     _r.tools.push( {
                         name: aName,
@@ -479,6 +552,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
 
+                    _resetStats()
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
                     aPrompt = _r.conversation.reduce((acc, r) => {
@@ -546,14 +620,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 })
                             }
                         })
-                        if (stopWith) { 
+                        if (stopWith) {
                             _r.conversation = _r.conversation.concat(_res.candidates[0].content)
+                            _captureStats(_res, aModel)
                             return _res
                         } else {
                             _r.conversation = _r.conversation.concat(_p)
                             return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
                         }
                     } else {
+                        _captureStats(_res, aModel)
                         return _res
                     }
                 },
@@ -663,6 +739,37 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _temperature = aOptions.temperature
             var _url = aOptions.url
             var _params = aOptions.params
+            var _lastStats = __
+            var _resetStats = () => { _lastStats = __ }
+            var _captureStats = (aResponse, aModelName) => {
+                if (!isMap(aResponse)) {
+                    _lastStats = __
+                    return _lastStats
+                }
+
+                var stats = { vendor: "ollama" }
+                var modelName = isString(aModelName) ? aModelName : _model
+                if (isString(aResponse.model)) modelName = aResponse.model
+                if (isString(modelName)) stats.model = modelName
+                if (isString(aResponse.created_at)) stats.createdAt = aResponse.created_at
+
+                var tokens = {}
+                if (isDef(aResponse.prompt_eval_count)) tokens.prompt = aResponse.prompt_eval_count
+                if (isDef(aResponse.eval_count)) tokens.completion = aResponse.eval_count
+                if (isDef(tokens.prompt) && isDef(tokens.completion)) tokens.total = tokens.prompt + tokens.completion
+                if (Object.keys(tokens).length > 0) stats.tokens = tokens
+
+                var durations = {}
+                if (isDef(aResponse.total_duration)) durations.total = aResponse.total_duration
+                if (isDef(aResponse.load_duration)) durations.load = aResponse.load_duration
+                if (isDef(aResponse.prompt_eval_duration)) durations.prompt = aResponse.prompt_eval_duration
+                if (isDef(aResponse.eval_duration)) durations.completion = aResponse.eval_duration
+                if (Object.keys(durations).length > 0) stats.durations = durations
+
+                if (Object.keys(stats).filter(k => k != "vendor").length == 0) stats = __
+                _lastStats = stats
+                return _lastStats
+            }
 
             var _r = {
                 conversation: [],
@@ -674,6 +781,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isArray(aConversation)) _r.conversation = aConversation
                     return _r
                 },
+                getLastStats: () => _lastStats,
                 setTool: (aName, aDesc, aParams, aFn) => {
                     _r.tools.push({
                         type: "function",
@@ -722,7 +830,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
-                 
+
+                    _resetStats()
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
@@ -777,6 +886,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         } else {
                             _r.conversation.push({ role: "assistant", content: _res })
                         }
+                        _captureStats(_res, aModel)
                         return _res
                     }
                 },
@@ -888,6 +998,42 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _model = aOptions.model
             var _temperature = aOptions.temperature
             var _noSystem = aOptions.noSystem
+            var _lastStats = __
+            var _resetStats = () => { _lastStats = __ }
+            var _captureStats = (aResponse, aModelName) => {
+                if (!isMap(aResponse)) {
+                    _lastStats = __
+                    return _lastStats
+                }
+
+                var stats = { vendor: "anthropic" }
+                var modelName = isString(aModelName) ? aModelName : _model
+                if (isString(aResponse.model)) modelName = aResponse.model
+                if (isString(modelName)) stats.model = modelName
+                if (isString(aResponse.id)) stats.id = aResponse.id
+                if (isString(aResponse.type)) stats.type = aResponse.type
+                if (isString(aResponse.stop_reason)) stats.stopReason = aResponse.stop_reason
+
+                if (isMap(aResponse.usage)) {
+                    var tokens = {}
+                    if (isDef(aResponse.usage.input_tokens)) tokens.prompt = aResponse.usage.input_tokens
+                    if (isDef(aResponse.usage.output_tokens)) tokens.completion = aResponse.usage.output_tokens
+                    if (isDef(aResponse.usage.total_tokens)) tokens.total = aResponse.usage.total_tokens
+                    if (Object.keys(tokens).length > 0) stats.tokens = tokens
+                    stats.usage = aResponse.usage
+                }
+
+                if (isArray(aResponse.content)) {
+                    var contentTypes = aResponse.content
+                        .filter(c => isMap(c) && isString(c.type))
+                        .map(c => c.type)
+                    if (contentTypes.length > 0) stats.contentTypes = contentTypes
+                }
+
+                if (Object.keys(stats).filter(k => k != "vendor").length == 0) stats = __
+                _lastStats = stats
+                return _lastStats
+            }
             var _r = {
                 conversation: [],
                 tools: {},
@@ -898,6 +1044,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isArray(aConversation)) _r.conversation = aConversation
                     return _r
                 },
+                getLastStats: () => _lastStats,
                 setTool: (aName, aDesc, aParams, aFn) => {
                     _r.tools[aName] = {
                         type: "function",
@@ -928,7 +1075,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
-                 
+
+                    _resetStats()
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
@@ -964,7 +1112,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                     }*/
-                    var _res = _r._request("v1/messages", body)   
+                    var _res = _r._request("v1/messages", body)
                     /*if (isDef(_res) && isArray(_res.choices)) {
                         // call tools
                         var _p = [], stopWith = false
@@ -989,6 +1137,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return _res
                     }*/
+                   _captureStats(_res, aModel)
                    _r.conversation.push({
                         role: "assistant",
                         content: _res.content
@@ -1098,7 +1247,22 @@ OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
  */
 OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
     return this.model.getModels()
-}   
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.getLastStats() : Map</key>
+ * Returns the latest usage statistics reported by the underlying GPT model for the most recent prompt request.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.getLastStats = function() {
+    if (isDef(this.model) && isFunction(this.model.getLastStats)) {
+        var stats = this.model.getLastStats()
+        if (isMap(stats)) return clone(stats)
+        return stats
+    }
+    return __
+}
 
 /**
  * <odoc>
@@ -1108,6 +1272,17 @@ OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
  */
 OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
     return this.model.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools)
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) : Map</key>
+ * Executes prompt and returns a map with the model response and any reported statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
+    var response = this.model.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools)
+    return { response: response, stats: this.getLastStats() }
 }
 
 /**
@@ -1149,6 +1324,17 @@ OpenWrap.ai.prototype.gpt.prototype.setConversation = function(aConversation) {
  */
 OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
     return this.model.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.rawPromptWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) : Map</key>
+ * Executes rawPrompt and returns the raw response together with any reported statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.rawPromptWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
+    var response = this.model.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
+    return { response: response, stats: this.getLastStats() }
 }
 
 /**
@@ -1418,9 +1604,12 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * - params: a map with the parameters to use in the requests (e.g. { "max_tokens": 1000, "top_p": 1, "frequency_penalty": 0, "presence_penalty": 0 })\
  * \
  * If aModel is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
+ * \
+ * The returned object also exposes helper methods to inspect vendor usage information: `getLastStats`/`lastStats` (map with the latest statistics), `promptWithStats`
+ * and `rawPromptWithStats` (returning `{ response, stats }`).
  * </odoc>
  */
-global.$gpt = function(aModel) { 
+global.$gpt = function(aModel) {
     if (isUnDef(aModel) && isDef(getEnv("OAF_MODEL"))) aModel = af.fromJSSLON(getEnv("OAF_MODEL"))
     _$(aModel, "options").isMap().$_()
     var type = _$(aModel.type, "type").isString().$_()
@@ -1435,12 +1624,46 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
+         * <key>$gpt.getLastStats() : Map</key>
+         * Returns the latest usage statistics reported by the underlying LLM vendor for the last prompt request.
+         * </odoc>
+         */
+        getLastStats: () => _g.getLastStats(),
+        /**
+         * <odoc>
+         * <key>$gpt.lastStats() : Map</key>
+         * Alias for $gpt.getLastStats.
+         * </odoc>
+         */
+        lastStats: () => _g.getLastStats(),
+        /**
+         * <odoc>
          * <key>$gpt.prompt(aPrompt, aRole, aModel, aTemperature, tools) : String</key>
          * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor).
          * </odoc>
          */
         prompt: (aPrompt, aRole, aModel, aTemperature, tools) => {
             return _g.prompt(aPrompt, aRole, aModel, aTemperature, tools)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptWithStats(aPrompt, aRole, aModel, aTemperature, tools) : Map</key>
+         * Executes prompt and returns a map with the response and the reported statistics ({ response, stats }).
+         * </odoc>
+         */
+        promptWithStats: (aPrompt, aRole, aModel, aTemperature, tools) => {
+            var response = _g.prompt(aPrompt, aRole, aModel, aTemperature, tools)
+            return { response: response, stats: _g.getLastStats() }
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.rawPromptWithStats(aPrompt, aModel, aTemperature, aJsonFlag, tools) : Map</key>
+         * Executes the underlying rawPrompt call and returns the raw response together with the reported statistics ({ response, stats }).
+         * </odoc>
+         */
+        rawPromptWithStats: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
+            var response = _g.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
+            return { response: response, stats: _g.getLastStats() }
         },
         /**
          * <odoc>

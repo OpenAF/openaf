@@ -10417,9 +10417,9 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
  * </odoc>
  */
 const $llm = function(aModel) {
-	if (global.$gpt) return $gpt(aModel)
-	ow.loadAI()
-	return $gpt(aModel)
+        if (global.$gpt) return $gpt(aModel)
+        ow.loadAI()
+        return $gpt(aModel)
 }
 
 /**
