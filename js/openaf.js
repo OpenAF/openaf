@@ -10417,9 +10417,19 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
  * </odoc>
  */
 const $llm = function(aModel) {
-	if (global.$gpt) return $gpt(aModel)
-	ow.loadAI()
-	return $gpt(aModel)
+        if (global.$gpt) return $gpt(aModel)
+        ow.loadAI()
+        return $gpt(aModel)
+}
+
+/**
+ * <odoc>
+ * <key>$LLM(aModel) : $gpt</key>
+ * Alias for $llm to keep backwards compatibility with upper-case invocations.
+ * </odoc>
+ */
+const $LLM = function(aModel) {
+        return $llm(aModel)
 }
 
 /**
