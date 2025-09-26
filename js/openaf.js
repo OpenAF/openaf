@@ -5431,18 +5431,54 @@ const pidCheckIn = function(aFilename) {
  * <key>pidKill(aPidNumber, isForce) : boolean</key>
  * Tries to terminate a process with aPidNumber. If successful it will return true otherwise it will
  * return false. If necessary, a boolean true value on isForce, will force the termination of the process.
+ * When isForce is true, it will also attempt to kill any child processes of the target process.
  * </odoc>
  */
 const pidKill = function(aPidNumber, isForce) {
 	try {
 		var force = "";
 		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
-			if (isForce) force = "/F";
+			if (isForce) {
+				// Use /T flag to kill process tree (including children) and /F for force
+				force = "/T /F";
+			}
 			if (af.sh("cmd /c taskkill "+ force + " /PID " + aPidNumber)) {
 				return true;
 			}
 		} else {
-			force = (isForce) ? "-9" : "-2";
+			if (isForce) {
+				// First, try to kill child processes
+				try {
+					// Use pgrep to find child processes and kill them
+					var childrenResult = af.sh("pgrep -P " + aPidNumber);
+					if (__exitcode == 0 && isDef(childrenResult) && childrenResult.length > 0) {
+						// Kill child processes first with SIGKILL
+						af.sh("pkill -KILL -P " + aPidNumber);
+					}
+				} catch(childE) {
+					// If pgrep/pkill fail, try alternative approach using ps
+					try {
+						var psResult = af.sh("ps -o pid --no-headers --ppid " + aPidNumber);
+						if (__exitcode == 0 && isDef(psResult) && psResult.trim().length > 0) {
+							var childPids = psResult.trim().split(/\s+/);
+							for (var i = 0; i < childPids.length; i++) {
+								if (childPids[i] && childPids[i] !== "") {
+									af.sh("kill -9 " + childPids[i]);
+								}
+							}
+						}
+					} catch(psE) {
+						// Ignore errors in child process killing - continue with parent
+					}
+				}
+				
+				// Kill the main process with SIGKILL
+				force = "-9";
+			} else {
+				// Use SIGINT for graceful termination
+				force = "-2";
+			}
+			
 			af.sh("kill " + force + " " + aPidNumber);
 			if (__exitcode == 0) {
 				return true;
@@ -7043,7 +7079,7 @@ const checkLatestVersion = function() {
 
 /**
  * <odoc>
- * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap) : String</key>
+ * <key>sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback) : String</key>
  * Tries to execute commandArguments (either a String or an array of strings) in the operating system as a shortcut for 
  * AF.sh except that it will run them through the OS shell. Optionally aStdIn can be provided, aTimeout can be defined 
  * for the execution and if shouldInheritIO is true the stdout, stderr and stdin will be inherit from OpenAF. If 
@@ -7052,18 +7088,20 @@ const checkLatestVersion = function() {
  * The variables __exitcode and __stderr can be checked for the command exit code and the stderr output correspondingly.
  * In alternative if returnMap = true a map will be returned with stdout, stderr and exitcode.
  * A callbackFunc can be provided, if shouldInheritIO is undefined or false, that will receive, as parameters, an output 
- * stream, a error stream and an input stream (see help af.sh for an example). If defined the stdout and stderr won't be available for the returnMap if true.
+ * stream, a error stream and an input stream (see help af.sh for an example). 
+ * An exitCallback can also be provided that will receive the exit code as a parameter.
+ * If defined the stdout and stderr won't be available for the returnMap if true.
  * </odoc>
  */
-const sh = function(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap) {
+const sh = function(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback) {
 	if (typeof commandArguments == "string") {
 		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
-			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap);
+			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback);
 		} else {
-			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap);
+			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback);
 		}
 	} else {
-		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap);
+		return af.sh(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback);
 	}
 }
 
@@ -8229,6 +8267,7 @@ const $jsonrpc = function(aOptions) {
 		_p  : __,
 		_s  : false,
 		_cmd: false,
+		_sy : $sync(),
 		_q  : {},
 		_r  : {},
 		type: type => {
@@ -8241,16 +8280,26 @@ const $jsonrpc = function(aOptions) {
 			return _r
 		},
 		sh  : cmd => {
-			if (_r._cmd && isDef(_r._p)) return _r
+			var _go = false
+			_r._sy.run(() => {
+				if (_r._cmd == false) {
+					_r._cmd = true
+					_go = true
+				}
+			})
+			if (!_go) return _r
 
 			aOptions.cmd = cmd
 			aOptions.type = "stdio"
-			_r._cmd = true
+			if (isDef(_r._p)) return _r
+			var _prts
+
 			_r._p = $doV(() => {
 				var _rtb = $tb(() => {
 					_r._s = false
-					_debug("jsonrpc process started")
+					_debug("jsonrpc threadbox started " + nowNano())
 					var _resh = $sh(cmd)
+					            .exitcb(function(p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { return "" } })
 								.cb((o, e, i) => {
 									_debug("jsonrpc process started")
 									$doWait($doAll(
@@ -8304,8 +8353,8 @@ const $jsonrpc = function(aOptions) {
 								})
 								.get()
 					_debug("jsonrpc process ended: " + af.toSLON(_resh))
-				}).stopWhen(() => _r._s).exec()
-				_debug("threadbox: " + af.toSLON(_rtb))
+				}).stopWhen(() => _r._s && (isDef(_prts) && !_prts.isAlive())).exec()
+				_debug("jsonrpc threadbox: " + af.toSLON(_rtb))
 			}).catch(e => {
 				_debug("jsonrpc process error: " + e)
 				$err(e)
@@ -8329,20 +8378,24 @@ const $jsonrpc = function(aOptions) {
 					params: _$(aParams, "aParams").isMap().default({}),
 					__notify: !!aNotification
 				}
-				$await("__jsonrpc_q-" + _id).notifyAll()
-				// If this is a notification (no reply expected) skip waiting for a response
-				if (!!aNotification) {
-					// cleanup waiter and return undefined
-					$await("__jsonrpc_a-" + _id).destroy()
-					return
-				}
-				$await("__jsonrpc_a-" + _id).wait(aOptions.timeout)
+
 				var _res
+				// for stdio concorrency is not supported by nature so we use locks and awaits to
+				// serialize requests and responses
+				$lock("__jsonrpc_q-" + _id).tryLock(() => {
+					$await("__jsonrpc_q-" + _id).notifyAll()
+					// If this is a notification (no reply expected) skip waiting for a response
+					if (!!aNotification) {
+						// cleanup waiter and return undefined
+						$await("__jsonrpc_a-" + _id).destroy()
+						return
+					}
+					$await("__jsonrpc_a-" + _id).wait(aOptions.timeout)
+				})
 				if (isMap(_r._r[_id])) {
 					_res = _r._r[_id]
 					delete _r._r[_id]
 				}
-				$await("__jsonrpc_a-" + _id).destroy()
 				return isDef(_res) && isDef(_res.result) ? _res.result : _res
 			case "remote":
 			default      :
@@ -8484,7 +8537,7 @@ const $mcp = function(aOptions) {
 				clientInfo: clientInfo
 			})
 			
-			if (isDef(initResult) && !isDef(initResult.error)) {
+			if (isDef(initResult) && isUnDef(initResult.error)) {
 				_r._initialized = true
 				_r._capabilities = initResult.capabilities || {}
 				
@@ -10364,9 +10417,9 @@ AF.prototype.fromSQL2NLinq = function(sql, preParse) {
  * </odoc>
  */
 const $llm = function(aModel) {
-	if (global.$gpt) return $gpt(aModel)
-	ow.loadAI()
-	return $gpt(aModel)
+        if (global.$gpt) return $gpt(aModel)
+        ow.loadAI()
+        return $gpt(aModel)
 }
 
 /**
@@ -13083,6 +13136,7 @@ const $sh = function(aString, aIn) {
 		this.fcb = __;
 		this.t = __;
 		this.dw = __;
+		this.ecb = __
 		ow.loadFormat();
 		if (ow.format.isWindows()) this.encoding = "cp850"; else this.encoding = __;
 		if (isDef(aCmd)) this.q.push({ cmd: aCmd, in: aIn });
@@ -13159,6 +13213,18 @@ const $sh = function(aString, aIn) {
 
 	/**
 	 * <odoc>
+	 * <key>$sh.exitcb(aFunction) : $sh</key>
+	 * When executing aCmd if aFunction is provided it will be called to determine if the execution should continue or not. If aFunction returns "destroy"
+	 * the execution will try to be destroyed. If aFunction returns "force" the execution will be forced to stop. 
+	 * </odoc>
+	 */
+	__sh.prototype.exitcb = function(aExitCallback) {
+		this.ecb = () => { return aExitCallback }
+		return this
+	}
+
+	/**
+	 * <odoc>
 	 * <key>$sh.prefix(aPrefix, aTemplate) : $sh</key>
 	 * When executing aCmd (with .get) it will use ow.format.streamSHPrefix with aPrefix and optionally aTemplate.
 	 * </odoc>
@@ -13169,7 +13235,7 @@ const $sh = function(aString, aIn) {
 		var aFn = (s, isE) => {
 			if (isE) parent._fcbE += s+"\n"; else parent._fcbO += s+"\n"
 		}
-		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, __, aTemplate, aFn) }
+		this.fcb = () => { return ow.format.streamSHPrefix(aPrefix, this.encoding, __, aTemplate, aFn) }
 		return this
 	};
 
@@ -13252,7 +13318,7 @@ const $sh = function(aString, aIn) {
 			if (isDef(this.q[ii].cmd)) {
 				this._fcbE = ""
 				this._fcbO = ""
-				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs), this.q[ii]);
+				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, false, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs, (isDef(this.ecb) ? this.ecb() : __)), this.q[ii]);
 				if (isDef(this.fcb)) {
 					_res.stdout = this._fcbO.slice(0,-1)
 					_res.stderr = this._fcbE.slice(0,-1)
@@ -13350,7 +13416,7 @@ const $sh = function(aString, aIn) {
 		var res = [];
 		for(var ii in this.q) {
 			if (isDef(this.q[ii].cmd)) {
-				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs), this.q[ii]);
+				var _res = merge(sh(this.q[ii].cmd, this.q[ii].in, this.t, true, this.wd, true, (isDef(this.fcb) ? this.fcb() : __), this.encoding, this.dw, this.envs, (isDef(this.ecb) ? this.ecb() : __)), this.q[ii])
 				res.push(_res);
 				if (isDef(this.fe)) {
 					var rfe = this.fe(_res);

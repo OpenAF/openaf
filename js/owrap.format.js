@@ -3732,6 +3732,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// table render
 	if (res.indexOf("|") >= 0) {
 		var isTab = false, fields = [], data = [], sepProc = false, insep = false
+		res = res.replace(/\|\s*$/, "|\n")
 		res = res.split("\n").map(l => {
 			var _lorig = l
 			l = l.trim()
