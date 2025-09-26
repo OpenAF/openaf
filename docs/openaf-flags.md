@@ -15,6 +15,17 @@ Central list of noteworthy runtime flags and environment variables.
 | OJOB_CHECK_JOB_REMOVAL | false | Warn when jobs removed |
 | OJOB_JSONLOG | (unset) | Force JSON logging format |
 | OJOB_AUTHORIZEDDOMAINS | ojob.io | Allowlist for remote includes |
+| OJOB_LOCALPATH | (unset) | Local path for ojob files resolution |
+
+## AI/LLM Configuration
+
+| Env | Default | Purpose |
+|-----|---------|---------|
+| OAF_MODEL | (unset) | Default LLM model configuration as JSLON |
+| OPENAI_API_KEY | (unset) | OpenAI API key for LLM operations |
+| ANTHROPIC_API_KEY | (unset) | Anthropic Claude API key |
+| GEMINI_API_KEY | (unset) | Google Gemini API key |
+| OLLAMA_HOST | http://localhost:11434 | Ollama server URL |
 
 ## OpenAF Core Integrity / Validation
 
