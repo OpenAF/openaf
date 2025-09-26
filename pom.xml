@@ -315,7 +315,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
-      <version>0.12.6</version>
+      <version>0.13.0</version>
     </dependency>
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
