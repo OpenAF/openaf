@@ -649,6 +649,19 @@ jobs:
     Write-Host "PowerShell is running"
     $_args.psResult = "success"
   
+# Python
+- name: "Python Job"
+  lang: python
+  exec: | #python
+    print("Python is running")
+    args['pythonResult'] = 'success'
+
+# Alternative Python execution
+- name: "Python File Job"
+  typeArgs:
+    execPy: "/path/to/script.py"
+  exec: |
+    # Python script will be executed
 # Go
 - name: "Go Job"
   lang: go
@@ -695,21 +708,83 @@ jobs:
 
 ### Job Validation
 
+oJob provides comprehensive input and output validation through the `check` section:
+
 ```yaml
 jobs:
 - name : "Validated Job"
   check:
     in:                      # Input validation
-      inputFile: isString
-      port     : toNumber.isNumber.default(8080)
-      enabled  : toBoolean.isBoolean.default(false)
-    out:                     # Output validation
-      result: isString.oneOf(['success', 'failure'])
-      count : isNumber.default(0)
+      inputFile: isString    # Must be a string
+      port     : toNumber.isNumber.default(8080)  # Convert to number, default 8080
+      enabled  : toBoolean.isBoolean.default(false)  # Convert to boolean, default false
+      config   : isMap       # Must be an object/map
+      items    : isArray.default([])  # Must be array, default empty
+      level    : isString.oneOf(['debug', 'info', 'warn', 'error']).default('info')
+      timeout  : isNumber.between(1000, 60000).default(30000)  # Between 1-60 seconds
+    out:                     # Output validation  
+      result: isString.oneOf(['success', 'failure'])  # Must be one of these values
+      count : isNumber.default(0)  # Must be number, default 0
+      data  : isMap.default({})    # Must be map, default empty object
   exec : | #js
-    // Validation happens automatically
+    // Input validation happens automatically before this code runs
+    // args.inputFile is guaranteed to be a string
+    // args.port is guaranteed to be a number (converted from string if needed)
+    // args.enabled is guaranteed to be a boolean
+    
+    // Process the validated inputs
+    log("Processing file: " + args.inputFile + " on port: " + args.port);
+    
+    // Set outputs - these will be validated too
     args.result = "success"
     args.count = 42
+    args.data = { processed: true, timestamp: new Date() }
+    // Output validation happens automatically after this code runs
+```
+
+#### Advanced Validation Examples
+
+```yaml
+jobs:
+- name: "Advanced Validation"
+  check:
+    in:
+      # String validations
+      email    : isString.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)  # Email regex
+      username : isString.minLength(3).maxLength(20)          # Length constraints
+      password : isString.minLength(8).hasUpperCase().hasLowerCase().hasNumber()
+      
+      # Number validations
+      age      : isNumber.between(0, 150)                     # Age range
+      score    : isNumber.multipleOf(0.5).between(0, 100)     # Score in 0.5 increments
+      
+      # Array validations
+      tags     : isArray.minLength(1).maxLength(10)           # 1-10 items
+      emails   : isArray.eachIsString()                       # Each item must be string
+      
+      # Object validations
+      settings : isMap.hasKeys(['theme', 'language'])         # Must have required keys
+      metadata : isSchema({                                   # JSON Schema validation
+        type: "object",
+        properties: {
+          version: { type: "string" },
+          created: { type: "string", format: "date-time" }
+        },
+        required: ["version"]
+      })
+      
+      # Conditional validation
+      database : check("args.useDatabase", "isMap.hasKeys(['host', 'port'])")
+      
+    out:
+      # Ensure outputs meet requirements
+      processedCount: isNumber.min(0)
+      errors        : isArray.default([])
+      status        : isString.oneOf(['completed', 'failed', 'partial'])
+  exec : | #js
+    // All inputs are validated and converted as needed
+    args.processedCount = 100
+    args.status = "completed"
 ```
 
 ### Job Inheritance
