@@ -594,7 +594,7 @@ public class AFBase extends ScriptableObject {
 							//t.join(tt); // not working in some cases
 							long limit = java.lang.System.currentTimeMillis() + tt;
 							while(java.lang.System.currentTimeMillis() < limit && p.isAlive()) {
-								Thread.sleep(50);
+								Thread.sleep(10);
 								//long now = java.lang.System.currentTimeMillis();
 								//if (limit > now) t.wait(limit - now);
 							}
