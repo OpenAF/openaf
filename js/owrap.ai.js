@@ -969,20 +969,20 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
-                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("nomic-embed-text")
+                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default(_model)
                     aDimensions = _$(aDimensions, "aDimensions").isNumber().default(__)
 
                     _resetStats()
                     var body = {
                         model: aEmbeddingModel,
-                        prompt: isArray(aInput) ? aInput.join("\n") : String(aInput)
+                        input: isArray(aInput) ? aInput.join("\n") : String(aInput)
                     }
                     if (isDef(aDimensions)) {
-                        body.options = merge(body.options || {}, { embedding_dimensions: aDimensions })
+                        body.dimensions = aDimensions
                     }
                     body = merge(body, _params)
-                    
-                    var _res = _r._request("/api/embeddings", body)
+                     
+                    var _res = _r._request("/api/embed", body)
                     _captureStats(_res, aEmbeddingModel)
                     return _res
                 },
