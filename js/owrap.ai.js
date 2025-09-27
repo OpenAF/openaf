@@ -348,14 +348,18 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
-                getEmbeddings: (aInput, aEmbeddingModel) => {
+                getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
                     aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-3-small")
+                    aDimensions = _$(aDimensions, "aDimensions").isNumber().default(__)
 
                     _resetStats()
                     var body = {
                         model: aEmbeddingModel,
                         input: aInput
+                    }
+                    if (isDef(aDimensions)) {
+                        body.dimensions = aDimensions
                     }
                     body = merge(body, aOptions.params)
                     
@@ -699,9 +703,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(res.models)) res = res.models
                     return res
                 },
-                getEmbeddings: (aInput, aEmbeddingModel) => {
+                getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
                     aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-004")
+                    aDimensions = _$(aDimensions, "aDimensions").isNumber().default(__)
 
                     _resetStats()
                     var body = {
@@ -711,6 +716,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 text: isArray(aInput) ? aInput.join("\n") : String(aInput)
                             }]
                         }
+                    }
+                    if (isDef(aDimensions)) {
+                        body.output_dimensionality = aDimensions
                     }
                     body = merge(body, aOptions.params)
                     
@@ -959,14 +967,18 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
-                getEmbeddings: (aInput, aEmbeddingModel) => {
+                getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
                     aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("nomic-embed-text")
+                    aDimensions = _$(aDimensions, "aDimensions").isNumber().default(__)
 
                     _resetStats()
                     var body = {
                         model: aEmbeddingModel,
                         prompt: isArray(aInput) ? aInput.join("\n") : String(aInput)
+                    }
+                    if (isDef(aDimensions)) {
+                        body.options = merge(body.options || {}, { embedding_dimensions: aDimensions })
                     }
                     body = merge(body, _params)
                     
@@ -1232,7 +1244,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
-                getEmbeddings: (aInput, aEmbeddingModel) => {
+                getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     throw "Text embeddings not supported by Anthropic"
                 },
                 _request: (aURI, aData, aVerb) => {
@@ -1303,14 +1315,15 @@ OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
 
 /**
  * <odoc>
- * <key>ow.ai.gpt.prototype.getEmbeddings(aInput, aEmbeddingModel) : Object</key>
+ * <key>ow.ai.gpt.prototype.getEmbeddings(aInput, aDimensions, aEmbeddingModel) : Object</key>
  * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel (defaults to provider-specific default).
+ * If aDimensions is specified, requests embeddings with that many dimensions (provider support varies).
  * Returns the raw embedding response from the provider.
  * </odoc>
  */
-OpenWrap.ai.prototype.gpt.prototype.getEmbeddings = function(aInput, aEmbeddingModel) {
+OpenWrap.ai.prototype.gpt.prototype.getEmbeddings = function(aInput, aDimensions, aEmbeddingModel) {
     if (isFunction(this.model.getEmbeddings)) {
-        return this.model.getEmbeddings(aInput, aEmbeddingModel)
+        return this.model.getEmbeddings(aInput, aDimensions, aEmbeddingModel)
     } else {
         throw "Embeddings not supported by this provider"
     }
@@ -1945,23 +1958,25 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
-         * <key>$gpt.getEmbeddings(aInput, aEmbeddingModel) : Object</key>
+         * <key>$gpt.getEmbeddings(aInput, aDimensions, aEmbeddingModel) : Object</key>
          * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel (defaults to provider-specific default).
+         * If aDimensions is specified, requests embeddings with that many dimensions (provider support varies).
          * Returns the raw embedding response from the provider.
          * </odoc>
          */
-        getEmbeddings: (aInput, aEmbeddingModel) => {
-            return _g.getEmbeddings(aInput, aEmbeddingModel)
+        getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
+            return _g.getEmbeddings(aInput, aDimensions, aEmbeddingModel)
         },
         /**
          * <odoc>
-         * <key>$gpt.getEmbeddingsWithStats(aInput, aEmbeddingModel) : Map</key>
+         * <key>$gpt.getEmbeddingsWithStats(aInput, aDimensions, aEmbeddingModel) : Map</key>
          * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel and returns both the response and usage statistics.
+         * If aDimensions is specified, requests embeddings with that many dimensions (provider support varies).
          * Returns a map with { response, stats }.
          * </odoc>
          */
-        getEmbeddingsWithStats: (aInput, aEmbeddingModel) => {
-            var response = _g.getEmbeddings(aInput, aEmbeddingModel)
+        getEmbeddingsWithStats: (aInput, aDimensions, aEmbeddingModel) => {
+            var response = _g.getEmbeddings(aInput, aDimensions, aEmbeddingModel)
             return { response: response, stats: _g.getLastStats() }
         },
         /**
