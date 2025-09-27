@@ -348,6 +348,21 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
+                getEmbeddings: (aInput, aEmbeddingModel) => {
+                    aInput = _$(aInput, "aInput").$_()
+                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-3-small")
+
+                    _resetStats()
+                    var body = {
+                        model: aEmbeddingModel,
+                        input: aInput
+                    }
+                    body = merge(body, aOptions.params)
+                    
+                    var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "embeddings", body)
+                    _captureStats(_res, body)
+                    return _res
+                },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
                     aData = _$(aData, "aData").isMap().default({})
@@ -684,6 +699,25 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(res.models)) res = res.models
                     return res
                 },
+                getEmbeddings: (aInput, aEmbeddingModel) => {
+                    aInput = _$(aInput, "aInput").$_()
+                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-004")
+
+                    _resetStats()
+                    var body = {
+                        model: aEmbeddingModel,
+                        content: {
+                            parts: [{
+                                text: isArray(aInput) ? aInput.join("\n") : String(aInput)
+                            }]
+                        }
+                    }
+                    body = merge(body, aOptions.params)
+                    
+                    var _res = _r._request("models/" + aEmbeddingModel + ":embedContent", body)
+                    _captureStats(_res, aEmbeddingModel)
+                    return _res
+                },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
                     aData = _$(aData, "aData").isMap().default({})
@@ -924,6 +958,21 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return res
                     }
+                },
+                getEmbeddings: (aInput, aEmbeddingModel) => {
+                    aInput = _$(aInput, "aInput").$_()
+                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("nomic-embed-text")
+
+                    _resetStats()
+                    var body = {
+                        model: aEmbeddingModel,
+                        prompt: isArray(aInput) ? aInput.join("\n") : String(aInput)
+                    }
+                    body = merge(body, _params)
+                    
+                    var _res = _r._request("/api/embeddings", body)
+                    _captureStats(_res, aEmbeddingModel)
+                    return _res
                 },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -1183,6 +1232,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
+                getEmbeddings: (aInput, aEmbeddingModel) => {
+                    throw "Text embeddings not supported by Anthropic"
+                },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
                     aData = _$(aData, "aData").isMap().default({})
@@ -1247,6 +1299,21 @@ OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
  */
 OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
     return this.model.getModels()
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.prototype.getEmbeddings(aInput, aEmbeddingModel) : Object</key>
+ * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel (defaults to provider-specific default).
+ * Returns the raw embedding response from the provider.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.getEmbeddings = function(aInput, aEmbeddingModel) {
+    if (isFunction(this.model.getEmbeddings)) {
+        return this.model.getEmbeddings(aInput, aEmbeddingModel)
+    } else {
+        throw "Embeddings not supported by this provider"
+    }
 }
 
 /**
@@ -1875,6 +1942,27 @@ global.$gpt = function(aModel) {
             }
 
             return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.getEmbeddings(aInput, aEmbeddingModel) : Object</key>
+         * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel (defaults to provider-specific default).
+         * Returns the raw embedding response from the provider.
+         * </odoc>
+         */
+        getEmbeddings: (aInput, aEmbeddingModel) => {
+            return _g.getEmbeddings(aInput, aEmbeddingModel)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.getEmbeddingsWithStats(aInput, aEmbeddingModel) : Map</key>
+         * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel and returns both the response and usage statistics.
+         * Returns a map with { response, stats }.
+         * </odoc>
+         */
+        getEmbeddingsWithStats: (aInput, aEmbeddingModel) => {
+            var response = _g.getEmbeddings(aInput, aEmbeddingModel)
+            return { response: response, stats: _g.getLastStats() }
         },
         /**
          * <odoc>
