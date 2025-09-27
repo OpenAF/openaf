@@ -180,5 +180,168 @@ jobs:
     $set('processed', c);
 ```
 
+## 11. Advanced Parameter Validation
+```yaml
+jobs:
+- name: "API Endpoint"
+  check:
+    in:
+      endpoint: isString.match(/^https?:\/\//)
+      method  : isString.oneOf(['GET', 'POST', 'PUT', 'DELETE']).default('GET')
+      timeout : toNumber.isNumber.between(1000, 60000).default(30000)
+      headers : isMap.default({})
+      retries : toNumber.isNumber.between(0, 5).default(3)
+    out:
+      statusCode: isNumber.between(100, 599)
+      responseTime: isNumber.min(0)
+      success: toBoolean.isBoolean.default(false)
+  exec: | #js
+    var start = now();
+    try {
+      var response = $rest().get(args.endpoint, args.headers);
+      args.statusCode = response.responseCode;
+      args.success = response.responseCode < 400;
+    } catch(e) {
+      args.statusCode = 0;
+      args.success = false;
+    }
+    args.responseTime = now() - start;
+```
+
+## 12. LLM-Powered Data Processing
+```yaml
+help:
+  text: "Process data files using AI analysis"
+  expects:
+  - name: inputFiles
+    desc: "Array of file paths to process"
+  - name: prompt
+    desc: "Analysis prompt for the LLM"
+
+ojob:
+  metrics:
+    passive: true
+    port: 9101
+
+jobs:
+- name: "AI Data Processor"
+  check:
+    in:
+      inputFiles: isArray.minLength(1)
+      prompt    : isString.minLength(10)
+      model     : isString.default("gpt-3.5-turbo")
+      batchSize : toNumber.isNumber.between(1, 100).default(10)
+    out:
+      processedCount: isNumber.min(0)
+      results       : isArray
+      errors        : isArray.default([])
+  exec: | #js
+    ow.loadAI();
+    var llm = ow.ai.gpt({
+      type: "openai",
+      key: $sec("openai", "key"),
+      model: args.model
+    });
+    
+    args.results = [];
+    args.processedCount = 0;
+    
+    args.inputFiles.forEach(file => {
+      try {
+        var data = io.readFileJSON(file);
+        var analysis = llm.prompt(args.prompt + "\n\nData: " + JSON.stringify(data));
+        args.results.push({ file: file, analysis: analysis });
+        args.processedCount++;
+      } catch(e) {
+        args.errors.push({ file: file, error: e.message });
+      }
+    });
+```
+
+## 13. Telemetry-Enabled Service Monitor
+```yaml
+ojob:
+  daemon: true
+  timeInterval: 30000
+  
+  metrics:
+    passive: true
+    port: 9102
+    uri: "/metrics"
+    
+    add:
+      servicesUp: | #js
+        return { value: $get("healthyServices") || 0 }
+      responseTime: | #js
+        return { value: $get("avgResponseTime") || 0 }
+    
+    openmetrics:
+      url: "http://pushgateway:9091/metrics/job/service-monitor"
+      period: 60000
+      metrics: ["servicesUp", "responseTime"]
+
+init:
+  services:
+  - { name: "api", url: "http://api:8080/health" }
+  - { name: "db", url: "http://db:5432/health" }
+  - { name: "cache", url: "http://cache:6379/ping" }
+
+jobs:
+- name: "Health Check"
+  check:
+    in:
+      timeout: toNumber.default(5000)
+    out:
+      healthyCount: isNumber.min(0)
+      totalResponseTime: isNumber.min(0)
+  exec: | #js
+    var healthy = 0, totalTime = 0;
+    
+    args.init.services.forEach(service => {
+      var start = now();
+      try {
+        var response = $rest({timeout: args.timeout}).get(service.url);
+        if (response.responseCode < 400) healthy++;
+        totalTime += (now() - start);
+      } catch(e) {
+        logWarn("Service " + service.name + " unhealthy: " + e.message);
+      }
+    });
+    
+    args.healthyCount = healthy;
+    args.totalResponseTime = totalTime;
+    $set("healthyServices", healthy);
+    $set("avgResponseTime", totalTime / args.init.services.length);
+    
+  daemonFunc: | #js
+    $job("Health Check");
+```
+
+## 14. Integrity-Protected Configuration
+```yaml
+ojob:
+  integrity:
+    list:
+    - config/prod.yaml: sha256:abc123...
+    - config/secrets.yaml: sha256:def456...
+    strict: true
+    warn: false
+
+include:
+- config/prod.yaml
+- config/secrets.yaml
+
+jobs:
+- name: "Secure Job"
+  check:
+    in:
+      apiKey    : isString.minLength(32)
+      environment: isString.oneOf(['dev', 'staging', 'prod'])
+      debug     : toBoolean.default(false)
+  exec: | #js
+    // Configuration files verified before this runs
+    log("Running in " + args.environment + " environment");
+```
+
 ---
 See also: `ojob-security.md` for hardening and `openaf-flags.md` for tuning.
