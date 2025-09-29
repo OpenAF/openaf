@@ -2440,7 +2440,7 @@ OpenWrap.java.prototype.parseHSPerf = function(aByteArray, retFlat) {
         res2.sun.rt.__createVmBeginDate = new Date(Number(res2.sun.rt.createVmBeginTime))
         res2.sun.rt.__createVmEndDate   = new Date(Number(res2.sun.rt.createVmEndTime))
         res2.sun.rt.__vmInitDoneDate    = new Date(Number(res2.sun.rt.vmInitDoneTime))
-        res2.sun.rt.__totalRunningTime  = (isDef(res2.sun.os) ? Number(res2.sun.os.hrt.ticks) / 1000000 : __)
+        res2.sun.rt.__totalRunningTime  = isDef(res2.sun.os) ? (isDef(res2.sun.os.hrt.ticks) ? Number(res2.sun.os.hrt.ticks) / 1000000 : now() - res2.sun.rt.__createVmBeginDate) : __
 
         var accTime = 0
         for(var i in res2.sun.gc.collector) {
