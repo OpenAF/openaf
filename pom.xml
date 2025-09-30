@@ -290,7 +290,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna</artifactId>
-      <version>5.17.0</version>
+      <version>5.18.1</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
