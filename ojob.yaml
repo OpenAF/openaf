@@ -1529,7 +1529,7 @@ jobs:
       j = ow.oJob.parseTodo(j)
       /*if (isString(j))               $job(j, args)
       if (isMap(j) && isDef(j.name)) $job(j.name, j.args)*/
-      $job(j, args)
+      $job(j, args, ow.oJob.getID(), false)
     }
     if (res) t.forEach(fn); else e.forEach(fn)
 
