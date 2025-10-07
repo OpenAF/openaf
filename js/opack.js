@@ -976,7 +976,7 @@ function runScript(aScript, aEnvsMap) {
 		OAF_VERSION: getVersion(),
 		OAF_DIST   : getDistribution(),
 		OJOB_HOME  : __flags.OJOB_LOCALPATH
-	})
+	}, aEnvsMap)
 	if (isString(aScript)) {
 		try {
 			var s = newFn("args=" + stringify(aEnvsMap,__,"") + ";" + aScript)

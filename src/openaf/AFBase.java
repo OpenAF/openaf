@@ -550,9 +550,10 @@ public class AFBase extends ScriptableObject {
 				public void run() {
 					boolean stopped = false;
 					while (p.isAlive()) {
-						try { this.sleep(50); } catch(Exception e) {}
-						Context cx = (Context) AFCmdBase.jse.enterContext();
+						//try { } catch(Exception e) {}
 						try {
+							java.lang.Thread.onSpinWait(); this.sleep(500); 
+							Context cx = (Context) AFCmdBase.jse.enterContext();
 							Object status = ((Function) exitCallback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { p });
 							if (status instanceof String) {
 								switch(((String) status).toLowerCase()) {
