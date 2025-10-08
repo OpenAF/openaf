@@ -549,28 +549,29 @@ public class AFBase extends ScriptableObject {
 			exitCallbackThread = new Thread() {
 				public void run() {
 					boolean stopped = false;
+					Context cx = (Context) AFCmdBase.jse.enterContext();
 					while (p.isAlive()) {
 						//try { } catch(Exception e) {}
 						try {
-							java.lang.Thread.onSpinWait(); this.sleep(500); 
-							Context cx = (Context) AFCmdBase.jse.enterContext();
-							Object status = ((Function) exitCallback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { p });
-							if (status instanceof String) {
-								switch(((String) status).toLowerCase()) {
-								case "force"  :
-									p.destroyForcibly();
-									stopped = true;
-									break;
-								case "destroy":
-									p.destroy();
-									stopped = true;
-									break;
+							//java.lang.Thread.onSpinWait(); this.sleep(500); 
+							if (!p.waitFor(500, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+								Object status = ((Function) exitCallback).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()), new Object[] { p });
+								if (status instanceof String) {
+									switch(((String) status).toLowerCase()) {
+									case "force"  :
+										p.destroyForcibly();
+										stopped = true;
+										break;
+									case "destroy":
+										p.destroy();
+										stopped = true;
+										break;
+									}
 								}
 							}
 						} catch(Exception e) {
 							e.printStackTrace();
 						} finally {
-							AFCmdBase.jse.exitContext();
 							if (stopped) {
 								try {
 									if (is != null    && !p.isAlive()) tlines.set(IOUtils.toString(is, Cencoding));
@@ -579,6 +580,7 @@ public class AFBase extends ScriptableObject {
 							}
 						}
 					}
+					AFCmdBase.jse.exitContext();
 				};
 			};
 			exitCallbackThread.start();
