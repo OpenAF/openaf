@@ -8506,6 +8506,8 @@ const $mcp = function(aOptions) {
 		version: "1.0.0"
 	})
 	aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default(__)
+	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
+	aOptions.posfn = _$(aOptions.posfn, "aOptions.posfn").isFunction().default(__)
 
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
@@ -8569,10 +8571,20 @@ const $mcp = function(aOptions) {
 			toolName = _$(toolName, "toolName").isString().$_()
 			toolArguments = _$(toolArguments, "toolArguments").isMap().default({})
 			
-			return _jsonrpc.exec("tools/call", {
+			// Call pre-function if provided
+			if (aOptions.preFn) {
+				aOptions.preFn(toolName, toolArguments)
+			}
+			// Call the tool
+			var _res = _jsonrpc.exec("tools/call", {
 				name: toolName,
 				arguments: toolArguments
 			})
+			// Call post-function if provided
+			if (aOptions.posfn) {
+				aOptions.posfn(toolName, toolArguments, _res)
+			}
+			return _res
 		},
 		listPrompts: () => {
 			if (!_r._initialized) {

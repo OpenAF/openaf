@@ -226,7 +226,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
+                    if (isUnDef(aTools)) {
+                        aTools = Object.keys(_r.tools)
+                    } else if (isMap(aTools)) {
+                        aTools = Object.keys(aTools)
+                    }
+                    aTools       = _$(aTools, "aTools").isArray().default([])
 
                     _resetStats()
                     var msgs = []
@@ -247,17 +252,26 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     body = merge(body, aOptions.params)
                     if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools.map(t => {
-                            var _t = _r.tools[t].function
-                            return {
-                                type: "function",
-                                function: {
-                                    name: _t.name,
-                                    description: _t.description,
-                                    parameters: _t.parameters
+                        body.tools = aTools
+                            .map(t => {
+                                if (isString(t)) {
+                                    var _tool = _r.tools[t]
+                                    if (isMap(_tool) && isMap(_tool.function)) {
+                                        return {
+                                            type: "function",
+                                            function: {
+                                                name: _tool.function.name,
+                                                description: _tool.function.description,
+                                                parameters: _tool.function.parameters
+                                            }
+                                        }
+                                    }
+                                } else if (isMap(t)) {
+                                    return t
                                 }
-                            }
-                        })
+                            })
+                            .filter(isDef)
+                        if (!isArray(body.tools) || body.tools.length == 0) delete body.tools
                     }
                     var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
                     if (isDef(_res) && isArray(_res.choices)) {
