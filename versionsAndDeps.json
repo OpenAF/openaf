@@ -231,10 +231,10 @@
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
 			"deps": []
 		},
-	   {
-		   "description": "OkHTTP Client",
-		   "path": ["okhttp-4.12.0.jar", "okio-3.15.0.jar", "okio-jvm-3.15.0.jar", "kotlin-stdlib-2.2.0.jar"],
-		   "version": "4.12.0",
+          {
+                  "description": "OkHTTP Client",
+                  "path": ["okhttp-5.2.0.jar", "okhttp-jvm-5.2.0.jar", "okio-3.16.0.jar", "okio-jvm-3.16.0.jar", "kotlin-stdlib-2.2.20.jar"],
+                  "version": "5.2.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",

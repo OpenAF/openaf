@@ -1941,28 +1941,28 @@ OpenWrap.obj.prototype.http.prototype.exec = function(aURL, aRequestType, aIn, a
 	if (__flags.HTTP_USE_MEDIA_TYPE) if (isDef(aRequestMap["Content-Type"])) mediaType = aRequestMap["Content-Type"]
 
 	if (isDef(aIn)) {
-		if (isBytes) {
-			aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), aIn)
-		} else {
-			aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), String(aIn))
-		}
-	} else {
-		if (isDef(this.__uf)) {
+                if (isBytes) {
+                        aBody = Packages.okhttp3.RequestBody.create(aIn, isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType))
+                } else {
+                        aBody = Packages.okhttp3.RequestBody.create(String(aIn), isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType))
+                }
+        } else {
+                if (isDef(this.__uf)) {
 			var f 
 			if (isString(this.__uf)) {
 				f = new java.io.File(this.__uf)
 			} else {
 				f = this.__uf
 			}
-			if (isUnDef(this.__ufn)) {
-				aBody = Packages.okhttp3.RequestBody.create(isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType), f)
-			} else {
-				aBody = Packages.okhttp3.MultipartBody.Builder().setType(Packages.okhttp3.MultipartBody.FORM).addFormDataPart(this.__ufn, this.__uf, Packages.okhttp3.RequestBody.create(isNull(mediaType) ? Packages.okhttp3.MediaType.get("application/octet-stream") : Packages.okhttp3.MediaType.get(mediaType), f)).build()
-			}
-		} else {
-			aBody = Packages.okhttp3.RequestBody.create(Packages.okhttp3.MediaType.get("application/json"), "")
-		}
-	}
+                        if (isUnDef(this.__ufn)) {
+                                aBody = Packages.okhttp3.RequestBody.create(f, isNull(mediaType) ? null : Packages.okhttp3.MediaType.get(mediaType))
+                        } else {
+                                aBody = Packages.okhttp3.MultipartBody.Builder().setType(Packages.okhttp3.MultipartBody.FORM).addFormDataPart(this.__ufn, this.__uf, Packages.okhttp3.RequestBody.create(f, isNull(mediaType) ? Packages.okhttp3.MediaType.get("application/octet-stream") : Packages.okhttp3.MediaType.get(mediaType))).build()
+                        }
+                } else {
+                        aBody = Packages.okhttp3.RequestBody.create("", Packages.okhttp3.MediaType.get("application/json"))
+                }
+        }
 
 	if (isUnDef(aRequestType)) aRequestType = "GET";
 
