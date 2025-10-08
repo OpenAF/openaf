@@ -8507,7 +8507,7 @@ const $mcp = function(aOptions) {
 	})
 	aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default(__)
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
-	aOptions.posfn = _$(aOptions.posfn, "aOptions.posfn").isFunction().default(__)
+	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
@@ -8581,8 +8581,8 @@ const $mcp = function(aOptions) {
 				arguments: toolArguments
 			})
 			// Call post-function if provided
-			if (aOptions.posfn) {
-				aOptions.posfn(toolName, toolArguments, _res)
+			if (aOptions.posFn) {
+				aOptions.posFn(toolName, toolArguments, _res)
 			}
 			return _res
 		},
