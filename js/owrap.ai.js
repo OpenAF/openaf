@@ -610,11 +610,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
-                    if (isDef(aTools)) {
+                    if (isArray(aTools) && aTools.length > 0) {
                         var sTools = clone(aTools)
-                        // remove functions
+                        // remove functions and $id/$schema from parameters
                         traverse(sTools, (aK, aV, aP, aO) => {
                             if (aK == 'fn') delete aO[aK]
+                            if (aK == 'parameters' && isMap(aO[aK])) {
+                                delete aO[aK]['$id']
+                                delete aO[aK]['$schema']
+                            }
                         })
                         body = merge(body, { tools: [ { functionDeclarations: sTools } ] })
                     }
@@ -891,7 +895,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
-                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                    msgs = aPrompt.map(c => {
+                        if (isMap(c)) {
+                            // Ensure content is always a string
+                            if (!isString(c.content)) c.content = stringify(c.content, __, "")
+                            return c
+                        }
+                        return { role: "user", content: String(c) }
+                    })
                     var uri = "/api/chat"
 
                     var body = {
@@ -929,10 +940,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var _t = aTools.find(tool => tool.function && tool.function.name == tc.function.name)
                                 if (isUnDef(_t)) throw "Tool '" + tc.function.name + "' not found"
                                 var _args = jsonParse(tc.function.arguments)
-                                var _tr = stringify(_t.fn(_args), __, "")
+                                var _tr = _t.fn(_args)
+                                // Ensure tool response is a string
                                 _p.push({ role: "assistant", tool_calls: [ tc ] })
-                                _p.push({ role: "tool", content: _tr, tool_call_id: tc.function.id })
+                                _p.push({ role: "tool", content: isString(_tr) ? _tr : stringify(_tr, __, ""), tool_call_id: tc.function.id })
                             }
+                        })
+                        // Also ensure all pushed messages have string content
+                        _p = _p.map(m => {
+                            if (isMap(m) && isDef(m.content) && !isString(m.content)) m.content = stringify(m.content, __, "")
+                            return m
                         })
                         _r.conversation = _r.conversation.concat(_p)
                         return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
