@@ -231,7 +231,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else if (isMap(aTools)) {
                         aTools = Object.keys(aTools)
                     }
-                    aTools       = _$(aTools, "aTools").isArray().default([])
+                    aTools = _$(aTools, "aTools").isArray().default([])
 
                     _resetStats()
                     var msgs = []
@@ -251,6 +251,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         response_format: (aOptions.noResponseFormat ? __ : (aJsonFlag  ? { type: "json_object" } : __))
                     }
                     body = merge(body, aOptions.params)
+                    // Only include tools if there are any configured
                     if (isArray(aTools) && aTools.length > 0) {
                         body.tools = aTools
                             .map(t => {
@@ -272,6 +273,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                             })
                             .filter(isDef)
                         if (!isArray(body.tools) || body.tools.length == 0) delete body.tools
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
                     }
                     var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
                     if (isDef(_res) && isArray(_res.choices)) {
@@ -586,15 +589,29 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
 
                     _resetStats()
-                    var msgs = []
-                    if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
+                    // Ensure all messages use 'parts' and never 'content'
+                    function toPartsMsg(msg) {
+                        if (isMap(msg)) {
+                            let role = isDef(msg.role) ? msg.role : "user";
+                            if (isArray(msg.parts)) {
+                                return { role, parts: msg.parts };
+                            } else if (isDef(msg.content)) {
+                                return { role, parts: [ { text: msg.content } ] };
+                            } else if (isString(msg.text)) {
+                                return { role, parts: [ { text: msg.text } ] };
+                            }
+                        }
+                        return { role: "user", parts: [ { text: String(msg) } ] };
+                    }
+                    var msgs = [];
+                    if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ];
                     aPrompt = _r.conversation.reduce((acc, r) => {
                         if (isUnDef(r.role) || r.role != "system") {
-                            acc.push(isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ] });
+                            acc.push(toPartsMsg(r));
                         }
                         return acc;
-                    }, []).concat(aPrompt);
-                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", parts: [ { text: c } ] })
+                    }, []).concat(aPrompt.map(toPartsMsg));
+                    msgs = aPrompt;
                  
                     var body = {
                         system_instruction: { parts: _r.conversation.reduce((acc, r) => {
@@ -621,6 +638,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                         body = merge(body, { tools: [ { functionDeclarations: sTools } ] })
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
                     }
                     body = merge(body, aOptions.params)
 
@@ -928,6 +947,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 }
                             }
                         })
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
                     }
                     _r.conversation = msgs
                     var _res = _r._request(uri, body)
@@ -1242,6 +1263,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                             })
                             .filter(isDef)
                         if (_bodyTools.length > 0) body.tools = _bodyTools
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
                     }
 
                     var _res = _r._request("v1/messages", body)
