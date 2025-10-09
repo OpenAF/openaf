@@ -1166,75 +1166,136 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
+                    if (isUnDef(aTools)) {
+                        aTools = Object.keys(_r.tools)
+                    } else if (isMap(aTools)) {
+                        aTools = Object.keys(aTools)
+                    } else if (isArray(aTools)) {
+                        aTools = aTools.map(t => {
+                            if (isString(t)) return t
+                            if (isMap(t) && isString(t.name)) return t.name
+                            if (isMap(t) && isMap(t.function) && isString(t.function.name)) return t.function.name
+                        }).filter(isDef)
+                    }
+                    aTools       = _$(aTools, "aTools").isArray().default([])
 
                     _resetStats()
-                    var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
-                    aPrompt = _r.conversation.concat(aPrompt)
-                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
-                 
-                    if (_noSystem) {
-                        msgs = msgs.filter(m => m.role != "system")
+                    var _incoming = isArray(aPrompt) ? aPrompt : [ aPrompt ]
+                    var _fullConversation = _r.conversation.concat(_incoming)
+                    var msgs = _fullConversation.map(c => isMap(c) ? c : { role: "user", content: c })
+
+                    var systemMsgs = msgs.filter(m => m.role == "system")
+                    var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice())
+
+                    if (aJsonFlag) {
+                        var _jsonInstruction = { role: "user", content: "output json" }
+                        bodyMessages.push(_jsonInstruction)
+                        msgs.push(_jsonInstruction)
                     }
+
+                    _r.conversation = msgs
+
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
-                        messages: msgs
-                        //response_format: (aJsonFlag ? { type: "json_object" } : __)
+                        messages: bodyMessages
                     }
-                    if (_noSystem) {
-                        body.system = msgs.filter(m => m.role == "system").map(m => m.content).join("\n")
-                    }
-                    if (aJsonFlag) {
-                        msgs.push({ role: "user", content: "output json" })
-                    }
-                     _r.conversation = msgs
-                    body = merge(body, aOptions.params)
-                    /*if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools.map(t => {
-                            var _t = _r.tools[t].function
-                            return {
-                                type: "function",
-                                function: {
-                                    name: _t.name,
-                                    description: _t.description,
-                                    parameters: _t.parameters
+                    if (_noSystem && systemMsgs.length > 0) {
+                        var _systemText = systemMsgs
+                            .map(m => {
+                                if (isArray(m.content)) {
+                                    return m.content
+                                        .map(sc => {
+                                            if (isMap(sc) && isString(sc.text)) return sc.text
+                                            if (isString(sc)) return sc
+                                            return stringify(sc, __, "")
+                                        })
+                                        .join("\n")
                                 }
-                            }
-                        })
-                    }*/
+                                return isString(m.content) ? m.content : stringify(m.content, __, "")
+                            })
+                            .filter(s => isString(s) && s.length > 0)
+                            .join("\n")
+                        if (_systemText.length > 0) body.system = _systemText
+                    }
+
+                    body = merge(body, aOptions.params)
+
+                    if (isArray(aTools) && aTools.length > 0) {
+                        var _bodyTools = aTools
+                            .map(t => {
+                                if (!isString(t)) return __
+                                var _tool = _r.tools[t]
+                                if (!isMap(_tool) || !isMap(_tool.function)) return __
+                                var _params = clone(_tool.function.parameters)
+                                if (isMap(_params)) {
+                                    delete _params["$schema"]
+                                    delete _params["$id"]
+                                }
+                                if (!isMap(_params)) _params = { type: "object" }
+                                return {
+                                    name: _tool.function.name,
+                                    description: _tool.function.description,
+                                    input_schema: _params
+                                }
+                            })
+                            .filter(isDef)
+                        if (_bodyTools.length > 0) body.tools = _bodyTools
+                    }
+
                     var _res = _r._request("v1/messages", body)
-                    /*if (isDef(_res) && isArray(_res.choices)) {
-                        // call tools
-                        var _p = [], stopWith = false
-                        _res.choices.forEach(tc => {
-                            if (isDef(tc.message) && isArray(tc.message.tool_calls)) {
-                                tc.message.tool_calls.forEach(tci => {
-                                    var _t = _r.tools[tci.function.name]
-                                    var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
-                                    _p.push({ role: "assistant", tool_calls: [ tci ]})
-                                    _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
+                    _captureStats(_res, aModel)
+
+                    if (isMap(_res) && isArray(_res.content)) {
+                        var assistantMsg = { role: "assistant", content: _res.content }
+                        _r.conversation.push(assistantMsg)
+
+                        var toolCalls = _res.content.filter(c => isMap(c) && c.type == "tool_use")
+                        if (toolCalls.length > 0) {
+                            var followUps = []
+                            toolCalls.forEach(tc => {
+                                if (!isString(tc.name)) throw "Invalid tool call without name"
+                                var _tool = _r.tools[tc.name]
+                                if (isUnDef(_tool)) throw "Tool '" + tc.name + "' not found"
+                                if (!isFunction(_tool.fn)) throw "Tool '" + tc.name + "' missing function implementation"
+                                var _args = tc.input
+                                var _result = _tool.fn(_args)
+                                var _content
+                                if (isString(_result)) {
+                                    _content = _result
+                                } else if (isArray(_result) || isMap(_result)) {
+                                    _content = stringify(_result, __, "")
+                                } else if (isUnDef(_result) || _result === null) {
+                                    _content = ""
+                                } else {
+                                    _content = stringify(_result, __, "")
+                                }
+                                followUps.push({
+                                    role: "user",
+                                    content: [
+                                        {
+                                            type: "tool_result",
+                                            tool_use_id: tc.id,
+                                            content: _content
+                                        }
+                                    ]
                                 })
+                            })
+                            if (followUps.length > 0) {
+                                _r.conversation = _r.conversation.concat(followUps)
+                                return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
                             }
-                            if (isDef(tc.finish_reason) && tc.finish_reason == "stop") {
-                                _p.push({ role: "assistant", content: tc.message.content })
-                                stopWith = true
-                            }
-                        })
-                        if (stopWith)
-                            return _res
-                        else
-                            return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
-                    } else {
+                        }
+
                         return _res
-                    }*/
-                   _captureStats(_res, aModel)
-                   _r.conversation.push({
-                        role: "assistant",
-                        content: _res.content
-                   })
-                   return _res
+                    } else {
+                        _r.conversation.push({
+                            role: "assistant",
+                            content: _res
+                        })
+                        return _res
+                    }
                 },
                 rawImgGen: (aPrompt, aModel) => {
                     throw "Not supported yet"
