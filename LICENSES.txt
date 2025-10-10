@@ -3009,10 +3009,10 @@ APPENDIX: How to apply the Apache License to your work
 
 -----------------------
 Third-party name      : OkHTTP Client
-Version               : 4.12.0
+Version               : 5.2.0
 Changed from original : No
-Location in openaf.jar: okhttp-4.12.0.jar, okio-3.9.1.jar, okio-jvm-3.9.1.jar, kotlin-stdlib-2.0.20.jar
-License               : 
+Location in openaf.jar: okhttp-5.2.0.jar, okhttp-jvm-5.2.0.jar, okio-3.16.0.jar, okio-jvm-3.16.0.jar, kotlin-stdlib-2.2.20.jar
+License               :
 
 
 
