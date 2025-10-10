@@ -57,7 +57,9 @@ $$(obj).getI("USER.NAME")          // Gets "user.name" case-insensitively
 
 ### _$ - Parameter Validation
 
-The `_$()` function provides robust parameter validation and type checking:
+The `_$()` function provides robust parameter validation and type checking with a fluent API:
+
+#### Basic Validation and Type Checking
 
 ```javascript
 // Basic validation
@@ -77,12 +79,78 @@ _$(value, "value").toString();      // Converts to string
 _$(value, "value").toBoolean();     // Converts to boolean
 _$(value, "value").toArray();       // Converts to array
 _$(value, "value").toDate();        // Converts to Date
+```
 
-// Advanced validations
-_$(id, "id").isUUID();              // Validates UUID format
-_$(data, "data").isSchema(schema);  // Validates against JSON schema
-_$(items, "items").oneOf([1,2,3]);  // Must be one of specified values
-_$(range, "range").between(1, 100); // Must be between 1 and 100
+#### Advanced Validations
+
+```javascript
+// String validations
+_$(id, "id").isUUID();                              // Validates UUID format
+_$(email, "email").isEmail();                       // Email format validation
+_$(phone, "phone").match(/^\+?[\d\s\-\(\)]+$/);    // Regex matching
+_$(text, "text").minLength(5).maxLength(100);      // Length constraints
+_$(password, "password").hasUpperCase().hasLowerCase().hasNumber();
+
+// Number validations
+_$(age, "age").isNumber().between(0, 150);         // Range validation
+_$(score, "score").isNumber().multipleOf(0.5);     // Must be multiple of 0.5
+_$(price, "price").isNumber().min(0);              // Minimum value
+
+// Array validations
+_$(items, "items").isArray().minLength(1);         // Non-empty array
+_$(tags, "tags").isArray().maxLength(10);          // Maximum length
+_$(emails, "emails").isArray().eachIsString();     // Each element validation
+
+// Object validations
+_$(config, "config").isMap().hasKeys(['host', 'port']);  // Required keys
+_$(data, "data").isSchema(schema);                 // JSON schema validation
+_$(items, "items").oneOf([1,2,3]);                 // Must be one of specified values
+_$(range, "range").between(1, 100);                // Must be between 1 and 100
+```
+
+#### Conditional and Complex Validation
+
+```javascript
+// Conditional validation
+_$(database, "database").check(
+  config => config.type === 'mysql',
+  "Database config required for MySQL"
+);
+
+// Expression-based validation
+_$(user, "user").expr("v.age >= 18", "User must be an adult");
+
+// Custom validation functions
+_$(value, "value").check(
+  v => v > 0 && v < 100, 
+  "Value must be between 0 and 100"
+);
+
+// Multiple validations with custom error messages
+_$(port, "port")
+  .isNumber("Port must be a number")
+  .between(1024, 65535, "Port must be between 1024 and 65535")
+  .default(8080);
+```
+
+#### Integration with oJob Validation
+
+The same validation syntax is used in oJob `check.in` and `check.out` sections:
+
+```yaml
+jobs:
+- name: "My Job"
+  check:
+    in:
+      username: isString.minLength(3).maxLength(20)
+      age     : toNumber.isNumber.between(18, 100)
+      email   : isString.isEmail()
+      settings: isMap.hasKeys(['theme', 'locale'])
+    out:
+      result  : isString.oneOf(['success', 'error'])
+      count   : isNumber.min(0).default(0)
+  exec: |
+    // Validated parameters available in args
 ```
 
 ---

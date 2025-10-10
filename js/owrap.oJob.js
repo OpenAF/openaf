@@ -40,7 +40,7 @@ OpenWrap.oJob = function(isNonLocal) {
 	this.running = false;
 
 	this.shutdownFuncs = [];
-	this.shortcuts = []
+	this.shortcuts = new Set()
 	this.fileList = []
 	this._code = {}
 	var ead = getEnv("OJOB_AUTHORIZEDDOMAINS");
@@ -3246,9 +3246,9 @@ OpenWrap.oJob.prototype.outputParse = function(aObj) {
 OpenWrap.oJob.prototype.addShortcut = function(addShortcut) {
 	_$(addShortcut, "addShortcut").isMap().$_()
 
-	if (isUnDef(this.shortcuts)) this.shortcuts = []
-	if ($from(this.shortcuts).equals("name", addShortcut.name).none()) {
-		this.shortcuts.push(addShortcut)
+	if (isUnDef(this.shortcuts)) this.shortcuts = new Set()
+	if (Array.from(this.shortcuts).filter(s => s.name == addShortcut.name).length == 0) {
+		this.shortcuts.add(clone(addShortcut))
 	} else {
 		logWarn("Already existing shortcut '" + addShortcut.name + "' definition. Ignoring.")
 	}
@@ -3264,9 +3264,10 @@ OpenWrap.oJob.prototype.addShortcuts = function(v) {
 		_s.job   = v.name
 		_s.nolog = _$(_s.nolog, "typeArgs.shortcut.nolog").isBoolean().default(false)
 		_s.map   = true
-		_s.name  = _$(_s.name, "typeArgs.shortcut.name").isString().default(_s.job)
+		_s.name  = _$(_s.name, "typeArgs.shortcut.name").isString().default(__)
 		_s.attrs = _$(_s.args, "typeArgs.shortcut.args").isMap().default({})
 
+		if (isUnDef(_s.name)) _s.name = String(_s.job)
 		_s.name    = "(" + _s.name.replace(/[\(\)]/g, "")
 		var keyArg = _$(_s.keyArg, "typeArgs.shortcut.keyArg").isString().default(__)
 
@@ -3720,11 +3721,14 @@ OpenWrap.oJob.prototype.parseTodo = function(aTodo, _getlist) {
 		}
 	}]
 
-	if (isArray(this.shortcuts)) {
-		oJobShortcuts = oJobShortcuts.concat( $from(this.shortcuts).except(oJobShortcuts).select() )
+	if (isDef(this.shortcuts)) {
+		var shortcutNames = new Set(oJobShortcuts.map(r => r.name))
+		oJobShortcuts = oJobShortcuts.concat(
+			Array.from(this.shortcuts).filter(r => !shortcutNames.has(r.name))
+		)
 	}
 
-	if (isUnDef(aTodo) && _getlist) return oJobShortcuts
+	if (isUnDef(aTodo) && _getlist) return clone(oJobShortcuts)
 	if (!isMap(aTodo)) return aTodo
 
 	// Get only relevant entries

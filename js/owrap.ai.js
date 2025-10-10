@@ -226,7 +226,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
+                    if (isUnDef(aTools)) {
+                        aTools = Object.keys(_r.tools)
+                    } else if (isMap(aTools)) {
+                        aTools = Object.keys(aTools)
+                    }
+                    aTools = _$(aTools, "aTools").isArray().default([])
 
                     _resetStats()
                     var msgs = []
@@ -246,18 +251,30 @@ OpenWrap.ai.prototype.__gpttypes = {
                         response_format: (aOptions.noResponseFormat ? __ : (aJsonFlag  ? { type: "json_object" } : __))
                     }
                     body = merge(body, aOptions.params)
+                    // Only include tools if there are any configured
                     if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools.map(t => {
-                            var _t = _r.tools[t].function
-                            return {
-                                type: "function",
-                                function: {
-                                    name: _t.name,
-                                    description: _t.description,
-                                    parameters: _t.parameters
+                        body.tools = aTools
+                            .map(t => {
+                                if (isString(t)) {
+                                    var _tool = _r.tools[t]
+                                    if (isMap(_tool) && isMap(_tool.function)) {
+                                        return {
+                                            type: "function",
+                                            function: {
+                                                name: _tool.function.name,
+                                                description: _tool.function.description,
+                                                parameters: _tool.function.parameters
+                                            }
+                                        }
+                                    }
+                                } else if (isMap(t)) {
+                                    return t
                                 }
-                            }
-                        })
+                            })
+                            .filter(isDef)
+                        if (!isArray(body.tools) || body.tools.length == 0) delete body.tools
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
                     }
                     var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
                     if (isDef(_res) && isArray(_res.choices)) {
@@ -347,6 +364,25 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return res
                     }
+                },
+                getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
+                    aInput = _$(aInput, "aInput").$_()
+                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-3-small")
+                    aDimensions = _$(aDimensions, "aDimensions").isNumber().default(__)
+
+                    _resetStats()
+                    var body = {
+                        model: aEmbeddingModel,
+                        input: aInput
+                    }
+                    if (isDef(aDimensions)) {
+                        body.dimensions = aDimensions
+                    }
+                    body = merge(body, aOptions.params)
+                    
+                    var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "embeddings", body)
+                    _captureStats(_res, body)
+                    return _res
                 },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -553,15 +589,29 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
 
                     _resetStats()
-                    var msgs = []
-                    if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ]
+                    // Ensure all messages use 'parts' and never 'content'
+                    function toPartsMsg(msg) {
+                        if (isMap(msg)) {
+                            let role = isDef(msg.role) ? msg.role : "user";
+                            if (isArray(msg.parts)) {
+                                return { role, parts: msg.parts };
+                            } else if (isDef(msg.content)) {
+                                return { role, parts: [ { text: msg.content } ] };
+                            } else if (isString(msg.text)) {
+                                return { role, parts: [ { text: msg.text } ] };
+                            }
+                        }
+                        return { role: "user", parts: [ { text: String(msg) } ] };
+                    }
+                    var msgs = [];
+                    if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ];
                     aPrompt = _r.conversation.reduce((acc, r) => {
                         if (isUnDef(r.role) || r.role != "system") {
-                            acc.push(isMap(r) ? r : { role: r.role, parts: [ { text: r.content } ] });
+                            acc.push(toPartsMsg(r));
                         }
                         return acc;
-                    }, []).concat(aPrompt);
-                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", parts: [ { text: c } ] })
+                    }, []).concat(aPrompt.map(toPartsMsg));
+                    msgs = aPrompt;
                  
                     var body = {
                         system_instruction: { parts: _r.conversation.reduce((acc, r) => {
@@ -577,13 +627,19 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
-                    if (isDef(aTools)) {
+                    if (isArray(aTools) && aTools.length > 0) {
                         var sTools = clone(aTools)
-                        // remove functions
+                        // remove functions and $id/$schema from parameters
                         traverse(sTools, (aK, aV, aP, aO) => {
                             if (aK == 'fn') delete aO[aK]
+                            if (aK == 'parameters' && isMap(aO[aK])) {
+                                delete aO[aK]['$id']
+                                delete aO[aK]['$schema']
+                            }
                         })
                         body = merge(body, { tools: [ { functionDeclarations: sTools } ] })
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
                     }
                     body = merge(body, aOptions.params)
 
@@ -683,6 +739,29 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var res = _r._request("models", {}, "GET")
                     if (isDef(res.models)) res = res.models
                     return res
+                },
+                getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
+                    aInput = _$(aInput, "aInput").$_()
+                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-004")
+                    aDimensions = _$(aDimensions, "aDimensions").isNumber().default(__)
+
+                    _resetStats()
+                    var body = {
+                        model: aEmbeddingModel,
+                        content: {
+                            parts: [{
+                                text: isArray(aInput) ? aInput.join("\n") : String(aInput)
+                            }]
+                        }
+                    }
+                    if (isDef(aDimensions)) {
+                        body.output_dimensionality = aDimensions
+                    }
+                    body = merge(body, aOptions.params)
+                    
+                    var _res = _r._request("models/" + aEmbeddingModel + ":embedContent", body)
+                    _captureStats(_res, aEmbeddingModel)
+                    return _res
                 },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -835,7 +914,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
                     aPrompt = _r.conversation.concat(aPrompt)
-                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
+                    msgs = aPrompt.map(c => {
+                        if (isMap(c)) {
+                            // Ensure content is always a string
+                            if (!isString(c.content)) c.content = stringify(c.content, __, "")
+                            return c
+                        }
+                        return { role: "user", content: String(c) }
+                    })
                     var uri = "/api/chat"
 
                     var body = {
@@ -861,6 +947,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 }
                             }
                         })
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
                     }
                     _r.conversation = msgs
                     var _res = _r._request(uri, body)
@@ -873,10 +961,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var _t = aTools.find(tool => tool.function && tool.function.name == tc.function.name)
                                 if (isUnDef(_t)) throw "Tool '" + tc.function.name + "' not found"
                                 var _args = jsonParse(tc.function.arguments)
-                                var _tr = stringify(_t.fn(_args), __, "")
+                                var _tr = _t.fn(_args)
+                                // Ensure tool response is a string
                                 _p.push({ role: "assistant", tool_calls: [ tc ] })
-                                _p.push({ role: "tool", content: _tr, tool_call_id: tc.function.id })
+                                _p.push({ role: "tool", content: isString(_tr) ? _tr : stringify(_tr, __, ""), tool_call_id: tc.function.id })
                             }
+                        })
+                        // Also ensure all pushed messages have string content
+                        _p = _p.map(m => {
+                            if (isMap(m) && isDef(m.content) && !isString(m.content)) m.content = stringify(m.content, __, "")
+                            return m
                         })
                         _r.conversation = _r.conversation.concat(_p)
                         return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
@@ -924,6 +1018,25 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return res
                     }
+                },
+                getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
+                    aInput = _$(aInput, "aInput").$_()
+                    aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default(_model)
+                    aDimensions = _$(aDimensions, "aDimensions").isNumber().default(__)
+
+                    _resetStats()
+                    var body = {
+                        model: aEmbeddingModel,
+                        input: isArray(aInput) ? aInput.join("\n") : String(aInput)
+                    }
+                    if (isDef(aDimensions)) {
+                        body.dimensions = aDimensions
+                    }
+                    body = merge(body, _params)
+                     
+                    var _res = _r._request("/api/embed", body)
+                    _captureStats(_res, aEmbeddingModel)
+                    return _res
                 },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -1074,75 +1187,138 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
-                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
+                    if (isUnDef(aTools)) {
+                        aTools = Object.keys(_r.tools)
+                    } else if (isMap(aTools)) {
+                        aTools = Object.keys(aTools)
+                    } else if (isArray(aTools)) {
+                        aTools = aTools.map(t => {
+                            if (isString(t)) return t
+                            if (isMap(t) && isString(t.name)) return t.name
+                            if (isMap(t) && isMap(t.function) && isString(t.function.name)) return t.function.name
+                        }).filter(isDef)
+                    }
+                    aTools       = _$(aTools, "aTools").isArray().default([])
 
                     _resetStats()
-                    var msgs = []
                     if (isString(aPrompt)) aPrompt = [ aPrompt ]
-                    aPrompt = _r.conversation.concat(aPrompt)
-                    msgs = aPrompt.map(c => isMap(c) ? c : { role: "user", content: c })
-                 
-                    if (_noSystem) {
-                        msgs = msgs.filter(m => m.role != "system")
+                    var _incoming = isArray(aPrompt) ? aPrompt : [ aPrompt ]
+                    var _fullConversation = _r.conversation.concat(_incoming)
+                    var msgs = _fullConversation.map(c => isMap(c) ? c : { role: "user", content: c })
+
+                    var systemMsgs = msgs.filter(m => m.role == "system")
+                    var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice())
+
+                    if (aJsonFlag) {
+                        var _jsonInstruction = { role: "user", content: "output json" }
+                        bodyMessages.push(_jsonInstruction)
+                        msgs.push(_jsonInstruction)
                     }
+
+                    _r.conversation = msgs
+
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
-                        messages: msgs
-                        //response_format: (aJsonFlag ? { type: "json_object" } : __)
+                        messages: bodyMessages
                     }
-                    if (_noSystem) {
-                        body.system = msgs.filter(m => m.role == "system").map(m => m.content).join("\n")
-                    }
-                    if (aJsonFlag) {
-                        msgs.push({ role: "user", content: "output json" })
-                    }
-                     _r.conversation = msgs
-                    body = merge(body, aOptions.params)
-                    /*if (isArray(aTools) && aTools.length > 0) {
-                        body.tools = aTools.map(t => {
-                            var _t = _r.tools[t].function
-                            return {
-                                type: "function",
-                                function: {
-                                    name: _t.name,
-                                    description: _t.description,
-                                    parameters: _t.parameters
+                    if (_noSystem && systemMsgs.length > 0) {
+                        var _systemText = systemMsgs
+                            .map(m => {
+                                if (isArray(m.content)) {
+                                    return m.content
+                                        .map(sc => {
+                                            if (isMap(sc) && isString(sc.text)) return sc.text
+                                            if (isString(sc)) return sc
+                                            return stringify(sc, __, "")
+                                        })
+                                        .join("\n")
                                 }
-                            }
-                        })
-                    }*/
-                    var _res = _r._request("v1/messages", body)
-                    /*if (isDef(_res) && isArray(_res.choices)) {
-                        // call tools
-                        var _p = [], stopWith = false
-                        _res.choices.forEach(tc => {
-                            if (isDef(tc.message) && isArray(tc.message.tool_calls)) {
-                                tc.message.tool_calls.forEach(tci => {
-                                    var _t = _r.tools[tci.function.name]
-                                    var _tr = stringify(_t.fn(jsonParse(tci.function.arguments)), __, "")
-                                    _p.push({ role: "assistant", tool_calls: [ tci ]})
-                                    _p.push({ role: "tool", content: _tr, tool_call_id: tci.id })
-                                })
-                            }
-                            if (isDef(tc.finish_reason) && tc.finish_reason == "stop") {
-                                _p.push({ role: "assistant", content: tc.message.content })
-                                stopWith = true
-                            }
-                        })
-                        if (stopWith)
-                            return _res
-                        else
-                            return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                                return isString(m.content) ? m.content : stringify(m.content, __, "")
+                            })
+                            .filter(s => isString(s) && s.length > 0)
+                            .join("\n")
+                        if (_systemText.length > 0) body.system = _systemText
+                    }
+
+                    body = merge(body, aOptions.params)
+
+                    if (isArray(aTools) && aTools.length > 0) {
+                        var _bodyTools = aTools
+                            .map(t => {
+                                if (!isString(t)) return __
+                                var _tool = _r.tools[t]
+                                if (!isMap(_tool) || !isMap(_tool.function)) return __
+                                var _params = clone(_tool.function.parameters)
+                                if (isMap(_params)) {
+                                    delete _params["$schema"]
+                                    delete _params["$id"]
+                                }
+                                if (!isMap(_params)) _params = { type: "object" }
+                                return {
+                                    name: _tool.function.name,
+                                    description: _tool.function.description,
+                                    input_schema: _params
+                                }
+                            })
+                            .filter(isDef)
+                        if (_bodyTools.length > 0) body.tools = _bodyTools
                     } else {
+                        if (isDef(body.tools)) delete body.tools
+                    }
+
+                    var _res = _r._request("v1/messages", body)
+                    _captureStats(_res, aModel)
+
+                    if (isMap(_res) && isArray(_res.content)) {
+                        var assistantMsg = { role: "assistant", content: _res.content }
+                        _r.conversation.push(assistantMsg)
+
+                        var toolCalls = _res.content.filter(c => isMap(c) && c.type == "tool_use")
+                        if (toolCalls.length > 0) {
+                            var followUps = []
+                            toolCalls.forEach(tc => {
+                                if (!isString(tc.name)) throw "Invalid tool call without name"
+                                var _tool = _r.tools[tc.name]
+                                if (isUnDef(_tool)) throw "Tool '" + tc.name + "' not found"
+                                if (!isFunction(_tool.fn)) throw "Tool '" + tc.name + "' missing function implementation"
+                                var _args = tc.input
+                                var _result = _tool.fn(_args)
+                                var _content
+                                if (isString(_result)) {
+                                    _content = _result
+                                } else if (isArray(_result) || isMap(_result)) {
+                                    _content = stringify(_result, __, "")
+                                } else if (isUnDef(_result) || _result === null) {
+                                    _content = ""
+                                } else {
+                                    _content = stringify(_result, __, "")
+                                }
+                                followUps.push({
+                                    role: "user",
+                                    content: [
+                                        {
+                                            type: "tool_result",
+                                            tool_use_id: tc.id,
+                                            content: _content
+                                        }
+                                    ]
+                                })
+                            })
+                            if (followUps.length > 0) {
+                                _r.conversation = _r.conversation.concat(followUps)
+                                return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
+                            }
+                        }
+
                         return _res
-                    }*/
-                   _captureStats(_res, aModel)
-                   _r.conversation.push({
-                        role: "assistant",
-                        content: _res.content
-                   })
-                   return _res
+                    } else {
+                        _r.conversation.push({
+                            role: "assistant",
+                            content: _res
+                        })
+                        return _res
+                    }
                 },
                 rawImgGen: (aPrompt, aModel) => {
                     throw "Not supported yet"
@@ -1182,6 +1358,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return res
                     }
+                },
+                getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
+                    throw "Text embeddings not supported by Anthropic"
                 },
                 _request: (aURI, aData, aVerb) => {
                     _$(aURI, "aURI").isString().$_()
@@ -1247,6 +1426,22 @@ OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
  */
 OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
     return this.model.getModels()
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.prototype.getEmbeddings(aInput, aDimensions, aEmbeddingModel) : Object</key>
+ * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel (defaults to provider-specific default).
+ * If aDimensions is specified, requests embeddings with that many dimensions (provider support varies).
+ * Returns the raw embedding response from the provider.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.getEmbeddings = function(aInput, aDimensions, aEmbeddingModel) {
+    if (isFunction(this.model.getEmbeddings)) {
+        return this.model.getEmbeddings(aInput, aDimensions, aEmbeddingModel)
+    } else {
+        throw "Embeddings not supported by this provider"
+    }
 }
 
 /**
@@ -1875,6 +2070,29 @@ global.$gpt = function(aModel) {
             }
 
             return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.getEmbeddings(aInput, aDimensions, aEmbeddingModel) : Object</key>
+         * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel (defaults to provider-specific default).
+         * If aDimensions is specified, requests embeddings with that many dimensions (provider support varies).
+         * Returns the raw embedding response from the provider.
+         * </odoc>
+         */
+        getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
+            return _g.getEmbeddings(aInput, aDimensions, aEmbeddingModel)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.getEmbeddingsWithStats(aInput, aDimensions, aEmbeddingModel) : Map</key>
+         * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel and returns both the response and usage statistics.
+         * If aDimensions is specified, requests embeddings with that many dimensions (provider support varies).
+         * Returns a map with { response, stats }.
+         * </odoc>
+         */
+        getEmbeddingsWithStats: (aInput, aDimensions, aEmbeddingModel) => {
+            var response = _g.getEmbeddings(aInput, aDimensions, aEmbeddingModel)
+            return { response: response, stats: _g.getLastStats() }
         },
         /**
          * <odoc>

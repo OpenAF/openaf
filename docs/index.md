@@ -28,5 +28,12 @@ Core references and extended guides to build and operate oJobs and OpenAF soluti
 ## Search Tips
 Use `$path` expressions in templates for dynamic data extraction, and leverage built-in jobs `(if)`, `(parallel)`, `(repeat)` for control flow without writing raw JavaScript where possible.
 
+### Advanced Features Highlighted
+- **Enhanced Parameter Validation**: Comprehensive `_$()` validation chains with type conversion, regex matching, and range checking
+- **Job Input/Output Validation**: Declarative `check.in` and `check.out` sections with fluent validation syntax
+- **AI/LLM Integration**: Multi-provider LLM support (OpenAI, Anthropic, Gemini, Ollama) with function calling and image processing
+- **Telemetry & Metrics**: Built-in metrics collection, OpenMetrics format support, and integration with monitoring systems
+- **Security Enhancements**: File integrity checking, authorized domains, and comprehensive audit trails
+
 ---
 This index is intentionally minimal—open individual docs for full tables of contents.
