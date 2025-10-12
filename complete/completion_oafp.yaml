@@ -166,6 +166,15 @@ complete:
       desc: If true will list all available MCP tools
     - name: inmcplistprompts=
       desc: If true will list all available MCP prompts
+  - name: in=minia
+    desc: Executes a mini-a interaction definition (requires the mini-a oPack)
+    opts:
+    - name: minianolog=
+      desc: If true hides mini-a interaction logs and shows a temporary progress message instead
+    - name: minialogfile=
+      desc: Path to append interaction log lines with timestamps
+    - name: miniametrics=
+      desc: Path to write the mini-a run metrics as JSON (placeholders can include the run id)
   - name: in=ndjson
     desc: A NDJSON (new-line delimited JSON) format
     opts:
