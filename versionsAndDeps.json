@@ -110,7 +110,7 @@
 		{
 			"description": "Rhino",
 			"path": ["lib/js.jar"],
-			"version": "1.7.15",
+			"version": "1.8.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/mozilla/rhino/master/LICENSE.txt",
@@ -136,13 +136,13 @@
 		},
 		{
 			"description": "H2",
-			"path": ["lib/h2-2.3.232.jar"],
-			"version": "2.3.232",
+			"path": ["lib/h2-2.4.240.jar"],
+			"version": "2.4.240",
 			"changes": false,
 			"type": ["java"],
 			"license": "This software contains unmodified binary redistributions for H2 database engine (http://www.h2database.com/), which is dual licensed and available under the MPL 2.0 (Mozilla Public License) or under the EPL 1.0 (Eclipse Public License). An original copy of the license agreement can be found at: http://www.h2database.com/html/license.html",
 			"deps": [
-				"lib/slf4j_api.jar"
+				"lib/slf4j-api-2.0.17.jar"
 			]
 		},
 		{
@@ -156,8 +156,8 @@
 		},
 		{
 			"description": "jjwt",
-			"path": ["lib/jjwt-api-0.12.6.jar", "lib/jjwt-gson-0.12.6.jar", "lib/jjwt-impl-0.12.6.jar"],
-			"version": "0.12.6",
+			"path": ["lib/jjwt-api-0.13.0.jar", "lib/jjwt-gson-0.13.0.jar", "lib/jjwt-impl-0.13.0.jar"],
+			"version": "0.13.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/jwtk/jjwt/master/LICENSE",
@@ -186,10 +186,10 @@
 				"file": "jansi-{{version}}.jar"
 			}
 		},
-	   {
-		   "description": "Apache Commons IO",
-		   "path": ["lib/commons-io-2.19.0.jar"],
-		   "version": "2.19.0",
+		{
+			"description": "Apache Commons IO",
+			"path": ["lib/commons-io-2.20.0.jar"],
+			"version": "2.20.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -206,8 +206,8 @@
 		},
 		{
 			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.17.0.jar"],
-			"version": "3.17.0",
+			"path": ["lib/commons-lang3-3.18.0.jar"],
+			"version": "3.18.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -224,8 +224,8 @@
 		},
 		{
 			"description": "Apache Commons Compress",
-			"path": ["lib/commons-compress-1.27.1.jar"],
-			"version": "1.27.1",
+			"path": ["lib/commons-compress-1.28.0.jar"],
+			"version": "1.28.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -233,8 +233,8 @@
 		},
           {
                   "description": "OkHTTP Client",
-                  "path": ["okhttp-5.2.0.jar", "okhttp-jvm-5.2.0.jar", "okio-3.16.0.jar", "okio-jvm-3.16.0.jar", "kotlin-stdlib-2.2.20.jar"],
-                  "version": "5.2.0",
+                  "path": ["okhttp-5.2.1.jar", "okhttp-jvm-5.2.1.jar", "okio-3.16.0.jar", "okio-jvm-3.16.0.jar", "kotlin-stdlib-2.2.20.jar"],
+                  "version": "5.2.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",
@@ -242,8 +242,8 @@
 		},
 	   {
 		   "description": "Oracle JDBC 23",
-		   "path": ["lib/ojdbc11-23.8.0.25.04.jar"],
-		   "version": "23.8.0.25.04",
+		   "path": ["lib/ojdbc11-23.9.0.25.07.jar"],
+		   "version": "23.9.0.25.07",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.oracle.com/webapps/maven/register/license.html",
@@ -251,8 +251,8 @@
 		},
 	   {
 		   "description": "PostgreSQL JDBC",
-		   "path": ["lib/postgresql-42.7.7.jar"],
-		   "version": "42.7.7",
+		   "path": ["lib/postgresql-42.7.8.jar"],
+		   "version": "42.7.8",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.postgresql.org/about/licence/",
@@ -287,7 +287,7 @@
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/malensek/jbsdiff/master/LICENSE.txt",
 			"deps": [
-				"lib/commons-compress-1.25.0.jar"
+				"lib/commons-compress-1.28.0.jar"
 			]
 		},
 		{
@@ -301,8 +301,8 @@
 		},
 	   {
 		   "description": "GSON",
-		   "path": ["lib/gson-2.13.1.jar"],
-		   "version": "2.13.1",
+		   "path": ["lib/gson-2.13.2.jar"],
+		   "version": "2.13.2",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/google/gson/master/LICENSE",
@@ -314,8 +314,8 @@
 		},
 	   {
 		   "description": "Jackson Core",
-		   "path": ["lib/jackson-core-2.19.1.jar"],
-		   "version": "2.19.1",
+		   "path": ["lib/jackson-core-2.20.0.jar"],
+		   "version": "2.20.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
@@ -385,7 +385,7 @@
 			"name": "HTTP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.19.0.jar",
+				"lib/commons-io-2.20.0.jar",
 				"lib/jetty-io-12.1.1.jar",
 				"lib/jetty-util-12.1.1.jar",
 				"lib/jetty-client-12.1.1.jar",
@@ -395,7 +395,7 @@
 				"lib/jetty-websocket-jetty-api-12.1.1.jar",
 				"lib/jetty-websocket-jetty-client-12.1.1.jar",
 				"lib/jetty-websocket-jetty-common-12.1.1.jar",
-				"lib/jetty-websocket-core-12.1.1.jar",
+				"lib/jetty-websocket-core-client-12.1.1.jar",
 				"lib/jetty-websocket-core-common-12.1.1.jar"
 			]
 		},
@@ -416,7 +416,7 @@
 			"name": "SNMP",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-3.9.3.jar",
+				"lib/snmp4j-3.9.6.jar",
 				"lib/snmp4j-agent-3.8.2.jar"
 			]
 		},
@@ -424,7 +424,7 @@
 			"name": "SNMPServer",
 			"removable": true,
 			"deps": [
-				"lib/snmp4j-3.9.3.jar",
+				"lib/snmp4j-3.9.6.jar",
 				"lib/snmp4j-agent-3.8.2.jar"
 			]
 		},
@@ -432,7 +432,7 @@
 			"name": "SSH",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-io-2.19.0.jar"
+				"lib/commons-io-2.20.0.jar"
 			],
 			"deps": [
 				"lib/jsch-2.27.2.jar",
@@ -464,8 +464,8 @@
 			"name": "ZIP",
 			"removable": false,
 			"hardDeps": [
-				"lib/commons-io-2.17.0.jar",
-				"lib/commons-compress-1.27.1.jar"
+				"lib/commons-io-2.20.0.jar",
+				"lib/commons-compress-1.28.0.jar"
 			],
 			"deps": []
 		},
@@ -473,7 +473,7 @@
 			"name": "BSDiff",
 			"removable": true,
 			"hardDeps": [
-				"lib/commons-compress-1.27.1.jar"
+				"lib/commons-compress-1.28.0.jar"
 			],
 			"deps": [
 				"lib/jbsdiff-1.0.jar"
@@ -483,14 +483,14 @@
 			"name": "Oracle",
 			"removable": true,
 			"deps": [
-				"lib/ojdbc11-23.8.0.25.04.jar"
+				"lib/ojdbc11-23.9.0.25.07.jar"
 			]
 		},
 		{
 			"name": "PostgreSQL",
 			"removable": true,
 			"deps": [
-				"lib/postgresql-42.7.7.jar"
+				"lib/postgresql-42.7.8.jar"
 			]
 		}
 	]

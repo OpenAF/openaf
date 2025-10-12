@@ -76,6 +76,10 @@ F_in__in_mdcode=0
 F_in__in_mcp=0
 F_in__in_mcp_inmcptoolslist_=1
 F_in__in_mcp_inmcplistprompts_=1
+F_in__in_minia=0
+F_in__in_minia_minianolog_=1
+F_in__in_minia_minialogfile_=1
+F_in__in_minia_miniametrics_=1
 F_in__in_ndjson=0
 F_in__in_ndjson_ndjsonjoin_=1
 F_in__in_ndjson_ndjsonfilter_=1
@@ -422,6 +426,10 @@ if [ $# -gt 0 ]; then
     if [ "$arg" = "in=mcp" ]; then FFOUND=1; F_in__in_mcp=1; F_in_=0; fi
     if [ "${arg#inmcptoolslist=}" != "$arg" ]; then FFOUND=1; F_in__in_mcp_inmcptoolslist_=0; fi
     if [ "${arg#inmcplistprompts=}" != "$arg" ]; then FFOUND=1; F_in__in_mcp_inmcplistprompts_=0; fi
+    if [ "$arg" = "in=minia" ]; then FFOUND=1; F_in__in_minia=1; F_in_=0; fi
+    if [ "${arg#minianolog=}" != "$arg" ]; then FFOUND=1; F_in__in_minia_minianolog_=0; fi
+    if [ "${arg#minialogfile=}" != "$arg" ]; then FFOUND=1; F_in__in_minia_minialogfile_=0; fi
+    if [ "${arg#miniametrics=}" != "$arg" ]; then FFOUND=1; F_in__in_minia_miniametrics_=0; fi
     if [ "$arg" = "in=ndjson" ]; then FFOUND=1; F_in__in_ndjson=1; F_in_=0; fi
     if [ "${arg#ndjsonjoin=}" != "$arg" ]; then FFOUND=1; F_in__in_ndjson_ndjsonjoin_=0; fi
     if [ "${arg#ndjsonfilter=}" != "$arg" ]; then FFOUND=1; F_in__in_ndjson_ndjsonfilter_=0; fi
@@ -787,6 +795,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=mdtable	A Markdown table format"
   echo "in=mdcode	A Markdown code blocks format"
   echo "in=mcp	A Model Context Protocol (MCP) input"
+  echo "in=minia	Executes a mini-a interaction definition (requires the mini-a oPack)"
   echo "in=ndjson	A NDJSON (new-line delimited JSON) format"
   echo "in=ndslon	A NDSLON (new-line delimited SLON) format"
   echo "in=oaf	Takes an OpenAF scripting code or OpenAF script file to execute and use the result as input"
@@ -979,6 +988,17 @@ if [ $F_in__in_mcp -eq 1 ]; then
   fi
   if [ $F_in__in_mcp_inmcplistprompts_ -eq 1 ]; then
     echo "inmcplistprompts=	If true will list all available MCP prompts"
+  fi
+fi
+if [ $F_in__in_minia -eq 1 ]; then
+  if [ $F_in__in_minia_minianolog_ -eq 1 ]; then
+    echo "minianolog=	If true hides mini-a interaction logs and shows a temporary progress message instead"
+  fi
+  if [ $F_in__in_minia_minialogfile_ -eq 1 ]; then
+    echo "minialogfile=	Path to append interaction log lines with timestamps"
+  fi
+  if [ $F_in__in_minia_miniametrics_ -eq 1 ]; then
+    echo "miniametrics=	Path to write the mini-a run metrics as JSON (placeholders can include the run id)"
   fi
 fi
 if [ $F_in__in_ndjson -eq 1 ]; then
