@@ -27,6 +27,8 @@ var __genScriptsUpdate = [];
 var __noSLF4JErrorOnly;
 //Set openaf variables
 
+var __jsonrpcSharedConnections = __jsonrpcSharedConnections || {};
+
 /**
  * <odoc>
  * <key>isJavaClass(aObj) : boolean</key>
@@ -8218,6 +8220,7 @@ const $rest = function(ops) {
  * - cmd (string): Required for stdio type - the command to execute\
  * - options (map): Additional options passed to $rest for remote connections\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
+ * - shared (boolean): Share connections between identical configurations (default: false)\
  * \
  * The returned client object provides these methods:\
  * \
@@ -8257,6 +8260,65 @@ const $jsonrpc = function(aOptions) {
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
 	// debug = true will print JSON requests and responses using print()
 	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
+	aOptions.shared = _$(aOptions.shared, "aOptions.shared").isBoolean().default(false)
+
+	const _createSharedWrapper = (entry, key) => {
+		var _destroyed = false
+		const _wrap = {
+			type: type => {
+				entry.base.type(type)
+				return _wrap
+			},
+			url: url => {
+				entry.base.url(url)
+				return _wrap
+			},
+			sh: cmd => {
+				entry.base.sh(cmd)
+				return _wrap
+			},
+			exec: (aMethod, aParams, aNotification) => entry.base.exec(aMethod, aParams, aNotification),
+			destroy: () => {
+				if (_destroyed) return
+				_destroyed = true
+				entry.count = (entry.count || 0) - 1
+				if (entry.count <= 0) {
+					entry.base.destroy()
+					delete __jsonrpcSharedConnections[key]
+				}
+			}
+		}
+		entry.count = (entry.count || 0) + 1
+		return _wrap
+	}
+
+	const _getShareKey = () => {
+		if (!aOptions.shared) return __
+		var _payload
+		if (isString(aOptions.cmd)) {
+			_payload = {
+				type: "stdio",
+				cmd: aOptions.cmd
+			}
+		} else if (isString(aOptions.url)) {
+			_payload = {
+				type: "remote",
+				url: aOptions.url
+			}
+		}
+		if (isUnDef(_payload)) return __
+		if (isDef(aOptions.options)) {
+			_payload.options = isMap(aOptions.options) ? sortMapKeys(aOptions.options, true) : aOptions.options
+		} else {
+			_payload.options = {}
+		}
+		return md5(stringify(sortMapKeys(_payload, true)))
+	}
+
+	const _shareKey = _getShareKey()
+	if (isDef(_shareKey) && isDef(__jsonrpcSharedConnections[_shareKey])) {
+		return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
+	}
 
 	const _debug = m => {
 		if (aOptions.debug) printErr(ansiColor("yellow,BOLD", "DEBUG: ") + ansiColor("yellow", m))
@@ -8432,6 +8494,13 @@ const $jsonrpc = function(aOptions) {
 				$doWait(_r._p)
 			}
 		}
+}
+	if (isDef(_shareKey)) {
+		if (isDef(__jsonrpcSharedConnections[_shareKey]) && __jsonrpcSharedConnections[_shareKey].base !== _r) {
+			return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
+		}
+		__jsonrpcSharedConnections[_shareKey] = { base: _r, count: 0 }
+		return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
 	}
 	return _r
 }
@@ -8451,6 +8520,7 @@ const $jsonrpc = function(aOptions) {
  * - cmd (string): Required for stdio type - the command to launch the MCP server\
  * - options (map): Additional options passed to underlying JSON-RPC client\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
+ * - shared (boolean): Enable shared JSON-RPC connections when possible (default: false)\
  * - strict (boolean): Enable strict MCP protocol compliance (default: true)\
  * - clientInfo (map): Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})\
  * \
@@ -8501,6 +8571,7 @@ const $mcp = function(aOptions) {
 	// debug = true will enable printing of JSON-RPC requests/responses
 	aOptions.strict = _$(aOptions.strict, "aOptions.strict").isBoolean().default(true)
 	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
+	aOptions.shared = _$(aOptions.shared, "aOptions.shared").isBoolean().default(false)
 	aOptions.clientInfo = _$(aOptions.clientInfo, "aOptions.clientInfo").isMap().default({
 		name: "OpenAF MCP Client",
 		version: "1.0.0"
