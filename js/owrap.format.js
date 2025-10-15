@@ -7,6 +7,8 @@ OpenWrap.format = function() {
 	return ow.format;
 }
 
+if (typeof __owWithMdCache === "undefined") var __owWithMdCache
+
 OpenWrap.format.prototype.string = {
 	// from: https://dmitripavlutin.com/what-every-javascript-developer-should-know-about-unicode/
 	/** 
@@ -3598,7 +3600,7 @@ OpenWrap.format.prototype.logWarnWithProgressFooter = function(aMessage, aTempla
  * <key>ow.format.withMD(aString, defaultAnsi) : String</key>
  * Use aString with simple markdown and convert it to ANSI. Optionally you can add a defaultAnsi string to return back 
  * after applying the ansi styles for markdown (use ansiColor function to provide the defaultAnsi).
- * Currently supports only: bold, italic, tables, simple code blocks, line rule, bullets, numbered lines, links and blocks.
+ * Currently supports only: bold, italic, inline code, strikethrough, tables, simple code blocks, line rule, bullets, numbered lines, links and blocks.
  * </odoc>
  */
 OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
@@ -3607,31 +3609,64 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	var res = aString, da = (defaultAnsi.length > 0 ? ansiColor(defaultAnsi, "") : "")
 
 	// Theme set
-	__colorFormat.md = merge({
-		codeBlock: {
-			line: "YELLOW,BOLD",
-			text: "NEGATIVE_ON,ITALIC",
-			theme: "openCurvedSpace"
-		},
-		heads: {
-			h1: "WHITE,BOLD,UNDERLINE",
-			h2: "BOLD,UNDERLINE",
-			h3: "BOLD",
-			h4: "UNDERLINE"
-		},
-		line: "FAINT",
-		link: {
-			text: "UNDERLINE",
-			url: "FAINT"
-		},
-		bullets: "BOLD",
-		list: "BOLD",
-		note: {
+	if (!isDef(__colorFormat.__withMdDefaults) || !__colorFormat.__withMdDefaults) {
+		__colorFormat.__withMdDefaults = true
+		__colorFormat.md = merge({
+			codeBlock: {
+				line: "YELLOW,BOLD",
+				text: "NEGATIVE_ON,ITALIC",
+				theme: "openCurvedSpace"
+			},
+			codeInline: {
+				text: "YELLOW",
+				surround: "FAINT"
+			},
+			heads: {
+				h1: "WHITE,BOLD,UNDERLINE",
+				h2: "BOLD,UNDERLINE",
+				h3: "BOLD",
+				h4: "UNDERLINE"
+			},
 			line: "FAINT",
-			text: __,
-			theme: "simpleLine"
+			link: {
+				text: "UNDERLINE",
+				url: "FAINT"
+			},
+			bullets: "BOLD",
+			list: "BOLD",
+			strike: "STRIKETHROUGH",
+			note: {
+				line: "FAINT",
+				text: __,
+				theme: "simpleLine"
+			}
+		}, __colorFormat.md)
+	} else {
+		__colorFormat.md = merge({
+			codeInline: {
+				text: "YELLOW",
+				surround: "FAINT"
+			},
+			strike: "STRIKETHROUGH"
+		}, __colorFormat.md)
+	}
+
+	var _withMdPatterns = __owWithMdCache
+	if (!isDef(_withMdPatterns)) {
+		_withMdPatterns = {
+			comments: "(?<!\\)<!--(.|\n)*?--(?<!\\)>",
+			boldItalicStar: "(?<!\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\)(\\*{3})",
+			boldItalicUnd: "(?<!\\)(_{3})([^ _][^_\n]*)(?<!\\)(_{3})",
+			boldStar: "(?<!\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\)(\\*{2})",
+			boldUnd: "(?<!\\)(_{2})([^ _][^_\n]*)(?<!\\)(_{2})",
+			italicStar: "(?<!\\)(\\*)([^ \\*][^\\*\n]*)(?<!\\)(\\*)",
+			italicUnd: "(?<!\\)(_)([^ _][^_\n]*)(?<!\\)(_)",
+			strike: "(?<!\\)(~~)([^ ~][^~\n]*)(?<!\\)(~~)",
+			inlineCode: /(^|[^`\\])`([^`\n]+?)`(?!`)/g,
+			escape: /\\([_\*`~])/g
 		}
-	}, __colorFormat.md)
+		__owWithMdCache = _withMdPatterns
+	}
 
 	// pre process code blocks
 
@@ -3650,17 +3685,29 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			res = res.replace(b, "```$$" + i + "```")
 		})
 
-    res = javaRegExp(res).replaceAll("(?<!\\\\)<!--(.|\n)*?--(?<!\\\\)>", "")
-    res = javaRegExp(res).replaceAll("(?<=[^\\W_*\\\\])([*_])+(?=[^\\W_*\\\\])", "\\\\$1")
-	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})", ansiColor("BOLD,ITALIC", "$2")+da)
-	res = javaRegExp(res).replaceAll("(?<!\\\\)(_{3})(^ _][ _\n]*)(?<!\\\\)(_{3})", ansiColor("BOLD,ITALIC", "$2")+da)
-	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})", ansiColor("BOLD", "$2")+da)
-	res = javaRegExp(res).replaceAll("(?<!\\\\)(_{2})([^ _][^_\n]*)(?<!\\\\)(_{2})", ansiColor("BOLD", "$2")+da)
-	res = javaRegExp(res).replaceAll("(?<!\\\\)(\\*)([^ \\*][^\\*\n]*)(?<!\\\\)(\\*)", ansiColor("ITALIC", "$2")+da)
-	res = javaRegExp(res).replaceAll("(?<!\\\\)(_)([^ _][^_\n]*)(?<!\\\\)(_)", ansiColor("ITALIC", "$2")+da)
+    res = javaRegExp(res).replaceAll(_withMdPatterns.comments, "")
+    res = javaRegExp(res).replaceAll("(?<=[^\W_*\\])([*_])+(?=[^\W_*\\])", "\\$1")
+	res = javaRegExp(res).replaceAll(_withMdPatterns.boldItalicStar, ansiColor("BOLD,ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.boldItalicUnd, ansiColor("BOLD,ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.boldStar, ansiColor("BOLD", "$2")+da)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.boldUnd, ansiColor("BOLD", "$2")+da)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.italicStar, ansiColor("ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.italicUnd, ansiColor("ITALIC", "$2")+da)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.strike, ansiColor(__colorFormat.md.strike, "$2")+da)
+
+	_withMdPatterns.inlineCode.lastIndex = 0
+	res = res.replace(_withMdPatterns.inlineCode, (m, prefix, code) => {
+		var inline = ansiColor(__colorFormat.md.codeInline.text, code)
+		if (__colorFormat.md.codeInline.surround) {
+			var surround = ansiColor(__colorFormat.md.codeInline.surround, "`")
+			inline = surround + inline + surround
+		}
+		return prefix + inline + da
+	})
 
     // escape
-    res = res.replace(/\\([_\*])/g, "$1")
+    _withMdPatterns.escape.lastIndex = 0
+    res = res.replace(_withMdPatterns.escape, "$1")
 
 	res = res.replace(/^# (.+)/mg, ansiColor(__colorFormat.md.heads.h1, "$1") + da)
 	res = res.replace(/^## (.+)/mg, ansiColor(__colorFormat.md.heads.h2, "$1") + da)
@@ -3675,6 +3722,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	} else {
 		_aSize = 80
 	}
+	var _tWidth = _aSize
 
 	// Single line transformers
 	res = res.split("\n").map(l => {
@@ -3693,7 +3741,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 		if (ar) {
 			var lsize = ar[1].length + 1 + ar[2].length
 
-			return ow.format.string.wordWrap(ar[3], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
+			return ow.format.string.wordWrap(ar[3], _tWidth - lsize).split("\n").map((l, i) => {
 				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.bullets, "\u2022") + ar[2] : repeat(lsize, ' ')) + l
 			}).join("\n")
 		}
@@ -3703,7 +3751,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 		if (ar) {
 			var lsize = ar[1].length + ar[2].length + 1 + ar[3].length
 
-			return ow.format.string.wordWrap(ar[4], __con.getTerminal().getWidth() - lsize).split("\n").map((l, i) => {
+			return ow.format.string.wordWrap(ar[4], _tWidth - lsize).split("\n").map((l, i) => {
 				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.list, ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
 			}).join("\n")
 		}
