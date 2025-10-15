@@ -3653,20 +3653,21 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 
 	var _withMdPatterns = __owWithMdCache
 	if (!isDef(_withMdPatterns)) {
-		_withMdPatterns = {
-			comments: "(?<!\\\\)<!--(.|\n)*?--(?<!\\\\)>",
-			boldItalicStar: "(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})",
-			boldItalicUnd: "(?<!\\\\)(_{3})([^ _][^_\n]*)(?<!\\\\)(_{3})",
-			boldStar: "(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})",
-			boldUnd: "(?<!\\\\)(_{2})([^ _][^_\n]*)(?<!\\\\)(_{2})",
-			italicStar: "(?<!\\\\)(\\*)([^ \\*][^\\*\n]*)(?<!\\\\)(\\*)",
-			italicUnd: "(?<!\\\\)(_)([^ _][^_\n]*)(?<!\\\\)(_)",
-			strike: "(?<!\\\\)(~~)([^ ~][^~\n]*)(?<!\\\\)(~~)",
-			inlineCode: /(^|[^`\\])`([^`\n]+?)`(?!`)/g,
-			escape: /\\([_\*`~])/g
-		}
-		__owWithMdCache = _withMdPatterns
-	}
+                _withMdPatterns = {
+                        comments: "(?<!\\\\)<!--(.|\n)*?--(?<!\\\\)>",
+                        emphasisGuard: "(?<=[\\p{L}\\p{N}])([*_])+(?=[\\p{L}\\p{N}])",
+                        boldItalicStar: "(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})",
+                        boldItalicUnd: "(?<!\\\\)(_{3})([^ _][^_\n]*)(?<!\\\\)(_{3})",
+                        boldStar: "(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})",
+                        boldUnd: "(?<!\\\\)(_{2})([^ _][^_\n]*)(?<!\\\\)(_{2})",
+                        italicStar: "(?<!\\\\)(\\*)([^ \\*][^\\*\n]*)(?<!\\\\)(\\*)",
+                        italicUnd: "(?<!\\\\)(_)([^ _][^_\n]*)(?<!\\\\)(_)",
+                        strike: "(?<!\\\\)(~~)([^ ~][^~\n]*)(?<!\\\\)(~~)",
+                        inlineCode: /(^|[^`\\])`([^`\n]+?)`(?!`)/g,
+                        escape: /\\([_\*`~])/g
+                }
+                __owWithMdCache = _withMdPatterns
+        }
 
 	// pre process code blocks
 
@@ -3686,7 +3687,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 		})
 
     res = javaRegExp(res).replaceAll(_withMdPatterns.comments, "")
-    res = javaRegExp(res).replaceAll("(?<=[^\W_*\\])([*_])+(?=[^\W_*\\])", "\\$1")
+    res = javaRegExp(res).replaceAll(_withMdPatterns.emphasisGuard, "\\\\$1")
 	res = javaRegExp(res).replaceAll(_withMdPatterns.boldItalicStar, ansiColor("BOLD,ITALIC", "$2")+da)
 	res = javaRegExp(res).replaceAll(_withMdPatterns.boldItalicUnd, ansiColor("BOLD,ITALIC", "$2")+da)
 	res = javaRegExp(res).replaceAll(_withMdPatterns.boldStar, ansiColor("BOLD", "$2")+da)
