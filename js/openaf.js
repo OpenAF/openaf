@@ -1669,7 +1669,12 @@ function __initializeCon() {
 }
  
 var __ansiColorCache = {
-	RESET: "\x1b[m"
+	RESET        : "\x1b[m",   // the most used
+	STRIKETHROUGH: "\x1b[9m",  // required,
+	BOLD         : "\x1b[1m",  // for caching
+	FAINT        : "\x1b[2m",  // for caching
+	ITALIC       : "\x1b[3m",  // for caching
+	UNDERLINE    : "\x1b[4m"   // for caching
 }
 const __ansiColorPrep = function(aAnsi) {
 	var jansi = JavaImporter(Packages.org.fusesource.jansi)
