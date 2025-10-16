@@ -249,7 +249,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                         temperature: aTemperature,
                         messages: msgs
                     }
-                    if (!aOptions.noResponseFormat && aJsonFlag) {
+                    // IMPORTANT: OpenAI JSON mode (response_format) cannot be combined with tool/function calling.
+                    // Only enable strict JSON mode when there are no tools requested.
+                    if (!aOptions.noResponseFormat && aJsonFlag && (!isArray(aTools) || aTools.length === 0)) {
                         body.response_format = {
                             type: "json_schema",
                             json_schema: {
