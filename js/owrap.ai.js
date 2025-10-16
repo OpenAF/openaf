@@ -634,10 +634,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         }
                     }
                     if (aJsonFlag) {
+                        // For Gemini, setting responseMimeType to application/json is enough to encourage JSON output.
+                        // Do NOT set a default responseSchema. Gemini requires OBJECT schemas to have non-empty properties,
+                        // and an empty schema `{ type: "OBJECT" }` will trigger INVALID_ARGUMENT. If callers want a
+                        // structured schema, they can pass it via aOptions.params.generationConfig.responseSchema.
                         body.generationConfig.responseMimeType = "application/json"
-                        if (isUnDef(body.generationConfig.responseSchema)) {
-                            body.generationConfig.responseSchema = { type: "OBJECT" }
-                        }
                     }
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
@@ -1215,36 +1216,43 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTools       = _$(aTools, "aTools").isArray().default([])
 
                     _resetStats()
-                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
-                    var _incoming = isArray(aPrompt) ? aPrompt : [ aPrompt ]
-                    var _fullConversation = _r.conversation.concat(_incoming)
-                    var msgs = _fullConversation.map(c => isMap(c) ? c : { role: "user", content: c })
+                    // Always build messages as a valid array of objects with role and string content
+                    var buildMsgObj = function(c) {
+                        if (isMap(c)) {
+                            let role = isDef(c.role) ? c.role : "user";
+                            let content = c.content;
+                            if (isArray(content)) content = content.map(x => isString(x) ? x : stringify(x, __, "")).join("\n");
+                            if (!isString(content)) content = stringify(content, __, "");
+                            return { role, content };
+                        } else {
+                            return { role: "user", content: String(c) };
+                        }
+                    };
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ];
+                    var _incoming = isArray(aPrompt) ? aPrompt : [ aPrompt ];
+                    var _fullConversation = _r.conversation.concat(_incoming);
+                    var msgs = _fullConversation.map(buildMsgObj);
 
-                    var systemMsgs = msgs.filter(m => m.role == "system")
-                    var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice())
+                    var systemMsgs = msgs.filter(m => m.role == "system");
+                    var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice());
 
                     if (aJsonFlag) {
-                        var _jsonInstruction = { role: "user", content: "output json" }
-                        bodyMessages.push(_jsonInstruction)
-                        msgs.push(_jsonInstruction)
+                        var _jsonInstruction = { role: "user", content: "output json" };
+                        bodyMessages.push(_jsonInstruction);
+                        msgs.push(_jsonInstruction);
                     }
 
-                    _r.conversation = msgs
+                    _r.conversation = msgs;
 
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
                         messages: bodyMessages
                     }
-                    if (aJsonFlag) {
-                        body.response_format = {
-                            type: "json_schema",
-                            json_schema: {
-                                name: "response",
-                                schema: { type: "object" }
-                            }
-                        }
-                    }
+                    // Note: Anthropic does not support response_format like OpenAI.
+                    // JSON output is controlled via system prompts and model behavior.
+                    // The aJsonFlag instruction is already added to messages above.
+                    
                     if (_noSystem && systemMsgs.length > 0) {
                         var _systemText = systemMsgs
                             .map(m => {
