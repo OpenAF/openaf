@@ -247,8 +247,16 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
-                        messages: msgs,
-                        response_format: (aOptions.noResponseFormat ? __ : (aJsonFlag  ? { type: "json_object" } : __))
+                        messages: msgs
+                    }
+                    if (!aOptions.noResponseFormat && aJsonFlag) {
+                        body.response_format = {
+                            type: "json_schema",
+                            json_schema: {
+                                name: "response",
+                                schema: { type: "object" }
+                            }
+                        }
                     }
                     body = merge(body, aOptions.params)
                     // Only include tools if there are any configured
@@ -623,6 +631,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                         contents: msgs,
                         generationConfig: {
                             temperature: aTemperature
+                        }
+                    }
+                    if (aJsonFlag) {
+                        body.generationConfig.responseMimeType = "application/json"
+                        if (isUnDef(body.generationConfig.responseSchema)) {
+                            body.generationConfig.responseSchema = { type: "OBJECT" }
                         }
                     }
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
@@ -1222,6 +1236,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                         temperature: aTemperature,
                         messages: bodyMessages
                     }
+                    if (aJsonFlag) {
+                        body.response_format = {
+                            type: "json_schema",
+                            json_schema: {
+                                name: "response",
+                                schema: { type: "object" }
+                            }
+                        }
+                    }
                     if (_noSystem && systemMsgs.length > 0) {
                         var _systemText = systemMsgs
                             .map(m => {
@@ -1635,7 +1658,21 @@ OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemp
     this.setInstructions("json")
 
     var out = this.model.prompt(aPrompt, aModel, aTemperature, true, tools)
-    return isString(out) ? jsonParse(out, __, __, true) : out 
+    return isString(out) ? jsonParse(out, __, __, true) : out
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.jsonPromptWithStats(aPrompt, aModel, aTemperature, tools) : Map</key>
+ * Executes jsonPrompt and returns the parsed response together with any reported statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.jsonPromptWithStats = function(aPrompt, aModel, aTemperature, tools) {
+    this.setInstructions("json")
+
+    var out = this.model.prompt(aPrompt, aModel, aTemperature, true, tools)
+    var parsed = isString(out) ? jsonParse(out, __, __, true) : out
+    return { response: parsed, stats: this.getLastStats() }
 }
 
 /**
@@ -1800,8 +1837,8 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * \
  * If aModel is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
  * \
- * The returned object also exposes helper methods to inspect vendor usage information: `getLastStats`/`lastStats` (map with the latest statistics), `promptWithStats`
- * and `rawPromptWithStats` (returning `{ response, stats }`).
+ * The returned object also exposes helper methods to inspect vendor usage information: `getLastStats`/`lastStats` (map with the latest statistics), `promptWithStats`,
+ * `promptJSONWithStats` and `rawPromptWithStats` (returning `{ response, stats }`).
  * </odoc>
  */
 global.$gpt = function(aModel) {
@@ -1923,6 +1960,15 @@ global.$gpt = function(aModel) {
          */
         promptJSON: (aPrompt, aModel, aTemperature, tools) => {
             return _g.jsonPrompt(aPrompt, aModel, aTemperature, tools)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptJSONWithStats(aPrompt, aModel, aTemperature)</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a map with the parsed JSON response and statistics ({ response, stats }).
+         * </odoc>
+         */
+        promptJSONWithStats: (aPrompt, aModel, aTemperature, tools) => {
+            return _g.jsonPromptWithStats(aPrompt, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
