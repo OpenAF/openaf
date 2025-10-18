@@ -148,6 +148,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _r = {
                 conversation: [],
                 tools: {},
+                getModelName: () => _model,
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -486,10 +487,11 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _r = {
                 conversation: [],
                 tools: [],
+                getModelName: () => _model,
                 getConversation: () => {
                     var _res = _r.conversation.map(r => {
                         if (isMap(r)) {
-                            if (isUnDef(r.role)) 
+                            if (isUnDef(r.role))
                                 r.role = "user"
                             else if (r.role == "assistant") {
                                 r.role = "model"
@@ -870,6 +872,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _r = {
                 conversation: [],
                 tools: [],
+                getModelName: () => _model,
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -1167,6 +1170,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _r = {
                 conversation: [],
                 tools: {},
+                getModelName: () => _model,
                 getConversation: () => {
                     return _r.conversation
                 },
@@ -1444,11 +1448,53 @@ OpenWrap.ai.prototype.__gpttypes = {
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt = function(aType, aOptions) {
-    if (isUnDef(ow.ai.__gpttypes[aType])) {
-        throw "Unrecognized GPT type '" + aType + "'."
-    } else {
-        this.model = ow.ai.__gpttypes[aType].create(aOptions)
+    if (!isString(aType) || aType.trim().length == 0) {
+        throw new Error("GPT type must be a non-empty string.")
     }
+
+    var _type = aType.trim()
+    var _types = isMap(ow.ai.__gpttypes) ? Object.keys(ow.ai.__gpttypes) : []
+    var _impl = isMap(ow.ai.__gpttypes) ? ow.ai.__gpttypes[_type] : __
+
+    if (isUnDef(_impl)) {
+        var _msg = "Unrecognized GPT type '" + _type + "'."
+        if (_types.length > 0) {
+            _msg += " Available types: " + _types.join(", ")
+        }
+        throw new Error(_msg)
+    }
+
+    this.__type = _type
+    this.model = _impl.create(aOptions)
+    var _modelName = (isDef(this.model) && isFunction(this.model.getModelName)) ? this.model.getModelName() : __
+    if (isUnDef(_modelName) && isMap(aOptions) && isString(aOptions.model)) {
+        _modelName = aOptions.model
+    }
+    this.__modelName = _modelName
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.prototype.getType() : String</key>
+ * Returns the GPT provider type used to create this instance.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.getType = function() {
+    return this.__type
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.prototype.getModelName() : String</key>
+ * Returns the default model name configured for this GPT instance.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.getModelName = function() {
+    if (isDef(this.model) && isFunction(this.model.getModelName)) {
+        var _name = this.model.getModelName()
+        if (isDef(_name)) this.__modelName = _name
+    }
+    return this.__modelName
 }
 
 /**
