@@ -34,6 +34,7 @@ Use `$path` expressions in templates for dynamic data extraction, and leverage b
 - **AI/LLM Integration**: Multi-provider LLM support (OpenAI, Anthropic, Gemini, Ollama) with function calling and image processing
 - **Telemetry & Metrics**: Built-in metrics collection, OpenMetrics format support, and integration with monitoring systems
 - **Security Enhancements**: File integrity checking, authorized domains, and comprehensive audit trails
+- **Async Promises**: `$do` / `$doV` helpers build on `oPromise` for threaded or virtual-thread asynchronous execution with familiar `.then` / `.catch` chaining.【F:js/openaf.js†L13130-L13157】【F:js/openaf.js†L12145-L12163】【F:js/openaf.js†L12208-L12251】
 
 ---
 This index is intentionally minimal—open individual docs for full tables of contents.
