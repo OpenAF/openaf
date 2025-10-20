@@ -248,8 +248,18 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
-                        messages: msgs,
-                        response_format: (aOptions.noResponseFormat ? __ : (aJsonFlag  ? { type: "json_object" } : __))
+                        messages: msgs
+                    }
+                    // IMPORTANT: OpenAI JSON mode (response_format) cannot be combined with tool/function calling.
+                    // Only enable strict JSON mode when there are no tools requested.
+                    if (!aOptions.noResponseFormat && aJsonFlag && (!isArray(aTools) || aTools.length === 0)) {
+                        body.response_format = {
+                            type: "json_schema",
+                            json_schema: {
+                                name: "response",
+                                schema: { type: "object" }
+                            }
+                        }
                     }
                     body = merge(body, aOptions.params)
                     // Only include tools if there are any configured
@@ -626,6 +636,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                         generationConfig: {
                             temperature: aTemperature
                         }
+                    }
+                    if (aJsonFlag) {
+                        // For Gemini, setting responseMimeType to application/json is enough to encourage JSON output.
+                        // Do NOT set a default responseSchema. Gemini requires OBJECT schemas to have non-empty properties,
+                        // and an empty schema `{ type: "OBJECT" }` will trigger INVALID_ARGUMENT. If callers want a
+                        // structured schema, they can pass it via aOptions.params.generationConfig.responseSchema.
+                        body.generationConfig.responseMimeType = "application/json"
                     }
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
@@ -1205,27 +1222,46 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aTools       = _$(aTools, "aTools").isArray().default([])
 
                     _resetStats()
-                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
-                    var _incoming = isArray(aPrompt) ? aPrompt : [ aPrompt ]
-                    var _fullConversation = _r.conversation.concat(_incoming)
-                    var msgs = _fullConversation.map(c => isMap(c) ? c : { role: "user", content: c })
+                    // Always build messages as a valid array of objects with role and string content
+                    // This ensures consistent message formatting for the AI model
+                    // and simplifies the processing of messages later on.
+                    // Helper function to build message objects from various input formats
+                    var buildMsgObj = function(c) {
+                        if (isMap(c)) {
+                            let role = isDef(c.role) ? c.role : "user";
+                            let content = c.content;
+                            if (isArray(content)) content = content.map(x => isString(x) ? x : stringify(x, __, "")).join("\n");
+                            if (!isString(content)) content = stringify(content, __, "");
+                            return { role, content };
+                        } else {
+                            return { role: "user", content: String(c) };
+                        }
+                    };
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ];
+                    var _incoming = isArray(aPrompt) ? aPrompt : [ aPrompt ];
+                    var _fullConversation = _r.conversation.concat(_incoming);
+                    var msgs = _fullConversation.map(buildMsgObj);
 
-                    var systemMsgs = msgs.filter(m => m.role == "system")
-                    var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice())
+                    var systemMsgs = msgs.filter(m => m.role == "system");
+                    var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice());
 
                     if (aJsonFlag) {
-                        var _jsonInstruction = { role: "user", content: "output json" }
-                        bodyMessages.push(_jsonInstruction)
-                        msgs.push(_jsonInstruction)
+                        var _jsonInstruction = { role: "user", content: "output json" };
+                        bodyMessages.push(_jsonInstruction);
+                        msgs.push(_jsonInstruction);
                     }
 
-                    _r.conversation = msgs
+                    _r.conversation = msgs;
 
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
                         messages: bodyMessages
                     }
+                    // Note: Anthropic does not support response_format like OpenAI.
+                    // JSON output is controlled via system prompts and model behavior.
+                    // The aJsonFlag instruction is already added to messages above.
+                    
                     if (_noSystem && systemMsgs.length > 0) {
                         var _systemText = systemMsgs
                             .map(m => {
@@ -1681,7 +1717,21 @@ OpenWrap.ai.prototype.gpt.prototype.jsonPrompt = function(aPrompt, aModel, aTemp
     this.setInstructions("json")
 
     var out = this.model.prompt(aPrompt, aModel, aTemperature, true, tools)
-    return isString(out) ? jsonParse(out, __, __, true) : out 
+    return isString(out) ? jsonParse(out, __, __, true) : out
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.jsonPromptWithStats(aPrompt, aModel, aTemperature, tools) : Map</key>
+ * Executes jsonPrompt and returns the parsed response together with any reported statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.jsonPromptWithStats = function(aPrompt, aModel, aTemperature, tools) {
+    this.setInstructions("json")
+
+    var out = this.model.prompt(aPrompt, aModel, aTemperature, true, tools)
+    var parsed = isString(out) ? jsonParse(out, __, __, true) : out
+    return { response: parsed, stats: this.getLastStats() }
 }
 
 /**
@@ -1846,8 +1896,8 @@ OpenWrap.ai.prototype.gpt.prototype.codePrompt = function(aPrompt, aModel, aTemp
  * \
  * If aModel is not provided, it will try to get the model from the environment variable "OAF_MODEL" with the map in JSON or SLON format.
  * \
- * The returned object also exposes helper methods to inspect vendor usage information: `getLastStats`/`lastStats` (map with the latest statistics), `promptWithStats`
- * and `rawPromptWithStats` (returning `{ response, stats }`).
+ * The returned object also exposes helper methods to inspect vendor usage information: `getLastStats`/`lastStats` (map with the latest statistics), `promptWithStats`,
+ * `promptJSONWithStats` and `rawPromptWithStats` (returning `{ response, stats }`).
  * </odoc>
  */
 global.$gpt = function(aModel) {
@@ -1969,6 +2019,15 @@ global.$gpt = function(aModel) {
          */
         promptJSON: (aPrompt, aModel, aTemperature, tools) => {
             return _g.jsonPrompt(aPrompt, aModel, aTemperature, tools)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptJSONWithStats(aPrompt, aModel, aTemperature)</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a map with the parsed JSON response and statistics ({ response, stats }).
+         * </odoc>
+         */
+        promptJSONWithStats: (aPrompt, aModel, aTemperature, tools) => {
+            return _g.jsonPromptWithStats(aPrompt, aModel, aTemperature, tools)
         },
         /**
          * <odoc>

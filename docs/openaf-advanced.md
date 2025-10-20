@@ -100,7 +100,27 @@ Favor built-in job shortcuts `(if)`, `(repeat)`, `(each)`, `(parallel)` to minim
 - Adjust parallel heuristics: `ojob.flags.PFOREACH.*`
 - Prefer `execRequire` for large reusable code blocks vs inline duplicates
 
-## 14. Observability and Telemetry
+## 14. Asynchronous Execution with oPromise
+
+- **$do** – queue work on the standard ForkJoin-backed pool and receive an `oPromise` for fluent `.then` / `.catch` composition. The resolver passed into your function can resolve with returned values or explicit `resolve()` calls, while thrown errors or `reject()` calls route to the rejection chain.【F:js/openaf.js†L13130-L13157】【F:js/openaf.js†L12208-L12251】
+- **$doV** – same contract as `$do` but targets a virtual-thread-per-task executor so launching many concurrent tasks will not consume native threads when the JVM supports Project Loom virtual threads.【F:js/openaf.js†L12145-L12163】【F:js/openaf.js†L13148-L13157】
+- **Coordination helpers** – mix `$doAll` / `$doFirst` (wrappers over `oPromise.all()` / `.race()`) to wait for all tasks or the first completion, enabling fan-out/fan-in patterns without manual synchronization primitives.【F:js/openaf.js†L13159-L13179】【F:js/openaf.js†L12253-L12348】
+
+Example fan-out flow using virtual threads:
+
+```javascript
+var tasks = [url1, url2, url3].map(url =>
+  $doV(() => httpGet(url))
+);
+
+$doAll(tasks)
+  .then(results => log("Fetched: " + results.length))
+  .catch(err => logErr("HTTP error: " + err));
+```
+
+Combine with `$tb` or custom cancellation logic for cooperative shutdown when outstanding promises should be abandoned.
+
+## 15. Observability and Telemetry
 
 ### Metrics Collection and Exposure
 
@@ -258,7 +278,7 @@ jobs:
     }
 ```
 
-## 15. AI and Machine Learning Integration
+## 16. AI and Machine Learning Integration
 
 OpenAF provides comprehensive AI capabilities through `ow.ai` for both traditional ML and modern LLM integration.
 
@@ -492,7 +512,7 @@ function robustLLMCall(prompt, maxRetries = 3) {
 }
 ```
 
-## 16. Safe Dynamic Includes
+## 17. Safe Dynamic Includes
 Combine integrity hashes + authorized domains + change auditing flags. For local development disable with environment variable toggles but keep production strict.
 
 ---

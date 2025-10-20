@@ -2379,35 +2379,49 @@ function genpack(args) {
 
 var showhelp = (isUnDef(__opackParams)) ? 1 : 0;
 var verbfound = 0;
-var params = (isUnDef(__opackParams)) ? __expr.split(/ +/) : __opackParams.split(/ +/);
+//var params = (isUnDef(__opackParams)) ? __expr.split(/ +/) : __opackParams.split(/ +/);
+var params = isUnDef(__opackParams) ? processExpr(" ") : splitBySeparator(__opackParams, " ")
+
+var __adaptParams = obj => {
+	var _m = []
+	traverse(obj, (k, v, p, o) => {
+		if (isUnDef(v) || v == "") {
+			_m.push(k)
+		} else {
+			_m.push(k + "=" + stringify(v, __, ""))
+		}
+	})
+	return _m
+}
 
 // Check for existing verbs
 for(let i in verbs) {
 	if (verbfound) continue;
 
-	if (params[0] == i) {
-		params.splice(0, 1);
+	if (Object.keys(params)[0] == i) {
+		//params.splice(0, 1);
+		delete params[i]
 
 		verb = i;
 		var fnDone = () => log("Done.")
 
 		switch(verb) {
-			case 'info'           : __opack_info(params); break;
-			case 'install'        : log(af.toCSLON(install(params), true)); fnDone(); break;
-			case 'erase'          : log(af.toCSLON(erase(params), true)); fnDone(); break;
-			case 'list'           : __opack_list(params); break;
-			case 'genpack'        : genpack(params); fnDone(); break;
-			case 'pack'           : pack(params); fnDone(); break;
-			case 'add2db'         : add(params); fnDone(); break;
-			case 'remove4db'      : remove(params); fnDone(); break;
-			case 'add2remotedb'   : addCentral(params); fnDone(); break;
-			case 'remove4remotedb': removeCentral(params); fnDone(); break;
-			case 'script'         : __opack_script(params); break;
-			case 'daemon'         : __opack_script(params, true); break;
-			case 'ojob'           : __opack_script(params, false, true); break;
-			case 'search'         : __opack_search(params); break;
-			case 'update'         : log(af.toCSLON(update(params), true)); fnDone(); break;
-			case 'exec'           : __opack_exec(params); break;
+			case 'info'           : __opack_info(__adaptParams(params)); break;
+			case 'install'        : log(af.toCSLON(install(__adaptParams(params)), true)); fnDone(); break;
+			case 'erase'          : log(af.toCSLON(erase(__adaptParams(params)), true)); fnDone(); break;
+			case 'list'           : __opack_list(__adaptParams(params)); break;
+			case 'genpack'        : genpack(__adaptParams(params)); fnDone(); break;
+			case 'pack'           : pack(__adaptParams(params)); fnDone(); break;
+			case 'add2db'         : add(__adaptParams(params)); fnDone(); break;
+			case 'remove4db'      : remove(__adaptParams(params)); fnDone(); break;
+			case 'add2remotedb'   : addCentral(__adaptParams(params)); fnDone(); break;
+			case 'remove4remotedb': removeCentral(__adaptParams(params)); fnDone(); break;
+			case 'script'         : __opack_script(__adaptParams(params)); break;
+			case 'daemon'         : __opack_script(__adaptParams(params), true); break;
+			case 'ojob'           : __opack_script(__adaptParams(params), false, true); break;
+			case 'search'         : __opack_search(__adaptParams(params)); break;
+			case 'update'         : log(af.toCSLON(update(__adaptParams(params)), true)); fnDone(); break;
+			case 'exec'           : __opack_exec(__adaptParams(params)); break;
 			case 'help'           : showhelp = 1; showHelp(); break;
 		}
 
