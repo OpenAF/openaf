@@ -2388,7 +2388,7 @@ var __adaptParams = obj => {
 		if (isUnDef(v) || v == "") {
 			_m.push(k)
 		} else {
-			_m.push(k + "=\"" + v + "\"")
+			_m.push(k + "=" + stringify(v, __, ""))
 		}
 	})
 	return _m

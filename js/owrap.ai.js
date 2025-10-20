@@ -1223,6 +1223,9 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     _resetStats()
                     // Always build messages as a valid array of objects with role and string content
+                    // This ensures consistent message formatting for the AI model
+                    // and simplifies the processing of messages later on.
+                    // Helper function to build message objects from various input formats
                     var buildMsgObj = function(c) {
                         if (isMap(c)) {
                             let role = isDef(c.role) ? c.role : "user";
