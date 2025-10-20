@@ -119,6 +119,11 @@ log("Init build");
 var os = java.lang.System.getProperty("os.name") + "";
 var PATHSEPARATOR = (os.match(/Windows/)) ? ";" : ":";
 
+// Get Java version and determine if we need the unsafe memory access flag
+var javaVersion = Number(java.lang.System.getProperty("java.version").split(".")[0]);
+var javaUnsafeFlag = (javaVersion < 23) ? "--sun-misc-unsafe-memory-access=allow " : "";
+log("Java version detected: " + javaVersion + " (unsafe flag: " + (javaUnsafeFlag !== "" ? "enabled" : "disabled") + ")");
+
 var dateFormat = new java.text.SimpleDateFormat("yyyyMMdd");
 var release = (isDef(params.withVersion)) ? params.withVersion : dateFormat.format(new java.util.Date());
 
@@ -291,25 +296,23 @@ try {
 				}
 			}
 
-			if (doIt) {
-				log("-> Compiling " + file.filename);
-				var output = af.sh("java --sun-misc-unsafe-memory-access=allow -jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT_2019" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
-				log("<- Compiled  " + file.filename);
-				destjssha.files.push({
-					file: file.filename,
-					orig: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/js/" + file.filename)),
-					dest: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/jsmin/" + file.filename))
-				});
-				if (output.length > 0) log(file.filename + ": " + output);
-				if (__stderr.length > 0) {
-					if (__stderr.match(/ WARNING - /))
-						logWarn(file.filename + ": " + __stderr);
-					else
-						logErr(file.filename + ": " + __stderr);
-				}
+		if (doIt) {
+			log("-> Compiling " + file.filename);
+			var output = af.sh("java " + javaUnsafeFlag + "-jar " + OPENAF_BUILD_HOME + "/compiler.jar --language_out " + "ECMASCRIPT_2019" + " --env CUSTOM --strict_mode_input false --rewrite_polyfills false --js " + OPENAF_BUILD_HOME + "/js/" + file.filename + " --js_output_file " + OPENAF_BUILD_HOME + "/jsmin/" + file.filename, "", null, false);
+			log("<- Compiled  " + file.filename);
+			destjssha.files.push({
+				file: file.filename,
+				orig: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/js/" + file.filename)),
+				dest: sha1(io.readFileStream(OPENAF_BUILD_HOME + "/jsmin/" + file.filename))
+			});
+			if (output.length > 0) log(file.filename + ": " + output);
+			if (__stderr.length > 0) {
+				if (__stderr.match(/ WARNING - /))
+					logWarn(file.filename + ": " + __stderr);
+				else
+					logErr(file.filename + ": " + __stderr);
 			}
-
-			try {
+		}			try {
 				log("Compiling from minimized " + file.filename + "...");
 			  if (validationForCompile(file.filename))
 			    //af.compileToClasses(file.filename.replace(/\./g, "_"), io.readFileString(OPENAF_BUILD_HOME + "/jsmin/" + file.filename), OPENAF_BUILD_HOME + "/jslib");
