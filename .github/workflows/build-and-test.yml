@@ -20,7 +20,7 @@ jobs:
     - name: Cache OpenAF runtime
       uses: actions/cache@v4
       with:
-        key : oaf-t8
+        key : oaf
         path: /tmp/oaf
 
     # --------------
@@ -33,7 +33,7 @@ jobs:
       with:
         ojob: ojob.io/ojob/compile
         args: "source=ojob.yaml target=ojob.json"
-        dist: t8
+        #dist: t8
 
     # -------------
     - name: Checkin
@@ -43,7 +43,7 @@ jobs:
       with:
         ojob: ojob.io/git/hub/checkIn
         args: 'message="Update\ ojob.json"'
-        dist: t8
+        #dist: t8
 
     # --------------------
     - name: Setup Java JDK
@@ -96,7 +96,7 @@ jobs:
     - name: Setup Java JDK
       uses: actions/setup-java@v4
       with:
-        java-version: 21
+        java-version: 25
         distribution: 'temurin'
         
     # ----------------------------------
@@ -124,7 +124,7 @@ jobs:
     - name: Convert autoTestAll.md to html
       uses: openaf/ojob-action@v7
       with:
-        dist: t8
+        #dist: t8
         ojob: ojob.io/formats/md2html
         args: md=tests/autoTestAll.md html=tests/autoTestAll.html compact=true 
         
@@ -139,7 +139,7 @@ jobs:
     - name: Generate badges
       uses: openaf/ojob-action@v7
       with:
-        dist: t8
+        #dist: t8
         def : |
           todo:
           - (if    ): |
