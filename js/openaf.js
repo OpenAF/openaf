@@ -4714,13 +4714,15 @@ var $from = function(a) {
  * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
  * to_ms(date), timeagoAbbr(x)\
  * env(str), envs(regex)\
- * oafp(json/slon)\
+ * oafp(json/slon), oafpd(obj, json/slon)\
  * if(cond, then, else)\
  * assign(obj, path, value), assignp(objPathStr, path, value)\
  * random(min, max), srandom(min, max)\
  * at(arrayIndex)\
  * to_numSpace(num, space), from_numSpace(num, space)\
  * to_kyaml(obj), from_kyaml(str)\
+ * to_base64(str), from_base64(str)\
+ * to_xml(obj), from_xml(str)\
  * 
  * Functions only active if flag PATH_SAFE is false:\
  *   ojob(name, argsJSSLON)\
@@ -4999,6 +5001,14 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => af.fromYAML(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
+		to_xml: {
+			_func: ar => af.fromObj2XML(ar[0], __, ar[1]),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		from_xml: {
+			_func: ar => af.fromXML2Obj(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
 		to_kyaml: {
 			_func: ar => af.toKYAML(ar[0], ar[1], __, ar[2]),
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.boolean ] }, { types: [ jmespath.types.boolean ] } ]
@@ -5200,6 +5210,18 @@ const $path = function(aObj, aPath, customFunctions) {
 				return _r
 			}, 
 			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		oafpd: {
+			_func: ar => {
+				var _id = genUUID()
+				var _mp = merge({ out: "key", "__key": _id, data: ar[0] }, af.fromJSSLON(ar[1]))
+				loadOAFP()
+				oafp(_mp)
+				var _r = $get(_id)
+				$unset(_id)
+				return _r
+			},
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
 		},
 		ojob: {
 			_func: ar => {
