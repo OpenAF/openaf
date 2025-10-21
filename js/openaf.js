@@ -8219,7 +8219,7 @@ const $rest = function(ops) {
  * or with local processes using stdio. The aOptions parameter is a map with the following
  * possible keys:\
  * \
- * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio")\
+ * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio") or "dummy"\
  * - url (string): Required for remote servers - the endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string): Required for stdio type - the command to execute\
@@ -8432,6 +8432,22 @@ const $jsonrpc = function(aOptions) {
 		},
 		exec: (aMethod, aParams, aNotification) => {
 			switch(aOptions.type) {
+			case "dummy" :
+				aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
+				aMethod = _$(aMethod, "aMethod").isString().$_()
+				aParams = _$(aParams, "aParams").isMap().default({})
+
+				_debug("jsonrpc dummy -> " + stringify({ method: aMethod, params: aParams }, __, ""))
+				if (isMap(aOptions.options.fns)) {
+					if (isFunction(aOptions.options.fns[aMethod])) {
+						var _res = aOptions.options.fns[aMethod](aParams)
+						_debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
+						return _res
+					} else {
+						_debug("jsonrpc dummy <- " + stringify({ error: "Method not found" }, __, ""))
+						throw new Error("Method not found")
+					}
+				}
 			case "stdio" :
 				if (_r._cmd === false) {
 					if (isUnDef(aOptions.cmd)) {
@@ -8585,6 +8601,29 @@ const $mcp = function(aOptions) {
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 
+	if (aOptions.type == "dummy") {
+		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
+		aOptions.options.fns     = _$(aOptions.options.fns, "aOptions.options.fns").isMap().default({})
+		aOptions.options.fnsMeta = _$(aOptions.options.fnsMeta, "aOptions.options.fnsMeta").isMap().default({})
+
+		aOptions.options.fns["tools/list"] = params => {
+			return { 
+				tools: Object.keys(aOptions.options.fns)
+				       .filter(k => k != "tools/list" && k != "tools/call" && k != "initialize" && k != "notifications/initialized")
+				       .map(k => {
+					return aOptions.options.fnsMeta[k] || { name: k, description: "No description available" }
+				})
+			}
+		}
+		aOptions.options.fns["tools/call"] = params => {
+			return aOptions.options.fns[params.name](params.arguments)
+		}
+		aOptions.options.fns["initialize"] = params => {
+			return { }
+		}
+		aOptions.options.fns["notifications/initialized"] = params => {
+		}
+	}
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
 	
