@@ -2380,7 +2380,7 @@ function genpack(args) {
 var showhelp = (isUnDef(__opackParams)) ? 1 : 0;
 var verbfound = 0;
 //var params = (isUnDef(__opackParams)) ? __expr.split(/ +/) : __opackParams.split(/ +/);
-var params = isUnDef(__opackParams) ? processExpr(" ") : splitBySeparator(__opackParams, " ")
+var params = isUnDef(__opackParams) ? processExpr(" ") : processExpr(" ", __, __opackParams)
 
 var __adaptParams = obj => {
 	var _m = []
