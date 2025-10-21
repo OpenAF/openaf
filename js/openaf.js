@@ -5252,6 +5252,20 @@ const $path = function(aObj, aPath, customFunctions) {
 			},
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
 		},
+		from_base64: {
+			_func: ar => {
+				ow.loadFormat()
+				return ow.format.fromBase64(ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		to_base64: {
+			_func: ar => {
+				ow.loadFormat()
+				return ow.format.toBase64(ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
 		if: {
 			_func: ar => {
 				if (ar[0]) {
