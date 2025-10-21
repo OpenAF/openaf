@@ -4714,13 +4714,15 @@ var $from = function(a) {
  * ch(name, op, arg1, arg2), path(obj, jmespath), opath(jmespath)\
  * to_ms(date), timeagoAbbr(x)\
  * env(str), envs(regex)\
- * oafp(json/slon)\
+ * oafp(json/slon), oafpd(obj, json/slon)\
  * if(cond, then, else)\
  * assign(obj, path, value), assignp(objPathStr, path, value)\
  * random(min, max), srandom(min, max)\
  * at(arrayIndex)\
  * to_numSpace(num, space), from_numSpace(num, space)\
  * to_kyaml(obj), from_kyaml(str)\
+ * to_base64(str), from_base64(str)\
+ * to_xml(obj), from_xml(str)\
  * 
  * Functions only active if flag PATH_SAFE is false:\
  *   ojob(name, argsJSSLON)\
@@ -4999,6 +5001,14 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => af.fromYAML(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
+		to_xml: {
+			_func: ar => af.fromObj2XML(ar[0], __, ar[1]),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		from_xml: {
+			_func: ar => af.fromXML2Obj(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
 		to_kyaml: {
 			_func: ar => af.toKYAML(ar[0], ar[1], __, ar[2]),
 			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.boolean ] }, { types: [ jmespath.types.boolean ] } ]
@@ -5201,6 +5211,18 @@ const $path = function(aObj, aPath, customFunctions) {
 			}, 
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
+		oafpd: {
+			_func: ar => {
+				var _id = genUUID()
+				var _mp = merge({ out: "key", "__key": _id, data: ar[0] }, af.fromJSSLON(ar[1]))
+				loadOAFP()
+				oafp(_mp)
+				var _r = $get(_id)
+				$unset(_id)
+				return _r
+			},
+			_signature: [ { types: [ jmespath.types.any ] }, { types: [ jmespath.types.string ] } ]
+		},
 		ojob: {
 			_func: ar => {
 				if (!__flags.PATH_SAFE) {
@@ -5251,6 +5273,20 @@ const $path = function(aObj, aPath, customFunctions) {
 				}
 			},
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		from_base64: {
+			_func: ar => {
+				ow.loadFormat()
+				return ow.format.fromBase64(ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
+		to_base64: {
+			_func: ar => {
+				ow.loadFormat()
+				return ow.format.toBase64(ar[0])
+			},
+			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
 		if: {
 			_func: ar => {
@@ -8219,7 +8255,7 @@ const $rest = function(ops) {
  * or with local processes using stdio. The aOptions parameter is a map with the following
  * possible keys:\
  * \
- * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio")\
+ * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio") or "dummy"\
  * - url (string): Required for remote servers - the endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string): Required for stdio type - the command to execute\
@@ -8432,6 +8468,22 @@ const $jsonrpc = function(aOptions) {
 		},
 		exec: (aMethod, aParams, aNotification) => {
 			switch(aOptions.type) {
+			case "dummy" :
+				aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
+				aMethod = _$(aMethod, "aMethod").isString().$_()
+				aParams = _$(aParams, "aParams").isMap().default({})
+
+				_debug("jsonrpc dummy -> " + stringify({ method: aMethod, params: aParams }, __, ""))
+				if (isMap(aOptions.options.fns)) {
+					if (isFunction(aOptions.options.fns[aMethod])) {
+						var _res = aOptions.options.fns[aMethod](aParams)
+						_debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
+						return _res
+					} else {
+						_debug("jsonrpc dummy <- " + stringify({ error: "Method not found" }, __, ""))
+						throw new Error("Method not found")
+					}
+				}
 			case "stdio" :
 				if (_r._cmd === false) {
 					if (isUnDef(aOptions.cmd)) {
@@ -8585,6 +8637,29 @@ const $mcp = function(aOptions) {
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 
+	if (aOptions.type == "dummy") {
+		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
+		aOptions.options.fns     = _$(aOptions.options.fns, "aOptions.options.fns").isMap().default({})
+		aOptions.options.fnsMeta = _$(aOptions.options.fnsMeta, "aOptions.options.fnsMeta").isMap().default({})
+
+		aOptions.options.fns["tools/list"] = params => {
+			return { 
+				tools: Object.keys(aOptions.options.fns)
+				       .filter(k => k != "tools/list" && k != "tools/call" && k != "initialize" && k != "notifications/initialized")
+				       .map(k => {
+					return aOptions.options.fnsMeta[k] || { name: k, description: "No description available" }
+				})
+			}
+		}
+		aOptions.options.fns["tools/call"] = params => {
+			return aOptions.options.fns[params.name](params.arguments)
+		}
+		aOptions.options.fns["initialize"] = params => {
+			return { }
+		}
+		aOptions.options.fns["notifications/initialized"] = params => {
+		}
+	}
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
 	
