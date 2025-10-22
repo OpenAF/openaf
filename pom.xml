@@ -360,7 +360,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>com.github.mwiede</groupId>
       <artifactId>jsch</artifactId>
-      <version>2.27.2</version>
+      <version>2.27.4</version>
     </dependency>
     <dependency>
       <groupId>com.github.vertical-blank</groupId>
