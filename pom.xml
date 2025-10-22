@@ -180,7 +180,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>commons-net</groupId>
       <artifactId>commons-net</artifactId>
-      <version>3.11.1</version>
+      <version>3.12.0</version>
     </dependency>
     <dependency>
       <groupId>com.warrenstrange</groupId>
