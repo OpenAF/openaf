@@ -58,7 +58,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             <plugin>
               <groupId>org.codehaus.mojo</groupId>
               <artifactId>exec-maven-plugin</artifactId>
-              <version>3.5.1</version>
+              <version>3.6.2</version>
               <executions>
                 <execution>
                   <id>ojob-build</id>
