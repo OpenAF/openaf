@@ -15,7 +15,9 @@ OpenWrap.template = function() {
 };
 
 OpenWrap.template.prototype.__mdHTMLExtras = []
+OpenWrap.template.prototype.__mdHTMLPosExtras = []
 OpenWrap.template.prototype.__mdHTMLTExtras = []
+OpenWrap.template.prototype.__mdHTMLTPosExtras = []
 OpenWrap.template.prototype.__srcPath = {}
 
 OpenWrap.template.prototype.__requireHB = function() {
@@ -800,17 +802,105 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			    io.fileExists(getOPackPath("Mermaid")+"/mermaid.js")) loadLib("mermaid.js")
 			this.__templatemd = io.readFileString(getOpenAFJar() + "::hbs/md.hbs")
 		}
+
+		var _extras = [], _posextras = []
+		if (__flags.MD_CHART) {
+			_extras.push('<script src="/js/chart.js"></script>')
+			_posextras.push(`
+<script>
+(function () {
+  const selector = [
+    'pre > code.language-chartjs',
+    'pre > code.lang-chartjs',
+    'pre > code[class*="language-chartjs"]',
+    'pre > code.language-chart',
+    'pre > code.lang-chart',
+    'pre > code[class*="language-chart"]'
+  ].join(', ')
+
+  const blocks = Array.from(document.querySelectorAll(selector))
+  const charts = []  // keep references for resize updates
+
+  let uid = 0
+  for (const code of blocks) {
+    const pre = code.parentElement
+    const raw = code.textContent.trim()
+
+    // Create a responsive container
+    const wrap = document.createElement('div')
+    wrap.style.position = 'relative'
+    wrap.style.width = '90%'
+    wrap.style.maxWidth = 'min(1024px, 95vw)' // responsive max width
+    wrap.style.margin = '20px auto'
+    wrap.style.display = 'block'
+    wrap.style.textAlign = 'center'
+
+    const canvas = document.createElement('canvas')
+    canvas.id = \`chartjs-md-\${++uid}\`
+    wrap.appendChild(canvas)
+
+    pre.replaceWith(wrap)
+
+    let config
+    try {
+      config = JSON.parse(raw)
+    } catch (err) {
+      const errEl = document.createElement('pre')
+      errEl.textContent = 'Invalid Chart.js JSON:\\n' + err.message
+      wrap.replaceWith(errEl)
+      continue
+    }
+
+    if (!config || typeof config !== 'object' || !config.type || !config.data) {
+      const errEl = document.createElement('pre')
+      errEl.textContent = 'Chart.js config must include "type" and "data".'
+      wrap.replaceWith(errEl)
+      continue
+    }
+
+    // Make sure Chart.js is responsive
+    if (!config.options) config.options = {}
+    config.options.responsive = true
+    config.options.maintainAspectRatio ??= true
+
+    try {
+      const chart = new Chart(canvas.getContext('2d'), config)
+      charts.push(chart)
+    } catch (err) {
+      const errEl = document.createElement('pre')
+      errEl.textContent = 'Chart render error:\\n' + err.message
+      wrap.replaceWith(errEl)
+    }
+  }
+
+  // Redraw charts on window resize for full responsiveness
+  let resizeTimeout
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = setTimeout(() => {
+      charts.forEach(chart => chart.resize())
+    }, 150)
+  })
+})();
+</script>
+			`)
+		}
 		
-		var _extras = []
 		// Process trigger extras
 		ow.template.__mdHTMLTExtras.forEach(r => {
 			if (aMarkdownString.indexOf(r.t) >= 0) _extras.push(r.e)
+		})
+
+		// Process pos extras
+		ow.template.__mdHTMLPosExtras.forEach(r => {
+			if (aMarkdownString.indexOf(r.t) >= 0) _posextras.push(r.e)
 		})
 
 		return this.parse(this.__templatemd, {
 			markdown: converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">"),
 			noMaxWidth: removeMaxWidth,
 			extras: _extras,
+			posextras: _posextras,
 			mdcodeclip: __flags.MD_CODECLIP,
 			themeauto: __flags.MD_DARKMODE == "auto" && !forceDark,
 			themedark: __flags.MD_DARKMODE == "true" || forceDark
