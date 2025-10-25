@@ -8259,7 +8259,7 @@ const $rest = function(ops) {
  * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio") or "dummy"\
  * - url (string): Required for remote servers - the endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
- * - cmd (string): Required for stdio type - the command to execute\
+ * - cmd (string|map|array): Required for stdio type - the command to execute or the map/array accepted by $sh\
  * - options (map): Additional options passed to $rest for remote connections\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
  * - shared (boolean): Share connections between identical configurations (default: false)\
@@ -8334,6 +8334,15 @@ const $jsonrpc = function(aOptions) {
 		return _wrap
 	}
 
+	const _normalizeShareValue = value => {
+		if (isMap(value)) {
+			return sortMapKeys(value, true)
+		} else if (Array.isArray(value)) {
+			return value.map(item => _normalizeShareValue(item))
+		}
+		return value
+	}
+
 	const _getShareKey = () => {
 		if (!aOptions.shared) return __
 		var _payload
@@ -8341,6 +8350,11 @@ const $jsonrpc = function(aOptions) {
 			_payload = {
 				type: "stdio",
 				cmd: aOptions.cmd
+			}
+		} else if (isMap(aOptions.cmd) || Array.isArray(aOptions.cmd)) {
+			_payload = {
+				type: "stdio",
+				cmd: _normalizeShareValue(aOptions.cmd)
 			}
 		} else if (isString(aOptions.url)) {
 			_payload = {
