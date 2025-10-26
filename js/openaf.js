@@ -8296,30 +8296,26 @@ const $rest = function(ops) {
  * localClient.destroy();\
  * </odoc>
  */
-const $jsonrpc = function(aOptions) {
+const $jsonrpc = function (aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
 	// debug = true will print JSON requests and responses using print()
 	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
 	aOptions.shared = _$(aOptions.shared, "aOptions.shared").isBoolean().default(false)
+	var _main_id = genUUID()
 
-	const _createSharedWrapper = (entry, key) => {
+	/*const _createSharedWrapper = (entry, key) => {
 		var _destroyed = false
 		const _wrap = {
-			type: type => {
-				entry.base.type(type)
-				return _wrap
+			type: () => _wrap,
+			url : () => _wrap,
+			sh  : () => _wrap,
+			exec: (aMethod, aParams, aNotification) => {
+				print("DEBUG!!! " + entry.count)
+				_debug("jsonrpc SHARED -> " + stringify({ method: aMethod, params: aParams }, __, ""))
+				return entry.base.exec(aMethod, aParams, aNotification)
 			},
-			url: url => {
-				entry.base.url(url)
-				return _wrap
-			},
-			sh: cmd => {
-				entry.base.sh(cmd)
-				return _wrap
-			},
-			exec: (aMethod, aParams, aNotification) => entry.base.exec(aMethod, aParams, aNotification),
 			destroy: () => {
 				if (_destroyed) return
 				_destroyed = true
@@ -8332,9 +8328,10 @@ const $jsonrpc = function(aOptions) {
 		}
 		entry.count = (entry.count || 0) + 1
 		return _wrap
-	}
+	}*/
 
 	const _getShareKey = () => {
+		// Generate a unique key based on connection options
 		if (!aOptions.shared) return __
 		var _payload
 		if (isString(aOptions.cmd)) {
@@ -8347,6 +8344,8 @@ const $jsonrpc = function(aOptions) {
 				type: "remote",
 				url: aOptions.url
 			}
+		} else {
+			_payload = clone(jsonParse(stringify(aOptions, __, "")))
 		}
 		if (isUnDef(_payload)) return __
 		if (isDef(aOptions.options)) {
@@ -8354,12 +8353,15 @@ const $jsonrpc = function(aOptions) {
 		} else {
 			_payload.options = {}
 		}
-		return md5(stringify(sortMapKeys(_payload, true)))
+		return md5(stringify(sortMapKeys(_payload, true), __, ""))
 	}
 
+	_main_id = genUUID()
 	const _shareKey = _getShareKey()
 	if (isDef(_shareKey) && isDef(__jsonrpcSharedConnections[_shareKey])) {
-		return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
+		//return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
+		__jsonrpcSharedConnections[_shareKey]._copies.inc()
+		return __jsonrpcSharedConnections[_shareKey]
 	}
 
 	const _debug = m => {
@@ -8368,22 +8370,23 @@ const $jsonrpc = function(aOptions) {
 
 	const _r = {
 		_ids: $atomic(1, "long"),
-		_p  : __,
-		_s  : false,
+		_p: __,
+		_s: false,
 		_cmd: false,
-		_sy : $sync(),
-		_q  : {},
-		_r  : {},
+		_sy: $sync(),
+		_q: {},
+		_r: {},
+		_copies: $atomic(0, "long"),
 		type: type => {
 			aOptions.type = type
 			return _r
 		},
-		url : url => {
+		url: url => {
 			aOptions.url = url
 			aOptions.type = "remote"
 			return _r
 		},
-		sh  : cmd => {
+		sh: cmd => {
 			var _go = false
 			_r._sy.run(() => {
 				if (_r._cmd == false) {
@@ -8403,59 +8406,59 @@ const $jsonrpc = function(aOptions) {
 					_r._s = false
 					_debug("jsonrpc threadbox started " + nowNano())
 					var _resh = $sh(cmd)
-					            .exitcb(function(p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { return "" } })
-								.cb((o, e, i) => {
-									_debug("jsonrpc process started")
-									$doWait($doAll(
-										[
-											// in stream
-											$do(() => {
-												$await("__jsonrpc_" + md5(cmd)).notifyAll()
-												do {
-													var _id = _r._ids.get()
-													$await("__jsonrpc_q-" + _id).wait()
-													if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
-														var _m = {
-															jsonrpc: "2.0",
-															id: _id,
-															method: _r._q[_id].method,
-															params: _r._q[_id].params
-														}
-														if (_r._q[_id].__notify) {
-															delete _m.id
-														}
-														var msg = stringify(_m, __, "") + "\n"
-														_debug("jsonrpc -> " + msg)
-														ioStreamWrite(i, msg)
-														i.flush()
-														delete _r._q[_id]
-														_r._ids.inc()
-													}
-													$await("__jsonrpc_q-" + _id).destroy()
-													$await("__jsonrpc_r-" + _id).notify()
-												} while(!_r._s)
-											}),
-											// out stream
-											$do(() => {
-												do {
-													var _id = _r._ids.get()
-													$await("__jsonrpc_r-" + _id).wait()
-													ioStreamReadLines(o, line => {
-														_debug("jsonrpc <- " + line)
-														var _l = jsonParse(line)
-														_r._r[_l.id] = _l
-														$await("__jsonrpc_a-" + _l.id).notify()
-														$await("__jsonrpc_r-" + _id).destroy()
-														return false
-													}, __, false)
-													o.flush()
-												} while(!_r._s)
-											})
-										]
-									))
-									_debug("jsonrpc process ended")
-								})
-								.get()
+						.exitcb(function (p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { return "" } })
+						.cb((o, e, i) => {
+							_debug("jsonrpc process started")
+							$doWait($doAll(
+								[
+									// in stream
+									$do(() => {
+										$await("__jsonrpc_" + _main_id).notifyAll()
+										do {
+											var _id = _r._ids.get()
+											$await("__jsonrpc_q-" + _id + "-" + _main_id).wait()
+											if (isMap(_r._q[_id]) && isDef(_r._q[_id].method)) {
+												var _m = {
+													jsonrpc: "2.0",
+													id: _id,
+													method: _r._q[_id].method,
+													params: _r._q[_id].params
+												}
+												if (_r._q[_id].__notify) {
+													delete _m.id
+												}
+												var msg = stringify(_m, __, "") + "\n"
+												_debug("jsonrpc -> " + msg)
+												ioStreamWrite(i, msg)
+												i.flush()
+												delete _r._q[_id]
+												_r._ids.inc()
+											}
+											$await("__jsonrpc_q-" + _id + "-" + _main_id).destroy()
+											$await("__jsonrpc_r-" + _id + "-" + _main_id).notify()
+										} while (!_r._s)
+									}),
+									// out stream
+									$do(() => {
+										do {
+											var _id = _r._ids.get()
+											$await("__jsonrpc_r-" + _id + "-" + _main_id).wait()
+											ioStreamReadLines(o, line => {
+												_debug("jsonrpc <- " + line)
+												var _l = jsonParse(line)
+												_r._r[_l.id] = _l
+												$await("__jsonrpc_a-" + _l.id + "-" + _main_id).notify()
+												$await("__jsonrpc_r-" + _id + "-" + _main_id).destroy()
+												return false
+											}, __, false)
+											o.flush()
+										} while (!_r._s)
+									})
+								]
+							))
+							_debug("jsonrpc process ended")
+						})
+						.get()
 					_debug("jsonrpc process ended: " + af.toSLON(_resh))
 				}).stopWhen(() => _r._s && (isDef(_prts) && !_prts.isAlive())).exec()
 				_debug("jsonrpc threadbox: " + af.toSLON(_rtb))
@@ -8463,102 +8466,111 @@ const $jsonrpc = function(aOptions) {
 				_debug("jsonrpc process error: " + e)
 				$err(e)
 			})
-			$await("__jsonrpc_" + md5(cmd)).wait()
+			$await("__jsonrpc_" + _main_id).wait()
 			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
 		exec: (aMethod, aParams, aNotification) => {
-			switch(aOptions.type) {
-			case "dummy" :
-				aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
-				aMethod = _$(aMethod, "aMethod").isString().$_()
-				aParams = _$(aParams, "aParams").isMap().default({})
+			switch (aOptions.type) {
+				case "dummy":
+					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
+					aMethod = _$(aMethod, "aMethod").isString().$_()
+					aParams = _$(aParams, "aParams").isMap().default({})
 
-				_debug("jsonrpc dummy -> " + stringify({ method: aMethod, params: aParams }, __, ""))
-				if (isMap(aOptions.options.fns)) {
-					if (isFunction(aOptions.options.fns[aMethod])) {
-						var _res = aOptions.options.fns[aMethod](aParams)
-						_debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
-						return _res
+					_debug("jsonrpc dummy -> " + stringify({ method: aMethod, params: aParams }, __, ""))
+					if (isMap(aOptions.options.fns)) {
+						if (isFunction(aOptions.options.fns[aMethod])) {
+							var _res = aOptions.options.fns[aMethod](aParams)
+							_debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
+							return _res
+						} else {
+							_debug("jsonrpc dummy <- " + stringify({ error: "Method not found" }, __, ""))
+							throw new Error("Method not found")
+						}
+					}
+					return __
+				case "stdio":
+					if (_r._cmd === false) {
+						if (isUnDef(aOptions.cmd)) {
+							throw new Error("Command is not defined")
+						}
+						_r.sh(aOptions.cmd)
+					}
+					var _id = _r._ids.get()
+					_r._q[_id] = {
+						method: _$(aMethod, "aMethod").isString().$_(),
+						params: _$(aParams, "aParams").isMap().default({}),
+						__notify: !!aNotification
+					}
+
+					var _res
+					// for stdio concorrency is not supported by nature so we use locks and awaits to
+					// serialize requests and responses
+					$lock("__jsonrpc_q-" + _id + "-" + _main_id).tryLock(() => {
+						$await("__jsonrpc_q-" + _id + "-" + _main_id).notifyAll()
+						// If this is a notification (no reply expected) skip waiting for a response
+						if (!!aNotification) {
+							// cleanup waiter and return undefined
+							$await("__jsonrpc_a-" + _id + "-" + _main_id).destroy()
+							return
+						}
+						$await("__jsonrpc_a-" + _id + "-" + _main_id).wait(aOptions.timeout)
+					})
+					if (isMap(_r._r[_id])) {
+						_res = _r._r[_id]
+						delete _r._r[_id]
+					}
+					return isDef(_res) && isDef(_res.result) ? _res.result : _res
+				case "remote":
+				default:
+					_$(aOptions.url, "aOptions.url").isString().$_()
+					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
+					aMethod = _$(aMethod, "aMethod").isString().$_()
+					aParams = _$(aParams, "aParams").isMap().default({})
+
+					var _req = {
+						jsonrpc: "2.0",
+						method: aMethod,
+						params: aParams
+					}
+					// If not a notification attach an id
+					if (!aNotification) {
+						_req.id = aOptions.id || _r._ids.inc()
 					} else {
-						_debug("jsonrpc dummy <- " + stringify({ error: "Method not found" }, __, ""))
-						throw new Error("Method not found")
+						delete _req.id
 					}
-				}
-			case "stdio" :
-				if (_r._cmd === false) {
-					if (isUnDef(aOptions.cmd)) {
-						throw new Error("Command is not defined")
+					_debug("jsonrpc -> " + stringify(_req, __, ""))
+					var res = $rest(aOptions.options).post(aOptions.url, _req)
+					// Notifications do not expect a reply
+					if (!!aNotification) return
+					_debug("jsonrpc <- " + stringify(res, __, ""))
+					if (isDef(res)) {
+						if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
+						if (isDef(res.result)) return res.result
 					}
-					_r.sh(aOptions.cmd)
-				}
-				var _id = _r._ids.get()
-				_r._q[_id] = {
-					method: _$(aMethod, "aMethod").isString().$_(),
-					params: _$(aParams, "aParams").isMap().default({}),
-					__notify: !!aNotification
-				}
-
-				var _res
-				// for stdio concorrency is not supported by nature so we use locks and awaits to
-				// serialize requests and responses
-				$lock("__jsonrpc_q-" + _id).tryLock(() => {
-					$await("__jsonrpc_q-" + _id).notifyAll()
-					// If this is a notification (no reply expected) skip waiting for a response
-					if (!!aNotification) {
-						// cleanup waiter and return undefined
-						$await("__jsonrpc_a-" + _id).destroy()
-						return
-					}
-					$await("__jsonrpc_a-" + _id).wait(aOptions.timeout)
-				})
-				if (isMap(_r._r[_id])) {
-					_res = _r._r[_id]
-					delete _r._r[_id]
-				}
-				return isDef(_res) && isDef(_res.result) ? _res.result : _res
-			case "remote":
-			default      :
-				_$(aOptions.url, "aOptions.url").isString().$_()
-				aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
-				aMethod = _$(aMethod, "aMethod").isString().$_()
-				aParams = _$(aParams, "aParams").isMap().default({})
-
-				var _req = {
-					jsonrpc: "2.0",
-					method: aMethod,
-					params: aParams
-				}
-				// If not a notification attach an id
-				if (!aNotification) {
-					_req.id = aOptions.id || _r._ids.inc()
-				} else {
-					delete _req.id
-				}
-				_debug("jsonrpc -> " + stringify(_req, __, ""))
-				var res = $rest(aOptions.options).post(aOptions.url, _req)
-				// Notifications do not expect a reply
-				if (!!aNotification) return
-				_debug("jsonrpc <- " + stringify(res, __, ""))
-				if (isDef(res)) {
-					if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
-					if (isDef(res.result)) return res.result
-				}
+					return __
 			}
 		},
 		destroy: () => {
+			if (_r._copies.get() > 0) {
+				_r._copies.dec()
+				return
+			}
 			_r._s = true
 			if (isDef(_r._p)) {
 				$doWait(_r._p)
 			}
 		}
-}
+	}
 	if (isDef(_shareKey)) {
 		if (isDef(__jsonrpcSharedConnections[_shareKey]) && __jsonrpcSharedConnections[_shareKey].base !== _r) {
-			return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
+			//return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
+			__jsonrpcSharedConnections[_shareKey]._copies.inc()
+			return __jsonrpcSharedConnections[_shareKey]
 		}
-		__jsonrpcSharedConnections[_shareKey] = { base: _r, count: 0 }
-		return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
+		//__jsonrpcSharedConnections[_shareKey] = { base: _r, count: 0 }
+		__jsonrpcSharedConnections[_shareKey] = _r
+		//return _createSharedWrapper(__jsonrpcSharedConnections[_shareKey], _shareKey)
 	}
 	return _r
 }

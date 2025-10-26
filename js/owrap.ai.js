@@ -2107,7 +2107,7 @@ global.$gpt = function(aModel) {
             }
 
             var toolsList = aMcpClient.listTools()
-            if (!isArray(toolsList.tools)) {
+            if (isUnDef(toolsList) || !isArray(toolsList.tools)) {
                 throw new Error("Unable to retrieve tools from MCP client")
             }
 
