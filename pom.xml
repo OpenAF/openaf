@@ -53,12 +53,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
+                <version>3.14.1</version>
             </plugin>
             <plugin>
               <groupId>org.codehaus.mojo</groupId>
               <artifactId>exec-maven-plugin</artifactId>
-              <version>3.5.1</version>
+              <version>3.6.2</version>
               <executions>
                 <execution>
                   <id>ojob-build</id>
@@ -165,7 +165,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.18.0</version>
+      <version>3.19.0</version>
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
@@ -180,7 +180,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>commons-net</groupId>
       <artifactId>commons-net</artifactId>
-      <version>3.11.1</version>
+      <version>3.12.0</version>
     </dependency>
     <dependency>
       <groupId>com.warrenstrange</groupId>
@@ -360,7 +360,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>com.github.mwiede</groupId>
       <artifactId>jsch</artifactId>
-      <version>2.27.2</version>
+      <version>2.27.4</version>
     </dependency>
     <dependency>
       <groupId>com.github.vertical-blank</groupId>

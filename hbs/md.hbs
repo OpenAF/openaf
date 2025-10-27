@@ -57,5 +57,8 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', eve
 {{#if themedark}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{#if themeauto}}<script>if (__isDark) document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{#if mdcodeclip}}<script src="/js/mdcodeclip.js"></script>{{/if}}
+{{#each posextras}}
+{{{this}}}
+{{/each}}
 </body>
 </html>
