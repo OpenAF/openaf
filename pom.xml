@@ -329,8 +329,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-stdlib</artifactId>
-      <version>2.2.20</version>
+      <artifactId>kotlin-stdlib</artifactId><version>2.2.21</version>
     </dependency>
     <dependency>
       <groupId>com.squareup.okio</groupId>
@@ -359,8 +358,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     </dependency>
     <dependency>
       <groupId>com.github.mwiede</groupId>
-      <artifactId>jsch</artifactId>
-      <version>2.27.4</version>
+      <artifactId>jsch</artifactId><version>2.27.5</version>
     </dependency>
     <dependency>
       <groupId>com.github.vertical-blank</groupId>
