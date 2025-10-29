@@ -251,15 +251,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                         messages: msgs
                     }
                     // IMPORTANT: OpenAI JSON mode (response_format) cannot be combined with tool/function calling.
-                    // Only enable strict JSON mode when there are no tools requested.
+                    // Only enable JSON mode when there are no tools requested.
+                    // Default to the broadly-compatible 'json_object' mode and allow params to override.
                     if (!aOptions.noResponseFormat && aJsonFlag && (!isArray(aTools) || aTools.length === 0)) {
-                        body.response_format = {
-                            type: "json_schema",
-                            json_schema: {
-                                name: "response",
-                                schema: { type: "object" }
-                            }
-                        }
+                        body.response_format = { type: "json_object" }
                     }
                     body = merge(body, aOptions.params)
                     // Only include tools if there are any configured
@@ -288,6 +283,19 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isDef(body.tools)) delete body.tools
                     }
                     var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
+                    // If OpenAI rejects a provided json_schema for missing properties, retry with json_object
+                    if (isMap(_res) && isMap(_res.error)) {
+                        var _msg = "" + (isDef(_res.error.message) ? _res.error.message : _res.error)
+                        var _rf = isMap(body.response_format) ? body.response_format : __
+                        var _isSchema = isMap(_rf) && _rf.type === "json_schema"
+                        var _missingProps = _msg.indexOf("Invalid schema for response_format") >= 0 || _msg.indexOf("object schema missing properties") >= 0
+                        // Only retry when we attempted json_schema and no tools are in play
+                        if (_isSchema && _missingProps && (!isArray(body.tools) || body.tools.length === 0)) {
+                            var _retryBody = clone(body)
+                            _retryBody.response_format = { type: "json_object" }
+                            _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", _retryBody)
+                        }
+                    }
                     if (isDef(_res) && isArray(_res.choices)) {
                         // call tools
                         var _p = [], stopWith = false
