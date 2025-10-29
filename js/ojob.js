@@ -113,8 +113,18 @@ if (kparams.indexOf("-i") >= 0 && params["-i"] == "") {
 //}
 
 if (kparams.length >= 1 && ojob_shouldRun) {
-	ojob_runFile();
+	ojob_runFile()
+
+	// If errors occurred exit with error code = number of failed jobs
+	var _c = 0
+	$ch("oJob::log").forEach((k, v) => {
+		if (v.start && v.error) _c++
+	})
+	if (_c > 0) exit(_c)
 }
+
+// FUNCTIONS
+// ---------
 
 function ojob_showHelp() {
 	print("Usage: ojob aYamlFile.yaml/json [options]\n");
