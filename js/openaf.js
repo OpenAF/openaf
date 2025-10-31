@@ -8420,7 +8420,7 @@ const $jsonrpc = function (aOptions) {
 					_r._s = false
 					_debug("jsonrpc threadbox started " + nowNano())
 					var _resh = $sh(cmd)
-						.exitcb(function (p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { return "" } })
+						.exitcb(function (p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { sleep(250, true); return "" } })
 						.cb((o, e, i) => {
 							_debug("jsonrpc process started")
 							$doWait($doAll(
