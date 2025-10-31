@@ -8663,6 +8663,7 @@ const $mcp = function(aOptions) {
 	aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default(__)
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
+	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2024-11-05")
 
 	if (aOptions.type == "dummy") {
 		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
@@ -8682,7 +8683,7 @@ const $mcp = function(aOptions) {
 			return aOptions.options.fns[params.name](params.arguments)
 		}
 		aOptions.options.fns["initialize"] = params => {
-			return { }
+			return { protocolVersion: "2024-11-05" }
 		}
 		aOptions.options.fns["notifications/initialized"] = params => {
 		}
@@ -8708,9 +8709,9 @@ const $mcp = function(aOptions) {
 		initialize: (clientInfo) => {
 			clientInfo = _$(clientInfo, "clientInfo").isMap().default({})
 			clientInfo = merge(aOptions.clientInfo, clientInfo)
-			
+
 			var initResult = _jsonrpc.exec("initialize", {
-				protocolVersion: "2024-11-05",
+				protocolVersion: aOptions.protocolVersion,
 				capabilities: {
 					sampling: {}
 				},
