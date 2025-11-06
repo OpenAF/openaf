@@ -8358,6 +8358,10 @@ const $jsonrpc = function (aOptions) {
 				type: "remote",
 				url: aOptions.url
 			}
+		} else if (aOptions.type == "dummy" || aOptions.type == "ojob") {
+			_payload = {
+				type   : "dummy"
+			}
 		} else {
 			_payload = clone(jsonParse(stringify(aOptions, __, "")))
 		}
