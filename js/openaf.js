@@ -8593,20 +8593,40 @@ const $jsonrpc = function (aOptions) {
  * <odoc>
  * <key>$mcp(aOptions) : Map</key>
  * Creates a Model Context Protocol (MCP) client that can communicate with LLM MCP servers
- * using JSON-RPC over stdio or remote connections. This client implements the MCP protocol
+ * using JSON-RPC over stdio, remote connections, dummy mode, or oJob-based servers. This client implements the MCP protocol
  * version 2024-11-05 and provides access to tools, prompts, and other MCP capabilities.
  * \
  * The aOptions parameter is a map with the following possible keys:\
  * \
- * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio")\
+ * - type (string): Connection type - "stdio" for local process, "remote" for HTTP server, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
  * - url (string): Required for remote servers - the MCP server endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string): Required for stdio type - the command to launch the MCP server\
- * - options (map): Additional options passed to underlying JSON-RPC client\
+ * - options (map): Additional options:\
+ *   - For remote/stdio: passed to underlying JSON-RPC client\
+ *   - For dummy: { fns: map of function implementations, fnsMeta: map of function metadata }\
+ *   - For ojob: { job: path to oJob file, args: arguments map, init: init entry/entries to run, fns: map of additional functions, fnsMeta: map of additional function metadata }\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
  * - shared (boolean): Enable shared JSON-RPC connections when possible (default: false)\
  * - strict (boolean): Enable strict MCP protocol compliance (default: true)\
  * - clientInfo (map): Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})\
+ * - preFn (function): Function called before each tool execution with (toolName, toolArguments)\
+ * - posFn (function): Function called after each tool execution with (toolName, toolArguments, result)\
+ * \
+ * Type-specific details:\
+ * \
+ * "dummy" type: Creates a local testing MCP server without external processes.\
+ * - Use options.fns to define tool implementations as functions\
+ * - Use options.fnsMeta to define tool metadata (description, input schema)\
+ * - Useful for development and testing without running actual MCP servers\
+ * \
+ * "ojob" type: Creates an MCP server based on oJob jobs as tools.\
+ * - options.job (required): Path to the oJob file containing job definitions\
+ * - options.args: Arguments to pass to the oJob\
+ * - options.init: Init entry name(s) to execute on startup (string or array)\
+ * - Jobs with fnsMeta property become MCP tools automatically\
+ * - Job names become tool names (except "tools/list", "tools/call", "initialize", "notifications/initialized")\
+ * - Combines oJob's job execution with MCP protocol\
  * \
  * The returned client object provides these methods:\
  * \
@@ -8618,6 +8638,7 @@ const $jsonrpc = function (aOptions) {
  * - callTool(toolName, toolArguments): Execute a specific tool with given arguments\
  * - listPrompts(): Get list of available prompts from the MCP server\
  * - getPrompt(promptName, promptArguments): Get a specific prompt with given arguments\
+ * - toGptTools(aGptInstance, aToolNames): Add MCP tools to a $gpt instance\
  * - exec(method, params): Low-level method to execute any MCP/JSON-RPC method\
  * - destroy(): Stop the client and cleanup resources\
  * \
@@ -8644,8 +8665,40 @@ const $jsonrpc = function (aOptions) {
  * remoteClient.initialize();\
  * var prompts = remoteClient.listPrompts();\
  * \
+ * // Dummy mode for testing\
+ * var dummyClient = $mcp({\
+ *   type: "dummy",\
+ *   options: {\
+ *     fns: {\
+ *       "test_tool": (params) => ({ result: "test" })\
+ *     },\
+ *     fnsMeta: {\
+ *       "test_tool": {\
+ *         description: "A test tool",\
+ *         inputSchema: { type: "object", properties: {} }\
+ *       }\
+ *     }\
+ *   }\
+ * });\
+ * dummyClient.initialize();\
+ * dummyClient.callTool("test_tool", {});\
+ * \
+ * // oJob-based MCP server\
+ * var ojobClient = $mcp({\
+ *   type: "ojob",\
+ *   options: {\
+ *     job: "mytools.yaml",\
+ *     args: { env: "prod" },\
+ *     init: "setup"\
+ *   }\
+ * });\
+ * ojobClient.initialize();\
+ * var jobTools = ojobClient.listTools();\
+ * \
  * client.destroy();\
  * remoteClient.destroy();\
+ * dummyClient.destroy();\
+ * ojobClient.destroy();\
  * </odoc>
  */
 const $mcp = function(aOptions) {
@@ -8665,7 +8718,80 @@ const $mcp = function(aOptions) {
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2024-11-05")
 
-	if (aOptions.type == "dummy") {
+	if (aOptions.type == "ojob") {
+		ow.loadOJob()
+		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
+		aOptions.options.job     = _$(aOptions.options.job, "aOptions.options.job").isString().$_()
+		aOptions.options.args    = _$(aOptions.options.args, "aOptions.options.args").isMap().default({})
+		aOptions.options.fns     = _$(aOptions.options.fns, "aOptions.options.fns").isMap().default({})
+		aOptions.options.fnsMeta = _$(aOptions.options.fnsMeta, "aOptions.options.fnsMeta").isMap().default({})
+		aOptions.options.init    = _$(aOptions.options.init, "aOptions.options.init").default(__)
+
+		// Load jobs from the oJob 
+		var fnsMeta = {}, fns = {}
+		var jobsData = ow.oJob.loadJobs(aOptions.options.job, aOptions.options.args)
+
+		// Run init entries if any
+		if (isDef(aOptions.options.init)) {
+			if (isString(aOptions.options.init)) {
+				aOptions.options.init = [ aOptions.options.init ]
+			}
+			if (isArray(aOptions.options.init)) {
+				aOptions.options.init.forEach(initEntry => $job(initEntry, aOptions.options.args))
+			}
+		}
+
+		// Extract fnsMeta and fns
+		if (isObject(jobsData)) {
+			// fnsMeta
+			var fMeta = searchKeys(jobsData, "fnsMeta")
+			if (isMap(fMeta)) {
+				var kfMeta = Object.keys(fMeta).filter(k => k.match(/fnsMeta/))
+				if (kfMeta.length > 0) {
+					fnsMeta = fMeta[kfMeta[0]]
+				} else {
+					throw new Error("No functions found in oJob fnsMeta data loaded from " + aOptions.options.job)
+				}
+			} else {
+				throw new Error("Invalid oJob fnsMeta data loaded from " + aOptions.options.job)
+			}
+			// fns
+			var fFns = searchKeys(jobsData, "fns")
+			if (isMap(fFns)) {
+				var kfns = Object.keys(fFns).filter(k => k.match(/fns[^M]/))
+				if (kfns.length > 0) {
+					fns = fFns[kfns[0]]
+				} else {
+					throw new Error("No functions found in oJob fns data loaded from " + aOptions.options.job)
+				}
+			} else {
+				throw new Error("Invalid oJob fns data loaded from " + aOptions.options.job)
+			}
+		} else {
+			throw new Error("Invalid oJob data loaded from " + aOptions.options.job)
+		}
+
+		aOptions.type = "dummy"
+		aOptions.options.fnsMeta = fnsMeta
+		aOptions.options.fns["tools/list"] = params => {
+			return { 
+				tools: Object.keys(fns)
+				       .filter(k => k != "tools/list" && k != "tools/call" && k != "initialize" && k != "notifications/initialized")
+				       .map(k => {
+					return fnsMeta[k] || { name: k, description: "No description available" }
+				})
+			}
+		}
+		aOptions.options.fns["tools/call"] = params => {
+			return $job(fns[params.name], params.arguments)
+		}
+		aOptions.options.fns["initialize"] = params => {
+			return { protocolVersion: "2024-11-05" }
+		}
+		aOptions.options.fns["notifications/initialized"] = params => {
+			return {}
+		}
+	} else if (aOptions.type == "dummy") {
 		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
 		aOptions.options.fns     = _$(aOptions.options.fns, "aOptions.options.fns").isMap().default({})
 		aOptions.options.fnsMeta = _$(aOptions.options.fnsMeta, "aOptions.options.fnsMeta").isMap().default({})
@@ -8686,6 +8812,7 @@ const $mcp = function(aOptions) {
 			return { protocolVersion: "2024-11-05" }
 		}
 		aOptions.options.fns["notifications/initialized"] = params => {
+			return {}
 		}
 	}
 	// Create underlying JSON-RPC client
