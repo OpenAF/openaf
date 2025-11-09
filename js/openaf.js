@@ -238,17 +238,17 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		wordWrapLimitFactor: 2,
 		bandRows           : true
 	},
-        CONSOLE: {
-                view: "tree"
-        },
-        JSONRPC: {
-                cmd: {
-                        defaultDir: "."
-                }
-        },
-        IO: {
-                bufferSize: 1024
-        },
+	CONSOLE: {
+		view: "tree"
+	},
+	JSONRPC: {
+		cmd: {
+			defaultDir: "."
+		}
+	},
+	IO: {
+		bufferSize: 1024
+	},
 	ALTERNATIVES: {
 		traverse : true,
 		extend   : true,
@@ -8365,7 +8365,7 @@ const $jsonrpc = function (aOptions) {
 			}
 		} else if (aOptions.type == "dummy" || aOptions.type == "ojob") {
 			_payload = {
-				type   : "dummy"
+				type: "dummy"
 			}
 		} else {
 			_payload = clone(jsonParse(stringify(aOptions, __, "")))
@@ -8387,62 +8387,62 @@ const $jsonrpc = function (aOptions) {
 		return __jsonrpcSharedConnections[_shareKey]
 	}
 
-        const _debug = m => {
-                if (aOptions.debug) printErr(ansiColor("yellow,BOLD", "DEBUG: ") + ansiColor("yellow", m))
-        }
+	const _debug = m => {
+		if (aOptions.debug) printErr(ansiColor("yellow,BOLD", "DEBUG: ") + ansiColor("yellow", m))
+	}
 
-        const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
+	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
 
-        const _r = {
-                _ids: $atomic(1, "long"),
-                _p: __,
-                _s: false,
-                _cmd: false,
-                _sy: $sync(),
-                _q: {},
-                _r: {},
-                _pwd: _defaultCmdDir,
-                _copies: $atomic(0, "long"),
-                type: type => {
-                        aOptions.type = type
-                        return _r
-                },
+	const _r = {
+		_ids: $atomic(1, "long"),
+		_p: __,
+		_s: false,
+		_cmd: false,
+		_sy: $sync(),
+		_q: {},
+		_r: {},
+		_pwd: _defaultCmdDir,
+		_copies: $atomic(0, "long"),
+		type: type => {
+			aOptions.type = type
+			return _r
+		},
 		url: url => {
-                        aOptions.url = url
-                        aOptions.type = "remote"
-                        return _r
-                },
-                pwd: aPath => {
-                        _r._pwd = aPath
-                        return _r
-                },
-                sh: cmd => {
-                        var _go = false
-                        _r._sy.run(() => {
-                                if (_r._cmd == false) {
-                                        _r._cmd = true
+			aOptions.url = url
+			aOptions.type = "remote"
+			return _r
+		},
+		pwd: aPath => {
+			_r._pwd = aPath
+			return _r
+		},
+		sh: cmd => {
+			var _go = false
+			_r._sy.run(() => {
+				if (_r._cmd == false) {
+					_r._cmd = true
 					_go = true
 				}
 			})
 			if (!_go) return _r
 
-                        aOptions.cmd = cmd
-                        aOptions.type = "stdio"
-                        if (isDef(_r._p)) return _r
-                        var _prts
+			aOptions.cmd = cmd
+			aOptions.type = "stdio"
+			if (isDef(_r._p)) return _r
+			var _prts
 
-                        _r._p = $doV(() => {
-                                var _rtb = $tb(() => {
-                                        _r._s = false
-                                        _debug("jsonrpc threadbox started " + nowNano())
-                                        var _cmdRunner = $sh(cmd)
-                                        if (isDef(_r._pwd)) _cmdRunner.pwd(_r._pwd)
-                                        var _resh = _cmdRunner
-                                                .exitcb(function (p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { sleep(250, true); return "" } })
-                                                .cb((o, e, i) => {
-                                                        _debug("jsonrpc process started")
-                                                        $doWait($doAll(
-                                                                [
+			_r._p = $doV(() => {
+				var _rtb = $tb(() => {
+					_r._s = false
+					_debug("jsonrpc threadbox started " + nowNano())
+					var _cmdRunner = $sh(cmd)
+					if (isDef(_r._pwd)) _cmdRunner.pwd(_r._pwd)
+					var _resh = _cmdRunner
+						.exitcb(function (p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { sleep(250, true); return "" } })
+						.cb((o, e, i) => {
+							_debug("jsonrpc process started")
+							$doWait($doAll(
+								[
 									// in stream
 									$do(() => {
 										$await("__jsonrpc_" + _main_id).notifyAll()
