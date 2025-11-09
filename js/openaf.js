@@ -241,6 +241,11 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	CONSOLE: {
 		view: "tree"
 	},
+	JSONRPC: {
+		cmd: {
+			defaultDir: "."
+		}
+	},
 	IO: {
 		bufferSize: 1024
 	},
@@ -8360,7 +8365,7 @@ const $jsonrpc = function (aOptions) {
 			}
 		} else if (aOptions.type == "dummy" || aOptions.type == "ojob") {
 			_payload = {
-				type   : "dummy"
+				type: "dummy"
 			}
 		} else {
 			_payload = clone(jsonParse(stringify(aOptions, __, "")))
@@ -8386,6 +8391,8 @@ const $jsonrpc = function (aOptions) {
 		if (aOptions.debug) printErr(ansiColor("yellow,BOLD", "DEBUG: ") + ansiColor("yellow", m))
 	}
 
+	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
+
 	const _r = {
 		_ids: $atomic(1, "long"),
 		_p: __,
@@ -8394,6 +8401,7 @@ const $jsonrpc = function (aOptions) {
 		_sy: $sync(),
 		_q: {},
 		_r: {},
+		_pwd: _defaultCmdDir,
 		_copies: $atomic(0, "long"),
 		type: type => {
 			aOptions.type = type
@@ -8402,6 +8410,10 @@ const $jsonrpc = function (aOptions) {
 		url: url => {
 			aOptions.url = url
 			aOptions.type = "remote"
+			return _r
+		},
+		pwd: aPath => {
+			_r._pwd = aPath
 			return _r
 		},
 		sh: cmd => {
@@ -8423,7 +8435,9 @@ const $jsonrpc = function (aOptions) {
 				var _rtb = $tb(() => {
 					_r._s = false
 					_debug("jsonrpc threadbox started " + nowNano())
-					var _resh = $sh(cmd)
+					var _cmdRunner = $sh(cmd)
+					if (isDef(_r._pwd)) _cmdRunner.pwd(_r._pwd)
+					var _resh = _cmdRunner
 						.exitcb(function (p) { _prts = p; if (_r._s) { _debug("jsonrpc force stopping"); pidKill(p.pid(), true); return "force" } else { sleep(250, true); return "" } })
 						.cb((o, e, i) => {
 							_debug("jsonrpc process started")
