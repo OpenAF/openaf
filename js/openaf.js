@@ -8736,6 +8736,8 @@ const $mcp = function(aOptions) {
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2024-11-05")
 
+	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
+
 	if (aOptions.type == "ojob") {
 		ow.loadOJob()
 		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
@@ -8747,7 +8749,7 @@ const $mcp = function(aOptions) {
 
 		// Load jobs from the oJob 
 		var fnsMeta = {}, fns = {}
-		var jobsData = ow.oJob.loadJobs(aOptions.options.job, aOptions.options.args)
+		var jobsData = ow.oJob.loadJobs(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job, aOptions.options.args)
 
 		// Run init entries if any
 		if (isDef(aOptions.options.init)) {
