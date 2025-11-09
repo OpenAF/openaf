@@ -226,8 +226,8 @@
 		},
 		{
 			"description": "Apache Commons Lang",
-			"path": ["lib/commons-lang3-3.18.0.jar"],
-			"version": "3.18.0",
+			"path": ["lib/commons-lang3-3.19.0.jar"],
+			"version": "3.19.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
@@ -251,10 +251,10 @@
 			"license": "https://raw.githubusercontent.com/licenses/license-templates/master/templates/apache.txt",
 			"deps": []
 		},
-          {
-                  "description": "OkHTTP Client",
-                  "path": ["okhttp-5.2.1.jar", "okhttp-jvm-5.2.1.jar", "okio-3.16.2.jar", "okio-jvm-3.16.2.jar", "kotlin-stdlib-2.2.20.jar"],
-                  "version": "5.2.1",
+		{
+			"description": "OkHTTP Client",
+			"path": ["okhttp-5.3.0.jar", "okhttp-jvm-5.3.0.jar", "okio-3.16.2.jar", "okio-jvm-3.16.2.jar", "kotlin-stdlib-2.2.21.jar"],
+			"version": "5.3.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://github.com/square/okhttp/blob/master/LICENSE.txt",
@@ -262,8 +262,8 @@
 		},
 	   {
 		   "description": "Oracle JDBC 23",
-		   "path": ["lib/ojdbc11-23.9.0.25.07.jar"],
-		   "version": "23.9.0.25.07",
+		   "path": ["lib/ojdbc17-23.26.0.0.0.jar"],
+		   "version": "23.26.0.0.0",
 			"changes": false,
 			"type": ["java"],
 			"license": "Check https://www.oracle.com/webapps/maven/register/license.html",
@@ -334,8 +334,8 @@
 		},
 	   {
 		   "description": "Jackson Core",
-		   "path": ["lib/jackson-core-2.20.0.jar"],
-		   "version": "2.20.0",
+		   "path": ["lib/jackson-core-2.20.1.jar"],
+		   "version": "2.20.1",
 			"changes": false,
 			"type": ["java"],
 			"license": "https://raw.githubusercontent.com/FasterXML/jackson-core/master/LICENSE",
@@ -455,7 +455,7 @@
 				"lib/commons-io-2.20.0.jar"
 			],
 			"deps": [
-				"lib/jsch-2.27.2.jar",
+				"lib/jsch-2.27.5.jar",
 				"lib/jsch.agentproxy.connector-factory-0.0.9.jar",
 				"lib/jsch.agentproxy.core-0.0.9.jar",
 				"lib/jsch.agentproxy.jsch-0.0.9.jar",
@@ -503,7 +503,7 @@
 			"name": "Oracle",
 			"removable": true,
 			"deps": [
-				"lib/ojdbc11-23.9.0.25.07.jar"
+				"lib/ojdbc17-23.26.0.0.0.jar"
 			]
 		},
 		{

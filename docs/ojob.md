@@ -1761,6 +1761,15 @@ jobs:
     // Job logic here
 ```
 
+- **Adding a shortcut to an existing job**
+  1. Add a `typeArgs.shortcut` map to the job you want to expose through shortcut syntax.
+  2. Set `name` to the identifier that will become `(name)` in the `todo` list.
+  3. Use `keyArg` when you want the unnamed value after `(name)` to feed a specific job argument.
+  4. Map each named shortcut argument `((arg))` to the underlying job argument in the `args` map.
+  5. Configure optional fields such as `nolog: true` to inherit additional behaviour.
+
+  Refer to [`docs/ojob-all.yaml`](./ojob-all.yaml) for the complete structure of `typeArgs.shortcut`, including optional fields like `nolog` and detailed comments about each entry. A practical example lives in [`ojob.yaml`](../ojob.yaml) where the `ojob pass` job publishes the `(pass)` shortcut by mapping its `__args`, `__debug`, and `__templateArgs` parameters so they can be provided directly from shortcut notation.
+
 Usage in todo:
 ```yaml
 todo:

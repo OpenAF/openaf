@@ -1757,6 +1757,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
     _$(fnsMeta, "fnsMeta").isArray().$_()
     _$(fns, "fns").isMap().$_()
     initData = merge({
+        protocolVersion: "2024-11-05",
         serverInfo: {
             name: "OpenAF",
             title: "OpenAF Server",
