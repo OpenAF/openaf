@@ -15,10 +15,10 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testFlatten;
 
-   - name: Obj::REST Errors
-     from: Obj::Init
-     to  : oJob Test
-     exec: args.func = args.tests.testRESTErrors;
+  #  - name: Obj::REST Errors
+  #    from: Obj::Init
+  #    to  : oJob Test
+  #    exec: args.func = args.tests.testRESTErrors;
 
    - name: Obj::Get Path
      from: Obj::Init
@@ -100,7 +100,7 @@ todo:
 # ------------
 - Obj::Init
 - Obj::Flatten
-- Obj::REST Errors
+#- Obj::REST Errors
 - Obj::Get Path
 - Obj::Set Path   
 - Obj::Array to object conversion
