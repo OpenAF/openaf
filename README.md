@@ -95,6 +95,20 @@ Just delete the original empty folder where you executed the install command.
 * [OpenAF oPromises](https://docs.openaf.io/docs/concepts/OpenAF-oPromise.html)
 <!--* [Code tips & tricks](Tips-&-tricks)-->
 
+### Repository documentation
+
+* [Documentation index](docs/index.md)
+* [OpenAF overview](docs/openaf.md)
+* [Advanced OpenAF features](docs/openaf-advanced.md)
+* [Command-line flags](docs/openaf-flags.md)
+* [oJob overview](docs/ojob.md)
+* [oJob reference catalog](docs/ojob-all.yaml)
+* [oJob security guidance](docs/ojob-security.md)
+* [oJob recipes](docs/ojob-recipes.md)
+* [LLM integration guide](docs/llm-guide.md)
+* [OpenAF AI GPT types](docs/ow-ai-gpttypes.md)
+* Additional developer notes in [docs/dev/](docs/dev/)
+
 ## Building
 
 After cloning the repository locally execute: 
