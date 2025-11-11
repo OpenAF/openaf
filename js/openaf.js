@@ -12022,8 +12022,8 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 				c = String(_con.readChar("")).charCodeAt(0)
 				if (c == 91 || c == 79) {
 					c = String(_con.readChar("")).charCodeAt(0)
-					if (c == 66 && option < anArray.length - 1) option++
-					if (c == 65 && option > 0) option--
+					if (c == 66) option = (option + 1) % anArray.length
+					if (c == 65) option = (option - 1 + anArray.length) % anArray.length
 				}
 			} else {
 				if (c == 127) {
@@ -12129,8 +12129,8 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 				c = String(_con.readChar("")).charCodeAt(0)
 				if (c == 91 || c == 79) {
 					c = String(_con.readChar("")).charCodeAt(0)
-					if (c == 66 && option < anArray.length - 1) option++
-					if (c == 65 && option > 0) option--
+					if (c == 66) option = (option + 1) % anArray.length
+					if (c == 65) option = (option - 1 + anArray.length) % anArray.length
 				}
 			} else if (c == 32) {
 				aSelectMap.set(anArray[option], !aSelectMap.get(anArray[option]))
