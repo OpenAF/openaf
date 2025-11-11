@@ -11985,11 +11985,11 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
 		printErr("\x1B[?25l" + _v)
 
-		let option = 0, firstTime = true, span = 0
-		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
-		ow.loadFormat()
-		let _print = () => {
-			if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
+                let option = 0, firstTime = true, span = 0, cancelled = false
+                let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
+                ow.loadFormat()
+                let _print = () => {
+                        if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
 			var _o = anArray
 					 .map((l, i) => {
 						if (i >= span && i - span < aMaxDisplay) {
@@ -12012,39 +12012,57 @@ const askChoose = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 			print(_o)
 		}
 
-		let c = 0
-		do {
-			_print()
-			var _c = _con.readChar("")
-			c = String(_c).charCodeAt(0)
-			if (c == 27) {
-				filter = ""
-				c = String(_con.readChar("")).charCodeAt(0)
-				if (c == 91 || c == 79) {
-					c = String(_con.readChar("")).charCodeAt(0)
-					if (c == 66 && option < anArray.length - 1) option++
-					if (c == 65 && option > 0) option--
-				}
-			} else {
-				if (c == 127) {
-					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
-				} else {
-					if (c >= 32 && c < 255) filter += _c
+                let c = 0
+                do {
+                        _print()
+                        var _c = _con.readChar("")
+                        c = String(_c).charCodeAt(0)
+                        if (c == 27) {
+                                filter = ""
+                                let nextC = _con.readCharNB()
+                                if (nextC == -2) { try { sleep(10) } catch(e) {} nextC = _con.readCharNB() }
+                                if (nextC == -1 || nextC == -2) {
+                                        cancelled = true
+                                        break
+                                }
+                                c = nextC
+                                if (c == 91 || c == 79) {
+                                        c = String(_con.readChar("")).charCodeAt(0)
+                                        if (anArray.length > 0) {
+                                                if (c == 66) option = (option + 1) % anArray.length
+                                                if (c == 65) option = (option - 1 + anArray.length) % anArray.length
+                                        }
+                                } else {
+                                        cancelled = true
+                                        break
+                                }
+                        } else {
+                                if (c == 127) {
+                                        if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
+                                } else {
+                                        if (c >= 32 && c < 255) filter += _c
 				}
 				if (filter.length > 0) {
 					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 				}
 			}
-		} while (c != 13 && c != 10)
-		ow.format.string.ansiMoveUp(aMaxDisplay)
-		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
-		ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		printErrnl(repeat(_v.length, " ") + "\r")
-		printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
-		ow.format.string.ansiMoveUp(2)
-		printErr("\x1B[?25h\n")
+                } while (!cancelled && c != 13 && c != 10)
+                ow.format.string.ansiMoveUp(aMaxDisplay)
+                printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize, " ")).join("\n"))
+                ow.format.string.ansiMoveUp(aMaxDisplay+1)
+                printErrnl(repeat(_v.length, " ") + "\r")
+                if (cancelled) {
+                        const cancelMsg = aPrompt + (aPrompt.endsWith(" ") ? "" : " ") + "[cancelled]"
+                        printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askQuestion, cancelMsg))
+                        ow.format.string.ansiMoveUp(2)
+                        printErr("\x1B[?25h\n")
+                        return __
+                }
+                printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, anArray[option]) + "]")
+                ow.format.string.ansiMoveUp(2)
+                printErr("\x1B[?25h\n")
 
-		return option
+                return option
 	} else {
 		throw "Choose options not supported on the current terminal."
 	}
@@ -12092,10 +12110,10 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 		var _v = ansiColor(__colorFormat.askPre, "? ") + ansiColor(__colorFormat.askQuestion, aPrompt) + " " + aHelpText
 		printErr("\x1B[?25l" + _v)
 
-		let option = 0, firstTime = true, span = 0
-		let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
-		let _print = () => {
-			if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
+                let option = 0, firstTime = true, span = 0, cancelled = false
+                let maxSpace = anArray.reduce((a, b) => { return a.length > b.length ? a : b }).length
+                let _print = () => {
+                        if (option > (aMaxDisplay-2)) span = option - aMaxDisplay + 1; else span = 0
 			var _o = anArray
 					 .map((l, i) => {
 						if (i >= span && i - span < aMaxDisplay) {
@@ -12119,24 +12137,35 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 			printErr(_o)
 		}
 
-		let c = 0
-		do {
-			_print()
-			var _c = _con.readChar("")
-			c = String(_c).charCodeAt(0)
-			if (c == 27) {
-				filter = ""
-				c = String(_con.readChar("")).charCodeAt(0)
-				if (c == 91 || c == 79) {
-					c = String(_con.readChar("")).charCodeAt(0)
-					if (c == 66 && option < anArray.length - 1) option++
-					if (c == 65 && option > 0) option--
-				}
-			} else if (c == 32) {
-				aSelectMap.set(anArray[option], !aSelectMap.get(anArray[option]))
-			} else {
-				if (c == 127) {
-					if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
+                let c = 0
+                do {
+                        _print()
+                        var _c = _con.readChar("")
+                        c = String(_c).charCodeAt(0)
+                        if (c == 27) {
+                                filter = ""
+                                let nextC = _con.readCharNB()
+                                if (nextC == -2) { try { sleep(10) } catch(e) {} nextC = _con.readCharNB() }
+                                if (nextC == -1 || nextC == -2) {
+                                        cancelled = true
+                                        break
+                                }
+                                c = nextC
+                                if (c == 91 || c == 79) {
+                                        c = String(_con.readChar("")).charCodeAt(0)
+                                        if (anArray.length > 0) {
+                                                if (c == 66) option = (option + 1) % anArray.length
+                                                if (c == 65) option = (option - 1 + anArray.length) % anArray.length
+                                        }
+                                } else {
+                                        cancelled = true
+                                        break
+                                }
+                        } else if (c == 32) {
+                                aSelectMap.set(anArray[option], !aSelectMap.get(anArray[option]))
+                        } else {
+                                if (c == 127) {
+                                        if (filter.length > 0) filter = filter.substring(0, filter.length - 1)
 				} else {
 					if (c > 32 && c < 255) filter += _c
 				}
@@ -12144,20 +12173,28 @@ const askChooseMultiple = (aPrompt, anArray, aMaxDisplay, aHelpText) => {
 					option = anArray.findIndex(v => v.toLowerCase().indexOf(filter.toLowerCase()) >= 0)
 				}
 			}
-		} while (c != 13 && c != 10)
-		ow.format.string.ansiMoveUp(aMaxDisplay)
-		printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
-		ow.format.string.ansiMoveUp(aMaxDisplay+1)
-		printErrnl(repeat(_v.length, " ") + "\r")
+                } while (!cancelled && c != 13 && c != 10)
+                ow.format.string.ansiMoveUp(aMaxDisplay)
+                printErr(range(aMaxDisplay).map(r => repeat(maxSpace + chooseDirSize + chooseMultipleSize, " ")).join("\n"))
+                ow.format.string.ansiMoveUp(aMaxDisplay+1)
+                printErrnl(repeat(_v.length, " ") + "\r")
 
-		let options = []
-		aSelectMap.forEach((v, k) => { if (v) options.push(k) })
-		printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
+                if (cancelled) {
+                        const cancelMsg = aPrompt + (aPrompt.endsWith(" ") ? "" : " ") + "[cancelled]"
+                        printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askQuestion, cancelMsg))
+                        ow.format.string.ansiMoveUp(2)
+                        printErr("\x1B[?25h\n")
+                        return __
+                }
 
-		ow.format.string.ansiMoveUp(2)
-		printErr("\x1B[?25h\n")
+                let options = []
+                aSelectMap.forEach((v, k) => { if (v) options.push(k) })
+                printErr("\n\x1b[1A\x1b[0G" + ansiColor(__colorFormat.askPos, "\u2713") + " " + aPrompt + "[" + ansiColor(__colorFormat.string, options.join(", ") ) + "]")
 
-		return options
+                ow.format.string.ansiMoveUp(2)
+                printErr("\x1B[?25h\n")
+
+                return options
 	} else {
 		throw "Choose options not supported on the current terminal."
 	}
