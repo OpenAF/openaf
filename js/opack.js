@@ -1961,6 +1961,14 @@ function update(args) {
 		log(_msg)
 		var packag = getPackage(_pack)
 
+		// Get original installation path for update
+		var originalInstallPath
+		var origPackForUpdate = findLocalDBByName(_pack)
+		if (isDef(origPackForUpdate) && isDef(origPackForUpdate.__target)) {
+			originalInstallPath = origPackForUpdate.__target
+			log("Found existing installation at: " + originalInstallPath)
+		}
+
 		if (!isUnDef(packag) &&
 			(typeof packag.name == 'undefined' ||
 			packag.__filelocation == 'local'))
@@ -2009,7 +2017,12 @@ function update(args) {
 				logWarn("Can't update!")
 				_stats.failed++
 			} else {
-				var otherStats = install([_pack])
+				var installArgs = [_pack]
+				if (isDef(originalInstallPath)) {
+					installArgs.push("-d")
+					installArgs.push(originalInstallPath)
+				}
+				var otherStats = install(installArgs)
 				if (isDef(otherStats)) {
 					_stats.updated += otherStats.installed
 					_stats.failed += otherStats.failed
@@ -2025,7 +2038,12 @@ function update(args) {
 			_stats.erasedToUpdate += otherStats.erased
 			_stats.failed += otherStats.failed
 		}
-		var otherStats = install([_pack])
+		var installArgs = [_pack]
+		if (isDef(originalInstallPath)) {
+			installArgs.push("-d")
+			installArgs.push(originalInstallPath)
+		}
+		var otherStats = install(installArgs)
 		if (isDef(otherStats)) {
 			_stats.updated += otherStats.installed
 			_stats.failed += otherStats.failed
