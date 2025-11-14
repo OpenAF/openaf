@@ -27,23 +27,62 @@ OpenWrap.net.prototype.getPublicIP = function(aIPAddress) {
 
 /**
  * <odoc>
- * <key>ow.net.getActualTime(useAlternative) : Date</key>
- * Retrieves the current actual time from worldtimeapi.org (through https). The current actual time will be returned in a Date.
- * If useAlternative = true it will use worldclockapi.com (through http)
+ * <key>ow.net.getActualTime(aServer, aTimeout) : Date</key>
+ * Retrieves the current actual time from NTP servers. The current actual time will be returned in a Date.
+ * If aServer is provided, it will use that specific server, otherwise it will try multiple public NTP servers
+ * in sequence: 'pool.ntp.org', 'time.google.com', 'time-a.nist.gov', 'europe.pool.ntp.org'.
+ * aTimeout is optional and defaults to 5000ms.
  * </odoc>
  */
-OpenWrap.net.prototype.getActualTime = function(useAlternative) {
-	plugin("HTTP");
+OpenWrap.net.prototype.getActualTime = function(aServer, aTimeout) {
+	var NTPUDPClient = Packages.org.apache.commons.net.ntp.NTPUDPClient
+	var InetAddress  = Packages.java.net.InetAddress
 
-	if (useAlternative) {
-		//var h = ow.loadObj();
-		//return new Date(ow.obj.rest.jsonGet("http://now.postman-echo.com").now.epoch * 1000);
-		return new Date((1000 * ($rest().get("http://worldclockapi.com/api/json/utc/now").currentFileTime / 10000000 - 11644473600)));
+	aTimeout = _$(aTimeout, "aTimeout").isNumber().default(5000)
+
+	var servers = []
+	if (isDef(aServer)) {
+		servers = [aServer]
 	} else {
-		//plugin("XML");
-		//return new Date((new XML((new HTTP("https://nist.time.gov/actualtime.cgi")).response())).get("@time")/1000);
-		return new Date($rest().get("https://worldtimeapi.org/api/ip").unixtime * 1000);
+		servers = ["pool.ntp.org", "time.google.com", "time-a.nist.gov", "europe.pool.ntp.org"]
 	}
+
+	var lastError
+	for (var i = 0; i < servers.length; i++) {
+		var server = servers[i]
+		var client = new NTPUDPClient()
+		client.setDefaultTimeout(aTimeout)
+
+		try {
+			var address = InetAddress.getByName(server)
+			var info = client.getTime(address)
+
+			info.computeDetails()
+			var offset = info.getOffset()
+
+			if (offset === null || isNaN(offset)) {
+				throw "No valid offset returned by NTP server: " + server
+			}
+
+			var systemTime = java.lang.System.currentTimeMillis()
+			var correctedTime = systemTime + Number(offset)
+
+			if (isNaN(correctedTime)) {
+				throw "Invalid corrected time calculated from NTP server: " + server
+			}
+
+			return new Date(correctedTime)
+		} catch(e) {
+			lastError = e
+		} finally {
+			try {
+				client.close()
+			} catch(e2) {}
+		}
+	}
+
+	// If all servers failed, throw the last error
+	throw "Failed to get time from any NTP server. Last error: " + lastError
 }
 
 /**
