@@ -1,0 +1,50 @@
+# Copyright 2025 Nuno Aguiar
+
+include:
+   - oJobTest.yaml
+
+jobs:
+   # Net tests
+   # ---------
+   - name: Net::Init
+     exec: args.tests = require("autoTestAll.Net.js");
+
+   - name: Net::Load Net
+     from: Net::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testLoadNet;
+
+   - name: Net::Get Actual Time (default)
+     from: Net::Init
+     to  : oJob Test
+     deps:
+       - Net::Load Net
+     exec: args.func = args.tests.testGetActualTimeDefault;
+
+   - name: Net::Get Actual Time (with server)
+     from: Net::Init
+     to  : oJob Test
+     deps:
+       - Net::Load Net
+     exec: args.func = args.tests.testGetActualTimeWithServer;
+
+   - name: Net::Get Actual Time (with timeout)
+     from: Net::Init
+     to  : oJob Test
+     deps:
+       - Net::Load Net
+     exec: args.func = args.tests.testGetActualTimeWithTimeout;
+
+   - name: Net::Get Actual Time (server and timeout)
+     from: Net::Init
+     to  : oJob Test
+     deps:
+       - Net::Load Net
+     exec: args.func = args.tests.testGetActualTimeServerAndTimeout;
+
+todo:
+   - Net::Load Net
+   - Net::Get Actual Time (default)
+   - Net::Get Actual Time (with server)
+   - Net::Get Actual Time (with timeout)
+   - Net::Get Actual Time (server and timeout)

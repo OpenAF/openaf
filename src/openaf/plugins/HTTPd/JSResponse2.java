@@ -78,6 +78,7 @@ public class JSResponse2 extends Response {
 					String stackTrace = sw.toString();
 
 					SimpleLog.log(logtype.ERROR, "HTTPd error on request=" + AFCmdBase.jse.stringify(json, null, "").toString() + " with exception=" + e.getMessage() + " | " + e.getClass(), e);
+					e.printStackTrace();
 				}
 			}
 			
