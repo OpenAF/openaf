@@ -66,7 +66,8 @@ var verbs = {
  	},
  	"remove4db": {
  		"help"        : "Remove a package entry from the local OpenPack database",
- 		"optionshelp" : []
+ 		"optionshelp" : ["Provide the path to the entry to remove.",
+		                  "'-i'       : Remove package entries interactively.",]
 	},
 	"script": {
 		"help"        : "Creates a shell script, on the current path, to execute a opack (--script)"
@@ -1961,6 +1962,14 @@ function update(args) {
 		log(_msg)
 		var packag = getPackage(_pack)
 
+		// Get original installation path for update
+		var originalInstallPath
+		var origPackForUpdate = findLocalDBByName(_pack)
+		if (isDef(origPackForUpdate) && isDef(origPackForUpdate.__target)) {
+			originalInstallPath = origPackForUpdate.__target
+			log("Found existing installation at: " + originalInstallPath)
+		}
+
 		if (!isUnDef(packag) &&
 			(typeof packag.name == 'undefined' ||
 			packag.__filelocation == 'local'))
@@ -2009,7 +2018,12 @@ function update(args) {
 				logWarn("Can't update!")
 				_stats.failed++
 			} else {
-				var otherStats = install([_pack])
+				var installArgs = [_pack]
+				if (isDef(originalInstallPath)) {
+					installArgs.push("-d")
+					installArgs.push(originalInstallPath)
+				}
+				var otherStats = install(installArgs)
 				if (isDef(otherStats)) {
 					_stats.updated += otherStats.installed
 					_stats.failed += otherStats.failed
@@ -2025,7 +2039,12 @@ function update(args) {
 			_stats.erasedToUpdate += otherStats.erased
 			_stats.failed += otherStats.failed
 		}
-		var otherStats = install([_pack])
+		var installArgs = [_pack]
+		if (isDef(originalInstallPath)) {
+			installArgs.push("-d")
+			installArgs.push(originalInstallPath)
+		}
+		var otherStats = install(installArgs)
 		if (isDef(otherStats)) {
 			_stats.updated += otherStats.installed
 			_stats.failed += otherStats.failed
@@ -2174,18 +2193,160 @@ function erase(args, dontRemoveDir, isUpdate) {
 	return _stats
 }
 
+function removeInteractiveFromDB(dbOverride) {
+	var base = String(getOpenAFPath());
+	if (!base.endsWith("/")) base += "/";
+	var dbPath = _$(dbOverride, "db").isString().default(base + PACKAGESJSON_DB);
+
+	if (!io.fileExists(dbPath)) {
+		logErr("oPack database not found at " + dbPath);
+		return;
+	}
+
+	var packages;
+	try {
+		var zip = new ZIP();
+		var raw = af.fromBytes2String(zip.streamGetFile(dbPath, PACKAGESJSON));
+		packages = af.fromJson(raw);
+	} catch(e) {
+		logErr("Failed to read oPack database at " + dbPath + ": " + e);
+		return;
+	}
+
+	var entries = [];
+	var addEntry = (key, pack) => {
+		if (isUnDef(pack)) return;
+		if (isDef(pack.name) && pack.name == "OpenAF") return;
+		var label = isDef(pack.name) ? pack.name : key;
+		if (isDef(pack.version)) label += " (" + pack.version + ")";
+		var target = isDef(pack.__target) ? pack.__target : key;
+		label += " | " + target;
+		entries.push({ key: key, label: label, pack: pack });
+	};
+
+	var isArrayPackages = isArray(packages);
+	if (isArrayPackages) {
+		packages.forEach((pack, idx) => addEntry(idx, pack));
+	} else {
+		Object.keys(packages).sort().forEach(key => addEntry(key, packages[key]));
+	}
+
+	if (entries.length == 0) {
+		log("No removable entries found in " + dbPath);
+		return;
+	}
+
+	var options = entries.map(e => e.label);
+
+	// Ensure console is initialized
+	__initializeCon()
+	
+	var selectedLabels = askChooseMultiple(
+		"Select oPacks to remove",
+		options,
+		Math.min(10, options.length),
+		ansiColor("FAINT,ITALIC", "(use arrows to move, space to toggle, enter to confirm)")
+	);
+
+	if (!isArray(selectedLabels) || selectedLabels.length == 0) {
+		log("No entries selected. Nothing will be removed.");
+		return;
+	}
+
+	var selected = entries.filter(e => selectedLabels.indexOf(e.label) >= 0);
+	selected.forEach(e => log("Marked for removal: " + e.label));
+
+	var nowDate = new Date();
+	var pad = n => String(n).padStart(2, "0");
+	var timestamp = nowDate.getFullYear() +
+	                pad(nowDate.getMonth() + 1) +
+	                pad(nowDate.getDate()) +
+	                pad(nowDate.getHours()) +
+	                pad(nowDate.getMinutes()) +
+	                pad(nowDate.getSeconds());
+	var backupPath = dbPath + "." + timestamp + ".bak";
+	log("Creating backup at " + backupPath + "...");
+	io.cp(dbPath, backupPath);
+
+	var removed = [];
+	if (isArrayPackages) {
+		var indexes = {};
+		selected.forEach(e => indexes[String(e.key)] = true);
+		packages = packages.filter((_, idx) => !indexes[String(idx)]);
+		selected.forEach(e => removed.push(isDef(e.pack.name) ? e.pack.name : String(e.key)));
+	} else {
+		selected.forEach(e => {
+			if (isDef(packages[e.key]) && isDef(packages[e.key].name))
+				removed.push(packages[e.key].name);
+			else
+				removed.push(String(e.key));
+			delete packages[e.key];
+		});
+	}
+
+	var zip = new ZIP();
+	try {
+		zip.streamPutFile(dbPath, PACKAGESJSON, af.fromString2Bytes(stringify(packages, __, 2)));
+	} catch(e) {
+		logErr("Failed to write updated packages.json: " + e);
+		log("Database left untouched. Restore from backup at " + backupPath);
+		throw e;
+	}
+
+	log("Removed " + removed.length + " entr" + (removed.length == 1 ? "y" : "ies") + " from " + dbPath);
+	removed.forEach(name => log(" - " + name));
+}
+
 // REMOVE LOCAL
 function remove(args) {
     checkOpenAFinDB();
-	var packag = findLocalDBByName(args[0]);
+	args = isArray(args) ? args : [];
+	var interactive = false;
+	var dbOverride;
+	var filteredArgs = [];
+	var expectDBPath = false;
+
+	for (var i = 0; i < args.length; i++) {
+		var curr = args[i];
+
+		if (expectDBPath) {
+			dbOverride = curr;
+			expectDBPath = false;
+			continue;
+		}
+
+		if (curr == "-i") {
+			interactive = true;
+			continue;
+		}
+
+		if (curr == "-db") {
+			expectDBPath = true;
+			continue;
+		}
+
+		if (String(curr).indexOf("db=") == 0) {
+			dbOverride = curr.substring(3);
+			continue;
+		}
+
+		filteredArgs.push(curr);
+	}
+
+	if (interactive) {
+		removeInteractiveFromDB(dbOverride);
+		return;
+	}
+
+	var packag = findLocalDBByName(filteredArgs[0]);
 
 	if (isDef(packag) && isUnDef(packag["name"])) {
-		logErr(`Package '${args[0]}' not found on the local OpenPack DB.`);
+		logErr(`Package '${filteredArgs[0]}' not found on the local OpenPack DB.`);
 		return;
 	} else {
-		args[0] = findLocalDBTargetByName(args[0]);
+		filteredArgs[0] = findLocalDBTargetByName(filteredArgs[0]);
 		log("Removing from the local OpenPack DB: " + packag.name + "(" + packag.version + ")" + " [" + findLocalDBTargetByName(packag.name) + "]");
-		removeLocalDB(packag, args[0]);
+		removeLocalDB(packag, filteredArgs[0]);
 	}
 }
 

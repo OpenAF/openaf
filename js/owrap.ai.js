@@ -111,6 +111,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _temperature = aOptions.temperature
             var _noSystem = aOptions.noSystem
             var _lastStats = __
+            var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
             var _captureStats = (aResponse, aRequestBody) => {
                 if (!isMap(aResponse)) {
@@ -185,6 +186,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getLastStats: () => _lastStats,
+                setDebugCh: (aChName) => {
+                    if (isDef(aChName)) {
+                        _debugCh = aChName
+                        $ch(_debugCh).create()
+                    } else {
+                        _debugCh = __
+                    }
+                    return _r
+                },
                 prompt: (aPrompt, aModel, aTemperature, aJsonFlag, tools) => {
                     var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
                     if (isArray(__r.choices) && __r.choices.length > 0) {
@@ -282,7 +292,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         if (isDef(body.tools)) delete body.tools
                     }
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var _res = _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
                     // If OpenAI rejects a provided json_schema for missing properties, retry with json_object
                     if (isMap(_res) && isMap(_res.error)) {
                         var _msg = "" + (isDef(_res.error.message) ? _res.error.message : _res.error)
@@ -459,6 +471,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _model = aOptions.model
             var _temperature = aOptions.temperature
             var _lastStats = __
+            var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
             var _captureStats = (aResponse, aModelName) => {
                 if (!isMap(aResponse)) {
@@ -537,6 +550,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getLastStats: () => _lastStats,
+                setDebugCh: (aChName) => {
+                    if (isDef(aChName)) {
+                        _debugCh = aChName
+                        $ch(_debugCh).create()
+                    } else {
+                        _debugCh = __
+                    }
+                    return _r
+                },
                 setTool: (aName, aDesc, aParams, aFn) => {
                     _r.tools.push( {
                         name: aName,
@@ -670,7 +692,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     body = merge(body, aOptions.params)
 
-                    var _res = _r._request("models/" + aModel + ":generateContent", body)   
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
+                    var _res = _r._request("models/" + aModel + ":generateContent", body)
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))   
                     if (isDef(_res) && isArray(_res.candidates)) {
                         // call tools
                         var _p = msgs, stopWith = false
@@ -846,6 +870,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _url = aOptions.url
             var _params = aOptions.params
             var _lastStats = __
+            var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
             var _captureStats = (aResponse, aModelName) => {
                 if (!isMap(aResponse)) {
@@ -889,6 +914,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getLastStats: () => _lastStats,
+                setDebugCh: (aChName) => {
+                    if (isDef(aChName)) {
+                        _debugCh = aChName
+                        $ch(_debugCh).create()
+                    } else {
+                        _debugCh = __
+                    }
+                    return _r
+                },
                 setTool: (aName, aDesc, aParams, aFn) => {
                     _r.tools.push({
                         type: "function",
@@ -979,7 +1013,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isDef(body.tools)) delete body.tools
                     }
                     _r.conversation = msgs
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var _res = _r._request(uri, body)
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
 
                     if (isDef(_res) && isDef(_res.message) && isArray(_res.message["tool_calls"])) {
                         // call tools
@@ -1140,6 +1176,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _temperature = aOptions.temperature
             var _noSystem = aOptions.noSystem
             var _lastStats = __
+            var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
             var _captureStats = (aResponse, aModelName) => {
                 if (!isMap(aResponse)) {
@@ -1187,6 +1224,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     return _r
                 },
                 getLastStats: () => _lastStats,
+                setDebugCh: (aChName) => {
+                    if (isDef(aChName)) {
+                        _debugCh = aChName
+                        $ch(_debugCh).create()
+                    } else {
+                        _debugCh = __
+                    }
+                    return _r
+                },
                 setTool: (aName, aDesc, aParams, aFn) => {
                     _r.tools[aName] = {
                         type: "function",
@@ -1315,7 +1361,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isDef(body.tools)) delete body.tools
                     }
 
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var _res = _r._request("v1/messages", body)
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))
                     _captureStats(_res, aModel)
 
                     if (isMap(_res) && isArray(_res.content)) {
@@ -1598,6 +1646,17 @@ OpenWrap.ai.prototype.gpt.prototype.getConversation = function() {
  */
 OpenWrap.ai.prototype.gpt.prototype.setConversation = function(aConversation) {
     this.model.setConversation(aConversation)
+    return this
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.setDebugCh(aChName) : ow.ai.gpt</key>
+ * Sets the debug channel name to aChName. When defined, creates an OpenAF channel and logs all requests and responses. Call with undefined to disable debug logging.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.setDebugCh = function(aChName) {
+    this.model.setDebugCh(aChName)
     return this
 }
 
@@ -1935,6 +1994,16 @@ global.$gpt = function(aModel) {
          * </odoc>
          */
         lastStats: () => _g.getLastStats(),
+        /**
+         * <odoc>
+         * <key>$gpt.setDebugCh(aChName) : $gpt</key>
+         * Sets the debug channel name to aChName. When defined, creates an OpenAF channel and logs all requests and responses. Call with undefined to disable debug logging.
+         * </odoc>
+         */
+        setDebugCh: (aChName) => {
+            _g.setDebugCh(aChName)
+            return _r
+        },
         /**
          * <odoc>
          * <key>$gpt.prompt(aPrompt, aRole, aModel, aTemperature, tools) : String</key>
