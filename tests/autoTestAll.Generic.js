@@ -454,7 +454,7 @@
     exports.testAwait = function() {
         sync(() => {
             var state = 0, err1, err2, ini = now()
-            var p1 = $do(() => {
+            var p1 = $doV(() => {
                 $await("testF").wait(30000)
                 ow.test.assert(state, 1, "Problem with await (1)")
                 //sleep(150, true);
@@ -467,7 +467,7 @@
             
             while(p1 == 0 && !p1.executing && now() - ini < 60000) sleep(50, true)
     
-            var p2 = $do(() => {
+            var p2 = $doV(() => {
                 state = 1
                 $await("testF").notify()
                 $await("test1").wait(5000)
@@ -481,6 +481,9 @@
             $doWait($doAll([p1, p2]));
             if (isDef(err1)) throw err1;
             if (isDef(err2)) throw err2;
+
+            $await("testF").destroy()
+            $await("testF2").destroy()
         })
     };
 
