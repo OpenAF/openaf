@@ -85,6 +85,7 @@ var zip    = new ZIP();
 var zipNew = new ZIP();
 var includeMore = {}; 
 var mainClass = undefined;
+var forceRepack = false;
 
 var irj = isRepackJar(classPath);
 log("Checking OpenAF launcher...")
@@ -95,7 +96,14 @@ if (irj && isUnDef(getEnv("__OAF_MAINCLASS"))) {
 		var _newClass = (isDef(mainClass)) ? mainClass : "openaf.AFCmdOS"
 		log("Replacing main class with " + _newClass + "...")
 		str = str.replace(/Main-Class: openaf.Launcher/g, "Main-Class: " + _newClass)
-		_zip.streamPutFile(classPath, "META-INF/MANIFEST.MF", af.fromString2Bytes(str))
+		// On Windows the JVM holds the JAR open, so defer to repack + swap
+		if (os.toLowerCase().indexOf("windows") >= 0) {
+			mainClass = _newClass
+			forceRepack = true
+			log("Will update MANIFEST during repack (Windows lock).")
+		} else {
+			_zip.streamPutFile(classPath, "META-INF/MANIFEST.MF", af.fromString2Bytes(str))
+		}
 	}
 }
 
@@ -156,7 +164,7 @@ $from(ow.obj.fromObj2Array(getOPackLocalDB(), "path")).notEmpty("scripts.prerepa
 	}
 });
 
-if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
+if (!irj || __expr != "" || Object.keys(includeMore).length > 0 || forceRepack) {
 	var oldVersionFile = classPath.replace(/openaf.jar/, "openaf.jar.orig");
     
     if (!noHomeComms) syncFn(() => {
@@ -278,8 +286,41 @@ if (!irj || __expr != "" || Object.keys(includeMore).length > 0) {
 }
 
 if (createTmp) {
-	io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(classPath.replace(/openaf.jar/, "openaf.jar.tmp")));
-	io.rm(classPath.replace(/openaf.jar/, "openaf.jar.tmp"));
+	var _tmpPath = classPath.replace(/openaf.jar/, "openaf.jar.tmp")
+	var _isWindows = os.toLowerCase().indexOf("windows") >= 0
+	if (_isWindows) {
+		try {
+			var _updBat = classPath.replace(/openaf.jar/, "update-openaf.bat")
+			var _bat = [
+				"@echo off",
+				"setlocal EnableExtensions",
+				"set DIR=%~dp0",
+				"set SRC=\"%DIR%openaf.jar.tmp\"",
+				"set DST=\"%DIR%openaf.jar\"",
+				":wait",
+				"timeout /T 1 /NOBREAK >nul",
+				"copy %SRC% %DST% >nul 2>&1",
+				"if errorlevel 1 goto wait",
+				"del %SRC% >nul 2>&1",
+				//"if errorlevel 1 goto wait",
+				"set OAF_JARGS=\"-Xshare:dump -XX:SharedArchiveFile=%DIR%.shared.oaf %OAF_JARGS%\"",
+				"\"%DIR%oaf.bat\" -c \"ow.loadOJob();loadOAFP();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();__initializeCon();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})\"",
+				"del /F /Q \"%~f0\" >nul 2>&1"
+			].join("\r\n")
+			io.writeFileString(_updBat, _bat)
+			// Launch updater detached to swap files after this process exits
+			//$sh([_updBat.replace(/\//g, "\\")]).exec()
+			$sh(_updBat).dontWait(true).get()
+			log("Scheduled Windows update of openaf.jar; exiting to unlock file...")
+			exit(0, true)
+		} catch(e) {
+			logErr("Couldn't schedule Windows update: " + e)
+			$err(e)
+		}
+	} else {
+		io.writeFileBytes(classPath.replace(/\\/g, "/"), io.readFileBytes(_tmpPath))
+		io.rm(_tmpPath)
+	}
 }
 
 // Create archived classes (CDS)
@@ -288,7 +329,10 @@ log("(re)Creating OpenAF shared archive...");
 //           .get(0)
 var _jaorig = getEnv("OAF_JARGS")
 if (isUnDef(_jaorig)) _jaorig = ""
-var _res = $sh([getOpenAFPath() + "/oaf", "-c", "ow.loadOJob();loadOAFP();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();__initializeCon();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})"])
+var os = String(java.lang.System.getProperty("os.name"))
+var isWindows = os.toLowerCase().indexOf("windows") >= 0
+
+var _res = $sh([getOpenAFPath() + "oaf" + (isWindows ? ".bat" : ""), "-c", "ow.loadOJob();loadOAFP();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();__initializeCon();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})"])
            .envs({ OAF_JARGS: "-Xshare:dump -XX:SharedArchiveFile=" + getOpenAFPath() + ".shared.oaf " + _jaorig }, true)
 		   .get(0)
 if (_res.exitcode != 0) {
