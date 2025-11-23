@@ -804,9 +804,9 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 		}
 
 		var _extras = [], _posextras = []
-		if (__flags.MD_CHART) {
-			_extras.push('<script src="/js/chart.js"></script>')
-			_posextras.push(`
+                if (__flags.MD_CHART) {
+                        _extras.push('<script src="/js/chart.js"></script>')
+                        _posextras.push(`
 <script>
 (function () {
   const selector = [
@@ -883,8 +883,182 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
   })
 })();
 </script>
-			`)
-		}
+                        `)
+                }
+
+                if (__flags.MD_MAP) {
+                        _extras.push('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />')
+                        _extras.push(`
+<style>
+  .leaflet-map {
+    width: 100%;
+    height: 420px;
+    margin: 20px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  body.markdown-body-dark .leaflet-container {
+    background: #0f1115;
+  }
+
+  body.markdown-body-dark .leaflet-tile-pane {
+    filter: brightness(0.85) invert(0.9) hue-rotate(180deg);
+  }
+
+  body.markdown-body-dark .leaflet-bar a,
+  body.markdown-body-dark .leaflet-bar a:hover {
+    background-color: #1c1f26;
+    color: #e6e6e6;
+    border-color: #2d3038;
+  }
+</style>
+                        `)
+                        _extras.push('<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>')
+                        _posextras.push(`
+<script>
+(function () {
+  const selector = [
+    'pre > code.language-leaflet',
+    'pre > code.lang-leaflet',
+    'pre > code.leaflet',
+    'pre > code[class*="language-leaflet"]'
+  ].join(', ')
+
+  function configureLeaflet() {
+    if (typeof L === 'undefined') return false
+
+    // Ensure marker icons resolve correctly even when assets are loaded from CDN
+    delete L.Icon.Default.prototype._getIconUrl
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png'
+    })
+
+    try { document.dispatchEvent(new CustomEvent('leaflet:ready')) } catch (_) {}
+    return true
+  }
+
+  function renderLeafletBlocks() {
+    if (typeof L === 'undefined') return
+
+    const blocks = Array.from(document.querySelectorAll(selector))
+    blocks.forEach((code, idx) => {
+      if (code.dataset.leafletRendered === 'true') return
+
+      const pre = code.parentElement
+      const raw = code.textContent.trim()
+
+      let config
+      try {
+        config = JSON.parse(raw)
+      } catch (err) {
+        console.error('Invalid Leaflet JSON config:', err)
+        code.dataset.leafletRendered = 'true'
+        return
+      }
+
+      if (!config || !Array.isArray(config.center) || config.center.length !== 2) {
+        console.error('Leaflet config requires a "center" array with [lat, lon]')
+        code.dataset.leafletRendered = 'true'
+        return
+      }
+
+      const mapId = 'leaflet-map-' + Date.now() + '-' + idx
+      const mapContainer = document.createElement('div')
+      mapContainer.className = 'leaflet-map'
+      mapContainer.id = mapId
+
+      code.dataset.leafletRendered = 'true'
+      pre.replaceWith(mapContainer)
+
+      requestAnimationFrame(() => {
+        const map = L.map(mapId, config.options || {}).setView(config.center, config.zoom || 13)
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map)
+
+        const defaultIcon = L.icon({
+          iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+          iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        })
+
+        if (Array.isArray(config.markers)) {
+          config.markers.forEach(marker => {
+            const lat = marker.lat ?? marker.latitude
+            const lon = marker.lon ?? marker.lng ?? marker.longitude
+            if (typeof lat !== 'number' || typeof lon !== 'number') return
+
+            const m = L.marker([lat, lon], { icon: defaultIcon }).addTo(map)
+            if (marker.popup) m.bindPopup(marker.popup)
+          })
+        }
+
+        if (Array.isArray(config.layers)) {
+          config.layers.forEach(layer => {
+            if (layer.type === 'circle' && Array.isArray(layer.center) && layer.center.length === 2 && layer.radius) {
+              L.circle(layer.center, {
+                color: layer.color || '#3388ff',
+                fillColor: layer.fillColor || layer.color || '#3388ff',
+                fillOpacity: layer.fillOpacity ?? 0.2,
+                radius: layer.radius
+              }).addTo(map)
+            } else if (layer.type === 'polyline' && Array.isArray(layer.points)) {
+              L.polyline(layer.points, {
+                color: layer.color || '#3388ff',
+                weight: layer.weight || 3
+              }).addTo(map)
+            } else if (layer.type === 'polygon' && Array.isArray(layer.points)) {
+              L.polygon(layer.points, {
+                color: layer.color || '#3388ff',
+                fillColor: layer.fillColor || layer.color || '#3388ff',
+                fillOpacity: layer.fillOpacity ?? 0.2
+              }).addTo(map)
+            } else if (layer.type === 'rectangle' && Array.isArray(layer.bounds)) {
+              L.rectangle(layer.bounds, {
+                color: layer.color || '#3388ff',
+                fillColor: layer.fillColor || layer.color || '#3388ff',
+                fillOpacity: layer.fillOpacity ?? 0.2
+              }).addTo(map)
+            }
+          })
+        }
+
+        if (config.options) {
+          if (config.options.scrollWheelZoom === false) map.scrollWheelZoom.disable()
+          if (config.options.dragging === false) map.dragging.disable()
+        }
+
+        mapContainer.__leafletInstance = map
+      })
+    })
+  }
+
+  function initLeafletMaps() {
+    if (!configureLeaflet()) {
+      setTimeout(initLeafletMaps, 120)
+      return
+    }
+    renderLeafletBlocks()
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLeafletMaps)
+  } else {
+    initLeafletMaps()
+  }
+})()
+</script>
+                        `)
+                }
 		
 		// Process trigger extras
 		ow.template.__mdHTMLTExtras.forEach(r => {
