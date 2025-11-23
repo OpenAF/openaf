@@ -216,10 +216,11 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
-	MD_CODECLIP                : true,   // If true, code blocks will have a button to copy the code to the clipboard
-	MD_DARKMODE                : "false", // Possible values: "auto", "true", "false"
-	MD_CHART                   : false,  // If true, code blocks with "chart" language will be rendered as Chart.js charts
-	USE_JAVA_GENUUID           : true,
+        MD_CODECLIP                : true,   // If true, code blocks will have a button to copy the code to the clipboard
+        MD_DARKMODE                : "false", // Possible values: "auto", "true", "false"
+        MD_CHART                   : false,  // If true, code blocks with "chart" language will be rendered as Chart.js charts
+        MD_MAP                     : false,  // If true, code blocks with "leaflet" language will be rendered as Leaflet maps
+        USE_JAVA_GENUUID           : true,
 	ANSICOLOR_CACHE            : true,
 	ANSICOLOR_ASK              : true,
 	OPENMETRICS_LABEL_MAX      : true,   // If false openmetrics label name & value length won't be restricted,
