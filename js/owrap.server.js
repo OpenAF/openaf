@@ -1779,6 +1779,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
             initialize                 : () => initData,
             "prompts/list"             : () => ({}),
             "notifications/initialized": () => ({}),
+            ping                       : () => ({}),
             "tools/call"               : params => {
                 if (isDef(params.name)) {
                     const tool = fns[params.name]
