@@ -250,10 +250,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aPrompt = _r.conversation.concat(aPrompt)
                     msgs = aPrompt.filter(c => isDef(c)).map(c => isMap(c) ? c : { role: "user", content: c })
 
-                    if (aJsonFlag) {
-                        msgs.unshift({ role: (_noSystem ? "developer" : "system"), content: "output json" })
-                    }
                     _r.conversation = msgs
+                    if (aJsonFlag) {
+                        msgs = [{ role: (_noSystem ? "developer" : "system"), content: "output json" }].concat(msgs)
+                    }
                     if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
                     var body = {
                         model: aModel,
@@ -1299,13 +1299,12 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var systemMsgs = msgs.filter(m => m.role == "system");
                     var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice());
 
+                    _r.conversation = msgs;
+
                     if (aJsonFlag) {
                         var _jsonInstruction = { role: "user", content: "output json" };
                         bodyMessages.push(_jsonInstruction);
-                        msgs.push(_jsonInstruction);
                     }
-
-                    _r.conversation = msgs;
 
                     var body = {
                         model: aModel,
