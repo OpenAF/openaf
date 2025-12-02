@@ -388,7 +388,7 @@ var ollama = ow.ai.gpt({
 var gemini = ow.ai.gpt({
   type: "gemini",
   key : process.env.GEMINI_KEY,
-  model: "gemini-1.5-flash"
+  model: "gemini-2.5-flash"
 });
 ```
 
