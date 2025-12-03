@@ -171,22 +171,10 @@ public final class OAFdCL extends URLClassLoader {
             return cachedClass;
         }
         
-
+        // CRITICAL: Follow proper parent-first delegation to avoid LinkageErrors
+        // Try parent classloader first before attempting to find the class ourselves
         try {
-            Class<?> clazz = findClass(name);
-            if (resolve) {
-                resolveClass(clazz);
-            }
-            // Cache the result
-            classCache.putIfAbsent(name, clazz);
-            cacheMisses.incrementAndGet();
-            return clazz;
-        } catch (ClassNotFoundException e) {
-            // Fall through to normal delegation
-        }
-        
-        try {
-            // Use parent's loadClass for proper delegation
+            // Delegate to parent first (standard Java classloading pattern)
             Class<?> clazz = super.loadClass(name, resolve);
             
             // Cache non-system classes for better performance
@@ -197,7 +185,20 @@ public final class OAFdCL extends URLClassLoader {
             cacheMisses.incrementAndGet();
             return clazz;
         } catch (ClassNotFoundException e) {
-            throw e;
+            // Parent couldn't find it, now try to find it ourselves
+            try {
+                Class<?> clazz = findClass(name);
+                if (resolve) {
+                    resolveClass(clazz);
+                }
+                // Cache the result
+                classCache.putIfAbsent(name, clazz);
+                cacheMisses.incrementAndGet();
+                return clazz;
+            } catch (ClassNotFoundException e2) {
+                // Couldn't find it anywhere
+                throw e2;
+            }
         }
     }
 

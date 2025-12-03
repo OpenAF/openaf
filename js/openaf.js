@@ -3445,12 +3445,12 @@ var __loadedJars = [];
 const loadExternalJars = function(aPath, dontCheck) {
 	if (!io.fileExists(aPath) || io.fileInfo(aPath).isFile) throw "Folder not found.";
 	$from(io.listFiles(aPath).files).ends("filename", '.jar').sort("-filename").select((v) => {
-		var libfile = v.filename;
+		var libfile = v.filename
 		if (!dontCheck && __loadedJars.indexOf(libfile) < 0) {
-			af.externalAddClasspath(new java.io.File(v.canonicalPath).toURI().toURL(), true );
-			__loadedJars.push(libfile);
+			af.externalAddClasspath(new java.io.File(v.canonicalPath).toURI().toURL(), true )
+			__loadedJars.push(libfile)
 		}
-	});
+	})
 }
  
 /**
