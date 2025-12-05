@@ -305,7 +305,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>org.snmp4j</groupId>
       <artifactId>snmp4j-agent</artifactId>
-      <version>3.8.2</version>
+      <version>3.8.3</version>
     </dependency>
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
