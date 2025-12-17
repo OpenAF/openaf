@@ -52,6 +52,7 @@ var extraArgsForJava12 = extraArgsForJava11 + " ";
 //var extraArgsForJava17 = " -Xshare:off "
 var extraArgsForJava17 = " -XX:SharedArchiveFile=" + (ow.format.isWindows() ? "%DIR%" : "$DIR") + "/.shared.oaf "
 var extraArgsForJava24 = " --enable-native-access=ALL-UNNAMED "
+var extraArgsForJava25 = " -XX:+UseCompactObjectHeaders "
 var DEFAULT_SH = "/bin/sh";
 var noopacks = false;
 
@@ -352,6 +353,7 @@ if (Number(javaVer) != null && Number(javaVer) == 11) javaargs += " " + extraArg
 if (Number(javaVer) != null && Number(javaVer) > 11 && Number(javaVer) < 17) javaargs += " " + extraArgsForJava12;
 if (Number(javaVer) != null && Number(javaVer) >= 17) javaargs += " " + extraArgsForJava17;
 if (Number(javaVer) != null && Number(javaVer) >= 24) javaargs += " " + extraArgsForJava24;
+if (Number(javaVer) != null && Number(javaVer) >= 25) javaargs += " " + extraArgsForJava25;
 
 var winBat = generateWinBat();
 var winPackBat = generateWinPackBat();
