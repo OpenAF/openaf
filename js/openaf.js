@@ -12481,15 +12481,16 @@ const __getThreadPools = function() {
  * Optionally if useVirtualThreads is true, the aFunction will be executed in a virtual thread, otherwise it will be executed in a normal thread.
  * </odoc>
  */
- const oPromise = function(aFunction, aRejFunction, useVirtualThreads) {
-	this.states = {
-		NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
-	};
+const oPromise = function(aFunction, aRejFunction, useVirtualThreads) {
+        this.states = {
+                NEW: 0, FULFILLED: 1, PREFAILED: 2, FAILED: 3
+        };
 
-	this.state = $atomic(this.states.NEW, "int");
-	this.executing = $atomic(false, "boolean");
-	this.executors = new java.util.concurrent.ConcurrentLinkedQueue();
-	this.vThreads = useVirtualThreads || false
+        this.state = $atomic(this.states.NEW, "int");
+        this.executing = $atomic(false, "boolean");
+        this.executors = new java.util.concurrent.ConcurrentLinkedQueue();
+        this.vThreads = useVirtualThreads || false
+        this.__thread = __
 	
 	this.then(aFunction, aRejFunction);
 };
@@ -12660,92 +12661,110 @@ oPromise.prototype.resolve = function(aValue) {
 	return this;
 };
 
-oPromise.prototype.cancel = function() {
-	if (isDef(this.__f)) {
-		return this.__f.cancel(true);
-	}
+oPromise.prototype.cancel = function(aReason) {
+        if (this.state.get() == this.states.FULFILLED || this.state.get() == this.states.FAILED) return false;
+
+        this.reason = isDef(aReason) ? aReason : "cancelled";
+        this.state.set(this.states.PREFAILED);
+
+        var cancelled = false;
+
+        try {
+                if (isDef(this.__f)) cancelled = this.__f.cancel(true);
+        } catch(e) {}
+
+        try {
+                if (isDef(this.__thread) && this.__thread.isAlive()) { this.__thread.interrupt(); cancelled = true }
+        } catch(e) {}
+
+        this.__exec();
+
+        return cancelled;
 };
 
 oPromise.prototype.__exec = function() {
 	var thisOP = this;
 
-	do {
-		try {
-			this.__f = __getThreadPool(this.vThreads).submit(new java.lang.Runnable({
-				run: () => {
-					//var ignore = false;
-					//syncFn(() => { if (thisOP.executing.get()) ignore = true; else thisOP.executing.set(true); }, thisOP.executing.get());
-					if (!thisOP.executing.setIf(false, true)) return
-					//if (ignore) return;
-					
-					try {
-						while (thisOP.executors.size() > 0) {
-							var f = thisOP.executors.poll();
-							// Exec
-							if (thisOP.state.get() != thisOP.states.PREFAILED && 
-								thisOP.state.get() != thisOP.states.FAILED && 
-								f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
-								var res, done = false;
-								try {
-									var checkResult = $atomic(true, "boolean");
-									if (isDef(thisOP.value)) {
-										res = f.func(thisOP.value);
-									} else {
-										res = f.func(function (v) { checkResult.set(false); thisOP.resolve(v); },
-													function (r) { checkResult.set(false); thisOP.reject(r); });
-									}
+        do {
+                try {
+                        this.__f = __getThreadPool(this.vThreads).submit(new java.lang.Runnable({
+                                run: () => {
+                                        //var ignore = false;
+                                        //syncFn(() => { if (thisOP.executing.get()) ignore = true; else thisOP.executing.set(true); }, thisOP.executing.get());
+                                        if (!thisOP.executing.setIf(false, true)) return
+                                        //if (ignore) return;
 
-									if (checkResult.get() &&
-										(isJavaObject(res) || isDef(res)) &&
-										res != null &&
-										(thisOP.state.get() == thisOP.states.NEW || thisOP.state.get() == thisOP.states.FULFILLED)) {
-										res = thisOP.resolve(res);
-									}
-								} catch (e) {
-									thisOP.reject(e);
-								}
-							}
-							// Reject
-							if (thisOP.state.get() == thisOP.states.PREFAILED || thisOP.state.get() == thisOP.states.FAILED) {
-								while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
-									f = thisOP.executors.poll();
-								}
+                                        thisOP.__thread = java.lang.Thread.currentThread()
 
-								if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
-									try {
-										f.func(thisOP.reason);
-										thisOP.state.set(thisOP.states.FULFILLED);
-									} catch (e) {
-										thisOP.state.set(thisOP.states.FAILED);
-										throw e;
-									}
-								} else {
-									if (isUnDef(f) || f == null) thisOP.state.set(thisOP.states.FAILED);
-								}
-							}
-						}
-					} catch(ee) {
-						throw ee;
-					} finally {
-						//syncFn(() => { thisOP.executing.set(false); }, thisOP.executing.get());
-						thisOP.executing.set(false)
+                                        try {
+                                                while (thisOP.executors.size() > 0) {
+                                                        var f = thisOP.executors.poll();
+                                                        // Exec
+                                                        if (thisOP.state.get() != thisOP.states.PREFAILED &&
+                                                                thisOP.state.get() != thisOP.states.FAILED &&
+                                                                f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
+                                                                var res, done = false;
+                                                                try {
+                                                                        var checkResult = $atomic(true, "boolean");
+                                                                        if (isDef(thisOP.value)) {
+                                                                                res = f.func(thisOP.value);
+                                                                        } else {
+                                                                                res = f.func(function (v) { checkResult.set(false); thisOP.resolve(v); },
+                                                                                                                function (r) { checkResult.set(false); thisOP.reject(r); });
+                                                                        }
 
-						if (thisOP.executors.isEmpty()) {
-							thisOP.state.setIf(thisOP.states.NEW, thisOP.states.FULFILLED);
-							thisOP.state.setIf(thisOP.states.PREFAILED, thisOP.states.FAILED);
-						}
-					}
+                                                                        if (checkResult.get() &&
+                                                                                (isJavaObject(res) || isDef(res)) &&
+                                                                                res != null &&
+                                                                                (thisOP.state.get() == thisOP.states.NEW || thisOP.state.get() == thisOP.states.FULFILLED)) {
+                                                                                res = thisOP.resolve(res);
+                                                                        }
+                                                                } catch (e) {
+                                                                        thisOP.reject(e);
+                                                                }
+                                                        }
+                                                        // Reject
+                                                        if (thisOP.state.get() == thisOP.states.PREFAILED || thisOP.state.get() == thisOP.states.FAILED) {
+                                                                while (f != null && isDef(f) && f.type != "reject" && isDef(f.func) && isFunction(f.func)) {
+                                                                        f = thisOP.executors.poll();
+                                                                }
 
-					/*if (thisOP.state == thisOP.states.PREFAILED && thisOP.executors.isEmpty()) {
-						thisOP.state = thisOP.states.FAILED;
-					}*/
-				}
-			}));
-		} catch(e) {
-			if (String(e).indexOf("RejectedExecutionException") < 0) throw e;
-		}
-		// Try again if null
-	} while(isUnDef(this.__f) || this.__f == null);
+                                                                if (f != null && isDef(f) && isDef(f.func) && isFunction(f.func)) {
+                                                                        try {
+                                                                                f.func(thisOP.reason);
+                                                                                thisOP.state.set(thisOP.states.FULFILLED);
+                                                                        } catch (e) {
+                                                                                thisOP.state.set(thisOP.states.FAILED);
+                                                                                throw e;
+                                                                        }
+                                                                } else {
+                                                                        if (isUnDef(f) || f == null) thisOP.state.set(thisOP.states.FAILED);
+                                                                }
+                                                        }
+                                                }
+                                        } catch(ee) {
+                                                throw ee;
+                                        } finally {
+                                                //syncFn(() => { thisOP.executing.set(false); }, thisOP.executing.get());
+                                                thisOP.executing.set(false)
+                                                thisOP.__thread = __
+
+                                                if (thisOP.executors.isEmpty()) {
+                                                        thisOP.state.setIf(thisOP.states.NEW, thisOP.states.FULFILLED);
+                                                        thisOP.state.setIf(thisOP.states.PREFAILED, thisOP.states.FAILED);
+                                                }
+                                        }
+
+                                        /*if (thisOP.state == thisOP.states.PREFAILED && thisOP.executors.isEmpty()) {
+                                                thisOP.state = thisOP.states.FAILED;
+                                        }*/
+                                }
+                        }));
+                } catch(e) {
+                        if (String(e).indexOf("RejectedExecutionException") < 0) throw e;
+                }
+                // Try again if null
+        } while(isUnDef(this.__f) || this.__f == null);
 
 };
 
@@ -13410,10 +13429,11 @@ const $doA2B = function(aAFn, aBFn, noc, defaultTimeout, aErrorFunction, useVirt
  * object will be immediatelly returned. Optionally this aFunction can receive a resolve and reject functions for to you use inside
  * aFunction to provide a result with resolve(aResult) or an exception with reject(aReason). If you don't call theses functions the
  * returned value will be used for resolve or any exception thrown will be use for reject. You can use the "then" method to add more
- * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the 
+ * aFunction that will execute once the previous as executed successfully (in a stack fashion). The return/resolve value from the
  * previous function will be passed as the value for the second. You can use the "catch" method to add aFunction that will receive
  * a string or exception for any exception thrown with the reject functions. You can also provide aRejFunction to work as a "catch"
- * method as previously described before.
+ * method as previously described before. The returned oPromise also exposes a cancel method to interrupt the corresponding running
+ * thread (similar to the Threads plugin capabilities) and reject the promise chain.
  * </odoc>
  */
 const $do = function(aFunction, aRejFunction) {
@@ -13425,7 +13445,9 @@ const $do = function(aFunction, aRejFunction) {
  * <key>$doV(aFunction, aRejFunction) : oPromise</key>
  * Equivalent to $do but using virtual threads (if available) to execute the aFunction. This will allow the aFunction to be executed
  * without blocking the current thread. If aFunction is not provided it will return a new oPromise that will be resolved
- * when the first executor is added to it. If aRejFunction is provided it will be used as a "catch" method for the oPromise.
+ * when the first executor is added to it. If aRejFunction is provided it will be used as a "catch" method for the oPromise. The
+ * returned oPromise also exposes a cancel method to interrupt the corresponding running thread (similar to the Threads plugin
+ * capabilities) and reject the promise chain.
  * </odoc>
  */
 const $doV = function(aFunction, aRejFunction) {
