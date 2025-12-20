@@ -115,6 +115,16 @@ jobs:
      then: oJob Test
      exec: args.func = args.tests.testDo;
 
+   - name: OpenAF::Test $do cancel
+     from: OpenAF::Init
+     then: oJob Test
+     exec: args.func = args.tests.testDoCancel;
+
+   - name: OpenAF::Test $doV cancel
+     from: OpenAF::Init
+     then: oJob Test
+     exec: args.func = args.tests.testDoVCancel;
+
    - name: OpenAF::Test $doAll
      from: OpenAF::Init
      then: oJob Test
