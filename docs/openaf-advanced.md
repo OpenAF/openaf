@@ -102,9 +102,10 @@ Favor built-in job shortcuts `(if)`, `(repeat)`, `(each)`, `(parallel)` to minim
 
 ## 14. Asynchronous Execution with oPromise
 
-- **$do** – queue work on the standard ForkJoin-backed pool and receive an `oPromise` for fluent `.then` / `.catch` composition. The resolver passed into your function can resolve with returned values or explicit `resolve()` calls, while thrown errors or `reject()` calls route to the rejection chain.【F:js/openaf.js†L13130-L13157】【F:js/openaf.js†L12208-L12251】
-- **$doV** – same contract as `$do` but targets a virtual-thread-per-task executor so launching many concurrent tasks will not consume native threads when the JVM supports Project Loom virtual threads.【F:js/openaf.js†L12145-L12163】【F:js/openaf.js†L13148-L13157】
-- **Coordination helpers** – mix `$doAll` / `$doFirst` (wrappers over `oPromise.all()` / `.race()`) to wait for all tasks or the first completion, enabling fan-out/fan-in patterns without manual synchronization primitives.【F:js/openaf.js†L13159-L13179】【F:js/openaf.js†L12253-L12348】
+- **$do** – queue work on the standard ForkJoin-backed pool and receive an `oPromise` for fluent `.then` / `.catch` composition. The resolver passed into your function can resolve with returned values or explicit `resolve()` calls, while thrown errors or `reject()` calls route to the rejection chain.【F:js/openaf.js†L13426-L13455】【F:js/openaf.js†L12472-L12528】
+- **$doV** – same contract as `$do` but targets a virtual-thread-per-task executor so launching many concurrent tasks will not consume native threads when the JVM supports Project Loom virtual threads.【F:js/openaf.js†L13444-L13455】【F:js/openaf.js†L12421-L12438】
+- **Coordination helpers** – mix `$doAll` / `$doFirst` (wrappers over `oPromise.all()` / `.race()`) to wait for all tasks or the first completion, enabling fan-out/fan-in patterns without manual synchronization primitives.【F:js/openaf.js†L13459-L13479】【F:js/openaf.js†L12532-L12589】
+- **Cancellation** – call `.cancel()` on any `$do` / `$doV` promise to interrupt the associated thread (mirroring the Threads plugin) and drive the chain into the rejection path for cleanup.【F:js/openaf.js†L13426-L13455】【F:js/openaf.js†L12664-L12683】
 
 Example fan-out flow using virtual threads:
 
