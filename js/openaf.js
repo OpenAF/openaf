@@ -12662,25 +12662,25 @@ oPromise.prototype.resolve = function(aValue) {
 };
 
 oPromise.prototype.cancel = function(aReason) {
-        if (this.state.get() == this.states.FULFILLED || this.state.get() == this.states.FAILED) return false;
+	if (this.state.get() == this.states.FULFILLED || this.state.get() == this.states.FAILED) return false
 
-        this.reason = isDef(aReason) ? aReason : "cancelled";
-        this.state.set(this.states.PREFAILED);
+	this.reason = isDef(aReason) ? aReason : "cancelled"
+	this.state.set(this.states.PREFAILED)
 
-        var cancelled = false;
+	var cancelled = false
 
-        try {
-                if (isDef(this.__f)) cancelled = this.__f.cancel(true);
-        } catch(e) {}
+	try {
+		if (isDef(this.__f)) cancelled = this.__f.cancel(true)
+	} catch(e) {}
 
-        try {
-                if (isDef(this.__thread) && this.__thread.isAlive()) { this.__thread.interrupt(); cancelled = true }
-        } catch(e) {}
+	try {
+		if (isDef(this.__thread) && this.__thread.isAlive()) { this.__thread.interrupt(); cancelled = true }
+	} catch(e) {}
 
-        this.__exec();
+	this.__exec()
 
-        return cancelled;
-};
+	return cancelled
+}
 
 oPromise.prototype.__exec = function() {
 	var thisOP = this;

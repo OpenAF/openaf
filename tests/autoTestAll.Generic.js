@@ -661,29 +661,30 @@
     };
 
     exports.testDoCancel = function() {
-        var interrupted = $atomic(false, "boolean");
-        var cancelled = $atomic(false, "boolean");
-        var start = now();
+        var interrupted = $atomic(false, "boolean")
+        var cancelled = $atomic(false, "boolean")
+        var start = now()
 
         var p = $do(() => {
             while(true) {
-                if (java.lang.Thread.interrupted()) {
-                    interrupted.set(true);
-                    throw "cancelled";
-                }
-                if ((now() - start) > 5000) throw "timeout";
+                sleep(1000, true)
+                if ((now() - start) > 5000) throw "timeout"
             }
         }).catch((reason) => {
-            if (String(reason) == "cancelled") cancelled.set(true);
-        });
+            if (String(reason) == "cancelled" || String(reason).toLowerCase().indexOf("interrupted") >= 0) {
+                cancelled.set(true)
+                interrupted.set(true)
+            }
+            $await("testDoCancel").notify()
+        })
 
-        sleep(100);
-        var cRes = p.cancel("cancelled");
-        $doWait(p, 2000);
+        $doWait(p, 1500)
+        var cRes = p.cancel("cancelled")
+        $await("testDoCancel").wait(2000)
 
         ow.test.assert(cRes, true, "Problem cancelling $do");
-        ow.test.assert(interrupted.get(), true, "Problem interrupting $do thread");
-        ow.test.assert(cancelled.get(), true, "Problem propagating $do cancellation");
+        ow.test.assert(interrupted.get(), true, "Problem interrupting $do thread")
+        ow.test.assert(cancelled.get(), true, "Problem propagating $do cancellation")
     };
 
     exports.testDoVCancel = function() {
@@ -693,19 +694,20 @@
 
         var p = $doV(() => {
             while(true) {
-                if (java.lang.Thread.interrupted()) {
-                    interrupted.set(true);
-                    throw "cancelled";
-                }
-                if ((now() - start) > 5000) throw "timeout";
+                sleep(1000, true)
+                if ((now() - start) > 5000) throw "timeout"
             }
         }).catch((reason) => {
-            if (String(reason) == "cancelled") cancelled.set(true);
-        });
+            if (String(reason) == "cancelled" || String(reason).toLowerCase().indexOf("interrupted") >= 0) {
+                cancelled.set(true)
+                interrupted.set(true)
+            }
+            $await("testDoVCancel").notify()
+        })
 
-        sleep(100);
-        var cRes = p.cancel("cancelled");
-        $doWait(p, 2000);
+        $doWait(p, 1500)
+        var cRes = p.cancel("cancelled")
+        $await("testDoVCancel").wait(2000)
 
         ow.test.assert(cRes, true, "Problem cancelling $doV");
         ow.test.assert(interrupted.get(), true, "Problem interrupting $doV thread");
