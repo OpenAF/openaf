@@ -130,6 +130,69 @@ function injectSortStyles() {
   document.head.appendChild(style);
 }
 
+// Parse numeric values optionally containing commas and units (e.g. 1,024, 10k, 5 MB/s).
+function parseNumberWithUnits(value) {
+  if (value === null || value === undefined) return null;
+
+  // Remove thousands separators and normalize spacing
+  const cleaned = String(value).replace(/,/g, '').trim();
+  if (!cleaned) return null;
+
+  const match = cleaned.match(/^(-?\d+(?:\.\d+)?)(?:\s*([a-zA-Z]+(?:\/s)?|%))?$/);
+  if (!match) return null;
+
+  const numberPart = parseFloat(match[1]);
+  if (isNaN(numberPart)) return null;
+
+  const unit = (match[2] || '').toLowerCase();
+
+  const unitMultipliers = {
+    '': 1,
+    '%': 1,
+    'k': 1e3,
+    'kb': 1024,
+    'kib': 1024,
+    'kbyte': 1024,
+    'kbytes': 1024,
+    'kbit': 1e3,
+    'kbit/s': 1e3,
+    'kb/s': 1e3,
+    'kbps': 1e3,
+    'm': 1e6,
+    'mb': 1024 * 1024,
+    'mib': 1024 * 1024,
+    'mbyte': 1024 * 1024,
+    'mbytes': 1024 * 1024,
+    'mbit': 1e6,
+    'mbit/s': 1e6,
+    'mb/s': 1e6,
+    'mbps': 1e6,
+    'g': 1e9,
+    'gb': 1024 * 1024 * 1024,
+    'gib': 1024 * 1024 * 1024,
+    'gbyte': 1024 * 1024 * 1024,
+    'gbytes': 1024 * 1024 * 1024,
+    'gbit': 1e9,
+    'gbit/s': 1e9,
+    'gb/s': 1e9,
+    'gbps': 1e9,
+    't': 1e12,
+    'tb': 1024 * 1024 * 1024 * 1024,
+    'tib': 1024 * 1024 * 1024 * 1024,
+    'tbyte': 1024 * 1024 * 1024 * 1024,
+    'tbytes': 1024 * 1024 * 1024 * 1024,
+    'tbit': 1e12,
+    'tbit/s': 1e12,
+    'tb/s': 1e12,
+    'tbps': 1e12
+  };
+
+  const multiplier = unitMultipliers[unit];
+  if (multiplier === undefined) return null;
+
+  return numberPart * multiplier;
+}
+
 // Add helper function to support "yyyy-MM-dd HH:mm:ss" format.
 function parseDate(str) {
   // If the string contains a space but no 'T', replace the first space with 'T'
@@ -216,6 +279,15 @@ function sortTable(table) {
           let numB = parseFloat(valB);
           if (numA < numB) return crit.direction === 'asc' ? -1 : 1;
           if (numA > numB) return crit.direction === 'asc' ? 1 : -1;
+          continue;
+        }
+
+        // Attempt parsing numbers with commas or units before falling back to strings
+        const parsedA = parseNumberWithUnits(valA);
+        const parsedB = parseNumberWithUnits(valB);
+        if (parsedA !== null && parsedB !== null) {
+          if (parsedA < parsedB) return crit.direction === 'asc' ? -1 : 1;
+          if (parsedA > parsedB) return crit.direction === 'asc' ? 1 : -1;
           continue;
         }
 
