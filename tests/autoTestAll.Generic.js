@@ -659,7 +659,61 @@
 
         ow.test.assert(res, false, "Problem with multiple $do().then().catch()");
     };
-    
+
+    exports.testDoCancel = function() {
+        var interrupted = $atomic(false, "boolean")
+        var cancelled = $atomic(false, "boolean")
+        var start = now()
+
+        var p = $do(() => {
+            while(true) {
+                sleep(1000, true)
+                if ((now() - start) > 5000) throw "timeout"
+            }
+        }).catch((reason) => {
+            if (String(reason) == "cancelled" || String(reason).toLowerCase().indexOf("interrupted") >= 0) {
+                cancelled.set(true)
+                interrupted.set(true)
+            }
+            $await("testDoCancel").notify()
+        })
+
+        $doWait(p, 1500)
+        var cRes = p.cancel("cancelled")
+        $await("testDoCancel").wait(2000)
+
+        ow.test.assert(cRes, true, "Problem cancelling $do");
+        ow.test.assert(interrupted.get(), true, "Problem interrupting $do thread")
+        ow.test.assert(cancelled.get(), true, "Problem propagating $do cancellation")
+    };
+
+    exports.testDoVCancel = function() {
+        var interrupted = $atomic(false, "boolean");
+        var cancelled = $atomic(false, "boolean");
+        var start = now();
+
+        var p = $doV(() => {
+            while(true) {
+                sleep(1000, true)
+                if ((now() - start) > 5000) throw "timeout"
+            }
+        }).catch((reason) => {
+            if (String(reason) == "cancelled" || String(reason).toLowerCase().indexOf("interrupted") >= 0) {
+                cancelled.set(true)
+                interrupted.set(true)
+            }
+            $await("testDoVCancel").notify()
+        })
+
+        $doWait(p, 1500)
+        var cRes = p.cancel("cancelled")
+        $await("testDoVCancel").wait(2000)
+
+        ow.test.assert(cRes, true, "Problem cancelling $doV");
+        ow.test.assert(interrupted.get(), true, "Problem interrupting $doV thread");
+        ow.test.assert(cancelled.get(), true, "Problem propagating $doV cancellation");
+    };
+
     exports.testDoAll = function() {
         var success = [];
 
