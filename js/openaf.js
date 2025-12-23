@@ -12703,7 +12703,7 @@ oPromise.prototype.__exec = function() {
                                                         if (thisOP.state.get() != thisOP.states.PREFAILED &&
                                                                 thisOP.state.get() != thisOP.states.FAILED &&
                                                                 f != null && isDef(f) && f.type == "exec" && isDef(f.func) && isFunction(f.func)) {
-                                                                var res, done = false;
+                                                                var res;
                                                                 try {
                                                                         var checkResult = $atomic(true, "boolean");
                                                                         if (isDef(thisOP.value)) {
