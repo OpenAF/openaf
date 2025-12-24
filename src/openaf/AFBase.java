@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -53,6 +54,8 @@ import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.JSDescriptor;
+import org.mozilla.javascript.JSScript;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.annotations.JSConstructor;
 import org.mozilla.javascript.annotations.JSFunction;
@@ -1346,6 +1349,41 @@ public class AFBase extends ScriptableObject {
 			return Class.forName(name);
 		}
 	}	
+
+	/**
+	 * <odoc>
+	 * <key>af.newScriptInstance(aClassOrName) : Script</key>
+	 * Instantiates a compiled script class, handling Rhino descriptor-based constructors when needed.
+	 * </odoc>
+	 */
+	@JSFunction
+	public Script newScriptInstance(Object aClassOrName) throws Exception {
+		Class<?> cls;
+		if (aClassOrName instanceof Class) {
+			cls = (Class<?>) aClassOrName;
+		} else if (aClassOrName instanceof String) {
+			cls = Class.forName((String) aClassOrName);
+		} else {
+			throw new IllegalArgumentException("Unsupported class reference: " + aClassOrName);
+		}
+
+		try {
+			return (Script) cls.getDeclaredConstructor().newInstance();
+		} catch (NoSuchMethodException e) {
+			try {
+				Class.forName(cls.getName() + "Main", true, cls.getClassLoader());
+				Field field = cls.getDeclaredField("_descriptors");
+				field.setAccessible(true);
+				JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
+				if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
+					throw new IllegalStateException("Missing JS descriptors for " + cls.getName());
+				}
+				return new JSScript((JSDescriptor) descriptors[0], null);
+			} catch (Throwable t) {
+				throw new RuntimeException("Failed to load compiled script " + cls.getName(), t);
+			}
+		}
+	}
 	
 	/**
 	 * <odoc>

@@ -10,6 +10,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.net.MalformedURLException;
 import java.nio.charset.Charset;
 import java.util.zip.ZipFile;
@@ -18,9 +22,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.IdScriptableObject;
+import org.mozilla.javascript.JSDescriptor;
+import org.mozilla.javascript.JSScript;
 import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeJSON;
 import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
@@ -787,15 +794,15 @@ public class AFCmdOS extends AFCmdBase {
 				afScript = (Scriptable) jse.newObject(gscope, "AF");
 				
 				if (!ScriptableObject.hasProperty(gscope, "af"))
-					((IdScriptableObject) gscope).put("af", gscope, afScript);
+					ScriptableObject.putProperty(gscope, "af", afScript);
 				
 				// Add the IO object
 				if (!ScriptableObject.hasProperty(gscope, "io"))
-					((IdScriptableObject) gscope).put("io", gscope, jse.newObject(gscope, "IO"));
+					ScriptableObject.putProperty(gscope, "io", jse.newObject(gscope, "IO"));
 				
 			}
 
-			AFBase.runFromClass(Class.forName("openaf_js").getDeclaredConstructor().newInstance());
+			AFBase.runFromClass(newScriptInstance("openaf_js"));
 			//cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
@@ -867,6 +874,42 @@ public class AFCmdOS extends AFCmdBase {
 		} catch (Exception e1) {
 			SimpleLog.log(SimpleLog.logtype.ERROR, "Error while executing operation: " + e1.getMessage(), null);
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "", e1);
+		}
+	}
+
+	private static Script newScriptInstance(String className) throws Exception {
+		Class<?> cls = Class.forName(className);
+		try {
+			return (Script) cls.getDeclaredConstructor().newInstance();
+		} catch (NoSuchMethodException e) {
+			try {
+				Class.forName(className + "Main", true, cls.getClassLoader());
+				Field field = cls.getDeclaredField("_descriptors");
+				field.setAccessible(true);
+				JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
+				if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
+					throw new IllegalStateException("Missing JS descriptors for " + className);
+				}
+				return new JSScript((JSDescriptor) descriptors[0], null);
+			} catch (Throwable initFailure) {
+				return compileScriptFromResource(cls, className);
+			}
+		}
+	}
+
+	private static Script compileScriptFromResource(Class<?> cls, String className) throws Exception {
+		String resourceName = "js/openaf.js";
+		try (InputStream in = cls.getClassLoader().getResourceAsStream(resourceName)) {
+			if (in == null) {
+				throw new IllegalStateException("Unable to load " + resourceName + " for " + className);
+			}
+			Context cx = (Context) AFCmdBase.jse.enterContext();
+			try {
+				InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
+				return cx.compileReader(reader, resourceName, 1, null);
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
 		}
 	}
 
