@@ -1206,11 +1206,28 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	static public Object runFromClass(Object cl) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
-		Object ret = ((Script) cl).exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
-		AFCmdBase.jse.exitContext();
-		
-		return ret;
+		try {
+			Script script = coerceToScript(cl);
+			return script.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
+		} finally {
+			AFCmdBase.jse.exitContext();
+		}
 		//OptRuntime.main((Script) cl, new String[0]);
+	}
+
+	private static Script coerceToScript(Object candidate) {
+		if (candidate instanceof Script) {
+			return (Script) candidate;
+		}
+
+		if (candidate instanceof NativeJavaObject) {
+			Object unwrapped = ((NativeJavaObject) candidate).unwrap();
+			if (unwrapped instanceof Script) {
+				return (Script) unwrapped;
+			}
+		}
+
+		throw new IllegalArgumentException("Expected Script but got " + (candidate == null ? "null" : candidate.getClass().getName()));
 	}
 	
 	/**
@@ -1358,13 +1375,21 @@ public class AFBase extends ScriptableObject {
 	 */
 	@JSFunction
 	public Script newScriptInstance(Object aClassOrName) throws Exception {
+		Object target = (aClassOrName instanceof NativeJavaObject)
+			? ((NativeJavaObject) aClassOrName).unwrap()
+			: aClassOrName;
+
+		if (target instanceof Script) {
+			return (Script) target;
+		}
+
 		Class<?> cls;
-		if (aClassOrName instanceof Class) {
-			cls = (Class<?>) aClassOrName;
-		} else if (aClassOrName instanceof String) {
-			cls = Class.forName((String) aClassOrName);
+		if (target instanceof Class) {
+			cls = (Class<?>) target;
+		} else if (target instanceof String) {
+			cls = Class.forName((String) target);
 		} else {
-			throw new IllegalArgumentException("Unsupported class reference: " + aClassOrName);
+			throw new IllegalArgumentException("Unsupported class reference: " + target);
 		}
 
 		try {
