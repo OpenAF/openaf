@@ -3197,13 +3197,13 @@ const getOpenAFPath = function() {
 	} else {
 		if (isUnDef(__OpenAFJar)) {
 			var res;
-			ar.map(f => {
+			ar.forEach(f => {
 				if (f.endsWith("openaf.jar")) {
 					res = String(java.io.File(f).getAbsolutePath());
 					if (res.endsWith("openaf.jar")) res = res.substring(0, res.length - 11);
 					res = res.split("\\").join("/");
-					var lastSlash = Math.max(res.lastIndexOf("/"), res.lastIndexOf("\\"));
-					if (lastSlash > 0) res = res.substring(0, lastSlash);
+					//var lastSlash = Math.max(res.lastIndexOf("/"), res.lastIndexOf("\\"));
+					//if (lastSlash > 0) res = res.substring(0, lastSlash);
 				}
 			});
 			__OpenAFJar = res;
