@@ -49,7 +49,6 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJSON;
 import org.mozilla.javascript.NativeJavaArray;
 import org.mozilla.javascript.NativeJavaObject;
-import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
@@ -925,7 +924,6 @@ public class AFBase extends ScriptableObject {
 	@SuppressWarnings("rawtypes")
 	@JSFunction
 	public Class<?> externalClass(Object locs, String clName) throws Exception {
-		URLClassLoader loader = null;
 		try {
 			ArrayList<URL> aURLs = new ArrayList<URL>();
 			if (!(locs instanceof NativeArray)) return null;
@@ -936,17 +934,13 @@ public class AFBase extends ScriptableObject {
 			AFCmdBase.jse.exitContext();
 			URL[] urls = {};
 			urls = aURLs.toArray(urls);
-			loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+			URLClassLoader loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
 			Class<?> cl = Class.forName(clName, true, loader);
 			
 			return cl;
 		} catch (ClassNotFoundException | MalformedURLException e) {
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "Cannot find class: " + clName + "; " + e.getMessage(), e);
 			throw e;
-		} finally {
-			if (loader != null) {
-				loader.close();
-			}
 		}
 	}
 	
@@ -1019,7 +1013,7 @@ public class AFBase extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void load(String js, NativeFunction callback) throws Exception {
+	public void load(String js, Function callback) throws Exception {
 		String includeScript = null;
 
 		if (js == null) throw new Exception("No filename provided.");
@@ -1122,7 +1116,7 @@ public class AFBase extends ScriptableObject {
 	@JSFunction
 	public Object compile(String script, String name) {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
-		cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6); 
+		//cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6); 
 		org.mozilla.javascript.Script compiledScript = cx.compileString(script, name, 1, null);
 		AFCmdBase.jse.addNumberOfLines(script);
 		Object ret = compiledScript.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
@@ -1208,6 +1202,7 @@ public class AFBase extends ScriptableObject {
 		Context cx = (Context) AFCmdBase.jse.enterContext();
 		try {
 			Script script = coerceToScript(cl);
+			initCompiledClass(script.getClass());
 			return script.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
 		} finally {
 			AFCmdBase.jse.exitContext();
@@ -1228,6 +1223,59 @@ public class AFBase extends ScriptableObject {
 		}
 
 		throw new IllegalArgumentException("Expected Script but got " + (candidate == null ? "null" : candidate.getClass().getName()));
+	}
+
+	static void initCompiledClass(Class<?> cls) {
+		Context cx = (Context) AFCmdBase.jse.enterContext();
+		try {
+			loadCompiledCompanions(cls);
+			try {
+				cls.getMethod("_reInit", Context.class).invoke(null, cx);
+			} catch (NoSuchMethodException e) {
+				// Method not generated when no regex literals exist.
+			}
+			try {
+				cls.getMethod("_qInit").invoke(null);
+			} catch (NoSuchMethodException e) {
+				// Method not generated when no template literals exist.
+			}
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException("Failed to initialize compiled script class " + cls.getName(), e);
+		} finally {
+			AFCmdBase.jse.exitContext();
+		}
+	}
+
+	private static void loadCompiledCompanions(Class<?> cls) throws ReflectiveOperationException {
+		Field field;
+		try {
+			field = cls.getDeclaredField("_descriptors");
+		} catch (NoSuchFieldException e) {
+			return;
+		}
+
+		ClassLoader loader = cls.getClassLoader();
+		String className = cls.getName();
+		try {
+			Class.forName(className + "Main", true, loader);
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("Missing compiled companion class " + className + "Main", e);
+		}
+
+		field.setAccessible(true);
+		JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
+		if (descriptors == null || descriptors.length == 0) {
+			throw new RuntimeException("Missing JS descriptors for " + className);
+		}
+
+		for (int i = 0; i < descriptors.length; i++) {
+			String codeClass = className + "ojsc" + i;
+			try {
+				Class.forName(codeClass, true, loader);
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException("Missing compiled companion class " + codeClass, e);
+			}
+		}
 	}
 	
 	/**
@@ -1393,7 +1441,9 @@ public class AFBase extends ScriptableObject {
 		}
 
 		try {
-			return (Script) cls.getDeclaredConstructor().newInstance();
+			Script script = (Script) cls.getDeclaredConstructor().newInstance();
+			initCompiledClass(cls);
+			return script;
 		} catch (NoSuchMethodException e) {
 			try {
 				Class.forName(cls.getName() + "Main", true, cls.getClassLoader());
@@ -1403,6 +1453,7 @@ public class AFBase extends ScriptableObject {
 				if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
 					throw new IllegalStateException("Missing JS descriptors for " + cls.getName());
 				}
+				initCompiledClass(cls);
 				return new JSScript((JSDescriptor) descriptors[0], null);
 			} catch (Throwable t) {
 				throw new RuntimeException("Failed to load compiled script " + cls.getName(), t);

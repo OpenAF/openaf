@@ -1690,11 +1690,11 @@ const __ansiColorPrep = function(aAnsi) {
 	var nAnsi = []
 	aAnsi.split(",").forEach(r => {
 		if (r.startsWith("BG(")) {
-			var bg = r.match(/BG\((\d+)\)/)
-			if (!isNull(bg)) aString = "\033[48;5;" + bg[1] + "m" + aString
+			var bg = r.substring(3, r.length - 1)
+			if (bg.length > 0) aString = "\033[48;5;" + bg + "m" + aString
 		} else if (r.startsWith("FG(")) {
-			var fg = r.match(/FG\((\d+)\)/)
-			if (!isNull(fg)) aString = "\033[38;5;" + fg[1] + "m" + aString
+			var fg = r.substring(3, r.length - 1)
+			if (fg.length > 0) aString = "\033[38;5;" + fg + "m" + aString
 		} else {
 			nAnsi.push(r)
 		}
@@ -1745,7 +1745,7 @@ const ansiColor = function(aAnsi, aString, force, noCache, noReset) {
 	}
 }
 
-var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
+var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).indexOf("Windows") >= 0 ? true : false;
 var __ansiColorValue;
 var openafOldTheme = false;
 
@@ -1756,7 +1756,7 @@ var openafOldTheme = false;
  * </odoc>
  */
 const ansiWinTermCap = function() {
-	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+	if (String(java.lang.System.getProperty("os.name")).indexOf("Windows") >= 0) {
 		if (isDef(__ansiColorValue)) return (__ansiColorValue > 3);
 
 		var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
@@ -1819,7 +1819,7 @@ const ansiStart = function(force) {
  */
 const ansiStop = function(force) {
 	if (__ansiColorFlag) {
-		if (isDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+		if (isDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).indexOf("Windows") >= 0) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
 			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
@@ -3191,22 +3191,26 @@ const getDistribution = function() {
  */
 var __OpenAFJar;
 const getOpenAFPath = function() {
+	var ar = String(java.lang.System.getProperty("java.class.path")).split(java.io.File.pathSeparator)
 	if (isDef(__forcedOpenAFJar)) {
 		__OpenAFJar = String(new java.io.File(__forcedOpenAFJar).getParent());
 	} else {
 		if (isUnDef(__OpenAFJar)) {
-			var ar = String(java.lang.System.getProperty("java.class.path")).split(java.io.File.pathSeparator);
 			var res;
 			ar.map(f => {
-				if (f.match(/openaf\.jar$/)) {
+				if (f.endsWith("openaf.jar")) {
 					res = String(java.io.File(f).getAbsolutePath());
-					res = res.replace(/openaf\.jar$/, "").replace(/\\/g, "/");
-					res = res.replace(/[/\\][^/\\]+$/, "");
+					if (res.endsWith("openaf.jar")) res = res.substring(0, res.length - 11);
+					res = res.split("\\").join("/");
+					var lastSlash = Math.max(res.lastIndexOf("/"), res.lastIndexOf("\\"));
+					if (lastSlash > 0) res = res.substring(0, lastSlash);
 				}
 			});
 			__OpenAFJar = res;
 		}	
 	}
+
+	if (__OpenAFJar[__OpenAFJar.length - 1] != "/") __OpenAFJar += "/"
 
 	return __OpenAFJar;
 }
@@ -3701,8 +3705,35 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 			if (!dontLoad && aScript.endsWith(".class")) {
 				try {
 					af.getClass(cl);
+					try {
+						af.newScriptInstance(cl);
+					} catch(e2) {
+						if (String(e2).match(/ClassNotFoundException|Missing compiled companion class/)) {
+							io.mkdir(path);
+							io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
+							io.rm(clFilepath);
+							var code = io.readFileString(info.canonicalPath)
+							__codeVerify(code, aScript)
+							if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
+							af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + code + "}", path);
+							af.runFromExternalClass(cl, path);
+							var exp = {}, mod = { id: cl, uri: cl, exports: exp };
+
+							global["__" + cl].call({}, requireCompiled, exp, mod);
+							return mod.exports;
+						} else {
+							throw e2;
+						}
+					}
 				} catch(e) {
 					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
+						io.mkdir(path);
+						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
+						io.rm(clFilepath);
+						var code = io.readFileString(info.canonicalPath)
+						__codeVerify(code, aScript)
+						if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
+						af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + code + "}", path);
 						af.runFromExternalClass(cl, path);
 						var exp = {}, mod = { id: cl, uri: cl, exports: exp };
 
@@ -3760,8 +3791,32 @@ const loadCompiled = function(aScript, dontCompile, dontLoad) {
 			if (!dontLoad && aScript.endsWith(".class")) {
 				try {
 					af.getClass(cl);
+					try {
+						af.newScriptInstance(cl);
+					} catch(e2) {
+						if (String(e2).match(/ClassNotFoundException|Missing compiled companion class/)) {
+							io.mkdir(path);
+							io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
+							io.rm(clFilepath);
+							var code = io.readFileString(info.canonicalPath)
+							__codeVerify(code, aScript)
+							if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
+							af.compileToClasses(cl, code, path);
+							af.runFromExternalClass(cl, path);
+							res = true;
+						} else {
+							throw e2;
+						}
+					}
 				} catch(e) {
 					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
+						io.mkdir(path);
+						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
+						io.rm(clFilepath);
+						var code = io.readFileString(info.canonicalPath)
+						__codeVerify(code, aScript)
+						if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
+						af.compileToClasses(cl, code, path);
 						af.runFromExternalClass(cl, path);
 						res = true;
 					} else {
@@ -4026,7 +4081,7 @@ const cls = function() {
  * </odoc>
  */
 const conReset = function() {
-	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) return true
+	if (String(java.lang.System.getProperty("os.name")).indexOf("Windows") >= 0) return true
 	if (!__initializeCon() || isUnDef(__con)) return false
 	__con.getTerminal().settings.set("sane")
 	return true
@@ -5436,7 +5491,7 @@ const addOnOpenAFShutdown = function(aFunction) {
 const pidCheck = function(aPid) {
 	try {
 		aPid = Number(aPid);
-		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
+		if (java.lang.System.getProperty("os.name").indexOf("Windows") >= 0) {
 			if (af.sh("cmd /c tasklist /NH /FI \"PID eq " + aPid + "\"").match(aPid)) {
 				return true;
 			} 
@@ -5487,7 +5542,7 @@ const pidCheckIn = function(aFilename) {
 const pidKill = function(aPidNumber, isForce) {
 	try {
 		var force = "";
-		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
+		if (java.lang.System.getProperty("os.name").indexOf("Windows") >= 0) {
 			if (isForce) {
 				// Use /T flag to kill process tree (including children) and /F for force
 				force = "/T /F";
@@ -6171,7 +6226,19 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 			af.runFromClass(af.newScriptInstance(aClass));
 		} catch(e) {
 			if (isCoreCompiledLib(aClass)) throw e;
-			loadLib(_libPath, true);
+			if (String(e).match(/ClassNotFoundException|Missing compiled companion class/)) {
+				try {
+					if (loadCompiled(_libPath)) {
+						af.runFromClass(af.newScriptInstance(aClass));
+					} else {
+						loadLib(_libPath, true);
+					}
+				} catch(_e) {
+					loadLib(_libPath, true);
+				}
+			} else {
+				loadLib(_libPath, true);
+			}
 		}
 		__loadedLibs[aClass.toLowerCase()] = true;
 	};
@@ -6203,6 +6270,20 @@ const loadCompiledRequire = function(aClass, forceReload, aFunction) {
 			return mod.exports;
 		} catch(e) {
 			if (isCoreCompiledLib(aClass)) throw e;
+			if (String(e).match(/ClassNotFoundException|Missing compiled companion class/)) {
+				try {
+					if (loadCompiled(_libPath)) {
+						af.runFromClass(af.newScriptInstance(aClass));
+						var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+						global["__" + aClass](loadCompiledRequire, exp, mod);
+						__loadedLibs[aClass.toLowerCase()] = true;
+						if (isDef(aFunction)) aFunction(mod.exports);
+						return mod.exports;
+					}
+				} catch(_e) {
+					// Fall back to source load below.
+				}
+			}
 			var mod = require(_libPath);
 			__loadedLibs[aClass.toLowerCase()] = true;
 			if (isDef(aFunction)) aFunction(mod);
@@ -7169,7 +7250,7 @@ const checkLatestVersion = function() {
  */
 const sh = function(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback) {
 	if (typeof commandArguments == "string") {
-		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
+		if (java.lang.System.getProperty("os.name").indexOf("Windows") >= 0) {
 			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback);
 		} else {
 			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback);
@@ -9977,11 +10058,24 @@ const newFn = function() {
  */
 AF.prototype.runFromExternalClass = function(aClass, aPath) {
 	try {
+		var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
+		af.runFromClass(af.newScriptInstance(cl));
+		return;
+	} catch(e) {
+		if (String(e).match(/ClassNotFoundException/)) {
+			// Fall through to the default loader below.
+		} else {
+			throw e;
+		}
+	}
+	try {
 		af.runFromClass(af.newScriptInstance(aClass));
 	} catch(e) {
 		if (String(e).match(/ClassNotFoundException/)) {
 			var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
 			af.runFromClass(af.newScriptInstance(cl));
+		} else {
+			throw e;
 		}
 	}
 };

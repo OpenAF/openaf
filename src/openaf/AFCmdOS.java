@@ -24,7 +24,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.IdScriptableObject;
 import org.mozilla.javascript.JSDescriptor;
 import org.mozilla.javascript.JSScript;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeJSON;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Script;
@@ -141,10 +141,10 @@ public class AFCmdOS extends AFCmdBase {
 				return (String) aPass;
 			}
 		} 
-		if (aPass instanceof NativeFunction) {
+		if (aPass instanceof Function) {
 			try {
 				Context cx = (Context) AFCmdBase.jse.enterContext();
-				return (String) ((NativeFunction) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+				return (String) ((Function) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
                             cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
                             new Object[] { });
 			} catch(Exception e) {
@@ -820,7 +820,7 @@ public class AFCmdOS extends AFCmdBase {
 			} 
 
 			if (injectclass) {
-				res = AFBase.runFromClass(Class.forName(injectclassfile).getDeclaredConstructor().newInstance());
+				res = AFBase.runFromClass(newScriptInstance(injectclassfile));
 			}
 			
 			if (isolatePMs && res != null && !(res instanceof Undefined)) {
@@ -880,7 +880,9 @@ public class AFCmdOS extends AFCmdBase {
 	private static Script newScriptInstance(String className) throws Exception {
 		Class<?> cls = Class.forName(className);
 		try {
-			return (Script) cls.getDeclaredConstructor().newInstance();
+			Script script = (Script) cls.getDeclaredConstructor().newInstance();
+			AFBase.initCompiledClass(cls);
+			return script;
 		} catch (NoSuchMethodException e) {
 			try {
 				Class.forName(className + "Main", true, cls.getClassLoader());
@@ -890,6 +892,7 @@ public class AFCmdOS extends AFCmdBase {
 				if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
 					throw new IllegalStateException("Missing JS descriptors for " + className);
 				}
+				AFBase.initCompiledClass(cls);
 				return new JSScript((JSDescriptor) descriptors[0], null);
 			} catch (Throwable initFailure) {
 				return compileScriptFromResource(cls, className);

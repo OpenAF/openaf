@@ -1772,45 +1772,51 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
             }
         }
     }, initData)
+    const mcpInitialize = () => initData
+    const mcpPromptsList = () => ({})
+    const mcpNotificationsInitialized = () => ({})
+    const mcpPing = () => ({})
+    const mcpToolsCall = params => {
+        if (isDef(params.name)) {
+            const tool = fns[params.name]
+            if (tool) {
+                try {
+                    var result = tool(params.input || params.arguments || {})
+                    return { 
+                        content: [{
+                            type: "text",
+                            text: isString(result) ? result : stringify(result, __, "")
+                        }],
+                        isError: false
+                    }
+                } catch (e) {
+                    return { 
+                        content: [{
+                            type: "text",
+                            text: "Error executing tool: " + e.message
+                        }],
+                        isError: true
+                    }
+                }
+            } else {
+                return { content: [{
+                    type: "text",
+                    text: "Tool not found: " + params.name
+                }], isError: true }
+            }
+        }
+    }
+    const mcpToolsList = () => ({ tools: fnsMeta })
     io.pipeLn(line => {
         var _pline = jsonParse(line)
         lgF("rcv", _pline)
         var _res = ow.server.jsonRPC(_pline, {
-            initialize                 : () => initData,
-            "prompts/list"             : () => ({}),
-            "notifications/initialized": () => ({}),
-            ping                       : () => ({}),
-            "tools/call"               : params => {
-                if (isDef(params.name)) {
-                    const tool = fns[params.name]
-                    if (tool) {
-                        try {
-                            var result = tool(params.input || params.arguments || {})
-                            return { 
-                                content: [{
-                                    type: "text",
-                                    text: isString(result) ? result : stringify(result, __, "")
-                                }],
-                                isError: false
-                            }
-                        } catch (e) {
-                            return { 
-                                content: [{
-                                    type: "text",
-                                    text: "Error executing tool: " + e.message
-                                }],
-                                isError: true
-                            }
-                        }
-                    } else {
-                        return { content: [{
-                            type: "text",
-                            text: "Tool not found: " + params.name
-                        }], isError: true }
-                    }
-                }
-            },
-            "tools/list": () => ({ tools: fnsMeta })
+            initialize                 : mcpInitialize,
+            "prompts/list"             : mcpPromptsList,
+            "notifications/initialized": mcpNotificationsInitialized,
+            ping                       : mcpPing,
+            "tools/call"               : mcpToolsCall,
+            "tools/list"               : mcpToolsList
         })
 
         lgF("snd", _res)
