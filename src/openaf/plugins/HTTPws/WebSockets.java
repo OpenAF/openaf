@@ -87,9 +87,12 @@ public class WebSockets {
         //client = new WebSocketClient(hclient);
 
         try {
+            @SuppressWarnings("removal")
             org.eclipse.jetty.websocket.client.ClientUpgradeRequest request = null;
             if (u != null && p != null) {
-                request = new org.eclipse.jetty.websocket.client.ClientUpgradeRequest();
+                @SuppressWarnings("removal")
+                org.eclipse.jetty.websocket.client.ClientUpgradeRequest tempRequest = new org.eclipse.jetty.websocket.client.ClientUpgradeRequest();
+                request = tempRequest;
                 String s = new String(AFCmdBase.afc.dIP(u) + ":" + new String(AFCmdBase.afc.dIP(p).toCharArray()));
                 request.setHeader("Authorization",
                         "Basic " + new String(org.apache.commons.codec.binary.Base64.encodeBase64(s.getBytes())));
@@ -103,10 +106,14 @@ public class WebSockets {
             EventSocket socket = new EventSocket(onConnect, onMsg, onError, onClose);
             Future<org.eclipse.jetty.websocket.api.Session> fut;
             if (request == null) {
-                fut = client.connect(socket, uri);
+                @SuppressWarnings("removal")
+                Future<org.eclipse.jetty.websocket.api.Session> tempFut = client.connect(socket, uri);
+                fut = tempFut;
             } else {
-                fut = client
+                @SuppressWarnings("removal")
+                Future<org.eclipse.jetty.websocket.api.Session> tempFut = client
                 .connect(socket, uri, request);
+                fut = tempFut;
             }
             
             org.eclipse.jetty.websocket.api.Session session;

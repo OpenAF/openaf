@@ -815,7 +815,8 @@ public class AFCmdOS extends AFCmdBase {
 			if (injectscript || filescript || injectcode || processScript) {
 				Context cxl = (Context) jse.enterContext();
 				org.mozilla.javascript.Script compiledScript = cxl.compileString(script, scriptfile, 1, null);
-				res = compiledScript.exec(cxl, gscope);
+				Object tempRes = compiledScript.exec(cxl, gscope, gscope);
+				res = tempRes;
 				jse.exitContext();
 			} 
 

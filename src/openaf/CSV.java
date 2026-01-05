@@ -156,7 +156,8 @@ public class CSV extends ScriptableObject {
 				csvFormatB = csvFormatB.setNullString((String) jsMap.get("withNullString"));
 			}
 
-			this.csvFormat = csvFormatB.build();
+			CSVFormat tempFormat = csvFormatB.build();
+			this.csvFormat = tempFormat;
 		}
 	}
 
@@ -199,7 +200,8 @@ public class CSV extends ScriptableObject {
 			String[] headers = null;
 			Reader reader = new InputStreamReader(((InputStream) aStream), "UTF-8");
 			if (!this.csvFormat.getSkipHeaderRecord() && this.heads == null) {
-				this.csvFormat = this.csvFormat.builder().setHeader().build();
+				CSVFormat tempFormat = CSVFormat.Builder.create(this.csvFormat).setHeader().build();
+				this.csvFormat = tempFormat;
 			}
 			CSVParser parser = this.csvFormat.parse(reader);
 			

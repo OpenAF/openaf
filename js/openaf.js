@@ -3191,12 +3191,14 @@ const getDistribution = function() {
  */
 var __OpenAFJar;
 const getOpenAFPath = function() {
-	var ar = String(java.lang.System.getProperty("java.class.path")).split(java.io.File.pathSeparator)
 	if (isDef(__forcedOpenAFJar)) {
-		__OpenAFJar = String(new java.io.File(__forcedOpenAFJar).getParent());
+		__OpenAFJar = String(new java.io.File(__forcedOpenAFJar).getParent())
+		if (__OpenAFJar[__OpenAFJar.length - 2] == "/.") __OpenAFJar = __OpenAFJar.substring(0, __OpenAFJar.length - 1)
+		if (__OpenAFJar[__OpenAFJar.length - 1] != "/")  __OpenAFJar += "/"
 	} else {
 		if (isUnDef(__OpenAFJar)) {
-			var res;
+			var res
+			var ar = String(java.lang.System.getProperty("java.class.path")).split(java.io.File.pathSeparator)
 			ar.forEach(f => {
 				if (f.endsWith("openaf.jar")) {
 					res = String(java.io.File(f).getAbsolutePath());
@@ -3205,14 +3207,14 @@ const getOpenAFPath = function() {
 					//var lastSlash = Math.max(res.lastIndexOf("/"), res.lastIndexOf("\\"));
 					//if (lastSlash > 0) res = res.substring(0, lastSlash);
 				}
-			});
-			__OpenAFJar = res;
+			})
+			__OpenAFJar = res
+			if (__OpenAFJar[__OpenAFJar.length - 2] == "/.") __OpenAFJar = __OpenAFJar.substring(0, __OpenAFJar.length - 1)
+			if (__OpenAFJar[__OpenAFJar.length - 1] != "/")  __OpenAFJar += "/"
 		}	
 	}
 
-	if (__OpenAFJar[__OpenAFJar.length - 1] != "/") __OpenAFJar += "/"
-
-	return __OpenAFJar;
+	return __OpenAFJar
 }
 
 __flags.OJOB_LOCALPATH = getOpenAFPath() + "ojobs"

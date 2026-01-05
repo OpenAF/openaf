@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.SSLServerSocketFactory;
@@ -114,7 +115,11 @@ public class HTTPd extends NanoHTTPD implements IHTTPd {
 			}
 		}
 
-		Map<String, String> parms = session.getParms();
+		Map<String, List<String>> params = session.getParameters();
+		Map<String, String> parms = new HashMap<>();
+		for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+			parms.put(entry.getKey(), entry.getValue().isEmpty() ? "" : entry.getValue().get(0));
+		}
 		parms.put(super.QUERY_STRING_PARAMETER, session.getQueryParameterString());
 		Response res = com.nwu.httpd.HTTPSession.serve(this, log, session.getUri(), method, session.getHeaders(), parms,
 				files, session.getOriginalURI());

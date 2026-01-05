@@ -1119,7 +1119,7 @@ public class AFBase extends ScriptableObject {
 		//cx.setLanguageVersion(org.mozilla.javascript.Context.VERSION_ES6); 
 		org.mozilla.javascript.Script compiledScript = cx.compileString(script, name, 1, null);
 		AFCmdBase.jse.addNumberOfLines(script);
-		Object ret = compiledScript.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
+		Object ret = compiledScript.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), (Scriptable) AFCmdBase.jse.getGlobalscope());
 		AFCmdBase.jse.exitContext();
 		
 		return ret;
@@ -1203,7 +1203,7 @@ public class AFBase extends ScriptableObject {
 		try {
 			Script script = coerceToScript(cl);
 			initCompiledClass(script.getClass());
-			return script.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope());
+			return script.exec(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(), (Scriptable) AFCmdBase.jse.getGlobalscope());
 		} finally {
 			AFCmdBase.jse.exitContext();
 		}
