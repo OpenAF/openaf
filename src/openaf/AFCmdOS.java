@@ -111,6 +111,7 @@ public class AFCmdOS extends AFCmdBase {
 	private static final Map<Class<?>, Constructor<?>> constructorCache = new ConcurrentHashMap<>();
 	private static final Map<String, Field> fieldCache = new ConcurrentHashMap<>();
 	private static final Map<String, JSDescriptor<?>> descriptorCache = new ConcurrentHashMap<>();
+	private static final Map<Class<?>, Boolean> initializedClasses = new ConcurrentHashMap<>();
 	
 	// Regex pattern cache to avoid recompilation
 	private static final Pattern ZIP_SUFFIX_PATTERN = Pattern.compile("::[^:]+$");
@@ -760,10 +761,7 @@ public class AFCmdOS extends AFCmdBase {
 			Scriptable gscope = (Scriptable) jse.getGlobalscope();
 			Object noSLF4JErrorOnly = Context.javaToJS(__noSLF4JErrorOnly, gscope);
 			
-			// Issue 34
-			if (System.getProperty("java.util.logging.config.file") == null) {
-				System.setProperty("java.util.logging.config.file", "");
-			}
+			// Issue 34 - Already initialized in AFCmdBase static block
 			/*if (__noSLF4JErrorOnly) {
 				// Set logging to ERROR 
 				try {
@@ -783,54 +781,56 @@ public class AFCmdOS extends AFCmdBase {
 				opmIn = AFCmdBase.jse.newObject(gscope);
 			}
 			
-			synchronized(this) {		
-				ScriptableObject.putProperty(gscope, "__noSLF4JErrorOnly", noSLF4JErrorOnly);
-	
-				ScriptableObject.putProperty(gscope, "pmIn", opmIn);
-				ScriptableObject.putProperty(gscope, "__pmIn", opmIn);
-			
-				// Add pmOut object
-				Object opmOut = Context.javaToJS(jsonPMOut, gscope);
-				ScriptableObject.putProperty(gscope, "pmOut", opmOut);
-				ScriptableObject.putProperty(gscope, "__pmOut", opmOut);
-				
-				// Add expr object
-				Object opmExpr = Context.javaToJS(exprInput, gscope);
-				ScriptableObject.putProperty(gscope, "expr", opmExpr);
-				ScriptableObject.putProperty(gscope, "__expr", opmExpr);
-				ScriptableObject.putProperty(gscope, "__args", args);
-				
-				// Add scriptfile object
-				if (filescript) {
-					Object scriptFile = Context.javaToJS(scriptfile, gscope);
-					ScriptableObject.putProperty(gscope, "__scriptfile", scriptFile);
-					ScriptableObject.putProperty(gscope, "__iszip", (zip == null) ? false: true);
-				}
+			// ScriptableObject operations are thread-safe, no need for synchronization during startup
+			ScriptableObject.putProperty(gscope, "__noSLF4JErrorOnly", noSLF4JErrorOnly);
 
-				// Add AF class
-				ScriptableObject.defineClass(gscope, AFBase.class, false, true);
-				
-				// Add DB class
-				ScriptableObject.defineClass(gscope, DB.class, false, true);
-				
-				// Add CSV class
-				ScriptableObject.defineClass(gscope, CSV.class, false, true);
-				
-				// Add IO class
-				ScriptableObject.defineClass(gscope, IOBase.class, false, true);			
-				
-				// Add this object
-				Scriptable afScript = null;
-				afScript = (Scriptable) jse.newObject(gscope, "AF");
-				
-				if (!ScriptableObject.hasProperty(gscope, "af"))
-					ScriptableObject.putProperty(gscope, "af", afScript);
-				
-				// Add the IO object
-				if (!ScriptableObject.hasProperty(gscope, "io"))
-					ScriptableObject.putProperty(gscope, "io", jse.newObject(gscope, "IO"));
-				
+			ScriptableObject.putProperty(gscope, "pmIn", opmIn);
+			ScriptableObject.putProperty(gscope, "__pmIn", opmIn);
+
+			// Add pmOut object
+			Object opmOut = Context.javaToJS(jsonPMOut, gscope);
+			ScriptableObject.putProperty(gscope, "pmOut", opmOut);
+			ScriptableObject.putProperty(gscope, "__pmOut", opmOut);
+
+			// Add expr object
+			Object opmExpr = Context.javaToJS(exprInput, gscope);
+			ScriptableObject.putProperty(gscope, "expr", opmExpr);
+			ScriptableObject.putProperty(gscope, "__expr", opmExpr);
+			ScriptableObject.putProperty(gscope, "__args", args);
+
+			// Add scriptfile object
+			if (filescript) {
+				Object scriptFile = Context.javaToJS(scriptfile, gscope);
+				ScriptableObject.putProperty(gscope, "__scriptfile", scriptFile);
+				ScriptableObject.putProperty(gscope, "__iszip", (zip == null) ? false: true);
 			}
+
+			// Add AF class (only if not already defined)
+			if (!ScriptableObject.hasProperty(gscope, "AF"))
+				ScriptableObject.defineClass(gscope, AFBase.class, false, true);
+
+			// Add DB class (only if not already defined)
+			if (!ScriptableObject.hasProperty(gscope, "DB"))
+				ScriptableObject.defineClass(gscope, DB.class, false, true);
+
+			// Add CSV class (only if not already defined)
+			if (!ScriptableObject.hasProperty(gscope, "CSV"))
+				ScriptableObject.defineClass(gscope, CSV.class, false, true);
+
+			// Add IO class (only if not already defined)
+			if (!ScriptableObject.hasProperty(gscope, "IO"))
+				ScriptableObject.defineClass(gscope, IOBase.class, false, true);
+
+			// Add this object
+			Scriptable afScript = null;
+			afScript = (Scriptable) jse.newObject(gscope, "AF");
+
+			if (!ScriptableObject.hasProperty(gscope, "af"))
+				ScriptableObject.putProperty(gscope, "af", afScript);
+
+			// Add the IO object
+			if (!ScriptableObject.hasProperty(gscope, "io"))
+				ScriptableObject.putProperty(gscope, "io", jse.newObject(gscope, "IO"));
 
 			AFBase.runFromClass(newScriptInstance("openaf_js"));
 			//cx.setErrorReporter(new OpenRhinoErrorReporter());
@@ -917,6 +917,14 @@ public class AFCmdOS extends AFCmdBase {
 		}
 	}
 
+	// Helper to initialize a class only once
+	private static void initCompiledClassOnce(Class<?> cls) throws Exception {
+		if (!initializedClasses.containsKey(cls)) {
+			AFBase.initCompiledClass(cls);
+			initializedClasses.put(cls, Boolean.TRUE);
+		}
+	}
+
 	private static Script newScriptInstance(String className) throws Exception {
 		// Fast path: check descriptor cache first (most common case)
 		JSDescriptor<?> cachedDescriptor = descriptorCache.get(className);
@@ -938,20 +946,20 @@ public class AFCmdOS extends AFCmdBase {
 		if (constructor != null) {
 			try {
 				Script script = (Script) constructor.newInstance();
-				AFBase.initCompiledClass(cls);
+				initCompiledClassOnce(cls);
 				return script;
 			} catch (Exception e) {
 				// Cache was invalid, remove it and continue
 				constructorCache.remove(cls);
 			}
 		}
-		
+
 		// Try to get and cache constructor
 		try {
 			constructor = cls.getDeclaredConstructor();
 			constructorCache.put(cls, constructor);
 			Script script = (Script) constructor.newInstance();
-			AFBase.initCompiledClass(cls);
+			initCompiledClassOnce(cls);
 			return script;
 		} catch (NoSuchMethodException e) {
 			// Fall through to descriptor approach
@@ -979,7 +987,7 @@ public class AFCmdOS extends AFCmdBase {
 			
 			// Cache descriptor for future fast-path access
 			descriptorCache.put(className, descriptors[0]);
-			AFBase.initCompiledClass(cls);
+			initCompiledClassOnce(cls);
 			return new JSScript((JSDescriptor) descriptors[0], null);
 		} catch (Throwable initFailure) {
 			return compileScriptFromResource(cls, className);

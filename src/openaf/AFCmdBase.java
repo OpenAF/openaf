@@ -1,8 +1,6 @@
 package openaf;
 
 import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.zip.ZipFile;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -16,17 +14,24 @@ import java.lang.String;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20260102";
+	public static String VERSION = "20260106";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
-	
+
 	public static JSEngine jse;
-	public static String afcmd = "AFCmdBase"; 
+	public static String afcmd = "AFCmdBase";
 	public static String[] args;
 	public static AFCmdBase afc;
 	public static ZipFile zip;
 	public static int optLevel = 9;
 	public static boolean dontDIP = false;
+
+	static {
+		// Issue 34 - Initialize java.util.logging.config.file once during class loading
+		if (System.getProperty("java.util.logging.config.file") == null) {
+			System.setProperty("java.util.logging.config.file", "");
+		}
+	}
 	
 	public String dIP(Object aPass) {
 		if (aPass instanceof String) {
@@ -71,18 +76,13 @@ public class AFCmdBase {
 		return null;
 	}
 	
-	public AFCmdBase() {	
+	public AFCmdBase() {
 		// Initialize startup optimization for Java 21+
 		StartupOptimizer.optimizeStartup();
-		
-		final ExecutorService executor = Executors.newCachedThreadPool();
-		executor.execute(new Runnable() {
-			@Override
-			public void run() {
-				SimpleLog.init();
-				executor.shutdown();
-			}
-		});		
+
+		// SimpleLog.init() is trivial (just sets ready = true), no need for thread pool
+		SimpleLog.init();
+
 		restartEngine();
 		afc = this;
 	}

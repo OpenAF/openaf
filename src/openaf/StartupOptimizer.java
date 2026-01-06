@@ -18,6 +18,7 @@ public final class StartupOptimizer {
     
     private static volatile boolean optimizationEnabled = true;
     private static volatile ExecutorService virtualThreadExecutor;
+    private static volatile CompletableFuture<Void> classWarmupFuture;
     // Precompile regex used to parse the java major version
     private static final java.util.regex.Pattern JAVA_MAJOR_PATTERN =
         java.util.regex.Pattern.compile("^(\\d+)");
@@ -53,24 +54,42 @@ public final class StartupOptimizer {
         if (!optimizationEnabled) {
             return;
         }
-        
-        // Pre-warm the OAFdCL classloader cache
-        CompletableFuture.runAsync(() -> {
+
+        // Pre-warm the OAFdCL classloader cache and store the future
+        classWarmupFuture = CompletableFuture.runAsync(() -> {
             OAFdCL loader = OAFdCL.getInstance(ClassLoader.getSystemClassLoader());
             if (loader != null) {
-                loader.preWarmCache();
+                try {
+                    loader.preWarmCache().join();  // Wait for class warmup to complete
+                } catch (Exception e) {
+                    // Ignore warmup failures
+                }
             }
         }, virtualThreadExecutor);
-        
+
         // Pre-load frequently used system properties
         CompletableFuture.runAsync(() -> {
             preloadSystemProperties();
         }, virtualThreadExecutor);
-        
+
         // Initialize JIT compilation hints
         CompletableFuture.runAsync(() -> {
             initializeJITHints();
         }, virtualThreadExecutor);
+    }
+
+    /**
+     * Await completion of class warmup for optimal cache hit rate
+     * Call this before critical path operations
+     */
+    public static void awaitClassWarmup(long timeoutMs) {
+        if (classWarmupFuture != null) {
+            try {
+                classWarmupFuture.get(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                // Timeout or error - continue anyway
+            }
+        }
     }
     
     /**
