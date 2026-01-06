@@ -45,7 +45,7 @@ const isJavaClass = function(obj) {
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
  */
-const isJavaObject = obj => {
+const isJavaObject = function(obj) {
 	//var s = Object.prototype.toString.call(obj);
 	//return (s === '[object JavaObject]' || s === '[object JavaArray]');
 	/*try {
@@ -81,7 +81,7 @@ const isJavaObject = obj => {
  * Returns true if aObj is a Java array, false otherwise
  * </odoc>
  */
-const isJavaArray = obj => {
+const isJavaArray = function(obj) {
 	try {
 		if (obj != null && typeof obj.getClass === 'function' && Object.prototype.toString.call(obj) === '[object JavaArray]') {
 			return true
@@ -100,7 +100,7 @@ const isJavaArray = obj => {
  * (see also isUnDef). Shortcut for the isDefined function.
  * </odoc>
  */
-const isDef = aObject => isJavaObject(aObject) || typeof aObject !== 'undefined'
+const isDef = function(aObject) { return isJavaObject(aObject) || typeof aObject !== 'undefined' }
 
 /**
  * <odoc>
@@ -109,7 +109,7 @@ const isDef = aObject => isJavaObject(aObject) || typeof aObject !== 'undefined'
  * (see also isDef). Shortcut for the isUndefined function.
  * </odoc>
  */
-const isUnDef = aObject => !isJavaObject(aObject) && typeof aObject == 'undefined'
+const isUnDef = function(aObject) { return !isJavaObject(aObject) && typeof aObject == 'undefined' }
 
 /**
  * <odoc>
@@ -131,10 +131,10 @@ const __envs = getEnvs()
  * the value of the provided aEnv will be parsed from JSON or SLON.
  * </odoc>
  */
-const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
+const getEnvsDef = function(aEnv, aVar, aDefault, isJson) {
 	if (isDef(aVar)) return aVar
 	if (isDef(__envs[aEnv])) {
-		if (isJson && isDef(af.fromJSSLON)) {
+		if (isJson) {
 			return af.fromJSSLON(__envs[aEnv], true)
 		} else {
 			return __envs[aEnv]
@@ -6358,6 +6358,7 @@ const syncFn = function(aFunction, anObj) {
 //(c) 2012-2014 Greg MacWilliam.
 //Freely distributed under the MIT license.
 
+/*
 //Pod instance constructor function:
 function Pod(name) {
 	this.name = name;
@@ -6372,7 +6373,7 @@ Pod._m = {};
  * <key>pods.define(aId, aDepsArray, aFactoryFunction)</key>
  * Defines a new module given aId, aDepsArray with depend id modules and a factory function.
  * </odoc>
- */
+ *\/
 //Defines a new module.
 //@param String id: the reference id for the module.
 //@param Array deps: an optional array of dependency ids.
@@ -6411,7 +6412,7 @@ Pod.define = function (id, deps, factory) {
  * <key>pods.declare(aId, exports)</key>
  * Declares a new module, aId, as the provided exports literal.
  * </odoc>
- */
+ *\/
 //Declares a new module as the provided exports literal:
 //Signature 1:
 //@param String id: reference id of the module.
@@ -6446,7 +6447,7 @@ Pod.declare = function (id, exports) {
  * Requires a module or a list of modules and all of its dependencies. Optionally you can provide
  * aCallbackFunction to inject the required modules into.
  * </odoc>
- */
+ *\/
 //Requires a module. This fetches the module and all of its dependencies.
 //@param String/Array req: the id (or list of ids) to require.
 //@param Function callback: an optional callback to inject the required modules into.
@@ -6512,6 +6513,7 @@ Pod.prototype = {
 
 var pods;
 if (isUnDef(pods)) pods = new Pod();
+*/
 
 //FROM https://github.com/gmac/pods.js
 //END --------------------------------
@@ -6751,7 +6753,7 @@ var ow = new OpenWrap()
  */
 const loadHandlebars = function() {
 	var res = loadCompiledLib("handlebars_js");
-	if (res) pods.declare("Handlebars", loadHandlebars());
+	//if (res) pods.declare("Handlebars", loadHandlebars());
 }
 
 /**
@@ -6783,7 +6785,7 @@ const loadUnderscore = function() {
  */
 const loadFuse = function() {
 	var res = loadCompiledLib("fusejs_js");
-	if (res) pods.declare("FuseJS", loadFuse());
+	//if (res) pods.declare("FuseJS", loadFuse());
 }
 
 /**
@@ -6795,12 +6797,12 @@ const loadFuse = function() {
 const loadDiff = function() {
 	var res = loadCompiledLib("diff_js");
 	global.JsDiff = global.Diff;
-	if (res) pods.declare("JsDiff", loadDiff());
+	//if (res) pods.declare("JsDiff", loadDiff());
 }
 
 const loadAjv = function() {
 	var res = loadCompiledLib("ajv_js");
-	if (res) pods.declare("Ajv", loadAjv());
+	//if (res) pods.declare("Ajv", loadAjv());
 }
 
 /**
@@ -6823,7 +6825,7 @@ const loadLodash = function() {
  */
 const loadHelp = function() {
 	var res = loadCompiledLib("odoc_js");
-	if (res) pods.declare("Help", loadHelp());
+	//if (res) pods.declare("Help", loadHelp());
 }
 
 var __odocsurl;
@@ -14877,33 +14879,33 @@ __flags = merge(__flags, getEnvsDef("OAF_FLAGS", __, __, true))
 
 // -------------------------------------
 // Profile support (must be always last)
-
 var OPENAFPROFILE;
 if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 
 (function() {
 	var prof = "";
-	try {
-		var fprof = __gHDir() + "/" + OPENAFPROFILE;
-		if (io.fileExists(fprof)) {
-			loadCompiled(fprof);
+	//try {
+		var fprof = new java.io.File(__gHDir(), OPENAFPROFILE)
+		if (fprof.exists()) {
+			loadCompiled(String(fprof.getAbsolutePath()))
 		}
-	} catch(e) {
+	/*} catch(e) {
 		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
 			e.message.indexOf("java.nio.file.NoSuchFileException") < 0) throw e;
-	}
+	}*/
 
-	try {
-		if (af.getClass("openaf.OAFRepack").getResourceAsStream("/" + OPENAFPROFILE) != null) {
+	if (af.getClass("openaf.OAFRepack").getResourceAsStream("/" + OPENAFPROFILE) != null) {
+		try {
 			var fprof = getOpenAFJar() + "::" + OPENAFPROFILE;
 			prof = io.readFileString(fprof);
 			af.compile(prof);
+		} catch(e) {
+			if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+				e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
+				e.message.indexOf("java.io.IOException") < 0 &&
+				e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
 		}
-	} catch(e) {
-		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
-			e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
-			e.message.indexOf("java.io.IOException") < 0 &&
-			e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
+
 	}
 })();
 
@@ -14912,6 +14914,6 @@ Packages.openaf.plugins.HTTPServer.DEFAULT_HTTP_SERVER = __flags.HTTPD_DEFAULT_I
 
 // OAF Code Integrity for script files
 var __scriptfile
-if (isString(__scriptfile)) {
+if (typeof __scriptfile == 'string' || false) {
 	__codeVerify(io.readFileString(__scriptfile), __scriptfile)
 }
