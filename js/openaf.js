@@ -8757,7 +8757,7 @@ const $mcp = function(aOptions) {
 		var fnsMeta = {}, fns = {} 
 		var jobsTemp = io.createTempFile("ojob_mcp_", ".yaml")
 		var jobsPreD = aOptions.options.job.endsWith(".json") ? io.readFileJSON(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job) : io.readFileYAML(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job)
-		if (isDef(jobsPreD.ojob.daemon)) delete jobsPreD.ojob.daemon
+		if (isDef(jobsPreD.ojob) && isDef(jobsPreD.ojob.daemon)) delete jobsPreD.ojob.daemon
 		if (aOptions.options.job.endsWith(".json"))
 			io.writeFileJSON(jobsTemp, jobsPreD)
 		else
