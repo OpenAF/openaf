@@ -8762,7 +8762,14 @@ const $mcp = function(aOptions) {
 			io.writeFileJSON(jobsTemp, jobsPreD)
 		else
 			io.writeFileYAML(jobsTemp, jobsPreD)
-		var jobsData = ow.oJob.loadJobs(jobsTemp, aOptions.options.args)
+		var jobsData
+		try {
+			jobsData = ow.oJob.loadJobs(jobsTemp, aOptions.options.args)
+		} finally {
+			try {
+				io.rm(jobsTemp)
+			} catch(e) {}
+		}
 
 		// Run init entries if any
 		if (isDef(aOptions.options.init)) {
