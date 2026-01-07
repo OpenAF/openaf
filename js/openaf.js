@@ -8754,8 +8754,22 @@ const $mcp = function(aOptions) {
 		aOptions.options.init    = _$(aOptions.options.init, "aOptions.options.init").default(__)
 
 		// Load jobs from the oJob 
-		var fnsMeta = {}, fns = {}
-		var jobsData = ow.oJob.loadJobs(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job, aOptions.options.args)
+		var fnsMeta = {}, fns = {} 
+		var jobsTemp = io.createTempFile("ojob_mcp_", ".yaml")
+		var jobsPreD = aOptions.options.job.endsWith(".json") ? io.readFileJSON(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job) : io.readFileYAML(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job)
+		if (isDef(jobsPreD.ojob) && isDef(jobsPreD.ojob.daemon)) delete jobsPreD.ojob.daemon
+		if (aOptions.options.job.endsWith(".json"))
+			io.writeFileJSON(jobsTemp, jobsPreD)
+		else
+			io.writeFileYAML(jobsTemp, jobsPreD)
+		var jobsData
+		try {
+			jobsData = ow.oJob.loadJobs(jobsTemp, aOptions.options.args)
+		} finally {
+			try {
+				io.rm(jobsTemp)
+			} catch(e) {}
+		}
 
 		// Run init entries if any
 		if (isDef(aOptions.options.init)) {

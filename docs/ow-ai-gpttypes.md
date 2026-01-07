@@ -173,6 +173,11 @@ Handle tool execution in `rawPrompt`:
 - Execute registered functions
 - Continue conversation with tool results
 
+**Gemini 2.5/3 notes**
+- Tool calls arrive as `functionCall` parts; send tool results back as `functionResponse` parts on a follow-up `user` message.
+- `functionCall.args` may be an object or a JSON string depending on the model/version.
+- When requesting JSON output, prefer `generationConfig.responseMimeType = "application/json"` and only set `responseSchema` when it has non-empty `properties`.
+
 ### 4. Authentication Patterns
 
 #### API Key in Header (OpenAI, Anthropic)
