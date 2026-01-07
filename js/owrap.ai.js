@@ -677,7 +677,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
                     if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
                     if (isArray(aTools) && aTools.length > 0) {
-                        var sTools = clone(aTools)
+                        var sTools = aTools.map(t => {
+                            if (isString(t)) {
+                                return $from(_r.tools).equals("name", t).at(0)
+                            }
+                            return t
+                        }).filter(isDef)
+                        sTools = clone(sTools)
                         // remove functions and $id/$schema from parameters
                         traverse(sTools, (aK, aV, aP, aO) => {
                             if (aK == 'fn') delete aO[aK]
@@ -696,21 +702,21 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var _res = _r._request("models/" + aModel + ":generateContent", body)
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, merge({_t:nowNano(),_f:'llm'}, _res))   
                     if (isDef(_res) && isArray(_res.candidates)) {
-                        // call tools
-                        var _p = msgs, stopWith = false
+                        // Tool calling for Gemini 2.5/3: model replies with functionCall parts and expects
+                        // functionResponse parts in a follow-up user turn. Some models return args as JSON strings.
+                        var _p = [], stopWith = false
                         _res.candidates.forEach(tc => {
                             if (isArray(tc.content.parts) && tc.finishReason == "STOP") {
                                 stopWith = true
-                                tc.content.parts.forEach(p => {
-                                    if (isDef(p.functionCall)) {
-                                        _p.push({ role: "model", parts: [{
-                                            functionCall: {
-                                                name: p.functionCall.name,
-                                                args: p.functionCall.args
-                                            }
-                                        }]})
+                                var fnParts = tc.content.parts.filter(p => isDef(p.functionCall))
+                                if (fnParts.length > 0) {
+                                    _p.push({ role: "model", parts: tc.content.parts })
+                                    fnParts.forEach(p => {
                                         var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
-                                        var _tr = stringify(_t.fn(p.functionCall.args), __, "")
+                                        var _args = p.functionCall.args
+                                        if (isString(_args)) _args = jsonParse(_args, __, __, true)
+                                        if (isUnDef(_args)) _args = {}
+                                        var _tr = stringify(_t.fn(_args), __, "")
                                         _p.push({ role: "user", parts: [{
                                             functionResponse: {
                                                 name: p.functionCall.name,
@@ -720,11 +726,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                                                 }
                                             }
                                         }]})
-                                        stopWith = false
-                                    } else {
-                                        _p.push(p)
-                                    }
-                                })
+                                    })
+                                    stopWith = false
+                                }
                             }
                         })
                         if (stopWith) {
@@ -733,7 +737,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             return _res
                         } else {
                             _r.conversation = _r.conversation.concat(_p)
-                            return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
                         }
                     } else {
                         _captureStats(_res, aModel)
