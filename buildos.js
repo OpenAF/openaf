@@ -266,6 +266,7 @@ var addCompiledClasses = (baseName) => {
 		if (f.isDirectory) continue;
 		if (f.filename.indexOf(baseName) != 0) continue;
 		if (!f.filename.match(/\.class$/)) continue;
+		//if (f.filename.match(/_jsojsc\d+\.class$/)) continue;
 		zipJSlib.putFile(f.filename, io.readFileBytes(f.filepath));
 	}
 }
