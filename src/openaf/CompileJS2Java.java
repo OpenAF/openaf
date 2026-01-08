@@ -81,9 +81,9 @@ public class CompileJS2Java {
 		ce.setRecordingLocalJsDocComments(false);
 		ce.setGenerateObserverCount(false);*/
 		//ce.setAllowMemberExprAsFunctionName(false);
-		ce.setGenerateDebugInfo(true);
+		ce.setGenerateDebugInfo(false);
 		// Avoid embedding the full source in the generated class to prevent ConstantPool "Too big string"
-		ce.setGeneratingSource(true);
+		ce.setGeneratingSource(false);
 		ClassCompiler cc = new ClassCompiler(ce);
 		Object compiled[] = compileToClassFilesNoSource(cc, script, classfile, 1, classfile);
 		if (path == null || path.equals("undefined"))
