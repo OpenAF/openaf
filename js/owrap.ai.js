@@ -473,25 +473,29 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _lastStats = __
             var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
-            var _captureStats = (aResponse, aModelName) => {
-                if (!isMap(aResponse)) {
-                    _lastStats = __
-                    return _lastStats
-                }
+                var _captureStats = (aResponse, aModelName) => {
+                    if (!isMap(aResponse)) {
+                        _lastStats = __
+                        return _lastStats
+                    }
 
-                var stats = { vendor: "gemini" }
-                var modelName = isString(aModelName) ? aModelName : _model
-                if (isString(aResponse.model)) modelName = aResponse.model
-                if (isString(modelName)) stats.model = modelName
+                    var stats = { vendor: "gemini" }
+                    var modelName = isString(aModelName) ? aModelName : _model
+                    if (isString(aResponse.model)) modelName = aResponse.model
+                    if (isString(aResponse.modelVersion)) modelName = aResponse.modelVersion
+                    if (isString(modelName)) stats.model = modelName
+                    if (isString(aResponse.responseId)) stats.id = aResponse.responseId
 
-                if (isMap(aResponse.usageMetadata)) {
-                    var tokens = {}
-                    if (isDef(aResponse.usageMetadata.promptTokenCount)) tokens.prompt = aResponse.usageMetadata.promptTokenCount
-                    if (isDef(aResponse.usageMetadata.candidatesTokenCount)) tokens.completion = aResponse.usageMetadata.candidatesTokenCount
-                    if (isDef(aResponse.usageMetadata.totalTokenCount)) tokens.total = aResponse.usageMetadata.totalTokenCount
-                    if (Object.keys(tokens).length > 0) stats.tokens = tokens
-                    stats.usage = aResponse.usageMetadata
-                }
+                    if (isMap(aResponse.usageMetadata)) {
+                        var tokens = {}
+                        if (isDef(aResponse.usageMetadata.promptTokenCount)) tokens.prompt = aResponse.usageMetadata.promptTokenCount
+                        if (isDef(aResponse.usageMetadata.candidatesTokenCount)) tokens.completion = aResponse.usageMetadata.candidatesTokenCount
+                        if (isDef(aResponse.usageMetadata.totalTokenCount)) tokens.total = aResponse.usageMetadata.totalTokenCount
+                        if (isDef(aResponse.usageMetadata.cachedContentTokenCount)) tokens.cached = aResponse.usageMetadata.cachedContentTokenCount
+                        if (isDef(aResponse.usageMetadata.thoughtsTokenCount)) tokens.thoughts = aResponse.usageMetadata.thoughtsTokenCount
+                        if (Object.keys(tokens).length > 0) stats.tokens = tokens
+                        stats.usage = aResponse.usageMetadata
+                    }
 
                 if (isArray(aResponse.candidates)) {
                     var finishReasons = aResponse.candidates
@@ -545,7 +549,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                     return r
                                 }
                             }
-                        })
+                        }).filter(isDef)
                     }
                     return _r
                 },
@@ -648,20 +652,25 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var msgs = [];
                     if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ];
                     aPrompt = _r.conversation.reduce((acc, r) => {
-                        if (isUnDef(r.role) || r.role != "system") {
+                        if (isDef(r) && (isUnDef(r.role) || r.role != "system")) {
                             acc.push(toPartsMsg(r));
                         }
                         return acc;
                     }, []).concat(aPrompt.map(toPartsMsg));
                     msgs = aPrompt;
                  
-                    var body = {
-                        system_instruction: { parts: _r.conversation.reduce((acc, r) => {
-                            if (isDef(r.role) && r.role == "system") {
-                                acc = acc.concat(r.parts)
+                    var systemParts = _r.conversation.reduce((acc, r) => {
+                        if (isDef(r) && isDef(r.role) && r.role == "system") {
+                            if (isArray(r.parts)) {
+                                acc = acc.concat(r.parts.filter(p => isDef(p)))
+                            } else if (isDef(r.content)) {
+                                acc = acc.concat([ { text: String(r.content) } ])
                             }
-                            return acc;
-                        }, []) },
+                        }
+                        return acc
+                    }, [])
+                    var body = {
+                        system_instruction: { parts: systemParts },
                         contents: msgs,
                         generationConfig: {
                             temperature: aTemperature
@@ -716,13 +725,36 @@ OpenWrap.ai.prototype.__gpttypes = {
                                         var _args = p.functionCall.args
                                         if (isString(_args)) _args = jsonParse(_args, __, __, true)
                                         if (isUnDef(_args)) _args = {}
-                                        var _tr = stringify(_t.fn(_args), __, "")
+                                        var _tr = _t.fn(_args)
+                                        var _tryParse = v => {
+                                            if (isString(v)) {
+                                                return jsonParse(v, __, __, true)
+                                            }
+                                            return __
+                                        }
+                                        if (isString(_tr)) {
+                                            var _pjson = _tryParse(_tr)
+                                            if (isDef(_pjson)) _tr = _pjson
+                                        } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
+                                            var _pjson2 = _tryParse(_tr.result)
+                                            if (isDef(_pjson2)) _tr = _pjson2
+                                        }
+                                        var _content = __
+                                        if (isMap(_tr)) {
+                                            _content = _tr
+                                        } else if (isArray(_tr)) {
+                                            _content = { items: _tr }
+                                        } else if (isDef(_tr)) {
+                                            _content = { result: _tr }
+                                        } else {
+                                            _content = {}
+                                        }
                                         _p.push({ role: "user", parts: [{
                                             functionResponse: {
                                                 name: p.functionCall.name,
                                                 response: {
                                                     name: p.functionCall.name,
-                                                    content: _tr
+                                                    content: _content
                                                 }
                                             }
                                         }]})
@@ -737,7 +769,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             return _res
                         } else {
                             _r.conversation = _r.conversation.concat(_p)
-                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
+                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, [])
                         }
                     } else {
                         _captureStats(_res, aModel)
@@ -775,7 +807,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         aRole = "user"
                      }
                      if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
-                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
+                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt.filter(isDef))
                      return _r
                 },
                 addUserPrompt: (aPrompt) => {
