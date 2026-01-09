@@ -245,11 +245,10 @@ public final class OAFdCL extends URLClassLoader {
 
     /**
      * Pre-warm the cache with commonly used classes for faster startup
-     * @return CompletableFuture that completes when pre-warming is done
      */
-    public final java.util.concurrent.CompletableFuture<Void> preWarmCache() {
-        // Pre-load commonly used OpenAF classes asynchronously
-        return java.util.concurrent.CompletableFuture.runAsync(() -> {
+    public final void preWarmCache() {
+        // Pre-load commonly used OpenAF classes in a virtual thread for non-blocking operation
+        Thread.startVirtualThread(() -> {
             String[] commonClasses = {
                 "org.mozilla.javascript.Function",
                 "openaf.OAFdCL",
@@ -264,7 +263,7 @@ public final class OAFdCL extends URLClassLoader {
                 "org.mozilla.javascript.optimizer.OptRuntime",
                 "openaf.Launcher"
             };
-
+            
             for (String className : commonClasses) {
                 try {
                     loadClass(className);
@@ -272,7 +271,7 @@ public final class OAFdCL extends URLClassLoader {
                     // Ignore - class might not be available yet
                 }
             }
-        }, java.util.concurrent.ForkJoinPool.commonPool());
+        });
     }
     
     /**
