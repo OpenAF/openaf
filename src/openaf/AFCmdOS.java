@@ -833,7 +833,7 @@ public class AFCmdOS extends AFCmdBase {
 				ScriptableObject.putProperty(gscope, "io", jse.newObject(gscope, "IO"));
 
 			AFBase.runFromClass(newScriptInstance("openaf_js"));
-			//cx.setErrorReporter(new OpenRhinoErrorReporter());
+			cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
 				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + pmIn + ")";
