@@ -3089,8 +3089,8 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
 };
 
     OpenWrap.ai.prototype.decisionTree.ID3.prototype.predicates = {
-        '==': function (a, b) { return a == b },
-        '>=': function (a, b) { return a >= b }
+        'EQ': (a, b) => a == b,
+        'GTE': (a, b) => a >= b
     };
 
     /**
@@ -3326,11 +3326,11 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
                 // depending on the type of the attribute value
                 var predicateName;
                 if (typeof pivot == 'number') {
-                    predicateName = '>=';
+                    predicateName = 'GTE';
                 } else {
                     // there is no sense to compare non-numeric attributes
                     // so we will check only equality of such attributes
-                    predicateName = '==';
+                    predicateName = 'EQ';
                 }
 
                 var attrPredPivot = attr + predicateName + pivot;
