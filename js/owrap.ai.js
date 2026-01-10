@@ -3089,8 +3089,8 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
 };
 
     OpenWrap.ai.prototype.decisionTree.ID3.prototype.predicates = {
-        'EQ': (a, b) => a == b,
-        'GTE': (a, b) => a >= b
+        'eq': (a, b) => a == b,
+        'gte': (a, b) => a >= b
     };
 
     /**
@@ -3100,7 +3100,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
      * @param builder - contains training set and
      *                  some configuration parameters
      */
-    OpenWrap.ai.prototype.decisionTree.ID3.prototype.DecisionTree = function(builder) {        
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.DecisionTree = function(builder) {      
         this.root = this.buildDecisionTree({
             trainingSet: builder.trainingSet,
             ignoredAttributes: this.arrayToHashSet(builder.ignoredAttributes),
@@ -3326,11 +3326,11 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
                 // depending on the type of the attribute value
                 var predicateName;
                 if (typeof pivot == 'number') {
-                    predicateName = 'GTE';
+                    predicateName = 'gte';
                 } else {
                     // there is no sense to compare non-numeric attributes
                     // so we will check only equality of such attributes
-                    predicateName = 'EQ';
+                    predicateName = 'eq';
                 }
 
                 var attrPredPivot = attr + predicateName + pivot;
