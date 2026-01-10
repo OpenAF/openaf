@@ -32,6 +32,29 @@ import java.util.Set;
  * 
  */
 public class CompileJS2Java {
+    /**
+     * Enum to specify the class compilation method
+     */
+    public enum CompilationMethod {
+        /**
+         * Default method - ensures field names are sanitized
+         * Uses custom Codegen with source clearing for optimal class file size
+         */
+        DEFAULT,
+
+        /**
+         * Mozilla Rhino 1.9.0 method - mimics current Mozilla Rhino branch approach
+         * Uses ClassCompiler's standard compileToClassFiles method
+         */
+        RHINO_1_9_0,
+
+        /**
+         * Mozilla Rhino legacy method - uses approach from previous Rhino versions
+         * May use different CodeGen parameters or legacy compilation path
+         */
+        RHINO_LEGACY
+    }
+
     private static final int MAX_STRING_LITERAL = 65000;
     private static final Set<String> REGEX_ALLOWED_KEYWORDS = new HashSet<String>();
 
@@ -54,14 +77,46 @@ public class CompileJS2Java {
     public static void main(String args[]) {
 		try {
 			String script = new String(Files.readAllBytes(Paths.get(args[1])));
-			compileToClasses(args[0], script, args[2]);
+			CompilationMethod method = CompilationMethod.RHINO_LEGACY;
+			String path = args.length > 2 ? args[2] : null;
+
+			// Parse optional compilation method flag (args[3])
+			if (args.length > 3 && args[3] != null && !args[3].isEmpty()) {
+				try {
+					method = CompilationMethod.valueOf(args[3].toUpperCase());
+				} catch (IllegalArgumentException e) {
+					System.err.println("Invalid compilation method: " + args[3]);
+					System.err.println("Valid options: DEFAULT, RHINO_1_9_0, RHINO_LEGACY");
+					System.err.println("Using RHINO_LEGACYcp  method.");
+				}
+			}
+
+			//System.err.println("CompileJS2Java: Using compilation method: " + method);
+			compileToClasses(args[0], script, path, method);
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 			e.printStackTrace();
-		}        
+		}
 	}
 
+    /**
+     * Compile JavaScript to Java classes using the 
+     *  compilation method
+     * @deprecated Use {@link #compileToClasses(String, String, String, CompilationMethod)} instead
+     */
+    @Deprecated
     public static void compileToClasses(String classfile, String script, String path) {
+        compileToClasses(classfile, script, path, CompilationMethod.RHINO_LEGACY);
+    }
+
+    /**
+     * Compile JavaScript to Java classes using the specified compilation method
+     * @param classfile The name of the class file to generate
+     * @param script The JavaScript source code
+     * @param path The output path for the class files
+     * @param method The compilation method to use
+     */
+    public static void compileToClasses(String classfile, String script, String path, CompilationMethod method) {
 		long origSize = script.length();
 		script = splitLongStrings(script);
 		if (script.length() != origSize) {
@@ -81,11 +136,29 @@ public class CompileJS2Java {
 		ce.setRecordingLocalJsDocComments(false);
 		ce.setGenerateObserverCount(false);*/
 		//ce.setAllowMemberExprAsFunctionName(false);
+
+		// Configure debug info, source embedding, and optimization based on compilation method
 		ce.setGenerateDebugInfo(false);
-		// Avoid embedding the full source in the generated class to prevent ConstantPool "Too big string"
 		ce.setGeneratingSource(false);
+
+		// Set optimization level based on compilation method
+		if (method == CompilationMethod.DEFAULT) {
+			// Use aggressive optimization with field name sanitization
+			ce.setInterpretedMode(false);
+			//System.err.println("Set optimization level to 9 for DEFAULT method");
+		} else if (method == CompilationMethod.RHINO_1_9_0) {
+			// Use standard Rhino 1.9.0 optimization level (no optimization)
+			ce.setInterpretedMode(false);
+			//System.err.println("Set optimization level to 0 for RHINO_1_9_0 method");
+		} else if (method == CompilationMethod.RHINO_LEGACY) {
+			// Use legacy/minimal optimization level (basic bytecode generation)
+			// Note: -1 would be interpreted mode which is incompatible with class file generation
+			ce.setInterpretedMode(false);
+			//System.err.println("Set optimization level to 0 for RHINO_LEGACY method");
+		}
+
 		ClassCompiler cc = new ClassCompiler(ce);
-		Object compiled[] = compileToClassFilesNoSource(cc, script, classfile, 1, classfile);
+		Object compiled[] = compileToClassFilesWithMethod(cc, script, classfile, 1, classfile, method);
 		if (path == null || path.equals("undefined"))
 			path = "";
 		else
@@ -107,10 +180,40 @@ public class CompileJS2Java {
 				System.err.println(ioe.getMessage());
                 ioe.printStackTrace();
 			}
-		} 
-	} 
+		}
+	}
 
+    /**
+     * Dispatcher method to compile to class files using the specified compilation method
+     */
+    private static Object[] compileToClassFilesWithMethod(ClassCompiler cc, String script, String sourceName,
+                                                           int lineno, String className, CompilationMethod method) {
+        switch (method) {
+            case DEFAULT:
+                return compileToClassFilesDefault(cc, script, sourceName, lineno, className);
+            case RHINO_1_9_0:
+                return compileToClassFilesRhino190(cc, script, sourceName, lineno, className);
+            case RHINO_LEGACY:
+                return compileToClassFilesRhinoLegacy(cc, script, sourceName, lineno, className);
+            default:
+                throw new IllegalArgumentException("Unknown compilation method: " + method);
+        }
+    }
+
+    /**
+     * Backward compatibility wrapper for the old method name
+     * @deprecated Use {@link #compileToClassFilesDefault(ClassCompiler, String, String, int, String)} instead
+     */
+    @Deprecated
     private static Object[] compileToClassFilesNoSource(ClassCompiler cc, String script, String sourceName, int lineno, String className) {
+        return compileToClassFilesDefault(cc, script, sourceName, lineno, className);
+    }
+
+    /**
+     * DEFAULT compilation method - ensures field names are sanitized
+     * Uses custom Codegen with source clearing for optimal class file size
+     */
+    private static Object[] compileToClassFilesDefault(ClassCompiler cc, String script, String sourceName, int lineno, String className) {
         Parser parser = new Parser(cc.getCompilerEnv());
         AstRoot ast = parser.parse(script, sourceName, lineno);
         IRFactory irFactory = new IRFactory(cc.getCompilerEnv(), script);
@@ -125,6 +228,100 @@ public class CompileJS2Java {
         JSDescriptor.Builder builder = new JSDescriptor.Builder();
         OptJSCode.BuilderEnv builderEnv = new OptJSCode.BuilderEnv(mainClassName);
         byte[] mainBytes = codegen.compileToClassFile(cc.getCompilerEnv(), builder, builderEnv, mainClassName, scriptNode, script, false);
+        clearDescriptorRawSources(builder);
+        Object[] descriptors = invokeBuildDescriptorsAndMain(cc, mainClassName, builder);
+
+        if (isScript) {
+            Object[] out = new Object[descriptors.length + 2];
+            System.arraycopy(descriptors, 0, out, 2, descriptors.length);
+            out[0] = mainClassName;
+            out[1] = mainBytes;
+            return out;
+        }
+
+        if (targetExtends == null) {
+            targetExtends = ScriptRuntime.ObjectClass;
+        }
+        Map<String, Integer> functionNames = collectFunctionNames(scriptNode);
+        byte[] adapterBytes = JavaAdapter.createAdapterCode(functionNames, className, targetExtends, targetImplements, mainClassName);
+
+        Object[] out = new Object[descriptors.length + 4];
+        System.arraycopy(descriptors, 0, out, 4, descriptors.length);
+        out[0] = className;
+        out[1] = adapterBytes;
+        out[2] = mainClassName;
+        out[3] = mainBytes;
+        return out;
+    }
+
+    /**
+     * RHINO_1_9_0 compilation method - mimics current Mozilla Rhino branch approach
+     * Uses standard Rhino compilation with optimization level 0
+     */
+    private static Object[] compileToClassFilesRhino190(ClassCompiler cc, String script, String sourceName, int lineno, String className) {
+        Parser parser = new Parser(cc.getCompilerEnv());
+        AstRoot ast = parser.parse(script, sourceName, lineno);
+        IRFactory irFactory = new IRFactory(cc.getCompilerEnv(), script);
+        ScriptNode scriptNode = irFactory.transformTree(ast);
+        Class<?> targetExtends = cc.getTargetExtends();
+        Class<?>[] targetImplements = cc.getTargetImplements();
+        boolean isScript = targetExtends == null && targetImplements == null;
+        String mainClassName = isScript ? className : invokeMakeAuxiliaryClassName(cc, className, "1");
+
+        Codegen codegen = new Codegen();
+        codegen.setMainMethodClass(cc.getMainMethodClass());
+        JSDescriptor.Builder builder = new JSDescriptor.Builder();
+        OptJSCode.BuilderEnv builderEnv = new OptJSCode.BuilderEnv(mainClassName);
+        byte[] mainBytes = codegen.compileToClassFile(cc.getCompilerEnv(), builder, builderEnv, mainClassName, scriptNode, script, false);
+
+        // Clear descriptor sources to avoid constant pool size limits
+        clearDescriptorRawSources(builder);
+        Object[] descriptors = invokeBuildDescriptorsAndMain(cc, mainClassName, builder);
+
+        if (isScript) {
+            Object[] out = new Object[descriptors.length + 2];
+            System.arraycopy(descriptors, 0, out, 2, descriptors.length);
+            out[0] = mainClassName;
+            out[1] = mainBytes;
+            return out;
+        }
+
+        if (targetExtends == null) {
+            targetExtends = ScriptRuntime.ObjectClass;
+        }
+        Map<String, Integer> functionNames = collectFunctionNames(scriptNode);
+        byte[] adapterBytes = JavaAdapter.createAdapterCode(functionNames, className, targetExtends, targetImplements, mainClassName);
+
+        Object[] out = new Object[descriptors.length + 4];
+        System.arraycopy(descriptors, 0, out, 4, descriptors.length);
+        out[0] = className;
+        out[1] = adapterBytes;
+        out[2] = mainClassName;
+        out[3] = mainBytes;
+        return out;
+    }
+
+    /**
+     * RHINO_LEGACY compilation method - uses approach from previous Rhino versions
+     * Uses standard Rhino compilation with optimization level 0 and source clearing
+     */
+    private static Object[] compileToClassFilesRhinoLegacy(ClassCompiler cc, String script, String sourceName, int lineno, String className) {
+        Parser parser = new Parser(cc.getCompilerEnv());
+        AstRoot ast = parser.parse(script, sourceName, lineno);
+        IRFactory irFactory = new IRFactory(cc.getCompilerEnv(), script);
+        ScriptNode scriptNode = irFactory.transformTree(ast);
+        Class<?> targetExtends = cc.getTargetExtends();
+        Class<?>[] targetImplements = cc.getTargetImplements();
+        boolean isScript = targetExtends == null && targetImplements == null;
+        String mainClassName = isScript ? className : invokeMakeAuxiliaryClassName(cc, className, "1");
+
+        Codegen codegen = new Codegen();
+        codegen.setMainMethodClass(cc.getMainMethodClass());
+        JSDescriptor.Builder builder = new JSDescriptor.Builder();
+        OptJSCode.BuilderEnv builderEnv = new OptJSCode.BuilderEnv(mainClassName);
+        byte[] mainBytes = codegen.compileToClassFile(cc.getCompilerEnv(), builder, builderEnv, mainClassName, scriptNode, script, false);
+
+        // Clear descriptor sources to avoid constant pool size limits
         clearDescriptorRawSources(builder);
         Object[] descriptors = invokeBuildDescriptorsAndMain(cc, mainClassName, builder);
 
