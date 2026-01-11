@@ -45,7 +45,7 @@ const isJavaClass = function(obj) {
  * Returns true if aObj is a Java object, false otherwise
  * </odoc>
  */
-const isJavaObject = obj => {
+const isJavaObject = function(obj) {
 	//var s = Object.prototype.toString.call(obj);
 	//return (s === '[object JavaObject]' || s === '[object JavaArray]');
 	/*try {
@@ -81,7 +81,7 @@ const isJavaObject = obj => {
  * Returns true if aObj is a Java array, false otherwise
  * </odoc>
  */
-const isJavaArray = obj => {
+const isJavaArray = function(obj) {
 	try {
 		if (obj != null && typeof obj.getClass === 'function' && Object.prototype.toString.call(obj) === '[object JavaArray]') {
 			return true
@@ -100,7 +100,7 @@ const isJavaArray = obj => {
  * (see also isUnDef). Shortcut for the isDefined function.
  * </odoc>
  */
-const isDef = aObject => isJavaObject(aObject) || typeof aObject !== 'undefined'
+const isDef = function(aObject) { return isJavaObject(aObject) || typeof aObject !== 'undefined' }
 
 /**
  * <odoc>
@@ -109,7 +109,7 @@ const isDef = aObject => isJavaObject(aObject) || typeof aObject !== 'undefined'
  * (see also isDef). Shortcut for the isUndefined function.
  * </odoc>
  */
-const isUnDef = aObject => !isJavaObject(aObject) && typeof aObject == 'undefined'
+const isUnDef = function(aObject) { return !isJavaObject(aObject) && typeof aObject == 'undefined' }
 
 /**
  * <odoc>
@@ -131,10 +131,10 @@ const __envs = getEnvs()
  * the value of the provided aEnv will be parsed from JSON or SLON.
  * </odoc>
  */
-const getEnvsDef = (aEnv, aVar, aDefault, isJson) => {
+const getEnvsDef = function(aEnv, aVar, aDefault, isJson) {
 	if (isDef(aVar)) return aVar
 	if (isDef(__envs[aEnv])) {
-		if (isJson && isDef(af.fromJSSLON)) {
+		if (isJson) {
 			return af.fromJSSLON(__envs[aEnv], true)
 		} else {
 			return __envs[aEnv]
@@ -1690,11 +1690,11 @@ const __ansiColorPrep = function(aAnsi) {
 	var nAnsi = []
 	aAnsi.split(",").forEach(r => {
 		if (r.startsWith("BG(")) {
-			var bg = r.match(/BG\((\d+)\)/)
-			if (!isNull(bg)) aString = "\033[48;5;" + bg[1] + "m" + aString
+			var bg = r.substring(3, r.length - 1)
+			if (bg.length > 0) aString = "\033[48;5;" + bg + "m" + aString
 		} else if (r.startsWith("FG(")) {
-			var fg = r.match(/FG\((\d+)\)/)
-			if (!isNull(fg)) aString = "\033[38;5;" + fg[1] + "m" + aString
+			var fg = r.substring(3, r.length - 1)
+			if (fg.length > 0) aString = "\033[38;5;" + fg + "m" + aString
 		} else {
 			nAnsi.push(r)
 		}
@@ -1745,7 +1745,7 @@ const ansiColor = function(aAnsi, aString, force, noCache, noReset) {
 	}
 }
 
-var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).match(/Windows/) ? true : false;
+var __ansiColorFlag = String(java.lang.System.getProperty("os.name")).indexOf("Windows") >= 0 ? true : false;
 var __ansiColorValue;
 var openafOldTheme = false;
 
@@ -1756,7 +1756,7 @@ var openafOldTheme = false;
  * </odoc>
  */
 const ansiWinTermCap = function() {
-	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+	if (String(java.lang.System.getProperty("os.name")).indexOf("Windows") >= 0) {
 		if (isDef(__ansiColorValue)) return (__ansiColorValue > 3);
 
 		var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
@@ -1819,7 +1819,7 @@ const ansiStart = function(force) {
  */
 const ansiStop = function(force) {
 	if (__ansiColorFlag) {
-		if (isDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).match(/Windows/)) {
+		if (isDef(__ansiColorValue) && String(java.lang.System.getProperty("os.name")).indexOf("Windows") >= 0) {
 			var k32 = Packages.com.sun.jna.Native.loadLibrary("kernel32", Packages.com.sun.jna.platform.win32.Kernel32, com.sun.jna.win32.W32APIOptions.UNICODE_OPTIONS);
 			var hout = k32.GetStdHandle(k32.STD_OUTPUT_HANDLE);
 			var herr = k32.GetStdHandle(k32.STD_ERROR_HANDLE);
@@ -3192,23 +3192,29 @@ const getDistribution = function() {
 var __OpenAFJar;
 const getOpenAFPath = function() {
 	if (isDef(__forcedOpenAFJar)) {
-		__OpenAFJar = String(new java.io.File(__forcedOpenAFJar).getParent());
+		__OpenAFJar = String(new java.io.File(__forcedOpenAFJar).getParent())
+		if (__OpenAFJar[__OpenAFJar.length - 2] == "/.") __OpenAFJar = __OpenAFJar.substring(0, __OpenAFJar.length - 1)
+		if (__OpenAFJar[__OpenAFJar.length - 1] != "/")  __OpenAFJar += "/"
 	} else {
 		if (isUnDef(__OpenAFJar)) {
-			var ar = String(java.lang.System.getProperty("java.class.path")).split(java.io.File.pathSeparator);
-			var res;
-			ar.map(f => {
-				if (f.match(/openaf\.jar$/)) {
+			var res
+			var ar = String(java.lang.System.getProperty("java.class.path")).split(java.io.File.pathSeparator)
+			ar.forEach(f => {
+				if (f.endsWith("openaf.jar")) {
 					res = String(java.io.File(f).getAbsolutePath());
-					res = res.replace(/openaf\.jar$/, "").replace(/\\/g, "/");
-					res = res.replace(/[/\\][^/\\]+$/, "");
+					if (res.endsWith("openaf.jar")) res = res.substring(0, res.length - 11);
+					res = res.split("\\").join("/");
+					//var lastSlash = Math.max(res.lastIndexOf("/"), res.lastIndexOf("\\"));
+					//if (lastSlash > 0) res = res.substring(0, lastSlash);
 				}
-			});
-			__OpenAFJar = res;
+			})
+			__OpenAFJar = res
+			if (__OpenAFJar[__OpenAFJar.length - 2] == "/.") __OpenAFJar = __OpenAFJar.substring(0, __OpenAFJar.length - 1)
+			if (__OpenAFJar[__OpenAFJar.length - 1] != "/")  __OpenAFJar += "/"
 		}	
 	}
 
-	return __OpenAFJar;
+	return __OpenAFJar
 }
 
 __flags.OJOB_LOCALPATH = getOpenAFPath() + "ojobs"
@@ -3701,8 +3707,35 @@ const requireCompiled = function(aScript, dontCompile, dontLoad) {
 			if (!dontLoad && aScript.endsWith(".class")) {
 				try {
 					af.getClass(cl);
+					try {
+						af.newScriptInstance(cl);
+					} catch(e2) {
+						if (String(e2).match(/ClassNotFoundException|Missing compiled companion class/)) {
+							io.mkdir(path);
+							io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
+							io.rm(clFilepath);
+							var code = io.readFileString(info.canonicalPath)
+							__codeVerify(code, aScript)
+							if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
+							af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + code + "}", path);
+							af.runFromExternalClass(cl, path);
+							var exp = {}, mod = { id: cl, uri: cl, exports: exp };
+
+							global["__" + cl].call({}, requireCompiled, exp, mod);
+							return mod.exports;
+						} else {
+							throw e2;
+						}
+					}
 				} catch(e) {
 					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
+						io.mkdir(path);
+						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
+						io.rm(clFilepath);
+						var code = io.readFileString(info.canonicalPath)
+						__codeVerify(code, aScript)
+						if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
+						af.compileToClasses(cl, "var __" + cl + " = function(require, exports, module) {" + code + "}", path);
 						af.runFromExternalClass(cl, path);
 						var exp = {}, mod = { id: cl, uri: cl, exports: exp };
 
@@ -3760,8 +3793,32 @@ const loadCompiled = function(aScript, dontCompile, dontLoad) {
 			if (!dontLoad && aScript.endsWith(".class")) {
 				try {
 					af.getClass(cl);
+					try {
+						af.newScriptInstance(cl);
+					} catch(e2) {
+						if (String(e2).match(/ClassNotFoundException|Missing compiled companion class/)) {
+							io.mkdir(path);
+							io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
+							io.rm(clFilepath);
+							var code = io.readFileString(info.canonicalPath)
+							__codeVerify(code, aScript)
+							if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
+							af.compileToClasses(cl, code, path);
+							af.runFromExternalClass(cl, path);
+							res = true;
+						} else {
+							throw e2;
+						}
+					}
 				} catch(e) {
 					if (String(e).match(/ClassNotFoundException/) && !dontCompile) {
+						io.mkdir(path);
+						io.writeFileString(path + "." + getDistribution() + "-" + getVersion(), "")
+						io.rm(clFilepath);
+						var code = io.readFileString(info.canonicalPath)
+						__codeVerify(code, aScript)
+						if (!__flags.OAF_CLOSED) code = __loadPreParser(code) 
+						af.compileToClasses(cl, code, path);
 						af.runFromExternalClass(cl, path);
 						res = true;
 					} else {
@@ -4026,7 +4083,7 @@ const cls = function() {
  * </odoc>
  */
 const conReset = function() {
-	if (String(java.lang.System.getProperty("os.name")).match(/Windows/)) return true
+	if (String(java.lang.System.getProperty("os.name")).indexOf("Windows") >= 0) return true
 	if (!__initializeCon() || isUnDef(__con)) return false
 	__con.getTerminal().settings.set("sane")
 	return true
@@ -5436,7 +5493,7 @@ const addOnOpenAFShutdown = function(aFunction) {
 const pidCheck = function(aPid) {
 	try {
 		aPid = Number(aPid);
-		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
+		if (java.lang.System.getProperty("os.name").indexOf("Windows") >= 0) {
 			if (af.sh("cmd /c tasklist /NH /FI \"PID eq " + aPid + "\"").match(aPid)) {
 				return true;
 			} 
@@ -5487,7 +5544,7 @@ const pidCheckIn = function(aFilename) {
 const pidKill = function(aPidNumber, isForce) {
 	try {
 		var force = "";
-		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
+		if (java.lang.System.getProperty("os.name").indexOf("Windows") >= 0) {
 			if (isForce) {
 				// Use /T flag to kill process tree (including children) and /F for force
 				force = "/T /F";
@@ -6148,6 +6205,11 @@ const loadLib = function(aLib, forceReload, aFunction) {
 	return false;
 }
 
+const isCoreCompiledLib = function(aClass) {
+	var _lc = String(aClass).toLowerCase();
+	return (_lc === "openaf_js" || _lc === "openafsigil_js");
+}
+
 /**
  * <odoc>
  * <key>loadCompiledLib(aLibClass, forceReload, aFunction, withSync) : boolean</key>
@@ -6160,14 +6222,34 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) || 
 		__loadedLibs[aClass.toLowerCase()] == false) {
-		if (withSync) {
-			sync(() => {
-				af.runFromClass(af.getClass(aClass).newInstance())
-				__loadedLibs[aClass.toLowerCase()] = true
+	var _libPath = getOpenAFJar() + "::js/" + aClass.replace(/_js$/, ".js");
+	var _loadCompiled = () => {
+		try {
+			af.runFromClass(af.newScriptInstance(aClass));
+		} catch(e) {
+			if (isCoreCompiledLib(aClass)) throw e;
+			if (String(e).match(/ClassNotFoundException|Missing compiled companion class/)) {
+				try {
+					if (loadCompiled(_libPath)) {
+						af.runFromClass(af.newScriptInstance(aClass));
+					} else {
+						loadLib(_libPath, true);
+					}
+				} catch(_e) {
+					loadLib(_libPath, true);
+				}
+			} else {
+				loadLib(_libPath, true);
+			}
+		}
+		__loadedLibs[aClass.toLowerCase()] = true;
+	};
+	if (withSync) {
+		sync(() => {
+				_loadCompiled();
 			}, __loadedLibs)
 		} else {
-			af.runFromClass(af.getClass(aClass).newInstance())
-			__loadedLibs[aClass.toLowerCase()] = true
+			_loadCompiled();
 		}
 		if (isDef(aFunction)) aFunction()
 		return true
@@ -6177,22 +6259,47 @@ const loadCompiledLib = function(aClass, forceReload, aFunction, withSync) {
 }
 
 const loadCompiledRequire = function(aClass, forceReload, aFunction) {
+	var _libPath = getOpenAFJar() + "::js/" + aClass.replace(/_js$/, ".js");
 	if (forceReload ||
 		isUnDef(__loadedLibs[aClass.toLowerCase()]) || 
-		__loadedLibs[aClass.toLowerCase()] == false) {		
-		af.runFromClass(af.getClass(aClass).newInstance());
-		var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-		global["__" + aClass](loadCompiledRequire, exp, mod);
-		//exp = mod.exports || exp;
-		__loadedLibs[aClass.toLowerCase()] = true;
-		if (isDef(aFunction)) aFunction(mod.exports);
-		return mod.exports;
+		__loadedLibs[aClass.toLowerCase()] == false) {
+		try {
+			af.runFromClass(af.newScriptInstance(aClass));
+			var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+			global["__" + aClass](loadCompiledRequire, exp, mod);
+			__loadedLibs[aClass.toLowerCase()] = true;
+			if (isDef(aFunction)) aFunction(mod.exports);
+			return mod.exports;
+		} catch(e) {
+			if (isCoreCompiledLib(aClass)) throw e;
+			if (String(e).match(/ClassNotFoundException|Missing compiled companion class/)) {
+				try {
+					if (loadCompiled(_libPath)) {
+						af.runFromClass(af.newScriptInstance(aClass));
+						var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+						global["__" + aClass](loadCompiledRequire, exp, mod);
+						__loadedLibs[aClass.toLowerCase()] = true;
+						if (isDef(aFunction)) aFunction(mod.exports);
+						return mod.exports;
+					}
+				} catch(_e) {
+					// Fall back to source load below.
+				}
+			}
+			var mod = require(_libPath);
+			__loadedLibs[aClass.toLowerCase()] = true;
+			if (isDef(aFunction)) aFunction(mod);
+			return mod;
+		}
 	} else {
-		var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
-		global["__" + aClass](loadCompiledRequire, exp, mod);
-		//exp = mod.exports || exp;
-	
-		return mod.exports;
+		if (isDef(global["__" + aClass])) {
+			var exp = {}, mod = { id: aClass, uri: aClass, exports: exp };
+			global["__" + aClass](loadCompiledRequire, exp, mod);
+			return mod.exports;
+		} else {
+			if (isCoreCompiledLib(aClass)) throw new Error("Compiled core library not loaded: " + aClass);
+			return require(_libPath);
+		}
 	}
 }
 
@@ -6251,6 +6358,7 @@ const syncFn = function(aFunction, anObj) {
 //(c) 2012-2014 Greg MacWilliam.
 //Freely distributed under the MIT license.
 
+/*
 //Pod instance constructor function:
 function Pod(name) {
 	this.name = name;
@@ -6265,7 +6373,7 @@ Pod._m = {};
  * <key>pods.define(aId, aDepsArray, aFactoryFunction)</key>
  * Defines a new module given aId, aDepsArray with depend id modules and a factory function.
  * </odoc>
- */
+ *\/
 //Defines a new module.
 //@param String id: the reference id for the module.
 //@param Array deps: an optional array of dependency ids.
@@ -6304,7 +6412,7 @@ Pod.define = function (id, deps, factory) {
  * <key>pods.declare(aId, exports)</key>
  * Declares a new module, aId, as the provided exports literal.
  * </odoc>
- */
+ *\/
 //Declares a new module as the provided exports literal:
 //Signature 1:
 //@param String id: reference id of the module.
@@ -6339,7 +6447,7 @@ Pod.declare = function (id, exports) {
  * Requires a module or a list of modules and all of its dependencies. Optionally you can provide
  * aCallbackFunction to inject the required modules into.
  * </odoc>
- */
+ *\/
 //Requires a module. This fetches the module and all of its dependencies.
 //@param String/Array req: the id (or list of ids) to require.
 //@param Function callback: an optional callback to inject the required modules into.
@@ -6405,6 +6513,7 @@ Pod.prototype = {
 
 var pods;
 if (isUnDef(pods)) pods = new Pod();
+*/
 
 //FROM https://github.com/gmac/pods.js
 //END --------------------------------
@@ -6644,7 +6753,7 @@ var ow = new OpenWrap()
  */
 const loadHandlebars = function() {
 	var res = loadCompiledLib("handlebars_js");
-	if (res) pods.declare("Handlebars", loadHandlebars());
+	//if (res) pods.declare("Handlebars", loadHandlebars());
 }
 
 /**
@@ -6676,7 +6785,7 @@ const loadUnderscore = function() {
  */
 const loadFuse = function() {
 	var res = loadCompiledLib("fusejs_js");
-	if (res) pods.declare("FuseJS", loadFuse());
+	//if (res) pods.declare("FuseJS", loadFuse());
 }
 
 /**
@@ -6688,12 +6797,12 @@ const loadFuse = function() {
 const loadDiff = function() {
 	var res = loadCompiledLib("diff_js");
 	global.JsDiff = global.Diff;
-	if (res) pods.declare("JsDiff", loadDiff());
+	//if (res) pods.declare("JsDiff", loadDiff());
 }
 
 const loadAjv = function() {
 	var res = loadCompiledLib("ajv_js");
-	if (res) pods.declare("Ajv", loadAjv());
+	//if (res) pods.declare("Ajv", loadAjv());
 }
 
 /**
@@ -6716,7 +6825,7 @@ const loadLodash = function() {
  */
 const loadHelp = function() {
 	var res = loadCompiledLib("odoc_js");
-	if (res) pods.declare("Help", loadHelp());
+	//if (res) pods.declare("Help", loadHelp());
 }
 
 var __odocsurl;
@@ -7145,7 +7254,7 @@ const checkLatestVersion = function() {
  */
 const sh = function(commandArguments, aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback) {
 	if (typeof commandArguments == "string") {
-		if (java.lang.System.getProperty("os.name").match(/Windows/)) {
+		if (java.lang.System.getProperty("os.name").indexOf("Windows") >= 0) {
 			return af.sh(["cmd", "/c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback);
 		} else {
 			return af.sh(["/bin/sh", "-c", commandArguments], aStdIn, aTimeout, shouldInheritIO, aDirectory, returnMap, callbackFunc, anEncoding, dontWait, envsMap, exitCallback);
@@ -10086,11 +10195,24 @@ const newFn = function() {
  */
 AF.prototype.runFromExternalClass = function(aClass, aPath) {
 	try {
-		af.runFromClass(af.getClass(aClass).newInstance());
+		var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
+		af.runFromClass(af.newScriptInstance(cl));
+		return;
+	} catch(e) {
+		if (String(e).match(/ClassNotFoundException/)) {
+			// Fall through to the default loader below.
+		} else {
+			throw e;
+		}
+	}
+	try {
+		af.runFromClass(af.newScriptInstance(aClass));
 	} catch(e) {
 		if (String(e).match(/ClassNotFoundException/)) {
 			var cl = af.externalClass([ (new java.io.File(aPath)).toURI().toURL() ], aClass);
-			af.runFromClass(cl.newInstance());
+			af.runFromClass(af.newScriptInstance(cl));
+		} else {
+			throw e;
 		}
 	}
 };
@@ -14883,33 +15005,33 @@ __flags = merge(__flags, getEnvsDef("OAF_FLAGS", __, __, true))
 
 // -------------------------------------
 // Profile support (must be always last)
-
 var OPENAFPROFILE;
 if (isUnDef(OPENAFPROFILE)) OPENAFPROFILE = ".openaf_profile";
 
 (function() {
 	var prof = "";
-	try {
-		var fprof = __gHDir() + "/" + OPENAFPROFILE;
-		if (io.fileExists(fprof)) {
-			loadCompiled(fprof);
+	//try {
+		var fprof = new java.io.File(__gHDir(), OPENAFPROFILE)
+		if (fprof.exists()) {
+			loadCompiled(String(fprof.getAbsolutePath()))
 		}
-	} catch(e) {
+	/*} catch(e) {
 		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
 			e.message.indexOf("java.nio.file.NoSuchFileException") < 0) throw e;
-	}
+	}*/
 
-	try {
-		if (af.getClass("openaf.OAFRepack").getResourceAsStream("/" + OPENAFPROFILE) != null) {
+	if (af.getClass("openaf.OAFRepack").getResourceAsStream("/" + OPENAFPROFILE) != null) {
+		try {
 			var fprof = getOpenAFJar() + "::" + OPENAFPROFILE;
 			prof = io.readFileString(fprof);
 			af.compile(prof);
+		} catch(e) {
+			if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
+				e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
+				e.message.indexOf("java.io.IOException") < 0 &&
+				e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
 		}
-	} catch(e) {
-		if (e.message.indexOf("java.io.FileNotFoundException") < 0 &&
-			e.message.indexOf("java.nio.file.NoSuchFileException") < 0 &&
-			e.message.indexOf("java.io.IOException") < 0 &&
-			e.message.indexOf("java.lang.NullPointerException: entry") < 0) throw e;
+
 	}
 })();
 
@@ -14918,6 +15040,6 @@ Packages.openaf.plugins.HTTPServer.DEFAULT_HTTP_SERVER = __flags.HTTPD_DEFAULT_I
 
 // OAF Code Integrity for script files
 var __scriptfile
-if (isString(__scriptfile)) {
+if (typeof __scriptfile == 'string' || false) {
 	__codeVerify(io.readFileString(__scriptfile), __scriptfile)
 }

@@ -250,7 +250,7 @@ public final class OAFdCL extends URLClassLoader {
         // Pre-load commonly used OpenAF classes in a virtual thread for non-blocking operation
         Thread.startVirtualThread(() -> {
             String[] commonClasses = {
-                "org.mozilla.javascript.NativeFunction",
+                "org.mozilla.javascript.Function",
                 "openaf.OAFdCL",
                 "org.mozilla.javascript.Scriptable",
                 "org.mozilla.javascript.optimizer.Bootstrapper",

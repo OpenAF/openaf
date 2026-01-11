@@ -48,7 +48,7 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -68,9 +68,9 @@ public class JMXServer extends ScriptableObject {
 	private static final long serialVersionUID = 2249818633847061216L;
 
 	public class DynaMXBean implements DynamicMBean {
-		NativeFunction getFunction;
-		NativeFunction setFunction;
-		NativeFunction opsFunction;
+		Function getFunction;
+		Function setFunction;
+		Function opsFunction;
 		protected OpenMBeanAttributeInfo[] attrInfo;
 		protected OpenMBeanConstructorInfo[] attrCons;
 		protected OpenMBeanOperationInfo[] attrOps;
@@ -95,7 +95,7 @@ public class JMXServer extends ScriptableObject {
 		 * @param get
 		 * @param set
 		 */
-		public DynaMXBean(NativeObject attrs, NativeFunction get, NativeFunction set, NativeFunction opsRouter) {
+		public DynaMXBean(NativeObject attrs, Function get, Function set, Function opsRouter) {
 			ArrayList<OpenMBeanAttributeInfoSupport> linfo = new ArrayList<OpenMBeanAttributeInfoSupport>();
 			ArrayList<OpenMBeanOperationInfoSupport> lops = new ArrayList<OpenMBeanOperationInfoSupport>();
 			
@@ -431,7 +431,7 @@ public class JMXServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public long addBean(NativeObject attrs, NativeFunction getFunction, NativeFunction setFunction, NativeFunction opsFunction) throws JMException {
+	public long addBean(NativeObject attrs, Function getFunction, Function setFunction, Function opsFunction) throws JMException {
 		if (mxs != null) {
 			DynaMXBean db = new DynaMXBean(attrs, getFunction, setFunction, opsFunction);
 		
@@ -455,7 +455,7 @@ public class JMXServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public long addObjectBean(String name, NativeObject attrs, NativeFunction getFunction, NativeFunction setFunction, NativeFunction opsFunction) throws JMException {
+	public long addObjectBean(String name, NativeObject attrs, Function getFunction, Function setFunction, Function opsFunction) throws JMException {
 		if (mxs != null) {
 			DynaMXBean db = new DynaMXBean(attrs, getFunction, setFunction, opsFunction);
 		

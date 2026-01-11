@@ -20,7 +20,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
@@ -156,12 +156,13 @@ public class CSV extends ScriptableObject {
 				csvFormatB = csvFormatB.setNullString((String) jsMap.get("withNullString"));
 			}
 
-			this.csvFormat = csvFormatB.build();
+			CSVFormat tempFormat = csvFormatB.build();
+			this.csvFormat = tempFormat;
 		}
 	}
 
 	@JSFunction
-	public void toStream(Object aStream, NativeFunction func) throws IOException {
+	public void toStream(Object aStream, Function func) throws IOException {
 		if (aStream instanceof OutputStream) {
 			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter((OutputStream) aStream));
 
@@ -193,13 +194,14 @@ public class CSV extends ScriptableObject {
 	}
 
 	@JSFunction
-	public void fromStream(Object aStream, NativeFunction func) throws IOException {
+	public void fromStream(Object aStream, Function func) throws IOException {
 		if (aStream instanceof InputStream) {
 			boolean hasHeaders = false;
 			String[] headers = null;
 			Reader reader = new InputStreamReader(((InputStream) aStream), "UTF-8");
 			if (!this.csvFormat.getSkipHeaderRecord() && this.heads == null) {
-				this.csvFormat = this.csvFormat.builder().setHeader().build();
+				CSVFormat tempFormat = CSVFormat.Builder.create(this.csvFormat).setHeader().build();
+				this.csvFormat = tempFormat;
 			}
 			CSVParser parser = this.csvFormat.parse(reader);
 			

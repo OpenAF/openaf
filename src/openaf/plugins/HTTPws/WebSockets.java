@@ -1,6 +1,6 @@
 package openaf.plugins.HTTPws;
 
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Context;
 
@@ -44,14 +44,14 @@ public class WebSockets {
         public Future<Session> fut;
     }
 
-    static public Object wsConnect(Authenticator authenticator, String u, String p, String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
-            NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+    static public Object wsConnect(Authenticator authenticator, String u, String p, String anURL, Function onConnect, Function onMsg, Function onError,
+            Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
         Object res = wsClient(authenticator, u, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
         return ((WebSocketsReply) res).fut;
     }
 
-    static public Object wsClient(Authenticator authenticator, String u, String p, String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError,
-            NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+    static public Object wsClient(Authenticator authenticator, String u, String p, String anURL, Function onConnect, Function onMsg, Function onError,
+            Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 
         URI uri = URI.create(anURL);
         WebSocketClient client;
@@ -87,9 +87,12 @@ public class WebSockets {
         //client = new WebSocketClient(hclient);
 
         try {
+            @SuppressWarnings("removal")
             org.eclipse.jetty.websocket.client.ClientUpgradeRequest request = null;
             if (u != null && p != null) {
-                request = new org.eclipse.jetty.websocket.client.ClientUpgradeRequest();
+                @SuppressWarnings("removal")
+                org.eclipse.jetty.websocket.client.ClientUpgradeRequest tempRequest = new org.eclipse.jetty.websocket.client.ClientUpgradeRequest();
+                request = tempRequest;
                 String s = new String(AFCmdBase.afc.dIP(u) + ":" + new String(AFCmdBase.afc.dIP(p).toCharArray()));
                 request.setHeader("Authorization",
                         "Basic " + new String(org.apache.commons.codec.binary.Base64.encodeBase64(s.getBytes())));
@@ -103,10 +106,14 @@ public class WebSockets {
             EventSocket socket = new EventSocket(onConnect, onMsg, onError, onClose);
             Future<org.eclipse.jetty.websocket.api.Session> fut;
             if (request == null) {
-                fut = client.connect(socket, uri);
+                @SuppressWarnings("removal")
+                Future<org.eclipse.jetty.websocket.api.Session> tempFut = client.connect(socket, uri);
+                fut = tempFut;
             } else {
-                fut = client
+                @SuppressWarnings("removal")
+                Future<org.eclipse.jetty.websocket.api.Session> tempFut = client
                 .connect(socket, uri, request);
+                fut = tempFut;
             }
             
             org.eclipse.jetty.websocket.api.Session session;
@@ -128,9 +135,9 @@ public class WebSockets {
 
     @WebSocket
     public static class EventSocket {
-        NativeFunction onConnect, onMsg, onError, onClose;
+        Function onConnect, onMsg, onError, onClose;
 
-        public EventSocket(NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose) {
+        public EventSocket(Function onConnect, Function onMsg, Function onError, Function onClose) {
             this.onConnect = onConnect;
             this.onMsg = onMsg;
             this.onError = onError;

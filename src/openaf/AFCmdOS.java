@@ -10,17 +10,28 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.net.MalformedURLException;
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipFile;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.IdScriptableObject;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.JSDescriptor;
+import org.mozilla.javascript.JSScript;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeJSON;
 import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
@@ -95,6 +106,24 @@ public class AFCmdOS extends AFCmdBase {
 
 	public static ZipFile zip;
 	
+	// Performance caches for newScriptInstance
+	private static final Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
+	private static final Map<Class<?>, Constructor<?>> constructorCache = new ConcurrentHashMap<>();
+	private static final Map<String, Field> fieldCache = new ConcurrentHashMap<>();
+	private static final Map<String, JSDescriptor<?>> descriptorCache = new ConcurrentHashMap<>();
+	private static final Map<Class<?>, Boolean> initializedClasses = new ConcurrentHashMap<>();
+	
+	// Regex pattern cache to avoid recompilation
+	private static final Pattern ZIP_SUFFIX_PATTERN = Pattern.compile("::[^:]+$");
+	private static final Pattern PREFIX_PATTERN = Pattern.compile(".+::");
+	private static final Pattern SHEBANG_PATTERN = Pattern.compile("^#.*");
+	
+	// Resource stream cache
+	private static final Map<String, String> resourceStreamCache = new ConcurrentHashMap<>();
+	
+	// Compiled script cache for commonly used scripts
+	private static final Map<String, org.mozilla.javascript.Script> compiledScriptCache = new ConcurrentHashMap<>();
+	
 	protected inputtype INPUT_TYPE = inputtype.INPUT_AUTO;
 	protected String exprInput = "";
 	protected String scriptfile = "";
@@ -134,10 +163,10 @@ public class AFCmdOS extends AFCmdBase {
 				return (String) aPass;
 			}
 		} 
-		if (aPass instanceof NativeFunction) {
+		if (aPass instanceof Function) {
 			try {
 				Context cx = (Context) AFCmdBase.jse.enterContext();
-				return (String) ((NativeFunction) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+				return (String) ((Function) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
                             cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
                             new Object[] { });
 			} catch(Exception e) {
@@ -631,14 +660,20 @@ public class AFCmdOS extends AFCmdBase {
 			
 			if (filescript) {				
 				if (injectscript) {
-					java.io.InputStream stream = getClass().getResourceAsStream(injectscriptfile);
-					if (stream != null) {
-						try {
-							script = IOUtils.toString(stream, "UTF-8");
-						} finally {
-							stream.close();
+					// Cache resource streams to avoid repeated I/O
+					script = resourceStreamCache.computeIfAbsent(injectscriptfile, key -> {
+						java.io.InputStream stream = getClass().getResourceAsStream(key);
+						if (stream != null) {
+							try {
+								return IOUtils.toString(stream, "UTF-8");
+							} catch (IOException e) {
+								return "";
+							} finally {
+								try { stream.close(); } catch (IOException e) { }
+							}
 						}
-					}
+						return "";
+					});
 				} else {		    	
 			    	boolean isZip = false;
 			    	boolean isOpack = false;
@@ -647,7 +682,8 @@ public class AFCmdOS extends AFCmdBase {
 			    	
 					// Determine if it's opack/zip
 					if (!scriptfile.endsWith(".js")) {
-						DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(scriptfile.replaceFirst("::[^:]+$", ""))));
+						String baseScriptPath = ZIP_SUFFIX_PATTERN.matcher(scriptfile).replaceFirst("");
+						DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(baseScriptPath)));
 						int test = 0;
 						if (dis != null) {
 							try {
@@ -660,7 +696,7 @@ public class AFCmdOS extends AFCmdBase {
 						if (test == 0x504b0304) {
 							isZip = true;
 							try {
-								tmpZip = new ZipFile(scriptfile.replaceFirst("::[^:]+$",  ""));
+								tmpZip = new ZipFile(baseScriptPath);
 								isOpack = tmpZip.getEntry(OPACK) != null;
 								zip = tmpZip;
 							} catch(Exception e) {}
@@ -689,26 +725,28 @@ public class AFCmdOS extends AFCmdBase {
 				    		}
 			    		} else {
 			    			try {
-			    				script = IOUtils.toString(zip.getInputStream(zip.getEntry(scriptfile.replaceFirst(".+::", ""))), "UTF-8");
-			    			} catch(NullPointerException e) {
-			    				throw new Exception("Can't find " + scriptfile.replaceFirst(".+::", ""));
-			    			}
-			    		}
-			    	} else {
-			    		script = FileUtils.readFileToString(new File(scriptfile), (Charset) null);
-				    	zip = null;
-			    	}
-			    }
-			    	
-			} else {
-				if (!injectclass) script = theInput.toString();
-			}
-			
-			if (script != null) {
+		    				String innerPath = PREFIX_PATTERN.matcher(scriptfile).replaceFirst("");
+		    				script = IOUtils.toString(zip.getInputStream(zip.getEntry(innerPath)), "UTF-8");
+		    			} catch(NullPointerException e) {
+		    				String innerPath = PREFIX_PATTERN.matcher(scriptfile).replaceFirst("");
+		    				throw new Exception("Can't find " + innerPath);
+		    			}
+		    		}
+		    	} else {
+		    		script = FileUtils.readFileToString(new File(scriptfile), (Charset) null);
+			    	zip = null;
+		    	}
+		    }
+		    	
+		} else {
+			if (!injectclass) script = theInput.toString();
+		}
+		
+		if (script != null) {
 				if (injectcode) script = code + "\n" + script;
 				if (script.startsWith("#") || script.startsWith(PREFIX_SCRIPT)) {
-					script = script.replaceAll("^#.*", "//");
-					script = script.replaceFirst(PREFIX_SCRIPT, "");
+					script = SHEBANG_PATTERN.matcher(script).replaceAll("//");
+					script = script.replaceFirst(Pattern.quote(PREFIX_SCRIPT), "");
 				}
 				
 				if (daemon) script = "ow.loadServer().simpleCheckIn('" + scriptfile + "'); " + script + "; ow.loadServer().daemon();";
@@ -723,10 +761,7 @@ public class AFCmdOS extends AFCmdBase {
 			Scriptable gscope = (Scriptable) jse.getGlobalscope();
 			Object noSLF4JErrorOnly = Context.javaToJS(__noSLF4JErrorOnly, gscope);
 			
-			// Issue 34
-			if (System.getProperty("java.util.logging.config.file") == null) {
-				System.setProperty("java.util.logging.config.file", "");
-			}
+			// Issue 34 - Already initialized in AFCmdBase static block
 			/*if (__noSLF4JErrorOnly) {
 				// Set logging to ERROR 
 				try {
@@ -746,57 +781,59 @@ public class AFCmdOS extends AFCmdBase {
 				opmIn = AFCmdBase.jse.newObject(gscope);
 			}
 			
-			synchronized(this) {		
-				ScriptableObject.putProperty(gscope, "__noSLF4JErrorOnly", noSLF4JErrorOnly);
-	
-				ScriptableObject.putProperty(gscope, "pmIn", opmIn);
-				ScriptableObject.putProperty(gscope, "__pmIn", opmIn);
-			
-				// Add pmOut object
-				Object opmOut = Context.javaToJS(jsonPMOut, gscope);
-				ScriptableObject.putProperty(gscope, "pmOut", opmOut);
-				ScriptableObject.putProperty(gscope, "__pmOut", opmOut);
-				
-				// Add expr object
-				Object opmExpr = Context.javaToJS(exprInput, gscope);
-				ScriptableObject.putProperty(gscope, "expr", opmExpr);
-				ScriptableObject.putProperty(gscope, "__expr", opmExpr);
-				ScriptableObject.putProperty(gscope, "__args", args);
-				
-				// Add scriptfile object
-				if (filescript) {
-					Object scriptFile = Context.javaToJS(scriptfile, gscope);
-					ScriptableObject.putProperty(gscope, "__scriptfile", scriptFile);
-					ScriptableObject.putProperty(gscope, "__iszip", (zip == null) ? false: true);
-				}
+			// ScriptableObject operations are thread-safe, no need for synchronization during startup
+			ScriptableObject.putProperty(gscope, "__noSLF4JErrorOnly", noSLF4JErrorOnly);
 
-				// Add AF class
-				ScriptableObject.defineClass(gscope, AFBase.class, false, true);
-				
-				// Add DB class
-				ScriptableObject.defineClass(gscope, DB.class, false, true);
-				
-				// Add CSV class
-				ScriptableObject.defineClass(gscope, CSV.class, false, true);
-				
-				// Add IO class
-				ScriptableObject.defineClass(gscope, IOBase.class, false, true);			
-				
-				// Add this object
-				Scriptable afScript = null;
-				afScript = (Scriptable) jse.newObject(gscope, "AF");
-				
-				if (!ScriptableObject.hasProperty(gscope, "af"))
-					((IdScriptableObject) gscope).put("af", gscope, afScript);
-				
-				// Add the IO object
-				if (!ScriptableObject.hasProperty(gscope, "io"))
-					((IdScriptableObject) gscope).put("io", gscope, jse.newObject(gscope, "IO"));
-				
+			ScriptableObject.putProperty(gscope, "pmIn", opmIn);
+			ScriptableObject.putProperty(gscope, "__pmIn", opmIn);
+
+			// Add pmOut object
+			Object opmOut = Context.javaToJS(jsonPMOut, gscope);
+			ScriptableObject.putProperty(gscope, "pmOut", opmOut);
+			ScriptableObject.putProperty(gscope, "__pmOut", opmOut);
+
+			// Add expr object
+			Object opmExpr = Context.javaToJS(exprInput, gscope);
+			ScriptableObject.putProperty(gscope, "expr", opmExpr);
+			ScriptableObject.putProperty(gscope, "__expr", opmExpr);
+			ScriptableObject.putProperty(gscope, "__args", args);
+
+			// Add scriptfile object
+			if (filescript) {
+				Object scriptFile = Context.javaToJS(scriptfile, gscope);
+				ScriptableObject.putProperty(gscope, "__scriptfile", scriptFile);
+				ScriptableObject.putProperty(gscope, "__iszip", (zip == null) ? false: true);
 			}
 
-			AFBase.runFromClass(Class.forName("openaf_js").getDeclaredConstructor().newInstance());
-			//cx.setErrorReporter(new OpenRhinoErrorReporter());
+			// Add AF class (only if not already defined)
+			if (!ScriptableObject.hasProperty(gscope, "AF"))
+				ScriptableObject.defineClass(gscope, AFBase.class, false, true);
+
+			// Add DB class (only if not already defined)
+			if (!ScriptableObject.hasProperty(gscope, "DB"))
+				ScriptableObject.defineClass(gscope, DB.class, false, true);
+
+			// Add CSV class (only if not already defined)
+			if (!ScriptableObject.hasProperty(gscope, "CSV"))
+				ScriptableObject.defineClass(gscope, CSV.class, false, true);
+
+			// Add IO class (only if not already defined)
+			if (!ScriptableObject.hasProperty(gscope, "IO"))
+				ScriptableObject.defineClass(gscope, IOBase.class, false, true);
+
+			// Add this object
+			Scriptable afScript = null;
+			afScript = (Scriptable) jse.newObject(gscope, "AF");
+
+			if (!ScriptableObject.hasProperty(gscope, "af"))
+				ScriptableObject.putProperty(gscope, "af", afScript);
+
+			// Add the IO object
+			if (!ScriptableObject.hasProperty(gscope, "io"))
+				ScriptableObject.putProperty(gscope, "io", jse.newObject(gscope, "IO"));
+
+			AFBase.runFromClass(newScriptInstance("openaf_js"));
+			cx.setErrorReporter(new OpenRhinoErrorReporter());
 			
 			if (isolatePMs) {
 				script = "(function(__pIn) { var __pmOut = {}; var __pmIn = __pIn; " + script + "; return __pmOut; })(" + pmIn + ")";
@@ -807,13 +844,23 @@ public class AFCmdOS extends AFCmdBase {
 			Object res = null;
 			if (injectscript || filescript || injectcode || processScript) {
 				Context cxl = (Context) jse.enterContext();
-				org.mozilla.javascript.Script compiledScript = cxl.compileString(script, scriptfile, 1, null);
-				res = compiledScript.exec(cxl, gscope);
+				// Cache commonly compiled scripts to avoid recompilation
+				String cacheKey = (filescript ? scriptfile : "inline_" + System.identityHashCode(script));
+				org.mozilla.javascript.Script compiledScript = compiledScriptCache.get(cacheKey);
+				if (compiledScript == null) {
+					compiledScript = cxl.compileString(script, scriptfile, 1, null);
+					// Only cache file scripts, not inline ones, to save memory
+					if (filescript && compiledScriptCache.size() < 256) {
+						compiledScriptCache.put(cacheKey, compiledScript);
+					}
+				}
+				Object tempRes = compiledScript.exec(cxl, gscope, gscope);
+				res = tempRes;
 				jse.exitContext();
 			} 
 
 			if (injectclass) {
-				res = AFBase.runFromClass(Class.forName(injectclassfile).getDeclaredConstructor().newInstance());
+				res = AFBase.runFromClass(newScriptInstance(injectclassfile));
 			}
 			
 			if (isolatePMs && res != null && !(res instanceof Undefined)) {
@@ -867,6 +914,111 @@ public class AFCmdOS extends AFCmdBase {
 		} catch (Exception e1) {
 			SimpleLog.log(SimpleLog.logtype.ERROR, "Error while executing operation: " + e1.getMessage(), null);
 			SimpleLog.log(SimpleLog.logtype.DEBUG, "", e1);
+		}
+	}
+
+	// Helper to initialize a class only once
+	private static void initCompiledClassOnce(Class<?> cls) throws Exception {
+		if (!initializedClasses.containsKey(cls)) {
+			AFBase.initCompiledClass(cls);
+			initializedClasses.put(cls, Boolean.TRUE);
+		}
+	}
+
+	private static Script newScriptInstance(String className) throws Exception {
+		// Fast path: check descriptor cache first (most common case)
+		JSDescriptor<?> cachedDescriptor = descriptorCache.get(className);
+		if (cachedDescriptor != null) {
+			return new JSScript((JSDescriptor) cachedDescriptor, null);
+		}
+		
+		// Cache class lookup
+		Class<?> cls = classCache.computeIfAbsent(className, key -> {
+			try {
+				return Class.forName(key);
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+		});
+		
+		// Try cached constructor approach (second fastest)
+		Constructor<?> constructor = constructorCache.get(cls);
+		if (constructor != null) {
+			try {
+				Script script = (Script) constructor.newInstance();
+				initCompiledClassOnce(cls);
+				return script;
+			} catch (Exception e) {
+				// Cache was invalid, remove it and continue
+				constructorCache.remove(cls);
+			}
+		}
+
+		// Try to get and cache constructor
+		try {
+			constructor = cls.getDeclaredConstructor();
+			constructorCache.put(cls, constructor);
+			Script script = (Script) constructor.newInstance();
+			initCompiledClassOnce(cls);
+			return script;
+		} catch (NoSuchMethodException e) {
+			// Fall through to descriptor approach
+		}
+		
+		// Descriptor-based approach
+		try {
+			Class.forName(className + "Main", true, cls.getClassLoader());
+			
+			// Cache field lookup and accessibility
+			Field field = fieldCache.computeIfAbsent(className, key -> {
+				try {
+					Field f = cls.getDeclaredField("_descriptors");
+					f.setAccessible(true);
+					return f;
+				} catch (NoSuchFieldException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			
+			JSDescriptor<?>[] descriptors = (JSDescriptor<?>[]) field.get(null);
+			if (descriptors == null || descriptors.length == 0 || descriptors[0] == null) {
+				throw new IllegalStateException("Missing JS descriptors for " + className);
+			}
+			
+			// Cache descriptor for future fast-path access
+			descriptorCache.put(className, descriptors[0]);
+			initCompiledClassOnce(cls);
+			return new JSScript((JSDescriptor) descriptors[0], null);
+		} catch (Throwable initFailure) {
+			return compileScriptFromResource(cls, className);
+		}
+	}
+
+	private static Script compileScriptFromResource(Class<?> cls, String className) throws Exception {
+		String resourceName = "js/openaf.js";
+		// Cache compiled resource scripts
+		String cacheKey = "resource_" + className;
+		org.mozilla.javascript.Script cached = compiledScriptCache.get(cacheKey);
+		if (cached != null) {
+			return cached;
+		}
+		
+		try (InputStream in = cls.getClassLoader().getResourceAsStream(resourceName)) {
+			if (in == null) {
+				throw new IllegalStateException("Unable to load " + resourceName + " for " + className);
+			}
+			Context cx = (Context) AFCmdBase.jse.enterContext();
+			try {
+				InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
+				org.mozilla.javascript.Script compiled = cx.compileReader(reader, resourceName, 1, null);
+				// Cache for future use
+				if (compiledScriptCache.size() < 256) {
+					compiledScriptCache.put(cacheKey, compiled);
+				}
+				return compiled;
+			} finally {
+				AFCmdBase.jse.exitContext();
+			}
 		}
 	}
 

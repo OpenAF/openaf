@@ -43,7 +43,7 @@ import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
 import javax.net.ssl.SSLContext;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -84,7 +84,7 @@ public class HTTPServer extends ScriptableObject {
 	protected static HashMap<String, Object> sessions = new HashMap<String, Object>();
 	protected String id;
 	protected int serverport;
-	public static Map<String, NativeFunction> callbacks = new ConcurrentHashMap<String, NativeFunction>();
+	public static Map<String, Function> callbacks = new ConcurrentHashMap<String, Function>();
 
 	/**
 	 * 
@@ -97,13 +97,13 @@ public class HTTPServer extends ScriptableObject {
 	
 	public class HLog extends com.nwu.log.Log {
 		protected int port; 
-		protected NativeFunction callback = null;
+		protected Function callback = null;
 		
 		public HLog(int port, Object f) {
 			super(false);
 			this.port = port;
-			if (f != null && f instanceof NativeFunction)
-				this.callback = (NativeFunction) f;
+			if (f != null && f instanceof Function)
+				this.callback = (Function) f;
 		}
 		
 		protected void SimpleLoglog(SimpleLog.logtype type, String message, Exception e) {
@@ -202,13 +202,13 @@ public class HTTPServer extends ScriptableObject {
 	
 	public class HLog2 extends com.nwu2.log.Log {
 		protected int port; 
-		protected NativeFunction callback = null;
+		protected Function callback = null;
 		
 		public HLog2(int port, Object f) {
 			super(false);
 			this.port = port;
-			if (f != null && f instanceof NativeFunction)
-				this.callback = (NativeFunction) f;
+			if (f != null && f instanceof Function)
+				this.callback = (Function) f;
 		}
 		
 		protected void SimpleLoglog(SimpleLog.logtype type, String message, Exception e) {
@@ -748,7 +748,7 @@ public class HTTPServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void add(String auri, NativeFunction callback) {
+	public void add(String auri, Function callback) {
 		// Ensure URI starts with a slash
 		String uri = (!auri.startsWith("/")) ? "/" + auri : auri;
 
@@ -980,7 +980,7 @@ public class HTTPServer extends ScriptableObject {
 	 * @throws IllegalAccessException 
 	 */
 	@JSFunction
-	public void addXDTServer(String uri, NativeFunction authFunction, NativeFunction opsBroker) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+	public void addXDTServer(String uri, Function authFunction, Function opsBroker) throws ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		if (USE_JAVA_HTTP_SERVER) {
 			throw new UnsupportedOperationException("XDT Server not implemented for Java HTTP server");
 		} else {
@@ -989,8 +989,8 @@ public class HTTPServer extends ScriptableObject {
 			
 			if (AFCmdBase.afcmd.equals("AFCmdWeDo")) {
 				Class<?> cl = Class.forName("openaf.plugins.HTTPd.XDTServerResponse");
-				cl.getDeclaredMethod("setAuthfunction", NativeFunction.class).invoke(this, authFunction);
-				cl.getDeclaredMethod("setOpsfunction", NativeFunction.class).invoke(this, opsBroker);
+				cl.getDeclaredMethod("setAuthfunction", Function.class).invoke(this, authFunction);
+				cl.getDeclaredMethod("setOpsfunction", Function.class).invoke(this, opsBroker);
 				
 				if (USE_NWU2)
 					httpd2.registerURIResponse(uri, cl, props);
@@ -1257,9 +1257,9 @@ public class HTTPServer extends ScriptableObject {
 	 * Custom HttpHandler implementation for Java HTTP server
 	 */
 	public class JavaHttpHandler implements HttpHandler {
-		private final NativeFunction callback;
+		private final Function callback;
 		
-		public JavaHttpHandler(String uri, NativeFunction callback, int port) {
+		public JavaHttpHandler(String uri, Function callback, int port) {
 			this.callback = callback;
 		}
 		

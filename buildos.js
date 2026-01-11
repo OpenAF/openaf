@@ -258,6 +258,19 @@ var compileJS2Java = (classfile, script, path) => {
 	.get(0)
 }
 
+var addCompiledClasses = (baseName) => {
+	var listfiles = io.listFiles(OPENAF_BUILD_HOME + "/jslib");
+	if (isUndefined(listfiles) || isUndefined(listfiles.files)) return;
+	for (var i in listfiles.files) {
+		var f = listfiles.files[i];
+		if (f.isDirectory) continue;
+		if (f.filename.indexOf(baseName) != 0) continue;
+		if (!f.filename.match(/\.class$/)) continue;
+		//if (f.filename.match(/_jsojsc\d+\.class$/)) continue;
+		zipJSlib.putFile(f.filename, io.readFileBytes(f.filepath));
+	}
+}
+
 //for(i in jsList) {
 parallel4Array(jsList, function (i) {
 try {	
@@ -325,7 +338,7 @@ try {
 			}
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/jsmin/" + file.filename));
-				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));
+				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) addCompiledClasses(file.filename.replace(/\./g, "_"));
 			}, tempJar);
 		} else {
 			try {
@@ -341,7 +354,7 @@ try {
 			  }   
 			sync(function () {
 				tempJar.putFile("js/" + file.filename, io.readFileBytes(OPENAF_BUILD_HOME + "/js/" + file.filename));
-				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) zipJSlib.putFile(file.filename.replace(/\./g, "_") + ".class", io.readFileBytes(OPENAF_BUILD_HOME + "/jslib/" + file.filename.replace(/\./g, "_") + ".class" ));				
+				if (validationForCompile(file.filename) || validationForRequireCompile(file.filename)) addCompiledClasses(file.filename.replace(/\./g, "_"));			
 			}, tempJar);
 		}
 	}
