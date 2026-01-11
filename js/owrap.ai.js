@@ -2317,9 +2317,10 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
-         * <key>$gpt.withMcpTools(aMcpClient, aToolNames) : ow.ai.gpt</key>
+         * <key>$gpt.withMcpTools(aMcpClient, aToolNames, aIncludeAgentTools) : ow.ai.gpt</key>
          * Automatically adds MCP tools from an MCP client to the current GPT instance. The aMcpClient should be an initialized $mcp client.
          * If aToolNames is provided (array of strings), only those specific tools will be added. Otherwise, all available tools are added.
+         * If aIncludeAgentTools is true, tools with names starting with "agents/" will be included (defaults to false for Gemini compatibility).
          * Each MCP tool will be converted to a GPT-compatible tool using the MCP tool's JSON schema.
          * \
          * Example:\
@@ -2327,15 +2328,17 @@ global.$gpt = function(aModel) {
          * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
          * mcpClient.initialize();\
          * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
-         * gpt.withMcpTools(mcpClient); // Adds all MCP tools\
+         * gpt.withMcpTools(mcpClient); // Adds all MCP tools except agents/*\
          * // or gpt.withMcpTools(mcpClient, ["read_file", "write_file"]); // Adds only specific tools\
+         * // or gpt.withMcpTools(mcpClient, __, true); // Includes agents/* tools\
          * \
          * var response = gpt.prompt("Read the file /tmp/example.txt");\
          * </odoc>
          */
-        withMcpTools: (aMcpClient, aToolNames) => {
+        withMcpTools: (aMcpClient, aToolNames, aIncludeAgentTools) => {
             _$(aMcpClient, "aMcpClient").isMap().$_()
             aToolNames = _$(aToolNames, "aToolNames").isArray().default(__)
+            aIncludeAgentTools = _$(aIncludeAgentTools, "aIncludeAgentTools").isBoolean().default(false)
 
             if (!aMcpClient._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
@@ -2349,6 +2352,11 @@ global.$gpt = function(aModel) {
             var toolsToAdd = toolsList.tools
             if (isDef(aToolNames)) {
                 toolsToAdd = toolsList.tools.filter(tool => aToolNames.indexOf(tool.name) >= 0)
+            }
+
+            // Filter out agents/* tools unless explicitly requested (for Gemini compatibility)
+            if (!aIncludeAgentTools) {
+                toolsToAdd = toolsToAdd.filter(tool => !tool.name.startsWith("agents/"))
             }
 
             toolsToAdd.forEach(tool => {
