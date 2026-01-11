@@ -256,4 +256,90 @@
         ow.test.assert(r4.isError, true, "Fourth request should fail due to rate limit");
         ow.test.assert(r4.content[0].text.indexOf("Rate limit") >= 0, true, "Should mention rate limit");
     };
+
+    exports.testWithMcpToolsAgentFilter = function() {
+        // Test that withMcpTools excludes agents/* tools by default (for Gemini compatibility)
+        // and includes them only when aIncludeAgentTools=true
+
+        // Create a dummy MCP client with both regular tools and agents/* tools
+        var client = $mcp({
+            type: "dummy",
+            options: {
+                tools: [
+                    {
+                        name: "read_file",
+                        description: "Read a file",
+                        inputSchema: {
+                            type: "object",
+                            properties: {
+                                path: { type: "string" }
+                            }
+                        }
+                    },
+                    {
+                        name: "agents/list",
+                        description: "List agents",
+                        inputSchema: {
+                            type: "object",
+                            properties: {}
+                        }
+                    },
+                    {
+                        name: "agents/send",
+                        description: "Send to agent",
+                        inputSchema: {
+                            type: "object",
+                            properties: {
+                                agent_id: { type: "string" },
+                                message: { type: "string" }
+                            }
+                        }
+                    },
+                    {
+                        name: "write_file",
+                        description: "Write a file",
+                        inputSchema: {
+                            type: "object",
+                            properties: {
+                                path: { type: "string" },
+                                content: { type: "string" }
+                            }
+                        }
+                    }
+                ]
+            }
+        });
+
+        client.initialize();
+
+        // Test 1: Default behavior (aIncludeAgentTools=false) - should exclude agents/* tools
+        var gpt1 = $gpt({ type: "openai", options: { key: "test-key" } });
+        gpt1.withMcpTools(client);
+
+        var toolNames1 = Object.keys(gpt1.model.tools);
+        ow.test.assert(toolNames1.indexOf("read_file") >= 0, true, "Should include read_file");
+        ow.test.assert(toolNames1.indexOf("write_file") >= 0, true, "Should include write_file");
+        ow.test.assert(toolNames1.indexOf("agents/list") < 0, true, "Should NOT include agents/list by default");
+        ow.test.assert(toolNames1.indexOf("agents/send") < 0, true, "Should NOT include agents/send by default");
+
+        // Test 2: Explicit exclusion (aIncludeAgentTools=false)
+        var gpt2 = $gpt({ type: "openai", options: { key: "test-key" } });
+        gpt2.withMcpTools(client, __, false);
+
+        var toolNames2 = Object.keys(gpt2.model.tools);
+        ow.test.assert(toolNames2.indexOf("agents/list") < 0, true, "Should NOT include agents/list when aIncludeAgentTools=false");
+        ow.test.assert(toolNames2.indexOf("agents/send") < 0, true, "Should NOT include agents/send when aIncludeAgentTools=false");
+
+        // Test 3: Explicit inclusion (aIncludeAgentTools=true)
+        var gpt3 = $gpt({ type: "openai", options: { key: "test-key" } });
+        gpt3.withMcpTools(client, __, true);
+
+        var toolNames3 = Object.keys(gpt3.model.tools);
+        ow.test.assert(toolNames3.indexOf("read_file") >= 0, true, "Should include read_file");
+        ow.test.assert(toolNames3.indexOf("write_file") >= 0, true, "Should include write_file");
+        ow.test.assert(toolNames3.indexOf("agents/list") >= 0, true, "Should include agents/list when aIncludeAgentTools=true");
+        ow.test.assert(toolNames3.indexOf("agents/send") >= 0, true, "Should include agents/send when aIncludeAgentTools=true");
+
+        client.destroy();
+    };
 })();
