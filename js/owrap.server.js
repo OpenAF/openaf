@@ -1811,17 +1811,299 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
         var _pline = jsonParse(line)
         lgF("rcv", _pline)
         var _res = ow.server.jsonRPC(_pline, {
-            initialize                 : mcpInitialize,
-            "prompts/list"             : mcpPromptsList,
-            "notifications/initialized": mcpNotificationsInitialized,
-            ping                       : mcpPing,
-            "tools/call"               : mcpToolsCall,
-            "tools/list"               : mcpToolsList
+            initialize                 : () => initData,
+            "prompts/list"             : () => ({}),
+            "notifications/initialized": () => ({}),
+            ping                       : () => ({}),
+            "tools/call"               : params => {
+                if (isDef(params.name)) {
+                    const tool = fns[params.name]
+                    if (tool) {
+                        try {
+                            var result = tool(params.input || params.arguments || {})
+                            return { 
+                                content: [{
+                                    type: "text",
+                                    text: isString(result) ? result : stringify(result, __, "")
+                                }],
+                                isError: false
+                            }
+                        } catch (e) {
+                            return { 
+                                content: [{
+                                    type: "text",
+                                    text: "Error executing tool: " + e.message
+                                }],
+                                isError: true
+                            }
+                        }
+                    } else {
+                        return { content: [{
+                            type: "text",
+                            text: "Tool not found: " + params.name
+                        }], isError: true }
+                    }
+                }
+            },
+            "tools/list": () => ({ tools: fnsMeta }),
+            "agents/list": params => {
+                if (isUnDef(global.__a2a__)) {
+                    return { agents: [] }
+                }
+                return global.__a2a__.listAgents()
+            },
+            "agents/get": params => {
+                if (isUnDef(global.__a2a__)) {
+                    throw "No agent registry configured"
+                }
+                if (isUnDef(params) || isUnDef(params.id)) {
+                    throw "Missing required parameter: id"
+                }
+                return global.__a2a__.getAgent(params.id)
+            },
+            "agents/send": params => {
+                if (isUnDef(global.__a2a__)) {
+                    return {
+                        content: [{ type: "text", text: "No agent registry configured" }],
+                        isError: true
+                    }
+                }
+                if (isUnDef(params) || isUnDef(params.id)) {
+                    return {
+                        content: [{ type: "text", text: "Missing required parameter: id" }],
+                        isError: true
+                    }
+                }
+                return global.__a2a__.send(params.id, params.message, params.options || {}, params.context || {})
+            }
         })
 
         lgF("snd", _res)
         sprint(_res, "")
     })
+}
+
+//-----------------------------------------------------------------------------------------------------
+// A2A (Agent-to-Agent)
+//-----------------------------------------------------------------------------------------------------
+
+/**
+ * <odoc>
+ * <key>ow.server.a2a() : ow.server.a2a</key>
+ * Creates an agent registry for Agent-to-Agent (A2A) messaging over MCP.
+ * Agents can be registered with metadata and message handlers, then accessed via MCP methods (agents/list, agents/get, agents/send).
+ * </odoc>
+ */
+OpenWrap.server.prototype.a2a = function() {
+    this.registry = {}
+    this.defaultSizeLimit = 10 * 1024 * 1024  // 10MB default
+    this.defaultTimeout = 60000  // 60 seconds
+    return this
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.a2a.prototype.registerAgent(aMeta, aHandler, aAuthFn, aOptions)</key>
+ * Registers an agent with the A2A registry.\
+ * \
+ * aMeta should be a map with:\
+ *   - id (string, required): Unique agent identifier\
+ *   - name (string): Display name (defaults to id)\
+ *   - title (string): Human-readable title (defaults to id)\
+ *   - version (string): Version string (defaults to "1.0.0")\
+ *   - tags (array): Array of categorization tags\
+ *   - capabilities (map): Map of agent capabilities\
+ * \
+ * aHandler is a function(message, options, context) that processes messages and returns:\
+ *   { content: [{ type: "text", text: "..." }], isError: false }\
+ * \
+ * aAuthFn is an optional function(context) that returns true/false for authorization.\
+ * \
+ * aOptions is an optional map with:\
+ *   - sizeLimit (number): Maximum message size in bytes\
+ *   - timeout (number): Handler timeout in milliseconds\
+ *   - rateLimit (number): Requests per minute limit\
+ * </odoc>
+ */
+OpenWrap.server.prototype.a2a.prototype.registerAgent = function(aMeta, aHandler, aAuthFn, aOptions) {
+    _$(aMeta, "aMeta").isMap().$_()
+    _$(aMeta.id, "aMeta.id").isString().$_()
+    _$(aHandler, "aHandler").isFunction().$_()
+
+    // Build complete metadata with defaults
+    var meta = {
+        id: aMeta.id,
+        name: _$(aMeta.name, "aMeta.name").isString().default(aMeta.id),
+        title: _$(aMeta.title, "aMeta.title").isString().default(aMeta.id),
+        version: _$(aMeta.version, "aMeta.version").isString().default("1.0.0"),
+        tags: _$(aMeta.tags, "aMeta.tags").isArray().default([]),
+        capabilities: _$(aMeta.capabilities, "aMeta.capabilities").isMap().default({ messaging: true })
+    }
+
+    // Store in registry
+    this.registry[aMeta.id] = {
+        meta: meta,
+        handler: aHandler,
+        authFn: aAuthFn,
+        options: merge({
+            sizeLimit: this.defaultSizeLimit,
+            timeout: this.defaultTimeout,
+            rateLimit: __
+        }, aOptions || {}),
+        rateLimitCounter: 0,
+        rateLimitReset: nowNano()
+    }
+
+    return this
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.a2a.prototype.unregisterAgent(aId)</key>
+ * Removes an agent from the registry by ID.
+ * </odoc>
+ */
+OpenWrap.server.prototype.a2a.prototype.unregisterAgent = function(aId) {
+    _$(aId, "aId").isString().$_()
+    delete this.registry[aId]
+    return this
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.a2a.prototype.listAgents(aFilterFn) : Map</key>
+ * Returns a map with an 'agents' array containing metadata for all registered agents.\
+ * Optionally filter agents using aFilterFn(agentMeta) which should return true to include the agent.
+ * </odoc>
+ */
+OpenWrap.server.prototype.a2a.prototype.listAgents = function(aFilterFn) {
+    var agents = Object.values(this.registry).map(function(a) { return a.meta })
+
+    if (isDef(aFilterFn) && isFunction(aFilterFn)) {
+        agents = agents.filter(aFilterFn)
+    }
+
+    return { agents: agents }
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.a2a.prototype.getAgent(aId) : Map</key>
+ * Returns the metadata for a specific agent by ID.\
+ * Throws an error if the agent is not found.
+ * </odoc>
+ */
+OpenWrap.server.prototype.a2a.prototype.getAgent = function(aId) {
+    _$(aId, "aId").isString().$_()
+
+    if (isUnDef(this.registry[aId])) {
+        throw "Agent not found: " + aId
+    }
+
+    return this.registry[aId].meta
+}
+
+/**
+ * <odoc>
+ * <key>ow.server.a2a.prototype.send(aId, aMessage, aOptions, aAuthContext) : Map</key>
+ * Sends a message to the specified agent and returns the response.\
+ * \
+ * aId: Agent identifier\
+ * aMessage: String or Map with message content\
+ * aOptions: Optional map with request options\
+ * aAuthContext: Optional authentication/session context\
+ * \
+ * Returns MCP-style response: { content: [{ type: "text", text: "..." }], isError: false }
+ * </odoc>
+ */
+OpenWrap.server.prototype.a2a.prototype.send = function(aId, aMessage, aOptions, aAuthContext) {
+    _$(aId, "aId").isString().$_()
+    aOptions = _$(aOptions, "aOptions").isMap().default({})
+    aAuthContext = _$(aAuthContext, "aAuthContext").default({})
+
+    // Check if agent exists
+    var agent = this.registry[aId]
+    if (isUnDef(agent)) {
+        return {
+            content: [{ type: "text", text: "Agent not found: " + aId }],
+            isError: true
+        }
+    }
+
+    // Authentication check
+    if (isDef(agent.authFn) && isFunction(agent.authFn)) {
+        try {
+            if (!agent.authFn(aAuthContext)) {
+                return {
+                    content: [{ type: "text", text: "Unauthorized access to agent: " + aId }],
+                    isError: true
+                }
+            }
+        } catch(authError) {
+            return {
+                content: [{ type: "text", text: "Authentication error: " + authError }],
+                isError: true
+            }
+        }
+    }
+
+    // Size limit check
+    var messageSize = stringify(aMessage).length
+    if (messageSize > agent.options.sizeLimit) {
+        return {
+            content: [{ type: "text", text: "Message size (" + messageSize + " bytes) exceeds limit (" + agent.options.sizeLimit + " bytes)" }],
+            isError: true
+        }
+    }
+
+    // Rate limit check
+    if (isDef(agent.options.rateLimit)) {
+        var now = nowNano()
+        var elapsed = (now - agent.rateLimitReset) / 1000000000 / 60  // minutes
+
+        if (elapsed >= 1) {
+            // Reset counter
+            agent.rateLimitCounter = 0
+            agent.rateLimitReset = now
+        }
+
+        agent.rateLimitCounter++
+
+        if (agent.rateLimitCounter > agent.options.rateLimit) {
+            return {
+                content: [{ type: "text", text: "Rate limit exceeded for agent: " + aId }],
+                isError: true
+            }
+        }
+    }
+
+    // Execute handler
+    try {
+        var result = agent.handler(aMessage, aOptions, aAuthContext)
+
+        // Ensure result is in proper MCP format
+        if (isUnDef(result) || !isMap(result)) {
+            return {
+                content: [{ type: "text", text: stringify(result) }],
+                isError: false
+            }
+        }
+
+        if (isUnDef(result.content)) {
+            result.content = [{ type: "text", text: stringify(result) }]
+        }
+
+        if (isUnDef(result.isError)) {
+            result.isError = false
+        }
+
+        return result
+    } catch(handlerError) {
+        return {
+            content: [{ type: "text", text: "Error executing agent handler: " + handlerError }],
+            isError: true
+        }
+    }
 }
 
 //-----------------------------------------------------------------------------------------------------
