@@ -7,7 +7,7 @@ import java.lang.String;
 import java.lang.Exception;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import openaf.AFCmdBase;
@@ -65,7 +65,7 @@ public class JSResponse2 extends Response {
 			json.put("params", json, toScriptable(request.getParams()));
 			json.put("files", json, toScriptable(request.getFiles()));
 			
-			Function func = HTTPServer.callbacks.get(this.httpd.getListeningPort() + ":" + props.get("uri"));
+			NativeFunction func = HTTPServer.callbacks.get(this.httpd.getListeningPort() + ":" + props.get("uri"));
 			Object ret = null; 
 			if (func != null) {
 				try {

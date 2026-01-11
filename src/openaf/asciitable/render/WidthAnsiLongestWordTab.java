@@ -13,7 +13,7 @@ import de.vandermeer.asciitable.v2.row.V2_Row;
 import de.vandermeer.asciitable.v2.row.ContentRow;
 import org.apache.commons.lang3.StringUtils;
 
-import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 import openaf.AFCmdBase;
@@ -22,7 +22,7 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 
 	protected int max;
 	protected int[] maxAr;
-	protected static Function callback;
+	protected static NativeFunction callback;
 
 	public WidthAnsiLongestWordTab(int maxSize) {
 		if (maxSize < 3) {
@@ -43,7 +43,7 @@ public class WidthAnsiLongestWordTab implements V2_Width {
 		this.maxAr = maxAr;
 	}
 
-	public static void setCallback(Function callback) {
+	public static void setCallback(NativeFunction callback) {
 		WidthAnsiLongestWordTab.callback = callback;
 	}
 

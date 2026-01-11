@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -389,7 +389,7 @@ public class HTTP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsConnect(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+	public Object wsConnect(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 		return WebSockets.wsConnect(authenticator, l, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
 
@@ -422,7 +422,7 @@ public class HTTP extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public Object wsClient(String anURL, Function onConnect, Function onMsg, Function onError, Function onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
+	public Object wsClient(String anURL, NativeFunction onConnect, NativeFunction onMsg, NativeFunction onError, NativeFunction onClose, Object aTimeout, boolean supportSelfSigned) throws Exception {
 		return WebSockets.wsClient(authenticator, l, p, anURL, onConnect, onMsg, onError, onClose, aTimeout, supportSelfSigned);
 	}
 

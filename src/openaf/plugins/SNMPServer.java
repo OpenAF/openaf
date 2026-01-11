@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.lang.String;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
@@ -64,7 +64,7 @@ public class SNMPServer extends ScriptableObject {
 	protected String address;
 	protected OctetString community;
 	protected SNMPAgent agent;
-	public static Map<String, Function> callbacks = new ConcurrentHashMap<String, Function>();
+	public static Map<String, NativeFunction> callbacks = new ConcurrentHashMap<String, NativeFunction>();
 	
 	
 	public static MOColumn[] getMOColumns() {
@@ -84,7 +84,7 @@ public class SNMPServer extends ScriptableObject {
 	 * @return
 	 */
 	public static Variable execFunc(String oid) {
-		Function func = callbacks.get(oid);
+		NativeFunction func = callbacks.get(oid);
 		
 		Object ret = null; 
 		if (func != null) {
@@ -297,7 +297,7 @@ public class SNMPServer extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void addOID(String oid, Function func) throws DuplicateRegistrationException {
+	public void addOID(String oid, NativeFunction func) throws DuplicateRegistrationException {
 		if (oid != null) {
 			agent.registerManagedObjects(new MOJSFunction(new OID(oid)));
 			setOID(oid, func);
@@ -311,7 +311,7 @@ public class SNMPServer extends ScriptableObject {
      * </odoc>
      */
 	@JSFunction
-	public void setOID(String oid, Function func) {
+	public void setOID(String oid, NativeFunction func) {
 		callbacks.put(oid, func);
 	}
 	

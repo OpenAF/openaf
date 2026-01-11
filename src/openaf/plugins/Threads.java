@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.lang.String;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
@@ -43,7 +43,7 @@ public class Threads extends ScriptableObject {
 	 *
 	 */
 	public class ScriptFunction implements Callable<Boolean>, Runnable {
-		protected Function aFunction;
+		protected NativeFunction aFunction;
 		//protected Context cx;
 		protected UUID uuid;
 		
@@ -52,7 +52,7 @@ public class Threads extends ScriptableObject {
 		 * 
 		 * @param aFunction
 		 */
-		public ScriptFunction(UUID uuid, Function aFunction) {
+		public ScriptFunction(UUID uuid, NativeFunction aFunction) {
 			this.aFunction = aFunction;
 			this.uuid = uuid;
 		}
@@ -126,7 +126,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void addOpenAFShutdownHook(final Function aFunction) {
+	public void addOpenAFShutdownHook(final NativeFunction aFunction) {
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			public void run() {
 				try {
@@ -149,7 +149,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addThread(Function aFunction) {
+	public String addThread(NativeFunction aFunction) {
 		UUID uuid = UUID.randomUUID();
 		threads.add(new ScriptFunction(uuid, aFunction));
 		return uuid.toString();
@@ -309,7 +309,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addVirtualThread(Function aFunction) {
+	public String addVirtualThread(NativeFunction aFunction) {
 		if (executor == null) initVirtualThreadPerTaskExecutor();
 		UUID uuid = UUID.randomUUID();
 		executor.execute((Runnable) new ScriptFunction(uuid, aFunction));
@@ -325,7 +325,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addScheduleThread(Function aFunction, double delay) {
+	public String addScheduleThread(NativeFunction aFunction, double delay) {
 		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
 
 		UUID uuid = UUID.randomUUID();
@@ -342,7 +342,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addCachedThread(Function aFunction) {
+	public String addCachedThread(NativeFunction aFunction) {
 		if (executor == null) initCachedThreadPool();
 
 		UUID uuid = UUID.randomUUID();
@@ -359,7 +359,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addFixedThread(Function aFunction) throws Exception {
+	public String addFixedThread(NativeFunction aFunction) throws Exception {
 		if (executor == null) throw new Exception("Please use initFixedThreadPool first.");
 
 		UUID uuid = UUID.randomUUID();
@@ -376,7 +376,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addSingleThread(Function aFunction) {
+	public String addSingleThread(NativeFunction aFunction) {
 		if (executor == null) initSingleThreadPool();
 
 		UUID uuid = UUID.randomUUID();
@@ -393,7 +393,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addScheduleThreadAtFixedRate(Function aFunction, double time) {
+	public String addScheduleThreadAtFixedRate(NativeFunction aFunction, double time) {
 		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
 
 		UUID uuid = UUID.randomUUID();
@@ -410,7 +410,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public String addScheduleThreadWithFixedDelay(Function aFunction, double time) {
+	public String addScheduleThreadWithFixedDelay(NativeFunction aFunction, double time) {
 		if (executor == null) initScheduledThreadPool(this.getNumberOfCores());
 
 		UUID uuid = UUID.randomUUID();
@@ -458,7 +458,7 @@ public class Threads extends ScriptableObject {
 	 * </odoc>
 	 */
 	@JSFunction
-	public void sync(Function aFunction) {
+	public void sync(NativeFunction aFunction) {
 	    if (executor == null) return;
 	    
 		synchronized(executor) {

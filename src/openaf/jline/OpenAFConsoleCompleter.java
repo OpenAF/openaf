@@ -5,7 +5,7 @@ package openaf.jline;
 import java.util.List;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeFunction;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.annotations.JSConstructor;
@@ -21,7 +21,7 @@ public class OpenAFConsoleCompleter extends ScriptableObject implements Complete
 	 * 
 	 */
 	private static final long serialVersionUID = 3655679646340836309L;
-	protected Function func;
+	protected NativeFunction func;
 
 	@Override
 	public int complete(final String buffer, final int cursor, final List<CharSequence> candidates) {
@@ -47,12 +47,12 @@ public class OpenAFConsoleCompleter extends ScriptableObject implements Complete
 		return "OpenAFConsoleCompleter";
 	}
 	
-	public OpenAFConsoleCompleter(Function func) {
+	public OpenAFConsoleCompleter(NativeFunction func) {
 		this.func = func;
 	}
 	
 	@JSConstructor
-	public void newOpenAFConsoleCompleter(Function func) {
+	public void newOpenAFConsoleCompleter(NativeFunction func) {
 		this.func = func;
 	}
 

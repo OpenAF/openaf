@@ -1772,41 +1772,6 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
             }
         }
     }, initData)
-    const mcpInitialize = () => initData
-    const mcpPromptsList = () => ({})
-    const mcpNotificationsInitialized = () => ({})
-    const mcpPing = () => ({})
-    const mcpToolsCall = params => {
-        if (isDef(params.name)) {
-            const tool = fns[params.name]
-            if (tool) {
-                try {
-                    var result = tool(params.input || params.arguments || {})
-                    return { 
-                        content: [{
-                            type: "text",
-                            text: isString(result) ? result : stringify(result, __, "")
-                        }],
-                        isError: false
-                    }
-                } catch (e) {
-                    return { 
-                        content: [{
-                            type: "text",
-                            text: "Error executing tool: " + e.message
-                        }],
-                        isError: true
-                    }
-                }
-            } else {
-                return { content: [{
-                    type: "text",
-                    text: "Tool not found: " + params.name
-                }], isError: true }
-            }
-        }
-    }
-    const mcpToolsList = () => ({ tools: fnsMeta })
     io.pipeLn(line => {
         var _pline = jsonParse(line)
         lgF("rcv", _pline)
