@@ -167,6 +167,7 @@ public class CompileJS2Java {
 		for (int j = 0; j != compiled.length; j += 2) {
 			String className = (String)compiled[j];
 			byte[] bytes = (byte[])(byte[])compiled[(j + 1)];
+			bytes = sanitizeMethodNames(bytes);
 			bytes = patchMaxLocals(bytes);
 			File outfile = new File(path + className + ".class");
 			try {
@@ -406,6 +407,200 @@ public class CompileJS2Java {
     }
 
     private static final int MIN_MAX_LOCALS = 1024;
+
+    /**
+     * Sanitize method and field names in the class file constant pool
+     * Replaces illegal characters (like '/') with underscores to ensure JVM compliance
+     * Only sanitizes actual names, not type descriptors or class names
+     */
+    private static byte[] sanitizeMethodNames(byte[] classBytes) {
+        if (classBytes == null || classBytes.length < 10) {
+            return classBytes;
+        }
+
+        // Make a copy to avoid modifying the original
+        byte[] result = classBytes.clone();
+
+        int[] pos = new int[] { 0 };
+        int magic = readU4(result, pos);
+        if (magic != 0xCAFEBABE) {
+            return classBytes;
+        }
+
+        readU2(result, pos); // minor version
+        readU2(result, pos); // major version
+        int cpCount = readU2(result, pos);
+
+        // Track positions and info about constant pool entries
+        int[] utf8Positions = new int[cpCount];
+        int[] utf8Lengths = new int[cpCount];
+        int[] cpEntryPos = new int[cpCount];  // Position of each CP entry
+        int[] cpTags = new int[cpCount];       // Tag of each CP entry
+
+        // First pass: locate all constant pool entries
+        for (int i = 1; i < cpCount; i++) {
+            cpEntryPos[i] = pos[0];
+            int tag = readU1(result, pos);
+            cpTags[i] = tag;
+
+            switch (tag) {
+                case 1: { // UTF8
+                    int len = readU2(result, pos);
+                    if (pos[0] + len > result.length) {
+                        return classBytes;
+                    }
+                    utf8Positions[i] = pos[0];
+                    utf8Lengths[i] = len;
+                    pos[0] += len;
+                    break;
+                }
+                case 3: // Integer
+                case 4: // Float
+                    pos[0] += 4;
+                    break;
+                case 5: // Long
+                case 6: // Double
+                    pos[0] += 8;
+                    i++; // Takes two slots
+                    break;
+                case 7:  // Class
+                case 8:  // String
+                case 16: // MethodType
+                case 19: // Module
+                case 20: // Package
+                    pos[0] += 2;
+                    break;
+                case 9:  // Fieldref
+                case 10: // Methodref
+                case 11: // InterfaceMethodref
+                case 12: // NameAndType
+                case 18: // InvokeDynamic
+                    pos[0] += 4;
+                    break;
+                case 15: // MethodHandle
+                    pos[0] += 3;
+                    break;
+                case 17: // Dynamic
+                    pos[0] += 4;
+                    break;
+                default:
+                    return classBytes;
+            }
+            if (pos[0] > result.length) {
+                return classBytes;
+            }
+        }
+
+        // Second pass: identify which UTF8 entries are method/field names
+        // These are referenced by NameAndType entries (tag 12) and from methods/fields sections
+        boolean[] isNameEntry = new boolean[cpCount];
+        for (int i = 1; i < cpCount; i++) {
+            if (cpTags[i] == 12) { // NameAndType
+                int nameIndex = readU2At(result, cpEntryPos[i] + 1);
+                if (nameIndex > 0 && nameIndex < cpCount) {
+                    isNameEntry[nameIndex] = true;
+                }
+            }
+        }
+
+        // Also scan methods and fields sections for name indices
+        pos[0] = 0;
+        readU4(result, pos); // magic
+        readU2(result, pos); // minor
+        readU2(result, pos); // major
+        readU2(result, pos); // cpCount
+
+        // Skip constant pool (we already parsed it)
+        for (int i = 1; i < cpCount; i++) {
+            int tag = readU1(result, pos);
+            switch (tag) {
+                case 1: pos[0] += 2 + readU2At(result, pos[0]); break;
+                case 3: case 4: pos[0] += 4; break;
+                case 5: case 6: pos[0] += 8; i++; break;
+                case 7: case 8: case 16: case 19: case 20: pos[0] += 2; break;
+                case 9: case 10: case 11: case 12: case 18: pos[0] += 4; break;
+                case 15: pos[0] += 3; break;
+                case 17: pos[0] += 4; break;
+                default: break;
+            }
+        }
+
+        pos[0] += 6; // access_flags, this_class, super_class
+        int interfacesCount = readU2(result, pos);
+        pos[0] += interfacesCount * 2;
+
+        // Mark field names
+        int fieldsCount = readU2(result, pos);
+        for (int i = 0; i < fieldsCount; i++) {
+            pos[0] += 2; // access_flags
+            int nameIndex = readU2(result, pos);
+            if (nameIndex > 0 && nameIndex < cpCount) {
+                isNameEntry[nameIndex] = true;
+            }
+            pos[0] += 2; // descriptor_index
+            int attrCount = readU2(result, pos);
+            for (int a = 0; a < attrCount; a++) {
+                pos[0] += 2; // name_index
+                int len = readU4(result, pos);
+                pos[0] += len;
+            }
+        }
+
+        // Mark method names
+        int methodsCount = readU2(result, pos);
+        for (int i = 0; i < methodsCount; i++) {
+            pos[0] += 2; // access_flags
+            int nameIndex = readU2(result, pos);
+            if (nameIndex > 0 && nameIndex < cpCount) {
+                isNameEntry[nameIndex] = true;
+            }
+            pos[0] += 2; // descriptor_index
+            int attrCount = readU2(result, pos);
+            for (int a = 0; a < attrCount; a++) {
+                pos[0] += 2; // name_index
+                int len = readU4(result, pos);
+                pos[0] += len;
+            }
+        }
+
+        // Third pass: sanitize only Rhino-generated method names with illegal characters
+        boolean modified = false;
+        for (int i = 1; i < cpCount; i++) {
+            if (isNameEntry[i] && utf8Positions[i] > 0 && utf8Lengths[i] > 0) {
+                int strPos = utf8Positions[i];
+                int strLen = utf8Lengths[i];
+
+                // Only process strings that look like Rhino-generated method names
+                // These typically start with "_c_" prefix
+                if (strLen > 3 &&
+                    result[strPos] == '_' &&
+                    result[strPos + 1] == 'c' &&
+                    result[strPos + 2] == '_') {
+
+                    // Check if this name contains forward slashes (illegal in method names)
+                    boolean hasSlash = false;
+                    for (int j = 0; j < strLen; j++) {
+                        if (result[strPos + j] == '/') {
+                            hasSlash = true;
+                            break;
+                        }
+                    }
+
+                    if (hasSlash) {
+                        // Sanitize by replacing forward slashes with underscores
+                        for (int j = 0; j < strLen; j++) {
+                            if (result[strPos + j] == '/') {
+                                result[strPos + j] = (byte) '_';
+                                modified = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return modified ? result : classBytes;
+    }
 
     private static byte[] patchMaxLocals(byte[] classBytes) {
         if (classBytes == null || classBytes.length < 10) {

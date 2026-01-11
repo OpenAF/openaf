@@ -2354,8 +2354,8 @@ global.$gpt = function(aModel) {
             toolsToAdd.forEach(tool => {
                 var gptParams = {
                     type: "object",
-                    properties: tool.inputSchema.properties || {},
-                    required: tool.inputSchema.required || []
+                    properties: isDef(tool.inputSchema) && isDef(tool.inputSchema.properties) ? tool.inputSchema.properties : {},
+                    required: isDef(tool.inputSchema) && isDef(tool.inputSchema.required) ? tool.inputSchema.required : []
                 }
 
                 var mcpToolFn = function(args) {
