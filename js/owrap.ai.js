@@ -473,7 +473,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _lastStats = __
             var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
-                var _captureStats = (aResponse, aModelName) => {
+            var _captureStats = (aResponse, aModelName) => {
                     if (!isMap(aResponse)) {
                         _lastStats = __
                         return _lastStats
