@@ -8854,6 +8854,34 @@ const $mcp = function(aOptions) {
 		aOptions.options.fns["notifications/initialized"] = params => {
 			return {}
 		}
+		// A2A agent stubs
+		aOptions.options.agents = _$(aOptions.options.agents, "aOptions.options.agents").isArray().default([])
+		aOptions.options.fns["agents/list"] = params => {
+			return { agents: aOptions.options.agents }
+		}
+		aOptions.options.fns["agents/get"] = params => {
+			var agent = $from(aOptions.options.agents).equals("id", params.id).at(0)
+			if (isUnDef(agent)) {
+				throw "Agent not found: " + params.id
+			}
+			return agent
+		}
+		aOptions.options.fns["agents/send"] = params => {
+			var agent = $from(aOptions.options.agents).equals("id", params.id).at(0)
+			if (isUnDef(agent)) {
+				return {
+					content: [{ type: "text", text: "Agent not found: " + params.id }],
+					isError: true
+				}
+			}
+			if (isDef(agent.handler) && isFunction(agent.handler)) {
+				return agent.handler(params.message, params.options || {})
+			}
+			return {
+				content: [{ type: "text", text: "Echo: " + stringify(params.message) }],
+				isError: false
+			}
+		}
 	}
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
@@ -8947,11 +8975,102 @@ const $mcp = function(aOptions) {
 			}
 			promptName = _$(promptName, "promptName").isString().$_()
 			promptArguments = _$(promptArguments, "promptArguments").isMap().default({})
-			
+
 			return _jsonrpc.exec("prompts/get", {
 				name: promptName,
 				arguments: promptArguments
 			})
+		},
+		/**
+		 * <odoc>
+		 * <key>$mcp.listAgents() : Map</key>
+		 * Lists all available A2A agents from the MCP server.\
+		 * Returns a map with an 'agents' array containing agent metadata (id, name, title, version, tags, capabilities).\
+		 * Must call initialize() first.\
+		 * \
+		 * Example:\
+		 * \
+		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});\
+		 * client.initialize();\
+		 * var agents = client.listAgents();\
+		 * print(agents.agents);
+		 * </odoc>
+		 */
+		listAgents: () => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			return _jsonrpc.exec("agents/list", {})
+		},
+		/**
+		 * <odoc>
+		 * <key>$mcp.getAgent(agentId) : Map</key>
+		 * Retrieves metadata for a specific A2A agent by ID.\
+		 * Returns the agent's metadata map (id, name, title, version, tags, capabilities).\
+		 * Throws an error if the agent is not found.\
+		 * Must call initialize() first.\
+		 * \
+		 * Example:\
+		 * \
+		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});\
+		 * client.initialize();\
+		 * var agent = client.getAgent("weather-agent");\
+		 * print(agent);
+		 * </odoc>
+		 */
+		getAgent: (agentId) => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			agentId = _$(agentId, "agentId").isString().$_()
+			return _jsonrpc.exec("agents/get", { id: agentId })
+		},
+		/**
+		 * <odoc>
+		 * <key>$mcp.sendToAgent(agentId, message, options) : Map</key>
+		 * Sends a message to the specified A2A agent and returns the response.\
+		 * \
+		 * agentId: String identifier of the target agent\
+		 * message: String or Map containing the message content\
+		 * options: Optional map with request options\
+		 * \
+		 * Returns MCP-style response: { content: [{type: "text", text: "..."}], isError: false }\
+		 * \
+		 * Supports preFn and posFn hooks if configured in the MCP client options.\
+		 * Must call initialize() first.\
+		 * \
+		 * Example:\
+		 * \
+		 * var client = $mcp({cmd: "ojob a2a-server.yaml"});\
+		 * client.initialize();\
+		 * var response = client.sendToAgent("echo-agent", "Hello World");\
+		 * print(response.content[0].text);
+		 * </odoc>
+		 */
+		sendToAgent: (agentId, message, options) => {
+			if (!_r._initialized) {
+				throw new Error("MCP client not initialized. Call initialize() first.")
+			}
+			agentId = _$(agentId, "agentId").isString().$_()
+			options = _$(options, "options").isMap().default({})
+
+			// Call pre-function hook if provided
+			if (aOptions.preFn) {
+				aOptions.preFn("agents/send", { id: agentId, message: message, options: options })
+			}
+
+			var result = _jsonrpc.exec("agents/send", {
+				id: agentId,
+				message: message,
+				options: options
+			})
+
+			// Call post-function hook if provided
+			if (aOptions.posFn) {
+				aOptions.posFn("agents/send", { id: agentId, message: message, options: options }, result)
+			}
+
+			return result
 		},
 		/**
 		 * <odoc>

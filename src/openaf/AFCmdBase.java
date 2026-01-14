@@ -1,11 +1,9 @@
 package openaf;
 
 import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.zip.ZipFile;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.NativeFunction;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import openaf.rhino.RhinoEngine;
 import java.lang.String;
@@ -16,17 +14,24 @@ import java.lang.String;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20250726";
+	public static String VERSION = "20260111";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
-	
+
 	public static JSEngine jse;
-	public static String afcmd = "AFCmdBase"; 
+	public static String afcmd = "AFCmdBase";
 	public static String[] args;
 	public static AFCmdBase afc;
 	public static ZipFile zip;
 	public static int optLevel = 9;
 	public static boolean dontDIP = false;
+
+	static {
+		// Issue 34 - Initialize java.util.logging.config.file once during class loading
+		if (System.getProperty("java.util.logging.config.file") == null) {
+			System.setProperty("java.util.logging.config.file", "");
+		}
+	}
 	
 	public String dIP(Object aPass) {
 		if (aPass instanceof String) {
@@ -37,10 +42,10 @@ public class AFCmdBase {
 				return (String) aPass;
 			}
 		} 
-		if (aPass instanceof NativeFunction) {
+		if (aPass instanceof Function) {
 			try {
 				Context cx = (Context) AFCmdBase.jse.enterContext();
-				return (String) ((NativeFunction) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+				return (String) ((Function) aPass).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
                             cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
                             new Object[] { });
 			} catch(Exception e) {
@@ -56,10 +61,10 @@ public class AFCmdBase {
 		if (aF instanceof String) {
 			return (String) aF;
 		} 
-		if (aF instanceof NativeFunction) {
+		if (aF instanceof Function) {
 			try {
 				Context cx = (Context) AFCmdBase.jse.enterContext();
-				return (String) ((NativeFunction) aF).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
+				return (String) ((Function) aF).call(cx, (Scriptable) AFCmdBase.jse.getGlobalscope(),
                             cx.newObject((Scriptable) AFCmdBase.jse.getGlobalscope()),
                             new Object[] { });
 			} catch(Exception e) {
@@ -71,18 +76,13 @@ public class AFCmdBase {
 		return null;
 	}
 	
-	public AFCmdBase() {	
+	public AFCmdBase() {
 		// Initialize startup optimization for Java 21+
 		StartupOptimizer.optimizeStartup();
-		
-		final ExecutorService executor = Executors.newCachedThreadPool();
-		executor.execute(new Runnable() {
-			@Override
-			public void run() {
-				SimpleLog.init();
-				executor.shutdown();
-			}
-		});		
+
+		// SimpleLog.init() is trivial (just sets ready = true), no need for thread pool
+		SimpleLog.init();
+
 		restartEngine();
 		afc = this;
 	}
