@@ -474,24 +474,28 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
             var _captureStats = (aResponse, aModelName) => {
-                if (!isMap(aResponse)) {
-                    _lastStats = __
-                    return _lastStats
-                }
+                    if (!isMap(aResponse)) {
+                        _lastStats = __
+                        return _lastStats
+                    }
 
-                var stats = { vendor: "gemini" }
-                var modelName = isString(aModelName) ? aModelName : _model
-                if (isString(aResponse.model)) modelName = aResponse.model
-                if (isString(modelName)) stats.model = modelName
+                    var stats = { vendor: "gemini" }
+                    var modelName = isString(aModelName) ? aModelName : _model
+                    if (isString(aResponse.model)) modelName = aResponse.model
+                    if (isString(aResponse.modelVersion)) modelName = aResponse.modelVersion
+                    if (isString(modelName)) stats.model = modelName
+                    if (isString(aResponse.responseId)) stats.id = aResponse.responseId
 
-                if (isMap(aResponse.usageMetadata)) {
-                    var tokens = {}
-                    if (isDef(aResponse.usageMetadata.promptTokenCount)) tokens.prompt = aResponse.usageMetadata.promptTokenCount
-                    if (isDef(aResponse.usageMetadata.candidatesTokenCount)) tokens.completion = aResponse.usageMetadata.candidatesTokenCount
-                    if (isDef(aResponse.usageMetadata.totalTokenCount)) tokens.total = aResponse.usageMetadata.totalTokenCount
-                    if (Object.keys(tokens).length > 0) stats.tokens = tokens
-                    stats.usage = aResponse.usageMetadata
-                }
+                    if (isMap(aResponse.usageMetadata)) {
+                        var tokens = {}
+                        if (isDef(aResponse.usageMetadata.promptTokenCount)) tokens.prompt = aResponse.usageMetadata.promptTokenCount
+                        if (isDef(aResponse.usageMetadata.candidatesTokenCount)) tokens.completion = aResponse.usageMetadata.candidatesTokenCount
+                        if (isDef(aResponse.usageMetadata.totalTokenCount)) tokens.total = aResponse.usageMetadata.totalTokenCount
+                        if (isDef(aResponse.usageMetadata.cachedContentTokenCount)) tokens.cached = aResponse.usageMetadata.cachedContentTokenCount
+                        if (isDef(aResponse.usageMetadata.thoughtsTokenCount)) tokens.thoughts = aResponse.usageMetadata.thoughtsTokenCount
+                        if (Object.keys(tokens).length > 0) stats.tokens = tokens
+                        stats.usage = aResponse.usageMetadata
+                    }
 
                 if (isArray(aResponse.candidates)) {
                     var finishReasons = aResponse.candidates
@@ -545,7 +549,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                     return r
                                 }
                             }
-                        })
+                        }).filter(isDef)
                     }
                     return _r
                 },
@@ -648,20 +652,25 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var msgs = [];
                     if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ];
                     aPrompt = _r.conversation.reduce((acc, r) => {
-                        if (isUnDef(r.role) || r.role != "system") {
+                        if (isDef(r) && (isUnDef(r.role) || r.role != "system")) {
                             acc.push(toPartsMsg(r));
                         }
                         return acc;
                     }, []).concat(aPrompt.map(toPartsMsg));
                     msgs = aPrompt;
                  
-                    var body = {
-                        system_instruction: { parts: _r.conversation.reduce((acc, r) => {
-                            if (isDef(r.role) && r.role == "system") {
-                                acc = acc.concat(r.parts)
+                    var systemParts = _r.conversation.reduce((acc, r) => {
+                        if (isDef(r) && isDef(r.role) && r.role == "system") {
+                            if (isArray(r.parts)) {
+                                acc = acc.concat(r.parts.filter(p => isDef(p)))
+                            } else if (isDef(r.content)) {
+                                acc = acc.concat([ { text: String(r.content) } ])
                             }
-                            return acc;
-                        }, []) },
+                        }
+                        return acc
+                    }, [])
+                    var body = {
+                        system_instruction: { parts: systemParts },
                         contents: msgs,
                         generationConfig: {
                             temperature: aTemperature
@@ -716,13 +725,36 @@ OpenWrap.ai.prototype.__gpttypes = {
                                         var _args = p.functionCall.args
                                         if (isString(_args)) _args = jsonParse(_args, __, __, true)
                                         if (isUnDef(_args)) _args = {}
-                                        var _tr = stringify(_t.fn(_args), __, "")
+                                        var _tr = _t.fn(_args)
+                                        var _tryParse = v => {
+                                            if (isString(v)) {
+                                                return jsonParse(v, __, __, true)
+                                            }
+                                            return __
+                                        }
+                                        if (isString(_tr)) {
+                                            var _pjson = _tryParse(_tr)
+                                            if (isDef(_pjson)) _tr = _pjson
+                                        } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
+                                            var _pjson2 = _tryParse(_tr.result)
+                                            if (isDef(_pjson2)) _tr = _pjson2
+                                        }
+                                        var _content = __
+                                        if (isMap(_tr)) {
+                                            _content = _tr
+                                        } else if (isArray(_tr)) {
+                                            _content = { items: _tr }
+                                        } else if (isDef(_tr)) {
+                                            _content = { result: _tr }
+                                        } else {
+                                            _content = {}
+                                        }
                                         _p.push({ role: "user", parts: [{
                                             functionResponse: {
                                                 name: p.functionCall.name,
                                                 response: {
                                                     name: p.functionCall.name,
-                                                    content: _tr
+                                                    content: _content
                                                 }
                                             }
                                         }]})
@@ -737,7 +769,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             return _res
                         } else {
                             _r.conversation = _r.conversation.concat(_p)
-                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
+                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, [])
                         }
                     } else {
                         _captureStats(_res, aModel)
@@ -775,7 +807,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         aRole = "user"
                      }
                      if (isString(aPrompt)) _r.conversation.push({ role: aRole.toLowerCase(), content: aPrompt })
-                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt)
+                     if (isArray(aPrompt))  _r.conversation = _r.conversation.concat(aPrompt.filter(isDef))
                      return _r
                 },
                 addUserPrompt: (aPrompt) => {
@@ -1505,6 +1537,129 @@ OpenWrap.ai.prototype.__gpttypes = {
 
 /**
  * <odoc>
+ * <key>ow.ai.agent(aOptions) : Map</key>
+ * Creates a GPT-backed agent suitable for A2A (Agent-to-Agent) messaging.\
+ * Returns a map with 'meta' (agent metadata) and 'handler' (message handler function) ready for registration with ow.server.a2a.registerAgent().\
+ * \
+ * aOptions should contain:\
+ *   - id (string, required): Unique agent identifier\
+ *   - name (string): Display name (defaults to id)\
+ *   - title (string): Human-readable title (defaults to id)\
+ *   - version (string): Version string (defaults to "1.0.0")\
+ *   - tags (array): Array of categorization tags\
+ *   - capabilities (map): Map of agent capabilities (defaults to {messaging: true})\
+ *   - gpt (required): Either a $gpt instance or a config map for $gpt (e.g., {type: "openai", options: {key: "..."}})\
+ *   - systemPrompt (string): System message to guide the agent's behavior\
+ *   - tools (array): Array of tool names or definitions to add to the GPT instance\
+ * \
+ * Example:\
+ * \
+ * var weatherAgent = ow.ai.agent({\
+ *   id: "weather-agent",\
+ *   name: "Weather Agent",\
+ *   gpt: {type: "openai", options: {key: "sk-..."}},\
+ *   systemPrompt: "You provide weather information concisely.",\
+ *   capabilities: {messaging: true, weatherData: true}\
+ * });\
+ * \
+ * global.__a2a__ = new ow.server.a2a();\
+ * global.__a2a__.registerAgent(weatherAgent.meta, weatherAgent.handler);
+ * </odoc>
+ */
+OpenWrap.ai.prototype.agent = function(aOptions) {
+	_$(aOptions, "aOptions").isMap().$_()
+	_$(aOptions.id, "aOptions.id").isString().$_()
+
+	// Create or use provided GPT instance
+	var gpt = aOptions.gpt
+	if (isMap(aOptions.gpt) && isUnDef(aOptions.gpt.prompt)) {
+		// aOptions.gpt is a config map, create $gpt instance
+		gpt = $gpt(aOptions.gpt)
+	}
+	_$(gpt, "gpt").$_()
+	if (!isFunction(gpt.prompt)) {
+		throw new Error("GPT instance must have a prompt() method")
+	}
+
+	// Build agent metadata
+	var meta = {
+		id: aOptions.id,
+		name: _$(aOptions.name, "aOptions.name").isString().default(aOptions.id),
+		title: _$(aOptions.title, "aOptions.title").isString().default(aOptions.id),
+		version: _$(aOptions.version, "aOptions.version").isString().default("1.0.0"),
+		tags: _$(aOptions.tags, "aOptions.tags").isArray().default([]),
+		capabilities: _$(aOptions.capabilities, "aOptions.capabilities").isMap().default({
+			messaging: true
+		})
+	}
+
+	// Add tools to GPT if provided
+	if (isDef(aOptions.tools) && isArray(aOptions.tools)) {
+		aOptions.tools.forEach(function(tool) {
+			if (isString(tool)) {
+				// Tool name - assume it's already registered with GPT
+			} else if (isMap(tool)) {
+				// Tool definition - register it
+				if (isDef(tool.name) && isDef(tool.fn)) {
+					gpt.model.setTool(tool.name, tool.description || "", tool.parameters || {}, tool.fn)
+				}
+			}
+		})
+	}
+
+	// Build message handler
+	var handler = function(message, options, context) {
+		try {
+			// Construct prompt from system message + user message
+			var prompt = []
+
+			if (isDef(aOptions.systemPrompt)) {
+				prompt.push({ role: "system", content: aOptions.systemPrompt })
+			}
+
+			// Add the user message
+			if (isString(message)) {
+				prompt.push({ role: "user", content: message })
+			} else if (isMap(message)) {
+				if (isDef(message.content)) {
+					prompt.push({ role: "user", content: message.content })
+				} else {
+					prompt.push({ role: "user", content: stringify(message) })
+				}
+			} else {
+				prompt.push({ role: "user", content: stringify(message) })
+			}
+
+			// Call GPT
+			var response = gpt.prompt(prompt)
+
+			// Return MCP-style response
+			return {
+				content: [{
+					type: "text",
+					text: isString(response) ? response : stringify(response)
+				}],
+				isError: false
+			}
+		} catch(e) {
+			return {
+				content: [{
+					type: "text",
+					text: "Agent error: " + e.message
+				}],
+				isError: true
+			}
+		}
+	}
+
+	return {
+		meta: meta,
+		handler: handler
+	}
+}
+
+/**
+ * <odoc>
  * <key>ow.ai.gpt(aType, aOptions) : ow.ai.gpt</key>
  * Creates a GPT AI model of aType (e.g. "openai" or "ollama") with aOptions.\
  * </odoc>
@@ -2199,8 +2354,8 @@ global.$gpt = function(aModel) {
             toolsToAdd.forEach(tool => {
                 var gptParams = {
                     type: "object",
-                    properties: tool.inputSchema.properties || {},
-                    required: tool.inputSchema.required || []
+                    properties: isDef(tool.inputSchema) && isDef(tool.inputSchema.properties) ? tool.inputSchema.properties : {},
+                    required: isDef(tool.inputSchema) && isDef(tool.inputSchema.required) ? tool.inputSchema.required : []
                 }
 
                 var mcpToolFn = function(args) {
@@ -2220,6 +2375,84 @@ global.$gpt = function(aModel) {
                 }
 
                 _g.model.setTool(tool.name, tool.description, gptParams, mcpToolFn)
+            })
+
+            return _r
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.withA2aAgents(aA2aClient, aAgentIds) : ow.ai.gpt</key>
+         * Automatically adds A2A agents from an MCP/A2A client to the current GPT instance as tools.\
+         * The aA2aClient should be an initialized $mcp client that supports agents/* methods.\
+         * If aAgentIds is provided (array of strings), only those specific agents will be added. Otherwise, all available agents are added.\
+         * Each A2A agent becomes a GPT tool where the tool call sends a message to the agent and returns its response.\
+         * \
+         * Example:\
+         * \
+         * var a2aClient = $mcp({type: "remote", url: "http://localhost:8080/a2a"});\
+         * a2aClient.initialize();\
+         * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
+         * gpt.withA2aAgents(a2aClient); // Adds all A2A agents as tools\
+         * // or gpt.withA2aAgents(a2aClient, ["weather-agent", "translator-agent"]); // Adds only specific agents\
+         * \
+         * var response = gpt.prompt("What's the weather in Lisbon?"); // GPT can call the weather-agent\
+         * </odoc>
+         */
+        withA2aAgents: (aA2aClient, aAgentIds) => {
+            _$(aA2aClient, "aA2aClient").isMap().$_()
+            aAgentIds = _$(aAgentIds, "aAgentIds").isArray().default(__)
+
+            if (!aA2aClient._initialized) {
+                throw new Error("MCP/A2A client not initialized. Call initialize() first.")
+            }
+
+            var agentsList = aA2aClient.listAgents()
+            if (isUnDef(agentsList) || !isArray(agentsList.agents)) {
+                throw new Error("Unable to retrieve agents from A2A client")
+            }
+
+            var agentsToAdd = agentsList.agents
+            if (isDef(aAgentIds)) {
+                agentsToAdd = agentsList.agents.filter(agent => aAgentIds.indexOf(agent.id) >= 0)
+            }
+
+            agentsToAdd.forEach(agent => {
+                var description = agent.title || agent.name || agent.id
+                if (isDef(agent.capabilities) && isMap(agent.capabilities)) {
+                    var caps = Object.keys(agent.capabilities).filter(k => agent.capabilities[k] === true)
+                    if (caps.length > 0) {
+                        description += " (capabilities: " + caps.join(", ") + ")"
+                    }
+                }
+
+                var gptParams = {
+                    type: "object",
+                    properties: {
+                        message: {
+                            type: "string",
+                            description: "The message to send to the agent"
+                        }
+                    },
+                    required: ["message"]
+                }
+
+                var a2aToolFn = function(args) {
+                    try {
+                        var result = aA2aClient.sendToAgent(agent.id, args.message, {})
+                        if (isDef(result.content) && isArray(result.content)) {
+                            // Extract text content from MCP result
+                            return result.content.map(c => c.text || c.data || stringify(c)).join("\n")
+                        } else if (isDef(result.content)) {
+                            return result.content
+                        } else {
+                            return stringify(result)
+                        }
+                    } catch(e) {
+                        return "Error calling A2A agent '" + agent.id + "': " + e.message
+                    }
+                }
+
+                _g.model.setTool(agent.id, description, gptParams, a2aToolFn)
             })
 
             return _r
@@ -3057,8 +3290,8 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
 };
 
     OpenWrap.ai.prototype.decisionTree.ID3.prototype.predicates = {
-        '==': function (a, b) { return a == b },
-        '>=': function (a, b) { return a >= b }
+        'eq': (a, b) => a == b,
+        'gte': (a, b) => a >= b
     };
 
     /**
@@ -3068,7 +3301,7 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
      * @param builder - contains training set and
      *                  some configuration parameters
      */
-    OpenWrap.ai.prototype.decisionTree.ID3.prototype.DecisionTree = function(builder) {        
+    OpenWrap.ai.prototype.decisionTree.ID3.prototype.DecisionTree = function(builder) {      
         this.root = this.buildDecisionTree({
             trainingSet: builder.trainingSet,
             ignoredAttributes: this.arrayToHashSet(builder.ignoredAttributes),
@@ -3294,11 +3527,11 @@ OpenWrap.ai.prototype.decisionTree.ID3 = function() {
                 // depending on the type of the attribute value
                 var predicateName;
                 if (typeof pivot == 'number') {
-                    predicateName = '>=';
+                    predicateName = 'gte';
                 } else {
                     // there is no sense to compare non-numeric attributes
                     // so we will check only equality of such attributes
-                    predicateName = '==';
+                    predicateName = 'eq';
                 }
 
                 var attrPredPivot = attr + predicateName + pivot;
