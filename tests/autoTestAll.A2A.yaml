@@ -1,0 +1,59 @@
+# Copyright 2023 Nuno Aguiar
+
+include:
+   - oJobTest.yaml
+
+jobs:
+   # ---------------------------------------------------
+   - name: A2A::Init
+     exec: |
+       args.tests = require("autoTestAll.A2A.js");
+
+   # ---------------------------------------------------
+   - name: A2A::Registry
+     from: A2A::Init
+     to  : oJob Test
+     exec: |
+       args.func = args.tests.testRegistry;
+
+   # ---------------------------------------------------
+   - name: A2A::Server Stdio
+     from: A2A::Init
+     to  : oJob Test
+     exec: |
+       args.func = args.tests.testServerStdio;
+
+   # ---------------------------------------------------
+   - name: A2A::Client Dummy
+     from: A2A::Init
+     to  : oJob Test
+     exec: |
+       args.func = args.tests.testClientDummy;
+
+   # ---------------------------------------------------
+   - name: A2A::Send Message
+     from: A2A::Init
+     to  : oJob Test
+     exec: |
+       args.func = args.tests.testSendMessage;
+
+   # ---------------------------------------------------
+   - name: A2A::Auth
+     from: A2A::Init
+     to  : oJob Test
+     exec: |
+       args.func = args.tests.testAuth;
+
+   # ---------------------------------------------------
+   - name: A2A::Size Limits
+     from: A2A::Init
+     to  : oJob Test
+     exec: |
+       args.func = args.tests.testSizeLimits;
+
+   # ---------------------------------------------------
+   - name: A2A::Rate Limits
+     from: A2A::Init
+     to  : oJob Test
+     exec: |
+       args.func = args.tests.testRateLimits;
