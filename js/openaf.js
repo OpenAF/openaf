@@ -8855,7 +8855,7 @@ const $mcp = function(aOptions) {
 			return {}
 		}
 		// A2A agent stubs
-		aOptions.options.agents = _$(aOptions.options.agents, "aOptions.options.agents").isArray().default([])
+		/*aOptions.options.agents = _$(aOptions.options.agents, "aOptions.options.agents").isArray().default([])
 		aOptions.options.fns["agents/list"] = params => {
 			return { agents: aOptions.options.agents }
 		}
@@ -8881,7 +8881,7 @@ const $mcp = function(aOptions) {
 				content: [{ type: "text", text: "Echo: " + stringify(params.message) }],
 				isError: false
 			}
-		}
+		}*/
 	}
 	// Create underlying JSON-RPC client
 	const _jsonrpc = $jsonrpc(aOptions)
