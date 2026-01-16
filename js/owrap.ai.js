@@ -1980,6 +1980,20 @@ OpenWrap.ai.prototype.gpt.prototype.jsonPromptWithStats = function(aPrompt, aMod
 
 /**
  * <odoc>
+ * <key>ow.ai.gpt.jsonPromptWithStatsRaw(aPrompt, aModel, aTemperature, tools) : Map</key>
+ * Executes jsonPrompt and returns the raw response, parsed response, and statistics ({ response, raw, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.jsonPromptWithStatsRaw = function(aPrompt, aModel, aTemperature, tools) {
+    this.setInstructions("json")
+
+    var out = this.model.prompt(aPrompt, aModel, aTemperature, true, tools)
+    var parsed = isString(out) ? jsonParse(out, __, __, true) : out
+    return { response: parsed, raw: out, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
  * <key>ow.ai.gpt.booleanPrompt(aPrompt, aModel, aTemperature, tools) : boolean</key>
  * Tries to prompt aPrompt (a string or an array of strings) with aRole (defaults to "user") and aModel (defaults to the one provided on the constructor).
  * </odoc>
@@ -2282,6 +2296,15 @@ global.$gpt = function(aModel) {
          */
         promptJSONWithStats: (aPrompt, aModel, aTemperature, tools) => {
             return _g.jsonPromptWithStats(aPrompt, aModel, aTemperature, tools)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptJSONWithStatsRaw(aPrompt, aModel, aTemperature)</key>
+         * Tries to prompt aPrompt (a string or an array of strings) and aModel (defaults to the one provided on the constructor) returning a map with the raw response, parsed JSON response, and statistics ({ response, raw, stats }).
+         * </odoc>
+         */
+        promptJSONWithStatsRaw: (aPrompt, aModel, aTemperature, tools) => {
+            return _g.jsonPromptWithStatsRaw(aPrompt, aModel, aTemperature, tools)
         },
         /**
          * <odoc>
