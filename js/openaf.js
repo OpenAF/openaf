@@ -5089,12 +5089,12 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => af.fromTOML(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
-		to_toom: {
-			_func: ar => af.toTOOM(ar[0]),
+		to_toon: {
+			_func: ar => af.toTOON(ar[0]),
 			_signature: [ { types: [ jmespath.types.any ] } ]
 		},
-		from_toom: {
-			_func: ar => af.fromTOOM(ar[0]),
+		from_toon: {
+			_func: ar => af.fromTOON(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
 		trim: {
@@ -10102,6 +10102,12 @@ const loadJSYAML = function() {
 	loadCompiledLib("js-yaml_js", __, __, true)
 }
 
+/**
+ * <odoc>
+ * <key>loadTOON()</key>
+ * Loads the TOON image encoding/decoding library.
+ * </odoc>
+ */
 const loadTOON = function() {
 	if (isUnDef(global.toon) || global.toon.decode || global.toon.encode)
 		global.toon = loadCompiledRequire("toon_js")
