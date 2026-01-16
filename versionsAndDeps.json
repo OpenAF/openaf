@@ -1,5 +1,13 @@
 {
 	"external": [{
+			"description": "Toon",
+			"path": ["js/toon.js"],
+			"version": "2.1.0",
+			"changes": true,
+			"type": ["js"],
+			"license": "https://github.com/toon-format/toon/blob/main/LICENSE",
+			"deps": []
+		},{
 			"description": "Showdown",
 			"path": ["js/showdown.js"],
 			"version": "2.0.0",

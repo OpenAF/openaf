@@ -5089,6 +5089,14 @@ const $path = function(aObj, aPath, customFunctions) {
 			_func: ar => af.fromTOML(ar[0]),
 			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
+		to_toom: {
+			_func: ar => af.toTOOM(ar[0]),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		from_toom: {
+			_func: ar => af.fromTOOM(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
+		},
 		trim: {
 			_func: ar => ar[0].trim(),
 			_signature: [ { types: [ jmespath.types.string ] } ]
@@ -10094,6 +10102,11 @@ const loadJSYAML = function() {
 	loadCompiledLib("js-yaml_js", __, __, true)
 }
 
+const loadTOON = function() {
+	if (isUnDef(global.toon) || global.toon.decode || global.toon.encode)
+		global.toon = loadCompiledRequire("toon_js")
+}
+
 /**
  * <odoc>
  * <key>loadOAFP()</key>
@@ -10502,6 +10515,28 @@ AF.prototype.toKYAML = function(aJson, multiDoc, sanitize, shouldColor, perEntry
 	// Null
 	colored = colored.replace(/(^|[\s\[,\{:])(null)(?=([,\]\}\s]|$))/gi, function(_, p1, n){ return p1 + ansiColor(__colorFormat.default, n) })
 	return colored
+}
+
+/**
+ * <odoc>
+ * <key>AF.toTOON(aObj) : String</key>
+ * Tries to convert aObj into a TOON string.
+ * </odoc>
+ */
+AF.prototype.toTOON = function(aObj) {
+	loadTOON()
+	return toon.encode(aObj)
+}
+
+/**
+ * <odoc>
+ * <key>AF.fromTOON(aTOONStr) : Object</key>
+ * Tries to parse aTOONStr into a javascript object.
+ * </odoc>
+ */
+AF.prototype.fromTOON = function(aTOONStr) {
+	loadTOON()
+	return toon.decode(aTOONStr)
 }
 
 /**
