@@ -71,6 +71,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $toYAML          -- returns the YAML version of the parameter\
  *   - $toKYAML         -- returns the KYAML version fo the parameter\
  *   - $toJSON          -- returns the JSON version of the parameter\
+ *   - $toTOON          -- returns the TOON version of the parameter\
  *   - $env             -- returns the current environment variable identified by the parameter\
  *   - $escape          -- returns an escaped version of the parameter\
  *   - $acolor          -- returns an ansi color (first argument) escape sequence of the string parameter (second argument)\
@@ -151,6 +152,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 		toYAML: af.toYAML,
 		toKYAML: af.toKYAML,
 		toJSON: stringify,
+		toTOON: s => af.toTOON(af),
 		ptree: r => printTree(r),
 		pmap: r => printMap(r),
 		pbar: (v, m, min, size, indicator, space) => ow.format.string.progress(v, isMap(m) ? __ : m, isMap(min) ? __ : min, isMap(size) ? __ : size, isMap(indicator) ? __ : indicator, isMap(space) ? __ : space),
