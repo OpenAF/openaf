@@ -10002,7 +10002,7 @@ const loadJSYAML = function() {
  */
 const loadTOON = function() {
 	if (isUnDef(global.toon) || global.toon.decode || global.toon.encode)
-		global.toon = loadCompiledRequire("toon_js")
+		global.toon = require(getOpenAFJar() + "::js/toon.js")
 }
 
 /**
