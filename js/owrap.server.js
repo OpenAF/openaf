@@ -1845,8 +1845,8 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
                     }
                 }
             },
-            "tools/list": () => ({ tools: fnsMeta }),
-            "agents/list": params => {
+            "tools/list": () => ({ tools: fnsMeta })
+            /*"agents/list": params => {
                 if (isUnDef(global.__a2a__)) {
                     return { agents: [] }
                 }
@@ -1875,7 +1875,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
                     }
                 }
                 return global.__a2a__.send(params.id, params.message, params.options || {}, params.context || {})
-            }
+            }*/
         })
 
         lgF("snd", _res)
