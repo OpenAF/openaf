@@ -14803,6 +14803,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(af.toYAML(res, __, true, true))
+		case "toon":
+			return fnP(af.toTOON(res))
 		case "table":
 			if (isMap(res)) res = [res]
 			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __)))
