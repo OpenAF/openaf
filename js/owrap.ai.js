@@ -473,7 +473,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _lastStats = __
             var _debugCh = __
             var _resetStats = () => { _lastStats = __ }
-                var _captureStats = (aResponse, aModelName) => {
+            var _captureStats = (aResponse, aModelName) => {
                     if (!isMap(aResponse)) {
                         _lastStats = __
                         return _lastStats
@@ -516,16 +516,25 @@ OpenWrap.ai.prototype.__gpttypes = {
                 getConversation: () => {
                     var _res = _r.conversation.map(r => {
                         if (isMap(r)) {
-                            if (isUnDef(r.role))
-                                r.role = "user"
-                            else if (r.role == "assistant") {
-                                r.role = "model"
+                            // Clone to avoid mutating the original conversation
+                            var _entry = clone(r)
+                            if (isUnDef(_entry.role))
+                                _entry.role = "user"
+                            else if (_entry.role == "assistant") {
+                                _entry.role = "model"
                             }
-                            
-                            if (isArray(r.parts) && r.parts.length > 0) {
-                                r.content = r.parts.reduce((aC, aV) => aC + "\n" + aV.text, "")
-                                delete r.parts
+
+                            if (isArray(_entry.parts) && _entry.parts.length > 0) {
+                                // Only extract text from parts that have text (skip functionCall, functionResponse, etc.)
+                                var textParts = _entry.parts.filter(p => isDef(p) && isDef(p.text))
+                                if (textParts.length > 0) {
+                                    _entry.content = textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                                } else {
+                                    _entry.content = ""
+                                }
+                                delete _entry.parts
                             }
+                            return _entry
                         }
                         return r
                     })
@@ -576,7 +585,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
                     if (isArray(__r.candidates) && isArray(__r.candidates[0].content.parts) && __r.candidates[0].content.parts.length > 0) {
                         if (__r.candidates[0].finishReason == "STOP") {
-                           return __r.candidates[0].content.parts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                           // Only extract text from parts that have text (skip functionCall, functionResponse, etc.)
+                           var textParts = __r.candidates[0].content.parts.filter(p => isDef(p) && isDef(p.text))
+                           return textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
                         }
                     }
                     return stringify(__r, __, "")
@@ -622,7 +633,9 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     if (isArray(__r.candidates) && isArray(__r.candidates[0].content.parts) && __r.candidates[0].content.parts.length > 0) {
                         if (__r.candidates[0].finishReason == "STOP") {
-                           return __r.candidates[0].content.parts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                           // Only extract text from parts that have text (skip functionCall, functionResponse, etc.)
+                           var textParts = __r.candidates[0].content.parts.filter(p => isDef(p) && isDef(p.text))
+                           return textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
                         }
                      }
                      return __r
@@ -651,12 +664,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     var msgs = [];
                     if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ];
+                    // Preserve the new user prompt(s) before merging with conversation history
+                    // This is needed to add them to the conversation when function calls occur
+                    var newPrompts = isArray(aPrompt) ? aPrompt.map(toPartsMsg) : [];
                     aPrompt = _r.conversation.reduce((acc, r) => {
                         if (isDef(r) && (isUnDef(r.role) || r.role != "system")) {
                             acc.push(toPartsMsg(r));
                         }
                         return acc;
-                    }, []).concat(aPrompt.map(toPartsMsg));
+                    }, []).concat(newPrompts);
                     msgs = aPrompt;
                  
                     var systemParts = _r.conversation.reduce((acc, r) => {
@@ -764,11 +780,14 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         })
                         if (stopWith) {
-                            _r.conversation = _r.conversation.concat(_res.candidates[0].content)
+                            // Add the new user prompt(s) and the model response to conversation
+                            _r.conversation = _r.conversation.concat(newPrompts).concat(_res.candidates[0].content)
                             _captureStats(_res, aModel)
                             return _res
                         } else {
-                            _r.conversation = _r.conversation.concat(_p)
+                            // Add the new user prompt(s), then the function call/response to conversation
+                            // This ensures the conversation starts with a user turn before the model's functionCall
+                            _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
                             return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, [])
                         }
                     } else {
@@ -2317,10 +2336,9 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
-         * <key>$gpt.withMcpTools(aMcpClient, aToolNames, aIncludeAgentTools) : ow.ai.gpt</key>
+         * <key>$gpt.withMcpTools(aMcpClient, aToolNames) : ow.ai.gpt</key>
          * Automatically adds MCP tools from an MCP client to the current GPT instance. The aMcpClient should be an initialized $mcp client.
          * If aToolNames is provided (array of strings), only those specific tools will be added. Otherwise, all available tools are added.
-         * If aIncludeAgentTools is true, tools with names starting with "agents/" will be included (defaults to false for Gemini compatibility).
          * Each MCP tool will be converted to a GPT-compatible tool using the MCP tool's JSON schema.
          * \
          * Example:\
@@ -2328,17 +2346,15 @@ global.$gpt = function(aModel) {
          * var mcpClient = $mcp({cmd: "npx @modelcontextprotocol/server-filesystem /tmp"});\
          * mcpClient.initialize();\
          * var gpt = $gpt({type: "openai", options: {key: "your-key"}});\
-         * gpt.withMcpTools(mcpClient); // Adds all MCP tools except agents/*\
+         * gpt.withMcpTools(mcpClient); // Adds all MCP tools\
          * // or gpt.withMcpTools(mcpClient, ["read_file", "write_file"]); // Adds only specific tools\
-         * // or gpt.withMcpTools(mcpClient, __, true); // Includes agents/* tools\
          * \
          * var response = gpt.prompt("Read the file /tmp/example.txt");\
          * </odoc>
          */
-        withMcpTools: (aMcpClient, aToolNames, aIncludeAgentTools) => {
+        withMcpTools: (aMcpClient, aToolNames) => {
             _$(aMcpClient, "aMcpClient").isMap().$_()
             aToolNames = _$(aToolNames, "aToolNames").isArray().default(__)
-            aIncludeAgentTools = _$(aIncludeAgentTools, "aIncludeAgentTools").isBoolean().default(false)
 
             if (!aMcpClient._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
@@ -2352,11 +2368,6 @@ global.$gpt = function(aModel) {
             var toolsToAdd = toolsList.tools
             if (isDef(aToolNames)) {
                 toolsToAdd = toolsList.tools.filter(tool => aToolNames.indexOf(tool.name) >= 0)
-            }
-
-            // Filter out agents/* tools unless explicitly requested (for Gemini compatibility)
-            if (!aIncludeAgentTools) {
-                toolsToAdd = toolsToAdd.filter(tool => !tool.name.startsWith("agents/"))
             }
 
             toolsToAdd.forEach(tool => {
