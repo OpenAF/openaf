@@ -304,7 +304,7 @@ if (createTmp) {
 				"del %SRC% >nul 2>&1",
 				//"if errorlevel 1 goto wait",
 				"set OAF_JARGS=\"-Xshare:dump -XX:SharedArchiveFile=%DIR%.shared.oaf %OAF_JARGS%\"",
-				"\"%DIR%oaf.bat\" -c \"ow.loadOJob();loadOAFP();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();__initializeCon();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})\"",
+				"\"%DIR%oaf.bat\" -c \"ow.loadOJob();loadOAFP();loadTOON();loadJSYAML();loadPy();ow.loadSec();loadLodash();loadFuse();ow.loadFormat();ow.loadObj();ow.loadServer();loadUnderscore();ow.loadMetrics();loadJSYAML();ow.loadPython();ow.loadTemplate();loadHandlebars();__initializeCon();loadCompiledLib('jmespath_js');oafp({data:'()'});oJobRun({todo:[]})\"",
 				"del /F /Q \"%~f0\" >nul 2>&1"
 			].join("\r\n")
 			io.writeFileString(_updBat, _bat)

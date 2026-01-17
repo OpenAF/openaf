@@ -4728,6 +4728,7 @@ var $from = function(a) {
  * at(arrayIndex)\
  * to_numSpace(num, space), from_numSpace(num, space)\
  * to_kyaml(obj), from_kyaml(str)\
+ * to_toon(obj), from_toon(str)\
  * to_base64(str), from_base64(str)\
  * to_xml(obj), from_xml(str)\
  * 
@@ -4931,6 +4932,14 @@ const $path = function(aObj, aPath, customFunctions) {
 		replace: {
 			_func: ar => ar[0].replace(new RegExp(ar[1], ar[2]), ar[3]),
 			_signature: [ { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] }, { types: [ jmespath.types.string ] } ]
+		},
+		to_toon: {
+			_func: ar => af.toTOON(ar[0]),
+			_signature: [ { types: [ jmespath.types.any ] } ]
+		},
+		from_toon: {
+			_func: ar => af.fromTOON(ar[0]),
+			_signature: [ { types: [ jmespath.types.string ] } ]
 		},
 		trim: {
 			_func: ar => ar[0].trim(),
@@ -9987,6 +9996,17 @@ const loadJSYAML = function() {
 
 /**
  * <odoc>
+ * <key>loadTOON()</key>
+ * Loads the TOON image encoding/decoding library.
+ * </odoc>
+ */
+const loadTOON = function() {
+	if (isUnDef(global.toon) || global.toon.decode || global.toon.encode)
+		global.toon = require(getOpenAFJar() + "::js/toon.js")
+}
+
+/**
+ * <odoc>
  * <key>loadOAFP()</key>
  * Loads the OpenAF processor that can be used with the function oafp. Example:\
  * \
@@ -10183,7 +10203,6 @@ AF.prototype.setInteractiveTerminal = () => isDef(__con) ? __con.getTerminal().s
  * </odoc>
  */
 AF.prototype.unsetInteractiveTerminal = () => isDef(__con) ? __con.getTerminal().settings.set("icanon echo") : __
-
 /**
  * <odoc>
  * <key>AF.toYAML(aJson, multiDoc, sanitize, shouldColor) : String</key>
@@ -10380,6 +10399,28 @@ AF.prototype.toKYAML = function(aJson, multiDoc, sanitize, shouldColor, perEntry
 	// Null
 	colored = colored.replace(/(^|[\s\[,\{:])(null)(?=([,\]\}\s]|$))/gi, function(_, p1, n){ return p1 + ansiColor(__colorFormat.default, n) })
 	return colored
+}
+
+/**
+ * <odoc>
+ * <key>AF.toTOON(aObj) : String</key>
+ * Tries to convert aObj into a TOON string.
+ * </odoc>
+ */
+AF.prototype.toTOON = function(aObj) {
+	loadTOON()
+	return toon.encode(aObj)
+}
+
+/**
+ * <odoc>
+ * <key>AF.fromTOON(aTOONStr) : Object</key>
+ * Tries to parse aTOONStr into a javascript object.
+ * </odoc>
+ */
+AF.prototype.fromTOON = function(aTOONStr) {
+	loadTOON()
+	return toon.decode(aTOONStr)
 }
 
 /**
@@ -14640,6 +14681,8 @@ const $output = function(aObj, args, aFunc, shouldReturn) {
 			__ansiColorFlag = true
 			__conConsole = true
 			return fnP(af.toYAML(res, __, true, true))
+		case "toon":
+			return fnP(af.toTOON(res))
 		case "table":
 			if (isMap(res)) res = [res]
 			if (isArray(res)) return fnP(printTable(res, __, __, __conAnsi, (__conAnsi || isDef(this.__codepage) ? "utf" : __)))

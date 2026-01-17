@@ -2878,7 +2878,7 @@ OpenWrap.oJob.prototype.addJob = function(aJobsCh, _aName, _jobDeps, _jobType, _
 				aJobTypeArgs.shell = _$(aJobTypeArgs.shell, "aJobTypeArgs.shell").isString().default("powershell");
 			}
 			var m = parent.__langs[aJobTypeArgs.lang]
-			if (isDef(aJobTypeArgs.lang) && isUnDef(m) && ["javascript", "oaf", "js"].indexOf(aJobTypeArgs.lang) === -1) throw "Language '" + aJobTypeArgs.lang + "' not supported or defined for job '" + aName + "'."
+			if (isDef(aJobTypeArgs.lang) && isUnDef(m) && ["javascript", "oaf", "js", "python"].indexOf(aJobTypeArgs.lang) === -1) throw "Language '" + aJobTypeArgs.lang + "' not supported or defined for job '" + aName + "'."
 			if (isDef(m) && isUnDef(aJobTypeArgs.returnRE) && isDef(m.returnRE)) aJobTypeArgs.returnRE = m.returnRE
 			if (isDef(m) && isUnDef(aJobTypeArgs.returnFn) && isDef(m.returnFn)) aJobTypeArgs.returnFn = m.returnFn
 
