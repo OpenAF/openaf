@@ -238,6 +238,8 @@ complete:
       desc: JSON/SLON map with SNMPv3 security options
   - name: in=toml
     desc: TOML format
+  - name: in=toon
+    desc: TOON format
   - name: in=xls
     desc: A XLSx compatible file -requires file=abc.xlsx-
     opts:
@@ -500,6 +502,8 @@ complete:
     desc: A string text format
   - name: out=toml
     desc: A TOML format -arrays will have outkey=list-
+  - name: out=toon
+    desc: A TOON format
   - name: out=tree
     desc: A tree-like format
   - name: out=xls

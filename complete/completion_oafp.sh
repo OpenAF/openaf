@@ -108,6 +108,7 @@ F_in__in_snmp_insnmptimeout_=1
 F_in__in_snmp_insnmpretries_=1
 F_in__in_snmp_insnmpsec_=1
 F_in__in_toml=0
+F_in__in_toon=0
 F_in__in_xls=0
 F_in__in_xls_inxlssheet_=1
 F_in__in_xls_inxlsevalformulas_=1
@@ -227,6 +228,7 @@ F_out__out_template_templatedata_=1
 F_out__out_template_templatetmpl_=1
 F_out__out_text=0
 F_out__out_toml=0
+F_out__out_toon=0
 F_out__out_tree=0
 F_out__out_xls=0
 F_out__out_xls_xlsfile_=1
@@ -458,6 +460,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#insnmpretries=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmpretries_=0; fi
     if [ "${arg#insnmpsec=}" != "$arg" ]; then FFOUND=1; F_in__in_snmp_insnmpsec_=0; fi
     if [ "$arg" = "in=toml" ]; then FFOUND=1; F_in__in_toml=1; F_in_=0; fi
+    if [ "$arg" = "in=toon" ]; then FFOUND=1; F_in__in_toon=1; F_in_=0; fi
     if [ "$arg" = "in=xls" ]; then FFOUND=1; F_in__in_xls=1; F_in_=0; fi
     if [ "${arg#inxlssheet=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlssheet_=0; fi
     if [ "${arg#inxlsevalformulas=}" != "$arg" ]; then FFOUND=1; F_in__in_xls_inxlsevalformulas_=0; fi
@@ -577,6 +580,7 @@ if [ $# -gt 0 ]; then
     if [ "${arg#templatetmpl=}" != "$arg" ]; then FFOUND=1; F_out__out_template_templatetmpl_=0; fi
     if [ "$arg" = "out=text" ]; then FFOUND=1; F_out__out_text=1; F_out_=0; fi
     if [ "$arg" = "out=toml" ]; then FFOUND=1; F_out__out_toml=1; F_out_=0; fi
+    if [ "$arg" = "out=toon" ]; then FFOUND=1; F_out__out_toon=1; F_out_=0; fi
     if [ "$arg" = "out=tree" ]; then FFOUND=1; F_out__out_tree=1; F_out_=0; fi
     if [ "$arg" = "out=xls" ]; then FFOUND=1; F_out__out_xls=1; F_out_=0; fi
     if [ "${arg#xlsfile=}" != "$arg" ]; then FFOUND=1; F_out__out_xls_xlsfile_=0; fi
@@ -809,6 +813,7 @@ if [ $F_in_ -eq 1 ]; then
   echo "in=sql	One or more SQLs statements to AST -Abstract Syntax Tree- or beautified SQL"
   echo "in=snmp	Retrieves data from a SNMP device"
   echo "in=toml	TOML format"
+  echo "in=toon	TOON format"
   echo "in=xls	A XLSx compatible file -requires file=abc.xlsx-"
   echo "in=xml	An XML format -auto-detected-"
   echo "in=yaml	A YAML format -auto-detected-"
@@ -1141,6 +1146,7 @@ if [ $F_out_ -eq 1 ]; then
   echo "out=template	A Handlebars template format"
   echo "out=text	A string text format"
   echo "out=toml	A TOML format -arrays will have outkey=list-"
+  echo "out=toon	A TOON format"
   echo "out=tree	A tree-like format"
   echo "out=xls	A XLSx output format"
   echo "out=xml	An XML format"
