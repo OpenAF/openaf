@@ -350,7 +350,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>dnsjava</groupId>
       <artifactId>dnsjava</artifactId>
-      <version>3.6.3</version>
+      <version>3.6.4</version>
     </dependency>   
     <dependency>
       <groupId>org.slf4j</groupId>
