@@ -270,7 +270,8 @@ fi
     });
   }
   s += "EXITCODE=$?\n";
-  if (isCon) s += "stty icanon echo 2>/dev/null\n";
+  //if (isCon) s += "stty icanon echo 2>/dev/null\n";
+  s += "stty icanon echo 2>/dev/null\n";
   s += "exit $EXITCODE\n";
   return s;
 }
