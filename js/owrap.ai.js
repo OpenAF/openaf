@@ -2398,6 +2398,71 @@ OpenWrap.ai.prototype.gpt.prototype.rawPromptStream = function(aPrompt, aRole, a
 
 /**
  * <odoc>
+ * <key>ow.ai.gpt.promptStreamWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+ * Executes a streaming prompt and returns a map with the aggregated response and statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStreamWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    var response = this.model.promptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+    return { response: response, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.rawPromptStreamWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+ * Executes a streaming prompt and returns the raw streaming payloads, aggregated response, and statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.rawPromptStreamWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
+    if (!isFunction(this.model.rawPromptStream)) throw "Streaming not supported by this provider"
+    var response = this.model.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+    return { response: response, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptStreamJSON(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Object</key>
+ * Executes a streaming JSON prompt and returns the parsed JSON response.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStreamJSON = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    this.setInstructions("json")
+    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    return isString(out) ? jsonParse(out, __, __, true) : out
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptStreamJSONWithStats(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Map</key>
+ * Executes a streaming JSON prompt and returns the parsed response with statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStreamJSONWithStats = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    this.setInstructions("json")
+    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    var parsed = isString(out) ? jsonParse(out, __, __, true) : out
+    return { response: parsed, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptStreamJSONWithStatsRaw(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Map</key>
+ * Executes a streaming JSON prompt and returns the raw response, parsed response, and statistics ({ response, raw, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStreamJSONWithStatsRaw = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    this.setInstructions("json")
+    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    var parsed = isString(out) ? jsonParse(out, __, __, true) : out
+    return { response: parsed, raw: out, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
  * <key>ow.ai.gpt.promptWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) : Map</key>
  * Executes prompt and returns a map with the model response and any reported statistics ({ response, stats }).
  * </odoc>
@@ -2833,6 +2898,53 @@ global.$gpt = function(aModel) {
          */
         rawPromptStream: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
             return _g.rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStreamWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+         * Executes a streaming prompt and returns a map with the aggregated response and statistics ({ response, stats }).
+         * </odoc>
+         */
+        promptStreamWithStats: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
+            var response = _g.promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+            return { response: response, stats: _g.getLastStats() }
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.rawPromptStreamWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+         * Executes a streaming prompt and returns the raw streaming payloads, aggregated response, and statistics ({ response, stats }).
+         * </odoc>
+         */
+        rawPromptStreamWithStats: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
+            var response = _g.rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+            return { response: response, stats: _g.getLastStats() }
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStreamJSON(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Object</key>
+         * Executes a streaming JSON prompt and returns the parsed JSON response.
+         * </odoc>
+         */
+        promptStreamJSON: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
+            return _g.promptStreamJSON(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStreamJSONWithStats(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Map</key>
+         * Executes a streaming JSON prompt and returns the parsed response with statistics ({ response, stats }).
+         * </odoc>
+         */
+        promptStreamJSONWithStats: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
+            return _g.promptStreamJSONWithStats(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStreamJSONWithStatsRaw(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Map</key>
+         * Executes a streaming JSON prompt and returns the raw response, parsed response, and statistics ({ response, raw, stats }).
+         * </odoc>
+         */
+        promptStreamJSONWithStatsRaw: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
+            return _g.promptStreamJSONWithStatsRaw(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
         },
         /**
          * <odoc>
