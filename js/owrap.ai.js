@@ -149,25 +149,38 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _readSseStream = (aStream, aOnPayload) => {
                 var dataLines = []
                 var stop = false
+                var errorObj = __
                 var flush = () => {
                     if (stop || dataLines.length === 0) return
                     var payload = dataLines.join("\n")
                     dataLines = []
                     if (aOnPayload(payload) === true) stop = true
                 }
-                ioStreamReadLines(aStream, line => {
-                    if (stop) return true
-                    var _line = String(line)
-                    if (_line.length === 0) {
-                        flush()
-                        return stop === true
+                if (isObject(aStream)) {
+                    // Check if this is an error response (has error field)
+                    if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
+                        errorObj = aStream
+                        aOnPayload(aStream)
+                    } else {
+                        aOnPayload(aStream)
                     }
-                    if (_line.indexOf("data:") === 0) {
-                        dataLines.push(_line.substring(5).trim())
-                    }
-                }, "\n", false)
-                flush()
-                try { aStream.close() } catch(e) {}
+                    aOnPayload("[DONE]")
+                } else {
+                    ioStreamReadLines(aStream, line => {
+                        if (stop) return true
+                        var _line = String(line)
+                        if (_line.length === 0) {
+                            flush()
+                            return stop === true
+                        }
+                        if (_line.indexOf("data:") === 0) {
+                            dataLines.push(_line.substring(5).trim())
+                        }
+                    }, "\n", false)
+                    flush()
+                    try { aStream.close() } catch(e) {}
+                }
+                return errorObj
             }
             var _r = {
                 conversation: [],
@@ -426,7 +439,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var lastResponse = __
                     var finishReason = __
                     var _stream = _r._requestStream((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
-                    _readSseStream(_stream, payload => {
+                    var streamError = _readSseStream(_stream, payload => {
                         if (payload === "[DONE]") return true
                         var data = jsonParse(payload, __, __, true)
                         if (isDef(data)) {
@@ -461,6 +474,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         }
                     })
+                    // If there was a stream error, return it immediately
+                    if (isDef(streamError)) {
+                        _captureStats(streamError, body)
+                        return streamError
+                    }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
                     if (content.length > 0) {
                         _r.conversation = _r.conversation.concat({ role: "assistant", content: content })
@@ -471,6 +489,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                    if (isMap(res) && isDef(res.error)) return res
                     return res.content
                 },
                 rawImgGen: (aPrompt, aModel) => {
@@ -667,27 +686,40 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _readSseStream = (aStream, aOnPayload) => {
                 var dataLines = []
                 var stop = false
+                var errorObj = __
                 var flush = () => {
                     if (stop || dataLines.length === 0) return
                     var payload = dataLines.join("\n")
                     dataLines = []
                     if (aOnPayload(payload) === true) stop = true
                 }
-                ioStreamReadLines(aStream, line => {
-                    if (stop) return true
-                    var _line = String(line)
-                    if (_line.length === 0) {
-                        flush()
-                        return stop === true
+                if (isObject(aStream)) {
+                    // Check if this is an error response (has error field or unusual structure)
+                    if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
+                        errorObj = aStream
+                        aOnPayload(aStream)
+                    } else {
+                        aOnPayload(aStream)
                     }
-                    if (_line.indexOf("data:") === 0) {
-                        dataLines.push(_line.substring(5).trim())
-                    }
-                }, "\n", false)
-                flush()
-                try { aStream.close() } catch(e) {}
+                    aOnPayload("[DONE]")
+                } else {
+                    ioStreamReadLines(aStream, line => {
+                        if (stop) return true
+                        var _line = String(line)
+                        if (_line.length === 0) {
+                            flush()
+                            return stop === true
+                        }
+                        if (_line.indexOf("data:") === 0) {
+                            dataLines.push(_line.substring(5).trim())
+                        }
+                    }, "\n", false)
+                    flush()
+                    try { aStream.close() } catch(e) {}
+                }
+                return errorObj
             }
-            var _readSseStream = (aStream, aOnPayload) => {
+            /*var _readSseStream = (aStream, aOnPayload) => {
                 var dataLines = []
                 var stop = false
                 var flush = () => {
@@ -709,7 +741,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 }, "\n", false)
                 flush()
                 try { aStream.close() } catch(e) {}
-            }
+            }*/
 
             var _r = {
                 conversation: [],
@@ -1076,7 +1108,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var content = ""
                     var lastResponse = __
                     var _stream = _r._requestStream("models/" + aModel + ":streamGenerateContent?alt=sse", body)
-                    _readSseStream(_stream, payload => {
+                    var streamError = _readSseStream(_stream, payload => {
                         var data = jsonParse(payload, __, __, true)
                         if (isDef(data)) {
                             events.push(data)
@@ -1095,6 +1127,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         }
                     })
+                    // If there was a stream error, return it immediately
+                    if (isDef(streamError)) {
+                        _captureStats(streamError, aModel)
+                        return streamError
+                    }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
                     if (content.length > 0) {
                         _r.conversation = _r.conversation.concat(newPrompts).concat({ role: "model", parts: [ { text: content } ] })
@@ -1104,6 +1141,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                    if (isMap(res) && isDef(res.error)) return res
                     return res.content
                 },
                 rawImgGen: (aPrompt, aModel) => {
@@ -1488,6 +1526,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var content = ""
                     var lastResponse = __
                     var _stream = _r._requestStream(uri, body)
+                    // Check if _stream is an error object
+                    if (isMap(_stream) && (isMap(_stream.error) || isDef(_stream.error))) {
+                        _captureStats(_stream, aModel)
+                        return _stream
+                    }
                     ioStreamReadLines(_stream, line => {
                         var _line = String(line).trim()
                         if (_line.length == 0) return
@@ -1513,6 +1556,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                    if (isMap(res) && isDef(res.error)) return res
                     return res.content
                 },
                 rawImgGen: (aPrompt, aModel) => {
@@ -1707,6 +1751,43 @@ OpenWrap.ai.prototype.__gpttypes = {
                 _lastStats = stats
                 return _lastStats
             }
+            var _readSseStream = (aStream, aOnPayload) => {
+                var dataLines = []
+                var stop = false
+                var errorObj = __
+                var flush = () => {
+                    if (stop || dataLines.length === 0) return
+                    var payload = dataLines.join("\n")
+                    dataLines = []
+                    if (aOnPayload(payload) === true) stop = true
+                }
+                if (isObject(aStream)) {
+                    // Check if this is an error response (has error field)
+                    if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
+                        errorObj = aStream
+                        aOnPayload(aStream)
+                    } else {
+                        aOnPayload(aStream)
+                    }
+                    aOnPayload("[DONE]")
+                } else {
+                    ioStreamReadLines(aStream, line => {
+                        if (stop) return true
+                        var _line = String(line)
+                        if (_line.length === 0) {
+                            flush()
+                            return stop === true
+                        }
+                        if (_line.indexOf("data:") === 0) {
+                            dataLines.push(_line.substring(5).trim())
+                        }
+                    }, "\n", false)
+                    flush()
+                    try { aStream.close() } catch(e) {}
+                }
+                return errorObj
+            }
+
             var _r = {
                 conversation: [],
                 tools: {},
@@ -2012,7 +2093,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var content = ""
                     var lastMessage = __
                     var _stream = _r._requestStream("v1/messages", body)
-                    _readSseStream(_stream, payload => {
+                    var streamError = _readSseStream(_stream, payload => {
                         if (payload === "[DONE]") return true
                         var data = jsonParse(payload, __, __, true)
                         if (isDef(data)) {
@@ -2027,6 +2108,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                             }
                         }
                     })
+                    // If there was a stream error, return it immediately
+                    if (isDef(streamError)) {
+                        _captureStats(streamError, aModel)
+                        return streamError
+                    }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
                     if (content.length > 0) {
                         _r.conversation.push({ role: "assistant", content: content })
@@ -2036,6 +2122,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
                     var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                    if (isMap(res) && isDef(res.error)) return res
                     return res.content
                 },
                 rawImgGen: (aPrompt, aModel) => {
