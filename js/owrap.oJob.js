@@ -886,7 +886,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				if (__JSONformat.unsafe) traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
 				return _r;
 			} else {
-				af.fromYAML(_r, true);
+				return af.fromYAML(_r, true);
 			}
 		}
 	}
@@ -929,12 +929,20 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 	var fnReadEncYAML = f => {
 		var content = io.readFileString(f);
 		content = String(Packages.openaf.AFCmdBase.afc.dIP(content));
-		return af.fromYAML(content, true);
+		var _r = af.fromYAML(content, true);
+		if (isMap(_r) && __JSONformat.unsafe) {
+			traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+		}
+		return _r;
 	}
 	var fnReadEncJSON = f => {
 		var content = io.readFileString(f);
 		content = String(Packages.openaf.AFCmdBase.afc.dIP(content));
-		return JSON.parse(content);
+		var _r = JSON.parse(content);
+		if (isMap(_r) && __JSONformat.unsafe) {
+			traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+		}
+		return _r;
 	}
 
 	function _load(aFn) {
