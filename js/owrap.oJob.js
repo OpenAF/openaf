@@ -897,8 +897,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var _r = $rest({ throwExceptions: true }).get(url);
-			_r = String(Packages.openaf.AFCmdBase.afc.dIP(_r));
+			var _r = $rest({ throwExceptions: true }).getBytes(url);
+			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
 			if (isString(_r)) {
 				_r = af.fromYAML(_r, true);
 			}
@@ -915,8 +915,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				jobs: [{ name: "Unauthorized URL" }]
 			};
 		else {
-			var _r = $rest({ throwExceptions: true }).get(url);
-			_r = String(Packages.openaf.AFCmdBase.afc.dIP(_r));
+			var _r = $rest({ throwExceptions: true }).getBytes(url);
+			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
 			if (isString(_r)) {
 				try { _r = JSON.parse(_r); } catch (e) { }
 			}
@@ -927,8 +927,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		}
 	}
 	var fnReadEncYAML = f => {
-		var content = io.readFileString(f);
-		content = String(Packages.openaf.AFCmdBase.afc.dIP(content));
+		var content = io.readFileBytes(f);
+		content = String(Packages.openaf.AFCmdBase.afc.dbIP(content));
 		var _r = af.fromYAML(content, true);
 		if (isMap(_r) && __JSONformat.unsafe) {
 			traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
@@ -936,8 +936,8 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		return _r;
 	}
 	var fnReadEncJSON = f => {
-		var content = io.readFileString(f);
-		content = String(Packages.openaf.AFCmdBase.afc.dIP(content));
+		var content = io.readFileBytes(f);
+		content = String(Packages.openaf.AFCmdBase.afc.dbIP(content));
 		var _r = JSON.parse(content);
 		if (isMap(_r) && __JSONformat.unsafe) {
 			traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });

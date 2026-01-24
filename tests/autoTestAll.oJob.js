@@ -297,16 +297,16 @@
                 }
             ]
         };
-        
+
         var tk = genUUID();
         var tmpOJobEnc = io.createTempFile("oJob", ".yaml.enc").replace(/\\/g, "/");
         var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/");
-        
-        // Encrypt the oJob YAML content
+
+        // Encrypt the oJob YAML content using byte-based encryption
         var yamlContent = af.toYAML(testOJob);
-        var encryptedContent = af.encrypt(yamlContent);
-        io.writeFileString(tmpOJobEnc, encryptedContent);
-        
+        var encryptedBytes = af.encryptString2Bytes(yamlContent);
+        io.writeFileBytes(tmpOJobEnc, encryptedBytes);
+
         io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJobEnc + "\", { token: \"" + tk + "\" })");
 
         var r = $openaf(tmpOAF);
@@ -324,16 +324,16 @@
                 }
             ]
         };
-        
+
         var tk = genUUID();
         var tmpOJobEnc = io.createTempFile("oJob", ".json.enc").replace(/\\/g, "/");
         var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/");
-        
-        // Encrypt the oJob JSON content
+
+        // Encrypt the oJob JSON content using byte-based encryption
         var jsonContent = stringify(testOJob);
-        var encryptedContent = af.encrypt(jsonContent);
-        io.writeFileString(tmpOJobEnc, encryptedContent);
-        
+        var encryptedBytes = af.encryptString2Bytes(jsonContent);
+        io.writeFileBytes(tmpOJobEnc, encryptedBytes);
+
         io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJobEnc + "\", { token: \"" + tk + "\" })");
 
         var r = $openaf(tmpOAF);
