@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.zip.ZipFile;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeJavaArray;
 import org.mozilla.javascript.Scriptable;
 import openaf.rhino.RhinoEngine;
 import java.lang.String;
@@ -14,7 +15,7 @@ import java.lang.String;
  * 
  */
 public class AFCmdBase {
-	public static String VERSION = "20260111";
+	public static String VERSION = "20260124";
 	public static String DISTRIBUTION = "nightly";
 	public static String LICENSE = "See license info in openaf.jar/LICENSE and openaf.jar/LICENSES.txt";
 
@@ -41,7 +42,7 @@ public class AFCmdBase {
 				if (((String) aPass).startsWith("$raw$")) return ((String) aPass).substring(5);
 				return (String) aPass;
 			}
-		} 
+		}
 		if (aPass instanceof Function) {
 			try {
 				Context cx = (Context) AFCmdBase.jse.enterContext();
@@ -55,6 +56,21 @@ public class AFCmdBase {
 			}
 		}
 		return null;
+	}
+
+	public String dbIP(Object aBytes) {
+		if (aBytes == null) return null;
+		if (aBytes instanceof NativeJavaArray) {
+			aBytes = ((NativeJavaArray) aBytes).unwrap();
+		}
+		if (!(aBytes instanceof byte[])) return null;
+
+		try {
+			return AFBase.decryptBytes2String(aBytes, null);
+		} catch (Exception e) {
+			// If decryption fails, return as string
+			return new String((byte[]) aBytes);
+		}
 	}
 
 	public String fURL(Object aF) {
