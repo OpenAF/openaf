@@ -890,6 +890,52 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			}
 		}
 	}
+	var fnDownEncYAML = url => {
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
+			return {
+				todo: ["Unauthorized URL"],
+				jobs: [{ name: "Unauthorized URL" }]
+			};
+		else {
+			var _r = $rest({ throwExceptions: true }).get(url);
+			_r = String(Packages.openaf.AFCmdBase.afc.dIP(_r));
+			if (isString(_r)) {
+				_r = af.fromYAML(_r, true);
+			}
+			if (isMap(_r) && __JSONformat.unsafe) {
+				traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+			}
+			return _r;
+		}
+	}
+	var fnDownEncJSON = url => {
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
+			return {
+				todo: ["Unauthorized URL"],
+				jobs: [{ name: "Unauthorized URL" }]
+			};
+		else {
+			var _r = $rest({ throwExceptions: true }).get(url);
+			_r = String(Packages.openaf.AFCmdBase.afc.dIP(_r));
+			if (isString(_r)) {
+				try { _r = JSON.parse(_r); } catch (e) { }
+			}
+			if (isMap(_r) && __JSONformat.unsafe) {
+				traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+			}
+			return _r;
+		}
+	}
+	var fnReadEncYAML = f => {
+		var content = io.readFileString(f);
+		content = String(Packages.openaf.AFCmdBase.afc.dIP(content));
+		return af.fromYAML(content, true);
+	}
+	var fnReadEncJSON = f => {
+		var content = io.readFileString(f);
+		content = String(Packages.openaf.AFCmdBase.afc.dIP(content));
+		return JSON.parse(content);
+	}
 
 	function _load(aFn) {
 		var res = {};
@@ -945,7 +991,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			}
 		});
 
-    	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
+    	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i) && !aFile.match(/\.enc$/i)) {
 			var pp = (new java.net.URI(aFile)).getPath()
 			if (pp == "") {
 				aFile += "/"
@@ -974,7 +1020,19 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			}
 		}
 
-		if (aFile.match(/\.ya?ml$/i)) {
+		if (aFile.match(/\.ya?ml\.enc$/i)) {
+			if (aFile.match(/^https?:\/\//)) {
+				res = this.__merge(_load(fnDownEncYAML), res);
+			} else {
+				res = this.__merge(_load(fnReadEncYAML), res);
+			}
+		} else if (aFile.match(/\.js(on)?\.enc$/i)) {
+			if (aFile.match(/^https?:\/\//)) {
+				res = this.__merge(_load(fnDownEncJSON), res);
+			} else {
+				res = this.__merge(_load(fnReadEncJSON), res);
+			}
+		} else if (aFile.match(/\.ya?ml$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
 			} else {
