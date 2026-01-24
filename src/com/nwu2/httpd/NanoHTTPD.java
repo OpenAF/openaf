@@ -1700,16 +1700,25 @@ public abstract class NanoHTTPD {
          *             if something goes wrong while sending the data.
          */
         private void sendBody(OutputStream outputStream, long pending) throws IOException {
-            long BUFFER_SIZE = 16 * 1024;
-            byte[] buff = new byte[(int) BUFFER_SIZE];
+            // Adapt buffer size for SSE
+            boolean isSSE = this.mimeType != null && this.mimeType.equals("text/event-stream");
+            long bufferSize = isSSE ? 1024 : (16 * 1024); // 1KB for SSE, 16KB for regular content
+            
+            byte[] buff = new byte[(int) bufferSize];
             boolean sendEverything = pending == -1;
+            
             while (pending > 0 || sendEverything) {
-                long bytesToRead = sendEverything ? BUFFER_SIZE : Math.min(pending, BUFFER_SIZE);
+                long bytesToRead = sendEverything ? bufferSize : Math.min(pending, bufferSize);
                 int read = this.data.read(buff, 0, (int) bytesToRead);
                 if (read <= 0) {
                     break;
                 }
                 outputStream.write(buff, 0, read);
+                
+                if (isSSE) {
+                    outputStream.flush(); // Flush immediately for SSE
+                }
+                
                 if (!sendEverything) {
                     pending -= read;
                 }
