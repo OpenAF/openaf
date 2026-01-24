@@ -286,4 +286,58 @@
         ow.test.assert(r.existingNested, 5432, "Problem with oJob todo default args for existing nested value.")
         ow.test.assert(r.circularRef, "${circularRef:-circular}", "Problem with oJob todo default args circular reference prevention.")
     }
+
+    exports.testOJobEncryptedYAML = function() {
+        var testOJob = {
+            todo: [ "Test" ],
+            jobs: [
+                {
+                    name: "Test",
+                    exec: "__pm.status = 'ok'; __pm.t = args.token;"
+                }
+            ]
+        };
+        
+        var tk = genUUID();
+        var tmpOJobEnc = io.createTempFile("oJob", ".yaml.enc").replace(/\\/g, "/");
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/");
+        
+        // Encrypt the oJob YAML content
+        var yamlContent = af.toYAML(testOJob);
+        var encryptedContent = af.encrypt(yamlContent);
+        io.writeFileString(tmpOJobEnc, encryptedContent);
+        
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJobEnc + "\", { token: \"" + tk + "\" })");
+
+        var r = $openaf(tmpOAF);
+
+        ow.test.assert(r.t, tk, "Problem with oJob encrypted YAML file.");
+    };
+
+    exports.testOJobEncryptedJSON = function() {
+        var testOJob = {
+            todo: [ "Test" ],
+            jobs: [
+                {
+                    name: "Test",
+                    exec: "__pm.status = 'ok'; __pm.t = args.token;"
+                }
+            ]
+        };
+        
+        var tk = genUUID();
+        var tmpOJobEnc = io.createTempFile("oJob", ".json.enc").replace(/\\/g, "/");
+        var tmpOAF  = io.createTempFile("oJob", ".js").replace(/\\/g, "/");
+        
+        // Encrypt the oJob JSON content
+        var jsonContent = stringify(testOJob);
+        var encryptedContent = af.encrypt(jsonContent);
+        io.writeFileString(tmpOJobEnc, encryptedContent);
+        
+        io.writeFileString(tmpOAF, "__flags.OJOB_CONSOLE_STDERR = false;oJob(\"" + tmpOJobEnc + "\", { token: \"" + tk + "\" })");
+
+        var r = $openaf(tmpOAF);
+
+        ow.test.assert(r.t, tk, "Problem with oJob encrypted JSON file.");
+    };
 })()
