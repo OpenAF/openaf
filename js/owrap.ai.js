@@ -156,7 +156,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     dataLines = []
                     if (aOnPayload(payload) === true) stop = true
                 }
-                if (isObject(aStream)) {
+                if (isMap(aStream)) {
                     // Check if this is an error response (has error field)
                     if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
                         errorObj = aStream
@@ -480,11 +480,44 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return streamError
                     }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
+                    var toolCalls = Object.keys(toolCallsMap).map(k => toolCallsMap[k])
+                    
+                    // Handle tool calling similar to non-streaming version
+                    if (isArray(toolCalls) && toolCalls.length > 0) {
+                        var _p = []
+                        toolCalls.forEach(tc => {
+                            var _t = _r.tools[tc.function.name]
+                            if (isDef(_t) && isFunction(_t.fn)) {
+                                var _args = jsonParse(tc.function.arguments, __, __, true)
+                                if (isUnDef(_args)) _args = {}
+                                var _tr = stringify(_t.fn(_args), __, "")
+                                _p.push({ role: "assistant", tool_calls: [ tc ]})
+                                _p.push({ role: "tool", content: _tr, tool_call_id: tc.id })
+                            }
+                        })
+                        if (_p.length > 0) {
+                            _r.conversation = _r.conversation.concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream(_p, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
+                            }
+                            return toolResult
+                        }
+                    }
+                    
                     if (content.length > 0) {
                         _r.conversation = _r.conversation.concat({ role: "assistant", content: content })
                     }
                     _captureStats(lastResponse, body)
-                    var toolCalls = Object.keys(toolCallsMap).map(k => toolCallsMap[k])
                     return { content: content, events: events, toolCalls: toolCalls, finishReason: finishReason }
                 },
                 promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
@@ -693,7 +726,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     dataLines = []
                     if (aOnPayload(payload) === true) stop = true
                 }
-                if (isObject(aStream)) {
+                if (isMap(aStream)) {
                     // Check if this is an error response (has error field or unusual structure)
                     if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
                         errorObj = aStream
@@ -1133,6 +1166,80 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return streamError
                     }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
+                    
+                    // Handle tool calling for Gemini streaming
+                    if (isMap(lastResponse) && isArray(lastResponse.candidates)) {
+                        var _p = [], stopWith = false
+                        lastResponse.candidates.forEach(tc => {
+                            if (isArray(tc.content.parts)) {
+                                var fnParts = tc.content.parts.filter(p => isDef(p.functionCall))
+                                if (fnParts.length > 0 && tc.finishReason == "STOP") {
+                                    stopWith = true
+                                    _p.push({ role: "model", parts: tc.content.parts })
+                                    fnParts.forEach(p => {
+                                        var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
+                                        if (isDef(_t) && isFunction(_t.fn)) {
+                                            var _args = p.functionCall.args
+                                            if (isString(_args)) _args = jsonParse(_args, __, __, true)
+                                            if (isUnDef(_args)) _args = {}
+                                            var _tr = _t.fn(_args)
+                                            var _tryParse = v => {
+                                                if (isString(v)) {
+                                                    return jsonParse(v, __, __, true)
+                                                }
+                                                return __
+                                            }
+                                            if (isString(_tr)) {
+                                                var _pjson = _tryParse(_tr)
+                                                if (isDef(_pjson)) _tr = _pjson
+                                            } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
+                                                var _pjson2 = _tryParse(_tr.result)
+                                                if (isDef(_pjson2)) _tr = _pjson2
+                                            }
+                                            var _content = __
+                                            if (isMap(_tr)) {
+                                                _content = _tr
+                                            } else if (isArray(_tr)) {
+                                                _content = { items: _tr }
+                                            } else if (isDef(_tr)) {
+                                                _content = { result: _tr }
+                                            } else {
+                                                _content = {}
+                                            }
+                                            _p.push({ role: "user", parts: [{
+                                                functionResponse: {
+                                                    name: p.functionCall.name,
+                                                    response: {
+                                                        name: p.functionCall.name,
+                                                        content: _content
+                                                    }
+                                                }
+                                            }]})
+                                        }
+                                    })
+                                    stopWith = false
+                                }
+                            }
+                        })
+                        if (!stopWith && _p.length > 0) {
+                            _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, [], aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
+                            }
+                            return toolResult
+                        }
+                    }
+                    
                     if (content.length > 0) {
                         _r.conversation = _r.conversation.concat(newPrompts).concat({ role: "model", parts: [ { text: content } ] })
                     }
@@ -1548,6 +1655,41 @@ OpenWrap.ai.prototype.__gpttypes = {
                     try { _stream.close() } catch(e) {}
 
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
+                    
+                    // Handle tool calling for Ollama streaming
+                    if (isMap(lastResponse) && isMap(lastResponse.message) && isArray(lastResponse.message.tool_calls)) {
+                        var _p = []
+                        lastResponse.message.tool_calls.forEach(tc => {
+                            if (isMap(tc.function)) {
+                                var _t = $from(_r.tools).equals("function.name", tc.function.name).at(0)
+                                if (isDef(_t) && isFunction(_t.function.fn)) {
+                                    var _args = jsonParse(tc.function.arguments, __, __, true)
+                                    if (isUnDef(_args)) _args = {}
+                                    var _tr = stringify(_t.function.fn(_args), __, "")
+                                    _p.push({ role: "assistant", content: "", tool_calls: [ tc ] })
+                                    _p.push({ role: "tool", content: _tr })
+                                }
+                            }
+                        })
+                        if (_p.length > 0) {
+                            _r.conversation = _r.conversation.concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream(_p, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
+                            }
+                            return toolResult
+                        }
+                    }
+                    
                     if (content.length > 0) {
                         _r.conversation.push({ role: "assistant", content: content })
                     }
@@ -1761,7 +1903,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                     dataLines = []
                     if (aOnPayload(payload) === true) stop = true
                 }
-                if (isObject(aStream)) {
+                if (isMap(aStream)) {
                     // Check if this is an error response (has error field)
                     if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
                         errorObj = aStream
@@ -2114,6 +2256,63 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return streamError
                     }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
+                    
+                    // Handle tool calling for Anthropic streaming
+                    // Collect tool_use blocks from events
+                    var toolUseBlocks = events.filter(e => e.type == "content_block_start" && isMap(e.content_block) && e.content_block.type == "tool_use")
+                        .map(e => e.content_block)
+                    // Also check for tool_use in content_block_delta events to get complete arguments
+                    events.forEach(e => {
+                        if (e.type == "content_block_delta" && isMap(e.delta) && e.delta.type == "input_json_delta") {
+                            if (isDef(e.index) && e.index < toolUseBlocks.length) {
+                                if (isUnDef(toolUseBlocks[e.index].input)) toolUseBlocks[e.index].input = ""
+                                toolUseBlocks[e.index].input += e.delta.partial_json
+                            }
+                        }
+                    })
+                    
+                    if (isArray(toolUseBlocks) && toolUseBlocks.length > 0) {
+                        var _p = []
+                        // Build content array with text and tool_use blocks
+                        var contentBlocks = []
+                        if (content.length > 0) contentBlocks.push({ type: "text", text: content })
+                        toolUseBlocks.forEach(tu => contentBlocks.push({ type: "tool_use", id: tu.id, name: tu.name, input: jsonParse(tu.input || "{}", __, __, true) || {} }))
+                        
+                        if (contentBlocks.length > 0) {
+                            _p.push({ role: "assistant", content: contentBlocks })
+                        }
+                        
+                        // Execute tools and build responses
+                        toolUseBlocks.forEach(tc => {
+                            var _t = _r.tools[tc.name]
+                            if (isDef(_t) && isFunction(_t.fn)) {
+                                var _args = isString(tc.input) ? jsonParse(tc.input, __, __, true) : tc.input
+                                if (isUnDef(_args)) _args = {}
+                                var _result = _t.fn(_args)
+                                var _resultStr = isString(_result) ? _result : (isArray(_result) || isMap(_result)) ? stringify(_result, __, "") : (isUnDef(_result) || _result === null) ? "" : stringify(_result, __, "")
+                                _p.push({ role: "user", content: [{ type: "tool_result", tool_use_id: tc.id, content: _resultStr }] })
+                            }
+                        })
+                        
+                        if (_p.length > 0) {
+                            _r.conversation = _r.conversation.concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
+                            }
+                            return toolResult
+                        }
+                    }
+                    
                     if (content.length > 0) {
                         _r.conversation.push({ role: "assistant", content: content })
                     }
