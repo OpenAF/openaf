@@ -983,7 +983,12 @@ public abstract class NanoHTTPD {
                     String acceptEncoding = this.headers.get("accept-encoding");
                     this.cookies.unloadQueue(r);
                     r.setRequestMethod(this.method);
-                    r.setGzipEncoding(useGzipWhenAccepted(r) && acceptEncoding != null && acceptEncoding.contains("gzip"));
+                    // Prevent gzip for text/event-stream
+                    if ("text/event-stream".equals(r.getMimeType())) {
+                        r.setGzipEncoding(false);
+                    } else {
+                        r.setGzipEncoding(useGzipWhenAccepted(r) && acceptEncoding != null && acceptEncoding.contains("gzip"));
+                    }
                     r.setKeepAlive(keepAlive);
                     r.send(this.outputStream);
                 }
