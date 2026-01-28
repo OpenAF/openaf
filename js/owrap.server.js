@@ -3204,6 +3204,8 @@ OpenWrap.server.prototype.httpd = {
 
 		if (isDef(getOPackPath("Mermaid")) && 
 		    io.fileExists(getOPackPath("Mermaid")+"/mermaid.js")) loadLib("mermaid.js")
+		if (isDef(getOPackPath("KaTeX")) && 
+		    io.fileExists(getOPackPath("KaTeX")+"/katex.js")) loadLib("katex.js")
 
 		// To be deprecated in favour of HTTPD_CUSTOMURIS
 		Object.keys(this.customLibs).forEach(lib => {
