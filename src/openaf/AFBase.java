@@ -784,19 +784,141 @@ public class AFBase extends ScriptableObject {
 	
 	/**
 	 * Try to decrypt the password if encrypted. Otherwise return the same password.
-	 * 
+	 *
 	 * @param aPassword
 	 * @return
 	 */
 	public static String decryptIfPossible(String aPassword) {
-		try {                          
+		try {
 			String r = decrypt(aPassword, K);
 			if (r == null) return aPassword; else return r;
 		} catch (Exception e) {
 			return aPassword;
 		}
 	}
-	
+
+	/**
+	 * <odoc>
+	 * <key>af.encryptBytes(anArrayOfBytes, aKey) : anArrayOfBytes</key>
+	 * Encrypts the provided anArrayOfBytes using AES/CBC/PKCS5PADDING. If aKey is provided
+	 * it will encrypt using it. Returns the encrypted bytes with the IV appended at the end
+	 * (last 16 bytes).
+	 * </odoc>
+	 * @throws Exception
+	 */
+	@JSFunction
+	public static Object encryptBytes(Object aBytes, Object key) throws Exception {
+		if (aBytes == null || aBytes instanceof Undefined) throw new Exception("Input bytes cannot be null or undefined.");
+		if (key == null || key instanceof Undefined) key = AFBase.K;
+		if (key instanceof String) key = ((String) key).getBytes();
+		if (aBytes instanceof NativeJavaArray) aBytes = ((NativeJavaArray) aBytes).unwrap();
+		if (!(aBytes instanceof byte[])) throw new Exception("Input must be an array of bytes.");
+		if (((byte[]) key).length < 16) throw new Exception("Invalid key size. Key should be, at least, 16 bytes.");
+
+		SecureRandom sc = new SecureRandom();
+		byte[] biv = sc.generateSeed(16);
+		IvParameterSpec iv = new IvParameterSpec(biv);
+		SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
+
+		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+		cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
+
+		byte[] encrypted = cipher.doFinal((byte[]) aBytes);
+
+		// Combine encrypted bytes + IV
+		byte[] result = new byte[encrypted.length + biv.length];
+		System.arraycopy(encrypted, 0, result, 0, encrypted.length);
+		System.arraycopy(biv, 0, result, encrypted.length, biv.length);
+
+		return result;
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.encryptString2Bytes(aString, aKey) : anArrayOfBytes</key>
+	 * Encrypts the provided aString using AES/CBC/PKCS5PADDING and returns the encrypted
+	 * bytes with the IV appended at the end (last 16 bytes). If aKey is provided it will
+	 * encrypt using it.
+	 * </odoc>
+	 * @throws Exception
+	 */
+	@JSFunction
+	public static Object encryptString2Bytes(String aString, Object key) throws Exception {
+		if (aString == null) throw new Exception("Input string cannot be null.");
+		return encryptBytes(aString.getBytes(), key);
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.decryptBytes(anArrayOfBytes, aKey) : anArrayOfBytes</key>
+	 * Decrypts the provided anArrayOfBytes (with the IV in the last 16 bytes) using
+	 * AES/CBC/PKCS5PADDING. If aKey is provided it will decrypt using it.
+	 * </odoc>
+	 * @throws Exception
+	 */
+	@JSFunction
+	public static Object decryptBytes(Object aBytes, Object key) throws Exception {
+		if (aBytes == null || aBytes instanceof Undefined) throw new Exception("Input bytes cannot be null or undefined.");
+		if (key == null || key instanceof Undefined) key = AFBase.K;
+		if (key instanceof String) key = ((String) key).getBytes();
+		if (aBytes instanceof NativeJavaArray) aBytes = ((NativeJavaArray) aBytes).unwrap();
+		if (!(aBytes instanceof byte[])) throw new Exception("Input must be an array of bytes.");
+
+		byte[] data = (byte[]) aBytes;
+		if (((byte[]) key).length < 16) throw new Exception("Invalid key size. Key should be, at least, 16 bytes.");
+		if (data.length < 16) throw new Exception("Invalid data size. Data should be, at least, 16 bytes (IV).");
+
+		// Extract IV from the last 16 bytes
+		byte[] biv = new byte[16];
+		System.arraycopy(data, data.length - 16, biv, 0, 16);
+
+		// Extract encrypted data (everything except the last 16 bytes)
+		byte[] encrypted = new byte[data.length - 16];
+		System.arraycopy(data, 0, encrypted, 0, data.length - 16);
+
+		IvParameterSpec iv = new IvParameterSpec(biv);
+		SecretKeySpec skeySpec = new SecretKeySpec((byte[]) key, "AES");
+
+		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+		cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
+
+		return cipher.doFinal(encrypted);
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.decryptBytes2String(anArrayOfBytes, aKey) : String</key>
+	 * Decrypts the provided anArrayOfBytes (with the IV in the last 16 bytes) using
+	 * AES/CBC/PKCS5PADDING and returns the result as a String. If aKey is provided
+	 * it will decrypt using it.
+	 * </odoc>
+	 * @throws Exception
+	 */
+	@JSFunction
+	public static String decryptBytes2String(Object aBytes, Object key) throws Exception {
+		byte[] decrypted = (byte[]) decryptBytes(aBytes, key);
+		return new String(decrypted);
+	}
+
+	/**
+	 * <odoc>
+	 * <key>af.decryptBytesIfPossible(anArrayOfBytes, aKey) : anArrayOfBytes</key>
+	 * Tries to decrypt anArrayOfBytes using the provided aKey (or the default key if not
+	 * provided). If decryption fails, returns the original bytes unchanged.
+	 * </odoc>
+	 */
+	@JSFunction
+	public static Object decryptBytesIfPossible(Object aBytes, Object key) {
+		if (aBytes == null || aBytes instanceof Undefined) return aBytes;
+		try {
+			if (key == null || key instanceof Undefined) key = K;
+			Object r = decryptBytes(aBytes, key);
+			if (r == null) return aBytes; else return r;
+		} catch (Exception e) {
+			return aBytes;
+		}
+	}
+
 	@JSFunction
 	public void writeFile(String filename, Object pmIn, String encoding, boolean sa) throws Exception {
 		throw(new Exception("af.writeFile was deprecated. Please replace with io.writeFile."));
