@@ -300,7 +300,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <dependency>
       <groupId>org.snmp4j</groupId>
       <artifactId>snmp4j</artifactId>
-      <version>3.9.6</version>
+      <version>3.9.7</version>
     </dependency>
     <dependency>
       <groupId>org.snmp4j</groupId>
