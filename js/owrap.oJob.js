@@ -2436,7 +2436,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 		}
 	}
 
-	function _run(aExec, args, job, id) {	
+	function _run(aExec, args, job, id) {
 		if (isDef(aJob.typeArgs.noTemplateArgs)) noTemplateArgs = aJob.typeArgs.noTemplateArgs; else noTemplateArgs = !parent.__ojob.templateArgs
 		
 		// Find templates on args	
@@ -2455,8 +2455,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 
 		var f = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
 		var fe, fint;
-		if (isDef(parent.__ojob.catch)) fe = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
-		if (isDef(aJob.catch)) fint = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + aJob.catch);
+		if (isDef(parent.__ojob.catch)) fe = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + parent.__ojob.catch + "})(); return { args: args, res: _res };");
+		if (isDef(aJob.catch)) fint = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + aJob.catch + "})(); return { args: args, res: _res };");
 		
 		var stopWhen, timeout, tb = false, tbres;
 		if (isDef(aJob.typeArgs.timeout))  { tb = true; timeout = aJob.typeArgs.timeout; }
@@ -2481,21 +2481,27 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					} catch(e) {
 						var useExt = true, recordError = true;
 						if (isDef(fint)) {
-							if (!fint(aValue, job, id, depInfo, e)) {
-								if (parent.__ojob.logArgs) 
+							var _r = fint(aValue, job, id, depInfo, e);
+							if (!_r.res) {
+								if (parent.__ojob.logArgs)
    									errors.push(stringify({ args: aValue, exception: String(e)}));
 								else
 									errors.push(stringify({ exception: String(e) }));
+							} else {
+								Object.assign(aValue, _r.args);
 							}
 							recordError = false;
 							useExt = false;
 						}
 						if (isDef(fe) && useExt) {
-							if (!fe(aValue, job, id, depInfo, e)) {
-								if (parent.__ojob.logArgs) 
+							var _r = fe(aValue, job, id, depInfo, e)
+							if (!_r.res) {
+								if (parent.__ojob.logArgs)
 									errors.push(stringify({ args: aValue, exception: String(e)}));
 								else
 									errors.push(stringify({ exception: String(e)}));
+							} else {
+								Object.assign(aValue, _r.args);
 							}
 							recordError = false;
 						}
@@ -2506,7 +2512,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 								errors.push(stringify({ exception: String(e)}));
 						}
 					} finally {
-						return true;
+						return aValue
 					}
 				});
 			} else {
@@ -2520,21 +2526,27 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					} catch(e) {
 						var useExt = true, recordError = true;
 						if (isDef(fint)) {
-							if (!fint(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
+							var _r = fint(args.__oJobRepeat[aVi], job, id, depInfo, e);
+							if (!_r.res) {
 								if (parent.__ojob.logArgs)
 									errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
 								else
 									errors.push(stringify({ exception: e}));
+							} else {
+								Object.assign(args.__oJobRepeat[aVi], _r.args);
 							}
 							recordError = false;
 							useExt = false;
 						}
 						if (isDef(fe) && useExt) {
-							if (!fe(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
+							var _r = fe(args.__oJobRepeat[aVi], job, id, depInfo, e);
+							if (!_r.res) {
 								if (parent.__ojob.logArgs)
 									errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
 								else
 									errors.push(stringify({ exception: e}));
+							} else {
+								Object.assign(args.__oJobRepeat[aVi], _r.args);
 							}
 							recordError = false;
 						}
@@ -2561,11 +2573,21 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			} catch(e) {
 				if (isUnDef(fint) && isUnDef(fe)) throw e;
 
-				if (isDef(fint) && !fint(args, job, id, depInfo, e)) {
-					throw e;
+				var useExt = true;
+				if (isDef(fint)) {
+					var _r = fint(args, job, id, depInfo, e)
+					if (!_r.res) {
+						throw e
+					}
+					resExec = _r.args;
+					useExt = false;
 				}
-				if (isDef(fe) && !fe(args, job, id, depInfo, e)) {
-					throw e;
+				if (isDef(fe) && useExt) {
+					var _r = fe(args, job, id, depInfo, e)
+					if (!_r.res) {
+						throw e;
+					}
+					resExec = _r.args;
 				}
 			}
 		}
@@ -2604,6 +2626,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 				}
 			} catch(e) {
 				this.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
+				// If catch handlers exist, they already handled the error in _run, so re-throw
+				if (isDef(aJob.catch) || isDef(parent.__ojob.catch)) throw e;
 			}
 			
 			//return true;
