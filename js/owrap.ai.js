@@ -583,6 +583,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
+                getModelInfo: (aModelId) => {
+                    aModelId = _$(aModelId, "aModelId").isString().default(_model)
+                    var _modelId = encodeURIComponent(aModelId)
+                    return _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "models/" + _modelId, {}, "GET")
+                },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
                     aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-3-small")
@@ -1302,6 +1307,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(res.models)) res = res.models
                     return res
                 },
+                getModelInfo: (aModelId) => {
+                    aModelId = _$(aModelId, "aModelId").isString().default(_model)
+                    var _modelName = aModelId
+                    if (_modelName.indexOf("models/") === 0) _modelName = _modelName.substring("models/".length)
+                    _modelName = encodeURIComponent(_modelName)
+                    return _r._request("models/" + _modelName, {}, "GET")
+                },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
                     aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-004")
@@ -1735,6 +1747,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return res
                     }
+                },
+                getModelInfo: (aModelId) => {
+                    aModelId = _$(aModelId, "aModelId").isString().default(_model)
+                    return _r._request("/api/show", { model: aModelId })
                 },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
@@ -2363,6 +2379,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
+                getModelInfo: (aModelId) => {
+                    aModelId = _$(aModelId, "aModelId").isString().default(_model)
+                    var _modelId = encodeURIComponent(aModelId)
+                    return _r._request("v1/models/" + _modelId, {}, "GET")
+                },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     throw "Text embeddings not supported by Anthropic"
                 },
@@ -2617,6 +2638,20 @@ OpenWrap.ai.prototype.gpt.prototype.getModelName = function() {
  */
 OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
     return this.model.getModels()
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.prototype.getModelInfo(aModelId) : Map</key>
+ * Returns the model information for aModelId (defaults to the current configured model when omitted).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.getModelInfo = function(aModelId) {
+    if (isFunction(this.model.getModelInfo)) {
+        return this.model.getModelInfo(aModelId)
+    } else {
+        throw "Model info not supported by this provider"
+    }
 }
 
 /**
@@ -3133,6 +3168,15 @@ global.$gpt = function(aModel) {
         getAPI: () => _g,
         getModels: () => {
             return _g.getModels()
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.getModelInfo(aModelId) : Map</key>
+         * Returns the model information for aModelId (defaults to the current configured model when omitted).
+         * </odoc>
+         */
+        getModelInfo: (aModelId) => {
+            return _g.getModelInfo(aModelId)
         },
         /**
          * <odoc>
