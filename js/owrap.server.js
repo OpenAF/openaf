@@ -1654,42 +1654,51 @@ OpenWrap.server.prototype.queue.prototype.purge = function() {
  * </odoc>
  */
 OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
-	// Validate the input parameters
-    if (isMap(data)) {
-		// Check if the required fields are present
-        if (isDef(data.jsonrpc)) {
-            const fn = mapOfFns[data.method]
-            const id = data.id
-            const params = data.params || {}
-
-			// If the method is defined in the mapOfFns, execute it and return the result
-			// Otherwise, return an error indicating that the method is unknown
-            if (fn) {
-                var _res = fn(params)
-                return {
-                    jsonrpc: "2.0",
-                    id: id,
-                    result: _res
-                }
-            } else {
-                return {
-                    jsonrpc: "2.0",
-                    id: id,
-                    error: "Unknown method: " + data.method
-                }
-            }
-        } else {
-            return {
-                jsonrpc: "2.0",
-                id: null,
-                error: "Invalid JSON-RPC request"
-            }
-        }
-    } else {
+    // Validate the input parameters
+    if (!isMap(data)) {
         return {
             jsonrpc: "2.0",
             id: null,
-            error: "Invalid JSON-RPC request format"
+            error: { code: -32600, message: "Invalid Request" }
+        }
+    }
+
+    if (data.jsonrpc !== "2.0" || isUnDef(data.method)) {
+        return {
+            jsonrpc: "2.0",
+            id: isDef(data.id) ? data.id : null,
+            error: { code: -32600, message: "Invalid Request" }
+        }
+    }
+
+    const fn = mapOfFns[data.method]
+    const id = data.id
+    const isNotification = isUnDef(id) || isNull(id)
+    const params = isDef(data.params) ? data.params : {}
+
+    if (!isFunction(fn)) {
+        if (isNotification) return null
+        return {
+            jsonrpc: "2.0",
+            id: id,
+            error: { code: -32601, message: "Method not found" }
+        }
+    }
+
+    try {
+        var _res = isArray(params) ? fn.apply(null, params) : fn(params)
+        if (isNotification) return null
+        return {
+            jsonrpc: "2.0",
+            id: id,
+            result: _res
+        }
+    } catch (e) {
+        if (isNotification) return null
+        return {
+            jsonrpc: "2.0",
+            id: id,
+            error: { code: -32603, message: "Internal error", data: String(e) }
         }
     }
 }
@@ -1773,41 +1782,49 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
         }
     }, initData)
     io.pipeLn(line => {
-        var _pline = jsonParse(line)
+        if (isUnDef(line) || String(line).trim() === "") return
+        var _pline
+        try {
+            _pline = jsonParse(line)
+        } catch (e) {
+            lgF("err", "Invalid JSON: " + String(e))
+            return
+        }
         lgF("rcv", _pline)
         var _res = ow.server.jsonRPC(_pline, {
             initialize                 : () => initData,
-            "prompts/list"             : () => ({}),
+            "prompts/list"             : () => ({ prompts: [] }),
             "notifications/initialized": () => ({}),
             ping                       : () => ({}),
             "tools/call"               : params => {
-                if (isDef(params.name)) {
-                    const tool = fns[params.name]
-                    if (tool) {
-                        try {
-                            var result = tool(params.input || params.arguments || {})
-                            return { 
-                                content: [{
-                                    type: "text",
-                                    text: isString(result) ? result : stringify(result, __, "")
-                                }],
-                                isError: false
-                            }
-                        } catch (e) {
-                            return { 
-                                content: [{
-                                    type: "text",
-                                    text: "Error executing tool: " + e.message
-                                }],
-                                isError: true
-                            }
+                if (isUnDef(params) || isUnDef(params.name)) {
+                    return { content: [{ type: "text", text: "Missing tool name" }], isError: true }
+                }
+                const tool = fns[params.name]
+                if (tool) {
+                    try {
+                        var result = tool(params.input || params.arguments || {})
+                        return { 
+                            content: [{
+                                type: "text",
+                                text: isString(result) ? result : stringify(result, __, "")
+                            }],
+                            isError: false
                         }
-                    } else {
-                        return { content: [{
-                            type: "text",
-                            text: "Tool not found: " + params.name
-                        }], isError: true }
+                    } catch (e) {
+                        return { 
+                            content: [{
+                                type: "text",
+                                text: "Error executing tool: " + e.message
+                            }],
+                            isError: true
+                        }
                     }
+                } else {
+                    return { content: [{
+                        type: "text",
+                        text: "Tool not found: " + params.name
+                    }], isError: true }
                 }
             },
             "tools/list": () => ({ tools: fnsMeta })
@@ -1843,8 +1860,10 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
             }*/
         })
 
-        lgF("snd", _res)
-        sprint(_res, "")
+        if (isDef(_res)) {
+            lgF("snd", _res)
+            sprint(_res, "")
+        }
     })
 }
 
@@ -3660,20 +3679,20 @@ OpenWrap.server.prototype.httpd = {
             if (request.method !== "POST") {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Only POST allowed")
                 return ow.server.httpd.reply({
-                    mcp: "1.0",
+                    jsonrpc: "2.0",
                     error: { code: -32600, message: "Invalid Request: Only POST allowed" },
                     id: null
-                }, 400, "application/json", {})
+                }, 200, "application/json", {})
             }
             var body = (isDef(request.files) && isDef(request.files.postData)) ? request.files.postData : __
 			if (isUnDef(body) && isDef(request.data)) body = request.data
             if (isUnDef(body)) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - No body")
                 return ow.server.httpd.reply({
-                    mcp: "1.0",
+                    jsonrpc: "2.0",
                     error: { code: -32700, message: "Parse error: No body" },
                     id: null
-                }, 400, "application/json", {})
+                }, 200, "application/json", {})
             }
             var reqObj
             try {
@@ -3681,51 +3700,55 @@ OpenWrap.server.prototype.httpd = {
             } catch(e) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Invalid JSON")
                 return ow.server.httpd.reply({
-                    mcp: "1.0",
+                    jsonrpc: "2.0",
                     error: { code: -32700, message: "Parse error: Invalid JSON" },
                     id: null
-                }, 400, "application/json", {})
+                }, 200, "application/json", {})
             }
             if (!reqObj || (reqObj.mcp !== "1.0" && reqObj.jsonrpc !== "2.0") || !reqObj.method) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Invalid Request")
                 return ow.server.httpd.reply({
-                    mcp: "1.0",
+                    jsonrpc: "2.0",
                     error: { code: -32600, message: "Invalid Request" },
                     id: reqObj && reqObj.id !== undefined ? reqObj.id : null
-                }, 400, "application/json", {})
+                }, 200, "application/json", {})
             }
+            var isNotification = isUnDef(reqObj.id) || isNull(reqObj.id)
             var fn = mapOfFunctions[reqObj.method]
             if (!isFunction(fn)) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Method not found: " + reqObj.method)
+                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {})
                 return ow.server.httpd.reply({
-                    mcp: "1.0",
+                    jsonrpc: "2.0",
                     error: { code: -32601, message: "Method not found" },
                     id: reqObj.id
-                }, 404, "application/json", {})
+                }, 200, "application/json", {})
             }
             try {
                 var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params)
 				debugFn("MCP request result: " + stringify(result))
+                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {})
                 return ow.server.httpd.reply({
-                    mcp: "1.0",
+                    jsonrpc: "2.0",
                     result: result,
                     id: reqObj.id
                 }, 200, "application/json", {})
             } catch(e) {
 				logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
+                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {})
                 return ow.server.httpd.reply({
-                    mcp: "1.0",
+                    jsonrpc: "2.0",
                     error: { code: -32603, message: "Internal error", data: String(e) },
                     id: reqObj.id
-                }, 500, "application/json", {})
+                }, 200, "application/json", {})
             }
         } catch(e) {
 			logFn("Invalid MCP request: " + request.method + " " + request.uri + " - Internal error: " + String(e))
             return ow.server.httpd.reply({
-                mcp: "1.0",
-                error: { code: -32604, message: "Internal error", data: String(e) },
+                jsonrpc: "2.0",
+                error: { code: -32603, message: "Internal error", data: String(e) },
                 id: null
-            }, 500, "application/json", {})
+            }, 200, "application/json", {})
         }
     },
 
