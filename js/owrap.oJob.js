@@ -1210,6 +1210,116 @@ OpenWrap.oJob.prototype.previewFile = function(aFile) {
 
 /**
  * <odoc>
+ * <key>ow.oJob.isEncryptedDefinition(aFile) : boolean</key>
+ * Returns true if aFile ends with .yaml.enc or .json.enc (query/hash ignored).
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.isEncryptedDefinition = function(aFile) {
+	if (isUnDef(aFile)) return false;
+	var f = String(aFile).replace(/[?#].*$/, "");
+	return (f.match(/\.ya?ml\.enc$/i) || f.match(/\.js(on)?\.enc$/i));
+};
+
+/**
+ * <odoc>
+ * <key>ow.oJob.getIncludes(aFile) : Map</key>
+ * Returns a map with include and jobsInclude arrays (if any).
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getIncludes = function(aFile) {
+	function _collect(v) {
+		var out = [];
+		if (isUnDef(v)) return out;
+		if (isString(v)) return [ v ];
+		if (isArray(v)) {
+			v.forEach(e => { out = out.concat(_collect(e)); });
+			return out;
+		}
+		if (isMap(v)) {
+			if (isString(v.file)) return [ v.file ];
+			if (isString(v.url)) return [ v.url ];
+			if (isString(v.path)) return [ v.path ];
+			var ks = Object.keys(v);
+			if (ks.length == 1 && isString(v[ks[0]])) return [ v[ks[0]] ];
+		}
+		return out;
+	}
+
+	var res = this.__loadFile(aFile);
+	return {
+		include: _collect(res.include),
+		jobsInclude: _collect(res.jobsInclude)
+	};
+};
+
+/**
+ * <odoc>
+ * <key>ow.oJob.getRawIncludes(aFile) : Map</key>
+ * Returns a map with include and jobsInclude arrays from the raw file (no include resolution).
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getRawIncludes = function(aFile) {
+	function _collect(v) {
+		var out = [];
+		if (isUnDef(v)) return out;
+		if (isString(v)) return [ v ];
+		if (isArray(v)) {
+			v.forEach(e => { out = out.concat(_collect(e)); });
+			return out;
+		}
+		if (isMap(v)) {
+			if (isString(v.file)) return [ v.file ];
+			if (isString(v.url)) return [ v.url ];
+			if (isString(v.path)) return [ v.path ];
+			var ks = Object.keys(v);
+			if (ks.length == 1 && isString(v[ks[0]])) return [ v[ks[0]] ];
+		}
+		return out;
+	}
+
+	if (isUnDef(aFile)) return { include: [], jobsInclude: [] };
+
+	var res = {};
+	try {
+		var f = String(aFile);
+		var content = __;
+		if (f.match(/^https?:\/\//i)) {
+			if (this.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) {
+				return { include: [], jobsInclude: [] };
+			}
+			content = $rest({ throwExceptions: true }).get(f);
+		} else {
+			content = io.readFileString(f);
+		}
+
+		if (isMap(content)) {
+			res = content;
+		} else if (isString(content)) {
+			var fclean = f.replace(/[?#].*$/, "");
+			if (fclean.match(/\.js(on)?$/i)) {
+				res = jsonParse(content, __, __, true);
+			} else if (fclean.match(/\.ya?ml$/i)) {
+				res = af.fromYAML(content, true);
+			} else {
+				try {
+					res = af.fromYAML(content, true);
+				} catch(e1) {
+					res = jsonParse(content, __, __, true);
+				}
+			}
+		}
+	} catch(e) {
+		res = {};
+	}
+
+	return {
+		include: _collect(res.include),
+		jobsInclude: _collect(res.jobsInclude)
+	};
+};
+
+/**
+ * <odoc>
  * <key>ow.oJob.runAllShutdownJobs()</key>
  * Tries to run all the shutdown type jobs accumulated until now.
  * </odoc>
