@@ -192,6 +192,7 @@ OpenWrap.oJob.prototype.verifyIntegrity = function(aFileOrPath) {
 	if (aFileOrPath.toLowerCase().startsWith("http://") || aFileOrPath.toLowerCase().startsWith("https://")) isUrl = true;
 
 	if (!isUrl) {
+		aFileOrPath = this.__resolveOPackFile(aFileOrPath);
         aFileOrPath = aFileOrPath.replace(/\\+/g, "/");
 		aFileOrPath = aFileOrPath.replace(/\/+/g, "/");
         if (!io.fileExists(aFileOrPath)) {
@@ -993,6 +994,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 	}
 	
 	if (isDef(aFile)) {
+		aFile = this.__resolveOPackFile(aFile);
 		ow.oJob.authorizedDomains.forEach(d => {
 			if (aFile.startsWith(d) && !io.fileExists(aFile)) {
 				aFile = "https://" + aFile
@@ -1073,6 +1075,18 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 		//throw "The oJob '" + aOrigFile + "' is included more than once!"
 		return this.loadJSON(res, removeTodos, true)
 	}
+};
+
+OpenWrap.oJob.prototype.__resolveOPackFile = function(aFile) {
+	if (isUnDef(aFile) || !isString(aFile)) return aFile
+	var m = String(aFile).match(/^@\[(.+?)\]\/(.+)$/)
+	if (!m) return aFile
+
+	includeOPack(m[1])
+	var opath = getOPackPath(m[1])
+	print("opath = " + opath)
+	if (isUnDef(opath)) throw "Couldn't find opack '" + m[1] + "'."
+	return (opath + "/" + m[2]).replace(/\\+/g, "/").replace(/\/+/g, "/")
 };
 
 /**
@@ -1281,7 +1295,7 @@ OpenWrap.oJob.prototype.getRawIncludes = function(aFile) {
 
 	var res = {};
 	try {
-		var f = String(aFile);
+		var f = String(this.__resolveOPackFile(aFile));
 		var content = __;
 		if (f.match(/^https?:\/\//i)) {
 			if (this.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) {
