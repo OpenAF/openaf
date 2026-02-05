@@ -1201,7 +1201,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                                 var _pjson2 = _tryParse(_tr.result)
                                                 if (isDef(_pjson2)) _tr = _pjson2
                                             }
-                                            var _content = __
+                                            var _content
                                             if (isMap(_tr)) {
                                                 _content = _tr
                                             } else if (isArray(_tr)) {
