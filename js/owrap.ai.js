@@ -146,6 +146,42 @@ OpenWrap.ai.prototype.__gpttypes = {
                 _lastStats = stats
                 return _lastStats
             }
+            var _readSseStream = (aStream, aOnPayload) => {
+                var dataLines = []
+                var stop = false
+                var errorObj = __
+                var flush = () => {
+                    if (stop || dataLines.length === 0) return
+                    var payload = dataLines.join("\n")
+                    dataLines = []
+                    if (aOnPayload(payload) === true) stop = true
+                }
+                if (isMap(aStream)) {
+                    // Check if this is an error response (has error field)
+                    if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
+                        errorObj = aStream
+                        aOnPayload(aStream)
+                    } else {
+                        aOnPayload(aStream)
+                    }
+                    aOnPayload("[DONE]")
+                } else {
+                    ioStreamReadLines(aStream, line => {
+                        if (stop) return true
+                        var _line = String(line)
+                        if (_line.length === 0) {
+                            flush()
+                            return stop === true
+                        }
+                        if (_line.indexOf("data:") === 0) {
+                            dataLines.push(_line.substring(5).trim())
+                        }
+                    }, "\n", false)
+                    flush()
+                    try { aStream.close() } catch(e) {}
+                }
+                return errorObj
+            }
             var _r = {
                 conversation: [],
                 tools: {},
@@ -338,6 +374,157 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return _res
                     }
                 },
+                rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                    aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
+                    if (isUnDef(aTools)) {
+                        aTools = Object.keys(_r.tools)
+                    } else if (isMap(aTools)) {
+                        aTools = Object.keys(aTools)
+                    }
+                    aTools = _$(aTools, "aTools").isArray().default([])
+
+                    _resetStats()
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.filter(c => isDef(c)).map(c => isMap(c) ? c : { role: "user", content: c })
+
+                    _r.conversation = msgs
+                    if (aJsonFlag) {
+                        msgs = [{ role: (_noSystem ? "developer" : "system"), content: "output json" }].concat(msgs)
+                    }
+                    if (_noSystem) msgs = msgs.map(m => { if (m.role == "system") m.role = "developer"; return m })
+                    var body = {
+                        model: aModel,
+                        temperature: aTemperature,
+                        messages: msgs,
+                        stream: true
+                    }
+                    if (!aOptions.noResponseFormat && aJsonFlag && (!isArray(aTools) || aTools.length === 0)) {
+                        body.response_format = { type: "json_object" }
+                    }
+                    body = merge(body, aOptions.params)
+                    if (isArray(aTools) && aTools.length > 0) {
+                        body.tools = aTools
+                            .map(t => {
+                                if (isString(t)) {
+                                    var _tool = _r.tools[t]
+                                    if (isMap(_tool) && isMap(_tool.function)) {
+                                        return {
+                                            type: "function",
+                                            function: {
+                                                name: _tool.function.name,
+                                                description: _tool.function.description,
+                                                parameters: _tool.function.parameters
+                                            }
+                                        }
+                                    }
+                                } else if (isMap(t)) {
+                                    return t
+                                }
+                            })
+                            .filter(isDef)
+                        if (!isArray(body.tools) || body.tools.length == 0) delete body.tools
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
+                    }
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
+
+                    var events = []
+                    var content = ""
+                    var toolCallsMap = {}
+                    var lastResponse = __
+                    var finishReason = __
+                    var _stream = _r._requestStream((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "chat/completions", body)
+                    var streamError = _readSseStream(_stream, payload => {
+                        if (payload === "[DONE]") return true
+                        var data = jsonParse(payload, __, __, true)
+                        if (isDef(data)) {
+                            events.push(data)
+                            lastResponse = data
+                            if (isArray(data.choices)) {
+                                data.choices.forEach(choice => {
+                                    if (isString(choice.finish_reason)) finishReason = choice.finish_reason
+                                    if (isMap(choice.delta)) {
+                                        if (isString(choice.delta.content)) {
+                                            content += choice.delta.content
+                                            if (isFunction(aOnDelta)) aOnDelta(choice.delta.content, data)
+                                        }
+                                        if (isArray(choice.delta.tool_calls)) {
+                                            choice.delta.tool_calls.forEach(tc => {
+                                                var key = isDef(tc.index) ? String(tc.index) : (isDef(tc.id) ? tc.id : "0")
+                                                if (isUnDef(toolCallsMap[key])) {
+                                                    toolCallsMap[key] = {
+                                                        id: tc.id,
+                                                        type: tc.type,
+                                                        function: { name: "", arguments: "" }
+                                                    }
+                                                }
+                                                if (isMap(tc.function)) {
+                                                    if (isString(tc.function.name)) toolCallsMap[key].function.name = tc.function.name
+                                                    if (isString(tc.function.arguments)) toolCallsMap[key].function.arguments += tc.function.arguments
+                                                }
+                                            })
+                                        }
+                                    }
+                                })
+                            }
+                        }
+                    })
+                    // If there was a stream error, return it immediately
+                    if (isDef(streamError)) {
+                        _captureStats(streamError, body)
+                        return streamError
+                    }
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
+                    var toolCalls = Object.keys(toolCallsMap).map(k => toolCallsMap[k])
+                    
+                    // Handle tool calling similar to non-streaming version
+                    if (isArray(toolCalls) && toolCalls.length > 0) {
+                        var _p = []
+                        toolCalls.forEach(tc => {
+                            var _t = _r.tools[tc.function.name]
+                            if (isDef(_t) && isFunction(_t.fn)) {
+                                var _args = jsonParse(tc.function.arguments, __, __, true)
+                                if (isUnDef(_args)) _args = {}
+                                var _tr = stringify(_t.fn(_args), __, "")
+                                _p.push({ role: "assistant", tool_calls: [ tc ]})
+                                _p.push({ role: "tool", content: _tr, tool_call_id: tc.id })
+                            }
+                        })
+                        if (_p.length > 0) {
+                            _r.conversation = _r.conversation.concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream(_p, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
+                            }
+                            return toolResult
+                        }
+                    }
+                    
+                    if (content.length > 0) {
+                        _r.conversation = _r.conversation.concat({ role: "assistant", content: content })
+                    }
+                    _captureStats(lastResponse, body)
+                    return { content: content, events: events, toolCalls: toolCalls, finishReason: finishReason }
+                },
+                promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
+                    var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                    if (isMap(res) && isDef(res.error)) return res
+                    return res.content
+                },
                 rawImgGen: (aPrompt, aModel) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
@@ -396,6 +583,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
+                getModelInfo: (aModelId) => {
+                    aModelId = _$(aModelId, "aModelId").isString().default(_model)
+                    var _modelId = encodeURIComponent(aModelId)
+                    return _r._request((aOptions.apiVersion.length > 0 ? aOptions.apiVersion + "/" : "") + "models/" + _modelId, {}, "GET")
+                },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
                     aEmbeddingModel = _$(aEmbeddingModel, "aEmbeddingModel").isString().default("text-embedding-3-small")
@@ -448,6 +640,27 @@ OpenWrap.ai.prototype.__gpttypes = {
                     switch(aVerb.toUpperCase()) {
                     case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI))
                     case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData))
+                    }
+                },
+                _requestStream: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __m = { 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                       requestHeaders: merge(aOptions.headers, { 
+                          Authorization: "Bearer " + Packages.openaf.AFCmdBase.afc.dIP(_key),
+                          Accept       : "text/event-stream"
+                       })
+                    } 
+                    _h.close()
+
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return $rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI)
+                    case "POST": return $rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData)
                     }
                 }
             }
@@ -508,6 +721,65 @@ OpenWrap.ai.prototype.__gpttypes = {
                 _lastStats = stats
                 return _lastStats
             }
+            var _readSseStream = (aStream, aOnPayload) => {
+                var dataLines = []
+                var stop = false
+                var errorObj = __
+                var flush = () => {
+                    if (stop || dataLines.length === 0) return
+                    var payload = dataLines.join("\n")
+                    dataLines = []
+                    if (aOnPayload(payload) === true) stop = true
+                }
+                if (isMap(aStream)) {
+                    // Check if this is an error response (has error field or unusual structure)
+                    if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
+                        errorObj = aStream
+                        aOnPayload(aStream)
+                    } else {
+                        aOnPayload(aStream)
+                    }
+                    aOnPayload("[DONE]")
+                } else {
+                    ioStreamReadLines(aStream, line => {
+                        if (stop) return true
+                        var _line = String(line)
+                        if (_line.length === 0) {
+                            flush()
+                            return stop === true
+                        }
+                        if (_line.indexOf("data:") === 0) {
+                            dataLines.push(_line.substring(5).trim())
+                        }
+                    }, "\n", false)
+                    flush()
+                    try { aStream.close() } catch(e) {}
+                }
+                return errorObj
+            }
+            /*var _readSseStream = (aStream, aOnPayload) => {
+                var dataLines = []
+                var stop = false
+                var flush = () => {
+                    if (stop || dataLines.length === 0) return
+                    var payload = dataLines.join("\n")
+                    dataLines = []
+                    if (aOnPayload(payload) === true) stop = true
+                }
+                ioStreamReadLines(aStream, line => {
+                    if (stop) return true
+                    var _line = String(line)
+                    if (_line.length === 0) {
+                        flush()
+                        return stop === true
+                    }
+                    if (_line.indexOf("data:") === 0) {
+                        dataLines.push(_line.substring(5).trim())
+                    }
+                }, "\n", false)
+                flush()
+                try { aStream.close() } catch(e) {}
+            }*/
 
             var _r = {
                 conversation: [],
@@ -795,6 +1067,195 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return _res
                     }
                 },
+                rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                    aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
+
+                    _resetStats()
+                    function toPartsMsg(msg) {
+                        if (isMap(msg)) {
+                            let role = isDef(msg.role) ? msg.role : "user";
+                            if (isArray(msg.parts)) {
+                                return { role, parts: msg.parts };
+                            } else if (isDef(msg.content)) {
+                                return { role, parts: [ { text: msg.content } ] };
+                            } else if (isString(msg.text)) {
+                                return { role, parts: [ { text: msg.text } ] };
+                            }
+                        }
+                        return { role: "user", parts: [ { text: String(msg) } ] };
+                    }
+                    if (isString(aPrompt)) aPrompt = [ { role: "user", parts: [ { text: aPrompt } ] } ];
+                    var newPrompts = isArray(aPrompt) ? aPrompt.map(toPartsMsg) : [];
+                    aPrompt = _r.conversation.reduce((acc, r) => {
+                        if (isDef(r) && (isUnDef(r.role) || r.role != "system")) {
+                            acc.push(toPartsMsg(r));
+                        }
+                        return acc;
+                    }, []).concat(newPrompts);
+
+                    var systemParts = _r.conversation.reduce((acc, r) => {
+                        if (isDef(r) && isDef(r.role) && r.role == "system") {
+                            if (isArray(r.parts)) {
+                                acc = acc.concat(r.parts.filter(p => isDef(p)))
+                            } else if (isDef(r.content)) {
+                                acc = acc.concat([ { text: String(r.content) } ])
+                            }
+                        }
+                        return acc
+                    }, [])
+                    var body = {
+                        system_instruction: { parts: systemParts },
+                        contents: aPrompt,
+                        generationConfig: {
+                            temperature: aTemperature
+                        }
+                    }
+                    if (aJsonFlag) {
+                        body.generationConfig.responseMimeType = "application/json"
+                    }
+                    if (isDef(body.system_instruction) && Object.keys(body.system_instruction.parts).length == 0) delete body.system_instruction.parts
+                    if (isDef(body.system_instruction) && Object.keys(body.system_instruction).length == 0) delete body.system_instruction
+                    if (isArray(aTools) && aTools.length > 0) {
+                        var sTools = aTools.map(t => {
+                            if (isString(t)) {
+                                return $from(_r.tools).equals("name", t).at(0)
+                            }
+                            return t
+                        }).filter(isDef)
+                        sTools = clone(sTools)
+                        traverse(sTools, (aK, aV, aP, aO) => {
+                            if (aK == 'fn') delete aO[aK]
+                            if (aK == 'parameters' && isMap(aO[aK])) {
+                                delete aO[aK]['$id']
+                                delete aO[aK]['$schema']
+                            }
+                        })
+                        body = merge(body, { tools: [ { functionDeclarations: sTools } ] })
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
+                    }
+                    body = merge(body, aOptions.params)
+
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
+
+                    var events = []
+                    var content = ""
+                    var lastResponse = __
+                    var _stream = _r._requestStream("models/" + aModel + ":streamGenerateContent?alt=sse", body)
+                    var streamError = _readSseStream(_stream, payload => {
+                        var data = jsonParse(payload, __, __, true)
+                        if (isDef(data)) {
+                            events.push(data)
+                            lastResponse = data
+                            if (isArray(data.candidates)) {
+                                data.candidates.forEach(c => {
+                                    if (isMap(c.content) && isArray(c.content.parts)) {
+                                        c.content.parts.forEach(p => {
+                                            if (isString(p.text)) {
+                                                content += p.text
+                                                if (isFunction(aOnDelta)) aOnDelta(p.text, data)
+                                            }
+                                        })
+                                    }
+                                })
+                            }
+                        }
+                    })
+                    // If there was a stream error, return it immediately
+                    if (isDef(streamError)) {
+                        _captureStats(streamError, aModel)
+                        return streamError
+                    }
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
+                    
+                    // Handle tool calling for Gemini streaming
+                    if (isMap(lastResponse) && isArray(lastResponse.candidates)) {
+                        var _p = [], stopWith = false
+                        lastResponse.candidates.forEach(tc => {
+                            if (isArray(tc.content.parts)) {
+                                var fnParts = tc.content.parts.filter(p => isDef(p.functionCall))
+                                if (fnParts.length > 0 && tc.finishReason == "STOP") {
+                                    stopWith = true
+                                    _p.push({ role: "model", parts: tc.content.parts })
+                                    fnParts.forEach(p => {
+                                        var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
+                                        if (isDef(_t) && isFunction(_t.fn)) {
+                                            var _args = p.functionCall.args
+                                            if (isString(_args)) _args = jsonParse(_args, __, __, true)
+                                            if (isUnDef(_args)) _args = {}
+                                            var _tr = _t.fn(_args)
+                                            var _tryParse = v => {
+                                                if (isString(v)) {
+                                                    return jsonParse(v, __, __, true)
+                                                }
+                                                return __
+                                            }
+                                            if (isString(_tr)) {
+                                                var _pjson = _tryParse(_tr)
+                                                if (isDef(_pjson)) _tr = _pjson
+                                            } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
+                                                var _pjson2 = _tryParse(_tr.result)
+                                                if (isDef(_pjson2)) _tr = _pjson2
+                                            }
+                                            var _content = __
+                                            if (isMap(_tr)) {
+                                                _content = _tr
+                                            } else if (isArray(_tr)) {
+                                                _content = { items: _tr }
+                                            } else if (isDef(_tr)) {
+                                                _content = { result: _tr }
+                                            } else {
+                                                _content = {}
+                                            }
+                                            _p.push({ role: "user", parts: [{
+                                                functionResponse: {
+                                                    name: p.functionCall.name,
+                                                    response: {
+                                                        name: p.functionCall.name,
+                                                        content: _content
+                                                    }
+                                                }
+                                            }]})
+                                        }
+                                    })
+                                    stopWith = false
+                                }
+                            }
+                        })
+                        if (!stopWith && _p.length > 0) {
+                            _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, [], aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
+                            }
+                            return toolResult
+                        }
+                    }
+                    
+                    if (content.length > 0) {
+                        _r.conversation = _r.conversation.concat(newPrompts).concat({ role: "model", parts: [ { text: content } ] })
+                    }
+                    _captureStats(lastResponse, aModel)
+                    return { content: content, events: events }
+                },
+                promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
+                    var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                    if (isMap(res) && isDef(res.error)) return res
+                    return res.content
+                },
                 rawImgGen: (aPrompt, aModel) => {
                     aPrompt      = _$(aPrompt, "aPrompt").default(__)
                     aModel       = _$(aModel, "aModel").isString().default(_model)
@@ -845,6 +1306,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var res = _r._request("models", {}, "GET")
                     if (isDef(res.models)) res = res.models
                     return res
+                },
+                getModelInfo: (aModelId) => {
+                    aModelId = _$(aModelId, "aModelId").isString().default(_model)
+                    var _modelName = aModelId
+                    if (_modelName.indexOf("models/") === 0) _modelName = _modelName.substring("models/".length)
+                    _modelName = encodeURIComponent(_modelName)
+                    return _r._request("models/" + _modelName, {}, "GET")
                 },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
@@ -902,6 +1370,27 @@ OpenWrap.ai.prototype.__gpttypes = {
                     switch(aVerb.toUpperCase()) {
                     case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + Packages.openaf.AFCmdBase.afc.dIP(_key)))
                     case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + "?key=" + Packages.openaf.AFCmdBase.afc.dIP(_key), aData))
+                    }
+                },
+                _requestStream: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __m = { 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                       requestHeaders: merge(aOptions.headers, { 
+                          Accept       : "text/event-stream"
+                       })
+                    } 
+                    _h.close()
+
+                    var sep = aURI.indexOf("?") >= 0 ? "&" : "?"
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return $rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + sep + "key=" + Packages.openaf.AFCmdBase.afc.dIP(_key))
+                    case "POST": return $rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI + sep + "key=" + Packages.openaf.AFCmdBase.afc.dIP(_key), aData)
                     }
                 }
             }
@@ -1103,6 +1592,127 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return _res
                     }
                 },
+                rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                    aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
+                    aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
+
+                    _resetStats()
+                    var msgs = []
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ]
+                    aPrompt = _r.conversation.concat(aPrompt)
+                    msgs = aPrompt.map(c => {
+                        if (isMap(c)) {
+                            if (!isString(c.content)) c.content = stringify(c.content, __, "")
+                            return c
+                        }
+                        return { role: "user", content: String(c) }
+                    })
+                    var uri = "/api/chat"
+
+                    var body = {
+                        model: aModel,
+                        messages: msgs,
+                        options: merge({
+                            temperature: aTemperature,
+                        }, _params ),
+                        stream: true
+                    }
+                    if (aJsonFlag) {
+                        body.format = "json"
+                    }
+                    if (isArray(aTools) && aTools.length > 0) {
+                        body.tools = aTools.map(t => {
+                            var _t = t.function
+                            return {
+                                type: "function",
+                                function: {
+                                    name: _t.name,
+                                    description: _t.description,
+                                    parameters: _t.parameters
+                                }
+                            }
+                        })
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
+                    }
+                    _r.conversation = msgs
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
+
+                    var events = []
+                    var content = ""
+                    var lastResponse = __
+                    var _stream = _r._requestStream(uri, body)
+                    // Check if _stream is an error object
+                    if (isMap(_stream) && (isMap(_stream.error) || isDef(_stream.error))) {
+                        _captureStats(_stream, aModel)
+                        return _stream
+                    }
+                    ioStreamReadLines(_stream, line => {
+                        var _line = String(line).trim()
+                        if (_line.length == 0) return
+                        var data = jsonParse(_line, __, __, true)
+                        if (isDef(data)) {
+                            events.push(data)
+                            lastResponse = data
+                            if (isMap(data.message) && isString(data.message.content) && data.message.content.length > 0) {
+                                content += data.message.content
+                                if (isFunction(aOnDelta)) aOnDelta(data.message.content, data)
+                            }
+                            if (data.done === true) return true
+                        }
+                    }, "\n", false)
+                    try { _stream.close() } catch(e) {}
+
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
+                    
+                    // Handle tool calling for Ollama streaming
+                    if (isMap(lastResponse) && isMap(lastResponse.message) && isArray(lastResponse.message.tool_calls)) {
+                        var _p = []
+                        lastResponse.message.tool_calls.forEach(tc => {
+                            if (isMap(tc.function)) {
+                                var _t = $from(_r.tools).equals("function.name", tc.function.name).at(0)
+                                if (isDef(_t) && isFunction(_t.function.fn)) {
+                                    var _args = jsonParse(tc.function.arguments, __, __, true)
+                                    if (isUnDef(_args)) _args = {}
+                                    var _tr = stringify(_t.function.fn(_args), __, "")
+                                    _p.push({ role: "assistant", content: "", tool_calls: [ tc ] })
+                                    _p.push({ role: "tool", content: _tr })
+                                }
+                            }
+                        })
+                        if (_p.length > 0) {
+                            _r.conversation = _r.conversation.concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream(_p, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
+                            }
+                            return toolResult
+                        }
+                    }
+                    
+                    if (content.length > 0) {
+                        _r.conversation.push({ role: "assistant", content: content })
+                    }
+                    _captureStats(lastResponse, aModel)
+                    return { content: content, events: events }
+                },
+                promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
+                    var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                    if (isMap(res) && isDef(res.error)) return res
+                    return res.content
+                },
                 rawImgGen: (aPrompt, aModel) => {
                     throw "Not implemented for Ollama"
                 },
@@ -1137,6 +1747,10 @@ OpenWrap.ai.prototype.__gpttypes = {
                     } else {
                         return res
                     }
+                },
+                getModelInfo: (aModelId) => {
+                    aModelId = _$(aModelId, "aModelId").isString().default(_model)
+                    return _r._request("/api/show", { model: aModelId })
                 },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     aInput = _$(aInput, "aInput").$_()
@@ -1206,6 +1820,34 @@ OpenWrap.ai.prototype.__gpttypes = {
                         break
                     }
                     return _r
+                },
+                _requestStream: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    if (!aURI.startsWith("/")) aURI = "/" + aURI
+
+                    var _h
+                    if (isUnDef(this._h)) {
+                        var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                        _h.close()
+                    } else {
+                        _h = this._h
+                    }
+                    
+                    var __r = { 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                       requestHeaders: {
+                         Accept: "*/*"
+                       }
+                    }
+
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return $rest(__r).get2Stream(_url + aURI)
+                    case "POST": return $rest(__r).post2Stream(_url + aURI, aData)
+                    }
                 }
             }
             return _r
@@ -1267,6 +1909,43 @@ OpenWrap.ai.prototype.__gpttypes = {
                 _lastStats = stats
                 return _lastStats
             }
+            var _readSseStream = (aStream, aOnPayload) => {
+                var dataLines = []
+                var stop = false
+                var errorObj = __
+                var flush = () => {
+                    if (stop || dataLines.length === 0) return
+                    var payload = dataLines.join("\n")
+                    dataLines = []
+                    if (aOnPayload(payload) === true) stop = true
+                }
+                if (isMap(aStream)) {
+                    // Check if this is an error response (has error field)
+                    if (isMap(aStream) && (isMap(aStream.error) || isDef(aStream.error))) {
+                        errorObj = aStream
+                        aOnPayload(aStream)
+                    } else {
+                        aOnPayload(aStream)
+                    }
+                    aOnPayload("[DONE]")
+                } else {
+                    ioStreamReadLines(aStream, line => {
+                        if (stop) return true
+                        var _line = String(line)
+                        if (_line.length === 0) {
+                            flush()
+                            return stop === true
+                        }
+                        if (_line.indexOf("data:") === 0) {
+                            dataLines.push(_line.substring(5).trim())
+                        }
+                    }, "\n", false)
+                    flush()
+                    try { aStream.close() } catch(e) {}
+                }
+                return errorObj
+            }
+
             var _r = {
                 conversation: [],
                 tools: {},
@@ -1470,6 +2149,197 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return _res
                     }
                 },
+                rawPromptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
+                    aPrompt      = _$(aPrompt, "aPrompt").default(__)
+                    aTemperature = _$(aTemperature, "aTemperature").isNumber().default(_temperature)
+                    aModel       = _$(aModel, "aModel").isString().default(_model)
+                    aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
+                    if (isUnDef(aTools)) {
+                        aTools = Object.keys(_r.tools)
+                    } else if (isMap(aTools)) {
+                        aTools = Object.keys(aTools)
+                    } else if (isArray(aTools)) {
+                        aTools = aTools.map(t => {
+                            if (isString(t)) return t
+                            if (isMap(t) && isString(t.name)) return t.name
+                            if (isMap(t) && isMap(t.function) && isString(t.function.name)) return t.function.name
+                        }).filter(isDef)
+                    }
+                    aTools       = _$(aTools, "aTools").isArray().default([])
+
+                    _resetStats()
+                    var buildMsgObj = function(c) {
+                        if (isMap(c)) {
+                            let role = isDef(c.role) ? c.role : "user";
+                            let content = c.content;
+                            if (isArray(content)) content = content.map(x => isString(x) ? x : stringify(x, __, "")).join("\n");
+                            if (!isString(content)) content = stringify(content, __, "");
+                            return { role, content };
+                        } else {
+                            return { role: "user", content: String(c) };
+                        }
+                    };
+                    if (isString(aPrompt)) aPrompt = [ aPrompt ];
+                    var _incoming = isArray(aPrompt) ? aPrompt : [ aPrompt ];
+                    var _fullConversation = _r.conversation.concat(_incoming);
+                    var msgs = _fullConversation.map(buildMsgObj);
+
+                    var systemMsgs = msgs.filter(m => m.role == "system");
+                    var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice());
+
+                    _r.conversation = msgs;
+
+                    if (aJsonFlag) {
+                        var _jsonInstruction = { role: "user", content: "output json" };
+                        bodyMessages.push(_jsonInstruction);
+                    }
+
+                    var body = {
+                        model: aModel,
+                        temperature: aTemperature,
+                        messages: bodyMessages,
+                        stream: true
+                    }
+                    
+                    if (_noSystem && systemMsgs.length > 0) {
+                        var _systemText = systemMsgs
+                            .map(m => {
+                                if (isArray(m.content)) {
+                                    return m.content
+                                        .map(sc => {
+                                            if (isMap(sc) && isString(sc.text)) return sc.text
+                                            if (isString(sc)) return sc
+                                            return stringify(sc, __, "")
+                                        })
+                                        .join("\n")
+                                }
+                                return isString(m.content) ? m.content : stringify(m.content, __, "")
+                            })
+                            .filter(s => isString(s) && s.length > 0)
+                            .join("\n")
+                        if (_systemText.length > 0) body.system = _systemText
+                    }
+
+                    body = merge(body, aOptions.params)
+
+                    if (isArray(aTools) && aTools.length > 0) {
+                        var _bodyTools = aTools
+                            .map(t => {
+                                if (!isString(t)) return __
+                                var _tool = _r.tools[t]
+                                if (!isMap(_tool) || !isMap(_tool.function)) return __
+                                var _params = clone(_tool.function.parameters)
+                                if (isMap(_params)) {
+                                    delete _params["$schema"]
+                                    delete _params["$id"]
+                                }
+                                if (!isMap(_params)) _params = { type: "object" }
+                                return {
+                                    name: _tool.function.name,
+                                    description: _tool.function.description,
+                                    input_schema: _params
+                                }
+                            })
+                            .filter(isDef)
+                        if (_bodyTools.length > 0) body.tools = _bodyTools
+                    } else {
+                        if (isDef(body.tools)) delete body.tools
+                    }
+
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
+                    var events = []
+                    var content = ""
+                    var lastMessage = __
+                    var _stream = _r._requestStream("v1/messages", body)
+                    var streamError = _readSseStream(_stream, payload => {
+                        if (payload === "[DONE]") return true
+                        var data = jsonParse(payload, __, __, true)
+                        if (isDef(data)) {
+                            events.push(data)
+                            lastMessage = data
+                            if (data.type == "content_block_delta" && isMap(data.delta) && isString(data.delta.text)) {
+                                content += data.delta.text
+                                if (isFunction(aOnDelta)) aOnDelta(data.delta.text, data)
+                            }
+                            if (data.type == "message_delta" && isMap(data.delta) && isDef(data.delta.stop_reason)) {
+                                lastMessage.stop_reason = data.delta.stop_reason
+                            }
+                        }
+                    })
+                    // If there was a stream error, return it immediately
+                    if (isDef(streamError)) {
+                        _captureStats(streamError, aModel)
+                        return streamError
+                    }
+                    if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
+                    
+                    // Handle tool calling for Anthropic streaming
+                    // Collect tool_use blocks from events
+                    var toolUseBlocks = events.filter(e => e.type == "content_block_start" && isMap(e.content_block) && e.content_block.type == "tool_use")
+                        .map(e => e.content_block)
+                    // Also check for tool_use in content_block_delta events to get complete arguments
+                    events.forEach(e => {
+                        if (e.type == "content_block_delta" && isMap(e.delta) && e.delta.type == "input_json_delta") {
+                            if (isDef(e.index) && e.index < toolUseBlocks.length) {
+                                if (isUnDef(toolUseBlocks[e.index].input)) toolUseBlocks[e.index].input = ""
+                                toolUseBlocks[e.index].input += e.delta.partial_json
+                            }
+                        }
+                    })
+                    
+                    if (isArray(toolUseBlocks) && toolUseBlocks.length > 0) {
+                        var _p = []
+                        // Build content array with text and tool_use blocks
+                        var contentBlocks = []
+                        if (content.length > 0) contentBlocks.push({ type: "text", text: content })
+                        toolUseBlocks.forEach(tu => contentBlocks.push({ type: "tool_use", id: tu.id, name: tu.name, input: jsonParse(tu.input || "{}", __, __, true) || {} }))
+                        
+                        if (contentBlocks.length > 0) {
+                            _p.push({ role: "assistant", content: contentBlocks })
+                        }
+                        
+                        // Execute tools and build responses
+                        toolUseBlocks.forEach(tc => {
+                            var _t = _r.tools[tc.name]
+                            if (isDef(_t) && isFunction(_t.fn)) {
+                                var _args = isString(tc.input) ? jsonParse(tc.input, __, __, true) : tc.input
+                                if (isUnDef(_args)) _args = {}
+                                var _result = _t.fn(_args)
+                                var _resultStr = isString(_result) ? _result : (isArray(_result) || isMap(_result)) ? stringify(_result, __, "") : (isUnDef(_result) || _result === null) ? "" : stringify(_result, __, "")
+                                _p.push({ role: "user", content: [{ type: "tool_result", tool_use_id: tc.id, content: _resultStr }] })
+                            }
+                        })
+                        
+                        if (_p.length > 0) {
+                            _r.conversation = _r.conversation.concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
+                            }
+                            return toolResult
+                        }
+                    }
+                    
+                    if (content.length > 0) {
+                        _r.conversation.push({ role: "assistant", content: content })
+                    }
+                    _captureStats(lastMessage, aModel)
+                    return { content: content, events: events }
+                },
+                promptStream: (aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta) => {
+                    var res = _r.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                    if (isMap(res) && isDef(res.error)) return res
+                    return res.content
+                },
                 rawImgGen: (aPrompt, aModel) => {
                     throw "Not supported yet"
                 },
@@ -1509,6 +2379,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                         return res
                     }
                 },
+                getModelInfo: (aModelId) => {
+                    aModelId = _$(aModelId, "aModelId").isString().default(_model)
+                    var _modelId = encodeURIComponent(aModelId)
+                    return _r._request("v1/models/" + _modelId, {}, "GET")
+                },
                 getEmbeddings: (aInput, aDimensions, aEmbeddingModel) => {
                     throw "Text embeddings not supported by Anthropic"
                 },
@@ -1546,6 +2421,28 @@ OpenWrap.ai.prototype.__gpttypes = {
                     switch(aVerb.toUpperCase()) {
                     case "GET" : return _fnh($rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI))
                     case "POST": return _fnh($rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData))
+                    }
+                },
+                _requestStream: (aURI, aData, aVerb) => {
+                    _$(aURI, "aURI").isString().$_()
+                    aData = _$(aData, "aData").isMap().default({})
+                    aVerb = _$(aVerb, "aVerb").isString().default("POST")
+                 
+                    var _h = new ow.obj.http(__, __, __, __, __, __, __, { timeout: _timeout })
+                    var __m = { 
+                       conTimeout    : 60000,
+                       httpClient    : _h,
+                       requestHeaders: merge(aOptions.headers, { 
+                          "x-api-key"        : Packages.openaf.AFCmdBase.afc.dIP(_key),
+                          "anthropic-version": "2023-06-01",
+                          Accept             : "text/event-stream"
+                       })
+                    } 
+                    _h.close()
+
+                    switch(aVerb.toUpperCase()) {
+                    case "GET" : return $rest(__m).get2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI)
+                    case "POST": return $rest(__m).post2Stream(aOptions.url + (aOptions.url.endsWith("/") ? "" : "/") + aURI, aData)
                     }
                 }
             }
@@ -1745,6 +2642,20 @@ OpenWrap.ai.prototype.gpt.prototype.getModels = function() {
 
 /**
  * <odoc>
+ * <key>ow.ai.gpt.prototype.getModelInfo(aModelId) : Map</key>
+ * Returns the model information for aModelId (defaults to the current configured model when omitted).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.getModelInfo = function(aModelId) {
+    if (isFunction(this.model.getModelInfo)) {
+        return this.model.getModelInfo(aModelId)
+    } else {
+        throw "Model info not supported by this provider"
+    }
+}
+
+/**
+ * <odoc>
  * <key>ow.ai.gpt.prototype.getEmbeddings(aInput, aDimensions, aEmbeddingModel) : Object</key>
  * Gets text embeddings for aInput (string or array of strings) using aEmbeddingModel (defaults to provider-specific default).
  * If aDimensions is specified, requests embeddings with that many dimensions (provider support varies).
@@ -1782,6 +2693,93 @@ OpenWrap.ai.prototype.gpt.prototype.getLastStats = function() {
  */
 OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
     return this.model.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools)
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : String</key>
+ * Executes a streaming prompt, calling aOnDelta for each streamed chunk, and returns the aggregated response.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStream = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    return this.model.promptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+ * Executes a streaming prompt and returns the raw streaming payloads together with the aggregated response ({ content, events }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.rawPromptStream = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
+    if (!isFunction(this.model.rawPromptStream)) throw "Streaming not supported by this provider"
+    return this.model.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptStreamWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+ * Executes a streaming prompt and returns a map with the aggregated response and statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStreamWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    var response = this.model.promptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+    return { response: response, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.rawPromptStreamWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+ * Executes a streaming prompt and returns the raw streaming payloads, aggregated response, and statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.rawPromptStreamWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
+    if (!isFunction(this.model.rawPromptStream)) throw "Streaming not supported by this provider"
+    var response = this.model.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+    return { response: response, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptStreamJSON(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Object</key>
+ * Executes a streaming JSON prompt and returns the parsed JSON response.
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStreamJSON = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    this.setInstructions("json")
+    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    return isString(out) ? jsonParse(out, __, __, true) : out
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptStreamJSONWithStats(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Map</key>
+ * Executes a streaming JSON prompt and returns the parsed response with statistics ({ response, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStreamJSONWithStats = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    this.setInstructions("json")
+    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    var parsed = isString(out) ? jsonParse(out, __, __, true) : out
+    return { response: parsed, stats: this.getLastStats() }
+}
+
+/**
+ * <odoc>
+ * <key>ow.ai.gpt.promptStreamJSONWithStatsRaw(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Map</key>
+ * Executes a streaming JSON prompt and returns the raw response, parsed response, and statistics ({ response, raw, stats }).
+ * </odoc>
+ */
+OpenWrap.ai.prototype.gpt.prototype.promptStreamJSONWithStatsRaw = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
+    if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
+    this.setInstructions("json")
+    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    var parsed = isString(out) ? jsonParse(out, __, __, true) : out
+    return { response: parsed, raw: out, stats: this.getLastStats() }
 }
 
 /**
@@ -2173,6 +3171,15 @@ global.$gpt = function(aModel) {
         },
         /**
          * <odoc>
+         * <key>$gpt.getModelInfo(aModelId) : Map</key>
+         * Returns the model information for aModelId (defaults to the current configured model when omitted).
+         * </odoc>
+         */
+        getModelInfo: (aModelId) => {
+            return _g.getModelInfo(aModelId)
+        },
+        /**
+         * <odoc>
          * <key>$gpt.getLastStats() : Map</key>
          * Returns the latest usage statistics reported by the underlying LLM vendor for the last prompt request.
          * </odoc>
@@ -2203,6 +3210,71 @@ global.$gpt = function(aModel) {
          */
         prompt: (aPrompt, aRole, aModel, aTemperature, tools) => {
             return _g.prompt(aPrompt, aRole, aModel, aTemperature, tools)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : String</key>
+         * Executes a streaming prompt, calling aOnDelta for each streamed chunk, and returns the aggregated response.
+         * </odoc>
+         */
+        promptStream: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
+            return _g.promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+         * Executes a streaming prompt and returns the raw streaming payloads together with the aggregated response ({ content, events }).
+         * </odoc>
+         */
+        rawPromptStream: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
+            return _g.rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStreamWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+         * Executes a streaming prompt and returns a map with the aggregated response and statistics ({ response, stats }).
+         * </odoc>
+         */
+        promptStreamWithStats: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
+            var response = _g.promptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+            return { response: response, stats: _g.getLastStats() }
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.rawPromptStreamWithStats(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) : Map</key>
+         * Executes a streaming prompt and returns the raw streaming payloads, aggregated response, and statistics ({ response, stats }).
+         * </odoc>
+         */
+        rawPromptStreamWithStats: (aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) => {
+            var response = _g.rawPromptStream(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+            return { response: response, stats: _g.getLastStats() }
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStreamJSON(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Object</key>
+         * Executes a streaming JSON prompt and returns the parsed JSON response.
+         * </odoc>
+         */
+        promptStreamJSON: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
+            return _g.promptStreamJSON(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStreamJSONWithStats(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Map</key>
+         * Executes a streaming JSON prompt and returns the parsed response with statistics ({ response, stats }).
+         * </odoc>
+         */
+        promptStreamJSONWithStats: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
+            return _g.promptStreamJSONWithStats(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
+        },
+        /**
+         * <odoc>
+         * <key>$gpt.promptStreamJSONWithStatsRaw(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) : Map</key>
+         * Executes a streaming JSON prompt and returns the raw response, parsed response, and statistics ({ response, raw, stats }).
+         * </odoc>
+         */
+        promptStreamJSONWithStatsRaw: (aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) => {
+            return _g.promptStreamJSONWithStatsRaw(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta)
         },
         /**
          * <odoc>

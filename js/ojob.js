@@ -181,10 +181,81 @@ function ojob__getFile() {
 	}
 }
 
+function ojob__isEncryptedDefinition(aFile) {
+	if (isUnDef(aFile)) return false;
+	try {
+		if (isDef(ow) && isDef(ow.oJob) && isFunction(ow.oJob.isEncryptedDefinition)) {
+			return ow.oJob.isEncryptedDefinition(aFile);
+		}
+	} catch(e) { }
+	var f = String(aFile).replace(/[?#].*$/, "");
+	return (f.match(/\.ya?ml\.enc$/i) || f.match(/\.js(on)?\.enc$/i));
+}
+
+function ojob__hasEncryptedIncludes(aFile) {
+	if (isUnDef(aFile)) return false;
+	try {
+		if (isDef(ow) && isDef(ow.oJob) && isFunction(ow.oJob.getRawIncludes)) {
+			var inc0 = ow.oJob.getRawIncludes(aFile);
+			var lst0 = [];
+			if (isArray(inc0.include)) lst0 = lst0.concat(inc0.include);
+			if (isArray(inc0.jobsInclude)) lst0 = lst0.concat(inc0.jobsInclude);
+			if ($from(lst0).select(r => ojob__isEncryptedDefinition(r)).length > 0) return true;
+		}
+		if (isDef(ow) && isDef(ow.oJob) && isFunction(ow.oJob.getIncludes)) {
+			var inc = ow.oJob.getIncludes(aFile);
+			var lst = []
+			if (isArray(inc.include)) lst = lst.concat(inc.include);
+			if (isArray(inc.jobsInclude)) lst = lst.concat(inc.jobsInclude);
+			return $from(lst).select(r => ojob__isEncryptedDefinition(r)).length > 0;
+		}
+	} catch(e) { }
+	if (ojob__rawHasEncryptedIncludes(aFile)) return true;
+	return false;
+}
+
+function ojob__rawHasEncryptedIncludes(aFile) {
+	try {
+		var f = String(aFile);
+		var content = __;
+		if (f.match(/^https?:\/\//i)) {
+			if (isDef(ow) && isDef(ow.oJob) && isArray(ow.oJob.authorizedDomains)) {
+				if (ow.oJob.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) return false;
+			}
+			content = $rest({ throwExceptions: true }).get(f);
+		} else {
+			content = io.readFileString(f);
+		}
+
+		if (!isString(content)) content = String(content);
+		var raw = content.replace(/\r/g, "");
+		if (raw.match(/\.ya?ml\.enc\b/i) || raw.match(/\.js(on)?\.enc\b/i)) {
+			if (raw.match(/(^|\n)\s*(include|jobsInclude)\s*:/)) return true;
+			if (raw.match(/\"(include|jobsInclude)\"\s*:\s*/)) return true;
+		}
+	} catch(e) { }
+	return false;
+}
+
+function ojob__blockEncrypted(aFile, optionName) {
+	if (ojob__isEncryptedDefinition(aFile)) {
+		printErr("oJob definition '" + aFile + "' is encrypted; option " + optionName + " can't be used.");
+		ojob_shouldRun = false;
+		return true;
+	}
+	if (ojob__hasEncryptedIncludes(aFile)) {
+		printErr("oJob definition '" + aFile + "' includes encrypted includes/jobsInclude; option " + optionName + " can't be used.");
+		ojob_shouldRun = false;
+		return true;
+	}
+	return false;
+}
+
 function ojob_compile() {
 	var file = ojob__getFile()
 
 	if (isDef(file)) {
+		if (ojob__blockEncrypted(file, "-compile")) return;
 		print(af.toYAML(ow.loadOJob().previewFile(file)))
 	}
 	ojob_shouldRun = false
@@ -194,6 +265,7 @@ function ojob_tojson() {
 	var file = ojob__getFile()
 
 	if (isDef(file)) {
+		if (ojob__blockEncrypted(file, "-tojson")) return;
 		sprint(ow.loadOJob().previewFile(file))
 	}
 	ojob_shouldRun = false
@@ -203,6 +275,7 @@ function ojob_jobs() {
 	var file = ojob__getFile()
 
 	if (isDef(file)) {
+		if (ojob__blockEncrypted(file, "-jobs")) return;
 		print(af.toYAML($stream(ow.loadOJob().previewFile(file).jobs).map("name").distinct().toArray().sort()))
 	}
 	ojob_shouldRun = false
@@ -228,6 +301,7 @@ function ojob_setParams() {
 
 function ojob_draw() {
 	var file = ojob__getFile();
+	if (ojob__blockEncrypted(file, "-deps")) return;
 	ow.loadOJob();
 
 	var oj = ow.oJob.previewFile(file);
@@ -466,6 +540,7 @@ function ojob_todo() {
 	var file = ojob__getFile();
 
 	if (isDef(file)) {
+		if (ojob__blockEncrypted(file, "-todo")) return;
 		var l = ow.loadOJob().previewFile(file).todo.map(r => ow.oJob.parseTodo(r))
 		var r = [];
 		for(var i in l) {
