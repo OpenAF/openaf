@@ -58,19 +58,14 @@ public class AFCmdBase {
 		return null;
 	}
 
-	public String dbIP(Object aBytes) {
+	public String dbIP(Object aBytes) throws Exception {
 		if (aBytes == null) return null;
 		if (aBytes instanceof NativeJavaArray) {
 			aBytes = ((NativeJavaArray) aBytes).unwrap();
 		}
 		if (!(aBytes instanceof byte[])) return null;
 
-		try {
-			return AFBase.decryptBytes2String(aBytes, null);
-		} catch (Exception e) {
-			// If decryption fails, return as string
-			return new String((byte[]) aBytes);
-		}
+		return AFBase.decryptBytes2String(aBytes, null);
 	}
 
 	public String fURL(Object aF) {
