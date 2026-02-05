@@ -1314,7 +1314,7 @@ OpenWrap.oJob.prototype.getRawIncludes = function(aFile) {
 	var res = {};
 	try {
 		var f = String(this.__resolveOPackFile(aFile));
-		var content = __;
+		var content;
 		if (f.match(/^https?:\/\//i)) {
 			if (this.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) {
 				return { include: [], jobsInclude: [] };
