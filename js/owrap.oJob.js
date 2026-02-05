@@ -2764,6 +2764,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 						parent.__addLog("success", aJob.name, uuid, args, __, aId, aJob.typeArgs)
 					}).catch((e) => {
 						parent.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
+						// If catch handlers exist, they already handled the error in _run, so re-throw
+						if (isDef(aJob.catch) || isDef(parent.__ojob.catch)) throw e;
 					}));
 				}
 			} catch(e) {
