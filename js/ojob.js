@@ -217,7 +217,7 @@ function ojob__hasEncryptedIncludes(aFile) {
 function ojob__rawHasEncryptedIncludes(aFile) {
 	try {
 		var f = String(aFile);
-		var content = __;
+		var content;
 		if (f.match(/^https?:\/\//i)) {
 			if (isDef(ow) && isDef(ow.oJob) && isArray(ow.oJob.authorizedDomains)) {
 				if (ow.oJob.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) return false;
