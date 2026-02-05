@@ -886,9 +886,81 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 				if (__JSONformat.unsafe) traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
 				return _r;
 			} else {
-				af.fromYAML(_r, true);
+				return af.fromYAML(_r, true);
 			}
 		}
+	}
+	var fnDownEncYAML = url => {
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
+			return {
+				todo: ["Unauthorized URL"],
+				jobs: [{ name: "Unauthorized URL" }]
+			};
+		else {
+			var _r = $rest({ throwExceptions: true }).getBytes(url);
+			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
+			if (isString(_r)) {
+				try {
+					_r = af.fromYAML(_r, true);
+				} catch (e) {
+					throw "Failed to parse encrypted YAML from URL '" + url + "'. The content may not be properly encrypted or the decryption key may be incorrect. Error: " + e.message;
+				}
+			}
+			if (isMap(_r) && __JSONformat.unsafe) {
+				traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+			}
+			return _r;
+		}
+	}
+	var fnDownEncJSON = url => {
+		if (parent.authorizedDomains.indexOf(String((new java.net.URL(url)).getHost())) < 0)
+			return {
+				todo: ["Unauthorized URL"],
+				jobs: [{ name: "Unauthorized URL" }]
+			};
+		else {
+			var _r = $rest({ throwExceptions: true }).getBytes(url);
+			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
+			if (isString(_r)) {
+				try {
+					_r = JSON.parse(_r);
+				} catch (e) {
+					throw "Failed to parse encrypted JSON from URL '" + url + "'. The content may not be properly encrypted or the decryption key may be incorrect. Error: " + e.message;
+				}
+			}
+			if (isMap(_r) && __JSONformat.unsafe) {
+				traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+			}
+			return _r;
+		}
+	}
+	var fnReadEncYAML = f => {
+		var content = io.readFileBytes(f);
+		content = String(Packages.openaf.AFCmdBase.afc.dbIP(content));
+		var _r;
+		try {
+			_r = af.fromYAML(content, true);
+		} catch (e) {
+			throw "Failed to parse encrypted YAML file '" + f + "'. The file may not be properly encrypted or the decryption key may be incorrect. Error: " + e.message;
+		}
+		if (isMap(_r) && __JSONformat.unsafe) {
+			traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+		}
+		return _r;
+	}
+	var fnReadEncJSON = f => {
+		var content = io.readFileBytes(f);
+		content = String(Packages.openaf.AFCmdBase.afc.dbIP(content));
+		var _r;
+		try {
+			_r = JSON.parse(content);
+		} catch (e) {
+			throw "Failed to parse encrypted JSON file '" + f + "'. The file may not be properly encrypted or the decryption key may be incorrect. Error: " + e.message;
+		}
+		if (isMap(_r) && __JSONformat.unsafe) {
+			traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
+		}
+		return _r;
 	}
 
 	function _load(aFn) {
@@ -945,7 +1017,7 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			}
 		});
 
-    	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i)) {
+    	if (aFile.match(/^https?:\/\//i) && !aFile.match(/\.ya?ml$/i) && !aFile.match(/\.js(on)?$/i) && !aFile.match(/\.enc$/i)) {
 			var pp = (new java.net.URI(aFile)).getPath()
 			if (pp == "") {
 				aFile += "/"
@@ -974,7 +1046,19 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			}
 		}
 
-		if (aFile.match(/\.ya?ml$/i)) {
+		if (aFile.match(/\.ya?ml\.enc$/i)) {
+			if (aFile.match(/^https?:\/\//)) {
+				res = this.__merge(_load(fnDownEncYAML), res);
+			} else {
+				res = this.__merge(_load(fnReadEncYAML), res);
+			}
+		} else if (aFile.match(/\.js(on)?\.enc$/i)) {
+			if (aFile.match(/^https?:\/\//)) {
+				res = this.__merge(_load(fnDownEncJSON), res);
+			} else {
+				res = this.__merge(_load(fnReadEncJSON), res);
+			}
+		} else if (aFile.match(/\.ya?ml$/i)) {
 			if (aFile.match(/^https?:\/\//)) {
 				res = this.__merge(_load(fnDownYAML), res);
 			} else {
@@ -1140,6 +1224,116 @@ OpenWrap.oJob.prototype.previewFile = function(aFile) {
 	if (isDef(res.include)) res.include = []
 	if (isDef(res.jobsInclude)) res.jobsInclude = []
 	return res
+};
+
+/**
+ * <odoc>
+ * <key>ow.oJob.isEncryptedDefinition(aFile) : boolean</key>
+ * Returns true if aFile ends with .yaml.enc or .json.enc (query/hash ignored).
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.isEncryptedDefinition = function(aFile) {
+	if (isUnDef(aFile)) return false;
+	var f = String(aFile).replace(/[?#].*$/, "");
+	return (f.match(/\.ya?ml\.enc$/i) || f.match(/\.js(on)?\.enc$/i));
+};
+
+/**
+ * <odoc>
+ * <key>ow.oJob.getIncludes(aFile) : Map</key>
+ * Returns a map with include and jobsInclude arrays (if any).
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getIncludes = function(aFile) {
+	function _collect(v) {
+		var out = [];
+		if (isUnDef(v)) return out;
+		if (isString(v)) return [ v ];
+		if (isArray(v)) {
+			v.forEach(e => { out = out.concat(_collect(e)); });
+			return out;
+		}
+		if (isMap(v)) {
+			if (isString(v.file)) return [ v.file ];
+			if (isString(v.url)) return [ v.url ];
+			if (isString(v.path)) return [ v.path ];
+			var ks = Object.keys(v);
+			if (ks.length == 1 && isString(v[ks[0]])) return [ v[ks[0]] ];
+		}
+		return out;
+	}
+
+	var res = this.__loadFile(aFile);
+	return {
+		include: _collect(res.include),
+		jobsInclude: _collect(res.jobsInclude)
+	};
+};
+
+/**
+ * <odoc>
+ * <key>ow.oJob.getRawIncludes(aFile) : Map</key>
+ * Returns a map with include and jobsInclude arrays from the raw file (no include resolution).
+ * </odoc>
+ */
+OpenWrap.oJob.prototype.getRawIncludes = function(aFile) {
+	function _collect(v) {
+		var out = [];
+		if (isUnDef(v)) return out;
+		if (isString(v)) return [ v ];
+		if (isArray(v)) {
+			v.forEach(e => { out = out.concat(_collect(e)); });
+			return out;
+		}
+		if (isMap(v)) {
+			if (isString(v.file)) return [ v.file ];
+			if (isString(v.url)) return [ v.url ];
+			if (isString(v.path)) return [ v.path ];
+			var ks = Object.keys(v);
+			if (ks.length == 1 && isString(v[ks[0]])) return [ v[ks[0]] ];
+		}
+		return out;
+	}
+
+	if (isUnDef(aFile)) return { include: [], jobsInclude: [] };
+
+	var res = {};
+	try {
+		var f = String(aFile);
+		var content = __;
+		if (f.match(/^https?:\/\//i)) {
+			if (this.authorizedDomains.indexOf(String((new java.net.URL(f)).getHost())) < 0) {
+				return { include: [], jobsInclude: [] };
+			}
+			content = $rest({ throwExceptions: true }).get(f);
+		} else {
+			content = io.readFileString(f);
+		}
+
+		if (isMap(content)) {
+			res = content;
+		} else if (isString(content)) {
+			var fclean = f.replace(/[?#].*$/, "");
+			if (fclean.match(/\.js(on)?$/i)) {
+				res = jsonParse(content, __, __, true);
+			} else if (fclean.match(/\.ya?ml$/i)) {
+				res = af.fromYAML(content, true);
+			} else {
+				try {
+					res = af.fromYAML(content, true);
+				} catch(e1) {
+					res = jsonParse(content, __, __, true);
+				}
+			}
+		}
+	} catch(e) {
+		res = {};
+	}
+
+	return {
+		include: _collect(res.include),
+		jobsInclude: _collect(res.jobsInclude)
+	};
 };
 
 /**
@@ -2370,7 +2564,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 		}
 	}
 
-	function _run(aExec, args, job, id) {	
+	function _run(aExec, args, job, id) {
 		if (isDef(aJob.typeArgs.noTemplateArgs)) noTemplateArgs = aJob.typeArgs.noTemplateArgs; else noTemplateArgs = !parent.__ojob.templateArgs
 		
 		// Find templates on args	
@@ -2389,8 +2583,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 
 		var f = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var each = __; " + aExec + "; return args;");
 		var fe, fint;
-		if (isDef(parent.__ojob.catch)) fe = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + parent.__ojob.catch);
-		if (isDef(aJob.catch)) fint = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; " + aJob.catch);
+		if (isDef(parent.__ojob.catch)) fe = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + parent.__ojob.catch + "})(); return { args: args, res: _res };");
+		if (isDef(aJob.catch)) fint = newFn("var args = ow.oJob.__defaultArgs(arguments[0]); var job = arguments[1]; var id = arguments[2]; var deps = arguments[3]; var exception = arguments[4]; var _res = (() => {" + aJob.catch + "})(); return { args: args, res: _res };");
 		
 		var stopWhen, timeout, tb = false, tbres;
 		if (isDef(aJob.typeArgs.timeout))  { tb = true; timeout = aJob.typeArgs.timeout; }
@@ -2415,21 +2609,27 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					} catch(e) {
 						var useExt = true, recordError = true;
 						if (isDef(fint)) {
-							if (!fint(aValue, job, id, depInfo, e)) {
-								if (parent.__ojob.logArgs) 
+							var _r = fint(aValue, job, id, depInfo, e);
+							if (!_r.res) {
+								if (parent.__ojob.logArgs)
    									errors.push(stringify({ args: aValue, exception: String(e)}));
 								else
 									errors.push(stringify({ exception: String(e) }));
+							} else {
+								Object.assign(aValue, _r.args);
 							}
 							recordError = false;
 							useExt = false;
 						}
 						if (isDef(fe) && useExt) {
-							if (!fe(aValue, job, id, depInfo, e)) {
-								if (parent.__ojob.logArgs) 
+							var _r = fe(aValue, job, id, depInfo, e)
+							if (!_r.res) {
+								if (parent.__ojob.logArgs)
 									errors.push(stringify({ args: aValue, exception: String(e)}));
 								else
 									errors.push(stringify({ exception: String(e)}));
+							} else {
+								Object.assign(aValue, _r.args);
 							}
 							recordError = false;
 						}
@@ -2440,7 +2640,7 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 								errors.push(stringify({ exception: String(e)}));
 						}
 					} finally {
-						return true;
+						return aValue
 					}
 				});
 			} else {
@@ -2454,21 +2654,27 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 					} catch(e) {
 						var useExt = true, recordError = true;
 						if (isDef(fint)) {
-							if (!fint(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
+							var _r = fint(args.__oJobRepeat[aVi], job, id, depInfo, e);
+							if (!_r.res) {
 								if (parent.__ojob.logArgs)
 									errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
 								else
 									errors.push(stringify({ exception: e}));
+							} else {
+								Object.assign(args.__oJobRepeat[aVi], _r.args);
 							}
 							recordError = false;
 							useExt = false;
 						}
 						if (isDef(fe) && useExt) {
-							if (!fe(args.__oJobRepeat[aVi], job, id, depInfo, e)) {
+							var _r = fe(args.__oJobRepeat[aVi], job, id, depInfo, e);
+							if (!_r.res) {
 								if (parent.__ojob.logArgs)
 									errors.push(stringify({ args: args.__oJobRepeat[aVi], exception: e}));
 								else
 									errors.push(stringify({ exception: e}));
+							} else {
+								Object.assign(args.__oJobRepeat[aVi], _r.args);
 							}
 							recordError = false;
 						}
@@ -2495,11 +2701,21 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 			} catch(e) {
 				if (isUnDef(fint) && isUnDef(fe)) throw e;
 
-				if (isDef(fint) && !fint(args, job, id, depInfo, e)) {
-					throw e;
+				var useExt = true;
+				if (isDef(fint)) {
+					var _r = fint(args, job, id, depInfo, e)
+					if (!_r.res) {
+						throw e
+					}
+					resExec = _r.args;
+					useExt = false;
 				}
-				if (isDef(fe) && !fe(args, job, id, depInfo, e)) {
-					throw e;
+				if (isDef(fe) && useExt) {
+					var _r = fe(args, job, id, depInfo, e)
+					if (!_r.res) {
+						throw e;
+					}
+					resExec = _r.args;
 				}
 			}
 		}
@@ -2538,6 +2754,8 @@ OpenWrap.oJob.prototype.runJob = function(aJob, provideArgs, aId, noAsync, rExec
 				}
 			} catch(e) {
 				this.__addLog("error", aJob.name, uuid, args, e, aId, aJob.typeArgs)
+				// If catch handlers exist, they already handled the error in _run, so re-throw
+				if (isDef(aJob.catch) || isDef(parent.__ojob.catch)) throw e;
 			}
 			
 			//return true;
