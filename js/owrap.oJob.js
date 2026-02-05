@@ -900,7 +900,11 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			var _r = $rest({ throwExceptions: true }).getBytes(url);
 			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
 			if (isString(_r)) {
-				_r = af.fromYAML(_r, true);
+				try {
+					_r = af.fromYAML(_r, true);
+				} catch (e) {
+					throw "Failed to parse encrypted YAML from URL '" + url + "'. The content may not be properly encrypted or the decryption key may be incorrect. Error: " + e.message;
+				}
 			}
 			if (isMap(_r) && __JSONformat.unsafe) {
 				traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
@@ -918,7 +922,11 @@ OpenWrap.oJob.prototype.__loadFile = function(aFile, removeTodos, isInclude) {
 			var _r = $rest({ throwExceptions: true }).getBytes(url);
 			_r = String(Packages.openaf.AFCmdBase.afc.dbIP(_r));
 			if (isString(_r)) {
-				try { _r = JSON.parse(_r); } catch (e) { }
+				try {
+					_r = JSON.parse(_r);
+				} catch (e) {
+					throw "Failed to parse encrypted JSON from URL '" + url + "'. The content may not be properly encrypted or the decryption key may be incorrect. Error: " + e.message;
+				}
 			}
 			if (isMap(_r) && __JSONformat.unsafe) {
 				traverse(_r, (aK, aV, aP, aO) => { if (isString(aV) && aV.startsWith("!!js/eval ")) aO[aK] = eval(aV.slice(10)); });
