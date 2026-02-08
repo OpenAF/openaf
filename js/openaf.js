@@ -9758,6 +9758,21 @@ if (isUnDef(alert)) alert = function(msg) {
 };
 
 var __timeout = {};
+/**
+ * <odoc>
+ * <key>setTimeout(aFunction, aPeriod)</key>
+ * Tries to execute aFunction after aPeriod milliseconds. Note: this function will block the
+ * main thread, so use it with caution. If you need to execute aFunction in a different thread and avoid blocking the main thread, please use setInterval with a clearInterval after the first execution.
+ * \
+ * Example:\
+ * \
+ * setTimeout(() => { print("Hello after 2 seconds"); }, 2000);\
+ * \
+ * // or using setInterval to avoid blocking the main thread\
+ * var id = setInterval(() => { print("Hello after 2 seconds"); clearInterval(id); }, 2000);\
+ * \
+ * </odoc>
+ */
 const setTimeout = function(aFunction, aPeriod) {
 	sleep(aPeriod);
 	var args = [];
@@ -9765,6 +9780,12 @@ const setTimeout = function(aFunction, aPeriod) {
 	aFunction.apply(this, args);
 }
 
+/**
+ * <odoc>
+ * <key>setInterval(aFunction, aPeriod) : String</key>
+ * Tries to execute aFunction every aPeriod milliseconds. Returns an id that can be used to clear the interval with clearInterval. Note: this function uses Threads plugin, so it will execute aFunction in a different thread and it won't block the main thread. Also, do note that the aFunction execution time is not included in the aPeriod, so if aFunction takes 2 seconds to execute and aPeriod is 5 seconds, the next execution will be 5 seconds after aFunction finishes, so it will be 7 seconds after the previous execution start.
+ * </odoc>
+ */
 const setInterval = function(aFunction, aPeriod) {
 	plugin("Threads");
 	var t = new Threads();
@@ -9775,7 +9796,7 @@ const setInterval = function(aFunction, aPeriod) {
 	var parent = this;
 
 	var f = function(uuid) {
-		aFunction.apply(parent, args);
+	  aFunction.apply(parent, args);
 	}
 
 	var uuid = t.addThread(f);
@@ -9784,6 +9805,12 @@ const setInterval = function(aFunction, aPeriod) {
 	return uuid;
 }
 
+/**
+ * <odoc>
+ * <key>clearInterval(uuid)</key>
+ * Clears the interval with the provided uuid returned by setInterval.
+ * </odoc>
+ */
 const clearInterval = function(uuid) {
 	var t = __timeout[uuid];
 	t.stop();
