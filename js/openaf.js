@@ -8513,7 +8513,8 @@ const $jsonrpc = function (aOptions) {
 			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
-		exec: (aMethod, aParams, aNotification) => {
+		exec: (aMethod, aParams, aNotification, aExecOptions) => {
+			aExecOptions = _$(aExecOptions, "aExecOptions").isMap().default({})
 			switch (aOptions.type) {
 				case "dummy":
 					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
@@ -8566,12 +8567,14 @@ const $jsonrpc = function (aOptions) {
                                         }
                                         if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
                                         return isDef(_res) && isDef(_res.result) ? _res.result : _res
-                                case "remote":
-                                default:
-                                        _$(aOptions.url, "aOptions.url").isString().$_()
-                                        aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
+				case "remote":
+				default:
+					_$(aOptions.url, "aOptions.url").isString().$_()
+					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
 					aMethod = _$(aMethod, "aMethod").isString().$_()
 					aParams = _$(aParams, "aParams").isMap().default({})
+					var _restOptions = clone(aOptions.options)
+					if (isMap(aExecOptions.restOptions)) _restOptions = merge(_restOptions, aExecOptions.restOptions)
 
 					var _req = {
 						jsonrpc: "2.0",
@@ -8585,7 +8588,7 @@ const $jsonrpc = function (aOptions) {
 						delete _req.id
 					}
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
-					var res = $rest(aOptions.options).post(aOptions.url, _req)
+					var res = $rest(_restOptions).post(aOptions.url, _req)
                                         // Notifications do not expect a reply
                                         if (!!aNotification) return
                                         _debug("jsonrpc <- " + stringify(res, __, ""))
@@ -8631,7 +8634,7 @@ const $jsonrpc = function (aOptions) {
  * \
  * The aOptions parameter is a map with the following possible keys:\
  * \
- * - type (string): Connection type - "stdio" for local process, "remote" for HTTP server, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
+ * - type (string): Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
  * - url (string): Required for remote servers - the MCP server endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string): Required for stdio type - the command to launch the MCP server\
@@ -8668,7 +8671,7 @@ const $jsonrpc = function (aOptions) {
  * - sh(aCommand): Set the command and switch to stdio type\
  * - initialize(clientInfo): Initialize the MCP connection and exchange capabilities\
  * - listTools(): Get list of available tools from the MCP server\
- * - callTool(toolName, toolArguments): Execute a specific tool with given arguments\
+ * - callTool(toolName, toolArguments, toolOptions): Execute a specific tool with given arguments and optional per-call options\
  * - listPrompts(): Get list of available prompts from the MCP server\
  * - getPrompt(promptName, promptArguments): Get a specific prompt with given arguments\
  * - toGptTools(aGptInstance, aToolNames): Add MCP tools to a $gpt instance\
@@ -8696,6 +8699,8 @@ const $jsonrpc = function (aOptions) {
  *   clientInfo: {name: "MyApp", version: "2.0.0"}\
  * });\
  * remoteClient.initialize();\
+ * // Optional per-call HTTP options (only used for remote/http MCP clients)\
+ * var result2 = remoteClient.callTool("read_file", {path: "/tmp/example.txt"}, { requestHeaders: { Authorization: "Bearer ..." } });\
  * var prompts = remoteClient.listPrompts();\
  * \
  * // Dummy mode for testing\
@@ -8950,12 +8955,13 @@ const $mcp = function(aOptions) {
                         }
                         return _jsonrpc.exec("tools/list", {})
 		},
-		callTool: (toolName, toolArguments) => {
+		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
 				throw new Error("MCP client not initialized. Call initialize() first.")
 			}
 			toolName = _$(toolName, "toolName").isString().$_()
 			toolArguments = _$(toolArguments, "toolArguments").isMap().default({})
+			toolOptions = _$(toolOptions, "toolOptions").isMap().default(__)
 			
 			// Call pre-function if provided
 			if (aOptions.preFn) {
@@ -8965,7 +8971,7 @@ const $mcp = function(aOptions) {
 			var _res = _jsonrpc.exec("tools/call", {
 				name: toolName,
 				arguments: toolArguments
-			})
+			}, __, { restOptions: toolOptions })
 			// Call post-function if provided
 			if (aOptions.posFn) {
 				aOptions.posFn(toolName, toolArguments, _res)

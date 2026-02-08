@@ -1860,7 +1860,8 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
             }*/
         })
 
-        if (isDef(_res)) {
+        // JSON-RPC notifications return null by design; don't emit a stray "null" line on stdio.
+        if (isDef(_res) && !isNull(_res)) {
             lgF("snd", _res)
             sprint(_res, "")
         }

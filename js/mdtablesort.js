@@ -193,6 +193,68 @@ function parseNumberWithUnits(value) {
   return numberPart * multiplier;
 }
 
+// Parse a semantic version string and return normalized components.
+function parseSemVer(value) {
+  if (value === null || value === undefined) return null;
+  const cleaned = String(value).trim();
+  if (!cleaned) return null;
+
+  const match = cleaned.match(
+    /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/
+  );
+  if (!match) return null;
+
+  return {
+    major: parseInt(match[1], 10),
+    minor: parseInt(match[2], 10),
+    patch: parseInt(match[3], 10),
+    prerelease: match[4] ? match[4].split('.') : []
+  };
+}
+
+function isNumericIdentifier(value) {
+  return /^\d+$/.test(value);
+}
+
+// Compare semantic versions according to SemVer precedence rules.
+function compareSemVer(a, b) {
+  if (a.major !== b.major) return a.major < b.major ? -1 : 1;
+  if (a.minor !== b.minor) return a.minor < b.minor ? -1 : 1;
+  if (a.patch !== b.patch) return a.patch < b.patch ? -1 : 1;
+
+  const aHasPre = a.prerelease.length > 0;
+  const bHasPre = b.prerelease.length > 0;
+  if (!aHasPre && !bHasPre) return 0;
+  if (!aHasPre) return 1;
+  if (!bHasPre) return -1;
+
+  const len = Math.max(a.prerelease.length, b.prerelease.length);
+  for (let i = 0; i < len; i++) {
+    const ai = a.prerelease[i];
+    const bi = b.prerelease[i];
+
+    if (ai === undefined) return -1;
+    if (bi === undefined) return 1;
+    if (ai === bi) continue;
+
+    const aiNum = isNumericIdentifier(ai);
+    const biNum = isNumericIdentifier(bi);
+
+    if (aiNum && biNum) {
+      const aNum = parseInt(ai, 10);
+      const bNum = parseInt(bi, 10);
+      if (aNum !== bNum) return aNum < bNum ? -1 : 1;
+      continue;
+    }
+
+    if (aiNum && !biNum) return -1;
+    if (!aiNum && biNum) return 1;
+    return ai < bi ? -1 : 1;
+  }
+
+  return 0;
+}
+
 // Add helper function to support "yyyy-MM-dd HH:mm:ss" format.
 function parseDate(str) {
   // If the string contains a space but no 'T', replace the first space with 'T'
@@ -261,6 +323,16 @@ function sortTable(table) {
         let cellB = b.children[crit.colIndex];
         let valA = cellA ? cellA.textContent.trim() : '';
         let valB = cellB ? cellB.textContent.trim() : '';
+
+        // Attempt semantic version parsing before generic date/string checks
+        const semverA = parseSemVer(valA);
+        const semverB = parseSemVer(valB);
+        if (semverA && semverB) {
+          const semverCmp = compareSemVer(semverA, semverB);
+          if (semverCmp < 0) return crit.direction === 'asc' ? -1 : 1;
+          if (semverCmp > 0) return crit.direction === 'asc' ? 1 : -1;
+          continue;
+        }
 
         // Attempt date parsing first
         const timeA = parseDate(valA);
