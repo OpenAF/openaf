@@ -395,4 +395,56 @@
 
         $ch("queue::test").destroy();
     };
+
+    exports.testCheckInWithEnvVar = function() {
+        ow.loadServer();
+
+        // Test 1: Default behavior without environment variable
+        var testPid1 = "test_checkin_1.pid";
+        io.rm(testPid1);
+        
+        var result1 = ow.server.checkIn(testPid1, function() { return false; });
+        ow.test.assert(result1, true, "Problem with checkIn creating PID file");
+        ow.test.assert(io.fileExists(testPid1), true, "Problem with checkIn - PID file should exist");
+        
+        pidCheckOut(testPid1);
+        io.rm(testPid1);
+
+        // Test 2: Environment variable overrides the parameter
+        var testPid2 = "test_checkin_2.pid";
+        var envPid = "test_checkin_env.pid";
+        io.rm(testPid2);
+        io.rm(envPid);
+        
+        // Set environment variable
+        java.lang.System.setProperty("OAF_PIDFILE", envPid);
+        
+        var result2 = ow.server.checkIn(testPid2, function() { return false; });
+        ow.test.assert(result2, true, "Problem with checkIn when using environment variable");
+        ow.test.assert(io.fileExists(envPid), true, "Problem with checkIn - Environment variable PID file should exist");
+        ow.test.assert(io.fileExists(testPid2), false, "Problem with checkIn - Parameter PID file should not exist when env var is set");
+        
+        pidCheckOut(envPid);
+        io.rm(envPid);
+        
+        // Clear environment variable
+        java.lang.System.clearProperty("OAF_PIDFILE");
+
+        // Test 3: Environment variable overrides even when parameter is undefined
+        var envPid3 = "test_checkin_env3.pid";
+        io.rm(envPid3);
+        
+        java.lang.System.setProperty("OAF_PIDFILE", envPid3);
+        
+        var result3 = ow.server.checkIn(void 0, function() { return false; });
+        ow.test.assert(result3, true, "Problem with checkIn when using environment variable with undefined parameter");
+        ow.test.assert(io.fileExists(envPid3), true, "Problem with checkIn - Environment variable PID file should exist when parameter is undefined");
+        ow.test.assert(io.fileExists("server.pid"), false, "Problem with checkIn - Default PID file should not exist when env var is set");
+        
+        pidCheckOut(envPid3);
+        io.rm(envPid3);
+        
+        // Clear environment variable
+        java.lang.System.clearProperty("OAF_PIDFILE");
+    };
 })();
