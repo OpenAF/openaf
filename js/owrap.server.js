@@ -15,8 +15,7 @@ OpenWrap.server = function() {
  * of the server and provide an onAlreadyRunning function (that will received the corresponding aPidFile).
  * If the onAlreadyRunning function returns false the process will exit with -1 (or the anExitCode provided),
  * if true will continue processing. The aPidFile parameter can be overridden by setting the OAF_PIDFILE 
- * environment variable.\
- * \
+ * environment variable.
  * Example:\
  * \
  * var params = processExpr();\

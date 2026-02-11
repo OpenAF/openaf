@@ -432,10 +432,10 @@
         var envPidFile = getEnv("OAF_PIDFILE");
         if (isDefined(envPidFile) && envPidFile != "") {
             io.rm(envPidFile);
-            var result3 = ow.server.checkIn("should_be_overridden.pid", function() { return false; });
+            var result3 = ow.server.checkIn("test_param.pid", function() { return false; });
             ow.test.assert(result3, true, "Problem with checkIn when OAF_PIDFILE is set");
             ow.test.assert(io.fileExists(envPidFile), true, "Problem with checkIn - OAF_PIDFILE file should exist");
-            ow.test.assert(io.fileExists("should_be_overridden.pid"), false, "Problem with checkIn - parameter file should not exist when OAF_PIDFILE is set");
+            ow.test.assert(io.fileExists("test_param.pid"), false, "Problem with checkIn - parameter file should not exist when OAF_PIDFILE is set");
             
             pidCheckOut(envPidFile);
             io.rm(envPidFile);
