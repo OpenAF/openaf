@@ -4541,7 +4541,6 @@ const restartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
 	var builder = new java.lang.ProcessBuilder(command);
 	builder.inheritIO();
 	builder.start()
-	sleep(500, true)
 	if (!noStop) java.lang.System.exit(0);
 }
 
