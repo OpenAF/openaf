@@ -43,9 +43,9 @@ OpenWrap.server.prototype.checkIn = function(aPidFile, onAlreadyRunning, onShutd
 	if (isUndefined(anExitCode)) anExitCode = -1;
 	
 	// Override aPidFile with OAF_PIDFILE environment variable if set
-	var envPidFile = getEnv("OAF_PIDFILE");
-	if (isDefined(envPidFile) && String(envPidFile).trim() != "") {
-		aPidFile = String(envPidFile).trim();
+	var envPidFile = getEnv("OAF_PIDFILE")
+	if (isDef(envPidFile) && String(envPidFile).trim() != "") {
+		aPidFile = String(envPidFile).trim()
 	}
 	if (isUndefined(aPidFile)) aPidFile = "server.pid";
 	ret = pidCheckIn(aPidFile);
