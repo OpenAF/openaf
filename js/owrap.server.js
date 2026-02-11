@@ -14,7 +14,8 @@ OpenWrap.server = function() {
  * Optionally you can provide an onShutdown function to execute any code needed upon controlled shutdown
  * of the server and provide an onAlreadyRunning function (that will received the corresponding aPidFile).
  * If the onAlreadyRunning function returns false the process will exit with -1 (or the anExitCode provided),
- * if true will continue processing.
+ * if true will continue processing. The aPidFile parameter can be overridden by setting the OAF_PIDFILE 
+ * environment variable.
  * Example:\
  * \
  * var params = processExpr();\
@@ -41,6 +42,11 @@ OpenWrap.server.prototype.checkIn = function(aPidFile, onAlreadyRunning, onShutd
 	var ret = false;
 	if (isUndefined(anExitCode)) anExitCode = -1;
 	
+	// Override aPidFile with OAF_PIDFILE environment variable if set
+	var envPidFile = getEnv("OAF_PIDFILE")
+	if (isDef(envPidFile) && String(envPidFile).trim() != "") {
+		aPidFile = String(envPidFile).trim()
+	}
 	if (isUndefined(aPidFile)) aPidFile = "server.pid";
 	ret = pidCheckIn(aPidFile);
 	if (ret && isDefined(onShutdown)) addOnOpenAFShutdown(onShutdown);

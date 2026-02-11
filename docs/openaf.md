@@ -483,6 +483,7 @@ ow.sec.closeMainSBuckets();
 ow.loadServer();
 
 // Process management
+// Note: The PID file path can be overridden by setting the OAF_PIDFILE environment variable
 var isRunning = ow.server.checkIn("server.pid", 
   function(existingPid) {
     log("Server already running with PID: " + existingPid);

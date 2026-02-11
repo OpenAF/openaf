@@ -80,6 +80,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testQueue;
 
+   - name: Server::CheckIn
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testCheckIn;
+
 todo:
    # Server tests
    # ------------
@@ -98,3 +103,4 @@ todo:
    - Server::Auth
    - Server::AuthApp
    - Server::Queue
+   - Server::CheckIn
