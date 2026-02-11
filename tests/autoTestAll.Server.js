@@ -421,10 +421,14 @@
         pidCheckOut(testPid);
         io.rm(testPid);
 
-        // Test 3: Test that OAF_PIDFILE environment variable would override if set
-        // Note: This test verifies the code logic exists but cannot actually set env vars at runtime
-        // The environment variable functionality should be tested by setting OAF_PIDFILE before 
-        // starting the OpenAF process in real-world usage or CI environments
+        // Test 3: Verify OAF_PIDFILE environment variable behavior
+        // Note: Environment variables cannot be set at runtime in Java (they're inherited from parent process)
+        // This test checks if OAF_PIDFILE is set in the environment and validates override behavior
+        // To test this functionality in CI, set OAF_PIDFILE before running the test suite
+        // Example CI configuration:
+        //   env:
+        //     OAF_PIDFILE: test_env.pid
+        //   run: cd tests && ../ojob autoTestAll.yaml
         var envPidFile = getEnv("OAF_PIDFILE");
         if (isDefined(envPidFile) && envPidFile != "") {
             io.rm(envPidFile);
