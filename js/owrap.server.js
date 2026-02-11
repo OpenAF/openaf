@@ -48,7 +48,6 @@ OpenWrap.server.prototype.checkIn = function(aPidFile, onAlreadyRunning, onShutd
 		aPidFile = String(envPidFile).trim();
 	}
 	if (isUndefined(aPidFile)) aPidFile = "server.pid";
-	
 	ret = pidCheckIn(aPidFile);
 	if (ret && isDefined(onShutdown)) addOnOpenAFShutdown(onShutdown);
 	if (!ret) {

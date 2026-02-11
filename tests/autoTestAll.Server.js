@@ -423,8 +423,9 @@
 
         // Test 3: Verify OAF_PIDFILE environment variable behavior
         // Note: Environment variables cannot be set at runtime in Java (they're inherited from parent process)
-        // This test checks if OAF_PIDFILE is set in the environment and validates override behavior
-        // To test this functionality in CI, set OAF_PIDFILE before running the test suite
+        // This test checks if OAF_PIDFILE is set in the environment and validates override behavior.
+        // If OAF_PIDFILE is not set, these tests will be skipped (which is expected behavior).
+        // To test this functionality in CI, set OAF_PIDFILE before running the test suite.
         // Example CI configuration:
         //   env:
         //     OAF_PIDFILE: test_env.pid
