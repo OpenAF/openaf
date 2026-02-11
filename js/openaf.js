@@ -256,7 +256,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true,
 		listFilesRecursive: true,
-		colorify : true
+		colorify : true,
+		restart  : true
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -4504,8 +4505,13 @@ const stopOpenAFAndRun = function(aCommandLineArray, addCommand) {
  * element will be use sequentially to build the command line to start a new OpenAF instance. 
  * preCommandLineArray can be used to provide java arguments if defined.
  * </odoc>
+ * 
  */
 const restartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
+	if (__flags.ALTERNATIVES.restart) {
+		endOpenAFAndStartOpenAF(aCommandLineArray, preLineArray, noStop)
+		return
+	}
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
 	var currentJar = getOpenAFJar();
 	
@@ -4557,6 +4563,81 @@ const forkOpenAF = function(aCommandLineArray, preLineArray) {
 	return $do(() => {
 		restartOpenAF(aCommandLineArray, preLineArray, true);
 	});
+}
+
+const __quotePosixArg = aArg => "'" + String(aArg).replace(/'/g, "'\"'\"'") + "'"
+const __quoteCmdArg = aArg => {
+	var s = String(aArg)
+	if (s.length == 0) return "\"\""
+	if (/[\s"&|<>^()%!]/.test(s)) return "\"" + s.replace(/(["^%!])/g, "^$1") + "\""
+	return s
+}
+
+/**
+ * <odoc>
+ * <key>endOpenAFAndStart(aCommandLineArray, noStop)</key>
+ * Terminates the current OpenAF execution while trying to execute the commands on the aCommandLineArray
+ * in detached mode. On Unix systems it uses nohup (and setsid if available). On Windows it uses cmd start.
+ * </odoc>
+ */
+const endOpenAFAndStart = function(aCommandLineArray, noStop) {
+	_$(aCommandLineArray).isArray().$_("Please provide a command line array.")
+	noStop = _$(noStop).isBoolean().default(false)
+	if (aCommandLineArray.length <= 0) throw "Please provide a non-empty command line array."
+
+	var osName = String(java.lang.System.getProperty("os.name")).toLowerCase()
+	var isWindows = osName.indexOf("windows") >= 0
+	var commandLine = []
+
+	if (isWindows) {
+		var cmd = "start \"\" /B " + aCommandLineArray.map(__quoteCmdArg).join(" ")
+		commandLine = [ "cmd", "/c", cmd ]
+	} else {
+		var cmd = aCommandLineArray.map(__quotePosixArg).join(" ")
+		var shellCmd = "(command -v setsid >/dev/null 2>&1 && nohup setsid " + cmd + " >/dev/null 2>&1 < /dev/null || nohup " + cmd + " >/dev/null 2>&1 < /dev/null) &"
+		commandLine = [ "/bin/sh", "-c", shellCmd ]
+	}
+
+ 	var builder = new java.lang.ProcessBuilder(commandLine.map(s => new java.lang.String(s)))
+	builder.start()
+	sleep(100, true)
+	if (!noStop) java.lang.System.exit(0)
+}
+
+/**
+ * <odoc>
+ * <key>endOpenAFAndStartOpenAF(aCommandLineArray, preCommandLineArray, noStop)</key>
+ * Terminates the current OpenAF execution and tries to start a detached OpenAF process with the current
+ * OpenAF command line plus an extra aCommandLineArray. preCommandLineArray can be used to provide java arguments.
+ * </odoc>
+ */
+const endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
+	if (isDef(aCommandLineArray)) _$(aCommandLineArray).isArray().$_("Please provide a command line array.");
+	noStop = _$(noStop).isBoolean().default(false);
+
+	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
+	var currentJar = getOpenAFJar();
+	if (!currentJar.endsWith(".jar")) return;
+
+	var command = [];
+	command.push(String(javaBin));
+
+	if (isDef(preLineArray)) {
+		for (var c in preLineArray) command.push(String(preLineArray[c]));
+	} else {
+		var ar = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
+		for (var ari = 0; ari < ar.size(); ari++) command.push(String(ar.get(ari)));
+	}
+
+	command.push("-jar");
+	command.push(String(currentJar));
+
+	for (var i in __args) command.push(String(__args[i]));
+	if (isDef(aCommandLineArray)) {
+		for (var ai in aCommandLineArray) command.push(String(aCommandLineArray[ai]));
+	}
+
+	return endOpenAFAndStart(command, noStop);
 }
 
 /**
@@ -11309,6 +11390,27 @@ AF.prototype.fromObj2XML = function (obj, sanitize, aAttrKey, aPrefix, aSuffix) 
  * </odoc>
  */
 AF.prototype.encryptText = function() { plugin("Console"); print("Encrypted text: " + af.encrypt((new Console()).readLinePrompt("Enter text: ", "*"))); };
+
+/**
+ * <odoc>
+ * <key>AF.endOpenAFAndStart(aCommandLineArray, noStop)</key>
+ * Calls endOpenAFAndStart to start a detached process and then end the current OpenAF execution.
+ * noStop=true can be used to avoid exiting the current OpenAF process.
+ * </odoc>
+ */
+AF.prototype.endOpenAFAndStart = function(aCommandLineArray, noStop) {
+	return endOpenAFAndStart(aCommandLineArray, noStop)
+}
+
+/**
+ * <odoc>
+ * <key>AF.endOpenAFAndStartOpenAF(aCommandLineArray, preCommandLineArray, noStop)</key>
+ * Calls endOpenAFAndStartOpenAF to detach and start another OpenAF with current arguments plus extras.
+ * </odoc>
+ */
+AF.prototype.endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
+	return endOpenAFAndStartOpenAF(aCommandLineArray, preLineArray, noStop)
+}
 
 /**
  * <odoc>
