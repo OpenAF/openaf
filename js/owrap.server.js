@@ -46,9 +46,8 @@ OpenWrap.server.prototype.checkIn = function(aPidFile, onAlreadyRunning, onShutd
 	var envPidFile = getEnv("OAF_PIDFILE");
 	if (isDefined(envPidFile) && envPidFile != "") {
 		aPidFile = envPidFile;
-	} else {
-		if (isUndefined(aPidFile)) aPidFile = "server.pid";
 	}
+	if (isUndefined(aPidFile)) aPidFile = "server.pid";
 	
 	ret = pidCheckIn(aPidFile);
 	if (ret && isDefined(onShutdown)) addOnOpenAFShutdown(onShutdown);

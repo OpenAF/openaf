@@ -431,11 +431,23 @@
         //   run: cd tests && ../ojob autoTestAll.yaml
         var envPidFile = getEnv("OAF_PIDFILE");
         if (isDefined(envPidFile) && envPidFile != "") {
+            // Test 3a: Environment variable overrides explicit parameter
             io.rm(envPidFile);
             var result3 = ow.server.checkIn("test_param.pid", function() { return false; });
             ow.test.assert(result3, true, "Problem with checkIn when OAF_PIDFILE is set");
             ow.test.assert(io.fileExists(envPidFile), true, "Problem with checkIn - OAF_PIDFILE file should exist");
             ow.test.assert(io.fileExists("test_param.pid"), false, "Problem with checkIn - parameter file should not exist when OAF_PIDFILE is set");
+            
+            pidCheckOut(envPidFile);
+            io.rm(envPidFile);
+
+            // Test 3b: Environment variable overrides default (undefined parameter)
+            io.rm(envPidFile);
+            io.rm("server.pid");
+            var result4 = ow.server.checkIn(void 0, function() { return false; });
+            ow.test.assert(result4, true, "Problem with checkIn when OAF_PIDFILE is set with undefined parameter");
+            ow.test.assert(io.fileExists(envPidFile), true, "Problem with checkIn - OAF_PIDFILE file should exist when parameter is undefined");
+            ow.test.assert(io.fileExists("server.pid"), false, "Problem with checkIn - default file should not exist when OAF_PIDFILE is set");
             
             pidCheckOut(envPidFile);
             io.rm(envPidFile);
