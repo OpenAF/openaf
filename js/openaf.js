@@ -4488,11 +4488,11 @@ const stopOpenAFAndRun = function(aCommandLineArray, addCommand, redirectOutput)
 	
 	if (addCommand) {
 		if (unix) {
-			aCommandLineArray.unshift("/c");
-			aCommandLineArray.unshift("cmd");	
-		} else {
 			aCommandLineArray.unshift("-c");
 			aCommandLineArray.unshift("/bin/sh");	
+		} else {
+			aCommandLineArray.unshift("/c");
+			aCommandLineArray.unshift("cmd");	
 		}
 	}
 	var builder = new java.lang.ProcessBuilder(aCommandLineArray);
