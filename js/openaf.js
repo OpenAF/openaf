@@ -4484,8 +4484,9 @@ const stopOpenAFAndRun = function(aCommandLineArray, addCommand, redirectOutput)
 	addCommand = _$(addCommand).isBoolean().default(false);
 	redirectOutput = _$(redirectOutput).isBoolean().default(false);
 
+	var unix = ( java.lang.System.getProperty("os.name").indexOf("Windows") < 0);
+	
 	if (addCommand) {
-		var unix = ( java.lang.System.getProperty("os.name").indexOf("Windows") < 0);
 		if (unix) {
 			aCommandLineArray.unshift("/c");
 			aCommandLineArray.unshift("cmd");	
@@ -4496,7 +4497,7 @@ const stopOpenAFAndRun = function(aCommandLineArray, addCommand, redirectOutput)
 	}
 	var builder = new java.lang.ProcessBuilder(aCommandLineArray);
 	if (redirectOutput) {
-		var nullFile = new java.io.File((java.lang.System.getProperty("os.name").indexOf("Windows") >= 0) ? "NUL" : "/dev/null");
+		var nullFile = new java.io.File(unix ? "/dev/null" : "NUL");
 		builder.redirectOutput(nullFile);
 		builder.redirectError(nullFile);
 	} else {
