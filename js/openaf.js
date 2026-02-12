@@ -4485,7 +4485,7 @@ const stopOpenAFAndRun = function(aCommandLineArray, addCommand, redirectOutput)
 	redirectOutput = _$(redirectOutput).isBoolean().default(false);
 
 	var unix = ( java.lang.System.getProperty("os.name").indexOf("Windows") < 0);
-	
+
 	if (addCommand) {
 		if (unix) {
 			aCommandLineArray.unshift("-c");
