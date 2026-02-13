@@ -4471,30 +4471,44 @@ const uniqArray = function(anArray) {
 
 /**
  * <odoc>
- * <key>stopOpenAFAndRun(aCommandLineArray, addCommand)</key>
+ * <key>stopOpenAFAndRun(aCommandLineArray, addCommand, redirectOutput, noStop)</key>
  * Terminates the current OpenAF execution while trying to execute the commands on the aCommandLineArray.
  * Optionally you can use addCommand boolean flag (true) to allow for shell like commands on the current operating system.
+ * If redirectOutput is false (default), output is inherited from the parent process. Set redirectOutput to true to redirect
+ * output to /dev/null (or NUL on Windows).
+ * If noStop is true the current OpenAF execution will not be terminated.
  * To restart OpenAF please use the restartOpenAF function.
  * </odoc>
  */
-const stopOpenAFAndRun = function(aCommandLineArray, addCommand) {
+const stopOpenAFAndRun = function(aCommandLineArray, addCommand, redirectOutput, noStop) {
 	_$(aCommandLineArray).isArray().$_("Please provide a command line array.");
 	addCommand = _$(addCommand).isBoolean().default(false);
+	redirectOutput = _$(redirectOutput).isBoolean().default(false);
+	noStop = _$(noStop).isBoolean().default(false);
+
+	var unix = ( java.lang.System.getProperty("os.name").indexOf("Windows") < 0);
 
 	if (addCommand) {
-		var unix = ( java.lang.System.getProperty("os.name").indexOf("Windows") < 0);
 		if (unix) {
-			aCommandLineArray.unshift("/c");
-			aCommandLineArray.unshift("cmd");	
-		} else {
 			aCommandLineArray.unshift("-c");
 			aCommandLineArray.unshift("/bin/sh");	
+		} else {
+			aCommandLineArray.unshift("/c");
+			aCommandLineArray.unshift("cmd");	
 		}
 	}
-	var builder = new java.lang.ProcessBuilder(aCommandLineArray);
-	builder.inheritIO();
-	builder.start();
-	java.lang.System.exit(0);
+	var _args = aCommandLineArray.map(s => String(s))
+	var builder = new java.lang.ProcessBuilder(_args)
+	if (redirectOutput) {
+		var nullFile = new java.io.File(unix ? "/dev/null" : "NUL");
+		builder.redirectOutput(nullFile);
+		builder.redirectError(nullFile);
+	} else {
+		builder.inheritIO();
+	}
+	var _p = builder.start();
+	sleep(100, true)
+	if (!noStop) java.lang.System.exit(0);
 }
 
 /**
@@ -4508,10 +4522,6 @@ const stopOpenAFAndRun = function(aCommandLineArray, addCommand) {
  * 
  */
 const restartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
-	if (__flags.ALTERNATIVES.restart) {
-		endOpenAFAndStartOpenAF(aCommandLineArray, preLineArray, noStop)
-		return
-	}
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
 	var currentJar = getOpenAFJar();
 	
@@ -4528,8 +4538,10 @@ const restartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
 		}
 	} else {
 		var ar = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
+		var _continue = true
 		for(var ari = 0; ari < ar.size(); ari++) {
-			command.add(String(ar.get(ari)));
+			if (_continue) command.add(String(ar.get(ari)))
+			if (ar.get(ari) == "openaf.jar") _continue = false
 		}
 	}
 	command.add("-jar");
@@ -4544,10 +4556,11 @@ const restartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
 		}
 	}
 
-	var builder = new java.lang.ProcessBuilder(command);
-	builder.inheritIO();
-	builder.start()
-	if (!noStop) java.lang.System.exit(0);
+	stopOpenAFAndRun(af.fromJavaArray(command.toArray()), false, false, noStop)
+	//var builder = new java.lang.ProcessBuilder(command);
+	//builder.inheritIO();
+	//builder.start()
+	//if (!noStop) java.lang.System.exit(0);
 }
 
 /**
@@ -4575,14 +4588,17 @@ const __quoteCmdArg = aArg => {
 
 /**
  * <odoc>
- * <key>endOpenAFAndStart(aCommandLineArray, noStop)</key>
+ * <key>endOpenAFAndStart(aCommandLineArray, noStop, redirectOutput)</key>
  * Terminates the current OpenAF execution while trying to execute the commands on the aCommandLineArray
  * in detached mode. On Unix systems it uses nohup (and setsid if available). On Windows it uses cmd start.
+ * If redirectOutput is true (default), output is redirected to /dev/null on Unix (on Windows output is always visible).
+ * Set redirectOutput to false to keep the output visible.
  * </odoc>
  */
-const endOpenAFAndStart = function(aCommandLineArray, noStop) {
+const endOpenAFAndStart = function(aCommandLineArray, noStop, redirectOutput) {
 	_$(aCommandLineArray).isArray().$_("Please provide a command line array.")
 	noStop = _$(noStop).isBoolean().default(false)
+	redirectOutput = _$(redirectOutput).isBoolean().default(true)
 	if (aCommandLineArray.length <= 0) throw "Please provide a non-empty command line array."
 
 	var osName = String(java.lang.System.getProperty("os.name")).toLowerCase()
@@ -4594,26 +4610,31 @@ const endOpenAFAndStart = function(aCommandLineArray, noStop) {
 		commandLine = [ "cmd", "/c", cmd ]
 	} else {
 		var cmd = aCommandLineArray.map(__quotePosixArg).join(" ")
-		var shellCmd = "(command -v setsid >/dev/null 2>&1 && nohup setsid " + cmd + " >/dev/null 2>&1 < /dev/null || nohup " + cmd + " >/dev/null 2>&1 < /dev/null) &"
+		var shellCmd
+		if (redirectOutput) {
+			shellCmd = "(command -v setsid >/dev/null 2>&1 && nohup setsid " + cmd + " >/dev/null 2>&1 < /dev/null || nohup " + cmd + " >/dev/null 2>&1 < /dev/null) &"
+		} else {
+			shellCmd = "(command -v setsid >/dev/null 2>&1 && nohup setsid " + cmd + " < /dev/null || nohup " + cmd + " < /dev/null) &"
+		}
 		commandLine = [ "/bin/sh", "-c", shellCmd ]
 	}
 
- 	var builder = new java.lang.ProcessBuilder(commandLine.map(s => new java.lang.String(s)))
-	builder.start()
-	sleep(100, true)
-	if (!noStop) java.lang.System.exit(0)
+	return stopOpenAFAndRun(commandLine, false, redirectOutput, noStop)
 }
 
 /**
  * <odoc>
- * <key>endOpenAFAndStartOpenAF(aCommandLineArray, preCommandLineArray, noStop)</key>
+ * <key>endOpenAFAndStartOpenAF(aCommandLineArray, preCommandLineArray, noStop, redirectOutput)</key>
  * Terminates the current OpenAF execution and tries to start a detached OpenAF process with the current
  * OpenAF command line plus an extra aCommandLineArray. preCommandLineArray can be used to provide java arguments.
+ * If redirectOutput is true (default), output is redirected to /dev/null on Unix (on Windows output is always visible).
+ * Set redirectOutput to false to keep the output visible.
  * </odoc>
  */
-const endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
+const endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop, redirectOutput) {
 	if (isDef(aCommandLineArray)) _$(aCommandLineArray).isArray().$_("Please provide a command line array.");
 	noStop = _$(noStop).isBoolean().default(false);
+	redirectOutput = _$(redirectOutput).isBoolean().default(true);
 
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
 	var currentJar = getOpenAFJar();
@@ -4632,12 +4653,11 @@ const endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop
 	command.push("-jar");
 	command.push(String(currentJar));
 
-	for (var i in __args) command.push(String(__args[i]));
 	if (isDef(aCommandLineArray)) {
 		for (var ai in aCommandLineArray) command.push(String(aCommandLineArray[ai]));
 	}
 
-	return endOpenAFAndStart(command, noStop);
+	return endOpenAFAndStart(command, noStop, redirectOutput);
 }
 
 /**
@@ -11393,24 +11413,28 @@ AF.prototype.encryptText = function() { plugin("Console"); print("Encrypted text
 
 /**
  * <odoc>
- * <key>AF.endOpenAFAndStart(aCommandLineArray, noStop)</key>
+ * <key>AF.endOpenAFAndStart(aCommandLineArray, noStop, redirectOutput)</key>
  * Calls endOpenAFAndStart to start a detached process and then end the current OpenAF execution.
  * noStop=true can be used to avoid exiting the current OpenAF process.
+ * If redirectOutput is true (default), output is redirected to /dev/null on Unix (on Windows output is always visible).
+ * Set redirectOutput to false to keep the output visible.
  * </odoc>
  */
-AF.prototype.endOpenAFAndStart = function(aCommandLineArray, noStop) {
-	return endOpenAFAndStart(aCommandLineArray, noStop)
+AF.prototype.endOpenAFAndStart = function(aCommandLineArray, noStop, redirectOutput) {
+	return endOpenAFAndStart(aCommandLineArray, noStop, redirectOutput)
 }
 
 /**
  * <odoc>
- * <key>AF.endOpenAFAndStartOpenAF(aCommandLineArray, preCommandLineArray, noStop)</key>
+ * <key>AF.endOpenAFAndStartOpenAF(aCommandLineArray, preCommandLineArray, noStop, redirectOutput)</key>
  * Calls endOpenAFAndStartOpenAF to detach and start another OpenAF with current arguments plus extras.
+ * If redirectOutput is true (default), output is redirected to /dev/null on Unix (on Windows output is always visible).
+ * Set redirectOutput to false to keep the output visible.
  * </odoc>
  */
-AF.prototype.endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
-	return endOpenAFAndStartOpenAF(aCommandLineArray, preLineArray, noStop)
-}
+/*AF.prototype.endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop, redirectOutput) {
+	return endOpenAFAndStartOpenAF(aCommandLineArray, preLineArray, noStop, redirectOutput)
+}*/
 
 /**
  * <odoc>
