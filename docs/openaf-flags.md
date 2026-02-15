@@ -38,6 +38,12 @@ Central list of noteworthy runtime flags and environment variables.
 | OAF_SIGNATURE_KEY | (unset) | Public key for signature validation |
 | OAF_VALIDATION_STRICT | false | Require integrity + signature both |
 
+## Server Management
+
+| Env | Default | Purpose |
+|-----|---------|---------|
+| OAF_PIDFILE | (unset) | Override PID file path in ow.server.checkIn |
+
 ## Misc Performance / Behavior
 
 | Flag | Purpose |
