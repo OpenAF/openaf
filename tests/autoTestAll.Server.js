@@ -395,4 +395,63 @@
 
         $ch("queue::test").destroy();
     };
+
+    exports.testCheckIn = function() {
+        ow.loadServer();
+
+        // Test 1: Default behavior without parameter - should use default "server.pid"
+        io.rm("server.pid");
+        
+        var result1 = ow.server.checkIn(void 0, function() { return false; });
+        ow.test.assert(result1, true, "Problem with checkIn creating default PID file");
+        ow.test.assert(io.fileExists("server.pid"), true, "Problem with checkIn - default PID file should exist");
+        
+        pidCheckOut("server.pid");
+        io.rm("server.pid");
+
+        // Test 2: Specified PID file parameter
+        var testPid = "test_checkin.pid";
+        io.rm(testPid);
+        
+        var result2 = ow.server.checkIn(testPid, function() { return false; });
+        ow.test.assert(result2, true, "Problem with checkIn creating specified PID file");
+        ow.test.assert(io.fileExists(testPid), true, "Problem with checkIn - specified PID file should exist");
+        ow.test.assert(io.fileExists("server.pid"), false, "Problem with checkIn - default PID file should not exist when custom specified");
+        
+        pidCheckOut(testPid);
+        io.rm(testPid);
+
+        // Test 3: Verify OAF_PIDFILE environment variable behavior
+        // Note: Environment variables cannot be set at runtime in Java (they're inherited from parent process)
+        // This test checks if OAF_PIDFILE is set in the environment and validates override behavior.
+        // If OAF_PIDFILE is not set, these tests will be skipped (which is expected behavior).
+        // To test this functionality in CI, set OAF_PIDFILE before running the test suite.
+        // Example CI configuration:
+        //   env:
+        //     OAF_PIDFILE: test_env.pid
+        //   run: cd tests && ../ojob autoTestAll.yaml
+        var envPidFile = getEnv("OAF_PIDFILE");
+        if (isDefined(envPidFile) && envPidFile != "") {
+            // Test 3a: Environment variable overrides explicit parameter
+            io.rm(envPidFile);
+            var result3 = ow.server.checkIn("test_param.pid", function() { return false; });
+            ow.test.assert(result3, true, "Problem with checkIn when OAF_PIDFILE is set");
+            ow.test.assert(io.fileExists(envPidFile), true, "Problem with checkIn - OAF_PIDFILE file should exist");
+            ow.test.assert(io.fileExists("test_param.pid"), false, "Problem with checkIn - parameter file should not exist when OAF_PIDFILE is set");
+            
+            pidCheckOut(envPidFile);
+            io.rm(envPidFile);
+
+            // Test 3b: Environment variable overrides default (undefined parameter)
+            io.rm(envPidFile);
+            io.rm("server.pid");
+            var result4 = ow.server.checkIn(void 0, function() { return false; });
+            ow.test.assert(result4, true, "Problem with checkIn when OAF_PIDFILE is set with undefined parameter");
+            ow.test.assert(io.fileExists(envPidFile), true, "Problem with checkIn - OAF_PIDFILE file should exist when parameter is undefined");
+            ow.test.assert(io.fileExists("server.pid"), false, "Problem with checkIn - default file should not exist when OAF_PIDFILE is set");
+            
+            pidCheckOut(envPidFile);
+            io.rm(envPidFile);
+        }
+    };
 })();

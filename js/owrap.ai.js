@@ -723,6 +723,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             }
             var _readSseStream = (aStream, aOnPayload) => {
                 var dataLines = []
+                var nonSseLines = []
                 var stop = false
                 var errorObj = __
                 var flush = () => {
@@ -750,9 +751,32 @@ OpenWrap.ai.prototype.__gpttypes = {
                         }
                         if (_line.indexOf("data:") === 0) {
                             dataLines.push(_line.substring(5).trim())
+                            // Gemini can send one complete JSON event per `data:` line without
+                            // an empty separator line; emit as soon as the accumulated payload parses.
+                            var _candidatePayload = dataLines.join("\n")
+                            var _candidateObj = jsonParse(_candidatePayload, __, __, true)
+                            if (isDef(_candidateObj)) {
+                                dataLines = []
+                                if (aOnPayload(_candidateObj) === true) stop = true
+                            }
+                        } else {
+                            // Fallback for non-SSE JSON error responses returned by stream endpoint.
+                            nonSseLines.push(_line)
                         }
                     }, "\n", false)
                     flush()
+                    if (nonSseLines.length > 0) {
+                        var fallbackPayload = nonSseLines.join("\n").trim()
+                        if (fallbackPayload.length > 0) {
+                            var fallbackObj = jsonParse(fallbackPayload, __, __, true)
+                            if (isDef(fallbackObj)) {
+                                if (isMap(fallbackObj) && (isMap(fallbackObj.error) || isDef(fallbackObj.error))) {
+                                    errorObj = fallbackObj
+                                }
+                                aOnPayload(fallbackObj)
+                            }
+                        }
+                    }
                     try { aStream.close() } catch(e) {}
                 }
                 return errorObj
@@ -1147,8 +1171,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var lastResponse = __
                     var _stream = _r._requestStream("models/" + aModel + ":streamGenerateContent?alt=sse", body)
                     var streamError = _readSseStream(_stream, payload => {
-                        var data = jsonParse(payload, __, __, true)
+                        var data = __
+                        if (isMap(payload)) {
+                            data = payload
+                        } else if (isString(payload)) {
+                            if (payload === "[DONE]") return true
+                            data = jsonParse(payload, __, __, true)
+                        }
                         if (isDef(data)) {
+                            if (isMap(data) && (isMap(data.error) || isDef(data.error))) return true
                             events.push(data)
                             lastResponse = data
                             if (isArray(data.candidates)) {

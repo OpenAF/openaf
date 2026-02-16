@@ -256,7 +256,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		merge    : true,
 		jsonParse: true,
 		listFilesRecursive: true,
-		colorify : true
+		colorify : true,
+		restart  : true
 	},
 	WITHMD: {
 		htmlFilter: true
@@ -4470,30 +4471,44 @@ const uniqArray = function(anArray) {
 
 /**
  * <odoc>
- * <key>stopOpenAFAndRun(aCommandLineArray, addCommand)</key>
+ * <key>stopOpenAFAndRun(aCommandLineArray, addCommand, redirectOutput, noStop)</key>
  * Terminates the current OpenAF execution while trying to execute the commands on the aCommandLineArray.
  * Optionally you can use addCommand boolean flag (true) to allow for shell like commands on the current operating system.
+ * If redirectOutput is false (default), output is inherited from the parent process. Set redirectOutput to true to redirect
+ * output to /dev/null (or NUL on Windows).
+ * If noStop is true the current OpenAF execution will not be terminated.
  * To restart OpenAF please use the restartOpenAF function.
  * </odoc>
  */
-const stopOpenAFAndRun = function(aCommandLineArray, addCommand) {
+const stopOpenAFAndRun = function(aCommandLineArray, addCommand, redirectOutput, noStop) {
 	_$(aCommandLineArray).isArray().$_("Please provide a command line array.");
 	addCommand = _$(addCommand).isBoolean().default(false);
+	redirectOutput = _$(redirectOutput).isBoolean().default(false);
+	noStop = _$(noStop).isBoolean().default(false);
+
+	var unix = ( java.lang.System.getProperty("os.name").indexOf("Windows") < 0);
 
 	if (addCommand) {
-		var unix = ( java.lang.System.getProperty("os.name").indexOf("Windows") < 0);
 		if (unix) {
-			aCommandLineArray.unshift("/c");
-			aCommandLineArray.unshift("cmd");	
-		} else {
 			aCommandLineArray.unshift("-c");
 			aCommandLineArray.unshift("/bin/sh");	
+		} else {
+			aCommandLineArray.unshift("/c");
+			aCommandLineArray.unshift("cmd");	
 		}
 	}
-	var builder = new java.lang.ProcessBuilder(aCommandLineArray);
-	builder.inheritIO();
-	builder.start();
-	java.lang.System.exit(0);
+	var _args = aCommandLineArray.map(s => String(s))
+	var builder = new java.lang.ProcessBuilder(_args)
+	if (redirectOutput) {
+		var nullFile = new java.io.File(unix ? "/dev/null" : "NUL");
+		builder.redirectOutput(nullFile);
+		builder.redirectError(nullFile);
+	} else {
+		builder.inheritIO();
+	}
+	var _p = builder.start();
+	sleep(100, true)
+	if (!noStop) java.lang.System.exit(0);
 }
 
 /**
@@ -4504,6 +4519,7 @@ const stopOpenAFAndRun = function(aCommandLineArray, addCommand) {
  * element will be use sequentially to build the command line to start a new OpenAF instance. 
  * preCommandLineArray can be used to provide java arguments if defined.
  * </odoc>
+ * 
  */
 const restartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
 	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
@@ -4522,8 +4538,10 @@ const restartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
 		}
 	} else {
 		var ar = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
+		var _continue = true
 		for(var ari = 0; ari < ar.size(); ari++) {
-			command.add(String(ar.get(ari)));
+			if (_continue) command.add(String(ar.get(ari)))
+			if (ar.get(ari) == "openaf.jar") _continue = false
 		}
 	}
 	command.add("-jar");
@@ -4538,10 +4556,11 @@ const restartOpenAF = function(aCommandLineArray, preLineArray, noStop) {
 		}
 	}
 
-	var builder = new java.lang.ProcessBuilder(command);
-	builder.inheritIO();
-	builder.start();
-	if (!noStop) java.lang.System.exit(0);
+	stopOpenAFAndRun(af.fromJavaArray(command.toArray()), false, false, noStop)
+	//var builder = new java.lang.ProcessBuilder(command);
+	//builder.inheritIO();
+	//builder.start()
+	//if (!noStop) java.lang.System.exit(0);
 }
 
 /**
@@ -4557,6 +4576,88 @@ const forkOpenAF = function(aCommandLineArray, preLineArray) {
 	return $do(() => {
 		restartOpenAF(aCommandLineArray, preLineArray, true);
 	});
+}
+
+const __quotePosixArg = aArg => "'" + String(aArg).replace(/'/g, "'\"'\"'") + "'"
+const __quoteCmdArg = aArg => {
+	var s = String(aArg)
+	if (s.length == 0) return "\"\""
+	if (/[\s"&|<>^()%!]/.test(s)) return "\"" + s.replace(/(["^%!])/g, "^$1") + "\""
+	return s
+}
+
+/**
+ * <odoc>
+ * <key>endOpenAFAndStart(aCommandLineArray, noStop, redirectOutput)</key>
+ * Terminates the current OpenAF execution while trying to execute the commands on the aCommandLineArray
+ * in detached mode. On Unix systems it uses nohup (and setsid if available). On Windows it uses cmd start.
+ * If redirectOutput is true (default), output is redirected to /dev/null on Unix (on Windows output is always visible).
+ * Set redirectOutput to false to keep the output visible.
+ * </odoc>
+ */
+const endOpenAFAndStart = function(aCommandLineArray, noStop, redirectOutput) {
+	_$(aCommandLineArray).isArray().$_("Please provide a command line array.")
+	noStop = _$(noStop).isBoolean().default(false)
+	redirectOutput = _$(redirectOutput).isBoolean().default(true)
+	if (aCommandLineArray.length <= 0) throw "Please provide a non-empty command line array."
+
+	var osName = String(java.lang.System.getProperty("os.name")).toLowerCase()
+	var isWindows = osName.indexOf("windows") >= 0
+	var commandLine = []
+
+	if (isWindows) {
+		var cmd = "start \"\" /B " + aCommandLineArray.map(__quoteCmdArg).join(" ")
+		commandLine = [ "cmd", "/c", cmd ]
+	} else {
+		var cmd = aCommandLineArray.map(__quotePosixArg).join(" ")
+		var shellCmd
+		if (redirectOutput) {
+			shellCmd = "(command -v setsid >/dev/null 2>&1 && nohup setsid " + cmd + " >/dev/null 2>&1 < /dev/null || nohup " + cmd + " >/dev/null 2>&1 < /dev/null) &"
+		} else {
+			shellCmd = "(command -v setsid >/dev/null 2>&1 && nohup setsid " + cmd + " < /dev/null || nohup " + cmd + " < /dev/null) &"
+		}
+		commandLine = [ "/bin/sh", "-c", shellCmd ]
+	}
+
+	return stopOpenAFAndRun(commandLine, false, redirectOutput, noStop)
+}
+
+/**
+ * <odoc>
+ * <key>endOpenAFAndStartOpenAF(aCommandLineArray, preCommandLineArray, noStop, redirectOutput)</key>
+ * Terminates the current OpenAF execution and tries to start a detached OpenAF process with the current
+ * OpenAF command line plus an extra aCommandLineArray. preCommandLineArray can be used to provide java arguments.
+ * If redirectOutput is true (default), output is redirected to /dev/null on Unix (on Windows output is always visible).
+ * Set redirectOutput to false to keep the output visible.
+ * </odoc>
+ */
+const endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop, redirectOutput) {
+	if (isDef(aCommandLineArray)) _$(aCommandLineArray).isArray().$_("Please provide a command line array.");
+	noStop = _$(noStop).isBoolean().default(false);
+	redirectOutput = _$(redirectOutput).isBoolean().default(true);
+
+	var javaBin = java.lang.System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "java";
+	var currentJar = getOpenAFJar();
+	if (!currentJar.endsWith(".jar")) return;
+
+	var command = [];
+	command.push(String(javaBin));
+
+	if (isDef(preLineArray)) {
+		for (var c in preLineArray) command.push(String(preLineArray[c]));
+	} else {
+		var ar = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
+		for (var ari = 0; ari < ar.size(); ari++) command.push(String(ar.get(ari)));
+	}
+
+	command.push("-jar");
+	command.push(String(currentJar));
+
+	if (isDef(aCommandLineArray)) {
+		for (var ai in aCommandLineArray) command.push(String(aCommandLineArray[ai]));
+	}
+
+	return endOpenAFAndStart(command, noStop, redirectOutput);
 }
 
 /**
@@ -8513,7 +8614,8 @@ const $jsonrpc = function (aOptions) {
 			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
-		exec: (aMethod, aParams, aNotification) => {
+		exec: (aMethod, aParams, aNotification, aExecOptions) => {
+			aExecOptions = _$(aExecOptions, "aExecOptions").isMap().default({})
 			switch (aOptions.type) {
 				case "dummy":
 					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
@@ -8566,12 +8668,14 @@ const $jsonrpc = function (aOptions) {
                                         }
                                         if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
                                         return isDef(_res) && isDef(_res.result) ? _res.result : _res
-                                case "remote":
-                                default:
-                                        _$(aOptions.url, "aOptions.url").isString().$_()
-                                        aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
+				case "remote":
+				default:
+					_$(aOptions.url, "aOptions.url").isString().$_()
+					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
 					aMethod = _$(aMethod, "aMethod").isString().$_()
 					aParams = _$(aParams, "aParams").isMap().default({})
+					var _restOptions = clone(aOptions.options)
+					if (isMap(aExecOptions.restOptions)) _restOptions = merge(_restOptions, aExecOptions.restOptions)
 
 					var _req = {
 						jsonrpc: "2.0",
@@ -8585,7 +8689,7 @@ const $jsonrpc = function (aOptions) {
 						delete _req.id
 					}
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
-					var res = $rest(aOptions.options).post(aOptions.url, _req)
+					var res = $rest(_restOptions).post(aOptions.url, _req)
                                         // Notifications do not expect a reply
                                         if (!!aNotification) return
                                         _debug("jsonrpc <- " + stringify(res, __, ""))
@@ -8631,7 +8735,7 @@ const $jsonrpc = function (aOptions) {
  * \
  * The aOptions parameter is a map with the following possible keys:\
  * \
- * - type (string): Connection type - "stdio" for local process, "remote" for HTTP server, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
+ * - type (string): Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
  * - url (string): Required for remote servers - the MCP server endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string): Required for stdio type - the command to launch the MCP server\
@@ -8668,7 +8772,7 @@ const $jsonrpc = function (aOptions) {
  * - sh(aCommand): Set the command and switch to stdio type\
  * - initialize(clientInfo): Initialize the MCP connection and exchange capabilities\
  * - listTools(): Get list of available tools from the MCP server\
- * - callTool(toolName, toolArguments): Execute a specific tool with given arguments\
+ * - callTool(toolName, toolArguments, toolOptions): Execute a specific tool with given arguments and optional per-call options\
  * - listPrompts(): Get list of available prompts from the MCP server\
  * - getPrompt(promptName, promptArguments): Get a specific prompt with given arguments\
  * - toGptTools(aGptInstance, aToolNames): Add MCP tools to a $gpt instance\
@@ -8696,6 +8800,8 @@ const $jsonrpc = function (aOptions) {
  *   clientInfo: {name: "MyApp", version: "2.0.0"}\
  * });\
  * remoteClient.initialize();\
+ * // Optional per-call HTTP options (only used for remote/http MCP clients)\
+ * var result2 = remoteClient.callTool("read_file", {path: "/tmp/example.txt"}, { requestHeaders: { Authorization: "Bearer ..." } });\
  * var prompts = remoteClient.listPrompts();\
  * \
  * // Dummy mode for testing\
@@ -8950,12 +9056,13 @@ const $mcp = function(aOptions) {
                         }
                         return _jsonrpc.exec("tools/list", {})
 		},
-		callTool: (toolName, toolArguments) => {
+		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
 				throw new Error("MCP client not initialized. Call initialize() first.")
 			}
 			toolName = _$(toolName, "toolName").isString().$_()
 			toolArguments = _$(toolArguments, "toolArguments").isMap().default({})
+			toolOptions = _$(toolOptions, "toolOptions").isMap().default(__)
 			
 			// Call pre-function if provided
 			if (aOptions.preFn) {
@@ -8965,7 +9072,7 @@ const $mcp = function(aOptions) {
 			var _res = _jsonrpc.exec("tools/call", {
 				name: toolName,
 				arguments: toolArguments
-			})
+			}, __, { restOptions: toolOptions })
 			// Call post-function if provided
 			if (aOptions.posFn) {
 				aOptions.posFn(toolName, toolArguments, _res)
@@ -9758,6 +9865,21 @@ if (isUnDef(alert)) alert = function(msg) {
 };
 
 var __timeout = {};
+/**
+ * <odoc>
+ * <key>setTimeout(aFunction, aPeriod)</key>
+ * Tries to execute aFunction after aPeriod milliseconds. Note: this function will block the
+ * main thread, so use it with caution. If you need to execute aFunction in a different thread and avoid blocking the main thread, please use setInterval with a clearInterval after the first execution.
+ * \
+ * Example:\
+ * \
+ * setTimeout(() => { print("Hello after 2 seconds"); }, 2000);\
+ * \
+ * // or using setInterval to avoid blocking the main thread\
+ * var id = setInterval(() => { print("Hello after 2 seconds"); clearInterval(id); }, 2000);\
+ * \
+ * </odoc>
+ */
 const setTimeout = function(aFunction, aPeriod) {
 	sleep(aPeriod);
 	var args = [];
@@ -9765,6 +9887,12 @@ const setTimeout = function(aFunction, aPeriod) {
 	aFunction.apply(this, args);
 }
 
+/**
+ * <odoc>
+ * <key>setInterval(aFunction, aPeriod) : String</key>
+ * Tries to execute aFunction every aPeriod milliseconds. Returns an id that can be used to clear the interval with clearInterval. Note: this function uses Threads plugin, so it will execute aFunction in a different thread and it won't block the main thread. Also, do note that the aFunction execution time is not included in the aPeriod, so if aFunction takes 2 seconds to execute and aPeriod is 5 seconds, the next execution will be 5 seconds after aFunction finishes, so it will be 7 seconds after the previous execution start.
+ * </odoc>
+ */
 const setInterval = function(aFunction, aPeriod) {
 	plugin("Threads");
 	var t = new Threads();
@@ -9775,7 +9903,7 @@ const setInterval = function(aFunction, aPeriod) {
 	var parent = this;
 
 	var f = function(uuid) {
-		aFunction.apply(parent, args);
+	  aFunction.apply(parent, args);
 	}
 
 	var uuid = t.addThread(f);
@@ -9784,6 +9912,12 @@ const setInterval = function(aFunction, aPeriod) {
 	return uuid;
 }
 
+/**
+ * <odoc>
+ * <key>clearInterval(uuid)</key>
+ * Clears the interval with the provided uuid returned by setInterval.
+ * </odoc>
+ */
 const clearInterval = function(uuid) {
 	var t = __timeout[uuid];
 	t.stop();
@@ -11276,6 +11410,31 @@ AF.prototype.fromObj2XML = function (obj, sanitize, aAttrKey, aPrefix, aSuffix) 
  * </odoc>
  */
 AF.prototype.encryptText = function() { plugin("Console"); print("Encrypted text: " + af.encrypt((new Console()).readLinePrompt("Enter text: ", "*"))); };
+
+/**
+ * <odoc>
+ * <key>AF.endOpenAFAndStart(aCommandLineArray, noStop, redirectOutput)</key>
+ * Calls endOpenAFAndStart to start a detached process and then end the current OpenAF execution.
+ * noStop=true can be used to avoid exiting the current OpenAF process.
+ * If redirectOutput is true (default), output is redirected to /dev/null on Unix (on Windows output is always visible).
+ * Set redirectOutput to false to keep the output visible.
+ * </odoc>
+ */
+AF.prototype.endOpenAFAndStart = function(aCommandLineArray, noStop, redirectOutput) {
+	return endOpenAFAndStart(aCommandLineArray, noStop, redirectOutput)
+}
+
+/**
+ * <odoc>
+ * <key>AF.endOpenAFAndStartOpenAF(aCommandLineArray, preCommandLineArray, noStop, redirectOutput)</key>
+ * Calls endOpenAFAndStartOpenAF to detach and start another OpenAF with current arguments plus extras.
+ * If redirectOutput is true (default), output is redirected to /dev/null on Unix (on Windows output is always visible).
+ * Set redirectOutput to false to keep the output visible.
+ * </odoc>
+ */
+/*AF.prototype.endOpenAFAndStartOpenAF = function(aCommandLineArray, preLineArray, noStop, redirectOutput) {
+	return endOpenAFAndStartOpenAF(aCommandLineArray, preLineArray, noStop, redirectOutput)
+}*/
 
 /**
  * <odoc>
@@ -14782,7 +14941,7 @@ const $err = function(exception, rethrow, returnStr, code) {
 		str.push(["\n", ansiColor("", exception.message)].join(""))
 	}
 
-	var isNavErr = (__flags.OAF_ERRSTACK && "lineNumber" in exception)
+	var isNavErr = (__flags.OAF_ERRSTACK && typeof exception === 'object' && exception !== null && "lineNumber" in exception)
 
 	// If we need to print the error stack, cache the split stack lines.
 	let stackLines
