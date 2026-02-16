@@ -883,7 +883,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (__r.candidates[0].finishReason == "STOP") {
                            // Only extract text from parts that have text (skip functionCall, functionResponse, etc.)
                            var textParts = __r.candidates[0].content.parts.filter(p => isDef(p) && isDef(p.text))
-                           return textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                           if (textParts.length > 0) return textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                           // Avoid returning empty text when Gemini emits only functionCall/functionResponse parts.
+                           return stringify(__r, __, "")
                         }
                     }
                     return stringify(__r, __, "")
@@ -931,7 +933,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (__r.candidates[0].finishReason == "STOP") {
                            // Only extract text from parts that have text (skip functionCall, functionResponse, etc.)
                            var textParts = __r.candidates[0].content.parts.filter(p => isDef(p) && isDef(p.text))
-                           return textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                           if (textParts.length > 0) return textParts.reduce((aC, aV) => aC + "\n" + aV.text, "")
+                           return __r
                         }
                      }
                      return __r
@@ -1203,77 +1206,88 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
                     
-                    // Handle tool calling for Gemini streaming
-                    if (isMap(lastResponse) && isArray(lastResponse.candidates)) {
-                        var _p = [], stopWith = false
-                        lastResponse.candidates.forEach(tc => {
-                            if (isArray(tc.content.parts)) {
-                                var fnParts = tc.content.parts.filter(p => isDef(p.functionCall))
-                                if (fnParts.length > 0 && tc.finishReason == "STOP") {
-                                    stopWith = true
-                                    _p.push({ role: "model", parts: tc.content.parts })
-                                    fnParts.forEach(p => {
-                                        var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
-                                        if (isDef(_t) && isFunction(_t.fn)) {
-                                            var _args = p.functionCall.args
-                                            if (isString(_args)) _args = jsonParse(_args, __, __, true)
-                                            if (isUnDef(_args)) _args = {}
-                                            var _tr = _t.fn(_args)
-                                            var _tryParse = v => {
-                                                if (isString(v)) {
-                                                    return jsonParse(v, __, __, true)
-                                                }
-                                                return __
+                    // Handle tool calling for Gemini streaming.
+                    // Gemini can emit functionCall parts in an earlier event and a separate final STOP event with empty text.
+                    var _p = []
+                    var modelToolParts = []
+                    var seenFnCalls = {}
+                    events.forEach(ev => {
+                        if (isArray(ev.candidates)) {
+                            ev.candidates.forEach(tc => {
+                                if (isMap(tc.content) && isArray(tc.content.parts)) {
+                                    tc.content.parts.forEach(p => {
+                                        if (isDef(p.functionCall)) {
+                                            var _fck = p.functionCall.name + "::" + stringify(p.functionCall.args, __, "")
+                                            if (isUnDef(seenFnCalls[_fck])) {
+                                                seenFnCalls[_fck] = true
+                                                modelToolParts.push(p)
                                             }
-                                            if (isString(_tr)) {
-                                                var _pjson = _tryParse(_tr)
-                                                if (isDef(_pjson)) _tr = _pjson
-                                            } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
-                                                var _pjson2 = _tryParse(_tr.result)
-                                                if (isDef(_pjson2)) _tr = _pjson2
-                                            }
-                                            var _content
-                                            if (isMap(_tr)) {
-                                                _content = _tr
-                                            } else if (isArray(_tr)) {
-                                                _content = { items: _tr }
-                                            } else if (isDef(_tr)) {
-                                                _content = { result: _tr }
-                                            } else {
-                                                _content = {}
-                                            }
-                                            _p.push({ role: "user", parts: [{
-                                                functionResponse: {
-                                                    name: p.functionCall.name,
-                                                    response: {
-                                                        name: p.functionCall.name,
-                                                        content: _content
-                                                    }
-                                                }
-                                            }]})
                                         }
                                     })
-                                    stopWith = false
                                 }
+                            })
+                        }
+                    })
+                    if (modelToolParts.length > 0) {
+                        _p.push({ role: "model", parts: modelToolParts })
+                        modelToolParts.forEach(p => {
+                            var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
+                            if (isDef(_t) && isFunction(_t.fn)) {
+                                var _args = p.functionCall.args
+                                if (isString(_args)) _args = jsonParse(_args, __, __, true)
+                                if (isUnDef(_args)) _args = {}
+                                var _tr = _t.fn(_args)
+                                var _tryParse = v => {
+                                    if (isString(v)) {
+                                        return jsonParse(v, __, __, true)
+                                    }
+                                    return __
+                                }
+                                if (isString(_tr)) {
+                                    var _pjson = _tryParse(_tr)
+                                    if (isDef(_pjson)) _tr = _pjson
+                                } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
+                                    var _pjson2 = _tryParse(_tr.result)
+                                    if (isDef(_pjson2)) _tr = _pjson2
+                                }
+                                var _content
+                                if (isMap(_tr)) {
+                                    _content = _tr
+                                } else if (isArray(_tr)) {
+                                    _content = { items: _tr }
+                                } else if (isDef(_tr)) {
+                                    _content = { result: _tr }
+                                } else {
+                                    _content = {}
+                                }
+                                _p.push({ role: "user", parts: [{
+                                    functionResponse: {
+                                        name: p.functionCall.name,
+                                        response: {
+                                            name: p.functionCall.name,
+                                            content: _content
+                                        }
+                                    }
+                                }]})
                             }
                         })
-                        if (!stopWith && _p.length > 0) {
-                            _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
-                            // Recursively call rawPromptStream to continue streaming with tool results
-                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, [], aOnDelta)
-                            if (isMap(toolResult)) {
-                                // Merge events from both calls
-                                if (isArray(toolResult.events)) {
-                                    toolResult.events = events.concat(toolResult.events)
-                                }
-                                // Append content from tool execution response
-                                if (isString(toolResult.content)) {
-                                    toolResult.content = content + toolResult.content
-                                }
-                                return toolResult
+                    }
+                    if (_p.length > 0) {
+                        _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
+                        // Recursively call rawPromptStream to continue streaming with tool results
+                        var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, [], aOnDelta)
+                        if (isMap(toolResult)) {
+                            // Merge events from both calls
+                            if (isArray(toolResult.events)) {
+                                toolResult.events = events.concat(toolResult.events)
+                            }
+                            // Append content from tool execution response
+                            if (isString(toolResult.content)) {
+                                toolResult.content = content + toolResult.content
                             }
                             return toolResult
                         }
+                        return toolResult
                     }
                     
                     if (content.length > 0) {
