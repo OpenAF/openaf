@@ -297,7 +297,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 		seq_ratio          : 1
 	},
 	MCPSERVER                   : {
-		answerInTOOM       : false
+		answerInTOON       : false
 	},
 	YAML: {
 		indent     : 2,
