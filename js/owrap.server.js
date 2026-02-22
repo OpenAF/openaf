@@ -1763,6 +1763,8 @@ OpenWrap.server.prototype.jsonRPC = function(data, mapOfFns) {
  * </odoc>
  */
 OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
+    var _mcpResultToText = result => (__flags.MCPSERVER && __flags.MCPSERVER.answerInTOOM === true) ? af.toTOON(result) : stringify(result)
+
     lgF = _$(lgF, "lgF").isFunction().default((t, m) => {
         // io.writeLineNDJSON("log.ndjson", { type: t, data: m })
     })
@@ -1813,7 +1815,7 @@ OpenWrap.server.prototype.mcpStdio = function(initData, fnsMeta, fns, lgF) {
                         return { 
                             content: [{
                                 type: "text",
-                                text: isString(result) ? result : stringify(result, __, "")
+                                text: isString(result) ? result : _mcpResultToText(result)
                             }],
                             isError: false
                         }
@@ -2008,6 +2010,8 @@ OpenWrap.server.prototype.a2a.prototype.getAgent = function(aId) {
  * </odoc>
  */
 OpenWrap.server.prototype.a2a.prototype.send = function(aId, aMessage, aOptions, aAuthContext) {
+    var _mcpResultToText = result => (__flags.MCPSERVER && __flags.MCPSERVER.answerInTOOM === true) ? af.toTOON(result) : stringify(result)
+
     _$(aId, "aId").isString().$_()
     aOptions = _$(aOptions, "aOptions").isMap().default({})
     aAuthContext = _$(aAuthContext, "aAuthContext").default({})
@@ -2075,13 +2079,13 @@ OpenWrap.server.prototype.a2a.prototype.send = function(aId, aMessage, aOptions,
         // Ensure result is in proper MCP format
         if (isUnDef(result) || !isMap(result)) {
             return {
-                content: [{ type: "text", text: stringify(result) }],
+                content: [{ type: "text", text: _mcpResultToText(result) }],
                 isError: false
             }
         }
 
         if (isUnDef(result.content)) {
-            result.content = [{ type: "text", text: stringify(result) }]
+            result.content = [{ type: "text", text: _mcpResultToText(result) }]
         }
 
         if (isUnDef(result.isError)) {
