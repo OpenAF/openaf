@@ -3734,6 +3734,12 @@ OpenWrap.server.prototype.httpd = {
             try {
                 var result = isArray(reqObj.params) ? fn.apply(null, reqObj.params) : fn(reqObj.params)
 				debugFn("MCP request result: " + stringify(result))
+                // Normalize non-map results to MCP content envelope.
+                // Use af.toTOOM when __flags.MCPSERVER.answerInTOOM is true, otherwise fall back to stringify.
+                if (!isMap(result)) {
+                    var _useTOOM = isDef(__flags) && isDef(__flags.MCPSERVER) && __flags.MCPSERVER.answerInTOOM === true;
+                    result = { content: [{ type: "text", text: _useTOOM ? af.toTOOM(result) : stringify(result) }], isError: false };
+                }
                 if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {})
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
