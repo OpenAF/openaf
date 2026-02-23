@@ -1273,22 +1273,22 @@ OpenWrap.ai.prototype.__gpttypes = {
                         })
                     }
                     if (_p.length > 0) {
-                        _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
-                        // Recursively call rawPromptStream to continue streaming with tool results
-                        var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, [], aOnDelta)
-                        if (isMap(toolResult)) {
-                            // Merge events from both calls
-                            if (isArray(toolResult.events)) {
-                                toolResult.events = events.concat(toolResult.events)
-                            }
-                            // Append content from tool execution response
-                            if (isString(toolResult.content)) {
-                                toolResult.content = content + toolResult.content
+                            _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
+                            // Recursively call rawPromptStream to continue streaming with tool results
+                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, [], aOnDelta)
+                            if (isMap(toolResult)) {
+                                // Merge events from both calls
+                                if (isArray(toolResult.events)) {
+                                    toolResult.events = events.concat(toolResult.events)
+                                }
+                                // Append content from tool execution response
+                                if (isString(toolResult.content)) {
+                                    toolResult.content = content + toolResult.content
+                                }
+                                return toolResult
                             }
                             return toolResult
                         }
-                        return toolResult
-                    }
                     
                     if (content.length > 0) {
                         _r.conversation = _r.conversation.concat(newPrompts).concat({ role: "model", parts: [ { text: content } ] })
@@ -1990,6 +1990,29 @@ OpenWrap.ai.prototype.__gpttypes = {
                 }
                 return errorObj
             }
+            var _normalizeToolResultForAnthropic = aResult => {
+                if (isString(aResult)) {
+                    var _parsed = jsonParse(aResult, __, __, true)
+                    if (isMap(_parsed) && isArray(_parsed.content)) {
+                        var _txtFromStr = _parsed.content
+                            .filter(r => isMap(r) && isString(r.text))
+                            .map(r => r.text)
+                            .join("\n")
+                        if (_txtFromStr.length > 0) return _txtFromStr
+                    }
+                    return aResult
+                }
+                if (isMap(aResult) && isArray(aResult.content)) {
+                    var _text = aResult.content
+                        .filter(r => isMap(r) && isString(r.text))
+                        .map(r => r.text)
+                        .join("\n")
+                    if (_text.length > 0) return _text
+                }
+                if (isArray(aResult) || isMap(aResult)) return stringify(aResult, __, "")
+                if (isUnDef(aResult) || aResult === null) return ""
+                return stringify(aResult, __, "")
+            }
 
             var _r = {
                 conversation: [],
@@ -2028,7 +2051,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var __r = _r.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
                     if (isArray(__r.content) && __r.content.length > 0) {
                         if (__r.stop_reason === "end_turn") {
-                           return __r.content[0].text
+                           var textParts = __r.content.filter(c => isMap(c) && c.type == "text" && isString(c.text))
+                           if (textParts.length > 0) return textParts.map(c => c.text).join("\n")
                         }
                     }
                     return __r
@@ -2063,8 +2087,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isMap(c)) {
                             let role = isDef(c.role) ? c.role : "user";
                             let content = c.content;
-                            if (isArray(content)) content = content.map(x => isString(x) ? x : stringify(x, __, "")).join("\n");
-                            if (!isString(content)) content = stringify(content, __, "");
+                            if (isMap(content)) content = [ content ]
+                            if (isArray(content)) {
+                                content = content.map(x => {
+                                    if (isString(x)) return { type: "text", text: x }
+                                    if (isMap(x)) return x
+                                    return { type: "text", text: stringify(x, __, "") }
+                                })
+                            }
+                            if (!isString(content) && !isArray(content)) content = stringify(content, __, "");
                             return { role, content };
                         } else {
                             return { role: "user", content: String(c) };
@@ -2080,11 +2111,6 @@ OpenWrap.ai.prototype.__gpttypes = {
 
                     _r.conversation = msgs;
 
-                    if (aJsonFlag) {
-                        var _jsonInstruction = { role: "user", content: "output json" };
-                        bodyMessages.push(_jsonInstruction);
-                    }
-
                     var body = {
                         model: aModel,
                         temperature: aTemperature,
@@ -2092,7 +2118,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     }
                     // Note: Anthropic does not support response_format like OpenAI.
                     // JSON output is controlled via system prompts and model behavior.
-                    // The aJsonFlag instruction is already added to messages above.
                     
                     if (_noSystem && systemMsgs.length > 0) {
                         var _systemText = systemMsgs
@@ -2111,6 +2136,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                             .filter(s => isString(s) && s.length > 0)
                             .join("\n")
                         if (_systemText.length > 0) body.system = _systemText
+                    }
+                    if (aJsonFlag) {
+                        body.system = (isString(body.system) && body.system.length > 0 ? body.system + "\n\n" : "") + "output json"
                     }
 
                     body = merge(body, aOptions.params)
@@ -2158,16 +2186,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 if (!isFunction(_tool.fn)) throw "Tool '" + tc.name + "' missing function implementation"
                                 var _args = tc.input
                                 var _result = _tool.fn(_args)
-                                var _content
-                                if (isString(_result)) {
-                                    _content = _result
-                                } else if (isArray(_result) || isMap(_result)) {
-                                    _content = stringify(_result, __, "")
-                                } else if (isUnDef(_result) || _result === null) {
-                                    _content = ""
-                                } else {
-                                    _content = stringify(_result, __, "")
-                                }
+                                var _content = _normalizeToolResultForAnthropic(_result)
                                 followUps.push({
                                     role: "user",
                                     content: [
@@ -2217,8 +2236,15 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (isMap(c)) {
                             let role = isDef(c.role) ? c.role : "user";
                             let content = c.content;
-                            if (isArray(content)) content = content.map(x => isString(x) ? x : stringify(x, __, "")).join("\n");
-                            if (!isString(content)) content = stringify(content, __, "");
+                            if (isMap(content)) content = [ content ]
+                            if (isArray(content)) {
+                                content = content.map(x => {
+                                    if (isString(x)) return { type: "text", text: x }
+                                    if (isMap(x)) return x
+                                    return { type: "text", text: stringify(x, __, "") }
+                                })
+                            }
+                            if (!isString(content) && !isArray(content)) content = stringify(content, __, "");
                             return { role, content };
                         } else {
                             return { role: "user", content: String(c) };
@@ -2233,11 +2259,6 @@ OpenWrap.ai.prototype.__gpttypes = {
                     var bodyMessages = (_noSystem ? msgs.filter(m => m.role != "system") : msgs.slice());
 
                     _r.conversation = msgs;
-
-                    if (aJsonFlag) {
-                        var _jsonInstruction = { role: "user", content: "output json" };
-                        bodyMessages.push(_jsonInstruction);
-                    }
 
                     var body = {
                         model: aModel,
@@ -2263,6 +2284,9 @@ OpenWrap.ai.prototype.__gpttypes = {
                             .filter(s => isString(s) && s.length > 0)
                             .join("\n")
                         if (_systemText.length > 0) body.system = _systemText
+                    }
+                    if (aJsonFlag) {
+                        body.system = (isString(body.system) && body.system.length > 0 ? body.system + "\n\n" : "") + "output json"
                     }
 
                     body = merge(body, aOptions.params)
@@ -2294,6 +2318,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'client'}, merge({_t:nowNano(),_f:'client'}, body))
                     var events = []
                     var content = ""
+                    var _textDeltas = []
+                    // When tools are enabled, Anthropic may emit interim text for tool turns.
+                    // Defer delta emission until we confirm this turn is not a tool_use stop.
+                    var _deferToolStreaming = isArray(aTools) && aTools.length > 0
+                    // In JSON-control mode (agent loop), don't stream raw JSON deltas to the UI.
+                    // Let the caller process the final parsed answer instead.
+                    var _suppressJsonStreaming = aJsonFlag === true
                     var lastMessage = __
                     var _stream = _r._requestStream("v1/messages", body)
                     var streamError = _readSseStream(_stream, payload => {
@@ -2304,7 +2335,13 @@ OpenWrap.ai.prototype.__gpttypes = {
                             lastMessage = data
                             if (data.type == "content_block_delta" && isMap(data.delta) && isString(data.delta.text)) {
                                 content += data.delta.text
-                                if (isFunction(aOnDelta)) aOnDelta(data.delta.text, data)
+                                if (isFunction(aOnDelta) && !_suppressJsonStreaming) {
+                                    if (_deferToolStreaming) {
+                                        _textDeltas.push({ text: data.delta.text, data: data })
+                                    } else {
+                                        aOnDelta(data.delta.text, data)
+                                    }
+                                }
                             }
                             if (data.type == "message_delta" && isMap(data.delta) && isDef(data.delta.stop_reason)) {
                                 lastMessage.stop_reason = data.delta.stop_reason
@@ -2319,18 +2356,47 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (isDef(_debugCh)) $ch(_debugCh).set({_t:nowNano(),_f:'llm'}, { _t: nowNano(), _f: "llm", events: events })
                     
                     // Handle tool calling for Anthropic streaming
-                    // Collect tool_use blocks from events
-                    var toolUseBlocks = events.filter(e => e.type == "content_block_start" && isMap(e.content_block) && e.content_block.type == "tool_use")
-                        .map(e => e.content_block)
-                    // Also check for tool_use in content_block_delta events to get complete arguments
+                    // Track tool_use blocks by Anthropic content index (not filtered array position).
+                    var toolUseBlocksByIndex = {}
+                    var toolUseBlocks = []
+                    events.forEach(e => {
+                        if (e.type == "content_block_start" && isMap(e.content_block) && e.content_block.type == "tool_use") {
+                            var _tu = {
+                                id: e.content_block.id,
+                                name: e.content_block.name,
+                                input: ""
+                            }
+                            if (isDef(e.content_block.input)) {
+                                if (isString(e.content_block.input)) {
+                                    _tu.input = e.content_block.input
+                                } else if (isMap(e.content_block.input)) {
+                                    // Anthropic often starts tool_use with input:{} and then streams real args in input_json_delta.
+                                    if (Object.keys(e.content_block.input).length > 0) {
+                                        _tu.input = stringify(e.content_block.input, __, "")
+                                    }
+                                } else {
+                                    _tu.input = stringify(e.content_block.input, __, "")
+                                }
+                            }
+                            if (isDef(e.index)) toolUseBlocksByIndex[e.index] = _tu
+                            toolUseBlocks.push(_tu)
+                        }
+                    })
+                    // Collect tool arguments from streamed input deltas.
                     events.forEach(e => {
                         if (e.type == "content_block_delta" && isMap(e.delta) && e.delta.type == "input_json_delta") {
-                            if (isDef(e.index) && e.index < toolUseBlocks.length) {
-                                if (isUnDef(toolUseBlocks[e.index].input)) toolUseBlocks[e.index].input = ""
-                                toolUseBlocks[e.index].input += e.delta.partial_json
+                            var _tu = toolUseBlocksByIndex[e.index]
+                            if (isMap(_tu)) {
+                                if (!isString(_tu.input)) _tu.input = stringify(_tu.input, __, "")
+                                _tu.input += _$(e.delta.partial_json).default("")
                             }
                         }
                     })
+
+                    // Flush deferred deltas only for terminal non-tool turns.
+                    if (_deferToolStreaming && !_suppressJsonStreaming && isFunction(aOnDelta) && (!isArray(toolUseBlocks) || toolUseBlocks.length == 0)) {
+                        _textDeltas.forEach(d => aOnDelta(d.text, d.data))
+                    }
                     
                     if (isArray(toolUseBlocks) && toolUseBlocks.length > 0) {
                         var _p = []
@@ -2350,7 +2416,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var _args = isString(tc.input) ? jsonParse(tc.input, __, __, true) : tc.input
                                 if (isUnDef(_args)) _args = {}
                                 var _result = _t.fn(_args)
-                                var _resultStr = isString(_result) ? _result : (isArray(_result) || isMap(_result)) ? stringify(_result, __, "") : (isUnDef(_result) || _result === null) ? "" : stringify(_result, __, "")
+                                var _resultStr = _normalizeToolResultForAnthropic(_result)
                                 _p.push({ role: "user", content: [{ type: "tool_result", tool_use_id: tc.id, content: _resultStr }] })
                             }
                         })
@@ -2364,10 +2430,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 if (isArray(toolResult.events)) {
                                     toolResult.events = events.concat(toolResult.events)
                                 }
-                                // Append content from tool execution response
-                                if (isString(toolResult.content)) {
-                                    toolResult.content = content + toolResult.content
-                                }
+                                // Don't prepend intermediary tool-turn text.
                                 return toolResult
                             }
                             return toolResult

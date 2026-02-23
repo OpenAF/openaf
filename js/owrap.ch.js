@@ -4470,10 +4470,102 @@ OpenWrap.ch.prototype.utils = {
 
 		return {
 			query: {
-				query_string: {
-					query: aQueryString
+			query_string: {
+				query: aQueryString
 				}
 			}
+		};
+	},
+
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.getK8sRemoteURLArrayFunc(aOptions) : Function</key>
+	 * Returns a function to be used as aRemoteURLArray in ow.ch.server.peer. It will resolve
+	 * all IP addresses from a Kubernetes DNS name (typically a headless service for deployments)
+	 * using ow.net.getDNS and return an array of remote channel URLs.\
+	 * \
+	 * aOptions map entries:\
+	 * - dnsName    (String, mandatory) Kubernetes DNS name to resolve\
+	 * - recordType (String, optional)  DNS record type (defaults to "a")\
+	 * - dnsServer  (String, optional)  DNS server to use\
+	 * - protocol   (String, optional)  URL protocol (defaults to "http")\
+	 * - port       (Number, optional)  Port to use (defaults to local peer port when numeric)\
+	 * - path       (String, optional)  URL path (defaults to peer path argument)\
+	 * - excludeCurrentIP (Boolean, optional) Excludes current instance IP from result (defaults to false)\
+	 * - currentIP  (String, optional)  Explicit current instance IP (otherwise uses POD_IP env var or ow.net.getHostAddress())\
+	 * - urlFn      (Function, optional) Custom URL builder fn(ip, ctx)\
+	 * \
+	 * Example:\
+	 * \
+	 * var peersFn = ow.ch.utils.getK8sRemoteURLArrayFunc({\
+	 *   dnsName: "openaf-peers.default.svc.cluster.local",\
+	 *   protocol: "http",\
+	 *   port: 8090,\
+	 *   path: "/log"\
+	 * });\
+	 * ow.ch.server.peer("__log", 8090, "/log", peersFn);\
+	 * </odoc>
+	 */
+	getK8sRemoteURLArrayFunc: function(aOptions) {
+		aOptions = _$(aOptions, "aOptions").isMap().default({});
+		_$(aOptions.dnsName, "aOptions.dnsName").isString().$_("Please provide aOptions.dnsName.");
+
+		return function(aName, aLocalPortORServer, aPath, aUUID) {
+			ow.loadNet();
+
+			var res = [];
+			var dnsRes = ow.net.getDNS(aOptions.dnsName, aOptions.recordType, aOptions.dnsServer, true);
+			var dnsArr = isArray(dnsRes) ? dnsRes : [ dnsRes ];
+			var protocol = _$(aOptions.protocol).isString().default("http");
+			var port = aOptions.port;
+			var path = _$(aOptions.path).isString().default(aPath);
+			var excludeCurrentIP = _$(aOptions.excludeCurrentIP).isBoolean().default(false);
+			var currentIP = _$(aOptions.currentIP).isString().default(__);
+
+			if (isUnDef(port) && isNumber(aLocalPortORServer)) port = aLocalPortORServer;
+			if (isString(path) && path.length > 0 && path.substring(0, 1) != "/") path = "/" + path;
+			if (excludeCurrentIP && isUnDef(currentIP) && isDef(getEnv("POD_IP"))) currentIP = String(getEnv("POD_IP"));
+			if (excludeCurrentIP && isUnDef(currentIP)) {
+				try { currentIP = String(ow.net.getHostAddress()); } catch(e) {}
+			}
+
+			function _extractIP(aDNSRecord) {
+				if (isString(aDNSRecord)) return aDNSRecord;
+				if (isMap(aDNSRecord) && isDef(aDNSRecord.Address)) {
+					if (isString(aDNSRecord.Address)) return aDNSRecord.Address;
+					if (isMap(aDNSRecord.Address) && isDef(aDNSRecord.Address.HostAddress)) return aDNSRecord.Address.HostAddress;
+				}
+				if (isMap(aDNSRecord) && isString(aDNSRecord.RdataToString)) return aDNSRecord.RdataToString;
+				return __;
+			}
+
+			function _mkURL(aIP) {
+				var host = aIP;
+				if (isString(aIP) && aIP.indexOf(":") >= 0 && aIP.substring(0, 1) != "[") host = "[" + aIP + "]";
+				var u = protocol + "://" + host;
+				if (isDef(port)) u += ":" + port;
+				if (isDef(path)) u += path;
+				return u;
+			}
+
+			for (var i in dnsArr) {
+				var ip = _extractIP(dnsArr[i]);
+				if (isDef(ip)) {
+					if (excludeCurrentIP && isDef(currentIP) && String(ip) == String(currentIP)) continue;
+					var u = isFunction(aOptions.urlFn)
+						? aOptions.urlFn(ip, {
+							name: aName,
+							localPortOrServer: aLocalPortORServer,
+							path: aPath,
+							uuid: aUUID,
+							options: aOptions
+						})
+						: _mkURL(ip);
+					if (isDef(u)) res.push(u);
+				}
+			}
+
+			return $from(res).distinct().select();
 		};
 	},
 
@@ -5006,6 +5098,7 @@ OpenWrap.ch.prototype.server = {
 	 * <key>ow.ch.server.peer(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount)</key>
 	 * Exposes aName channel in the same way as ow.ch.server.expose but it also add a subscribe function to 
 	 * the aName channel to remotely peer with other expose channel(s) given aRemoteURLArray. Optionally
+	 * aRemoteURLArray can also be a function returning a URL or an array of URLs. Optionally
 	 * you can also provide aAuthFunc(user, pass) and aUnAuthFunc(aServer, aRequest) functions using ow.server.httpd.authBasic.
 	 * The aAuthFunc can add aRequest.channelPermission to enforce read and/or write permissions on a channel (e.g. "r", "rw").
 	 * Optionally you can provide aMaxTime for expiration of commands to retry to communicate and aMaxCount of commands to retry to communicate.\
@@ -5019,6 +5112,10 @@ OpenWrap.ch.prototype.server = {
 	peer: function(aName, aLocalPortORServer, aPath, aRemoteURLArray, aAuthFunc, aUnAuthFunc, aMaxTime, aMaxCount) {
 		var uuid = ow.ch.server.expose(aName, aLocalPortORServer, aPath, aAuthFunc, aUnAuthFunc);
 		var res = [];
+
+		if (isFunction(aRemoteURLArray) && !isArray(aRemoteURLArray)) {
+			aRemoteURLArray = aRemoteURLArray(aName, aLocalPortORServer, aPath, uuid);
+		}
 
 		if (!(isArray(aRemoteURLArray))) aRemoteURLArray = [ aRemoteURLArray ];
 		
