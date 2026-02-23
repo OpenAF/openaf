@@ -4514,8 +4514,14 @@ OpenWrap.ch.prototype.utils = {
 				ow.loadNet();
 
 				var res = [];
-				var dnsRes = ow.net.getDNS(aOptions.dnsName, aOptions.recordType, aOptions.dnsServer, true);
-				var dnsArr = isArray(dnsRes) ? dnsRes : [ dnsRes ];
+				var dnsArr;
+				try {
+					var dnsRes = ow.net.getDNS(aOptions.dnsName, aOptions.recordType, aOptions.dnsServer, true);
+					dnsArr = isArray(dnsRes) ? dnsRes : [ dnsRes ];
+				} catch(e) {
+					logErr("getK8sRemoteURLArrayFunc DNS resolution failed for '" + aOptions.dnsName + "': " + e);
+					return [];
+				}
 				var protocol = _$(aOptions.protocol).isString().default("http");
 				var port = aOptions.port;
 				var path = _$(aOptions.path).isString().default(aPath);
