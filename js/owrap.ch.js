@@ -4465,17 +4465,17 @@ OpenWrap.ch.prototype.utils = {
 	 * Returns a query map using aQueryString (using lucene query string (like in Kibana)) to be used on getAll, for example.
 	 * </odoc>
 	 */
-		getElasticQuery: function(aQueryString) {
-			_$(aQueryString).isString();
+	getElasticQuery: function(aQueryString) {
+		_$(aQueryString).isString();
 
-			return {
-				query: {
-				query_string: {
-					query: aQueryString
-					}
+		return {
+			query: {
+			query_string: {
+				query: aQueryString
 				}
-			};
-		},
+			}
+		};
+	},
 
 		/**
 		 * <odoc>
@@ -4535,49 +4535,68 @@ OpenWrap.ch.prototype.utils = {
 					try { currentIP = String(ow.net.getHostAddress()); } catch(e) {}
 				}
 
-				function _extractIP(aDNSRecord) {
-					if (isString(aDNSRecord)) return aDNSRecord;
-					if (isMap(aDNSRecord) && isDef(aDNSRecord.Address)) {
-						if (isString(aDNSRecord.Address)) return aDNSRecord.Address;
-						if (isMap(aDNSRecord.Address) && isDef(aDNSRecord.Address.HostAddress)) return aDNSRecord.Address.HostAddress;
-					}
-					if (isMap(aDNSRecord) && isString(aDNSRecord.RdataToString)) return aDNSRecord.RdataToString;
-					return __;
+		return function(aName, aLocalPortORServer, aPath, aUUID) {
+			ow.loadNet();
+
+			var res = [];
+			var dnsRes = ow.net.getDNS(aOptions.dnsName, aOptions.recordType, aOptions.dnsServer, true);
+			var dnsArr = isArray(dnsRes) ? dnsRes : [ dnsRes ];
+			var protocol = _$(aOptions.protocol).isString().default("http");
+			var port = aOptions.port;
+			var path = _$(aOptions.path).isString().default(aPath);
+			var excludeCurrentIP = _$(aOptions.excludeCurrentIP).isBoolean().default(false);
+			var currentIP = _$(aOptions.currentIP).isString().default(__);
+
+			if (isUnDef(port) && isNumber(aLocalPortORServer)) port = aLocalPortORServer;
+			if (isString(path) && path.length > 0 && path.substring(0, 1) != "/") path = "/" + path;
+			if (excludeCurrentIP && isUnDef(currentIP) && isDef(getEnv("POD_IP"))) currentIP = String(getEnv("POD_IP"));
+			if (excludeCurrentIP && isUnDef(currentIP)) {
+				try { currentIP = String(ow.net.getHostAddress()); } catch(e) {}
+			}
+
+			function _extractIP(aDNSRecord) {
+				if (isString(aDNSRecord)) return aDNSRecord;
+				if (isMap(aDNSRecord) && isDef(aDNSRecord.Address)) {
+					if (isString(aDNSRecord.Address)) return aDNSRecord.Address;
+					if (isMap(aDNSRecord.Address) && isDef(aDNSRecord.Address.HostAddress)) return aDNSRecord.Address.HostAddress;
 				}
+				if (isMap(aDNSRecord) && isString(aDNSRecord.RdataToString)) return aDNSRecord.RdataToString;
+				return __;
+			}
 
-				function _mkURL(aIP) {
-					var host = aIP;
-					if (isString(aIP) && aIP.indexOf(":") >= 0 && aIP.substring(0, 1) != "[") host = "[" + aIP + "]";
-					var u = protocol + "://" + host;
-					if (isDef(port)) u += ":" + port;
-					if (isDef(path)) u += path;
-					return u;
+			function _mkURL(aIP) {
+				var host = aIP;
+				if (isString(aIP) && aIP.indexOf(":") >= 0 && aIP.substring(0, 1) != "[") host = "[" + aIP + "]";
+				var u = protocol + "://" + host;
+				if (isDef(port)) u += ":" + port;
+				if (isDef(path)) u += path;
+				return u;
+			}
+
+			for (var i in dnsArr) {
+				var ip = _extractIP(dnsArr[i]);
+				if (isDef(ip)) {
+					if (excludeCurrentIP && isDef(currentIP) && String(ip) == String(currentIP)) continue;
+					var u = isFunction(aOptions.urlFn)
+						? aOptions.urlFn(ip, {
+							name: aName,
+							localPortOrServer: aLocalPortORServer,
+							path: aPath,
+							uuid: aUUID,
+							options: aOptions
+						})
+						: _mkURL(ip);
+					if (isDef(u)) res.push(u);
 				}
+			}
 
-				for (var i in dnsArr) {
-					var ip = _extractIP(dnsArr[i]);
-					if (isDef(ip)) {
-						if (excludeCurrentIP && isDef(currentIP) && String(ip) == String(currentIP)) continue;
-						var u = isFunction(aOptions.urlFn)
-							? aOptions.urlFn(ip, {
-								name: aName,
-								localPortOrServer: aLocalPortORServer,
-								path: aPath,
-								uuid: aUUID,
-								options: aOptions
-							})
-							: _mkURL(ip);
-						if (isDef(u)) res.push(u);
-					}
-				}
+			return $from(res).distinct().select();
+		};
+	},
 
-				return $from(res).distinct().select();
-			};
-		},
-
-		/**
-		 * <odoc>
-		 * <key>ow.ch.utils.poolChanges(aCh, idKeys, aChM)</key>
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.poolChanges(aCh, idKeys, aChM)</key>
 	 * When executed pools to find all changes in aCh, using an idKeys array of key map fields, and executing a setAll on aCh for
 	 * the changed entries. To compare it stores the last version in a 'aCh + "::chMemory"' channel that can be created with aChM map options
 	 * ($ch type and options entries). Usefull to trigger channel subscribed functions when the aCh type doesn't detect automatically changes.
