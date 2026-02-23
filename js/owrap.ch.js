@@ -4465,17 +4465,17 @@ OpenWrap.ch.prototype.utils = {
 	 * Returns a query map using aQueryString (using lucene query string (like in Kibana)) to be used on getAll, for example.
 	 * </odoc>
 	 */
-		getElasticQuery: function(aQueryString) {
-			_$(aQueryString).isString();
+	getElasticQuery: function(aQueryString) {
+		_$(aQueryString).isString();
 
-			return {
-				query: {
-				query_string: {
-					query: aQueryString
-					}
+		return {
+			query: {
+			query_string: {
+				query: aQueryString
 				}
-			};
-		},
+			}
+		};
+	},
 
 	/**
 	 * <odoc>
@@ -4569,9 +4569,9 @@ OpenWrap.ch.prototype.utils = {
 		};
 	},
 
-		/**
-		 * <odoc>
-		 * <key>ow.ch.utils.poolChanges(aCh, idKeys, aChM)</key>
+	/**
+	 * <odoc>
+	 * <key>ow.ch.utils.poolChanges(aCh, idKeys, aChM)</key>
 	 * When executed pools to find all changes in aCh, using an idKeys array of key map fields, and executing a setAll on aCh for
 	 * the changed entries. To compare it stores the last version in a 'aCh + "::chMemory"' channel that can be created with aChM map options
 	 * ($ch type and options entries). Usefull to trigger channel subscribed functions when the aCh type doesn't detect automatically changes.
