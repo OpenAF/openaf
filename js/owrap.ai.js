@@ -1231,47 +1231,47 @@ OpenWrap.ai.prototype.__gpttypes = {
                     if (modelToolParts.length > 0) {
                         _p.push({ role: "model", parts: modelToolParts })
                         modelToolParts.forEach(p => {
-                                        var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
-                                        if (isDef(_t) && isFunction(_t.fn)) {
-                                            var _args = p.functionCall.args
-                                            if (isString(_args)) _args = jsonParse(_args, __, __, true)
-                                            if (isUnDef(_args)) _args = {}
-                                            var _tr = _t.fn(_args)
-                                            var _tryParse = v => {
-                                                if (isString(v)) {
-                                                    return jsonParse(v, __, __, true)
-                                                }
-                                                return __
-                                            }
-                                            if (isString(_tr)) {
-                                                var _pjson = _tryParse(_tr)
-                                                if (isDef(_pjson)) _tr = _pjson
-                                            } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
-                                                var _pjson2 = _tryParse(_tr.result)
-                                                if (isDef(_pjson2)) _tr = _pjson2
-                                            }
-                                            var _content
-                                            if (isMap(_tr)) {
-                                                _content = _tr
-                                            } else if (isArray(_tr)) {
-                                                _content = { items: _tr }
-                                            } else if (isDef(_tr)) {
-                                                _content = { result: _tr }
-                                            } else {
-                                                _content = {}
-                                            }
-                                            _p.push({ role: "user", parts: [{
-                                                functionResponse: {
-                                                    name: p.functionCall.name,
-                                                    response: {
-                                                        name: p.functionCall.name,
-                                                        content: _content
-                                                    }
-                                                }
-                                            }]})
-                                        }
-                                    })
+                            var _t = $from(_r.tools).equals("name", p.functionCall.name).at(0)
+                            if (isDef(_t) && isFunction(_t.fn)) {
+                                var _args = p.functionCall.args
+                                if (isString(_args)) _args = jsonParse(_args, __, __, true)
+                                if (isUnDef(_args)) _args = {}
+                                var _tr = _t.fn(_args)
+                                var _tryParse = v => {
+                                    if (isString(v)) {
+                                        return jsonParse(v, __, __, true)
+                                    }
+                                    return __
                                 }
+                                if (isString(_tr)) {
+                                    var _pjson = _tryParse(_tr)
+                                    if (isDef(_pjson)) _tr = _pjson
+                                } else if (isMap(_tr) && Object.keys(_tr).length == 1 && isString(_tr.result)) {
+                                    var _pjson2 = _tryParse(_tr.result)
+                                    if (isDef(_pjson2)) _tr = _pjson2
+                                }
+                                var _content
+                                if (isMap(_tr)) {
+                                    _content = _tr
+                                } else if (isArray(_tr)) {
+                                    _content = { items: _tr }
+                                } else if (isDef(_tr)) {
+                                    _content = { result: _tr }
+                                } else {
+                                    _content = {}
+                                }
+                                _p.push({ role: "user", parts: [{
+                                    functionResponse: {
+                                        name: p.functionCall.name,
+                                        response: {
+                                            name: p.functionCall.name,
+                                            content: _content
+                                        }
+                                    }
+                                }]})
+                            }
+                        })
+                    }
                     if (_p.length > 0) {
                             _r.conversation = _r.conversation.concat(newPrompts).concat(_p)
                             // Recursively call rawPromptStream to continue streaming with tool results
