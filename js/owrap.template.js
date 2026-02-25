@@ -88,6 +88,7 @@ OpenWrap.template.prototype.__addHelpers = function(aHB) {
  *   - $case            -- to be used with $switch for each case\
  *   - $default         -- to be used with $switch for each case\
  *   - $ptable          -- returns an ansi ascii printTable representation of an object\
+ *   - $mdtable         -- returns a markdown table representation of an array object\
  *   - $ptree           -- returns an ansi ascii printTree representation of an object\
  *   - $pchart          -- returns an ansi ascii line chart with an object and a format string: "unit path:color:legend... [-min:0] [-max:100] [-hsize:40] [-vsize:10]"\
  *   - $pbar            -- returns an ansi ascii progress bar with a value and a max value, a min value, a size, an indicator and space char\
@@ -219,6 +220,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 			return ""
 		},
 		ptable: printTable,
+		mdtable: a => ow.template.md.table(a),
 		cjson: colorify,
 		cslon: ow.loadFormat().toCSLON,
 		jsmap: (res, isFull) => {
