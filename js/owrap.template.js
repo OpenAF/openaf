@@ -220,7 +220,7 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 			return ""
 		},
 		ptable: printTable,
-		mdtable: a => ow.template.md.table(a),
+		mdtable: ow.template.md.table,
 		cjson: colorify,
 		cslon: ow.loadFormat().toCSLON,
 		jsmap: (res, isFull) => {
