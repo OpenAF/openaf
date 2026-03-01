@@ -27,6 +27,8 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.Set;
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
@@ -652,6 +654,61 @@ public class IO extends ScriptableObject {
 		
 		return baos.toByteArray();		
 	}
+
+	/**
+	 * <odoc>
+	 * <key>io.xz(anObject) : anArrayOfBytes</key>
+	 * Compresses an object into an xz array of bytes.
+	 * </odoc>
+	 * 
+	 * @param dataIn
+	 * @return
+	 * @throws IOException
+	 */
+	@JSFunction
+	public static Object xz(Object dataIn) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		XZCompressorOutputStream xos = new XZCompressorOutputStream(baos);
+		if (dataIn instanceof org.mozilla.javascript.NativeJavaArray) {
+			dataIn = ((org.mozilla.javascript.NativeJavaArray) dataIn).unwrap();
+		}
+		IOUtils.write((byte[]) dataIn, xos);
+
+		xos.flush();
+		xos.close();
+		baos.flush();
+		baos.close();
+
+		return baos.toByteArray();
+	}
+
+	/**
+	 * <odoc>
+	 * <key>io.unxz(anArrayOfBytes) : anObject</key>
+	 * Uncompresses an xzed array of bytes.
+	 * </odoc>
+	 * 
+	 * @param dataIn
+	 * @return
+	 * @throws IOException
+	 */
+	@JSFunction
+	public static Object unxz(Object dataIn) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		if (dataIn instanceof org.mozilla.javascript.NativeJavaArray) {
+			dataIn = ((org.mozilla.javascript.NativeJavaArray) dataIn).unwrap();
+		}
+		XZCompressorInputStream xis = new XZCompressorInputStream(new ByteArrayInputStream((byte[]) dataIn));
+		IOUtils.copy(xis, baos);
+
+		xis.close();
+		baos.flush();
+		baos.close();
+
+		return baos.toByteArray();
+	}
 	
 	/** 
 	 * <odoc>
@@ -706,6 +763,42 @@ public class IO extends ScriptableObject {
 	@JSFunction
 	public static Object readFileGzipStream(String filename) throws IOException {
 		return new GZIPInputStream(FileUtils.openInputStream(new File(filename)));
+	}
+
+	/**
+	 * <odoc>
+	 * <key>io.writeFileXzStream(aFilename, shouldAppend) : JavaStream</key>
+	 * Creates and returns a JavaStream to write to an xz aFilename. Optionally if shouldAppend=true
+	 * it will append to an existing file. For example:\
+	 * \
+	 * var stream = io.writeFileXzStream("afile.txt.xz");\
+	 * ioStreamWrite(stream, "Hello "); // you can also use ioStreamWriteBytes \
+	 * ioStreamWrite(stream, "World!");\
+	 * stream.close();\
+	 * \
+	 * </odoc>
+	 */
+	@JSFunction
+	public static Object writeFileXzStream(String filename, boolean shouldAppend) throws IOException {
+		return new XZCompressorOutputStream(FileUtils.openOutputStream(new File(filename), shouldAppend));
+	}
+
+	/**
+	 * <odoc>
+	 * <key>io.readFileXzStream(aFilename) : JavaStream</key>
+	 * Creates and returns a JavaStream to read from an xz aFilename. For example:\
+	 * \
+	 * var stream = io.readFileXzStream("afile.txt.xz");\
+	 * ioStreamRead(stream, function(buffer) { // you can also use ioStreamReadBytes \
+	 *    printnl(buffer);\
+	 * });\
+	 * stream.close();\
+	 * \
+	 * </odoc>
+	 */
+	@JSFunction
+	public static Object readFileXzStream(String filename) throws IOException {
+		return new XZCompressorInputStream(FileUtils.openInputStream(new File(filename)));
 	}
 	
 	/**

@@ -158,10 +158,19 @@ ojob:
   conAnsi: true                # Enable ANSI terminal detection
   conWidth: 128                # Force console width
   
-  # File logging
+  # File logging (all options mirror ow.ch.utils.setLogToFile)
   logToFile:
-    logFolder: "/var/log"
-    HKhowLongAgoInMinutes: 2880
+    logFolder: "/var/log"              # Where the current log file is written (default: '.')
+    filenameTemplate: "log-{{timedate}}.log"  # Template for log filename (uses timedate)
+    fileDateFormat: "yyyy-MM-dd"       # Date format for filename (daily); use 'yyyy-MM-dd-HH' for hourly
+    lineTemplate: "{{timedate}} | {{type}} | {{{message}}}\n"  # Template per log line
+    lineDateFormat: "yyyy-MM-dd HH:mm:ss.SSS"  # Date format used inside each line
+    HKRegExPattern: "log-\\d{4}-\\d{2}-\\d{2}\\.log"  # Regex to identify log files for housekeeping
+    HKhowLongAgoInMinutes: 2880        # Minutes of logs to retain; older files are deleted (omit to disable)
+    dontCompress: false                # Set true to skip gzip compression of older log files
+    backupFolder: "/var/log/backup"    # Move older log files here (omit to keep in logFolder)
+    numberOfEntriesToKeep: 100         # In-memory OpenAF log channel entries to keep
+    setLogOff: false                   # Set true to suppress console logging
   
   # Structured logging
   log:
