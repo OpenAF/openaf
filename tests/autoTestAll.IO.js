@@ -110,6 +110,34 @@
 
         ow.test.assert(orig.length, s.length, "Problem with gzip native java array to byte array conversion.");
     };
+    exports.testXzNativeToByte = () => {
+        var orig = io.readFileString("../js/openaf.js", io.getDefaultEncoding());
+
+        io.writeFileBytes("autoTestAll.xz", io.xz(io.readFileBytes("../js/openaf.js")));
+        var a = Packages.org.apache.commons.io.IOUtils.toByteArray(io.readFileStream("autoTestAll.xz"));
+        var s = af.fromBytes2String(io.unxz(a));
+
+        ow.test.assert(orig.length, s.length, "Problem with xz native java array to byte array conversion.");
+    };
+
+    exports.testIOXzStream = function() {
+        var file = "autoTestAll.test.xz";
+        var stream = io.writeFileXzStream(file);
+        ioStreamWrite(stream, "Hello ", void 0, false);
+        ioStreamWrite(stream, "World! €áä", void 0, false);
+        stream.close();
+
+        stream = io.readFileXzStream(file);
+        var res = "";
+        ioStreamRead(stream, function(buffer) {
+            res += buffer;
+        }, void 0, false);
+        stream.close();
+
+        ow.test.assert(res, "Hello World! €áä", "Problem with read/writeFileXzStream or ioStreamRead/Write.");
+        io.rm(file);
+    };
+
 
     exports.testBinaryFileDetection = () => {
         ow.test.assert(io.isBinaryFile(getOpenAFJar()), true, "Problem with io.isBinaryFile detecting binary files.");
