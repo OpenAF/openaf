@@ -131,6 +131,16 @@ public class IOBase extends openaf.core.IO {
 	}
 
 	@JSFunction
+	public static Object xz(Object dataIn) throws IOException {
+		return openaf.core.IO.xz(dataIn);
+	}
+
+	@JSFunction
+	public static Object unxz(Object dataIn) throws IOException {
+		return openaf.core.IO.unxz(dataIn);
+	}
+
+	@JSFunction
 	public static Object randomAccessFile(String filename, String mode) throws FileNotFoundException {
 		return openaf.core.IO.randomAccessFile(filename, mode);
 	}
@@ -143,6 +153,16 @@ public class IOBase extends openaf.core.IO {
 	@JSFunction
 	public static Object readFileGzipStream(String filename) throws IOException {
 		return openaf.core.IO.readFileGzipStream(filename);
+	}
+
+	@JSFunction
+	public static Object writeFileXzStream(String filename, boolean shouldAppend) throws IOException {
+		return openaf.core.IO.writeFileXzStream(filename, shouldAppend);
+	}
+
+	@JSFunction
+	public static Object readFileXzStream(String filename) throws IOException {
+		return openaf.core.IO.readFileXzStream(filename);
 	}
 	
 	@JSFunction
