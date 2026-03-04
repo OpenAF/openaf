@@ -7380,14 +7380,16 @@ const ioStreamRead = function(aStream, aFunction, aBufferSize, useNIO, encoding)
 		var reader = new java.io.BufferedReader(new java.io.InputStreamReader(aStream, encoding), bufferSize);
 		var cbuf = java.lang.reflect.Array.newInstance(java.lang.Character.TYPE, bufferSize);
 		var nRead;
-		while ((nRead = reader.read(cbuf, 0, bufferSize)) > 0) {
-			var res = aFunction(String(new java.lang.String(cbuf, 0, nRead)));
-			if (res == true) {
-				reader.close();
-				return;
+		try {
+			while ((nRead = reader.read(cbuf, 0, bufferSize)) > 0) {
+				var res = aFunction(String(new java.lang.String(cbuf, 0, nRead)));
+				if (res == true) {
+					return;
+				}
 			}
+		} finally {
+			reader.close();
 		}
-		reader.close();
 	} else {
 		var buffer = af.fromString2Bytes(repeat(bufferSize, ' '));
 
