@@ -7377,40 +7377,17 @@ const ioStreamRead = function(aStream, aFunction, aBufferSize, useNIO, encoding)
 	var bufferSize = (isUnDef(aBufferSize)) ? __flags.IO.bufferSize : aBufferSize;
 
 	if (useNIO) {
-		var channel;
-		try {
-			channel = aStream.getChannel();
-		} catch(e) {
-			channel = java.nio.channels.Channels.newChannel(aStream);
-		}
-
-		var buffer = java.nio.ByteBuffer.allocate(bufferSize);
-
-		//var bRead = channel.read(buffer);
-		var bRead = Packages.org.apache.commons.io.IOUtils.read(channel, buffer);
-		while(bRead > 0) {
-			buffer.flip();
-
-			/*var buf = [];
-			while(buffer.hasRemaining()) {
-				buf.push(Number(buffer.get()));
-			}*/
-
-			//var res = aFunction(af.fromBytes2String(af.fromArray2Bytes(buf)));
-			var res = aFunction(String(java.nio.charset.Charset.forName(encoding).newDecoder().decode(buffer).toString()));
+		var reader = new java.io.BufferedReader(new java.io.InputStreamReader(aStream, encoding), bufferSize);
+		var cbuf = java.lang.reflect.Array.newInstance(java.lang.Character.TYPE, bufferSize);
+		var nRead;
+		while ((nRead = reader.read(cbuf, 0, bufferSize)) > 0) {
+			var res = aFunction(String(new java.lang.String(cbuf, 0, nRead)));
 			if (res == true) {
-				channel.close();
-				aStream.close();
+				reader.close();
 				return;
 			}
-
-			buffer.clear();
-			//bRead = channel.read(buffer);
-			bRead = Packages.org.apache.commons.io.IOUtils.read(channel, buffer);
 		}
-
-		channel.close();
-		aStream.close();
+		reader.close();
 	} else {
 		var buffer = af.fromString2Bytes(repeat(bufferSize, ' '));
 
