@@ -68,8 +68,18 @@ ojob:
   logHistory  : 10    # Factor of number of job logs to keep by the number of defined jobs 
   logJobs     : true  # Should log job execution or not
   logArgs     : false # If true prior to each job execution the corresponding args will be output
-  logToFile   : 
-    # map equivalent to ow.ch.utils.setLogToFile
+  logToFile   :                                       # map equivalent to ow.ch.utils.setLogToFile
+    logFolder            : "."                        # Where the current log file should be written (defaults to '.')
+    filenameTemplate     : "log-{{timedate}}.log"     # ow.template for the log filename
+    fileDateFormat       : "yyyy-MM-dd"               # File date format used in filenameTemplate (e.g. 'yyyy-MM-dd' for daily, 'yyyy-MM-dd-HH' for hourly)
+    lineTemplate         : "{{timedate}} | {{type}} | {{{message}}}\n" # ow.template for each log line (type=INFO/WARN/ERROR, message=logged message)
+    lineDateFormat       : "yyyy-MM-dd HH:mm:ss.SSS" # Date format used in lineTemplate
+    HKRegExPattern       : "log-\\d{4}-\\d{2}-\\d{2}\\.log" # Housekeeping regex pattern to find log files
+    HKhowLongAgoInMinutes:                            # How many minutes of logs to keep (if not defined files won't be deleted)
+    dontCompress         : false                      # If true older log files won't be gzip compressed
+    backupFolder         :                            # If defined older log files will be moved to this folder
+    numberOfEntriesToKeep: 100                        # Number of OpenAF log channel entries to keep in memory
+    setLogOff            : false                      # If true turns off console logging
   log         :
     # map equivalent to setLog function
     format: json  # If not defined the value will be infered from the env variable OJOB_JSONLOG
