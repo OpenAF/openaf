@@ -8507,20 +8507,20 @@ const $jsonrpc = function (aOptions) {
 
 	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
 
-        const _r = {
-                _ids: $atomic(1, "long"),
-                _p: __,
-                _s: false,
-                _cmd: false,
-                _sy: $sync(),
-                _q: {},
-                _r: {},
-                _info: __,
-                _pwd: _defaultCmdDir,
-                _copies: $atomic(0, "long"),
-                type: type => {
-                        aOptions.type = type
-                        return _r
+	const _r = {
+		_ids: $atomic(1, "long"),
+		_p: __,
+		_s: false,
+		_cmd: false,
+		_sy: $sync(),
+		_q: {},
+		_r: {},
+		_info: __,
+		_pwd: _defaultCmdDir,
+		_copies: $atomic(0, "long"),
+		type: type => {
+			aOptions.type = type
+			return _r
 		},
 		url: url => {
 			aOptions.url = url
@@ -8559,7 +8559,7 @@ const $jsonrpc = function (aOptions) {
 							$doWait($doAll(
 								[
 									// in stream
-									$do(() => {
+									$doV(() => {
 										$await("__jsonrpc_" + _main_id).notifyAll()
 										do {
 											var _id = _r._ids.get()
@@ -8586,7 +8586,7 @@ const $jsonrpc = function (aOptions) {
 										} while (!_r._s)
 									}),
 									// out stream
-									$do(() => {
+									$doV(() => {
 										do {
 											var _id = _r._ids.get()
 											$await("__jsonrpc_r-" + _id + "-" + _main_id).wait()
@@ -8629,13 +8629,13 @@ const $jsonrpc = function (aOptions) {
 					if (isMap(aOptions.options.fns)) {
 						if (isFunction(aOptions.options.fns[aMethod])) {
 							var _res = aOptions.options.fns[aMethod](aParams)
-                                                _debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
-                                                if (aMethod == "initialize" && !aNotification) _r._info = _res
-                                                return _res
-                                        } else {
-                                                _debug("jsonrpc dummy <- " + stringify({ error: "Method not found" }, __, ""))
-                                                throw new Error("Method not found")
-                                        }
+							_debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
+							if (aMethod == "initialize" && !aNotification) _r._info = _res
+							return _res
+						} else {
+							_debug("jsonrpc dummy <- " + stringify({ error: "Method not found" }, __, ""))
+							throw new Error("Method not found")
+						}
 					}
 					return __
 				case "stdio":
@@ -8665,12 +8665,12 @@ const $jsonrpc = function (aOptions) {
 						}
 						$await("__jsonrpc_a-" + _id + "-" + _main_id).wait(aOptions.timeout)
 					})
-                                        if (isMap(_r._r[_id])) {
-                                                _res = _r._r[_id]
-                                                delete _r._r[_id]
-                                        }
-                                        if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
-                                        return isDef(_res) && isDef(_res.result) ? _res.result : _res
+					if (isMap(_r._r[_id])) {
+						_res = _r._r[_id]
+						delete _r._r[_id]
+					}
+					if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
+					return isDef(_res) && isDef(_res.result) ? _res.result : _res
 				case "remote":
 				default:
 					_$(aOptions.url, "aOptions.url").isString().$_()
@@ -8693,23 +8693,23 @@ const $jsonrpc = function (aOptions) {
 					}
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
 					var res = $rest(_restOptions).post(aOptions.url, _req)
-                                        // Notifications do not expect a reply
-                                        if (!!aNotification) return
-                                        _debug("jsonrpc <- " + stringify(res, __, ""))
-                                        if (isDef(res)) {
-                                                if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
-                                                if (aMethod == "initialize" && !aNotification) _r._info = res.result
-                                                if (isDef(res.result)) return res.result
-                                        }
-                                        return __
-                        }
-                },
-                getInfo: () => _r._info,
-                destroy: () => {
-                        if (_r._copies.get() > 0) {
-                                _r._copies.dec()
-                                return
-                        }
+					// Notifications do not expect a reply
+					if (!!aNotification) return
+					_debug("jsonrpc <- " + stringify(res, __, ""))
+					if (isDef(res)) {
+						if (isDef(res.error) && (isDef(res.error.response))) return res.error.response
+						if (aMethod == "initialize" && !aNotification) _r._info = res.result
+						if (isDef(res.result)) return res.result
+					}
+					return __
+			}
+		},
+		getInfo: () => _r._info,
+		destroy: () => {
+			if (_r._copies.get() > 0) {
+				_r._copies.dec()
+				return
+			}
 			_r._s = true
 			if (isDef(_r._p)) {
 				$doWait(_r._p)
@@ -9021,26 +9021,26 @@ const $mcp = function(aOptions) {
 			return _r
 		},
 		initialize: (clientInfo) => {
-                        clientInfo = _$(clientInfo, "clientInfo").isMap().default({})
-                        clientInfo = merge(aOptions.clientInfo, clientInfo)
+        	clientInfo = _$(clientInfo, "clientInfo").isMap().default({})
+            clientInfo = merge(aOptions.clientInfo, clientInfo)
 
-                        var initResult = _jsonrpc.exec("initialize", {
-                                protocolVersion: aOptions.protocolVersion,
+			var initResult = _jsonrpc.exec("initialize", {
+				protocolVersion: aOptions.protocolVersion,
 				capabilities: {
 					sampling: {}
 				},
 				clientInfo: clientInfo
 			})
 
-                        if (isDef(initResult) && isUnDef(initResult.error)) {
-                                _r._initialized = true
-                                _r._capabilities = initResult.capabilities || {}
-                                _r._initResult = initResult
+            if (isDef(initResult) && isUnDef(initResult.error)) {
+                _r._initialized = true
+                _r._capabilities = initResult.capabilities || {}
+                _r._initResult = initResult
 
-                                // Send initialized notification
-                                if (aOptions.strict) {
-                                        try {
-                                                // send as a notification (no response expected)
+                // Send initialized notification
+                if (aOptions.strict) {
+                    try {
+                        // send as a notification (no response expected)
 						_jsonrpc.exec("notifications/initialized", {}, true)
 					} catch(e) {
 						// Notifications might not return responses, ignore errors
@@ -9049,15 +9049,15 @@ const $mcp = function(aOptions) {
 
 				return _r
 			} else {
-                                        throw new Error("MCP initialization failed: " + (isDef(initResult) ? initResult.error : __ || "Unknown error"))
-                        }
-                },
-                getInfo: () => _r._initResult,
-                listTools: () => {
-                        if (!_r._initialized) {
-                                throw new Error("MCP client not initialized. Call initialize() first.")
-                        }
-                        return _jsonrpc.exec("tools/list", {})
+                throw new Error("MCP initialization failed: " + (isDef(initResult) ? initResult.error : __ || "Unknown error"))
+            }
+        },
+        getInfo: () => _r._initResult,
+        listTools: () => {
+            if (!_r._initialized) {
+                throw new Error("MCP client not initialized. Call initialize() first.")
+            }
+            return _jsonrpc.exec("tools/list", {})
 		},
 		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
