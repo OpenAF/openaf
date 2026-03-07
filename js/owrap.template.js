@@ -220,7 +220,47 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 			return ""
 		},
 		ptable: printTable,
-		mdtable: ow.template.md.table,
+		mdtable: function(headers, rows) {
+			// Safe markdown table generator: uses header keys for column order and escapes cell values.
+			function _escapeCell(value) {
+				if (value === null || value === undefined) return "";
+				var s = String(value);
+				// Escape pipe characters which delimit columns in markdown tables
+				s = s.replace(/\|/g, "\\|");
+				// Normalize newlines to <br/> to avoid breaking table structure
+				s = s.replace(/\r?\n/g, "<br/>");
+				return s;
+			}
+
+			if (!Array.isArray(headers) || !Array.isArray(rows)) return "";
+
+			// Header line
+			var headerLine = "| " + headers.map(_escapeCell).join(" | ") + " |";
+			// Separator line
+			var sepLine = "| " + headers.map(function() { return "---"; }).join(" | ") + " |";
+
+			// Body lines
+			var bodyLines = rows.map(function(row) {
+				// Object row: use header names as keys
+				if (row && typeof row === "object" && !Array.isArray(row)) {
+					return "| " + headers.map(function(h) {
+						return _escapeCell(row[h]);
+					}).join(" | ") + " |";
+				}
+				// Array row: use index corresponding to header position
+				if (Array.isArray(row)) {
+					return "| " + headers.map(function(_, idx) {
+						return _escapeCell(row[idx]);
+					}).join(" | ") + " |";
+				}
+				// Scalar row: put value in first column, leave others empty
+				return "| " + headers.map(function(_, idx) {
+					return _escapeCell(idx === 0 ? row : "");
+				}).join(" | ") + " |";
+			});
+
+			return [headerLine, sepLine].concat(bodyLines).join("\n");
+		},
 		cjson: colorify,
 		cslon: ow.loadFormat().toCSLON,
 		jsmap: (res, isFull) => {

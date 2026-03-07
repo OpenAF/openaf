@@ -75,9 +75,9 @@ ojob:
     lineTemplate         : "{{timedate}} | {{type}} | {{{message}}}\n" # ow.template for each log line (type=INFO/WARN/ERROR, message=logged message)
     lineDateFormat       : "yyyy-MM-dd HH:mm:ss.SSS" # Date format used in lineTemplate
     HKRegExPattern       : "log-\\d{4}-\\d{2}-\\d{2}\\.log" # Housekeeping regex pattern to find log files
-    HKhowLongAgoInMinutes:                            # How many minutes of logs to keep (if not defined files won't be deleted)
+    # HKhowLongAgoInMinutes: 1440                     # Example: keep logs for 1440 minutes (1 day). Omit this key to disable deletion.
     dontCompress         : false                      # If true older log files won't be gzip compressed
-    backupFolder         :                            # If defined older log files will be moved to this folder
+    # backupFolder         : "./log-backup"           # Example: if defined, older log files will be moved to this folder. Omit to disable.
     numberOfEntriesToKeep: 100                        # Number of OpenAF log channel entries to keep in memory
     setLogOff            : false                      # If true turns off console logging
   log         :
