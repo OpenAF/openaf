@@ -106,10 +106,11 @@ public class FileResponse extends Response {
 
 		// Prohibit getting out of current directory
 		if (relativeUri.startsWith("..") || relativeUri.endsWith("..")
-				|| relativeUri.indexOf("../") >= 0)
+				|| relativeUri.indexOf("../") >= 0
+				|| relativeUri.indexOf(".." + File.separator) >= 0)
 			return new com.nwu2.httpd.responses.SimpleResponse(httpd,
 					Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
-					"FORBIDDEN: Won't serve ../ for security reasons.");
+					"FORBIDDEN: Won't serve .. paths for security reasons.");
 
 		File f;
 		File baseDir;
