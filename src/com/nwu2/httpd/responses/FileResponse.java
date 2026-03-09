@@ -242,14 +242,27 @@ public class FileResponse extends Response {
 							"Requested Range Not Satisfiable");
 				}
 
-				FileInputStream fis = new FileInputStream(f);
-				fis.skip(startFrom);
-				com.nwu2.httpd.responses.Response r = new com.nwu2.httpd.responses.SimpleResponse(
-						httpd, Codes.HTTP_OK, mime, fis);
-				r.addHeader("Content-length", "" + (f.length() - startFrom));
-				r.addHeader("Content-range", "" + startFrom + "-"
-						+ (f.length() - 1) + "/" + f.length());
-				return r;
+				FileInputStream fis = null;
+				boolean success = false;
+				try {
+					fis = new FileInputStream(f);
+					fis.skip(startFrom);
+					com.nwu2.httpd.responses.Response r = new com.nwu2.httpd.responses.SimpleResponse(
+							httpd, Codes.HTTP_OK, mime, fis);
+					r.addHeader("Content-length", "" + (f.length() - startFrom));
+					r.addHeader("Content-range", "" + startFrom + "-"
+							+ (f.length() - 1) + "/" + f.length());
+					success = true;
+					return r;
+				} finally {
+					if (!success && fis != null) {
+						try {
+							fis.close();
+						} catch (IOException e) {
+							// Ignored: best-effort to close stream on failure
+						}
+					}
+				}
 			} catch (IOException ioe) {
 				return new com.nwu2.httpd.responses.SimpleResponse(httpd,
 						Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
