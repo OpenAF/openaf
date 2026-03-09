@@ -136,41 +136,6 @@ public class FileResponse extends Response {
 					Codes.HTTP_NOTFOUND, Codes.MIME_PLAINTEXT,
 					"Error 404, file not found.");
 
-			// List the directory, if necessary
-			if (f.isDirectory()) {
-				// Browsers get confused without '/' after the
-				// directory, send a redirect.
-				if (!uriForLinks.endsWith("/")) {
-					uriForLinks += "/";
-//				com.nwu2.httpd.responses.Response r = new com.nwu2.httpd.responses.SimpleResponse(
-//						httpd, Codes.HTTP_REDIRECT, Codes.MIME_HTML,
-//						"<html><head><meta http-equiv=\"refresh\" content=\"0; url=" + this.rURI + uri + "\"></head>"+HTML_STYLE+"<body>Redirected: <a href=\"" + this.rURI + uri + "\">"
-//								+ this.rURI + uri + "</a></body></html>");
-//				r.addHeader("Location", this.rURI + uri);
-//				return r;
-				}
-
-				this.rURI = this.rURI.replaceAll("/+", "/");
-				uriForLinks = uriForLinks.replaceAll("/+",  "/");
-				
-				// First try index.html and index.htm
-				if (new File(f, "index.html").exists())
-					f = new File(f, "index.html");
-				else if (new File(f, "index.htm").exists())
-					f = new File(f, "index.htm");
-				// No index file, list the directory
-				else if (allowDirectoryListing) {
-					String[] files = f.list();
-					String msg = "<html>"+HTML_STYLE+"<body><h1>Directory /" + uriForLinks + "</h1><br/>";
-
-					if (uriForLinks.length() > 1) {
-						String u = uriForLinks.substring(0, uriForLinks.length() - 1);
-						int slash = u.lastIndexOf('/');
-						if (slash >= 0 && slash < u.length())
-							msg += "<b><a href=\"" + encodeUri(uriForLinks.substring(0, slash + 1))
-									+ "\">..</a></b><br/>";
-					}
-
 					for (int i = 0; i < files.length; ++i) {
 					File curFile = new File(f, files[i]);
 					boolean dir = curFile.isDirectory();
@@ -243,14 +208,27 @@ public class FileResponse extends Response {
 							"Requested Range Not Satisfiable");
 				}
 
-				FileInputStream fis = new FileInputStream(f);
-				fis.skip(startFrom);
-				com.nwu2.httpd.responses.Response r = new com.nwu2.httpd.responses.SimpleResponse(
-						httpd, Codes.HTTP_OK, mime, fis);
-				r.addHeader("Content-length", "" + (f.length() - startFrom));
-				r.addHeader("Content-range", "" + startFrom + "-"
-						+ (f.length() - 1) + "/" + f.length());
-				return r;
+				FileInputStream fis = null;
+				boolean success = false;
+				try {
+					fis = new FileInputStream(f);
+					fis.skip(startFrom);
+					com.nwu2.httpd.responses.Response r = new com.nwu2.httpd.responses.SimpleResponse(
+							httpd, Codes.HTTP_OK, mime, fis);
+					r.addHeader("Content-length", "" + (f.length() - startFrom));
+					r.addHeader("Content-range", "" + startFrom + "-"
+							+ (f.length() - 1) + "/" + f.length());
+					success = true;
+					return r;
+				} finally {
+					if (!success && fis != null) {
+						try {
+							fis.close();
+						} catch (IOException e) {
+							// Ignored: best-effort to close stream on failure
+						}
+					}
+				}
 			} catch (IOException ioe) {
 				return new com.nwu2.httpd.responses.SimpleResponse(httpd,
 						Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
