@@ -236,7 +236,7 @@ public class FileResponse extends Response {
 						}
 					}
 				}
-				if (startFrom < 0 || startFrom >= f.length()) {
+				if (range != null && (startFrom < 0 || startFrom >= f.length())) {
 					return new com.nwu2.httpd.responses.SimpleResponse(httpd,
 							com.nwu2.httpd.NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE, Codes.MIME_PLAINTEXT,
 							"Requested Range Not Satisfiable");
