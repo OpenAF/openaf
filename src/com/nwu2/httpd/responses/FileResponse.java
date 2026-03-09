@@ -81,8 +81,11 @@ public class FileResponse extends Response {
 	 */
 	public com.nwu2.httpd.responses.Response serveFile(String uri,
 			Map<String, String> header, File homeDir, boolean allowDirectoryListing) {
-		
-		uri = uri.replaceFirst(this.rURI, "");
+		String relativeUri = uri;
+		if (relativeUri == null) relativeUri = "";
+		if (this.rURI != null && relativeUri.startsWith(this.rURI)) {
+			relativeUri = relativeUri.substring(this.rURI.length());
+		}
 		
 		// Make sure we won't die of an exception later
 		if (!homeDir.isDirectory())
@@ -91,59 +94,83 @@ public class FileResponse extends Response {
 					"INTERNAL ERRROR: serveFile(): given homeDir is not a directory.");
 
 		// Remove URL arguments
-		uri = uri.trim().replace(File.separatorChar, '/');
-		if (uri.indexOf('?') >= 0)
-			uri = uri.substring(0, uri.indexOf('?'));
+		relativeUri = relativeUri.trim().replace('\\', '/');
+		if (relativeUri.indexOf('?') >= 0)
+			relativeUri = relativeUri.substring(0, relativeUri.indexOf('?'));
+		while (relativeUri.startsWith("/")) relativeUri = relativeUri.substring(1);
+		if (relativeUri.indexOf('\0') >= 0) {
+			return new com.nwu2.httpd.responses.SimpleResponse(httpd,
+					Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
+					"FORBIDDEN: Invalid path.");
+		}
 
 		// Prohibit getting out of current directory
-		if (uri.startsWith("..") || uri.endsWith("..")
-				|| uri.indexOf("../") >= 0)
+		if (relativeUri.startsWith("..") || relativeUri.endsWith("..")
+				|| relativeUri.indexOf("../") >= 0)
 			return new com.nwu2.httpd.responses.SimpleResponse(httpd,
 					Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
 					"FORBIDDEN: Won't serve ../ for security reasons.");
 
-		File f = new File(homeDir, uri);
+		File f;
+		File baseDir;
+		try {
+			baseDir = homeDir.getCanonicalFile();
+			f = relativeUri.isEmpty() ? baseDir : new File(baseDir, relativeUri).getCanonicalFile();
+			String basePath = baseDir.getPath();
+			String filePath = f.getPath();
+			if (!filePath.equals(basePath) && !filePath.startsWith(basePath + File.separator)) {
+				return new com.nwu2.httpd.responses.SimpleResponse(httpd,
+						Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
+						"FORBIDDEN: Invalid path.");
+			}
+		} catch (IOException ioe) {
+			return new com.nwu2.httpd.responses.SimpleResponse(httpd,
+					Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
+					"FORBIDDEN: Invalid path.");
+		}
+
+		String uriForLinks = relativeUri;
 		if (!f.exists())
 			return new com.nwu2.httpd.responses.SimpleResponse(httpd,
 					Codes.HTTP_NOTFOUND, Codes.MIME_PLAINTEXT,
 					"Error 404, file not found.");
 
-		// List the directory, if necessary
-		if (f.isDirectory()) {
-			// Browsers get confused without '/' after the
-			// directory, send a redirect.
-			if (!uri.endsWith("/")) {
-				uri += "/";
+			// List the directory, if necessary
+			if (f.isDirectory()) {
+				// Browsers get confused without '/' after the
+				// directory, send a redirect.
+				if (!uriForLinks.endsWith("/")) {
+					uriForLinks += "/";
 //				com.nwu2.httpd.responses.Response r = new com.nwu2.httpd.responses.SimpleResponse(
 //						httpd, Codes.HTTP_REDIRECT, Codes.MIME_HTML,
 //						"<html><head><meta http-equiv=\"refresh\" content=\"0; url=" + this.rURI + uri + "\"></head>"+HTML_STYLE+"<body>Redirected: <a href=\"" + this.rURI + uri + "\">"
 //								+ this.rURI + uri + "</a></body></html>");
 //				r.addHeader("Location", this.rURI + uri);
 //				return r;
-			}
-
-			this.rURI = this.rURI.replaceAll("/+", "/");
-			uri = uri.replaceAll("/+",  "/");
-			
-			// First try index.html and index.htm
-			if (new File(f, "index.html").exists())
-				f = new File(homeDir, uri + "/index.html");
-			else if (new File(f, "index.htm").exists())
-				f = new File(homeDir, uri + "/index.htm");
-			// No index file, list the directory
-			else if (allowDirectoryListing) {
-				String[] files = f.list();
-				String msg = "<html>"+HTML_STYLE+"<body><h1>Directory " + uri + "</h1><br/>";
-
-				if (uri.length() > 1) {
-					String u = uri.substring(0, uri.length() - 1);
-					int slash = u.lastIndexOf('/');
-					if (slash >= 0 && slash < u.length())
-						msg += "<b><a href=\"" + encodeUri(uri.substring(0, slash + 1))
-								+ "\">..</a></b><br/>";
 				}
 
-				for (int i = 0; i < files.length; ++i) {
+				this.rURI = this.rURI.replaceAll("/+", "/");
+				uriForLinks = uriForLinks.replaceAll("/+",  "/");
+				
+				// First try index.html and index.htm
+				if (new File(f, "index.html").exists())
+					f = new File(f, "index.html");
+				else if (new File(f, "index.htm").exists())
+					f = new File(f, "index.htm");
+				// No index file, list the directory
+				else if (allowDirectoryListing) {
+					String[] files = f.list();
+					String msg = "<html>"+HTML_STYLE+"<body><h1>Directory /" + uriForLinks + "</h1><br/>";
+
+					if (uriForLinks.length() > 1) {
+						String u = uriForLinks.substring(0, uriForLinks.length() - 1);
+						int slash = u.lastIndexOf('/');
+						if (slash >= 0 && slash < u.length())
+							msg += "<b><a href=\"" + encodeUri(uriForLinks.substring(0, slash + 1))
+									+ "\">..</a></b><br/>";
+					}
+
+					for (int i = 0; i < files.length; ++i) {
 					File curFile = new File(f, files[i]);
 					boolean dir = curFile.isDirectory();
 					if (dir) {
@@ -151,8 +178,8 @@ public class FileResponse extends Response {
 						files[i] += "/";
 					}
 
-					msg += "<a href=\"" + encodeUri(uri + files[i]) + "\">"
-							+ files[i] + "</a>";
+						msg += "<a href=\"" + encodeUri(uriForLinks + files[i]) + "\">"
+								+ files[i] + "</a>";
 
 					// Show file size
 					if (curFile.isFile()) {
@@ -197,22 +224,25 @@ public class FileResponse extends Response {
 			// Support (simple) skipping:
 			long startFrom = 0;
 			String range = header.get("range");
-			if (range != null) {
-				if (range.startsWith("bytes=")) {
-					range = range.substring("bytes=".length());
-					int minus = range.indexOf('-');
-					if (minus > 0)
-						range = range.substring(0, minus);
-					try {
-						startFrom = Long.parseLong(range);
-					} catch (NumberFormatException nfe) {
+				if (range != null) {
+					if (range.startsWith("bytes=")) {
+						range = range.substring("bytes=".length());
+						int minus = range.indexOf('-');
+						if (minus > 0)
+							range = range.substring(0, minus);
+						try {
+							startFrom = Long.parseLong(range);
+						} catch (NumberFormatException nfe) {
+						}
 					}
 				}
-			}
+				if (startFrom < 0 || startFrom >= f.length()) {
+					return new com.nwu2.httpd.responses.SimpleResponse(httpd,
+							com.nwu2.httpd.NanoHTTPD.Response.Status.RANGE_NOT_SATISFIABLE, Codes.MIME_PLAINTEXT,
+							"Requested Range Not Satisfiable");
+				}
 
-			FileInputStream fis = null;
-			try {
-				fis = new FileInputStream(f);
+				FileInputStream fis = new FileInputStream(f);
 				fis.skip(startFrom);
 				com.nwu2.httpd.responses.Response r = new com.nwu2.httpd.responses.SimpleResponse(
 						httpd, Codes.HTTP_OK, mime, fis);
@@ -220,18 +250,9 @@ public class FileResponse extends Response {
 				r.addHeader("Content-range", "" + startFrom + "-"
 						+ (f.length() - 1) + "/" + f.length());
 				return r;
-			} finally {
-				if (fis != null) {
-					try {
-						fis.close();
-					} catch (IOException e) {
-						// Log the exception or handle it as needed
-					}
-				}
-			}
-		} catch (IOException ioe) {
-			return new com.nwu2.httpd.responses.SimpleResponse(httpd,
-					Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
+			} catch (IOException ioe) {
+				return new com.nwu2.httpd.responses.SimpleResponse(httpd,
+						Codes.HTTP_FORBIDDEN, Codes.MIME_PLAINTEXT,
 					"FORBIDDEN: Reading file failed.");
 		}
 	}
