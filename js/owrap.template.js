@@ -232,7 +232,11 @@ OpenWrap.template.prototype.addOpenAFHelpers = function() {
 				return s;
 			}
 
-			if (!Array.isArray(headers) || !Array.isArray(rows)) return "";
+			if (!Array.isArray(headers)) return ""
+			if (!Array.isArray(rows)) {
+				rows = headers
+				headers = Object.keys(rows[0] || {})
+			}
 
 			// Header line
 			var headerLine = "| " + headers.map(_escapeCell).join(" | ") + " |";
