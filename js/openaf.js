@@ -8354,11 +8354,12 @@ const $rest = function(ops) {
  * or with local processes using stdio. The aOptions parameter is a map with the following
  * possible keys:\
  * \
- * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio") or "dummy"\
+ * - type (string): Connection type, either "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses (default: "stdio") or "dummy"\
  * - url (string): Required for remote servers - the endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string|map|array): Required for stdio type - the command to execute or the map/array accepted by $sh\
  * - options (map): Additional options passed to $rest for remote connections\
+ * - sse (boolean): When true, remote/http requests expect Server-Sent Events responses with JSON-RPC payloads in `data:` events\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
  * - shared (boolean): Share connections between identical configurations (default: false)\
  * \
@@ -8398,6 +8399,7 @@ const $jsonrpc = function (aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	aOptions.sse = _$(aOptions.sse, "aOptions.sse").isBoolean().default(false)
 	// debug = true will print JSON requests and responses using print()
 	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
 	aOptions.shared = _$(aOptions.shared, "aOptions.shared").isBoolean().default(false)
@@ -8453,7 +8455,7 @@ const $jsonrpc = function (aOptions) {
 			}
 		} else if (isString(aOptions.url)) {
 			_payload = {
-				type: "remote",
+				type: (aOptions.type == "sse" || aOptions.sse) ? "sse" : "remote",
 				url: aOptions.url
 			}
 		} else if (aOptions.type == "dummy" || aOptions.type == "ojob") {
@@ -8503,7 +8505,7 @@ const $jsonrpc = function (aOptions) {
 		},
 		url: url => {
 			aOptions.url = url
-			aOptions.type = "remote"
+			aOptions.type = (aOptions.type == "sse" || aOptions.sse) ? "sse" : "remote"
 			return _r
 		},
 		pwd: aPath => {
@@ -8596,6 +8598,62 @@ const $jsonrpc = function (aOptions) {
 			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
+		_readSSE: aStream => {
+			if (isMap(aStream)) {
+				if (isDef(aStream.stream)) return _r._readSSE(aStream.stream)
+				if (isDef(aStream.inputStream)) return _r._readSSE(aStream.inputStream)
+				if (isString(aStream.response)) return _r._readSSE(af.fromString2InputStream(aStream.response))
+				if (isString(aStream.error)) {
+					var _parsedError = jsonParse(aStream.error, __, __, true)
+					return [ isDef(_parsedError) ? _parsedError : aStream ]
+				}
+				return [ aStream ]
+			}
+			if (isDef(aStream) && "function" === typeof aStream.readAllBytes && "function" !== typeof aStream.read) {
+				return _r._readSSE(af.fromBytes2InputStream(aStream.readAllBytes()))
+			}
+			var _events = []
+			var _dataLines = []
+			var _nonSseLines = []
+			var _flush = () => {
+				if (_dataLines.length == 0) return
+				var _payload = _dataLines.join("\n").trim()
+				_dataLines = []
+				if (_payload.length == 0 || _payload == "[DONE]") return
+				var _obj = jsonParse(_payload, __, __, true)
+				_events.push(isDef(_obj) ? _obj : _payload)
+			}
+			try {
+				ioStreamReadLines(aStream, line => {
+					var _line = String(line)
+					if (_line.length == 0) {
+						_flush()
+						return false
+					}
+					if (_line.indexOf(":") == 0) return false
+					if (_line.indexOf("data:") == 0) {
+						_dataLines.push(_line.substring(5).trim())
+					} else if (_line.indexOf("event:") == 0 || _line.indexOf("id:") == 0 || _line.indexOf("retry:") == 0) {
+						// ignore SSE metadata
+					} else {
+						_nonSseLines.push(_line)
+					}
+					return false
+				}, "\n", false)
+				_flush()
+			} finally {
+				try { aStream.close() } catch(e) {}
+			}
+			if (_events.length > 0) return _events
+			if (_nonSseLines.length > 0) {
+				var _fallback = _nonSseLines.join("\n").trim()
+				if (_fallback.length > 0) {
+					var _fallbackObj = jsonParse(_fallback, __, __, true)
+					return [ isDef(_fallbackObj) ? _fallbackObj : _fallback ]
+				}
+			}
+			return []
+		},
 		exec: (aMethod, aParams, aNotification, aExecOptions) => {
 			aExecOptions = _$(aExecOptions, "aExecOptions").isMap().default({})
 			switch (aOptions.type) {
@@ -8650,6 +8708,8 @@ const $jsonrpc = function (aOptions) {
 					}
 					if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
 					return isDef(_res) && isDef(_res.result) ? _res.result : _res
+				case "sse":
+					aOptions.sse = true
 				case "remote":
 				default:
 					_$(aOptions.url, "aOptions.url").isString().$_()
@@ -8671,7 +8731,27 @@ const $jsonrpc = function (aOptions) {
 						delete _req.id
 					}
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
-					var res = $rest(_restOptions).post(aOptions.url, _req)
+						var _useSSE = (aOptions.type == "sse" || aOptions.sse)
+						var res
+						if (_useSSE) {
+							_restOptions.requestHeaders = merge(
+								{ Accept: "application/json, text/event-stream" },
+								_$(_restOptions.requestHeaders, "requestHeaders").isMap().default({})
+							)
+						if (!!aNotification) {
+							var _notificationRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
+							if (isDef(_notificationRes) && "function" === typeof _notificationRes.close) {
+								try { _notificationRes.close() } catch(e) {}
+							}
+							return
+						}
+						var _streamRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
+						var _events = _r._readSSE(_streamRes)
+						res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isUnDef(r.id)).shift()
+						if (isUnDef(res) && _events.length > 0) res = _events[0]
+					} else {
+						res = $rest(_restOptions).post(aOptions.url, _req)
+					}
 					// Notifications do not expect a reply
 					if (!!aNotification) return
 					_debug("jsonrpc <- " + stringify(res, __, ""))
@@ -8717,7 +8797,7 @@ const $jsonrpc = function (aOptions) {
  * \
  * The aOptions parameter is a map with the following possible keys:\
  * \
- * - type (string): Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
+ * - type (string): Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
  * - url (string): Required for remote servers - the MCP server endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string): Required for stdio type - the command to launch the MCP server\
@@ -8727,6 +8807,7 @@ const $jsonrpc = function (aOptions) {
  *   - For ojob: { job: path to oJob file, args: arguments map, init: init entry/entries to run, fns: map of additional functions, fnsMeta: map of additional function metadata }\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
  * - shared (boolean): Enable shared JSON-RPC connections when possible (default: false)\
+ * - sse (boolean): When true, remote/http MCP requests expect Server-Sent Events responses carrying JSON-RPC payloads\
  * - strict (boolean): Enable strict MCP protocol compliance (default: true)\
  * - clientInfo (map): Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})\
  * - preFn (function): Function called before each tool execution with (toolName, toolArguments)\
@@ -8862,6 +8943,7 @@ const $mcp = function(aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	aOptions.sse = _$(aOptions.sse, "aOptions.sse").isBoolean().default(false)
 	// debug = true will enable printing of JSON-RPC requests/responses
 	aOptions.strict = _$(aOptions.strict, "aOptions.strict").isBoolean().default(true)
 	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
@@ -8871,7 +8953,7 @@ const $mcp = function(aOptions) {
 		version: "1.0.0"
 	})
 	aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default(__)
-	aOptions.auth = _$(aOptions.auth, "aOptions.auth").isMap().default(__)
+	aOptions.auth = _$(aOptions.auth, "aOptions.auth").isMap().default({})
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2024-11-05")
@@ -8924,11 +9006,12 @@ const $mcp = function(aOptions) {
 		return _auth.authorizationCode
 	}
 
-	const _getAuthHeaders = () => {
-		if (isUnDef(aOptions.auth) || !isMap(aOptions.auth)) return __
-		if (aOptions.type != "remote" && aOptions.type != "http") return __
+		const _getAuthHeaders = () => {
+			if (isUnDef(aOptions.auth) || !isMap(aOptions.auth)) return __
+			if (aOptions.type != "remote" && aOptions.type != "http" && aOptions.type != "sse") return __
+			if (Object.keys(aOptions.auth).length == 0) return __
 
-		var _type = String(_$(aOptions.auth.type, "aOptions.auth.type").isString().default("bearer")).toLowerCase()
+			var _type = String(_$(aOptions.auth.type, "aOptions.auth.type").isString().default("bearer")).toLowerCase()
 		if (_type == "bearer") {
 			var _token = _$(aOptions.auth.token, "aOptions.auth.token").isString().$_()
 			var _tokenType = _$(aOptions.auth.tokenType, "aOptions.auth.tokenType").isString().default("Bearer")
@@ -8992,7 +9075,7 @@ const $mcp = function(aOptions) {
 
 	const _execWithAuth = (method, params, notification, execOptions) => {
 		execOptions = _$(execOptions, "execOptions").isMap().default({})
-		if (aOptions.type == "remote" || aOptions.type == "http") {
+		if (aOptions.type == "remote" || aOptions.type == "http" || aOptions.type == "sse") {
 			var _authHeaders = _getAuthHeaders()
 			if (isMap(_authHeaders)) {
 				var _restOptions = _$(execOptions.restOptions, "execOptions.restOptions").isMap().default({})
@@ -9173,7 +9256,7 @@ const $mcp = function(aOptions) {
 				clientInfo: clientInfo
 			})
 
-            if (isDef(initResult) && isUnDef(initResult.error)) {
+			if (isDef(initResult) && isUnDef(initResult.error)) {
                 _r._initialized = true
                 _r._capabilities = initResult.capabilities || {}
                 _r._initResult = initResult
@@ -9190,7 +9273,13 @@ const $mcp = function(aOptions) {
 
 				return _r
 			} else {
-                throw new Error("MCP initialization failed: " + (isDef(initResult) ? initResult.error : __ || "Unknown error"))
+				var _initError = "Unknown error"
+				if (isString(initResult)) _initError = initResult
+				if (isMap(initResult) && isDef(initResult.error)) {
+					if (isString(initResult.error)) _initError = initResult.error
+					if (isMap(initResult.error) && isDef(initResult.error.message)) _initError = initResult.error.message
+				}
+                throw new Error("MCP initialization failed: " + _initError)
             }
         },
         getInfo: () => _r._initResult,
