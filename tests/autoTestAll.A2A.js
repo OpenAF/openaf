@@ -138,6 +138,84 @@
         client.destroy();
     };
 
+    exports.testClientRemoteSSE = function() {
+        ow.loadServer();
+
+        var port = findRandomOpenPort();
+        var hs = ow.server.httpd.start(port);
+
+        ow.server.httpd.route(hs, {
+            "/mcp-sse": function(req) {
+                var body = (isDef(req.files) && isDef(req.files.postData)) ? req.files.postData : req.data;
+                var rpc = jsonParse(body);
+                var isNotification = isUnDef(rpc.id) || isNull(rpc.id);
+                var result;
+
+                switch(rpc.method) {
+                case "initialize":
+                    result = {
+                        protocolVersion: "2024-11-05",
+                        capabilities: { tools: { listChanged: false } },
+                        serverInfo: { name: "SSE MCP", version: "1.0.0" }
+                    };
+                    break;
+                case "notifications/initialized":
+                    return ow.server.httpd.reply("", 204, "text/plain", {});
+                case "tools/list":
+                    result = {
+                        tools: [
+                            {
+                                name: "ping",
+                                description: "Ping tool",
+                                inputSchema: { type: "object", properties: {} }
+                            }
+                        ]
+                    };
+                    break;
+                case "tools/call":
+                    result = {
+                        content: [{ type: "text", text: "pong" }],
+                        isError: false
+                    };
+                    break;
+                default:
+                    result = { unsupported: rpc.method };
+                }
+
+                if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {});
+
+                return ow.server.httpd.reply(
+                    "event: message\n" +
+                    "data: " + stringify({ jsonrpc: "2.0", result: result, id: rpc.id }, __, "") + "\n\n",
+                    200,
+                    "text/event-stream",
+                    { "Cache-Control": "no-cache" }
+                );
+            }
+        });
+
+        try {
+            var client = $mcp({
+                type: "remote",
+                url: "http://127.0.0.1:" + port + "/mcp-sse",
+                sse: true
+            });
+
+            client.initialize();
+
+            var tools = client.listTools();
+            ow.test.assert(isArray(tools.tools), true, "SSE MCP should list tools");
+            ow.test.assert(tools.tools[0].name, "ping", "SSE MCP should expose the ping tool");
+
+            var res = client.callTool("ping", {});
+            ow.test.assert(res.content[0].text, "pong", "SSE MCP tool call should return pong");
+
+            client.destroy();
+        } finally {
+            ow.server.httpd.stop(hs);
+        }
+    };
+
     exports.testSendMessage = function() {
         ow.loadServer();
 
