@@ -31,6 +31,13 @@ jobs:
        args.func = args.tests.testClientDummy;
 
    # ---------------------------------------------------
+   - name: A2A::Client Remote SSE
+     from: A2A::Init
+     to  : oJob Test
+     exec: |
+       args.func = args.tests.testClientRemoteSSE;
+
+   # ---------------------------------------------------
    - name: A2A::Send Message
      from: A2A::Init
      to  : oJob Test

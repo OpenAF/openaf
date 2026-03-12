@@ -8354,11 +8354,12 @@ const $rest = function(ops) {
  * or with local processes using stdio. The aOptions parameter is a map with the following
  * possible keys:\
  * \
- * - type (string): Connection type, either "stdio" for local process or "remote" for HTTP server (default: "stdio") or "dummy"\
+ * - type (string): Connection type, either "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses (default: "stdio") or "dummy"\
  * - url (string): Required for remote servers - the endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string|map|array): Required for stdio type - the command to execute or the map/array accepted by $sh\
  * - options (map): Additional options passed to $rest for remote connections\
+ * - sse (boolean): When true, remote/http requests expect Server-Sent Events responses with JSON-RPC payloads in `data:` events\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
  * - shared (boolean): Share connections between identical configurations (default: false)\
  * \
@@ -8398,6 +8399,7 @@ const $jsonrpc = function (aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	aOptions.sse = _$(aOptions.sse, "aOptions.sse").isBoolean().default(false)
 	// debug = true will print JSON requests and responses using print()
 	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
 	aOptions.shared = _$(aOptions.shared, "aOptions.shared").isBoolean().default(false)
@@ -8453,7 +8455,7 @@ const $jsonrpc = function (aOptions) {
 			}
 		} else if (isString(aOptions.url)) {
 			_payload = {
-				type: "remote",
+				type: (aOptions.type == "sse" || aOptions.sse) ? "sse" : "remote",
 				url: aOptions.url
 			}
 		} else if (aOptions.type == "dummy" || aOptions.type == "ojob") {
@@ -8503,7 +8505,7 @@ const $jsonrpc = function (aOptions) {
 		},
 		url: url => {
 			aOptions.url = url
-			aOptions.type = "remote"
+			aOptions.type = (aOptions.type == "sse" || aOptions.sse) ? "sse" : "remote"
 			return _r
 		},
 		pwd: aPath => {
@@ -8596,6 +8598,62 @@ const $jsonrpc = function (aOptions) {
 			_debug("jsonrpc command set to: " + cmd)
 			return _r
 		},
+		_readSSE: aStream => {
+			if (isMap(aStream)) {
+				if (isDef(aStream.stream)) return _r._readSSE(aStream.stream)
+				if (isDef(aStream.inputStream)) return _r._readSSE(aStream.inputStream)
+				if (isString(aStream.response)) return _r._readSSE(af.fromString2InputStream(aStream.response))
+				if (isString(aStream.error)) {
+					var _parsedError = jsonParse(aStream.error, __, __, true)
+					return [ isDef(_parsedError) ? _parsedError : aStream ]
+				}
+				return [ aStream ]
+			}
+			if (isDef(aStream) && "function" === typeof aStream.readAllBytes && "function" !== typeof aStream.read) {
+				return _r._readSSE(af.fromBytes2InputStream(aStream.readAllBytes()))
+			}
+			var _events = []
+			var _dataLines = []
+			var _nonSseLines = []
+			var _flush = () => {
+				if (_dataLines.length == 0) return
+				var _payload = _dataLines.join("\n").trim()
+				_dataLines = []
+				if (_payload.length == 0 || _payload == "[DONE]") return
+				var _obj = jsonParse(_payload, __, __, true)
+				_events.push(isDef(_obj) ? _obj : _payload)
+			}
+			try {
+				ioStreamReadLines(aStream, line => {
+					var _line = String(line)
+					if (_line.length == 0) {
+						_flush()
+						return false
+					}
+					if (_line.indexOf(":") == 0) return false
+					if (_line.indexOf("data:") == 0) {
+						_dataLines.push(_line.substring(5).trim())
+					} else if (_line.indexOf("event:") == 0 || _line.indexOf("id:") == 0 || _line.indexOf("retry:") == 0) {
+						// ignore SSE metadata
+					} else {
+						_nonSseLines.push(_line)
+					}
+					return false
+				}, "\n", false)
+				_flush()
+			} finally {
+				try { aStream.close() } catch(e) {}
+			}
+			if (_events.length > 0) return _events
+			if (_nonSseLines.length > 0) {
+				var _fallback = _nonSseLines.join("\n").trim()
+				if (_fallback.length > 0) {
+					var _fallbackObj = jsonParse(_fallback, __, __, true)
+					return [ isDef(_fallbackObj) ? _fallbackObj : _fallback ]
+				}
+			}
+			return []
+		},
 		exec: (aMethod, aParams, aNotification, aExecOptions) => {
 			aExecOptions = _$(aExecOptions, "aExecOptions").isMap().default({})
 			switch (aOptions.type) {
@@ -8650,6 +8708,8 @@ const $jsonrpc = function (aOptions) {
 					}
 					if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
 					return isDef(_res) && isDef(_res.result) ? _res.result : _res
+				case "sse":
+					aOptions.sse = true
 				case "remote":
 				default:
 					_$(aOptions.url, "aOptions.url").isString().$_()
@@ -8671,7 +8731,27 @@ const $jsonrpc = function (aOptions) {
 						delete _req.id
 					}
 					_debug("jsonrpc -> " + stringify(_req, __, ""))
-					var res = $rest(_restOptions).post(aOptions.url, _req)
+						var _useSSE = (aOptions.type == "sse" || aOptions.sse)
+						var res
+						if (_useSSE) {
+							_restOptions.requestHeaders = merge(
+								{ Accept: "application/json, text/event-stream" },
+								_$(_restOptions.requestHeaders, "requestHeaders").isMap().default({})
+							)
+						if (!!aNotification) {
+							var _notificationRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
+							if (isDef(_notificationRes) && "function" === typeof _notificationRes.close) {
+								try { _notificationRes.close() } catch(e) {}
+							}
+							return
+						}
+						var _streamRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
+						var _events = _r._readSSE(_streamRes)
+						res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isUnDef(r.id)).shift()
+						if (isUnDef(res) && _events.length > 0) res = _events[0]
+					} else {
+						res = $rest(_restOptions).post(aOptions.url, _req)
+					}
 					// Notifications do not expect a reply
 					if (!!aNotification) return
 					_debug("jsonrpc <- " + stringify(res, __, ""))
@@ -8717,7 +8797,7 @@ const $jsonrpc = function (aOptions) {
  * \
  * The aOptions parameter is a map with the following possible keys:\
  * \
- * - type (string): Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
+ * - type (string): Connection type - "stdio" for local process, "remote"/"http" for HTTP server, "sse" for HTTP SSE responses, "dummy" for local testing, or "ojob" for oJob-based server (default: "stdio")\
  * - url (string): Required for remote servers - the MCP server endpoint URL\
  * - timeout (number): Timeout in milliseconds for operations (default: 60000)\
  * - cmd (string): Required for stdio type - the command to launch the MCP server\
@@ -8727,10 +8807,17 @@ const $jsonrpc = function (aOptions) {
  *   - For ojob: { job: path to oJob file, args: arguments map, init: init entry/entries to run, fns: map of additional functions, fnsMeta: map of additional function metadata }\
  * - debug (boolean): Enable debug output showing JSON-RPC messages (default: false)\
  * - shared (boolean): Enable shared JSON-RPC connections when possible (default: false)\
+ * - sse (boolean): When true, remote/http MCP requests expect Server-Sent Events responses carrying JSON-RPC payloads\
  * - strict (boolean): Enable strict MCP protocol compliance (default: true)\
  * - clientInfo (map): Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})\
  * - preFn (function): Function called before each tool execution with (toolName, toolArguments)\
  * - posFn (function): Function called after each tool execution with (toolName, toolArguments, result)\
+ * - auth (map): Optional authentication options for remote/http type:\
+ *   - type (string): "bearer" (static token) or "oauth2" (automatic token retrieval/refresh)\
+ *   - token (string): Bearer token when type is "bearer"\
+ *   - tokenType (string): Authorization scheme prefix (default: "Bearer")\
+ *   - For oauth2: tokenURL, clientId, clientSecret, scope, audience, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow\
+ *   - disableOpenBrowser (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)\
  * \
  * Type-specific details:\
  * \
@@ -8786,6 +8873,36 @@ const $jsonrpc = function (aOptions) {
  * var result2 = remoteClient.callTool("read_file", {path: "/tmp/example.txt"}, { requestHeaders: { Authorization: "Bearer ..." } });\
  * var prompts = remoteClient.listPrompts();\
  * \
+ * // Remote MCP server with OAuth2 client credentials\
+ * var oauthClient = $mcp({\
+ *   type: "remote",\
+ *   url: "https://example.com/mcp",\
+ *   auth: {\
+ *     type: "oauth2",\
+ *     tokenURL: "https://example.com/oauth/token",\
+ *     clientId: "my-client",\
+ *     clientSecret: "my-secret",\
+ *     scope: "mcp:read mcp:write"\
+ *   }\
+ * });\
+ * oauthClient.initialize();\
+ * \
+ * // OAuth2 authorization_code flow (opens browser by default)\
+ * var oauthCodeClient = $mcp({\
+ *   type: "remote",\
+ *   url: "https://example.com/mcp",\
+ *   auth: {\
+ *     type: "oauth2",\
+ *     grantType: "authorization_code",\
+ *     authURL: "https://example.com/oauth/authorize",\
+ *     tokenURL: "https://example.com/oauth/token",\
+ *     redirectURI: "http://localhost/callback",\
+ *     clientId: "my-client",\
+ *     clientSecret: "my-secret",\
+ *     disableOpenBrowser: false\
+ *   }\
+ * });\
+ * \
  * // Dummy mode for testing\
  * var dummyClient = $mcp({\
  *   type: "dummy",\
@@ -8826,6 +8943,7 @@ const $mcp = function(aOptions) {
 	aOptions = _$(aOptions, "aOptions").isMap().default({})
 	aOptions.type = _$(aOptions.type, "aOptions.type").isString().default("stdio")
 	aOptions.timeout = _$(aOptions.timeout, "aOptions.timeout").isNumber().default(60000)
+	aOptions.sse = _$(aOptions.sse, "aOptions.sse").isBoolean().default(false)
 	// debug = true will enable printing of JSON-RPC requests/responses
 	aOptions.strict = _$(aOptions.strict, "aOptions.strict").isBoolean().default(true)
 	aOptions.debug = _$(aOptions.debug, "aOptions.debug").isBoolean().default(false)
@@ -8835,11 +8953,138 @@ const $mcp = function(aOptions) {
 		version: "1.0.0"
 	})
 	aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default(__)
+	aOptions.auth = _$(aOptions.auth, "aOptions.auth").isMap().default({})
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2024-11-05")
 
 	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
+
+	const _auth = {
+		token: __,
+		tokenType: "Bearer",
+		expiresAt: 0,
+		refreshToken: __,
+		authorizationCode: _$(aOptions.auth.code, "aOptions.auth.code").isString().default(_$(aOptions.auth.authorizationCode, "aOptions.auth.authorizationCode").isString().default(__))
+	}
+
+	const _urlEnc = v => String(java.net.URLEncoder.encode(String(v), "UTF-8"))
+	const _openAuthBrowser = aURL => {
+		if (_$(aOptions.auth.disableOpenBrowser, "aOptions.auth.disableOpenBrowser").isBoolean().default(false)) return
+		try {
+			if (java.awt.Desktop.isDesktopSupported()) {
+				java.awt.Desktop.getDesktop().browse(new java.net.URI(String(aURL)))
+			}
+		} catch(e) {
+			if (aOptions.debug) printErr(ansiColor("yellow", "OAuth2 browser open failed: " + e))
+		}
+	}
+
+	const _getAuthorizationCode = (_clientId, _scope, _audience) => {
+		if (isDef(_auth.authorizationCode)) return _auth.authorizationCode
+		var _authURL = _$(aOptions.auth.authURL, "aOptions.auth.authURL").isString().$_()
+		var _redirectURI = _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_()
+		var _state = _$(aOptions.auth.state, "aOptions.auth.state").isString().default(genUUID())
+		var _authParams = {
+			response_type: "code",
+			client_id: _clientId,
+			redirect_uri: _redirectURI,
+			state: _state
+		}
+		if (isDef(_scope)) _authParams.scope = _scope
+		if (isDef(_audience)) _authParams.audience = _audience
+		if (isMap(aOptions.auth.extraAuthParams)) _authParams = merge(_authParams, aOptions.auth.extraAuthParams)
+		var _query = Object.keys(_authParams).map(k => _urlEnc(k) + "=" + _urlEnc(_authParams[k])).join("&")
+		var _authFullURL = _authURL + (_authURL.indexOf("?") >= 0 ? "&" : "?") + _query
+		_openAuthBrowser(_authFullURL)
+		if (isFunction(aOptions.auth.onAuthorizationURL)) aOptions.auth.onAuthorizationURL(_authFullURL)
+		if (_$(aOptions.auth.promptForCode, "aOptions.auth.promptForCode").isBoolean().default(true)) {
+			_auth.authorizationCode = String(ask("OpenAF MCP OAuth2 - paste the authorization code: "))
+		} else {
+			throw new Error("OAuth2 authorization code required. Set auth.code/auth.authorizationCode or enable promptForCode.")
+		}
+		return _auth.authorizationCode
+	}
+
+		const _getAuthHeaders = () => {
+			if (isUnDef(aOptions.auth) || !isMap(aOptions.auth)) return __
+			if (aOptions.type != "remote" && aOptions.type != "http" && aOptions.type != "sse") return __
+			if (Object.keys(aOptions.auth).length == 0) return __
+
+			var _type = String(_$(aOptions.auth.type, "aOptions.auth.type").isString().default("bearer")).toLowerCase()
+		if (_type == "bearer") {
+			var _token = _$(aOptions.auth.token, "aOptions.auth.token").isString().$_()
+			var _tokenType = _$(aOptions.auth.tokenType, "aOptions.auth.tokenType").isString().default("Bearer")
+			return { Authorization: _tokenType + " " + _token }
+		}
+
+		if (_type == "oauth2") {
+			var _tokenURL = _$(aOptions.auth.tokenURL, "aOptions.auth.tokenURL").isString().$_()
+			var _clientId = _$(aOptions.auth.clientId, "aOptions.auth.clientId").isString().$_()
+			var _clientSecret = _$(aOptions.auth.clientSecret, "aOptions.auth.clientSecret").isString().$_()
+			var _grantType = String(_$(aOptions.auth.grantType, "aOptions.auth.grantType").isString().default("client_credentials")).toLowerCase()
+			var _scope = _$(aOptions.auth.scope, "aOptions.auth.scope").isString().default(__)
+			var _audience = _$(aOptions.auth.audience, "aOptions.auth.audience").isString().default(__)
+			var _refreshWindowMs = _$(aOptions.auth.refreshWindowMs, "aOptions.auth.refreshWindowMs").isNumber().default(30000)
+			var _now = now()
+			if (isUnDef(_auth.token) || _auth.expiresAt <= (_now + _refreshWindowMs)) {
+				var _tokenParams
+				if (isDef(_auth.refreshToken)) {
+					_tokenParams = {
+						grant_type: "refresh_token",
+						refresh_token: _auth.refreshToken,
+						client_id: _clientId,
+						client_secret: _clientSecret
+					}
+				} else if (_grantType == "authorization_code") {
+					_tokenParams = {
+						grant_type: "authorization_code",
+						code: _getAuthorizationCode(_clientId, _scope, _audience),
+						redirect_uri: _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_(),
+						client_id: _clientId,
+						client_secret: _clientSecret
+					}
+				} else {
+					_tokenParams = {
+						grant_type: _grantType,
+						client_id: _clientId,
+						client_secret: _clientSecret
+					}
+				}
+				if (isDef(_scope)) _tokenParams.scope = _scope
+				if (isDef(_audience)) _tokenParams.audience = _audience
+				if (isMap(aOptions.auth.extraParams)) _tokenParams = merge(_tokenParams, aOptions.auth.extraParams)
+
+				var _tokenRes = $rest({ urlEncode: true }).post(_tokenURL, _tokenParams)
+				if (isUnDef(_tokenRes) || isUnDef(_tokenRes.access_token)) {
+					throw new Error("OAuth2 token response doesn't contain access_token")
+				}
+				_auth.token = _tokenRes.access_token
+				if (isDef(_tokenRes.refresh_token)) _auth.refreshToken = _tokenRes.refresh_token
+				_auth.tokenType = _$(aOptions.auth.tokenType, "aOptions.auth.tokenType").isString().default(_$(
+					_tokenRes.token_type, "token_type").isString().default("Bearer")
+				)
+				var _expiresIn = _$(Number(_tokenRes.expires_in), "expires_in").isNumber().default(__)
+				_auth.expiresAt = isDef(_expiresIn) ? (_now + (_expiresIn * 1000)) : Number.MAX_SAFE_INTEGER
+			}
+			return { Authorization: _auth.tokenType + " " + _auth.token }
+		}
+
+		throw new Error("Unsupported MCP auth.type: " + aOptions.auth.type)
+	}
+
+	const _execWithAuth = (method, params, notification, execOptions) => {
+		execOptions = _$(execOptions, "execOptions").isMap().default({})
+		if (aOptions.type == "remote" || aOptions.type == "http" || aOptions.type == "sse") {
+			var _authHeaders = _getAuthHeaders()
+			if (isMap(_authHeaders)) {
+				var _restOptions = _$(execOptions.restOptions, "execOptions.restOptions").isMap().default({})
+				_restOptions.requestHeaders = merge(_authHeaders, _$(_restOptions.requestHeaders, "requestHeaders").isMap().default({}))
+				execOptions.restOptions = _restOptions
+			}
+		}
+		return _jsonrpc.exec(method, params, notification, execOptions)
+	}
 
 	if (aOptions.type == "ojob") {
 		ow.loadOJob()
@@ -9003,7 +9248,7 @@ const $mcp = function(aOptions) {
         	clientInfo = _$(clientInfo, "clientInfo").isMap().default({})
             clientInfo = merge(aOptions.clientInfo, clientInfo)
 
-			var initResult = _jsonrpc.exec("initialize", {
+			var initResult = _execWithAuth("initialize", {
 				protocolVersion: aOptions.protocolVersion,
 				capabilities: {
 					sampling: {}
@@ -9011,7 +9256,7 @@ const $mcp = function(aOptions) {
 				clientInfo: clientInfo
 			})
 
-            if (isDef(initResult) && isUnDef(initResult.error)) {
+			if (isDef(initResult) && isUnDef(initResult.error)) {
                 _r._initialized = true
                 _r._capabilities = initResult.capabilities || {}
                 _r._initResult = initResult
@@ -9020,7 +9265,7 @@ const $mcp = function(aOptions) {
                 if (aOptions.strict) {
                     try {
                         // send as a notification (no response expected)
-						_jsonrpc.exec("notifications/initialized", {}, true)
+						_execWithAuth("notifications/initialized", {}, true)
 					} catch(e) {
 						// Notifications might not return responses, ignore errors
 					}
@@ -9028,7 +9273,13 @@ const $mcp = function(aOptions) {
 
 				return _r
 			} else {
-                throw new Error("MCP initialization failed: " + (isDef(initResult) ? initResult.error : __ || "Unknown error"))
+				var _initError = "Unknown error"
+				if (isString(initResult)) _initError = initResult
+				if (isMap(initResult) && isDef(initResult.error)) {
+					if (isString(initResult.error)) _initError = initResult.error
+					if (isMap(initResult.error) && isDef(initResult.error.message)) _initError = initResult.error.message
+				}
+                throw new Error("MCP initialization failed: " + _initError)
             }
         },
         getInfo: () => _r._initResult,
@@ -9036,7 +9287,7 @@ const $mcp = function(aOptions) {
             if (!_r._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
             }
-            return _jsonrpc.exec("tools/list", {})
+			return _execWithAuth("tools/list", {})
 		},
 		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
@@ -9051,7 +9302,7 @@ const $mcp = function(aOptions) {
 				aOptions.preFn(toolName, toolArguments)
 			}
 			// Call the tool
-			var _res = _jsonrpc.exec("tools/call", {
+			var _res = _execWithAuth("tools/call", {
 				name: toolName,
 				arguments: toolArguments
 			}, __, { restOptions: toolOptions })
@@ -9065,7 +9316,7 @@ const $mcp = function(aOptions) {
 			if (!_r._initialized) {
 				throw new Error("MCP client not initialized. Call initialize() first.")
 			}
-			return _jsonrpc.exec("prompts/list", {})
+			return _execWithAuth("prompts/list", {})
 		},
 		getPrompt: (promptName, promptArguments) => {
 			if (!_r._initialized) {
@@ -9074,7 +9325,7 @@ const $mcp = function(aOptions) {
 			promptName = _$(promptName, "promptName").isString().$_()
 			promptArguments = _$(promptArguments, "promptArguments").isMap().default({})
 
-			return _jsonrpc.exec("prompts/get", {
+			return _execWithAuth("prompts/get", {
 				name: promptName,
 				arguments: promptArguments
 			})
@@ -9098,7 +9349,7 @@ const $mcp = function(aOptions) {
 			if (!_r._initialized) {
 				throw new Error("MCP client not initialized. Call initialize() first.")
 			}
-			return _jsonrpc.exec("agents/list", {})
+			return _execWithAuth("agents/list", {})
 		},
 		/**
 		 * <odoc>
@@ -9121,7 +9372,7 @@ const $mcp = function(aOptions) {
 				throw new Error("MCP client not initialized. Call initialize() first.")
 			}
 			agentId = _$(agentId, "agentId").isString().$_()
-			return _jsonrpc.exec("agents/get", { id: agentId })
+			return _execWithAuth("agents/get", { id: agentId })
 		},
 		/**
 		 * <odoc>
@@ -9157,7 +9408,7 @@ const $mcp = function(aOptions) {
 				aOptions.preFn("agents/send", { id: agentId, message: message, options: options })
 			}
 
-			var result = _jsonrpc.exec("agents/send", {
+			var result = _execWithAuth("agents/send", {
 				id: agentId,
 				message: message,
 				options: options
@@ -9235,7 +9486,7 @@ const $mcp = function(aOptions) {
 			return _r
 		},
 		exec: (method, params) => {
-			return _jsonrpc.exec(method, params)
+			return _execWithAuth(method, params)
 		},
 		destroy: () => {
 			_jsonrpc.destroy()
