@@ -216,6 +216,61 @@
         }
     };
 
+    exports.testClientToolBlacklist = function() {
+        var client = $mcp({
+            type: "dummy",
+            blacklist: ["secret_tool"],
+            options: {
+                fns: {
+                    visible_tool: function(params) {
+                        return {
+                            content: [{ type: "text", text: "visible" }],
+                            isError: false
+                        };
+                    },
+                    secret_tool: function(params) {
+                        return {
+                            content: [{ type: "text", text: "secret" }],
+                            isError: false
+                        };
+                    }
+                },
+                fnsMeta: {
+                    visible_tool: {
+                        name: "visible_tool",
+                        description: "Visible tool",
+                        inputSchema: { type: "object", properties: {} }
+                    },
+                    secret_tool: {
+                        name: "secret_tool",
+                        description: "Secret tool",
+                        inputSchema: { type: "object", properties: {} }
+                    }
+                }
+            }
+        });
+
+        client.initialize();
+
+        var tools = client.listTools();
+        ow.test.assert(isArray(tools.tools), true, "Dummy MCP should list tools");
+        ow.test.assert(tools.tools.length, 1, "Blacklisted tool should be excluded from listTools");
+        ow.test.assert(tools.tools[0].name, "visible_tool", "Only non-blacklisted tool should be listed");
+
+        var visibleRes = client.callTool("visible_tool", {});
+        ow.test.assert(visibleRes.content[0].text, "visible", "Non-blacklisted tool should execute");
+
+        var blocked = false;
+        try {
+            client.callTool("secret_tool", {});
+        } catch(e) {
+            blocked = String(e.message).indexOf("blacklisted") >= 0;
+        }
+        ow.test.assert(blocked, true, "Blacklisted tool should be rejected by callTool");
+
+        client.destroy();
+    };
+
     exports.testSendMessage = function() {
         ow.loadServer();
 
