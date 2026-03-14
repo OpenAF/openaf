@@ -8486,6 +8486,27 @@ const $jsonrpc = function (aOptions) {
 		if (aOptions.debug) printErr(ansiColor("yellow,BOLD", "DEBUG: ") + ansiColor("yellow", m))
 	}
 
+	const _pickHeaderCaseInsensitive = (headers, keyName) => {
+		if (!isMap(headers)) return __
+		var _target = String(keyName).toLowerCase()
+		var _foundKey = Object.keys(headers).find(k => String(k).toLowerCase() == _target)
+		if (isUnDef(_foundKey)) return __
+		var _v = headers[_foundKey]
+		if (Array.isArray(_v)) return _v.length > 0 ? _v[0] : __
+		return _v
+	}
+
+	const _session = {
+		mcpSessionId: __
+	}
+
+	const _captureSessionFromHeaders = headers => {
+		var _sid = _pickHeaderCaseInsensitive(headers, "mcp-session-id")
+		if (isDef(_sid) && String(_sid).length > 0) {
+			_session.mcpSessionId = String(_sid)
+		}
+	}
+
 	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
 
 	const _r = {
@@ -8718,6 +8739,13 @@ const $jsonrpc = function (aOptions) {
 					aParams = _$(aParams, "aParams").isMap().default({})
 					var _restOptions = clone(aOptions.options)
 					if (isMap(aExecOptions.restOptions)) _restOptions = merge(_restOptions, aExecOptions.restOptions)
+					_restOptions.requestHeaders = _$(
+						_restOptions.requestHeaders,
+						"requestHeaders"
+					).isMap().default({})
+					if (isDef(_session.mcpSessionId) && isUnDef(_pickHeaderCaseInsensitive(_restOptions.requestHeaders, "mcp-session-id"))) {
+						_restOptions.requestHeaders["mcp-session-id"] = _session.mcpSessionId
+					}
 
 					var _req = {
 						jsonrpc: "2.0",
@@ -8734,23 +8762,30 @@ const $jsonrpc = function (aOptions) {
 						var _useSSE = (aOptions.type == "sse" || aOptions.sse)
 						var res
 						if (_useSSE) {
+							var _http = ow.loadObj().rest.connectionFactory()
+							_restOptions.httpClient = _http
 							_restOptions.requestHeaders = merge(
 								{ Accept: "application/json, text/event-stream" },
 								_$(_restOptions.requestHeaders, "requestHeaders").isMap().default({})
 							)
 						if (!!aNotification) {
 							var _notificationRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
+							_captureSessionFromHeaders(_http.responseHeaders())
 							if (isDef(_notificationRes) && "function" === typeof _notificationRes.close) {
 								try { _notificationRes.close() } catch(e) {}
 							}
 							return
 						}
 						var _streamRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
+						_captureSessionFromHeaders(_http.responseHeaders())
 						var _events = _r._readSSE(_streamRes)
 						res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isUnDef(r.id)).shift()
 						if (isUnDef(res) && _events.length > 0) res = _events[0]
 					} else {
+						var _http = ow.loadObj().rest.connectionFactory()
+						_restOptions.httpClient = _http
 						res = $rest(_restOptions).post(aOptions.url, _req)
+						_captureSessionFromHeaders(_http.responseHeaders())
 					}
 					// Notifications do not expect a reply
 					if (!!aNotification) return
@@ -8810,6 +8845,7 @@ const $jsonrpc = function (aOptions) {
  * - sse (boolean): When true, remote/http MCP requests expect Server-Sent Events responses carrying JSON-RPC payloads\
  * - strict (boolean): Enable strict MCP protocol compliance (default: true)\
  * - clientInfo (map): Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})\
+ * - blacklist (array): Optional array of MCP tool names to hide from listTools() and block in callTool()\
  * - preFn (function): Function called before each tool execution with (toolName, toolArguments)\
  * - posFn (function): Function called after each tool execution with (toolName, toolArguments, result)\
  * - auth (map): Optional authentication options for remote/http type:\
@@ -8952,13 +8988,27 @@ const $mcp = function(aOptions) {
 		name: "OpenAF MCP Client",
 		version: "1.0.0"
 	})
+	aOptions.blacklist = _$(aOptions.blacklist, "aOptions.blacklist").isArray().default([])
 	aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default(__)
 	aOptions.auth = _$(aOptions.auth, "aOptions.auth").isMap().default({})
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2024-11-05")
 
+	const _toolBlacklist = {}
+	aOptions.blacklist.forEach(toolName => {
+		toolName = _$(toolName, "aOptions.blacklist[]").isString().$_()
+		_toolBlacklist[toolName] = true
+	})
+
 	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
+	const _isToolBlacklisted = toolName => _toolBlacklist[toolName] === true
+	const _filterToolsList = toolsRes => {
+		if (isMap(toolsRes) && isArray(toolsRes.tools) && Object.keys(_toolBlacklist).length > 0) {
+			toolsRes.tools = toolsRes.tools.filter(tool => !_isToolBlacklisted(tool.name))
+		}
+		return toolsRes
+	}
 
 	const _auth = {
 		token: __,
@@ -9283,11 +9333,11 @@ const $mcp = function(aOptions) {
             }
         },
         getInfo: () => _r._initResult,
-        listTools: () => {
+		listTools: () => {
             if (!_r._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
             }
-			return _execWithAuth("tools/list", {})
+			return _filterToolsList(_execWithAuth("tools/list", {}))
 		},
 		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
@@ -9296,6 +9346,9 @@ const $mcp = function(aOptions) {
 			toolName = _$(toolName, "toolName").isString().$_()
 			toolArguments = _$(toolArguments, "toolArguments").isMap().default({})
 			toolOptions = _$(toolOptions, "toolOptions").isMap().default(__)
+			if (_isToolBlacklisted(toolName)) {
+				throw new Error("MCP tool '" + toolName + "' is blacklisted.")
+			}
 			
 			// Call pre-function if provided
 			if (aOptions.preFn) {
