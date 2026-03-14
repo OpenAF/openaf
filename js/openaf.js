@@ -8762,7 +8762,7 @@ const $jsonrpc = function (aOptions) {
 						var _useSSE = (aOptions.type == "sse" || aOptions.sse)
 						var res
 						if (_useSSE) {
-							var _http = ow.obj.rest.connectionFactory()
+							var _http = ow.loadObj().rest.connectionFactory()
 							_restOptions.httpClient = _http
 							_restOptions.requestHeaders = merge(
 								{ Accept: "application/json, text/event-stream" },
@@ -8782,7 +8782,7 @@ const $jsonrpc = function (aOptions) {
 						res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isUnDef(r.id)).shift()
 						if (isUnDef(res) && _events.length > 0) res = _events[0]
 					} else {
-						var _http = ow.obj.rest.connectionFactory()
+						var _http = ow.loadObj().rest.connectionFactory()
 						_restOptions.httpClient = _http
 						res = $rest(_restOptions).post(aOptions.url, _req)
 						_captureSessionFromHeaders(_http.responseHeaders())
@@ -8845,6 +8845,7 @@ const $jsonrpc = function (aOptions) {
  * - sse (boolean): When true, remote/http MCP requests expect Server-Sent Events responses carrying JSON-RPC payloads\
  * - strict (boolean): Enable strict MCP protocol compliance (default: true)\
  * - clientInfo (map): Client information sent during initialization (default: {name: "OpenAF MCP Client", version: "1.0.0"})\
+ * - blacklist (array): Optional array of MCP tool names to hide from listTools() and block in callTool()\
  * - preFn (function): Function called before each tool execution with (toolName, toolArguments)\
  * - posFn (function): Function called after each tool execution with (toolName, toolArguments, result)\
  * - auth (map): Optional authentication options for remote/http type:\
@@ -8987,13 +8988,27 @@ const $mcp = function(aOptions) {
 		name: "OpenAF MCP Client",
 		version: "1.0.0"
 	})
+	aOptions.blacklist = _$(aOptions.blacklist, "aOptions.blacklist").isArray().default([])
 	aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default(__)
 	aOptions.auth = _$(aOptions.auth, "aOptions.auth").isMap().default({})
 	aOptions.preFn = _$(aOptions.preFn, "aOptions.preFn").isFunction().default(__)
 	aOptions.posFn = _$(aOptions.posFn, "aOptions.posFn").isFunction().default(__)
 	aOptions.protocolVersion = _$(aOptions.protocolVersion, "aOptions.protocolVersion").isString().default("2024-11-05")
 
+	const _toolBlacklist = {}
+	aOptions.blacklist.forEach(toolName => {
+		toolName = _$(toolName, "aOptions.blacklist[]").isString().$_()
+		_toolBlacklist[toolName] = true
+	})
+
 	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
+	const _isToolBlacklisted = toolName => _toolBlacklist[toolName] === true
+	const _filterToolsList = toolsRes => {
+		if (isMap(toolsRes) && isArray(toolsRes.tools) && Object.keys(_toolBlacklist).length > 0) {
+			toolsRes.tools = toolsRes.tools.filter(tool => !_isToolBlacklisted(tool.name))
+		}
+		return toolsRes
+	}
 
 	const _auth = {
 		token: __,
@@ -9318,11 +9333,11 @@ const $mcp = function(aOptions) {
             }
         },
         getInfo: () => _r._initResult,
-        listTools: () => {
+		listTools: () => {
             if (!_r._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
             }
-			return _execWithAuth("tools/list", {})
+			return _filterToolsList(_execWithAuth("tools/list", {}))
 		},
 		callTool: (toolName, toolArguments, toolOptions) => {
 			if (!_r._initialized) {
@@ -9331,6 +9346,9 @@ const $mcp = function(aOptions) {
 			toolName = _$(toolName, "toolName").isString().$_()
 			toolArguments = _$(toolArguments, "toolArguments").isMap().default({})
 			toolOptions = _$(toolOptions, "toolOptions").isMap().default(__)
+			if (_isToolBlacklisted(toolName)) {
+				throw new Error("MCP tool '" + toolName + "' is blacklisted.")
+			}
 			
 			// Call pre-function if provided
 			if (aOptions.preFn) {
