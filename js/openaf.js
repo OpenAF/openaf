@@ -8486,6 +8486,27 @@ const $jsonrpc = function (aOptions) {
 		if (aOptions.debug) printErr(ansiColor("yellow,BOLD", "DEBUG: ") + ansiColor("yellow", m))
 	}
 
+	const _pickHeaderCaseInsensitive = (headers, keyName) => {
+		if (!isMap(headers)) return __
+		var _target = String(keyName).toLowerCase()
+		var _foundKey = Object.keys(headers).find(k => String(k).toLowerCase() == _target)
+		if (isUnDef(_foundKey)) return __
+		var _v = headers[_foundKey]
+		if (Array.isArray(_v)) return _v.length > 0 ? _v[0] : __
+		return _v
+	}
+
+	const _session = {
+		mcpSessionId: __
+	}
+
+	const _captureSessionFromHeaders = headers => {
+		var _sid = _pickHeaderCaseInsensitive(headers, "mcp-session-id")
+		if (isDef(_sid) && String(_sid).length > 0) {
+			_session.mcpSessionId = String(_sid)
+		}
+	}
+
 	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
 
 	const _r = {
@@ -8718,6 +8739,13 @@ const $jsonrpc = function (aOptions) {
 					aParams = _$(aParams, "aParams").isMap().default({})
 					var _restOptions = clone(aOptions.options)
 					if (isMap(aExecOptions.restOptions)) _restOptions = merge(_restOptions, aExecOptions.restOptions)
+					_restOptions.requestHeaders = _$(
+						_restOptions.requestHeaders,
+						"requestHeaders"
+					).isMap().default({})
+					if (isDef(_session.mcpSessionId) && isUnDef(_pickHeaderCaseInsensitive(_restOptions.requestHeaders, "mcp-session-id"))) {
+						_restOptions.requestHeaders["mcp-session-id"] = _session.mcpSessionId
+					}
 
 					var _req = {
 						jsonrpc: "2.0",
@@ -8734,23 +8762,30 @@ const $jsonrpc = function (aOptions) {
 						var _useSSE = (aOptions.type == "sse" || aOptions.sse)
 						var res
 						if (_useSSE) {
+							var _http = ow.obj.rest.connectionFactory()
+							_restOptions.httpClient = _http
 							_restOptions.requestHeaders = merge(
 								{ Accept: "application/json, text/event-stream" },
 								_$(_restOptions.requestHeaders, "requestHeaders").isMap().default({})
 							)
 						if (!!aNotification) {
 							var _notificationRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
+							_captureSessionFromHeaders(_http.responseHeaders())
 							if (isDef(_notificationRes) && "function" === typeof _notificationRes.close) {
 								try { _notificationRes.close() } catch(e) {}
 							}
 							return
 						}
 						var _streamRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
+						_captureSessionFromHeaders(_http.responseHeaders())
 						var _events = _r._readSSE(_streamRes)
 						res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isUnDef(r.id)).shift()
 						if (isUnDef(res) && _events.length > 0) res = _events[0]
 					} else {
+						var _http = ow.obj.rest.connectionFactory()
+						_restOptions.httpClient = _http
 						res = $rest(_restOptions).post(aOptions.url, _req)
+						_captureSessionFromHeaders(_http.responseHeaders())
 					}
 					// Notifications do not expect a reply
 					if (!!aNotification) return
