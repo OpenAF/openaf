@@ -808,6 +808,15 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 	extraDownOptions = _$(extraDownOptions).isMap().default(__flags.MD_SHOWDOWN_OPTIONS)
 
 	removeMaxWidth = _$(removeMaxWidth, "removeMaxWidth").isBoolean().default(__flags.MD_NOMAXWIDTH)
+	var mdString = aMarkdownString
+	var svgBlocks = []
+	if (__flags.MD_RENDER_SVG) {
+		mdString = String(mdString).replace(/(^|\n)```svg[ \t]*\r?\n([\s\S]*?)\r?\n```(?=\n|$)/g, (m, prefix, svg) => {
+			var token = "OAFMDSVGBLOCK" + svgBlocks.length + "PLACEHOLDER"
+			svgBlocks.push(svg)
+			return prefix + token
+		})
+	}
 	var showdown = require(getOpenAFJar() + "::js/showdown.js");
 	//var showdown = loadCompiledRequire("showdown_js");
 	showdown.setFlavor("github");
@@ -1112,16 +1121,24 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 		
 		// Process trigger extras
 		ow.template.__mdHTMLTExtras.forEach(r => {
-			if (aMarkdownString.indexOf(r.t) >= 0) _extras.push(r.e)
+			if (mdString.indexOf(r.t) >= 0) _extras.push(r.e)
 		})
 
 		// Process pos extras
 		ow.template.__mdHTMLPosExtras.forEach(r => {
-			if (aMarkdownString.indexOf(r.t) >= 0) _posextras.push(r.e)
+			if (mdString.indexOf(r.t) >= 0) _posextras.push(r.e)
 		})
 
+		var html = converter.makeHtml(mdString).replace("<html>", "<html><meta charset=\"utf-8\">")
+		if (__flags.MD_RENDER_SVG && svgBlocks.length > 0) {
+			svgBlocks.forEach((svg, idx) => {
+				html = html.replace("<p>OAFMDSVGBLOCK" + idx + "PLACEHOLDER</p>", svg)
+				html = html.replace("OAFMDSVGBLOCK" + idx + "PLACEHOLDER", svg)
+			})
+		}
+
 		return this.parse(this.__templatemd, {
-			markdown: converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">"),
+			markdown: html,
 			noMaxWidth: removeMaxWidth,
 			extras: _extras,
 			posextras: _posextras,
@@ -1130,7 +1147,14 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			themedark: __flags.MD_DARKMODE == "true" || forceDark
 		})
 	} else {
-		return converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">")
+		var html = converter.makeHtml(mdString).replace("<html>", "<html><meta charset=\"utf-8\">")
+		if (__flags.MD_RENDER_SVG && svgBlocks.length > 0) {
+			svgBlocks.forEach((svg, idx) => {
+				html = html.replace("<p>OAFMDSVGBLOCK" + idx + "PLACEHOLDER</p>", svg)
+				html = html.replace("OAFMDSVGBLOCK" + idx + "PLACEHOLDER", svg)
+			})
+		}
+		return html
 	}
 };
 

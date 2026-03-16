@@ -216,6 +216,7 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	VISIBLELENGTH              : true,
 	MD_NOMAXWIDTH              : true,
 	MD_SHOWDOWN_OPTIONS        : {},
+	MD_RENDER_SVG              : false,  // If true, ```svg fenced blocks are turned into inline SVG before markdown to HTML conversion
         MD_CODECLIP                : true,   // If true, code blocks will have a button to copy the code to the clipboard
         MD_DARKMODE                : "false", // Possible values: "auto", "true", "false"
         MD_CHART                   : false,  // If true, code blocks with "chart" language will be rendered as Chart.js charts
