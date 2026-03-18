@@ -1788,19 +1788,57 @@ OpenWrap.oJob.prototype.stop = function() {
 };
 
 OpenWrap.oJob.prototype.__defaultArgs = function(aArgs) {
+	function _isEscaped(aStr, aPos) {
+		var c = 0
+		for (var i = aPos - 1; i >= 0 && aStr.charAt(i) == "\\"; i--) c++
+		return (c % 2) == 1
+	}
+
+	function _unescapeEscapedTokens(aStr) {
+		return String(aStr).replace(/(\\+)\$\{([^}]+)\}/g, (aM, aSlashes, aExpr) => {
+			if ((aSlashes.length % 2) == 1) {
+				return aSlashes.substring(1) + "${" + aExpr + "}"
+			}
+			return aM
+		})
+	}
+
+	function _resolveToken(aExpr, aKey, aRaw) {
+		var _p = aExpr.indexOf(":-")
+		var _k = (_p >= 0 ? aExpr.substring(0, _p) : aExpr)
+		var _d = (_p >= 0 ? aExpr.substring(_p + 2) : __)
+		var _r
+
+		if (_k != aKey) {
+			_r = $$(aArgs).get(_k)
+			if ("undefined" == typeof _r && _p >= 0) {
+				// There is a default
+				_r = _d
+			}
+			return { self: false, value: _r }
+		} else {
+			logWarn("oJob: argument '" + aKey + "' can't be used as default value for itself (" + aRaw + ")")
+			return { self: true, value: __ }
+		}
+	}
+
 	traverse(aArgs, (aK, aV, aP, aO) => {
-		if ("string" == typeof aV && aV.length > 3 && aV.startsWith("${") && aV.endsWith("}")) {
-			var _s = aV.substring(2, aV.length - 1)
-			var _r, _t = _s.split(":-")
-			if (_t[0] != aK) {
-				_r = $$(aArgs).get(_t[0])
-				if ("undefined" == typeof _r && _t.length > 1) {
-					// There is a default
-					_r = _t[1]
-				}
-				aO[aK] = _r
+		if ("string" == typeof aV && aV.length > 3) {
+			var _m = aV.match(/^\$\{([^}]+)\}$/)
+			if (isArray(_m) && !_isEscaped(aV, 0)) {
+				var _res = _resolveToken(_m[1], aK, aV)
+				if (!_res.self) aO[aK] = _res.value
 			} else {
-				logWarn("oJob: argument '" + aK + "' can't be used as default value for itself (" + aV + ")")
+				if (aV.indexOf("${") >= 0) {
+					aO[aK] = aV.replace(/\$\{([^}]+)\}/g, (aM, aExpr, aPos, aSrc) => {
+						if (_isEscaped(aSrc, aPos)) return aM
+						var _res = _resolveToken(aExpr, aK, aV)
+						if (_res.self) return aM
+						if ("undefined" == typeof _res.value || _res.value == null) return ""
+						return String(_res.value)
+					})
+					aO[aK] = _unescapeEscapedTokens(aO[aK])
+				}
 			}
 		}
 	})
