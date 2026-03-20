@@ -44,6 +44,12 @@ Central list of noteworthy runtime flags and environment variables.
 |-----|---------|---------|
 | OAF_PIDFILE | (unset) | Override PID file path in ow.server.checkIn |
 
+## Template / Markdown
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| MD_RENDER_SVG | false | When true, ` ```svg ` fenced blocks in markdown are extracted and injected as inline SVG in HTML output instead of being treated as code blocks |
+
 ## Misc Performance / Behavior
 
 | Flag | Purpose |

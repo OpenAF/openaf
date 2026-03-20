@@ -516,5 +516,89 @@ function robustLLMCall(prompt, maxRetries = 3) {
 ## 17. Safe Dynamic Includes
 Combine integrity hashes + authorized domains + change auditing flags. For local development disable with environment variable toggles but keep production strict.
 
+## 18. MCP Client ($mcp)
+
+`$mcp(aOptions)` creates a Model Context Protocol (MCP) client for communicating with LLM tool servers.
+
+### Connection types
+
+| `type` | Description |
+|--------|-------------|
+| `stdio` (default) | Spawn a local process; communicate over stdin/stdout |
+| `remote` / `http` | HTTP JSON-RPC endpoint |
+| `sse` | HTTP endpoint with Server-Sent Events responses |
+| `ojob` | In-process oJob jobs exposed as MCP tools |
+| `dummy` | Local in-memory stub for testing |
+
+```javascript
+// stdio MCP server
+var client = $mcp({ type: "stdio", cmd: "my-mcp-server" });
+client.initialize();
+var tools = client.listTools();
+var result = client.callTool("myTool", { param: "value" });
+
+// Remote HTTP MCP server
+var remote = $mcp({ type: "remote", url: "https://mcp.example.com/mcp" });
+remote.initialize();
+```
+
+### Authentication (`auth` option)
+
+For `remote`/`http`/`sse` connections:
+
+```javascript
+// Static bearer token
+var client = $mcp({
+  type: "remote",
+  url: "https://mcp.example.com/mcp",
+  auth: { type: "bearer", token: "my-token" }
+});
+
+// OAuth2 client credentials
+var client = $mcp({
+  type: "remote",
+  url: "https://mcp.example.com/mcp",
+  auth: {
+    type: "oauth2",
+    tokenURL: "https://auth.example.com/oauth/token",
+    clientId: "my-client",
+    clientSecret: "my-secret",
+    scope: "mcp:read mcp:write"
+  }
+});
+
+// OAuth2 authorization_code (opens browser)
+var client = $mcp({
+  type: "remote",
+  url: "https://mcp.example.com/mcp",
+  auth: {
+    type: "oauth2",
+    grantType: "authorization_code",
+    authURL: "https://auth.example.com/authorize",
+    tokenURL: "https://auth.example.com/oauth/token",
+    clientId: "my-client",
+    redirectURI: "http://localhost:8080/callback",
+    disableOpenBrowser: false  // set true to suppress browser launch
+  }
+});
+```
+
+OAuth2 token URLs can also be auto-discovered from the MCP server's OAuth 2.0 Protected Resource Metadata when `tokenURL`/`authURL` are omitted.
+
+### Tool blacklist
+
+Prevent specific tools from appearing in `listTools()` or being called via `callTool()`:
+
+```javascript
+var client = $mcp({
+  type: "stdio",
+  cmd: "my-mcp-server",
+  blacklist: ["dangerousTool", "internalTool"]
+});
+client.initialize();
+// listTools() will not include blacklisted tools
+// callTool("dangerousTool", {}) throws an error
+```
+
 ---
 See also: `ojob-security.md`, `openaf-flags.md`, and main references.
