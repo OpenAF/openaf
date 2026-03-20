@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
   <title>{{title}}</title>
 
-  <link href="css/materialize-icon.css" rel="stylesheet">
-  <link href="css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+  <link href="{{uriPrefix}}/css/materialize-icon.css" rel="stylesheet">
+  <link href="{{uriPrefix}}/css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
   <!--link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/-->
 </head>
 <body>
@@ -28,11 +28,11 @@
   </ul>
 
   <!--  Scripts-->
-  <script src="js/jquery.js"></script>
-  <script src="js/materialize.js"></script>
-  <script src="js/stream.js"></script>
-  <script src="js/underscore.js"></script>
-  <script src="js/nlinq.js"></script>
+  <script src="{{uriPrefix}}/js/jquery.js"></script>
+  <script src="{{uriPrefix}}/js/materialize.js"></script>
+  <script src="{{uriPrefix}}/js/stream.js"></script>
+  <script src="{{uriPrefix}}/js/underscore.js"></script>
+  <script src="{{uriPrefix}}/js/nlinq.js"></script>
 
   <div class="section">
     <div class="container no-pad-bot s12">
@@ -55,7 +55,7 @@
        $(".sidenav").sidenav();
     });
     window.onbeforeunload = function(event) {
-       $.ajax({ async: false, type: 'GET', url: '/exec/quit', success: function(d) {}});
+       $.ajax({ async: false, type: 'GET', url: '{{uriPrefix}}/exec/quit', success: function(d) {}});
     }
   </script>
 

@@ -804,8 +804,9 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
  * \
  * </odoc>
  */
-OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark) {
+OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark, aURIPrefix) {
 	extraDownOptions = _$(extraDownOptions).isMap().default(__flags.MD_SHOWDOWN_OPTIONS)
+	aURIPrefix = ow.loadServer().httpd.getHTMLPrefix(aURIPrefix)
 
 	removeMaxWidth = _$(removeMaxWidth, "removeMaxWidth").isBoolean().default(__flags.MD_NOMAXWIDTH)
 	var mdString = aMarkdownString
@@ -864,7 +865,7 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 
 		var _extras = [], _posextras = []
                 if (__flags.MD_CHART) {
-                        _extras.push('<script src="/js/chart.js"></script>')
+                        _extras.push('<script src="' + aURIPrefix + '/js/chart.js"></script>')
                         _posextras.push(`
 <script>
 (function () {
@@ -1144,7 +1145,8 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 			posextras: _posextras,
 			mdcodeclip: __flags.MD_CODECLIP,
 			themeauto: __flags.MD_DARKMODE == "auto" && !forceDark,
-			themedark: __flags.MD_DARKMODE == "true" || forceDark
+			themedark: __flags.MD_DARKMODE == "true" || forceDark,
+			uriPrefix: aURIPrefix
 		})
 	} else {
 		var html = converter.makeHtml(mdString).replace("<html>", "<html><meta charset=\"utf-8\">")
@@ -1500,8 +1502,9 @@ OpenWrap.template.prototype.html = {
 	 * Returns a full HTML page with the nJSMap representation of the aMapOrArray provided. If forceDark = true it will force the dark mode.
 	 * </odoc>
 	 */
-	parseMapInHTML: function(aMapOrArray, forceDark) {
+	parseMapInHTML: function(aMapOrArray, forceDark, aURIPrefix) {
 		ow.loadTemplate()
+		aURIPrefix = ow.loadServer().httpd.getHTMLPrefix(aURIPrefix)
 
 		var _themeauto = ow.template.html.njsmapAutoTheme()
 		var code = "var out, _data=" + stringify(aMapOrArray,__,"") + ";"
@@ -1516,7 +1519,7 @@ OpenWrap.template.prototype.html = {
 		}
 		code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
-		return "<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/" + "nJSMap.css" + "\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
+		return "<html><script src=\"" + aURIPrefix + "/js/openafsigil.js\"\></script><script src=\"" + aURIPrefix + "/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"" + aURIPrefix + "/css/" + "nJSMap.css" + "\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
 	},
 	/**
 	 * <odoc>

@@ -281,6 +281,8 @@ var __flags = ( typeof __flags != "undefined" && "[object Object]" == Object.pro
 	HTTPD_THREADS               : "auto",
 	HTTPD_BUFSIZE               : 8192,
 	HTTPD_CUSTOMURIS 			: {},
+	// Optional URI prefix by HTTP server port. If a specific port is unset, HTTPD_PREFIX[0] is used as the default.
+	HTTPD_PREFIX                : {},
 	HTTPD_DEFAULT_IMPL          : "nwu2",
 	SQL_QUERY_METHOD            : "auto",
 	SQL_QUERY_H2_INMEM          : false,
@@ -8853,7 +8855,8 @@ const $jsonrpc = function (aOptions) {
  *   - type (string): "bearer" (static token) or "oauth2" (automatic token retrieval/refresh)\
  *   - token (string): Bearer token when type is "bearer"\
  *   - tokenType (string): Authorization scheme prefix (default: "Bearer")\
- *   - For oauth2: tokenURL, clientId, clientSecret, scope, audience, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow\
+ *   - For oauth2: tokenURL, clientId, clientSecret, scope, audience, resource, grantType (default: "client_credentials"), extraParams (map), refreshWindowMs (default: 30000), authURL/redirectURI for authorization_code flow\
+ *   - For oauth2: if tokenURL/authURL are omitted for remote/http MCP servers they can be discovered through OAuth 2.0 Protected Resource Metadata and Authorization Server Metadata\
  *   - disableOpenBrowser (boolean): If true prevents opening a browser during OAuth2 authorization_code flow (default: false)\
  * \
  * Type-specific details:\
@@ -9016,10 +9019,116 @@ const $mcp = function(aOptions) {
 		tokenType: "Bearer",
 		expiresAt: 0,
 		refreshToken: __,
-		authorizationCode: _$(aOptions.auth.code, "aOptions.auth.code").isString().default(_$(aOptions.auth.authorizationCode, "aOptions.auth.authorizationCode").isString().default(__))
+		authorizationCode: _$(aOptions.auth.code, "aOptions.auth.code").isString().default(_$(aOptions.auth.authorizationCode, "aOptions.auth.authorizationCode").isString().default(__)),
+		pkceVerifier: __,
+		resource: __,
+		protectedResourceMetadataURL: __,
+		protectedResourceMetadata: __,
+		authorizationServerIssuer: __,
+		authorizationServerMetadataURL: __,
+		authorizationServerMetadata: __,
+		discoveredAuthURL: __,
+		discoveredTokenURL: __,
+		discoveredRegistrationURL: __
 	}
 
 	const _urlEnc = v => String(java.net.URLEncoder.encode(String(v), "UTF-8"))
+	const _base64URL = aBytes => String(af.fromBytes2String(af.toBase64Bytes(aBytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")
+	const _uriToString = aURI => {
+		var _s = String(aURI.getScheme()).toLowerCase()
+		var _h = isDef(aURI.getHost()) ? String(aURI.getHost()).toLowerCase() : __
+		var _p = aURI.normalize().getPath()
+		if (isUnDef(_p) || _p == "/") _p = ""
+		return String(new java.net.URI(_s, aURI.getUserInfo(), _h, aURI.getPort(), _p, null, null).toString())
+	}
+	const _canonicalizeResourceURI = aURL => {
+		var _uri = new java.net.URI(String(aURL))
+		if (isUnDef(_uri.getScheme()) || isUnDef(_uri.getHost())) throw new Error("Invalid MCP remote URL for OAuth resource discovery: " + aURL)
+		return _uriToString(_uri)
+	}
+	const _buildWellKnownURL = (aURL, aSuffix) => {
+		var _uri = new java.net.URI(String(aURL))
+		if (isUnDef(_uri.getScheme()) || isUnDef(_uri.getHost())) throw new Error("Invalid URL for OAuth metadata discovery: " + aURL)
+		var _scheme = String(_uri.getScheme()).toLowerCase()
+		var _host = String(_uri.getHost()).toLowerCase()
+		var _path = _uri.normalize().getPath()
+		if (isUnDef(_path) || _path == "/") _path = ""
+		return String(new java.net.URI(_scheme, _uri.getUserInfo(), _host, _uri.getPort(), "/.well-known/" + aSuffix + _path, null, null).toString())
+	}
+	const _fetchJSON = aURL => {
+		var _http = ow.loadObj().rest.connectionFactory()
+		var _res = $rest({
+			httpClient: _http,
+			requestHeaders: { Accept: "application/json" }
+		}).get(aURL)
+		return {
+			body: _res,
+			headers: _http.responseHeaders(),
+			status: _http.responseCode()
+		}
+	}
+	const _getOAuthResource = () => {
+		if (isDef(_auth.resource)) return _auth.resource
+		_auth.resource = _$(aOptions.auth.resource, "aOptions.auth.resource").isString().default(_canonicalizeResourceURI(aOptions.url))
+		return _auth.resource
+	}
+	const _getPKCEVerifier = () => {
+		if (isDef(_auth.pkceVerifier)) return _auth.pkceVerifier
+		var _seed = String(genUUID()) + String(genUUID())
+		_auth.pkceVerifier = _base64URL(af.fromString2Bytes(_seed))
+		return _auth.pkceVerifier
+	}
+	const _getPKCEChallenge = () => {
+		var _digest = java.security.MessageDigest.getInstance("SHA-256")
+		return _base64URL(_digest.digest(af.fromString2Bytes(_getPKCEVerifier())))
+	}
+	const _discoverOAuthMetadata = () => {
+		if (isDef(_auth.authorizationServerMetadata)) return _auth.authorizationServerMetadata
+		if (isDef(aOptions.auth.tokenURL) && isDef(aOptions.auth.authURL)) return __
+		var _resource = _getOAuthResource()
+		var _resourceMetadataURL = _$(aOptions.auth.protectedResourceMetadataURL, "aOptions.auth.protectedResourceMetadataURL").isString().default(
+			_buildWellKnownURL(_resource, "oauth-protected-resource")
+		)
+		var _resourceMetadata = _fetchJSON(_resourceMetadataURL).body
+		if (!isMap(_resourceMetadata)) {
+			throw new Error("OAuth protected resource metadata response is invalid for " + _resourceMetadataURL)
+		}
+		if (!isArray(_resourceMetadata.authorization_servers) || _resourceMetadata.authorization_servers.length == 0) {
+			throw new Error("OAuth protected resource metadata doesn't contain authorization_servers")
+		}
+		var _issuer = _$(aOptions.auth.authorizationServer, "aOptions.auth.authorizationServer").isString().default(
+			_$(aOptions.auth.authorizationServerIssuer, "aOptions.auth.authorizationServerIssuer").isString().default(_resourceMetadata.authorization_servers[0])
+		)
+		var _authServerMetadataURL = _$(aOptions.auth.authorizationServerMetadataURL, "aOptions.auth.authorizationServerMetadataURL").isString().default(
+			_buildWellKnownURL(_issuer, "oauth-authorization-server")
+		)
+		var _authServerMetadata = _fetchJSON(_authServerMetadataURL).body
+		if (!isMap(_authServerMetadata)) {
+			throw new Error("OAuth authorization server metadata response is invalid for " + _authServerMetadataURL)
+		}
+		_auth.protectedResourceMetadataURL = _resourceMetadataURL
+		_auth.protectedResourceMetadata = _resourceMetadata
+		_auth.authorizationServerIssuer = _issuer
+		_auth.authorizationServerMetadataURL = _authServerMetadataURL
+		_auth.authorizationServerMetadata = _authServerMetadata
+		_auth.discoveredAuthURL = _authServerMetadata.authorization_endpoint
+		_auth.discoveredTokenURL = _authServerMetadata.token_endpoint
+		_auth.discoveredRegistrationURL = _authServerMetadata.registration_endpoint
+		return _authServerMetadata
+	}
+	const _getResolvedAuthURL = () => {
+		var _authURL = isString(aOptions.auth.authURL) ? String(aOptions.auth.authURL) : __
+		if (isDef(_authURL)) return _authURL
+		_discoverOAuthMetadata()
+		return isString(_auth.discoveredAuthURL) ? String(_auth.discoveredAuthURL) : __
+	}
+	const _getResolvedTokenURL = () => {
+		var _tokenURL = isString(aOptions.auth.tokenURL) ? String(aOptions.auth.tokenURL) : __
+		if (isDef(_tokenURL)) return _tokenURL
+		_discoverOAuthMetadata()
+		if (!isString(_auth.discoveredTokenURL)) throw new Error("OAuth authorization server metadata doesn't contain token_endpoint")
+		return String(_auth.discoveredTokenURL)
+	}
 	const _openAuthBrowser = aURL => {
 		if (_$(aOptions.auth.disableOpenBrowser, "aOptions.auth.disableOpenBrowser").isBoolean().default(false)) return
 		try {
@@ -9031,9 +9140,10 @@ const $mcp = function(aOptions) {
 		}
 	}
 
-	const _getAuthorizationCode = (_clientId, _scope, _audience) => {
+	const _getAuthorizationCode = (_clientId, _scope, _audience, _resource) => {
 		if (isDef(_auth.authorizationCode)) return _auth.authorizationCode
-		var _authURL = _$(aOptions.auth.authURL, "aOptions.auth.authURL").isString().$_()
+		var _authURL = _getResolvedAuthURL()
+		_$( _authURL, "authorization_endpoint").isString().$_()
 		var _redirectURI = _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_()
 		var _state = _$(aOptions.auth.state, "aOptions.auth.state").isString().default(genUUID())
 		var _authParams = {
@@ -9044,6 +9154,9 @@ const $mcp = function(aOptions) {
 		}
 		if (isDef(_scope)) _authParams.scope = _scope
 		if (isDef(_audience)) _authParams.audience = _audience
+		if (isDef(_resource)) _authParams.resource = _resource
+		_authParams.code_challenge = _getPKCEChallenge()
+		_authParams.code_challenge_method = "S256"
 		if (isMap(aOptions.auth.extraAuthParams)) _authParams = merge(_authParams, aOptions.auth.extraAuthParams)
 		var _query = Object.keys(_authParams).map(k => _urlEnc(k) + "=" + _urlEnc(_authParams[k])).join("&")
 		var _authFullURL = _authURL + (_authURL.indexOf("?") >= 0 ? "&" : "?") + _query
@@ -9070,12 +9183,13 @@ const $mcp = function(aOptions) {
 		}
 
 		if (_type == "oauth2") {
-			var _tokenURL = _$(aOptions.auth.tokenURL, "aOptions.auth.tokenURL").isString().$_()
+			var _tokenURL = _getResolvedTokenURL()
 			var _clientId = _$(aOptions.auth.clientId, "aOptions.auth.clientId").isString().$_()
-			var _clientSecret = _$(aOptions.auth.clientSecret, "aOptions.auth.clientSecret").isString().$_()
+			var _clientSecret = _$(aOptions.auth.clientSecret, "aOptions.auth.clientSecret").isString().default(__)
 			var _grantType = String(_$(aOptions.auth.grantType, "aOptions.auth.grantType").isString().default("client_credentials")).toLowerCase()
 			var _scope = _$(aOptions.auth.scope, "aOptions.auth.scope").isString().default(__)
 			var _audience = _$(aOptions.auth.audience, "aOptions.auth.audience").isString().default(__)
+			var _resource = _getOAuthResource()
 			var _refreshWindowMs = _$(aOptions.auth.refreshWindowMs, "aOptions.auth.refreshWindowMs").isNumber().default(30000)
 			var _now = now()
 			if (isUnDef(_auth.token) || _auth.expiresAt <= (_now + _refreshWindowMs)) {
@@ -9084,26 +9198,26 @@ const $mcp = function(aOptions) {
 					_tokenParams = {
 						grant_type: "refresh_token",
 						refresh_token: _auth.refreshToken,
-						client_id: _clientId,
-						client_secret: _clientSecret
+						client_id: _clientId
 					}
 				} else if (_grantType == "authorization_code") {
 					_tokenParams = {
 						grant_type: "authorization_code",
-						code: _getAuthorizationCode(_clientId, _scope, _audience),
+						code: _getAuthorizationCode(_clientId, _scope, _audience, _resource),
 						redirect_uri: _$(aOptions.auth.redirectURI, "aOptions.auth.redirectURI").isString().$_(),
 						client_id: _clientId,
-						client_secret: _clientSecret
+						code_verifier: _getPKCEVerifier()
 					}
 				} else {
 					_tokenParams = {
 						grant_type: _grantType,
-						client_id: _clientId,
-						client_secret: _clientSecret
+						client_id: _clientId
 					}
 				}
+				if (isDef(_clientSecret)) _tokenParams.client_secret = _clientSecret
 				if (isDef(_scope)) _tokenParams.scope = _scope
 				if (isDef(_audience)) _tokenParams.audience = _audience
+				if (isDef(_resource)) _tokenParams.resource = _resource
 				if (isMap(aOptions.auth.extraParams)) _tokenParams = merge(_tokenParams, aOptions.auth.extraParams)
 
 				var _tokenRes = $rest({ urlEncode: true }).post(_tokenURL, _tokenParams)
