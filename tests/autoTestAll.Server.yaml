@@ -60,6 +60,26 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testHTTPServerJava;
 
+   - name: Server::HTTP server prefix
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPServerPrefix;
+
+   - name: Server::HTTP server prefix NWU2
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPServerPrefixNWU2;
+
+   - name: Server::HTTP server prefix Java
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPServerPrefixJava;
+
+   - name: Server::HTTP server prefix helpers
+     from: Server::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testHTTPServerPrefixHelpers;
+
    - name: Server::Scheduler
      from: Server::Init
      to  : oJob Test
@@ -99,6 +119,10 @@ todo:
    - Server::HTTP server
    - Server::HTTP server NWU2
    - Server::HTTP server Java
+   - Server::HTTP server prefix
+   - Server::HTTP server prefix NWU2
+   - Server::HTTP server prefix Java
+   - Server::HTTP server prefix helpers
    - Server::Locks
    - Server::Auth
    - Server::AuthApp

@@ -17,6 +17,20 @@
         ow.test.assert(out.match(/highlight\.js/).length, 1, "Problem with ow.template.parseMD2HTML full html");
     };
 
+    exports.testMD2HTMLWithPrefix = function() {
+        var md = "# test 1"
+
+        ow.loadTemplate()
+
+        var out = ow.template.parseMD2HTML(md, true, __, __, __, "/myprefix")
+        ow.test.assert(out.indexOf('src="/myprefix/js/highlight.js"') >= 0, true, "Problem with ow.template.parseMD2HTML full html prefix support")
+        ow.test.assert(out.indexOf('href="/myprefix/css/github-markdown.css"') >= 0, true, "Problem with ow.template.parseMD2HTML stylesheet prefix support")
+
+        out = ow.template.html.parseMapInHTML({ a: 1 }, __, "/myprefix")
+        ow.test.assert(out.indexOf('src="/myprefix/js/openafsigil.js"') >= 0, true, "Problem with ow.template.html.parseMapInHTML prefix support")
+        ow.test.assert(out.indexOf('href="/myprefix/css/nJSMap.css"') >= 0, true, "Problem with ow.template.html.parseMapInHTML stylesheet prefix support")
+    };
+
     exports.testSimpleTemplate = function() {
         ow.loadTemplate();
         ow.test.assert(templify("Hello {{name}}", { name: "OpenAF"}), "Hello OpenAF", "Problem with simple templify test 1.");

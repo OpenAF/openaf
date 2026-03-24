@@ -14945,6 +14945,199 @@ const $ssh = function(aMap) {
 
 /**
  * <odoc>
+ * <key>$ftp.$ftp(aMap) : $ftp</key>
+ * Builds an object to allow access through ftp/ftps. aMap should be a ftp/ftps string with the format:
+ * ftp://user:pass@host:port/?timeout=1234&amp;passive=true&amp;binary=true or
+ * ftps://user:pass@host:port/?timeout=1234&amp;passive=true&amp;binary=true&amp;implicit=false&amp;protocol=TLS or
+ * a map with the keys: host, port, login, pass, secure, implicit, protocol, passive, binary and timeout.
+ * See "help FTP.FTP" for more info.
+ * </odoc>
+ */
+const $ftp = function(aMap) {
+	var __ftp = function(aMap) {
+		plugin("FTP");
+		aMap = _$(aMap).$_("Please provide a ftp/ftps map or an URL");
+		this.map = aMap;
+		this.ftp = this.__connect(aMap);
+	};
+
+	__ftp.prototype.__getftp = function() {
+		if (isUnDef(this.ftp)) this.ftp = this.__connect(this.map);
+		return this.ftp;
+	};
+
+	__ftp.prototype.__connect = function(aMap) {
+		var f;
+
+		if (isMap(aMap)) {
+			aMap.secure = _$(aMap.secure).isBoolean().default(false);
+			aMap.implicit = _$(aMap.implicit).isBoolean().default(false);
+			aMap.port = _$(aMap.port).isNumber().default((aMap.secure && aMap.implicit ? 990 : 21));
+			aMap.protocol = _$(aMap.protocol).isString().default("TLS");
+			aMap.passive = _$(aMap.passive).isBoolean().default(true);
+			aMap.binary = _$(aMap.binary).isBoolean().default(true);
+			if (isDef(aMap.url)) aMap.host = aMap.url;
+		}
+
+		if (!(aMap instanceof FTP)) {
+			f = new FTP((isString(aMap) ? aMap : aMap.host), aMap.port, aMap.login, aMap.pass, aMap.secure, aMap.implicit, aMap.protocol, aMap.passive, aMap.binary, aMap.timeout);
+		} else {
+			f = aMap;
+		}
+
+		return f;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.cd(aPath) : $ftp</key>
+	 * Changes the current remote working directory.
+	 * </odoc>
+	 */
+	__ftp.prototype.cd = function(aPath) {
+		this.__getftp().cd(aPath);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.pwd() : String</key>
+	 * Returns the current remote working directory.
+	 * </odoc>
+	 */
+	__ftp.prototype.pwd = function() {
+		var res = this.__getftp().pwd();
+		this.close();
+		return res;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.timeout(aTimeout) : $ftp</key>
+	 * Sets aTimeout in ms for the ftp/ftps connection to a remote host defined by aMap.
+	 * </odoc>
+	 */
+	__ftp.prototype.timeout = function(aTimeout) {
+		this.__getftp().setTimeout(aTimeout);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.passive(isPassive) : $ftp</key>
+	 * Sets the passive mode for the ftp/ftps connection.
+	 * </odoc>
+	 */
+	__ftp.prototype.passive = function(isPassive) {
+		this.__getftp().setPassiveMode(isPassive);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.binary(isBinary) : $ftp</key>
+	 * Sets the file transfer mode between binary and ascii.
+	 * </odoc>
+	 */
+	__ftp.prototype.binary = function(isBinary) {
+		this.__getftp().setBinaryMode(isBinary);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.mkdir(aDirectory) : $ftp</key>
+	 * Creates aDirectory via FTP/FTPS on a remote host defined by aMap.
+	 * </odoc>
+	 */
+	__ftp.prototype.mkdir = function(aDir) {
+		this.__getftp().mkdir(aDir);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.getFile(aSource, aTarget) : $ftp</key>
+	 * Gets aSource filepath and stores it locally on aTarget from a remote host defined by aMap.
+	 * </odoc>
+	 */
+	__ftp.prototype.getFile = function(aSource, aTarget) {
+		this.__getftp().ftpGet(aSource, aTarget);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.putFile(aSource, aTarget) : $ftp</key>
+	 * Puts aSource local filepath or Java stream and stores it remotely in aTarget on a remote host defined by aMap.
+	 * </odoc>
+	 */
+	__ftp.prototype.putFile = function(aSource, aTarget) {
+		this.__getftp().ftpPut(aSource, aTarget);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.rename(aSource, aTarget) : $ftp</key>
+	 * Renames aSource filepath to aTarget filepath on a remote host defined by aMap.
+	 * </odoc>
+	 */
+	__ftp.prototype.rename = function(aSource, aTarget) {
+		this.__getftp().rename(aSource, aTarget);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.listFiles(aRemotePath) : Array</key>
+	 * Returns an array of maps with the listing of aRemotePath provided.
+	 * </odoc>
+	 */
+	__ftp.prototype.listFiles = function(aPath) {
+		var lst = this.__getftp().listFiles(aPath);
+		this.close();
+		return (isDef(lst) ? lst.files : []);
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.rm(aFilePath) : $ftp</key>
+	 * Remove aFilePath from a remote host defined by aMap.
+	 * </odoc>
+	 */
+	__ftp.prototype.rm = function(aFilePath) {
+		this.__getftp().rm(aFilePath);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.rmdir(aFilePath) : $ftp</key>
+	 * Removes a directory from a remote host defined by aMap.
+	 * </odoc>
+	 */
+	__ftp.prototype.rmdir = function(aFilePath) {
+		this.__getftp().rmdir(aFilePath);
+		return this;
+	};
+
+	/**
+	 * <odoc>
+	 * <key>$ftp.close() : $ftp</key>
+	 * Closes a remote host connection defined by aMap.
+	 * </odoc>
+	 */
+	__ftp.prototype.close = function() {
+		if (isDef(this.ftp)) this.ftp.close();
+		return this;
+	};
+
+	return new __ftp(aMap);
+};
+
+/**
+ * <odoc>
  * <key>$csv(aMap) : $csv</key>
  * Provides a shortcut to access CSV functionality. Optionally you can provide options through aMap.\
  * \

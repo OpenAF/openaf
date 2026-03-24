@@ -315,6 +315,81 @@
         _testHTTPServer("nwu2")
     }
 
+    function _testHTTPServerPrefix(aImpl) {
+        ow.loadServer()
+        ow.loadObj()
+
+        var port = findRandomOpenPort()
+        var prefix = "/myprefix"
+        __flags.HTTPD_PREFIX[port] = prefix
+
+        var hs = ow.server.httpd.start(port, "127.0.0.1", __, __, __, __, __, aImpl)
+    
+        try {
+            ow.server.httpd.route(hs,
+                ow.server.httpd.mapRoutesWithLibs(hs, {
+                    "/normal": req => hs.replyOKText(req.uri),
+                    "/go": req => ow.server.httpd.replyRedirect(hs, "/target"),
+                    "/target": req => hs.replyOKText("redirect target")
+                }),
+                req => hs.reply("", "text/plain", 401, {})
+            )
+
+            ow.test.assert(
+                (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/normal"),
+                "/normal",
+                `(${aImpl}) Problem stripping HTTPD prefix before route handlers.`
+            )
+
+            var h = new ow.obj.http()
+            var failed = false
+            try {
+                h.get("http://127.0.0.1:" + port + "/normal")
+            } catch(e) {
+                if (h.responseCode() == 401) failed = true
+            }
+            ow.test.assert(failed, true, `(${aImpl}) Unexpected unprefixed access when HTTPD prefix is configured.`)
+
+            ow.test.assert(
+                (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/go"),
+                "redirect target",
+                `(${aImpl}) Problem rewriting redirects with HTTPD prefix.`
+            )
+
+            var css = (new ow.obj.http()).get("http://127.0.0.1:" + port + prefix + "/css/materialize-icon.css")
+            ow.test.assert(css.indexOf(prefix + "/fonts/material-design-icons/Material-Design-Icons.woff2") >= 0, true, `(${aImpl}) Problem rewriting CSS font URLs with HTTPD prefix.`)
+
+            var fontRes = (new ow.obj.http()).getBytes("http://127.0.0.1:" + port + prefix + "/fonts/openaf_small.png")
+            ow.test.assert(fontRes.responseBytes.length > 0, true, `(${aImpl}) Problem serving prefixed font routes.`)
+        } finally {
+            ow.server.httpd.stop(hs)
+            delete __flags.HTTPD_PREFIX[port]
+        }
+    }
+    exports.testHTTPServerPrefix = function() {
+        _testHTTPServerPrefix("nwu")
+    }
+    exports.testHTTPServerPrefixJava = function() {
+        _testHTTPServerPrefix("java")
+    }
+    exports.testHTTPServerPrefixNWU2 = function() {
+        _testHTTPServerPrefix("nwu2")
+    }
+
+    exports.testHTTPServerPrefixHelpers = function() {
+        ow.loadServer()
+
+        ow.test.assert(ow.server.httpd.withPrefix({}, { x: 1 }), "/", "Problem sanitizing non-string URI values for prefixing.")
+        ow.test.assert(ow.server.httpd.normalizePrefix({ x: 1 }), "", "Problem sanitizing non-string HTTPD prefix values.")
+
+        delete __flags.HTTPD_PREFIX["12345"]
+        __flags.HTTPD_PREFIX["0"] = "/default-prefix"
+        ow.test.assert(ow.server.httpd.getPrefix(12345), "/default-prefix", "Problem using HTTPD_PREFIX[0] as default fallback.")
+        ow.test.assert(ow.server.httpd.getPrefix({}), "/default-prefix", "Problem using HTTPD_PREFIX[0] as fallback for invalid prefix helper arguments.")
+        ow.test.assert(ow.server.httpd.getHTMLPrefix({}), "/default-prefix", "Problem using HTTPD_PREFIX[0] as HTML prefix fallback for invalid arguments.")
+        delete __flags.HTTPD_PREFIX["0"]
+    }
+
     exports.testQueue = function() {
         ow.loadServer();
         var q = new ow.server.queue({ t: "q" }, "test");
