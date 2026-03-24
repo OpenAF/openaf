@@ -330,6 +330,7 @@ public class FTP extends ScriptableObject {
 		String path;
 		Scriptable no = (Scriptable) AFCmdBase.jse.newObject(AFCmdBase.jse.getGlobalscope());
 		ArrayList<Scriptable> list = new ArrayList<Scriptable>();
+		FTPFile[] files = null;
 
 		if (opath == null || !(opath instanceof String)) {
 			path = ".";
@@ -337,7 +338,32 @@ public class FTP extends ScriptableObject {
 			path = ((String) opath).replaceAll("/+", "/");
 		}
 
-		for(FTPFile f : client.listFiles(path)) {
+		try {
+			files = client.mlistDir(path);
+		} catch(Exception e) {
+			// Ignore and fall back to LIST.
+		}
+
+		if (files == null || files.length == 0) {
+			files = client.listFiles(path);
+		}
+
+		if ((files == null || files.length == 0) && path != null && path.length() > 0 && !path.equals(".")) {
+			String previous = client.printWorkingDirectory();
+			try {
+				if (client.changeWorkingDirectory(path)) {
+					files = client.listFiles(".");
+				}
+			} finally {
+				if (previous != null && previous.length() > 0) {
+					client.changeWorkingDirectory(previous);
+				}
+			}
+		}
+
+		if (files == null) files = new FTPFile[0];
+
+		for(FTPFile f : files) {
 			if (f != null && f.getName() != null && !f.getName().equals(".") && !f.getName().equals("..")) {
 				Scriptable record = (Scriptable) AFCmdBase.jse.newObject(no);
 				Calendar ts = f.getTimestamp();
