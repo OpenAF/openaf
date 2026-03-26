@@ -20,4 +20,5 @@ include:
 - autoTestAll.ZIP.yaml
 - autoTestAll.Sec.yaml
 - autoTestAll.oJob.yaml
+- autoTestAll.MCP.yaml
 # - autoTestAll.SNMP.yaml   // Test servers don't work

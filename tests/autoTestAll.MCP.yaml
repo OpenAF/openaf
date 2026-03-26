@@ -1,0 +1,29 @@
+# Copyright 2023 Nuno Aguiar
+
+include:
+   - oJobTest.yaml
+
+jobs:
+   - name: MCP::Init
+     exec: |
+       args.tests = require("autoTestAll.MCP.js");
+
+   - name: MCP::OAuth discovery with client credentials
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testOAuthDiscoveryClientCredentials;
+
+   - name: MCP::OAuth authorization URL includes resource and PKCE
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testOAuthAuthorizationCodeBuildsAuthorizationURL;
+
+   - name: MCP::OAuth authorization code token exchange includes resource and verifier
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testOAuthAuthorizationCodeTokenExchange;
+
+todo:
+   - MCP::OAuth discovery with client credentials
+   - MCP::OAuth authorization URL includes resource and PKCE
+   - MCP::OAuth authorization code token exchange includes resource and verifier

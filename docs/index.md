@@ -32,9 +32,13 @@ Use `$path` expressions in templates for dynamic data extraction, and leverage b
 - **Enhanced Parameter Validation**: Comprehensive `_$()` validation chains with type conversion, regex matching, and range checking
 - **Job Input/Output Validation**: Declarative `check.in` and `check.out` sections with fluent validation syntax
 - **AI/LLM Integration**: Multi-provider LLM support (OpenAI, Anthropic, Gemini, Ollama) with function calling and image processing
+- **MCP Client**: `$mcp()` for Model Context Protocol communication with stdio, HTTP, and SSE transports; OAuth2 (client credentials & authorization_code); tool blacklist (see `openaf-advanced.md` §19)
+- **FTP/FTPS Client**: `$ftp()` shortcut for plain and TLS-secured FTP file transfers (see `openaf.md`)
+- **HTTP Path Prefix**: Deploy the embedded HTTP server under a configurable subpath via `HTTPD_PREFIX` flag (see `openaf-advanced.md` §18, `openaf-flags.md`)
 - **Telemetry & Metrics**: Built-in metrics collection, OpenMetrics format support, and integration with monitoring systems
 - **Security Enhancements**: File integrity checking, authorized domains, and comprehensive audit trails
-- **Async Promises**: `$do` / `$doV` helpers build on `oPromise` for threaded or virtual-thread asynchronous execution with familiar `.then` / `.catch` chaining.【F:js/openaf.js†L13130-L13157】【F:js/openaf.js†L12145-L12163】【F:js/openaf.js†L12208-L12251】
+- **Async Promises**: `$do` / `$doV` helpers build on `oPromise` for threaded or virtual-thread asynchronous execution with familiar `.then` / `.catch` chaining.
+- **Inline Argument Token Interpolation**: oJob args support `"${key}"` and `"prefix-${key}-suffix"` patterns with default values and backslash escaping (see `ojob.md`)
 
 ---
 This index is intentionally minimal—open individual docs for full tables of contents.

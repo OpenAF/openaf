@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
-<link rel="stylesheet" href="/css/github-gist.css">
-<link rel="stylesheet" href="/css/github-markdown.css">
-<link rel="stylesheet" href="/css/materialize-icon.css">
-<link rel="stylesheet" href="/css/nJSMap.css">
+<link rel="stylesheet" href="{{uriPrefix}}/css/github-gist.css">
+<link rel="stylesheet" href="{{uriPrefix}}/css/github-markdown.css">
+<link rel="stylesheet" href="{{uriPrefix}}/css/materialize-icon.css">
+<link rel="stylesheet" href="{{uriPrefix}}/css/nJSMap.css">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
-<script src="/js/highlight.js"></script>
+<script src="{{uriPrefix}}/js/highlight.js"></script>
 <script>hljs.highlightAll();</script>
 <style>.markdown-body, .markdown-body-dark { box-sizing: border-box;{{#if noMaxWidth}}width: 100%;{{else}}max-width: 980px;{{/if}} margin: 0 auto; padding: 45px; } @media (max-width: 767px) { .markdown-body, .markdown-body-dark { padding: 15px; } }</style>
 {{#each extras}}
@@ -57,7 +57,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', eve
 {{{markdown}}}
 {{#if themedark}}<script>document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
 {{#if themeauto}}<script>if (__isDark) document.querySelectorAll('pre code').forEach((block) => { block.classList.add('hljs_dark') })</script>{{/if}}
-{{#if mdcodeclip}}<script src="/js/mdcodeclip.js"></script>{{/if}}
+{{#if mdcodeclip}}<script src="{{uriPrefix}}/js/mdcodeclip.js"></script>{{/if}}
 {{#each posextras}}
 {{{this}}}
 {{/each}}
