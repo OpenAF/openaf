@@ -516,7 +516,64 @@ function robustLLMCall(prompt, maxRetries = 3) {
 ## 17. Safe Dynamic Includes
 Combine integrity hashes + authorized domains + change auditing flags. For local development disable with environment variable toggles but keep production strict.
 
-## 18. MCP Client ($mcp)
+## 18. HTTP Path Prefix Support (ow.server.httpd)
+
+OpenAF's embedded HTTP server supports serving all resources and routes under a configurable path prefix. This is useful when deploying behind a reverse proxy that forwards requests under a subpath (e.g. `/app`).
+
+### Setting a prefix
+
+Set the `HTTPD_PREFIX` flag before starting any server. Key `"0"` is the global default for all ports; use a specific port number string to override per port:
+
+```javascript
+// Set global prefix /app for all HTTP servers
+__flags.HTTPD_PREFIX = { "0": "/app" };
+
+// Or different prefixes per port
+__flags.HTTPD_PREFIX = { "0": "", "8080": "/api", "9090": "/gui" };
+```
+
+Via oJob YAML:
+```yaml
+ojob:
+  flags:
+    HTTPD_PREFIX:
+      "0": /app
+```
+
+### Prefix utility functions
+
+`ow.server.httpd` provides helper functions to work with prefixes:
+
+| Function | Description |
+|----------|-------------|
+| `ow.server.httpd.getPrefix(httpdOrPort)` | Returns the normalized prefix for the given server or port |
+| `ow.server.httpd.withPrefix(httpdOrPort, uri)` | Prepend the prefix to `uri` (skips absolute URLs) |
+| `ow.server.httpd.stripPrefix(httpdOrPort, uri)` | Remove the prefix from a URI for internal routing |
+| `ow.server.httpd.normalizePrefix(aPrefix)` | Normalize a raw prefix string (ensures leading `/`, no trailing `/`) |
+
+```javascript
+ow.loadServer();
+__flags.HTTPD_PREFIX = { "0": "/app" };
+
+var httpd = ow.server.httpd.start(8080);
+
+// Build a prefixed URL
+var link = ow.server.httpd.withPrefix(httpd, "/about"); // "/app/about"
+
+// Strip prefix for internal route matching
+ow.server.httpd.route(httpd, ow.server.httpd.mapWithExistingFn(httpd, {
+  "/about": function(req) {
+    return httpd.replyOKText("About page");
+  }
+}), function(req) {
+  var internalURI = ow.server.httpd.stripPrefix(httpd, req.uri);
+  return httpd.replyNotFound();
+});
+```
+
+All built-in GUI pages and static-file handlers automatically respect the configured prefix.
+
+## 19. MCP Client ($mcp)
 
 `$mcp(aOptions)` creates a Model Context Protocol (MCP) client for communicating with LLM tool servers.
 

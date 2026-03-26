@@ -40,9 +40,10 @@ Central list of noteworthy runtime flags and environment variables.
 
 ## Server Management
 
-| Env | Default | Purpose |
-|-----|---------|---------|
+| Env / Flag | Default | Purpose |
+|------------|---------|---------|
 | OAF_PIDFILE | (unset) | Override PID file path in ow.server.checkIn |
+| HTTPD_PREFIX *(flag)* | `{}` | Runtime flag (set via `__flags.HTTPD_PREFIX` or `ojob.flags`). Map of port-to-path-prefix entries for the embedded HTTP server. Key `"0"` is the global default. E.g. `{ "0": "/app", "8080": "/api" }`. Must be set before calling `ow.server.httpd.start()`. |
 
 ## Template / Markdown
 

@@ -392,7 +392,8 @@ todo:
 - **Inheritance**: These processed arguments are passed to the target job
 - **Template integration**: Works seamlessly with oJob's template processing
 - **Nested support**: Supports dot notation for nested object properties
-- **Type preservation**: Values are processed as strings but maintain their intended types
+- **Type preservation**: When a string value is exactly `"${key}"` the resolved value keeps its original type (number, boolean, array, object, etc.). When a token appears inside a longer string (e.g. `"prefix-${key}-suffix"`) the result is always a string.
+- **Inline interpolation**: Tokens can appear anywhere inside a string value and multiple tokens may be combined — e.g. `"${host:-localhost}:${port:-8080}"`. Note that when multiple tokens are interpolated into a string context, each resolved value is converted via `String()` before concatenation.
 - **Escaping**: Prefix a token with `\` to prevent resolution — `\${key}` is left as the literal string `${key}`. Use `\\${key}` to produce `\${key}` in the output (odd number of backslashes escapes, even number does not).
 
 **Usage examples:**
