@@ -393,6 +393,7 @@ todo:
 - **Template integration**: Works seamlessly with oJob's template processing
 - **Nested support**: Supports dot notation for nested object properties
 - **Type preservation**: Values are processed as strings but maintain their intended types
+- **Escaping**: Prefix a token with `\` to prevent resolution — `\${key}` is left as the literal string `${key}`. Use `\\${key}` to produce `\${key}` in the output (odd number of backslashes escapes, even number does not).
 
 **Usage examples:**
 ```yaml

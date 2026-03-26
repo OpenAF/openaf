@@ -86,20 +86,34 @@ var templates = ow.template.loadHBSs({
     "odoc"  : getOpenAFJar() + "::hbs/odoc.hbs"
 });
 
+function guiPrefix() {
+    return ow.server.httpd.getPrefix(httpServer);
+}
+
+function guiPath(aURI) {
+    return ow.server.httpd.withPrefix(httpServer, aURI);
+}
+
+function withGuiPage(aPage) {
+    var page = clone(aPage);
+    page.uriPrefix = guiPrefix();
+    return page;
+}
+
 var defaultPage = {
     "title": "OpenAF",
     "logo" : {
         "text": "OpenAF",
-        "link": "/"
+        "link": guiPath("/")
     },
     "served": {
         "text": "OpenAF (version " + getVersion() + ")",
         "link": "https://openaf.io"
     },
     "navbar": [
-        { "text": "openaf-Console", "link": "/exec/openaf-console" },
-        { "text": "Documentation",  "link": "/odoc"  },
-        { "text": "oPacks",         "link": "/opack" }
+        { "text": "openaf-Console", "link": guiPath("/exec/openaf-console") },
+        { "text": "Documentation",  "link": guiPath("/odoc")  },
+        { "text": "oPacks",         "link": guiPath("/opack") }
     ],
     "contents": "" +
        "<p class=\"thin\">" +
@@ -107,10 +121,10 @@ var defaultPage = {
        (verifyIfInstalled() ? 
           "(version " + getVersion() + " installed in " + getOpenAFPath() + ")<br>" +
           ((needupdate) ?
-             "<br>There is a new version " + updateversion + ". Do you wish to update this version? &nbsp;&nbsp;<p class=\"regular\"><a class=\"waves-effect waves-light orange regular btn\" href=\"/exec/update\"><i class=\"material-icons left\">play_for_work</i>Update</a>"
+             "<br>There is a new version " + updateversion + ". Do you wish to update this version? &nbsp;&nbsp;<p class=\"regular\"><a class=\"waves-effect waves-light orange regular btn\" href=\"" + guiPath("/exec/update") + "\"><i class=\"material-icons left\">play_for_work</i>Update</a>"
           : "")
         :
-          "Do you want to install OpenAF? &nbsp;&nbsp;<p class=\"regular\"><a class=\"waves-effect waves-light orange regular btn\" href=\"/exec/install\"><i class=\"material-icons left\">play_for_work</i>Install</a></p><span class=\"thin\">(install will create scripts in " + getOpenAFPath() + " to make it easier to use OpenAF).</span>"
+          "Do you want to install OpenAF? &nbsp;&nbsp;<p class=\"regular\"><a class=\"waves-effect waves-light orange regular btn\" href=\"" + guiPath("/exec/install") + "\"><i class=\"material-icons left\">play_for_work</i>Install</a></p><span class=\"thin\">(install will create scripts in " + getOpenAFPath() + " to make it easier to use OpenAF).</span>"
         ) +
        "</p>" + "<p/><hr/>" +
        "<div class=\"thin flow-text\" style=\"font-family: monospace; font-size: 8pt\">" + String(Packages.openaf.AFCmdOS.argHelp).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;") + "</div>"
@@ -224,11 +238,11 @@ ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, 
 			}
 
             if (terms.length == 1) {
-                odoc.contents = templates("odoc", { "id": id, "list": false, "terms": terms, "res": searchHelp(id)[0] });
+                odoc.contents = templates("odoc", { "id": id, "list": false, "terms": terms, "res": searchHelp(id)[0], "uriPrefix": guiPrefix() });
             } else {
-                odoc.contents = templates("odoc", { "id": id, "list": true, "terms": terms });
+                odoc.contents = templates("odoc", { "id": id, "list": true, "terms": terms, "uriPrefix": guiPrefix() });
             }
-            return httpServer.replyOKHTML(templates("index", odoc));
+            return httpServer.replyOKHTML(templates("index", withGuiPage(odoc)));
         }catch(e) {logErr(e)}
     },
     "/odocKey": function(req) {
@@ -245,6 +259,7 @@ ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, 
         var remote = getOPackRemoteDB();
         opacks.contents = templates("opacks",
             {
+                "uriPrefix": guiPrefix(),
                 "installed": $stream(Object.keys(local))
                              .map(function(r) { return {
                                 "Name": local[r].name,
@@ -271,12 +286,12 @@ ow.server.httpd.route(httpServer, ow.server.httpd.mapRoutesWithLibs(httpServer, 
                             .sorted("Name")
                             .toArray()
             });
-        return httpServer.replyOKHTML(templates("index", opacks));
+        return httpServer.replyOKHTML(templates("index", withGuiPage(opacks)));
         } catch(e) {logErr(e)}
     }
 
 }), function(req) {
-    return httpServer.replyOKHTML(templates("index", defaultPage));
+    return httpServer.replyOKHTML(templates("index", withGuiPage(defaultPage)));
 }, __,
     function(req) {
 	keepRunning = true;

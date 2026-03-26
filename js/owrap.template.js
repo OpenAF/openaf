@@ -804,10 +804,20 @@ OpenWrap.template.prototype.loadCompiledHBS = function(aFilename) {
  * \
  * </odoc>
  */
-OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark) {
+OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, removeMaxWidth, extraDownOptions, forceDark, aURIPrefix) {
 	extraDownOptions = _$(extraDownOptions).isMap().default(__flags.MD_SHOWDOWN_OPTIONS)
+	aURIPrefix = ow.loadServer().httpd.getHTMLPrefix(aURIPrefix)
 
 	removeMaxWidth = _$(removeMaxWidth, "removeMaxWidth").isBoolean().default(__flags.MD_NOMAXWIDTH)
+	var mdString = aMarkdownString
+	var svgBlocks = []
+	if (__flags.MD_RENDER_SVG) {
+		mdString = String(mdString).replace(/(^|\n)```svg[ \t]*\r?\n([\s\S]*?)\r?\n```(?=\n|$)/g, (m, prefix, svg) => {
+			var token = "OAFMDSVGBLOCK" + svgBlocks.length + "PLACEHOLDER"
+			svgBlocks.push(svg)
+			return prefix + token
+		})
+	}
 	var showdown = require(getOpenAFJar() + "::js/showdown.js");
 	//var showdown = loadCompiledRequire("showdown_js");
 	showdown.setFlavor("github");
@@ -855,7 +865,7 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 
 		var _extras = [], _posextras = []
                 if (__flags.MD_CHART) {
-                        _extras.push('<script src="/js/chart.js"></script>')
+                        _extras.push('<script src="' + aURIPrefix + '/js/chart.js"></script>')
                         _posextras.push(`
 <script>
 (function () {
@@ -1112,25 +1122,41 @@ OpenWrap.template.prototype.parseMD2HTML = function(aMarkdownString, isFull, rem
 		
 		// Process trigger extras
 		ow.template.__mdHTMLTExtras.forEach(r => {
-			if (aMarkdownString.indexOf(r.t) >= 0) _extras.push(r.e)
+			if (mdString.indexOf(r.t) >= 0) _extras.push(r.e)
 		})
 
 		// Process pos extras
 		ow.template.__mdHTMLPosExtras.forEach(r => {
-			if (aMarkdownString.indexOf(r.t) >= 0) _posextras.push(r.e)
+			if (mdString.indexOf(r.t) >= 0) _posextras.push(r.e)
 		})
 
+		var html = converter.makeHtml(mdString).replace("<html>", "<html><meta charset=\"utf-8\">")
+		if (__flags.MD_RENDER_SVG && svgBlocks.length > 0) {
+			svgBlocks.forEach((svg, idx) => {
+				html = html.replace("<p>OAFMDSVGBLOCK" + idx + "PLACEHOLDER</p>", svg)
+				html = html.replace("OAFMDSVGBLOCK" + idx + "PLACEHOLDER", svg)
+			})
+		}
+
 		return this.parse(this.__templatemd, {
-			markdown: converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">"),
+			markdown: html,
 			noMaxWidth: removeMaxWidth,
 			extras: _extras,
 			posextras: _posextras,
 			mdcodeclip: __flags.MD_CODECLIP,
 			themeauto: __flags.MD_DARKMODE == "auto" && !forceDark,
-			themedark: __flags.MD_DARKMODE == "true" || forceDark
+			themedark: __flags.MD_DARKMODE == "true" || forceDark,
+			uriPrefix: aURIPrefix
 		})
 	} else {
-		return converter.makeHtml(aMarkdownString).replace("<html>", "<html><meta charset=\"utf-8\">")
+		var html = converter.makeHtml(mdString).replace("<html>", "<html><meta charset=\"utf-8\">")
+		if (__flags.MD_RENDER_SVG && svgBlocks.length > 0) {
+			svgBlocks.forEach((svg, idx) => {
+				html = html.replace("<p>OAFMDSVGBLOCK" + idx + "PLACEHOLDER</p>", svg)
+				html = html.replace("OAFMDSVGBLOCK" + idx + "PLACEHOLDER", svg)
+			})
+		}
+		return html
 	}
 };
 
@@ -1476,8 +1502,9 @@ OpenWrap.template.prototype.html = {
 	 * Returns a full HTML page with the nJSMap representation of the aMapOrArray provided. If forceDark = true it will force the dark mode.
 	 * </odoc>
 	 */
-	parseMapInHTML: function(aMapOrArray, forceDark) {
+	parseMapInHTML: function(aMapOrArray, forceDark, aURIPrefix) {
 		ow.loadTemplate()
+		aURIPrefix = ow.loadServer().httpd.getHTMLPrefix(aURIPrefix)
 
 		var _themeauto = ow.template.html.njsmapAutoTheme()
 		var code = "var out, _data=" + stringify(aMapOrArray,__,"") + ";"
@@ -1492,7 +1519,7 @@ OpenWrap.template.prototype.html = {
 		}
 		code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
-		return "<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/" + "nJSMap.css" + "\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
+		return "<html><script src=\"" + aURIPrefix + "/js/openafsigil.js\"\></script><script src=\"" + aURIPrefix + "/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"" + aURIPrefix + "/css/" + "nJSMap.css" + "\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>"
 	},
 	/**
 	 * <odoc>

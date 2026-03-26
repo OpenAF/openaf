@@ -19,6 +19,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testMD2HTML;
 
+   - name: Template::Test Markdown to HTML prefix
+     from: Template::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testMD2HTMLWithPrefix;
+
    - name: Template::Test simple template
      from: Template::Init
      to  : oJob Test
@@ -50,6 +55,7 @@ todo:
    
    - Template::Load Template
    - Template::Test Markdown to HTML
+   - Template::Test Markdown to HTML prefix
    - Template::Test simple template
    - Template::Test format helpers
    - Template::Test conditional helpers
