@@ -516,5 +516,146 @@ function robustLLMCall(prompt, maxRetries = 3) {
 ## 17. Safe Dynamic Includes
 Combine integrity hashes + authorized domains + change auditing flags. For local development disable with environment variable toggles but keep production strict.
 
+## 18. HTTP Path Prefix Support (ow.server.httpd)
+
+OpenAF's embedded HTTP server supports serving all resources and routes under a configurable path prefix. This is useful when deploying behind a reverse proxy that forwards requests under a subpath (e.g. `/app`).
+
+### Setting a prefix
+
+Set the `HTTPD_PREFIX` flag before starting any server. Key `"0"` is the global default for all ports; use a specific port number string to override per port:
+
+```javascript
+// Set global prefix /app for all HTTP servers
+__flags.HTTPD_PREFIX = { "0": "/app" };
+
+// Or different prefixes per port
+__flags.HTTPD_PREFIX = { "0": "", "8080": "/api", "9090": "/gui" };
+```
+
+Via oJob YAML:
+```yaml
+ojob:
+  flags:
+    HTTPD_PREFIX:
+      "0": /app
+```
+
+### Prefix utility functions
+
+`ow.server.httpd` provides helper functions to work with prefixes:
+
+| Function | Description |
+|----------|-------------|
+| `ow.server.httpd.getPrefix(httpdOrPort)` | Returns the normalized prefix for the given server or port |
+| `ow.server.httpd.withPrefix(httpdOrPort, uri)` | Prepend the prefix to `uri` (skips absolute URLs) |
+| `ow.server.httpd.stripPrefix(httpdOrPort, uri)` | Remove the prefix from a URI for internal routing |
+| `ow.server.httpd.normalizePrefix(aPrefix)` | Normalize a raw prefix string (ensures leading `/`, no trailing `/`) |
+
+```javascript
+ow.loadServer();
+__flags.HTTPD_PREFIX = { "0": "/app" };
+
+var httpd = ow.server.httpd.start(8080);
+
+// Build a prefixed URL
+var link = ow.server.httpd.withPrefix(httpd, "/about"); // "/app/about"
+
+// Strip prefix for internal route matching
+ow.server.httpd.route(httpd, ow.server.httpd.mapWithExistingFn(httpd, {
+  "/about": function(req) {
+    return httpd.replyOKText("About page");
+  }
+}), function(req) {
+  var internalURI = ow.server.httpd.stripPrefix(httpd, req.uri);
+  return httpd.replyNotFound();
+});
+```
+
+All built-in GUI pages and static-file handlers automatically respect the configured prefix.
+
+## 19. MCP Client ($mcp)
+
+`$mcp(aOptions)` creates a Model Context Protocol (MCP) client for communicating with LLM tool servers.
+
+### Connection types
+
+| `type` | Description |
+|--------|-------------|
+| `stdio` (default) | Spawn a local process; communicate over stdin/stdout |
+| `remote` / `http` | HTTP JSON-RPC endpoint |
+| `sse` | HTTP endpoint with Server-Sent Events responses |
+| `ojob` | In-process oJob jobs exposed as MCP tools |
+| `dummy` | Local in-memory stub for testing |
+
+```javascript
+// stdio MCP server
+var client = $mcp({ type: "stdio", cmd: "my-mcp-server" });
+client.initialize();
+var tools = client.listTools();
+var result = client.callTool("myTool", { param: "value" });
+
+// Remote HTTP MCP server
+var remote = $mcp({ type: "remote", url: "https://mcp.example.com/mcp" });
+remote.initialize();
+```
+
+### Authentication (`auth` option)
+
+For `remote`/`http`/`sse` connections:
+
+```javascript
+// Static bearer token
+var client = $mcp({
+  type: "remote",
+  url: "https://mcp.example.com/mcp",
+  auth: { type: "bearer", token: "my-token" }
+});
+
+// OAuth2 client credentials
+var client = $mcp({
+  type: "remote",
+  url: "https://mcp.example.com/mcp",
+  auth: {
+    type: "oauth2",
+    tokenURL: "https://auth.example.com/oauth/token",
+    clientId: "my-client",
+    clientSecret: "my-secret",
+    scope: "mcp:read mcp:write"
+  }
+});
+
+// OAuth2 authorization_code (opens browser)
+var client = $mcp({
+  type: "remote",
+  url: "https://mcp.example.com/mcp",
+  auth: {
+    type: "oauth2",
+    grantType: "authorization_code",
+    authURL: "https://auth.example.com/authorize",
+    tokenURL: "https://auth.example.com/oauth/token",
+    clientId: "my-client",
+    redirectURI: "http://localhost:8080/callback",
+    disableOpenBrowser: false  // set true to suppress browser launch
+  }
+});
+```
+
+OAuth2 token URLs can also be auto-discovered from the MCP server's OAuth 2.0 Protected Resource Metadata when `tokenURL`/`authURL` are omitted.
+
+### Tool blacklist
+
+Prevent specific tools from appearing in `listTools()` or being called via `callTool()`:
+
+```javascript
+var client = $mcp({
+  type: "stdio",
+  cmd: "my-mcp-server",
+  blacklist: ["dangerousTool", "internalTool"]
+});
+client.initialize();
+// listTools() will not include blacklisted tools
+// callTool("dangerousTool", {}) throws an error
+```
+
 ---
 See also: `ojob-security.md`, `openaf-flags.md`, and main references.

@@ -2958,6 +2958,71 @@ OpenWrap.server.prototype.httpd = {
 	__servers: {},
 	customLibs: {},
 
+	normalizePrefix: function(aPrefix) {
+		if (isUnDef(aPrefix)) return ""
+		if (!isString(aPrefix)) return ""
+
+		aPrefix = String(aPrefix).trim()
+		if (aPrefix == "" || aPrefix == "/") return ""
+
+		aPrefix = aPrefix.replace(/^[^/]+/, "/$&").replace(/\/+/g, "/").replace(/\/$/, "")
+		return (aPrefix == "/" ? "" : aPrefix)
+	},
+
+	getPrefix: function(aHTTPdOrPort) {
+		var aPort = aHTTPdOrPort
+		if (isDef(aHTTPdOrPort) && isDef(aHTTPdOrPort.getPort)) aPort = aHTTPdOrPort.getPort()
+		if (isUnDef(aPort)) return this.normalizePrefix(__flags.HTTPD_PREFIX["0"])
+		if (!isString(aPort) && !isNumber(aPort)) return this.normalizePrefix(__flags.HTTPD_PREFIX["0"])
+
+		aPort = String(aPort)
+		if (isDef(__flags.HTTPD_PREFIX[aPort])) return this.normalizePrefix(__flags.HTTPD_PREFIX[aPort])
+		return this.normalizePrefix(__flags.HTTPD_PREFIX["0"])
+	},
+
+	getHTMLPrefix: function(aHTTPdOrPrefix) {
+		if (isDef(aHTTPdOrPrefix) && isDef(aHTTPdOrPrefix.getPort)) return this.getPrefix(aHTTPdOrPrefix)
+		if (isString(aHTTPdOrPrefix)) return this.normalizePrefix(aHTTPdOrPrefix)
+		return this.getPrefix(0)
+	},
+
+	withPrefix: function(aHTTPdOrPort, aURI) {
+		if (!isString(aURI)) aURI = "/"
+
+		if (aURI.match(/^[a-z]+:\/\//i) || aURI.startsWith("//")) return aURI
+
+		var aPrefix = this.getPrefix(aHTTPdOrPort)
+		if (aPrefix == "") return aURI
+
+		if (aURI == "") return aPrefix
+		if (!aURI.startsWith("/")) aURI = "/" + aURI
+		if (aURI == aPrefix || aURI.startsWith(aPrefix + "/")) return aURI
+
+		return aPrefix + aURI
+	},
+
+	stripPrefix: function(aHTTPdOrPort, aURI) {
+		if (!isString(aURI)) aURI = "/"
+
+		var aPrefix = this.getPrefix(aHTTPdOrPort)
+		if (aPrefix == "") return aURI
+		if (aURI == aPrefix || aURI == (aPrefix + "/")) return "/"
+		if (aURI.startsWith(aPrefix + "/")) return aURI.substring(aPrefix.length)
+
+		return __
+	},
+
+	escapeRE: function(aString) {
+		return String(aString).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+	},
+
+	rewriteCSSWithPrefix: function(aHTTPd, aCSS) {
+		var aPrefix = this.getPrefix(aHTTPd)
+		if (aPrefix == "") return aCSS
+
+		return String(aCSS).replace(/url\((['"]?)\/(fonts\/[^'")]+)\1\)/g, "url($1" + aPrefix + "/$2$1)")
+	},
+
 	/**
 	 * <odoc>
 	 * <key>ow.server.httpd.start(aPort, aHost, keyStorePath, password, errorFunction, aWebSockets, aTimeout, aImpl) : Object</key>
@@ -3152,7 +3217,14 @@ OpenWrap.server.prototype.httpd = {
 		aHTTPd.add(aPath, function(req) {			
 			try {
 				if (aHTTPd.getImpl() == "java") cnvt2string(req)
-				var uri = req.uri.replace(new RegExp("^" + aP), "");
+				var uri = req.uri.replace(new RegExp("^" + parent.escapeRE(aP)), "");
+				var prefURI = parent.stripPrefix(aHTTPd, uri)
+				if (parent.getPrefix(aHTTPd) != "") {
+					if (isUnDef(prefURI)) return parent.__defaultRoutes[aPort](req, aHTTPd);
+					req.originalURI = req.uri
+					req.uri = prefURI
+					uri = prefURI
+				}
 				if (isFunction(parent.__preRoutes[aPort])) parent.__preRoutes[aPort](req, aHTTPd);
 				if (isFunction(parent.__routes[aPort][uri])) {
 					return parent.__routes[aPort][uri](req, aHTTPd);
@@ -3264,7 +3336,7 @@ OpenWrap.server.prototype.httpd = {
 		aMapOfRoutes["/js/materialize2.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/materialize2.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/js/nlinq.js"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("js/nlinq.js"), ow.server.httpd.mimes.JS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) }
 		aMapOfRoutes["/css/materialize.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/materialize.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
-		aMapOfRoutes["/css/materialize-icon.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/materialize-icon.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
+		aMapOfRoutes["/css/materialize-icon.css"] = function() { return aHTTPd.reply(ow.server.httpd.rewriteCSSWithPrefix(aHTTPd, ow.server.httpd.getFromOpenAF("css/materialize-icon.css")), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/github-gist.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/github-gist.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/github-markdown.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/github-markdown.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
 		aMapOfRoutes["/css/nJSMap.css"] = function() { return aHTTPd.reply(ow.server.httpd.getFromOpenAF("css/nJSMap.css"), ow.server.httpd.mimes.CSS, ow.server.httpd.codes.OK, ow.server.httpd.cache.public) };
@@ -3439,7 +3511,7 @@ OpenWrap.server.prototype.httpd = {
 	
 				if (furi.match(new RegExp("^" + baseFilePath))) {
 					if (furi.match(/\.md$/)) {
-						return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(io.readFileString(furi), 1, noMaxWidth));
+						return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(io.readFileString(furi), 1, noMaxWidth, __, __, ow.server.httpd.getPrefix(aHTTPd)));
 					} else {
 						return aHTTPd.replyBytes(io.readFileBytes(furi), ow.server.httpd.getMimeType(furi), __, mapOfHeaders);
 					}
@@ -3451,7 +3523,7 @@ OpenWrap.server.prototype.httpd = {
 			}
 		} else {
 			try {
-				return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(af.fromInputStream2String(aBaseFilePath), 1, noMaxWidth))
+				return aHTTPd.replyOKHTML(ow.template.parseMD2HTML(af.fromInputStream2String(aBaseFilePath), 1, noMaxWidth, __, __, ow.server.httpd.getPrefix(aHTTPd)))
 			} catch(e) {
 				return notFoundFunction(aHTTPd, aBaseFilePath, aBaseURI, aURI, e)
 			}
@@ -3489,7 +3561,7 @@ OpenWrap.server.prototype.httpd = {
 		code += "document.getElementById(\"njsmap_out\").innerHTML = out;"
 
 		return aHTTPd.replyOKHTML("<html><script src=\"/js/openafsigil.js\"\></script><script src=\"/js/njsmap.js\"\></script><head><link rel=\"stylesheet\" href=\"/css/nJSMap.css\"></head><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + "><span id=\"njsmap_out\"></span><script>" + code + "</script>" + _themeauto + "</body></html>")*/
-		return aHTTPd.replyOKHTML(ow.template.html.parseMapInHTML(aMapOrArray))
+		return aHTTPd.replyOKHTML(ow.template.html.parseMapInHTML(aMapOrArray, __, ow.server.httpd.getPrefix(aHTTPd)))
 		//return aHTTPd.replyOKHTML("<html><style>" + res.css + "</style><body" + (__flags.MD_DARKMODE == "true" ? " class=\"njsmap_dark\"" : "") + ">" + res.out + _themeauto + "</body></html>");
 	},
 
@@ -3500,6 +3572,9 @@ OpenWrap.server.prototype.httpd = {
 	 * </odoc>
 	 */
 	replyRedirect: function(aHTTPd, newLocation, mapOfHeaders) {
+		if (isString(newLocation) && newLocation.startsWith("/") && !newLocation.startsWith("//")) {
+			newLocation = ow.server.httpd.withPrefix(aHTTPd, newLocation)
+		}
 		return aHTTPd.reply("", "text/plain", 303, merge({"Location": newLocation}, mapOfHeaders));
 	},
 	
@@ -4426,6 +4501,7 @@ OpenWrap.server.prototype.httpd.browse = {
 				renderList: (lst, server, request, options) => {
 					if (isDef(options.browse) && !options.browse) return ""
 					const uri = request.uri
+					const publicParentURI = ow.server.httpd.withPrefix(server, options.parentURI)
 			  
 					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "").replace(/\/$/, "")
 					if (isString(options.suffix)) 
@@ -4439,20 +4515,20 @@ OpenWrap.server.prototype.httpd.browse = {
 					}
 			  
 					const breadcrumb = p => {
-					  if (p == "") return "[/](</>) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + options.parentURI.replace(/ +/g, "") + ">)"
+					  if (p == "") return "[/](<" + ow.server.httpd.withPrefix(server, "/") + ">) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + publicParentURI.replace(/ +/g, "") + ">)"
 					  var parts = p.split("/")
-					  var b = "[/](</>) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + options.parentURI.replace(/ +/g, "") + ">)"
+					  var b = "[/](<" + ow.server.httpd.withPrefix(server, "/") + ">) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + publicParentURI.replace(/ +/g, "") + ">)"
 					  for (var i = 0; i < parts.length; i++) {
 						if (i == parts.length - 1) {
 						  b += (!options.showURI && i == 0 ? "" : " / ") + parts[i] + " "
 						} else {
-						  b += " [" + (!options.showURI && i == 0 ? "" : " / ") + " " + parts[i] + "](<" + options.parentURI + "/" + parts.slice(0, i + 1).join("/") + "/>)"
+						  b += " [" + (!options.showURI && i == 0 ? "" : " / ") + " " + parts[i] + "](<" + publicParentURI + "/" + parts.slice(0, i + 1).join("/") + "/>)"
 						}
 					  }
 					  return b
 					}
 			  
-					const logo = _$(options.logo, "logo").isString().default("/fonts/openaf_small.png")
+					const logo = ow.server.httpd.withPrefix(server, (isString(options.logo) ? options.logo : "/fonts/openaf_small.png"))
 					var content = "## " + breadcrumb( puri ) + "<img style=\"padding-left: 1em;\" align=\"right\" src=\"" + logo + "\">\n\n"
 					content += "|  |" + lst.fields.join(" | ") + " |\n"
 					if (lst.alignFields) {
@@ -4469,7 +4545,7 @@ OpenWrap.server.prototype.httpd.browse = {
 						content += "|\n"
 			  
 						if (puri != "/" && puri != "") {
-						  content += "| <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8598;</span> | __[..](<" + options.parentURI + puri.replace(/[^\/]+\/?$/, "") + ">)__ | | |\n"
+						  content += "| <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8598;</span> | __[..](<" + publicParentURI + puri.replace(/[^\/]+\/?$/, "") + ">)__ | | |\n"
 						}
 			  
 						$from(lst.list).sort("-isDirectory", "values." + lst.key).select(r => {
@@ -4477,13 +4553,13 @@ OpenWrap.server.prototype.httpd.browse = {
 							if (r.isDirectory) {
 								content += " <span style=\"color: #a0a0a0; font-family: -apple-system, Calibri, DejaVu Sans;\">&#8600;</span> |"
 							} else {
-								content += " <span style=\"font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + "?raw=true\" download=\"" + r.values[lst.key] + "\">&darr;</a></span> |"
+								content += " <span style=\"font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"" + publicParentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + "?raw=true\" download=\"" + r.values[lst.key] + "\">&darr;</a></span> |"
 							}
 							lst.fields.forEach((f, i) => {
 							  if (r.isDirectory) {
-								  content += " " + (i == 0 ? "__[" + r.values[f] + "](<" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + ">)__" : r.values[f]) + " |"
+								  content += " " + (i == 0 ? "__[" + r.values[f] + "](<" + publicParentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + ">)__" : r.values[f]) + " |"
 							  } else {
-								  content += " " + (i == 0 ? "[" + r.values[f] + "](<" + options.parentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + options.suffix + ">)" : r.values[f]) + " |"
+								  content += " " + (i == 0 ? "[" + r.values[f] + "](<" + publicParentURI + (puri.length > 0 ? "/" : "") + puri + "/" + r.values[lst.key] + options.suffix + ">)" : r.values[f]) + " |"
 							  }
 							})
 							content += "\n"
@@ -4494,12 +4570,13 @@ OpenWrap.server.prototype.httpd.browse = {
 						content += "\n" + options.footer + "\n"
 					}
 			  
-					if (options.sortTab) content += "<script src=\"/js/mdtablesort.js\"></script>\n"
+					if (options.sortTab) content += "<script src=\"" + ow.server.httpd.withPrefix(server, "/js/mdtablesort.js") + "\"></script>\n"
 			  
-					return ow.template.parseMD2HTML( content, true )
+					return ow.template.parseMD2HTML(content, true, __, __, __, ow.server.httpd.getPrefix(server))
 				},
 				renderObj: (obj, server, request, options) => {
 					const uri = request.uri
+					const publicParentURI = ow.server.httpd.withPrefix(server, options.parentURI)
 			  
 					var puri = uri.replace(new RegExp("^" + options.parentURI + "/?"), "").replace(/\/$/, "")
 					delete request.params["NanoHttpd.QUERY_STRING"]
@@ -4536,7 +4613,7 @@ OpenWrap.server.prototype.httpd.browse = {
 					}
 			  
 					if (obj.type == "md") {
-					  return server.replyOKHTML(ow.template.parseMD2HTML((options.useMDTemplate ? $t(String(obj.data), { request: request }) : String(obj.data)), true))
+					  return server.replyOKHTML(ow.template.parseMD2HTML((options.useMDTemplate ? $t(String(obj.data), { request: request }) : String(obj.data)), true, __, __, __, ow.server.httpd.getPrefix(server)))
 					}
 			  
 					if (obj.type == "json" && (isUnDef(request.params.parse) || request.params.parse != "false")) {
@@ -4544,14 +4621,14 @@ OpenWrap.server.prototype.httpd.browse = {
 					}
 			  
 					const breadcrumb = p => {
-					  if (p == "") return "[/](</>) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + options.parentURI.replace(/ +/g, "") + ">)"
+					  if (p == "") return "[/](<" + ow.server.httpd.withPrefix(server, "/") + ">) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + publicParentURI.replace(/ +/g, "") + ">)"
 					  var parts = p.split("/")
-					  var b = "[/](</>) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + options.parentURI.replace(/ +/g, "") + ">)"
+					  var b = "[/](<" + ow.server.httpd.withPrefix(server, "/") + ">) [" + (options.showURI ? options.parentURI.replace(/^\//, "") : "") + "](<" + publicParentURI.replace(/ +/g, "") + ">)"
 					  for (var i = 0; i < parts.length; i++) {
 						if (i == parts.length - 1) {
 						  b += (!options.showURI && i == 0 ? "" : " / ") + parts[i] + " "
 						} else {
-						  b += " [" + (!options.showURI && i == 0 ? "" : " / ") + " " + parts[i] + "](<" + options.parentURI + "/" + parts.slice(0, i + 1).join("/") + "/>)"
+						  b += " [" + (!options.showURI && i == 0 ? "" : " / ") + " " + parts[i] + "](<" + publicParentURI + "/" + parts.slice(0, i + 1).join("/") + "/>)"
 						}
 					  }
 					  return b
@@ -4574,7 +4651,7 @@ OpenWrap.server.prototype.httpd.browse = {
 			  
 					if (obj.type == "rawjson") obj.type = "json"
 			  
-					const logo = _$(options.logo, "logo").isString().default("/fonts/openaf_small.png")
+					const logo = ow.server.httpd.withPrefix(server, (isString(options.logo) ? options.logo : "/fonts/openaf_small.png"))
 					var content
 					if (obj.type == "raw") {
 					  content = "## <span style=\"display: flex; justify-content: space-between\"><span>" + breadcrumb( puri ) + "</span><span style=\"display: inline-flex; justify-content: space-between; float: inline-end; align-items: start\"><span onclick=\"history.back()\" onmouseout=\"this.style.textDecoration='none';\" onmouseover=\"this.style.textDecoration='underline';\" style=\"padding-left: 1em; text-decoration: none; cursor: pointer; font-family: -apple-system, Calibri, DejaVu Sans;\"><a href=\"javascript:history.back()\">&larr;</a></span></span></span>\n\n"
@@ -4597,7 +4674,7 @@ OpenWrap.server.prototype.httpd.browse = {
 					}
 			  
 			  
-					return server.replyOKHTML( ow.template.parseMD2HTML( content, true ) )
+					return server.replyOKHTML(ow.template.parseMD2HTML(content, true, __, __, __, ow.server.httpd.getPrefix(server)))
 				},
 				renderEmpty: (request, options) => {
 					const uri = request.uri
@@ -4607,7 +4684,7 @@ OpenWrap.server.prototype.httpd.browse = {
 					var content = "# " + (options.showURI ? options.parentURI + "/" : "") + puri + "\n\n"
 					content += "*No content found.*\n"
 			  
-					return ow.template.parseMD2HTML( content, true )
+					return ow.template.parseMD2HTML(content, true, __, __, __, ow.server.httpd.getPrefix(options.serverOrPort))
 				}
 			}
 		}, aOptions)

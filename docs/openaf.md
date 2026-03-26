@@ -759,6 +759,65 @@ Convenience getters:
 - `getJsSlon(i)` parse SLON
 - `getYaml(i)` parse YAML
 
+### $ftp - FTP / FTPS Client
+
+`$ftp(aMap)` creates an FTP or FTPS client connection. `aMap` can be a URL string or a configuration map.
+
+**URL format:**
+```
+ftp://user:pass@host:port/?timeout=5000&passive=true&binary=true
+ftps://user:pass@host:port/?timeout=5000&passive=true&implicit=false&protocol=TLS
+```
+
+**Map format:**
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `host` | – | Remote hostname or IP |
+| `port` | `21` / `990` | Port (990 for implicit FTPS) |
+| `login` | – | Username |
+| `pass` | – | Password |
+| `secure` | `false` | Enable FTPS (explicit TLS) |
+| `implicit` | `false` | Use implicit TLS mode (port 990) |
+| `protocol` | `"TLS"` | TLS protocol name |
+| `passive` | `true` | Use passive mode |
+| `binary` | `true` | Binary transfer mode |
+| `timeout` | – | Connection timeout in ms |
+
+**Available methods (all return `$ftp` for chaining except where noted):**
+
+| Method | Description |
+|--------|-------------|
+| `cd(aPath)` | Change remote working directory |
+| `pwd()` | Return current remote working directory (String) |
+| `mkdir(aDir)` | Create remote directory |
+| `getFile(src, dst)` | Download remote `src` to local `dst` |
+| `putFile(src, dst)` | Upload local `src` (path or stream) to remote `dst` |
+| `rename(src, dst)` | Rename / move remote file |
+| `listFiles(aPath)` | Return array of file-info maps for `aPath` |
+| `rm(aFilePath)` | Delete remote file |
+| `rmdir(aFilePath)` | Delete remote directory |
+| `passive(bool)` | Toggle passive mode |
+| `binary(bool)` | Toggle binary transfer mode |
+| `timeout(ms)` | Set connection timeout |
+| `close()` | Close the connection |
+
+**Examples:**
+```javascript
+// Plain FTP via URL
+var ftp = $ftp("ftp://user:secret@ftp.example.com/");
+ftp.cd("/uploads")
+   .putFile("/local/report.csv", "report.csv")
+   .close();
+
+// FTPS via map
+var ftps = $ftp({ host: "ftp.example.com", secure: true,
+                   login: "user", pass: "secret" });
+var files = ftps.listFiles("/data");
+ftps.getFile("/data/report.csv", "/tmp/report.csv");
+ftps.close();
+```
+
 ### $tb - Thread Box (Timeout / Stop Controller)
 
 Run a function with enforced timeout or stop condition:

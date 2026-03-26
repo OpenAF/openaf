@@ -50,7 +50,7 @@
 			   <table class="grey-text text-darken-1">
 			    {{#if Local}}
 			    <tr><td class="align-top right-align"><b>Path:</b></td><td>{{Path}}</td></tr>
-			    <tr><td class="align-top right-align"><b>Version:</b></td><td>{{Version}}{{#if Update}} (new version {{RemoteVersion}} available) &nbsp;&nbsp; <a href="/exec/opack/update?opack={{Name}}" class="waves-effect waves-light orange btn"><i class="material-icons left">cloud_download</i>Update</a>{{/if}}</td></tr>
+			    <tr><td class="align-top right-align"><b>Version:</b></td><td>{{Version}}{{#if Update}} (new version {{RemoteVersion}} available) &nbsp;&nbsp; <a href="{{../uriPrefix}}/exec/opack/update?opack={{Name}}" class="waves-effect waves-light orange btn"><i class="material-icons left">cloud_download</i>Update</a>{{/if}}</td></tr>
 			    {{else}}
 			    <tr><td class="align-top right-align"><b>Version available:</b></td><td>{{RemoteVersion}}</td></tr>
 			    {{/if}}
@@ -59,7 +59,7 @@
 			    <tr><td class="align-top right-align"><b>Bug reporting:</b></td><td><a href="{{Bugs}}">{{Bugs}}</a></td></tr>
                             {{#if Local}}
                             {{else}}
-			    <tr><td class="align-top right-align"><b></b></td><td><a href="/exec/opack/install?opack={{Name}}" class="waves-effect waves-light orange btn"><i class="material-icons left">cloud_download</i>Install</a></td></tr>
+			    <tr><td class="align-top right-align"><b></b></td><td><a href="{{../uriPrefix}}/exec/opack/install?opack={{Name}}" class="waves-effect waves-light orange btn"><i class="material-icons left">cloud_download</i>Install</a></td></tr>
 		            {{/if}}
 			   </table>
 			  </div>

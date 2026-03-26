@@ -27,7 +27,7 @@
 
 		var output = "";
 		if (newList.length == 1 || typeof newTerm !== 'undefined') {
-			$.getJSON("/odocKey?q=" + _.escape(searchVal), function(elem) { 
+			$.getJSON("{{uriPrefix}}/odocKey?q=" + _.escape(searchVal), function(elem) { 
 				var out = "";
 				out += "<span class=\"card-title thin\">" + elem.key + "</span>";
 				out += "<div class=\"card-action\"><h5 class=\"grey-text text-darken-1\">" + elem.fullkey + "</h5>";
