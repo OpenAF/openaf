@@ -65,18 +65,17 @@ See also: [`docs/openaf.md`](./openaf.md) — search for "Testing Framework" for
 
 (function() {
     exports.testMyModuleBasic = function() {
-        ow.loadTest();
-        // Load the module under test if needed
-        // loadLib("myModule.js");
+        // ow.test is already loaded by the framework — call assert directly
+        ow.loadFormat();   // load any OpenAF module you need for the test
 
-        var result = myModule.myFunc("hello");
-        ow.test.assert(result, "HELLO", "myFunc should uppercase the input");
+        var result = ow.format.toHumanSize(1024);
+        ow.test.assert(result, "1 KB", "toHumanSize should format 1024 bytes as 1 KB");
     };
 
     exports.testMyModuleEdgeCase = function() {
-        ow.loadTest();
-        var result = myModule.myFunc("");
-        ow.test.assert(result, "", "myFunc should return empty string for empty input");
+        ow.loadFormat();
+        var result = ow.format.toHumanSize(0);
+        ow.test.assert(result, "0 B", "toHumanSize should return 0 B for zero input");
     };
 })();
 ```
@@ -85,7 +84,8 @@ Key points:
 - Wrap everything in a self-executing `(function() { ... })()` so variables do not leak into the global scope.
 - Export each test as `exports.testXxx = function() { ... }`.
 - Each export function must be independent (no shared mutable state between tests).
-- Call `ow.loadTest()` inside each test function (or once at the top of the IIFE).
+- `ow.loadTest()` is called once by the framework (`autoTestAll.js`) before any tests run — do **not** repeat it inside individual test functions.
+- Load any OpenAF modules your test needs (e.g. `ow.loadFormat()`, `ow.loadObj()`, `plugin("ZIP")`) at the top of the test function itself.
 
 ---
 
@@ -291,14 +291,11 @@ Edit `tests/autoTestAll.Cache.js`:
 
 (function() {
     exports.testCacheSetGet = function() {
-        ow.loadTest();
+        ow.loadObj();   // load the module under test
 
         // Exercise the function under test
-        var cache = ow.obj.pool.create();   // hypothetical API
-        cache.set("key", "value");
-        var result = cache.get("key");
-
-        ow.test.assert(result, "value", "Cache get should return the stored value");
+        var result = ow.obj.pool.AF(5).get();   // hypothetical API
+        ow.test.assert(isDef(result), true, "Pool get should return a defined value");
 
         // Clean up any artefacts (files, sockets, etc.)
         // io.rm("some-temp-file.tmp");
@@ -308,6 +305,7 @@ Edit `tests/autoTestAll.Cache.js`:
 
 Tips:
 - Use `ow.test.assert(actual, expected, message)` for every assertion.
+- Do **not** call `ow.loadTest()` — the framework already loaded it before running your tests.
 - Clean up temporary files with `io.rm("path")` at the end of the function.
 - Avoid hard-coded absolute paths; use relative paths inside `tests/`.
 - Avoid tests that require external network services unless absolutely necessary; mock or skip with a clear comment when network is unavailable.
@@ -362,11 +360,9 @@ The orchestrator regenerates `tests/autoTestAll.md` (the Markdown report) and an
 
 (function() {
 
-    // Optional shared setup — keep this minimal and side-effect-free
-    // var myModule = require("path/to/module.js");
-
     exports.testMyFuncBasic = function() {
-        ow.loadTest();
+        // Load any OpenAF module you need
+        // ow.loadFormat();
 
         // Arrange
         var input    = "hello";
@@ -380,15 +376,11 @@ The orchestrator regenerates `tests/autoTestAll.md` (the Markdown report) and an
     };
 
     exports.testMyFuncNull = function() {
-        ow.loadTest();
-
         var result = myModule.myFunc(null);
         ow.test.assert(result, null, "myFunc should return null for null input");
     };
 
     exports.testMyFuncWithCleanup = function() {
-        ow.loadTest();
-
         var tmpFile = "autoTestAll.myFunc.tmp";
         try {
             myModule.myFuncWriteFile(tmpFile, "data");
@@ -400,6 +392,8 @@ The orchestrator regenerates `tests/autoTestAll.md` (the Markdown report) and an
 
 })();
 ```
+
+> **Note:** `ow.loadTest()` is **not** needed here — it is called once by the orchestrator framework before your tests run.
 
 Companion YAML (`autoTestAll.MyModule.yaml`):
 
@@ -457,7 +451,6 @@ todo:
 
   ```javascript
   exports.testMyHTTP = function() {
-      ow.loadTest();
       try {
           $rest().get("http://example.com");
       } catch(e) {
