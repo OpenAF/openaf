@@ -8702,13 +8702,15 @@ const $jsonrpc = function (aOptions) {
 					if (isMap(aOptions.options.fns)) {
 						if (isFunction(aOptions.options.fns[aMethod])) {
 							var _res = aOptions.options.fns[aMethod](aParams)
-							_mcpInfo.lastResponse = { result: _res }
+							_mcpInfo.lastResponse = { jsonrpc: "2.0", result: _res }
 							_mcpInfo.lastResponseHeaders = __
-							_debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
+							_debug("jsonrpc dummy <- " + stringify(_mcpInfo.lastResponse, __, ""))
 							if (aMethod == "initialize" && !aNotification) _r._info = _res
 							return _res
 						} else {
-							_debug("jsonrpc dummy <- " + stringify({ error: "Method not found" }, __, ""))
+							_mcpInfo.lastResponse = { jsonrpc: "2.0", error: { code: -32601, message: "Method not found" } }
+							_mcpInfo.lastResponseHeaders = __
+							_debug("jsonrpc dummy <- " + stringify(_mcpInfo.lastResponse, __, ""))
 							throw new Error("Method not found")
 						}
 					}
@@ -9027,6 +9029,31 @@ const $mcp = function(aOptions) {
 		_toolBlacklist[toolName] = true
 	})
 
+	const _buildSyntheticCapabilities = fns => {
+		var _caps = {}
+		fns = _$(fns, "fns").isMap().default({})
+		var _fnNames = Object.keys(fns)
+		var _hasCustomTools = _fnNames.some(name => ["tools/list", "tools/call", "initialize", "notifications/initialized"].indexOf(name) < 0)
+		if (_hasCustomTools || isDef(fns["tools/list"]) || isDef(fns["tools/call"])) _caps.tools = { listChanged: false }
+		if (isDef(fns["prompts/list"]) || isDef(fns["prompts/get"])) _caps.prompts = { listChanged: false }
+		if (isDef(fns["resources/list"]) || isDef(fns["resources/read"]) || isDef(fns["resources/templates/list"])) _caps.resources = { listChanged: false }
+		if (isDef(fns["logging/setLevel"])) _caps.logging = {}
+		if (isDef(fns["agents/list"]) || isDef(fns["agents/get"]) || isDef(fns["agents/send"])) _caps.agents = {}
+		return _caps
+	}
+
+	const _buildSyntheticInitializeResult = opts => {
+		opts = _$(opts, "opts").isMap().default({})
+		var _result = {
+			protocolVersion: _$(opts.protocolVersion, "opts.protocolVersion").isString().default(aOptions.protocolVersion)
+		}
+		var _serverInfo = _$(opts.serverInfo, "opts.serverInfo").isMap().default(__)
+		var _capabilities = _$(opts.capabilities, "opts.capabilities").isMap().default(__)
+		if (isMap(_serverInfo)) _result.serverInfo = clone(_serverInfo)
+		if (isMap(_capabilities)) _result.capabilities = clone(_capabilities)
+		return _result
+	}
+
 	const _defaultCmdDir = (isDef(__flags) && isDef(__flags.JSONRPC) && isDef(__flags.JSONRPC.cmd) && isDef(__flags.JSONRPC.cmd.defaultDir)) ? __flags.JSONRPC.cmd.defaultDir : __
 	const _isToolBlacklisted = toolName => _toolBlacklist[toolName] === true
 	const _filterToolsList = toolsRes => {
@@ -9283,7 +9310,7 @@ const $mcp = function(aOptions) {
 		aOptions.options.init    = _$(aOptions.options.init, "aOptions.options.init").default(__)
 
 		// Load jobs from the oJob 
-		var fnsMeta = {}, fns = {} 
+		var fnsMeta = {}, fns = {}, _initMeta = {} 
 		var jobsTemp = io.createTempFile("ojob_mcp_", ".yaml")
 		var jobsPreD = aOptions.options.job.endsWith(".json") ? io.readFileJSON(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job) : io.readFileYAML(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job)
 		if (isDef(jobsPreD.ojob) && isDef(jobsPreD.ojob.daemon)) delete jobsPreD.ojob.daemon
@@ -9340,8 +9367,30 @@ const $mcp = function(aOptions) {
 			throw new Error("Invalid oJob data loaded from " + aOptions.options.job)
 		}
 
+		var _serverInfoEntries = searchKeys(jobsPreD, "serverInfo")
+		if (isMap(_serverInfoEntries)) {
+			var _serverInfoKey = Object.keys(_serverInfoEntries).find(k => isMap(_serverInfoEntries[k]))
+			if (isDef(_serverInfoKey)) _initMeta.serverInfo = clone(_serverInfoEntries[_serverInfoKey])
+		}
+		var _capabilitiesEntries = searchKeys(jobsPreD, "capabilities")
+		if (isMap(_capabilitiesEntries)) {
+			var _capabilitiesKey = Object.keys(_capabilitiesEntries).find(k => isMap(_capabilitiesEntries[k]))
+			if (isDef(_capabilitiesKey)) _initMeta.capabilities = clone(_capabilitiesEntries[_capabilitiesKey])
+		}
+		var _protocolVersionEntries = searchKeys(jobsPreD, "protocolVersion")
+		if (isMap(_protocolVersionEntries)) {
+			var _protocolVersionKey = Object.keys(_protocolVersionEntries).find(k => isString(_protocolVersionEntries[k]))
+			if (isDef(_protocolVersionKey)) _initMeta.protocolVersion = String(_protocolVersionEntries[_protocolVersionKey])
+		}
+
 		aOptions.type = "dummy"
 		aOptions.options.fnsMeta = fnsMeta
+		aOptions.options.serverInfo = _$(aOptions.options.serverInfo, "aOptions.options.serverInfo").isMap().default(_$( _initMeta.serverInfo, "_initMeta.serverInfo").isMap().default({
+			name: "OpenAF oJob MCP",
+			version: "1.0.0"
+		}))
+		aOptions.options.capabilities = _$(aOptions.options.capabilities, "aOptions.options.capabilities").isMap().default(_$( _initMeta.capabilities, "_initMeta.capabilities").isMap().default(_buildSyntheticCapabilities(fns)))
+		aOptions.options.protocolVersion = _$(aOptions.options.protocolVersion, "aOptions.options.protocolVersion").isString().default(_$( _initMeta.protocolVersion, "_initMeta.protocolVersion").isString().default(aOptions.protocolVersion))
 		aOptions.options.fns["tools/list"] = params => {
 			return { 
 				tools: Object.keys(fns)
@@ -9355,7 +9404,7 @@ const $mcp = function(aOptions) {
 			return $job(fns[params.name], params.arguments)
 		}
 		aOptions.options.fns["initialize"] = params => {
-			return { protocolVersion: "2024-11-05" }
+			return _buildSyntheticInitializeResult(aOptions.options)
 		}
 		aOptions.options.fns["notifications/initialized"] = params => {
 			return {}
@@ -9364,6 +9413,12 @@ const $mcp = function(aOptions) {
 		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
 		aOptions.options.fns     = _$(aOptions.options.fns, "aOptions.options.fns").isMap().default({})
 		aOptions.options.fnsMeta = _$(aOptions.options.fnsMeta, "aOptions.options.fnsMeta").isMap().default({})
+		aOptions.options.serverInfo = _$(aOptions.options.serverInfo, "aOptions.options.serverInfo").isMap().default({
+			name: "OpenAF Dummy MCP",
+			version: "1.0.0"
+		})
+		aOptions.options.capabilities = _$(aOptions.options.capabilities, "aOptions.options.capabilities").isMap().default(_buildSyntheticCapabilities(aOptions.options.fns))
+		aOptions.options.protocolVersion = _$(aOptions.options.protocolVersion, "aOptions.options.protocolVersion").isString().default(aOptions.protocolVersion)
 
 		aOptions.options.fns["tools/list"] = params => {
 			return { 
@@ -9378,7 +9433,7 @@ const $mcp = function(aOptions) {
 			return aOptions.options.fns[params.name](params.arguments)
 		}
 		aOptions.options.fns["initialize"] = params => {
-			return { protocolVersion: "2024-11-05" }
+			return _buildSyntheticInitializeResult(aOptions.options)
 		}
 		aOptions.options.fns["notifications/initialized"] = params => {
 			return {}
@@ -9532,7 +9587,7 @@ const $mcp = function(aOptions) {
 		 * <key>$mcp.listAgents() : Map</key>
 		 * Lists all available A2A agents from the MCP server.\
 		 * Returns a map with an 'agents' array containing agent metadata (id, name, title, version, tags, capabilities).\
-		 * Must call initialize() first.\
+			return _buildSyntheticInitializeResult(aOptions.options)
 		 * \
 		 * Example:\
 		 * \
