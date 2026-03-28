@@ -84,11 +84,14 @@
 
                 if (isNotification) return ow.server.httpd.reply("", 204, "text/plain", {});
 
+                var responseHeaders = {};
+                if (rpc.method == "initialize") responseHeaders["mcp-session-id"] = "test-session-1";
+
                 return ow.server.httpd.reply({
                     jsonrpc: "2.0",
                     result: result,
                     id: rpc.id
-                }, 200, "application/json", {});
+                }, 200, "application/json", responseHeaders);
             }
         });
 
@@ -194,6 +197,37 @@
                 ow.test.assert(isDef(ctx.state.tokenRequests[0].code_verifier), true, "Authorization code token exchange should include a PKCE verifier.");
                 ow.test.assert(ctx.state.tokenRequests[0].code, "auth-code-123", "Authorization code token exchange should use the provided authorization code.");
                 ow.test.assert(ctx.state.mcpAuthHeaders[0], "Bearer token-1", "Authorization code flow should send the bearer token to the MCP server.");
+            } finally {
+                client.destroy();
+            }
+        });
+    };
+
+    exports.testGetClientInfoIncludesJSONRPCMCPData = function() {
+        withOAuthMCPServer(function(ctx) {
+            var client = $mcp({
+                type: "remote",
+                strict: false,
+                url: ctx.resource,
+                auth: {
+                    type: "oauth2",
+                    grantType: "client_credentials",
+                    clientId: "client-a",
+                    clientSecret: "secret-a"
+                }
+            });
+
+            try {
+                client.initialize({ name: "TestClient", version: "9.9.9" });
+                var info = client.getClientInfo();
+
+                ow.test.assert(info.lastRequest.method, "initialize", "getClientInfo should include the last JSON-RPC method.");
+                ow.test.assert(info.lastRequest.params.protocolVersion, "2024-11-05", "getClientInfo should include initialize protocolVersion.");
+                ow.test.assert(info.lastRequest.params.clientInfo.name, "TestClient", "getClientInfo should include sent clientInfo.");
+                ow.test.assert(info.lastResponse.jsonrpc, "2.0", "getClientInfo should include raw JSON-RPC response envelope.");
+                ow.test.assert(info.lastResponse.result.serverInfo.name, "OAuth MCP", "getClientInfo should include JSON-RPC result data.");
+                ow.test.assert(info.session.mcpSessionId, "test-session-1", "getClientInfo should include captured MCP session id.");
+                ow.test.assert(info.initialize.protocolVersion, "2024-11-05", "getClientInfo should include initialize result data.");
             } finally {
                 client.destroy();
             }
