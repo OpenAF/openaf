@@ -233,4 +233,77 @@
             }
         });
     };
+
+    exports.testDummyAdapterExposesInitializeMetadata = function() {
+        var client = $mcp({
+            type: "dummy",
+            strict: false,
+            options: {
+                serverInfo: { name: "Dummy MCP", version: "1.2.3" },
+                capabilities: {
+                    tools: { listChanged: false },
+                    prompts: { listChanged: false }
+                },
+                fnsMeta: {
+                    ping: {
+                        name: "ping",
+                        description: "Ping tool",
+                        inputSchema: { type: "object", properties: {} }
+                    }
+                },
+                fns: {
+                    ping: function() {
+                        return {
+                            content: [{ type: "text", text: "pong" }],
+                            isError: false
+                        };
+                    }
+                }
+            }
+        });
+
+        try {
+            client.initialize({ name: "DummyClient", version: "2.0.0" });
+
+            var info = client.getInfo();
+            var clientInfo = client.getClientInfo();
+
+            ow.test.assert(info.protocolVersion, "2024-11-05", "Dummy adapter should expose initialize protocolVersion.");
+            ow.test.assert(info.serverInfo.name, "Dummy MCP", "Dummy adapter should expose initialize serverInfo.");
+            ow.test.assert(info.capabilities.tools.listChanged, false, "Dummy adapter should expose initialize capabilities.");
+            ow.test.assert(clientInfo.lastRequest.params.clientInfo.name, "DummyClient", "Dummy adapter should record sent clientInfo.");
+            ow.test.assert(clientInfo.lastResponse.jsonrpc, "2.0", "Dummy adapter should keep a JSON-RPC response envelope.");
+            ow.test.assert(clientInfo.lastResponse.result.serverInfo.name, "Dummy MCP", "Dummy adapter should expose initialize result in the response envelope.");
+            ow.test.assert(clientInfo.initialize.serverInfo.name, "Dummy MCP", "Dummy adapter should copy initialize result into getClientInfo.initialize.");
+        } finally {
+            client.destroy();
+        }
+    };
+
+    exports.testOJobAdapterExposesInitializeMetadata = function() {
+        var client = $mcp({
+            type: "ojob",
+            strict: false,
+            options: {
+                job: "../o/mini-a/mcps/mcp-time.yaml"
+            }
+        });
+
+        try {
+            client.initialize({ name: "OJobClient", version: "3.0.0" });
+
+            var info = client.getInfo();
+            var clientInfo = client.getClientInfo();
+
+            ow.test.assert(info.protocolVersion, "2024-11-05", "oJob adapter should expose initialize protocolVersion.");
+            ow.test.assert(info.serverInfo.name, "mini-a-time", "oJob adapter should expose serverInfo from the MCP job definition.");
+            ow.test.assert(info.capabilities.tools.listChanged, false, "oJob adapter should derive tool capabilities.");
+            ow.test.assert(clientInfo.lastRequest.params.clientInfo.name, "OJobClient", "oJob adapter should record sent clientInfo.");
+            ow.test.assert(clientInfo.lastResponse.jsonrpc, "2.0", "oJob adapter should keep a JSON-RPC response envelope.");
+            ow.test.assert(clientInfo.lastResponse.result.serverInfo.name, "mini-a-time", "oJob adapter should expose initialize result in the response envelope.");
+            ow.test.assert(clientInfo.initialize.serverInfo.name, "mini-a-time", "oJob adapter should copy initialize result into getClientInfo.initialize.");
+        } finally {
+            client.destroy();
+        }
+    };
 })();

@@ -23,7 +23,19 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testOAuthAuthorizationCodeTokenExchange;
 
+   - name: MCP::Dummy adapter exposes initialize metadata
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testDummyAdapterExposesInitializeMetadata;
+
+   - name: MCP::oJob adapter exposes initialize metadata
+     from: MCP::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testOJobAdapterExposesInitializeMetadata;
+
 todo:
    - MCP::OAuth discovery with client credentials
    - MCP::OAuth authorization URL includes resource and PKCE
    - MCP::OAuth authorization code token exchange includes resource and verifier
+   - MCP::Dummy adapter exposes initialize metadata
+   - MCP::oJob adapter exposes initialize metadata
