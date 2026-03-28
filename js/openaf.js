@@ -8503,6 +8503,13 @@ const $jsonrpc = function (aOptions) {
 		mcpSessionId: __
 	}
 
+	const _mcpInfo = {
+		session: _session,
+		lastRequest: __,
+		lastResponse: __,
+		lastResponseHeaders: __
+	}
+
 	const _captureSessionFromHeaders = headers => {
 		var _sid = _pickHeaderCaseInsensitive(headers, "mcp-session-id")
 		if (isDef(_sid) && String(_sid).length > 0) {
@@ -8680,6 +8687,11 @@ const $jsonrpc = function (aOptions) {
 		},
 		exec: (aMethod, aParams, aNotification, aExecOptions) => {
 			aExecOptions = _$(aExecOptions, "aExecOptions").isMap().default({})
+			_mcpInfo.lastRequest = {
+				method: _$(aMethod, "aMethod").isString().default(__),
+				params: _$(aParams, "aParams").isMap().default({}),
+				notification: !!aNotification
+			}
 			switch (aOptions.type) {
 				case "dummy":
 					aOptions.options = _$(aOptions.options, "aOptions.options").isMap().default({})
@@ -8690,6 +8702,8 @@ const $jsonrpc = function (aOptions) {
 					if (isMap(aOptions.options.fns)) {
 						if (isFunction(aOptions.options.fns[aMethod])) {
 							var _res = aOptions.options.fns[aMethod](aParams)
+							_mcpInfo.lastResponse = { result: _res }
+							_mcpInfo.lastResponseHeaders = __
 							_debug("jsonrpc dummy <- " + stringify({ result: _res }, __, ""))
 							if (aMethod == "initialize" && !aNotification) _r._info = _res
 							return _res
@@ -8730,6 +8744,8 @@ const $jsonrpc = function (aOptions) {
 						_res = _r._r[_id]
 						delete _r._r[_id]
 					}
+					_mcpInfo.lastResponse = _res
+					_mcpInfo.lastResponseHeaders = __
 					if (aMethod == "initialize" && !aNotification) _r._info = isDef(_res) && isDef(_res.result) ? _res.result : _res
 					return isDef(_res) && isDef(_res.result) ? _res.result : _res
 				case "sse":
@@ -8774,6 +8790,8 @@ const $jsonrpc = function (aOptions) {
 						if (!!aNotification) {
 							var _notificationRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
 							_captureSessionFromHeaders(_http.responseHeaders())
+							_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
+							_mcpInfo.lastResponse = __
 							if (isDef(_notificationRes) && "function" === typeof _notificationRes.close) {
 								try { _notificationRes.close() } catch(e) {}
 							}
@@ -8781,6 +8799,7 @@ const $jsonrpc = function (aOptions) {
 						}
 						var _streamRes = $rest(_restOptions).post2Stream(aOptions.url, _req)
 						_captureSessionFromHeaders(_http.responseHeaders())
+						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
 						var _events = _r._readSSE(_streamRes)
 						res = _events.filter(r => isMap(r)).filter(r => r.id == _req.id || isUnDef(r.id)).shift()
 						if (isUnDef(res) && _events.length > 0) res = _events[0]
@@ -8789,7 +8808,9 @@ const $jsonrpc = function (aOptions) {
 						_restOptions.httpClient = _http
 						res = $rest(_restOptions).post(aOptions.url, _req)
 						_captureSessionFromHeaders(_http.responseHeaders())
+						_mcpInfo.lastResponseHeaders = clone(_http.responseHeaders())
 					}
+					_mcpInfo.lastResponse = res
 					// Notifications do not expect a reply
 					if (!!aNotification) return
 					_debug("jsonrpc <- " + stringify(res, __, ""))
@@ -8802,6 +8823,7 @@ const $jsonrpc = function (aOptions) {
 			}
 		},
 		getInfo: () => _r._info,
+		getClientInfo: () => merge({}, _mcpInfo),
 		destroy: () => {
 			if (_r._copies.get() > 0) {
 				_r._copies.dec()
@@ -9448,6 +9470,13 @@ const $mcp = function(aOptions) {
             }
         },
         getInfo: () => _r._initResult,
+		getClientInfo: () => {
+			var _clientInfo = _jsonrpc.getClientInfo()
+			if (isMap(_r._initResult)) {
+				_clientInfo.initialize = clone(_r._initResult)
+			}
+			return _clientInfo
+		},
 		listTools: () => {
             if (!_r._initialized) {
                 throw new Error("MCP client not initialized. Call initialize() first.")
