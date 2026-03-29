@@ -445,7 +445,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             return _res
                         } else {
                             _r.conversation = _r.conversation.concat(_p)
-                            return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                            return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
                         }
                     } else {
                         _captureStats(_res, body)
@@ -576,7 +576,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                         if (_p.length > 0) {
                             _r.conversation = _r.conversation.concat(_p)
                             // Recursively call rawPromptStream to continue streaming with tool results
-                            var toolResult = _r.rawPromptStream(_p, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
                             if (isMap(toolResult)) {
                                 // Merge events from both calls
                                 if (isArray(toolResult.events)) {
@@ -1619,6 +1619,7 @@ OpenWrap.ai.prototype.__gpttypes = {
             var _params = aOptions.params
             var _lastStats = __
             var _debugCh = __
+            var _streamWarmModels = {}
             var _resetStats = () => { _lastStats = __ }
             var _captureStats = (aResponse, aModelName) => {
                 if (!isMap(aResponse)) {
@@ -1648,6 +1649,31 @@ OpenWrap.ai.prototype.__gpttypes = {
                 if (Object.keys(stats).filter(k => k != "vendor").length == 0) stats = __
                 _lastStats = stats
                 return _lastStats
+            }
+            var _ensureModelReadyForStream = aModel => {
+                var _targetModel = _$(aModel, "aModel").isString().default(_model)
+                if (_streamWarmModels[_targetModel] === true) return
+
+                try {
+                    _r._request("/api/chat", {
+                        model: _targetModel,
+                        messages: [],
+                        options: merge({
+                            temperature: _temperature
+                        }, _params),
+                        stream: false
+                    })
+                    _streamWarmModels[_targetModel] = true
+                } catch(e) {
+                    if (isDef(_debugCh)) {
+                        $ch(_debugCh).set({_t:nowNano(),_f:'llm-warmup'}, {
+                            _t: nowNano(),
+                            _f: "llm-warmup",
+                            model: _targetModel,
+                            error: String(e)
+                        })
+                    }
+                }
             }
 
             var _r = {
@@ -1691,7 +1717,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var fn = tc.function || {}
                                 var args = fn.arguments
                                 if (isString(args)) args = jsonParse(args, __, __, true) || {}
-                                return { id: fn.id || "", name: fn.name || "", arguments: args || {} }
+                                return { id: tc.id || fn.id || "", name: fn.name || "", arguments: args || {} }
                             })
                         }
                         _result.push(entry)
@@ -1709,7 +1735,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                             _conv.push({
                                 role: "assistant",
                                 content: isDef(msg.content) ? (msg.content || "") : "",
-                                tool_calls: msg.toolCalls.map(tc => ({
+                                tool_calls: msg.toolCalls.map((tc, ti) => ({
+                                    id: tc.id || ("tc_" + idx + "_" + ti),
                                     function: {
                                         name: tc.name,
                                         arguments: isString(tc.arguments) ? tc.arguments : stringify(tc.arguments || {}, __, "")
@@ -1717,10 +1744,11 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 }))
                             })
                         } else if (role == "user" && isArray(msg.toolResults) && msg.toolResults.length > 0) {
-                            msg.toolResults.forEach(tr => {
+                            msg.toolResults.forEach((tr, ti) => {
                                 _conv.push({
                                     role: "tool",
-                                    content: isString(tr.result) ? tr.result : stringify(tr.result || "", __, "")
+                                    content: isString(tr.result) ? tr.result : stringify(tr.result || "", __, ""),
+                                    tool_call_id: tr.id || ("tc_" + idx + "_" + ti)
                                 })
                             })
                         } else {
@@ -1845,7 +1873,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                                 var _tr = _t.fn(_args)
                                 // Ensure tool response is a string
                                 _p.push({ role: "assistant", tool_calls: [ tc ] })
-                                _p.push({ role: "tool", content: isString(_tr) ? _tr : stringify(_tr, __, ""), tool_call_id: tc.function.id })
+                                _p.push({ role: "tool", content: isString(_tr) ? _tr : stringify(_tr, __, ""), tool_call_id: tc.id || tc.function.id })
                             }
                         })
                         // Also ensure all pushed messages have string content
@@ -1854,7 +1882,7 @@ OpenWrap.ai.prototype.__gpttypes = {
                             return m
                         })
                         _r.conversation = _r.conversation.concat(_p)
-                        return _r.rawPrompt(_p, aModel, aTemperature, aJsonFlag, aTools)
+                        return _r.rawPrompt([], aModel, aTemperature, aJsonFlag, aTools)
                     } else {
                         if (isDef(_res) && isDef(_res.message) && isString(_res.message.content)) {
                             _r.conversation.push({ role: "assistant", content: _res.message.content })
@@ -1871,6 +1899,8 @@ OpenWrap.ai.prototype.__gpttypes = {
                     aModel       = _$(aModel, "aModel").isString().default(_model)
                     aJsonFlag    = _$(aJsonFlag, "aJsonFlag").isBoolean().default(false)
                     aTools       = _$(aTools, "aTools").isArray().default(_r.tools)
+
+                    if (_r.conversation.length == 0) _ensureModelReadyForStream(aModel)
 
                     _resetStats()
                     var msgs = []
@@ -1946,20 +1976,20 @@ OpenWrap.ai.prototype.__gpttypes = {
                         var _p = []
                         lastResponse.message.tool_calls.forEach(tc => {
                             if (isMap(tc.function)) {
-                                var _t = $from(_r.tools).equals("function.name", tc.function.name).at(0)
-                                if (isDef(_t) && isFunction(_t.function.fn)) {
+                                var _t = $from(aTools).equals("function.name", tc.function.name).at(0)
+                                if (isDef(_t) && isFunction(_t.fn)) {
                                     var _args = jsonParse(tc.function.arguments, __, __, true)
                                     if (isUnDef(_args)) _args = {}
-                                    var _tr = stringify(_t.function.fn(_args), __, "")
+                                    var _tr = stringify(_t.fn(_args), __, "")
                                     _p.push({ role: "assistant", content: "", tool_calls: [ tc ] })
-                                    _p.push({ role: "tool", content: _tr })
+                                    _p.push({ role: "tool", content: _tr, tool_call_id: tc.id || tc.function.id })
                                 }
                             }
                         })
                         if (_p.length > 0) {
                             _r.conversation = _r.conversation.concat(_p)
                             // Recursively call rawPromptStream to continue streaming with tool results
-                            var toolResult = _r.rawPromptStream(_p, aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
+                            var toolResult = _r.rawPromptStream([], aModel, aTemperature, aJsonFlag, aTools, aOnDelta)
                             if (isMap(toolResult)) {
                                 // Merge events from both calls
                                 if (isArray(toolResult.events)) {
@@ -3096,6 +3126,44 @@ OpenWrap.ai.prototype.gpt.prototype.getLastStats = function() {
     return __
 }
 
+OpenWrap.ai.prototype.gpt.prototype.__resolvePromptArgs = function(aRole, aModel, aTemperature, aJsonFlag, tools) {
+    var _roles = {
+        assistant: true,
+        developer: true,
+        model: true,
+        system: true,
+        tool: true,
+        user: true
+    }
+
+    var role = aRole
+    var model = aModel
+    var temperature = aTemperature
+    var jsonFlag = aJsonFlag
+    var _tools = tools
+
+    if (!isString(role) || _roles[String(role).toLowerCase()] !== true) {
+        _tools = jsonFlag
+        jsonFlag = temperature
+        temperature = model
+        model = role
+        role = __
+    }
+
+    if (isUnDef(_tools) && (isArray(jsonFlag) || isMap(jsonFlag))) {
+        _tools = jsonFlag
+        jsonFlag = false
+    }
+
+    return {
+        role: role,
+        model: model,
+        temperature: temperature,
+        jsonFlag: isBoolean(jsonFlag) ? jsonFlag : false,
+        tools: _tools
+    }
+}
+
 /**
  * <odoc>
  * <key>ow.ai.gpt.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) : String</key>
@@ -3103,7 +3171,8 @@ OpenWrap.ai.prototype.gpt.prototype.getLastStats = function() {
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
-    return this.model.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    return this.model.prompt(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools)
 }
 
 /**
@@ -3114,7 +3183,8 @@ OpenWrap.ai.prototype.gpt.prototype.prompt = function(aPrompt, aRole, aModel, aT
  */
 OpenWrap.ai.prototype.gpt.prototype.promptStream = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
     if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
-    return this.model.promptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    return this.model.promptStream(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools, aOnDelta)
 }
 
 /**
@@ -3125,7 +3195,8 @@ OpenWrap.ai.prototype.gpt.prototype.promptStream = function(aPrompt, aRole, aMod
  */
 OpenWrap.ai.prototype.gpt.prototype.rawPromptStream = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
     if (!isFunction(this.model.rawPromptStream)) throw "Streaming not supported by this provider"
-    return this.model.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    return this.model.rawPromptStream(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools, aOnDelta)
 }
 
 /**
@@ -3136,7 +3207,8 @@ OpenWrap.ai.prototype.gpt.prototype.rawPromptStream = function(aPrompt, aRole, a
  */
 OpenWrap.ai.prototype.gpt.prototype.promptStreamWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
     if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
-    var response = this.model.promptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    var response = this.model.promptStream(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools, aOnDelta)
     return { response: response, stats: this.getLastStats() }
 }
 
@@ -3148,7 +3220,8 @@ OpenWrap.ai.prototype.gpt.prototype.promptStreamWithStats = function(aPrompt, aR
  */
 OpenWrap.ai.prototype.gpt.prototype.rawPromptStreamWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools, aOnDelta) {
     if (!isFunction(this.model.rawPromptStream)) throw "Streaming not supported by this provider"
-    var response = this.model.rawPromptStream(aPrompt, aModel, aTemperature, aJsonFlag, tools, aOnDelta)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    var response = this.model.rawPromptStream(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools, aOnDelta)
     return { response: response, stats: this.getLastStats() }
 }
 
@@ -3161,7 +3234,8 @@ OpenWrap.ai.prototype.gpt.prototype.rawPromptStreamWithStats = function(aPrompt,
 OpenWrap.ai.prototype.gpt.prototype.promptStreamJSON = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
     if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
     this.setInstructions("json")
-    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, true, tools)
+    var out = this.model.promptStream(aPrompt, _args.model, _args.temperature, true, _args.tools, aOnDelta)
     return isString(out) ? jsonParse(out, __, __, true) : out
 }
 
@@ -3174,7 +3248,8 @@ OpenWrap.ai.prototype.gpt.prototype.promptStreamJSON = function(aPrompt, aRole, 
 OpenWrap.ai.prototype.gpt.prototype.promptStreamJSONWithStats = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
     if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
     this.setInstructions("json")
-    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, true, tools)
+    var out = this.model.promptStream(aPrompt, _args.model, _args.temperature, true, _args.tools, aOnDelta)
     var parsed = isString(out) ? jsonParse(out, __, __, true) : out
     return { response: parsed, stats: this.getLastStats() }
 }
@@ -3188,7 +3263,8 @@ OpenWrap.ai.prototype.gpt.prototype.promptStreamJSONWithStats = function(aPrompt
 OpenWrap.ai.prototype.gpt.prototype.promptStreamJSONWithStatsRaw = function(aPrompt, aRole, aModel, aTemperature, tools, aOnDelta) {
     if (!isFunction(this.model.promptStream)) throw "Streaming not supported by this provider"
     this.setInstructions("json")
-    var out = this.model.promptStream(aPrompt, aModel, aTemperature, true, tools, aOnDelta)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, true, tools)
+    var out = this.model.promptStream(aPrompt, _args.model, _args.temperature, true, _args.tools, aOnDelta)
     var parsed = isString(out) ? jsonParse(out, __, __, true) : out
     return { response: parsed, raw: out, stats: this.getLastStats() }
 }
@@ -3200,7 +3276,8 @@ OpenWrap.ai.prototype.gpt.prototype.promptStreamJSONWithStatsRaw = function(aPro
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.promptWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
-    var response = this.model.prompt(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    var response = this.model.prompt(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools)
     return { response: response, stats: this.getLastStats() }
 }
 
@@ -3284,7 +3361,8 @@ OpenWrap.ai.prototype.gpt.prototype.setDebugCh = function(aChName) {
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
-    return this.model.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    return this.model.rawPrompt(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools)
 }
 
 /**
@@ -3294,7 +3372,8 @@ OpenWrap.ai.prototype.gpt.prototype.rawPrompt = function(aPrompt, aRole, aModel,
  * </odoc>
  */
 OpenWrap.ai.prototype.gpt.prototype.rawPromptWithStats = function(aPrompt, aRole, aModel, aTemperature, aJsonFlag, tools) {
-    var response = this.model.rawPrompt(aPrompt, aModel, aTemperature, aJsonFlag, tools)
+    var _args = this.__resolvePromptArgs(aRole, aModel, aTemperature, aJsonFlag, tools)
+    var response = this.model.rawPrompt(aPrompt, _args.model, _args.temperature, _args.jsonFlag, _args.tools)
     return { response: response, stats: this.getLastStats() }
 }
 
