@@ -598,4 +598,38 @@
         ow.test.assert(imported[0].tool_calls[0].id, "call-4", "Problem importing Ollama tool call ids.");
         ow.test.assert(imported[1].tool_call_id, "call-4", "Problem importing Ollama tool result ids.");
     };
+
+    exports.testAIOllamaStreamingWarmsModelOnFreshConversation = function() {
+        ow.loadAI();
+
+        var g = new ow.ai.gpt("ollama", { url: "http://127.0.0.1:11434", model: "llama-test" });
+        var warmRequests = [];
+        var streamRequests = [];
+        var deltas = [];
+
+        g.model._request = function(url, body) {
+            warmRequests.push({ url: url, body: __cloneForTest(body) });
+            return { done: true };
+        };
+
+        g.model._requestStream = function(url, body) {
+            streamRequests.push({ url: url, body: __cloneForTest(body) });
+            return __makeOllamaStream([
+                { message: { content: "part-1" }, done: false },
+                { message: { content: "part-2" }, done: true }
+            ]);
+        };
+
+        var res = g.rawPromptStream("stream me", "llama-test", 0.1, false, [], function(delta) {
+            deltas.push(delta);
+        });
+
+        ow.test.assert(warmRequests.length, 1, "Problem warming Ollama before the first streaming request.");
+        ow.test.assert(warmRequests[0].url, "/api/chat", "Problem using the Ollama chat endpoint for warmup.");
+        ow.test.assert(warmRequests[0].body.messages, [], "Problem keeping the Ollama warmup request side-effect free.");
+        ow.test.assert(streamRequests.length, 1, "Problem executing the streamed Ollama request after warmup.");
+        ow.test.assert(streamRequests[0].body.messages, [ { role: "user", content: "stream me" } ], "Problem preserving the first streamed Ollama prompt after warmup.");
+        ow.test.assert(deltas, [ "part-1", "part-2" ], "Problem preserving Ollama streaming deltas after warmup.");
+        ow.test.assert(res.content, "part-1part-2", "Problem aggregating Ollama streaming content after warmup.");
+    };
 })();

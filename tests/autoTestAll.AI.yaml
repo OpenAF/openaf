@@ -95,6 +95,11 @@ jobs:
      to  : oJob Test
      exec: args.func = args.tests.testAIOllamaStreamingToolExecutionAndConversationIds;
 
+   - name: AI::Ollama streaming warmup on fresh conversation
+     from: AI::Init
+     to  : oJob Test
+     exec: args.func = args.tests.testAIOllamaStreamingWarmsModelOnFreshConversation;
+
 todo:
    # ow.ai tests
    # -----------
@@ -115,3 +120,4 @@ todo:
    - AI::OpenAI tool recursion without duplication
    - AI::OpenAI streaming tool recursion without duplication
    - AI::Ollama streaming tool execution and ids
+   - AI::Ollama streaming warmup on fresh conversation

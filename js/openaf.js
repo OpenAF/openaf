@@ -9305,12 +9305,51 @@ const $mcp = function(aOptions) {
 		aOptions.options         = _$(aOptions.options, "aOptions.options").isMap().default({})
 		aOptions.options.job     = _$(aOptions.options.job, "aOptions.options.job").isString().$_()
 		aOptions.options.args    = _$(aOptions.options.args, "aOptions.options.args").isMap().default({})
+		aOptions.options.tplDesc = _$(aOptions.options.tplDesc, "aOptions.options.tplDesc").isBoolean().default(false)
+		aOptions.options.toolPrefix = _$(aOptions.options.toolPrefix, "aOptions.options.toolPrefix").isString().default("")
+		aOptions.options.description = _$(aOptions.options.description, "aOptions.options.description").isMap().default({})
 		aOptions.options.fns     = _$(aOptions.options.fns, "aOptions.options.fns").isMap().default({})
 		aOptions.options.fnsMeta = _$(aOptions.options.fnsMeta, "aOptions.options.fnsMeta").isMap().default({})
 		aOptions.options.init    = _$(aOptions.options.init, "aOptions.options.init").default(__)
 
 		// Load jobs from the oJob 
 		var fnsMeta = {}, fns = {}, _initMeta = {} 
+		var _applyTemplate = (meta, allStrings) => {
+			if (!aOptions.options.tplDesc) return meta
+			var _walk = obj => {
+				if (isString(obj) && allStrings) return $t(obj, aOptions.options.args)
+				if (isArray(obj)) return obj.map(_walk)
+				if (isMap(obj)) {
+					Object.keys(obj).forEach(k => {
+						if (isString(obj[k]) && (allStrings || k == "description")) {
+							obj[k] = $t(obj[k], aOptions.options.args)
+						} else {
+							obj[k] = _walk(obj[k])
+						}
+					})
+				}
+				return obj
+			}
+			return _walk(meta)
+		}
+		var _applyTemplateToDescriptions = meta => _applyTemplate(meta, false)
+		var _prefixToolName = n => (aOptions.options.toolPrefix.length > 0 ? aOptions.options.toolPrefix + n : n)
+		var _resolveToolName = n => {
+			if (aOptions.options.toolPrefix.length > 0 && isString(n) && n.startsWith(aOptions.options.toolPrefix)) {
+				return n.substring(aOptions.options.toolPrefix.length)
+			}
+			return n
+		}
+		var _toToolMeta = k => {
+			var _meta = isDef(fnsMeta[k]) ? _applyTemplateToDescriptions(clone(fnsMeta[k])) : {
+				name: k,
+				description: k,
+				inputSchema: {}
+			}
+			if (!isMap(_meta)) _meta = { name: k, description: String(_meta), inputSchema: {} }
+			_meta.name = _prefixToolName(k)
+			return _meta
+		}
 		var jobsTemp = io.createTempFile("ojob_mcp_", ".yaml")
 		var jobsPreD = aOptions.options.job.endsWith(".json") ? io.readFileJSON(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job) : io.readFileYAML(_defaultCmdDir + String(java.io.File.separator) + aOptions.options.job)
 		if (isDef(jobsPreD.ojob) && isDef(jobsPreD.ojob.daemon)) delete jobsPreD.ojob.daemon
@@ -9382,9 +9421,26 @@ const $mcp = function(aOptions) {
 			var _protocolVersionKey = Object.keys(_protocolVersionEntries).find(k => isString(_protocolVersionEntries[k]))
 			if (isDef(_protocolVersionKey)) _initMeta.protocolVersion = String(_protocolVersionEntries[_protocolVersionKey])
 		}
+		var _descriptionEntries = searchKeys(jobsPreD, "description")
+		if (isMap(_descriptionEntries)) {
+			var _descriptionKey = Object.keys(_descriptionEntries).find(k => isMap(_descriptionEntries[k]))
+			if (isDef(_descriptionKey)) _initMeta.description = clone(_descriptionEntries[_descriptionKey])
+		}
 
 		aOptions.type = "dummy"
 		aOptions.options.fnsMeta = fnsMeta
+		aOptions.options.description = _applyTemplate(clone(merge({
+			protocolVersion: aOptions.protocolVersion,
+			serverInfo: {
+				name: "OpenAF oJob MCP",
+				title: "OpenAF oJob MCP server",
+				version: "1.0.0"
+			},
+			capabilities: {
+				prompts: { listChanged: true },
+				tools: { listChanged: true }
+			}
+		}, _$( _initMeta.description, "_initMeta.description").isMap().default({}), aOptions.options.description)), true)
 		aOptions.options.serverInfo = _$(aOptions.options.serverInfo, "aOptions.options.serverInfo").isMap().default(_$( _initMeta.serverInfo, "_initMeta.serverInfo").isMap().default({
 			name: "OpenAF oJob MCP",
 			version: "1.0.0"
@@ -9395,16 +9451,15 @@ const $mcp = function(aOptions) {
 			return { 
 				tools: Object.keys(fns)
 				       .filter(k => k != "tools/list" && k != "tools/call" && k != "initialize" && k != "notifications/initialized")
-				       .map(k => {
-					return fnsMeta[k] || { name: k, description: "No description available" }
-				})
+				       .map(k => _toToolMeta(k))
 			}
 		}
 		aOptions.options.fns["tools/call"] = params => {
-			return $job(fns[params.name], params.arguments)
+			var _toolName = _resolveToolName(params.name)
+			return $job(fns[_toolName], params.arguments)
 		}
 		aOptions.options.fns["initialize"] = params => {
-			return _buildSyntheticInitializeResult(aOptions.options)
+			return merge(_buildSyntheticInitializeResult(aOptions.options), aOptions.options.description)
 		}
 		aOptions.options.fns["notifications/initialized"] = params => {
 			return {}
