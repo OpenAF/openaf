@@ -70,6 +70,13 @@ jobs:
        - Format::Load Format
      exec: args.func = args.tests.testWordWrap; 
 
+   - name: Format::Markdown wrap
+     from: Format::Init
+     to  : oJob Test
+     deps:
+       - Format::Load Format
+     exec: args.func = args.tests.testWithMDWrap;
+
    - name: Format::String pad
      from: Format::Init
      to  : oJob Test
@@ -175,6 +182,7 @@ todo:
    - Format::LDAP date to/from
    - Format::Escape strings
    - Format::Word wrap
+   - Format::Markdown wrap
    - Format::String pad
    - Format::Date diff
    - Format::Cron
