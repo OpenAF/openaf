@@ -3791,7 +3791,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 		// bullets
 		var ar = l.match(/^(\s*)\*(\s+)(.+)$/)
 		if (ar) {
-			var lsize = ar[1].length + 1 + ar[2].length
+			var lsize = visibleLength(ar[1] + "\u2022" + ar[2])
 
 			return ow.format.string.wordWrap(ar[3], _tWidth - lsize).split("\n").map((l, i) => {
 				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.bullets, "\u2022") + ar[2] : repeat(lsize, ' ')) + l
@@ -3801,7 +3801,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 		// numbered list
 		var ar = l.match(/^(\s*)(\d+)\.(\s+)(.+)$/)
 		if (ar) {
-			var lsize = ar[1].length + ar[2].length + 1 + ar[3].length
+			var lsize = visibleLength(ar[1] + ar[2] + "." + ar[3])
 
 			return ow.format.string.wordWrap(ar[4], _tWidth - lsize).split("\n").map((l, i) => {
 				return (i == 0 ? ar[1] + ansiColor(__colorFormat.md.list, ar[2] + ".") + ar[3] : repeat(lsize, ' ')) + l
