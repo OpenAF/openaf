@@ -3692,33 +3692,33 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 				theme: "simpleLine"
 			}
 		}, __colorFormat.md)
-	} else {
-		__colorFormat.md = merge({
-			codeInline: {
-				text: "YELLOW",
-				surround: "FAINT"
-			},
-			strike: "STRIKETHROUGH"
-		}, __colorFormat.md)
 	}
 
 	var _withMdPatterns = __owWithMdCache
 	if (!isDef(_withMdPatterns)) {
-                _withMdPatterns = {
-                        comments: "(?<!\\\\)<!--(.|\n)*?--(?<!\\\\)>",
-                        emphasisGuard: "(?<=[\\p{L}\\p{N}])([*_])+(?=[\\p{L}\\p{N}])",
-                        boldItalicStar: "(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})",
-                        boldItalicUnd: "(?<!\\\\)(_{3})([^ _][^_\n]*)(?<!\\\\)(_{3})",
-                        boldStar: "(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})",
-                        boldUnd: "(?<!\\\\)(_{2})([^ _][^_\n]*)(?<!\\\\)(_{2})",
-                        italicStar: "(?<!\\\\)(\\*)([^ \\*][^\\*\n]*)(?<!\\\\)(\\*)",
-                        italicUnd: "(?<!\\\\)(_)([^ _][^_\n]*)(?<!\\\\)(_)",
-                        strike: "(?<!\\\\)(~~)([^ ~][^~\n]*)(?<!\\\\)(~~)",
-                        inlineCode: /(^|[^`\\])`([^`\n]+?)`(?!`)/g,
-                        escape: /\\([_\*`~])/g
-                }
-                __owWithMdCache = _withMdPatterns
-        }
+		_withMdPatterns = {
+			comments: "(?<!\\\\)<!--(.|\n)*?--(?<!\\\\)>",
+			emphasisGuard: "(?<=[\\p{L}\\p{N}])([*_])+(?=[\\p{L}\\p{N}])",
+			boldItalicStar: "(?<!\\\\)(\\*{3})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{3})",
+			boldItalicUnd: "(?<!\\\\)(_{3})([^ _][^_\n]*)(?<!\\\\)(_{3})",
+			boldStar: "(?<!\\\\)(\\*{2})([^ \\*][^\\*\n]*)(?<!\\\\)(\\*{2})",
+			boldUnd: "(?<!\\\\)(_{2})([^ _][^_\n]*)(?<!\\\\)(_{2})",
+			italicStar: "(?<!\\\\)(\\*)([^ \\*][^\\*\n]*)(?<!\\\\)(\\*)",
+			italicUnd: "(?<!\\\\)(_)([^ _][^_\n]*)(?<!\\\\)(_)",
+			strike: "(?<!\\\\)(~~)([^ ~][^~\n]*)(?<!\\\\)(~~)",
+			inlineCode: /(^|[^`\\])`([^`\n]+?)`(?!`)/g,
+			escape: /\\([_\*`~])/g,
+			// cached ansiColor replacement strings (da-independent part)
+			repBoldItalic: ansiColor("BOLD,ITALIC", "$2"),
+			repBold: ansiColor("BOLD", "$2"),
+			repItalic: ansiColor("ITALIC", "$2")
+		}
+		// Pre-compile all string patterns so javaRegExp reuses compiled Pattern instances
+		var _preCompiler = javaRegExp("")
+		var _strPatternKeys = ["comments","emphasisGuard","boldItalicStar","boldItalicUnd","boldStar","boldUnd","italicStar","italicUnd","strike"]
+		_strPatternKeys.forEach(k => _preCompiler.preCompile(_withMdPatterns[k]))
+		__owWithMdCache = _withMdPatterns
+	}
 
 	// pre process code blocks
 
@@ -3737,15 +3737,19 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 			res = res.replace(b, "```$$" + i + "```")
 		})
 
+	var _repBoldItalic = _withMdPatterns.repBoldItalic + da
+	var _repBold       = _withMdPatterns.repBold + da
+	var _repItalic     = _withMdPatterns.repItalic + da
+	var _repStrike     = ansiColor(__colorFormat.md.strike, "$2") + da
     res = javaRegExp(res).replaceAll(_withMdPatterns.comments, "")
     res = javaRegExp(res).replaceAll(_withMdPatterns.emphasisGuard, "\\\\$1")
-	res = javaRegExp(res).replaceAll(_withMdPatterns.boldItalicStar, ansiColor("BOLD,ITALIC", "$2")+da)
-	res = javaRegExp(res).replaceAll(_withMdPatterns.boldItalicUnd, ansiColor("BOLD,ITALIC", "$2")+da)
-	res = javaRegExp(res).replaceAll(_withMdPatterns.boldStar, ansiColor("BOLD", "$2")+da)
-	res = javaRegExp(res).replaceAll(_withMdPatterns.boldUnd, ansiColor("BOLD", "$2")+da)
-	res = javaRegExp(res).replaceAll(_withMdPatterns.italicStar, ansiColor("ITALIC", "$2")+da)
-	res = javaRegExp(res).replaceAll(_withMdPatterns.italicUnd, ansiColor("ITALIC", "$2")+da)
-	res = javaRegExp(res).replaceAll(_withMdPatterns.strike, ansiColor(__colorFormat.md.strike, "$2")+da)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.boldItalicStar, _repBoldItalic)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.boldItalicUnd, _repBoldItalic)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.boldStar, _repBold)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.boldUnd, _repBold)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.italicStar, _repItalic)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.italicUnd, _repItalic)
+	res = javaRegExp(res).replaceAll(_withMdPatterns.strike, _repStrike)
 
 	_withMdPatterns.inlineCode.lastIndex = 0
 	res = res.replace(_withMdPatterns.inlineCode, (m, prefix, code) => {
@@ -3775,18 +3779,21 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 		_aSize = 80
 	}
 	var _tWidth = _aSize
+	var _linkRep = ansiColor(__colorFormat.md.link.text, "$1") + " " + ansiColor(__colorFormat.md.link.url, "($2)")
+	var _sideLineThemes = ow.format.withSideLineThemes()
+	var _noteTheme = _sideLineThemes[__colorFormat.md.note.theme]
+	var _lineChar = isDef(__con) ? "─" : "-"
+	var _lineRule = repeat(_aSize, ansiColor(__colorFormat.md.line, _lineChar))
 
 	// Single line transformers
 	res = res.split("\n").map(l => {
 		// line rule
 		if (l.trim().match(/^---+/)) {
-			return repeat(_aSize, ansiColor(__colorFormat.md.line, (isDef(__con) ?  "─" : "-")))
+			return _lineRule
 		}
 
-        // Links
-		if (/\[[^\]\[]+\]\([^\)\()]+\)/.test(l)) {
-			l = l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, ansiColor(__colorFormat.md.link.text, "$1") + " " + ansiColor(__colorFormat.md.link.url,"($2)"))
-		}
+		// Links
+		l = l.replace(/\[([^\]\[]+)\]\(([^\)\(]+)\)/ig, _linkRep)
 
 		// bullets
 		var ar = l.match(/^(\s*)\*(\s+)(.+)$/)
@@ -3810,8 +3817,8 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 
 		// side line render
 		if (/^(\> .+)$/.test(l)) {
-			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, __colorFormat.md.note.line, __colorFormat.md.note.text, ow.format.withSideLineThemes()[__colorFormat.md.note.theme])))
-		} 
+			return ow.format.withSideLine(l.replace(/^\> (.+)$/, ow.format.withSideLine("$1", __, __colorFormat.md.note.line, __colorFormat.md.note.text, _noteTheme)))
+		}
 
 		// if not a code block or a table then it should be paragraph
 		if (!/^\|.+\|$/.test(l.trim()) && !/^```/.test(l.trim()) && l.trim().length > 0) {
@@ -3825,7 +3832,7 @@ OpenWrap.format.prototype.withMD = function(aString, defaultAnsi) {
 	// code block
 	if (res.indexOf("```") >= 0 && isArray(cblocks) && cblocks.length > 0) {
 		cblocks.forEach((b, i) => {
-			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), __, __colorFormat.md.codeBlock.line, __colorFormat.md.codeBlock.text, ow.format.withSideLineThemes()[__colorFormat.md.codeBlock.theme]))
+			res = res.replace("```$" + i + "```", ow.format.withSideLine(b.replace(/```+\w*( +|\n)((.|\n)+?)( +|\n)```+/mg, "$2").replace(/\\n/g, "\\\\n"), __, __colorFormat.md.codeBlock.line, __colorFormat.md.codeBlock.text, _sideLineThemes[__colorFormat.md.codeBlock.theme]))
 		})
 	}
 
